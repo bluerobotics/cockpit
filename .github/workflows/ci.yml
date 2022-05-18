@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+  schedule:
+  # Run every 6 days to help us stay on our toes
+  - cron: '0 0 */6 * *'
+
+jobs:
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt install -y xvfb yarn
+
+      - name: Run yarn
+        run: |
+          yarn install
+          yarn build
+          xvfb-run --auto-servernum yarn test:ci
