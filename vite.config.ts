@@ -24,6 +24,7 @@ export default defineConfig({
       branches: 85,
       functions: 80,
       lines: 95,
+      reporter: ['html', 'text'],
       statements: 85,
     },
   },
