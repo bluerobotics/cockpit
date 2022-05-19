@@ -5,6 +5,7 @@ module.exports = {
   root: true,
   extends: [
     'eslint:recommended',
+    'plugin:jsdoc/recommended',
     'plugin:vue/vue3-recommended',
     '@vue/eslint-config-typescript/recommended',
     '@vue/eslint-config-prettier',
@@ -14,11 +15,29 @@ module.exports = {
     'es2022': true,
     'vue/setup-compiler-macros': true,
   },
-  plugins: ['simple-import-sort'],
+  plugins: ['jsdoc', 'simple-import-sort'],
   rules: {
     'func-style': ['error', 'declaration'],
     'import/extensions': 'off',
     'import/order': 'off',
+    'jsdoc/require-jsdoc': [
+      'error',
+      {
+        require: {
+          ArrowFunctionExpression: false,
+          ClassDeclaration: true,
+          FunctionDeclaration: true,
+          FunctionExpression: false,
+          MethodDefinition: true,
+        },
+        contexts: [
+          'TSEnumDeclaration',
+          'TSInterfaceDeclaration',
+          'TSMethodSignature',
+          'TSPropertySignature',
+        ],
+      },
+    ],
     'max-len': ['error', { code: 120 }],
     'no-alert': 'off',
     'no-console': 'off',
@@ -69,6 +88,11 @@ module.exports = {
     ],
     'vue/valid-v-slot': ['error', { allowModifiers: true }],
     'no-await-in-loop': 'off',
+  },
+  settings: {
+    jsdoc: {
+      mode: 'typescript',
+    },
   },
   overrides: [
     {
