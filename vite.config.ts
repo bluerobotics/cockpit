@@ -20,5 +20,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    coverage: {
+      branches: 85,
+      functions: 80,
+      lines: 95,
+      statements: 85,
+    },
   },
 })
