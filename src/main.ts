@@ -19,6 +19,4 @@ ConnectionManager.addConnection(
   Protocol.ProtocolType.MAVLink
 )
 
-ConnectionManager.connections().forEach((connection) =>
-  connection.onRead((message) => console.log(message))
-)
+ConnectionManager.mainConnection()?.onRead((message) => console.log(message))
