@@ -1,5 +1,5 @@
-import * as FunnyName from 'lib/funny-name/funny-name'
-import { Attitude, Battery, Coordinates } from 'types/vehicle'
+import * as FunnyName from '@/libs/funny-name/funny-name'
+import { Attitude, Battery, Coordinates } from '@/libs/vehicle/types'
 
 /**
  * Define possible firmwares used by the vehicle
