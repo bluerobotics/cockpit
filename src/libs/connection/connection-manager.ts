@@ -4,7 +4,7 @@ import * as Connection from './connection'
 import { WebSocketConnection } from './websocket-connection'
 
 /**
- *
+ * Manager to handle multiple connections
  */
 export class ConnectionManager {
   private static _self: ConnectionManager
