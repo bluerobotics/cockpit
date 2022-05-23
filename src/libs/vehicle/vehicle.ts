@@ -38,7 +38,7 @@ function toFunnyNameType(type: Type): FunnyName.Type {
 }
 
 /**
- *
+ * Vehicle abstraction
  */
 export abstract class Abstract {
   // Information used to identify vehicle on frontend and specialized functionalities
