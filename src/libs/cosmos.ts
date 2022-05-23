@@ -60,6 +60,9 @@ declare global {
   }
 }
 
+// Use global as window when running for browsers, whe using node this should be changed
+const global = window
+
 // Global functions
 global.assert = function (result: boolean, message?: string) {
   if (!result) throw new Error(message ?? 'Assert failed')
