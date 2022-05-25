@@ -5,7 +5,6 @@ import { expect, test } from 'vitest'
 test('Global functions', () => {
   expect(() => assert(true === false, 'What!')).toThrowError('What!')
   expect(() => assert(true === true, 'No!')).not.toThrowError('No!')
-  expect(() => unused(true)).not.toThrowError()
 })
 
 test('Array', () => {
