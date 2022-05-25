@@ -61,7 +61,7 @@ export abstract class Abstract {
 
     unimplemented('We need to have a better way to generate a unique id')
     this._cockpitRegistrationNumber = Math.random() * Number.MAX_SAFE_INTEGER
-    this._funnyName = toFunnyNameType(type)
+    this._funnyName = FunnyName.generate(toFunnyNameType(type))
   }
 
   /**
