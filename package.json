@@ -19,8 +19,11 @@
   "dependencies": {
     "@mdi/font": "5.9.55",
     "@vueuse/core": "^8.6.0",
+    "mathjs": "^10.6.1",
     "pinia": "^2.0.13",
+    "popmotion": "^11.0.3",
     "roboto-fontface": "*",
+    "uuid": "^8.3.2",
     "vue": "^3.2.33",
     "vue-router": "^4.0.14",
     "vuetify": "^3.0.0-beta.0",
