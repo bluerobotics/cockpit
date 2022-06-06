@@ -1,5 +1,5 @@
-import { useEventListener } from '@vueuse/core'
-import { type Ref, onMounted, ref } from 'vue'
+import { useEventListener, useMouse, useMouseInElement, useMousePressed } from '@vueuse/core'
+import { type Ref, onMounted, ref, computed, watch } from 'vue'
 
 export default function useDrag(
   targetElement: Ref<HTMLElement>,
@@ -77,17 +77,60 @@ export default function useDrag(
       dragging.value = true
       mouseOffsetX.value = Math.round(event.targetTouches[0].clientX - x.value)
       mouseOffsetY.value = Math.round(event.targetTouches[0].clientY - y.value)
-    }, { passive: true })
+    })
     useEventListener(targetElement, 'touchmove', (event: TouchEvent) => {
       x.value = Math.round(event.targetTouches[0].clientX - mouseOffsetX.value)
       y.value = Math.round(event.targetTouches[0].clientY - mouseOffsetY.value)
     }, { passive: true })
-    useEventListener(targetElement, 'touchend', (event: TouchEvent) => {
+    useEventListener(targetElement, 'touchend', () => {
       dragging.value = false
-      x.value = Math.round(event.targetTouches[0].clientX - mouseOffsetX.value)
-      y.value = Math.round(event.targetTouches[0].clientY - mouseOffsetY.value)
     })
   })
 
   return { x, y, dragging, trashed }
+}
+
+export function useDragInElement(
+  targetElement: Ref<HTMLElement>,
+  initialX: number,
+  initialY: number
+): {
+  elementX: Ref<number>,
+  elementY: Ref<number>,
+  dragging: Ref<boolean>,
+  hovering: Ref<boolean>,
+  trashed: Ref<boolean>,
+} {
+  const trashed = ref(false)
+  const dragging = ref(false)
+  const hovering = ref(false)
+  const elementX = ref(0)
+  const elementY = ref(0)
+  const mouseOffsetX = ref(0)
+  const mouseOffsetY = ref(0)
+  // const { pressed } = useMousePressed({ target: targetElement })
+  const { x: mouseX, y: mouseY } = useMouse()
+  // const { isOutside } = useMouseInElement(targetElement)
+  // const hovering = computed(() => !isOutside)
+
+  // const mousePosition = computed(() => {
+  //   return { x: mouseX.value, y: mouseY.value }
+  // })
+
+  // watch(mousePosition, () => {
+  //   if (pressed.value) {
+  //     dragging.value = true
+  //   }
+  //   dragging.value = false
+  // })
+
+  // watch(dragging, () => {
+  //   const elementLimits = targetElement.value.getBoundingClientRect()
+  //   mouseOffsetX.value = mouseX.value - elementLimits.x
+  //   mouseOffsetY.value = mouseY.value - elementLimits.y
+  //   elementX.value = mouseX.value - mouseOffsetX.value
+  //   elementY.value = mouseY.value - mouseOffsetY.value
+  // })
+
+  return { elementX, elementY, dragging, hovering, trashed }
 }

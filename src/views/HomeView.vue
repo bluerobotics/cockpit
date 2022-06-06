@@ -40,9 +40,9 @@ import IndicatorsWidget from '../components/widgets/IndicatorsWidget.vue'
 
 const state = useStorage('cockpit-grid-store', {
   widgets: [
-    { hash: uuid4(), component: 'CounterCard', position: { x: 50, y: 50 }, size: { width: 300, height: 200 } },
-    { hash: uuid4(), component: 'CounterCard', position: { x: 150, y: 150 }, size: { width: 300, height: 200 } },
-    { hash: uuid4(), component: 'IndependentReactor', position: { x: 250, y: 250 }, size: { width: 300, height: 200 } },
+    // { hash: uuid4(), component: 'CounterCard', position: { x: 50, y: 50 }, size: { width: 300, height: 200 } },
+    // { hash: uuid4(), component: 'CounterCard', position: { x: 150, y: 150 }, size: { width: 300, height: 200 } },
+    // { hash: uuid4(), component: 'IndependentReactor', position: { x: 250, y: 250 }, size: { width: 300, height: 200 } },
   ],
 })
 

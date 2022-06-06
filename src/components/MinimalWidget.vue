@@ -11,7 +11,7 @@
 import { useMouse, useMouseInElement, useMousePressed } from '@vueuse/core'
 import { type Ref, computed, ref, watch } from 'vue'
 
-import useDrag from '@/composables/drag'
+import useDrag, { useDragInElement } from '@/composables/drag'
 
 const props = defineProps({
   componentHash: {
@@ -60,14 +60,14 @@ const height = ref(props.size.height)
 const { isOutside: notHoveringResizer } = useMouseInElement(resizeIconRef)
 const { pressed: pressingResizer } = useMousePressed({ target: resizeIconRef })
 
-const hoveringResizer = computed(() => !notHoveringResizer)
-const widgetSize = computed(() => {
+const hoveringResizer = computed(() => !notHoveringResizer.value)
+const widgetSize = ref(props.position)
+watch(width, () => {
   const truncatedWidth = Math.max(Math.min(width.value, 500), 0)
   const truncatedHeight = Math.max(Math.min(height.value, 500), 0)
-  return { width: truncatedWidth, height: truncatedHeight }
+  widgetSize.value = { width: truncatedWidth, height: truncatedHeight }
 })
 watch(widgetSize, () => {
-  console.log(`${widgetSize.value.width}px`, `${widgetSize.value.height}px`)
   emit('resize', { hash: props.componentHash, size: { width: widgetSize.value.width, height: widgetSize.value.height } })
 })
 const sizeStyle = computed(() => {
@@ -75,22 +75,36 @@ const sizeStyle = computed(() => {
 })
 
 // Widget positioning
-const { x: mouseX, y: mouseY, dragging: draggingComponent, trashed } = useDrag(
+const { x: widgetX, y: widgetY, dragging: draggingComponent, trashed } = useDrag(
   widgetRef as Ref<HTMLElement>,
   props.position.x,
   props.position.y
 )
+const { x: mX, y: mY } = useMouse()
 const { isOutside: notHoveringWidget } = useMouseInElement(widgetRef)
 const { pressed: pressingWidget } = useMousePressed({ target: widgetRef })
 
 const hoveringWidget = computed(() => !notHoveringWidget)
+const draggingWidget = computed(() => pressingWidget.value && !pressingResizer.value)
+const resizingWidget = computed(() => pressingWidget.value && pressingResizer.value)
 const mousePosition = computed(() => {
-  return { x: mouseX.value, y: mouseY.value }
+  return { x: widgetX.value, y: widgetY.value }
 })
-const widgetPosition = computed(() => {
-  const top = Math.max(Math.min(mousePosition.value.y, window.innerHeight - height.value), 0)
-  const left = Math.max(Math.min(mousePosition.value.x, window.innerWidth - width.value), 0)
-  return { x: left, y: top }
+const widgetPosition = ref(props.position)
+watch(mousePosition, () => {
+  if (resizingWidget.value) {
+    const right = mX.value
+    const bottom = mY.value
+    width.value = right - widgetPosition.value.x
+    height.value = bottom - widgetPosition.value.y
+    return
+  }
+  if (draggingWidget.value) {
+    const top = Math.max(Math.min(mousePosition.value.y, window.innerHeight - height.value), 0)
+    const left = Math.max(Math.min(mousePosition.value.x, window.innerWidth - width.value), 0)
+    widgetPosition.value = { x: left, y: top }
+    return
+  }
 })
 watch(widgetPosition, () => {
   emit('move', { hash: props.componentHash, position: widgetPosition.value })
@@ -103,11 +117,11 @@ watch(trashed, () => {
 const positionStyle = computed(() => {
   return { top: `${widgetPosition.value.y}px`, left: `${widgetPosition.value.x}px` }
 })
-const draggingWidget = computed(() => draggingComponent.value && !pressingResizer.value)
 </script>
 
 <style>
 .widget {
+  background-color: blue;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,6 +156,6 @@ const draggingWidget = computed(() => draggingComponent.value && !pressingResize
   color: red;
 }
 .pressingResizer {
-  color: blue;
+  color: rgb(9, 255, 0);
 }
 </style>
