@@ -69,8 +69,6 @@ export default function useDrag(
     useEventListener(targetElement, 'dragend', (event: DragEvent) => {
       document.body.style.cursor = 'auto'
       dragging.value = false
-      x.value = event.x - mouseOffsetX.value
-      y.value = event.y - mouseOffsetY.value
     })
     useEventListener(targetElement, 'touchstart', (event: TouchEvent) => {
       event.preventDefault()
@@ -100,37 +98,49 @@ export function useDragInElement(
   dragging: Ref<boolean>,
   hovering: Ref<boolean>,
   trashed: Ref<boolean>,
+  mouseX: Ref<number>,
+  mouseY: Ref<number>,
 } {
   const trashed = ref(false)
   const dragging = ref(false)
-  const hovering = ref(false)
-  const elementX = ref(0)
-  const elementY = ref(0)
-  const mouseOffsetX = ref(0)
-  const mouseOffsetY = ref(0)
-  // const { pressed } = useMousePressed({ target: targetElement })
+  const elementX = ref(initialX)
+  const elementY = ref(initialY)
+  // const mouseOffsetX = ref(0)
+  // const mouseOffsetY = ref(0)
+  const { pressed } = useMousePressed({ target: targetElement })
   const { x: mouseX, y: mouseY } = useMouse()
-  // const { isOutside } = useMouseInElement(targetElement)
-  // const hovering = computed(() => !isOutside)
+  const { isOutside } = useMouseInElement(targetElement)
+  const hovering = computed(() => !isOutside)
 
-  // const mousePosition = computed(() => {
-  //   return { x: mouseX.value, y: mouseY.value }
-  // })
+  onMounted(() => {
+    if (targetElement.value === undefined) {
+      return
+    }
+  })
+
+  const mousePosition = computed(() => {
+    return { x: mouseX.value, y: mouseY.value }
+  })
 
   // watch(mousePosition, () => {
   //   if (pressed.value) {
   //     dragging.value = true
+  //     return
   //   }
   //   dragging.value = false
   // })
 
-  // watch(dragging, () => {
-  //   const elementLimits = targetElement.value.getBoundingClientRect()
-  //   mouseOffsetX.value = mouseX.value - elementLimits.x
-  //   mouseOffsetY.value = mouseY.value - elementLimits.y
-  //   elementX.value = mouseX.value - mouseOffsetX.value
-  //   elementY.value = mouseY.value - mouseOffsetY.value
-  // })
+  watch(mousePosition, () => {
+    if (!pressed.value) {
+      return
+    }
+    const elementLimits = targetElement.value.getBoundingClientRect()
+    const mouseOffsetX = mouseX.value - elementLimits.x
+    const mouseOffsetY = mouseY.value - elementLimits.y
+    elementX.value = mouseX.value - mouseOffsetX
+    elementY.value = mouseY.value - mouseOffsetY
+    console.log(mouseX.value, mouseY.value, elementLimits.x, elementLimits.y, mouseOffsetX, mouseOffsetY, elementX.value, elementY.value)
+  })
 
-  return { elementX, elementY, dragging, hovering, trashed }
+  return { elementX, elementY, dragging, hovering, trashed, mouseX, mouseY }
 }

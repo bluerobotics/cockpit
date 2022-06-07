@@ -7,6 +7,7 @@
         :position="widget.position"
         :size="widget.size"
         @move="updatePosition"
+        @resize="updateSize"
         @delete="deleteComponent"
       >
         <template v-if="widget.component === 'CounterCard'">
@@ -60,6 +61,16 @@ const updatePosition = (value: { hash: string, position: { x: number, y: number 
     return
   }
   widget.position = value.position
+}
+
+const updateSize = (value: { hash: string, size: { width: number, height: number }}): void => {
+  const widget = state.value.widgets.find(
+    (widget) => widget.hash === value.hash
+  )
+  if (widget === undefined) {
+    return
+  }
+  widget.size = value.size
 }
 
 const addComponent = (componentType: string) => {

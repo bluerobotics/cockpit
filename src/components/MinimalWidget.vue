@@ -1,7 +1,9 @@
 <template>
-  <div ref="widgetRef" class="widget" :class="{ draggingWidget, hoveringWidget }" draggable="true">
-    <slot class="children"></slot>
-    <div v-if="!notHoveringWidget" ref="resizeIconRef" class="resizer" :class="{ hoveringResizer, pressingResizer}">
+  <div class="widget">
+    <div ref="widgetRef" :class="{ draggingWidget, hoveringWidget }" draggable="true">
+      <slot class="children"></slot>
+    </div>
+    <div ref="resizerRef" class="resizer" :class="{ hoveringResizer, pressingResizer}" draggable="true">
       <v-icon size="50px">mdi-resize-bottom-right</v-icon>
     </div>
   </div>
@@ -52,19 +54,19 @@ const emit = defineEmits<{
 
 // Widget
 const widgetRef = ref<HTMLElement>()
-const resizeIconRef = ref<HTMLElement>()
+const resizerRef = ref<HTMLElement>()
 
 // Widget sizing
 const width = ref(props.size.width)
 const height = ref(props.size.height)
-const { isOutside: notHoveringResizer } = useMouseInElement(resizeIconRef)
-const { pressed: pressingResizer } = useMousePressed({ target: resizeIconRef })
+const { isOutside: notHoveringResizer } = useMouseInElement(resizerRef)
+const { pressed: pressingResizer } = useMousePressed({ target: resizerRef })
 
 const hoveringResizer = computed(() => !notHoveringResizer.value)
-const widgetSize = ref(props.position)
+const widgetSize = ref(props.size)
 watch(width, () => {
-  const truncatedWidth = Math.max(Math.min(width.value, 500), 0)
-  const truncatedHeight = Math.max(Math.min(height.value, 500), 0)
+  const truncatedWidth = Math.max(Math.min(width.value, 500), 50)
+  const truncatedHeight = Math.max(Math.min(height.value, 500), 50)
   widgetSize.value = { width: truncatedWidth, height: truncatedHeight }
 })
 watch(widgetSize, () => {
@@ -75,36 +77,59 @@ const sizeStyle = computed(() => {
 })
 
 // Widget positioning
+// const { elementX: widgetX, elementY: widgetY, dragging: draggingComponent, hovering: hoveringComponentNew, trashed: trashed } = useDragInElement(
+//   widgetRef as Ref<HTMLElement>,
+//   props.position.x,
+//   props.position.y
+// )
+// watch(widgetX, () => {
+//   console.log(widgetX.value, widgetY.value, draggingComponent.value, hoveringComponent.value)
+// })
 const { x: widgetX, y: widgetY, dragging: draggingComponent, trashed } = useDrag(
   widgetRef as Ref<HTMLElement>,
   props.position.x,
   props.position.y
 )
+// const { elementX, elementY, dragging: draggingComponentNew, hovering: hoveringComponentNew, trashed: trashedNew, mouseX: mouseXNew, mouseY: mouseYNew } = useDragInElement(
+//   widgetRef as Ref<HTMLElement>,
+//   props.position.x,
+//   props.position.y
+// )
+// watch(elementX, () => {
+//   console.log(elementX.value, elementY.value, draggingComponentNew.value, hoveringComponentNew.value)
+// })
 const { x: mX, y: mY } = useMouse()
 const { isOutside: notHoveringWidget } = useMouseInElement(widgetRef)
-const { pressed: pressingWidget } = useMousePressed({ target: widgetRef })
 
 const hoveringWidget = computed(() => !notHoveringWidget)
-const draggingWidget = computed(() => pressingWidget.value && !pressingResizer.value)
-const resizingWidget = computed(() => pressingWidget.value && pressingResizer.value)
-const mousePosition = computed(() => {
+const draggingWidget = computed(() => draggingComponent.value && !pressingResizer.value)
+const resizingWidget = computed(() => pressingResizer.value)
+const widgetPositionWannabe = computed(() => {
   return { x: widgetX.value, y: widgetY.value }
 })
 const widgetPosition = ref(props.position)
-watch(mousePosition, () => {
-  if (resizingWidget.value) {
-    const right = mX.value
-    const bottom = mY.value
-    width.value = right - widgetPosition.value.x
-    height.value = bottom - widgetPosition.value.y
-    return
-  }
+watch(widgetPositionWannabe, () => {
   if (draggingWidget.value) {
-    const top = Math.max(Math.min(mousePosition.value.y, window.innerHeight - height.value), 0)
-    const left = Math.max(Math.min(mousePosition.value.x, window.innerWidth - width.value), 0)
+    const top = Math.max(Math.min(widgetPositionWannabe.value.y, window.innerHeight - height.value), 0)
+    const left = Math.max(Math.min(widgetPositionWannabe.value.x, window.innerWidth - width.value), 0)
     widgetPosition.value = { x: left, y: top }
     return
   }
+})
+const { x: resizerX, y: resizerY, dragging: draggingResizer } = useDrag(
+  resizerRef as Ref<HTMLElement>,
+  props.position.x + props.size.width,
+  props.position.y + props.size.height
+)
+watch(draggingResizer, () => {
+  const right = resizerX.value
+  const bottom = resizerY.value
+  const widgetLimits = widgetRef.value?.getBoundingClientRect()
+  width.value = right - widgetLimits?.left
+  height.value = bottom - widgetLimits?.top
+  console.log('---------------')
+  console.log(widgetPosition.value.x, widgetPosition.value.y, width.value, height.value)
+  return
 })
 watch(widgetPosition, () => {
   emit('move', { hash: props.componentHash, position: widgetPosition.value })
