@@ -10,17 +10,31 @@ import { ref } from 'vue'
 
 const trashRef = ref<HTMLElement>()
 
-useEventListener(trashRef, 'dragover', (event) => {
-  event.preventDefault()
-}, false)
+useEventListener(
+  trashRef,
+  'dragover',
+  (event) => {
+    event.preventDefault()
+  },
+  false
+)
 
-useEventListener(trashRef, 'dragenter', (event) => {
-  event.preventDefault()
-}, false)
-useEventListener(trashRef, 'dragleave', (event) => {
-  event.preventDefault()
-}, false)
-
+useEventListener(
+  trashRef,
+  'dragenter',
+  (event) => {
+    event.preventDefault()
+  },
+  false
+)
+useEventListener(
+  trashRef,
+  'dragleave',
+  (event) => {
+    event.preventDefault()
+  },
+  false
+)
 </script>
 
 <style scoped>

@@ -3,12 +3,11 @@
     <h1>This is the main view</h1>
     <template v-for="widget in state.widgets" :key="widget.hash">
       <MinimalWidget
-        :component-hash="widget.hash"
         :position="widget.position"
         :size="widget.size"
-        @move="updatePosition"
-        @resize="updateSize"
-        @delete="deleteComponent"
+        @move="(position) => updatePosition(widget.hash, position)"
+        @resize="(size) => updateSize(widget.hash, size)"
+        @drop="(position) => behaveForDrop(widget.hash, position)"
       >
         <template v-if="widget.component === 'CounterCard'">
           <CounterCard />
@@ -22,16 +21,28 @@
         <!-- <component :is="componentFromName(widget.component)"></component> -->
       </MinimalWidget>
     </template>
-    <v-btn class="ma-1" @click="addComponent('CounterCard')">Add new CounterCard</v-btn>
-    <v-btn class="ma-1" @click="addComponent('IndependentReactor')">Add new IndependentReactor</v-btn>
-    <v-btn class="ma-1" @click="addComponent('IndicatorsWidget')">Add new IndicatorsWidget</v-btn>
+    <v-btn class="ma-1" @click="addComponent('CounterCard')"
+      >Add new CounterCard</v-btn
+    >
+    <v-btn class="ma-1" @click="addComponent('IndependentReactor')"
+      >Add new IndependentReactor</v-btn
+    >
+    <v-btn class="ma-1" @click="addComponent('IndicatorsWidget')"
+      >Add new IndicatorsWidget</v-btn
+    >
     <DropzoneWidget />
+    <div>
+      <h1>X: {{ mouseX }}</h1>
+      <h1>Y: {{ mouseY }}</h1>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { useMouse, useStorage } from '@vueuse/core'
 import { v4 as uuid4 } from 'uuid'
+
+import type { Point2D, SizeRect2D } from '@/types/general'
 
 import DropzoneWidget from '../components/DropzoneWidget.vue'
 import MinimalWidget from '../components/MinimalWidget.vue'
@@ -39,11 +50,28 @@ import CounterCard from '../components/widgets/CounterCard.vue'
 import IndependentReactor from '../components/widgets/IndependentReactor.vue'
 import IndicatorsWidget from '../components/widgets/IndicatorsWidget.vue'
 
+const { x: mouseX, y: mouseY } = useMouse()
+
 const state = useStorage('cockpit-grid-store', {
   widgets: [
-    // { hash: uuid4(), component: 'CounterCard', position: { x: 50, y: 50 }, size: { width: 300, height: 200 } },
-    // { hash: uuid4(), component: 'CounterCard', position: { x: 150, y: 150 }, size: { width: 300, height: 200 } },
-    // { hash: uuid4(), component: 'IndependentReactor', position: { x: 250, y: 250 }, size: { width: 300, height: 200 } },
+    // {
+    //   hash: uuid4(),
+    //   component: 'CounterCard',
+    //   position: { x: 50, y: 50 },
+    //   size: { width: 200, height: 200 },
+    // },
+    // {
+    //   hash: uuid4(),
+    //   component: 'CounterCard',
+    //   position: { x: 150, y: 150 },
+    //   size: { width: 200, height: 200 },
+    // },
+    {
+      hash: uuid4(),
+      component: 'IndependentReactor',
+      position: { x: 250, y: 250 },
+      size: { width: 200, height: 200 },
+    },
   ],
 })
 
@@ -53,39 +81,63 @@ const state = useStorage('cockpit-grid-store', {
 //   )
 // }
 
-const updatePosition = (value: { hash: string, position: { x: number, y: number }}): void => {
-  const widget = state.value.widgets.find(
-    (widget) => widget.hash === value.hash
-  )
+const behaveForDrop = (hash: string, position: Point2D): void => {
+  const widget = state.value.widgets.find((w) => w.hash === hash)
   if (widget === undefined) {
     return
   }
-  widget.position = value.position
+  if (shouldDeleteComponent(position)) {
+    deleteComponent(widget.hash)
+  }
 }
 
-const updateSize = (value: { hash: string, size: { width: number, height: number }}): void => {
-  const widget = state.value.widgets.find(
-    (widget) => widget.hash === value.hash
+const shouldDeleteComponent = (position: Point2D): boolean => {
+  const trash = document.getElementById('trash')
+  if (trash === null) {
+    return false
+  }
+  const trashLimits = trash.getBoundingClientRect()
+  return (
+    position.x > trashLimits.left &&
+    position.x < trashLimits.right &&
+    position.y > trashLimits.top &&
+    position.y < trashLimits.bottom
   )
+}
+
+const deleteComponent = (hash: string): void => {
+  const widget = state.value.widgets.find((w) => w.hash === hash)
   if (widget === undefined) {
     return
   }
-  widget.size = value.size
-}
-
-const addComponent = (componentType: string) => {
-  state.value.widgets.push(
-    { hash: uuid4(), component: componentType, position: { x: 50, y: 50 }, size: { width: 300, height: 200 } }
-  )
-}
-
-const deleteComponent = (value: { hash: string }) => {
-  const widget = state.value.widgets.find(
-    (widget) => widget.hash === value.hash
-  )
   const index = state.value.widgets.indexOf(widget)
   state.value.widgets.splice(index, 1)
+}
 
+const updatePosition = (hash: string, position: Point2D): void => {
+  const widget = state.value.widgets.find((w) => w.hash === hash)
+  if (widget === undefined) {
+    return
+  }
+  widget.position = position
+}
+
+const updateSize = (hash: string, size: SizeRect2D): void => {
+  const widget = state.value.widgets.find((w) => w.hash === hash)
+  if (widget === undefined) {
+    return
+  }
+  widget.size = size
+}
+
+const addComponent = (componentType: string): void => {
+  state.value.widgets.push({
+    hash: uuid4(),
+    component: componentType,
+    position: { x: 10, y: 10 },
+    size: { width: 200, height: 200 },
+  })
+  console.log(state.value.widgets[0])
 }
 </script>
 
