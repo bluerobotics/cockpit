@@ -5,7 +5,7 @@ module.exports = {
   root: true,
   extends: [
     'eslint:recommended',
-    'plugin:jsdoc/recommended',
+    // 'plugin:jsdoc/recommended',
     'plugin:vue/vue3-recommended',
     '@vue/eslint-config-typescript/recommended',
     '@vue/eslint-config-prettier',
@@ -15,31 +15,34 @@ module.exports = {
     'es2022': true,
     'vue/setup-compiler-macros': true,
   },
-  plugins: ['jsdoc', 'simple-import-sort'],
+  plugins: [
+    // 'jsdoc',
+    'simple-import-sort',
+  ],
   rules: {
     'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
     'import/extensions': 'off',
     'import/order': 'off',
-    'jsdoc/require-jsdoc': [
-      'error',
-      {
-        require: {
-          ArrowFunctionExpression: false,
-          ClassDeclaration: true,
-          FunctionDeclaration: true,
-          FunctionExpression: false,
-          MethodDefinition: true,
-        },
-        contexts: [
-          'TSEnumDeclaration',
-          'TSInterfaceDeclaration',
-          'TSMethodSignature',
-          'TSPropertySignature',
-        ],
-      },
-    ],
-    'jsdoc/require-param-description': 0,
-    'jsdoc/require-returns-description': 0,
+    // 'jsdoc/require-jsdoc': [
+    //   'error',
+    //   {
+    //     require: {
+    //       ArrowFunctionExpression: false,
+    //       ClassDeclaration: true,
+    //       FunctionDeclaration: true,
+    //       FunctionExpression: false,
+    //       MethodDefinition: true,
+    //     },
+    //     contexts: [
+    //       'TSEnumDeclaration',
+    //       'TSInterfaceDeclaration',
+    //       'TSMethodSignature',
+    //       'TSPropertySignature',
+    //     ],
+    //   },
+    // ],
+    // 'jsdoc/require-param-description': 0,
+    // 'jsdoc/require-returns-description': 0,
     'max-len': ['error', { code: 120 }],
     'no-alert': 'off',
     'no-console': 'off',
@@ -92,9 +95,9 @@ module.exports = {
     'no-await-in-loop': 'off',
   },
   settings: {
-    jsdoc: {
-      mode: 'typescript',
-    },
+    // jsdoc: {
+    //   mode: 'typescript',
+    // },
   },
   overrides: [
     {
