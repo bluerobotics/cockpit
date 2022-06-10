@@ -1,6 +1,8 @@
 <template>
   <div id="trash" ref="trashRef" class="dropzone">
     <p>This is the trash can. Throw some component here and it will go away.</p>
+    <br />
+    <p>We can't say the same about your problems.</p>
   </div>
 </template>
 

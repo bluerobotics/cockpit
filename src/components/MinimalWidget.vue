@@ -1,12 +1,13 @@
 <template>
-  <div ref="outerWidgetRef" class="outerWidget">
+  <div id="outerWidgetRef" ref="outerWidgetRef" class="outerWidget">
     <div
+      id="innerWidgetRef"
       ref="innerWidgetRef"
       class="innerWidget"
       :class="{ draggingWidget, hoveringWidget }"
     >
       <div ref="actualWidgetRef" class="actualWidget"></div>
-      <!-- <slot class="children" ref="actualWidgetRef"></slot> -->
+      <!-- <slot ref="actualWidgetRef" class="children"></slot> -->
       <!-- <slot></slot> -->
     </div>
     <div
@@ -25,6 +26,7 @@ import { type Ref, computed, onMounted, ref, watch } from 'vue'
 import useDragInElement from '@/composables/drag'
 import { constrain } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
+import { useMouse } from '@vueuse/core';
 
 const props = defineProps<{
   size: SizeRect2D
@@ -41,6 +43,7 @@ const outerWidgetRef = ref<HTMLElement>()
 const innerWidgetRef = ref<HTMLElement>()
 const actualWidgetRef = ref<HTMLElement>()
 const resizerRef = ref<HTMLElement>()
+const { x: mouseX, y: mouseY } = useMouse()
 
 const {
   position: widgetRawPosition,
@@ -60,22 +63,42 @@ const {
 onMounted(() => {
   console.log('initial position: ', props.position)
   console.log('initial size: ', props.size)
-  const widgetLimits = innerWidgetRef.value.getBoundingClientRect()
-  console.log('initial inner widget limits: ', widgetLimits)
   const outerWidgetLimits = outerWidgetRef.value.getBoundingClientRect()
   console.log('initial outer widget limits: ', outerWidgetLimits)
+  const widgetLimits = innerWidgetRef.value.getBoundingClientRect()
+  console.log('initial inner widget limits: ', widgetLimits)
   const actualWidgetLimits = actualWidgetRef.value.getBoundingClientRect()
   console.log('initial actual widget limits: ', actualWidgetLimits)
+  const resizerLimits = resizerRef.value.getBoundingClientRect()
+  console.log('initial resizer limits: ', resizerLimits)
 })
 
+// Chuncho do demo
+// Por algum motivo quando a tela eh iniciada os valores da bouding rect do outerWidget tao cagadas e nao da pra usar
+const x = ref(0)
 const widgetRawSize = computed(() => {
-  if (innerWidgetRef.value === undefined || resizerRef.value === undefined) {
-    return props.size
+  if (x.value < 2 || outerWidgetRef.value === undefined) {
+    x.value += 1
+    if (document.getElementById('outerWidgetRef') !== null) {
+      console.log('outerWidget id limits before: ', document.getElementById('outerWidgetRef').getBoundingClientRect())
+    } else {
+      console.log('outer widget null')
+    }
+    if (outerWidgetRef.value !== undefined) {
+      console.log('outerWidget ref limits before: ', outerWidgetRef.value.getBoundingClientRect())
+    } else {
+      console.log('outer widget ref undefined')
+    }
+    return {
+      width: resizerPosition.value.x - widgetFinalPosition.value.x,
+      height: resizerPosition.value.y - widgetFinalPosition.value.y,
+    }
   }
-  const widgetLimits = innerWidgetRef.value.getBoundingClientRect()
+  console.log('outerWidgetRef limits after: ', document.getElementById('outerWidgetRef').getBoundingClientRect())
+  const widgetLimits = outerWidgetRef.value.getBoundingClientRect()
   return {
-    width: resizerPosition.value.x - widgetLimits.left,
-    height: resizerPosition.value.y - widgetLimits.top,
+    width: resizerPosition.value.x - widgetLimits.x,
+    height: resizerPosition.value.y - widgetLimits.y,
   }
 })
 
@@ -93,22 +116,32 @@ const widgetFinalPosition = computed((): Point2D => {
 })
 const widgetFinalSize = computed((): SizeRect2D => {
   return {
-    width: constrain(widgetRawSize.value.width, 30, 300),
-    height: constrain(widgetRawSize.value.height, 30, 300),
+    width: constrain(widgetRawSize.value.width, 50, 300),
+    height: constrain(widgetRawSize.value.height, 50, 300),
+  }
+})
+const mousePosition = computed(() => {
+  return {
+    x: mouseX.value,
+    y: mouseY.value,
   }
 })
 
-watch(draggingWidget, async (isDragging: boolean, wasDragging: boolean) => {
-  if (wasDragging && !isDragging) {
-    emit('drop', widgetFinalPosition.value)
-  }
-})
 watch(widgetFinalPosition, () => {
   emit('move', widgetFinalPosition.value)
 })
+// watch(resizerPosition, () => {
+//   console.log('resizerPosition', resizerPosition.value)
+// })
 watch(widgetFinalSize, () => {
   emit('resize', widgetFinalSize.value)
 })
+watch(draggingWidget, async (isDragging: boolean, wasDragging: boolean) => {
+  if (wasDragging && !isDragging) {
+    emit('drop', mousePosition.value)
+  }
+})
+
 const sizeStyle = computed(() => {
   return {
     width: `${widgetFinalSize.value.width}px`,
@@ -117,21 +150,27 @@ const sizeStyle = computed(() => {
 })
 const positionStyle = computed(() => {
   return {
-    top: `${widgetFinalPosition.value.y}px`,
     left: `${widgetFinalPosition.value.x}px`,
+    top: `${widgetFinalPosition.value.y}px`,
   }
 })
 </script>
 
 <style>
-.actualWidget {
-  background-color: rgb(255, 48, 179);
-  width: 150px;
-  height: 150px;
+.outerWidget {
+  background-color: blue;
+  position: absolute;
+  cursor: grab;
+  left: v-bind('positionStyle.left');
+  top: v-bind('positionStyle.top');
+  width: v-bind('sizeStyle.width');
+  height: v-bind('sizeStyle.height');
 }
 .innerWidget {
+  width: 100%;
   height: 100%;
   background-color: rebeccapurple;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -146,22 +185,18 @@ const positionStyle = computed(() => {
   outline-width: 3px;
   outline-color: rgba(113, 113, 113, 0.7);
 }
-.outerWidget {
-  background-color: blue;
-  width: v-bind('sizeStyle.width');
-  height: v-bind('sizeStyle.height');
-  position: absolute;
-  cursor: grab;
-  top: v-bind('positionStyle.top');
-  left: v-bind('positionStyle.left');
+.actualWidget {
+  background-color: rgb(255, 48, 179);
+  width: 150px;
+  height: 150px;
 }
 .children {
   pointer-events: none;
 }
 .resizer {
-  background-color: black;
-  width: 50px;
-  height: 50px;
+  background-color: rgba(0, 0, 0, 0.118);
+  width: 20px;
+  height: 20px;
   user-select: none;
   position: absolute;
   left: 100%;

@@ -5,6 +5,8 @@
       <v-card-text>
         <p>Clicked the button {{ store.counter }} times.</p>
         <p>Double this value is {{ store.doubleCount }}.</p>
+        <p>Text in the input is: {{ text }}.</p>
+        <input v-model="text" />
       </v-card-text>
       <v-card-actions>
         <v-btn @click="store.increment">Click me!</v-btn>
@@ -14,7 +16,16 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import { useCounterStore } from '@/stores/counter'
 
 const store = useCounterStore()
+const text = ref('')
 </script>
+
+<style scoped>
+input {
+  background-color: antiquewhite;
+}
+</style>
