@@ -54,18 +54,18 @@ const { x: mouseX, y: mouseY } = useMouse()
 
 const state = useStorage('cockpit-grid-store', {
   widgets: [
-    // {
-    //   hash: uuid4(),
-    //   component: 'CounterCard',
-    //   position: { x: 50, y: 50 },
-    //   size: { width: 200, height: 200 },
-    // },
-    // {
-    //   hash: uuid4(),
-    //   component: 'CounterCard',
-    //   position: { x: 150, y: 150 },
-    //   size: { width: 200, height: 200 },
-    // },
+    {
+      hash: uuid4(),
+      component: 'CounterCard',
+      position: { x: 50, y: 50 },
+      size: { width: 200, height: 200 },
+    },
+    {
+      hash: uuid4(),
+      component: 'CounterCard',
+      position: { x: 150, y: 150 },
+      size: { width: 200, height: 200 },
+    },
     {
       hash: uuid4(),
       component: 'IndependentReactor',
