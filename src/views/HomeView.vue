@@ -8,6 +8,8 @@
         @move="(position) => updatePosition(widget.hash, position)"
         @resize="(size) => updateSize(widget.hash, size)"
         @drop="(position) => behaveForDrop(widget.hash, position)"
+        @send-back="sendWidgetBack(widget.hash)"
+        @bring-front="bringWidgetFront(widget.hash)"
       >
         <template v-if="widget.component === 'CounterCard'">
           <CounterCard />
@@ -128,6 +130,26 @@ const updateSize = (hash: string, size: SizeRect2D): void => {
     return
   }
   widget.size = size
+}
+
+const bringWidgetFront = (hash: string): void => {
+  const widget = state.value.widgets.find((w) => w.hash === hash)
+  if (widget === undefined) {
+    return
+  }
+  const index = state.value.widgets.indexOf(widget)
+  state.value.widgets.splice(index, 1)
+  state.value.widgets.splice(0, 0, widget)
+}
+
+const sendWidgetBack = (hash: string): void => {
+  const widget = state.value.widgets.find((w) => w.hash === hash)
+  if (widget === undefined) {
+    return
+  }
+  const index = state.value.widgets.indexOf(widget)
+  state.value.widgets.splice(index, 1)
+  state.value.widgets.splice(state.value.widgets.length - 1, 0, widget)
 }
 
 const addComponent = (componentType: string): void => {

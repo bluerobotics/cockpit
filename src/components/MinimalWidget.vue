@@ -15,6 +15,12 @@
     >
       <v-icon :size="20">mdi-arrow-bottom-right</v-icon>
     </div>
+    <v-btn flat icon small @click="emit('send-back')"
+      ><v-icon>mdi-arrow-down-thick</v-icon></v-btn
+    >
+    <v-btn flat icon small @click="emit('bring-front')"
+      ><v-icon>mdi-arrow-up-thick</v-icon></v-btn
+    >
   </div>
 </template>
 
@@ -35,6 +41,8 @@ const emit = defineEmits<{
   (e: 'move', position: Point2D): void
   (e: 'resize', size: SizeRect2D): void
   (e: 'drop', position: Point2D): void
+  (e: 'send-back'): void
+  (e: 'bring-front'): void
 }>()
 
 const outerWidgetRef = ref<HTMLElement>()
