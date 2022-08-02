@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <h1>This is the main view</h1>
-    <template v-for="widget in state.widgets" :key="widget.hash">
+    <template v-for="widget in mainWidgetsLayer" :key="widget.hash">
       <MinimalWidget
         :position="widget.position"
         :size="widget.size"
@@ -43,6 +43,7 @@
 <script setup lang="ts">
 import { useMouse, useStorage } from '@vueuse/core'
 import { v4 as uuid4 } from 'uuid'
+import { computed } from 'vue'
 
 import type { Point2D, SizeRect2D } from '@/types/general'
 
@@ -98,6 +99,11 @@ const state = useStorage('cockpit-grid-store', {
 //   )
 // }
 
+const mainWidgetsLayer = computed(() => {
+  let originalWidgetsList = state.value.widgets.slice(0)
+  return originalWidgetsList.reverse()
+})
+
 const behaveForDrop = (hash: string, position: Point2D): void => {
   const widget = widgetFromHash(hash)
   if (shouldDeleteComponent(position)) {
@@ -139,14 +145,14 @@ const bringWidgetFront = (hash: string): void => {
   const widget = widgetFromHash(hash)
   const index = state.value.widgets.indexOf(widget)
   state.value.widgets.splice(index, 1)
-  state.value.widgets.splice(0, 0, widget)
+  state.value.widgets.unshift(widget)
 }
 
 const sendWidgetBack = (hash: string): void => {
   const widget = widgetFromHash(hash)
   const index = state.value.widgets.indexOf(widget)
   state.value.widgets.splice(index, 1)
-  state.value.widgets.splice(state.value.widgets.length - 1, 0, widget)
+  state.value.widgets.push(widget)
 }
 
 const widgetFromHash = (hash: string): Widget => {
@@ -164,7 +170,6 @@ const addComponent = (componentType: WidgetComponent): void => {
     position: { x: 10, y: 10 },
     size: { width: 200, height: 200 },
   })
-  console.log(state.value.widgets[0])
 }
 </script>
 
