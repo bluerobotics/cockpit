@@ -23,13 +23,13 @@
         <!-- <component :is="componentFromName(widget.component)"></component> -->
       </MinimalWidget>
     </template>
-    <v-btn class="ma-1" @click="addComponent('CounterCard')"
+    <v-btn class="ma-1" @click="addComponent(WidgetComponent.CounterCard)"
       >Add new CounterCard</v-btn
     >
-    <v-btn class="ma-1" @click="addComponent('IndependentReactor')"
+    <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndependentReactor)"
       >Add new IndependentReactor</v-btn
     >
-    <v-btn class="ma-1" @click="addComponent('IndicatorsWidget')"
+    <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndicatorsWidget)"
       >Add new IndicatorsWidget</v-btn
     >
     <DropzoneWidget />
@@ -54,27 +54,42 @@ import IndicatorsWidget from '../components/widgets/IndicatorsWidget.vue'
 
 const { x: mouseX, y: mouseY } = useMouse()
 
+enum WidgetComponent {
+  IndicatorsWidget = 'IndicatorsWidget',
+  CounterCard = 'CounterCard',
+  IndependentReactor = 'IndependentReactor',
+}
+
+interface Widget {
+  hash: string
+  component: WidgetComponent
+  position: Point2D
+  size: SizeRect2D
+}
+
+const defaultWidgets: Widget[] = [
+  {
+    hash: uuid4(),
+    component: WidgetComponent.CounterCard,
+    position: { x: 50, y: 50 },
+    size: { width: 200, height: 200 },
+  },
+  {
+    hash: uuid4(),
+    component: WidgetComponent.CounterCard,
+    position: { x: 150, y: 150 },
+    size: { width: 200, height: 200 },
+  },
+  {
+    hash: uuid4(),
+    component: WidgetComponent.IndependentReactor,
+    position: { x: 250, y: 250 },
+    size: { width: 200, height: 200 },
+  },
+]
+
 const state = useStorage('cockpit-grid-store', {
-  widgets: [
-    {
-      hash: uuid4(),
-      component: 'CounterCard',
-      position: { x: 50, y: 50 },
-      size: { width: 200, height: 200 },
-    },
-    {
-      hash: uuid4(),
-      component: 'CounterCard',
-      position: { x: 150, y: 150 },
-      size: { width: 200, height: 200 },
-    },
-    {
-      hash: uuid4(),
-      component: 'IndependentReactor',
-      position: { x: 250, y: 250 },
-      size: { width: 200, height: 200 },
-    },
-  ],
+  widgets: defaultWidgets,
 })
 
 // const componentFromName = (componentName: string): AsyncComponentLoader => {
@@ -84,10 +99,7 @@ const state = useStorage('cockpit-grid-store', {
 // }
 
 const behaveForDrop = (hash: string, position: Point2D): void => {
-  const widget = state.value.widgets.find((w) => w.hash === hash)
-  if (widget === undefined) {
-    return
-  }
+  const widget = widgetFromHash(hash)
   if (shouldDeleteComponent(position)) {
     deleteComponent(widget.hash)
   }
@@ -108,51 +120,44 @@ const shouldDeleteComponent = (position: Point2D): boolean => {
 }
 
 const deleteComponent = (hash: string): void => {
-  const widget = state.value.widgets.find((w) => w.hash === hash)
-  if (widget === undefined) {
-    return
-  }
+  const widget = widgetFromHash(hash)
   const index = state.value.widgets.indexOf(widget)
   state.value.widgets.splice(index, 1)
 }
 
 const updatePosition = (hash: string, position: Point2D): void => {
-  const widget = state.value.widgets.find((w) => w.hash === hash)
-  if (widget === undefined) {
-    return
-  }
+  const widget = widgetFromHash(hash)
   widget.position = position
 }
 
 const updateSize = (hash: string, size: SizeRect2D): void => {
-  const widget = state.value.widgets.find((w) => w.hash === hash)
-  if (widget === undefined) {
-    return
-  }
+  const widget = widgetFromHash(hash)
   widget.size = size
 }
 
 const bringWidgetFront = (hash: string): void => {
-  const widget = state.value.widgets.find((w) => w.hash === hash)
-  if (widget === undefined) {
-    return
-  }
+  const widget = widgetFromHash(hash)
   const index = state.value.widgets.indexOf(widget)
   state.value.widgets.splice(index, 1)
   state.value.widgets.splice(0, 0, widget)
 }
 
 const sendWidgetBack = (hash: string): void => {
-  const widget = state.value.widgets.find((w) => w.hash === hash)
-  if (widget === undefined) {
-    return
-  }
+  const widget = widgetFromHash(hash)
   const index = state.value.widgets.indexOf(widget)
   state.value.widgets.splice(index, 1)
   state.value.widgets.splice(state.value.widgets.length - 1, 0, widget)
 }
 
-const addComponent = (componentType: string): void => {
+const widgetFromHash = (hash: string): Widget => {
+  const widget = state.value.widgets.find((w) => w.hash === hash)
+  if (widget === undefined) {
+    throw new Error(`No widget found with hash ${hash}`)
+  }
+  return widget
+}
+
+const addComponent = (componentType: WidgetComponent): void => {
   state.value.widgets.push({
     hash: uuid4(),
     component: componentType,
