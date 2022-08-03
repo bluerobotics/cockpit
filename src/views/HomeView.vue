@@ -78,36 +78,8 @@ interface Layer {
   widgets: Widget[]
 }
 
-const defaultWidgets: Widget[] = [
-  {
-    hash: uuid4(),
-    component: WidgetComponent.CounterCard,
-    position: { x: 50, y: 50 },
-    size: { width: 200, height: 200 },
-  },
-  {
-    hash: uuid4(),
-    component: WidgetComponent.CounterCard,
-    position: { x: 150, y: 150 },
-    size: { width: 200, height: 200 },
-  },
-  {
-    hash: uuid4(),
-    component: WidgetComponent.IndependentReactor,
-    position: { x: 250, y: 250 },
-    size: { width: 200, height: 200 },
-  },
-]
-
-const defaultLayers: Layer[] = [
-  {
-    hash: uuid4(),
-    widgets: defaultWidgets,
-  },
-]
-
 const state = useStorage('cockpit-grid-store', {
-  layers: defaultLayers,
+  layers: [],
 })
 
 // const componentFromName = (componentName: string): AsyncComponentLoader => {
