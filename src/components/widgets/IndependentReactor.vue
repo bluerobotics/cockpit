@@ -17,3 +17,10 @@ import { ref } from 'vue'
 
 const counter = ref(0)
 </script>
+
+<style scoped>
+div {
+  background-color: rgb(255, 0, 0);
+}
+</style>
+

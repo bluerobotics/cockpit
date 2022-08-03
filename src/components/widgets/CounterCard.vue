@@ -25,7 +25,7 @@ const text = ref('')
 </script>
 
 <style scoped>
-input {
-  background-color: antiquewhite;
+div {
+  background-color: rgb(13, 255, 0);
 }
 </style>

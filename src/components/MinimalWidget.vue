@@ -97,8 +97,8 @@ const widgetFinalPosition = computed((): Point2D => {
 })
 const widgetFinalSize = computed((): SizeRect2D => {
   return {
-    width: constrain(widgetRawSize.value.width, 50, 300),
-    height: constrain(widgetRawSize.value.height, 50, 300),
+    width: constrain(widgetRawSize.value.width, 50, 500),
+    height: constrain(widgetRawSize.value.height, 50, 500),
   }
 })
 const mousePosition = computed(() => {

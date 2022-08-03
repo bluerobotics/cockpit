@@ -12,3 +12,9 @@ import { useBoatStore } from '@/stores/boat'
 
 const store = useBoatStore()
 </script>
+
+<style scoped>
+div {
+  background-color: rgb(0, 13, 255);
+}
+</style>
