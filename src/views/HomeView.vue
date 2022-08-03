@@ -1,42 +1,47 @@
 <template>
   <div class="home">
     <h1>This is the main view</h1>
-    <template v-for="widget in mainWidgetsLayer" :key="widget.hash">
-      <MinimalWidget
-        :position="widget.position"
-        :size="widget.size"
-        @move="(position) => updatePosition(widget.hash, position)"
-        @resize="(size) => updateSize(widget.hash, size)"
-        @drop="(position) => behaveForDrop(widget.hash, position)"
-        @send-back="sendWidgetBack(widget.hash)"
-        @bring-front="bringWidgetFront(widget.hash)"
+    <div v-for="layer in layers" :key="layer.hash" class="widget-layer">
+      <template v-for="widget in layer.widgets" :key="widget.hash">
+        <MinimalWidget
+          :position="widget.position"
+          :size="widget.size"
+          @move="(position) => updatePosition(widget.hash, position)"
+          @resize="(size) => updateSize(widget.hash, size)"
+          @drop="(position) => behaveForDrop(widget.hash, position)"
+          @send-back="sendWidgetBack(widget.hash)"
+          @bring-front="bringWidgetFront(widget.hash)"
+        >
+          <template v-if="widget.component === 'CounterCard'">
+            <CounterCard />
+          </template>
+          <template v-if="widget.component === 'IndependentReactor'">
+            <IndependentReactor />
+          </template>
+          <template v-if="widget.component === 'IndicatorsWidget'">
+            <IndicatorsWidget />
+          </template>
+          <!-- <component :is="componentFromName(widget.component)"></component> -->
+        </MinimalWidget>
+      </template>
+      <span>Layer {{ layer.hash }}</span>
+      <v-btn class="ma-1" @click="addComponent(WidgetComponent.CounterCard, layer.hash)"
+        >Add new CounterCard</v-btn
       >
-        <template v-if="widget.component === 'CounterCard'">
-          <CounterCard />
-        </template>
-        <template v-if="widget.component === 'IndependentReactor'">
-          <IndependentReactor />
-        </template>
-        <template v-if="widget.component === 'IndicatorsWidget'">
-          <IndicatorsWidget />
-        </template>
-        <!-- <component :is="componentFromName(widget.component)"></component> -->
-      </MinimalWidget>
-    </template>
-    <v-btn class="ma-1" @click="addComponent(WidgetComponent.CounterCard)"
-      >Add new CounterCard</v-btn
-    >
-    <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndependentReactor)"
-      >Add new IndependentReactor</v-btn
-    >
-    <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndicatorsWidget)"
-      >Add new IndicatorsWidget</v-btn
-    >
+      <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndependentReactor, layer.hash)"
+        >Add new IndependentReactor</v-btn
+      >
+      <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndicatorsWidget, layer.hash)"
+        >Add new IndicatorsWidget</v-btn
+      >
+      <v-btn class="ma-1" @click="deleteLayer(layer.hash)">X</v-btn>
+    </div>
     <DropzoneWidget />
     <div>
       <h1>X: {{ mouseX }}</h1>
       <h1>Y: {{ mouseY }}</h1>
     </div>
+    <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
   </div>
 </template>
 
@@ -68,6 +73,11 @@ interface Widget {
   size: SizeRect2D
 }
 
+interface Layer {
+  hash: string
+  widgets: Widget[]
+}
+
 const defaultWidgets: Widget[] = [
   {
     hash: uuid4(),
@@ -89,8 +99,15 @@ const defaultWidgets: Widget[] = [
   },
 ]
 
+const defaultLayers: Layer[] = [
+  {
+    hash: uuid4(),
+    widgets: defaultWidgets,
+  },
+]
+
 const state = useStorage('cockpit-grid-store', {
-  widgets: defaultWidgets,
+  layers: defaultLayers,
 })
 
 // const componentFromName = (componentName: string): AsyncComponentLoader => {
@@ -99,19 +116,19 @@ const state = useStorage('cockpit-grid-store', {
 //   )
 // }
 
-const mainWidgetsLayer = computed(() => {
-  let originalWidgetsList = state.value.widgets.slice(0)
-  return originalWidgetsList.reverse()
+const layers = computed(() => {
+  let originalLayers = state.value.layers.slice(0)
+  return originalLayers.reverse()
 })
 
 const behaveForDrop = (hash: string, position: Point2D): void => {
   const widget = widgetFromHash(hash)
-  if (shouldDeleteComponent(position)) {
-    deleteComponent(widget.hash)
+  if (shouldDeleteWidget(position)) {
+    deleteWidget(widget.hash)
   }
 }
 
-const shouldDeleteComponent = (position: Point2D): boolean => {
+const shouldDeleteWidget = (position: Point2D): boolean => {
   const trash = document.getElementById('trash')
   if (trash === null) {
     return false
@@ -125,10 +142,17 @@ const shouldDeleteComponent = (position: Point2D): boolean => {
   )
 }
 
-const deleteComponent = (hash: string): void => {
+const deleteWidget = (hash: string): void => {
   const widget = widgetFromHash(hash)
-  const index = state.value.widgets.indexOf(widget)
-  state.value.widgets.splice(index, 1)
+  const layer = layerFromWidgetHash(hash)
+  const index = layer.widgets.indexOf(widget)
+  layer.widgets.splice(index, 1)
+}
+
+const deleteLayer = (hash: string): void => {
+  const layer = layerFromHash(hash)
+  const index = state.value.layers.indexOf(layer)
+  state.value.layers.splice(index, 1)
 }
 
 const updatePosition = (hash: string, position: Point2D): void => {
@@ -143,28 +167,60 @@ const updateSize = (hash: string, size: SizeRect2D): void => {
 
 const bringWidgetFront = (hash: string): void => {
   const widget = widgetFromHash(hash)
-  const index = state.value.widgets.indexOf(widget)
-  state.value.widgets.splice(index, 1)
-  state.value.widgets.unshift(widget)
+  const layer = layerFromWidgetHash(hash)
+  const index = layer.widgets.indexOf(widget)
+  layer.widgets.splice(index, 1)
+  layer.widgets.unshift(widget)
 }
 
 const sendWidgetBack = (hash: string): void => {
   const widget = widgetFromHash(hash)
-  const index = state.value.widgets.indexOf(widget)
-  state.value.widgets.splice(index, 1)
-  state.value.widgets.push(widget)
+  const layer = layerFromWidgetHash(hash)
+  const index = layer.widgets.indexOf(widget)
+  layer.widgets.splice(index, 1)
+  layer.widgets.push(widget)
 }
 
 const widgetFromHash = (hash: string): Widget => {
-  const widget = state.value.widgets.find((w) => w.hash === hash)
-  if (widget === undefined) {
-    throw new Error(`No widget found with hash ${hash}`)
+  for (const layer of state.value.layers) {
+    for (const widget of layer.widgets) {
+      if (widget.hash === hash) {
+        return widget
+      }
+    }
   }
-  return widget
+  throw new Error(`No widget found with hash ${hash}`)
 }
 
-const addComponent = (componentType: WidgetComponent): void => {
-  state.value.widgets.push({
+const layerFromHash = (hash: string): Layer => {
+  const layer = state.value.layers.find((l) => l.hash === hash)
+  if (layer === undefined) {
+    throw new Error(`No layer found with hash ${hash}`)
+  }
+  return layer
+}
+
+const layerFromWidgetHash = (hash: string): Layer => {
+  for (const layer of state.value.layers) {
+    for (const widget of layer.widgets) {
+      if (widget.hash === hash) {
+        return layer
+      }
+    }
+  }
+  throw new Error(`Widget with hash ${hash} not found in any layer.`)
+}
+
+const addLayer = (): void => {
+  console.log(state.value.layers)
+  state.value.layers.push({ hash: uuid4(), widgets: [] })
+  console.log('new layer added')
+  console.log(state.value.layers)
+}
+
+const addComponent = (componentType: WidgetComponent, layerHash: string): void => {
+  const layer = layerFromHash(layerHash)
+  layer.widgets.push({
     hash: uuid4(),
     component: componentType,
     position: { x: 10, y: 10 },
@@ -180,5 +236,12 @@ const addComponent = (componentType: WidgetComponent): void => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+.widget-layer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(152, 204, 144);
 }
 </style>
