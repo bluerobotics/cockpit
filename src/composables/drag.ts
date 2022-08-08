@@ -131,7 +131,8 @@ import type { Point2D } from '@/types/general'
 
 export default function useDragInElement(
   targetElement: Ref<HTMLElement>,
-  initialPosition: Point2D
+  initialPosition: Point2D,
+  locked: Ref<boolean>
 ): {
   position: Ref<Point2D>
   dragging: Ref<boolean>
@@ -173,7 +174,7 @@ export default function useDragInElement(
   })
 
   watch(mousePosition, async () => {
-    if (!dragging.value) {
+    if (!dragging.value || locked.value) {
       return
     }
     position.value = {

@@ -27,9 +27,9 @@
     <div v-for="layer in layers" :key="layer.hash" class="widget-layer">
       <template v-for="widget in layer.widgets" :key="widget.hash">
         <MinimalWidget
-          :unlocked="editingMode"
           :position="widget.position"
           :size="widget.size"
+          :locked="!editingMode"
           @move="(position) => updatePosition(widget.hash, position)"
           @resize="(size) => updateSize(widget.hash, size)"
           @drop="(position) => behaveForDrop(widget.hash, position)"
@@ -232,10 +232,7 @@ const layerFromWidgetHash = (hash: string): Layer => {
 }
 
 const addLayer = (): void => {
-  console.log(state.value.layers)
   state.value.layers.push({ hash: uuid4(), widgets: [] })
-  console.log('new layer added')
-  console.log(state.value.layers)
 }
 
 const addComponent = (componentType: WidgetComponent, layerHash: string): void => {

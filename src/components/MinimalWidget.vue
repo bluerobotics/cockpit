@@ -8,34 +8,36 @@
     >
       <slot></slot>
     </div>
-    <div
-      ref="resizerRef"
-      class="resizer"
-      :class="{ draggingResizer, hoveringResizer }"
-    >
-      <img width="20" height="20" src="@/assets/resizer-icon.svg" draggable="false" />
-    </div>
-    <v-btn flat icon small @click="emit('send-back')"
-      ><v-icon>mdi-arrow-down-thick</v-icon></v-btn
-    >
-    <v-btn flat icon small @click="emit('bring-front')"
-      ><v-icon>mdi-arrow-up-thick</v-icon></v-btn
-    >
+    <template v-if="!locked">
+      <div
+        ref="resizerRef"
+        class="resizer"
+        :class="{ draggingResizer, hoveringResizer }"
+      >
+        <img width="20" height="20" src="@/assets/resizer-icon.svg" draggable="false" />
+      </div>
+      <v-btn flat icon small @click="emit('send-back')"
+        ><v-icon>mdi-arrow-down-thick</v-icon></v-btn
+      >
+      <v-btn flat icon small @click="emit('bring-front')"
+        ><v-icon>mdi-arrow-up-thick</v-icon></v-btn
+      >
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useMouse } from '@vueuse/core'
-import { type Ref, computed, ref, watch } from 'vue'
+import { type Ref, computed, ref, watch, toRefs } from 'vue'
 
 import useDragInElement from '@/composables/drag'
 import { constrain } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 
 const props = defineProps<{
-  unlocked: boolean
   size: SizeRect2D
   position: Point2D
+  locked: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,6 +48,7 @@ const emit = defineEmits<{
   (e: 'bring-front'): void
 }>()
 
+const locked = toRefs(props).locked
 const outerWidgetRef = ref<HTMLElement>()
 const innerWidgetRef = ref<HTMLElement>()
 const resizerRef = ref<HTMLElement>()
@@ -55,7 +58,7 @@ const {
   position: widgetRawPosition,
   dragging: draggingWidget,
   hovering: hoveringWidget,
-} = useDragInElement(innerWidgetRef as Ref<HTMLElement>, props.position)
+} = useDragInElement(innerWidgetRef as Ref<HTMLElement>, props.position, locked)
 
 const {
   position: resizerPosition,
@@ -64,7 +67,7 @@ const {
 } = useDragInElement(resizerRef as Ref<HTMLElement>, {
   x: props.position.x + props.size.width,
   y: props.position.y + props.size.height,
-})
+}, locked)
 
 // Chuncho do demo
 // Por algum motivo quando a tela eh iniciada os valores da bouding rect do outerWidget tao cagadas e nao da pra usar
