@@ -1,6 +1,29 @@
 <template>
-  <div class="home">
-    <v-btn class="ma-1" @click="editingMode = !editingMode"><v-icon>mdi-pencil</v-icon></v-btn>
+  <v-btn class="ma-1 edit-mode-btn" @click="editingMode = !editingMode"><v-icon>mdi-pencil</v-icon></v-btn>
+  <div class="main">
+    <v-card
+      class="edit-menu pa-2"
+      v-if="editingMode"
+      width="500"
+    >
+      <v-card-title>Edit menu</v-card-title>
+      <v-card-text>
+        <span>Edit layer</span>
+      </v-card-text>
+      <v-select
+        v-model="selectedLayer"
+        :items="availableLayers"
+      />
+      <div class="d-flex">
+        <v-select
+          v-model="selectedWidgetType"
+          :items="availableWidgetTypes"
+        />
+        <v-btn class="ma-1" @click="addComponent(selectedWidgetType, selectedLayer.hash)">Add widget</v-btn>
+      </div>
+      <v-btn class="ma-1" @click="deleteLayer(selectedLayer.hash)">Remove layer</v-btn>
+      <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
+    </v-card>
     <div v-for="layer in layers" :key="layer.hash" class="widget-layer">
       <template v-for="widget in layer.widgets" :key="widget.hash">
         <MinimalWidget
@@ -28,25 +51,10 @@
           <!-- <component :is="componentFromName(widget.component)"></component> -->
         </MinimalWidget>
       </template>
-      <div v-if="editingMode">
-        <span>Layer {{ layer.hash }}</span>
-        <v-btn class="ma-1" @click="addComponent(WidgetComponent.CounterCard, layer.hash)"
-          >Add new CounterCard</v-btn
-        >
-        <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndependentReactor, layer.hash)"
-          >Add new IndependentReactor</v-btn
-        >
-        <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndicatorsWidget, layer.hash)"
-          >Add new IndicatorsWidget</v-btn
-        >
-        <v-btn class="ma-1" @click="addComponent(WidgetComponent.VideoPlayer, layer.hash)"
-          >Add new VideoPlayer</v-btn
-        >
-        <v-btn class="ma-1" @click="deleteLayer(layer.hash)">X</v-btn>
-        <DropzoneWidget class="dropzone" v-if="showOverlay" />
-        <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
-        <div v-if="showOverlay" class="overlay" />
-      </div>
+    </div>
+    <div v-if="editingMode">
+      <DropzoneWidget class="dropzone" v-if="showOverlay" />
+      <div v-if="showOverlay" class="overlay" />
     </div>
   </div>
 </template>
@@ -86,9 +94,12 @@ interface Layer {
   widgets: Widget[]
 }
 
-const state = useStorage('cockpit-grid-store', {
+const cockpitGridStore: {
+  layers: Layer[]
+} = {
   layers: [],
-})
+}
+const state = useStorage('cockpit-grid-store', cockpitGridStore)
 
 const showOverlay = ref(false)
 const editingMode = ref(false)
@@ -104,6 +115,27 @@ const layers = computed(() => {
   let originalLayers = state.value.layers.slice(0)
   return originalLayers.reverse()
 })
+
+const availableWidgetTypes = computed(() => {
+  return [
+    WidgetComponent.IndicatorsWidget,
+    WidgetComponent.CounterCard,
+    WidgetComponent.IndependentReactor,
+    WidgetComponent.VideoPlayer,
+  ]
+})
+
+const availableLayers = computed(() => {
+  return layers.value.map((layer) => {
+    return {
+      title: layer.hash,
+      value: layer,
+    }
+  })
+})
+
+const selectedLayer = ref<Layer>(layers.value[0])
+const selectedWidgetType = ref<WidgetComponent>(availableWidgetTypes.value[0])
 
 const behaveForDrop = (hash: string, position: Point2D): void => {
   const widget = widgetFromHash(hash)
@@ -218,7 +250,7 @@ const addComponent = (componentType: WidgetComponent, layerHash: string): void =
 </script>
 
 <style>
-.home {
+.main {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -254,5 +286,14 @@ const addComponent = (componentType: WidgetComponent, layerHash: string): void =
   right: 0;
   bottom: 0;
   z-index: 2;
+}
+.edit-mode-btn {
+  position: absolute;
+  left: 10;
+  top: 10;
+  z-index: 1;
+}
+.edit-menu {
+  z-index: 1;
 }
 </style>
