@@ -22,6 +22,9 @@
       <v-btn flat icon small @click="emit('bring-front')"
         ><v-icon>mdi-arrow-up-thick</v-icon></v-btn
       >
+      <v-btn flat icon small @click="emit('remove')"
+        ><v-icon>mdi-close-thick</v-icon></v-btn
+      >
     </template>
   </div>
 </template>
@@ -46,6 +49,7 @@ const emit = defineEmits<{
   (e: 'drop', position: Point2D): void
   (e: 'send-back'): void
   (e: 'bring-front'): void
+  (e: 'remove'): void
 }>()
 
 const locked = toRefs(props).locked
