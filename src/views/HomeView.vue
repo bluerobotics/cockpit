@@ -1,5 +1,6 @@
 <template>
-  <v-btn class="ma-1 edit-mode-btn" @click="editingMode = !editingMode"><v-icon>mdi-pencil</v-icon></v-btn>
+  <v-btn class="ma-1 edit-mode-btn" icon="mdi-pencil" @click="editingMode = !editingMode" />
+  <div v-if="showGrid && editingMode" class="snapping-grid"></div>
   <div class="main">
     <v-card
       class="edit-menu pa-2"
@@ -23,9 +24,10 @@
       </div>
       <v-btn class="ma-1" @click="deleteLayer(selectedLayer.hash)">Remove layer</v-btn>
       <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
+      <v-btn class="ma-1" @click="showGrid = !showGrid">Use grid</v-btn>
     </v-card>
-    <div v-for="layer in layers" :key="layer.hash" class="widget-layer">
-      <template v-for="widget in layer.widgets" :key="widget.hash">
+    <div v-for="layer in state.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
+      <template v-for="widget in layer.widgets.slice().reverse()" :key="widget.hash">
         <MinimalWidget
           :position="widget.position"
           :size="widget.size"
@@ -95,17 +97,13 @@ const cockpitGridStore: {
 const state = useStorage('cockpit-grid-store', cockpitGridStore)
 
 const editingMode = ref(false)
+const showGrid = ref(false)
 
 // const componentFromName = (componentName: string): AsyncComponentLoader => {
 //   return defineAsyncComponent(
 //     () => import(`../components/widgets/${componentName}.vue`)
 //   )
 // }
-
-const layers = computed(() => {
-  let originalLayers = state.value.layers.slice(0)
-  return originalLayers.reverse()
-})
 
 const availableWidgetTypes = computed(() => {
   return [
@@ -117,7 +115,7 @@ const availableWidgetTypes = computed(() => {
 })
 
 const availableLayers = computed(() => {
-  return layers.value.map((layer) => {
+  return state.value.layers.slice().map((layer) => {
     return {
       title: layer.hash,
       value: layer,
@@ -125,7 +123,7 @@ const availableLayers = computed(() => {
   })
 })
 
-const selectedLayer = ref<Layer>(layers.value[0])
+const selectedLayer = ref<Layer>(state.value.layers[0])
 const selectedWidgetType = ref<WidgetComponent>(availableWidgetTypes.value[0])
 
 const deleteWidget = (hash: string): void => {
@@ -226,14 +224,25 @@ const addComponent = (componentType: WidgetComponent, layerHash: string): void =
   align-items: center;
   justify-content: center;
   background-color: rgb(152, 204, 144);
+  z-index: 50;
 }
 .edit-mode-btn {
   position: absolute;
   left: 10;
-  top: 10;
-  z-index: 1;
+  top: 50%;
+  z-index: 60;
 }
 .edit-menu {
-  z-index: 1;
+  z-index: 100;
+}
+.snapping-grid {
+  z-index: 40;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background-image: repeating-linear-gradient(0deg,transparent,transparent 14px,#88F 14px,#88F 15px),
+    repeating-linear-gradient(-90deg,transparent,transparent 14px,#88F 14px,#88F 15px);
+  background-size: 15px 15px;
+  background-repeat: repeat;
 }
 </style>
