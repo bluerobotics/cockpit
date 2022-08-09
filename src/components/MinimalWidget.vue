@@ -14,15 +14,26 @@
         class="resizer"
         :class="{ draggingResizer, hoveringResizer }"
       />
-      <v-btn flat icon small @click="emit('send-back')"
-        ><v-icon>mdi-arrow-down-thick</v-icon></v-btn
-      >
-      <v-btn flat icon small @click="emit('bring-front')"
-        ><v-icon>mdi-arrow-up-thick</v-icon></v-btn
-      >
-      <v-btn flat icon small @click="emit('remove')"
-        ><v-icon>mdi-close-thick</v-icon></v-btn
-      >
+      <div v-if="hoveringWidget" class="editing-buttons">
+        <v-btn
+          class="ma-1"
+          size="x-small"
+          icon="mdi-arrow-down-thick"
+          @click="emit('send-back')"
+        />
+        <v-btn
+          class="ma-1"
+          size="x-small"
+          icon="mdi-arrow-up-thick"
+          @click="emit('bring-front')"
+        />
+        <v-btn
+          class="ma-1"
+          size="x-small"
+          icon="mdi-close-thick"
+          @click="emit('remove')"
+        />
+      </div>
     </template>
   </div>
 </template>
@@ -147,11 +158,14 @@ const cursorStyle = computed(() => {
   }
   return 'grab'
 })
+const widgetEditingColor = computed(() => {
+  return locked.value ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.1)'
+})
 </script>
 
 <style>
 .outerWidget {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: v-bind('widgetEditingColor');
   position: absolute;
   cursor: v-bind('cursorStyle');
   left: v-bind('positionStyle.left');
@@ -170,12 +184,17 @@ const cursorStyle = computed(() => {
 .innerWidget.hoveringWidget {
   outline-style: dashed;
   outline-width: 1px;
-  outline-color: rgba(0, 0, 0, 0.3);
+  outline-color: v-bind('widgetEditingColor');
 }
 .innerWidget.draggingWidget {
   outline-style: dashed;
   outline-width: 3px;
-  outline-color: rgba(0, 0, 0, 0.1);
+  outline-color: v-bind('widgetEditingColor');
+}
+.editing-buttons {
+  position: absolute;
+  left: 0%;
+  bottom: 0%;
 }
 .resizer {
   width: 5px;
