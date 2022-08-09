@@ -136,13 +136,22 @@ const positionStyle = computed(() => {
     top: `${widgetFinalPosition.value.y}px`,
   }
 })
+const cursorStyle = computed(() => {
+  if (locked.value) {
+    return 'default'
+  }
+  if (draggingWidget.value) {
+    return 'grabbing'
+  }
+  return 'grab'
+})
 </script>
 
 <style>
 .outerWidget {
   background-color: rgba(0, 0, 0, 0.1);
   position: absolute;
-  cursor: grab;
+  cursor: v-bind('cursorStyle');
   left: v-bind('positionStyle.left');
   top: v-bind('positionStyle.top');
   width: v-bind('sizeStyle.width');
