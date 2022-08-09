@@ -13,9 +13,7 @@
         ref="resizerRef"
         class="resizer"
         :class="{ draggingResizer, hoveringResizer }"
-      >
-        <img width="20" height="20" src="@/assets/resizer-icon.svg" draggable="false" />
-      </div>
+      />
       <v-btn flat icon small @click="emit('send-back')"
         ><v-icon>mdi-arrow-down-thick</v-icon></v-btn
       >
@@ -180,16 +178,12 @@ const cursorStyle = computed(() => {
   outline-color: rgba(0, 0, 0, 0.1);
 }
 .resizer {
-  color: rgba(0, 0, 0, 0.1);
+  width: 5px;
+  height: 5px;
+  cursor: se-resize;
   user-select: none;
   position: absolute;
   left: 100%;
   top: 100%;
-}
-.resizer.hoveringResizer {
-  color: red;
-}
-.resizer.draggingResizer {
-  color: rgb(9, 255, 0);
 }
 </style>
