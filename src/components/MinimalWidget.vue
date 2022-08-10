@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import { useMouse } from '@vueuse/core'
-import { type Ref, computed, ref, watch, toRefs } from 'vue'
+import { type Ref, computed, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
 import { constrain } from '@/libs/utils'
@@ -77,17 +77,21 @@ const {
   position: resizerPosition,
   dragging: draggingResizer,
   hovering: hoveringResizer,
-} = useDragInElement(resizerRef as Ref<HTMLElement>, {
-  x: props.position.x + props.size.width,
-  y: props.position.y + props.size.height,
-}, locked)
+} = useDragInElement(
+  resizerRef as Ref<HTMLElement>,
+  {
+    x: props.position.x + props.size.width,
+    y: props.position.y + props.size.height,
+  },
+  locked
+)
 
 // Chuncho do demo
 // Por algum motivo quando a tela eh iniciada os valores da bouding rect do outerWidget tao cagadas e nao da pra usar
 const x = ref(0)
 const widgetRawSize = computed(() => {
   if (x.value < 2 || outerWidgetRef.value === undefined) {
-    x.value += 1
+    x.value += 1 // eslint-disable-line vue/no-side-effects-in-computed-properties
     return {
       width: resizerPosition.value.x - widgetFinalPosition.value.x,
       height: resizerPosition.value.y - widgetFinalPosition.value.y,

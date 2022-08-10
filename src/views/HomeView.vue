@@ -1,33 +1,40 @@
 <template>
-  <v-btn class="ma-1 edit-mode-btn" icon="mdi-pencil" @click="editingMode = !editingMode" />
+  <v-btn
+    class="ma-1 edit-mode-btn"
+    icon="mdi-pencil"
+    @click="editingMode = !editingMode"
+  />
   <div v-if="showGrid && editingMode" class="snapping-grid"></div>
   <div class="main">
-    <v-card
-      class="edit-menu pa-2"
-      v-if="editingMode"
-      width="500"
-    >
+    <v-card v-if="editingMode" class="edit-menu pa-2" width="500">
       <v-card-title>Edit menu</v-card-title>
       <v-card-text>
         <span>Edit layer</span>
       </v-card-text>
-      <v-select
-        v-model="selectedLayer"
-        :items="availableLayers"
-      />
+      <v-select v-model="selectedLayer" :items="availableLayers" />
       <div class="d-flex">
-        <v-select
-          v-model="selectedWidgetType"
-          :items="availableWidgetTypes"
-        />
-        <v-btn class="ma-1" @click="addComponent(selectedWidgetType, selectedLayer.hash)">Add widget</v-btn>
+        <v-select v-model="selectedWidgetType" :items="availableWidgetTypes" />
+        <v-btn
+          class="ma-1"
+          @click="addComponent(selectedWidgetType, selectedLayer.hash)"
+          >Add widget</v-btn
+        >
       </div>
-      <v-btn class="ma-1" @click="deleteLayer(selectedLayer.hash)">Remove layer</v-btn>
+      <v-btn class="ma-1" @click="deleteLayer(selectedLayer.hash)"
+        >Remove layer</v-btn
+      >
       <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
       <v-btn class="ma-1" @click="showGrid = !showGrid">Use grid</v-btn>
     </v-card>
-    <div v-for="layer in state.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
-      <template v-for="widget in layer.widgets.slice().reverse()" :key="widget.hash">
+    <div
+      v-for="layer in state.layers.slice().reverse()"
+      :key="layer.hash"
+      class="widget-layer"
+    >
+      <template
+        v-for="widget in layer.widgets.slice().reverse()"
+        :key="widget.hash"
+      >
         <MinimalWidget
           :position="widget.position"
           :size="widget.size"
@@ -38,16 +45,20 @@
           @bring-front="bringWidgetFront(widget.hash)"
           @remove="deleteWidget(widget.hash)"
         >
-          <template v-if="widget.component === 'CounterCard'">
+          <template v-if="widget.component === WidgetType.CounterCardComponent">
             <CounterCard />
           </template>
-          <template v-if="widget.component === 'IndependentReactor'">
+          <template
+            v-if="widget.component === WidgetType.IndependentReactorComponent"
+          >
             <IndependentReactor />
           </template>
-          <template v-if="widget.component === 'IndicatorsWidget'">
+          <template
+            v-if="widget.component === WidgetType.IndicatorsWidgetComponent"
+          >
             <IndicatorsWidget />
           </template>
-          <template v-if="widget.component === 'VideoPlayer'">
+          <template v-if="widget.component === WidgetType.VideoPlayerComponent">
             <VideoPlayer />
           </template>
           <!-- <component :is="componentFromName(widget.component)"></component> -->
@@ -70,16 +81,16 @@ import IndependentReactor from '../components/widgets/IndependentReactor.vue'
 import IndicatorsWidget from '../components/widgets/IndicatorsWidget.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 
-enum WidgetComponent {
-  IndicatorsWidget = 'IndicatorsWidget',
-  CounterCard = 'CounterCard',
-  IndependentReactor = 'IndependentReactor',
-  VideoPlayer = 'VideoPlayer',
+enum WidgetType {
+  IndicatorsWidgetComponent = 'IndicatorsWidget',
+  CounterCardComponent = 'CounterCard',
+  IndependentReactorComponent = 'IndependentReactor',
+  VideoPlayerComponent = 'VideoPlayer',
 }
 
 interface Widget {
   hash: string
-  component: WidgetComponent
+  component: WidgetType
   position: Point2D
   size: SizeRect2D
 }
@@ -107,10 +118,10 @@ const showGrid = ref(false)
 
 const availableWidgetTypes = computed(() => {
   return [
-    WidgetComponent.IndicatorsWidget,
-    WidgetComponent.CounterCard,
-    WidgetComponent.IndependentReactor,
-    WidgetComponent.VideoPlayer,
+    WidgetType.IndicatorsWidgetComponent,
+    WidgetType.CounterCardComponent,
+    WidgetType.IndependentReactorComponent,
+    WidgetType.VideoPlayerComponent,
   ]
 })
 
@@ -124,7 +135,7 @@ const availableLayers = computed(() => {
 })
 
 const selectedLayer = ref<Layer>(state.value.layers[0])
-const selectedWidgetType = ref<WidgetComponent>(availableWidgetTypes.value[0])
+const selectedWidgetType = ref<WidgetType>(availableWidgetTypes.value[0])
 
 const deleteWidget = (hash: string): void => {
   const widget = widgetFromHash(hash)
@@ -199,7 +210,7 @@ const addLayer = (): void => {
   state.value.layers.push({ hash: uuid4(), widgets: [] })
 }
 
-const addComponent = (componentType: WidgetComponent, layerHash: string): void => {
+const addComponent = (componentType: WidgetType, layerHash: string): void => {
   const layer = layerFromHash(layerHash)
   layer.widgets.push({
     hash: uuid4(),
@@ -240,8 +251,20 @@ const addComponent = (componentType: WidgetComponent, layerHash: string): void =
   position: absolute;
   height: 100%;
   width: 100%;
-  background-image: repeating-linear-gradient(0deg,transparent,transparent 14px,#88F 14px,#88F 15px),
-    repeating-linear-gradient(-90deg,transparent,transparent 14px,#88F 14px,#88F 15px);
+  background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 14px,
+      #88f 14px,
+      #88f 15px
+    ),
+    repeating-linear-gradient(
+      -90deg,
+      transparent,
+      transparent 14px,
+      #88f 14px,
+      #88f 15px
+    );
   background-size: 15px 15px;
   background-repeat: repeat;
 }
