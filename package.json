@@ -18,7 +18,9 @@
   },
   "dependencies": {
     "@mdi/font": "5.9.55",
+    "@vue-leaflet/vue-leaflet": "^0.6.1",
     "@vueuse/core": "^8.6.0",
+    "leaflet": "^1.8.0",
     "mathjs": "^10.6.1",
     "pinia": "^2.0.13",
     "popmotion": "^11.0.3",

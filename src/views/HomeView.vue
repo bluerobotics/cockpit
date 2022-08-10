@@ -63,6 +63,9 @@
           <template v-if="widget.component === WidgetType.VideoPlayerComponent">
             <VideoPlayer />
           </template>
+          <template v-if="widget.component === WidgetType.MapWidgetComponent">
+            <MapWidget />
+          </template>
           <!-- <component :is="componentFromName(widget.component)"></component> -->
         </MinimalWidget>
       </template>
@@ -81,6 +84,7 @@ import MinimalWidget from '../components/MinimalWidget.vue'
 import CounterCard from '../components/widgets/CounterCard.vue'
 import IndependentReactor from '../components/widgets/IndependentReactor.vue'
 import IndicatorsWidget from '../components/widgets/IndicatorsWidget.vue'
+import MapWidget from '../components/widgets/MapWidget.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 
 enum WidgetType {
@@ -88,6 +92,7 @@ enum WidgetType {
   CounterCardComponent = 'CounterCard',
   IndependentReactorComponent = 'IndependentReactor',
   VideoPlayerComponent = 'VideoPlayer',
+  MapWidgetComponent = 'MapWidget',
 }
 
 interface Widget {
@@ -125,6 +130,7 @@ const availableWidgetTypes = computed(() => {
     WidgetType.CounterCardComponent,
     WidgetType.IndependentReactorComponent,
     WidgetType.VideoPlayerComponent,
+    WidgetType.MapWidgetComponent,
   ]
 })
 
