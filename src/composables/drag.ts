@@ -132,7 +132,9 @@ import type { Point2D } from '@/types/general'
 export default function useDragInElement(
   targetElement: Ref<HTMLElement>,
   initialPosition: Point2D,
-  locked: Ref<boolean>
+  locked: Ref<boolean>,
+  snapToGrid: Ref<boolean>,
+  gridInterval: number
 ): {
   position: Ref<Point2D>
   dragging: Ref<boolean>
@@ -177,9 +179,26 @@ export default function useDragInElement(
     if (!dragging.value || locked.value) {
       return
     }
+    const gridTolerance = gridInterval / 2
+    let positionX = mousePosition.value.x - mouseOffset.value.x
+    let positionY = mousePosition.value.y - mouseOffset.value.y
+    if (snapToGrid.value) {
+      const distanceFromGridX = positionX % gridInterval
+      if (distanceFromGridX < gridTolerance) {
+        positionX = positionX - distanceFromGridX
+      } else if (distanceFromGridX > gridInterval - gridTolerance) {
+        positionX = positionX + (gridInterval - distanceFromGridX)
+      }
+      const distanceFromGridY = positionY % gridInterval
+      if (distanceFromGridY < gridTolerance) {
+        positionY = positionY - distanceFromGridY
+      } else if (distanceFromGridY > gridInterval - gridTolerance) {
+        positionY = positionY + (gridInterval - distanceFromGridY)
+      }
+    }
     position.value = {
-      x: mousePosition.value.x - mouseOffset.value.x,
-      y: mousePosition.value.y - mouseOffset.value.y,
+      x: positionX,
+      y: positionY,
     }
   })
 

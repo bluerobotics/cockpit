@@ -50,6 +50,8 @@ const props = defineProps<{
   size: SizeRect2D
   position: Point2D
   locked: boolean
+  snapToGrid: boolean
+  gridInterval: number
 }>()
 
 const emit = defineEmits<{
@@ -62,6 +64,8 @@ const emit = defineEmits<{
 }>()
 
 const locked = toRefs(props).locked
+const snapToGrid = toRefs(props).snapToGrid
+const gridInterval = toRefs(props).gridInterval
 const outerWidgetRef = ref<HTMLElement>()
 const innerWidgetRef = ref<HTMLElement>()
 const resizerRef = ref<HTMLElement>()
@@ -71,7 +75,13 @@ const {
   position: widgetRawPosition,
   dragging: draggingWidget,
   hovering: hoveringWidget,
-} = useDragInElement(innerWidgetRef as Ref<HTMLElement>, props.position, locked)
+} = useDragInElement(
+  innerWidgetRef as Ref<HTMLElement>,
+  props.position,
+  locked,
+  snapToGrid,
+  gridInterval.value
+)
 
 const {
   position: resizerPosition,
@@ -83,7 +93,9 @@ const {
     x: props.position.x + props.size.width,
     y: props.position.y + props.size.height,
   },
-  locked
+  locked,
+  snapToGrid,
+  gridInterval.value
 )
 
 // Chuncho do demo

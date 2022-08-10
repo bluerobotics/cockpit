@@ -39,6 +39,8 @@
           :position="widget.position"
           :size="widget.size"
           :locked="!editingMode"
+          :snap-to-grid="showGrid"
+          :grid-interval="gridInterval"
           @move="(position) => updatePosition(widget.hash, position)"
           @resize="(size) => updateSize(widget.hash, size)"
           @send-back="sendWidgetBack(widget.hash)"
@@ -109,6 +111,7 @@ const state = useStorage('cockpit-grid-store', cockpitGridStore)
 
 const editingMode = ref(false)
 const showGrid = ref(false)
+const gridInterval = ref(15)
 
 // const componentFromName = (componentName: string): AsyncComponentLoader => {
 //   return defineAsyncComponent(
@@ -219,6 +222,13 @@ const addComponent = (componentType: WidgetType, layerHash: string): void => {
     size: { width: 200, height: 200 },
   })
 }
+
+const gridIntervalStop = computed(() => {
+  return `${gridInterval.value}px`
+})
+const gridIntervalStart = computed(() => {
+  return `${gridInterval.value - 1}px`
+})
 </script>
 
 <style>
@@ -254,18 +264,18 @@ const addComponent = (componentType: WidgetType, layerHash: string): void => {
   background-image: repeating-linear-gradient(
       0deg,
       transparent,
-      transparent 14px,
-      #88f 14px,
-      #88f 15px
+      transparent v-bind('gridIntervalStart'),
+      #88f v-bind('gridIntervalStart'),
+      #88f v-bind('gridIntervalStop')
     ),
     repeating-linear-gradient(
       -90deg,
       transparent,
-      transparent 14px,
-      #88f 14px,
-      #88f 15px
+      transparent v-bind('gridIntervalStart'),
+      #88f v-bind('gridIntervalStart'),
+      #88f v-bind('gridIntervalStop')
     );
-  background-size: 15px 15px;
+  background-size: v-bind('gridIntervalStop') v-bind('gridIntervalStop');
   background-repeat: repeat;
 }
 </style>
