@@ -151,6 +151,7 @@ const deleteLayer = (hash: string): void => {
   const layer = layerFromHash(hash)
   const index = state.value.layers.indexOf(layer)
   state.value.layers.splice(index, 1)
+  selectedLayer.value = state.value.layers[0]
 }
 
 const updatePosition = (hash: string, position: Point2D): void => {
