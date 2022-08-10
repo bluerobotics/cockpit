@@ -1,9 +1,15 @@
 <template>
   <div>
-    <h1>Speed: {{ store.speed }} km/h</h1>
-    <h1>Heading: {{ store.heading }} deg</h1>
-    <h1>Depth: {{ store.depth }} m</h1>
-    <h1>Water temp: {{ store.waterTemp }} oC</h1>
+    <v-sheet rounded>
+      <p class="font-weight-bold text-body-1">Speed:</p>
+      <p class="text-body-1">{{ store.speed }} km/h</p>
+      <p class="font-weight-bold text-body-1">Heading:</p>
+      <p class="text-body-1">{{ store.heading }} deg</p>
+      <p class="font-weight-bold text-body-1">Depth:</p>
+      <p class="text-body-1">{{ store.depth }} m</p>
+      <p class="font-weight-bold text-body-1">Water temp:</p>
+      <p class="text-body-1">{{ store.waterTemp }} oC</p>
+    </v-sheet>
   </div>
 </template>
 
@@ -15,6 +21,11 @@ const store = useBoatStore()
 
 <style scoped>
 div {
-  background-color: rgb(0, 13, 255);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 </style>
