@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-sheet rounded>
+    <v-sheet rounded color="rgba(255, 255, 255, 0.8)">
       <p class="font-weight-bold text-body-1">Speed:</p>
       <p class="text-body-1">{{ store.speed }} km/h</p>
       <p class="font-weight-bold text-body-1">Heading:</p>
