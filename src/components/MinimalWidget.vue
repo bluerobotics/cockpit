@@ -13,7 +13,7 @@
       class="resizer"
       :class="{ draggingResizer, hoveringResizer }"
     >
-      <v-icon :size="20">mdi-arrow-bottom-right</v-icon>
+      <img width="20" height="20" src="@/assets/resizer-icon.svg" draggable="false" />
     </div>
     <v-btn flat icon small @click="emit('send-back')"
       ><v-icon>mdi-arrow-down-thick</v-icon></v-btn
@@ -33,6 +33,7 @@ import { constrain } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 
 const props = defineProps<{
+  unlocked: boolean
   size: SizeRect2D
   position: Point2D
 }>()

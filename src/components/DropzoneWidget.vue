@@ -45,12 +45,13 @@ useEventListener(
   height: 300px;
   margin: 10px;
   padding: 10px;
-  background-color: #80b0de70;
+  background-color: #80b1de;
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
   font-size: 1.5rem;
-  color: #3b699b8c;
+  color: #3b699b;
+  user-select: none; /* Standard */
 }
 </style>

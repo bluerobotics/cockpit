@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
+  <path d="M 500 0 L 500 500 L 0 500 L 500 0 Z" style="paint-order: stroke; fill-rule: nonzero; stroke: rgba(0, 0, 0, 0); stroke-width: 0px;" bx:shape="triangle 0 0 500 500 1 0 1@936b7950"/>
+</svg>

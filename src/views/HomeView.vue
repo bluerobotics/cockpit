@@ -1,9 +1,10 @@
 <template>
   <div class="home">
-    <h1>This is the main view</h1>
+    <v-btn class="ma-1" @click="editingMode = !editingMode"><v-icon>mdi-pencil</v-icon></v-btn>
     <div v-for="layer in layers" :key="layer.hash" class="widget-layer">
       <template v-for="widget in layer.widgets" :key="widget.hash">
         <MinimalWidget
+          :unlocked="editingMode"
           :position="widget.position"
           :size="widget.size"
           @move="(position) => updatePosition(widget.hash, position)"
@@ -21,34 +22,39 @@
           <template v-if="widget.component === 'IndicatorsWidget'">
             <IndicatorsWidget />
           </template>
+          <template v-if="widget.component === 'VideoPlayer'">
+            <VideoPlayer />
+          </template>
           <!-- <component :is="componentFromName(widget.component)"></component> -->
         </MinimalWidget>
       </template>
-      <span>Layer {{ layer.hash }}</span>
-      <v-btn class="ma-1" @click="addComponent(WidgetComponent.CounterCard, layer.hash)"
-        >Add new CounterCard</v-btn
-      >
-      <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndependentReactor, layer.hash)"
-        >Add new IndependentReactor</v-btn
-      >
-      <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndicatorsWidget, layer.hash)"
-        >Add new IndicatorsWidget</v-btn
-      >
-      <v-btn class="ma-1" @click="deleteLayer(layer.hash)">X</v-btn>
+      <div v-if="editingMode">
+        <span>Layer {{ layer.hash }}</span>
+        <v-btn class="ma-1" @click="addComponent(WidgetComponent.CounterCard, layer.hash)"
+          >Add new CounterCard</v-btn
+        >
+        <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndependentReactor, layer.hash)"
+          >Add new IndependentReactor</v-btn
+        >
+        <v-btn class="ma-1" @click="addComponent(WidgetComponent.IndicatorsWidget, layer.hash)"
+          >Add new IndicatorsWidget</v-btn
+        >
+        <v-btn class="ma-1" @click="addComponent(WidgetComponent.VideoPlayer, layer.hash)"
+          >Add new VideoPlayer</v-btn
+        >
+        <v-btn class="ma-1" @click="deleteLayer(layer.hash)">X</v-btn>
+        <DropzoneWidget class="dropzone" v-if="showOverlay" />
+        <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
+        <div v-if="showOverlay" class="overlay" />
+      </div>
     </div>
-    <DropzoneWidget />
-    <div>
-      <h1>X: {{ mouseX }}</h1>
-      <h1>Y: {{ mouseY }}</h1>
-    </div>
-    <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useMouse, useStorage } from '@vueuse/core'
+import { useMouse, useMousePressed, useStorage } from '@vueuse/core'
 import { v4 as uuid4 } from 'uuid'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { Point2D, SizeRect2D } from '@/types/general'
 
@@ -57,13 +63,15 @@ import MinimalWidget from '../components/MinimalWidget.vue'
 import CounterCard from '../components/widgets/CounterCard.vue'
 import IndependentReactor from '../components/widgets/IndependentReactor.vue'
 import IndicatorsWidget from '../components/widgets/IndicatorsWidget.vue'
+import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 
-const { x: mouseX, y: mouseY } = useMouse()
+// const { x: mouseX, y: mouseY } = useMouse()
 
 enum WidgetComponent {
   IndicatorsWidget = 'IndicatorsWidget',
   CounterCard = 'CounterCard',
   IndependentReactor = 'IndependentReactor',
+  VideoPlayer = 'VideoPlayer',
 }
 
 interface Widget {
@@ -82,6 +90,10 @@ const state = useStorage('cockpit-grid-store', {
   layers: [],
 })
 
+const showOverlay = ref(false)
+const editingMode = ref(false)
+const { pressed } = useMousePressed()
+
 // const componentFromName = (componentName: string): AsyncComponentLoader => {
 //   return defineAsyncComponent(
 //     () => import(`../components/widgets/${componentName}.vue`)
@@ -98,6 +110,7 @@ const behaveForDrop = (hash: string, position: Point2D): void => {
   if (shouldDeleteWidget(position)) {
     deleteWidget(widget.hash)
   }
+  showOverlay.value = false
 }
 
 const shouldDeleteWidget = (position: Point2D): boolean => {
@@ -128,6 +141,9 @@ const deleteLayer = (hash: string): void => {
 }
 
 const updatePosition = (hash: string, position: Point2D): void => {
+  if (pressed.value) {
+    showOverlay.value = true
+  }
   const widget = widgetFromHash(hash)
   widget.position = position
 }
@@ -215,5 +231,28 @@ const addComponent = (componentType: WidgetComponent, layerHash: string): void =
   align-items: center;
   justify-content: center;
   background-color: rgb(152, 204, 144);
+}
+/* The Overlay (background) */
+.overlay {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.25);
+  overflow-x: hidden;
+  transition: 0.5s;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.dropzone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
 }
 </style>

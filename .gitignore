@@ -6,4 +6,6 @@ cypress/fixtures/
 cypress/videos/
 cypress/screenshots/
 
+src/assets/bbb.mp4
+
 *.log
