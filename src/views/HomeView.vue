@@ -51,6 +51,11 @@
             <CounterCard />
           </template>
           <template
+            v-if="widget.component === WidgetType.CompassWidgetComponent"
+          >
+            <CompassWidget />
+          </template>
+          <template
             v-if="widget.component === WidgetType.IndependentReactorComponent"
           >
             <IndependentReactor />
@@ -81,6 +86,7 @@ import { computed, ref } from 'vue'
 import type { Point2D, SizeRect2D } from '@/types/general'
 
 import MinimalWidget from '../components/MinimalWidget.vue'
+import CompassWidget from '../components/widgets/CompassWidget.vue'
 import CounterCard from '../components/widgets/CounterCard.vue'
 import IndependentReactor from '../components/widgets/IndependentReactor.vue'
 import IndicatorsWidget from '../components/widgets/IndicatorsWidget.vue'
@@ -93,6 +99,7 @@ enum WidgetType {
   IndependentReactorComponent = 'IndependentReactor',
   VideoPlayerComponent = 'VideoPlayer',
   MapWidgetComponent = 'MapWidget',
+  CompassWidgetComponent = 'CompassWidget',
 }
 
 interface Widget {
@@ -128,6 +135,7 @@ const availableWidgetTypes = computed(() => {
   return [
     WidgetType.IndicatorsWidgetComponent,
     WidgetType.CounterCardComponent,
+    WidgetType.CompassWidgetComponent,
     WidgetType.IndependentReactorComponent,
     WidgetType.VideoPlayerComponent,
     WidgetType.MapWidgetComponent,
