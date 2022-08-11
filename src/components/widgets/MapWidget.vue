@@ -18,7 +18,8 @@
 import 'leaflet/dist/leaflet.css'
 
 import { LMap, LTileLayer } from '@vue-leaflet/vue-leaflet'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
+// import { ref, watch } from 'vue'
 
 // const props = defineProps<{
 //   locked: boolean

@@ -1,7 +1,7 @@
 <template>
   <v-btn
     v-if="showEditButton"
-    class="ma-1 edit-mode-btn"
+    class="ml-2 edit-mode-btn"
     icon="mdi-pencil"
     @click="editingMode = !editingMode"
   />
@@ -17,39 +17,42 @@
       <div class="edit-menu">
         <v-card v-if="editingMode" class="pa-3 edit-card" width="500">
           <v-card-title>Edit menu</v-card-title>
-          <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
-          <div class="d-flex align-center ma-2">
-            <v-select
-              v-model="selectedLayer"
-              :items="availableLayers"
-              hide-details
-            />
-            <v-btn
-              class="ml-2"
-              icon="mdi-delete"
-              size="small"
-              rounded="lg"
-              @click="deleteLayer(selectedLayer.hash)"
-            />
-          </div>
-          <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
-          <template v-for="widget in selectedLayer.widgets" :key="widget.hash">
-            <li class="pl-6">{{ widget.component }}</li>
+          <template v-if="selectedLayer !== undefined">
+            <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
+            <div class="d-flex align-center ma-2">
+              <v-select
+                v-model="selectedLayer"
+                :items="availableLayers"
+                no-data-text="No layers available."
+                hide-details
+              />
+              <v-btn
+                class="ml-2"
+                icon="mdi-delete"
+                size="small"
+                rounded="lg"
+                @click="deleteLayer(selectedLayer.hash)"
+              />
+            </div>
+            <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
+            <template v-for="widget in selectedLayer.widgets" :key="widget.hash">
+              <li class="pl-6">{{ widget.component }}</li>
+            </template>
+            <div class="d-flex align-center ma-2">
+              <v-select
+                v-model="selectedWidgetType"
+                :items="availableWidgetTypes"
+                hide-details
+              />
+              <v-btn
+                class="ml-2"
+                icon="mdi-plus"
+                size="small"
+                rounded="lg"
+                @click="addComponent(selectedWidgetType, selectedLayer.hash)"
+              />
+            </div>
           </template>
-          <div class="d-flex align-center ma-2">
-            <v-select
-              v-model="selectedWidgetType"
-              :items="availableWidgetTypes"
-              hide-details
-            />
-            <v-btn
-              class="ml-2"
-              icon="mdi-plus"
-              size="small"
-              rounded="lg"
-              @click="addComponent(selectedWidgetType, selectedLayer.hash)"
-            />
-          </div>
           <v-card-actions>
             <v-spacer />
             <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
@@ -160,7 +163,7 @@ const showGrid = ref(false)
 const gridInterval = ref(15)
 
 watch(mouseX, () => {
-  if (mouseX.value < 50) {
+  if (mouseX.value < 100) {
     showEditButton.value = true
     return
   }

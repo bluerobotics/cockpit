@@ -130,7 +130,7 @@ import type { Point2D } from '@/types/general'
 // }
 
 export default function useDragInElement(
-  targetElement: Ref<HTMLElement>,
+  targetElement: Ref<HTMLElement | undefined | null>,
   initialPosition: Point2D,
   locked: Ref<boolean>,
   snapToGrid: Ref<boolean>,
@@ -150,13 +150,18 @@ export default function useDragInElement(
   const { x: mouseX, y: mouseY } = useMouse()
 
   onMounted(() => {
-    if (targetElement.value === undefined) {
+    if (targetElement.value === undefined || targetElement.value === null) {
       return
     }
   })
 
   watch(pressing, async (isPressing: boolean, wasPressing: boolean) => {
-    if (!wasPressing && isPressing) {
+    if (
+      !wasPressing &&
+      isPressing &&
+      targetElement.value !== undefined &&
+      targetElement.value !== null
+    ) {
       dragging.value = true
       const elementLimits = targetElement.value.getBoundingClientRect()
       mouseOffset.value = {
