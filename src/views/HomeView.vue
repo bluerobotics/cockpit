@@ -1,31 +1,63 @@
 <template>
   <v-btn
+    v-if="showEditButton"
     class="ma-1 edit-mode-btn"
     icon="mdi-pencil"
     @click="editingMode = !editingMode"
   />
   <div v-if="showGrid && editingMode" class="snapping-grid"></div>
   <div class="main">
-    <v-card v-if="editingMode" class="edit-menu pa-2" width="500">
-      <v-card-title>Edit menu</v-card-title>
-      <v-card-text>
-        <span>Edit layer</span>
-      </v-card-text>
-      <v-select v-model="selectedLayer" :items="availableLayers" />
-      <div class="d-flex">
-        <v-select v-model="selectedWidgetType" :items="availableWidgetTypes" />
-        <v-btn
-          class="ma-1"
-          @click="addComponent(selectedWidgetType, selectedLayer.hash)"
-          >Add widget</v-btn
-        >
+    <MinimalWidget
+      :position="{ x: 500, y: 200 }"
+      :size="{ width: 500, height: 400 }"
+      :locked="!editingMode"
+      :snap-to-grid="showGrid"
+      :grid-interval="gridInterval"
+    >
+      <div class="edit-menu">
+        <v-card v-if="editingMode" class="pa-3 edit-card" width="500">
+          <v-card-title>Edit menu</v-card-title>
+          <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
+          <div class="d-flex align-center ma-2">
+            <v-select
+              v-model="selectedLayer"
+              :items="availableLayers"
+              hide-details
+            />
+            <v-btn
+              class="ml-2"
+              icon="mdi-delete"
+              size="small"
+              rounded="lg"
+              @click="deleteLayer(selectedLayer.hash)"
+            />
+          </div>
+          <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
+          <template v-for="widget in selectedLayer.widgets" :key="widget.hash">
+            <li class="pl-6">{{ widget.component }}</li>
+          </template>
+          <div class="d-flex align-center ma-2">
+            <v-select
+              v-model="selectedWidgetType"
+              :items="availableWidgetTypes"
+              hide-details
+            />
+            <v-btn
+              class="ml-2"
+              icon="mdi-plus"
+              size="small"
+              rounded="lg"
+              @click="addComponent(selectedWidgetType, selectedLayer.hash)"
+            />
+          </div>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
+            <v-btn class="ma-1" @click="showGrid = !showGrid">Use grid</v-btn>
+          </v-card-actions>
+        </v-card>
       </div>
-      <v-btn class="ma-1" @click="deleteLayer(selectedLayer.hash)"
-        >Remove layer</v-btn
-      >
-      <v-btn class="ma-1" @click="addLayer()">Add new layer</v-btn>
-      <v-btn class="ma-1" @click="showGrid = !showGrid">Use grid</v-btn>
-    </v-card>
+    </MinimalWidget>
     <div
       v-for="layer in state.layers.slice().reverse()"
       :key="layer.hash"
@@ -79,9 +111,9 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { useMouse, useStorage } from '@vueuse/core'
 import { v4 as uuid4 } from 'uuid'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { Point2D, SizeRect2D } from '@/types/general'
 
@@ -121,9 +153,19 @@ const cockpitGridStore: {
 }
 const state = useStorage('cockpit-grid-store', cockpitGridStore)
 
+const { x: mouseX } = useMouse()
+const showEditButton = ref(false)
 const editingMode = ref(false)
 const showGrid = ref(false)
 const gridInterval = ref(15)
+
+watch(mouseX, () => {
+  if (mouseX.value < 50) {
+    showEditButton.value = true
+    return
+  }
+  showEditButton.value = false
+})
 
 // const componentFromName = (componentName: string): AsyncComponentLoader => {
 //   return defineAsyncComponent(
@@ -270,7 +312,16 @@ const gridIntervalStart = computed(() => {
   z-index: 60;
 }
 .edit-menu {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   z-index: 100;
+}
+.edit-card {
+  height: 100%;
 }
 .snapping-grid {
   z-index: 40;
