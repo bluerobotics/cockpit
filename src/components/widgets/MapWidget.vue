@@ -3,9 +3,9 @@
     <l-map
       v-model="zoom"
       v-model:zoom="zoom"
+      v-model:bounds="bounds"
+      v-model:center="center"
       class="map"
-      :center="[-27.5935, -48.55854]"
-      :inertia="true"
     >
       <l-tile-layer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -14,28 +14,41 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
 import { LMap, LTileLayer } from '@vue-leaflet/vue-leaflet'
+import { ref, watch } from 'vue'
 
-export default {
-  name: 'MyAwesomeMap',
-  components: {
-    LMap,
-    LTileLayer,
-  },
-  data() {
-    return {
-      zoom: 10,
-    }
-  },
-  mounted() {
-    this.$nextTick(() => {
-      this.$refs.myMap.leafletObject.ANY_LEAFLET_MAP_METHOD()
-    })
-  },
-}
+// const props = defineProps<{
+//   locked: boolean
+// }>()
+
+const zoom = ref(11)
+const bounds = ref(null)
+const center = ref([-27.5935, -48.55854])
+
+// watch(zoom, (newValue, oldValue) => {
+//   if (!props.locked && newValue !== oldValue) {
+//     zoom.value = oldValue
+//     console.log(`zoom value didnt change!`)
+//   }
+//   console.log(newValue, oldValue)
+// })
+// watch(bounds, (newValue, oldValue) => {
+//   if (!props.locked && newValue !== oldValue) {
+//     bounds.value = oldValue
+//     console.log(`bounds value didnt change!`)
+//   }
+//   console.log(newValue, oldValue)
+// })
+// watch(center, (newValue, oldValue) => {
+//   if (!props.locked && newValue !== oldValue) {
+//     center.value = oldValue
+//     console.log(`center value didnt change!`)
+//   }
+//   console.log(newValue, oldValue)
+// })
 </script>
 
 <style scoped>
