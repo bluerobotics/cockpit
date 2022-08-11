@@ -32,7 +32,7 @@ div {
   user-select: none;
   height: 100%;
   width: 100%;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 .boat {
   position: absolute;
