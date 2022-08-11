@@ -3,8 +3,9 @@
     <l-map
       v-model="zoom"
       v-model:zoom="zoom"
+      class="map"
       :center="[-27.5935, -48.55854]"
-      @move="console.log('move')"
+      :inertia="true"
     >
       <l-tile-layer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -40,10 +41,13 @@ export default {
 <style scoped>
 .root {
   width: 100%;
-  height: 88%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+.map {
+  z-index: 0;
 }
 </style>
