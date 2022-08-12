@@ -270,13 +270,13 @@ const layerFromWidgetHash = (hash: string): Layer => {
 }
 
 const addLayer = (): void => {
-  state.value.layers.push({ hash: uuid4(), widgets: [] })
+  state.value.layers.unshift({ hash: uuid4(), widgets: [] })
   selectedLayer.value = state.value.layers[state.value.layers.length - 1]
 }
 
 const addComponent = (componentType: WidgetType, layerHash: string): void => {
   const layer = layerFromHash(layerHash)
-  layer.widgets.push({
+  layer.widgets.unshift({
     hash: uuid4(),
     component: componentType,
     position: { x: 10, y: 10 },
