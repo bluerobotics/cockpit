@@ -8,6 +8,7 @@
   <div v-if="showGrid && editingMode" class="snapping-grid"></div>
   <div class="main">
     <MinimalWidget
+      v-if="editingMode"
       :position="{ x: 500, y: 200 }"
       :size="{ width: 500, height: 400 }"
       :locked="!editingMode"
@@ -15,7 +16,7 @@
       :grid-interval="gridInterval"
     >
       <div class="edit-menu">
-        <v-card v-if="editingMode" class="pa-3 edit-card" width="500">
+        <v-card class="pa-3 edit-card" width="500">
           <v-card-title>Edit menu</v-card-title>
           <template v-if="selectedLayer !== undefined">
             <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
