@@ -175,7 +175,7 @@ const cursorStyle = computed(() => {
   return 'grab'
 })
 const widgetEditingColor = computed(() => {
-  return locked.value ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.1)'
+  return locked.value ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.5)'
 })
 </script>
 
@@ -203,8 +203,8 @@ const widgetEditingColor = computed(() => {
   outline-color: v-bind('widgetEditingColor');
 }
 .innerWidget.draggingWidget {
-  outline-style: dashed;
-  outline-width: 3px;
+  outline-style: solid;
+  outline-width: 1px;
   outline-color: v-bind('widgetEditingColor');
 }
 .editing-buttons {
