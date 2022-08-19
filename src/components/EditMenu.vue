@@ -1,10 +1,11 @@
 <template>
-  <MinimalWidget
+  <WidgetHugger
     :position="{ x: 500, y: 200 }"
     :size="{ width: 500, height: 400 }"
-    :locked="false"
     :snap-to-grid="false"
-    :grid-interval="0"
+    :allow-resizing="false"
+    :allow-ordering="false"
+    :allow-deleting="false"
   >
     <div class="menu">
       <v-card class="pa-3 card" width="500">
@@ -15,6 +16,8 @@
             <v-select
               v-model="selectedLayer"
               :items="store.availableLayers"
+              density="compact"
+              variant="outlined"
               no-data-text="No layers available."
               hide-details
             />
@@ -27,13 +30,22 @@
             />
           </div>
           <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
-          <template v-for="widget in selectedLayer.widgets" :key="widget.hash">
-            <li class="pl-6">{{ widget.component }}</li>
+          <template v-if="selectedLayer.widgets.length > 0">
+            <li
+              v-for="widget in selectedLayer.widgets"
+              :key="widget.hash"
+              class="pl-6"
+            >
+              {{ widget.component }}
+            </li>
           </template>
-          <div class="d-flex align-center ma-2">
+          <p v-else class="pl-6">No widgets in layer.</p>
+          <div class="d-flex align-center ma-3">
             <v-select
               v-model="selectedWidgetType"
               :items="availableWidgetTypes"
+              density="compact"
+              variant="outlined"
               hide-details
             />
             <v-btn
@@ -46,49 +58,37 @@
           </div>
         </template>
         <v-card-actions>
-          <v-spacer />
           <v-btn class="ma-1" @click="addLayer">Add new layer</v-btn>
           <v-switch
             class="ma-1"
             label="Grid"
-            :model-value="props.showGrid"
+            :model-value="showGrid"
             hide-details
-            @change="toggleGrid"
+            @change="emit('update:showGrid', !showGrid)"
           />
         </v-card-actions>
       </v-card>
     </div>
-  </MinimalWidget>
+  </WidgetHugger>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { type Layer, WidgetType } from '@/types/general'
+import { type Layer, WidgetType } from '@/types/widgets'
 
-import MinimalWidget from './MinimalWidget.vue'
+import WidgetHugger from './WidgetHugger.vue'
 
 const store = useWidgetManagerStore()
 
-const props = defineProps<{
-  showGrid: boolean
-}>()
+defineProps<{ showGrid: boolean }>()
 
 const emit = defineEmits<{
   (e: 'update:showGrid', showGrid: boolean): void
 }>()
 
-const availableWidgetTypes = computed(() => {
-  return [
-    WidgetType.IndicatorsWidgetComponent,
-    WidgetType.CounterCardComponent,
-    WidgetType.CompassWidgetComponent,
-    WidgetType.IndependentReactorComponent,
-    WidgetType.VideoPlayerComponent,
-    WidgetType.MapWidgetComponent,
-  ]
-})
+const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref<WidgetType>(availableWidgetTypes.value[0])
 const selectedLayer = ref<Layer>(store.layers[0])
 
@@ -100,10 +100,6 @@ const addLayer = (): void => {
   store.addLayer()
   selectedLayer.value = store.layers[store.layers.length - 1]
 }
-
-const toggleGrid = (): void => {
-  emit('update:showGrid', !props.showGrid)
-}
 </script>
 
 <style scoped>
@@ -114,7 +110,6 @@ const toggleGrid = (): void => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 100;
 }
 .card {
   height: 100%;

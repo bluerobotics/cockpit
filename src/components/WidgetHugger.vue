@@ -1,40 +1,40 @@
 <template>
-  <div id="outerWidgetRef" ref="outerWidgetRef" class="outerWidget">
+  <div ref="outerWidgetRef" class="outerWidget">
     <div
-      id="innerWidgetRef"
       ref="innerWidgetRef"
       class="innerWidget"
       :class="{ draggingWidget, hoveringWidget }"
     >
       <slot></slot>
     </div>
-    <template v-if="!locked">
-      <div
-        ref="resizerRef"
-        class="resizer"
-        :class="{ draggingResizer, hoveringResizer }"
+    <div
+      ref="resizerRef"
+      class="resizer"
+      :class="{ draggingResizer, hoveringResizer, allowResizing }"
+    />
+    <div v-if="hoveringWidget" class="editing-buttons">
+      <v-btn
+        v-if="allowOrdering"
+        class="ma-1"
+        size="x-small"
+        icon="mdi-arrow-down-thick"
+        @click="emit('send-back')"
       />
-      <div v-if="hoveringWidget" class="editing-buttons">
-        <v-btn
-          class="ma-1"
-          size="x-small"
-          icon="mdi-arrow-down-thick"
-          @click="emit('send-back')"
-        />
-        <v-btn
-          class="ma-1"
-          size="x-small"
-          icon="mdi-arrow-up-thick"
-          @click="emit('bring-front')"
-        />
-        <v-btn
-          class="ma-1"
-          size="x-small"
-          icon="mdi-close-thick"
-          @click="emit('remove')"
-        />
-      </div>
-    </template>
+      <v-btn
+        v-if="allowOrdering"
+        class="ma-1"
+        size="x-small"
+        icon="mdi-arrow-up-thick"
+        @click="emit('bring-front')"
+      />
+      <v-btn
+        v-if="allowDeleting"
+        class="ma-1"
+        size="x-small"
+        icon="mdi-close-thick"
+        @click="emit('remove')"
+      />
+    </div>
   </div>
 </template>
 
@@ -46,13 +46,25 @@ import useDragInElement from '@/composables/drag'
 import { constrain } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 
-const props = defineProps<{
+export interface Props {
   size: SizeRect2D
   position: Point2D
-  locked: boolean
-  snapToGrid: boolean
-  gridInterval: number
-}>()
+  snapToGrid?: boolean
+  gridInterval?: number
+  allowMoving?: boolean
+  allowResizing?: boolean
+  allowOrdering?: boolean
+  allowDeleting?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  snapToGrid: true,
+  gridInterval: 15,
+  allowMoving: true,
+  allowResizing: true,
+  allowOrdering: true,
+  allowDeleting: true,
+})
 
 const emit = defineEmits<{
   (e: 'move', position: Point2D): void
@@ -63,7 +75,8 @@ const emit = defineEmits<{
   (e: 'remove'): void
 }>()
 
-const locked = toRefs(props).locked
+const allowMoving = toRefs(props).allowMoving
+const allowResizing = toRefs(props).allowResizing
 const snapToGrid = toRefs(props).snapToGrid
 const gridInterval = toRefs(props).gridInterval
 const outerWidgetRef = ref<HTMLElement>()
@@ -78,7 +91,7 @@ const {
 } = useDragInElement(
   innerWidgetRef as Ref<HTMLElement>,
   props.position,
-  locked,
+  allowMoving,
   snapToGrid,
   gridInterval.value
 )
@@ -93,13 +106,15 @@ const {
     x: props.position.x + props.size.width,
     y: props.position.y + props.size.height,
   },
-  locked,
+  allowResizing,
   snapToGrid,
   gridInterval.value
 )
 
-// Chuncho do demo
-// Por algum motivo quando a tela eh iniciada os valores da bouding rect do outerWidget tao cagadas e nao da pra usar
+// For some reason I can't figure out the boundings of the outerWidget start with
+// random values, messing the whole moving/resizing logic. To fix that problem we
+// wait for those values to be fixed before using them.
+// TODO: Remove this workaround
 const x = ref(0)
 const widgetRawSize = computed(() => {
   if (x.value < 2 || outerWidgetRef.value === undefined) {
@@ -166,7 +181,7 @@ const positionStyle = computed(() => {
   }
 })
 const cursorStyle = computed(() => {
-  if (locked.value) {
+  if (!allowMoving.value) {
     return 'default'
   }
   if (draggingWidget.value) {
@@ -174,14 +189,13 @@ const cursorStyle = computed(() => {
   }
   return 'grab'
 })
-const widgetEditingColor = computed(() => {
-  return locked.value ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.5)'
-})
+const widgetEditingColor = computed(() =>
+  allowMoving.value ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)'
+)
 </script>
 
 <style>
 .outerWidget {
-  background-color: v-bind('widgetEditingColor');
   position: absolute;
   cursor: v-bind('cursorStyle');
   left: v-bind('positionStyle.left');
@@ -212,7 +226,7 @@ const widgetEditingColor = computed(() => {
   left: 0%;
   bottom: 0%;
 }
-.resizer {
+.resizer.allowResizing {
   width: 5px;
   height: 5px;
   cursor: se-resize;

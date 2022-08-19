@@ -2,13 +2,8 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
 
-import type {
-  Layer,
-  Point2D,
-  SizeRect2D,
-  Widget,
-  WidgetType,
-} from '@/types/general'
+import type { Point2D, SizeRect2D } from '@/types/general'
+import type { Layer, Widget, WidgetType } from '@/types/widgets'
 
 const widgetFromHash = (layers: Layer[], hash: string): Widget => {
   for (const layer of layers) {

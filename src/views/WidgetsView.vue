@@ -25,10 +25,13 @@
         v-for="widget in layer.widgets.slice().reverse()"
         :key="widget.hash"
       >
-        <MinimalWidget
+        <WidgetHugger
           :position="widget.position"
           :size="widget.size"
-          :locked="!editingMode"
+          :allow-moving="editingMode"
+          :allow-resizing="editingMode"
+          :allow-ordering="editingMode"
+          :allow-deleting="editingMode"
           :snap-to-grid="showGrid"
           :grid-interval="gridInterval"
           @move="(position) => store.updatePosition(widget.hash, position)"
@@ -62,7 +65,7 @@
             <MapWidget />
           </template>
           <!-- <component :is="componentFromName(widget.component)"></component> -->
-        </MinimalWidget>
+        </WidgetHugger>
       </template>
     </div>
   </div>
@@ -73,11 +76,11 @@ import { useMouse } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { WidgetType } from '@/types/general'
+import { WidgetType } from '@/types/widgets'
 
 import EditMenu from '../components/EditMenu.vue'
-import MinimalWidget from '../components/MinimalWidget.vue'
 import SnappingGrid from '../components/SnappingGrid.vue'
+import WidgetHugger from '../components/WidgetHugger.vue'
 import CompassWidget from '../components/widgets/CompassWidget.vue'
 import CounterCard from '../components/widgets/CounterCard.vue'
 import IndependentReactor from '../components/widgets/IndependentReactor.vue'
