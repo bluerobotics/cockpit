@@ -228,8 +228,8 @@ const widgetEditingColor = computed(() =>
   bottom: 0%;
 }
 .resizer.allowResizing {
-  width: 5px;
-  height: 5px;
+  width: 10px;
+  height: 10px;
   cursor: se-resize;
   user-select: none;
   position: absolute;
