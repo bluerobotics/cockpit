@@ -73,7 +73,7 @@
 
 <script setup lang="ts">
 import { useMouse } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
@@ -96,8 +96,12 @@ const editingMode = ref(false)
 const showGrid = ref(false)
 const gridInterval = ref(15)
 
+const widgetsPresent = computed(() => {
+  return store.layers.some((layer) => layer.widgets.length != 0)
+})
+
 watch(mouseX, () => {
-  if (mouseX.value < 100) {
+  if (mouseX.value < 100 || !widgetsPresent.value) {
     showEditButton.value = true
     return
   }
