@@ -28,6 +28,13 @@
         @click="emit('bring-front')"
       />
       <v-btn
+        v-if="allowResizing"
+        class="ma-1"
+        size="x-small"
+        icon="mdi-overscan"
+        @click="fillScreen"
+      />
+      <v-btn
         v-if="allowDeleting"
         class="ma-1"
         size="x-small"
@@ -155,6 +162,12 @@ const mousePosition = computed(() => {
     y: mouseY.value,
   }
 })
+
+const fillScreen = async (): Promise<void> => {
+  widgetRawPosition.value = { x: 0, y: 0 }
+  await new Promise((r) => setTimeout(r, 10))
+  resizerPosition.value = { x: window.innerWidth, y: window.innerHeight }
+}
 
 watch(widgetFinalPosition, () => {
   emit('move', widgetFinalPosition.value)
