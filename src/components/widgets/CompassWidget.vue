@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="compass">
     <img class="boat" src="@/assets/boat.svg" height="200" draggable="false" />
-    <img class="compass" src="@/assets/compass.svg" draggable="false" />
+    <img class="compass-ticks" src="@/assets/nautic-compass.svg" draggable="false" />
   </div>
 </template>
 
@@ -18,7 +18,7 @@ const angleStyle = computed(() => {
 </script>
 
 <style scoped>
-div {
+.compass {
   width: 100%;
   height: 100%;
   display: flex;
@@ -26,7 +26,7 @@ div {
   align-items: center;
   justify-content: center;
 }
-.compass {
+.compass-ticks {
   transition: -webkit-transform 0.8s;
   transform: rotate(v-bind('angleStyle'));
   user-select: none;
@@ -43,6 +43,6 @@ div {
   bottom: 0;
   user-select: none;
   height: 55%;
-  z-index: 200;
+  z-index: 1;
 }
 </style>
