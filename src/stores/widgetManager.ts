@@ -40,21 +40,23 @@ export const useWidgetManagerStore = defineStore({
   state: () => ({
     layers: useStorage('cockpit-widget-layers', [] as Layer[]),
   }),
-  getters: {
-    availableLayers: (state) => {
-      return state.layers.slice().map((layer) => {
-        return {
-          title: layer.hash,
-          value: layer,
-        }
-      })
-    },
-  },
   actions: {
+    addLayer() {
+      this.layers.unshift({ hash: uuid4(), widgets: [] })
+    },
     deleteLayer(hash: string) {
       const layer = layerFromHash(this.layers, hash)
       const index = this.layers.indexOf(layer)
       this.layers.splice(index, 1)
+    },
+    addWidget(widgetType: WidgetType, layerHash: string) {
+      const layer = layerFromHash(this.layers, layerHash)
+      layer.widgets.unshift({
+        hash: uuid4(),
+        component: widgetType,
+        position: { x: 10, y: 10 },
+        size: { width: 200, height: 200 },
+      })
     },
     deleteWidget(hash: string) {
       const widget = widgetFromHash(this.layers, hash)
@@ -83,18 +85,6 @@ export const useWidgetManagerStore = defineStore({
       const index = layer.widgets.indexOf(widget)
       layer.widgets.splice(index, 1)
       layer.widgets.push(widget)
-    },
-    addLayer() {
-      this.layers.unshift({ hash: uuid4(), widgets: [] })
-    },
-    addWidget(widgetType: WidgetType, layerHash: string) {
-      const layer = layerFromHash(this.layers, layerHash)
-      layer.widgets.unshift({
-        hash: uuid4(),
-        component: widgetType,
-        position: { x: 10, y: 10 },
-        size: { width: 200, height: 200 },
-      })
     },
   },
 })

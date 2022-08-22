@@ -15,7 +15,7 @@
           <div class="d-flex align-center ma-2">
             <v-select
               v-model="selectedLayer"
-              :items="store.availableLayers"
+              :items="availableLayers"
               density="compact"
               variant="outlined"
               no-data-text="No layers available."
@@ -91,6 +91,15 @@ const emit = defineEmits<{
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref<WidgetType>(availableWidgetTypes.value[0])
 const selectedLayer = ref<Layer>(store.layers[0])
+
+const availableLayers = computed(() => {
+  return store.layers.slice().map((layer) => {
+    return {
+      title: layer.hash,
+      value: layer,
+    }
+  })
+})
 
 const deleteLayer = (): void => {
   store.deleteLayer(selectedLayer.value.hash)

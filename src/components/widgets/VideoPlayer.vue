@@ -15,7 +15,6 @@ const sampleVideos = [
 ]
 videoSource.value =
   sampleVideos[Math.floor(Math.random() * sampleVideos.length)]
-console.log(videoSource.value)
 </script>
 
 <style scoped>
