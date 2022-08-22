@@ -208,6 +208,7 @@ const widgetEditingColor = computed(() =>
   height: 100%;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 }
