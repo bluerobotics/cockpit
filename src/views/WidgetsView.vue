@@ -40,18 +40,10 @@
           @bring-front="store.bringWidgetFront(widget.hash)"
           @remove="store.deleteWidget(widget.hash)"
         >
-          <template v-if="widget.component === WidgetType.CounterCardComponent">
-            <CounterCard />
-          </template>
           <template
             v-if="widget.component === WidgetType.CompassWidgetComponent"
           >
             <CompassWidget />
-          </template>
-          <template
-            v-if="widget.component === WidgetType.IndependentReactorComponent"
-          >
-            <IndependentReactor />
           </template>
           <template
             v-if="widget.component === WidgetType.IndicatorsWidgetComponent"
@@ -82,8 +74,6 @@ import EditMenu from '../components/EditMenu.vue'
 import SnappingGrid from '../components/SnappingGrid.vue'
 import WidgetHugger from '../components/WidgetHugger.vue'
 import CompassWidget from '../components/widgets/CompassWidget.vue'
-import CounterCard from '../components/widgets/CounterCard.vue'
-import IndependentReactor from '../components/widgets/IndependentReactor.vue'
 import IndicatorsWidget from '../components/widgets/IndicatorsWidget.vue'
 import MapWidget from '../components/widgets/MapWidget.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
