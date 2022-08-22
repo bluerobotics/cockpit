@@ -1,7 +1,7 @@
 <template>
   <div>
     <img class="boat" src="@/assets/boat.svg" height="200" draggable="false" />
-    <img class="compass" src="@/assets/compass1.svg" draggable="false" />
+    <img class="compass" src="@/assets/compass.svg" draggable="false" />
   </div>
 </template>
 
