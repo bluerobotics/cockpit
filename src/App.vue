@@ -21,7 +21,7 @@ export default defineComponent({
 </script>
 
 <style>
-body {
-  overflow: hidden;
+html {
+  overflow: hidden !important;
 }
 </style>
