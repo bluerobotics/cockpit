@@ -1,7 +1,7 @@
 <template>
   <WidgetHugger
     :position="{ x: 500, y: 200 }"
-    :size="{ width: 500, height: 400 }"
+    :size="{ width: 500, height: 450 }"
     :snap-to-grid="false"
     :allow-resizing="false"
     :allow-ordering="false"
@@ -10,7 +10,7 @@
     <div class="menu">
       <v-card class="pa-3 card" width="500">
         <v-card-title>Edit menu</v-card-title>
-        <template v-if="selectedLayer !== undefined">
+        <div v-if="selectedLayer !== undefined">
           <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
           <div class="d-flex align-center ma-2">
             <v-select
@@ -56,7 +56,7 @@
               @click="store.addWidget(selectedWidgetType, selectedLayer.hash)"
             />
           </div>
-        </template>
+        </div>
         <v-card-actions>
           <v-btn class="ma-1" @click="addLayer">Add new layer</v-btn>
           <v-switch
@@ -109,9 +109,12 @@ const addLayer = (): void => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 }
 .card {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 </style>
