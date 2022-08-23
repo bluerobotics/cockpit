@@ -1,7 +1,7 @@
 <template>
   <WidgetHugger
-    :position="{ x: 500, y: 200 }"
-    :size="{ width: 600, height: 450 }"
+    :position="initialPosition"
+    :size="initialSize"
     :snap-to-grid="false"
     :allow-resizing="false"
     :allow-ordering="false"
@@ -89,6 +89,11 @@ const emit = defineEmits<{
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref<WidgetType>(availableWidgetTypes.value[0])
 const selectedLayer = ref<Layer>(store.layers[0])
+const initialSize = { width: 600, height: 450 }
+const initialPosition = {
+  x: (window.innerWidth - initialSize.width) / 2,
+  y: (window.innerHeight - initialSize.height) / 2,
+}
 
 const availableLayers = computed(() => {
   return store.layers.slice().map((layer) => {
@@ -111,7 +116,7 @@ const addLayer = (): void => {
 
 <style scoped>
 .card {
-  height: 100%;
-  width: 100%;
+  height: 95%;
+  width: 95%;
 }
 </style>
