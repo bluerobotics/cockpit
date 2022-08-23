@@ -101,11 +101,11 @@ const availableLayers = computed(() => {
 
 const deleteLayer = (): void => {
   store.deleteLayer(selectedLayer.value.hash)
-  selectedLayer.value = store.layers[store.layers.length - 1]
+  selectedLayer.value = store.layers[0]
 }
 const addLayer = (): void => {
   store.addLayer()
-  selectedLayer.value = store.layers[store.layers.length - 1]
+  selectedLayer.value = store.layers[0]
 }
 </script>
 
