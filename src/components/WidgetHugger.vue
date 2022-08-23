@@ -46,7 +46,6 @@
 </template>
 
 <script setup lang="ts">
-import { useMouse } from '@vueuse/core'
 import { type Ref, computed, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
@@ -89,7 +88,6 @@ const gridInterval = toRefs(props).gridInterval
 const outerWidgetRef = ref<HTMLElement>()
 const innerWidgetRef = ref<HTMLElement>()
 const resizerRef = ref<HTMLElement>()
-const { x: mouseX, y: mouseY } = useMouse()
 
 const {
   position: widgetRawPosition,
@@ -118,55 +116,38 @@ const {
   gridInterval.value
 )
 
-// For some reason I can't figure out the boundings of the outerWidget start with
-// random values, messing the whole moving/resizing logic. To fix that problem we
-// wait for those values to be fixed before using them.
-// TODO: Remove this workaround
-const x = ref(0)
-const widgetRawSize = computed(() => {
-  if (x.value < 2 || outerWidgetRef.value === undefined) {
-    x.value += 1 // eslint-disable-line vue/no-side-effects-in-computed-properties
-    return {
-      width: resizerPosition.value.x - widgetFinalPosition.value.x,
-      height: resizerPosition.value.y - widgetFinalPosition.value.y,
-    }
-  }
-  const widgetLimits = outerWidgetRef.value.getBoundingClientRect()
-  return {
-    width: resizerPosition.value.x - widgetLimits.x,
-    height: resizerPosition.value.y - widgetLimits.y,
-  }
-})
-
-const widgetFinalPosition = computed((): Point2D => {
+const widgetFinalPosition = ref(props.position)
+watch(widgetRawPosition, (position) => {
   if (innerWidgetRef.value === undefined || resizerRef.value === undefined) {
-    return props.position
+    return
   }
   const widgetLimits = innerWidgetRef.value.getBoundingClientRect()
   const maxX = window.innerWidth - widgetLimits.width
   const maxY = window.innerHeight - widgetLimits.height
-  return {
-    x: constrain(widgetRawPosition.value.x, 0, maxX),
-    y: constrain(widgetRawPosition.value.y, 0, maxY),
-  }
-})
-const widgetFinalSize = computed((): SizeRect2D => {
-  return {
-    width: widgetRawSize.value.width,
-    height: widgetRawSize.value.height,
-  }
-})
-const mousePosition = computed(() => {
-  return {
-    x: mouseX.value,
-    y: mouseY.value,
+  widgetFinalPosition.value = {
+    x: constrain(position.x, 0, maxX),
+    y: constrain(position.y, 0, maxY),
   }
 })
 
-const fillScreen = async (): Promise<void> => {
-  widgetRawPosition.value = { x: 0, y: 0 }
-  await new Promise((r) => setTimeout(r, 10))
-  resizerPosition.value = { x: window.innerWidth, y: window.innerHeight }
+const widgetFinalSize = ref(props.size)
+watch(resizerPosition, (position) => {
+  if (outerWidgetRef.value === undefined) {
+    return
+  }
+  const widgetLimits = outerWidgetRef.value.getBoundingClientRect()
+  widgetFinalSize.value = {
+    width: position.x - widgetLimits.x,
+    height: position.y - widgetLimits.y,
+  }
+})
+
+const fillScreen = (): void => {
+  widgetFinalPosition.value = { x: 0, y: 0 }
+  widgetFinalSize.value = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }
 }
 
 watch(widgetFinalPosition, () => {
@@ -174,11 +155,6 @@ watch(widgetFinalPosition, () => {
 })
 watch(widgetFinalSize, () => {
   emit('resize', widgetFinalSize.value)
-})
-watch(draggingWidget, async (isDragging: boolean, wasDragging: boolean) => {
-  if (wasDragging && !isDragging) {
-    emit('drop', mousePosition.value)
-  }
 })
 
 const sizeStyle = computed(() => {
