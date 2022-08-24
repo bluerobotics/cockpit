@@ -46,6 +46,9 @@
           <template v-if="widget.component === WidgetType.Map">
             <Map />
           </template>
+          <template v-if="widget.component === WidgetType.VideoPlayer">
+            <VideoPlayer />
+          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>

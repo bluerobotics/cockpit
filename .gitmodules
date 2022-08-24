@@ -1,0 +1,3 @@
+[submodule "src/assets/sample-videos/Big-Buck-Bunny"]
+	path = src/assets/sample-videos/Big-Buck-Bunny
+	url = https://github.com/chintan9/Big-Buck-Bunny.git
