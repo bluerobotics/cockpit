@@ -8,6 +8,7 @@ export enum WidgetType {
   Compass = 'Compass',
   Indicators = 'Indicators',
   Map = 'Map',
+  VideoPlayer = 'VideoPlayer',
 }
 
 export type Widget = {
