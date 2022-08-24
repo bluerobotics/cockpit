@@ -17,7 +17,7 @@ module.exports = {
   },
   plugins: ['jsdoc', 'simple-import-sort'],
   rules: {
-    'func-style': ['error', 'declaration'],
+    'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
     'import/extensions': 'off',
     'import/order': 'off',
     'jsdoc/require-jsdoc': [
@@ -90,6 +90,7 @@ module.exports = {
     ],
     'vue/valid-v-slot': ['error', { allowModifiers: true }],
     'no-await-in-loop': 'off',
+    'vue/multi-word-component-names': 'off',
   },
   settings: {
     jsdoc: {
