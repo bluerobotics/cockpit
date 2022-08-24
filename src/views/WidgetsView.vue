@@ -37,6 +37,9 @@
           @bring-front="store.bringWidgetFront(widget)"
           @remove="store.deleteWidget(widget)"
         >
+          <template v-if="widget.component === WidgetType.Compass">
+            <Compass />
+          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
