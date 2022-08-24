@@ -43,6 +43,9 @@
           <template v-if="widget.component === WidgetType.Indicators">
             <Indicators />
           </template>
+          <template v-if="widget.component === WidgetType.Map">
+            <Map />
+          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
