@@ -19,3 +19,10 @@ export default defineComponent({
   },
 })
 </script>
+
+<style>
+html {
+  /* Removes the scrollbar */
+  overflow: hidden !important;
+}
+</style>
