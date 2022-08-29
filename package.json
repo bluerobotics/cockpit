@@ -20,6 +20,7 @@
     "@mdi/font": "5.9.55",
     "@vue-leaflet/vue-leaflet": "^0.6.1",
     "@vueuse/core": "^9.1.1",
+    "browser-or-node": "^2.0.0",
     "leaflet": "^1.8.0",
     "pinia": "^2.0.13",
     "roboto-fontface": "*",
