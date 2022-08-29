@@ -22,8 +22,8 @@ export default defineConfig({
     environment: 'jsdom',
     coverage: {
       branches: 90,
-      functions: 85,
-      lines: 95,
+      functions: 95,
+      lines: 98,
       perFile: true,
       reporter: ['html', 'text'],
       statements: 95,
