@@ -1,4 +1,4 @@
-export {}
+import { isBrowser } from 'browser-or-node'
 
 declare global {
   /**
@@ -67,6 +67,11 @@ declare global {
   }
 }
 
+// Use global as window when running for browsers
+if (isBrowser) {
+  var global = window /* eslint-disable-line */
+}
+
 // Global functions
 global.assert = function (result: boolean, message?: string) {
   if (!result) throw new Error(message ?? 'Assert failed')
@@ -99,3 +104,5 @@ Array.prototype.random = function <T>(this: T[]): T | undefined {
 Array.prototype.sum = function (this: number[]): number {
   return this.reduce((a, b) => a + b, 0)
 }
+
+export default global
