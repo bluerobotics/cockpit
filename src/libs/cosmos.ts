@@ -72,6 +72,8 @@ if (isBrowser) {
   var global = window /* eslint-disable-line */
 }
 
+/* c8 ignore start */
+
 // Global functions
 global.assert = function (result: boolean, message?: string) {
   if (!result) throw new Error(message ?? 'Assert failed')
@@ -83,6 +85,8 @@ global.unimplemented = function (message?: string) {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-empty-function
 global.unused = function <T>(variable: T) {}
+
+/* c8 ignore stop */
 
 // Extend types
 Array.prototype.first = function <T>(this: T[]): T | undefined {
