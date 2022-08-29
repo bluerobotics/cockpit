@@ -5,7 +5,6 @@ import { expect, test } from 'vitest'
 test('Global functions', () => {
   expect(() => assert(true === false, 'What!')).toThrowError('What!')
   expect(() => assert(true === true, 'No!')).not.toThrowError('No!')
-  expect(() => unused(true)).not.toThrowError()
 })
 
 test('Array', () => {
@@ -17,4 +16,6 @@ test('Array', () => {
   expect([1, 2]).toContain([1, 2].random())
   expect([].sum()).toBe(0)
   expect(arrayTen.sum()).toBe(45)
+  expect([].last()).toBe(undefined)
+  expect([1, 2].last()).toBe(2)
 })
