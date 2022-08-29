@@ -45,6 +45,13 @@ declare global {
     isEmpty(): boolean
 
     /**
+     * Return the last element of array
+     *
+     * @returns T | undefined
+     */
+    last(): T | undefined
+
+    /**
      * Return a random element if available
      *
      * @returns T | undefined
@@ -75,6 +82,10 @@ global.unused = function <T>(variable: T) {}
 // Extend types
 Array.prototype.first = function <T>(this: T[]): T | undefined {
   return this.isEmpty() ? undefined : this[0]
+}
+
+Array.prototype.last = function <T>(this: T[]): T | undefined {
+  return this.isEmpty() ? undefined : this[this.length - 1]
 }
 
 Array.prototype.isEmpty = function <T>(this: T[]): boolean {
