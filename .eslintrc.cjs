@@ -73,6 +73,7 @@ module.exports = {
     'semi': ['error', 'never'],
     'simple-import-sort/exports': 'error',
     'simple-import-sort/imports': 'error',
+    'spaced-comment': ['error', 'always'],
     'sort-imports': 'off',
     '@typescript-eslint/no-useless-constructor': ['error'],
     '@typescript-eslint/no-shadow': ['error'],
