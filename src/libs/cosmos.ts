@@ -76,7 +76,7 @@ global.unimplemented = function (message?: string) {
   console.warn(new Error(message ?? 'Not implemented'))
 }
 
-//eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-empty-function
+// eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-empty-function
 global.unused = function <T>(variable: T) {}
 
 // Extend types
