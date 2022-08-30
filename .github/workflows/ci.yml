@@ -23,5 +23,6 @@ jobs:
       - name: Run yarn
         run: |
           yarn install
+          yarn lint
           yarn build
           xvfb-run --auto-servernum yarn test:ci
