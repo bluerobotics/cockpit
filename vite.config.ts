@@ -1,11 +1,17 @@
 import vue from '@vitejs/plugin-vue'
 import vuetify from '@vuetify/vite-plugin'
 import { defineConfig } from 'vite'
+import electron from 'vite-plugin-electron'
 
 const path = require('path') // eslint-disable-line @typescript-eslint/no-var-requires
 
 export default defineConfig({
   plugins: [
+    electron({
+      main: {
+        entry: 'electron/main.ts',
+      },
+    }),
     vue(),
     vuetify({
       autoImport: true,
