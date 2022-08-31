@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Test
+    name: Test and Deploy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,3 +26,14 @@ jobs:
           yarn lint
           yarn build
           xvfb-run --auto-servernum yarn test:ci
+
+      - name: Build electron app
+        run: |
+          yarn deploy:electron
+          mv dist/cockpit*.AppImage dist/cockpit.AppImage
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: cockpit
+          path: dist/cockpit*.AppImage
