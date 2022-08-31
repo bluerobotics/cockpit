@@ -54,8 +54,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Layer } layer - Layer
    */
   function addWidget(widgetType: WidgetType, layer: Layer): void {
+    const widgetHash = uuid4()
     layer.widgets.unshift({
-      hash: uuid4(),
+      hash: widgetHash,
+      name: widgetHash,
       component: widgetType,
       position: { x: 10, y: 10 },
       size: { width: 200, height: 200 },
