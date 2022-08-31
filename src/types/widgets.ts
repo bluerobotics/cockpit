@@ -28,6 +28,10 @@ export type Widget = {
    * Size of the widget box
    */
   size: SizeRect2D
+  /**
+   * Editable name for the widget
+   */
+  name: string
 }
 
 export type Layer = {
