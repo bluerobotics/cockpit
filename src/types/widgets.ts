@@ -13,7 +13,7 @@ export enum WidgetType {
 
 export type Widget = {
   /**
-   * Unique identification of the widget
+   * Unique identifier for the widget
    */
   hash: string
   /**
@@ -32,11 +32,11 @@ export type Widget = {
 
 export type Layer = {
   /**
-   *
+   * Unique identifier for the layer
    */
   hash: string
   /**
-   *
+   * Array of widgets that are stored in the layer
    */
   widgets: Widget[]
 }
