@@ -39,4 +39,8 @@ export type Layer = {
    * Array of widgets that are stored in the layer
    */
   widgets: Widget[]
+  /**
+   * Editable name for the layer
+   */
+  name: string
 }
