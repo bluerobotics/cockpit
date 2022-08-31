@@ -39,13 +39,25 @@
         class="ma-1"
         size="x-small"
         icon="mdi-close-thick"
-        @click="emit('remove')"
+        @click="widgetDeleteDialog.reveal"
       />
     </div>
   </div>
+  <teleport to="body">
+    <v-dialog v-model="widgetDeleteDialogRevealed">
+      <v-card class="pa-2">
+        <v-card-title>Delete widget?</v-card-title>
+        <v-card-actions>
+          <v-btn @click="widgetDeleteDialog.confirm">Yes</v-btn>
+          <v-btn @click="widgetDeleteDialog.cancel">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </teleport>
 </template>
 
 <script setup lang="ts">
+import { useConfirmDialog } from '@vueuse/core'
 import { type Ref, computed, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
@@ -202,6 +214,10 @@ const cursorStyle = computed(() => {
 const widgetEditingColor = computed(() =>
   allowMoving.value ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)'
 )
+
+const widgetDeleteDialogRevealed = ref(false)
+const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
+widgetDeleteDialog.onConfirm(() => emit('remove'))
 </script>
 
 <style>
