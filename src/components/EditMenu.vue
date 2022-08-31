@@ -25,7 +25,7 @@
             icon="mdi-delete"
             size="small"
             rounded="lg"
-            @click="deleteLayer"
+            @click="layerDeleteDialog.reveal"
           />
         </div>
         <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
@@ -67,10 +67,22 @@
         />
       </v-card-actions>
     </v-card>
+    <teleport to="body">
+      <v-dialog v-model="layerDeleteDialogRevealed">
+        <v-card class="pa-2">
+          <v-card-title>Delete layer?</v-card-title>
+          <v-card-actions>
+            <v-btn @click="layerDeleteDialog.confirm">Yes</v-btn>
+            <v-btn @click="layerDeleteDialog.cancel">Cancel</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </teleport>
   </WidgetHugger>
 </template>
 
 <script setup lang="ts">
+import { useConfirmDialog } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -115,6 +127,10 @@ const addLayer = (): void => {
   store.addLayer()
   selectedLayer.value = store.layers[0]
 }
+
+const layerDeleteDialogRevealed = ref(false)
+const layerDeleteDialog = useConfirmDialog(layerDeleteDialogRevealed)
+layerDeleteDialog.onConfirm(deleteLayer)
 </script>
 
 <style scoped>
