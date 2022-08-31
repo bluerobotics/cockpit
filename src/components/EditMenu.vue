@@ -114,7 +114,7 @@ const initialPosition = {
 
 const availableLayers = computed(() =>
   store.layers.slice().map((layer) => ({
-    title: layer.hash,
+    title: layer.name,
     value: layer,
   }))
 )

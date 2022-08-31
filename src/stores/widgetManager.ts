@@ -2,6 +2,7 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
 
+import * as Words from '@/libs/funny-name/words'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { Layer, Widget, WidgetType } from '@/types/widgets'
 
@@ -29,7 +30,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * Adds new layer to the store, with a randomly generated hash with UUID4 pattern
    */
   function addLayer(): void {
-    layers.value.unshift({ hash: uuid4(), widgets: [] })
+    layers.value.unshift({
+      hash: uuid4(),
+      name: `Layer ${Words.animalsOcean.random()}`,
+      widgets: [],
+    })
   }
 
   /**
