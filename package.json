@@ -2,10 +2,13 @@
   "name": "cockpit",
   "version": "0.0.0",
   "private": true,
+  "main": "dist/electron/main.js",
   "scripts": {
     "build": "vite build",
     "build:serve": "yarn build && yarn serve",
     "coverage": "vitest --coverage",
+    "deploy:electron:dir": "electron-builder --dir",
+    "deploy:electron": "electron-builder --publish=never",
     "dev": "vite",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore --max-warnings=0",
     "preview": "vite preview --port 5050",
@@ -45,6 +48,8 @@
     "@vuetify/vite-plugin": "^1.0.0-alpha.0",
     "c8": "^7.11.3",
     "cypress": "^9.5.4",
+    "electron": "^20.1.0",
+    "electron-builder": "^23.3.3",
     "eslint": "^8.5.0",
     "eslint-plugin-cypress": "^2.12.1",
     "eslint-plugin-jsdoc": "^39.3.0",
@@ -57,6 +62,7 @@
     "start-server-and-test": "^1.14.0",
     "typescript": "~4.6.3",
     "vite": "^2.9.5",
+    "vite-plugin-electron": "^0.9.2",
     "vitest": "^0.20.3",
     "vue-cli-plugin-vuetify": "~2.4.8",
     "vue-tsc": "^0.34.7",
@@ -66,5 +72,14 @@
     "semi": false,
     "singleQuote": true,
     "quoteProps": "consistent"
+  },
+  "build": {
+    "files": [
+      "dist"
+    ],
+    "appId": "org.bluerobotics.cockpit",
+    "mac": {
+      "category": "public.app-category.entertainment"
+    }
   }
 }
