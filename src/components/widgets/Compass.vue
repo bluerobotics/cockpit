@@ -12,11 +12,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useBoatStore } from '@/stores/boat'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 
-const store = useBoatStore()
+const store = useMainVehicleStore()
 
-const angleStyle = computed(() => `${store.heading}deg`)
+const angleStyle = computed(() => `${store.attitude.yaw ?? 0}rad`)
 </script>
 
 <style scoped>
