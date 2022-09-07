@@ -3,12 +3,13 @@ import { reactive, ref } from 'vue'
 
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
-import type { Message } from '@/libs/connection/messages/mavlink2rest'
+import type { Package } from '@/libs/connection/messages/mavlink2rest'
 import {
   MavAutopilot,
   MAVLinkType,
   MavType,
 } from '@/libs/connection/messages/mavlink2rest-enum'
+import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type { Attitude, Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
@@ -54,9 +55,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     vehicles
       .last()
       .deref()
-      .onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (message: Message) => {
-        firmwareType.value = message['autopilot']['type']
-        vehicleType.value = message['mavtype']['type']
+      .onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
+        if (pack.header.system_id != 1 || pack.header.component_id != 1) {
+          return
+        }
+
+        const heartbeat = pack.message as Message.Heartbeat
+        firmwareType.value = heartbeat.autopilot.type
+        vehicleType.value = heartbeat.mavtype.type
         lastHeartbeat.value = new Date()
       })
   })
