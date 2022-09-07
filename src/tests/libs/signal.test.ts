@@ -180,7 +180,10 @@ describe('SignalTyped Tests', () => {
   it('notify() should execute the callback with the payload', () => {
     const name = 'add'
     signal.add(name, receiver.onReceive)
-    signal.notify(signal.slots.get(name), 5)
+    const slot = signal.slots.get(name)
+    expect(slot).not.toBe(undefined)
+    // Ensure to be not undefined by previous line
+    slot && signal.notify(slot, 5)
     expect(receiver.onReceive).toHaveBeenCalledWith(5)
   })
 })
