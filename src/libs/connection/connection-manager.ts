@@ -9,7 +9,8 @@ import { WebSocketConnection } from './websocket-connection'
  */
 export class ConnectionManager {
   private static _connections: Connection.Abstract[] = []
-  private static _mainConnection: WeakRef<Connection.Abstract> = undefined
+  private static _mainConnection: WeakRef<Connection.Abstract> | undefined =
+    undefined
 
   // Signals
   static onMainConnection = new Signal<WeakRef<Connection.Abstract>>()
