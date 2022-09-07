@@ -94,22 +94,11 @@ export class Coordinates {
    * Set altitude information
    *
    * @param  {number?} altitude
-   * @param  {number?} altitudeAccuracy
    * @returns {Coordinates}
    */
-  setAltitude(altitude?: number, altitudeAccuracy?: number): Coordinates {
+  setAltitude(altitude?: number): Coordinates {
     if (altitude !== undefined) {
       this.altitude = altitude
-    }
-
-    if (altitudeAccuracy !== undefined) {
-      if (altitudeAccuracy < 0 || altitudeAccuracy > 1) {
-        console.error(
-          `altitudeAccuracy outside of valid range: ${altitudeAccuracy}`
-        )
-        return this
-      }
-      this.altitudeAccuracy = altitudeAccuracy
     }
 
     return this

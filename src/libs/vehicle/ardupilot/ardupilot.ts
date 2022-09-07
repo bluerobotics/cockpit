@@ -15,9 +15,8 @@ import * as Vehicle from '../vehicle'
 export class ArduPilot extends Vehicle.Abstract {
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _coordinates = new Coordinates({
-    accuracy: 0,
+    precision: 0,
     altitude: 0,
-    altitudeAccuracy: 0,
     latitude: 0,
     longitude: 0,
   })
@@ -70,9 +69,8 @@ export class ArduPilot extends Vehicle.Abstract {
       }
       case MAVLinkType.GLOBAL_POSITION_INT: {
         const position = mavlink_message.message as Message.GlobalPositionInt
-        this._coordinates.accuracy = 1
+        this._coordinates.precision = 1
         this._coordinates.altitude = position.alt / 1000 // (mm to meters)
-        this._coordinates.altitudeAccuracy = 1
         this._coordinates.latitude = position.lat / 1e7 // DegE7 to Deg
         this._coordinates.longitude = position.lon / 1e7 // DegE7 to Deg
         this.onPosition.emit()
