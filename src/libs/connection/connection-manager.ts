@@ -83,8 +83,8 @@ export class ConnectionManager {
     ConnectionManager._mainConnection = new WeakRef(connection)
     // There is no constructor and updating the register is not expensive in this function
     ConnectionManager.onMainConnection.register_caller(
-      (): Connection.Abstract =>
-        ConnectionManager._mainConnection.deref() as Connection.Abstract
+      // @ts-ignore: `_mainConnection is not undefined since we set it on previous line`
+      (): Connection.Abstract => ConnectionManager._mainConnection
     )
     ConnectionManager.onMainConnection.emit()
   }
@@ -97,7 +97,7 @@ export class ConnectionManager {
   static mainConnection(): Connection.Abstract | undefined {
     // Be sure that we have a valid connection
     ConnectionManager._updateMainConnection()
-    return ConnectionManager._mainConnection.deref()
+    return ConnectionManager._mainConnection?.deref()
   }
 
   /**
