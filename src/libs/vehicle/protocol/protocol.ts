@@ -17,6 +17,6 @@ export abstract class Abstract {
   abstract type(): Type
 
   abstract write(data: Uint8Array): boolean
-  abstract onRead(callback: (data: Uint8Array) => void)
+  abstract onRead(callback: (data: Uint8Array) => void): void
 }
 /* c8 ignore stop */
