@@ -128,8 +128,6 @@ function createVehicleFromMessage(message: Uint8Array): void {
         `Vehicle type not supported: ${system_id}/${component_id}: ${heartbeat.mavtype.type}`
       )
   }
-
-  console.log(heartbeat)
 }
 
 ConnectionManager.onRead.add(createVehicleFromMessage)
