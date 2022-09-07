@@ -56,7 +56,7 @@ export class ArduPilot extends Vehicle.Abstract {
     // Where add will use the template argument type to define the lambda argument type
     this.onMAVLinkMessage.emit_value(
       mavlink_message.message.type,
-      mavlink_message.message
+      mavlink_message
     )
 
     switch (mavlink_message.message.type) {
