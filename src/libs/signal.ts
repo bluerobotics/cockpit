@@ -3,6 +3,7 @@
  * https://raw.githubusercontent.com/rgr-myrg/signal-ts/7e10237c565e14b680029834c970ea49b0ed60dd/src/ts/Signal.ts
  * From: https://github.com/rgr-myrg/signal-ts
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
  * Type specialized signal, where a signal can only emit a single type
@@ -110,9 +111,9 @@ export class Signal<T> {
  * Generic signal that can emit multiple types based on typeof
  */
 export class SignalTyped {
-  public slots: Map<string, ((arg1: unknown) => void)[]> = new Map()
-  public onces: Map<string, ((arg1: unknown) => void)[]> = new Map()
-  public caller: (() => unknown) | undefined = undefined
+  public slots: Map<string, ((arg1: any) => void)[]> = new Map()
+  public onces: Map<string, ((arg1: any) => void)[]> = new Map()
+  public caller: (() => any) | undefined = undefined // eslint-disable-line
 
   /**
    * Add slots for generic types
@@ -121,7 +122,7 @@ export class SignalTyped {
    * @param {Function} slot
    * @returns {SignalTyped}
    */
-  public add(typeof_value: string, slot: (arg1: unknown) => void): SignalTyped {
+  public add(typeof_value: string, slot: (arg1: any) => void): SignalTyped { // eslint-disable-line
     if (typeof slot === 'function') {
       if (!this.slots.has(typeof_value)) {
         this.slots.set(typeof_value, [])
