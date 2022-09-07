@@ -23,11 +23,15 @@ export namespace Type {
    * @returns {Type}
    */
   export function fromProtocol(protocol: string): Type {
-    return (
-      Object.values(Type)
-        .filter((item) => protocol.startsWith(item as string))
-        .first() ?? Type.None
-    )
+    const result = Object.values(Type)
+      .filter((item) => protocol.startsWith(item as string))
+      .first()
+    /* c8 ignore start */
+    if (typeof result === 'function') {
+      return Type.None
+    }
+    /* c8 ignore end */
+    return result ?? Type.None
   }
 }
 
