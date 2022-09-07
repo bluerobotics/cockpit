@@ -10,6 +10,7 @@ import {
   MavType,
 } from '@/libs/connection/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
+import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type { Attitude, Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
@@ -39,23 +40,21 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     Protocol.Type.MAVLink
   )
 
+  const getAutoPilot = (vehicles: WeakRef<Vehicle.Abstract>[]): ArduPilot => {
+    const vehicle = vehicles?.last()?.deref()
+    return (vehicle as ArduPilot) || undefined
+  }
+
   VehicleFactory.onVehicles.once((vehicles: WeakRef<Vehicle.Abstract>[]) => {
-    vehicles
-      .last()
-      .deref()
-      .onAttitude.add((newAttitude: Attitude) => {
-        Object.assign(attitude, newAttitude)
-      })
-    vehicles
-      .last()
-      .deref()
-      .onPosition.add((newCoordinates: Coordinates) => {
-        Object.assign(coordinates, newCoordinates)
-      })
-    vehicles
-      .last()
-      .deref()
-      .onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
+    getAutoPilot(vehicles).onAttitude.add((newAttitude: Attitude) => {
+      Object.assign(attitude, newAttitude)
+    })
+    getAutoPilot(vehicles).onPosition.add((newCoordinates: Coordinates) => {
+      Object.assign(coordinates, newCoordinates)
+    })
+    getAutoPilot(vehicles).onMAVLinkMessage.add(
+      MAVLinkType.HEARTBEAT,
+      (pack: Package) => {
         if (pack.header.system_id != 1 || pack.header.component_id != 1) {
           return
         }
@@ -64,7 +63,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         firmwareType.value = heartbeat.autopilot.type
         vehicleType.value = heartbeat.mavtype.type
         lastHeartbeat.value = new Date()
-      })
+      }
+    )
   })
 
   return {
