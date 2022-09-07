@@ -2,8 +2,11 @@
   "extends": "./tsconfig.app.json",
   "exclude": [],
   "compilerOptions": {
+    "target": "es2021",
     "composite": true,
-    "lib": [],
-    "types": ["node", "jsdom"]
+    "lib": ["es2021"],
+    "types": ["node", "jsdom"],
+    "strictPropertyInitialization": false,
+    "importsNotUsedAsValues": "preserve",
   }
 }
