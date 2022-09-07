@@ -2,11 +2,6 @@ import '@/libs/cosmos'
 
 import { expect, test } from 'vitest'
 
-test('Global functions', () => {
-  expect(() => assert(true === false, 'What!')).toThrowError('What!')
-  expect(() => assert(true === true, 'No!')).not.toThrowError('No!')
-})
-
 test('Array', () => {
   const arrayTen = [...Array(10).keys()]
   expect([].first()).toBe(undefined)
