@@ -52,6 +52,18 @@ export class Signal<T> {
   }
 
   /**
+   * Remove all callbacks
+   *
+   * @returns {Signal<'T'>}
+   */
+  public clear(): Signal<T> {
+    this.slots = []
+    this.onces = []
+
+    return this
+  }
+
+  /**
    * Register function to be called when emit is used
    *
    * @param {Function} caller
@@ -160,6 +172,18 @@ export class SignalTyped {
         typeof_value,
         this.onces.get(typeof_value)?.filter((item) => item !== slot)
       )
+
+    return this
+  }
+
+  /**
+   * Remove all callbacks
+   *
+   * @returns {SignalTyped}
+   */
+  public clear(): SignalTyped {
+    this.slots = new Map()
+    this.onces = new Map()
 
     return this
   }
