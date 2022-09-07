@@ -75,16 +75,19 @@ if (isBrowser) {
 /* c8 ignore start */
 
 // Global functions
+// @ts-ignore: Global is defined to support both node and browser
 global.assert = function (result: boolean, message?: string) {
   if (!result) throw new Error(message ?? 'Assert failed')
 }
 
+// @ts-ignore: Global is defined to support both node and browser
 global.unimplemented = function (message?: string) {
   console.warn(new Error(message ?? 'Not implemented'))
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-empty-function
-global.unused = function <T>(variable: T) {}
+// eslint-disable-next-line
+// @ts-ignore: Global is defined to support both node and browser
+global.unused = function <T>(variable: T) {} // eslint-disable-line
 
 /* c8 ignore stop */
 
@@ -109,4 +112,5 @@ Array.prototype.sum = function (this: number[]): number {
   return this.reduce((a, b) => a + b, 0)
 }
 
+// @ts-ignore: Global is defined to support both node and browser
 export default global
