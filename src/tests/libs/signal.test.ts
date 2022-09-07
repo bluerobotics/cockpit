@@ -87,6 +87,11 @@ describe('Signal Tests', () => {
     signal.emit()
     expect(receiver.onReceive).toHaveBeenCalledWith(42)
   })
+
+  it('clear() should remove everything', () => {
+    signal.clear()
+    expect(signal.slots.length).toBe(0)
+  })
 })
 
 describe('SignalTyped Tests', () => {
@@ -185,5 +190,10 @@ describe('SignalTyped Tests', () => {
     // Ensure to be not undefined by previous line
     slot && signal.notify(slot, 5)
     expect(receiver.onReceive).toHaveBeenCalledWith(5)
+  })
+
+  it('clear() should be remove everything', () => {
+    signal.clear()
+    expect(signal.slots.size).toBe(0)
   })
 })
