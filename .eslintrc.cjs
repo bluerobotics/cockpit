@@ -74,6 +74,7 @@ module.exports = {
     'simple-import-sort/imports': 'error',
     'spaced-comment': ['error', 'always'],
     'sort-imports': 'off',
+    '@typescript-eslint/ban-ts-comment': ['off'],
     '@typescript-eslint/no-useless-constructor': ['error'],
     '@typescript-eslint/no-shadow': ['error'],
     '@typescript-eslint/explicit-function-return-type': [
