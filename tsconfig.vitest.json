@@ -5,7 +5,7 @@
     "target": "es2021",
     "composite": true,
     "lib": ["es2021"],
-    "types": ["node", "jsdom"],
+    "types": ["node", "jsdom", "vite/client"],
     "strictPropertyInitialization": false,
     "importsNotUsedAsValues": "preserve",
   }
