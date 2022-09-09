@@ -24,6 +24,7 @@ jobs:
         run: |
           yarn install
           yarn lint
+          yarn typecheck
           yarn build
           xvfb-run --auto-servernum yarn test:ci
 
