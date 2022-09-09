@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 
 export const ROOT_PATH = {
@@ -14,12 +14,15 @@ let mainWindow: BrowserWindow | null
  * Create electron window
  */
 function createWindow(): void {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize
   mainWindow = new BrowserWindow({
     icon: join(ROOT_PATH.public, 'favicon.ico'),
     webPreferences: {
       contextIsolation: false,
       nodeIntegration: false,
     },
+    width,
+    height,
   })
 
   // Test active push message to Renderer-process.
