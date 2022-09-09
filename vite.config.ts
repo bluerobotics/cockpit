@@ -1,7 +1,7 @@
 import vue from '@vitejs/plugin-vue'
-import vuetify from '@vuetify/vite-plugin'
 import { defineConfig } from 'vite'
 import electron from 'vite-plugin-electron'
+import vuetify from 'vite-plugin-vuetify'
 
 const path = require('path') // eslint-disable-line @typescript-eslint/no-var-requires
 
