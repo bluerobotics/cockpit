@@ -38,16 +38,16 @@
           @remove="store.deleteWidget(widget)"
         >
           <template v-if="widget.component === WidgetType.Compass">
-            <Compass />
+            <Compass :widget="widget" />
           </template>
           <template v-if="widget.component === WidgetType.Indicators">
-            <Indicators />
+            <Indicators :widget="widget" />
           </template>
           <template v-if="widget.component === WidgetType.Map">
-            <Map />
+            <Map :widget="widget" />
           </template>
           <template v-if="widget.component === WidgetType.VideoPlayer">
-            <VideoPlayer />
+            <VideoPlayer :widget="widget" />
           </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
