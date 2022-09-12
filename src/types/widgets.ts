@@ -32,6 +32,10 @@ export type Widget = {
    * Editable name for the widget
    */
   name: string
+  /**
+   * Internal options of the widget
+   */
+  options: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export type Layer = {
