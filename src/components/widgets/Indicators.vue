@@ -24,11 +24,17 @@
     </template>
     <template v-if="widget.options.showAttitude">
       <p class="font-weight-bold text-body-1">Pitch:</p>
-      <p class="text-body-1">{{ degrees(store.attitude?.pitch) }} deg</p>
+      <p class="text-body-1">
+        {{ degrees(store.attitude?.pitch).toFixed(2) }} deg
+      </p>
       <p class="font-weight-bold text-body-1">Roll:</p>
-      <p class="text-body-1">{{ degrees(store.attitude?.roll) }} deg</p>
+      <p class="text-body-1">
+        {{ degrees(store.attitude?.roll).toFixed(2) }} deg
+      </p>
       <p class="font-weight-bold text-body-1">Yaw:</p>
-      <p class="text-body-1">{{ degrees(store.attitude?.yaw) }} deg</p>
+      <p class="text-body-1">
+        {{ degrees(store.attitude?.yaw).toFixed(2) }} deg
+      </p>
     </template>
   </v-sheet>
   <v-dialog v-model="showOptionsDialog">
