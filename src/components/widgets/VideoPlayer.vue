@@ -89,6 +89,7 @@ onMounted(() => {
       videoFitStyle: 'cover',
       flipHorizontally: false,
       flipVertically: false,
+      streamName: undefined,
     }
   }
 })
@@ -96,8 +97,19 @@ onMounted(() => {
 watch(stream, async (newStream, oldStream) => {
   console.debug('Stream changed.', oldStream, newStream)
   if (videoElement.value !== undefined && newStream !== undefined) {
+    widget.value.options.streamName = selectedPeer.value?.displayName
     videoElement.value.srcObject = newStream
     videoElement.value.play()
+  }
+})
+
+watch(availablePeers, () => {
+  const savedStreamName = widget.value.options.streamName
+  if (selectedPeer.value === undefined && savedStreamName !== undefined) {
+    const savedPeer = availablePeers.value.find(
+      (peer) => peer.displayName === savedStreamName
+    )
+    selectedPeer.value = savedPeer
   }
 })
 
