@@ -43,6 +43,18 @@
           hide-details
           return-object
         />
+        <v-switch
+          v-model="flipHorizontally"
+          class="my-1"
+          label="Flip horizontally"
+          hide-details
+        />
+        <v-switch
+          v-model="flipVertically"
+          class="my-1"
+          label="Flip vertically"
+          hide-details
+        />
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -57,6 +69,8 @@ import type { RtcPeer } from '@/types/webrtc'
 const selectedPeer = ref<RtcPeer | undefined>()
 const showOptionsDialog = ref(false)
 const videoFitStyle = ref('cover')
+const flipHorizontally = ref(false)
+const flipVertically = ref(false)
 const videoElement = ref<HTMLVideoElement | undefined>()
 
 const { availablePeers, stream } = useWebRtcStream(selectedPeer)
@@ -67,6 +81,12 @@ watch(stream, async (newStream, oldStream) => {
     videoElement.value.srcObject = newStream
     videoElement.value.play()
   }
+})
+
+const flipStyle = computed(() => {
+  return `scale(${flipHorizontally.value ? -1 : 1}, ${
+    flipVertically.value ? -1 : 1
+  })`
 })
 </script>
 
@@ -86,6 +106,7 @@ video {
   top: 0;
   left: 0;
   object-fit: v-bind('videoFitStyle');
+  transform: v-bind('flipStyle');
 }
 .no-video-alert {
   width: 100%;
