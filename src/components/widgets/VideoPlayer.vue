@@ -31,6 +31,18 @@
           hide-details
           return-object
         />
+        <v-select
+          v-model="videoFitStyle"
+          label="Fit style"
+          class="my-3"
+          :items="['cover', 'fill', 'contain']"
+          item-title="displayName"
+          density="compact"
+          variant="outlined"
+          no-data-text="No streams available."
+          hide-details
+          return-object
+        />
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -44,6 +56,7 @@ import type { RtcPeer } from '@/types/webrtc'
 
 const selectedPeer = ref<RtcPeer | undefined>()
 const showOptionsDialog = ref(false)
+const videoFitStyle = ref('cover')
 const videoElement = ref<HTMLVideoElement | undefined>()
 
 const { availablePeers, stream } = useWebRtcStream(selectedPeer)
@@ -72,6 +85,7 @@ video {
   position: absolute;
   top: 0;
   left: 0;
+  object-fit: v-bind('videoFitStyle');
 }
 .no-video-alert {
   width: 100%;
