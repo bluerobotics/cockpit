@@ -31,8 +31,8 @@
         v-if="allowResizing"
         class="ma-1"
         size="x-small"
-        icon="mdi-overscan"
-        @click="fillScreen"
+        :icon="isFullScreen ? 'mdi-window-restore' : 'mdi-overscan'"
+        @click="toggleFullScreen"
       />
       <v-btn
         v-if="allowDeleting"
@@ -57,11 +57,11 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog } from '@vueuse/core'
+import { useConfirmDialog, useWindowSize } from '@vueuse/core'
 import { type Ref, computed, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
-import { constrain } from '@/libs/utils'
+import { constrain, isEqual } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 
 /**
@@ -127,6 +127,8 @@ const gridInterval = toRefs(props).gridInterval
 const outerWidgetRef = ref<HTMLElement | undefined>()
 const innerWidgetRef = ref<HTMLElement | undefined>()
 const resizerRef = ref<HTMLElement>()
+const lastNonFullScreenPosition = ref(props.position)
+const lastNonFullScreenSize = ref(props.size)
 
 const {
   position: widgetRawPosition,
@@ -181,21 +183,63 @@ watch(resizerPosition, (position) => {
   }
 })
 
-const fillScreen = (): void => {
-  widgetFinalPosition.value = { x: 0, y: 0 }
-  widgetFinalSize.value = {
-    width: window.innerWidth,
-    height: window.innerHeight,
+const fullScreenPosition = { x: 0, y: 0 }
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+const fullScreenSize = computed(() => ({
+  width: windowWidth.value,
+  height: windowHeight.value,
+}))
+const toggleFullScreen = (): void => {
+  if (isFullScreen.value) {
+    if (
+      isEqual(lastNonFullScreenPosition.value, fullScreenPosition) &&
+      isEqual(lastNonFullScreenSize.value, fullScreenSize.value)
+    ) {
+      lastNonFullScreenPosition.value = {
+        x: window.innerWidth * 0.15,
+        y: window.innerHeight * 0.15,
+      }
+      lastNonFullScreenSize.value = {
+        width: window.innerWidth * 0.7,
+        height: window.innerHeight * 0.7,
+      }
+    }
+    widgetFinalPosition.value = lastNonFullScreenPosition.value
+    widgetFinalSize.value = lastNonFullScreenSize.value
+    return
   }
+  widgetFinalPosition.value = fullScreenPosition
+  widgetFinalSize.value = fullScreenSize.value
+  return
 }
 
-watch(widgetFinalPosition, () => emit('move', widgetFinalPosition.value))
-watch(widgetFinalSize, () => emit('resize', widgetFinalSize.value))
+watch(widgetFinalPosition, () => {
+  if (!isFullScreenPosition.value) {
+    lastNonFullScreenPosition.value = widgetFinalPosition.value
+  }
+  emit('move', widgetFinalPosition.value)
+})
+watch(widgetFinalSize, () => {
+  if (!isFullScreenSize.value) {
+    lastNonFullScreenSize.value = widgetFinalSize.value
+  }
+  emit('resize', widgetFinalSize.value)
+})
 
 const sizeStyle = computed(() => ({
   width: `${widgetFinalSize.value.width}px`,
   height: `${widgetFinalSize.value.height}px`,
 }))
+
+const isFullScreenPosition = computed(() =>
+  isEqual(widgetFinalPosition.value, fullScreenPosition)
+)
+const isFullScreenSize = computed(() =>
+  isEqual(widgetFinalSize.value, fullScreenSize.value)
+)
+const isFullScreen = computed(() => {
+  return isFullScreenPosition.value && isFullScreenSize.value
+})
 
 const positionStyle = computed(() => ({
   left: `${widgetFinalPosition.value.x}px`,
