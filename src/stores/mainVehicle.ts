@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
+import { mavlink2restServerUrl } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/messages/mavlink2rest'
@@ -36,7 +37,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   ConnectionManager.addConnection(
-    new Connection.URI('ws://blueos.local:6040/ws/mavlink'),
+    new Connection.URI(mavlink2restServerUrl),
     Protocol.Type.MAVLink
   )
 
