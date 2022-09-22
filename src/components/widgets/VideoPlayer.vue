@@ -32,7 +32,7 @@
           return-object
         />
         <v-select
-          v-model="videoFitStyle"
+          v-model="widget.options.videoFitStyle"
           label="Fit style"
           class="my-3"
           :items="['cover', 'fill', 'contain']"
@@ -44,13 +44,13 @@
           return-object
         />
         <v-switch
-          v-model="flipHorizontally"
+          v-model="widget.options.flipHorizontally"
           class="my-1"
           label="Flip horizontally"
           hide-details
         />
         <v-switch
-          v-model="flipVertically"
+          v-model="widget.options.flipVertically"
           class="my-1"
           label="Flip vertically"
           hide-details
@@ -61,19 +61,37 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, toRefs, watch } from 'vue'
 
 import useWebRtcStream from '@/composables/webRTC'
 import type { RtcPeer } from '@/types/webrtc'
+import type { Widget } from '@/types/widgets'
+
+const props = defineProps<{
+  /**
+   * Widget reference
+   */
+  widget: Widget
+}>()
+
+const widget = toRefs(props).widget
 
 const selectedPeer = ref<RtcPeer | undefined>()
 const showOptionsDialog = ref(false)
-const videoFitStyle = ref('cover')
-const flipHorizontally = ref(false)
-const flipVertically = ref(false)
 const videoElement = ref<HTMLVideoElement | undefined>()
 
 const { availablePeers, stream } = useWebRtcStream(selectedPeer)
+
+onMounted(() => {
+  // Set initial widget options if they don't exist
+  if (Object.keys(widget.value.options).length === 0) {
+    widget.value.options = {
+      videoFitStyle: 'cover',
+      flipHorizontally: false,
+      flipVertically: false,
+    }
+  }
+})
 
 watch(stream, async (newStream, oldStream) => {
   console.debug('Stream changed.', oldStream, newStream)
@@ -84,8 +102,8 @@ watch(stream, async (newStream, oldStream) => {
 })
 
 const flipStyle = computed(() => {
-  return `scale(${flipHorizontally.value ? -1 : 1}, ${
-    flipVertically.value ? -1 : 1
+  return `scale(${widget.value.options.flipHorizontally ? -1 : 1}, ${
+    widget.value.options.flipVertically ? -1 : 1
   })`
 })
 </script>
@@ -105,7 +123,7 @@ video {
   position: absolute;
   top: 0;
   left: 0;
-  object-fit: v-bind('videoFitStyle');
+  object-fit: v-bind('widget.options.videoFitStyle');
   transform: v-bind('flipStyle');
 }
 .no-video-alert {
