@@ -24,7 +24,7 @@ const angleStyle = computed(() => `${store.attitude.yaw ?? 0}rad`)
   position: relative;
 }
 .compass-ticks {
-  transition: -webkit-transform 0.8s;
+  transition: -webkit-transform 0.2s;
   transform: rotate(v-bind('angleStyle'));
   user-select: none;
   height: 100%;
