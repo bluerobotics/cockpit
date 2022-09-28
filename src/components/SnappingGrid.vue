@@ -3,6 +3,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from '@vueuse/core'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -12,8 +13,13 @@ const props = defineProps<{
   gridInterval: number
 }>()
 
-const gridIntervalStop = computed(() => `${props.gridInterval}px`)
-const gridIntervalStart = computed(() => `${props.gridInterval - 1}px`)
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+const gridIntervalStyleX = computed(
+  () => `${windowWidth.value * props.gridInterval}px`
+)
+const gridIntervalStyleY = computed(
+  () => `${windowHeight.value * props.gridInterval}px`
+)
 </script>
 
 <style>
@@ -24,18 +30,18 @@ const gridIntervalStart = computed(() => `${props.gridInterval - 1}px`)
   background-image: repeating-linear-gradient(
       0deg,
       transparent,
-      transparent v-bind('gridIntervalStart'),
-      #88f v-bind('gridIntervalStart'),
-      #88f v-bind('gridIntervalStop')
+      transparent calc(v-bind('gridIntervalStyleY') - 1px),
+      #88f calc(v-bind('gridIntervalStyleY') - 1px),
+      #88f v-bind('gridIntervalStyleY')
     ),
     repeating-linear-gradient(
       -90deg,
       transparent,
-      transparent v-bind('gridIntervalStart'),
-      #88f v-bind('gridIntervalStart'),
-      #88f v-bind('gridIntervalStop')
+      transparent calc(v-bind('gridIntervalStyleX') - 1px),
+      #88f calc(v-bind('gridIntervalStyleX') - 1px),
+      #88f v-bind('gridIntervalStyleX')
     );
-  background-size: v-bind('gridIntervalStop') v-bind('gridIntervalStop');
+  background-size: v-bind('gridIntervalStyleX') v-bind('gridIntervalStyleY');
   background-repeat: repeat;
 }
 </style>
