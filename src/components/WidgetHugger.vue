@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog, useWindowSize } from '@vueuse/core'
+import { useConfirmDialog } from '@vueuse/core'
 import { type Ref, computed, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
@@ -104,7 +104,7 @@ export interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   snapToGrid: true,
-  gridInterval: 15,
+  gridInterval: 0.02,
   allowMoving: true,
   allowResizing: true,
   allowOrdering: true,
@@ -163,8 +163,8 @@ watch(widgetRawPosition, (position) => {
     return
   }
   const widgetLimits = innerWidgetRef.value.getBoundingClientRect()
-  const maxX = window.innerWidth - widgetLimits.width
-  const maxY = window.innerHeight - widgetLimits.height
+  const maxX = 1 - widgetLimits.width / window.innerWidth || 1
+  const maxY = 1 - widgetLimits.height / window.innerHeight || 1
   widgetFinalPosition.value = {
     x: constrain(position.x, 0, maxX),
     y: constrain(position.y, 0, maxY),
@@ -176,18 +176,20 @@ watch(resizerPosition, (position) => {
   if (outerWidgetRef.value === undefined) {
     return
   }
-  const widgetLimits = outerWidgetRef.value.getBoundingClientRect()
+  const widgetLimits = {
+    x: outerWidgetRef.value.getBoundingClientRect().x / window.innerWidth || 1,
+    y: outerWidgetRef.value.getBoundingClientRect().y / window.innerHeight || 1,
+  }
   widgetFinalSize.value = {
-    width: constrain(position.x - widgetLimits.x, 160, window.innerWidth),
-    height: constrain(position.y - widgetLimits.y, 40, window.innerHeight),
+    width: constrain(position.x - widgetLimits.x, 0.01, 1),
+    height: constrain(position.y - widgetLimits.y, 0.01, 1),
   }
 })
 
 const fullScreenPosition = { x: 0, y: 0 }
-const { width: windowWidth, height: windowHeight } = useWindowSize()
 const fullScreenSize = computed(() => ({
-  width: windowWidth.value,
-  height: windowHeight.value,
+  width: 1,
+  height: 1,
 }))
 const toggleFullScreen = (): void => {
   if (isFullScreen.value) {
@@ -196,12 +198,12 @@ const toggleFullScreen = (): void => {
       isEqual(lastNonFullScreenSize.value, fullScreenSize.value)
     ) {
       lastNonFullScreenPosition.value = {
-        x: window.innerWidth * 0.15,
-        y: window.innerHeight * 0.15,
+        x: 0.15,
+        y: 0.15,
       }
       lastNonFullScreenSize.value = {
-        width: window.innerWidth * 0.7,
-        height: window.innerHeight * 0.7,
+        width: 0.7,
+        height: 0.7,
       }
     }
     widgetFinalPosition.value = lastNonFullScreenPosition.value
@@ -227,8 +229,8 @@ watch(widgetFinalSize, () => {
 })
 
 const sizeStyle = computed(() => ({
-  width: `${widgetFinalSize.value.width}px`,
-  height: `${widgetFinalSize.value.height}px`,
+  width: `${100 * widgetFinalSize.value.width}%`,
+  height: `${100 * widgetFinalSize.value.height}%`,
 }))
 
 const isFullScreenPosition = computed(() =>
@@ -242,8 +244,8 @@ const isFullScreen = computed(() => {
 })
 
 const positionStyle = computed(() => ({
-  left: `${widgetFinalPosition.value.x}px`,
-  top: `${widgetFinalPosition.value.y}px`,
+  left: `${100 * widgetFinalPosition.value.x}%`,
+  top: `${100 * widgetFinalPosition.value.y}%`,
 }))
 
 const cursorStyle = computed(() => {

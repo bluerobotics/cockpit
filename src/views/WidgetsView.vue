@@ -84,7 +84,7 @@ const { x: mouseX } = useMouse()
 const showEditButton = ref(false)
 const editingMode = ref(false)
 const showGrid = ref(false)
-const gridInterval = ref(15)
+const gridInterval = ref(0.01)
 
 const widgetsPresent = computed(() =>
   store.layers.some((layer) => layer.widgets.length != 0)

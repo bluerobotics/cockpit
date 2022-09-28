@@ -106,10 +106,10 @@ const emit = defineEmits<{
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref<WidgetType>(availableWidgetTypes.value[0])
 const selectedLayer = ref<Layer>(store.layers[0])
-const initialSize = { width: 600, height: 450 }
+const initialSize = { width: 0.6, height: 0.5 }
 const initialPosition = {
-  x: (window.innerWidth - initialSize.width) / 2,
-  y: (window.innerHeight - initialSize.height) / 2,
+  x: 0.2,
+  y: 0.25,
 }
 
 const availableLayers = computed(() =>

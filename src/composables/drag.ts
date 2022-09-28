@@ -1,4 +1,9 @@
-import { useMouse, useMouseInElement, useMousePressed } from '@vueuse/core'
+import {
+  useMouse,
+  useMouseInElement,
+  useMousePressed,
+  useWindowSize,
+} from '@vueuse/core'
 import { type Ref, computed, ref, watch } from 'vue'
 
 import type { Point2D } from '@/types/general'
@@ -41,15 +46,16 @@ export default function useDragInElement(
   const { pressed: pressing } = useMousePressed({ target: targetElement })
   const { isOutside: notHovering } = useMouseInElement(targetElement)
   const hovering = computed(() => !notHovering.value)
-  const { x: mouseX, y: mouseY } = useMouse()
+  const { x: mousePixelsX, y: mousePixelsY } = useMouse()
+  const { width: windowWidth, height: windowHeight } = useWindowSize()
 
   watch(pressing, async (isPressing: boolean, wasPressing: boolean) => {
     if (!wasPressing && isPressing && targetElement.value !== undefined) {
       dragging.value = true
-      const elementLimits = targetElement.value.getBoundingClientRect()
+      const elementLimPixels = targetElement.value.getBoundingClientRect()
       mouseOffset.value = {
-        x: mouseX.value - elementLimits.x,
-        y: mouseY.value - elementLimits.y,
+        x: (mousePixelsX.value - elementLimPixels.x) / windowWidth.value || 1,
+        y: (mousePixelsY.value - elementLimPixels.y) / windowHeight.value || 1,
       }
     } else if (wasPressing && !isPressing) {
       dragging.value = false
@@ -57,8 +63,8 @@ export default function useDragInElement(
   })
 
   const mousePosition = computed(() => ({
-    x: mouseX.value,
-    y: mouseY.value,
+    x: mousePixelsX.value / windowWidth.value || 1,
+    y: mousePixelsY.value / windowHeight.value || 1,
   }))
 
   watch(mousePosition, async () => {
@@ -69,7 +75,7 @@ export default function useDragInElement(
     let positionY = mousePosition.value.y - mouseOffset.value.y
     if (snapToGrid.value) {
       const gridTolerance = gridInterval / 2
-      const distanceFromGridX = positionX % gridInterval
+      const distanceFromGridX = ((100 * positionX) % (100 * gridInterval)) / 100
       if (distanceFromGridX < gridTolerance) {
         positionX = positionX - distanceFromGridX
       } else if (distanceFromGridX > gridInterval - gridTolerance) {
