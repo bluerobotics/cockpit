@@ -33,9 +33,8 @@ export default function useWebRtcStream(
   }
 
   const removeAvailablePeer = (peerId: string): void => {
-    const peerToRemove = availablePeers.value.find((peer) => peer.id === peerId)
-    if (peerToRemove) {
-      const index = availablePeers.value.indexOf(peerToRemove)
+    const index = availablePeers.value.findIndex((peer) => peer.id === peerId)
+    if (index >= 0) {
       availablePeers.value.splice(index, 1)
     }
   }
