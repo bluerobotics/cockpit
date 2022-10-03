@@ -192,27 +192,27 @@ const fullScreenSize = computed(() => ({
   height: 1,
 }))
 const toggleFullScreen = (): void => {
-  if (isFullScreen.value) {
-    if (
-      isEqual(lastNonFullScreenPosition.value, fullScreenPosition) &&
-      isEqual(lastNonFullScreenSize.value, fullScreenSize.value)
-    ) {
-      lastNonFullScreenPosition.value = {
-        x: 0.15,
-        y: 0.15,
-      }
-      lastNonFullScreenSize.value = {
-        width: 0.7,
-        height: 0.7,
-      }
-    }
-    widgetFinalPosition.value = lastNonFullScreenPosition.value
-    widgetFinalSize.value = lastNonFullScreenSize.value
+  if (!isFullScreen.value) {
+    widgetFinalPosition.value = fullScreenPosition
+    widgetFinalSize.value = fullScreenSize.value
     return
   }
-  widgetFinalPosition.value = fullScreenPosition
-  widgetFinalSize.value = fullScreenSize.value
-  return
+
+  if (
+    isEqual(lastNonFullScreenPosition.value, fullScreenPosition) &&
+    isEqual(lastNonFullScreenSize.value, fullScreenSize.value)
+  ) {
+    lastNonFullScreenPosition.value = {
+      x: 0.15,
+      y: 0.15,
+    }
+    lastNonFullScreenSize.value = {
+      width: 0.7,
+      height: 0.7,
+    }
+  }
+  widgetFinalPosition.value = lastNonFullScreenPosition.value
+  widgetFinalSize.value = lastNonFullScreenSize.value
 }
 
 watch(widgetFinalPosition, () => {
