@@ -64,7 +64,7 @@
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 
 import useWebRtcStream from '@/composables/webRTC'
-import type { RtcPeer } from '@/types/webrtc'
+import type { RtcPeer } from '@/types/webRTC'
 import type { Widget } from '@/types/widgets'
 
 const props = defineProps<{

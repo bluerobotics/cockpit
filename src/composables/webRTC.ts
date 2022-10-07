@@ -2,7 +2,7 @@ import { type Ref, ref, watch } from 'vue'
 
 import { webRtcSignallingServerUrl } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
-import type { RtcPeer, SignallingMessage } from '@/types/webrtc'
+import type { RtcPeer, SignallingMessage } from '@/types/webRTC'
 
 /**
  *
