@@ -11,7 +11,7 @@ export default defineConfig({
       main: {
         entry: 'electron/main.ts',
       },
-    }),
+    }).filter((configuration) => configuration.apply === 'build'),
     vue(),
     vuetify({
       autoImport: true,
