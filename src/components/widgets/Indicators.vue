@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, toRefs } from 'vue'
+import { onBeforeMount, ref, toRefs } from 'vue'
 
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -79,7 +79,7 @@ const props = defineProps<{
 const widget = toRefs(props).widget
 const showOptionsDialog = ref(false)
 
-onMounted(() => {
+onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {

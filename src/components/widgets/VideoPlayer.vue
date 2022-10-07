@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
 
 import useWebRtcStream from '@/composables/webRTC'
 import type { RtcPeer } from '@/types/webRTC'
@@ -82,7 +82,7 @@ const videoElement = ref<HTMLVideoElement | undefined>()
 
 const { availablePeers, stream } = useWebRtcStream(selectedPeer)
 
-onMounted(() => {
+onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
