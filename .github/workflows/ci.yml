@@ -22,7 +22,7 @@ jobs:
 
       - name: Run yarn
         run: |
-          yarn install
+          yarn install --frozen-lockfile
           yarn lint
           yarn typecheck
           yarn build
