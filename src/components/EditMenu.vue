@@ -45,6 +45,7 @@
             :items="availableWidgetTypes"
             density="compact"
             variant="outlined"
+            label="Widget type"
             hide-details
           />
           <v-btn
@@ -52,7 +53,7 @@
             icon="mdi-plus"
             size="small"
             rounded="lg"
-            @click="store.addWidget(selectedWidgetType, selectedLayer)"
+            @click="addWidget"
           />
         </div>
       </div>
@@ -104,7 +105,7 @@ const emit = defineEmits<{
 }>()
 
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
-const selectedWidgetType = ref<WidgetType>(availableWidgetTypes.value[0])
+const selectedWidgetType = ref()
 const selectedLayer = ref<Layer>(store.layers[0])
 const initialSize = { width: 0.6, height: 0.5 }
 const initialPosition = {
@@ -126,6 +127,12 @@ const deleteLayer = (): void => {
 const addLayer = (): void => {
   store.addLayer()
   selectedLayer.value = store.layers[0]
+}
+
+const addWidget = (): void => {
+  if (selectedWidgetType.value === undefined) return
+  if (selectedLayer.value === undefined) return
+  store.addWidget(selectedWidgetType.value, selectedLayer.value)
 }
 
 const layerDeleteDialogRevealed = ref(false)
