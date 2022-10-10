@@ -37,6 +37,9 @@
           @bring-front="store.bringWidgetFront(widget)"
           @remove="store.deleteWidget(widget)"
         >
+          <template v-if="widget.component === WidgetType.Attitude">
+            <Attitude :widget="widget" />
+          </template>
           <template v-if="widget.component === WidgetType.Compass">
             <Compass :widget="widget" />
           </template>
@@ -76,6 +79,7 @@ import { WidgetType } from '@/types/widgets'
 import EditMenu from '../components/EditMenu.vue'
 import SnappingGrid from '../components/SnappingGrid.vue'
 import WidgetHugger from '../components/WidgetHugger.vue'
+import Attitude from '../components/widgets/Attitude.vue'
 import Compass from '../components/widgets/Compass.vue'
 import Indicators from '../components/widgets/Indicators.vue'
 import Joystick from '../components/widgets/Joystick.vue'
