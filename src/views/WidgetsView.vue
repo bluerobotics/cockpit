@@ -49,6 +49,9 @@
           <template v-if="widget.component === WidgetType.VideoPlayer">
             <VideoPlayer :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.Joystick">
+            <Joystick />
+          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
@@ -75,6 +78,7 @@ import SnappingGrid from '../components/SnappingGrid.vue'
 import WidgetHugger from '../components/WidgetHugger.vue'
 import Compass from '../components/widgets/Compass.vue'
 import Indicators from '../components/widgets/Indicators.vue'
+import Joystick from '../components/widgets/Joystick.vue'
 import Map from '../components/widgets/Map.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 
