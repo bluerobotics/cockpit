@@ -53,6 +53,7 @@
             icon="mdi-plus"
             size="small"
             rounded="lg"
+            :disabled="selectedWidgetType === undefined"
             @click="addWidget"
           />
         </div>
