@@ -11,3 +11,8 @@ export const degrees = (angle: number): number => (angle * 180) / Math.PI
 export const isEqual = (obj1: any, obj2: any): boolean => {
   return JSON.stringify(obj1) === JSON.stringify(obj2)
 }
+
+export const round = (value: number, places = 2): number => {
+  const power = Math.pow(10, places)
+  return Math.round(value * power) / power
+}
