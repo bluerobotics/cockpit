@@ -1,13 +1,6 @@
 <template>
-  <WidgetHugger
-    :position="initialPosition"
-    :size="initialSize"
-    :snap-to-grid="false"
-    :allow-resizing="false"
-    :allow-ordering="false"
-    :allow-deleting="false"
-  >
-    <v-card class="pa-3 card">
+  <v-navigation-drawer v-model="showDrawer" width="400" temporary>
+    <v-card ref="editDrawer" flat class="pa-2 edit-menu">
       <v-card-title>Edit menu</v-card-title>
       <div v-if="selectedLayer !== undefined">
         <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
@@ -69,28 +62,26 @@
         />
       </v-card-actions>
     </v-card>
-    <teleport to="body">
-      <v-dialog v-model="layerDeleteDialogRevealed">
-        <v-card class="pa-2">
-          <v-card-title>Delete layer?</v-card-title>
-          <v-card-actions>
-            <v-btn @click="layerDeleteDialog.confirm">Yes</v-btn>
-            <v-btn @click="layerDeleteDialog.cancel">Cancel</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </teleport>
-  </WidgetHugger>
+  </v-navigation-drawer>
+  <teleport to="body">
+    <v-dialog v-model="layerDeleteDialogRevealed">
+      <v-card class="pa-2">
+        <v-card-title>Delete layer?</v-card-title>
+        <v-card-actions>
+          <v-btn @click="layerDeleteDialog.confirm">Yes</v-btn>
+          <v-btn @click="layerDeleteDialog.cancel">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </teleport>
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { useConfirmDialog, useElementBounding, useMouse } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { type Layer, WidgetType } from '@/types/widgets'
-
-import WidgetHugger from './WidgetHugger.vue'
 
 const store = useWidgetManagerStore()
 
@@ -108,11 +99,15 @@ const emit = defineEmits<{
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref()
 const selectedLayer = ref<Layer>(store.layers[0])
-const initialSize = { width: 0.6, height: 0.5 }
-const initialPosition = {
-  x: 0.2,
-  y: 0.25,
-}
+
+const showDrawer = ref(true)
+const editDrawer = ref()
+const { width: menuWidth } = useElementBounding(editDrawer)
+const { x: mouseX } = useMouse()
+watch(mouseX, () => {
+  const hoveringMenu = mouseX.value < 1.2 * menuWidth.value && showDrawer.value
+  showDrawer.value = mouseX.value < 10 || hoveringMenu
+})
 
 const availableLayers = computed(() =>
   store.layers.slice().map((layer) => ({
@@ -142,8 +137,8 @@ layerDeleteDialog.onConfirm(deleteLayer)
 </script>
 
 <style scoped>
-.card {
-  height: 95%;
-  width: 95%;
+.edit-menu {
+  height: 100%;
+  width: 100%;
 }
 </style>
