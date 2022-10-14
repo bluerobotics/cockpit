@@ -1,4 +1,5 @@
 <template>
+  <div class="editing-mode-overlay" />
   <v-navigation-drawer v-model="showDrawer" width="400" temporary>
     <v-card ref="editDrawer" flat class="pa-2 edit-menu">
       <v-card-title>Edit menu</v-card-title>
@@ -140,5 +141,19 @@ layerDeleteDialog.onConfirm(deleteLayer)
 .edit-menu {
   height: 100%;
   width: 100%;
+}
+.editing-mode-overlay {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  border: 8px solid;
+  border-image: linear-gradient(
+      45deg,
+      rgba(64, 152, 224, 0.7),
+      rgba(234, 255, 47, 0.7)
+    )
+    1;
+  pointer-events: none;
+  z-index: 70;
 }
 </style>
