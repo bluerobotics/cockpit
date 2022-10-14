@@ -10,7 +10,7 @@
     :grid-interval="gridInterval"
     class="snapping-grid"
   />
-  <EditMenu v-if="editingMode" v-model:show-grid="showGrid" />
+  <EditMenu v-model:edit-mode="editingMode" v-model:show-grid="showGrid" />
   <div class="main">
     <div
       v-for="layer in store.layers.slice().reverse()"
