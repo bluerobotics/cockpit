@@ -1,5 +1,5 @@
 <template>
-  <div class="editing-mode-overlay" />
+  <div v-if="editMode" class="editing-mode-overlay" />
   <v-navigation-drawer v-model="showDrawer" width="400" temporary>
     <v-card ref="editDrawer" flat class="pa-2 edit-menu">
       <v-card-title>Edit menu</v-card-title>
@@ -79,18 +79,22 @@
 
 <script setup lang="ts">
 import { useConfirmDialog, useElementBounding, useMouse } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { type Layer, WidgetType } from '@/types/widgets'
 
 const store = useWidgetManagerStore()
 
-defineProps<{
+const props = defineProps<{
   /**
    * To show or not the snapping grid on the background (model prop)
    */
   showGrid: boolean
+  /**
+   * Whether or not the interface is in edit mode
+   */
+  editMode: boolean
 }>()
 
 const emit = defineEmits<{
@@ -101,13 +105,18 @@ const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref()
 const selectedLayer = ref<Layer>(store.layers[0])
 
-const showDrawer = ref(true)
+const showDrawer = ref(props.editMode)
 const editDrawer = ref()
 const { width: menuWidth } = useElementBounding(editDrawer)
 const { x: mouseX } = useMouse()
 watch(mouseX, () => {
   const hoveringMenu = mouseX.value < 1.2 * menuWidth.value && showDrawer.value
-  showDrawer.value = mouseX.value < 10 || hoveringMenu
+  showDrawer.value = props.editMode && (mouseX.value < 10 || hoveringMenu)
+})
+
+const editMode = toRefs(props).editMode
+watch(editMode, (isEditMode, wasEditMode) => {
+  showDrawer.value = !wasEditMode && isEditMode
 })
 
 const availableLayers = computed(() =>
