@@ -91,7 +91,7 @@ const store = useWidgetManagerStore()
 const { x: mouseX } = useMouse()
 const showEditButton = ref(false)
 const editingMode = ref(false)
-const showGrid = ref(false)
+const showGrid = ref(true)
 const gridInterval = ref(0.01)
 
 const widgetsPresent = computed(() =>
