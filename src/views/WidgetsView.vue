@@ -10,12 +10,8 @@
     :grid-interval="gridInterval"
     class="snapping-grid"
   />
+  <EditMenu v-if="editingMode" v-model:show-grid="showGrid" />
   <div class="main">
-    <EditMenu
-      v-if="editingMode"
-      v-model:show-grid="showGrid"
-      class="edit-menu"
-    />
     <div
       v-for="layer in store.layers.slice().reverse()"
       :key="layer.hash"
@@ -137,8 +133,5 @@ watch(mouseX, () => {
   left: 10;
   top: 50%;
   z-index: 60;
-}
-.edit-menu {
-  z-index: 100;
 }
 </style>
