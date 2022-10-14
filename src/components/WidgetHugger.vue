@@ -13,34 +13,44 @@
       :class="{ draggingResizer, hoveringResizer, allowResizing }"
     />
     <div v-if="hoveringWidget" class="editing-buttons">
-      <v-btn
-        v-if="allowOrdering"
-        class="ma-1"
-        size="x-small"
-        icon="mdi-arrow-down-thick"
-        @click="emit('send-back')"
-      />
-      <v-btn
-        v-if="allowOrdering"
-        class="ma-1"
-        size="x-small"
-        icon="mdi-arrow-up-thick"
-        @click="emit('bring-front')"
-      />
-      <v-btn
-        v-if="allowResizing"
-        class="ma-1"
-        size="x-small"
-        :icon="isFullScreen ? 'mdi-window-restore' : 'mdi-overscan'"
-        @click="toggleFullScreen"
-      />
-      <v-btn
-        v-if="allowDeleting"
-        class="ma-1"
-        size="x-small"
-        icon="mdi-close-thick"
-        @click="widgetDeleteDialog.reveal"
-      />
+      <v-menu
+        v-if="allowResizing || allowOrdering || allowDeleting"
+        location="top"
+      >
+        <template #activator="{ props: menuProps }">
+          <v-btn v-bind="menuProps" size="x-small" icon="mdi-pencil" />
+        </template>
+        <v-list>
+          <v-btn
+            v-if="allowOrdering"
+            class="ma-1"
+            size="x-small"
+            icon="mdi-arrow-down-thick"
+            @click="emit('send-back')"
+          />
+          <v-btn
+            v-if="allowOrdering"
+            class="ma-1"
+            size="x-small"
+            icon="mdi-arrow-up-thick"
+            @click="emit('bring-front')"
+          />
+          <v-btn
+            v-if="allowResizing"
+            class="ma-1"
+            size="x-small"
+            :icon="isFullScreen ? 'mdi-window-restore' : 'mdi-overscan'"
+            @click="toggleFullScreen"
+          />
+          <v-btn
+            v-if="allowDeleting"
+            class="ma-1"
+            size="x-small"
+            icon="mdi-close-thick"
+            @click="widgetDeleteDialog.reveal"
+          />
+        </v-list>
+      </v-menu>
     </div>
     <teleport to="body">
       <v-dialog v-model="widgetDeleteDialogRevealed">
@@ -296,8 +306,8 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
 }
 .editing-buttons {
   position: absolute;
-  left: 0%;
-  bottom: 0%;
+  left: 5px;
+  bottom: 5px;
 }
 .resizer.allowResizing {
   width: 10px;
