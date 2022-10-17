@@ -1,10 +1,28 @@
 <template>
-  <v-btn
-    v-if="showEditButton"
-    class="ml-2 edit-mode-btn"
-    icon="mdi-pencil"
-    @click="editingMode = !editingMode"
-  />
+  <v-menu v-if="showMainMenuButton || activateMainMenuButton" location="bottom">
+    <template #activator="{ props: menuProps }">
+      <v-btn
+        v-bind="menuProps"
+        class="edit-mode-btn"
+        icon="mdi-menu"
+        :disabled="!activateMainMenuButton"
+      />
+    </template>
+    <v-card class="pa-2 ma-2">
+      <v-switch
+        :model-value="editingMode"
+        inset
+        hide-details
+        label="Edit mode"
+        @click="editingMode = !editingMode"
+      />
+      <v-checkbox
+        v-model="showMainMenuButton"
+        label="Always show menu button"
+        hide-details
+      />
+    </v-card>
+  </v-menu>
   <SnappingGrid
     v-if="showGrid && editingMode"
     :grid-interval="gridInterval"
@@ -85,7 +103,8 @@ import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 const store = useWidgetManagerStore()
 
 const { x: mouseX } = useMouse()
-const showEditButton = ref(false)
+const showMainMenuButton = ref(false)
+const activateMainMenuButton = ref(false)
 const editingMode = ref(false)
 const showGrid = ref(true)
 const gridInterval = ref(0.01)
@@ -95,7 +114,7 @@ const widgetsPresent = computed(() =>
 )
 
 watch(mouseX, () => {
-  showEditButton.value = mouseX.value < 100 || !widgetsPresent.value
+  activateMainMenuButton.value = mouseX.value < 100 || !widgetsPresent.value
 })
 
 // TODO: Make this work
@@ -130,8 +149,8 @@ watch(mouseX, () => {
 }
 .edit-mode-btn {
   position: absolute;
-  left: 10;
-  top: 50%;
+  left: 15px;
+  top: 15px;
   z-index: 60;
 }
 </style>
