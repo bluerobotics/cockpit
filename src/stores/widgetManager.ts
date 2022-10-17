@@ -59,8 +59,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       hash: widgetHash,
       name: widgetHash,
       component: widgetType,
-      position: { x: 0.05, y: 0.05 },
-      size: { width: 0.2, height: 0.35 },
+      position: { x: 0.4, y: 0.32 },
+      size: { width: 0.2, height: 0.36 },
       options: {},
     })
   }
