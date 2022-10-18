@@ -72,10 +72,9 @@
         <v-expansion-panels>
           <v-expansion-panel>
             <v-expansion-panel-title>Color</v-expansion-panel-title>
-            <v-expansion-panel-text>
+            <v-expansion-panel-text class="pa-2">
               <v-color-picker
                 v-model="widget.options.hudColor"
-                class="ma-2"
                 :swatches="colorSwatches"
                 show-swatches
               />
