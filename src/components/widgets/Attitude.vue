@@ -165,7 +165,8 @@ const angleY = (angle: number): number => {
 const hudConfig = computed(() => {
   const halfArc = {
     innerRadius: aimRadius.value,
-    outerRadius: aimRadius.value + 2,
+    outerRadius: aimRadius.value + 1,
+    fill: 'red',
     angle: 90,
     stroke: widget.value.options.hudColor,
     strokeWidth: 2,
@@ -196,14 +197,14 @@ const hudConfig = computed(() => {
   const pitchLinesBaseConfig = {
     y: 0,
     stroke: widget.value.options.hudColor,
-    strokeWidth: 1,
+    strokeWidth: 2,
     dash: [6, 3],
   }
 
   const pitchTextsBaseConfig = {
-    y: -14,
+    y: -18,
     width: 30,
-    fontSize: 12,
+    fontSize: 15,
     fontStyle: 'bold',
     fontFamily: 'Arial',
     fill: widget.value.options.hudColor,
@@ -220,11 +221,11 @@ const hudConfig = computed(() => {
     let lineWidth = -stageSize.value.width / 2
     let lineConfig = {
       ...pitchLinesBaseConfig,
-      ...{ x: -3, points: [0, 20, -2, 0, 0.3 * lineWidth, 0] },
+      ...{ x: -4, points: [0, 20, -2, 0, 0.3 * lineWidth, 0] },
     }
     let textConfig = {
       ...pitchTextsBaseConfig,
-      ...{ x: -36, align: 'right', text: `${angle}°` },
+      ...{ x: -34, align: 'right', text: `${angle}°` },
     }
     let groupConfig = { y: renderVars.pitchLinesHeights[angle] }
     pitchLines.left[angle] = { lineConfig, textConfig, groupConfig }
@@ -242,7 +243,7 @@ const hudConfig = computed(() => {
   })
 
   const LiveTextsBase = {
-    fontSize: 20,
+    fontSize: 22,
     fontStyle: 'bold',
     fontFamily: 'Arial',
     fill: widget.value.options.hudColor,
