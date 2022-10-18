@@ -39,7 +39,7 @@
       @click="showOptionsDialog = !showOptionsDialog"
     />
   </div>
-  <v-dialog v-model="showOptionsDialog">
+  <v-dialog v-model="showOptionsDialog" min-width="400" max-width="35%">
     <v-card class="pa-2">
       <v-card-title>Attitude widget config</v-card-title>
       <v-card-text>

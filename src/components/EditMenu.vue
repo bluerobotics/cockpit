@@ -65,7 +65,7 @@
     </v-card>
   </v-navigation-drawer>
   <teleport to="body">
-    <v-dialog v-model="layerDeleteDialogRevealed">
+    <v-dialog v-model="layerDeleteDialogRevealed" width="auto">
       <v-card class="pa-2">
         <v-card-title>Delete layer?</v-card-title>
         <v-card-actions>

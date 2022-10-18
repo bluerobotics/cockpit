@@ -53,7 +53,7 @@
       </v-menu>
     </div>
     <teleport to="body">
-      <v-dialog v-model="widgetDeleteDialogRevealed">
+      <v-dialog v-model="widgetDeleteDialogRevealed" width="auto">
         <v-card class="pa-2">
           <v-card-title>Delete widget?</v-card-title>
           <v-card-actions>
