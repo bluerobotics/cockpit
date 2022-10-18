@@ -37,7 +37,7 @@
       </p>
     </template>
   </v-sheet>
-  <v-dialog v-model="showOptionsDialog">
+  <v-dialog v-model="showOptionsDialog" width="auto">
     <v-card class="pa-2">
       <v-card-title>Indicators widget config</v-card-title>
       <v-card-text>

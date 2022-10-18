@@ -15,7 +15,7 @@
       @click="showOptionsDialog = !showOptionsDialog"
     />
   </div>
-  <v-dialog v-model="showOptionsDialog">
+  <v-dialog v-model="showOptionsDialog" width="auto">
     <v-card class="pa-2">
       <v-card-title>Video widget config</v-card-title>
       <v-card-text>
