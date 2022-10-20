@@ -218,6 +218,8 @@ const hudConfig = computed(() => {
   const pitchLines: PitchLines = { left: {}, right: {} }
   pitchAngles.forEach((angle: number) => {
     let lineWidth = -stageSize.value.width / 2
+    if (angle === 0) lineWidth = 2 * lineWidth
+
     let lineConfig = {
       ...pitchLinesBaseConfig,
       ...{ x: -4, points: [0, 20, -2, 0, 0.3 * lineWidth, 0] },
@@ -239,6 +241,13 @@ const hudConfig = computed(() => {
     }
     groupConfig = { y: renderVars.pitchLinesHeights[angle] }
     pitchLines.right[angle] = { lineConfig, textConfig, groupConfig }
+
+    if (angle === 0) {
+      for (const side of Object.values(pitchLines)) {
+        side[angle].lineConfig.strokeWidth = 1.5 * lineConfig.strokeWidth
+        side[angle].lineConfig.dash = undefined
+      }
+    }
   })
 
   const LiveTextsBase = {
