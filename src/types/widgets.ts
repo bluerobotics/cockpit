@@ -5,6 +5,7 @@ import type { Point2D, SizeRect2D } from './general'
  * The enum value is equal to the component's filename, without the '.vue' extension
  */
 export enum WidgetType {
+  ActionMapper = 'ActionMapper',
   Attitude = 'Attitude',
   Compass = 'Compass',
   DepthHUD = 'DepthHUD',
