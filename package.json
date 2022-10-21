@@ -24,6 +24,7 @@
     "@vue-leaflet/vue-leaflet": "^0.6.1",
     "@vueuse/core": "^9.1.1",
     "browser-or-node": "^2.0.0",
+    "date-fns": "^2.29.3",
     "gamepad.js": "^1.0.4",
     "gsap": "^3.11.3",
     "konva": "^8.3.13",
