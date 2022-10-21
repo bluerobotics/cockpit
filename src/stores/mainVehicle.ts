@@ -13,16 +13,18 @@ import {
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Attitude, Coordinates } from '@/libs/vehicle/types'
+import type { Attitude, Coordinates, PowerSupply } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
+  const cpuLoad = ref<number>()
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
+  const powerSupply: PowerSupply = reactive({} as PowerSupply)
 
   /**
    * Check if vehicle is online (no more than 5 seconds passed since last heartbeat)
@@ -50,8 +52,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     getAutoPilot(vehicles).onAttitude.add((newAttitude: Attitude) => {
       Object.assign(attitude, newAttitude)
     })
+    getAutoPilot(vehicles).onCpuLoad.add((newCpuLoad: number) => {
+      cpuLoad.value = newCpuLoad
+    })
     getAutoPilot(vehicles).onPosition.add((newCoordinates: Coordinates) => {
       Object.assign(coordinates, newCoordinates)
+    })
+    getAutoPilot(vehicles).onPowerSupply.add((newPowerSupply: PowerSupply) => {
+      Object.assign(powerSupply, newPowerSupply)
     })
     getAutoPilot(vehicles).onMAVLinkMessage.add(
       MAVLinkType.HEARTBEAT,
@@ -69,11 +77,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   return {
+    cpuLoad,
     lastHeartbeat,
     firmwareType,
     vehicleType,
     attitude,
     coordinates,
+    powerSupply,
     isVehicleOnline,
   }
 })
