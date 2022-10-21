@@ -5,7 +5,12 @@ import type {
 import { MAVLinkType } from '@/libs/connection/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
-import { Attitude, Battery, Coordinates } from '@/libs/vehicle/types'
+import {
+  Attitude,
+  Battery,
+  Coordinates,
+  PowerSupply,
+} from '@/libs/vehicle/types'
 
 import * as Vehicle from '../vehicle'
 
@@ -14,12 +19,17 @@ import * as Vehicle from '../vehicle'
  */
 export class ArduPilot extends Vehicle.Abstract {
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
+  _communicationDropRate = 0
+  _communicationErrors = 0
   _coordinates = new Coordinates({
     precision: 0,
     altitude: 0,
     latitude: 0,
     longitude: 0,
   })
+  _cpuLoad = 0 // CPU load in percentage
+  _powerSupply = new PowerSupply()
+  _vehicleSpecificErrors = [0, 0, 0, 0]
 
   _messages: MAVLinkMessageDictionary = new Map()
 
@@ -76,6 +86,33 @@ export class ArduPilot extends Vehicle.Abstract {
         this.onPosition.emit()
         break
       }
+      case MAVLinkType.SYS_STATUS: {
+        const sysStatus = mavlink_message.message as Message.SysStatus
+        this._cpuLoad = sysStatus.load / 10 // Permille CPU usage
+        this.onCpuLoad.emit()
+
+        this._powerSupply.voltage = sysStatus.voltage_battery / 100 // centVolts to Volts
+        this._powerSupply.current =
+          sysStatus.current_battery === -1
+            ? undefined
+            : sysStatus.current_battery / 100 // centAmps, -1 if not available
+        this._powerSupply.remaining =
+          sysStatus.battery_remaining === -1
+            ? undefined
+            : sysStatus.battery_remaining // -1 if not available
+        console.log(`power ${JSON.stringify(this._powerSupply)}`)
+        this.onPowerSupply.emit()
+
+        this._communicationDropRate = sysStatus.drop_rate_comm // Drop rate of packets that were corrupted on reception
+        this._communicationErrors = sysStatus.errors_comm // Number of packets that were corrupted on reception
+        this._vehicleSpecificErrors = [
+          sysStatus._errors_count1,
+          sysStatus._errors_count2,
+          sysStatus._errors_count3,
+          sysStatus._errors_count4,
+        ] // Autopilot-specific errors
+        break
+      }
       default:
         break
     }
@@ -110,6 +147,15 @@ export class ArduPilot extends Vehicle.Abstract {
   }
 
   /**
+   * Get CPU load percentage
+   *
+   * @returns {number}
+   */
+  cpuLoad(): number {
+    return this._cpuLoad
+  }
+
+  /**
    * Disarm vehicle
    *
    * @returns {boolean}
@@ -136,5 +182,13 @@ export class ArduPilot extends Vehicle.Abstract {
    */
   position(): Coordinates {
     return this._coordinates
+  }
+  /**
+   * Return power supply information
+   *
+   * @returns {PowerSupply}
+   */
+  powerSupply(): PowerSupply {
+    return this._powerSupply
   }
 }
