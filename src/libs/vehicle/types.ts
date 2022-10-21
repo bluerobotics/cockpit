@@ -124,6 +124,15 @@ export class Attitude {
 }
 
 /**
+ * PowerSupply
+ */
+export class PowerSupply {
+  voltage: number | undefined // in Volts
+  current: number | undefined // in Amps
+  remaining: number | undefined // Percentage available
+}
+
+/**
  * Battery abstraction
  */
 export class Battery {
