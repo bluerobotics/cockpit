@@ -58,6 +58,7 @@ import type {
   MavSensorOrientation,
   MavSeverity,
   MavState,
+  MavSysStatusSensor,
   MavTunnelPayloadType,
   MavType,
   MavVtolState,
@@ -115,15 +116,15 @@ export namespace Message {
     /**
      * Bitmap showing which onboard controllers and sensors are present. Value of 0: not present. Value of 1: present..
      */
-    onboard_control_sensors_present: BitFlag // MavSysStatusSensor https://mavlink.io/en/messages/common.html#POSITION_TARGET_TYPEMASK
+    onboard_control_sensors_present: MavSysStatusSensor
     /**
      * Bitmap showing which onboard controllers and sensors are enabled:Value of 0: not enabled. Value of 1: enabled..
      */
-    onboard_control_sensors_enabled: BitFlag // MavSysStatusSensor https://mavlink.io/en/messages/common.html#POSITION_TARGET_TYPEMASK
+    onboard_control_sensors_enabled: MavSysStatusSensor
     /**
      * Bitmap showing which onboard controllers and sensors have an error (or are operational). Value of 0: error. Value of 1: healthy..
      */
-    onboard_control_sensors_health: BitFlag // MavSysStatusSensor https://mavlink.io/en/messages/common.html#POSITION_TARGET_TYPEMASK
+    onboard_control_sensors_health: MavSysStatusSensor
     /**
      * Maximum usage in percent of the mainloop time. Values: [0-1000] - should always be below 1000.
      */

@@ -184,6 +184,76 @@ export enum MavGoto {
 }
 
 /**
+ * These encode the sensors whose status is sent as part of the SYS_STATUS message.
+ */
+export enum MavSysStatusSensor {
+  // 3D gyro
+  MAV_SYS_STATUS_SENSOR_3D_GYRO = 0x01,
+  // 3D accelerometer
+  MAV_SYS_STATUS_SENSOR_3D_ACCEL = 0x02,
+  // 3D magnetometer
+  MAV_SYS_STATUS_SENSOR_3D_MAG = 0x04,
+  // Absolute pressure
+  MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE = 0x08,
+  // Differential pressure
+  MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE = 0x10,
+  // GPS
+  MAV_SYS_STATUS_SENSOR_GPS = 0x20,
+  // Optical flow
+  MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW = 0x40,
+  // Computer vision position
+  MAV_SYS_STATUS_SENSOR_VISION_POSITION = 0x80,
+  // Laser based position
+  MAV_SYS_STATUS_SENSOR_LASER_POSITION = 0x100,
+  // External ground truth (Vicon or Leica)
+  MAV_SYS_STATUS_SENSOR_EXTERNAL_GROUND_TRUTH = 0x200,
+  // 3D angular rate control
+  MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL = 0x400,
+  // Attitude stabilization
+  MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION = 0x800,
+  // Yaw position
+  MAV_SYS_STATUS_SENSOR_YAW_POSITION = 0x1000,
+  // Z/altitude control
+  MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL = 0x2000,
+  // x/y position control
+  MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL = 0x4000,
+  // Motor outputs / control
+  MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS = 0x8000,
+  // Rc receiver
+  MAV_SYS_STATUS_SENSOR_RC_RECEIVER = 0x10000,
+  // 2nd 3D gyro
+  MAV_SYS_STATUS_SENSOR_3D_GYRO2 = 0x20000,
+  // 2nd 3D accelerometer
+  MAV_SYS_STATUS_SENSOR_3D_ACCEL2 = 0x40000,
+  // 2nd 3D magnetometer
+  MAV_SYS_STATUS_SENSOR_3D_MAG2 = 0x80000,
+  // Geofence
+  MAV_SYS_STATUS_GEOFENCE = 0x100000,
+  // AHRS subsystem health
+  MAV_SYS_STATUS_AHRS = 0x200000,
+  // Terrain subsystem health
+  MAV_SYS_STATUS_TERRAIN = 0x400000,
+  // Motors are reversed
+  MAV_SYS_STATUS_REVERSE_MOTOR = 0x800000,
+  // Logging
+  MAV_SYS_STATUS_LOGGING = 0x1000000,
+  // Battery
+  MAV_SYS_STATUS_SENSOR_BATTERY = 0x2000000,
+  // Proximity
+  MAV_SYS_STATUS_SENSOR_PROXIMITY = 0x4000000,
+  // Satellite Communication
+  MAV_SYS_STATUS_SENSOR_SATCOM = 0x8000000,
+  // Pre-arm check status. Always healthy when armed
+  MAV_SYS_STATUS_PREARM_CHECK = 0x10000000,
+  // Avoidance/collision prevention
+  MAV_SYS_STATUS_OBSTACLE_AVOIDANCE = 0x20000000,
+  // Propulsion (actuator, esc, motor or propellor)
+  MAV_SYS_STATUS_SENSOR_PROPULSION = 0x40000000,
+  // Extended bit-field are used for further sensor status bits (needs to be set in onboard_control_sensors_present only)
+  MAV_SYS_STATUS_EXTENSION_USED = 0x80000000,
+}
+
+/**
  * These defines are predefined OR-combined mode flags.
  * There is no need to use values from this enum, but it simplifies the use of the mode flags.
  * Note that manual input is enabled in all modes as a safety override.
