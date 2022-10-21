@@ -15,6 +15,8 @@
       <p class="text-body-1">{{ store.firmwareType }}</p>
       <p class="font-weight-bold text-body-1">Vehicle:</p>
       <p class="text-body-1">{{ store.vehicleType }}</p>
+      <p class="font-weight-bold text-body-1">CPU load:</p>
+      <p class="text-body-1">{{ store.cpuLoad?.toFixed(2) }} %</p>
     </template>
     <template v-if="widget.options.showCoordinates">
       <p class="font-weight-bold text-body-1">Lat/Long:</p>
@@ -36,6 +38,13 @@
         {{ degrees(store.attitude?.yaw).toFixed(2) }} deg
       </p>
     </template>
+    <template v-if="widget.options.showPower">
+      <p class="font-weight-bold text-body-1">Battery:</p>
+      <p class="text-body-1">
+        {{ store.powerSupply?.voltage?.toFixed(2) }} V /
+        {{ store.powerSupply?.current?.toFixed(2) }} A
+      </p>
+    </template>
   </v-sheet>
   <v-dialog v-model="showOptionsDialog" width="auto">
     <v-card class="pa-2">
@@ -54,6 +63,11 @@
         <v-checkbox
           v-model="widget.options.showAttitude"
           label="showAttitude"
+          hide-details
+        />
+        <v-checkbox
+          v-model="widget.options.showPower"
+          label="showPower"
           hide-details
         />
       </v-card-text>
@@ -86,6 +100,7 @@ onBeforeMount(() => {
       showCoordinates: true,
       showAttitude: true,
       showDebugInfo: true,
+      showPower: true,
     }
   }
 })
