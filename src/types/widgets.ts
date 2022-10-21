@@ -10,6 +10,7 @@ export enum WidgetType {
   Indicators = 'Indicators',
   Joystick = 'Joystick',
   Map = 'Map',
+  PowerSupply = 'PowerSupply',
   VideoPlayer = 'VideoPlayer',
 }
 
