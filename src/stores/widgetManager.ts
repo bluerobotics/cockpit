@@ -1,3 +1,5 @@
+import '@/libs/cosmos'
+
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
