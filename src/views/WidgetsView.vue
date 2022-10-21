@@ -46,6 +46,9 @@
           <template v-if="widget.component === WidgetType.Map">
             <Map :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.PowerSupply">
+            <PowerSupply :widget="widget" />
+          </template>
           <template v-if="widget.component === WidgetType.VideoPlayer">
             <VideoPlayer :widget="widget" />
           </template>
@@ -80,6 +83,7 @@ import Compass from '../components/widgets/Compass.vue'
 import Indicators from '../components/widgets/Indicators.vue'
 import Joystick from '../components/widgets/Joystick.vue'
 import Map from '../components/widgets/Map.vue'
+import PowerSupply from '../components/widgets/PowerSupply.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 
 const store = useWidgetManagerStore()
