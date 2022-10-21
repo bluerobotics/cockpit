@@ -1,7 +1,12 @@
 import global from '@/libs/cosmos'
 import * as FunnyName from '@/libs/funny-name/funny-name'
 import { Signal } from '@/libs/signal'
-import type { Attitude, Battery, Coordinates } from '@/libs/vehicle/types'
+import type {
+  Attitude,
+  Battery,
+  Coordinates,
+  PowerSupply,
+} from '@/libs/vehicle/types'
 
 /**
  * Define possible firmwares used by the vehicle
@@ -55,7 +60,9 @@ export abstract class Abstract {
   onArm = new Signal<boolean>()
   onAttitude = new Signal<Attitude>()
   onBatteries = new Signal<Battery[]>()
+  onCpuLoad = new Signal<number>()
   onPosition = new Signal<Coordinates>()
+  onPowerSupply = new Signal<PowerSupply>()
 
   /**
    * Constructor for the abstract vehicle type
@@ -84,7 +91,9 @@ export abstract class Abstract {
     this.onArm.register_caller(() => this.arm())
     this.onAttitude.register_caller(() => this.attitude())
     this.onBatteries.register_caller(() => this.batteries())
+    this.onCpuLoad.register_caller(() => this.cpuLoad())
     this.onPosition.register_caller(() => this.position())
+    this.onPowerSupply.register_caller(() => this.powerSupply())
   }
 
   /**
@@ -110,7 +119,9 @@ export abstract class Abstract {
   abstract arm(): boolean
   abstract attitude(): Attitude
   abstract batteries(): Battery[]
+  abstract cpuLoad(): number // Percentage
   abstract disarm(): boolean
   abstract isArmed(): boolean
   abstract position(): Coordinates
+  abstract powerSupply(): PowerSupply
 }
