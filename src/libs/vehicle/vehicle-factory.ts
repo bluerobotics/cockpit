@@ -15,7 +15,7 @@ import { ArduSub } from './ardupilot/ardusub'
 import * as Vehicle from './vehicle'
 
 /**
- *
+ * Class responsible for handling vehicle creation
  */
 export class VehicleFactory {
   static _vehicles: WeakRef<Vehicle.Abstract>[] = []
