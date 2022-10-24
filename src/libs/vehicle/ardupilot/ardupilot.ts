@@ -28,6 +28,7 @@ export class ArduPilot extends Vehicle.Abstract {
     longitude: 0,
   })
   _cpuLoad = 0 // CPU load in percentage
+  _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
   _vehicleSpecificErrors = [0, 0, 0, 0]
 
@@ -84,6 +85,15 @@ export class ArduPilot extends Vehicle.Abstract {
         this._coordinates.latitude = position.lat / 1e7 // DegE7 to Deg
         this._coordinates.longitude = position.lon / 1e7 // DegE7 to Deg
         this.onPosition.emit()
+        break
+      }
+      case MAVLinkType.HEARTBEAT: {
+        const heartbeat = mavlink_message.message as Message.Heartbeat
+
+        this._isArmed = Boolean(
+          heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_SAFETY_ARMED
+        )
+        this.onArm.emit()
         break
       }
       case MAVLinkType.SYS_STATUS: {
@@ -170,8 +180,7 @@ export class ArduPilot extends Vehicle.Abstract {
    * @returns {boolean}
    */
   isArmed(): boolean {
-    unimplemented()
-    return true
+    return this._isArmed
   }
 
   /**
