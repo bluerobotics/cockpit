@@ -38,6 +38,7 @@ import type {
   MavMissionResult,
   MavMissionType,
   MavMode,
+  MavModeFlag,
   MavOdidAuthType,
   MavOdidCategoryEu,
   MavOdidClassificationType,
@@ -97,7 +98,7 @@ export namespace Message {
     /**
      * System mode bitmap..
      */
-    base_mode: BitFlag // TODO: MavModeFlag https://mavlink.io/en/messages/common.html#MAV_MODE_FLAG
+    base_mode: BitFlag<MavModeFlag>
     /**
      * System status flag..
      */
@@ -2811,7 +2812,7 @@ export namespace Message {
     /**
      * System mode. Includes arming state..
      */
-    mode: BitFlag // TODO: MavModeFlag https://mavlink.io/en/messages/common.html#MAV_MODE_FLAG
+    mode: BitFlag<MavModeFlag>
   }
 
   /**
@@ -5012,7 +5013,7 @@ export namespace Message {
     /**
      * Bitmap of enabled system modes..
      */
-    base_mode: BitFlag // TODO: MavModeFlag https://mavlink.io/en/messages/common.html#MAV_MODE_FLAG
+    base_mode: BitFlag<MavModeFlag>
     /**
      * The landed state. Is set to MAV_LANDED_STATE_UNDEFINED if landed state is unknown..
      */
