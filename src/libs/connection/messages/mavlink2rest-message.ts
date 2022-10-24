@@ -84,7 +84,7 @@ export namespace Message {
    */
   export interface Heartbeat extends Message {
     /**
-     * A bitfield for
+     * A bitfield for autopilot-specific flags
      */
     custom_mode: number
     /**
