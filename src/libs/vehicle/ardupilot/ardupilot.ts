@@ -221,4 +221,14 @@ export abstract class ArduPilotVehicle<
   powerSupply(): PowerSupply {
     return this._powerSupply
   }
+
+  /**
+   * Set vehicle flight mode
+   *
+   * @param {'Modes'} mode Custom vehicle mode
+   */
+  setMode(mode: Modes): void {
+    unimplemented()
+    mode
+  }
 }
