@@ -53,9 +53,9 @@ export class ArduPilot extends Vehicle.Abstract {
   onMessage(message: Uint8Array): void {
     const textDecoder = new TextDecoder()
     const mavlink_message = JSON.parse(textDecoder.decode(message)) as Package
-    const { system_id } = mavlink_message.header
+    const { system_id, component_id } = mavlink_message.header
 
-    if (system_id != 1) {
+    if (system_id != 1 || component_id != 1) {
       return
     }
 
