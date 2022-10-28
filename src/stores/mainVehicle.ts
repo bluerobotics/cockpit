@@ -26,6 +26,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const coordinates: Coordinates = reactive({} as Coordinates)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
+  const isArmed = ref<boolean>()
+
+  const mode = ref<string>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const modes = ref<Map<string, any>>()
 
   /**
    * Check if vehicle is online (no more than 5 seconds passed since last heartbeat)
@@ -51,8 +56,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   VehicleFactory.onVehicles.once((vehicles: WeakRef<Vehicle.Abstract>[]) => {
     mainVehicle.value = getAutoPilot(vehicles)
+    modes.value = mainVehicle.value.modesAvailable()
+
     mainVehicle.value.onAttitude.add((newAttitude: Attitude) => {
       Object.assign(attitude, newAttitude)
+    })
+    mainVehicle.value.onArm.add((armed: boolean) => {
+      isArmed.value = armed
     })
     mainVehicle.value.onCpuLoad.add((newCpuLoad: number) => {
       cpuLoad.value = newCpuLoad
@@ -76,6 +86,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         lastHeartbeat.value = new Date()
       }
     )
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getAutoPilot(vehicles).onMode.add((vehicleMode: any) => {
+      mode.value = [...(modes.value?.entries() ?? [])]
+        .filter(([, value]) => value !== vehicleMode)
+        .map(([, value]) => value)
+        .first()
+    })
   })
 
   return {
@@ -86,6 +103,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     attitude,
     coordinates,
     powerSupply,
+    mode,
+    modes,
+    isArmed,
     isVehicleOnline,
   }
 })
