@@ -47,7 +47,7 @@ function toFunnyNameType(type: Type): FunnyName.Type {
 /**
  * Vehicle abstraction
  */
-export abstract class Abstract {
+export abstract class AbstractVehicle<Modes> {
   // Information used to identify vehicle on frontend and specialized functionalities
   _firmware: Firmware
   _type: Type
@@ -61,6 +61,7 @@ export abstract class Abstract {
   onAttitude = new Signal<Attitude>()
   onBatteries = new Signal<Battery[]>()
   onCpuLoad = new Signal<number>()
+  onMode = new Signal<Modes>()
   onPosition = new Signal<Coordinates>()
   onPowerSupply = new Signal<PowerSupply>()
 
@@ -92,6 +93,7 @@ export abstract class Abstract {
     this.onAttitude.register_caller(() => this.attitude())
     this.onBatteries.register_caller(() => this.batteries())
     this.onCpuLoad.register_caller(() => this.cpuLoad())
+    this.onMode.register_caller(() => this.mode())
     this.onPosition.register_caller(() => this.position())
     this.onPowerSupply.register_caller(() => this.powerSupply())
   }
@@ -122,6 +124,9 @@ export abstract class Abstract {
   abstract cpuLoad(): number // Percentage
   abstract disarm(): boolean
   abstract isArmed(): boolean
+  abstract mode(): Modes
+  abstract modesAvailable(): Map<string, Modes>
   abstract position(): Coordinates
   abstract powerSupply(): PowerSupply
+  abstract setMode(mode: Modes): void
 }
