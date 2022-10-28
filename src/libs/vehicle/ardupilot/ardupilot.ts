@@ -100,7 +100,6 @@ export class ArduPilot extends Vehicle.Abstract {
           sysStatus.battery_remaining === -1
             ? undefined
             : sysStatus.battery_remaining // -1 if not available
-        console.log(`power ${JSON.stringify(this._powerSupply)}`)
         this.onPowerSupply.emit()
 
         this._communicationDropRate = sysStatus.drop_rate_comm // Drop rate of packets that were corrupted on reception
