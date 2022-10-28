@@ -2,7 +2,10 @@ import type {
   MAVLinkMessageDictionary,
   Package,
 } from '@/libs/connection/messages/mavlink2rest'
-import { MAVLinkType } from '@/libs/connection/messages/mavlink2rest-enum'
+import {
+  MAVLinkType,
+  MavModeFlag,
+} from '@/libs/connection/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
 import {
@@ -14,10 +17,15 @@ import {
 
 import * as Vehicle from '../vehicle'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ArduPilot = ArduPilotVehicle<any>
+
 /**
  * Generic ArduPilot vehicle
  */
-export class ArduPilot extends Vehicle.Abstract {
+export abstract class ArduPilotVehicle<
+  Modes
+> extends Vehicle.AbstractVehicle<Modes> {
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0
@@ -35,6 +43,18 @@ export class ArduPilot extends Vehicle.Abstract {
   _messages: MAVLinkMessageDictionary = new Map()
 
   onMAVLinkMessage = new SignalTyped()
+
+  /**
+   * Function for subclass inheritance
+   * Helps to deal with specialized vehicles that has particular or custom behaviour
+   *
+   * @param {Package} mavlink message
+   */
+  protected onMAVLinkPackage(mavlink: Package): void {
+    // Nothing here, typescript does not not have clean optional abstract methods
+    // without abstract class
+    mavlink
+  }
 
   /**
    * Construct a new generic ArduPilot type
@@ -125,6 +145,8 @@ export class ArduPilot extends Vehicle.Abstract {
       default:
         break
     }
+
+    this.onMAVLinkPackage(mavlink_message)
   }
 
   /**
