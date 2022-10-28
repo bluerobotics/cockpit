@@ -89,7 +89,7 @@ export abstract class AbstractVehicle<Modes> {
       `\tfirmware: ${this._firmware}\n`
     )
 
-    this.onArm.register_caller(() => this.arm())
+    this.onArm.register_caller(() => this.isArmed())
     this.onAttitude.register_caller(() => this.attitude())
     this.onBatteries.register_caller(() => this.batteries())
     this.onCpuLoad.register_caller(() => this.cpuLoad())
