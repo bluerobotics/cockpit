@@ -66,9 +66,9 @@ export interface Type<T> {
 /**
  * Abstract MAVLink2Rest bitflag identification
  */
-export interface BitFlag {
+export interface BitFlag<T = number> {
   /**
    * Abstract bitflag
    */
-  bits: number[]
+  bits: T
 }
