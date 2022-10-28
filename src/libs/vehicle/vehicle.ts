@@ -8,6 +8,9 @@ import type {
   PowerSupply,
 } from '@/libs/vehicle/types'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Abstract = AbstractVehicle<any>
+
 /**
  * Define possible firmwares used by the vehicle
  */
