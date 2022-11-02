@@ -5,7 +5,7 @@
         v-bind="menuProps"
         class="edit-mode-btn"
         icon="mdi-menu"
-        :disabled="!activateMainMenuButton"
+        :disabled="!(activateMainMenuButton || showMainMenuButton)"
       />
     </template>
     <v-card class="pa-2 ma-2">
