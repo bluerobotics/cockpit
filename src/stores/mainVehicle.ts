@@ -25,6 +25,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
+  const mainVehicle = ref<ArduPilot | undefined>(undefined)
 
   /**
    * Check if vehicle is online (no more than 5 seconds passed since last heartbeat)
@@ -49,19 +50,20 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   VehicleFactory.onVehicles.once((vehicles: WeakRef<Vehicle.Abstract>[]) => {
-    getAutoPilot(vehicles).onAttitude.add((newAttitude: Attitude) => {
+    mainVehicle.value = getAutoPilot(vehicles)
+    mainVehicle.value.onAttitude.add((newAttitude: Attitude) => {
       Object.assign(attitude, newAttitude)
     })
-    getAutoPilot(vehicles).onCpuLoad.add((newCpuLoad: number) => {
+    mainVehicle.value.onCpuLoad.add((newCpuLoad: number) => {
       cpuLoad.value = newCpuLoad
     })
-    getAutoPilot(vehicles).onPosition.add((newCoordinates: Coordinates) => {
+    mainVehicle.value.onPosition.add((newCoordinates: Coordinates) => {
       Object.assign(coordinates, newCoordinates)
     })
-    getAutoPilot(vehicles).onPowerSupply.add((newPowerSupply: PowerSupply) => {
+    mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
     })
-    getAutoPilot(vehicles).onMAVLinkMessage.add(
+    mainVehicle.value.onMAVLinkMessage.add(
       MAVLinkType.HEARTBEAT,
       (pack: Package) => {
         if (pack.header.system_id != 1 || pack.header.component_id != 1) {
