@@ -35,7 +35,7 @@
     "vue": "^3.2.33",
     "vue-konva": "^3.0.1",
     "vue-router": "^4.0.14",
-    "vuetify": "^3.0.0-beta.13",
+    "vuetify": "^3.0.0",
     "webfontloader": "^1.0.0"
   },
   "devDependencies": {
