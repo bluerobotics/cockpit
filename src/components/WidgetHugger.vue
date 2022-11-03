@@ -270,6 +270,9 @@ const cursorStyle = computed(() => {
 const widgetEditingColor = computed(() =>
   allowMoving.value ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)'
 )
+const widgetOverlayColor = computed(() =>
+  allowMoving.value ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0)'
+)
 
 const widgetDeleteDialogRevealed = ref(false)
 const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
@@ -284,6 +287,7 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
   top: v-bind('positionStyle.top');
   width: v-bind('sizeStyle.width');
   height: v-bind('sizeStyle.height');
+  background-color: v-bind('widgetOverlayColor');
 }
 .innerWidget {
   width: 100%;
