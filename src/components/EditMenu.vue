@@ -3,57 +3,62 @@
   <v-navigation-drawer v-model="showDrawer" width="400" temporary>
     <v-card ref="editDrawer" flat class="pa-2 edit-menu">
       <v-card-title>Edit menu</v-card-title>
-      <div v-if="selectedLayer !== undefined">
-        <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
-        <div class="d-flex align-center ma-2">
-          <v-select
-            v-model="selectedLayer"
-            :items="availableLayers"
-            density="compact"
-            variant="outlined"
-            no-data-text="No layers available."
-            hide-details
-          />
-          <v-btn
-            class="ml-2"
-            icon="mdi-delete"
-            size="small"
-            rounded="lg"
-            @click="layerDeleteDialog.reveal"
-          />
+      <v-card-subtitle class="mt-4 text-subtitle-1">
+        Current profile: {{ store.currentProfile.name }}
+      </v-card-subtitle>
+      <div class="ml-4">
+        <div v-if="selectedLayer !== undefined">
+          <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
+          <div class="d-flex align-center ma-2">
+            <v-select
+              v-model="selectedLayer"
+              :items="availableLayers"
+              density="compact"
+              variant="outlined"
+              no-data-text="No layers available."
+              hide-details
+            />
+            <v-btn
+              class="ml-2"
+              icon="mdi-delete"
+              size="small"
+              rounded="lg"
+              @click="layerDeleteDialog.reveal"
+            />
+          </div>
+          <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
+          <template v-if="selectedLayer.widgets.length > 0">
+            <li
+              v-for="widget in selectedLayer.widgets"
+              :key="widget.hash"
+              class="pl-6"
+            >
+              {{ widget.component }}
+            </li>
+          </template>
+          <p v-else class="pl-6">No widgets in layer.</p>
+          <div class="d-flex align-center ma-3">
+            <v-select
+              v-model="selectedWidgetType"
+              :items="availableWidgetTypes"
+              density="compact"
+              variant="outlined"
+              label="Widget type"
+              hide-details
+            />
+            <v-btn
+              class="ml-2"
+              icon="mdi-plus"
+              size="small"
+              rounded="lg"
+              :disabled="selectedWidgetType === undefined"
+              @click="addWidget"
+            />
+          </div>
         </div>
-        <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
-        <template v-if="selectedLayer.widgets.length > 0">
-          <li
-            v-for="widget in selectedLayer.widgets"
-            :key="widget.hash"
-            class="pl-6"
-          >
-            {{ widget.component }}
-          </li>
-        </template>
-        <p v-else class="pl-6">No widgets in layer.</p>
-        <div class="d-flex align-center ma-3">
-          <v-select
-            v-model="selectedWidgetType"
-            :items="availableWidgetTypes"
-            density="compact"
-            variant="outlined"
-            label="Widget type"
-            hide-details
-          />
-          <v-btn
-            class="ml-2"
-            icon="mdi-plus"
-            size="small"
-            rounded="lg"
-            :disabled="selectedWidgetType === undefined"
-            @click="addWidget"
-          />
-        </div>
+        <v-btn class="ma-1" flat @click="addLayer">Add new layer</v-btn>
       </div>
       <v-card-actions>
-        <v-btn class="ma-1" @click="addLayer">Add new layer</v-btn>
         <v-switch
           class="ma-1"
           label="Grid"
