@@ -4,13 +4,14 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
 
-import { widgetProfile } from '@/assets/defaults'
+import { widgetProfile, widgetProfiles } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
 import type { Point2D, SizeRect2D } from '@/types/general'
-import type { Layer, Widget, WidgetType } from '@/types/widgets'
+import type { Layer, Profile, Widget, WidgetType } from '@/types/widgets'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentProfile = useStorage('cockpit-current-profile', widgetProfile)
+  const savedProfiles = useStorage('cockpit-saved-profiles', widgetProfiles)
 
   /**
    * Get layer where given widget is at
@@ -27,6 +28,28 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       }
     }
     throw new Error(`No layer found for widget with hash ${widget.hash}`)
+  }
+
+  /**
+   * Adds new profile to the store
+   *
+   * @param { string } name - Custom name for the profile
+   * @param { Layer[] } profileLayers - Layers that define the profile
+   * @returns { Profile } The profile object just created
+   */
+  function saveProfile(name: string, profileLayers: Layer[]): Profile {
+    const newProfile = { name: name, layers: profileLayers }
+    savedProfiles.value[uuid4()] = newProfile
+    return newProfile
+  }
+
+  /**
+   * Change current profile for given one
+   *
+   * @param { Profile } profile - Profile to be loaded
+   */
+  function loadProfile(profile: Profile): void {
+    currentProfile.value = profile
   }
 
   /**
@@ -125,6 +148,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   return {
     currentProfile,
+    savedProfiles,
+    loadProfile,
+    saveProfile,
     addLayer,
     deleteLayer,
     addWidget,
