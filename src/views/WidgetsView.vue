@@ -31,7 +31,7 @@
   <EditMenu v-model:edit-mode="editingMode" v-model:show-grid="showGrid" />
   <div class="main">
     <div
-      v-for="layer in store.layers.slice().reverse()"
+      v-for="layer in store.currentProfile.layers.slice().reverse()"
       :key="layer.hash"
       class="widget-layer"
     >
@@ -118,7 +118,7 @@ const showGrid = ref(true)
 const gridInterval = ref(0.01)
 
 const widgetsPresent = computed(() =>
-  store.layers.some((layer) => layer.widgets.length != 0)
+  store.currentProfile.layers.some((layer) => layer.widgets.length != 0)
 )
 
 watch(mouseX, () => {
