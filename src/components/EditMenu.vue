@@ -3,62 +3,89 @@
   <v-navigation-drawer v-model="showDrawer" width="400" temporary>
     <v-card ref="editDrawer" flat class="pa-2 edit-menu">
       <v-card-title>Edit menu</v-card-title>
-      <v-card-subtitle class="mt-4 text-subtitle-1">
-        Current profile: {{ store.currentProfile.name }}
-      </v-card-subtitle>
-      <div class="ml-4">
-        <div v-if="selectedLayer !== undefined">
-          <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
-          <div class="d-flex align-center ma-2">
-            <v-select
-              v-model="selectedLayer"
-              :items="availableLayers"
-              density="compact"
-              variant="outlined"
-              no-data-text="No layers available."
-              hide-details
-            />
-            <v-btn
-              class="ml-2"
-              icon="mdi-delete"
-              size="small"
-              rounded="lg"
-              @click="layerDeleteDialog.reveal"
-            />
-          </div>
-          <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
-          <template v-if="selectedLayer.widgets.length > 0">
-            <li
-              v-for="widget in selectedLayer.widgets"
-              :key="widget.hash"
-              class="pl-6"
-            >
-              {{ widget.component }}
-            </li>
-          </template>
-          <p v-else class="pl-6">No widgets in layer.</p>
-          <div class="d-flex align-center ma-3">
-            <v-select
-              v-model="selectedWidgetType"
-              :items="availableWidgetTypes"
-              density="compact"
-              variant="outlined"
-              label="Widget type"
-              hide-details
-            />
-            <v-btn
-              class="ml-2"
-              icon="mdi-plus"
-              size="small"
-              rounded="lg"
-              :disabled="selectedWidgetType === undefined"
-              @click="addWidget"
-            />
-          </div>
-        </div>
-        <v-btn class="ma-1" flat @click="addLayer">Add new layer</v-btn>
+      <div class="mx-2 my-4">
+        <v-expansion-panels>
+          <v-expansion-panel>
+            <v-expansion-panel-title>
+              Current profile: {{ store.currentProfile.name }}
+            </v-expansion-panel-title>
+            <v-expansion-panel-text class="pa-2">
+              <div v-if="selectedLayer !== undefined">
+                <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
+                <div class="d-flex align-center ma-2">
+                  <v-select
+                    v-model="selectedLayer"
+                    :items="availableLayers"
+                    density="compact"
+                    variant="outlined"
+                    no-data-text="No layers available."
+                    hide-details
+                  />
+                  <v-btn
+                    class="ml-2"
+                    icon="mdi-delete"
+                    size="small"
+                    rounded="lg"
+                    @click="layerDeleteDialog.reveal"
+                  />
+                </div>
+                <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
+                <template v-if="selectedLayer.widgets.length > 0">
+                  <li
+                    v-for="widget in selectedLayer.widgets"
+                    :key="widget.hash"
+                    class="pl-6"
+                  >
+                    {{ widget.component }}
+                  </li>
+                </template>
+                <p v-else class="pl-6">No widgets in layer.</p>
+                <div class="d-flex align-center ma-3">
+                  <v-select
+                    v-model="selectedWidgetType"
+                    :items="availableWidgetTypes"
+                    density="compact"
+                    variant="outlined"
+                    label="Widget type"
+                    hide-details
+                  />
+                  <v-btn
+                    class="ml-2"
+                    icon="mdi-plus"
+                    size="small"
+                    rounded="lg"
+                    :disabled="selectedWidgetType === undefined"
+                    @click="addWidget"
+                  />
+                </div>
+              </div>
+              <v-btn class="ma-1" flat @click="addLayer">Add new layer</v-btn>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </div>
+      <div class="d-flex align-center ma-2">
+        <v-select
+          v-model="selectedProfile"
+          :items="availableProfiles"
+          density="compact"
+          variant="outlined"
+          label="Layer profiles available"
+          no-data-text="No profiles available."
+          hide-details
+        />
+        <v-btn
+          class="ml-2"
+          icon="mdi-download"
+          size="small"
+          rounded="lg"
+          @click="loadProfile"
+        />
       </div>
       <v-card-actions>
+        <v-btn class="ma-1" @click="profileCreationDialog.reveal">
+          Create new profile
+        </v-btn>
         <v-switch
           class="ma-1"
           label="Grid"
@@ -79,6 +106,30 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="profileCreationDialogRevealed" width="50%">
+      <v-card class="pa-2">
+        <v-card-title>New profile</v-card-title>
+        <v-card-text>
+          <v-form v-model="newProfileForm">
+            <v-text-field
+              v-model="newProfileName"
+              hide-details="auto"
+              label="Profile name"
+              :rules="[(name) => !!name || 'Name is required']"
+            />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            :disabled="!newProfileForm"
+            @click="profileCreationDialog.confirm"
+          >
+            Create
+          </v-btn>
+          <v-btn @click="profileCreationDialog.cancel">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </teleport>
 </template>
 
@@ -87,7 +138,7 @@ import { useConfirmDialog, useElementBounding, useMouse } from '@vueuse/core'
 import { computed, ref, toRefs, watch } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { type Layer, WidgetType } from '@/types/widgets'
+import { WidgetType } from '@/types/widgets'
 
 const store = useWidgetManagerStore()
 
@@ -108,7 +159,10 @@ const emit = defineEmits<{
 
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref()
-const selectedLayer = ref<Layer>(store.currentProfile.layers[0])
+const selectedProfile = ref()
+const selectedLayer = ref(store.currentProfile.layers[0])
+const newProfileName = ref('')
+const newProfileForm = ref(false)
 
 const showDrawer = ref(props.editMode)
 const editDrawer = ref()
@@ -131,6 +185,30 @@ const availableLayers = computed(() =>
   }))
 )
 
+const availableProfiles = computed(() =>
+  Object.values(store.savedProfiles).map((profile) => ({
+    title: profile.name,
+    value: profile,
+  }))
+)
+
+const loadProfile = (): void => {
+  if (selectedProfile.value === undefined) {
+    console.warn('Cannot load profile. No profile selected.')
+    return
+  }
+  store.loadProfile(selectedProfile.value)
+  selectedLayer.value = store.currentProfile.layers[0]
+}
+const createNewProfile = (): void => {
+  const newProfile = store.saveProfile(
+    newProfileName.value,
+    store.currentProfile.layers
+  )
+  store.loadProfile(newProfile)
+  selectedProfile.value = store.currentProfile
+  newProfileName.value = ''
+}
 const deleteLayer = (): void => {
   store.deleteLayer(selectedLayer.value)
   selectedLayer.value = store.currentProfile.layers[0]
@@ -149,6 +227,10 @@ const addWidget = (): void => {
 const layerDeleteDialogRevealed = ref(false)
 const layerDeleteDialog = useConfirmDialog(layerDeleteDialogRevealed)
 layerDeleteDialog.onConfirm(deleteLayer)
+
+const profileCreationDialogRevealed = ref(false)
+const profileCreationDialog = useConfirmDialog(profileCreationDialogRevealed)
+profileCreationDialog.onConfirm(createNewProfile)
 </script>
 
 <style scoped>
