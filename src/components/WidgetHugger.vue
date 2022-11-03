@@ -1,10 +1,11 @@
 <template>
+  <div
+    ref="widgetOverlay"
+    class="widgetOverlay"
+    :class="{ draggingWidget, hoveringOverlay }"
+  />
   <div ref="outerWidgetRef" class="outerWidget">
-    <div
-      ref="innerWidgetRef"
-      class="innerWidget"
-      :class="{ draggingWidget, hoveringWidget }"
-    >
+    <div ref="innerWidgetRef" class="innerWidget">
       <slot></slot>
     </div>
     <div
@@ -12,7 +13,7 @@
       class="resizer"
       :class="{ draggingResizer, hoveringResizer, allowResizing }"
     />
-    <div v-if="hoveringWidget" class="editing-buttons">
+    <div v-if="hoveringOverlay" class="editing-buttons">
       <v-menu
         v-if="allowResizing || allowOrdering || allowDeleting"
         location="top"
@@ -67,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog } from '@vueuse/core'
+import { useConfirmDialog, useMouseInElement } from '@vueuse/core'
 import { type Ref, computed, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
@@ -140,17 +141,18 @@ const resizerRef = ref<HTMLElement>()
 const lastNonFullScreenPosition = ref(props.position)
 const lastNonFullScreenSize = ref(props.size)
 
-const {
-  position: widgetRawPosition,
-  dragging: draggingWidget,
-  hovering: hoveringWidget,
-} = useDragInElement(
-  innerWidgetRef as Ref<HTMLElement>,
-  props.position,
-  allowMoving,
-  snapToGrid,
-  gridInterval.value
-)
+const widgetOverlay = ref()
+const { isOutside: notHoveringOverlay } = useMouseInElement(widgetOverlay)
+const hoveringOverlay = computed(() => !notHoveringOverlay.value)
+
+const { position: widgetRawPosition, dragging: draggingWidget } =
+  useDragInElement(
+    innerWidgetRef as Ref<HTMLElement>,
+    props.position,
+    allowMoving,
+    snapToGrid,
+    gridInterval.value
+  )
 
 const {
   position: resizerPosition,
@@ -280,6 +282,25 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
 </script>
 
 <style>
+.widgetOverlay {
+  --overlayOverSize: 10px;
+  position: absolute;
+  left: calc(v-bind('positionStyle.left') - var(--overlayOverSize));
+  top: calc(v-bind('positionStyle.top') - var(--overlayOverSize));
+  width: calc(v-bind('sizeStyle.width') + 2 * var(--overlayOverSize));
+  height: calc(v-bind('sizeStyle.height') + 2 * var(--overlayOverSize));
+  user-select: none;
+}
+.widgetOverlay.hoveringOverlay {
+  outline-style: dashed;
+  outline-width: 1px;
+  outline-color: v-bind('widgetEditingColor');
+}
+.widgetOverlay.draggingWidget {
+  outline-style: solid;
+  outline-width: 1px;
+  outline-color: v-bind('widgetEditingColor');
+}
 .outerWidget {
   position: absolute;
   cursor: v-bind('cursorStyle');
@@ -297,16 +318,6 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
   flex-direction: column;
   justify-content: center;
   align-items: center;
-}
-.innerWidget.hoveringWidget {
-  outline-style: dashed;
-  outline-width: 1px;
-  outline-color: v-bind('widgetEditingColor');
-}
-.innerWidget.draggingWidget {
-  outline-style: solid;
-  outline-width: 1px;
-  outline-color: v-bind('widgetEditingColor');
 }
 .editing-buttons {
   position: absolute;
