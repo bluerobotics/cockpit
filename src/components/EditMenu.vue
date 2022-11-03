@@ -103,7 +103,7 @@ const emit = defineEmits<{
 
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref()
-const selectedLayer = ref<Layer>(store.layers[0])
+const selectedLayer = ref<Layer>(store.currentProfile.layers[0])
 
 const showDrawer = ref(props.editMode)
 const editDrawer = ref()
@@ -120,7 +120,7 @@ watch(editMode, (isEditMode, wasEditMode) => {
 })
 
 const availableLayers = computed(() =>
-  store.layers.slice().map((layer) => ({
+  store.currentProfile.layers.slice().map((layer) => ({
     title: layer.name,
     value: layer,
   }))
@@ -128,11 +128,11 @@ const availableLayers = computed(() =>
 
 const deleteLayer = (): void => {
   store.deleteLayer(selectedLayer.value)
-  selectedLayer.value = store.layers[0]
+  selectedLayer.value = store.currentProfile.layers[0]
 }
 const addLayer = (): void => {
   store.addLayer()
-  selectedLayer.value = store.layers[0]
+  selectedLayer.value = store.currentProfile.layers[0]
 }
 
 const addWidget = (): void => {

@@ -4,12 +4,13 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
 
+import { widgetProfile } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { Layer, Widget, WidgetType } from '@/types/widgets'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
-  const layers = useStorage('cockpit-widget-layers', [] as Layer[])
+  const currentProfile = useStorage('cockpit-current-profile', widgetProfile)
 
   /**
    * Get layer where given widget is at
@@ -18,7 +19,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Widget } widget - Widget
    */
   function layerFromWidget(widget: Widget): Layer {
-    for (const layer of layers.value) {
+    for (const layer of currentProfile.value.layers) {
       for (const itWidget of layer.widgets) {
         if (itWidget === widget) {
           return layer
@@ -32,7 +33,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * Adds new layer to the store, with a randomly generated hash with UUID4 pattern
    */
   function addLayer(): void {
-    layers.value.unshift({
+    currentProfile.value.layers.unshift({
       hash: uuid4(),
       name: `Layer ${Words.animalsOcean.random()}`,
       widgets: [],
@@ -45,8 +46,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Layer } layer - Layer
    */
   function deleteLayer(layer: Layer): void {
-    const index = layers.value.indexOf(layer)
-    layers.value.splice(index, 1)
+    const index = currentProfile.value.layers.indexOf(layer)
+    currentProfile.value.layers.splice(index, 1)
   }
 
   /**
@@ -123,7 +124,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   return {
-    layers,
+    currentProfile,
     addLayer,
     deleteLayer,
     addWidget,
