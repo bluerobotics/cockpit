@@ -56,3 +56,14 @@ export type Layer = {
    */
   name: string
 }
+
+export type Profile = {
+  /**
+   * Array of layers that are stored in the profile
+   */
+  layers: Layer[]
+  /**
+   * Editable name for the profile
+   */
+  name: string
+}
