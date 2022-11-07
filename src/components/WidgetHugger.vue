@@ -269,9 +269,6 @@ const cursorStyle = computed(() => {
   }
   return 'grab'
 })
-const widgetEditingColor = computed(() =>
-  allowMoving.value ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)'
-)
 const widgetOverlayColor = computed(() =>
   allowMoving.value ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0)'
 )
@@ -292,14 +289,12 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
   user-select: none;
 }
 .widgetOverlay.hoveringOverlay {
-  outline-style: dashed;
-  outline-width: 1px;
-  outline-color: v-bind('widgetEditingColor');
+  box-shadow: 0 0 0 1px white;
+  outline: dashed 1px black;
 }
 .widgetOverlay.draggingWidget {
-  outline-style: solid;
-  outline-width: 1px;
-  outline-color: v-bind('widgetEditingColor');
+  box-shadow: 0 0 0 1px white;
+  outline: solid 1px black;
 }
 .outerWidget {
   position: absolute;
