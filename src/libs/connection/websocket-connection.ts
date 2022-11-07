@@ -8,6 +8,7 @@ import * as Connection from './connection'
 export class WebSocketConnection extends Connection.Abstract {
   _socket: WebSocket
   private _textEncoder = new TextEncoder()
+  private _textDecoder = new TextDecoder()
 
   /**
    * Websocket constructor
@@ -58,8 +59,7 @@ export class WebSocketConnection extends Connection.Abstract {
    * @returns {boolean}
    */
   write(data: Uint8Array): boolean {
-    unused(data)
-    unimplemented()
+    this._socket?.send(this._textDecoder.decode(data))
     return true
   }
 
