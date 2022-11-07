@@ -315,7 +315,10 @@ export abstract class ArduPilotVehicle<
    * @param {'Modes'} mode Custom vehicle mode
    */
   setMode(mode: Modes): void {
-    unimplemented()
-    mode
+    this.sendCommandLong(
+      MavCmd.MAV_CMD_DO_SET_MODE,
+      MavModeFlag.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+      Number(mode), // Custom mode, please refer to the individual autopilot specifications for details
+    )
   }
 }
