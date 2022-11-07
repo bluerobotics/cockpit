@@ -1,14 +1,14 @@
 <template>
-  <v-menu v-if="showMainMenuButton || activateMainMenuButton" location="bottom">
+  <v-menu v-if="showMainMenuButton" location="bottom">
     <template #activator="{ props: menuProps }">
       <v-btn
         v-bind="menuProps"
         class="edit-mode-btn"
         icon="mdi-menu"
-        :disabled="!activateMainMenuButton"
+        :disabled="disableMainMenuButton"
       />
     </template>
-    <v-card class="pa-2 ma-2">
+    <v-card ref="mainMenu" class="pa-2 ma-2">
       <v-switch
         :model-value="editingMode"
         inset
@@ -17,7 +17,7 @@
         @click="editingMode = !editingMode"
       />
       <v-checkbox
-        v-model="showMainMenuButton"
+        v-model="alwaysShowMainMenuButton"
         label="Always show menu button"
         hide-details
       />
@@ -84,14 +84,13 @@
 </template>
 
 <script setup lang="ts">
-import { useMouse } from '@vueuse/core'
+import { useMouse, useMouseInElement } from '@vueuse/core'
 import {
   // type AsyncComponentLoader,
   computed,
   reactive,
   // defineAsyncComponent,
   ref,
-  watch,
 } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -112,19 +111,26 @@ import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 const store = useWidgetManagerStore()
 
 const mouse = reactive(useMouse())
-const showMainMenuButton = ref(false)
-const activateMainMenuButton = ref(false)
+const alwaysShowMainMenuButton = ref(false)
 const editingMode = ref(false)
 const showGrid = ref(true)
 const gridInterval = ref(0.01)
+const mainMenu = ref()
 
 const widgetsPresent = computed(() =>
   store.currentProfile.layers.some((layer) => layer.widgets.length != 0)
 )
 
-watch(mouse, () => {
-  activateMainMenuButton.value =
-    (mouse.x < 100 && mouse.y < 100) || !widgetsPresent.value
+const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
+const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
+const disableMainMenuButton = computed(() => !mouseNearMainButton.value)
+const showMainMenuButton = computed(() => {
+  return (
+    alwaysShowMainMenuButton.value ||
+    mouseNearMainButton.value ||
+    !notHoveringMainMenu.value ||
+    !widgetsPresent.value
+  )
 })
 
 // TODO: Make this work
