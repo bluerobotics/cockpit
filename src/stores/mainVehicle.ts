@@ -89,8 +89,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getAutoPilot(vehicles).onMode.add((vehicleMode: any) => {
       mode.value = [...(modes.value?.entries() ?? [])]
-        .filter(([, value]) => value !== vehicleMode)
-        .map(([, value]) => value)
+        .filter(([, value]) => value === vehicleMode)
+        .map(([key]) => key)
         .first()
     })
   })
