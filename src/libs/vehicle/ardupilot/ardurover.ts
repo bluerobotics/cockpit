@@ -52,9 +52,11 @@ export class ArduRover extends ArduPilotVehicle<CustomMode> {
    */
   modesAvailable(): Map<string, CustomMode> {
     const modeMap = new Map()
-    Object.entries(CustomMode).forEach(([key, value]) => {
-      modeMap.set(key, value)
-    })
+    Object.entries(CustomMode)
+      .filter(([key]) => isNaN(Number(key)))
+      .forEach(([key, value]) => {
+        modeMap.set(key, value)
+      })
     return modeMap
   }
 }
