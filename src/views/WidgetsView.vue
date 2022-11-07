@@ -88,6 +88,7 @@ import { useMouse } from '@vueuse/core'
 import {
   // type AsyncComponentLoader,
   computed,
+  reactive,
   // defineAsyncComponent,
   ref,
   watch,
@@ -110,7 +111,7 @@ import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 
 const store = useWidgetManagerStore()
 
-const { x: mouseX } = useMouse()
+const mouse = reactive(useMouse())
 const showMainMenuButton = ref(false)
 const activateMainMenuButton = ref(false)
 const editingMode = ref(false)
@@ -121,8 +122,9 @@ const widgetsPresent = computed(() =>
   store.currentProfile.layers.some((layer) => layer.widgets.length != 0)
 )
 
-watch(mouseX, () => {
-  activateMainMenuButton.value = mouseX.value < 100 || !widgetsPresent.value
+watch(mouse, () => {
+  activateMainMenuButton.value =
+    (mouse.x < 100 && mouse.y < 100) || !widgetsPresent.value
 })
 
 // TODO: Make this work
