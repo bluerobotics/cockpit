@@ -27,6 +27,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean>()
+  const icon = ref<string | undefined>(undefined)
 
   const mode = ref<string>()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +58,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   VehicleFactory.onVehicles.once((vehicles: WeakRef<Vehicle.Abstract>[]) => {
     mainVehicle.value = getAutoPilot(vehicles)
     modes.value = mainVehicle.value.modesAvailable()
+    icon.value = mainVehicle.value.icon()
 
     mainVehicle.value.onAttitude.add((newAttitude: Attitude) => {
       Object.assign(attitude, newAttitude)
@@ -130,5 +132,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     modes,
     isArmed,
     isVehicleOnline,
+    icon,
   }
 })
