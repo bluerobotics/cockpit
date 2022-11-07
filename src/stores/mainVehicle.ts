@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 import { mavlink2restServerUrl } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
@@ -93,6 +93,29 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         .map(([key]) => key)
         .first()
     })
+  })
+
+  // Allow us to set custom commands to be used in the browser
+  // Expert mode
+  watch(mainVehicle, async (newVehicle) => {
+    if (newVehicle === undefined) {
+      return
+    }
+
+    const win = window as any // eslint-disable-line @typescript-eslint/no-explicit-any
+    win.vehicle = {
+      arm: () => newVehicle.arm(),
+      disarm: () => newVehicle.disarm(),
+      modesAvailable: () => {
+        console.log([...newVehicle.modesAvailable().keys()])
+      },
+      setFlightMode: (stringMode: string) => {
+        const enumMode = newVehicle.modesAvailable().get(stringMode)
+        if (enumMode !== undefined) {
+          newVehicle.setMode(enumMode)
+        }
+      },
+    }
   })
 
   return {
