@@ -137,7 +137,15 @@ export abstract class ArduPilotVehicle<
    */
   onMessage(message: Uint8Array): void {
     const textDecoder = new TextDecoder()
-    const mavlink_message = JSON.parse(textDecoder.decode(message)) as Package
+    let mavlink_message: Package
+    const text_message = textDecoder.decode(message)
+    try {
+      mavlink_message = JSON.parse(text_message) as Package
+    } catch (error) {
+      console.error(`Failed to parse mavlink message: ${text_message}`)
+      return
+    }
+
     const { system_id, component_id } = mavlink_message.header
 
     if (system_id != 1 || component_id != 1) {
