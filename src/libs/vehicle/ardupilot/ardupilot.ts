@@ -1,12 +1,16 @@
+import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type {
   MAVLinkMessageDictionary,
+  Message as MavMessage,
   Package,
 } from '@/libs/connection/messages/mavlink2rest'
 import {
+  MavCmd,
+  MavComponent,
   MAVLinkType,
   MavModeFlag,
 } from '@/libs/connection/messages/mavlink2rest-enum'
-import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
+import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
 import {
   Attitude,
@@ -63,6 +67,67 @@ export abstract class ArduPilotVehicle<
    */
   constructor(type: Vehicle.Type) {
     super(Vehicle.Firmware.ArduPilot, type)
+  }
+
+  /**
+   * Helper to send long mavlink commands
+   * Each parameter depends of the value specified by the protocol
+   *
+   * @param {MavCmd} mav_command
+   * @param {number} param1
+   * @param {number} param2
+   * @param {number} param3
+   * @param {number} param4
+   * @param {number} param5
+   * @param {number} param6
+   * @param {number} param7
+   */
+  sendCommandLong(
+    mav_command: MavCmd,
+    param1?: number,
+    param2?: number,
+    param3?: number,
+    param4?: number,
+    param5?: number,
+    param6?: number,
+    param7?: number
+  ): void {
+    const command: Message.CommandLong = {
+      type: MAVLinkType.COMMAND_LONG,
+      param1: param1 ?? 0,
+      param2: param2 ?? 0,
+      param3: param3 ?? 0,
+      param4: param4 ?? 0,
+      param5: param5 ?? 0,
+      param6: param6 ?? 0,
+      param7: param7 ?? 0,
+      command: {
+        type: mav_command,
+      },
+      target_system: 1,
+      target_component: 1,
+      confirmation: 0,
+    }
+
+    this.write(command)
+  }
+
+  /**
+   * Send a mavlink message
+   *
+   * @param {MavMessage} message
+   */
+  write(message: MavMessage): void {
+    const pack: Package = {
+      header: {
+        system_id: 255, // GCS system ID
+        component_id: Number(MavComponent.MAV_COMP_ID_UDP_BRIDGE), // Used by historical reasons (Check QGC)
+        sequence: 0,
+      },
+      message: message,
+    }
+    const textEncoder = new TextEncoder()
+    ConnectionManager.write(textEncoder.encode(JSON.stringify(pack)))
   }
 
   /**
@@ -150,12 +215,26 @@ export abstract class ArduPilotVehicle<
   }
 
   /**
+   * Helper function to arm/disarm the vehicle
+   *
+   * @param {boolean} arm
+   * @param {boolean} force
+   */
+  _arm(arm: boolean, force?: boolean): void {
+    this.sendCommandLong(
+      MavCmd.MAV_CMD_COMPONENT_ARM_DISARM,
+      arm ? 1 : 0, // 0: Disarm, 1: ARM
+      force ? 21196 : 0 // 21196: force arming/disarming (e.g. override preflight checks and disarming in flight)
+    )
+  }
+
+  /**
    * Arm vehicle
    *
    * @returns {boolean}
    */
   arm(): boolean {
-    unimplemented()
+    this._arm(true)
     return true
   }
 
@@ -192,7 +271,7 @@ export abstract class ArduPilotVehicle<
    * @returns {boolean}
    */
   disarm(): boolean {
-    unimplemented()
+    this._arm(false)
     return true
   }
 
