@@ -283,6 +283,7 @@ class JoystickManager {
 
         if ([EventType.Connected, EventType.Disconnected].includes(eventType)) {
           this.processJoystickUpdate(joystickEvent)
+          return
         }
 
         if (!this.enabledJoysticks.includes(joystickEvent.detail.gamepad.id)) {
