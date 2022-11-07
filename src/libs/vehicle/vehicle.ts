@@ -119,6 +119,28 @@ export abstract class AbstractVehicle<Modes> {
     return this._type
   }
 
+  /**
+   * Return the icon based on the vehicle type
+   *
+   * @returns {string}
+   */
+  icon(): string {
+    switch (this.type()) {
+      case Type.Antenna:
+        return 'mdi-satellite-uplink'
+      case Type.Blimp:
+        return 'mdi-airbaloon'
+      case Type.Copter:
+        return 'mdi-quadcopter'
+      case Type.Plane:
+        return 'mdi-airplane'
+      case Type.Rover:
+        return 'mdi-car-wireless'
+      case Type.Sub:
+        return 'mdi-submarine'
+    }
+  }
+
   abstract onMessage(message: Uint8Array): void
 
   abstract arm(): boolean
