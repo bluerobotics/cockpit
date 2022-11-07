@@ -1110,7 +1110,7 @@ export namespace Message {
     /**
      * The scheduled action for the waypoint..
      */
-    command: MavCmd
+    command: Type<MavCmd>
     /**
      * System ID.
      */
@@ -1973,7 +1973,7 @@ export namespace Message {
     /**
      * The scheduled action for the waypoint..
      */
-    command: MavCmd
+    command: Type<MavCmd>
     /**
      * System ID.
      */
@@ -2067,7 +2067,7 @@ export namespace Message {
     /**
      * The scheduled action for the mission item..
      */
-    command: MavCmd
+    command: Type<MavCmd>
     /**
      * System ID.
      */
@@ -2126,7 +2126,7 @@ export namespace Message {
     /**
      * Command ID (of command to send)..
      */
-    command: MavCmd
+    command: Type<MavCmd>
     /**
      * System which should execute the command.
      */
@@ -2149,11 +2149,11 @@ export namespace Message {
     /**
      * Command ID (of acknowledged command)..
      */
-    command: MavCmd
+    command: Type<MavCmd>
     /**
      * Result of command..
      */
-    result: MavResult
+    result: Type<MavResult>
     /**
      * WIP: Also used as result_param1, it can be set with a enum containing the errors reasons of why the command was denied or the progress percentage or 255 if unknown the progress when result is MAV_RESULT_IN_PROGRESS..
      */
@@ -2180,7 +2180,7 @@ export namespace Message {
     /**
      * Command ID (of command to cancel)..
      */
-    command: MavCmd
+    command: Type<MavCmd>
     /**
      * System executing long running command. Should not be broadcast (0)..
      */
