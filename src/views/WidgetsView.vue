@@ -16,6 +16,9 @@
         label="Edit mode"
         @click="editingMode = !editingMode"
       />
+      <v-btn prepend-icon="mdi-cog" flat @click="showConfigurationMenu = true">
+        Configuration
+      </v-btn>
       <v-checkbox
         v-model="alwaysShowMainMenuButton"
         label="Always show menu button"
@@ -81,6 +84,16 @@
       </template>
     </div>
   </div>
+  <teleport to="body">
+    <v-dialog
+      v-model="showConfigurationMenu"
+      transition="dialog-bottom-transition"
+      width="100%"
+      height="100%"
+    >
+      <ConfigurationMenu />
+    </v-dialog>
+  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -96,6 +109,7 @@ import {
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
 
+import ConfigurationMenu from '../components/ConfigurationMenu.vue'
 import EditMenu from '../components/EditMenu.vue'
 import SnappingGrid from '../components/SnappingGrid.vue'
 import WidgetHugger from '../components/WidgetHugger.vue'
@@ -116,6 +130,7 @@ const editingMode = ref(false)
 const showGrid = ref(true)
 const gridInterval = ref(0.01)
 const mainMenu = ref()
+const showConfigurationMenu = ref(false)
 
 const widgetsPresent = computed(() =>
   store.currentProfile.layers.some((layer) => layer.widgets.length != 0)
