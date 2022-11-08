@@ -9,8 +9,8 @@ on:
   - cron: '0 0 */6 * *'
 
 jobs:
-  build:
-    name: Test and Deploy
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,13 +28,43 @@ jobs:
           yarn build
           xvfb-run --auto-servernum yarn test:ci
 
-      - name: Build electron app
+  deploy-electron:
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - os: macos-latest
+          suffix: macos
+          extension: dmg
+
+        - os: ubuntu-latest
+          suffix: linux
+          extension: AppImage
+
+        - os: windows-latest
+          suffix: windows
+          extension: exe
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Use node to install yarn in all OSs
+      - name: Install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Build electron
         run: |
+          npm install --global yarn
+          yarn install --frozen-lockfile
+          yarn build
           yarn deploy:electron
-          mv dist/cockpit*.AppImage dist/cockpit.AppImage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: cockpit
-          path: dist/cockpit*.AppImage
+          name: cockpit-${{ matrix.suffix }}
+          path: dist/cockpit*.${{ matrix.extension }}
+          if-no-files-found: error
