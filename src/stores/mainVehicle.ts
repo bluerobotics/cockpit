@@ -26,7 +26,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const coordinates: Coordinates = reactive({} as Coordinates)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
-  const isArmed = ref<boolean>()
+  const isArmed = ref<boolean>(false)
   const icon = ref<string | undefined>(undefined)
 
   const mode = ref<string>()
