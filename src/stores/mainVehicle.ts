@@ -45,6 +45,43 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     )
   }
 
+  /**
+   * Arm the vehicle
+   */
+  function arm(): void {
+    mainVehicle.value?.arm()
+  }
+
+  /**
+   * Disarm the vehicle
+   */
+  function disarm(): void {
+    mainVehicle.value?.disarm()
+  }
+
+  /**
+   * List of available flight modes
+   *
+   * @returns {Array<string>}
+   */
+  function modesAvailable(): Array<string> {
+    return [...(modes.value?.entries() ?? [])]
+      .filter(([, value]) => value >= 0) // Remove cockpit internal flight modes
+      .map(([key]) => key)
+  }
+
+  /**
+   * Set vehicle flight mode
+   *
+   * @param {string} modeName
+   */
+  function setFlightMode(modeName: string): void {
+    const enumMode = modes.value?.get(modeName)
+    if (enumMode !== undefined) {
+      mainVehicle.value?.setMode(enumMode)
+    }
+  }
+
   ConnectionManager.addConnection(
     new Connection.URI(mavlink2restServerUrl),
     Protocol.Type.MAVLink
@@ -106,21 +143,20 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     const win = window as any // eslint-disable-line @typescript-eslint/no-explicit-any
     win.vehicle = {
-      arm: () => newVehicle.arm(),
-      disarm: () => newVehicle.disarm(),
+      arm: arm,
+      disarm: disarm,
       modesAvailable: () => {
-        console.log([...newVehicle.modesAvailable().keys()])
+        console.log(modesAvailable())
       },
-      setFlightMode: (stringMode: string) => {
-        const enumMode = newVehicle.modesAvailable().get(stringMode)
-        if (enumMode !== undefined) {
-          newVehicle.setMode(enumMode)
-        }
-      },
+      setFlightMode: setFlightMode,
     }
   })
 
   return {
+    arm,
+    disarm,
+    modesAvailable,
+    setFlightMode,
     cpuLoad,
     lastHeartbeat,
     firmwareType,
