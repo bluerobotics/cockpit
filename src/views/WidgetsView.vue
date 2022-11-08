@@ -66,6 +66,9 @@
           <template v-if="widget.component === WidgetType.MissionInfo">
             <MissionInfo :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.PowerBar">
+            <PowerBar :widget="widget" />
+          </template>
           <template v-if="widget.component === WidgetType.PowerSupply">
             <PowerSupply :widget="widget" />
           </template>
@@ -105,6 +108,7 @@ import Indicators from '../components/widgets/Indicators.vue'
 import Joystick from '../components/widgets/Joystick.vue'
 import Map from '../components/widgets/Map.vue'
 import MissionInfo from '../components/widgets/MissionInfo.vue'
+import PowerBar from '../components/widgets/PowerBar.vue'
 import PowerSupply from '../components/widgets/PowerSupply.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 
