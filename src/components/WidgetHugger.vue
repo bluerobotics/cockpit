@@ -2,7 +2,7 @@
   <div
     ref="widgetOverlay"
     class="widgetOverlay"
-    :class="{ draggingWidget, hoveringOverlay }"
+    :class="{ allowMoving, draggingWidget, hoveringOverlay }"
   />
   <div ref="outerWidgetRef" class="outerWidget">
     <div ref="innerWidgetRef" class="innerWidget">
@@ -269,9 +269,6 @@ const cursorStyle = computed(() => {
   }
   return 'grab'
 })
-const widgetOverlayColor = computed(() =>
-  allowMoving.value ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0)'
-)
 
 const widgetDeleteDialogRevealed = ref(false)
 const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
@@ -288,11 +285,14 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
   height: calc(v-bind('sizeStyle.height') + 2 * var(--overlayOverSize));
   user-select: none;
 }
-.widgetOverlay.hoveringOverlay {
+.widgetOverlay.allowMoving {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.widgetOverlay.hoveringOverlay.allowMoving {
   box-shadow: 0 0 0 1px white;
   outline: dashed 1px black;
 }
-.widgetOverlay.draggingWidget {
+.widgetOverlay.draggingWidget.allowMoving {
   box-shadow: 0 0 0 1px white;
   outline: solid 1px black;
 }
@@ -303,7 +303,6 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
   top: v-bind('positionStyle.top');
   width: v-bind('sizeStyle.width');
   height: v-bind('sizeStyle.height');
-  background-color: v-bind('widgetOverlayColor');
 }
 .innerWidget {
   width: 100%;
