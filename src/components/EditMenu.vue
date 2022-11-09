@@ -82,7 +82,7 @@
           @click="loadProfile"
         />
       </div>
-      <v-card-actions>
+      <v-card-actions class="d-flex flex-column align-baseline">
         <v-btn class="ma-1" @click="profileCreationDialog.reveal">
           Create new profile
         </v-btn>
@@ -90,7 +90,7 @@
           Reset profiles
         </v-btn>
         <v-switch
-          class="ma-1"
+          class="mx-3"
           label="Grid"
           :model-value="showGrid"
           hide-details
