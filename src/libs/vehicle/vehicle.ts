@@ -5,6 +5,7 @@ import type {
   Attitude,
   Battery,
   Coordinates,
+  PageDescription,
   PowerSupply,
 } from '@/libs/vehicle/types'
 
@@ -146,6 +147,7 @@ export abstract class AbstractVehicle<Modes> {
   abstract arm(): boolean
   abstract attitude(): Attitude
   abstract batteries(): Battery[]
+  abstract configurationPages(): PageDescription[]
   abstract cpuLoad(): number // Percentage
   abstract disarm(): boolean
   abstract isArmed(): boolean

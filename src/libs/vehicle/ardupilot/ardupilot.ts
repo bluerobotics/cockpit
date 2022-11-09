@@ -16,6 +16,7 @@ import {
   Attitude,
   Battery,
   Coordinates,
+  type PageDescription,
   PowerSupply,
 } from '@/libs/vehicle/types'
 
@@ -262,6 +263,15 @@ export abstract class ArduPilotVehicle<
    */
   batteries(): Battery[] {
     return [new Battery({ cells: [0, 0, 0, 0, 0, 0], voltage: 0 })]
+  }
+
+  /**
+   * Vehicle specific configuration pages
+   *
+   * @returns {PageDescription[]}
+   */
+  configurationPages(): PageDescription[] {
+    return []
   }
 
   /**
