@@ -1,8 +1,9 @@
 <template>
   <v-card class="pa-2" width="100%" height="100%">
-    <v-card-title>Configuration menu</v-card-title>
     <v-layout>
-      <v-navigation-drawer permanent>
+      <v-navigation-drawer>
+        <v-card-title>Configuration menu</v-card-title>
+        <v-divider/>
         <v-list v-model:selected="currentMenuComponent">
           <v-list-item
             v-for="(menu, i) in menus"
