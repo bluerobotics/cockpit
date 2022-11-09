@@ -13,6 +13,16 @@
             :value="menu.component"
           />
         </v-list>
+        <v-divider/>
+        <v-list v-model:selected="currentMenuComponent">
+          <v-list-item
+            v-for="(menu, i) in vehicleMenus"
+            :key="i"
+            :prepend-icon="menu.icon"
+            :title="menu.title"
+            :value="menu.component"
+          />
+        </v-list>
       </v-navigation-drawer>
       <v-main scrollable>
         <component :is="currentMenuComponent[0]"></component>
@@ -22,13 +32,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import ConfigurationFrameView from '../views/ConfigurationFrameView.vue'
 import ConfigurationGeneralView from '../views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '../views/ConfigurationJoystickView.vue'
 import ConfigurationPowerView from '../views/ConfigurationPowerView.vue'
 import ConfigurationSensorsView from '../views/ConfigurationSensorsView.vue'
+
+const store = useMainVehicleStore()
 
 const currentMenuComponent = ref([ConfigurationGeneralView])
 
@@ -59,4 +72,6 @@ const menus = [
     component: ConfigurationPowerView,
   },
 ]
+
+const vehicleMenus = computed(() => store?.configurationPages)
 </script>
