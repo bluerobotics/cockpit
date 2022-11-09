@@ -165,3 +165,23 @@ export class Battery {
     this.voltage = this.cells.sum()
   }
 }
+
+/**
+ * Description for vehicle configuration page
+ */
+export interface PageDescription {
+  /**
+   * Page title
+   */
+  title: string
+
+  /**
+   * Icon
+   */
+  icon: string
+
+  /**
+   * Component
+   */
+  component: any // eslint-disable-line @typescript-eslint/no-explicit-any
+}
