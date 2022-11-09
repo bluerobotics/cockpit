@@ -40,6 +40,7 @@
     >
       <template v-for="widget in layer.widgets.slice().reverse()" :key="widget">
         <WidgetHugger
+          v-if="Object.values(WidgetType).includes(widget.component)"
           :position="widget.position"
           :size="widget.size"
           :allow-moving="editingMode"
