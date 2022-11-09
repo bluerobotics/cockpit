@@ -13,7 +13,7 @@ import {
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Attitude, Coordinates, PowerSupply } from '@/libs/vehicle/types'
+import type { Attitude, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 
@@ -28,6 +28,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean>(false)
   const icon = ref<string | undefined>(undefined)
+  const configurationPages = ref<PageDescription[]>([])
 
   const mode = ref<string>()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,6 +97,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value = getAutoPilot(vehicles)
     modes.value = mainVehicle.value.modesAvailable()
     icon.value = mainVehicle.value.icon()
+    configurationPages.value = mainVehicle.value.configurationPages()
 
     mainVehicle.value.onAttitude.add((newAttitude: Attitude) => {
       Object.assign(attitude, newAttitude)
@@ -169,5 +171,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     isArmed,
     isVehicleOnline,
     icon,
+    configurationPages,
   }
 })
