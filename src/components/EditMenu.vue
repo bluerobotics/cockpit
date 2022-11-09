@@ -86,6 +86,9 @@
         <v-btn class="ma-1" @click="profileCreationDialog.reveal">
           Create new profile
         </v-btn>
+        <v-btn class="ma-1" @click="profileResetDialog.reveal">
+          Reset profiles
+        </v-btn>
         <v-switch
           class="ma-1"
           label="Grid"
@@ -103,6 +106,15 @@
         <v-card-actions>
           <v-btn @click="layerDeleteDialog.confirm">Yes</v-btn>
           <v-btn @click="layerDeleteDialog.cancel">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="profileResetDialogRevealed" width="auto">
+      <v-card class="pa-2">
+        <v-card-title>Reset profiles?</v-card-title>
+        <v-card-actions>
+          <v-btn @click="profileResetDialog.confirm">Yes</v-btn>
+          <v-btn @click="profileResetDialog.cancel">Cancel</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -213,6 +225,11 @@ const deleteLayer = (): void => {
   store.deleteLayer(selectedLayer.value)
   selectedLayer.value = store.currentProfile.layers[0]
 }
+const resetProfiles = (): void => {
+  store.resetSavedProfiles()
+  store.resetCurrentProfile()
+  selectedLayer.value = store.currentProfile.layers[0]
+}
 const addLayer = (): void => {
   store.addLayer()
   selectedLayer.value = store.currentProfile.layers[0]
@@ -231,6 +248,10 @@ layerDeleteDialog.onConfirm(deleteLayer)
 const profileCreationDialogRevealed = ref(false)
 const profileCreationDialog = useConfirmDialog(profileCreationDialogRevealed)
 profileCreationDialog.onConfirm(createNewProfile)
+
+const profileResetDialogRevealed = ref(false)
+const profileResetDialog = useConfirmDialog(profileResetDialogRevealed)
+profileResetDialog.onConfirm(resetProfiles)
 </script>
 
 <style scoped>

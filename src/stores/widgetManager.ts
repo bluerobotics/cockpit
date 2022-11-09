@@ -53,6 +53,20 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   /**
+   * Reset current profile to original state
+   */
+  function resetCurrentProfile(): void {
+    currentProfile.value = widgetProfile
+  }
+
+  /**
+   * Reset saved profiles to original state
+   */
+  function resetSavedProfiles(): void {
+    savedProfiles.value = widgetProfiles
+  }
+
+  /**
    * Adds new layer to the store, with a randomly generated hash with UUID4 pattern
    */
   function addLayer(): void {
@@ -151,6 +165,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     savedProfiles,
     loadProfile,
     saveProfile,
+    resetCurrentProfile,
+    resetSavedProfiles,
     addLayer,
     deleteLayer,
     addWidget,
