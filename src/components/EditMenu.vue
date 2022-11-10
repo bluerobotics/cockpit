@@ -97,6 +97,9 @@
           @change="emit('update:showGrid', !showGrid)"
         />
       </v-card-actions>
+      <v-btn flat block @click="emit('update:editMode', false)">
+        Exit edit mode
+      </v-btn>
     </v-card>
   </v-navigation-drawer>
   <teleport to="body">
@@ -167,6 +170,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:showGrid', showGrid: boolean): void
+  (e: 'update:editMode', editMode: boolean): void
 }>()
 
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
