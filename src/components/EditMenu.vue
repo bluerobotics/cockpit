@@ -4,7 +4,7 @@
     <v-card ref="editDrawer" flat class="pa-2 edit-menu">
       <v-card-title>Edit menu</v-card-title>
       <div class="mx-2 my-4">
-        <v-expansion-panels>
+        <v-expansion-panels v-model="openPanels">
           <v-expansion-panel>
             <v-expansion-panel-title>
               Current profile: {{ store.currentProfile.name }}
@@ -173,6 +173,7 @@ const emit = defineEmits<{
   (e: 'update:editMode', editMode: boolean): void
 }>()
 
+const openPanels = ref([0])
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref()
 const selectedProfile = ref()
