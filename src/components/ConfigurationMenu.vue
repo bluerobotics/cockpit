@@ -3,7 +3,7 @@
     <v-layout>
       <v-navigation-drawer>
         <v-card-title>Configuration menu</v-card-title>
-        <v-divider/>
+        <v-divider />
         <v-list v-model:selected="currentMenuComponent">
           <v-list-item
             v-for="(menu, i) in menus"

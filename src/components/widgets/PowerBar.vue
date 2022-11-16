@@ -33,8 +33,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
+
 import { joystickManager } from '@/libs/joystick/manager'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const vehicleStore = useMainVehicleStore()
 
