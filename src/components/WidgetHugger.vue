@@ -185,16 +185,32 @@ watch(widgetRawPosition, (position) => {
 
 const widgetFinalSize = ref(props.size)
 watch(resizerPosition, (position) => {
-  if (outerWidgetRef.value === undefined) {
+  if (!outerWidgetRef.value || !innerWidgetRef.value) {
     return
   }
   const widgetLimits = {
     x: outerWidgetRef.value.getBoundingClientRect().x / window.innerWidth || 1,
     y: outerWidgetRef.value.getBoundingClientRect().y / window.innerHeight || 1,
   }
+
+  const oldSize = widgetFinalSize.value
   widgetFinalSize.value = {
     width: constrain(position.x - widgetLimits.x, 0.01, 1),
     height: constrain(position.y - widgetLimits.y, 0.01, 1),
+  }
+
+  const growingWidth = widgetFinalSize.value.width > oldSize.width
+  const growingHeight = widgetFinalSize.value.height > oldSize.height
+
+  const { clientWidth, clientHeight, scrollWidth, scrollHeight } =
+    innerWidgetRef.value
+
+  if (scrollHeight > clientHeight && !growingHeight) {
+    widgetFinalSize.value.height = oldSize.height
+  }
+
+  if (scrollWidth > clientWidth && !growingWidth) {
+    widgetFinalSize.value.width = oldSize.width
   }
 })
 
