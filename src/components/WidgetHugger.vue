@@ -68,8 +68,20 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog, useMouseInElement } from '@vueuse/core'
-import { type Ref, computed, ref, toRefs, watch } from 'vue'
+import {
+  useConfirmDialog,
+  useElementSize,
+  useMouseInElement,
+} from '@vueuse/core'
+import {
+  type Ref,
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  toRefs,
+  watch,
+} from 'vue'
 
 import useDragInElement from '@/composables/drag'
 import { constrain, isEqual } from '@/libs/utils'
@@ -168,6 +180,32 @@ const {
   snapToGrid,
   gridInterval.value
 )
+
+const resizeWidgetToMinimalSize = async (): Promise<void> => {
+  let stillAutoResizing = false
+  if (innerWidgetRef.value === undefined) return
+  const { scrollWidth, scrollHeight, offsetHeight, offsetWidth } =
+    innerWidgetRef.value
+  if (scrollWidth > 1.05 * offsetWidth) {
+    widgetFinalSize.value.width = (1.1 * scrollWidth) / window.innerWidth
+    stillAutoResizing = true
+  }
+  if (scrollHeight > 1.05 * offsetHeight) {
+    widgetFinalSize.value.height = (1.1 * scrollHeight) / window.innerHeight
+    stillAutoResizing = true
+  }
+
+  if (stillAutoResizing) nextTick(() => resizeWidgetToMinimalSize())
+}
+
+onMounted(async () => await resizeWidgetToMinimalSize())
+
+const { width, height } = useElementSize(innerWidgetRef)
+const innerWidgetSize = computed(() => ({
+  width: width.value,
+  height: height.value,
+}))
+watch(innerWidgetSize, () => resizeWidgetToMinimalSize())
 
 const widgetFinalPosition = ref(props.position)
 watch(widgetRawPosition, (position) => {
