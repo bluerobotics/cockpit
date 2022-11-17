@@ -13,7 +13,7 @@
             :value="menu.component"
           />
         </v-list>
-        <v-divider/>
+        <v-divider />
         <v-list v-model:selected="currentMenuComponent">
           <v-list-item
             v-for="(menu, i) in vehicleMenus"
@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import ConfigurationFrameView from '../views/ConfigurationFrameView.vue'
