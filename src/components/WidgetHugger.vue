@@ -202,14 +202,14 @@ watch(resizerPosition, (position) => {
   const growingWidth = widgetFinalSize.value.width > oldSize.width
   const growingHeight = widgetFinalSize.value.height > oldSize.height
 
-  const { clientWidth, clientHeight, scrollWidth, scrollHeight } =
+  const { offsetWidth, offsetHeight, scrollWidth, scrollHeight } =
     innerWidgetRef.value
 
-  if (scrollHeight > clientHeight && !growingHeight) {
+  if (scrollHeight > offsetHeight && !growingHeight) {
     widgetFinalSize.value.height = oldSize.height
   }
 
-  if (scrollWidth > clientWidth && !growingWidth) {
+  if (scrollWidth > offsetWidth && !growingWidth) {
     widgetFinalSize.value.width = oldSize.width
   }
 })
