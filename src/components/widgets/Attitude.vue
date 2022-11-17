@@ -106,6 +106,8 @@ const props = defineProps<{
 const widget = toRefs(props).widget
 
 const showOptionsDialog = ref(false)
+const rollAngleDeg = ref(0)
+const pitchY = ref(0)
 
 // Pitch angles for which horizontal indication lines are rendered.
 const pitchAngles = [-90, -70, -45, -30, -10, 0, 10, 30, 45, 70, 90]
@@ -149,8 +151,24 @@ const aimRadius = computed(() =>
     0.2 * stageSize.value.width
   )
 )
-const rollAngleDeg = computed(() => degrees(store.attitude.roll) ?? 0)
-const pitchY = computed(() => degrees(store.attitude.pitch) ?? 0)
+
+/**
+ * Deal with high frequency update and decrease cpu usage when drawing
+ * low degrees changes
+ */
+let oldRoll: number | undefined = undefined
+let oldPitch: number | undefined = undefined
+watch(store.attitude, (attitude) => {
+  if (oldRoll == undefined || Math.abs(attitude.roll - oldRoll) > 0.1) {
+    oldRoll = attitude.roll
+    rollAngleDeg.value = degrees(store.attitude.roll)
+  }
+
+  if (oldPitch == undefined || Math.abs(attitude.pitch - oldPitch) > 0.1) {
+    oldPitch = attitude.pitch
+    pitchY.value = degrees(store.attitude.pitch)
+  }
+})
 
 // Returns the projected height of a pitch line for a given angle
 const angleY = (angle: number): number => {
