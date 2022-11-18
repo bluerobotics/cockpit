@@ -13,10 +13,10 @@ import {
 import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
 import {
+  type PageDescription,
   Attitude,
   Battery,
   Coordinates,
-  type PageDescription,
   PowerSupply,
 } from '@/libs/vehicle/types'
 
