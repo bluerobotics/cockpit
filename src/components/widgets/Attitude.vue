@@ -159,12 +159,15 @@ const aimRadius = computed(() =>
 let oldRoll: number | undefined = undefined
 let oldPitch: number | undefined = undefined
 watch(store.attitude, (attitude) => {
-  if (oldRoll == undefined || Math.abs(attitude.roll - oldRoll) > 0.1) {
+  const rollDiff = Math.abs(degrees(attitude.roll - (oldRoll || 0)))
+  const pitchDiff = Math.abs(degrees(attitude.pitch - (oldPitch || 0)))
+
+  if (rollDiff > 0.1) {
     oldRoll = attitude.roll
     rollAngleDeg.value = degrees(store.attitude.roll)
   }
 
-  if (oldPitch == undefined || Math.abs(attitude.pitch - oldPitch) > 0.1) {
+  if (pitchDiff > 0.1) {
     oldPitch = attitude.pitch
     pitchY.value = degrees(store.attitude.pitch)
   }
