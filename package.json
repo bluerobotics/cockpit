@@ -10,7 +10,7 @@
     "deploy:electron:dir": "electron-builder --dir",
     "deploy:electron": "electron-builder --publish=never",
     "dev": "vite",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore --max-warnings=0",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "preview": "vite preview --port 5050",
     "serve": "vite preview",
     "test:ci": "yarn test:e2e:ci && vitest --coverage --run",
