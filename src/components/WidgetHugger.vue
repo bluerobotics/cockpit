@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import {
   useConfirmDialog,
+  useElementBounding,
   useElementSize,
   useMouseInElement,
 } from '@vueuse/core'
@@ -198,7 +199,10 @@ const resizeWidgetToMinimalSize = async (): Promise<void> => {
   if (stillAutoResizing) nextTick(() => resizeWidgetToMinimalSize())
 }
 
-onMounted(async () => await resizeWidgetToMinimalSize())
+onMounted(async () => {
+  await resizeWidgetToMinimalSize()
+  makeWidgetRespectWalls()
+})
 
 const { width, height } = useElementSize(innerWidgetRef)
 const innerWidgetSize = computed(() => ({
@@ -206,6 +210,28 @@ const innerWidgetSize = computed(() => ({
   height: height.value,
 }))
 watch(innerWidgetSize, () => resizeWidgetToMinimalSize())
+
+const outerBounds = useElementBounding(outerWidgetRef)
+
+const makeWidgetRespectWalls = (): void => {
+  let needToRespect = false
+  for (const bound of [outerBounds.left.value, outerBounds.right.value]) {
+    if (bound < 0 || bound > window.innerWidth) {
+      needToRespect = true
+    }
+  }
+  for (const bound of [outerBounds.top.value, outerBounds.bottom.value]) {
+    if (bound < 0 || bound > window.innerHeight) {
+      needToRespect = true
+    }
+  }
+  if (needToRespect) {
+    widgetFinalPosition.value = defaultRestoredPosition()
+    widgetFinalSize.value = defaultRestoredSize()
+  }
+}
+
+watch(outerBounds, () => makeWidgetRespectWalls())
 
 const widgetFinalPosition = ref(props.position)
 watch(widgetRawPosition, (position) => {
