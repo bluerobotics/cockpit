@@ -13,7 +13,12 @@ import {
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Attitude, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
+import type {
+  Attitude,
+  Coordinates,
+  PageDescription,
+  PowerSupply,
+} from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 
