@@ -1,9 +1,14 @@
 <template>
-  <object class="svgObject" type="image/svg+xml" data="/images/PS5.svg" />
+  <object
+    :class="component_name"
+    type="image/svg+xml"
+    :data="joystick_svg_path"
+  />
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { v4 as uuid4 } from 'uuid'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 /**
  * Buttons for PS5 controller
@@ -37,8 +42,17 @@ enum Axis {
   LEFT = Buttons.L3,
 }
 
+/**
+ * Joystick models
+ */
+enum Models {
+  PS4 = 'PS4',
+  PS5 = 'PS5',
+}
+
 /* eslint-disable  */
 const props = defineProps<{
+  model: string // Models
   up?: boolean
   down?: boolean
   right?: boolean
@@ -66,15 +80,20 @@ const props = defineProps<{
 let waitTimer: ReturnType<typeof setInterval>
 let svg: Document | null | undefined
 
+const component_name = ref(`joystick-${uuid4()}`)
+
 // Wait for object to be loaded
 waitTimer = setInterval(() => {
   svg = (
-    document?.querySelector('.svgObject') as HTMLEmbedElement | null
+    document?.querySelector(
+      `.${component_name.value}`
+    ) as HTMLEmbedElement | null
   )?.getSVGDocument()
-  if (svg != undefined) {
-    clearInterval(waitTimer)
-  }
 }, 100)
+
+onBeforeUnmount(async () => {
+  clearInterval(waitTimer)
+})
 
 watch(
   () => [props.leftAxis, props.rightAxis],
@@ -83,6 +102,10 @@ watch(
     setAxis(Axis.RIGHT, props.rightAxis ?? [0, 0])
   }
 )
+
+const joystick_svg_path = computed(() => {
+  return `/images/${props.model}.svg`
+})
 
 watch(
   () => [
@@ -169,11 +192,27 @@ function scale(
  * @returns {void}
  */
 function setAxis(axis: Axis, [x, y]: [number, number]): void {
-  const xValue =
-    axis == Axis.RIGHT
-      ? scale(x, -1, 1, -3920.9, -3882.1)
-      : scale(x, -1, 1, -4144.8, -4106.1)
-  const yValue = scale(y, -1, 1, -2192.7, -2153.9)
+  let xValue
+  let yValue
+  switch (props.model) {
+    case Models.PS4: {
+      xValue =
+        axis == Axis.RIGHT
+          ? scale(x, -1, 1, 193.4, 223.6)
+          : scale(x, -1, 1, 417, 447.4)
+      yValue = scale(y, -1, 1, 173.5, 203.6)
+      break
+    }
+    default: {
+      // PS5
+      xValue =
+        axis == Axis.RIGHT
+          ? scale(x, -1, 1, -3920.9, -3882.1)
+          : scale(x, -1, 1, -4144.8, -4106.1)
+      yValue = scale(y, -1, 1, -2192.7, -2153.9)
+      break
+    }
+  }
 
   svg
     ?.getElementById(axis as unknown as string)
