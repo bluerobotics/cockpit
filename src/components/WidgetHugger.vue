@@ -268,18 +268,15 @@ const toggleFullScreen = (): void => {
     isEqual(lastNonFullScreenPosition.value, fullScreenPosition) &&
     isEqual(lastNonFullScreenSize.value, fullScreenSize.value)
   ) {
-    lastNonFullScreenPosition.value = {
-      x: 0.15,
-      y: 0.15,
-    }
-    lastNonFullScreenSize.value = {
-      width: 0.7,
-      height: 0.7,
-    }
+    lastNonFullScreenPosition.value = defaultRestoredPosition()
+    lastNonFullScreenSize.value = defaultRestoredSize()
   }
   widgetFinalPosition.value = lastNonFullScreenPosition.value
   widgetFinalSize.value = lastNonFullScreenSize.value
 }
+
+const defaultRestoredPosition = (): Point2D => ({ x: 0.15, y: 0.15 })
+const defaultRestoredSize = (): SizeRect2D => ({ width: 0.7, height: 0.7 })
 
 watch(widgetFinalPosition, () => {
   if (!isFullScreenPosition.value) {
