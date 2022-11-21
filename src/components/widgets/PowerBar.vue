@@ -9,10 +9,11 @@
     <v-switch
       v-model="armSwitch"
       :disabled="!vehicleStore.isVehicleOnline()"
-      class="v-input--horizontal"
+      class="v-input--horizontal mx-1"
       color="red-darken-3"
       :label="`${armSwitch ? 'Armed' : 'Disarmed'}`"
       :loading="vehicleStore.isArmed !== armSwitch ? 'warning' : undefined"
+      hide-details
     />
 
     <v-select
@@ -23,6 +24,7 @@
       variant="outlined"
       no-data-text="Waiting for available modes."
       hide-details
+      class="mx-1"
       :loading="vehicleStore.mode !== flightMode"
     />
 
