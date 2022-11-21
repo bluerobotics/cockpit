@@ -118,6 +118,7 @@ onBeforeMount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 .options-btn {
   display: none;
