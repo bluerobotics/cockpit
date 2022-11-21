@@ -23,15 +23,15 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      showgrid="false"
-     inkscape:zoom="15.093354"
-     inkscape:cx="401.60059"
-     inkscape:cy="316.3644"
+     inkscape:zoom="2.6681532"
+     inkscape:cx="498.28472"
+     inkscape:cy="301.70681"
      inkscape:window-width="3840"
      inkscape:window-height="2109"
      inkscape:window-x="2560"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="ps5" />
+     inkscape:current-layer="svg282" />
   <g
      id="ps5_macos"
      transform="translate(-576.351 -2137.57)">
@@ -144,7 +144,7 @@
            id="path_triangle" />
       </g>
       <g
-         id="path_square"
+         id="path_x"
          transform="translate(-3797.17 -2216.324)"
          fill="none"
          stroke="#747474"
@@ -163,7 +163,7 @@
            id="circle202" />
       </g>
       <g
-         id="path_x"
+         id="path_square"
          transform="translate(-3848.108 -2267.261)"
          fill="none"
          stroke="#747474"
@@ -777,22 +777,22 @@
      xml:space="preserve"
      style="font-size:22.6667px;fill:#000000"
      x="947.26648"
-     y="290.76984"
+     y="356.76984"
      id="text601-5-3-04-1-1-4"><tspan
        sodipodi:role="line"
        id="tspan599-9-5-1-1-8-5"
        x="947.26648"
-       y="290.76984"
+       y="356.76984"
        style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">X</tspan></text>
   <text
      xml:space="preserve"
      style="font-size:22.6667px;fill:#000000"
      x="945.06622"
-     y="357.14035"
+     y="289.14035"
      id="text601-5-3-04-1-1-4-6"><tspan
        sodipodi:role="line"
        id="tspan599-9-5-1-1-8-5-8"
        x="945.06622"
-       y="357.14035"
+       y="289.14035"
        style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">SQUARE</tspan></text>
 </svg>
