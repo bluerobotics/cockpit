@@ -1,8 +1,9 @@
 <template>
-  <v-toolbar class="topbar" color="rgba(0, 0, 0, 0.05)">
+  <v-sheet class="topbar" color="rgba(0, 0, 0, 0.05)">
     <v-btn
       :icon="vehicleIcon ?? 'mdi-help'"
       :color="getColor(vehicleStore.isVehicleOnline())"
+      variant="text"
     />
 
     <v-switch
@@ -27,8 +28,12 @@
 
     <v-spacer></v-spacer>
 
-    <v-btn :icon="'mdi-controller'" :color="getColor(joystickConnected)" />
-  </v-toolbar>
+    <v-btn
+      :icon="'mdi-controller'"
+      :color="getColor(joystickConnected)"
+      variant="text"
+    />
+  </v-sheet>
 </template>
 
 <script setup lang="ts">
@@ -89,6 +94,9 @@ vehicleUnsubscribe = vehicleStore.$subscribe(() => {
 <style scoped>
 .topbar {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   backdrop-filter: blur(1px);
 }
 
