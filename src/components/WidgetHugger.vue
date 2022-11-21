@@ -13,7 +13,7 @@
       class="resizer"
       :class="{ draggingResizer, hoveringResizer, allowResizing }"
     />
-    <div v-if="hoveringOverlay" class="editing-buttons">
+    <div v-if="hoveringOverlay || !notHoveringEditMenu" class="editing-buttons">
       <v-menu
         v-if="allowResizing || allowOrdering || allowDeleting"
         location="top"
@@ -21,7 +21,7 @@
         <template #activator="{ props: menuProps }">
           <v-btn v-bind="menuProps" size="x-small" icon="mdi-pencil" />
         </template>
-        <v-list>
+        <v-list ref="widgetEditMenu">
           <v-btn
             v-if="allowOrdering"
             class="ma-1"
@@ -157,6 +157,9 @@ const lastNonFullScreenSize = ref(props.size)
 const widgetOverlay = ref()
 const { isOutside: notHoveringOverlay } = useMouseInElement(widgetOverlay)
 const hoveringOverlay = computed(() => !notHoveringOverlay.value)
+
+const widgetEditMenu = ref()
+const { isOutside: notHoveringEditMenu } = useMouseInElement(widgetEditMenu)
 
 const { position: widgetRawPosition, dragging: draggingWidget } =
   useDragInElement(
