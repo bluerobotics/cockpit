@@ -12,6 +12,21 @@ export enum EventType {
   Button = 'button',
 }
 
+/**
+ * Supported joystick models
+ */
+export enum JoystickModel {
+  DualSense = 'DualSense (PS5)',
+  DualShock4 = 'DualShock (PS4)',
+  Unknown = 'Unknown Joystick Model',
+}
+
+const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
+  // Sony
+  ['054c:0ce6', JoystickModel.DualSense],
+  ['054c:09cc', JoystickModel.DualShock4],
+])
+
 // Necessary to add functions
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace EventType {
@@ -113,7 +128,7 @@ export type JoystickEvent = {
 }
 
 type callbackJoystickStateEventType = (event: JoystickEvent) => void
-type callbackJoystickEventType = (event: Array<Gamepad>) => void
+type callbackJoystickEventType = (event: Map<number, Gamepad>) => void
 
 /**
  * Joystick Manager
@@ -125,7 +140,7 @@ class JoystickManager {
   private callbacksJoystick: Array<callbackJoystickEventType> = []
   private callbacksJoystickState: Array<callbackJoystickStateEventType> = []
   private gamepadListener = new GamepadListener()
-  private joysticks: Array<Gamepad> = []
+  private joysticks: Map<number, Gamepad> = new Map()
   // We need to safe in settings
   private enabledJoysticks: Array<string> = []
 
@@ -156,6 +171,43 @@ class JoystickManager {
   }
 
   /**
+   * Get Vendor ID and Product ID from joystick
+   *
+   * @param {Gamepad} gamepad Object
+   * @returns {'vendor_id: string | undefined, product_id: string | undefined'} VID and PID
+   */
+  private getVidPid(gamepad: Gamepad): {
+    vendor_id: string | undefined // eslint-disable-line
+    product_id: string | undefined // eslint-disable-line
+  } {
+    const joystick_information = gamepad.id
+    const vendor_regex = new RegExp('Vendor: (?<vendor_id>[0-9a-f]{4})')
+    const product_regex = new RegExp('Product: (?<product_id>[0-9a-f]{4})')
+    const vendor_id = vendor_regex.exec(joystick_information)?.groups?.vendor_id
+    const product_id =
+      product_regex.exec(joystick_information)?.groups?.product_id
+    return { vendor_id, product_id }
+  }
+
+  /**
+   * Get joystick model
+   *
+   * @param {Gamepad} gamepad Object
+   * @returns {JoystickModel} Joystick model
+   */
+  getModel(gamepad: Gamepad): JoystickModel {
+    const { vendor_id, product_id } = this.getVidPid(gamepad)
+
+    if (vendor_id == undefined || product_id == undefined) {
+      return JoystickModel.Unknown
+    }
+    return (
+      JoystickMapVidPid.get(`${vendor_id}:${product_id}`) ??
+      JoystickModel.Unknown
+    )
+  }
+
+  /**
    * Request user for joystick HID access
    *
    * @param {Gamepad} gamepad object
@@ -166,16 +218,11 @@ class JoystickManager {
     // Electron API appears to be not working: https://www.electronjs.org/docs/latest/api/structures/hid-device
     // W3C productName may help but it's not working: https://wicg.github.io/webhid/
     // For both serialInformation is not available: https://github.com/w3c/gamepad/issues/73
-    const joystick_information = gamepad.id
-    const vendor_regex = new RegExp('Vendor: (?<vendor_id>[0-9a-f]{4})')
-    const product_regex = new RegExp('Product: (?<product_id>[0-9a-f]{4})')
-    const vendor_id = vendor_regex.exec(joystick_information)?.groups?.vendor_id
-    const product_id =
-      product_regex.exec(joystick_information)?.groups?.product_id
-    if (vendor_id === undefined || product_id === undefined) {
-      console.warn(
-        `Failed to fetch Product or Vendor identifier for joystick: ${vendor_id}:${product_id}`
-      )
+    const { vendor_id, product_id } = this.getVidPid(gamepad)
+
+    console.debug(`Joystick: ${gamepad.id} (${vendor_id}:${product_id})`)
+
+    if (vendor_id == undefined || product_id == undefined) {
       return
     }
 
@@ -207,54 +254,17 @@ class JoystickManager {
   private processJoystickUpdate(event: JoystickEvent): void {
     const index = event.detail.index
 
-    if (index < 0) {
-      console.log(`index: ${index}, length:${this.joysticks.length}`)
-      console.log(
-        `event: ${JSON.stringify(event)}, joysticks: ${JSON.stringify(
-          this.joysticks
-        )}`
-      )
-      throw new Error('Invalid joystick index.')
-    }
-
-    if (index > this.joysticks.length) {
-      console.log(`index: ${index}, length:${this.joysticks.length}`)
-      console.log(
-        `event: ${JSON.stringify(event)}, joysticks: ${JSON.stringify(
-          this.joysticks
-        )}`
-      )
-      throw new Error(
-        'Connected joystick index is beyond the number of joysticks connected.'
-      )
-    }
-
-    // Let us know if we need to push a new joystick or remove one that already exists
-    let isLatest = true
-
-    if (index < this.joysticks.length) {
-      isLatest = false
-      console.log(`index: ${index}, length:${this.joysticks.length}`)
-      console.log(
-        `event: ${JSON.stringify(event)}, joysticks: ${JSON.stringify(
-          this.joysticks
-        )}`
-      )
-      console.warn('Connected index is below the number of joysticks connected')
-    }
-
     if (event.type == EventType.Connected) {
       const gamepad = event.detail.gamepad
 
-      if (isLatest) {
-        // this.getHID(gamepad)
+      if (!this.joysticks.has(index)) {
+        this.getHID(gamepad)
         this.enabledJoysticks.push(gamepad.id)
-        this.joysticks.push(gamepad)
-      } else {
-        this.joysticks[index] = gamepad
       }
+      this.joysticks.set(index, gamepad)
     } else {
-      this.joysticks.splice(index, 1)
+      // Disconnect
+      this.joysticks.delete(index)
     }
 
     for (const callback of this.callbacksJoystick) {
