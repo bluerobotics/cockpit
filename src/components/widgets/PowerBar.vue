@@ -16,6 +16,8 @@
       hide-details
     />
 
+    <Alerter />
+
     <v-select
       v-model="flightMode"
       :disabled="!vehicleStore.isVehicleOnline()"
@@ -43,6 +45,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { joystickManager } from '@/libs/joystick/manager'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+
+import Alerter from './Alerter.vue'
 
 const vehicleStore = useMainVehicleStore()
 
