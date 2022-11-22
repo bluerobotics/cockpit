@@ -49,8 +49,8 @@ onMounted(() => {
   })
 })
 
-const processJoystickEvent = (event: Array<Gamepad>): void => {
-  joystickConnected.value = event.length !== 0
+const processJoystickEvent = (event: Map<number, Gamepad>): void => {
+  joystickConnected.value = event.size !== 0
 }
 
 const getColor = (isGreen: boolean): string => {
