@@ -75,6 +75,7 @@ module.exports = {
     'spaced-comment': ['error', 'always'],
     'sort-imports': 'off',
     '@typescript-eslint/ban-ts-comment': ['off'],
+    '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-useless-constructor': ['error'],
     '@typescript-eslint/no-shadow': ['error'],
     '@typescript-eslint/explicit-function-return-type': [
