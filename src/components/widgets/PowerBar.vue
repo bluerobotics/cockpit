@@ -1,42 +1,45 @@
 <template>
   <v-sheet class="topbar" color="rgba(0, 0, 0, 0.05)">
-    <v-btn
-      :icon="vehicleIcon ?? 'mdi-help'"
-      :color="getColor(vehicleStore.isVehicleOnline())"
-      variant="text"
-    />
+    <v-row align="center" justify="center" no-gutters>
+      <v-col>
+        <v-btn
+          :icon="vehicleIcon ?? 'mdi-help'"
+          :color="getColor(vehicleStore.isVehicleOnline())"
+          variant="text"
+        />
 
-    <v-switch
-      v-model="armSwitch"
-      :disabled="!vehicleStore.isVehicleOnline()"
-      class="v-input--horizontal mx-1"
-      color="red-darken-3"
-      :label="`${armSwitch ? 'Armed' : 'Disarmed'}`"
-      :loading="vehicleStore.isArmed !== armSwitch ? 'warning' : undefined"
-      hide-details
-    />
-
-    <Alerter />
-
-    <v-select
-      v-model="flightMode"
-      :disabled="!vehicleStore.isVehicleOnline()"
-      :items="flightModes"
-      density="compact"
-      variant="outlined"
-      no-data-text="Waiting for available modes."
-      hide-details
-      class="mx-1"
-      :loading="vehicleStore.mode !== flightMode"
-    />
-
-    <v-spacer></v-spacer>
-
-    <v-btn
-      :icon="'mdi-controller'"
-      :color="getColor(joystickConnected)"
-      variant="text"
-    />
+        <v-switch
+          v-model="armSwitch"
+          :disabled="!vehicleStore.isVehicleOnline()"
+          class="v-input--horizontal mx-1"
+          color="red-darken-3"
+          :label="`${armSwitch ? 'Armed' : 'Disarmed'}`"
+          :loading="vehicleStore.isArmed !== armSwitch ? 'warning' : undefined"
+          hide-details
+        />
+      </v-col>
+      <v-col>
+        <Alerter />
+      </v-col>
+      <v-col>
+        <v-select
+          v-model="flightMode"
+          :disabled="!vehicleStore.isVehicleOnline()"
+          :items="flightModes"
+          density="compact"
+          variant="outlined"
+          no-data-text="Waiting for available modes."
+          hide-details
+          class="mx-1"
+          :loading="vehicleStore.mode !== flightMode"
+        />
+        <v-btn
+          :icon="'mdi-controller'"
+          :color="getColor(joystickConnected)"
+          variant="text"
+        />
+      </v-col>
+    </v-row>
   </v-sheet>
 </template>
 
@@ -100,10 +103,12 @@ vehicleUnsubscribe = vehicleStore.$subscribe(() => {
 <style scoped>
 .topbar {
   width: 100%;
+  backdrop-filter: blur(1px);
+}
+.v-col {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  backdrop-filter: blur(1px);
+  justify-content: space-around;
 }
 
 .v-input--horizontal {
