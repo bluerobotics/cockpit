@@ -51,7 +51,7 @@ const levelColor = (level: AlertLevel): string => {
   justify-content: center;
   align-items: center;
   margin: 10px;
-  padding: 20px;
+  padding: 6px;
   white-space: nowrap;
 }
 .main-sheet p {
