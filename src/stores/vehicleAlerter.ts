@@ -15,7 +15,7 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
   watch(
     () => vehicleStore.isArmed,
     (isArmedNow) => {
-      const state = isArmedNow ? 'Vehicle armed' : 'Vehicle disarmed'
+      const state = isArmedNow ? 'armed' : 'disarmed'
       alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle ${state}`))
     }
   )
