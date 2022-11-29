@@ -7,15 +7,9 @@ test('URI', () => {
   expect(new Connection.URI('ws://google.com').isSecure()).toBe(false)
   expect(new Connection.URI('https://google.com').isSecure()).toBe(true)
   expect(new Connection.URI('wss://google.com').isSecure()).toBe(true)
-  expect(new Connection.URI('https://google.com').type()).toBe(
-    Connection.Type.Http
-  )
-  expect(new Connection.URI('wss://google.com').type()).toBe(
-    Connection.Type.WebSocket
-  )
-  expect(new Connection.URI('potato://google.com').type()).toBe(
-    Connection.Type.None
-  )
+  expect(new Connection.URI('https://google.com').type()).toBe(Connection.Type.Http)
+  expect(new Connection.URI('wss://google.com').type()).toBe(Connection.Type.WebSocket)
+  expect(new Connection.URI('potato://google.com').type()).toBe(Connection.Type.None)
 })
 
 test('Type', () => {

@@ -1,43 +1,18 @@
 <template>
   <v-menu v-if="showMainMenuButton" location="bottom">
     <template #activator="{ props: menuProps }">
-      <v-btn
-        v-bind="menuProps"
-        class="edit-mode-btn"
-        icon="mdi-menu"
-        :disabled="disableMainMenuButton"
-      />
+      <v-btn v-bind="menuProps" class="edit-mode-btn" icon="mdi-menu" :disabled="disableMainMenuButton" />
     </template>
     <v-card ref="mainMenu" class="pa-2 ma-2">
-      <v-switch
-        :model-value="editingMode"
-        inset
-        hide-details
-        label="Edit mode"
-        @click="editingMode = !editingMode"
-      />
-      <v-btn prepend-icon="mdi-cog" flat @click="showConfigurationMenu = true">
-        Configuration
-      </v-btn>
-      <v-checkbox
-        v-model="alwaysShowMainMenuButton"
-        label="Always show menu button"
-        hide-details
-      />
+      <v-switch :model-value="editingMode" inset hide-details label="Edit mode" @click="editingMode = !editingMode" />
+      <v-btn prepend-icon="mdi-cog" flat @click="showConfigurationMenu = true"> Configuration </v-btn>
+      <v-checkbox v-model="alwaysShowMainMenuButton" label="Always show menu button" hide-details />
     </v-card>
   </v-menu>
-  <SnappingGrid
-    v-if="showGrid && editingMode"
-    :grid-interval="gridInterval"
-    class="snapping-grid"
-  />
+  <SnappingGrid v-if="showGrid && editingMode" :grid-interval="gridInterval" class="snapping-grid" />
   <EditMenu v-model:edit-mode="editingMode" v-model:show-grid="showGrid" />
   <div class="main">
-    <div
-      v-for="layer in store.currentProfile.layers.slice().reverse()"
-      :key="layer.hash"
-      class="widget-layer"
-    >
+    <div v-for="layer in store.currentProfile.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
       <template v-for="widget in layer.widgets.slice().reverse()" :key="widget">
         <WidgetHugger
           v-if="Object.values(WidgetType).includes(widget.component)"
@@ -86,12 +61,7 @@
     </div>
   </div>
   <teleport to="body">
-    <v-dialog
-      v-model="showConfigurationMenu"
-      transition="dialog-bottom-transition"
-      width="100%"
-      height="100%"
-    >
+    <v-dialog v-model="showConfigurationMenu" transition="dialog-bottom-transition" width="100%" height="100%">
       <ConfigurationMenu />
     </v-dialog>
   </teleport>
@@ -133,19 +103,14 @@ const gridInterval = ref(0.01)
 const mainMenu = ref()
 const showConfigurationMenu = ref(false)
 
-const widgetsPresent = computed(() =>
-  store.currentProfile.layers.some((layer) => layer.widgets.length != 0)
-)
+const widgetsPresent = computed(() => store.currentProfile.layers.some((layer) => layer.widgets.length != 0))
 
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
 const disableMainMenuButton = computed(() => !mouseNearMainButton.value)
 const showMainMenuButton = computed(() => {
   return (
-    alwaysShowMainMenuButton.value ||
-    mouseNearMainButton.value ||
-    !notHoveringMainMenu.value ||
-    !widgetsPresent.value
+    alwaysShowMainMenuButton.value || mouseNearMainButton.value || !notHoveringMainMenu.value || !widgetsPresent.value
   )
 })
 

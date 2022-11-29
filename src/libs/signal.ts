@@ -43,9 +43,7 @@ export class Signal<T> {
    * @param  {Function} slot
    * @returns {Signal<'T'>}
    */
-  public remove(
-    slot: ((arg1: T) => void) | ((arg1: undefined) => void)
-  ): Signal<T> {
+  public remove(slot: ((arg1: T) => void) | ((arg1: undefined) => void)): Signal<T> {
     this.slots = this.slots.filter((item) => item !== slot)
     this.onces = this.onces.filter((item) => item !== slot)
 
@@ -158,10 +156,7 @@ export class SignalTyped {
    * @param {Function} slot
    * @returns {SignalTyped}
    */
-  public remove<T>(
-    typeof_value: string,
-    slot: (arg1: T) => void | (() => void)
-  ): SignalTyped {
+  public remove<T>(typeof_value: string, slot: (arg1: T) => void | (() => void)): SignalTyped {
     this.slots.has(typeof_value) &&
       this.slots.set(
         typeof_value,

@@ -4,9 +4,7 @@ import { type Ref, ref } from 'vue'
 import { Alert, AlertLevel } from '../types/alert'
 
 export const useAlertStore = defineStore('alert', () => {
-  const alerts: Ref<Alert[]> = ref([
-    new Alert(AlertLevel.Success, 'Cockpit started'),
-  ])
+  const alerts: Ref<Alert[]> = ref([new Alert(AlertLevel.Success, 'Cockpit started')])
 
   const pushAlert = (alert: Alert): void => {
     alerts.value.push(alert)

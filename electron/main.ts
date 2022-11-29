@@ -27,10 +27,7 @@ function createWindow(): void {
 
   // Test active push message to Renderer-process.
   mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow?.webContents.send(
-      'main-process-message',
-      new Date().toLocaleString()
-    )
+    mainWindow?.webContents.send('main-process-message', new Date().toLocaleString())
   })
 
   mainWindow.loadFile(join(ROOT_PATH.dist, 'index.html'))

@@ -12,33 +12,17 @@
       <p class="text-h3 text-left text-white">{{ store.missionName }}</p>
     </template>
     <template v-if="widget.options.showMissionUptime">
-      <p class="text-h5 text-left text-white">
-        Uptime: {{ missionUptimeString }}
-      </p>
+      <p class="text-h5 text-left text-white">Uptime: {{ missionUptimeString }}</p>
     </template>
   </v-sheet>
   <v-dialog v-model="showOptionsDialog" width="50%">
     <v-card class="pa-2">
       <v-card-title>Mission Info widget config</v-card-title>
       <v-card-text>
-        <v-checkbox
-          v-model="widget.options.showMissionName"
-          label="Show mission name"
-          hide-details
-        />
-        <v-text-field
-          v-model="store.missionName"
-          hide-details="auto"
-          label="Mission name"
-        />
-        <v-checkbox
-          v-model="widget.options.showMissionUptime"
-          label="Show mission uptime"
-          hide-details
-        />
-        <v-btn class="ma-1" @click="store.missionStartTime = new Date()">
-          Reset mission uptime
-        </v-btn>
+        <v-checkbox v-model="widget.options.showMissionName" label="Show mission name" hide-details />
+        <v-text-field v-model="store.missionName" hide-details="auto" label="Mission name" />
+        <v-checkbox v-model="widget.options.showMissionUptime" label="Show mission uptime" hide-details />
+        <v-btn class="ma-1" @click="store.missionStartTime = new Date()"> Reset mission uptime </v-btn>
       </v-card-text>
     </v-card>
   </v-dialog>

@@ -9,8 +9,7 @@ import { WebSocketConnection } from './websocket-connection'
  */
 export class ConnectionManager {
   private static _connections: Connection.Abstract[] = []
-  private static _mainConnection: WeakRef<Connection.Abstract> | undefined =
-    undefined
+  private static _mainConnection: WeakRef<Connection.Abstract> | undefined = undefined
 
   // Signals
   static onMainConnection = new Signal<WeakRef<Connection.Abstract>>()
@@ -22,9 +21,7 @@ export class ConnectionManager {
    * @returns {Connection.Abstract[]}
    */
   static connections(): Connection.Abstract[] {
-    console.warn(
-      'This function should not be used, only a single connection is supported for now'
-    )
+    console.warn('This function should not be used, only a single connection is supported for now')
     return ConnectionManager._connections
   }
 
@@ -34,10 +31,7 @@ export class ConnectionManager {
    * @param  {Connection.URI} uri
    * @param  {Protocol.Type} vehicleProtocol
    */
-  static addConnection(
-    uri: Connection.URI,
-    vehicleProtocol: Protocol.Type
-  ): void {
+  static addConnection(uri: Connection.URI, vehicleProtocol: Protocol.Type): void {
     let connection = undefined
     switch (uri.type()) {
       case Connection.Type.WebSocket:

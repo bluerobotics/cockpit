@@ -1,8 +1,5 @@
 import type { Package } from '@/libs/connection/messages/mavlink2rest'
-import {
-  MAVLinkType,
-  MavModeFlag,
-} from '@/libs/connection/messages/mavlink2rest-enum'
+import { MAVLinkType, MavModeFlag } from '@/libs/connection/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 
 import * as Vehicle from '../vehicle'
@@ -96,12 +93,7 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
         }
 
         // We only deal with the custom modes since this is how ArduPilot works
-        if (
-          !(
-            heartbeat.base_mode.bits &
-            MavModeFlag.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-          )
-        ) {
+        if (!(heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
           console.log(`no custom: ${JSON.stringify(heartbeat.base_mode)}`)
           return
         }

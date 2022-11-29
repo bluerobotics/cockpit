@@ -1,9 +1,4 @@
-import {
-  useMouse,
-  useMouseInElement,
-  useMousePressed,
-  useWindowSize,
-} from '@vueuse/core'
+import { useMouse, useMouseInElement, useMousePressed, useWindowSize } from '@vueuse/core'
 import { type Ref, computed, ref, watch } from 'vue'
 
 import type { Point2D } from '@/types/general'

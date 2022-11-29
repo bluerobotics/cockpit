@@ -1,9 +1,5 @@
 <template>
-  <object
-    :class="component_name"
-    type="image/svg+xml"
-    :data="joystick_svg_path"
-  />
+  <object :class="component_name" type="image/svg+xml" :data="joystick_svg_path" />
 </template>
 
 <script setup lang="ts">
@@ -84,11 +80,7 @@ const component_name = ref(`joystick-${uuid4()}`)
 
 // Wait for object to be loaded
 waitTimer = setInterval(() => {
-  svg = (
-    document?.querySelector(
-      `.${component_name.value}`
-    ) as HTMLEmbedElement | null
-  )?.getSVGDocument()
+  svg = (document?.querySelector(`.${component_name.value}`) as HTMLEmbedElement | null)?.getSVGDocument()
 }, 100)
 
 onBeforeUnmount(async () => {
@@ -171,17 +163,8 @@ function toggleButton(button: Buttons, state: boolean): void {
  * @param {number} outputMax Output maximum point
  * @returns {void}
  */
-function scale(
-  input: number,
-  inputMin: number,
-  inputMax: number,
-  outputMin: number,
-  outputMax: number
-): number {
-  return (
-    ((input - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin) +
-    outputMin
-  )
+function scale(input: number, inputMin: number, inputMax: number, outputMin: number, outputMax: number): number {
+  return ((input - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin) + outputMin
 }
 
 /**
@@ -196,26 +179,18 @@ function setAxis(axis: Axis, [x, y]: [number, number]): void {
   let yValue
   switch (props.model) {
     case Models.PS4: {
-      xValue =
-        axis == Axis.RIGHT
-          ? scale(x, -1, 1, 193.4, 223.6)
-          : scale(x, -1, 1, 417, 447.4)
+      xValue = axis == Axis.RIGHT ? scale(x, -1, 1, 193.4, 223.6) : scale(x, -1, 1, 417, 447.4)
       yValue = scale(y, -1, 1, 173.5, 203.6)
       break
     }
     default: {
       // PS5
-      xValue =
-        axis == Axis.RIGHT
-          ? scale(x, -1, 1, -3920.9, -3882.1)
-          : scale(x, -1, 1, -4144.8, -4106.1)
+      xValue = axis == Axis.RIGHT ? scale(x, -1, 1, -3920.9, -3882.1) : scale(x, -1, 1, -4144.8, -4106.1)
       yValue = scale(y, -1, 1, -2192.7, -2153.9)
       break
     }
   }
 
-  svg
-    ?.getElementById(axis as unknown as string)
-    ?.setAttribute('transform', `translate(${xValue} ${yValue})`)
+  svg?.getElementById(axis as unknown as string)?.setAttribute('transform', `translate(${xValue} ${yValue})`)
 }
 </script>

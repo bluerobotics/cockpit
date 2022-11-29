@@ -9,9 +9,4 @@ import router from './router'
 
 loadFonts()
 
-createApp(App)
-  .use(router)
-  .use(vuetify)
-  .use(VueKonva)
-  .use(createPinia())
-  .mount('#app')
+createApp(App).use(router).use(vuetify).use(VueKonva).use(createPinia()).mount('#app')

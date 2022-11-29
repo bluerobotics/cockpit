@@ -2,11 +2,7 @@
   <v-sheet class="topbar" color="rgba(0, 0, 0, 0.05)">
     <v-row align="center" justify="center" no-gutters>
       <v-col>
-        <v-btn
-          :icon="vehicleIcon ?? 'mdi-help'"
-          :color="getColor(vehicleStore.isVehicleOnline())"
-          variant="text"
-        />
+        <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline())" variant="text" />
 
         <v-switch
           v-model="armSwitch"
@@ -33,11 +29,7 @@
           class="mx-1"
           :loading="vehicleStore.mode !== flightMode"
         />
-        <v-btn
-          :icon="'mdi-controller'"
-          :color="getColor(joystickConnected)"
-          variant="text"
-        />
+        <v-btn :icon="'mdi-controller'" :color="getColor(joystickConnected)" variant="text" />
       </v-col>
     </v-row>
   </v-sheet>

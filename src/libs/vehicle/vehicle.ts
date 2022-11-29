@@ -1,13 +1,7 @@
 import global from '@/libs/cosmos'
 import * as FunnyName from '@/libs/funny-name/funny-name'
 import { Signal } from '@/libs/signal'
-import type {
-  Attitude,
-  Battery,
-  Coordinates,
-  PageDescription,
-  PowerSupply,
-} from '@/libs/vehicle/types'
+import type { Attitude, Battery, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Abstract = AbstractVehicle<any>
@@ -79,9 +73,7 @@ export abstract class AbstractVehicle<Modes> {
     this._firmware = firmware
     this._type = type
 
-    unimplemented(
-      'We need to have a better way to generate a unique id based on the vehicle hardware'
-    )
+    unimplemented('We need to have a better way to generate a unique id based on the vehicle hardware')
     this._cockpitRegistrationUUID = global.crypto.randomUUID()
     this._funnyName = FunnyName.generate(toFunnyNameType(type))
 

@@ -76,8 +76,7 @@ export class WebSocketConnection extends Connection.Abstract {
     // We need to parse the websocket message to a simple string and let the one that
     // receives do the json parsing
     // We need to have the same abstraction for all onRead
-    socket.onmessage = (message: MessageEvent) =>
-      this.onRead.emit_value(this._textEncoder.encode(message.data))
+    socket.onmessage = (message: MessageEvent) => this.onRead.emit_value(this._textEncoder.encode(message.data))
     socket.onclose = () => {
       setTimeout(() => {
         this._socket = this.createSocket(uri)

@@ -184,8 +184,7 @@ class JoystickManager {
     const vendor_regex = new RegExp('Vendor: (?<vendor_id>[0-9a-f]{4})')
     const product_regex = new RegExp('Product: (?<product_id>[0-9a-f]{4})')
     const vendor_id = vendor_regex.exec(joystick_information)?.groups?.vendor_id
-    const product_id =
-      product_regex.exec(joystick_information)?.groups?.product_id
+    const product_id = product_regex.exec(joystick_information)?.groups?.product_id
     return { vendor_id, product_id }
   }
 
@@ -201,10 +200,7 @@ class JoystickManager {
     if (vendor_id == undefined || product_id == undefined) {
       return JoystickModel.Unknown
     }
-    return (
-      JoystickMapVidPid.get(`${vendor_id}:${product_id}`) ??
-      JoystickModel.Unknown
-    )
+    return JoystickMapVidPid.get(`${vendor_id}:${product_id}`) ?? JoystickModel.Unknown
   }
 
   /**
@@ -297,9 +293,7 @@ class JoystickManager {
         }
 
         if (!this.enabledJoysticks.includes(joystickEvent.detail.gamepad.id)) {
-          console.warn(
-            `Joystick is not enabled: ${joystickEvent.detail.gamepad.id}`
-          )
+          console.warn(`Joystick is not enabled: ${joystickEvent.detail.gamepad.id}`)
           return
         }
 

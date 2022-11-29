@@ -9,9 +9,7 @@ import type { RtcPeer, SignallingMessage } from '@/types/webRTC'
  * @returns { void }
  * @param { Ref<RtcPeer | undefined> } selectedPeer - Peer to receive stream from
  */
-export default function useWebRtcStream(
-  selectedPeer: Ref<RtcPeer | undefined>
-): {
+export default function useWebRtcStream(selectedPeer: Ref<RtcPeer | undefined>): {
   /**
    * Available WebRTC peers to be chosen from
    */
@@ -105,10 +103,7 @@ export default function useWebRtcStream(
   }
 
   const onSocketMessage = async (event: MessageEvent): Promise<void> => {
-    console.debug(
-      'Message received from WebRTC signalling server.',
-      JSON.parse(event.data)
-    )
+    console.debug('Message received from WebRTC signalling server.', JSON.parse(event.data))
     if (sessionWebSocket.value === undefined) {
       resetSocket()
       return
@@ -117,9 +112,7 @@ export default function useWebRtcStream(
       const msg: SignallingMessage = JSON.parse(event.data)
       if (msg.type == 'registered') {
         sessionId.value = msg.peerId
-        console.debug(
-          `Cockpit registered as '${msg.peerType}' with id '${msg.peerId}'.`
-        )
+        console.debug(`Cockpit registered as '${msg.peerType}' with id '${msg.peerId}'.`)
         sendSocketSignal({
           type: 'list',
         })
@@ -170,21 +163,18 @@ export default function useWebRtcStream(
       console.debug(`New stream on peer ${peer.id}.`)
       stream.value = event.streams[0]
     })
-    peer.connection.addEventListener(
-      'icecandidate',
-      (event: RTCPeerConnectionIceEvent) => {
-        if (event.candidate === null) {
-          console.error('Cannot listen to ICE candidate event. Candidate null.')
-          return
-        }
-        console.debug('Sending ICE candidate to signalling server.')
-        sendSocketSignal({
-          type: 'peer',
-          peerId: peer.id,
-          ice: event.candidate.toJSON(),
-        })
+    peer.connection.addEventListener('icecandidate', (event: RTCPeerConnectionIceEvent) => {
+      if (event.candidate === null) {
+        console.error('Cannot listen to ICE candidate event. Candidate null.')
+        return
       }
-    )
+      console.debug('Sending ICE candidate to signalling server.')
+      sendSocketSignal({
+        type: 'peer',
+        peerId: peer.id,
+        ice: event.candidate.toJSON(),
+      })
+    })
   }
 
   const setDescriptions = async (

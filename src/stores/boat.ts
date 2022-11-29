@@ -8,18 +8,10 @@ export const useBoatStore = defineStore('boat', () => {
   const waterTemp = ref(0)
 
   setInterval(() => {
-    speed.value = parseFloat(
-      (speed.value + (10 * Math.random() - 5.0)).toFixed(2)
-    )
-    heading.value = parseFloat(
-      (heading.value + (10 * Math.random() - 5.0)).toFixed(2)
-    )
-    depth.value = parseFloat(
-      (depth.value + (10 * Math.random() - 5.0)).toFixed(2)
-    )
-    waterTemp.value = parseFloat(
-      (waterTemp.value + (10 * Math.random() - 5.0)).toFixed(2)
-    )
+    speed.value = parseFloat((speed.value + (10 * Math.random() - 5.0)).toFixed(2))
+    heading.value = parseFloat((heading.value + (10 * Math.random() - 5.0)).toFixed(2))
+    depth.value = parseFloat((depth.value + (10 * Math.random() - 5.0)).toFixed(2))
+    waterTemp.value = parseFloat((waterTemp.value + (10 * Math.random() - 5.0)).toFixed(2))
   }, 200)
 
   return { speed, heading, depth, waterTemp }

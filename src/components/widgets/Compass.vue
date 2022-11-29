@@ -1,10 +1,6 @@
 <template>
   <div class="compass">
-    <img
-      class="compass-ticks"
-      src="@/assets/nautic-compass.svg"
-      draggable="false"
-    />
+    <img class="compass-ticks" src="@/assets/nautic-compass.svg" draggable="false" />
     <img class="boat" src="@/assets/boat.svg" draggable="false" />
   </div>
 </template>

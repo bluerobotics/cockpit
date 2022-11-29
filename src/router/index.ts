@@ -1,8 +1,4 @@
-import {
-  createRouter,
-  createWebHashHistory,
-  createWebHistory,
-} from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 
 import AboutViewVue from '../views/AboutView.vue'
 import WidgetsView from '../views/WidgetsView.vue'

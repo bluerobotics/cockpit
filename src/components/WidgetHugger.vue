@@ -1,23 +1,12 @@
 <template>
-  <div
-    ref="widgetOverlay"
-    class="widgetOverlay"
-    :class="{ allowMoving, draggingWidget, hoveringOverlay }"
-  />
+  <div ref="widgetOverlay" class="widgetOverlay" :class="{ allowMoving, draggingWidget, hoveringOverlay }" />
   <div ref="outerWidgetRef" class="outerWidget">
     <div ref="innerWidgetRef" class="innerWidget">
       <slot></slot>
     </div>
-    <div
-      ref="resizerRef"
-      class="resizer"
-      :class="{ draggingResizer, hoveringResizer, allowResizing }"
-    />
+    <div ref="resizerRef" class="resizer" :class="{ draggingResizer, hoveringResizer, allowResizing }" />
     <div v-if="hoveringOverlay || !notHoveringEditMenu" class="editing-buttons">
-      <v-menu
-        v-if="allowResizing || allowOrdering || allowDeleting"
-        location="top"
-      >
+      <v-menu v-if="allowResizing || allowOrdering || allowDeleting" location="top">
         <template #activator="{ props: menuProps }">
           <v-btn v-bind="menuProps" size="x-small" icon="mdi-pencil" />
         </template>
@@ -68,21 +57,8 @@
 </template>
 
 <script setup lang="ts">
-import {
-  useConfirmDialog,
-  useElementBounding,
-  useElementSize,
-  useMouseInElement,
-} from '@vueuse/core'
-import {
-  type Ref,
-  computed,
-  nextTick,
-  onMounted,
-  ref,
-  toRefs,
-  watch,
-} from 'vue'
+import { useConfirmDialog, useElementBounding, useElementSize, useMouseInElement } from '@vueuse/core'
+import { type Ref, computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
 import { constrain, isEqual } from '@/libs/utils'
@@ -161,14 +137,13 @@ const hoveringOverlay = computed(() => !notHoveringOverlay.value)
 const widgetEditMenu = ref()
 const { isOutside: notHoveringEditMenu } = useMouseInElement(widgetEditMenu)
 
-const { position: widgetRawPosition, dragging: draggingWidget } =
-  useDragInElement(
-    innerWidgetRef as Ref<HTMLElement>,
-    props.position,
-    allowMoving,
-    snapToGrid,
-    gridInterval.value
-  )
+const { position: widgetRawPosition, dragging: draggingWidget } = useDragInElement(
+  innerWidgetRef as Ref<HTMLElement>,
+  props.position,
+  allowMoving,
+  snapToGrid,
+  gridInterval.value
+)
 
 const {
   position: resizerPosition,
@@ -188,8 +163,7 @@ const {
 const resizeWidgetToMinimalSize = async (): Promise<void> => {
   let stillAutoResizing = false
   if (innerWidgetRef.value === undefined) return
-  const { scrollWidth, scrollHeight, offsetHeight, offsetWidth } =
-    innerWidgetRef.value
+  const { scrollWidth, scrollHeight, offsetHeight, offsetWidth } = innerWidgetRef.value
   if (scrollWidth > 1.05 * offsetWidth) {
     widgetFinalSize.value.width = (1.1 * scrollWidth) / window.innerWidth
     stillAutoResizing = true
@@ -269,8 +243,7 @@ watch(resizerPosition, (position) => {
   const growingWidth = widgetFinalSize.value.width > oldSize.width
   const growingHeight = widgetFinalSize.value.height > oldSize.height
 
-  const { offsetWidth, offsetHeight, scrollWidth, scrollHeight } =
-    innerWidgetRef.value
+  const { offsetWidth, offsetHeight, scrollWidth, scrollHeight } = innerWidgetRef.value
 
   if (scrollHeight > offsetHeight && !growingHeight) {
     widgetFinalSize.value.height = oldSize.height
@@ -325,12 +298,8 @@ const sizeStyle = computed(() => ({
   height: `${100 * widgetFinalSize.value.height}%`,
 }))
 
-const isFullScreenPosition = computed(() =>
-  isEqual(widgetFinalPosition.value, fullScreenPosition)
-)
-const isFullScreenSize = computed(() =>
-  isEqual(widgetFinalSize.value, fullScreenSize.value)
-)
+const isFullScreenPosition = computed(() => isEqual(widgetFinalPosition.value, fullScreenPosition))
+const isFullScreenSize = computed(() => isEqual(widgetFinalSize.value, fullScreenSize.value))
 const isFullScreen = computed(() => {
   return isFullScreenPosition.value && isFullScreenSize.value
 })

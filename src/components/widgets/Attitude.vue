@@ -48,10 +48,7 @@
           label="Show roll/pitch values"
           :model-value="widget.options.showRollPitchValues"
           hide-details
-          @change="
-            widget.options.showRollPitchValues =
-              !widget.options.showRollPitchValues
-          "
+          @change="widget.options.showRollPitchValues = !widget.options.showRollPitchValues"
         />
         <span>Distance between pitch lines</span>
         <v-slider
@@ -73,11 +70,7 @@
           <v-expansion-panel>
             <v-expansion-panel-title>Color</v-expansion-panel-title>
             <v-expansion-panel-text class="pa-2">
-              <v-color-picker
-                v-model="widget.options.hudColor"
-                :swatches="colorSwatches"
-                show-swatches
-              />
+              <v-color-picker v-model="widget.options.hudColor" :swatches="colorSwatches" show-swatches />
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -144,13 +137,7 @@ const stageSize = computed(() => ({
 }))
 
 // Center aim radius, constrained from user's input
-const aimRadius = computed(() =>
-  constrain(
-    widget.value.options.desiredAimRadius,
-    35,
-    0.2 * stageSize.value.width
-  )
-)
+const aimRadius = computed(() => constrain(widget.value.options.desiredAimRadius, 35, 0.2 * stageSize.value.width))
 
 /**
  * Deal with high frequency update and decrease cpu usage when drawing
@@ -175,10 +162,7 @@ watch(store.attitude, (attitude) => {
 
 // Returns the projected height of a pitch line for a given angle
 const angleY = (angle: number): number => {
-  return (
-    (widget.value.options.pitchHeightFactor * radians(angle)) /
-    Math.cos(radians(angle))
-  )
+  return (widget.value.options.pitchHeightFactor * radians(angle)) / Math.cos(radians(angle))
 }
 
 // Configuration of the HUD Konva rendering objects
@@ -282,24 +266,16 @@ const hudConfig = computed(() => {
     roll: {
       ...LiveTextsBase,
       ...{
-        x:
-          stageSize.value.width / 2 +
-          (aimRadius.value < 140 ? -30 : -0.8 * aimRadius.value),
-        y:
-          stageSize.value.height / 2 +
-          (aimRadius.value < 140 ? -2.4 : 0.3) * aimRadius.value,
+        x: stageSize.value.width / 2 + (aimRadius.value < 140 ? -30 : -0.8 * aimRadius.value),
+        y: stageSize.value.height / 2 + (aimRadius.value < 140 ? -2.4 : 0.3) * aimRadius.value,
         text: `r: ${round(rollAngleDeg.value)}°`,
       },
     },
     pitch: {
       ...LiveTextsBase,
       ...{
-        x:
-          stageSize.value.width / 2 +
-          (aimRadius.value < 140 ? -30 : -0.7 * aimRadius.value),
-        y:
-          stageSize.value.height / 2 +
-          (aimRadius.value < 140 ? 2 : 0.45) * aimRadius.value,
+        x: stageSize.value.width / 2 + (aimRadius.value < 140 ? -30 : -0.7 * aimRadius.value),
+        y: stageSize.value.height / 2 + (aimRadius.value < 140 ? 2 : 0.45) * aimRadius.value,
         text: `p: ${round(pitchY.value)}°`,
       },
     },

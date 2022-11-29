@@ -6,9 +6,7 @@
       <div class="mx-2 my-4">
         <v-expansion-panels v-model="openPanels">
           <v-expansion-panel>
-            <v-expansion-panel-title>
-              Current profile: {{ store.currentProfile.name }}
-            </v-expansion-panel-title>
+            <v-expansion-panel-title> Current profile: {{ store.currentProfile.name }} </v-expansion-panel-title>
             <v-expansion-panel-text class="pa-2">
               <div v-if="selectedLayer !== undefined">
                 <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
@@ -21,21 +19,11 @@
                     no-data-text="No layers available."
                     hide-details
                   />
-                  <v-btn
-                    class="ml-2"
-                    icon="mdi-delete"
-                    size="small"
-                    rounded="lg"
-                    @click="layerDeleteDialog.reveal"
-                  />
+                  <v-btn class="ml-2" icon="mdi-delete" size="small" rounded="lg" @click="layerDeleteDialog.reveal" />
                 </div>
                 <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
                 <template v-if="selectedLayer.widgets.length > 0">
-                  <li
-                    v-for="widget in selectedLayer.widgets"
-                    :key="widget.hash"
-                    class="pl-6"
-                  >
+                  <li v-for="widget in selectedLayer.widgets" :key="widget.hash" class="pl-6">
                     {{ widget.component }}
                   </li>
                 </template>
@@ -74,21 +62,11 @@
           no-data-text="No profiles available."
           hide-details
         />
-        <v-btn
-          class="ml-2"
-          icon="mdi-download"
-          size="small"
-          rounded="lg"
-          @click="loadProfile"
-        />
+        <v-btn class="ml-2" icon="mdi-download" size="small" rounded="lg" @click="loadProfile" />
       </div>
       <v-card-actions class="d-flex flex-column align-baseline">
-        <v-btn class="ma-1" @click="profileCreationDialog.reveal">
-          Create new profile
-        </v-btn>
-        <v-btn class="ma-1" @click="profileResetDialog.reveal">
-          Reset profiles
-        </v-btn>
+        <v-btn class="ma-1" @click="profileCreationDialog.reveal"> Create new profile </v-btn>
+        <v-btn class="ma-1" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
         <v-switch
           class="mx-3"
           label="Grid"
@@ -97,9 +75,7 @@
           @change="emit('update:showGrid', !showGrid)"
         />
       </v-card-actions>
-      <v-btn flat block @click="emit('update:editMode', false)">
-        Exit edit mode
-      </v-btn>
+      <v-btn flat block @click="emit('update:editMode', false)"> Exit edit mode </v-btn>
     </v-card>
   </v-navigation-drawer>
   <teleport to="body">
@@ -135,12 +111,7 @@
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn
-            :disabled="!newProfileForm"
-            @click="profileCreationDialog.confirm"
-          >
-            Create
-          </v-btn>
+          <v-btn :disabled="!newProfileForm" @click="profileCreationDialog.confirm"> Create </v-btn>
           <v-btn @click="profileCreationDialog.cancel">Cancel</v-btn>
         </v-card-actions>
       </v-card>
@@ -218,10 +189,7 @@ const loadProfile = (): void => {
   selectedLayer.value = store.currentProfile.layers[0]
 }
 const createNewProfile = (): void => {
-  const newProfile = store.saveProfile(
-    newProfileName.value,
-    store.currentProfile.layers
-  )
+  const newProfile = store.saveProfile(newProfileName.value, store.currentProfile.layers)
   store.loadProfile(newProfile)
   selectedProfile.value = store.currentProfile
   newProfileName.value = ''
@@ -269,12 +237,7 @@ profileResetDialog.onConfirm(resetProfiles)
   height: 100%;
   width: 100%;
   border: 8px solid;
-  border-image: linear-gradient(
-      45deg,
-      rgba(64, 152, 224, 0.7),
-      rgba(234, 255, 47, 0.7)
-    )
-    1;
+  border-image: linear-gradient(45deg, rgba(64, 152, 224, 0.7), rgba(234, 255, 47, 0.7)) 1;
   pointer-events: none;
   z-index: 70;
 }

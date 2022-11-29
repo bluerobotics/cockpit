@@ -20,11 +20,7 @@
     </div>
     <l-marker v-if="home" :lat-lng="home">
       <l-icon :icon-size="[24, 24]">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="xMidYMid meet"
-          viewBox="0 0 24 24"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24">
           <path
             fill="blue"
             d="M12 3L2 12h3v8h14v-8h3L12 3m0 4.7c2.1 0 3.8 1.7

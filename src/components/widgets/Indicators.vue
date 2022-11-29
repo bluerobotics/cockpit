@@ -24,29 +24,20 @@
     </template>
     <template v-if="widget.options.showCoordinates">
       <p class="font-weight-bold text-body-1">Lat/Long:</p>
-      <p class="text-body-1">
-        {{ store.coordinates?.latitude }}/{{ store.coordinates?.longitude }}
-      </p>
+      <p class="text-body-1">{{ store.coordinates?.latitude }}/{{ store.coordinates?.longitude }}</p>
     </template>
     <template v-if="widget.options.showAttitude">
       <p class="font-weight-bold text-body-1">Pitch:</p>
-      <p class="text-body-1">
-        {{ degrees(store.attitude?.pitch).toFixed(2) }} deg
-      </p>
+      <p class="text-body-1">{{ degrees(store.attitude?.pitch).toFixed(2) }} deg</p>
       <p class="font-weight-bold text-body-1">Roll:</p>
-      <p class="text-body-1">
-        {{ degrees(store.attitude?.roll).toFixed(2) }} deg
-      </p>
+      <p class="text-body-1">{{ degrees(store.attitude?.roll).toFixed(2) }} deg</p>
       <p class="font-weight-bold text-body-1">Yaw:</p>
-      <p class="text-body-1">
-        {{ degrees(store.attitude?.yaw).toFixed(2) }} deg
-      </p>
+      <p class="text-body-1">{{ degrees(store.attitude?.yaw).toFixed(2) }} deg</p>
     </template>
     <template v-if="widget.options.showPower">
       <p class="font-weight-bold text-body-1">Battery:</p>
       <p class="text-body-1">
-        {{ store.powerSupply?.voltage?.toFixed(2) }} V /
-        {{ store.powerSupply?.current?.toFixed(2) }} A
+        {{ store.powerSupply?.voltage?.toFixed(2) }} V / {{ store.powerSupply?.current?.toFixed(2) }} A
       </p>
     </template>
   </v-sheet>
@@ -54,26 +45,10 @@
     <v-card class="pa-2">
       <v-card-title>Indicators widget config</v-card-title>
       <v-card-text>
-        <v-checkbox
-          v-model="widget.options.showDebugInfo"
-          label="showDebugInfo"
-          hide-details
-        />
-        <v-checkbox
-          v-model="widget.options.showCoordinates"
-          label="showCoordinates"
-          hide-details
-        />
-        <v-checkbox
-          v-model="widget.options.showAttitude"
-          label="showAttitude"
-          hide-details
-        />
-        <v-checkbox
-          v-model="widget.options.showPower"
-          label="showPower"
-          hide-details
-        />
+        <v-checkbox v-model="widget.options.showDebugInfo" label="showDebugInfo" hide-details />
+        <v-checkbox v-model="widget.options.showCoordinates" label="showCoordinates" hide-details />
+        <v-checkbox v-model="widget.options.showAttitude" label="showAttitude" hide-details />
+        <v-checkbox v-model="widget.options.showPower" label="showPower" hide-details />
       </v-card-text>
     </v-card>
   </v-dialog>

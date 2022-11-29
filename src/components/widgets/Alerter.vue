@@ -20,9 +20,7 @@ const alertStore = useAlertStore()
 
 const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
-const currentAlert = computed(
-  () => alertStore.alerts.last() || new Alert(AlertLevel.Info, 'No alerts.')
-)
+const currentAlert = computed(() => alertStore.alerts.last() || new Alert(AlertLevel.Info, 'No alerts.'))
 
 const levelColor = (level: AlertLevel): string => {
   switch (level) {
