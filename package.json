@@ -77,7 +77,8 @@
   "prettier": {
     "semi": false,
     "singleQuote": true,
-    "quoteProps": "consistent"
+    "quoteProps": "consistent",
+    "printWidth": 120
   },
   "build": {
     "files": [
