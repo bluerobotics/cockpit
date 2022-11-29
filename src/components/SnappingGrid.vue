@@ -14,12 +14,8 @@ const props = defineProps<{
 }>()
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
-const gridIntervalStyleX = computed(
-  () => `${windowWidth.value * props.gridInterval}px`
-)
-const gridIntervalStyleY = computed(
-  () => `${windowHeight.value * props.gridInterval}px`
-)
+const gridIntervalStyleX = computed(() => `${windowWidth.value * props.gridInterval}px`)
+const gridIntervalStyleY = computed(() => `${windowHeight.value * props.gridInterval}px`)
 </script>
 
 <style>

@@ -45,9 +45,7 @@ export class URI extends URL {
    * @returns {boolean}
    */
   isSecure(): boolean {
-    return ![Type.Http + 's:', Type.WebSocket + 's:']
-      .filter((item) => this.protocol.startsWith(item))
-      .isEmpty()
+    return ![Type.Http + 's:', Type.WebSocket + 's:'].filter((item) => this.protocol.startsWith(item)).isEmpty()
   }
   /**
    * Return connection type from URL string

@@ -1,24 +1,9 @@
 import { ConnectionManager } from '@/libs/connection/connection-manager'
-import type {
-  MAVLinkMessageDictionary,
-  Message as MavMessage,
-  Package,
-} from '@/libs/connection/messages/mavlink2rest'
-import {
-  MavCmd,
-  MavComponent,
-  MAVLinkType,
-  MavModeFlag,
-} from '@/libs/connection/messages/mavlink2rest-enum'
+import type { MAVLinkMessageDictionary, Message as MavMessage, Package } from '@/libs/connection/messages/mavlink2rest'
+import { MavCmd, MavComponent, MAVLinkType, MavModeFlag } from '@/libs/connection/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
-import {
-  type PageDescription,
-  Attitude,
-  Battery,
-  Coordinates,
-  PowerSupply,
-} from '@/libs/vehicle/types'
+import { type PageDescription, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
 
 import * as Vehicle from '../vehicle'
 
@@ -28,9 +13,7 @@ export type ArduPilot = ArduPilotVehicle<any>
 /**
  * Generic ArduPilot vehicle
  */
-export abstract class ArduPilotVehicle<
-  Modes
-> extends Vehicle.AbstractVehicle<Modes> {
+export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0
@@ -158,10 +141,7 @@ export abstract class ArduPilotVehicle<
 
     // TODO: Maybe create a signal class to deal with MAVLink only
     // Where add will use the template argument type to define the lambda argument type
-    this.onMAVLinkMessage.emit_value(
-      mavlink_message.message.type,
-      mavlink_message
-    )
+    this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
 
     switch (mavlink_message.message.type) {
       case MAVLinkType.ATTITUDE: {
@@ -184,9 +164,7 @@ export abstract class ArduPilotVehicle<
       case MAVLinkType.HEARTBEAT: {
         const heartbeat = mavlink_message.message as Message.Heartbeat
 
-        this._isArmed = Boolean(
-          heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_SAFETY_ARMED
-        )
+        this._isArmed = Boolean(heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_SAFETY_ARMED)
         this.onArm.emit()
         break
       }
@@ -196,14 +174,8 @@ export abstract class ArduPilotVehicle<
         this.onCpuLoad.emit()
 
         this._powerSupply.voltage = sysStatus.voltage_battery / 100 // centVolts to Volts
-        this._powerSupply.current =
-          sysStatus.current_battery === -1
-            ? undefined
-            : sysStatus.current_battery / 100 // centAmps, -1 if not available
-        this._powerSupply.remaining =
-          sysStatus.battery_remaining === -1
-            ? undefined
-            : sysStatus.battery_remaining // -1 if not available
+        this._powerSupply.current = sysStatus.current_battery === -1 ? undefined : sysStatus.current_battery / 100 // centAmps, -1 if not available
+        this._powerSupply.remaining = sysStatus.battery_remaining === -1 ? undefined : sysStatus.battery_remaining // -1 if not available
         this.onPowerSupply.emit()
 
         this._communicationDropRate = sysStatus.drop_rate_comm // Drop rate of packets that were corrupted on reception

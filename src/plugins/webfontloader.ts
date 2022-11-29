@@ -2,9 +2,7 @@
  * Load web fonts
  */
 export async function loadFonts(): Promise<void> {
-  const webFontLoader = await import(
-    /* webpackChunkName: "webfontloader" */ 'webfontloader'
-  )
+  const webFontLoader = await import(/* webpackChunkName: "webfontloader" */ 'webfontloader')
 
   webFontLoader.load({
     google: {

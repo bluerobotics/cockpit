@@ -1,10 +1,6 @@
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/messages/mavlink2rest'
-import {
-  MavAutopilot,
-  MAVLinkType,
-  MavType,
-} from '@/libs/connection/messages/mavlink2rest-enum'
+import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { Signal } from '@/libs/signal'
 
@@ -30,10 +26,7 @@ export class VehicleFactory {
    * @param {Vehicle.Type} type
    * @returns {Vehicle.Abstract | undefined}
    */
-  static createVehicle(
-    firmware: Vehicle.Firmware,
-    type: Vehicle.Type
-  ): Vehicle.Abstract | undefined {
+  static createVehicle(firmware: Vehicle.Firmware, type: Vehicle.Type): Vehicle.Abstract | undefined {
     let vehicle: undefined | Vehicle.Abstract = undefined
 
     switch (firmware) {
@@ -61,9 +54,7 @@ export class VehicleFactory {
    * @param  {Vehicle.Type} type
    * @returns {Vehicle.Abstract | undefined}
    */
-  static createArduPilotVehicle(
-    type: Vehicle.Type
-  ): Vehicle.Abstract | undefined {
+  static createArduPilotVehicle(type: Vehicle.Type): Vehicle.Abstract | undefined {
     switch (type) {
       case Vehicle.Type.Copter:
         return new ArduCopter()
@@ -85,9 +76,7 @@ export class VehicleFactory {
    */
   static vehicles(): WeakRef<Vehicle.Abstract>[] {
     // Be sure to remove vehicles that does not exist anymore
-    VehicleFactory._vehicles = VehicleFactory._vehicles.filter(
-      (weakRef) => weakRef.deref() !== undefined
-    )
+    VehicleFactory._vehicles = VehicleFactory._vehicles.filter((weakRef) => weakRef.deref() !== undefined)
 
     return VehicleFactory._vehicles
   }
@@ -114,9 +103,7 @@ function createVehicleFromMessage(message: Uint8Array): void {
 
   const heartbeat = mavlink_message.message as Message.Heartbeat
   if (heartbeat.autopilot.type !== MavAutopilot.MAV_AUTOPILOT_ARDUPILOTMEGA) {
-    console.warn(
-      `Vehicle not supported: ${system_id}/${component_id}: ${heartbeat.autopilot.type}`
-    )
+    console.warn(`Vehicle not supported: ${system_id}/${component_id}: ${heartbeat.autopilot.type}`)
   }
 
   switch (heartbeat.mavtype.type) {
@@ -124,9 +111,7 @@ function createVehicleFromMessage(message: Uint8Array): void {
       VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Sub)
       break
     default:
-      console.warn(
-        `Vehicle type not supported: ${system_id}/${component_id}: ${heartbeat.mavtype.type}`
-      )
+      console.warn(`Vehicle type not supported: ${system_id}/${component_id}: ${heartbeat.mavtype.type}`)
   }
 }
 

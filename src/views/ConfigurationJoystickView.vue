@@ -6,15 +6,10 @@
       <div v-if="joysticks && !joysticks.size">
         <h2 class="warning center-flex">
           No joystick detected.<br />
-          Make sure that a joystick is connected. You can hit any key to test
-          the joystick connection.
+          Make sure that a joystick is connected. You can hit any key to test the joystick connection.
         </h2>
       </div>
-      <div
-        v-for="[key, joystick] in joysticks"
-        :key="key"
-        class="center-flex pa-8"
-      >
+      <div v-for="[key, joystick] in joysticks" :key="key" class="center-flex pa-8">
         <JoystickPS
           style="width: 700px"
           :model="joystick.model"
@@ -48,12 +43,7 @@
 import { onMounted, ref } from 'vue'
 
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
-import {
-  type JoystickEvent,
-  EventType,
-  joystickManager,
-  JoystickModel,
-} from '@/libs/joystick/manager'
+import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 
 /**
  * Joystick control mapping
@@ -111,9 +101,7 @@ onMounted(() => {
 })
 
 const processJoystickEvent = (event: Map<number, Gamepad>): void => {
-  const newMap = new Map(
-    Array.from(event).map(([index, gamepad]) => [index, new Joystick(gamepad)])
-  )
+  const newMap = new Map(Array.from(event).map(([index, gamepad]) => [index, new Joystick(gamepad)]))
 
   // Add new joysticks
   for (const [index, joystick] of newMap) {

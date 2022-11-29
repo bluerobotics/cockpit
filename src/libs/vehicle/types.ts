@@ -71,11 +71,7 @@ export class Coordinates {
    * @param {Precision} precision
    * @returns {Coordinates}
    */
-  setPosition(
-    latitude: number,
-    longitude: number,
-    precision?: Precision
-  ): Coordinates {
+  setPosition(latitude: number, longitude: number, precision?: Precision): Coordinates {
     this.latitude = latitude
     this.longitude = longitude
 

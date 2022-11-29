@@ -43,18 +43,8 @@
           hide-details
           return-object
         />
-        <v-switch
-          v-model="widget.options.flipHorizontally"
-          class="my-1"
-          label="Flip horizontally"
-          hide-details
-        />
-        <v-switch
-          v-model="widget.options.flipVertically"
-          class="my-1"
-          label="Flip vertically"
-          hide-details
-        />
+        <v-switch v-model="widget.options.flipHorizontally" class="my-1" label="Flip horizontally" hide-details />
+        <v-switch v-model="widget.options.flipVertically" class="my-1" label="Flip vertically" hide-details />
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -106,17 +96,13 @@ watch(stream, async (newStream, oldStream) => {
 watch(availablePeers, () => {
   const savedStreamName = widget.value.options.streamName
   if (selectedPeer.value === undefined && savedStreamName !== undefined) {
-    const savedPeer = availablePeers.value.find(
-      (peer) => peer.displayName === savedStreamName
-    )
+    const savedPeer = availablePeers.value.find((peer) => peer.displayName === savedStreamName)
     selectedPeer.value = savedPeer
   }
 })
 
 const flipStyle = computed(() => {
-  return `scale(${widget.value.options.flipHorizontally ? -1 : 1}, ${
-    widget.value.options.flipVertically ? -1 : 1
-  })`
+  return `scale(${widget.value.options.flipHorizontally ? -1 : 1}, ${widget.value.options.flipVertically ? -1 : 1})`
 })
 </script>
 

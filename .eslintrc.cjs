@@ -30,12 +30,7 @@ module.exports = {
           FunctionExpression: false,
           MethodDefinition: true,
         },
-        contexts: [
-          'TSEnumDeclaration',
-          'TSInterfaceDeclaration',
-          'TSMethodSignature',
-          'TSPropertySignature',
-        ],
+        contexts: ['TSEnumDeclaration', 'TSInterfaceDeclaration', 'TSMethodSignature', 'TSPropertySignature'],
       },
     ],
     'jsdoc/require-param-description': 0,
@@ -57,13 +52,11 @@ module.exports = {
       },
       {
         selector: 'LabeledStatement',
-        message:
-          'Labels are a form of GOTO; using them makes code confusing and hard to maintain and understand.',
+        message: 'Labels are a form of GOTO; using them makes code confusing and hard to maintain and understand.',
       },
       {
         selector: 'WithStatement',
-        message:
-          '`with` is disallowed in strict mode because it makes code impossible to predict and optimize.',
+        message: '`with` is disallowed in strict mode because it makes code impossible to predict and optimize.',
       },
     ],
     'no-param-reassign': 'off',
@@ -78,10 +71,7 @@ module.exports = {
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-useless-constructor': ['error'],
     '@typescript-eslint/no-shadow': ['error'],
-    '@typescript-eslint/explicit-function-return-type': [
-      'error',
-      { allowExpressions: true },
-    ],
+    '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true }],
     'vue/no-unused-properties': [
       'error',
       {

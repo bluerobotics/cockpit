@@ -28,14 +28,10 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
     const pitchDegrees = degrees(newAttitude.pitch)
     const parsedPitch = pitchDegrees.toFixed(2)
     if (pitchDegrees < -pitchDegreeLimit.value) {
-      alertStore.pushAlert(
-        new Alert(AlertLevel.Critical, `Pitch too low (${parsedPitch})`)
-      )
+      alertStore.pushAlert(new Alert(AlertLevel.Critical, `Pitch too low (${parsedPitch})`))
     }
     if (pitchDegrees > pitchDegreeLimit.value) {
-      alertStore.pushAlert(
-        new Alert(AlertLevel.Critical, `Pitch too high (${parsedPitch})`)
-      )
+      alertStore.pushAlert(new Alert(AlertLevel.Critical, `Pitch too high (${parsedPitch})`))
     }
   })
 })
