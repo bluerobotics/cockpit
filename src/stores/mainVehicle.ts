@@ -1,3 +1,4 @@
+import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { reactive, ref, watch } from 'vue'
 
@@ -15,6 +16,7 @@ import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const cpuLoad = ref<number>()
+  const mainConnectionURI = useStorage('cockpit-main-connection-uri', mavlink2restServerURI)
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
@@ -76,7 +78,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   }
 
-  ConnectionManager.addConnection(mavlink2restServerURI, Protocol.Type.MAVLink)
+  ConnectionManager.onMainConnection.add(() => {
+    const newMainConnection = ConnectionManager.mainConnection()
+    if (newMainConnection !== undefined) {
+      mainConnectionURI.value = newMainConnection.uri()
+    }
+  })
+
+  ConnectionManager.addConnection(new Connection.URI(mainConnectionURI.value), Protocol.Type.MAVLink)
 
   const getAutoPilot = (vehicles: WeakRef<Vehicle.Abstract>[]): ArduPilot => {
     const vehicle = vehicles?.last()?.deref()
@@ -146,6 +155,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     disarm,
     modesAvailable,
     setFlightMode,
+    mainConnectionURI,
     cpuLoad,
     lastHeartbeat,
     firmwareType,
