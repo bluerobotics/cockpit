@@ -255,14 +255,11 @@ watch(resizerPosition, (position) => {
 })
 
 const fullScreenPosition = { x: 0, y: 0 }
-const fullScreenSize = computed(() => ({
-  width: 1,
-  height: 1,
-}))
+const fullScreenSize = { width: 1, height: 1 }
 const toggleFullScreen = (): void => {
   if (!isFullScreen.value) {
     widgetFinalPosition.value = fullScreenPosition
-    widgetFinalSize.value = fullScreenSize.value
+    widgetFinalSize.value = fullScreenSize
     return
   }
 
@@ -299,7 +296,7 @@ const sizeStyle = computed(() => ({
 }))
 
 const isFullScreenPosition = computed(() => isEqual(widgetFinalPosition.value, fullScreenPosition))
-const isFullScreenSize = computed(() => isEqual(widgetFinalSize.value, fullScreenSize.value))
+const isFullScreenSize = computed(() => isEqual(widgetFinalSize.value, fullScreenSize))
 const isFullScreen = computed(() => {
   return isFullScreenPosition.value && isFullScreenSize.value
 })
