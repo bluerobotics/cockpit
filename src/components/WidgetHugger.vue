@@ -33,6 +33,13 @@
             @click="toggleFullScreen"
           />
           <v-btn
+            v-if="allowResizing"
+            class="ma-1"
+            size="x-small"
+            :icon="isFullWidth ? 'mdi-window-restore' : 'mdi-arrow-split-vertical'"
+            @click="toggleFullWidth"
+          />
+          <v-btn
             v-if="allowDeleting"
             class="ma-1"
             size="x-small"
@@ -287,6 +294,27 @@ const toggleFullScreen = (): void => {
   }
 }
 
+const toggleFullWidth = (): void => {
+  if (!isFullWidth.value) {
+    widgetFinalPosition.value.x = 0
+    widgetFinalSize.value.width = 1
+    return
+  }
+
+  // If last non-maximized X position and width are from a maximized state (X at 0% and
+  // width at 100%), use a pre-defined position/width so we can effectively get out of maximized
+  // state. This happens, for example, when the initial widget state is maximized.
+  if (lastNonMaximizedX.value === 0) {
+    lastNonMaximizedX.value = defaultRestoredPosition().x
+  }
+  if (lastNonMaximizedWidth.value === 1) {
+    lastNonMaximizedWidth.value = defaultRestoredSize().width
+  }
+
+  widgetFinalPosition.value.x = lastNonMaximizedX.value
+  widgetFinalSize.value.width = lastNonMaximizedWidth.value
+}
+
 const defaultRestoredPosition = (): Point2D => ({ x: 0.15, y: 0.15 })
 const defaultRestoredSize = (): SizeRect2D => ({ width: 0.7, height: 0.7 })
 
@@ -314,6 +342,10 @@ const isFullScreenPosition = computed(() => isEqual(widgetFinalPosition.value, f
 const isFullScreenSize = computed(() => isEqual(widgetFinalSize.value, fullScreenSize))
 const isFullScreen = computed(() => {
   return isFullScreenPosition.value && isFullScreenSize.value
+})
+
+const isFullWidth = computed(() => {
+  return widgetFinalPosition.value.x === 0 && widgetFinalSize.value.width === 1
 })
 
 const positionStyle = computed(() => ({
