@@ -127,8 +127,10 @@ const gridInterval = toRefs(props).gridInterval
 const outerWidgetRef = ref<HTMLElement | undefined>()
 const innerWidgetRef = ref<HTMLElement | undefined>()
 const resizerRef = ref<HTMLElement>()
-const lastNonFullScreenPosition = ref(props.position)
-const lastNonFullScreenSize = ref(props.size)
+const lastNonMaximizedX = ref(props.position.x)
+const lastNonMaximizedY = ref(props.position.y)
+const lastNonMaximizedWidth = ref(props.size.width)
+const lastNonMaximizedHeight = ref(props.size.height)
 
 const widgetOverlay = ref()
 const { isOutside: notHoveringOverlay } = useMouseInElement(widgetOverlay)
@@ -263,15 +265,26 @@ const toggleFullScreen = (): void => {
     return
   }
 
-  if (
-    isEqual(lastNonFullScreenPosition.value, fullScreenPosition) &&
-    isEqual(lastNonFullScreenSize.value, fullScreenSize.value)
-  ) {
-    lastNonFullScreenPosition.value = defaultRestoredPosition()
-    lastNonFullScreenSize.value = defaultRestoredSize()
+  if (lastNonMaximizedX.value === 0) {
+    lastNonMaximizedX.value = defaultRestoredPosition().x
   }
-  widgetFinalPosition.value = lastNonFullScreenPosition.value
-  widgetFinalSize.value = lastNonFullScreenSize.value
+  if (lastNonMaximizedY.value === fullScreenPosition.y) {
+    lastNonMaximizedY.value = defaultRestoredPosition().y
+  }
+  if (lastNonMaximizedWidth.value === fullScreenSize.width) {
+    lastNonMaximizedX.value = defaultRestoredSize().width
+  }
+  if (lastNonMaximizedHeight.value === fullScreenSize.height) {
+    lastNonMaximizedHeight.value = defaultRestoredSize().height
+  }
+  widgetFinalPosition.value = {
+    x: lastNonMaximizedX.value,
+    y: lastNonMaximizedY.value,
+  }
+  widgetFinalSize.value = {
+    width: lastNonMaximizedWidth.value,
+    height: lastNonMaximizedHeight.value,
+  }
 }
 
 const defaultRestoredPosition = (): Point2D => ({ x: 0.15, y: 0.15 })
@@ -279,13 +292,15 @@ const defaultRestoredSize = (): SizeRect2D => ({ width: 0.7, height: 0.7 })
 
 watch(widgetFinalPosition, () => {
   if (!isFullScreenPosition.value) {
-    lastNonFullScreenPosition.value = widgetFinalPosition.value
+    lastNonMaximizedX.value = widgetFinalPosition.value.x
+    lastNonMaximizedY.value = widgetFinalPosition.value.y
   }
   emit('move', widgetFinalPosition.value)
 })
 watch(widgetFinalSize, () => {
   if (!isFullScreenSize.value) {
-    lastNonFullScreenSize.value = widgetFinalSize.value
+    lastNonMaximizedWidth.value = widgetFinalSize.value.width
+    lastNonMaximizedHeight.value = widgetFinalSize.value.height
   }
   emit('resize', widgetFinalSize.value)
 })
