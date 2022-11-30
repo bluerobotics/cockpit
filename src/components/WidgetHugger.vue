@@ -40,6 +40,13 @@
             @click="toggleFullWidth"
           />
           <v-btn
+            v-if="allowResizing"
+            class="ma-1"
+            size="x-small"
+            :icon="isFullHeight ? 'mdi-window-restore' : 'mdi-arrow-split-horizontal'"
+            @click="toggleFullHeight"
+          />
+          <v-btn
             v-if="allowDeleting"
             class="ma-1"
             size="x-small"
@@ -315,6 +322,27 @@ const toggleFullWidth = (): void => {
   widgetFinalSize.value.width = lastNonMaximizedWidth.value
 }
 
+const toggleFullHeight = (): void => {
+  if (!isFullHeight.value) {
+    widgetFinalPosition.value.y = 0
+    widgetFinalSize.value.height = 1
+    return
+  }
+
+  // If last non-maximized Y position and height are from a maximized state (Y at 0% and
+  // height at 100%), use a pre-defined position/height so we can effectively get out of maximized
+  // state. This happens, for example, when the initial widget state is maximized.
+  if (lastNonMaximizedY.value === 0) {
+    lastNonMaximizedY.value = defaultRestoredPosition().y
+  }
+  if (lastNonMaximizedHeight.value === 1) {
+    lastNonMaximizedHeight.value = defaultRestoredSize().height
+  }
+
+  widgetFinalPosition.value.y = lastNonMaximizedY.value
+  widgetFinalSize.value.height = lastNonMaximizedHeight.value
+}
+
 const defaultRestoredPosition = (): Point2D => ({ x: 0.15, y: 0.15 })
 const defaultRestoredSize = (): SizeRect2D => ({ width: 0.7, height: 0.7 })
 
@@ -346,6 +374,10 @@ const isFullScreen = computed(() => {
 
 const isFullWidth = computed(() => {
   return widgetFinalPosition.value.x === 0 && widgetFinalSize.value.width === 1
+})
+
+const isFullHeight = computed(() => {
+  return widgetFinalPosition.value.y === 0 && widgetFinalSize.value.height === 1
 })
 
 const positionStyle = computed(() => ({
