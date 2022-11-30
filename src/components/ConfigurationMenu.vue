@@ -1,10 +1,10 @@
 <template>
-  <v-card class="pa-2" width="100%" height="100%">
+  <v-card width="100%" height="100%">
     <v-layout>
-      <v-navigation-drawer>
-        <v-card-title>Configuration menu</v-card-title>
-        <v-divider />
+      <v-navigation-drawer permanent :rail="mdAndDown" :expand-on-hover="mdAndDown" :elevation="mdAndDown ? 5 : 0">
         <v-list v-model:selected="currentMenuComponent">
+          <v-list-item prepend-icon="mdi-view-dashboard" title="Configuration menu" />
+          <v-divider />
           <v-list-item
             v-for="(menu, i) in menus"
             :key="i"
@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useDisplay } from 'vuetify'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
@@ -45,6 +46,7 @@ import ConfigurationSensorsView from '../views/ConfigurationSensorsView.vue'
 const store = useMainVehicleStore()
 
 const currentMenuComponent = ref([ConfigurationGeneralView])
+const { mdAndDown } = useDisplay()
 
 const menus = [
   {
