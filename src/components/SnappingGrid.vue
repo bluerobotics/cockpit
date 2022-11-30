@@ -18,7 +18,7 @@ const gridIntervalStyleX = computed(() => `${windowWidth.value * props.gridInter
 const gridIntervalStyleY = computed(() => `${windowHeight.value * props.gridInterval}px`)
 </script>
 
-<style>
+<style scoped>
 .grid {
   position: absolute;
   height: 100%;

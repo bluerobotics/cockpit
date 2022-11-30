@@ -197,7 +197,7 @@ const processJoystickStateEvent = (event: JoystickEvent): void => {
 }
 </script>
 
-<style>
+<style scoped>
 .center {
   align-items: center;
   display: flex;
