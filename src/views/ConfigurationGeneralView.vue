@@ -71,7 +71,7 @@ const addNewConnection = async (): Promise<void> => {
 }
 </script>
 
-<style>
+<style scoped>
 .main {
   display: flex;
   flex-direction: column;
