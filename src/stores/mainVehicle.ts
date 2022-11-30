@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref, watch } from 'vue'
 
-import { mavlink2restServerUrl } from '@/assets/defaults'
+import { mavlink2restServerURI } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/messages/mavlink2rest'
@@ -76,7 +76,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   }
 
-  ConnectionManager.addConnection(new Connection.URI(mavlink2restServerUrl), Protocol.Type.MAVLink)
+  ConnectionManager.addConnection(mavlink2restServerURI, Protocol.Type.MAVLink)
 
   const getAutoPilot = (vehicles: WeakRef<Vehicle.Abstract>[]): ArduPilot => {
     const vehicle = vehicles?.last()?.deref()

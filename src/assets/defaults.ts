@@ -1,7 +1,8 @@
+import * as Connection from '@/libs/connection/connection'
 import { type Profile, WidgetType } from '@/types/widgets'
 
 export const webRtcSignallingServerUrl = 'ws://blueos.local:6021'
-export const mavlink2restServerUrl = 'ws://blueos.local:6040/ws/mavlink'
+export const mavlink2restServerURI = new Connection.URI('ws://blueos.local:6040/ws/mavlink')
 export const widgetProfiles: { [key: string]: Profile } = {
   'c2bcf04d-048f-496f-9d78-fc4002608028': {
     name: 'Default Cockpit profile',
