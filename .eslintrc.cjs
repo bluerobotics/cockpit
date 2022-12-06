@@ -18,6 +18,13 @@ module.exports = {
   plugins: ['jsdoc', 'simple-import-sort'],
   rules: {
     'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
+    'indent': [
+      'error',
+      2,
+      {
+        SwitchCase: 1,
+      },
+    ],
     'import/extensions': 'off',
     'import/order': 'off',
     'jsdoc/require-jsdoc': [
