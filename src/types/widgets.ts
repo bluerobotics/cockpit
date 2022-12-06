@@ -7,6 +7,7 @@ import type { Point2D, SizeRect2D } from './general'
 export enum WidgetType {
   Attitude = 'Attitude',
   Compass = 'Compass',
+  HudCompass = 'HudCompass',
   Indicators = 'Indicators',
   Joystick = 'Joystick',
   Map = 'Map',
