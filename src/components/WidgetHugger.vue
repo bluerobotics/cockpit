@@ -224,7 +224,10 @@ const makeWidgetRespectWalls = (): void => {
   }
 }
 
-watch(outerBounds, () => makeWidgetRespectWalls())
+watch(
+  () => outerBounds,
+  () => makeWidgetRespectWalls()
+)
 
 const widgetFinalPosition = ref(props.position)
 watch(widgetRawPosition, (position) => {
