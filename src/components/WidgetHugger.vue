@@ -189,7 +189,7 @@ const resizeWidgetToMinimalSize = async (): Promise<void> => {
     stillAutoResizing = true
   }
 
-  if (stillAutoResizing) nextTick(() => resizeWidgetToMinimalSize())
+  if (stillAutoResizing) nextTick(resizeWidgetToMinimalSize)
 }
 
 onMounted(async () => {
@@ -202,7 +202,7 @@ const innerWidgetSize = computed(() => ({
   width: width.value,
   height: height.value,
 }))
-watch(innerWidgetSize, () => resizeWidgetToMinimalSize())
+watch(innerWidgetSize, resizeWidgetToMinimalSize)
 
 const outerBounds = useElementBounding(outerWidgetRef)
 
@@ -224,10 +224,7 @@ const makeWidgetRespectWalls = (): void => {
   }
 }
 
-watch(
-  () => outerBounds,
-  () => makeWidgetRespectWalls()
-)
+watch(() => outerBounds, makeWidgetRespectWalls)
 
 const widgetFinalPosition = ref(props.position)
 watch(widgetRawPosition, (position) => {
