@@ -40,10 +40,11 @@ import { ConnectionManager } from '@/libs/connection/connection-manager'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
-const newConnectionURI = ref('')
+const mainVehicleStore = useMainVehicleStore()
+
 const connectionForm = ref()
 const connectionFormValid = ref(false)
-const mainVehicleStore = useMainVehicleStore()
+const newConnectionURI = ref(mainVehicleStore.mainConnectionURI)
 
 const isValidConnectionURI = computed(() => {
   try {
