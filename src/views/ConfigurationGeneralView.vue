@@ -2,7 +2,8 @@
   <div class="main">
     <h1>General configuration</h1>
     <v-card class="pa-5 pb-2 ma-4">
-      <v-icon :icon="mainVehicleStore.isVehicleOnline() ? 'mdi-lan-connect' : 'mdi-lan-disconnect'" class="mr-3" />
+      <v-progress-circular v-if="vehicleConnected === undefined" indeterminate size="24" class="mr-3" />
+      <v-icon v-else :icon="vehicleConnected ? 'mdi-lan-connect' : 'mdi-lan-disconnect'" class="mr-3" />
       <span class="text-h6">Vehicle connection</span>
       <div class="my-6">
         <span class="text-caption font-weight-thin"> Current connection link: </span>
@@ -33,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
@@ -45,6 +46,12 @@ const mainVehicleStore = useMainVehicleStore()
 const connectionForm = ref()
 const connectionFormValid = ref(false)
 const newConnectionURI = ref(mainVehicleStore.mainConnectionURI)
+
+const vehicleConnected = ref<boolean | undefined>(mainVehicleStore.isVehicleOnline)
+watch(
+  () => mainVehicleStore.isVehicleOnline,
+  () => (vehicleConnected.value = mainVehicleStore.isVehicleOnline)
+)
 
 const isValidConnectionURI = computed(() => {
   try {
@@ -61,6 +68,8 @@ const isValidConnectionURI = computed(() => {
 // Adds a new connection, which right now is the same as changing the main one
 const addNewConnection = async (): Promise<void> => {
   await connectionForm.value.validate()
+  vehicleConnected.value = undefined
+  setTimeout(() => (vehicleConnected.value ??= false), 5000)
   try {
     ConnectionManager.addConnection(new Connection.URI(newConnectionURI.value), Protocol.Type.MAVLink)
   } catch (error) {
