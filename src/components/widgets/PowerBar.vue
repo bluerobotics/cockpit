@@ -2,11 +2,11 @@
   <v-sheet class="topbar" color="rgba(0, 0, 0, 0.05)">
     <v-row align="center" justify="center" no-gutters>
       <v-col>
-        <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline())" variant="text" />
+        <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline)" variant="text" />
 
         <v-switch
           v-model="armSwitch"
-          :disabled="!vehicleStore.isVehicleOnline()"
+          :disabled="!vehicleStore.isVehicleOnline"
           class="v-input--horizontal mx-1"
           color="red-darken-3"
           :label="`${armSwitch ? 'Armed' : 'Disarmed'}`"
@@ -20,7 +20,7 @@
       <v-col>
         <v-select
           v-model="flightMode"
-          :disabled="!vehicleStore.isVehicleOnline()"
+          :disabled="!vehicleStore.isVehicleOnline"
           :items="flightModes"
           density="compact"
           variant="outlined"

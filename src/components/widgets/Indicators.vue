@@ -10,7 +10,7 @@
     />
     <template v-if="widget.options.showDebugInfo">
       <p class="font-weight-bold text-body-1">Vehicle online?</p>
-      <p class="text-body-1">{{ store.isVehicleOnline() }}</p>
+      <p class="text-body-1">{{ store.isVehicleOnline }}</p>
       <p class="font-weight-bold text-body-1">Armed?</p>
       <p class="text-body-1">{{ store.isArmed }}</p>
       <p class="font-weight-bold text-body-1">Flight mode:</p>
