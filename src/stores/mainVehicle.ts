@@ -1,6 +1,6 @@
-import { useStorage } from '@vueuse/core'
+import { useStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import { mavlink2restServerURI } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
@@ -27,6 +27,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const isArmed = ref<boolean>(false)
   const icon = ref<string | undefined>(undefined)
   const configurationPages = ref<PageDescription[]>([])
+  const timeNow = useTimestamp({ interval: 100 })
 
   const mode = ref<string>()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,9 +38,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    *
    * @returns { boolean } True if vehicle is online
    */
-  function isVehicleOnline(): boolean {
-    return lastHeartbeat.value !== undefined && new Date().getTime() - lastHeartbeat.value.getTime() < 5000
-  }
+  const isVehicleOnline = computed(() => {
+    return lastHeartbeat.value !== undefined && new Date(timeNow.value).getTime() - lastHeartbeat.value.getTime() < 5000
+  })
 
   /**
    * Arm the vehicle
