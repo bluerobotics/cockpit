@@ -11,7 +11,7 @@
   </v-menu>
   <SnappingGrid v-if="showGrid && editingMode" :grid-interval="gridInterval" class="snapping-grid" />
   <EditMenu v-model:edit-mode="editingMode" v-model:show-grid="showGrid" />
-  <div class="main">
+  <div class="widgets-view">
     <div v-for="layer in store.currentProfile.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
       <template v-for="widget in layer.widgets.slice().reverse()" :key="widget">
         <WidgetHugger
@@ -130,7 +130,7 @@ const showMainMenuButton = computed(() => {
 </script>
 
 <style scoped>
-.main {
+.widgets-view {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
