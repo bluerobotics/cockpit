@@ -1,5 +1,5 @@
 <template>
-  <v-sheet class="topbar" color="rgba(0, 0, 0, 0.05)">
+  <v-sheet class="topbar" color="rgba(255, 255, 255, 0.8)">
     <v-row align="center" justify="center" no-gutters>
       <v-col>
         <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline)" variant="text" />
