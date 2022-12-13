@@ -2,34 +2,38 @@
   <v-sheet class="topbar" color="rgba(255, 255, 255, 0.8)">
     <v-row align="center" justify="center" no-gutters>
       <v-col>
-        <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline)" variant="text" />
+        <div class="col-container">
+          <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline)" variant="text" />
 
-        <v-switch
-          v-model="armSwitch"
-          :disabled="!vehicleStore.isVehicleOnline"
-          class="v-input--horizontal mx-1"
-          color="red-darken-3"
-          :label="`${armSwitch ? 'Armed' : 'Disarmed'}`"
-          :loading="vehicleStore.isArmed !== armSwitch ? 'warning' : undefined"
-          hide-details
-        />
+          <v-switch
+            v-model="armSwitch"
+            :disabled="!vehicleStore.isVehicleOnline"
+            class="mx-1 flex-grow-0"
+            color="red-darken-3"
+            :label="`${armSwitch ? 'Armed' : 'Disarmed'}`"
+            :loading="vehicleStore.isArmed !== armSwitch ? 'warning' : undefined"
+            hide-details
+          />
+        </div>
       </v-col>
       <v-col>
         <Alerter />
       </v-col>
       <v-col>
-        <v-select
-          v-model="flightMode"
-          :disabled="!vehicleStore.isVehicleOnline"
-          :items="flightModes"
-          density="compact"
-          variant="outlined"
-          no-data-text="Waiting for available modes."
-          hide-details
-          class="mx-1"
-          :loading="vehicleStore.mode !== flightMode"
-        />
-        <v-btn :icon="'mdi-controller'" :color="getColor(joystickConnected)" variant="text" />
+        <div class="col-container">
+          <v-select
+            v-model="flightMode"
+            :disabled="!vehicleStore.isVehicleOnline"
+            :items="flightModes"
+            density="compact"
+            variant="outlined"
+            no-data-text="Waiting for available modes."
+            hide-details
+            class="mx-1 flex-grow-0 mode-select"
+            :loading="vehicleStore.mode !== flightMode"
+          />
+          <v-btn :icon="'mdi-controller'" :color="getColor(joystickConnected)" variant="text" />
+        </div>
       </v-col>
     </v-row>
   </v-sheet>
@@ -102,10 +106,20 @@ vehicleUnsubscribe = vehicleStore.$subscribe(() => {
   align-items: center;
   justify-content: space-around;
 }
+.col-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  padding: 5px;
+}
 
 .v-input--horizontal {
   grid-template-areas: none;
   grid-template-columns: none;
   grid-template-rows: none;
+}
+.mode-select {
+  min-width: 190px;
 }
 </style>
