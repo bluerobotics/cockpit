@@ -1,14 +1,13 @@
 <template>
-  <v-menu v-if="showMainMenuButton" location="bottom">
-    <template #activator="{ props: menuProps }">
-      <v-btn v-bind="menuProps" class="edit-mode-btn" icon="mdi-menu" :disabled="disableMainMenuButton" />
-    </template>
-    <v-card ref="mainMenu" class="pa-2 ma-2">
-      <v-switch :model-value="editingMode" inset hide-details label="Edit mode" @click="editingMode = !editingMode" />
-      <v-btn prepend-icon="mdi-cog" flat @click="showConfigurationMenu = true"> Configuration </v-btn>
-      <v-checkbox v-model="alwaysShowMainMenuButton" label="Always show menu button" hide-details />
-    </v-card>
-  </v-menu>
+  <button class="main-menu-button" @click="showMainMenu(!isShowingMainMenu)">
+    <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
+  </button>
+  <div ref="mainMenu" class="main-menu">
+    <div class="main-menu-content">
+      <v-btn prepend-icon="mdi-pencil" variant="plain" @click="editingMode = !editingMode">Edit mode</v-btn>
+      <v-btn prepend-icon="mdi-cog" variant="plain" @click="showConfigurationMenu = true">Configuration</v-btn>
+    </div>
+  </div>
   <SnappingGrid v-if="showGrid && editingMode" :grid-interval="gridInterval" class="snapping-grid" />
   <EditMenu v-model:edit-mode="editingMode" v-model:show-grid="showGrid" />
   <div class="widgets-view">
@@ -72,12 +71,14 @@
 
 <script setup lang="ts">
 import { useMouse, useMouseInElement } from '@vueuse/core'
+import gsap from 'gsap'
 import {
   // type AsyncComponentLoader,
   computed,
   reactive,
   // defineAsyncComponent,
   ref,
+  watch,
 } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -100,23 +101,38 @@ import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 const store = useWidgetManagerStore()
 
 const mouse = reactive(useMouse())
-const alwaysShowMainMenuButton = ref(false)
 const editingMode = ref(false)
 const showGrid = ref(true)
 const gridInterval = ref(0.01)
 const mainMenu = ref()
 const showConfigurationMenu = ref(false)
-
-const widgetsPresent = computed(() => store.currentProfile.layers.some((layer) => layer.widgets.length != 0))
+const isShowingMainMenu = ref(false)
 
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
-const disableMainMenuButton = computed(() => !mouseNearMainButton.value)
-const showMainMenuButton = computed(() => {
-  return (
-    alwaysShowMainMenuButton.value || mouseNearMainButton.value || !notHoveringMainMenu.value || !widgetsPresent.value
-  )
+watch(mouseNearMainButton, (isNear) => {
+  if (isNear) {
+    gsap.to('.main-menu-button', { x: 175, duration: 0.25 })
+  } else {
+    gsap.to('.main-menu-button', { x: -200, duration: 0.25 })
+  }
 })
+
+watch(notHoveringMainMenu, (isNotHovering) => {
+  if (isNotHovering) {
+    showMainMenu(false)
+  }
+})
+
+const showMainMenu = (show: boolean): void => {
+  if (show) {
+    gsap.to('.main-menu', { x: 370, duration: 0.25 })
+    isShowingMainMenu.value = true
+  } else {
+    gsap.to('.main-menu', { x: -300, duration: 0.25 })
+    isShowingMainMenu.value = false
+  }
+}
 
 // TODO: Make this work
 // This function allows us to load any component without declaring it in the template, just
@@ -148,10 +164,40 @@ const showMainMenuButton = computed(() => {
   background-color: rgb(122, 25, 25);
   z-index: 50;
 }
-.edit-mode-btn {
+.main-menu-button {
   position: absolute;
-  left: 15px;
-  top: 15px;
+  left: -200px;
+  top: 0px;
+  width: 100px;
+  height: 60px;
+  background-color: rgba(47, 57, 66, 0.8);
   z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(1px);
+}
+.main-menu-button-image {
+  margin-left: 20px;
+  width: 80%;
+  height: 80%;
+  filter: invert(87%) sepia(5%) saturate(2994%) hue-rotate(140deg) brightness(93%) contrast(90%);
+}
+.main-menu-button-image:active {
+  filter: invert(87%) sepia(5%) saturate(4000%) hue-rotate(140deg) brightness(60%) contrast(100%);
+}
+.main-menu {
+  position: absolute;
+  left: -400px;
+  top: 60px;
+  width: 300px;
+  z-index: 60;
+  background-color: rgba(47, 57, 66, 0.8);
+  backdrop-filter: blur(1px);
+}
+.main-menu-content {
+  color: white;
+  margin-left: 45px;
+  padding: 3px;
 }
 </style>
