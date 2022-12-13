@@ -159,7 +159,13 @@ const renderCanvas = (): void => {
     return
   }
   const ctx = canvasContext.value
-  ctx.reset()
+
+  // Ensure widget is compatible with browsers that don't support context reset yet
+  if (typeof ctx.reset === 'function') {
+    ctx.reset()
+  } else {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  }
 
   const halfCanvasWidth = 0.5 * canvasSize.value.width
   const halfCanvasHeight = 0.5 * canvasSize.value.height
