@@ -130,11 +130,12 @@ video {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background-color: rgb(143, 183, 236);
+  background-color: rgb(0, 20, 60);
   text-align: center;
   vertical-align: middle;
   padding: 10px;
-  border: 2px solid rgb(123, 163, 216);
+  color: white;
+  border: 2px solid rgb(0, 20, 80);
 }
 .options-btn {
   display: none;
