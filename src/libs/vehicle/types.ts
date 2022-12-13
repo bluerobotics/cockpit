@@ -138,7 +138,7 @@ export class Battery {
   /**
    * Create object
    *
-   * @param {Partial<Attitude>} init
+   * @param {Partial<Battery>} init
    */
   public constructor(init?: Partial<Battery>) {
     Object.assign(this, init)
