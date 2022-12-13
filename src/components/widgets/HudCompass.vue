@@ -228,7 +228,7 @@ watch(yaw, () => {
     if (Math.abs(renderVars.yawLinesX[angle] - position) > 90) {
       renderVars.yawLinesX[angle] = position
     } else {
-      gsap.to(renderVars.yawLinesX, 0.1, { [angle]: position })
+      gsap.to(renderVars.yawLinesX, { duration: 2.5, ease: 'elastic.out(1.2, 0.5)', [angle]: position })
     }
   })
 })
