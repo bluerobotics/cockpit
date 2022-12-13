@@ -156,6 +156,7 @@ const renderCanvas = (): void => {
   if (canvasContext.value === undefined) {
     console.warn('Canvas context undefined!')
     canvasContext.value = canvasRef.value.getContext('2d')
+    return
   }
   const ctx = canvasContext.value
   ctx.reset()
