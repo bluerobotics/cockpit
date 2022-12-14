@@ -1,8 +1,7 @@
 <template>
-  <v-card style="height: 100%">
-    <v-card-title class="center-flex">Joystick configuration</v-card-title>
-    <v-divider />
-    <v-card-text class="center">
+  <BaseConfigurationView>
+    <template #title>Joystick configuration</template>
+    <template #content>
       <div v-if="joysticks && !joysticks.size">
         <h2 class="warning flex-centered">
           No joystick detected.<br />
@@ -35,8 +34,8 @@
           :options="joystick.values.button_options"
         />
       </div>
-    </v-card-text>
-  </v-card>
+    </template>
+  </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
@@ -44,6 +43,8 @@ import { onMounted, ref } from 'vue'
 
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
+
+import BaseConfigurationView from './BaseConfigurationView.vue'
 
 /**
  * Joystick control mapping

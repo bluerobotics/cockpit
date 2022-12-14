@@ -1,13 +1,10 @@
 <template>
-  <div class="main">
-    <h1>Sensors configuration</h1>
-  </div>
+  <BaseConfigurationView>
+    <template #title>Sensor configuration</template>
+    <template #content></template>
+  </BaseConfigurationView>
 </template>
 
-<style scoped>
-.main {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-</style>
+<script setup lang="ts">
+import BaseConfigurationView from './BaseConfigurationView.vue'
+</script>

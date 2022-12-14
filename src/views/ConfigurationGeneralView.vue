@@ -1,39 +1,41 @@
 <template>
-  <div class="main">
-    <h1>General configuration</h1>
-    <v-card class="pa-5 pb-2 ma-4">
-      <v-progress-circular v-if="vehicleConnected === undefined" indeterminate size="24" class="mr-3" />
-      <v-icon v-else :icon="vehicleConnected ? 'mdi-lan-connect' : 'mdi-lan-disconnect'" class="mr-3" />
-      <span class="text-h6">Vehicle connection</span>
-      <div class="my-6">
-        <span class="text-caption font-weight-thin"> Current connection link: </span>
-        <br />
-        <span class="text-body-1">
-          {{ mainVehicleStore.mainConnectionURI }}
-        </span>
-      </div>
-      <v-form
-        ref="connectionForm"
-        v-model="connectionFormValid"
-        class="d-flex justify-center align-center"
-        @submit.prevent="addNewConnection"
-      >
-        <v-text-field
-          v-model="newConnectionURI"
-          label="Mavlink2Rest URI"
-          variant="underlined"
-          type="input"
-          hint="URI of a Mavlink2Rest web-socket"
-          class="uri-input"
-          :rules="[isValidConnectionURI]"
-        />
-        <v-btn icon="mdi-check" class="pa-0 mx-1 mb-5" rounded="lg" flat type="submit" />
-        <v-template v-if="newConnectionURI.toString() !== mavlink2restServerURI.toString()">
-          <v-btn icon="mdi-refresh" class="pa-0 mx-1 mb-5" rounded="lg" flat @click="resetConnection" />
-        </v-template>
-      </v-form>
-    </v-card>
-  </div>
+  <BaseConfigurationView>
+    <template #title>General configuration</template>
+    <template #content>
+      <v-card class="pa-5 pb-2 ma-4" max-width="600px">
+        <v-progress-circular v-if="vehicleConnected === undefined" indeterminate size="24" class="mr-3" />
+        <v-icon v-else :icon="vehicleConnected ? 'mdi-lan-connect' : 'mdi-lan-disconnect'" class="mr-3" />
+        <span class="text-h6">Vehicle connection</span>
+        <div class="my-6">
+          <span class="text-caption font-weight-thin"> Current connection link: </span>
+          <br />
+          <span class="text-body-1">
+            {{ mainVehicleStore.mainConnectionURI }}
+          </span>
+        </div>
+        <v-form
+          ref="connectionForm"
+          v-model="connectionFormValid"
+          class="d-flex justify-center align-center"
+          @submit.prevent="addNewConnection"
+        >
+          <v-text-field
+            v-model="newConnectionURI"
+            label="Mavlink2Rest URI"
+            variant="underlined"
+            type="input"
+            hint="URI of a Mavlink2Rest web-socket"
+            class="uri-input"
+            :rules="[isValidConnectionURI]"
+          />
+          <v-btn icon="mdi-check" class="pa-0 mx-1 mb-5" rounded="lg" flat type="submit" />
+          <v-template v-if="newConnectionURI.toString() !== mavlink2restServerURI.toString()">
+            <v-btn icon="mdi-refresh" class="pa-0 mx-1 mb-5" rounded="lg" flat @click="resetConnection" />
+          </v-template>
+        </v-form>
+      </v-card>
+    </template>
+  </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
@@ -44,6 +46,8 @@ import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+
+import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const mainVehicleStore = useMainVehicleStore()
 
@@ -91,12 +95,6 @@ const addNewConnection = async (): Promise<void> => {
 </script>
 
 <style scoped>
-.main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
 .uri-input {
   min-width: 350px;
 }
