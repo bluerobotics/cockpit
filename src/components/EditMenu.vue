@@ -1,9 +1,12 @@
 <template>
   <div v-if="editMode" class="editing-mode-overlay" />
-  <v-navigation-drawer v-model="showDrawer" width="400" temporary>
+  <div ref="editMenu" class="nav-drawer">
     <v-card ref="editDrawer" flat class="pa-2 edit-menu">
-      <v-card-title>Edit menu</v-card-title>
-      <div class="mx-2 my-4">
+      <div>
+        <v-card-title>Edit menu</v-card-title>
+        <v-divider color="white" />
+      </div>
+      <div class="mx-2 my-2">
         <v-expansion-panels v-model="openPanels">
           <v-expansion-panel>
             <v-expansion-panel-title> Current profile: {{ store.currentProfile.name }} </v-expansion-panel-title>
@@ -19,7 +22,14 @@
                     no-data-text="No layers available."
                     hide-details
                   />
-                  <v-btn class="ml-2" icon="mdi-delete" size="small" rounded="lg" @click="layerDeleteDialog.reveal" />
+                  <v-btn
+                    class="ml-2"
+                    icon="mdi-delete"
+                    size="small"
+                    variant="outlined"
+                    rounded="lg"
+                    @click="layerDeleteDialog.reveal"
+                  />
                 </div>
                 <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
                 <template v-if="selectedLayer.widgets.length > 0">
@@ -43,28 +53,30 @@
                     size="small"
                     rounded="lg"
                     :disabled="selectedWidgetType === undefined"
+                    variant="outlined"
                     @click="addWidget"
                   />
                 </div>
               </div>
-              <v-btn class="ma-1" flat @click="addLayer">Add new layer</v-btn>
+              <v-btn class="ma-1" variant="plain" @click="addLayer">Add new layer</v-btn>
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
       </div>
-      <div class="d-flex align-center ma-2">
+      <div class="d-flex align-center">
         <v-select
           v-model="selectedProfile"
           :items="availableProfiles"
+          class="profile-selector mx-2"
           density="compact"
           variant="outlined"
-          label="Layer profiles available"
-          no-data-text="No profiles available."
+          label="Layer profiles"
+          no-data-text="No layer profiles"
           hide-details
         />
-        <v-btn class="ml-2" icon="mdi-download" size="small" rounded="lg" @click="loadProfile" />
+        <v-btn class="ml-2" icon="mdi-download" size="small" variant="outlined" rounded="lg" @click="loadProfile" />
       </div>
-      <v-card-actions class="d-flex flex-column align-baseline">
+      <v-card-actions class="d-flex flex-column align-center justify-start">
         <v-btn class="ma-1" @click="profileCreationDialog.reveal"> Create new profile </v-btn>
         <v-btn class="ma-1" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
         <v-switch
@@ -75,9 +87,9 @@
           @change="emit('update:showGrid', !showGrid)"
         />
       </v-card-actions>
-      <v-btn flat block @click="emit('update:editMode', false)"> Exit edit mode </v-btn>
+      <v-btn variant="outlined" width="70%" @click="emit('update:editMode', false)"> Exit edit mode </v-btn>
     </v-card>
-  </v-navigation-drawer>
+  </div>
   <teleport to="body">
     <v-dialog v-model="layerDeleteDialogRevealed" width="auto">
       <v-card class="pa-2">
@@ -120,7 +132,8 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog, useElementBounding, useMouse } from '@vueuse/core'
+import { useConfirmDialog, useMouse, useMouseInElement } from '@vueuse/core'
+import gsap from 'gsap'
 import { computed, ref, toRefs, watch } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -152,16 +165,36 @@ const selectedLayer = ref(store.currentProfile.layers[0])
 const newProfileName = ref('')
 const newProfileForm = ref(false)
 
+const editMode = toRefs(props).editMode
+
 const showDrawer = ref(props.editMode)
 const editDrawer = ref()
-const { width: menuWidth } = useElementBounding(editDrawer)
 const { x: mouseX } = useMouse()
-watch(mouseX, () => {
-  const hoveringMenu = mouseX.value < 1.2 * menuWidth.value && showDrawer.value
-  showDrawer.value = props.editMode && (mouseX.value < 10 || hoveringMenu)
+
+const editMenu = ref()
+const { isOutside: notHoveringEditMenu } = useMouseInElement(editMenu)
+const mouseNearLeftBorder = computed(() => mouseX.value < 50)
+
+watch(showDrawer, (isShowing, wasShowing) => {
+  if (!wasShowing && isShowing) {
+    gsap.to('.nav-drawer', { x: 400, duration: 0.25 })
+  } else if (wasShowing && !isShowing) {
+    gsap.to('.nav-drawer', { x: -400, duration: 0.25 })
+  }
 })
 
-const editMode = toRefs(props).editMode
+watch(mouseNearLeftBorder, (isNear, wasNear) => {
+  if (editMode.value && !wasNear && isNear) {
+    showDrawer.value = true
+  }
+})
+
+watch(notHoveringEditMenu, (isNotHovering, wasNotHovering) => {
+  if (!wasNotHovering && isNotHovering) {
+    showDrawer.value = false
+  }
+})
+
 watch(editMode, (isEditMode, wasEditMode) => {
   showDrawer.value = !wasEditMode && isEditMode
 })
@@ -231,6 +264,21 @@ profileResetDialog.onConfirm(resetProfiles)
 .edit-menu {
   height: 100%;
   width: 100%;
+  color: white;
+  background-color: rgba(47, 57, 66, 0.8);
+  backdrop-filter: blur(1px);
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  flex-direction: column;
+}
+.nav-drawer {
+  position: absolute;
+  left: -400px;
+  width: 380;
+  z-index: 60;
+  height: 100%;
 }
 .editing-mode-overlay {
   position: absolute;
@@ -239,6 +287,13 @@ profileResetDialog.onConfirm(resetProfiles)
   border: 8px solid;
   border-image: linear-gradient(45deg, rgba(64, 152, 224, 0.7), rgba(234, 255, 47, 0.7)) 1;
   pointer-events: none;
-  z-index: 70;
+  z-index: 55;
+}
+.profile-selector {
+  min-width: 180px;
+}
+.v-expansion-panel {
+  background-color: rgba(0, 0, 0, 0);
+  color: white;
 }
 </style>
