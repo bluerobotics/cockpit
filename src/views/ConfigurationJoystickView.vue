@@ -4,12 +4,12 @@
     <v-divider />
     <v-card-text class="center">
       <div v-if="joysticks && !joysticks.size">
-        <h2 class="warning center-flex">
+        <h2 class="warning flex-centered">
           No joystick detected.<br />
           Make sure that a joystick is connected. You can hit any key to test the joystick connection.
         </h2>
       </div>
-      <div v-for="[key, joystick] in joysticks" :key="key" class="center-flex pa-8">
+      <div v-for="[key, joystick] in joysticks" :key="key" class="flex-centered pa-8">
         <JoystickPS
           style="width: 700px"
           :model="joystick.model"
@@ -196,17 +196,3 @@ const processJoystickStateEvent = (event: JoystickEvent): void => {
   }
 }
 </script>
-
-<style scoped>
-.center {
-  align-items: center;
-  display: flex;
-  justify-content: center;
-}
-
-.center-flex {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-</style>
