@@ -12,19 +12,31 @@ export const widgetProfiles: { [key: string]: Profile } = {
         name: 'Layer dragonfly',
         widgets: [
           {
+            hash: '8b1448f5-3f07-4bfc-8a0e-5d491993f858',
+            name: 'Depth HUD widget',
+            component: WidgetType.DepthHUD,
+            position: { x: 0.88, y: 0.18 },
+            size: { width: 0.1, height: 0.62 },
+            options: {
+              showDepthValue: true,
+              depthGainFactor: 150,
+              hudColor: '#FFFFFF',
+            },
+          },
+          {
             hash: 'a27ffc81-42ae-4d11-883c-12a744e019e1',
             name: 'PowerBar',
             component: WidgetType.PowerBar,
             position: { x: 0.1, y: 0.03 },
-            size: { width: 0.8, height: 0.1 },
+            size: { width: 0.8, height: 0.12 },
             options: {},
           },
           {
             hash: '0230b90e-0c6d-45ba-94e1-994a074b76c7',
             name: 'Attitude widget',
             component: WidgetType.Attitude,
-            position: { x: 0.12, y: 0.16 },
-            size: { width: 0.76, height: 0.66 },
+            position: { x: 0.14, y: 0.2 },
+            size: { width: 0.72, height: 0.6 },
             options: {
               showRollPitchValues: true,
               desiredAimRadius: 180,
@@ -37,7 +49,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             name: 'HUD Compass widget',
             component: WidgetType.HudCompass,
             position: { x: 0.2, y: 0.85 },
-            size: { width: 0.6, height: 0.13 },
+            size: { width: 0.6, height: 0.12 },
             options: {
               showYawValue: true,
               yawGainFactor: 150,
