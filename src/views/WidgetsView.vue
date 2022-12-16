@@ -35,6 +35,9 @@
           <template v-if="widget.component === WidgetType.Compass">
             <Compass :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.DepthHUD">
+            <DepthHUD :widget="widget" />
+          </template>
           <template v-if="widget.component === WidgetType.HudCompass">
             <HudCompass :widget="widget" />
           </template>
@@ -90,6 +93,7 @@ import SnappingGrid from '../components/SnappingGrid.vue'
 import WidgetHugger from '../components/WidgetHugger.vue'
 import Attitude from '../components/widgets/Attitude.vue'
 import Compass from '../components/widgets/Compass.vue'
+import DepthHUD from '../components/widgets/DepthHUD.vue'
 import HudCompass from '../components/widgets/HudCompass.vue'
 import Indicators from '../components/widgets/Indicators.vue'
 import Map from '../components/widgets/Map.vue'
