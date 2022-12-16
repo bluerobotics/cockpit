@@ -10,7 +10,7 @@ import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/messages/m
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Attitude, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
+import type { Altitude, Attitude, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 
@@ -20,6 +20,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
+  const altitude: Altitude = reactive({} as Altitude)
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
@@ -99,6 +100,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     icon.value = mainVehicle.value.icon()
     configurationPages.value = mainVehicle.value.configurationPages()
 
+    mainVehicle.value.onAltitude.add((newAltitude: Altitude) => {
+      Object.assign(altitude, newAltitude)
+    })
     mainVehicle.value.onAttitude.add((newAttitude: Attitude) => {
       Object.assign(attitude, newAttitude)
     })
@@ -161,6 +165,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     lastHeartbeat,
     firmwareType,
     vehicleType,
+    altitude,
     attitude,
     coordinates,
     powerSupply,

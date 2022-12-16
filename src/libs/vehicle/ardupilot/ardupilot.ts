@@ -3,7 +3,7 @@ import type { MAVLinkMessageDictionary, Message as MavMessage, Package } from '@
 import { MavCmd, MavComponent, MAVLinkType, MavModeFlag } from '@/libs/connection/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
-import { type PageDescription, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
+import { type PageDescription, Altitude, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
 
 import * as Vehicle from '../vehicle'
 
@@ -14,6 +14,7 @@ export type ArduPilot = ArduPilotVehicle<any>
  * Generic ArduPilot vehicle
  */
 export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
+  _altitude = new Altitude({ msl: 0, climb_rate: 0 })
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0
@@ -144,6 +145,13 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
 
     switch (mavlink_message.message.type) {
+      case MAVLinkType.VFR_HUD: {
+        const vfrHud = mavlink_message.message as Message.VfrHud
+        this._altitude.msl = vfrHud.alt
+        this._altitude.climb_rate = vfrHud.climb
+        this.onAltitude.emit()
+        break
+      }
       case MAVLinkType.ATTITUDE: {
         const attitude = mavlink_message.message as Message.Attitude
         this._attitude.roll = attitude.roll
@@ -217,6 +225,15 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   arm(): boolean {
     this._arm(true)
     return true
+  }
+
+  /**
+   * Return vehicle altitude-related data
+   *
+   * @returns {Altitude}
+   */
+  altitude(): Altitude {
+    return this._altitude
   }
 
   /**
