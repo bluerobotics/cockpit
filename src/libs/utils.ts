@@ -16,3 +16,12 @@ export const round = (value: number, places = 2): number => {
   const power = Math.pow(10, places)
   return Math.round(value * power) / power
 }
+
+export const range = (min: number, max: number): number[] => {
+  const len = round(max, 0) - round(min, 0) + 1
+  const arr = new Array(len)
+  for (let i = 0; i < len; i++) {
+    arr[i] = round(min, 0) + i
+  }
+  return arr
+}
