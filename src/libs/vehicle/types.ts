@@ -120,6 +120,23 @@ export class Attitude {
 }
 
 /**
+ * Altitude related data
+ */
+export class Altitude {
+  msl: number // Mean Sea Level, in meters
+  climb_rate: number // in meters per second
+
+  /**
+   * Create object
+   *
+   * @param {Partial<Altitude>} init
+   */
+  public constructor(init?: Partial<Altitude>) {
+    Object.assign(this, init)
+  }
+}
+
+/**
  * PowerSupply
  */
 export class PowerSupply {
