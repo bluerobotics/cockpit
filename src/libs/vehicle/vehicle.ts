@@ -1,7 +1,7 @@
 import global from '@/libs/cosmos'
 import * as FunnyName from '@/libs/funny-name/funny-name'
 import { Signal } from '@/libs/signal'
-import type { Attitude, Battery, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
+import type { Altitude, Attitude, Battery, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Abstract = AbstractVehicle<any>
@@ -57,6 +57,7 @@ export abstract class AbstractVehicle<Modes> {
   // Signals
   onArm = new Signal<boolean>()
   onAttitude = new Signal<Attitude>()
+  onAltitude = new Signal<Altitude>()
   onBatteries = new Signal<Battery[]>()
   onCpuLoad = new Signal<number>()
   onMode = new Signal<Modes>()
@@ -86,6 +87,7 @@ export abstract class AbstractVehicle<Modes> {
     )
 
     this.onArm.register_caller(() => this.isArmed())
+    this.onAltitude.register_caller(() => this.altitude())
     this.onAttitude.register_caller(() => this.attitude())
     this.onBatteries.register_caller(() => this.batteries())
     this.onCpuLoad.register_caller(() => this.cpuLoad())
@@ -137,6 +139,7 @@ export abstract class AbstractVehicle<Modes> {
   abstract onMessage(message: Uint8Array): void
 
   abstract arm(): boolean
+  abstract altitude(): Altitude
   abstract attitude(): Attitude
   abstract batteries(): Battery[]
   abstract configurationPages(): PageDescription[]
