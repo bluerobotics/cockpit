@@ -1,5 +1,5 @@
 <template>
-  <button class="main-menu-button" @click="showMainMenu(!isShowingMainMenu)">
+  <button class="main-menu-button" @click="showMainMenu(true)" @mouseover="showMainMenu(true)">
     <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
   </button>
   <div ref="mainMenu" class="main-menu">
