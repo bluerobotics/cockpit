@@ -6,13 +6,14 @@
           <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline)" variant="text" />
 
           <v-switch
-            v-model="armSwitch"
+            v-model="vehicleStore.isArmed"
             :disabled="!vehicleStore.isVehicleOnline"
             class="mx-1 flex-grow-0"
             color="red-darken-3"
-            :label="`${armSwitch ? 'Armed' : 'Disarmed'}`"
-            :loading="vehicleStore.isArmed !== armSwitch ? 'warning' : undefined"
+            :label="`${vehicleStore.isArmed ? 'Armed' : 'Disarmed'}`"
+            :loading="vehicleStore.isArmed === undefined"
             hide-details
+            @update:model-value="vehicleStore.isArmed ? vehicleStore.arm() : vehicleStore.disarm()"
           />
         </div>
       </v-col>
@@ -49,7 +50,6 @@ import Alerter from './Alerter.vue'
 
 const vehicleStore = useMainVehicleStore()
 
-const armSwitch = ref<boolean>(vehicleStore.isArmed)
 const flightMode = ref()
 const joystickConnected = ref<boolean>(false)
 
@@ -70,14 +70,6 @@ const getColor = (isGreen: boolean): string => {
 const vehicleIcon = computed(() => vehicleStore.icon)
 const flightModes = computed(() => vehicleStore.modesAvailable())
 
-watch(armSwitch, async (newValue) => {
-  if (newValue) {
-    vehicleStore.arm()
-  } else {
-    vehicleStore.disarm()
-  }
-})
-
 watch(flightMode, async (newMode) => {
   if (newMode === vehicleStore.mode) {
     return
@@ -90,7 +82,6 @@ watch(flightMode, async (newMode) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let vehicleUnsubscribe: any = undefined
 vehicleUnsubscribe = vehicleStore.$subscribe(() => {
-  armSwitch.value = vehicleStore.isArmed
   flightMode.value = vehicleStore.mode
   vehicleUnsubscribe()
 })
