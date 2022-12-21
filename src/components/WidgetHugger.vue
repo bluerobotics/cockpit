@@ -208,20 +208,15 @@ watch(innerWidgetSize, resizeWidgetToMinimalSize)
 const outerBounds = useElementBounding(outerWidgetRef)
 
 const makeWidgetRespectWalls = (): void => {
-  let needToRespect = false
   for (const bound of [outerBounds.left.value, outerBounds.right.value]) {
     if (bound < 0 || bound > window.innerWidth) {
-      needToRespect = true
+      widgetFinalPosition.value.x = 1 - widgetFinalSize.value.width
     }
   }
   for (const bound of [outerBounds.top.value, outerBounds.bottom.value]) {
     if (bound < 0 || bound > window.innerHeight) {
-      needToRespect = true
+      widgetFinalPosition.value.y = 1 - widgetFinalSize.value.height
     }
-  }
-  if (needToRespect) {
-    widgetFinalPosition.value = defaultRestoredPosition()
-    widgetFinalSize.value = defaultRestoredSize()
   }
 }
 
