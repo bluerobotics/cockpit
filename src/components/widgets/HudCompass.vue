@@ -44,6 +44,7 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
+import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
@@ -211,10 +212,10 @@ const renderCanvas = (): void => {
   // Add transparent mask over widget borders
   ctx.globalCompositeOperation = 'source-in'
   const grH = ctx.createLinearGradient(0, halfCanvasHeight, canvasSize.value.width, halfCanvasHeight)
-  grH.addColorStop(0.1, 'rgb(255, 255, 255, 0)')
-  grH.addColorStop(0.3, '#fff')
-  grH.addColorStop(0.7, '#fff')
-  grH.addColorStop(0.9, 'rgb(255, 255, 255, 0)')
+  grH.addColorStop(0.1, colord(widget.value.options.hudColor).alpha(0).toRgbString())
+  grH.addColorStop(0.3, colord(widget.value.options.hudColor).alpha(1).toRgbString())
+  grH.addColorStop(0.7, colord(widget.value.options.hudColor).alpha(1).toRgbString())
+  grH.addColorStop(0.9, colord(widget.value.options.hudColor).alpha(0).toRgbString())
   ctx.fillStyle = grH
   ctx.fillRect(0, 0, canvasSize.value.width, canvasSize.value.height)
 }
