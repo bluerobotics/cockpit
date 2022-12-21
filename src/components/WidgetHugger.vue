@@ -72,7 +72,7 @@
 
 <script setup lang="ts">
 import { useConfirmDialog, useElementBounding, useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
-import { type Ref, computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { type Ref, computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
 import { constrain, isEqual } from '@/libs/utils'
@@ -224,8 +224,6 @@ const makeWidgetRespectWalls = (): void => {
     widgetFinalSize.value = defaultRestoredSize()
   }
 }
-
-watch(() => outerBounds, makeWidgetRespectWalls)
 
 const widgetFinalPosition = ref(props.position)
 watch(widgetRawPosition, (position) => {
@@ -399,6 +397,9 @@ const cursorStyle = computed(() => {
 const widgetDeleteDialogRevealed = ref(false)
 const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
 widgetDeleteDialog.onConfirm(() => emit('remove'))
+
+const wallRespecterInterval = setInterval(makeWidgetRespectWalls, 1000)
+onBeforeUnmount(() => clearInterval(wallRespecterInterval))
 </script>
 
 <style scoped>
