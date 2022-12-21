@@ -1,11 +1,11 @@
 <template>
-  <div ref="widgetOverlay" class="widgetOverlay" :class="{ allowMoving, draggingWidget, hoveringOverlay }" />
+  <div ref="widgetOverlay" class="widgetOverlay" :class="{ allowMoving, draggingWidget, hoveringWidgetOrOverlay }" />
   <div ref="outerWidgetRef" class="outerWidget">
     <div ref="innerWidgetRef" class="innerWidget">
       <slot></slot>
     </div>
     <div ref="resizerRef" class="resizer" :class="{ draggingResizer, hoveringResizer, allowResizing }" />
-    <div v-if="hoveringOverlay || !notHoveringEditMenu" class="editing-buttons">
+    <div v-if="hoveringWidgetOrOverlay || !notHoveringEditMenu" class="editing-buttons">
       <v-menu v-if="allowResizing || allowOrdering || allowDeleting" location="top">
         <template #activator="{ props: menuProps }">
           <v-btn v-bind="menuProps" size="x-small" icon="mdi-pencil" />
@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog, useElementBounding, useElementSize, useMouseInElement } from '@vueuse/core'
+import { useConfirmDialog, useElementBounding, useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
 import { type Ref, computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
@@ -147,8 +147,9 @@ const lastNonMaximizedWidth = ref(props.size.width)
 const lastNonMaximizedHeight = ref(props.size.height)
 
 const widgetOverlay = ref()
-const { isOutside: notHoveringOverlay } = useMouseInElement(widgetOverlay)
-const hoveringOverlay = computed(() => !notHoveringOverlay.value)
+const hoveringOverlay = useElementHover(widgetOverlay)
+const hoveringWidgetItself = useElementHover(outerWidgetRef)
+const hoveringWidgetOrOverlay = computed(() => hoveringOverlay.value || hoveringWidgetItself.value)
 
 const widgetEditMenu = ref()
 const { isOutside: notHoveringEditMenu } = useMouseInElement(widgetEditMenu)
@@ -413,7 +414,7 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
 .widgetOverlay.allowMoving {
   background-color: rgba(0, 0, 0, 0.1);
 }
-.widgetOverlay.hoveringOverlay.allowMoving {
+.widgetOverlay.hoveringWidgetOrOverlay.allowMoving {
   box-shadow: 0 0 0 1px white;
   outline: dashed 1px black;
 }
