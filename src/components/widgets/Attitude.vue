@@ -47,6 +47,7 @@
           class="ma-1"
           label="Show roll/pitch values"
           :model-value="widget.options.showRollPitchValues"
+          :color="widget.options.showRollPitchValues ? 'rgb(0, 20, 80)' : undefined"
           hide-details
           @change="widget.options.showRollPitchValues = !widget.options.showRollPitchValues"
         />

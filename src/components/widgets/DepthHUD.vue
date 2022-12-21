@@ -18,6 +18,7 @@
           class="ma-1"
           label="Show height value"
           :model-value="widget.options.showDepthValue"
+          :color="widget.options.showDepthValue ? 'rgb(0, 20, 80)' : undefined"
           hide-details
           @change="widget.options.showDepthValue = !widget.options.showDepthValue"
         />

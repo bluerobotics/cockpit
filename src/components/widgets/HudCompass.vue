@@ -17,6 +17,7 @@
         <v-switch
           class="ma-1"
           label="Show yaw value"
+          :color="widget.options.showYawValue ? 'rgb(0, 20, 80)' : undefined"
           :model-value="widget.options.showYawValue"
           hide-details
           @change="widget.options.showYawValue = !widget.options.showYawValue"
