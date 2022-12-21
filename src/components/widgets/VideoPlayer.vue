@@ -43,8 +43,20 @@
           hide-details
           return-object
         />
-        <v-switch v-model="widget.options.flipHorizontally" class="my-1" label="Flip horizontally" hide-details />
-        <v-switch v-model="widget.options.flipVertically" class="my-1" label="Flip vertically" hide-details />
+        <v-switch
+          v-model="widget.options.flipHorizontally"
+          class="my-1"
+          label="Flip horizontally"
+          :color="widget.options.flipHorizontally ? 'rgb(0, 20, 80)' : undefined"
+          hide-details
+        />
+        <v-switch
+          v-model="widget.options.flipVertically"
+          class="my-1"
+          label="Flip vertically"
+          :color="widget.options.flipVertically ? 'rgb(0, 20, 80)' : undefined"
+          hide-details
+        />
       </v-card-text>
     </v-card>
   </v-dialog>
