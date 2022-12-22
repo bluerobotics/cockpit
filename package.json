@@ -39,7 +39,8 @@
     "vue-konva": "^3.0.1",
     "vue-router": "^4.0.14",
     "vuetify": "^3.0.0",
-    "webfontloader": "^1.0.0"
+    "webfontloader": "^1.0.0",
+    "webrtc-adapter": "^8.2.0"
   },
   "devDependencies": {
     "@pinia/testing": "^0.0.12",
