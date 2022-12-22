@@ -1,243 +1,342 @@
+/* eslint-disable jsdoc/no-undefined-types */ // TODO: Fix RTCConfiguration is unknown
+
 import { type Ref, ref, watch } from 'vue'
 
-import { webRtcSignallingServerUrl } from '@/assets/defaults'
-import * as Words from '@/libs/funny-name/words'
-import type { RtcPeer, SignallingMessage } from '@/types/webRTC'
+import * as Connection from '@/libs/connection/connection'
+import { Session } from '@/libs/webrtc/session'
+import { Signaller } from '@/libs/webrtc/signaller'
+import type { Stream } from '@/libs/webrtc/signalling_protocol'
 
 /**
  *
- * @returns { void }
- * @param { Ref<RtcPeer | undefined> } selectedPeer - Peer to receive stream from
  */
-export default function useWebRtcStream(selectedPeer: Ref<RtcPeer | undefined>): {
+interface startStreamReturn {
   /**
-   * Available WebRTC peers to be chosen from
+   * A list of Available WebRTC streams from Mavlink Camera Manager to be chosen from
    */
-  availablePeers: Ref<RtcPeer[]>
+  availableStreams: Ref<Array<Stream>>
   /**
-   * MediaStream object, if WebRTC peer is chosen
+   * MediaStream object, if WebRTC stream is chosen
    */
-  stream: Ref<MediaStream | undefined>
-} {
-  const sessionId = ref()
-  const availablePeers = ref([] as RtcPeer[])
-  const stream = ref<MediaStream | undefined>()
-  const rtc_configuration = { iceServers: [] }
-  const sessionWebSocket = ref<WebSocket | undefined>()
+  mediaStream: Ref<MediaStream | undefined>
+  /**
+   * Current status of the signalling
+   */
+  signallerStatus: Ref<string>
+  /**
+   * Current status of the stream
+   */
+  streamStatus: Ref<string>
+}
 
-  const addAvailablePeer = (peerId: string, displayName: string): void => {
-    removeAvailablePeer(peerId)
-    availablePeers.value.push({ id: peerId, displayName })
+/**
+ *
+ */
+export class WebRTCManager {
+  private availableStreams: Ref<Array<Stream>> = ref(new Array<Stream>())
+  private mediaStream: Ref<MediaStream | undefined> = ref()
+  private signallerStatus: Ref<string> = ref('waiting...')
+  private streamStatus: Ref<string> = ref('waiting...')
+  private consumerId: string | undefined
+  private streamName: string | undefined
+  private session: Session | undefined
+  private rtcConfiguration: RTCConfiguration
+
+  private hasEnded = false
+  private signaller: Signaller
+  private waitingForAvailableStreamsAnswer = false
+  private waitingForSessionStart = false
+
+  /**
+   *
+   * @param {Connection.URI} webRTCSignallingURI
+   * @param {RTCConfiguration} rtcConfiguration
+   */
+  constructor(webRTCSignallingURI: Connection.URI, rtcConfiguration: RTCConfiguration) {
+    console.debug('[WebRTC] Trying to connect to signalling server.')
+    this.rtcConfiguration = rtcConfiguration
+    this.signaller = new Signaller(
+      webRTCSignallingURI,
+      true,
+      (): void => {
+        this.startConsumer()
+      },
+      (status: string): void => this.updateSignallerStatus(status)
+    )
   }
 
-  const removeAvailablePeer = (peerId: string): void => {
-    const index = availablePeers.value.findIndex((peer) => peer.id === peerId)
-    if (index >= 0) {
-      availablePeers.value.splice(index, 1)
-    }
+  /**
+   *
+   * @param {string} reason
+   */
+  public close(reason: string): void {
+    this.stopSession(reason)
+    this.signaller.end(reason)
+    this.hasEnded = true
   }
 
-  const startSocket = (): void => {
-    console.debug('Trying to connect to signalling server.')
-    sessionWebSocket.value = new WebSocket(webRtcSignallingServerUrl)
-    sessionWebSocket.value.addEventListener('open', onSocketOpen)
-    sessionWebSocket.value.addEventListener('error', onSocketError)
-    sessionWebSocket.value.addEventListener('message', onSocketMessage)
-    sessionWebSocket.value.addEventListener('close', onSocketClose)
-  }
-
-  const clearAvailablePeers = (): void => {
-    console.debug(`Cleaning available peers for session '${sessionId.value}'.`)
-    availablePeers.value = []
-  }
-
-  const stopSocket = (): void => {
-    console.debug(`Stopping socket '${sessionId.value}'.`)
-    if (sessionWebSocket.value === undefined) {
-      console.warn(`Socket for session '${sessionId.value}' already undefined.`)
-      return
-    }
-    sessionWebSocket.value.removeEventListener('open', onSocketOpen)
-    sessionWebSocket.value.removeEventListener('error', onSocketError)
-    sessionWebSocket.value.removeEventListener('message', onSocketMessage)
-    sessionWebSocket.value.removeEventListener('close', onSocketClose)
-    sessionWebSocket.value = undefined
-  }
-
-  const resetSocket = (): void => {
-    console.debug(`Reseting socket '${sessionId.value}'.`)
-    stopSocket()
-    clearAvailablePeers()
-    window.setTimeout(startSocket, 1000)
-  }
-
-  const onSocketClose = (event: Event): void => {
-    console.debug('WebRTC socket closed.', event)
-    resetSocket()
-  }
-
-  const onSocketError = (event: Event): void => {
-    console.debug('WebRTC socket error.', event)
-    resetSocket()
-  }
-
-  const onSocketOpen = (event: Event): void => {
-    console.debug('WebRTC socket open.', event)
-    if (sessionWebSocket.value === undefined) {
-      resetSocket()
-      return
-    }
-    sendSocketSignal({
-      type: 'register',
-      peerType: 'listener',
-    })
-  }
-
-  const sendSocketSignal = (signal: SignallingMessage): void => {
-    console.debug(`Sending signal on session '${sessionId.value}'.`, signal)
-    if (sessionWebSocket.value === undefined) {
-      resetSocket()
-      return
-    }
-    sessionWebSocket.value.send(JSON.stringify(signal))
-  }
-
-  const onSocketMessage = async (event: MessageEvent): Promise<void> => {
-    console.debug('Message received from WebRTC signalling server.', JSON.parse(event.data))
-    if (sessionWebSocket.value === undefined) {
-      resetSocket()
-      return
-    }
-    try {
-      const msg: SignallingMessage = JSON.parse(event.data)
-      if (msg.type == 'registered') {
-        sessionId.value = msg.peerId
-        console.debug(`Cockpit registered as '${msg.peerType}' with id '${msg.peerId}'.`)
-        sendSocketSignal({
-          type: 'list',
-        })
-      } else if (msg.type == 'list' && msg.producers) {
-        availablePeers.value = msg.producers
-        console.debug('Updated available peers list: ', availablePeers.value)
-      } else if (msg.type == 'producerAdded') {
-        addAvailablePeer(msg.peerId!, msg.displayName || `Device ${Words.animalsOcean.random()}`)
-      } else if (msg.type == 'producerRemoved') {
-        removeAvailablePeer(msg.peerId!)
-      } else if (msg.type == 'peer') {
-        console.debug('Peer message received.')
-        const peer = availablePeers.value.find((p) => p.id === msg.peerId)
-        if (peer === undefined) {
-          console.error(`No peer found with id ${msg.peerId}.`)
-          return
-        }
-        if (peer.connection === undefined) {
-          createConnection(peer)
-        }
-        if (msg.sdp != null) {
-          await setDescriptions(peer, msg.sdp)
-        }
-        if (msg.ice != null) {
-          addIceCandidate(peer, msg.ice)
-        }
-      } else {
-        console.error('Unsupported message: ', msg)
-      }
-    } catch (e) {
-      if (e instanceof SyntaxError) {
-        console.error('Error parsing incoming JSON: ', event.data)
-      } else {
-        console.error('Unknown error parsing response: ', event.data)
-      }
-    }
-  }
-
-  const createConnection = (peer: RtcPeer): void => {
-    console.debug('Creating peer connection.')
-    peer.connection = new RTCPeerConnection(rtc_configuration)
-    peer.connection.addEventListener('track', (event: RTCTrackEvent) => {
-      console.debug(`New stream on peer ${peer.id}.`)
-      stream.value = event.streams[0]
-    })
-    peer.connection.addEventListener('icecandidate', (event: RTCPeerConnectionIceEvent) => {
-      if (event.candidate === null) {
-        console.error('Cannot listen to ICE candidate event. Candidate null.')
+  /**
+   *
+   * @param { Ref<Stream | undefined> } selectedStream - Stream to receive stream from
+   * @returns { startStreamReturn }
+   */
+  public startStream(selectedStream: Ref<Stream | undefined>): startStreamReturn {
+    watch(selectedStream, (newStream, oldStream) => {
+      if (newStream?.id === oldStream?.id) {
         return
       }
-      console.debug('Sending ICE candidate to signalling server.')
-      sendSocketSignal({
-        type: 'peer',
-        peerId: peer.id,
-        ice: event.candidate.toJSON(),
+
+      const msg = `Selected stream changed from "${oldStream?.id}" to "${newStream?.id}".`
+      console.debug('[WebRTC] ' + msg)
+      if (oldStream !== undefined) {
+        this.stopSession(msg)
+      }
+      if (newStream !== undefined) {
+        this.streamName = newStream.name
+        this.startSession()
+      }
+    })
+
+    return {
+      availableStreams: this.availableStreams,
+      mediaStream: this.mediaStream,
+      signallerStatus: this.signallerStatus,
+      streamStatus: this.streamStatus,
+    }
+  }
+
+  /**
+   *
+   * @param {string} newStatus
+   */
+  private updateStreamStatus(newStatus: string): void {
+    console.debug(`[WebRTC] Stream status updated from "${this.streamStatus.value}" to "${newStatus}"`)
+    const time = new Date().toTimeString().split(' ').first()
+    this.streamStatus.value = `${newStatus} (${time})`
+  }
+
+  /**
+   *
+   * @param {string} newStatus
+   */
+  private updateSignallerStatus(newStatus: string): void {
+    console.debug(`[WebRTC] Signaller status updated from "${this.signallerStatus.value}" to "${newStatus}"`)
+    const time = new Date().toTimeString().split(' ').first()
+    this.signallerStatus.value = `${newStatus} (${time})`
+  }
+
+  /**
+   *
+   */
+  private startConsumer(): void {
+    this.hasEnded = false
+    // Requests a new consumer ID
+    if (this.consumerId === undefined) {
+      this.signaller.requestConsumerId(
+        (newConsumerId: string): void => {
+          this.consumerId = newConsumerId
+        },
+        (newStatus: string): void => this.updateStreamStatus(newStatus)
+      )
+    }
+
+    this.availableStreams.value = []
+    this.updateStreamsAvailable()
+  }
+
+  /**
+   *
+   */
+  private updateStreamsAvailable(): void {
+    if (this.waitingForAvailableStreamsAnswer) {
+      this.signaller.requestStreams()
+      return
+    }
+    if (this.hasEnded) {
+      this.waitingForAvailableStreamsAnswer = false
+      return
+    }
+    this.waitingForAvailableStreamsAnswer = true
+
+    // Asks for available streams, which will trigger the consumer "onAvailableStreams" callback
+    window.setTimeout(() => {
+      if (!this.waitingForAvailableStreamsAnswer) {
+        return
+      }
+
+      // Register the parser to update the list of streams when the signaller receives the answer
+      this.signaller.parseAvailableStreamsAnswer((availableStreams): void => {
+        if (!this.waitingForAvailableStreamsAnswer) {
+          return
+        }
+        this.waitingForAvailableStreamsAnswer = false
+        this.availableStreams.value = availableStreams
+
+        this.updateStreamsAvailable()
       })
-    })
+
+      this.signaller.requestStreams()
+    }, 1000)
   }
 
-  const setDescriptions = async (
-    peer: RtcPeer,
-    // eslint-disable-next-line no-undef
-    sdp: RTCSessionDescriptionInit
-  ): Promise<void> => {
-    console.debug('Setting RTC descriptions.')
-    if (peer.connection === undefined) {
-      console.error('Cannot set RTC descriptions. No RTC connection defined.')
+  /**
+   *
+   * @param {RTCTrackEvent} event
+   */
+  private onTrackAdded(event: RTCTrackEvent): void {
+    const [remoteStream] = event.streams
+    this.mediaStream.value = remoteStream
+
+    console.groupCollapsed('[WebRTC] Track added')
+    console.debug('Event:', event)
+    console.debug('Settings:', event.track.getSettings?.())
+    console.debug('Constraints:', event.track.getConstraints?.())
+    console.debug('Capabilities:', event.track.getCapabilities?.())
+    console.groupEnd()
+  }
+
+  /**
+   *
+   * @param {Stream} stream
+   * @param {string} consumerId
+   */
+  private requestSession(stream: Stream, consumerId: string): void {
+    console.debug(`[WebRTC] Requesting stream:`, stream)
+
+    // Requests a new Session ID
+    this.signaller.requestSessionId(
+      consumerId,
+      stream.id,
+      (receivedSessionId: string): void => {
+        this.onSessionIdReceived(stream, stream.id, receivedSessionId)
+      },
+      (newStatus: string): void => this.updateStreamStatus(newStatus)
+    )
+
+    this.hasEnded = false
+  }
+
+  /**
+   *
+   */
+  private startSession(): void {
+    if (this.waitingForSessionStart) {
       return
     }
-    console.debug('Setting remote description.')
-    await peer.connection.setRemoteDescription(sdp)
-    console.debug('Creating answer to RTC connection.')
-    const description = await peer.connection.createAnswer()
-    console.debug('Setting local description.')
-    await peer.connection.setLocalDescription(description)
-    console.debug('Sending SDP to signalling server.')
-    sendSocketSignal({
-      type: 'peer',
-      peerId: peer.id,
-      sdp: peer.connection.localDescription!.toJSON(),
-    })
+    this.waitingForSessionStart = true
+
+    window.setTimeout(() => {
+      if (!this.waitingForSessionStart) {
+        return
+      }
+
+      const stream = this.availableStreams.value.find((s) => {
+        return s.name === this.streamName
+      })
+      if (stream === undefined) {
+        const error = `Failed to start a new Session with "${this.streamName}". Reason: not available`
+        console.error('[WebRTC] ' + error)
+        this.updateStreamStatus(error)
+
+        this.waitingForSessionStart = false
+        this.startSession()
+        return
+      }
+
+      const msg = `Starting session with producer "${stream.id}" ("${this.streamName}")`
+      this.updateStreamStatus(msg)
+      console.debug('[WebRTC] ' + msg)
+
+      if (this.consumerId === undefined) {
+        const error =
+          'Failed to start a new Session with producer' +
+          `"${stream.id}" ("${this.streamName}"). Reason: undefined consumerId`
+        console.error('[WebRTC] ' + error)
+        this.updateStreamStatus(error)
+
+        this.startConsumer()
+        this.startSession()
+        return
+      }
+
+      this.requestSession(stream, this.consumerId)
+
+      this.waitingForSessionStart = false
+    }, 1000)
   }
 
-  // eslint-disable-next-line no-undef
-  const addIceCandidate = (peer: RtcPeer, ice: RTCIceCandidateInit): void => {
-    console.debug('Adding ICE candidate.')
-    if (peer.connection === undefined) {
-      console.error('Cannot add ICE candidate. No RTC connection defined.')
+  /**
+   *
+   * @param {string} reason
+   */
+  private onSessionClosed(reason: string): void {
+    this.stopSession(reason)
+    this.consumerId = undefined
+    this.startConsumer()
+    this.startSession()
+  }
+
+  /**
+   *
+   * @param {Stream} stream
+   * @param {string} producerId
+   * @param {string} receivedSessionId
+   */
+  private onSessionIdReceived(stream: Stream, producerId: string, receivedSessionId: string): void {
+    // Create a new Session with the received Session ID
+    this.session = new Session(
+      receivedSessionId,
+      this.consumerId!,
+      stream,
+      this.signaller,
+      this.rtcConfiguration,
+      (event: RTCTrackEvent): void => this.onTrackAdded(event),
+      (_sessionId, reason) => this.onSessionClosed(reason)
+    )
+
+    // Registers Session callback for the Signaller endSession parser
+    this.signaller.parseEndSessionQuestion(
+      this.consumerId!,
+      producerId,
+      this.session.id,
+      (sessionId, reason) => {
+        console.debug(`[WebRTC] Session ${sessionId} ended. Reason: ${reason}`)
+        this.session = undefined
+        this.hasEnded = true
+      },
+      (newStatus: string): void => this.updateSignallerStatus(newStatus)
+    )
+
+    // Registers Session callbacks for the Signaller Negotiation parser
+    this.signaller.parseNegotiation(
+      this.consumerId!,
+      producerId,
+      this.session.id,
+      this.session.onIncomingICE.bind(this.session),
+      this.session.onIncomingSDP.bind(this.session),
+      (newStatus: string): void => this.updateSignallerStatus(newStatus)
+    )
+
+    const msg = `Session ${this.session.id} successfully started`
+    console.debug('[WebRTC] ' + msg)
+    this.updateStreamStatus(msg)
+  }
+
+  /**
+   *
+   * @param {string} reason
+   */
+  private stopSession(reason: string): void {
+    if (this.session === undefined) {
+      console.debug('[WebRTC] Stopping an undefined session, probably it was already stopped?')
       return
     }
-    peer.connection.addIceCandidate(new RTCIceCandidate(ice))
+    const msg = `Stopping session ${this.session.id}. Reason: ${reason}`
+    this.updateStreamStatus(msg)
+    console.debug('[WebRTC] ' + msg)
+
+    this.session.end()
+    this.session = undefined
+    this.hasEnded = true
   }
-
-  watch(selectedPeer, (newPeer, oldPeer) => {
-    console.debug(`Selected peer changed from ${oldPeer} to ${newPeer}.`)
-    if (oldPeer !== undefined) {
-      stopPeerConsuming(oldPeer.id)
-    }
-    if (newPeer !== undefined) {
-      startPeerConsuming(newPeer.id)
-    }
-  })
-
-  const startPeerConsuming = (peerId: string): void => {
-    console.debug('Registering as consumer on signalling server.')
-    sendSocketSignal({
-      type: 'register',
-      peerType: 'consumer',
-    })
-    console.debug(`Starting session with new peer "${peerId}".`)
-    sendSocketSignal({
-      type: 'startSession',
-      peerId: peerId,
-    })
-  }
-
-  const stopPeerConsuming = (peerId: string): void => {
-    console.debug(`Ending session with old peer "${peerId}".`)
-    sendSocketSignal({
-      type: 'endSession',
-      peerId: peerId,
-    })
-  }
-
-  startSocket()
-
-  return { availablePeers, stream }
 }

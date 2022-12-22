@@ -1,9 +1,9 @@
 <template>
   <div class="video-widget">
-    <div v-if="selectedPeer === undefined" class="no-video-alert">
+    <div v-if="selectedStream === undefined" class="no-video-alert">
       <span>No video stream selected.</span>
     </div>
-    <video ref="videoElement" muted loop autoplay disablePictureInPicture>
+    <video ref="videoElement" muted autoplay playsinline disablePictureInPicture>
       Your browser does not support the video tag.
     </video>
     <v-btn
@@ -20,11 +20,11 @@
       <v-card-title>Video widget config</v-card-title>
       <v-card-text>
         <v-select
-          v-model="selectedPeer"
-          label="Video source"
+          v-model="selectedStream"
+          label="Stream name"
           class="my-3"
-          :items="availablePeers"
-          item-title="displayName"
+          :items="availableStreams"
+          item-title="name"
           density="compact"
           variant="outlined"
           no-data-text="No streams available."
@@ -36,13 +36,16 @@
           label="Fit style"
           class="my-3"
           :items="['cover', 'fill', 'contain']"
-          item-title="displayName"
+          item-title="style"
           density="compact"
           variant="outlined"
           no-data-text="No streams available."
           hide-details
           return-object
         />
+        <v-banner-text>Saved stream name: "{{ widget.options.streamName }}"</v-banner-text>
+        <v-banner-text>Signaller Status: {{ signallerStatus }}</v-banner-text>
+        <v-banner-text>Stream Status: {{ streamStatus }}</v-banner-text>
         <v-switch
           v-model="widget.options.flipHorizontally"
           class="my-1"
@@ -63,11 +66,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
+import adapter from 'webrtc-adapter'
 
-import useWebRtcStream from '@/composables/webRTC'
-import type { RtcPeer } from '@/types/webRTC'
+import { WebRTCManager } from '@/composables/webRTC'
+import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
+
+const { webRTCSignallingURI } = useMainVehicleStore()
+
+const globalAddress = 'blueos.local'
+
+console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
 const props = defineProps<{
   /**
@@ -78,11 +89,26 @@ const props = defineProps<{
 
 const widget = toRefs(props).widget
 
-const selectedPeer = ref<RtcPeer | undefined>()
+const rtcConfiguration = {
+  bundlePolicy: 'max-bundle',
+  iceServers: [
+    {
+      urls: `turn:${globalAddress}:3478`,
+      username: 'user',
+      credential: 'pwd',
+    },
+    {
+      urls: `stun:${globalAddress}:3478`,
+    },
+  ],
+  // eslint-disable-next-line no-undef
+} as RTCConfiguration
+
+const selectedStream = ref<Stream | undefined>()
 const showOptionsDialog = ref(false)
 const videoElement = ref<HTMLVideoElement | undefined>()
-
-const { availablePeers, stream } = useWebRtcStream(selectedPeer)
+const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
+const { availableStreams, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(selectedStream)
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
@@ -96,20 +122,44 @@ onBeforeMount(() => {
   }
 })
 
-watch(stream, async (newStream, oldStream) => {
-  console.debug('Stream changed.', oldStream, newStream)
-  if (videoElement.value !== undefined && newStream !== undefined) {
-    widget.value.options.streamName = selectedPeer.value?.displayName
-    videoElement.value.srcObject = newStream
-    videoElement.value.play()
-  }
+onBeforeUnmount(() => {
+  webRTCManager.close('WebRTC Widget was removed')
 })
 
-watch(availablePeers, () => {
+watch(mediaStream, async (newStream, oldStream) => {
+  console.debug(`[WebRTC] Stream changed. From: ${oldStream?.id} to ${newStream?.id}`)
+  if (videoElement.value === undefined || newStream === undefined) {
+    return
+  }
+
+  widget.value.options.streamName = selectedStream.value?.name
+  videoElement.value.srcObject = newStream
+  videoElement.value
+    .play()
+    .then(() => {
+      console.log('[VideoPlayer] Stream is playing')
+    })
+    .catch((reason) => {
+      const msg = `Failed to play stream. Reason: ${reason}`
+      console.log(`[VideoPlayer] ${msg}`)
+      streamStatus.value = msg
+    })
+})
+
+watch(availableStreams, () => {
   const savedStreamName = widget.value.options.streamName
-  if (selectedPeer.value === undefined && savedStreamName !== undefined) {
-    const savedPeer = availablePeers.value.find((peer) => peer.displayName === savedStreamName)
-    selectedPeer.value = savedPeer
+  if (selectedStream.value !== undefined || savedStreamName === undefined || availableStreams.value.isEmpty()) {
+    return
+  }
+
+  if (selectedStream.value === undefined) {
+    console.debug!('[WebRTC] trying to set stream...')
+  }
+
+  const savedStream = availableStreams.value.find((s) => s.name === savedStreamName)
+
+  if (savedStream !== undefined && savedStream !== selectedStream.value) {
+    selectedStream.value = savedStream
   }
 })
 
