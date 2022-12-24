@@ -8,6 +8,7 @@
 </template>
 
 <script setup lang="ts">
+import { useTimestamp } from '@vueuse/core'
 import { format } from 'date-fns'
 import { computed } from 'vue'
 
@@ -17,10 +18,20 @@ import { Alert, AlertLevel } from '@/types/alert'
 
 useVehicleAlerterStore()
 const alertStore = useAlertStore()
+const timeNow = useTimestamp({ interval: 1000 })
+const alertPersistencyInterval = 10 // in seconds
 
 const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
-const currentAlert = computed(() => alertStore.alerts.last() || new Alert(AlertLevel.Info, 'No alerts.'))
+const currentAlert = computed((): Alert => {
+  const secsNow = new Date(timeNow.value).getSeconds()
+  const secsLastAlert = alertStore.alerts.last()?.time_created.getSeconds() || secsNow - alertPersistencyInterval - 1
+  if (secsNow - secsLastAlert > alertPersistencyInterval) {
+    return new Alert(AlertLevel.Info, 'No recent alerts.')
+  }
+  // @ts-ignore: TypeScript checker is not aware that if `last()` does not exist, the previous condition will be met
+  return alertStore.alerts.last()
+})
 
 const levelColor = (level: AlertLevel): string => {
   switch (level) {
