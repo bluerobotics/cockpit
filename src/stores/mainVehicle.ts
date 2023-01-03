@@ -10,7 +10,14 @@ import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/messages/m
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Altitude, Attitude, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
+import {
+  type Altitude,
+  type Attitude,
+  type Coordinates,
+  type PageDescription,
+  type PowerSupply,
+  type RcChannels,
+} from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 
@@ -23,6 +30,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const altitude: Altitude = reactive({} as Altitude)
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
+  const rcChannels: RcChannels = reactive({} as RcChannels)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean | undefined>(undefined)
@@ -115,6 +123,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onPosition.add((newCoordinates: Coordinates) => {
       Object.assign(coordinates, newCoordinates)
     })
+    mainVehicle.value.onRcChannels.add((newChannelData: RcChannels) => {
+      Object.assign(rcChannels, newChannelData)
+    })
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
     })
@@ -168,6 +179,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     altitude,
     attitude,
     coordinates,
+    rcChannels,
     powerSupply,
     mode,
     modes,

@@ -102,6 +102,21 @@ export class Coordinates {
 }
 
 /**
+ * Provide rc channel related information
+ */
+export class RcChannels {
+  inputs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  /**
+   * Create object
+   *
+   * @param {Partial<RcChannels>} init
+   */
+  public constructor(init?: Partial<RcChannels>) {
+    Object.assign(this, init)
+  }
+}
+
+/**
  * Body frame attitude
  */
 export class Attitude {

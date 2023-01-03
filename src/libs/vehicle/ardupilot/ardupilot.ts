@@ -3,7 +3,15 @@ import type { MAVLinkMessageDictionary, Message as MavMessage, Package } from '@
 import { MavCmd, MavComponent, MAVLinkType, MavModeFlag } from '@/libs/connection/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
-import { type PageDescription, Altitude, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
+import {
+  type PageDescription,
+  Altitude,
+  Attitude,
+  Battery,
+  Coordinates,
+  PowerSupply,
+  RcChannels,
+} from '@/libs/vehicle/types'
 
 import * as Vehicle from '../vehicle'
 
@@ -24,6 +32,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     latitude: 0,
     longitude: 0,
   })
+  _rcChannels = new RcChannels()
   _cpuLoad = 0 // CPU load in percentage
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
@@ -176,6 +185,33 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         this.onArm.emit()
         break
       }
+      case MAVLinkType.RC_CHANNELS: {
+        const rcChannels = mavlink_message.message as Message.RcChannels
+
+        this._rcChannels.inputs = [
+          rcChannels.chan1_raw | 0,
+          rcChannels.chan2_raw | 0,
+          rcChannels.chan3_raw | 0,
+          rcChannels.chan4_raw | 0,
+          rcChannels.chan5_raw | 0,
+          rcChannels.chan6_raw | 0,
+          rcChannels.chan7_raw | 0,
+          rcChannels.chan8_raw | 0,
+          rcChannels.chan9_raw | 0,
+          rcChannels.chan10_raw | 0,
+          rcChannels.chan11_raw | 0,
+          rcChannels.chan12_raw | 0,
+          rcChannels.chan13_raw | 0,
+          rcChannels.chan14_raw | 0,
+          rcChannels.chan15_raw | 0,
+          rcChannels.chan16_raw | 0,
+          rcChannels.chan17_raw | 0,
+          rcChannels.chan18_raw | 0,
+        ]
+
+        this.onRcChannels.emit()
+        break
+      }
       case MAVLinkType.SYS_STATUS: {
         const sysStatus = mavlink_message.message as Message.SysStatus
         this._cpuLoad = sysStatus.load / 10 // Permille CPU usage
@@ -306,6 +342,15 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   powerSupply(): PowerSupply {
     return this._powerSupply
+  }
+
+  /**
+   * Return rc channels information
+   *
+   * @returns {RcChannels}
+   */
+  rcChannels(): RcChannels {
+    return this._rcChannels
   }
 
   /**
