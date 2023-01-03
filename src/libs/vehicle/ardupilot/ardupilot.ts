@@ -11,6 +11,7 @@ import {
   Coordinates,
   PowerSupply,
   RcChannels,
+  Servos,
 } from '@/libs/vehicle/types'
 
 import * as Vehicle from '../vehicle'
@@ -33,6 +34,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     longitude: 0,
   })
   _rcChannels = new RcChannels()
+  _servos = new Servos()
   _cpuLoad = 0 // CPU load in percentage
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
@@ -212,6 +214,31 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         this.onRcChannels.emit()
         break
       }
+      case MAVLinkType.SERVO_OUTPUT_RAW: {
+        const servos = mavlink_message.message as Message.ServoOutputRaw
+
+        this._servos.outputs = [
+          servos.servo1_raw | 0,
+          servos.servo2_raw | 0,
+          servos.servo3_raw | 0,
+          servos.servo4_raw | 0,
+          servos.servo5_raw | 0,
+          servos.servo6_raw | 0,
+          servos.servo7_raw | 0,
+          servos.servo8_raw | 0,
+          servos.servo9_raw | 0,
+          servos.servo10_raw | 0,
+          servos.servo11_raw | 0,
+          servos.servo12_raw | 0,
+          servos.servo13_raw | 0,
+          servos.servo14_raw | 0,
+          servos.servo15_raw | 0,
+          servos.servo16_raw | 0,
+        ]
+
+        this.onServos.emit()
+        break
+      }
       case MAVLinkType.SYS_STATUS: {
         const sysStatus = mavlink_message.message as Message.SysStatus
         this._cpuLoad = sysStatus.load / 10 // Permille CPU usage
@@ -351,6 +378,15 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   rcChannels(): RcChannels {
     return this._rcChannels
+  }
+
+  /**
+   * Return servo output related information
+   *
+   * @returns {Servos}
+   */
+  servos(): Servos {
+    return this._servos
   }
 
   /**

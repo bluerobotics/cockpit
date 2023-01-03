@@ -17,6 +17,7 @@ import {
   type PageDescription,
   type PowerSupply,
   type RcChannels,
+  type Servos,
 } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
@@ -31,6 +32,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
   const rcChannels: RcChannels = reactive({} as RcChannels)
+  const servos: Servos = reactive({} as Servos)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean | undefined>(undefined)
@@ -126,6 +128,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onRcChannels.add((newChannelData: RcChannels) => {
       Object.assign(rcChannels, newChannelData)
     })
+    mainVehicle.value.onServos.add((newServoData: Servos) => {
+      Object.assign(servos, newServoData)
+    })
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
     })
@@ -180,6 +185,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     attitude,
     coordinates,
     rcChannels,
+    servos,
     powerSupply,
     mode,
     modes,

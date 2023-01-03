@@ -9,6 +9,7 @@ import type {
   PageDescription,
   PowerSupply,
   RcChannels,
+  Servos,
 } from '@/libs/vehicle/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,6 +72,7 @@ export abstract class AbstractVehicle<Modes> {
   onMode = new Signal<Modes>()
   onPosition = new Signal<Coordinates>()
   onRcChannels = new Signal<RcChannels>()
+  onServos = new Signal<Servos>()
   onPowerSupply = new Signal<PowerSupply>()
 
   /**
@@ -103,6 +105,7 @@ export abstract class AbstractVehicle<Modes> {
     this.onMode.register_caller(() => this.mode())
     this.onPosition.register_caller(() => this.position())
     this.onRcChannels.register_caller(() => this.rcChannels())
+    this.onServos.register_caller(() => this.servos())
     this.onPowerSupply.register_caller(() => this.powerSupply())
   }
 
@@ -160,6 +163,7 @@ export abstract class AbstractVehicle<Modes> {
   abstract modesAvailable(): Map<string, Modes>
   abstract position(): Coordinates
   abstract rcChannels(): RcChannels
+  abstract servos(): Servos
   abstract powerSupply(): PowerSupply
   abstract setMode(mode: Modes): void
 }
