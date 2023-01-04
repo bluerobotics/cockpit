@@ -29,8 +29,7 @@ const currentAlert = computed((): Alert => {
   if (secsNow - secsLastAlert > alertPersistencyInterval) {
     return new Alert(AlertLevel.Info, 'No recent alerts.')
   }
-  // @ts-ignore: TypeScript checker is not aware that if `last()` does not exist, the previous condition will be met
-  return alertStore.alerts.last()
+  return alertStore.alerts.last()!
 })
 
 const levelColor = (level: AlertLevel): string => {
