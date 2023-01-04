@@ -25,3 +25,23 @@ export const range = (min: number, max: number): number[] => {
   }
   return arr
 }
+
+/**
+ * Simple scale function
+ *
+ * @param {number} input Input value
+ * @param {number} inputMin Input lowest point
+ * @param {number} inputMax Input maximum point
+ * @param {number} outputMin Output lowest point
+ * @param {number} outputMax Output maximum point
+ * @returns {number}
+ */
+export const scale = (
+  input: number,
+  inputMin: number,
+  inputMax: number,
+  outputMin: number,
+  outputMax: number
+): number => {
+  return ((input - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin) + outputMin
+}

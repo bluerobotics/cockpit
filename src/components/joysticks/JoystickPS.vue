@@ -6,6 +6,8 @@
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { scale } from '@/libs/utils'
+
 /**
  * Buttons for PS5 controller
  */
@@ -151,20 +153,6 @@ watch(
  */
 function toggleButton(button: Buttons, state: boolean): void {
   svg?.getElementById(button)?.setAttribute('fill', state ? 'red' : 'none')
-}
-
-/**
- * Simpler sleep function
- *
- * @param {number} input Input value
- * @param {number} inputMin Input lowest point
- * @param {number} inputMax Input maximum point
- * @param {number} outputMin Output lowest point
- * @param {number} outputMax Output maximum point
- * @returns {void}
- */
-function scale(input: number, inputMin: number, inputMax: number, outputMin: number, outputMax: number): number {
-  return ((input - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin) + outputMin
 }
 
 /**
