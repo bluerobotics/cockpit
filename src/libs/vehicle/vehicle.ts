@@ -124,7 +124,7 @@ export abstract class AbstractVehicle<Modes> {
       case Type.Antenna:
         return 'mdi-satellite-uplink'
       case Type.Blimp:
-        return 'mdi-airbaloon'
+        return 'mdi-airballoon'
       case Type.Copter:
         return 'mdi-quadcopter'
       case Type.Plane:
