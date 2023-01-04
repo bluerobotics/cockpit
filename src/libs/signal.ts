@@ -160,15 +160,13 @@ export class SignalTyped {
     this.slots.has(typeof_value) &&
       this.slots.set(
         typeof_value,
-        // @ts-ignore: `has` confirms that typeof_value exists
-        this.slots.get(typeof_value).filter((item) => item !== slot)
+        this.slots.get(typeof_value)!.filter((item) => item !== slot)
       )
 
     this.onces.has(typeof_value) &&
       this.onces.set(
         typeof_value,
-        // @ts-ignore: `has` confirms that typeof_value exists
-        this.onces.get(typeof_value).filter((item) => item !== slot)
+        this.onces.get(typeof_value)!.filter((item) => item !== slot)
       )
 
     return this
@@ -193,12 +191,8 @@ export class SignalTyped {
    * @param {'T'} payload
    */
   public emit_value<T>(typeof_value: string, payload: T): void {
-    this.slots.has(typeof_value) &&
-      // @ts-ignore: `has` confirms that typeof_value exists
-      this.notify(this.slots.get(typeof_value), payload)
-    this.onces.has(typeof_value) &&
-      // @ts-ignore: `has` confirms that typeof_value exists
-      this.notify(this.onces.get(typeof_value), payload)
+    this.slots.has(typeof_value) && this.notify(this.slots.get(typeof_value)!, payload)
+    this.onces.has(typeof_value) && this.notify(this.onces.get(typeof_value)!, payload)
 
     this.onces.set(typeof_value, [])
   }
