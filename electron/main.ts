@@ -31,7 +31,6 @@ function createWindow(): void {
   })
 
   mainWindow.loadFile(join(ROOT_PATH.dist, 'index.html'))
-  mainWindow.webContents.openDevTools()
 }
 
 app.on('window-all-closed', () => {
