@@ -1,35 +1,6 @@
 <template>
   <div class="main">
-    <v-stage :config="stageSize">
-      <v-layer>
-        <v-group :config="hudConfig.pitchLinesGroups.left">
-          <template v-for="angle in hudConfig.pitchLines.left" :key="angle">
-            <v-group :config="angle.groupConfig">
-              <v-line :config="angle.lineConfig" />
-              <v-text :config="angle.textConfig" />
-            </v-group>
-          </template>
-        </v-group>
-        <v-group :config="hudConfig.centerAim">
-          <v-line :config="hudConfig.aimLines.left" />
-          <v-arc :config="hudConfig.aimArcs.left" />
-          <v-arc :config="hudConfig.aimArcs.right" />
-          <v-line :config="hudConfig.aimLines.right" />
-        </v-group>
-        <template v-if="widget.options.showRollPitchValues">
-          <v-text :config="hudConfig.liveTxt.pitch" />
-          <v-text :config="hudConfig.liveTxt.roll" />
-        </template>
-        <v-group :config="hudConfig.pitchLinesGroups.right">
-          <template v-for="angle in hudConfig.pitchLines.right" :key="angle">
-            <v-group :config="angle.groupConfig">
-              <v-line :config="angle.lineConfig" />
-              <v-text :config="angle.textConfig" />
-            </v-group>
-          </template>
-        </v-group>
-      </v-layer>
-    </v-stage>
+    <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
     <v-btn
       class="options-btn"
       icon="mdi-dots-vertical"
@@ -83,11 +54,10 @@
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
-import { computed, onBeforeMount, reactive, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { constrain, degrees, radians, round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import type { LiveTexts, PitchLines, RenderVariables } from '@/types/attitude'
 import type { Widget } from '@/types/widgets'
 
 const store = useMainVehicleStore()
@@ -99,9 +69,23 @@ const props = defineProps<{
 }>()
 const widget = toRefs(props).widget
 
+const canvasRef = ref<HTMLCanvasElement | undefined>()
+const canvasContext = ref()
+
+type RenderVariables = {
+  /**
+   * Rendering roll value, in degrees
+   */
+  rollDegrees: number
+  /**
+   * Vertical height of the pitch line for each angle
+   */
+  pitchLinesHeights: { [angle: string]: number }
+}
+
 const showOptionsDialog = ref(false)
 const rollAngleDeg = ref(0)
-const pitchY = ref(0)
+const pitchAngleDeg = ref(0)
 
 // Pitch angles for which horizontal indication lines are rendered.
 const pitchAngles = [-90, -70, -45, -30, -10, 0, 10, 30, 45, 70, 90]
@@ -125,20 +109,23 @@ onBeforeMount(() => {
       hudColor: colorSwatches.value[0][0],
     }
   }
-
-  // Instantiate the initial pitch object
-  pitchAngles.forEach((a: number) => (renderVars.pitchLinesHeights[a] = 5 * a))
 })
 
-// Make stage size follows window resizing
+onMounted(() => {
+  // Instantiate the initial pitch object
+  pitchAngles.forEach((a: number) => (renderVars.pitchLinesHeights[a] = 5 * a))
+  renderCanvas()
+})
+
+// Make canvas size follows window resizing
 const { width: windowWidth, height: windowHeight } = useWindowSize()
-const stageSize = computed(() => ({
+const canvasSize = computed(() => ({
   width: widget.value.size.width * windowWidth.value,
   height: widget.value.size.height * windowHeight.value,
 }))
 
 // Center aim radius, constrained from user's input
-const aimRadius = computed(() => constrain(widget.value.options.desiredAimRadius, 35, 0.2 * stageSize.value.width))
+const aimRadius = computed(() => constrain(widget.value.options.desiredAimRadius, 35, 0.2 * canvasSize.value.width))
 
 /**
  * Deal with high frequency update and decrease cpu usage when drawing
@@ -157,7 +144,7 @@ watch(store.attitude, (attitude) => {
 
   if (pitchDiff > 0.1) {
     oldPitch = attitude.pitch
-    pitchY.value = degrees(store.attitude.pitch)
+    pitchAngleDeg.value = degrees(store.attitude.pitch)
   }
 })
 
@@ -166,127 +153,100 @@ const angleY = (angle: number): number => {
   return (widget.value.options.pitchHeightFactor * radians(angle)) / Math.cos(radians(angle))
 }
 
-// Configuration of the HUD Konva rendering objects
-const hudConfig = computed(() => {
-  const halfArc = {
-    innerRadius: aimRadius.value,
-    outerRadius: aimRadius.value + 1,
-    fill: 'red',
-    angle: 90,
-    stroke: widget.value.options.hudColor,
-    strokeWidth: 2,
+const renderCanvas = (): void => {
+  if (canvasRef.value === undefined) {
+    console.error('Canvas ref undefined!')
+    return
   }
-  const aimArcs = {
-    left: { ...halfArc, ...{ rotation: -45 } },
-    right: { ...halfArc, ...{ rotation: +135 } },
+  if (canvasContext.value === undefined) {
+    console.warn('Canvas context undefined!')
+    canvasContext.value = canvasRef.value.getContext('2d')
+    return
   }
+  const ctx = canvasContext.value
+  ctx.reset()
 
-  const centerAim = {
-    x: stageSize.value.width / 2,
-    y: stageSize.value.height / 2,
-    rotation: renderVars.rollDegrees,
-  }
+  const halfCanvasWidth = 0.5 * canvasSize.value.width
+  const halfCanvasHeight = 0.5 * canvasSize.value.height
+  const linesFontSize = 12
+  const refFontSize = 22
+  const stdPad = 2
 
-  const aimLineBase = { stroke: widget.value.options.hudColor, strokeWidth: 2 }
-  const aimLines = {
-    left: {
-      ...aimLineBase,
-      ...{ points: [aimRadius.value, 0, 1.6 * aimRadius.value - 1, 0] },
-    },
-    right: {
-      ...aimLineBase,
-      ...{ points: [-aimRadius.value, 0, -1.6 * aimRadius.value + 1, 0] },
-    },
-  }
+  // Set canvas general properties
+  ctx.textAlign = 'center'
+  ctx.strokeStyle = 'white'
+  ctx.font = `bold ${linesFontSize}px Arial`
+  ctx.fillStyle = 'white'
+  const pitchLinesStartRadius = 2.0 * aimRadius.value
 
-  const pitchLinesBaseConfig = {
-    y: 0,
-    stroke: widget.value.options.hudColor,
-    strokeWidth: 2,
-    dash: [6, 3],
-  }
+  ctx.translate(halfCanvasWidth, halfCanvasHeight)
+  ctx.rotate(radians(renderVars.rollDegrees))
 
-  const pitchTextsBaseConfig = {
-    y: -18,
-    width: 30,
-    fontSize: 15,
-    fontStyle: 'bold',
-    fontFamily: 'Arial',
-    fill: widget.value.options.hudColor,
-  }
+  // Draw line for each angle
+  for (const [angle, height] of Object.entries(renderVars.pitchLinesHeights)) {
+    ctx.beginPath()
 
-  const pitchLinesGroups = {
-    left: { ...centerAim, ...{ offsetX: 1.8 * aimRadius.value } },
-    right: { ...centerAim, ...{ offsetX: -1.8 * aimRadius.value } },
-  }
+    const lineWidthFactor = Number(angle) === 0 ? 1.0 : 0.7
+    const lineDashPattern = Number(angle) === 0 ? [] : [5, 2]
+    const lineThickness = Number(angle) === 0 ? 3 : 2
 
-  // Configuration for the pitch lines on the left side of the screen
-  const pitchLines: PitchLines = { left: {}, right: {} }
-  pitchAngles.forEach((angle: number) => {
-    let lineWidth = -stageSize.value.width / 2
-    if (angle === 0) lineWidth = 2 * lineWidth
+    ctx.lineWidth = lineThickness
+    ctx.setLineDash(lineDashPattern)
 
-    let lineConfig = {
-      ...pitchLinesBaseConfig,
-      ...{ x: -4, points: [0, 20, -2, 0, 0.3 * lineWidth, 0] },
-    }
-    let textConfig = {
-      ...pitchTextsBaseConfig,
-      ...{ x: -34, align: 'right', text: `${angle}°` },
-    }
-    let groupConfig = { y: renderVars.pitchLinesHeights[angle] }
-    pitchLines.left[angle] = { lineConfig, textConfig, groupConfig }
+    // Draw left side of the line
+    ctx.moveTo(-(pitchLinesStartRadius + lineWidthFactor * (halfCanvasWidth - pitchLinesStartRadius)) + stdPad, height)
+    ctx.lineTo(-pitchLinesStartRadius, height)
+    ctx.lineTo(-pitchLinesStartRadius + 5, height + 15)
+    ctx.fillText(Number(angle), -pitchLinesStartRadius - 4 * stdPad, height - 3 * stdPad)
 
-    lineConfig = {
-      ...pitchLinesBaseConfig,
-      ...{ x: 3, points: [0, 20, 2, 0, -0.3 * lineWidth, 0] },
-    }
-    textConfig = {
-      ...pitchTextsBaseConfig,
-      ...{ x: 6, align: 'left', text: `${angle}°` },
-    }
-    groupConfig = { y: renderVars.pitchLinesHeights[angle] }
-    pitchLines.right[angle] = { lineConfig, textConfig, groupConfig }
+    // Draw right side of the line
+    ctx.moveTo(+(pitchLinesStartRadius + lineWidthFactor * (halfCanvasWidth - pitchLinesStartRadius)) - stdPad, height)
+    ctx.lineTo(pitchLinesStartRadius, height)
+    ctx.lineTo(pitchLinesStartRadius - 5, height + 15)
+    ctx.fillText(Number(angle), pitchLinesStartRadius + 4 * stdPad, height - 3 * stdPad)
 
-    if (angle === 0) {
-      for (const side of Object.values(pitchLines)) {
-        side[angle].lineConfig.strokeWidth = 1.5 * lineConfig.strokeWidth
-        side[angle].lineConfig.dash = undefined
-      }
-    }
-  })
-
-  const LiveTextsBase = {
-    fontSize: 22,
-    fontStyle: 'bold',
-    fontFamily: 'Arial',
-    fill: widget.value.options.hudColor,
+    ctx.stroke()
   }
 
-  const liveTxt: LiveTexts = {
-    roll: {
-      ...LiveTextsBase,
-      ...{
-        x: stageSize.value.width / 2 + (aimRadius.value < 140 ? -30 : -0.8 * aimRadius.value),
-        y: stageSize.value.height / 2 + (aimRadius.value < 140 ? -2.4 : 0.3) * aimRadius.value,
-        text: `r: ${round(rollAngleDeg.value)}°`,
-      },
-    },
-    pitch: {
-      ...LiveTextsBase,
-      ...{
-        x: stageSize.value.width / 2 + (aimRadius.value < 140 ? -30 : -0.7 * aimRadius.value),
-        y: stageSize.value.height / 2 + (aimRadius.value < 140 ? 2 : 0.45) * aimRadius.value,
-        text: `p: ${round(pitchY.value)}°`,
-      },
-    },
-  }
+  ctx.lineWidth = 3
+  ctx.setLineDash([])
+  ctx.font = `bold ${refFontSize}px Arial`
 
-  return { pitchLines, pitchLinesGroups, aimLines, aimArcs, centerAim, liveTxt }
-})
+  // Draw left side of the aim circle
+  ctx.beginPath()
+  ctx.moveTo(-aimRadius.value, 0)
+  ctx.lineTo(-1.5 * aimRadius.value, 0)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(0, 0, aimRadius.value, radians(135), radians(225))
+  ctx.stroke()
+
+  // Draw right side of the aim circle
+  ctx.beginPath()
+  ctx.moveTo(aimRadius.value, 0)
+  ctx.lineTo(1.5 * aimRadius.value, 0)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(0, 0, aimRadius.value, radians(-45), radians(45))
+  ctx.stroke()
+
+  const rollText = `r: ${Number(rollAngleDeg.value).toFixed(2)}`
+  const pitchText = `p: ${Number(pitchAngleDeg.value).toFixed(2)}`
+
+  ctx.rotate(radians(-renderVars.rollDegrees))
+  if (aimRadius.value < 200) {
+    ctx.fillText(rollText, 0, -1.5 * aimRadius.value)
+    ctx.fillText(pitchText, 0, +1.5 * aimRadius.value)
+  } else {
+    ctx.textAlign = 'start'
+    ctx.fillText(rollText, -aimRadius.value + refFontSize, -30)
+    ctx.fillText(pitchText, -aimRadius.value + refFontSize, +30)
+  }
+  ctx.stroke()
+}
 
 // Update the height of each pitch line when the vehicle pitch is updated
-watch(pitchY, () => {
+watch(pitchAngleDeg, () => {
   pitchAngles.forEach((angle: number) => {
     const y = -round(angleY(angle - degrees(store.attitude.pitch)))
     gsap.to(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
@@ -296,6 +256,11 @@ watch(pitchY, () => {
 // Update the HUD roll angle when the vehicle roll is updated
 watch(rollAngleDeg, () => {
   gsap.to(renderVars, 0.1, { rollDegrees: -round(rollAngleDeg.value) })
+})
+
+// Update canvas whenever reference variables changes
+watch([renderVars, canvasSize, widget.value.options], () => {
+  nextTick(() => renderCanvas())
 })
 </script>
 
