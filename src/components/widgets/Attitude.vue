@@ -235,8 +235,8 @@ const renderCanvas = (): void => {
 
   ctx.rotate(radians(-renderVars.rollDegrees))
   if (aimRadius.value < 200) {
-    ctx.fillText(rollText, 0, -1.5 * aimRadius.value)
-    ctx.fillText(pitchText, 0, +1.5 * aimRadius.value)
+    ctx.fillText(rollText, 0, constrain(-1.5 * aimRadius.value, -0.8 * halfCanvasHeight, 0))
+    ctx.fillText(pitchText, 0, constrain(+1.5 * aimRadius.value, 0, 0.8 * halfCanvasHeight))
   } else {
     ctx.textAlign = 'start'
     ctx.fillText(rollText, -aimRadius.value + refFontSize, -30)
