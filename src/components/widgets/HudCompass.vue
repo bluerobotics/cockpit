@@ -145,7 +145,7 @@ const angleX = (angle: number): number => {
   } else if (x > 180) {
     x -= 360
   }
-  return x
+  return -x
 }
 
 const canvasRef = ref<HTMLCanvasElement | undefined>()
