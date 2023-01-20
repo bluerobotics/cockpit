@@ -25,6 +25,7 @@ import {
   Parameter,
   PowerSupply,
   RcChannels,
+  ServoOutput,
 } from '@/libs/vehicle/types'
 import { ProtocolControllerState } from '@/types/joystick'
 
@@ -48,6 +49,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     longitude: 0,
   })
   _rcChannels = new RcChannels()
+  _servoOutput = new ServoOutput()
   _cpuLoad = 0 // CPU load in percentage
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
@@ -227,6 +229,32 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         ]
 
         this.onRcChannels.emit()
+        break
+      }
+      case MAVLinkType.SERVO_OUTPUT_RAW: {
+        const servoOutput = mavlink_message.message as Message.ServoOutputRaw
+
+        this._servoOutput.port = servoOutput.port
+        this._servoOutput.servosValues = [
+          servoOutput.servo1_raw | 0,
+          servoOutput.servo2_raw | 0,
+          servoOutput.servo3_raw | 0,
+          servoOutput.servo4_raw | 0,
+          servoOutput.servo5_raw | 0,
+          servoOutput.servo6_raw | 0,
+          servoOutput.servo7_raw | 0,
+          servoOutput.servo8_raw | 0,
+          servoOutput.servo9_raw | 0,
+          servoOutput.servo10_raw | 0,
+          servoOutput.servo11_raw | 0,
+          servoOutput.servo12_raw | 0,
+          servoOutput.servo13_raw | 0,
+          servoOutput.servo14_raw | 0,
+          servoOutput.servo15_raw | 0,
+          servoOutput.servo16_raw | 0,
+        ]
+
+        this.onServoOutput.emit()
         break
       }
       case MAVLinkType.SYS_STATUS: {
@@ -426,6 +454,15 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   rcChannels(): RcChannels {
     return this._rcChannels
+  }
+
+  /**
+   * Return servo output related information
+   *
+   * @returns {ServoOutput}
+   */
+  servoOutput(): ServoOutput {
+    return this._servoOutput
   }
 
   /**

@@ -119,6 +119,22 @@ export class RcChannels {
 }
 
 /**
+ * Provide info related to servo outputs
+ */
+export class ServoOutput {
+  port = 0
+  servosValues = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  /**
+   * Create object
+   *
+   * @param {Partial<ServoOutput>} init
+   */
+  public constructor(init?: Partial<ServoOutput>) {
+    Object.assign(this, init)
+  }
+}
+
+/**
  * Body frame attitude
  */
 export class Attitude {

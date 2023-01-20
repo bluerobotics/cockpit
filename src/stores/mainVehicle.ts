@@ -22,6 +22,7 @@ import {
   type Parameter,
   type PowerSupply,
   type RcChannels,
+  type ServoOutput,
 } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
@@ -98,6 +99,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
   const rcChannels: RcChannels = reactive({} as RcChannels)
+  const servoOutput: ServoOutput = reactive({} as ServoOutput)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const parametersTable = reactive({})
   const currentParameters = reactive({})
@@ -218,6 +220,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onRcChannels.add((newChannelData: RcChannels) => {
       Object.assign(rcChannels, newChannelData)
     })
+    mainVehicle.value.onServoOutput.add((newServoData: ServoOutput) => {
+      Object.assign(servoOutput, newServoData)
+    })
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
     })
@@ -327,6 +332,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     attitude,
     coordinates,
     rcChannels,
+    servoOutput,
     powerSupply,
     mode,
     modes,
