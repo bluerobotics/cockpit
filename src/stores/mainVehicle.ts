@@ -14,7 +14,15 @@ import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepositor
 import * as ardurover_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Rover-4.2/apm.pdef.json'
 import * as ardusub_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Sub-4.1/apm.pdef.json'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Altitude, Attitude, Coordinates, PageDescription, Parameter, PowerSupply } from '@/libs/vehicle/types'
+import {
+  type Altitude,
+  type Attitude,
+  type Coordinates,
+  type PageDescription,
+  type Parameter,
+  type PowerSupply,
+  type RcChannels,
+} from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { type MetadataFile } from '@/types/ardupilot-metadata'
@@ -89,6 +97,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const altitude: Altitude = reactive({} as Altitude)
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
+  const rcChannels: RcChannels = reactive({} as RcChannels)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const parametersTable = reactive({})
   const currentParameters = reactive({})
@@ -206,6 +215,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onPosition.add((newCoordinates: Coordinates) => {
       Object.assign(coordinates, newCoordinates)
     })
+    mainVehicle.value.onRcChannels.add((newChannelData: RcChannels) => {
+      Object.assign(rcChannels, newChannelData)
+    })
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
     })
@@ -314,6 +326,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     altitude,
     attitude,
     coordinates,
+    rcChannels,
     powerSupply,
     mode,
     modes,

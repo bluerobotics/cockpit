@@ -24,6 +24,7 @@ import {
   Coordinates,
   Parameter,
   PowerSupply,
+  RcChannels,
 } from '@/libs/vehicle/types'
 import { ProtocolControllerState } from '@/types/joystick'
 
@@ -46,6 +47,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     latitude: 0,
     longitude: 0,
   })
+  _rcChannels = new RcChannels()
   _cpuLoad = 0 // CPU load in percentage
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
@@ -196,6 +198,35 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
         this._isArmed = Boolean(heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_SAFETY_ARMED)
         this.onArm.emit()
+        break
+      }
+      case MAVLinkType.RC_CHANNELS: {
+        const rcChannels = mavlink_message.message as Message.RcChannels
+
+        this._rcChannels.availableChannelsCount = rcChannels.chancount
+        this._rcChannels.rssi = rcChannels.rssi
+        this._rcChannels.channelsValues = [
+          rcChannels.chan1_raw | 0,
+          rcChannels.chan2_raw | 0,
+          rcChannels.chan3_raw | 0,
+          rcChannels.chan4_raw | 0,
+          rcChannels.chan5_raw | 0,
+          rcChannels.chan6_raw | 0,
+          rcChannels.chan7_raw | 0,
+          rcChannels.chan8_raw | 0,
+          rcChannels.chan9_raw | 0,
+          rcChannels.chan10_raw | 0,
+          rcChannels.chan11_raw | 0,
+          rcChannels.chan12_raw | 0,
+          rcChannels.chan13_raw | 0,
+          rcChannels.chan14_raw | 0,
+          rcChannels.chan15_raw | 0,
+          rcChannels.chan16_raw | 0,
+          rcChannels.chan17_raw | 0,
+          rcChannels.chan18_raw | 0,
+        ]
+
+        this.onRcChannels.emit()
         break
       }
       case MAVLinkType.SYS_STATUS: {
@@ -386,6 +417,15 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     }
 
     this.write(heartbeatMessage)
+  }
+
+  /**
+   * Return rc channels information
+   *
+   * @returns {RcChannels}
+   */
+  rcChannels(): RcChannels {
+    return this._rcChannels
   }
 
   /**
