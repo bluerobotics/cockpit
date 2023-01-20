@@ -120,14 +120,9 @@ export default function useWebRtcStream(selectedPeer: Ref<RtcPeer | undefined>):
         availablePeers.value = msg.producers
         console.debug('Updated available peers list: ', availablePeers.value)
       } else if (msg.type == 'producerAdded') {
-        addAvailablePeer(
-          // @ts-ignore: peerId is always available on `producerAdded` messages
-          msg.peerId,
-          msg.displayName || `Device ${Words.animalsOcean.random()}`
-        )
+        addAvailablePeer(msg.peerId!, msg.displayName || `Device ${Words.animalsOcean.random()}`)
       } else if (msg.type == 'producerRemoved') {
-        // @ts-ignore: peerId is always available on `producerRemoved` messages
-        removeAvailablePeer(msg.peerId)
+        removeAvailablePeer(msg.peerId!)
       } else if (msg.type == 'peer') {
         console.debug('Peer message received.')
         const peer = availablePeers.value.find((p) => p.id === msg.peerId)
@@ -197,8 +192,7 @@ export default function useWebRtcStream(selectedPeer: Ref<RtcPeer | undefined>):
     sendSocketSignal({
       type: 'peer',
       peerId: peer.id,
-      // @ts-ignore: as `setLocalDescription` didn't raise, we know it exists
-      sdp: peer.connection.localDescription.toJSON(),
+      sdp: peer.connection.localDescription!.toJSON(),
     })
   }
 
