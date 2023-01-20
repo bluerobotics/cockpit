@@ -6,6 +6,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
+}
+.flex-centered-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @supports(padding:max(0px)) {
