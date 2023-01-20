@@ -182,6 +182,16 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   }
 
+  /**
+   * Test motor
+   *
+   * @param {number} motorId Motor instance number
+   * @param {number} outputPerc Output value in percentage
+   */
+  function doMotorTest(motorId: number, outputPerc: number): void {
+    mainVehicle.value?.doMotorTest(motorId, outputPerc)
+  }
+
   ConnectionManager.onMainConnection.add(() => {
     const newMainConnection = ConnectionManager.mainConnection()
     if (newMainConnection !== undefined) {
@@ -322,6 +332,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     sendGcsHeartbeat,
     requestParametersList,
     globalAddress,
+    doMotorTest,
     mainConnectionURI,
     webRTCSignallingURI,
     cpuLoad,

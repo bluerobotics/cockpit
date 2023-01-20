@@ -16,6 +16,7 @@ import {
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
+import { constrain, round } from '@/libs/utils'
 import {
   type PageDescription,
   Altitude,
@@ -488,5 +489,23 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       target_component: 0,
     }
     this.write(paramRequestMessage)
+  }
+
+  /**
+   * Test motor
+   *
+   * @param {number} motorId Motor instance number
+   * @param {number} output Output value in percentage
+   */
+  doMotorTest(motorId: number, output: number): void {
+    this.sendCommandLong(
+      MavCmd.MAV_CMD_DO_MOTOR_TEST,
+      motorId - 1,
+      1, // MOTOR_TEST_THROTTLE_TYPE.MOTOR_TEST_THROTTLE_PWM
+      round(constrain(output, 1000, 2000), 0), // Value should be between 1000 and 2000, and will be cropped if not
+      1, // Seconds running the motor
+      1, // Number of motors to be tested
+      2 // MOTOR_TEST_ORDER.MOTOR_TEST_ORDER_BOARD
+    )
   }
 }
