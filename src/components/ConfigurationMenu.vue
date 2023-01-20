@@ -41,6 +41,7 @@ import ConfigurationDevelopmentView from '../views/ConfigurationDevelopmentView.
 import ConfigurationFrameView from '../views/ConfigurationFrameView.vue'
 import ConfigurationGeneralView from '../views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '../views/ConfigurationJoystickView.vue'
+import ConfigurationMotorView from '../views/ConfigurationMotorView.vue'
 import ConfigurationPowerView from '../views/ConfigurationPowerView.vue'
 import ConfigurationSensorsView from '../views/ConfigurationSensorsView.vue'
 
@@ -74,6 +75,11 @@ const menus = [
     icon: 'mdi-lightning-bolt',
     title: 'Power',
     component: ConfigurationPowerView,
+  },
+  {
+    icon: 'mdi-turbine',
+    title: 'Motors',
+    component: ConfigurationMotorView,
   },
   {
     icon: 'mdi-dev-to',
