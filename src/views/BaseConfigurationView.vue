@@ -4,7 +4,7 @@
       <slot name="title"></slot>
     </v-card-title>
     <v-divider />
-    <v-card-text class="flex-centered">
+    <v-card-text class="flex-centered flex-column">
       <slot name="content"></slot>
     </v-card-text>
   </v-card>
