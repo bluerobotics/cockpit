@@ -17,13 +17,15 @@ export const round = (value: number, places = 2): number => {
   return Math.round(value * power) / power
 }
 
-export const range = (min: number, max: number): number[] => {
-  const len = round(max, 0) - round(min, 0) + 1
-  const arr = new Array(len)
-  for (let i = 0; i < len; i++) {
-    arr[i] = round(min, 0) + i
+export const range = (start: number, stop: number, step = 1): number[] => {
+  if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
+    return []
   }
-  return arr
+  const result = []
+  for (let i = start; step > 0 ? i < stop : i > stop; i += step) {
+    result.push(round(i, 2))
+  }
+  return result
 }
 
 /**
