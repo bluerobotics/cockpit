@@ -85,8 +85,8 @@ const passedDepths = ref<number[]>(Array(10).fill(0))
 const depth = computed(() => passedDepths.value[passedDepths.value.length - 1])
 const recentDepths = computed(() => passedDepths.value.slice(-10))
 const maxRecentDepth = computed(() => Math.max(...recentDepths.value))
-const maxGraphDepth = computed(() => (1.3 * maxRecentDepth.value > 10 ? 1.3 * maxRecentDepth.value : 10))
-const depthGraphDistances = computed(() => range(0, maxGraphDepth.value + 1))
+const maxGraphDepth = computed(() => (1.3 * maxRecentDepth.value > 1 ? 1.3 * maxRecentDepth.value : 1))
+const depthGraphDistances = computed(() => range(0, maxGraphDepth.value + 1, round(maxGraphDepth.value / 25), 1))
 const maxDepth = computed(() => Math.max(...depthGraphDistances.value))
 
 onBeforeMount(() => {
@@ -113,8 +113,15 @@ const canvasSize = computed(() => ({
 
 // The implementation below makes sure we don't update the Depth value in the widget whenever
 // the system Depth (from vehicle) updates, preventing unnecessary performance bottlenecks.
+
+const fakeAlt = ref(0)
+setInterval(() => {
+  const change = -(Math.random() - 0.5)
+  fakeAlt.value = constrain(fakeAlt.value + change, -10, 0)
+}, 100)
+
 watch(
-  () => store.altitude.msl,
+  fakeAlt,
   (newMslAltitude) => {
     const newDepth = -1 * constrain(newMslAltitude, newMslAltitude, 0)
     const depthDiff = Math.abs(newDepth - (depth.value || 0))
@@ -162,26 +169,19 @@ const renderCanvas = (): void => {
   ctx.strokeStyle = widget.value.options.hudColor
   ctx.fillStyle = widget.value.options.hudColor
 
-  let lineDivisors = [1, 5]
-  if (maxGraphDepth.value > 25) lineDivisors = [2, 10]
-  if (maxGraphDepth.value > 125) lineDivisors = [5, 25]
-  if (maxGraphDepth.value > 250) lineDivisors = [10, 50]
-  if (maxGraphDepth.value > 500) lineDivisors = [20, 100]
-
   // Draw line for each distance
   for (const [distance, y] of Object.entries(renderVars.depthLinesY)) {
-    if (Number(distance) % lineDivisors[0] === 0) {
-      ctx.beginPath()
-      ctx.moveTo(canvasWidth - stdPad - 3.3 * linesFontSize - minorLinesGap, y + initialPaddingY)
-      ctx.lineTo(stdPad + 3.9 * refFontSize + refTriangleSize, y + initialPaddingY)
-      ctx.lineWidth = '1'
-    }
-    if (Number(distance) % lineDivisors[1] === 0) {
+    if (maxGraphDepth.value % Number(distance) === 0) {
       // For distances that are multiple of the major graph scale, use a bolder line and write distance down
       ctx.lineWidth = '2'
       ctx.moveTo(canvasWidth - stdPad - 3.3 * linesFontSize, y + initialPaddingY)
       ctx.lineTo(stdPad + 3.9 * refFontSize + refTriangleSize, y + initialPaddingY)
       ctx.fillText(`${distance} m`, canvasWidth - stdPad - 3 * linesFontSize, y + initialPaddingY)
+    } else {
+      ctx.beginPath()
+      ctx.moveTo(canvasWidth - stdPad - 3.3 * linesFontSize - minorLinesGap, y + initialPaddingY)
+      ctx.lineTo(stdPad + 3.9 * refFontSize + refTriangleSize, y + initialPaddingY)
+      ctx.lineWidth = '1'
     }
     ctx.stroke()
   }
@@ -236,6 +236,7 @@ watch(depth, () => {
 
 // Update canvas whenever reference variables changes
 watch([renderVars, canvasSize, widget.value.options], () => {
+  console.log(renderVars.depthLinesY)
   nextTick(() => renderCanvas())
 })
 </script>
