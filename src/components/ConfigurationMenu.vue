@@ -37,6 +37,7 @@ import { useDisplay } from 'vuetify'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
+import ConfigurationDevelopmentView from '../views/ConfigurationDevelopmentView.vue'
 import ConfigurationFrameView from '../views/ConfigurationFrameView.vue'
 import ConfigurationGeneralView from '../views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '../views/ConfigurationJoystickView.vue'
@@ -73,6 +74,11 @@ const menus = [
     icon: 'mdi-lightning-bolt',
     title: 'Power',
     component: ConfigurationPowerView,
+  },
+  {
+    icon: 'mdi-dev-to',
+    title: 'Development',
+    component: ConfigurationDevelopmentView,
   },
 ]
 
