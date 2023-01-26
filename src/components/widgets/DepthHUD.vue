@@ -22,14 +22,6 @@
           hide-details
           @change="widget.options.showDepthValue = !widget.options.showDepthValue"
         />
-        <span>Distance between Depth lines</span>
-        <v-slider
-          v-model="widget.options.depthGainFactor"
-          label="Depth lines gain factor"
-          :min="150"
-          :max="1500"
-          thumb-label
-        />
         <v-expansion-panels>
           <v-expansion-panel>
             <v-expansion-panel-title>Color</v-expansion-panel-title>
@@ -94,7 +86,6 @@ onBeforeMount(() => {
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
       showDepthValue: true,
-      depthGainFactor: 150,
       hudColor: colorSwatches.value[2][0],
     }
   }
