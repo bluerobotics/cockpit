@@ -1,6 +1,14 @@
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { MAVLinkMessageDictionary, Message as MavMessage, Package } from '@/libs/connection/messages/mavlink2rest'
-import { MavCmd, MavComponent, MAVLinkType, MavModeFlag } from '@/libs/connection/messages/mavlink2rest-enum'
+import {
+  MavAutopilot,
+  MavCmd,
+  MavComponent,
+  MAVLinkType,
+  MavModeFlag,
+  MavState,
+  MavType,
+} from '@/libs/connection/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
 import { type PageDescription, Altitude, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
@@ -306,6 +314,23 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   powerSupply(): PowerSupply {
     return this._powerSupply
+  }
+
+  /**
+   * Send heartbeat from GCS
+   */
+  sendGcsHeartbeat(): void {
+    const heartbeatMessage: Message.Heartbeat = {
+      type: MAVLinkType.HEARTBEAT,
+      custom_mode: 0,
+      mavtype: { type: MavType.MAV_TYPE_GCS },
+      autopilot: { type: MavAutopilot.MAV_AUTOPILOT_INVALID },
+      base_mode: { bits: 192 },
+      system_status: { type: MavState.MAV_STATE_ACTIVE },
+      mavlink_version: 1,
+    }
+
+    this.write(heartbeatMessage)
   }
 
   /**
