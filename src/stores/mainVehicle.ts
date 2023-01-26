@@ -58,6 +58,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Send heartbeat from GCS
+   */
+  function sendGcsHeartbeat(): void {
+    mainVehicle.value?.sendGcsHeartbeat()
+  }
+
+  /**
    * List of available flight modes
    *
    * @returns {Array<string>}
@@ -154,6 +161,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       setFlightMode: setFlightMode,
     }
   })
+
+  setInterval(() => sendGcsHeartbeat(), 1000)
 
   return {
     arm,
