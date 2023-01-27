@@ -19,7 +19,6 @@ export const widgetProfiles: { [key: string]: Profile } = {
             size: { width: 0.1, height: 0.62 },
             options: {
               showDepthValue: true,
-              depthGainFactor: 150,
               hudColor: '#FFFFFF',
             },
           },
