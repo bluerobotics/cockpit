@@ -4,8 +4,8 @@ declare global {
   /**
    * Running time assert for development
    *
-   * @param {boolean}
-   * @param {string?}
+   * @param {boolean} result
+   * @param {string?} message
    * @returns {void}
    */
   function assert(result: boolean, message?: string): void
@@ -13,7 +13,7 @@ declare global {
   /**
    * Warn developer when something is not implemented
    *
-   * @param {string}
+   * @param {string} message
    * @returns {void}
    */
   function unimplemented(message?: string): void
@@ -21,7 +21,8 @@ declare global {
   /**
    * Helper to avoid unused warnings
    *
-   * @param T variable
+   * @template T
+   * @param {T} variable
    * @returns {void}
    */
   function unused<T>(variable: T): void
