@@ -81,14 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  useConfirmDialog,
-  useElementBounding,
-  useElementHover,
-  useElementSize,
-  useMouseInElement,
-  useWindowSize,
-} from '@vueuse/core'
+import { useConfirmDialog, useElementBounding, useElementHover, useMouseInElement, useWindowSize } from '@vueuse/core'
 import { type Ref, computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
@@ -225,13 +218,6 @@ onMounted(async () => {
   await resizeWidgetToMinimalSize()
   makeWidgetRespectWalls()
 })
-
-const { width, height } = useElementSize(innerWidgetRef)
-const innerWidgetSize = computed(() => ({
-  width: width.value,
-  height: height.value,
-}))
-watch(innerWidgetSize, resizeWidgetToMinimalSize)
 
 const outerBounds = useElementBounding(outerWidgetRef)
 
