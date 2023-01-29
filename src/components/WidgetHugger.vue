@@ -208,12 +208,12 @@ const {
 const resizeWidgetToMinimalSize = async (): Promise<void> => {
   let stillAutoResizing = false
   if (innerWidgetRef.value === undefined) return
-  const { scrollWidth, scrollHeight, offsetHeight, offsetWidth } = innerWidgetRef.value
-  if (scrollWidth > 1.05 * offsetWidth) {
+  const { clientHeight, clientWidth, scrollWidth, scrollHeight } = innerWidgetRef.value
+  if (scrollWidth > 1.05 * clientWidth) {
     widgetFinalSize.value.width = (1.1 * scrollWidth) / windowWidth.value
     stillAutoResizing = true
   }
-  if (scrollHeight > 1.05 * offsetHeight) {
+  if (scrollHeight > 1.05 * clientHeight) {
     widgetFinalSize.value.height = (1.1 * scrollHeight) / windowHeight.value
     stillAutoResizing = true
   }
@@ -281,13 +281,13 @@ watch(resizerPosition, (position) => {
   const growingWidth = widgetFinalSize.value.width > oldSize.width
   const growingHeight = widgetFinalSize.value.height > oldSize.height
 
-  const { offsetWidth, offsetHeight, scrollWidth, scrollHeight } = innerWidgetRef.value
+  const { clientWidth, clientHeight, scrollWidth, scrollHeight } = innerWidgetRef.value
 
-  if (scrollHeight > offsetHeight && !growingHeight) {
+  if (scrollHeight > clientHeight && !growingHeight) {
     widgetFinalSize.value.height = oldSize.height
   }
 
-  if (scrollWidth > offsetWidth && !growingWidth) {
+  if (scrollWidth > clientWidth && !growingWidth) {
     widgetFinalSize.value.width = oldSize.width
   }
 })
