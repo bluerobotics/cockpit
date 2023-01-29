@@ -210,11 +210,11 @@ const resizeWidgetToMinimalSize = async (): Promise<void> => {
   if (innerWidgetRef.value === undefined) return
   const { scrollWidth, scrollHeight, offsetHeight, offsetWidth } = innerWidgetRef.value
   if (scrollWidth > 1.05 * offsetWidth) {
-    widgetFinalSize.value.width = (1.1 * scrollWidth) / window.innerWidth
+    widgetFinalSize.value.width = (1.1 * scrollWidth) / windowWidth.value
     stillAutoResizing = true
   }
   if (scrollHeight > 1.05 * offsetHeight) {
-    widgetFinalSize.value.height = (1.1 * scrollHeight) / window.innerHeight
+    widgetFinalSize.value.height = (1.1 * scrollHeight) / windowHeight.value
     stillAutoResizing = true
   }
 
@@ -237,12 +237,12 @@ const outerBounds = useElementBounding(outerWidgetRef)
 
 const makeWidgetRespectWalls = (): void => {
   for (const bound of [outerBounds.left.value, outerBounds.right.value]) {
-    if (bound < 0 || bound > window.innerWidth) {
+    if (bound < 0 || bound > windowWidth.value) {
       widgetFinalPosition.value.x = 1 - widgetFinalSize.value.width
     }
   }
   for (const bound of [outerBounds.top.value, outerBounds.bottom.value]) {
-    if (bound < 0 || bound > window.innerHeight) {
+    if (bound < 0 || bound > windowHeight.value) {
       widgetFinalPosition.value.y = 1 - widgetFinalSize.value.height
     }
   }
@@ -254,8 +254,8 @@ watch(widgetRawPosition, (position) => {
     return
   }
   const widgetLimits = innerWidgetRef.value.getBoundingClientRect()
-  const maxX = 1 - widgetLimits.width / window.innerWidth || 1
-  const maxY = 1 - widgetLimits.height / window.innerHeight || 1
+  const maxX = 1 - widgetLimits.width / windowWidth.value || 1
+  const maxY = 1 - widgetLimits.height / windowHeight.value || 1
   widgetFinalPosition.value = {
     x: constrain(position.x, 0, maxX),
     y: constrain(position.y, 0, maxY),
@@ -268,8 +268,8 @@ watch(resizerPosition, (position) => {
     return
   }
   const widgetLimits = {
-    x: outerWidgetRef.value.getBoundingClientRect().x / window.innerWidth || 1,
-    y: outerWidgetRef.value.getBoundingClientRect().y / window.innerHeight || 1,
+    x: outerWidgetRef.value.getBoundingClientRect().x / windowWidth.value || 1,
+    y: outerWidgetRef.value.getBoundingClientRect().y / windowHeight.value || 1,
   }
 
   const oldSize = widgetFinalSize.value
