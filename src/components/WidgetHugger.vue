@@ -1,4 +1,14 @@
 <template>
+  <div v-if="devStore.developmentMode" class="widgetOverlay dev-info">
+    <p>Position: {{ 100 * position.x }} x {{ 100 * position.y }} %</p>
+    <p>Size: {{ 100 * size.width }} x {{ 100 * size.height }} %</p>
+    <p>Position: {{ position.x * windowWidth }} x {{ position.y * windowHeight }} px</p>
+    <p>Size: {{ size.width * windowWidth }} x {{ size.height * windowHeight }} px</p>
+    <p>Client size: {{ innerWidgetRef?.clientWidth }} x {{ innerWidgetRef?.clientHeight }} px</p>
+    <p>Offset size: {{ innerWidgetRef?.offsetWidth }} x {{ innerWidgetRef?.offsetHeight }} px</p>
+    <p>Scroll size: {{ innerWidgetRef?.scrollWidth }} x {{ innerWidgetRef?.scrollHeight }} px</p>
+    <p v-for="[k, v] in Object.entries(widget?.options)" :key="k">{{ k }} (option): {{ v }}</p>
+  </div>
   <div ref="widgetOverlay" class="widgetOverlay" :class="{ allowMoving, draggingWidget, hoveringWidgetOrOverlay }" />
   <div ref="outerWidgetRef" class="outerWidget">
     <div ref="innerWidgetRef" class="innerWidget">
@@ -71,17 +81,30 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog, useElementBounding, useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
+import {
+  useConfirmDialog,
+  useElementBounding,
+  useElementHover,
+  useElementSize,
+  useMouseInElement,
+  useWindowSize,
+} from '@vueuse/core'
 import { type Ref, computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
 import { constrain, isEqual } from '@/libs/utils'
+import { useDevelopmentStore } from '@/stores/development'
 import type { Point2D, SizeRect2D } from '@/types/general'
+import type { Widget } from '@/types/widgets'
 
 /**
  * Props for the WidgetHugger component
  */
 export interface Props {
+  /**
+   * Widget reference
+   */
+  widget: Widget
   /**
    * Size of the widget box, in pixels
    */
@@ -134,6 +157,7 @@ const emit = defineEmits<{
   (e: 'remove'): void
 }>()
 
+const widget = toRefs(props).widget
 const allowMoving = toRefs(props).allowMoving
 const allowResizing = toRefs(props).allowResizing
 const snapToGrid = toRefs(props).snapToGrid
@@ -145,6 +169,10 @@ const lastNonMaximizedX = ref(props.position.x)
 const lastNonMaximizedY = ref(props.position.y)
 const lastNonMaximizedWidth = ref(props.size.width)
 const lastNonMaximizedHeight = ref(props.size.height)
+
+const devStore = useDevelopmentStore()
+
+const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 const widgetOverlay = ref()
 const hoveringOverlay = useElementHover(widgetOverlay)
@@ -389,6 +417,8 @@ const cursorStyle = computed(() => {
   return 'grab'
 })
 
+const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
+
 const widgetDeleteDialogRevealed = ref(false)
 const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
 widgetDeleteDialog.onConfirm(() => emit('remove'))
@@ -406,6 +436,20 @@ onBeforeUnmount(() => clearInterval(wallRespecterInterval))
   width: calc(v-bind('sizeStyle.width') + 2 * var(--overlayOverSize));
   height: calc(v-bind('sizeStyle.height') + 2 * var(--overlayOverSize));
   user-select: none;
+}
+.dev-info {
+  background-color: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(v-bind('devInfoBlurLevel'));
+  z-index: 1;
+  pointer-events: none;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: auto;
+  text-shadow: 1ch;
+  flex-flow: column wrap;
 }
 .widgetOverlay.allowMoving {
   background-color: rgba(0, 0, 0, 0.1);
