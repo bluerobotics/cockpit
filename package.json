@@ -58,7 +58,7 @@
     "electron-builder": "^23.3.3",
     "eslint": "^8.5.0",
     "eslint-plugin-cypress": "^2.12.1",
-    "eslint-plugin-jsdoc": "^39.3.0",
+    "eslint-plugin-jsdoc": "^39.6.4",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "eslint-plugin-vue": "^8.2.0",
     "jsdom": "^19.0.0",
