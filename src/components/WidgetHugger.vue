@@ -198,7 +198,7 @@ const {
   gridInterval.value
 )
 
-const resizeWidgetToMinimalSize = async (): Promise<void> => {
+const resizeWidgetToMinimalSize = (): void => {
   let stillAutoResizing = false
   if (innerWidgetRef.value === undefined) return
   const { clientHeight, clientWidth, scrollWidth, scrollHeight } = innerWidgetRef.value
@@ -216,7 +216,7 @@ const resizeWidgetToMinimalSize = async (): Promise<void> => {
 
 onMounted(async () => {
   if (widget.value.managerVars.timesMounted === 0) {
-    await resizeWidgetToMinimalSize()
+    resizeWidgetToMinimalSize()
   }
   makeWidgetRespectWalls()
   widget.value.managerVars.timesMounted += 1
