@@ -13,6 +13,9 @@ import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type { Altitude, Attitude, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
+import { ProtocolControllerState } from '@/types/joystick'
+
+import { useControllerStore } from './controller'
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const cpuLoad = ref<number>()
@@ -55,6 +58,15 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   function disarm(): void {
     mainVehicle.value?.disarm()
+  }
+
+  /**
+   * Send manual control message
+   *
+   * @param {ProtocolControllerState} controllerState Current state of the controller
+   */
+  function sendManualControl(controllerState: ProtocolControllerState): void {
+    mainVehicle.value?.sendManualControl(controllerState)
   }
 
   /**
@@ -162,6 +174,17 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   })
 
+  const controllerStore = useControllerStore()
+  const currentControllerState = ref<ProtocolControllerState | undefined>()
+  const updateCurrentControllerState = (newState: ProtocolControllerState): void => {
+    currentControllerState.value = newState
+  }
+  controllerStore.registerControllerUpdateCallback(updateCurrentControllerState)
+
+  setInterval(() => {
+    if (currentControllerState.value === undefined) return
+    sendManualControl(currentControllerState.value)
+  }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
 
   return {
