@@ -119,7 +119,7 @@ watch(
 const distanceY = (altitude: number): number => {
   const diff = altitude
   const heightFactor = canvasSize.value.height / maxDepth.value
-  return round(heightFactor * diff, 0)
+  return round(heightFactor * diff)
 }
 
 const canvasRef = ref<HTMLCanvasElement | undefined>()
@@ -213,14 +213,14 @@ const renderCanvas = (): void => {
 // Update the X position of each line in the render variables with GSAP to smooth the transition
 watch(depth, () => {
   depthGraphDistances.value.forEach((distance) => {
-    renderVars.depthLinesY[distance] ??= round(canvasSize.value.height + 100, 0)
+    renderVars.depthLinesY[distance] ??= round(canvasSize.value.height + 100)
     gsap.to(renderVars.depthLinesY, 0.5, { [distance]: distanceY(distance) })
   })
   const distancesToExclude = Object.keys(renderVars.depthLinesY).filter(
     (distance) => !depthGraphDistances.value.includes(Number(distance))
   )
   distancesToExclude.forEach((distance) => {
-    gsap.to(renderVars.depthLinesY, 0.5, { [distance]: round(canvasSize.value.height + 100, 0) })
+    gsap.to(renderVars.depthLinesY, 0.5, { [distance]: round(canvasSize.value.height + 100) })
   })
   gsap.to(renderVars, 0.5, { indicatorY: distanceY(depth.value) })
 })

@@ -248,14 +248,14 @@ const renderCanvas = (): void => {
 // Update the height of each pitch line when the vehicle pitch is updated
 watch(pitchAngleDeg, () => {
   pitchAngles.forEach((angle: number) => {
-    const y = -round(angleY(angle - degrees(store.attitude.pitch)))
+    const y = -round(angleY(angle - degrees(store.attitude.pitch)), 2)
     gsap.to(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
   })
 })
 
 // Update the HUD roll angle when the vehicle roll is updated
 watch(rollAngleDeg, () => {
-  gsap.to(renderVars, 0.1, { rollDegrees: -round(rollAngleDeg.value) })
+  gsap.to(renderVars, 0.1, { rollDegrees: -round(rollAngleDeg.value, 2) })
 })
 
 // Update canvas whenever reference variables changes
