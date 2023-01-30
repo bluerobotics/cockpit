@@ -215,8 +215,11 @@ const resizeWidgetToMinimalSize = async (): Promise<void> => {
 }
 
 onMounted(async () => {
-  await resizeWidgetToMinimalSize()
+  if (widget.value.managerVars.timesMounted === 0) {
+    await resizeWidgetToMinimalSize()
+  }
   makeWidgetRespectWalls()
+  widget.value.managerVars.timesMounted += 1
 })
 
 const outerBounds = useElementBounding(outerWidgetRef)
