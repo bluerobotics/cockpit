@@ -10,7 +10,7 @@ FROM alpine:3.14
 
 # Install simple http server
 RUN apk add --no-cache wget
-RUN wget https://github.com/patrickelectric/simple-http-server/releases/download/fix_cross_ci/armv7-unknown-linux-musleabihf-simple-http-server \
+RUN wget https://github.com/TheWaWaR/simple-http-server/releases/download/v0.6.6/armv7-unknown-linux-musleabihf-simple-http-server \
     -O /usr/bin/simple-http-server
 RUN chmod +x /usr/bin/simple-http-server
 
