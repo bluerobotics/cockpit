@@ -6,7 +6,7 @@
    version="1.1"
    id="svg75"
    sodipodi:docname="PS4.svg"
-   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14, custom)"
+   inkscape:version="1.2.2 (b0a84865, 2022-12-01)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -23,28 +23,18 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      showgrid="false"
-     inkscape:zoom="2.6226753"
-     inkscape:cx="697.3795"
-     inkscape:cy="300.07527"
-     inkscape:window-width="3840"
-     inkscape:window-height="2109"
-     inkscape:window-x="2560"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
+     inkscape:zoom="0.92725575"
+     inkscape:cx="736.58212"
+     inkscape:cy="524.66647"
+     inkscape:window-width="1670"
+     inkscape:window-height="987"
+     inkscape:window-x="5"
+     inkscape:window-y="30"
+     inkscape:window-maximized="0"
      inkscape:current-layer="ps4_android" />
   <g
      id="ps4_android"
      transform="translate(-1896.351 -1533.57)">
-    <path
-       id="path_4924"
-       d="M2.28,0H9.7a.481.481,0,0,0,.48-.48V-1.8a.481.481,0,0,0-.48-.48H4.32a.227.227,0,0,1-.24-.24v-13.8a.481.481,0,0,0-.48-.48H2.28a.481.481,0,0,0-.48.48V-.48A.481.481,0,0,0,2.28,0ZM16.56.24A4.956,4.956,0,0,0,21.6-4.824a4.2,4.2,0,0,0-1.9-3.72c-.216-.144-.216-.36.024-.576a4.231,4.231,0,0,0,1.512-3.288,4.371,4.371,0,0,0-4.632-4.632,4.422,4.422,0,0,0-4.728,4.392v.6a.481.481,0,0,0,.48.48h1.3a.481.481,0,0,0,.48-.48v-.36a2.356,2.356,0,0,1,2.472-2.472,2.228,2.228,0,0,1,2.352,2.472,2.352,2.352,0,0,1-2.4,2.52h-.48a.481.481,0,0,0-.48.48v1.272a.481.481,0,0,0,.48.48h.48a2.627,2.627,0,0,1,2.76,2.832,2.685,2.685,0,0,1-2.76,2.9,2.684,2.684,0,0,1-2.784-2.832V-4.92a.481.481,0,0,0-.48-.48h-1.32a.481.481,0,0,0-.48.48v.408A4.883,4.883,0,0,0,16.56.24Z"
-       transform="translate(2288.848 1975.454)"
-       fill="#747474" />
-    <path
-       id="path_4927"
-       d="M2.28,0H3.6a.481.481,0,0,0,.48-.48v-6a.227.227,0,0,1,.24-.24H5.784a.469.469,0,0,1,.456.288L9.12-.384A.621.621,0,0,0,9.7,0H11.16a.429.429,0,0,0,.48-.432.818.818,0,0,0-.1-.384L8.76-6.48a.885.885,0,0,1-.12-.408c0-.216.192-.384.5-.576a4.746,4.746,0,0,0,2.5-4.3A4.893,4.893,0,0,0,6.6-16.8H2.28a.481.481,0,0,0-.48.48V-.48A.481.481,0,0,0,2.28,0ZM4.32-9a.227.227,0,0,1-.24-.24v-5.04a.227.227,0,0,1,.24-.24H6.6a2.6,2.6,0,0,1,2.688,2.76A2.6,2.6,0,0,1,6.6-9ZM18.624.24a4.956,4.956,0,0,0,5.04-5.064,4.2,4.2,0,0,0-1.9-3.72c-.216-.144-.216-.36.024-.576A4.231,4.231,0,0,0,23.3-12.408a4.371,4.371,0,0,0-4.632-4.632,4.422,4.422,0,0,0-4.728,4.392v.6a.481.481,0,0,0,.48.48h1.3a.481.481,0,0,0,.48-.48v-.36a2.356,2.356,0,0,1,2.472-2.472,2.228,2.228,0,0,1,2.352,2.472,2.352,2.352,0,0,1-2.4,2.52h-.48a.481.481,0,0,0-.48.48v1.272a.481.481,0,0,0,.48.48h.48a2.627,2.627,0,0,1,2.76,2.832,2.685,2.685,0,0,1-2.76,2.9A2.684,2.684,0,0,1,15.84-4.752V-4.92a.481.481,0,0,0-.48-.48H14.04a.481.481,0,0,0-.48.48v.408A4.883,4.883,0,0,0,18.624.24Z"
-       transform="translate(2512.154 1975.454)"
-       fill="#747474" />
     <path
        id="path_4780"
        d="M 0,0 168.98327,0.02680043"
@@ -443,138 +433,6 @@
        sodipodi:nodetypes="csccc"
        inkscape:highlight-color="#535353"
        style="stroke:#b2b2b2;stroke-opacity:0.165493" />
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2835.1978"
-       y="1551.9933"
-       id="text601-5-3"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5"
-         x="2835.1978"
-         y="1551.9933"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">R2</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2835.1978"
-       y="1620.1455"
-       id="text601-5-3-8"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-7"
-         x="2835.1978"
-         y="1620.1455"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">R1</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2837.0564"
-       y="1677.5518"
-       id="text601-5-3-04-1"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-1-1"
-         x="2837.0564"
-         y="1677.5518"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">TRIAN.</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2835.991"
-       y="1745.9158"
-       id="text601-5-3-04-1-1"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-1-1-8"
-         x="2835.991"
-         y="1745.9158"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">CIRCLE</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2837.283"
-       y="1854.9636"
-       id="text601-5-3-04-1-1-4"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-1-1-8-5"
-         x="2837.283"
-         y="1854.9636"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">X</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2836.2178"
-       y="1799.3341"
-       id="text601-5-3-04-1-1-4-6"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-1-1-8-5-8"
-         x="2836.2178"
-         y="1799.3341"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">SQUARE</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="1949.2426"
-       y="1550.2762"
-       id="text601"><tspan
-         sodipodi:role="line"
-         id="tspan599"
-         x="1949.2426"
-         y="1550.2762"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">L2</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="1949.2426"
-       y="1617.2509"
-       id="text601-5"><tspan
-         sodipodi:role="line"
-         id="tspan599-9"
-         x="1949.2426"
-         y="1617.2509"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">L1</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="1940.0132"
-       y="1687.4222"
-       id="text601-5-3-04"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-1"
-         x="1940.0132"
-         y="1687.4222"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">UP</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="1896.234"
-       y="1876.6207"
-       id="text601-5-3-04-4"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-1-7"
-         x="1896.234"
-         y="1876.6207"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">DOWN</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="1904.2009"
-       y="1813.7566"
-       id="text601-5-3-04-4-1"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-1-7-4"
-         x="1904.2009"
-         y="1813.7566"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">RIGHT</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="1921.6227"
-       y="1747.7432"
-       id="text601-5-3-04-4-1-0"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-1-7-4-4"
-         x="1921.6227"
-         y="1747.7432"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">LEFT</tspan></text>
     <path
        id="path_4986-1"
        d="m 1976.9234,1680.0283 h 192.0587"
@@ -635,39 +493,6 @@
        stroke="#747474"
        stroke-linecap="round"
        stroke-width="2" />
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2403.9124"
-       y="1575.3477"
-       id="text601-5-3-0-9"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-4-2"
-         x="2403.9124"
-         y="1575.3477"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">T</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2508.4893"
-       y="1560.9933"
-       id="text601-5-3-0"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-4"
-         x="2508.4893"
-         y="1560.9933"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">OPTIONS</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:22.6667px;fill:#000000"
-       x="2232.0913"
-       y="1561.5312"
-       id="text601-5-3-0-4"><tspan
-         sodipodi:role="line"
-         id="tspan599-9-5-4-1"
-         x="2232.0913"
-         y="1561.5312"
-         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Medium';fill:#808080">CREATE</tspan></text>
     <path
        id="path_4986"
        d="M 2832.2865,1668.3937 H 2654.564"
@@ -683,16 +508,5 @@
        stroke-linecap="round"
        stroke-width="3.77082"
        style="stroke-width:1.98891;stroke-dasharray:none" />
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22.6667px;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline Bold';fill:#808080"
-       x="2398.002"
-       y="1969.5385"
-       id="text1111"><tspan
-         sodipodi:role="line"
-         id="tspan1109"
-         x="2398.002"
-         y="1969.5385"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Fira Mono for Powerline';-inkscape-font-specification:'Fira Mono for Powerline'">PS</tspan></text>
   </g>
 </svg>
