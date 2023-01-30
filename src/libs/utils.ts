@@ -12,16 +12,16 @@ export const isEqual = (obj1: any, obj2: any): boolean => {
   return JSON.stringify(obj1) === JSON.stringify(obj2)
 }
 
-export const round = (value: number, places = 2): number => {
+export const round = (value: number, places = 0): number => {
   const power = Math.pow(10, places)
   return Math.round(value * power) / power
 }
 
 export const range = (min: number, max: number): number[] => {
-  const len = round(max, 0) - round(min, 0) + 1
+  const len = round(max) - round(min) + 1
   const arr = new Array(len)
   for (let i = 0; i < len; i++) {
-    arr[i] = round(min, 0) + i
+    arr[i] = round(min) + i
   }
   return arr
 }
