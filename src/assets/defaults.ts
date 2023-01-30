@@ -17,6 +17,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.DepthHUD,
             position: { x: 0.88, y: 0.18 },
             size: { width: 0.1, height: 0.62 },
+            managerVars: { timesMounted: 0 },
             options: {
               showDepthValue: true,
               hudColor: '#FFFFFF',
@@ -28,6 +29,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.PowerBar,
             position: { x: 0.1, y: 0.03 },
             size: { width: 0.8, height: 0.12 },
+            managerVars: { timesMounted: 0 },
             options: {},
           },
           {
@@ -36,6 +38,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.Attitude,
             position: { x: 0.14, y: 0.2 },
             size: { width: 0.72, height: 0.6 },
+            managerVars: { timesMounted: 0 },
             options: {
               showRollPitchValues: true,
               desiredAimRadius: 180,
@@ -49,6 +52,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.HudCompass,
             position: { x: 0.2, y: 0.85 },
             size: { width: 0.6, height: 0.12 },
+            managerVars: { timesMounted: 0 },
             options: {
               showYawValue: true,
               yawGainFactor: 150,
@@ -67,6 +71,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.VideoPlayer,
             position: { x: 0, y: 0 },
             size: { width: 1, height: 1 },
+            managerVars: { timesMounted: 0 },
             options: {
               videoFitStyle: 'cover',
               flipHorizontally: false,

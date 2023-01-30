@@ -43,6 +43,15 @@ export type Widget = {
    * Internal options of the widget
    */
   options: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  /**
+   * External variables used by the widget manager
+   */
+  managerVars: {
+    /**
+     * Number of times the widget was mounted
+     */
+    timesMounted: number
+  }
 }
 
 export type Layer = {
