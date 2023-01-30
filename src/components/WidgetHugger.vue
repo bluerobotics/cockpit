@@ -1,9 +1,9 @@
 <template>
   <div v-if="devStore.developmentMode" class="widgetOverlay dev-info">
-    <p>Position: {{ 100 * position.x }} x {{ 100 * position.y }} %</p>
-    <p>Size: {{ 100 * size.width }} x {{ 100 * size.height }} %</p>
-    <p>Position: {{ position.x * windowWidth }} x {{ position.y * windowHeight }} px</p>
-    <p>Size: {{ size.width * windowWidth }} x {{ size.height * windowHeight }} px</p>
+    <p>Position: {{ round(100 * position.x, 2) }} x {{ round(100 * position.y, 2) }} %</p>
+    <p>Size: {{ round(100 * size.width, 2) }} x {{ round(100 * size.height, 2) }} %</p>
+    <p>Position: {{ round(position.x * windowWidth) }} x {{ round(position.y * windowHeight) }} px</p>
+    <p>Size: {{ round(size.width * windowWidth) }} x {{ round(size.height * windowHeight) }} px</p>
     <p>Client size: {{ innerWidgetRef?.clientWidth }} x {{ innerWidgetRef?.clientHeight }} px</p>
     <p>Offset size: {{ innerWidgetRef?.offsetWidth }} x {{ innerWidgetRef?.offsetHeight }} px</p>
     <p>Scroll size: {{ innerWidgetRef?.scrollWidth }} x {{ innerWidgetRef?.scrollHeight }} px</p>
@@ -85,7 +85,7 @@ import { useConfirmDialog, useElementBounding, useElementHover, useMouseInElemen
 import { type Ref, computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
-import { constrain, isEqual } from '@/libs/utils'
+import { constrain, isEqual, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { Widget } from '@/types/widgets'
