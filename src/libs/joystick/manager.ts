@@ -95,11 +95,11 @@ export namespace JoystickDetail {
   }
 }
 
-export type JoystickEvent = {
+export type JoystickAxisEvent = {
   /**
    * Event type
    */
-  type: EventType
+  type: EventType.Axis
   /**
    * Detail information about the event
    */
@@ -126,6 +126,76 @@ export type JoystickEvent = {
     value: number
   }
 }
+
+export type JoystickButtonEvent = {
+  /**
+   * Event type
+   */
+  type: EventType.Button
+  /**
+   * Detail information about the event
+   */
+  detail: {
+    /**
+     * Joystick index
+     */
+    index: number
+    /**
+     * Gamepad object
+     */
+    gamepad: Gamepad
+    /**
+     * Button number
+     */
+    button: number
+    /**
+     * Pressing state
+     */
+    pressed: boolean
+    /**
+     * Axis value
+     */
+    value: number
+  }
+}
+
+export type JoysticConnectEvent = {
+  /**
+   * Event type
+   */
+  type: EventType.Connected
+  /**
+   * Detail information about the event
+   */
+  detail: {
+    /**
+     * Joystick index
+     */
+    index: number
+    /**
+     * Gamepad object
+     */
+    gamepad: Gamepad
+  }
+}
+
+export type JoysticDisconnectEvent = {
+  /**
+   * Event type
+   */
+  type: EventType.Disconnected
+  /**
+   * Detail information about the event
+   */
+  detail: {
+    /**
+     * Joystick index
+     */
+    index: number
+  }
+}
+
+export type JoystickEvent = JoystickAxisEvent | JoystickButtonEvent | JoysticConnectEvent | JoysticDisconnectEvent
 
 type callbackJoystickStateEventType = (event: JoystickEvent) => void
 type callbackJoystickEventType = (event: Map<number, Gamepad>) => void
@@ -283,11 +353,13 @@ class JoystickManager {
   private connectEvents(): void {
     for (const name of EventType.events()) {
       this.gamepadListener.on(`gamepad:${name}`, (event: GamepadEvent) => {
-        const eventType = name as EventType
         const joystickEvent = event as JoystickEvent
-        joystickEvent.type = EventType.fromGamepadEventType(joystickEvent.type)
+        const typeEnum = EventType.fromGamepadEventType(joystickEvent.type)
 
-        if ([EventType.Connected, EventType.Disconnected].includes(eventType)) {
+        if (typeEnum === EventType.Unknown) return
+        joystickEvent.type = typeEnum
+
+        if (joystickEvent.type === EventType.Connected || joystickEvent.type === EventType.Disconnected) {
           this.processJoystickUpdate(joystickEvent)
           return
         }
