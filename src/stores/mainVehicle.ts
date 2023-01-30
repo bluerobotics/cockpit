@@ -169,6 +169,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     disarm,
     modesAvailable,
     setFlightMode,
+    sendGcsHeartbeat,
     mainConnectionURI,
     cpuLoad,
     lastHeartbeat,
