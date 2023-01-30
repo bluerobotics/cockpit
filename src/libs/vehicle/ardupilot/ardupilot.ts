@@ -10,8 +10,10 @@ import {
   MavType,
 } from '@/libs/connection/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
+import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
 import { type PageDescription, Altitude, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
+import { ProtocolControllerState } from '@/types/joystick'
 
 import * as Vehicle from '../vehicle'
 
@@ -314,6 +316,25 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   powerSupply(): PowerSupply {
     return this._powerSupply
+  }
+
+  /**
+   * Send manual control
+   *
+   * @param {'ProtocolControllerState'} controllerState Current state of the controller
+   */
+  sendManualControl(controllerState: ProtocolControllerState): void {
+    const state = controllerState as MavlinkControllerState
+    const manualControlMessage: Message.ManualControl = {
+      type: MAVLinkType.MANUAL_CONTROL,
+      x: state.x,
+      y: state.y,
+      z: state.z,
+      r: state.r,
+      buttons: state.buttons,
+      target: 1,
+    }
+    this.write(manualControlMessage)
   }
 
   /**
