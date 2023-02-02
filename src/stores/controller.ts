@@ -48,62 +48,55 @@ export const useControllerStore = defineStore('controller', () => {
   }
 
   const processJoystickStateEvent = (event: JoystickEvent): void => {
-    if (event.type !== EventType.Axis && event.type !== EventType.Button) return
-    const index = event.detail.index
-    const gamepad = event.detail.gamepad
-
-    // Map not updated by manager yet
-    if (!joysticks.value.has(index)) return
-
-    joysticks.value.get(index)!.gamepad = gamepad
-
-    const model = joystickManager.getModel(gamepad)
-    joysticks.value.get(index)!.model = model
+    const joystick = joysticks.value.get(event.detail.index)
+    if (joystick === undefined || (event.type !== EventType.Axis && event.type !== EventType.Button)) return
+    joystick.gamepad = event.detail.gamepad
+    joystick.model = joystickManager.getModel(joystick.gamepad)
 
     const newValues = new JoystickValues()
     // Map Gamepad API inputs to known functions
-    if (model === JoystickModel.DualSense) {
-      newValues.leftAxisHorizontal = gamepad.axes[0]
-      newValues.leftAxisVertical = gamepad.axes[1]
-      newValues.rightAxisHorizontal = gamepad.axes[2]
-      newValues.rightAxisVertical = gamepad.axes[3]
+    if (joystick.model === JoystickModel.DualSense) {
+      newValues.leftAxisHorizontal = joystick.gamepad.axes[0]
+      newValues.leftAxisVertical = joystick.gamepad.axes[1]
+      newValues.rightAxisHorizontal = joystick.gamepad.axes[2]
+      newValues.rightAxisVertical = joystick.gamepad.axes[3]
     } else {
-      newValues.leftAxisHorizontal = gamepad.axes[2]
-      newValues.leftAxisVertical = gamepad.axes[3]
-      newValues.rightAxisHorizontal = gamepad.axes[0]
-      newValues.rightAxisVertical = gamepad.axes[1]
+      newValues.leftAxisHorizontal = joystick.gamepad.axes[2]
+      newValues.leftAxisVertical = joystick.gamepad.axes[3]
+      newValues.rightAxisHorizontal = joystick.gamepad.axes[0]
+      newValues.rightAxisVertical = joystick.gamepad.axes[1]
     }
 
-    newValues.directionalTopButton = gamepad.buttons[12]?.pressed
-    newValues.directionalBottomButton = gamepad.buttons[13]?.pressed
-    newValues.directionalLeftButton = gamepad.buttons[14]?.pressed
-    newValues.directionalRightButton = gamepad.buttons[15]?.pressed
+    newValues.directionalTopButton = joystick.gamepad.buttons[12]?.pressed
+    newValues.directionalBottomButton = joystick.gamepad.buttons[13]?.pressed
+    newValues.directionalLeftButton = joystick.gamepad.buttons[14]?.pressed
+    newValues.directionalRightButton = joystick.gamepad.buttons[15]?.pressed
 
-    newValues.rightClusterTopButton = gamepad.buttons[3]?.pressed
-    newValues.rightClusterBottomButton = gamepad.buttons[0]?.pressed
-    newValues.rightClusterLeftButton = gamepad.buttons[2]?.pressed
-    newValues.rightClusterRightButton = gamepad.buttons[1]?.pressed
+    newValues.rightClusterTopButton = joystick.gamepad.buttons[3]?.pressed
+    newValues.rightClusterBottomButton = joystick.gamepad.buttons[0]?.pressed
+    newValues.rightClusterLeftButton = joystick.gamepad.buttons[2]?.pressed
+    newValues.rightClusterRightButton = joystick.gamepad.buttons[1]?.pressed
 
-    newValues.leftShoulderButton = gamepad.buttons[4]?.pressed
-    newValues.leftTriggerButton = gamepad.buttons[6]?.pressed
-    newValues.leftStickerButton = gamepad.buttons[11]?.pressed
+    newValues.leftShoulderButton = joystick.gamepad.buttons[4]?.pressed
+    newValues.leftTriggerButton = joystick.gamepad.buttons[6]?.pressed
+    newValues.leftStickerButton = joystick.gamepad.buttons[11]?.pressed
 
-    newValues.rightShoulderButton = gamepad.buttons[5]?.pressed
-    newValues.rightTriggerButton = gamepad.buttons[7]?.pressed
-    newValues.rightStickerButton = gamepad.buttons[10]?.pressed
+    newValues.rightShoulderButton = joystick.gamepad.buttons[5]?.pressed
+    newValues.rightTriggerButton = joystick.gamepad.buttons[7]?.pressed
+    newValues.rightStickerButton = joystick.gamepad.buttons[10]?.pressed
 
-    newValues.extraButton1 = gamepad.buttons[8]?.pressed
-    newValues.extraButton2 = gamepad.buttons[9]?.pressed
-    newValues.extraButton3 = gamepad.buttons[16]?.pressed
-    newValues.extraButton4 = gamepad.buttons[17]?.pressed
-    newValues.extraButton5 = gamepad.buttons[18]?.pressed
+    newValues.extraButton1 = joystick.gamepad.buttons[8]?.pressed
+    newValues.extraButton2 = joystick.gamepad.buttons[9]?.pressed
+    newValues.extraButton3 = joystick.gamepad.buttons[16]?.pressed
+    newValues.extraButton4 = joystick.gamepad.buttons[17]?.pressed
+    newValues.extraButton5 = joystick.gamepad.buttons[18]?.pressed
 
-    joysticks.value.get(index)!.values = newValues
+    joystick.values = newValues
 
     let newControllerState: ProtocolControllerState | undefined
     if (mappingProtocol.value === JoystickProtocol.MAVLink) {
       const mavlinkMapping = mapping.value as MavlinkControllerMapping
-      newControllerState = new MavlinkControllerState(gamepad, mavlinkMapping)
+      newControllerState = new MavlinkControllerState(joystick.gamepad, mavlinkMapping)
     }
 
     if (newControllerState === undefined) return
