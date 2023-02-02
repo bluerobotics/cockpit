@@ -14,6 +14,21 @@ RUN wget https://github.com/TheWaWaR/simple-http-server/releases/download/v0.6.6
     -O /usr/bin/simple-http-server
 RUN chmod +x /usr/bin/simple-http-server
 
+LABEL permissions '{\
+  "ExposedPorts": {\
+    "8000/tcp": {}\
+  },\
+  "HostConfig": {\
+    "PortBindings": {\
+      "8000/tcp": [\
+        {\
+          "HostPort": ""\
+        }\
+      ]\
+    }\
+  }\
+}'
+
 # Copy frontend built on frontendBuild to this stage
 COPY --from=frontendBuilder /frontend/dist /cockpit
 ENTRYPOINT ["simple-http-server", "--index", "cockpit"]
