@@ -37,6 +37,7 @@ export const useControllerStore = defineStore('controller', () => {
     // Add new joysticks
     for (const [index, joystick] of newMap) {
       if (joysticks.value.has(index)) continue
+      joystick.model = joystickManager.getModel(joystick.gamepad)
       joysticks.value.set(index, joystick)
     }
 
@@ -51,7 +52,6 @@ export const useControllerStore = defineStore('controller', () => {
     const joystick = joysticks.value.get(event.detail.index)
     if (joystick === undefined || (event.type !== EventType.Axis && event.type !== EventType.Button)) return
     joystick.gamepad = event.detail.gamepad
-    joystick.model = joystickManager.getModel(joystick.gamepad)
 
     const newValues = new JoystickValues()
     // Map Gamepad API inputs to known functions
