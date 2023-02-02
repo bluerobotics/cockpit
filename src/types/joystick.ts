@@ -52,7 +52,7 @@ export class ProtocolControllerState {}
 export class Joystick {
   gamepad: Gamepad
   values = new JoystickValues()
-  model = JoystickModel.DualSense
+  model = JoystickModel.Unknown
 
   /**
    * Create joystick component
