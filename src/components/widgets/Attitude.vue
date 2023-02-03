@@ -56,7 +56,7 @@ import { useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
-import { constrain, degrees, radians, round } from '@/libs/utils'
+import { constrain, degrees, radians, resetCanvas, round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
@@ -164,7 +164,7 @@ const renderCanvas = (): void => {
     return
   }
   const ctx = canvasContext.value
-  ctx.reset()
+  resetCanvas(ctx)
 
   const halfCanvasWidth = 0.5 * canvasSize.value.width
   const halfCanvasHeight = 0.5 * canvasSize.value.height
