@@ -55,3 +55,9 @@ export const scale = (
 ): number => {
   return ((input - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin) + outputMin
 }
+
+export const resetCanvas = (context: CanvasRenderingContext2D): void => {
+  context.setTransform(1, 0, 0, 1, 0, 0)
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+  context.globalCompositeOperation = 'source-over'
+}
