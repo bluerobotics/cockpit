@@ -1,6 +1,7 @@
 coverage/
 dist/
 node_modules/
+dev-dist/
 
 cypress/fixtures/
 cypress/videos/
