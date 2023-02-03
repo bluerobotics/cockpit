@@ -41,7 +41,7 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
-import { constrain, range, round } from '@/libs/utils'
+import { constrain, range, resetCanvas, round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
@@ -137,7 +137,7 @@ const renderCanvas = (): void => {
   const ctx = canvasContext.value
   const canvasWidth = canvasSize.value.width
   const canvasHeight = canvasSize.value.height
-  ctx.reset()
+  resetCanvas(ctx)
 
   const linesFontSize = 12
   const refFontSize = 16
