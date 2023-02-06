@@ -180,17 +180,18 @@ const renderCanvas = (): void => {
   // Draw line for each angle
   for (const [angle, x] of Object.entries(renderVars.yawLinesX)) {
     if (x < -90 || x > 90) continue
-    const position = (widget.value.options.yawGainFactor * radians(x)) / Math.cos(radians(x))
+    const angleOffsetX = (widget.value.options.yawGainFactor * radians(x)) / Math.cos(radians(x))
+    const anglePositionX = halfCanvasWidth + angleOffsetX
     ctx.beginPath()
-    ctx.moveTo(halfCanvasWidth + position, refFontSize + stdPad + refTriangleSize + stdPad)
-    ctx.lineTo(halfCanvasWidth + position, canvasSize.value.height - linesFontSize - stdPad - minorLinesGap)
+    ctx.moveTo(anglePositionX, refFontSize + stdPad + refTriangleSize + stdPad)
+    ctx.lineTo(anglePositionX, canvasSize.value.height - linesFontSize - stdPad - minorLinesGap)
     ctx.lineWidth = '1'
 
     // For angles that are multiple of 15 degrees, use a bolder line and write angle down
     if (Number(angle) % 15 === 0) {
       ctx.lineWidth = '2'
-      ctx.lineTo(halfCanvasWidth + position, canvasSize.value.height - linesFontSize - stdPad)
-      ctx.fillText(angleRender(Number(angle)), halfCanvasWidth + position, canvasSize.value.height - stdPad)
+      ctx.lineTo(anglePositionX, canvasSize.value.height - linesFontSize - stdPad)
+      ctx.fillText(angleRender(Number(angle)), anglePositionX, canvasSize.value.height - stdPad)
     }
     ctx.stroke()
   }
