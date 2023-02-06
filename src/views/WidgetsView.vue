@@ -129,11 +129,7 @@ watch(notHoveringMainMenu, (isNotHovering) => {
 })
 
 const showMainMenu = (show: boolean): void => {
-  if (show) {
-    gsap.to('.main-menu', { x: 370, duration: 0.25 })
-  } else {
-    gsap.to('.main-menu', { x: -300, duration: 0.25 })
-  }
+  gsap.to('.main-menu', show ? { x: 370, duration: 0.25 } : { x: -300, duration: 0.25 })
 }
 
 // TODO: Make this work
