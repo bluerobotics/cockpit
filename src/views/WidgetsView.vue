@@ -10,7 +10,7 @@
   </div>
   <SnappingGrid v-if="showGrid && editingMode" :grid-interval="gridInterval" class="snapping-grid" />
   <EditMenu v-model:edit-mode="editingMode" v-model:show-grid="showGrid" />
-  <div class="widgets-view">
+  <div ref="widgetsView" class="widgets-view">
     <div v-for="layer in store.currentProfile.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
       <template v-for="widget in layer.widgets.slice().reverse()" :key="widget">
         <WidgetHugger
@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMouse, useMouseInElement } from '@vueuse/core'
+import { SwipeDirection, useMouse, useMouseInElement, useSwipe } from '@vueuse/core'
 import gsap from 'gsap'
 import {
   // type AsyncComponentLoader,
@@ -111,6 +111,8 @@ const showGrid = ref(true)
 const gridInterval = ref(0.01)
 const mainMenu = ref()
 const showConfigurationMenu = ref(false)
+const widgetsView = ref()
+const { isSwiping, direction: swipeDirection } = useSwipe(widgetsView)
 
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
@@ -129,6 +131,13 @@ const showMainMenuButton = (show: boolean): void => {
 const showMainMenu = (show: boolean): void => {
   gsap.to('.main-menu', show ? { x: 370, duration: 0.25 } : { x: -300, duration: 0.25 })
 }
+
+watch(isSwiping, () => {
+  if (!isSwiping.value || [SwipeDirection.NONE, null].includes(swipeDirection.value)) return
+  if ([SwipeDirection.LEFT, SwipeDirection.RIGHT].includes(swipeDirection.value as SwipeDirection)) {
+    showMainMenu(swipeDirection.value === SwipeDirection.RIGHT)
+  }
+})
 
 // TODO: Make this work
 // This function allows us to load any component without declaring it in the template, just
