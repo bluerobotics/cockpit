@@ -52,15 +52,16 @@ const levelColor = (level: AlertLevel): string => {
 
 <style scoped>
 .main-sheet {
-  width: 400px;
-  height: 84%;
+  min-width: 300px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin: 10px;
-  padding: 6px;
+  margin: 0.5ch;
+  padding: 0.3ch;
   white-space: nowrap;
+  overflow: hidden;
 }
 .main-sheet p {
   color: rgb(60, 60, 60);
