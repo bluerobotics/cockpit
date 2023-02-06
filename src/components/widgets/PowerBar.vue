@@ -88,6 +88,7 @@ vehicleUnsubscribe = vehicleStore.$subscribe(() => {
 
 <style scoped>
 .topbar {
+  min-width: 650px;
   width: 100%;
   backdrop-filter: blur(1px);
 }
