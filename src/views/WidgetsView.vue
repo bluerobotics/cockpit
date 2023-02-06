@@ -114,19 +114,17 @@ const showConfigurationMenu = ref(false)
 
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
-watch(mouseNearMainButton, (isNear) => {
-  if (isNear) {
-    gsap.to('.main-menu-button', { x: 175, duration: 0.25 })
-  } else {
-    gsap.to('.main-menu-button', { x: -200, duration: 0.25 })
-  }
-})
+watch(mouseNearMainButton, (isNear) => showMainMenuButton(isNear))
 
 watch(notHoveringMainMenu, (isNotHovering) => {
   if (isNotHovering) {
     showMainMenu(false)
   }
 })
+
+const showMainMenuButton = (show: boolean): void => {
+  gsap.to('.main-menu-button', show ? { x: 175, duration: 0.25 } : { x: -200, duration: 0.25 })
+}
 
 const showMainMenu = (show: boolean): void => {
   gsap.to('.main-menu', show ? { x: 370, duration: 0.25 } : { x: -300, duration: 0.25 })
