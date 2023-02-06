@@ -23,28 +23,6 @@ export default defineConfig({
         enabled: true,
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-      manifest: {
-        name: 'Cocopit',
-        short_name: 'Cocopit',
-        description: `An intuitive and customizable cross-platform ground control
-          station for remote vehicles of all types.`,
-        theme_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'landscape',
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-        ],
-      },
     }),
   ],
   define: { 'process.env': {} },
