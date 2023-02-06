@@ -1,26 +1,25 @@
 <template>
   <v-sheet class="topbar" color="rgba(255, 255, 255, 0.8)">
     <v-row align="center" justify="center" no-gutters>
-      <v-col>
+      <v-col class="flex-shrink-1">
         <div class="col-container">
           <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline)" variant="text" />
 
           <v-switch
             v-model="vehicleStore.isArmed"
             :disabled="!vehicleStore.isVehicleOnline"
-            class="mx-1 flex-grow-0"
+            class="mx-1"
             color="red-darken-3"
-            :label="`${vehicleStore.isArmed ? 'Armed' : 'Disarmed'}`"
             :loading="vehicleStore.isArmed === undefined"
             hide-details
             @update:model-value="vehicleStore.isArmed ? vehicleStore.arm() : vehicleStore.disarm()"
           />
         </div>
       </v-col>
-      <v-col>
+      <v-col class="flex-grow-1">
         <Alerter />
       </v-col>
-      <v-col>
+      <v-col class="flex-shrink-1">
         <div class="col-container">
           <v-select
             v-model="flightMode"
@@ -30,7 +29,7 @@
             variant="outlined"
             no-data-text="Waiting for available modes."
             hide-details
-            class="mx-1 flex-grow-0 mode-select"
+            class="mx-1 mode-select"
             :loading="vehicleStore.mode !== flightMode"
           />
           <v-btn :icon="'mdi-controller'" :color="getColor(joystickConnected)" variant="text" />
