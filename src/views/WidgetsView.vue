@@ -111,7 +111,6 @@ const showGrid = ref(true)
 const gridInterval = ref(0.01)
 const mainMenu = ref()
 const showConfigurationMenu = ref(false)
-const isShowingMainMenu = ref(false)
 
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
@@ -132,10 +131,8 @@ watch(notHoveringMainMenu, (isNotHovering) => {
 const showMainMenu = (show: boolean): void => {
   if (show) {
     gsap.to('.main-menu', { x: 370, duration: 0.25 })
-    isShowingMainMenu.value = true
   } else {
     gsap.to('.main-menu', { x: -300, duration: 0.25 })
-    isShowingMainMenu.value = false
   }
 }
 
