@@ -396,6 +396,10 @@ const positionStyle = computed(() => ({
   top: `${100 * widgetFinalPosition.value.y}%`,
 }))
 
+const overlayDisplayStyle = computed(() => {
+  return allowMoving.value || allowResizing.value ? 'block' : 'none'
+})
+
 const cursorStyle = computed(() => {
   if (!allowMoving.value) {
     return 'default'
@@ -425,6 +429,7 @@ onBeforeUnmount(() => clearInterval(wallRespecterInterval))
   width: calc(v-bind('sizeStyle.width') + 2 * var(--overlayOverSize));
   height: calc(v-bind('sizeStyle.height') + 2 * var(--overlayOverSize));
   user-select: none;
+  display: v-bind('overlayDisplayStyle');
 }
 .dev-info {
   background-color: rgba(255, 255, 255, 0.3);
