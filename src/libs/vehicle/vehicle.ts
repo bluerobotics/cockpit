@@ -1,4 +1,5 @@
-import global from '@/libs/cosmos'
+import { v4 as uuid4 } from 'uuid'
+
 import * as FunnyName from '@/libs/funny-name/funny-name'
 import { Signal } from '@/libs/signal'
 import type { Altitude, Attitude, Battery, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
@@ -75,7 +76,7 @@ export abstract class AbstractVehicle<Modes> {
     this._type = type
 
     unimplemented('We need to have a better way to generate a unique id based on the vehicle hardware')
-    this._cockpitRegistrationUUID = global.crypto.randomUUID()
+    this._cockpitRegistrationUUID = uuid4()
     this._funnyName = FunnyName.generate(toFunnyNameType(type))
 
     console.info(
