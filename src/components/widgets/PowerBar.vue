@@ -22,7 +22,7 @@
       <v-col class="flex-shrink-1">
         <div class="col-container">
           <v-select
-            v-model="flightMode"
+            v-model="vehicleStore.mode"
             :disabled="!vehicleStore.isVehicleOnline"
             :items="flightModes"
             density="compact"
@@ -30,7 +30,7 @@
             no-data-text="Waiting for available modes."
             hide-details
             class="mx-1 mode-select"
-            :loading="vehicleStore.mode !== flightMode"
+            @update:model-value="(newMode: string) => vehicleStore.setFlightMode(newMode)"
           />
           <v-btn :icon="'mdi-controller'" :color="getColor(joystickConnected)" variant="text" />
         </div>
@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { joystickManager } from '@/libs/joystick/manager'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -49,7 +49,6 @@ import Alerter from './Alerter.vue'
 
 const vehicleStore = useMainVehicleStore()
 
-const flightMode = ref()
 const joystickConnected = ref<boolean>(false)
 
 onMounted(() => {
@@ -68,22 +67,6 @@ const getColor = (isGreen: boolean): string => {
 
 const vehicleIcon = computed(() => vehicleStore.icon)
 const flightModes = computed(() => vehicleStore.modesAvailable())
-
-watch(flightMode, async (newMode) => {
-  if (newMode === vehicleStore.mode) {
-    return
-  }
-
-  vehicleStore.setFlightMode(newMode)
-})
-
-// Deal with initial vehicle state
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let vehicleUnsubscribe: any = undefined
-vehicleUnsubscribe = vehicleStore.$subscribe(() => {
-  flightMode.value = vehicleStore.mode
-  vehicleUnsubscribe()
-})
 </script>
 
 <style scoped>
