@@ -85,7 +85,7 @@ const flightModes = computed(() => vehicleStore.modesAvailable())
   align-items: center;
   justify-content: space-around;
   width: 100%;
-  padding: 5px;
+  padding: 7px;
 }
 
 .v-input--horizontal {
