@@ -191,7 +191,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         this._cpuLoad = sysStatus.load / 10 // Permille CPU usage
         this.onCpuLoad.emit()
 
-        this._powerSupply.voltage = sysStatus.voltage_battery / 100 // centVolts to Volts
+        this._powerSupply.voltage = sysStatus.voltage_battery / 1000 // milliVolts to Volts
         this._powerSupply.current = sysStatus.current_battery === -1 ? undefined : sysStatus.current_battery / 100 // centAmps, -1 if not available
         this._powerSupply.remaining = sysStatus.battery_remaining === -1 ? undefined : sysStatus.battery_remaining // -1 if not available
         this.onPowerSupply.emit()
