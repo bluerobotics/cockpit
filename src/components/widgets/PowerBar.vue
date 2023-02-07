@@ -3,7 +3,7 @@
     <v-row align="center" justify="center" no-gutters>
       <v-col class="flex-shrink-1">
         <div class="col-container">
-          <v-btn :icon="vehicleIcon ?? 'mdi-help'" :color="getColor(vehicleStore.isVehicleOnline)" variant="text" />
+          <v-icon class="ma-2" :color="getColor(vehicleStore.isVehicleOnline)">{{ vehicleIcon ?? 'mdi-help' }}</v-icon>
 
           <v-switch
             v-model="vehicleStore.isArmed"
@@ -32,7 +32,7 @@
             class="mx-1 mode-select"
             @update:model-value="(newMode: string) => vehicleStore.setFlightMode(newMode)"
           />
-          <v-btn :icon="'mdi-controller'" :color="getColor(joystickConnected)" variant="text" />
+          <v-icon class="ma-2" :color="getColor(joystickConnected)">mdi-controller</v-icon>
         </div>
       </v-col>
     </v-row>
