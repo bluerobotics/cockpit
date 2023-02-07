@@ -52,14 +52,11 @@ const levelColor = (level: AlertLevel): string => {
 
 <style scoped>
 .main-sheet {
-  min-width: 300px;
-  width: 100%;
+  min-width: 45ch;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  margin: 0.5ch;
-  padding: 0.3ch;
+  padding: 0.5ch 1.5ch;
   white-space: nowrap;
   overflow: hidden;
 }
