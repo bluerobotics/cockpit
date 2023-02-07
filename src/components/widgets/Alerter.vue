@@ -61,6 +61,6 @@ const levelColor = (level: AlertLevel): string => {
   overflow: hidden;
 }
 .main-sheet p {
-  color: rgb(60, 60, 60);
+  color: whitesmoke;
 }
 </style>
