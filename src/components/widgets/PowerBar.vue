@@ -1,5 +1,5 @@
 <template>
-  <v-sheet class="topbar" color="rgba(255, 255, 255, 0.8)">
+  <v-sheet class="topbar flex-centered" color="rgba(255, 255, 255, 0.8)">
     <v-row align="center" justify="center" no-gutters>
       <v-col class="flex-shrink-1">
         <div class="col-container">
