@@ -94,6 +94,10 @@ const flightModes = computed(() => vehicleStore.modesAvailable())
   grid-template-rows: none;
 }
 .mode-select {
-  min-width: 190px;
+  min-width: 19ch;
+  max-width: 20ch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
