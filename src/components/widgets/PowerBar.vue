@@ -8,7 +8,7 @@
           <v-switch
             v-model="vehicleStore.isArmed"
             :disabled="!vehicleStore.isVehicleOnline"
-            class="mx-1"
+            class="mx-1 arm-switch"
             color="red-darken-3"
             :loading="vehicleStore.isArmed === undefined"
             hide-details
@@ -96,6 +96,13 @@ const flightModes = computed(() => vehicleStore.modesAvailable())
 .mode-select {
   min-width: 19ch;
   max-width: 20ch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.arm-switch {
+  max-width: 7ch;
+  max-height: 3ch;
   display: flex;
   align-items: center;
   justify-content: center;
