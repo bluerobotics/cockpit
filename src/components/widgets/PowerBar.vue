@@ -1,5 +1,5 @@
 <template>
-  <v-sheet class="topbar flex-centered" color="rgba(255, 255, 255, 0.8)">
+  <v-sheet class="topbar flex-centered" color="rgba(255, 255, 255, 0.1)">
     <v-row align="center" justify="center" no-gutters>
       <v-col class="flex-shrink-1">
         <div class="col-container">
@@ -25,6 +25,7 @@
             v-model="vehicleStore.mode"
             :disabled="!vehicleStore.isVehicleOnline"
             :items="flightModes"
+            bg-color="rgb(255, 255, 255, 0.5)"
             density="compact"
             variant="outlined"
             no-data-text="Waiting for available modes."
