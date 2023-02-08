@@ -38,6 +38,7 @@
             no-data-text="Waiting for available modes."
             hide-details
             class="mx-1 mode-select"
+            :loading="vehicleStore.mode === undefined"
             @update:model-value="(newMode: string) => vehicleStore.setFlightMode(newMode)"
           />
           <v-icon
