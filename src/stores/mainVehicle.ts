@@ -33,7 +33,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const configurationPages = ref<PageDescription[]>([])
   const timeNow = useTimestamp({ interval: 100 })
 
-  const mode = ref<string>()
+  const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const modes = ref<Map<string, any>>()
 
