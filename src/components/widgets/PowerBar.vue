@@ -3,7 +3,13 @@
     <v-row align="center" justify="center" no-gutters>
       <v-col class="flex-shrink-1">
         <div class="col-container">
-          <v-icon class="ma-2" :color="getColor(vehicleStore.isVehicleOnline)">{{ vehicleIcon ?? 'mdi-help' }}</v-icon>
+          <v-icon
+            v-tooltip.bottom="vehicleStore.isVehicleOnline ? 'Vehicle connected' : 'Vehicle disconnected'"
+            class="ma-2"
+            :color="getColor(vehicleStore.isVehicleOnline)"
+          >
+            {{ vehicleIcon ?? 'mdi-help' }}
+          </v-icon>
 
           <v-switch
             v-model="vehicleStore.isArmed"
