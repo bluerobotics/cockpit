@@ -1,7 +1,7 @@
 import { ConnectionManager } from '@/libs/connection/connection-manager'
-import type { Package } from '@/libs/connection/messages/mavlink2rest'
-import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/messages/mavlink2rest-enum'
-import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
+import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
+import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { Signal } from '@/libs/signal'
 
 import { ArduCopter } from './ardupilot/arducopter'

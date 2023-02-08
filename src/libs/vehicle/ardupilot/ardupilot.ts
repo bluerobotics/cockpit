@@ -1,5 +1,5 @@
 import { ConnectionManager } from '@/libs/connection/connection-manager'
-import type { MAVLinkMessageDictionary, Message as MavMessage, Package } from '@/libs/connection/messages/mavlink2rest'
+import type { MAVLinkMessageDictionary, Message as MavMessage, Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
   MavAutopilot,
   MavCmd,
@@ -8,8 +8,8 @@ import {
   MavModeFlag,
   MavState,
   MavType,
-} from '@/libs/connection/messages/mavlink2rest-enum'
-import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
+} from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
 import { type PageDescription, Altitude, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
