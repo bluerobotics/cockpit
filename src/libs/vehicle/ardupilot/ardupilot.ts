@@ -1,5 +1,9 @@
 import { ConnectionManager } from '@/libs/connection/connection-manager'
-import type { MAVLinkMessageDictionary, Message as MavMessage, Package } from '@/libs/connection/m2r/messages/mavlink2rest'
+import type {
+  MAVLinkMessageDictionary,
+  Message as MavMessage,
+  Package,
+} from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
   MavAutopilot,
   MavCmd,
