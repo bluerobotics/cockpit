@@ -1,0 +1,3 @@
+[submodule "src/libs/connection/messages"]
+	path = src/libs/connection/m2r
+	url = https://github.com/patrickelectric/mavlink2rest-ts.git
