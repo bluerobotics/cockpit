@@ -1,10 +1,13 @@
 <template>
-  <v-sheet rounded class="main-sheet" :color="levelColor(currentAlert.level)">
-    <p class="text-h5">{{ currentAlert.message }}</p>
-    <p class="text-h7">
+  <div
+    :class="`bg-${levelColor(currentAlert.level)}`"
+    class="flex items-center justify-between rounded p-2 whitespace-nowrap overflow-hidden flex-grow m-1"
+  >
+    <p class="mx-1 text-xl font-medium text-gray-100 overflow-hidden">{{ currentAlert.message }}</p>
+    <p class="mx-1 text-gray-100">
       {{ formattedDate(currentAlert.time_created || new Date()) }}
     </p>
-  </v-sheet>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -35,7 +38,7 @@ const currentAlert = computed((): Alert => {
 const levelColor = (level: AlertLevel): string => {
   switch (level) {
     case AlertLevel.Critical:
-      return 'rgb(127, 52, 207)'
+      return 'critical'
     case AlertLevel.Error:
       return 'error'
     case AlertLevel.Info:
@@ -49,18 +52,3 @@ const levelColor = (level: AlertLevel): string => {
   }
 }
 </script>
-
-<style scoped>
-.main-sheet {
-  min-width: 45ch;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5ch 1.5ch;
-  white-space: nowrap;
-  overflow: hidden;
-}
-.main-sheet p {
-  color: whitesmoke;
-}
-</style>
