@@ -1,3 +1,6 @@
+import 'floating-vue/dist/style.css'
+
+import FloatingVue from 'floating-vue'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import VueKonva from 'vue-konva'
@@ -10,5 +13,5 @@ import router from './router'
 loadFonts()
 
 const app = createApp(App)
-app.use(router).use(vuetify).use(VueKonva).use(createPinia())
+app.use(router).use(vuetify).use(VueKonva).use(createPinia()).use(FloatingVue)
 app.mount('#app')
