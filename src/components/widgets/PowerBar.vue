@@ -39,7 +39,13 @@
             class="mx-1 mode-select"
             @update:model-value="(newMode: string) => vehicleStore.setFlightMode(newMode)"
           />
-          <v-icon class="ma-2" :color="getColor(joystickConnected)">mdi-controller</v-icon>
+          <v-icon
+            v-tooltip.bottom="joystickConnected ? 'Joystick connected' : 'Joystick disconnected'"
+            class="ma-2"
+            :color="getColor(joystickConnected)"
+          >
+            mdi-controller
+          </v-icon>
         </div>
       </v-col>
     </v-row>
