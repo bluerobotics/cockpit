@@ -1,6 +1,6 @@
-import type { Package } from '@/libs/connection/messages/mavlink2rest'
-import { MAVLinkType, MavModeFlag } from '@/libs/connection/messages/mavlink2rest-enum'
-import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
+import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
+import { MAVLinkType, MavModeFlag } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 
 import * as Vehicle from '../vehicle'
 import { ArduPilotVehicle } from './ardupilot'
