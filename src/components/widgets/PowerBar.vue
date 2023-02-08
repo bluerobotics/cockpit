@@ -13,6 +13,7 @@
 
           <v-switch
             v-model="vehicleStore.isArmed"
+            v-tooltip.bottom="vehicleStore.isArmed ? 'Disarm vehicle' : 'Arm vehicle'"
             :disabled="!vehicleStore.isVehicleOnline"
             class="mx-1 arm-switch"
             color="red-darken-3"
