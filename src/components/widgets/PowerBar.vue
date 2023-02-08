@@ -1,57 +1,47 @@
 <template>
-  <v-sheet class="topbar flex-centered" color="rgba(255, 255, 255, 0.1)">
-    <v-row align="center" justify="center" no-gutters>
-      <v-col class="flex-shrink-1">
-        <div class="col-container">
-          <v-icon
-            v-tooltip.bottom="vehicleStore.isVehicleOnline ? 'Vehicle connected' : 'Vehicle disconnected'"
-            class="ma-2"
-            :color="getColor(vehicleStore.isVehicleOnline)"
-          >
-            {{ vehicleIcon ?? 'mdi-help' }}
-          </v-icon>
+  <div class="flex items-center justify-evenly w-full backdrop-blur-sm bg-col-white p-0.5 min-w-fit">
+    <v-icon
+      v-tooltip.bottom="vehicleStore.isVehicleOnline ? 'Vehicle connected' : 'Vehicle disconnected'"
+      class="m-2"
+      :color="getColor(vehicleStore.isVehicleOnline)"
+    >
+      {{ vehicleIcon ?? 'mdi-help' }}
+    </v-icon>
 
-          <v-switch
-            v-model="vehicleStore.isArmed"
-            v-tooltip.bottom="vehicleStore.isArmed ? 'Disarm vehicle' : 'Arm vehicle'"
-            :disabled="!vehicleStore.isVehicleOnline"
-            class="mx-1 arm-switch"
-            color="red-darken-3"
-            :loading="vehicleStore.isArmed === undefined"
-            hide-details
-            @update:model-value="vehicleStore.isArmed ? vehicleStore.arm() : vehicleStore.disarm()"
-          />
-        </div>
-      </v-col>
-      <v-col class="flex-grow-1">
-        <Alerter />
-      </v-col>
-      <v-col class="flex-shrink-1">
-        <div class="col-container">
-          <v-select
-            v-model="vehicleStore.mode"
-            :disabled="!vehicleStore.isVehicleOnline"
-            :items="flightModes"
-            bg-color="rgb(255, 255, 255, 0.5)"
-            density="compact"
-            variant="outlined"
-            no-data-text="Waiting for available modes."
-            hide-details
-            class="mx-1 mode-select"
-            :loading="vehicleStore.mode === undefined"
-            @update:model-value="(newMode: string) => vehicleStore.setFlightMode(newMode)"
-          />
-          <v-icon
-            v-tooltip.bottom="joystickConnected ? 'Joystick connected' : 'Joystick disconnected'"
-            class="ma-2"
-            :color="getColor(joystickConnected)"
-          >
-            mdi-controller
-          </v-icon>
-        </div>
-      </v-col>
-    </v-row>
-  </v-sheet>
+    <v-switch
+      v-model="vehicleStore.isArmed"
+      v-tooltip.bottom="vehicleStore.isArmed ? 'Disarm vehicle' : 'Arm vehicle'"
+      :disabled="!vehicleStore.isVehicleOnline"
+      class="mx-1 flex items-center justify-center min-w-fit arm-switch"
+      color="red-darken-3"
+      :loading="vehicleStore.isArmed === undefined"
+      hide-details
+      @update:model-value="vehicleStore.isArmed ? vehicleStore.arm() : vehicleStore.disarm()"
+    />
+
+    <Alerter class="max-w-sm min-w-fit" />
+
+    <v-select
+      v-model="vehicleStore.mode"
+      :disabled="!vehicleStore.isVehicleOnline"
+      :items="flightModes"
+      bg-color="rgb(255, 255, 255, 0.5)"
+      density="compact"
+      variant="outlined"
+      no-data-text="Waiting for available modes."
+      hide-details
+      class="mx-1 flex items-center justify-center min-w-fit mode-select"
+      :loading="vehicleStore.mode === undefined"
+      @update:model-value="(newMode: string) => vehicleStore.setFlightMode(newMode)"
+    />
+    <v-icon
+      v-tooltip.bottom="joystickConnected ? 'Joystick connected' : 'Joystick disconnected'"
+      class="m-2"
+      :color="getColor(joystickConnected)"
+    >
+      mdi-controller
+    </v-icon>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -85,41 +75,13 @@ const flightModes = computed(() => vehicleStore.modesAvailable())
 </script>
 
 <style scoped>
-.topbar {
-  min-width: 650px;
-  width: 100%;
-  backdrop-filter: blur(1px);
-}
-.v-col {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-}
-.col-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  width: 100%;
-  padding: 7px;
-}
-
-.v-input--horizontal {
-  grid-template-areas: none;
-  grid-template-columns: none;
-  grid-template-rows: none;
-}
-.mode-select {
-  min-width: 19ch;
-  max-width: 20ch;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.bg-col-white {
+  background-color: rgb(255, 255, 255, 0.1);
 }
 .arm-switch {
-  max-width: 7ch;
-  max-height: 3ch;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 60px;
+}
+.mode-select {
+  max-width: 180px;
 }
 </style>
