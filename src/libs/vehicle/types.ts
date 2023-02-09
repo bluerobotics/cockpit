@@ -1,3 +1,5 @@
+import { MavSeverity } from '../connection/messages/mavlink2rest-enum'
+
 /**
  * Dilution of precision
  */
@@ -143,6 +145,15 @@ export class PowerSupply {
   voltage: number | undefined // in Volts
   current: number | undefined // in Amps
   remaining: number | undefined // Percentage available
+}
+
+/**
+ * StatusText
+ */
+export class StatusText {
+  // TODO: do not use MAVLINK stuff here.
+  severity: MavSeverity | undefined
+  text: string | undefined
 }
 
 /**

@@ -12,7 +12,15 @@ import {
 import { type Message } from '@/libs/connection/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
-import { type PageDescription, Altitude, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
+import {
+  type PageDescription,
+  Altitude,
+  Attitude,
+  Battery,
+  Coordinates,
+  PowerSupply,
+  StatusText,
+} from '@/libs/vehicle/types'
 import { ProtocolControllerState } from '@/types/joystick'
 
 import * as Vehicle from '../vehicle'
@@ -37,6 +45,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _cpuLoad = 0 // CPU load in percentage
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
+  _statusText = new StatusText()
   _vehicleSpecificErrors = [0, 0, 0, 0]
 
   _messages: MAVLinkMessageDictionary = new Map()
@@ -206,6 +215,13 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         ] // Autopilot-specific errors
         break
       }
+      case MAVLinkType.STATUSTEXT: {
+        const statusText = mavlink_message.message as Message.Statustext
+        this._statusText.text = statusText.text.filter((char) => char !== '\u0000').join('')
+        this._statusText.severity = statusText.severity
+        this.onStatusText.emit()
+        break
+      }
       default:
         break
     }
@@ -316,6 +332,15 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   powerSupply(): PowerSupply {
     return this._powerSupply
+  }
+
+  /**
+   * Return power supply information
+   *
+   * @returns {StatusText}
+   */
+  statusText(): StatusText {
+    return this._statusText
   }
 
   /**

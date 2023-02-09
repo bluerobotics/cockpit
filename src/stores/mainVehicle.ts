@@ -10,7 +10,7 @@ import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/messages/m
 import type { Message } from '@/libs/connection/messages/mavlink2rest-message'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Altitude, Attitude, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
+import type { Altitude, Attitude, Coordinates, PageDescription, PowerSupply, StatusText } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { ProtocolControllerState } from '@/types/joystick'
@@ -32,6 +32,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const icon = ref<string | undefined>(undefined)
   const configurationPages = ref<PageDescription[]>([])
   const timeNow = useTimestamp({ interval: 100 })
+  const statusText: StatusText = reactive({} as StatusText)
 
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,6 +138,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
     })
+    mainVehicle.value.onStatusText.add((newStatusText: StatusText) => {
+      Object.assign(statusText, newStatusText)
+    })
     mainVehicle.value.onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.system_id != 1 || pack.header.component_id != 1) {
         return
@@ -202,6 +206,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     attitude,
     coordinates,
     powerSupply,
+    statusText,
     mode,
     modes,
     isArmed,

@@ -60,6 +60,9 @@
           <template v-if="widget.component === WidgetType.VideoPlayer">
             <VideoPlayer :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.StatusTextReader">
+            <StatusTextReader :widget="widget" />
+          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
@@ -85,6 +88,7 @@ import {
   watch,
 } from 'vue'
 
+import StatusTextReader from '@/components/widgets/StatusTextReader.vue'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
 
