@@ -82,7 +82,7 @@
 
 <script setup lang="ts">
 import { useConfirmDialog, useElementBounding, useElementHover, useMouseInElement, useWindowSize } from '@vueuse/core'
-import { type Ref, computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
+import { type Ref, computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 import useDragInElement from '@/composables/drag'
 import { constrain, isEqual, round } from '@/libs/utils'
@@ -415,9 +415,6 @@ const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
 const widgetDeleteDialogRevealed = ref(false)
 const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
 widgetDeleteDialog.onConfirm(() => emit('remove'))
-
-const wallRespecterInterval = setInterval(makeWidgetRespectWalls, 1000)
-onBeforeUnmount(() => clearInterval(wallRespecterInterval))
 </script>
 
 <style scoped>
