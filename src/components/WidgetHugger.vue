@@ -257,8 +257,8 @@ watch(resizerPosition, (position) => {
     return
   }
   const widgetLimits = {
-    x: outerWidgetRef.value.getBoundingClientRect().x / windowWidth.value || 1,
-    y: outerWidgetRef.value.getBoundingClientRect().y / windowHeight.value || 1,
+    x: outerWidgetRef.value.getBoundingClientRect().x / windowWidth.value,
+    y: outerWidgetRef.value.getBoundingClientRect().y / windowHeight.value,
   }
 
   const oldSize = widgetFinalSize.value
