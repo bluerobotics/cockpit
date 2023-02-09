@@ -243,8 +243,8 @@ watch(widgetRawPosition, (position) => {
     return
   }
   const widgetLimits = innerWidgetRef.value.getBoundingClientRect()
-  const maxX = 1 - widgetLimits.width / windowWidth.value || 1
-  const maxY = 1 - widgetLimits.height / windowHeight.value || 1
+  const maxX = 1 - widgetLimits.width / windowWidth.value
+  const maxY = 1 - widgetLimits.height / windowHeight.value
   widgetFinalPosition.value = {
     x: constrain(position.x, 0, maxX),
     y: constrain(position.y, 0, maxY),
