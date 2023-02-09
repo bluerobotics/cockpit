@@ -1,94 +1,89 @@
 <template>
-  <div v-if="editMode" class="editing-mode-overlay" />
-  <div ref="editMenu" class="nav-drawer">
-    <v-card ref="editDrawer" flat class="pa-2 edit-menu">
-      <div>
-        <v-card-title>Edit menu</v-card-title>
-        <v-divider color="white" />
-      </div>
-      <div class="mx-2 my-2">
-        <v-expansion-panels v-model="openPanels">
-          <v-expansion-panel>
-            <v-expansion-panel-title> Current profile: {{ store.currentProfile.name }} </v-expansion-panel-title>
-            <v-expansion-panel-text class="pa-2">
-              <div v-if="selectedLayer !== undefined">
-                <v-card-subtitle class="mt-4">Layer</v-card-subtitle>
-                <div class="d-flex align-center ma-2">
-                  <v-select
-                    v-model="selectedLayer"
-                    :items="availableLayers"
-                    density="compact"
-                    variant="outlined"
-                    no-data-text="No layers available."
-                    hide-details
-                  />
-                  <v-btn
-                    class="ml-2"
-                    icon="mdi-delete"
-                    size="small"
-                    variant="outlined"
-                    rounded="lg"
-                    @click="layerDeleteDialog.reveal"
-                  />
-                </div>
-                <v-card-subtitle class="mt-4">Widgets</v-card-subtitle>
-                <template v-if="selectedLayer.widgets.length > 0">
-                  <li v-for="widget in selectedLayer.widgets" :key="widget.hash" class="pl-6">
-                    {{ widget.component }}
-                  </li>
-                </template>
-                <p v-else class="pl-6">No widgets in layer.</p>
-                <div class="d-flex align-center ma-3">
-                  <v-select
-                    v-model="selectedWidgetType"
-                    :items="availableWidgetTypes"
-                    density="compact"
-                    variant="outlined"
-                    label="Widget type"
-                    hide-details
-                  />
-                  <v-btn
-                    class="ml-2"
-                    icon="mdi-plus"
-                    size="small"
-                    rounded="lg"
-                    :disabled="selectedWidgetType === undefined"
-                    variant="outlined"
-                    @click="addWidget"
-                  />
-                </div>
-              </div>
-              <v-btn class="ma-1" variant="plain" @click="addLayer">Add new layer</v-btn>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
-      </div>
-      <div class="d-flex align-center">
-        <v-select
-          v-model="selectedProfile"
-          :items="availableProfiles"
-          class="profile-selector mx-2"
-          density="compact"
-          variant="outlined"
-          label="Layer profiles"
-          no-data-text="No layer profiles"
-          hide-details
-        />
-        <v-btn class="ml-2" icon="mdi-download" size="small" variant="outlined" rounded="lg" @click="loadProfile" />
-      </div>
-      <v-card-actions class="d-flex flex-column align-center justify-start">
-        <v-btn class="ma-1" @click="profileCreationDialog.reveal"> Create new profile </v-btn>
-        <v-btn class="ma-1" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
-        <v-switch
-          class="mx-3"
-          label="Grid"
-          :model-value="showGrid"
-          hide-details
-          @change="emit('update:showGrid', !showGrid)"
-        />
-      </v-card-actions>
-      <v-btn variant="outlined" width="70%" @click="emit('update:editMode', false)"> Exit edit mode </v-btn>
-    </v-card>
+  <div v-if="editMode" class="w-full h-full pointer-events-none position-absolute editing-mode-overlay" />
+  <div
+    ref="editMenu"
+    class="flex flex-col items-center justify-between h-full px-2 py-6 m-0 overflow-y-scroll text-white nav-drawer"
+  >
+    <p class="my-1 text-xl font-semibold">Edit menu</p>
+    <div class="w-11/12 h-px my-1 bg-white" />
+    <v-expansion-panels v-model="openPanels">
+      <v-expansion-panel>
+        <v-expansion-panel-title>Current profile: {{ store.currentProfile.name }} </v-expansion-panel-title>
+        <v-expansion-panel-text class="pa-2">
+          <div v-if="selectedLayer !== undefined">
+            <p class="mt-4">Layer</p>
+            <div class="flex items-center m-2">
+              <v-select
+                v-model="selectedLayer"
+                :items="availableLayers"
+                density="compact"
+                variant="outlined"
+                no-data-text="No layers available."
+                hide-details
+              />
+              <v-btn
+                class="ml-2"
+                icon="mdi-delete"
+                size="small"
+                variant="outlined"
+                rounded="lg"
+                @click="layerDeleteDialog.reveal"
+              />
+            </div>
+            <p class="mt-4">Widgets</p>
+            <template v-if="selectedLayer.widgets.length > 0">
+              <li v-for="widget in selectedLayer.widgets" :key="widget.hash" class="pl-6">
+                {{ widget.component }}
+              </li>
+            </template>
+            <p v-else class="pl-6">No widgets in layer.</p>
+            <div class="flex items-center m-3">
+              <v-select
+                v-model="selectedWidgetType"
+                :items="availableWidgetTypes"
+                density="compact"
+                variant="outlined"
+                label="Widget type"
+                hide-details
+              />
+              <v-btn
+                class="ml-2"
+                icon="mdi-plus"
+                size="small"
+                rounded="lg"
+                :disabled="selectedWidgetType === undefined"
+                variant="outlined"
+                @click="addWidget"
+              />
+            </div>
+          </div>
+          <v-btn class="ma-1" variant="plain" @click="addLayer">Add new layer</v-btn>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+    <div class="flex items-center w-10/12 my-2 justify-evenly">
+      <v-select
+        v-model="selectedProfile"
+        :items="availableProfiles"
+        class="w-10/12 m-1 max-h-16"
+        density="compact"
+        variant="outlined"
+        label="Layer profiles"
+        no-data-text="No layer profiles"
+        hide-details
+      />
+      <v-btn class="m-1" icon="mdi-download" size="small" variant="outlined" rounded="lg" @click="loadProfile" />
+    </div>
+    <v-btn class="m-1 text-white" @click="profileCreationDialog.reveal"> Create new profile </v-btn>
+    <v-btn class="m-1 text-white" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
+    <v-switch
+      class="flex items-center justify-center m-1 max-h-8"
+      label="Grid"
+      :model-value="showGrid"
+      hide-details
+      @change="emit('update:showGrid', !showGrid)"
+    />
+    <v-btn class="w-10/12" variant="outlined" @click="emit('update:editMode', false)">Exit edit mode</v-btn>
   </div>
   <teleport to="body">
     <v-dialog v-model="layerDeleteDialogRevealed" width="auto">
@@ -168,7 +163,6 @@ const newProfileForm = ref(false)
 const editMode = toRefs(props).editMode
 
 const showDrawer = ref(props.editMode)
-const editDrawer = ref()
 const { x: mouseX } = useMouse()
 
 const editMenu = ref()
@@ -261,36 +255,18 @@ profileResetDialog.onConfirm(resetProfiles)
 </script>
 
 <style scoped>
-.edit-menu {
-  height: 100%;
-  width: 100%;
-  color: white;
-  background-color: rgba(47, 57, 66, 0.8);
-  backdrop-filter: blur(1px);
-  border-radius: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-  flex-direction: column;
-}
 .nav-drawer {
   position: absolute;
   left: -400px;
-  width: 380;
+  width: 380px;
   z-index: 60;
-  height: 100%;
+  background-color: rgba(47, 57, 66, 0.8);
+  backdrop-filter: blur(1px);
 }
 .editing-mode-overlay {
-  position: absolute;
-  height: 100%;
-  width: 100%;
   border: 8px solid;
   border-image: linear-gradient(45deg, rgba(64, 152, 224, 0.7), rgba(234, 255, 47, 0.7)) 1;
-  pointer-events: none;
   z-index: 55;
-}
-.profile-selector {
-  min-width: 180px;
 }
 .v-expansion-panel {
   background-color: rgba(0, 0, 0, 0);
