@@ -108,7 +108,7 @@
       <v-card class="pa-2">
         <v-card-title>New profile</v-card-title>
         <v-card-text>
-          <v-form v-model="newProfileForm">
+          <v-form v-model="newProfileForm" @submit.prevent="createNewProfile">
             <v-text-field
               v-model="newProfileName"
               autofocus
@@ -119,7 +119,7 @@
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn :disabled="!newProfileForm" @click="createNewProfile()"> Create </v-btn>
+          <v-btn :disabled="!newProfileForm" @click="createNewProfile()">Create</v-btn>
           <v-btn @click="profileCreationDialog.cancel">Cancel</v-btn>
         </v-card-actions>
       </v-card>
