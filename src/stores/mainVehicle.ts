@@ -182,7 +182,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   controllerStore.registerControllerUpdateCallback(updateCurrentControllerState)
 
   setInterval(() => {
-    if (currentControllerState.value === undefined) return
+    if (currentControllerState.value === undefined || controllerStore.joysticks.size === 0) return
     sendManualControl(currentControllerState.value)
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
