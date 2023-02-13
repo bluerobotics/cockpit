@@ -38,7 +38,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @returns { Profile } The profile object just created
    */
   function saveProfile(name: string, profileLayers: Layer[]): Profile {
-    const newProfile = { name: name, layers: profileLayers }
+    const savedProfilesNames = Object.values(savedProfiles.value).map((profile: Profile) => profile.name)
+    if (savedProfilesNames.includes(name)) {
+      throw new Error('This name is already used in another profile.')
+    }
+    const newProfile = { name, layers: profileLayers }
     savedProfiles.value[uuid4()] = newProfile
     return newProfile
   }
