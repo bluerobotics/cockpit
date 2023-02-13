@@ -64,13 +64,15 @@
     <div class="flex items-center w-10/12 my-2 justify-evenly">
       <v-select
         v-model="selectedProfile"
-        :items="availableProfiles"
+        :items="Object.values(store.savedProfiles)"
+        item-title="name"
         class="w-10/12 m-1 max-h-16"
         density="compact"
         variant="outlined"
         label="Layer profiles"
         no-data-text="No layer profiles"
         hide-details
+        return-object
         @update:model-value="loadProfile"
       />
     </div>
@@ -157,7 +159,7 @@ const emit = defineEmits<{
 const openPanels = ref([0])
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref()
-const selectedProfile = ref()
+const selectedProfile = ref(store.currentProfile)
 const selectedLayer = ref(store.currentProfile.layers[0])
 const newProfileName = ref('')
 const newProfileForm = ref(false)
@@ -199,13 +201,6 @@ const availableLayers = computed(() =>
   store.currentProfile.layers.slice().map((layer) => ({
     title: layer.name,
     value: layer,
-  }))
-)
-
-const availableProfiles = computed(() =>
-  Object.values(store.savedProfiles).map((profile) => ({
-    title: profile.name,
-    value: profile,
   }))
 )
 
