@@ -230,19 +230,21 @@ const renderCanvas = (): void => {
   ctx.arc(0, 0, aimRadius.value, radians(-45), radians(45))
   ctx.stroke()
 
-  const rollText = `r: ${Number(rollAngleDeg.value).toFixed(2)}`
-  const pitchText = `p: ${Number(pitchAngleDeg.value).toFixed(2)}`
+  if (widget.value.options.showRollPitchValues) {
+    const rollText = `r: ${Number(rollAngleDeg.value).toFixed(2)}`
+    const pitchText = `p: ${Number(pitchAngleDeg.value).toFixed(2)}`
 
-  ctx.rotate(radians(-renderVars.rollDegrees))
-  if (aimRadius.value < 200) {
-    ctx.fillText(rollText, 0, constrain(-1.5 * aimRadius.value, -0.8 * halfCanvasHeight, 0))
-    ctx.fillText(pitchText, 0, constrain(+1.5 * aimRadius.value, 0, 0.8 * halfCanvasHeight))
-  } else {
-    ctx.textAlign = 'start'
-    ctx.fillText(rollText, -aimRadius.value + refFontSize, -30)
-    ctx.fillText(pitchText, -aimRadius.value + refFontSize, +30)
+    ctx.rotate(radians(-renderVars.rollDegrees))
+    if (aimRadius.value < 200) {
+      ctx.fillText(rollText, 0, constrain(-1.5 * aimRadius.value, -0.8 * halfCanvasHeight, 0))
+      ctx.fillText(pitchText, 0, constrain(+1.5 * aimRadius.value, 0, 0.8 * halfCanvasHeight))
+    } else {
+      ctx.textAlign = 'start'
+      ctx.fillText(rollText, -aimRadius.value + refFontSize, -30)
+      ctx.fillText(pitchText, -aimRadius.value + refFontSize, +30)
+    }
+    ctx.stroke()
   }
-  ctx.stroke()
 }
 
 // Update the height of each pitch line when the vehicle pitch is updated
