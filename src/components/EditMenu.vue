@@ -119,7 +119,7 @@
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn :disabled="!newProfileForm" @click="profileCreationDialog.confirm"> Create </v-btn>
+          <v-btn :disabled="!newProfileForm" @click="createNewProfile()"> Create </v-btn>
           <v-btn @click="profileCreationDialog.cancel">Cancel</v-btn>
         </v-card-actions>
       </v-card>
@@ -130,6 +130,7 @@
 <script setup lang="ts">
 import { useConfirmDialog, useMouse, useMouseInElement } from '@vueuse/core'
 import gsap from 'gsap'
+import Swal from 'sweetalert2'
 import { computed, ref, toRefs, watch } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -216,11 +217,18 @@ const loadProfile = (): void => {
   store.loadProfile(selectedProfile.value)
   selectedLayer.value = store.currentProfile.layers[0]
 }
-const createNewProfile = (): void => {
-  const newProfile = store.saveProfile(newProfileName.value, store.currentProfile.layers)
-  store.loadProfile(newProfile)
-  selectedProfile.value = store.currentProfile
-  newProfileName.value = ''
+const createNewProfile = async (): Promise<void> => {
+  profileCreationDialogRevealed.value = false
+  try {
+    const newProfile = store.saveProfile(newProfileName.value, store.currentProfile.layers)
+    store.loadProfile(newProfile)
+    selectedProfile.value = store.currentProfile
+    newProfileName.value = ''
+    profileCreationDialog.confirm()
+  } catch (error) {
+    await Swal.fire({ title: 'Could not create new profile!', text: error as string, icon: 'error' })
+    profileCreationDialogRevealed.value = true
+  }
 }
 const deleteLayer = (): void => {
   store.deleteLayer(selectedLayer.value)
@@ -248,7 +256,6 @@ layerDeleteDialog.onConfirm(deleteLayer)
 
 const profileCreationDialogRevealed = ref(false)
 const profileCreationDialog = useConfirmDialog(profileCreationDialogRevealed)
-profileCreationDialog.onConfirm(createNewProfile)
 
 const profileResetDialogRevealed = ref(false)
 const profileResetDialog = useConfirmDialog(profileResetDialogRevealed)
