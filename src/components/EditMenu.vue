@@ -71,8 +71,8 @@
         label="Layer profiles"
         no-data-text="No layer profiles"
         hide-details
+        @update:model-value="loadProfile"
       />
-      <v-btn class="m-1" icon="mdi-download" size="small" variant="outlined" rounded="lg" @click="loadProfile" />
     </div>
     <v-btn class="m-1 text-white" @click="profileCreationDialog.reveal"> Create new profile </v-btn>
     <v-btn class="m-1 text-white" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
