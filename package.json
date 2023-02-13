@@ -33,6 +33,7 @@
     "leaflet": "^1.9.0",
     "pinia": "^2.0.13",
     "roboto-fontface": "*",
+    "sweetalert2": "^11.7.1",
     "uuid": "^8.3.2",
     "vue": "^3.2.33",
     "vue-konva": "^3.0.1",
