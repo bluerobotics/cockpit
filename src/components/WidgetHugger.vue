@@ -400,6 +400,10 @@ const overlayDisplayStyle = computed(() => {
   return allowMoving.value || allowResizing.value ? 'block' : 'none'
 })
 
+const userInteractionStyle = computed(() => {
+  return allowMoving.value || allowResizing.value ? 'none' : ''
+})
+
 const cursorStyle = computed(() => {
   if (!allowMoving.value) {
     return 'default'
@@ -469,6 +473,7 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  user-select: v-bind('userInteractionStyle');
 }
 .editing-buttons {
   position: absolute;
