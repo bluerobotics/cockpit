@@ -111,6 +111,7 @@
           <v-form v-model="newProfileForm">
             <v-text-field
               v-model="newProfileName"
+              autofocus
               hide-details="auto"
               label="Profile name"
               :rules="[(name) => !!name || 'Name is required']"
