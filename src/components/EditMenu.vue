@@ -63,7 +63,7 @@
     </v-expansion-panels>
     <div class="flex items-center w-10/12 my-2 justify-evenly">
       <v-select
-        v-model="selectedProfile"
+        v-model="store.currentProfile"
         :items="Object.values(store.savedProfiles)"
         item-title="name"
         class="w-10/12 m-1 max-h-16"
@@ -159,7 +159,6 @@ const emit = defineEmits<{
 const openPanels = ref([0])
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const selectedWidgetType = ref()
-const selectedProfile = ref(store.currentProfile)
 const selectedLayer = ref(store.currentProfile.layers[0])
 const newProfileName = ref('')
 const newProfileForm = ref(false)
@@ -205,11 +204,6 @@ const availableLayers = computed(() =>
 )
 
 const loadProfile = (): void => {
-  if (selectedProfile.value === undefined) {
-    console.warn('Cannot load profile. No profile selected.')
-    return
-  }
-  store.loadProfile(selectedProfile.value)
   selectedLayer.value = store.currentProfile.layers[0]
 }
 const createNewProfile = async (): Promise<void> => {
@@ -217,7 +211,6 @@ const createNewProfile = async (): Promise<void> => {
   try {
     const newProfile = store.saveProfile(newProfileName.value, JSON.parse(JSON.stringify(store.currentProfile.layers)))
     store.loadProfile(newProfile)
-    selectedProfile.value = store.currentProfile
     newProfileName.value = ''
     profileCreationDialog.confirm()
   } catch (error) {
