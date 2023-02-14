@@ -215,7 +215,7 @@ const loadProfile = (): void => {
 const createNewProfile = async (): Promise<void> => {
   profileCreationDialogRevealed.value = false
   try {
-    const newProfile = store.saveProfile(newProfileName.value, store.currentProfile.layers)
+    const newProfile = store.saveProfile(newProfileName.value, JSON.parse(JSON.stringify(store.currentProfile.layers)))
     store.loadProfile(newProfile)
     selectedProfile.value = store.currentProfile
     newProfileName.value = ''
