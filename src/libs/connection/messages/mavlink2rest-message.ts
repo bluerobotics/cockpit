@@ -5575,7 +5575,7 @@ export namespace Message {
     /**
      * Status text message, without null termination character.
      */
-    text: number[] // String as array of 50 chars
+    text: string[] // String as array of 50 chars
     /**
      * Unique (opaque) identifier for this statustext message.May be used to reassemble a logical long-statustext message from a sequence of chunks.A value of zero indicates this is the only chunk in the sequence and the message can be emitted immediately..
      */
