@@ -116,7 +116,7 @@ const { isSwiping, direction: swipeDirection } = useSwipe(widgetsView)
 
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
-watch(mouseNearMainButton, (isNear) => showMainMenuButton(isNear))
+watch(mouseNearMainButton, (isNear) => showMainMenuButton(isNear && !editingMode.value))
 
 watch(notHoveringMainMenu, (isNotHovering) => {
   if (isNotHovering) {
