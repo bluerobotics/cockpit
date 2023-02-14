@@ -90,7 +90,7 @@ vehicleUnsubscribe = vehicleStore.$subscribe(() => {
 .topbar {
   min-width: 650px;
   width: 100%;
-  backdrop-filter: blur(1px);
+  backdrop-filter: blur(10px);
 }
 .v-col {
   display: flex;
