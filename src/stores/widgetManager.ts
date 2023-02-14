@@ -6,7 +6,6 @@ import { v4 as uuid4 } from 'uuid'
 
 import { widgetProfile, widgetProfiles } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
-import type { Point2D, SizeRect2D } from '@/types/general'
 import type { Layer, Profile, Widget, WidgetType } from '@/types/widgets'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
@@ -122,26 +121,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   /**
-   * Updates the position of a given widget
-   *
-   * @param { Widget } widget - Widget
-   * @param { Point2D } position - New desired position for the widget
-   */
-  function updatePosition(widget: Widget, position: Point2D): void {
-    widget.position = position
-  }
-
-  /**
-   * Updates the size of a given widget
-   *
-   * @param { Widget } widget - Hash of the widget
-   * @param { SizeRect2D } size - New desired size for the widget
-   */
-  function updateSize(widget: Widget, size: SizeRect2D): void {
-    widget.size = size
-  }
-
-  /**
    * Send widget to the beggining (front) of the widgets list
    *
    * @param { Widget } widget - Widget
@@ -176,8 +155,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     deleteLayer,
     addWidget,
     deleteWidget,
-    updatePosition,
-    updateSize,
     bringWidgetFront,
     sendWidgetBack,
   }

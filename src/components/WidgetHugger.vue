@@ -1,9 +1,9 @@
 <template>
   <div v-if="devStore.developmentMode" class="widgetOverlay dev-info">
-    <p>Position: {{ round(100 * position.x, 2) }} x {{ round(100 * position.y, 2) }} %</p>
-    <p>Size: {{ round(100 * size.width, 2) }} x {{ round(100 * size.height, 2) }} %</p>
-    <p>Position: {{ round(position.x * windowWidth) }} x {{ round(position.y * windowHeight) }} px</p>
-    <p>Size: {{ round(size.width * windowWidth) }} x {{ round(size.height * windowHeight) }} px</p>
+    <p>Position: {{ round(100 * widget.position.x, 2) }} x {{ round(100 * widget.position.y, 2) }} %</p>
+    <p>Size: {{ round(100 * widget.size.width, 2) }} x {{ round(100 * widget.size.height, 2) }} %</p>
+    <p>Position: {{ round(widget.position.x * windowWidth) }} x {{ round(widget.position.y * windowHeight) }} px</p>
+    <p>Size: {{ round(widget.size.width * windowWidth) }} x {{ round(widget.size.height * windowHeight) }} px</p>
     <p>Client size: {{ innerWidgetRef?.clientWidth }} x {{ innerWidgetRef?.clientHeight }} px</p>
     <p>Offset size: {{ innerWidgetRef?.offsetWidth }} x {{ innerWidgetRef?.offsetHeight }} px</p>
     <p>Scroll size: {{ innerWidgetRef?.scrollWidth }} x {{ innerWidgetRef?.scrollHeight }} px</p>
@@ -99,14 +99,6 @@ export interface Props {
    */
   widget: Widget
   /**
-   * Size of the widget box, in pixels
-   */
-  size: SizeRect2D
-  /**
-   * Position of the top-left corner of the widget box
-   */
-  position: Point2D
-  /**
    * To snap or not the widget to the grid while moving it
    */
   snapToGrid?: boolean
@@ -142,8 +134,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'move', position: Point2D): void
-  (e: 'resize', size: SizeRect2D): void
   (e: 'drop', position: Point2D): void
   (e: 'send-back'): void
   (e: 'bring-front'): void
@@ -158,10 +148,10 @@ const gridInterval = toRefs(props).gridInterval
 const outerWidgetRef = ref<HTMLElement | undefined>()
 const innerWidgetRef = ref<HTMLElement | undefined>()
 const resizerRef = ref<HTMLElement>()
-const lastNonMaximizedX = ref(props.position.x)
-const lastNonMaximizedY = ref(props.position.y)
-const lastNonMaximizedWidth = ref(props.size.width)
-const lastNonMaximizedHeight = ref(props.size.height)
+const lastNonMaximizedX = ref(props.widget.position.x)
+const lastNonMaximizedY = ref(props.widget.position.y)
+const lastNonMaximizedWidth = ref(props.widget.size.width)
+const lastNonMaximizedHeight = ref(props.widget.size.height)
 
 const devStore = useDevelopmentStore()
 
@@ -177,7 +167,7 @@ const { isOutside: notHoveringEditMenu } = useMouseInElement(widgetEditMenu)
 
 const { position: widgetRawPosition, dragging: draggingWidget } = useDragInElement(
   innerWidgetRef as Ref<HTMLElement>,
-  props.position,
+  props.widget.position,
   allowMoving,
   snapToGrid,
   gridInterval.value
@@ -190,8 +180,8 @@ const {
 } = useDragInElement(
   resizerRef as Ref<HTMLElement>,
   {
-    x: props.position.x + props.size.width,
-    y: props.position.y + props.size.height,
+    x: props.widget.position.x + props.widget.size.width,
+    y: props.widget.position.y + props.widget.size.height,
   },
   allowResizing,
   snapToGrid,
@@ -237,7 +227,7 @@ const makeWidgetRespectWalls = (): void => {
   }
 }
 
-const widgetFinalPosition = ref(props.position)
+const widgetFinalPosition = ref(props.widget.position)
 watch(widgetRawPosition, (position) => {
   if (innerWidgetRef.value === undefined || resizerRef.value === undefined) {
     return
@@ -251,7 +241,7 @@ watch(widgetRawPosition, (position) => {
   }
 })
 
-const widgetFinalSize = ref(props.size)
+const widgetFinalSize = ref(props.widget.size)
 watch(resizerPosition, (position) => {
   if (!outerWidgetRef.value || !innerWidgetRef.value) {
     return
@@ -362,14 +352,14 @@ watch(widgetFinalPosition, () => {
     lastNonMaximizedX.value = widgetFinalPosition.value.x
     lastNonMaximizedY.value = widgetFinalPosition.value.y
   }
-  emit('move', widgetFinalPosition.value)
+  widget.value.position = widgetFinalPosition.value
 })
 watch(widgetFinalSize, () => {
   if (!isFullScreenSize.value) {
     lastNonMaximizedWidth.value = widgetFinalSize.value.width
     lastNonMaximizedHeight.value = widgetFinalSize.value.height
   }
-  emit('resize', widgetFinalSize.value)
+  widget.value.size = widgetFinalSize.value
 })
 
 const sizeStyle = computed(() => ({
