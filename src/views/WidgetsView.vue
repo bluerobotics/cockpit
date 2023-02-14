@@ -119,13 +119,16 @@ const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
 watch(mouseNearMainButton, (isNear) => showMainMenuButton(isNear && !editingMode.value))
 
 watch(notHoveringMainMenu, (isNotHovering) => {
-  if (isNotHovering) {
+  if (isNotHovering && !mouseNearMainButton.value) {
     showMainMenu(false)
   }
 })
 
 const showMainMenuButton = (show: boolean): void => {
   gsap.to('.main-menu-button', show ? { x: 175, duration: 0.25 } : { x: -200, duration: 0.25 })
+  if (!show && notHoveringMainMenu.value) {
+    showMainMenu(false)
+  }
 }
 
 const showMainMenu = (show: boolean): void => {
