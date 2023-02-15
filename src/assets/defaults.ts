@@ -1,8 +1,6 @@
-import * as Connection from '@/libs/connection/connection'
 import { type Profile, WidgetType } from '@/types/widgets'
 
-export const defaultGlobalAddress = 'blueos.wifi'
-export const mavlink2restServerURI = new Connection.URI('ws://blueos.local:6040/ws/mavlink')
+export const defaultGlobalAddress = 'blueos.local'
 export const widgetProfiles: { [key: string]: Profile } = {
   'c2bcf04d-048f-496f-9d78-fc4002608028': {
     name: 'Default Cockpit profile',
