@@ -69,6 +69,17 @@ jobs:
           path: dist/cockpit*.${{ matrix.extension }}
           if-no-files-found: error
 
+      - name: Upload Release
+        uses: svenstaro/upload-release-action@v2
+        if: startsWith(github.ref, 'refs/tags/') && success()
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/cockpit*.${{ matrix.extension }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
+          file_glob: true
+
   deploy-blueos-extension:
     needs: test
     runs-on: ubuntu-latest
