@@ -1,8 +1,8 @@
 import { useStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, watch } from 'vue'
+import { type Ref, computed, reactive, ref, watch } from 'vue'
 
-import { mavlink2restServerURI } from '@/assets/defaults'
+import { defaultGlobalAddress } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/messages/mavlink2rest'
@@ -17,9 +17,67 @@ import { ProtocolControllerState } from '@/types/joystick'
 
 import { useControllerStore } from './controller'
 
+/**
+ * This is an abstraction that holds a customizable parameter that can fallback to a default value
+ *
+ * @template T The customizable parameter type
+ */
+class CustomizableParameter<T> {
+  private _customValue: T
+  private _defaultValue: () => T
+  isCustom = false
+
+  /**
+   * @param {Ref<T>} defaultVal The default parameter value
+   */
+  constructor(defaultVal: () => T) {
+    this._defaultValue = defaultVal
+    this._customValue = this.defaultValue
+  }
+
+  /**
+   * Sets the URI to a given custom one
+   *
+   * @param {T} val
+   */
+  set val(val: T) {
+    this._customValue = val
+  }
+
+  /**
+   * @returns {T} The current configured parameter, whether default or custom
+   */
+  get val(): T {
+    return this.isCustom ? this._customValue : this.defaultValue
+  }
+
+  /**
+   * @returns {T} The current configured parameter, whether default or custom
+   */
+  get defaultValue(): T {
+    return this._defaultValue()
+  }
+
+  /**
+   * Resets custom to the default value and disables custom
+   */
+  public reset(): void {
+    this.isCustom = false
+    this._customValue = this.defaultValue
+  }
+}
+
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const cpuLoad = ref<number>()
-  const mainConnectionURI = useStorage('cockpit-main-connection-uri', mavlink2restServerURI)
+  const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
+  const _mainConnectionURI = new CustomizableParameter<Connection.URI>(() => {
+    return new Connection.URI(`ws://${globalAddress.value}:6040/ws/mavlink`)
+  })
+  const mainConnectionURI = ref(_mainConnectionURI)
+  const _webRTCSignallingURI = new CustomizableParameter<Connection.URI>(() => {
+    return new Connection.URI(`ws://${globalAddress.value}:6021`)
+  })
+  const webRTCSignallingURI = ref(_webRTCSignallingURI)
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
@@ -102,11 +160,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   ConnectionManager.onMainConnection.add(() => {
     const newMainConnection = ConnectionManager.mainConnection()
     if (newMainConnection !== undefined) {
-      mainConnectionURI.value = newMainConnection.uri()
+      mainConnectionURI.value.val = newMainConnection.uri()
     }
   })
 
-  ConnectionManager.addConnection(new Connection.URI(mainConnectionURI.value), Protocol.Type.MAVLink)
+  ConnectionManager.addConnection(mainConnectionURI.value.val, Protocol.Type.MAVLink)
 
   const getAutoPilot = (vehicles: WeakRef<Vehicle.Abstract>[]): ArduPilot => {
     const vehicle = vehicles?.last()?.deref()
@@ -193,7 +251,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     modesAvailable,
     setFlightMode,
     sendGcsHeartbeat,
+    globalAddress,
     mainConnectionURI,
+    webRTCSignallingURI,
     cpuLoad,
     lastHeartbeat,
     firmwareType,
