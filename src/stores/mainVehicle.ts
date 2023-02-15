@@ -1,4 +1,4 @@
-import { useStorage, useTimestamp } from '@vueuse/core'
+import { type RemovableRef, useStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { type Ref, computed, reactive, ref, watch } from 'vue'
 
@@ -22,10 +22,10 @@ import { useControllerStore } from './controller'
  *
  * @template T The customizable parameter type
  */
-class CustomizableParameter<T> {
-  private _customValue: T
+export class CustomizableParameter<T> {
   private _defaultValue: () => T
-  isCustom = false
+  private _customValue: T
+  isCustom: boolean
 
   /**
    * @param {Ref<T>} defaultVal The default parameter value
@@ -33,6 +33,7 @@ class CustomizableParameter<T> {
   constructor(defaultVal: () => T) {
     this._defaultValue = defaultVal
     this._customValue = this.defaultValue
+    this.isCustom = false
   }
 
   /**
@@ -52,7 +53,7 @@ class CustomizableParameter<T> {
   }
 
   /**
-   * @returns {T} The current configured parameter, whether default or custom
+   * @returns {T} The default parameter
    */
   get defaultValue(): T {
     return this._defaultValue()
@@ -67,17 +68,46 @@ class CustomizableParameter<T> {
   }
 }
 
+/**
+ * Creates a useStorage of a CustomizableParameter<T> containing the necessary serialization
+ *
+ * @template T The customizable parameter type
+ * @param {string} storageKey The key to use in useStorage
+ * @param {T} defaultValue A callback to create the default parameter value
+ * @returns {RemovableRef<CustomizableParameter<T>>} The useStorage
+ */
+function createCustomizableParameterWithStorage<T>(
+  storageKey: string,
+  defaultValue: () => T
+): RemovableRef<CustomizableParameter<T>> {
+  return useStorage(storageKey, new CustomizableParameter<T>(defaultValue), undefined, {
+    serializer: {
+      read: (v: string): CustomizableParameter<T> => {
+        const ret = new CustomizableParameter<T>(defaultValue)
+
+        const { _customValue, isCustom } = v ? JSON.parse(v) : undefined
+        ret.val = _customValue ?? defaultValue
+        ret.isCustom = isCustom ?? false
+
+        return ret
+      },
+      write: (v: CustomizableParameter<T>): string => JSON.stringify(v), // since everything is serializable here
+    },
+  })
+}
+
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const cpuLoad = ref<number>()
-  const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
-  const _mainConnectionURI = new CustomizableParameter<Connection.URI>(() => {
-    return new Connection.URI(`ws://${globalAddress.value}:6040/ws/mavlink`)
+  const globalAddress = useStorage('cockpit-global-address', defaultGlobalAddress)
+
+  const mainConnectionURI = createCustomizableParameterWithStorage<string>('cockpit-vehicle-uri', (): string => {
+    return `ws://${globalAddress.value}:6040/ws/mavlink`
   })
-  const mainConnectionURI = ref(_mainConnectionURI)
-  const _webRTCSignallingURI = new CustomizableParameter<Connection.URI>(() => {
-    return new Connection.URI(`ws://${globalAddress.value}:6021`)
+
+  const webRTCSignallingURI = createCustomizableParameterWithStorage<string>('cockpit-webrtc-uri', (): string => {
+    return `ws://${globalAddress.value}:6021`
   })
-  const webRTCSignallingURI = ref(_webRTCSignallingURI)
+
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
@@ -160,11 +190,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   ConnectionManager.onMainConnection.add(() => {
     const newMainConnection = ConnectionManager.mainConnection()
     if (newMainConnection !== undefined) {
-      mainConnectionURI.value.val = newMainConnection.uri()
+      mainConnectionURI.value.val = newMainConnection.uri().toString()
     }
   })
 
-  ConnectionManager.addConnection(mainConnectionURI.value.val, Protocol.Type.MAVLink)
+  ConnectionManager.addConnection(new Connection.URI(mainConnectionURI.value.val), Protocol.Type.MAVLink)
 
   const getAutoPilot = (vehicles: WeakRef<Vehicle.Abstract>[]): ArduPilot => {
     const vehicle = vehicles?.last()?.deref()

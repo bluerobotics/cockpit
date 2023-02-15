@@ -66,17 +66,18 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
 import { WebRTCManager } from '@/composables/webRTC'
+import * as Connection from '@/libs/connection/connection'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
-const { webRTCSignallingURI } = useMainVehicleStore()
-
-const globalAddress = 'blueos.local'
+const mainStore = useMainVehicleStore()
+const { globalAddress, webRTCSignallingURI } = storeToRefs(mainStore)
 
 console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
@@ -107,7 +108,7 @@ const rtcConfiguration = {
 const selectedStream = ref<Stream | undefined>()
 const showOptionsDialog = ref(false)
 const videoElement = ref<HTMLVideoElement | undefined>()
-const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
+const webRTCManager = new WebRTCManager(new Connection.URI(webRTCSignallingURI.value.val), rtcConfiguration)
 const { availableStreams, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(selectedStream)
 
 onBeforeMount(() => {
