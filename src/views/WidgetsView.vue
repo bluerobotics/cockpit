@@ -6,6 +6,9 @@
     <div class="main-menu-content">
       <v-btn prepend-icon="mdi-pencil" variant="plain" @click="editingMode = !editingMode">Edit mode</v-btn>
       <v-btn prepend-icon="mdi-cog" variant="plain" @click="showConfigurationMenu = true">Configuration</v-btn>
+      <v-btn :prepend-icon="fullScreenToggleIcon" variant="plain" @click="toggleFullscreen">
+        {{ isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen' }}
+      </v-btn>
     </div>
   </div>
   <SnappingGrid v-if="showGrid && editingMode" :grid-interval="gridInterval" class="snapping-grid" />
@@ -70,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { SwipeDirection, useMouse, useMouseInElement, useSwipe } from '@vueuse/core'
+import { SwipeDirection, useFullscreen, useMouse, useMouseInElement, useSwipe } from '@vueuse/core'
 import gsap from 'gsap'
 import {
   // type AsyncComponentLoader,
@@ -109,6 +112,7 @@ const mainMenu = ref()
 const showConfigurationMenu = ref(false)
 const widgetsView = ref()
 const { isSwiping, direction: swipeDirection } = useSwipe(widgetsView)
+const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
@@ -137,6 +141,8 @@ watch(isSwiping, () => {
     showMainMenu(swipeDirection.value === SwipeDirection.RIGHT)
   }
 })
+
+const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscreen-exit' : 'mdi-overscan'))
 
 // TODO: Make this work
 // This function allows us to load any component without declaring it in the template, just
