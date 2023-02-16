@@ -16,6 +16,7 @@ module.exports = {
     'vue/setup-compiler-macros': true,
   },
   plugins: ['jsdoc', 'simple-import-sort'],
+  ignorePatterns: ['**/src/libs/connection/m2r/**'],
   rules: {
     'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
     'indent': 'off',
