@@ -7,7 +7,8 @@
 </template>
 
 <style>
-html {
+html,
+body {
   /* Removes the scrollbar */
   overflow: hidden !important;
 }
