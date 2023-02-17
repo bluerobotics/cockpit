@@ -1,5 +1,5 @@
 <template>
-  <div class="video-widget">
+  <div ref="videoWidget" class="video-widget">
     <div v-if="selectedStream === undefined" class="no-video-alert">
       <span>No video stream selected.</span>
     </div>
@@ -66,6 +66,7 @@
 </template>
 
 <script setup lang="ts">
+import { useMouseInElement } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
@@ -167,6 +168,10 @@ watch(availableStreams, () => {
 const flipStyle = computed(() => {
   return `scale(${widget.value.options.flipHorizontally ? -1 : 1}, ${widget.value.options.flipVertically ? -1 : 1})`
 })
+
+const videoWidget = ref()
+const { isOutside } = useMouseInElement(videoWidget)
+const mouseOverWidgetStyle = computed(() => (isOutside.value ? 'none' : 'block'))
 </script>
 
 <style scoped>
@@ -208,8 +213,6 @@ video {
   right: 0;
   color: white;
   filter: drop-shadow(2px 2px black);
-}
-.video-widget:hover .options-btn {
-  display: block;
+  display: v-bind('mouseOverWidgetStyle');
 }
 </style>
