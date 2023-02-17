@@ -205,6 +205,8 @@ video {
   margin: 5px;
   top: 0;
   right: 0;
+  color: white;
+  filter: drop-shadow(2px 2px black);
 }
 .video-widget:hover .options-btn {
   display: block;
