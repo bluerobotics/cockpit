@@ -90,26 +90,51 @@ const props = defineProps<{
 
 const widget = toRefs(props).widget
 
-const rtcConfiguration = {
-  bundlePolicy: 'max-bundle',
-  iceServers: [
-    {
-      urls: `turn:${globalAddress}:3478`,
-      username: 'user',
-      credential: 'pwd',
-    },
-    {
-      urls: `stun:${globalAddress}:3478`,
-    },
-  ],
-  // eslint-disable-next-line no-undef
-} as RTCConfiguration
+const rtcConfiguration = computed(() => {
+  return {
+    bundlePolicy: 'max-bundle',
+    iceServers: [
+      {
+        urls: `turn:${globalAddress}:3478`,
+        username: 'user',
+        credential: 'pwd',
+      },
+      {
+        urls: `stun:${globalAddress}:3478`,
+      },
+    ],
+    // eslint-disable-next-line no-undef
+  } as RTCConfiguration
+})
 
 const selectedStream = ref<Stream | undefined>()
 const showOptionsDialog = ref(false)
 const videoElement = ref<HTMLVideoElement | undefined>()
-const webRTCManager = new WebRTCManager(new Connection.URI(webRTCSignallingURI.value.val), rtcConfiguration)
+let webRTCManager = new WebRTCManager(new Connection.URI(webRTCSignallingURI.value.val), rtcConfiguration.value)
 const { availableStreams, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(selectedStream)
+
+watch(webRTCSignallingURI.value, (newVal, oldVal) => {
+  if (newVal === undefined || oldVal === undefined) {
+    return
+  }
+  try {
+    webRTCManager.close(`Signalling address changed to ${newVal.val}`)
+    webRTCManager = new WebRTCManager(new Connection.URI(webRTCSignallingURI.value.val), rtcConfiguration.value)
+  } catch (error) {
+    console.warn(`Failed to update Signalling. Reason: ${error}`)
+  }
+
+
+})
+
+watch(globalAddress, (newVal, oldVal) => {
+  if (newVal === undefined || oldVal === undefined) {
+    return
+  }
+  webRTCManager.close(`RTCConfiguration changed to ${newVal}`)
+  // eslint-disable-next-line no-undef
+  webRTCManager = new WebRTCManager(new Connection.URI(webRTCSignallingURI.value.val), rtcConfiguration.value)
+})
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
