@@ -152,6 +152,9 @@ const newGlobalAddress = ref(mainVehicleStore.globalAddress)
 const webRTCSignallingForm = ref()
 const webRTCSignallingFormValid = ref(false)
 const webRTCSignallingURI = ref(mainVehicleStore.webRTCSignallingURI)
+// TODO: Make a local buffer to keep changes until the user hit the "SET" button, then propagate the change into the Store
+const webRTCSignallingURILocal = ref<string>('')
+webRTCSignallingURILocal.value = mainVehicleStore.webRTCSignallingURI.val
 
 const connectionForm = ref()
 const connectionFormValid = ref(false)
