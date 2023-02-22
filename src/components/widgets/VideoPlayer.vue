@@ -117,7 +117,7 @@ onBeforeMount(() => {
       videoFitStyle: 'cover',
       flipHorizontally: false,
       flipVertically: false,
-      streamName: undefined,
+      streamName: undefined as string | undefined,
     }
   }
 })
@@ -147,18 +147,19 @@ watch(mediaStream, async (newStream, oldStream) => {
 })
 
 watch(availableStreams, () => {
-  const savedStreamName = widget.value.options.streamName
-  if (selectedStream.value !== undefined || savedStreamName === undefined || availableStreams.value.isEmpty()) {
+  const savedStreamName: string | undefined = widget.value.options.streamName
+  if (availableStreams.value.isEmpty()) {
     return
   }
 
-  if (selectedStream.value === undefined) {
-    console.debug!('[WebRTC] trying to set stream...')
-  }
-
-  const savedStream = availableStreams.value.find((s) => s.name === savedStreamName)
+  // Retrieve stream from the savedStreamName, otherwise choose the first available stream as a fallback
+  const savedStream =
+    savedStreamName !== undefined
+      ? availableStreams.value.find((s) => s.name === savedStreamName)
+      : availableStreams.value.first()
 
   if (savedStream !== undefined && savedStream !== selectedStream.value) {
+    console.debug!('[WebRTC] trying to set stream...')
     selectedStream.value = savedStream
   }
 })
