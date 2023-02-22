@@ -2,7 +2,7 @@
   <div v-if="editMode" class="w-full h-full pointer-events-none position-absolute editing-mode-overlay" />
   <div
     ref="editMenu"
-    class="flex flex-col items-center justify-between h-full px-2 py-6 m-0 overflow-y-scroll text-white nav-drawer"
+    class="flex flex-col items-center justify-between h-full px-2 py-6 m-0 overflow-y-auto text-white nav-drawer"
   >
     <p class="my-1 text-xl font-semibold">Edit menu</p>
     <div class="w-11/12 h-px my-1 bg-white" />
