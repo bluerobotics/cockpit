@@ -2,6 +2,7 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { availableGamepadToCockpitMaps } from '@/assets/joystick-profiles'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import {
   type MavlinkControllerMapping,
@@ -11,7 +12,7 @@ import {
   protocolAxesLimits,
   protocolDefaultMapping,
 } from '@/libs/joystick/protocols'
-import { type ProtocolControllerState, Joystick, JoystickProtocol, JoystickValues } from '@/types/joystick'
+import { type ProtocolControllerState, Joystick, JoystickProtocol } from '@/types/joystick'
 
 export type controllerUpdateCallback = (state: ProtocolControllerState) => void
 
@@ -19,7 +20,8 @@ export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const mappingProtocol = ref<JoystickProtocol>(JoystickProtocol.MAVLink)
-  const mapping = useStorage('cockpit-controller-mapping', protocolDefaultMapping(mappingProtocol.value))
+  const protocolMapping = useStorage('cockpit-protocol-mapping', protocolDefaultMapping(mappingProtocol.value))
+  const cockpitStdMappings = useStorage('cockpit-standard-mappings', availableGamepadToCockpitMaps)
   const availableAxes = protocolAvailableAxes(mappingProtocol.value)
   const availableButtons = protocolAvailableButtons(mappingProtocol.value)
   const axesLimits = protocolAxesLimits(mappingProtocol.value)
@@ -53,50 +55,13 @@ export const useControllerStore = defineStore('controller', () => {
     if (joystick === undefined || (event.type !== EventType.Axis && event.type !== EventType.Button)) return
     joystick.gamepad = event.detail.gamepad
 
-    const newValues = new JoystickValues()
-    // Map Gamepad API inputs to known functions
-    if (joystick.model === JoystickModel.DualSense) {
-      newValues.leftAxisHorizontal = joystick.gamepad.axes[0]
-      newValues.leftAxisVertical = joystick.gamepad.axes[1]
-      newValues.rightAxisHorizontal = joystick.gamepad.axes[2]
-      newValues.rightAxisVertical = joystick.gamepad.axes[3]
-    } else {
-      newValues.leftAxisHorizontal = joystick.gamepad.axes[2]
-      newValues.leftAxisVertical = joystick.gamepad.axes[3]
-      newValues.rightAxisHorizontal = joystick.gamepad.axes[0]
-      newValues.rightAxisVertical = joystick.gamepad.axes[1]
-    }
-
-    newValues.directionalTopButton = joystick.gamepad.buttons[12]?.pressed
-    newValues.directionalBottomButton = joystick.gamepad.buttons[13]?.pressed
-    newValues.directionalLeftButton = joystick.gamepad.buttons[14]?.pressed
-    newValues.directionalRightButton = joystick.gamepad.buttons[15]?.pressed
-
-    newValues.rightClusterTopButton = joystick.gamepad.buttons[3]?.pressed
-    newValues.rightClusterBottomButton = joystick.gamepad.buttons[0]?.pressed
-    newValues.rightClusterLeftButton = joystick.gamepad.buttons[2]?.pressed
-    newValues.rightClusterRightButton = joystick.gamepad.buttons[1]?.pressed
-
-    newValues.leftShoulderButton = joystick.gamepad.buttons[4]?.pressed
-    newValues.leftTriggerButton = joystick.gamepad.buttons[6]?.pressed
-    newValues.leftStickerButton = joystick.gamepad.buttons[11]?.pressed
-
-    newValues.rightShoulderButton = joystick.gamepad.buttons[5]?.pressed
-    newValues.rightTriggerButton = joystick.gamepad.buttons[7]?.pressed
-    newValues.rightStickerButton = joystick.gamepad.buttons[10]?.pressed
-
-    newValues.extraButton1 = joystick.gamepad.buttons[8]?.pressed
-    newValues.extraButton2 = joystick.gamepad.buttons[9]?.pressed
-    newValues.extraButton3 = joystick.gamepad.buttons[16]?.pressed
-    newValues.extraButton4 = joystick.gamepad.buttons[17]?.pressed
-    newValues.extraButton5 = joystick.gamepad.buttons[18]?.pressed
-
-    joystick.values = newValues
+    const joystickModel = joystick.model || JoystickModel.Unknown
+    joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
 
     let newControllerState: ProtocolControllerState | undefined
     if (mappingProtocol.value === JoystickProtocol.MAVLink) {
-      const mavlinkMapping = mapping.value as MavlinkControllerMapping
-      newControllerState = new MavlinkControllerState(joystick.gamepad, mavlinkMapping)
+      const mavlinkMapping = protocolMapping.value as MavlinkControllerMapping
+      newControllerState = new MavlinkControllerState(joystick.state, mavlinkMapping)
     }
 
     if (newControllerState === undefined) return
@@ -108,7 +73,8 @@ export const useControllerStore = defineStore('controller', () => {
   return {
     registerControllerUpdateCallback,
     joysticks,
-    mapping,
+    protocolMapping,
+    cockpitStdMappings,
     availableAxes,
     availableButtons,
     axesLimits,
