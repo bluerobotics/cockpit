@@ -16,7 +16,15 @@ import {
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
-import { type PageDescription, Altitude, Attitude, Battery, Coordinates, PowerSupply } from '@/libs/vehicle/types'
+import {
+  type PageDescription,
+  Altitude,
+  Attitude,
+  Battery,
+  Coordinates,
+  Parameter,
+  PowerSupply,
+} from '@/libs/vehicle/types'
 import { ProtocolControllerState } from '@/types/joystick'
 
 import * as Vehicle from '../vehicle'
@@ -41,6 +49,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _cpuLoad = 0 // CPU load in percentage
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
+  _lastParameter = new Parameter()
   _vehicleSpecificErrors = [0, 0, 0, 0]
 
   _messages: MAVLinkMessageDictionary = new Map()
@@ -209,6 +218,19 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         ] // Autopilot-specific errors
         break
       }
+
+      case MAVLinkType.PARAM_VALUE: {
+        const receivedMessage = mavlink_message.message as Message.ParamValue
+        const param_name = receivedMessage.param_id.join('').replace(/\0/g, '')
+        const { param_value } = receivedMessage
+        // We need this due to mismatches between js 64-bit floats and REAL32 in MAVLink
+        const trimmed_value = Math.round(param_value * 10000) / 10000
+
+        this._lastParameter = { name: param_name, value: trimmed_value }
+        this.onParameter.emit()
+        break
+      }
+
       default:
         break
     }
@@ -319,6 +341,15 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   powerSupply(): PowerSupply {
     return this._powerSupply
+  }
+
+  /**
+   * Return power supply information
+   *
+   * @returns {Parameter}
+   */
+  lastParameter(): Parameter {
+    return this._lastParameter
   }
 
   /**

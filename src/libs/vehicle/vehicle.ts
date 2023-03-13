@@ -2,7 +2,15 @@ import { v4 as uuid4 } from 'uuid'
 
 import * as FunnyName from '@/libs/funny-name/funny-name'
 import { Signal } from '@/libs/signal'
-import type { Altitude, Attitude, Battery, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
+import type {
+  Altitude,
+  Attitude,
+  Battery,
+  Coordinates,
+  PageDescription,
+  Parameter,
+  PowerSupply,
+} from '@/libs/vehicle/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Abstract = AbstractVehicle<any>
@@ -64,6 +72,7 @@ export abstract class AbstractVehicle<Modes> {
   onMode = new Signal<Modes>()
   onPosition = new Signal<Coordinates>()
   onPowerSupply = new Signal<PowerSupply>()
+  onParameter = new Signal<Parameter>()
 
   /**
    * Constructor for the abstract vehicle type
@@ -95,6 +104,7 @@ export abstract class AbstractVehicle<Modes> {
     this.onMode.register_caller(() => this.mode())
     this.onPosition.register_caller(() => this.position())
     this.onPowerSupply.register_caller(() => this.powerSupply())
+    this.onParameter.register_caller(() => this.lastParameter())
   }
 
   /**
@@ -151,5 +161,6 @@ export abstract class AbstractVehicle<Modes> {
   abstract modesAvailable(): Map<string, Modes>
   abstract position(): Coordinates
   abstract powerSupply(): PowerSupply
+  abstract lastParameter(): Parameter
   abstract setMode(mode: Modes): void
 }
