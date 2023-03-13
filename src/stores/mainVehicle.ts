@@ -135,6 +135,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Request current parameters from vehicle
+   */
+  function requestParametersList(): void {
+    mainVehicle.value?.requestParametersList()
+  }
+
+  /**
    * List of available flight modes
    *
    * @returns {Array<string>}
@@ -251,6 +258,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     modesAvailable,
     setFlightMode,
     sendGcsHeartbeat,
+    requestParametersList,
     globalAddress,
     mainConnectionURI,
     webRTCSignallingURI,
