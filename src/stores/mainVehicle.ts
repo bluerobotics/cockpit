@@ -9,10 +9,15 @@ import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
+import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Copter-4.3/apm.pdef.json'
+import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Plane-4.3/apm.pdef.json'
+import * as ardurover_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Rover-4.2/apm.pdef.json'
+import * as ardusub_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Sub-4.1/apm.pdef.json'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Altitude, Attitude, Coordinates, PageDescription, PowerSupply } from '@/libs/vehicle/types'
+import type { Altitude, Attitude, Coordinates, PageDescription, Parameter, PowerSupply } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
+import { type MetadataFile } from '@/types/ardupilot-metadata'
 import { ProtocolControllerState } from '@/types/joystick'
 
 import { useControllerStore } from './controller'
@@ -85,6 +90,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
+  const parametersTable = reactive({})
+  const currentParameters = reactive({})
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean | undefined>(undefined)
   const icon = ref<string | undefined>(undefined)
@@ -202,6 +209,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
     })
+    mainVehicle.value.onParameter.add((newParameter: Parameter) => {
+      const newCurrentParameters = { ...currentParameters, ...{ [newParameter.name]: newParameter.value } }
+      Object.assign(currentParameters, newCurrentParameters)
+    })
     mainVehicle.value.onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.system_id != 1 || pack.header.component_id != 1) {
         return
@@ -236,6 +247,40 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         console.log(modesAvailable())
       },
       setFlightMode: setFlightMode,
+    }
+  })
+
+  watch(vehicleType, (newType, oldType) => {
+    if (newType !== undefined && newType !== oldType) {
+      // Default to submarine metadata
+      let metadata: MetadataFile = ardusub_metadata
+      // This is to avoid importing a 40 lines enum from mavlink and adding a switch case with 40 cases
+      if (
+        vehicleType.value?.toString().toLowerCase().includes('vtol') ||
+        vehicleType.value?.toString().toLowerCase().includes('wing')
+      ) {
+        metadata = arduplane_metadata
+      } else if (
+        vehicleType.value?.toString().toLowerCase().includes('copter') ||
+        vehicleType.value?.toString().toLowerCase().includes('rotor')
+      ) {
+        metadata = arducopter_metadata
+      } else if (
+        vehicleType.value?.toString().toLowerCase().includes('rover') ||
+        vehicleType.value?.toString().toLowerCase().includes('boat')
+      ) {
+        metadata = ardurover_metadata
+      }
+
+      for (const category of Object.values(metadata)) {
+        for (const [name, parameter] of Object.entries(category)) {
+          if (!isNaN(Number(parameter))) {
+            continue
+          }
+          const newParameterTable = { ...parametersTable, ...{ [name]: parameter } }
+          Object.assign(parametersTable, newParameterTable)
+        }
+      }
     }
   })
 
@@ -275,6 +320,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     isArmed,
     isVehicleOnline,
     icon,
+    parametersTable,
+    currentParameters,
     configurationPages,
   }
 })

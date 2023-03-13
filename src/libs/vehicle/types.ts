@@ -145,6 +145,14 @@ export class PowerSupply {
 }
 
 /**
+ * Parameter
+ */
+export class Parameter {
+  value: number
+  name: string
+}
+
+/**
  * Battery abstraction
  */
 export class Battery {
