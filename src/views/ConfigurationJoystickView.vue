@@ -12,8 +12,9 @@
       <div
         v-for="[key, joystick] in controllerStore.joysticks"
         :key="key"
-        class="flex-centered flex-column ma-8 pa-0 graphs-container"
+        class="p-4 m-8 shadow-md rounded-2xl flex-centered flex-column position-relative"
       >
+        <p class="text-xl font-semibold text-grey-darken-3">{{ joystick.model }} controller</p>
         <JoystickPS
           style="width: 100%"
           :model="joystick.model === JoystickModel.DualSense ? 'PS5' : 'PS4'"
