@@ -145,9 +145,9 @@ watch(
 )
 
 /**
- * Simpler sleep function
+ * Change virtual button to on/off state
  *
- * @param {Buttons} button Button to be user
+ * @param {Button} button Button to be used
  * @param {boolean} state Button state
  * @returns {void}
  */
