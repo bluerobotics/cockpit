@@ -12,34 +12,15 @@ export enum JoystickProtocol {
 /**
  * Current state of joystick inputs
  */
-export class JoystickValues {
-  leftAxisHorizontal = 0
-  leftAxisVertical = 0
-  rightAxisHorizontal = 0
-  rightAxisVertical = 0
-
-  directionalTopButton = false
-  directionalBottomButton = false
-  directionalLeftButton = false
-  directionalRightButton = false
-
-  rightClusterBottomButton = false
-  rightClusterRightButton = false
-  rightClusterLeftButton = false
-  rightClusterTopButton = false
-
-  leftShoulderButton = false
-  leftTriggerButton = false
-  leftStickerButton = false
-  rightShoulderButton = false
-  rightTriggerButton = false
-  rightStickerButton = false
-
-  extraButton1 = false
-  extraButton2 = false
-  extraButton3 = false
-  extraButton4 = false
-  extraButton5 = false
+export interface JoystickState {
+  /**
+   * Joystick buttons state
+   */
+  buttons: (number | undefined)[]
+  /**
+   * Joystick axes state
+   */
+  axes: (number | undefined)[]
 }
 
 /**
@@ -52,7 +33,7 @@ export class ProtocolControllerState {}
  */
 export class Joystick {
   gamepad: Gamepad
-  values = new JoystickValues()
+  gamepadToCockpitMap = availableGamepadToCockpitMaps[JoystickModel.Unknown]
   model = JoystickModel.Unknown
 
   /**
@@ -62,6 +43,24 @@ export class Joystick {
    */
   constructor(gamepad: Gamepad) {
     this.gamepad = gamepad
+  }
+
+  /**
+   * Returns current state of axes and buttons
+   *
+   * @returns {JoystickState}
+   */
+  get state(): JoystickState {
+    return {
+      buttons: this.gamepadToCockpitMap.buttons.map((idx) => {
+        if (idx === undefined || this.gamepad.buttons[idx] === undefined) return undefined
+        return this.gamepad.buttons[idx].value
+      }),
+      axes: this.gamepadToCockpitMap.axes.map((idx) => {
+        if (idx === undefined || this.gamepad.axes[idx] === undefined) return undefined
+        return this.gamepad.axes[idx]
+      }),
+    }
   }
 }
 
