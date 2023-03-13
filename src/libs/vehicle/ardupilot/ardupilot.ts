@@ -369,4 +369,16 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       Number(mode) // Custom mode, please refer to the individual autopilot specifications for details
     )
   }
+
+  /**
+   * Request parameters list from vehicle
+   */
+  requestParametersList(): void {
+    const paramRequestMessage: Message.ParamRequestList = {
+      type: MAVLinkType.PARAM_REQUEST_LIST,
+      target_system: 0,
+      target_component: 0,
+    }
+    this.write(paramRequestMessage)
+  }
 }
