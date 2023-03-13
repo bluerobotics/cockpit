@@ -18,6 +18,7 @@ export enum EventType {
 export enum JoystickModel {
   DualSense = 'DualSense (PS5)',
   DualShock4 = 'DualShock (PS4)',
+  XboxOneS_Bluetooth = 'Xbox One S (bluetooth)',
   Unknown = 'Unknown Joystick Model',
 }
 
@@ -25,6 +26,7 @@ const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   // Sony
   ['054c:0ce6', JoystickModel.DualSense],
   ['054c:09cc', JoystickModel.DualShock4],
+  ['045e:02e0', JoystickModel.XboxOneS_Bluetooth],
 ])
 
 // Necessary to add functions
