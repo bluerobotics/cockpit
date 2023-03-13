@@ -1,9 +1,9 @@
-import { ps4MavlinkMapping } from '@/assets/joystick-profiles'
+import { cockpitStandardToMavlink } from '@/assets/joystick-profiles'
 import { round, scale } from '@/libs/utils'
 import { sequentialArray } from '@/libs/utils'
-import { type ControllerMapping, JoystickProtocol, ProtocolControllerState } from '@/types/joystick'
+import { type ProtocolControllerMapping, JoystickProtocol, ProtocolControllerState } from '@/types/joystick'
 
-export type MavlinkControllerMapping = ControllerMapping
+export type MavlinkControllerMapping = ProtocolControllerMapping
 
 /**
  * Current state of the controller in the MavLink protocol
@@ -57,8 +57,8 @@ export class MavlinkControllerState extends ProtocolControllerState {
   }
 }
 
-export const defaultMavlinkControllerMapping = ps4MavlinkMapping
-export const protocolDefaultMapping = (protocol: JoystickProtocol): ControllerMapping => {
+export const defaultMavlinkControllerMapping = cockpitStandardToMavlink
+export const protocolDefaultMapping = (protocol: JoystickProtocol): ProtocolControllerMapping => {
   switch (protocol) {
     case JoystickProtocol.MAVLink:
       return defaultMavlinkControllerMapping
