@@ -50,6 +50,18 @@
           :button-label-correspondency="buttonFunctions"
           @click="(e) => setCurrentInputs(joystick, e)"
         />
+        <div class="flex">
+          <button
+            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
+            @click="downloadJoystickProfile(joystick)"
+          >
+            Download profile
+          </button>
+          <label class="w-auto p-3 m-2 font-medium rounded-md shadow-md cursor-pointer text-uppercase">
+            <input type="file" accept="application/json" hidden @change="(e) => loadJoystickProfile(joystick, e)" />
+            Load profile
+          </label>
+        </div>
       </div>
     </template>
   </BaseConfigurationView>
@@ -131,6 +143,8 @@
 </template>
 
 <script setup lang="ts">
+import { saveAs } from 'file-saver'
+import Swal from 'sweetalert2'
 import { onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import JoystickPS, { type InputSpec, Axis } from '@/components/joysticks/JoystickPS.vue'
@@ -249,6 +263,27 @@ const updateMapping = (index: number, newValue: string | number, inputType: Even
     buttons.value = newInputMapping as number[]
     currentProtocolMapping.value.buttons = buttons.value
   }
+}
+
+const downloadJoystickProfile = (joystick: Joystick): void => {
+  var blob = new Blob([JSON.stringify(joystick.gamepadToCockpitMap)], { type: 'text/plain;charset=utf-8' })
+  saveAs(blob, `cockpit-std-profile-joystick-${joystick.model}.json`)
+}
+
+const loadJoystickProfile = async (joystick: Joystick, e: Event): Promise<void> => {
+  var reader = new FileReader()
+  reader.onload = (event: Event) => {
+    // @ts-ignore: We know the event type and need refactor of the event typing
+    const contents = event.target.result
+    const maybeProfile = JSON.parse(contents)
+    if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
+      Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
+      return
+    }
+    controllerStore.cockpitStdMappings[joystick.model] = maybeProfile
+  }
+  // @ts-ignore: We know the event type and need refactor of the event typing
+  reader.readAsText(e.target.files[0])
 }
 
 const currentProtocolMapping = ref(controllerStore.protocolMapping)
