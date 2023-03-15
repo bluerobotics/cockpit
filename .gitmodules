@@ -1,3 +1,6 @@
 [submodule "src/libs/connection/messages"]
 	path = src/libs/connection/m2r
 	url = https://github.com/patrickelectric/mavlink2rest-ts.git
+[submodule "src/libs/vehicle/ardupilot/ParameterRepository"]
+	path = src/libs/vehicle/ardupilot/ParameterRepository
+	url = https://github.com/ArduPilot/ParameterRepository.git
