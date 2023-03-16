@@ -86,10 +86,30 @@ module.exports = {
     'vue/valid-v-slot': ['error', { allowModifiers: true }],
     'no-await-in-loop': 'off',
     'vue/multi-word-component-names': 'off',
+    'vue/max-len': [
+      'error',
+      {
+        code: 120,
+        template: 160,
+        tabWidth: 4,
+        comments: 160,
+        ignoreComments: true,
+        ignoreTrailingComments: true,
+        ignoreUrls: true,
+      },
+    ],
   },
   settings: {
     jsdoc: {
       mode: 'typescript',
     },
   },
+  overrides: [
+    {
+      files: ['*.vue'],
+      rules: {
+        'max-len': ['off'],
+      },
+    },
+  ],
 }
