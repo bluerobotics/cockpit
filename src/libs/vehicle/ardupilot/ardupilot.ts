@@ -159,9 +159,9 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
 
     switch (mavlink_message.message.type) {
-      case MAVLinkType.VFR_HUD: {
-        const vfrHud = mavlink_message.message as Message.VfrHud
-        this._altitude.msl = vfrHud.alt
+      case MAVLinkType.AHRS2: {
+        const ahrsMessage = mavlink_message.message as Message.Ahrs2
+        this._altitude.msl = ahrsMessage.altitude
         this.onAltitude.emit()
         break
       }
