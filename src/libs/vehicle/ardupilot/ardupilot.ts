@@ -28,7 +28,7 @@ export type ArduPilot = ArduPilotVehicle<any>
  * Generic ArduPilot vehicle
  */
 export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
-  _altitude = new Altitude({ msl: 0, climb_rate: 0 })
+  _altitude = new Altitude({ msl: 0 })
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0
@@ -162,7 +162,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       case MAVLinkType.VFR_HUD: {
         const vfrHud = mavlink_message.message as Message.VfrHud
         this._altitude.msl = vfrHud.alt
-        this._altitude.climb_rate = vfrHud.climb
         this.onAltitude.emit()
         break
       }
