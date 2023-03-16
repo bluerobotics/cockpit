@@ -124,7 +124,6 @@ export class Attitude {
  */
 export class Altitude {
   msl: number // Mean Sea Level, in meters
-  climb_rate: number // in meters per second
 
   /**
    * Create object
