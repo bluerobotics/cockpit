@@ -18,7 +18,7 @@
     <div v-if="hoveringWidgetOrOverlay || !notHoveringEditMenu" class="editing-buttons">
       <v-menu v-if="allowResizing || allowOrdering || allowDeleting" location="top">
         <template #activator="{ props: menuProps }">
-          <v-btn v-bind="menuProps" size="x-small" icon="mdi-pencil" />
+          <v-btn v-bind="menuProps" size="x-small" icon="mdi-pencil" color="white" />
         </template>
         <v-list ref="widgetEditMenu">
           <v-btn
