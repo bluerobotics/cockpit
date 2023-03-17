@@ -305,6 +305,8 @@ watch([renderVars, canvasSize, widget.value.options], () => {
   margin: 5px;
   top: 0;
   right: 0;
+  color: white;
+  filter: drop-shadow(2px 2px black);
 }
 .main:hover .options-btn {
   display: block;
