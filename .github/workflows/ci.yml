@@ -24,7 +24,7 @@ jobs:
 
       - name: Run yarn
         run: |
-          yarn install --frozen-lockfile
+          yarn install --frozen-lockfile --network-timeout 300000
           yarn lint
           yarn typecheck
           yarn build
@@ -62,7 +62,7 @@ jobs:
       - name: Build electron
         run: |
           npm install --global yarn
-          yarn install --frozen-lockfile
+          yarn install --frozen-lockfile --network-timeout 300000
           yarn build
           yarn deploy:electron
 
