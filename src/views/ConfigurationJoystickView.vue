@@ -11,12 +11,33 @@
         <p class="text-base text-center">Make sure that a joystick is connected.</p>
         <p class="text-base text-center">You can hit any key to test the joystick connection.</p>
       </div>
-      <div
-        v-else-if="buttonFunctions.length === 0"
-        class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
-      >
-        <p>Could not stablish communication with the vehicle.</p>
-        <p>Button functions will appear as numbers. If connection is restablished, function names will appear.</p>
+      <div v-else>
+        <div
+          class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-fit"
+        >
+          <p class="font-bold">
+            This is the joystick configuration page. Here you can calibrate your joystick and map its buttons to
+            functions in your drone.
+          </p>
+          <br />
+          <p>
+            Click the buttons in your physical controller and see them being activated here. If any button does not
+            light up in this virtual joystick or is switched with another, click in it here and follow the instructions
+            to remap it.
+          </p>
+          <br />
+          <p>
+            By clicking the virtual buttons and axis you are also able to choose the function in your drone that this
+            button controls, as whel as set axis limits.
+          </p>
+        </div>
+        <div
+          v-if="buttonFunctions.length === 0"
+          class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
+        >
+          <p>Could not stablish communication with the vehicle.</p>
+          <p>Button functions will appear as numbers. If connection is restablished, function names will appear.</p>
+        </div>
       </div>
       <div
         v-for="[key, joystick] in controllerStore.joysticks"
