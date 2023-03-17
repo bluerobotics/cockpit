@@ -22,6 +22,14 @@
           hide-details
           @change="widget.options.showRollPitchValues = !widget.options.showRollPitchValues"
         />
+        <v-switch
+          class="ma-1"
+          label="Show center aim"
+          :model-value="widget.options.showCenterAim"
+          :color="widget.options.showCenterAim ? 'rgb(0, 20, 80)' : undefined"
+          hide-details
+          @change="widget.options.showCenterAim = !widget.options.showCenterAim"
+        />
         <span>Distance between pitch lines</span>
         <v-slider
           v-model="widget.options.pitchHeightFactor"
@@ -103,6 +111,7 @@ onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
+      showCenterAim: true,
       showRollPitchValues: true,
       desiredAimRadius: 150,
       pitchHeightFactor: 300,
@@ -212,23 +221,25 @@ const renderCanvas = (): void => {
   ctx.setLineDash([])
   ctx.font = `bold ${refFontSize}px Arial`
 
-  // Draw left side of the aim circle
-  ctx.beginPath()
-  ctx.moveTo(-aimRadius.value, 0)
-  ctx.lineTo(-1.5 * aimRadius.value, 0)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.arc(0, 0, aimRadius.value, radians(135), radians(225))
-  ctx.stroke()
+  if (widget.value.options.showCenterAim) {
+    // Draw left side of the aim circle
+    ctx.beginPath()
+    ctx.moveTo(-aimRadius.value, 0)
+    ctx.lineTo(-1.5 * aimRadius.value, 0)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(0, 0, aimRadius.value, radians(135), radians(225))
+    ctx.stroke()
 
-  // Draw right side of the aim circle
-  ctx.beginPath()
-  ctx.moveTo(aimRadius.value, 0)
-  ctx.lineTo(1.5 * aimRadius.value, 0)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.arc(0, 0, aimRadius.value, radians(-45), radians(45))
-  ctx.stroke()
+    // Draw right side of the aim circle
+    ctx.beginPath()
+    ctx.moveTo(aimRadius.value, 0)
+    ctx.lineTo(1.5 * aimRadius.value, 0)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(0, 0, aimRadius.value, radians(-45), radians(45))
+    ctx.stroke()
+  }
 
   if (widget.value.options.showRollPitchValues) {
     const rollText = `r: ${Number(rollAngleDeg.value).toFixed(2)}`
