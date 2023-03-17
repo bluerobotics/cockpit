@@ -2,11 +2,14 @@
   <BaseConfigurationView>
     <template #title>Joystick configuration</template>
     <template #content>
-      <div v-if="controllerStore.joysticks && !controllerStore.joysticks.size">
-        <h2 class="warning flex-centered">
-          No joystick detected.<br />
-          Make sure that a joystick is connected. You can hit any key to test the joystick connection.
-        </h2>
+      <div
+        v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
+        class="p-12 m-8 shadow-md rounded-2xl flex-centered flex-column position-relative"
+      >
+        <p class="text-2xl font-semibold">No joystick detected.</p>
+        <br />
+        <p class="text-base text-center">Make sure that a joystick is connected.</p>
+        <p class="text-base text-center">You can hit any key to test the joystick connection.</p>
       </div>
       <div
         v-else-if="buttonFunctions.length === 0"
