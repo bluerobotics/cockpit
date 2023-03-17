@@ -8,16 +8,21 @@
       {{ vehicleIcon ?? 'mdi-help' }}
     </v-icon>
 
-    <v-switch
-      v-model="vehicleStore.isArmed"
-      v-tooltip.bottom="vehicleStore.isArmed ? 'Disarm vehicle' : 'Arm vehicle'"
-      :disabled="!vehicleStore.isVehicleOnline"
-      class="mx-1 flex items-center justify-center min-w-fit arm-switch"
-      color="red-darken-3"
-      :loading="vehicleStore.isArmed === undefined"
-      hide-details
-      @update:model-value="vehicleStore.isArmed ? vehicleStore.arm() : vehicleStore.disarm()"
-    />
+    <button
+      class="relative flex items-center justify-center w-24 h-10 p-2 m-3 text-white rounded-md shadow-inner cursor-pointer bg-blue-grey-lighten-3 opacity-90"
+      @click="vehicleStore.isArmed ? vehicleStore.disarm() : vehicleStore.arm()"
+    >
+      <div
+        class="absolute top-auto flex items-center px-1 rounded-md shadow"
+        :class="vehicleStore.isArmed ? 'bg-grey-darken-1 justify-end' : 'justify-start bg-blue-darken-2'"
+        style="width: 70%; height: 80%; transition: all 0.2s ease-in-out"
+        :style="vehicleStore.isArmed ? 'left: 23%' : 'left: 7%'"
+      >
+        <span class="inline-block font-extrabold align-middle">
+          {{ vehicleStore.isArmed === undefined ? '...' : vehicleStore.isArmed ? 'Disarm' : 'Arm' }}
+        </span>
+      </div>
+    </button>
 
     <Alerter class="max-w-sm min-w-fit" />
 
@@ -30,7 +35,7 @@
       variant="outlined"
       no-data-text="Waiting for available modes."
       hide-details
-      class="mx-1 flex items-center justify-center min-w-fit mode-select"
+      class="flex items-center justify-center mx-1 min-w-fit mode-select"
       :loading="vehicleStore.mode === undefined"
       @update:model-value="(newMode: string) => vehicleStore.setFlightMode(newMode)"
     />
