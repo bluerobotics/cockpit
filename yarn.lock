@@ -4361,11 +4361,6 @@ klona@^2.0.4:
   resolved "https://registry.yarnpkg.com/klona/-/klona-2.0.5.tgz#d166574d90076395d9963aa7a928fabb8d76afbc"
   integrity sha512-pJiBpiXMbt7dkzXe8Ghj/u4FfXOOa98fPW+bihOJ4SjnoijweJrNThJfd3ifXpXhREjpoF2mZVH1GfS9LV3kHQ==
 
-konva@^8.3.13:
-  version "8.3.13"
-  resolved "https://registry.yarnpkg.com/konva/-/konva-8.3.13.tgz#c1adc986ddf5dde4790c0ed47eef8d40a313232e"
-  integrity sha512-O5VxHfRfTj4PscTglQH1NimS8+CC5hQYLeB8YQstu8MN/i2L8GjA1T9d7xxzITF2TD5+xcIs5ei7en3cztbNXg==
-
 latest-version@^5.1.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/latest-version/-/latest-version-5.1.0.tgz#119dfe908fe38d15dfa43ecd13fa12ec8832face"
@@ -6115,11 +6110,6 @@ vue-eslint-parser@^8.0.0, vue-eslint-parser@^8.0.1:
     esquery "^1.4.0"
     lodash "^4.17.21"
     semver "^7.3.5"
-
-vue-konva@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/vue-konva/-/vue-konva-3.0.1.tgz#1b0537e28aa492e28565e70ab9a10470ca21685a"
-  integrity sha512-2RQrGs1oSJR9G+mPvTXZsuLk1Jiy8vImYssfYZrUXVcpYP2s3Ihq0AUbg4lUj/gFpEcd2iK389ByPysUOD07Tw==
 
 vue-resize@^2.0.0-alpha.1:
   version "2.0.0-alpha.1"
