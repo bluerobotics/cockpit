@@ -30,6 +30,14 @@
           hide-details
           @change="widget.options.showCenterAim = !widget.options.showCenterAim"
         />
+        <v-switch
+          class="ma-1"
+          label="Show pitch lines"
+          :model-value="widget.options.showPitchLines"
+          :color="widget.options.showPitchLines ? 'rgb(0, 20, 80)' : undefined"
+          hide-details
+          @change="widget.options.showPitchLines = !widget.options.showPitchLines"
+        />
         <span>Distance between pitch lines</span>
         <v-slider
           v-model="widget.options.pitchHeightFactor"
@@ -112,6 +120,7 @@ onBeforeMount(() => {
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
       showCenterAim: true,
+      showPitchLines: true,
       showRollPitchValues: true,
       desiredAimRadius: 150,
       pitchHeightFactor: 300,
@@ -202,19 +211,22 @@ const renderCanvas = (): void => {
     ctx.lineWidth = lineThickness
     ctx.setLineDash(lineDashPattern)
 
-    // Draw left side of the line
-    ctx.moveTo(-(pitchLinesStartRadius + lineWidthFactor * (halfCanvasWidth - pitchLinesStartRadius)) + stdPad, height)
-    ctx.lineTo(-pitchLinesStartRadius, height)
-    ctx.lineTo(-pitchLinesStartRadius + 5, height + 15)
-    ctx.fillText(Number(angle), -pitchLinesStartRadius - 4 * stdPad, height - 3 * stdPad)
+    if (widget.value.options.showPitchLines) {
+      const distanceFromCenter = pitchLinesStartRadius + lineWidthFactor * (halfCanvasWidth - pitchLinesStartRadius)
+      // Draw left side of the line
+      ctx.moveTo(-distanceFromCenter + stdPad, height)
+      ctx.lineTo(-pitchLinesStartRadius, height)
+      ctx.lineTo(-pitchLinesStartRadius + 5, height + 15)
+      ctx.fillText(Number(angle), -pitchLinesStartRadius - 4 * stdPad, height - 3 * stdPad)
 
-    // Draw right side of the line
-    ctx.moveTo(+(pitchLinesStartRadius + lineWidthFactor * (halfCanvasWidth - pitchLinesStartRadius)) - stdPad, height)
-    ctx.lineTo(pitchLinesStartRadius, height)
-    ctx.lineTo(pitchLinesStartRadius - 5, height + 15)
-    ctx.fillText(Number(angle), pitchLinesStartRadius + 4 * stdPad, height - 3 * stdPad)
+      // Draw right side of the line
+      ctx.moveTo(+distanceFromCenter - stdPad, height)
+      ctx.lineTo(pitchLinesStartRadius, height)
+      ctx.lineTo(pitchLinesStartRadius - 5, height + 15)
+      ctx.fillText(Number(angle), pitchLinesStartRadius + 4 * stdPad, height - 3 * stdPad)
 
-    ctx.stroke()
+      ctx.stroke()
+    }
   }
 
   ctx.lineWidth = 3
