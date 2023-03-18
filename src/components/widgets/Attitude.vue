@@ -245,6 +245,18 @@ const renderCanvas = (): void => {
     }
     ctx.stroke()
   }
+
+  // Revert translation and rotation
+  ctx.translate(-halfCanvasWidth, -halfCanvasHeight)
+  ctx.rotate(-1 * radians(renderVars.rollDegrees))
+
+  // Add transparent mask over widget borders
+  ctx.globalCompositeOperation = 'source-in'
+  const grH = ctx.createLinearGradient(0, 0, canvasSize.value.width, canvasSize.value.height)
+  grH.addColorStop(0.0, widget.value.options.hudColor)
+  grH.addColorStop(1.0, widget.value.options.hudColor)
+  ctx.fillStyle = grH
+  ctx.fillRect(0, 0, canvasSize.value.width, canvasSize.value.height)
 }
 
 // Update the height of each pitch line when the vehicle pitch is updated
