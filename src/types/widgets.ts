@@ -16,6 +16,7 @@ export enum WidgetType {
   PowerBar = 'PowerBar',
   PowerSupply = 'PowerSupply',
   VideoPlayer = 'VideoPlayer',
+  VideoRecorder = 'VideoRecorder',
 }
 
 export type Widget = {

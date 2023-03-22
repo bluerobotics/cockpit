@@ -59,6 +59,9 @@
           <template v-if="widget.component === WidgetType.VideoPlayer">
             <VideoPlayer :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.VideoRecorder">
+            <VideoRecorder :widget="widget" />
+          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
@@ -101,6 +104,7 @@ import MissionInfo from '../components/widgets/MissionInfo.vue'
 import PowerBar from '../components/widgets/PowerBar.vue'
 import PowerSupply from '../components/widgets/PowerSupply.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
+import VideoRecorder from '../components/widgets/VideoRecorder.vue'
 
 const store = useWidgetManagerStore()
 

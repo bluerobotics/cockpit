@@ -1,0 +1,152 @@
+<template>
+  <div ref="recorderWidget" class="flex flex-col justify-around text-center align-center min-w-max min-h-max">
+    <div
+      :class="{ 'blob red opacity-100': isRecording, 'opacity-30': isOutside && !isRecording }"
+      class="w-20 h-20 m-2 transition-all duration-500 rounded-full bg-red-lighten-1 hover:cursor-pointer opacity-70 hover:opacity-90"
+      @click="isRecording ? stopRecording() : startRecording()"
+    />
+    <v-select
+      v-model="selectedStream"
+      label="Stream name"
+      class="m-1 transition-all duration-500"
+      :class="{ 'opacity-0': isOutside }"
+      :items="availableStreams"
+      item-title="name"
+      density="compact"
+      variant="outlined"
+      no-data-text="No streams available."
+      hide-details
+      return-object
+      color="white"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useMouseInElement } from '@vueuse/core'
+import { saveAs } from 'file-saver'
+import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
+import adapter from 'webrtc-adapter'
+
+import { WebRTCManager } from '@/composables/webRTC'
+import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
+import type { Widget } from '@/types/widgets'
+
+const { webRTCSignallingURI } = useMainVehicleStore()
+
+const globalAddress = 'blueos.local'
+
+console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
+
+const props = defineProps<{
+  /**
+   * Widget reference
+   */
+  widget: Widget
+}>()
+
+const widget = toRefs(props).widget
+
+const rtcConfiguration = {
+  bundlePolicy: 'max-bundle',
+  iceServers: [
+    {
+      urls: `turn:${globalAddress}:3478`,
+      username: 'user',
+      credential: 'pwd',
+    },
+    {
+      urls: `stun:${globalAddress}:3478`,
+    },
+  ],
+  // eslint-disable-next-line no-undef
+} as RTCConfiguration
+
+const selectedStream = ref<Stream | undefined>()
+const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
+const { availableStreams, mediaStream } = webRTCManager.startStream(selectedStream)
+const mediaRecorder = ref<MediaRecorder>()
+const recorderWidget = ref()
+const { isOutside } = useMouseInElement(recorderWidget)
+
+const isRecording = computed(() => {
+  return mediaRecorder.value !== undefined && mediaRecorder.value.state === 'recording'
+})
+
+onBeforeMount(() => {
+  // Set initial widget options if they don't exist
+  if (Object.keys(widget.value.options).length === 0) {
+    widget.value.options = {
+      streamName: undefined as string | undefined,
+    }
+  }
+})
+
+onBeforeUnmount(() => {
+  webRTCManager.close('WebRTC manager removed')
+})
+
+const startRecording = (): void => {
+  if (selectedStream.value === undefined || mediaStream.value === undefined) return
+  mediaRecorder.value = new MediaRecorder(mediaStream.value)
+  mediaRecorder.value.start()
+  let chunks: Blob[] = []
+  mediaRecorder.value.ondataavailable = (e) => chunks.push(e.data)
+
+  mediaRecorder.value.onstop = () => {
+    const blob = new Blob(chunks, { type: 'video/webm' })
+    chunks = []
+    saveAs(blob, 'video')
+  }
+}
+
+const stopRecording = (): void => {
+  if (mediaRecorder.value === undefined || !isRecording.value) return
+  mediaRecorder.value.stop()
+  mediaRecorder.value = undefined
+}
+
+watch(availableStreams, () => {
+  const savedStreamName: string | undefined = widget.value.options.streamName
+  if (availableStreams.value.isEmpty()) {
+    return
+  }
+
+  // Retrieve stream from the savedStreamName, otherwise choose the first available stream as a fallback
+  const savedStream =
+    savedStreamName !== undefined
+      ? availableStreams.value.find((s) => s.name === savedStreamName)
+      : availableStreams.value.first()
+
+  if (savedStream !== undefined && savedStream !== selectedStream.value) {
+    console.debug!('[WebRTC] trying to set stream...')
+    selectedStream.value = savedStream
+  }
+})
+</script>
+
+<style scoped>
+.blob.red {
+  background: rgba(255, 82, 82, 1);
+  box-shadow: 0 0 0 0 rgba(255, 82, 82, 1);
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(255, 82, 82, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 82, 82, 0);
+  }
+}
+</style>
