@@ -18,6 +18,7 @@
       hide-details
       return-object
       color="white"
+      @update:model-value="updateCurrentStream"
     />
   </div>
 </template>
@@ -57,14 +58,29 @@ const isRecording = computed(() => {
   return mediaRecorder.value !== undefined && mediaRecorder.value.state === 'recording'
 })
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
   // Set initial widget options if they don't exist
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
       streamName: undefined as string | undefined,
     }
   }
+  addScreenStream()
 })
+
+const addScreenStream = (): void => {
+  const screenStream = {
+    id: 'screenStream',
+    name: 'Entire screen',
+    encode: null,
+    height: null,
+    width: null,
+    interval: null,
+    source: null,
+    created: null,
+  }
+  availableStreams.value.push(screenStream)
+}
 
 onBeforeUnmount(() => {
   webRTCManager.close('WebRTC manager removed')
@@ -88,10 +104,27 @@ const stopRecording = (): void => {
   if (mediaRecorder.value === undefined || !isRecording.value) return
   mediaRecorder.value.stop()
   mediaRecorder.value = undefined
+  if (mediaStream.value !== undefined) {
+    mediaStream.value.getTracks().forEach((track: MediaStreamTrack) => track.stop())
+  }
+}
+
+const updateCurrentStream = async (): Promise<void> => {
+  if (selectedStream.value?.id === 'screenStream') {
+    try {
+      // @ts-ignore: preferCurrentTab option is currently available in most browsers, including chromium-based ones
+      mediaStream.value = await navigator.mediaDevices.getDisplayMedia({ preferCurrentTab: true })
+    } catch (err) {
+      console.error(err)
+    }
+  }
 }
 
 watch(availableStreams, () => {
   const savedStreamName: string | undefined = widget.value.options.streamName
+  if (!availableStreams.value.find((stream) => stream.id === 'screenStream')) {
+    addScreenStream()
+  }
   if (availableStreams.value.isEmpty()) {
     return
   }
