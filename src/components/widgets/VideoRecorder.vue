@@ -33,9 +33,7 @@ import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
-const { webRTCSignallingURI } = useMainVehicleStore()
-
-const globalAddress = 'blueos.local'
+const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
 
 console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
@@ -47,21 +45,6 @@ const props = defineProps<{
 }>()
 
 const widget = toRefs(props).widget
-
-const rtcConfiguration = {
-  bundlePolicy: 'max-bundle',
-  iceServers: [
-    {
-      urls: `turn:${globalAddress}:3478`,
-      username: 'user',
-      credential: 'pwd',
-    },
-    {
-      urls: `stun:${globalAddress}:3478`,
-    },
-  ],
-  // eslint-disable-next-line no-undef
-} as RTCConfiguration
 
 const selectedStream = ref<Stream | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)

@@ -297,6 +297,24 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
 
+  const rtcConfiguration = computed(
+    () =>
+      ({
+        bundlePolicy: 'max-bundle',
+        iceServers: [
+          {
+            urls: `turn:${globalAddress.value}:3478`,
+            username: 'user',
+            credential: 'pwd',
+          },
+          {
+            urls: `stun:${globalAddress.value}:3478`,
+          },
+        ],
+        // eslint-disable-next-line no-undef
+      } as RTCConfiguration)
+  )
+
   return {
     arm,
     disarm,
@@ -323,5 +341,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     parametersTable,
     currentParameters,
     configurationPages,
+    rtcConfiguration,
   }
 })
