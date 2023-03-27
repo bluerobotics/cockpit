@@ -49,10 +49,11 @@ const widget = toRefs(props).widget
 
 const selectedStream = ref<Stream | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-const { availableStreams, mediaStream } = webRTCManager.startStream(selectedStream)
+const { availableStreams: externalStreams, mediaStream } = webRTCManager.startStream(selectedStream)
 const mediaRecorder = ref<MediaRecorder>()
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
+const availableStreams = ref<Stream[]>([])
 
 const isRecording = computed(() => {
   return mediaRecorder.value !== undefined && mediaRecorder.value.state === 'recording'
@@ -120,8 +121,9 @@ const updateCurrentStream = async (): Promise<void> => {
   }
 }
 
-watch(availableStreams, () => {
+watch(externalStreams, () => {
   const savedStreamName: string | undefined = widget.value.options.streamName
+  availableStreams.value = externalStreams.value
   if (!availableStreams.value.find((stream) => stream.id === 'screenStream')) {
     addScreenStream()
   }
