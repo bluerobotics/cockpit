@@ -1,26 +1,44 @@
 <template>
-  <div ref="recorderWidget" class="flex flex-col justify-around text-center align-center min-w-max min-h-max">
+  <div ref="recorderWidget" class="flex flex-col justify-around w-full h-full p-2 text-center align-center">
     <div
       :class="{ 'blob red opacity-100': isRecording, 'opacity-30': isOutside && !isRecording }"
-      class="w-20 h-20 m-2 transition-all duration-500 rounded-full bg-red-lighten-1 hover:cursor-pointer opacity-70 hover:opacity-90"
-      @click="isRecording ? stopRecording() : startRecording()"
-    />
-    <v-select
-      :model-value="selectedStream"
-      label="Stream name"
-      class="m-1 transition-all duration-500"
-      :class="{ 'opacity-0': isOutside }"
-      :items="availableStreams"
-      item-title="name"
-      density="compact"
-      variant="outlined"
-      no-data-text="No streams available."
-      hide-details
-      return-object
-      color="white"
-      @update:model-value="updateCurrentStream"
+      class="w-full transition-all duration-500 rounded-full aspect-square bg-red-lighten-1 hover:cursor-pointer opacity-70 hover:opacity-90"
+      @click="toggleRecording()"
     />
   </div>
+  <v-dialog v-model="isStreamSelectDialogOpen" width="auto">
+    <div class="p-6 m-5 bg-white rounded-md">
+      <p class="text-xl font-semibold">Choose a stream to record</p>
+      <div class="w-auto h-px my-2 bg-grey-lighten-3" />
+      <v-select
+        :model-value="selectedStream"
+        label="Stream name"
+        :items="availableStreams"
+        item-title="name"
+        density="compact"
+        variant="outlined"
+        no-data-text="No streams available."
+        hide-details
+        return-object
+        @update:model-value="updateCurrentStream"
+      />
+      <div class="flex items-center">
+        <button
+          class="w-auto p-3 mx-2 font-medium transition-all rounded-md shadow-md text-uppercase hover:bg-slate-100"
+          @click="isStreamSelectDialogOpen = false"
+        >
+          Cancel
+        </button>
+        <button
+          class="flex items-center p-3 mx-2 font-medium transition-all rounded-md shadow-md w-fit text-uppercase hover:bg-slate-100"
+          @click=";[startRecording(), (isStreamSelectDialogOpen = false)]"
+        >
+          <span>Record</span>
+          <div class="w-5 h-5 ml-2 rounded-full bg-red" />
+        </button>
+      </div>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
@@ -55,6 +73,7 @@ const mediaRecorder = ref<MediaRecorder>()
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
 const availableStreams = ref<Stream[]>([])
+const isStreamSelectDialogOpen = ref(false)
 
 const isRecording = computed(() => {
   return mediaRecorder.value !== undefined && mediaRecorder.value.state === 'recording'
@@ -69,6 +88,15 @@ onBeforeMount(async () => {
   }
   addScreenStream()
 })
+
+const toggleRecording = async (): Promise<void> => {
+  if (isRecording.value) {
+    stopRecording()
+    return
+  }
+  // Open dialog so user can choose the stream which will be recorded
+  isStreamSelectDialogOpen.value = true
+}
 
 const addScreenStream = (): void => {
   const screenStream = {
