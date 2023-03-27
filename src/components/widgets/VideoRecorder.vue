@@ -6,7 +6,7 @@
       @click="isRecording ? stopRecording() : startRecording()"
     />
     <v-select
-      v-model="selectedStream"
+      :model-value="selectedStream"
       label="Stream name"
       class="m-1 transition-all duration-500"
       :class="{ 'opacity-0': isOutside }"
@@ -110,8 +110,12 @@ const stopRecording = (): void => {
   }
 }
 
-const updateCurrentStream = async (): Promise<void> => {
-  if (selectedStream.value?.id === 'screenStream') {
+const updateCurrentStream = async (stream: Stream | undefined): Promise<void> => {
+  selectedStream.value = stream
+  if (selectedStream.value === undefined) {
+    mediaStream.value = undefined
+    return
+  } else if (selectedStream.value.id === 'screenStream') {
     try {
       // @ts-ignore: preferCurrentTab option is currently available in most browsers, including chromium-based ones
       mediaStream.value = await navigator.mediaDevices.getDisplayMedia({ preferCurrentTab: true })
