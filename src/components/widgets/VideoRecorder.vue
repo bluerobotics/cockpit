@@ -122,7 +122,8 @@ const stopRecording = (): void => {
   if (mediaRecorder.value === undefined || !isRecording.value) return
   mediaRecorder.value.stop()
   mediaRecorder.value = undefined
-  if (mediaStream.value !== undefined) {
+  // If recording the screen stream, stop the tracks also, so the browser removes the recording warning.
+  if (selectedStream.value?.id === 'screenStream' && mediaStream.value !== undefined) {
     mediaStream.value.getTracks().forEach((track: MediaStreamTrack) => track.stop())
   }
 }
