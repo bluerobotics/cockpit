@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import { useMouseInElement } from '@vueuse/core'
 import { saveAs } from 'file-saver'
+import Swal, { type SweetAlertResult } from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
@@ -87,8 +88,24 @@ onBeforeUnmount(() => {
   webRTCManager.close('WebRTC manager removed')
 })
 
-const startRecording = (): void => {
-  if (selectedStream.value === undefined || mediaStream.value === undefined) return
+const startRecording = async (): Promise<SweetAlertResult | void> => {
+  if (availableStreams.value.isEmpty()) {
+    return Swal.fire({ text: 'No streams available.', icon: 'error' })
+  }
+  if (selectedStream.value === undefined) {
+    if (availableStreams.value.length === 1) {
+      await updateCurrentStream(availableStreams.value[0])
+    } else {
+      return Swal.fire({ text: 'No stream selected. Please choose one before continuing.', icon: 'error' })
+    }
+  }
+  if (mediaStream.value === undefined) {
+    return Swal.fire({ text: 'Media stream not defined.', icon: 'error' })
+  }
+  if (!mediaStream.value.active) {
+    return Swal.fire({ text: 'Media stream not yet active. Wait a second and try again.', icon: 'error' })
+  }
+
   mediaRecorder.value = new MediaRecorder(mediaStream.value)
   mediaRecorder.value.start()
   let chunks: Blob[] = []
