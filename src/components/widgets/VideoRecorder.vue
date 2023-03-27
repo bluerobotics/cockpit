@@ -99,6 +99,14 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
       return Swal.fire({ text: 'No stream selected. Please choose one before continuing.', icon: 'error' })
     }
   }
+  if (selectedStream.value?.id === 'screenStream') {
+    try {
+      // @ts-ignore: preferCurrentTab option is currently available in most browsers, including chromium-based ones
+      mediaStream.value = await navigator.mediaDevices.getDisplayMedia({ preferCurrentTab: true })
+    } catch (err) {
+      return Swal.fire({ text: 'Could not get stream from user screen.', icon: 'error' })
+    }
+  }
   if (mediaStream.value === undefined) {
     return Swal.fire({ text: 'Media stream not defined.', icon: 'error' })
   }
@@ -132,14 +140,6 @@ const updateCurrentStream = async (stream: Stream | undefined): Promise<void> =>
   selectedStream.value = stream
   if (selectedStream.value === undefined) {
     mediaStream.value = undefined
-    return
-  } else if (selectedStream.value.id === 'screenStream') {
-    try {
-      // @ts-ignore: preferCurrentTab option is currently available in most browsers, including chromium-based ones
-      mediaStream.value = await navigator.mediaDevices.getDisplayMedia({ preferCurrentTab: true })
-    } catch (err) {
-      console.error(err)
-    }
   }
 }
 
