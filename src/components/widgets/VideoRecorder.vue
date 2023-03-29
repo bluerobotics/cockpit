@@ -24,7 +24,7 @@
       />
       <div class="flex items-center">
         <button
-          class="w-auto p-3 mx-2 font-medium transition-all rounded-md shadow-md text-uppercase hover:bg-slate-100"
+          class="w-auto p-3 m-2 font-medium transition-all rounded-md shadow-md text-uppercase hover:bg-slate-100"
           @click="isStreamSelectDialogOpen = false"
         >
           Cancel
