@@ -31,10 +31,12 @@
         </button>
         <button
           class="flex items-center p-3 mx-2 font-medium transition-all rounded-md shadow-md w-fit text-uppercase hover:bg-slate-100"
+          :class="{ 'bg-slate-200 opacity-30 pointer-events-none': isLoadingStream }"
           @click=";[startRecording(), (isStreamSelectDialogOpen = false)]"
         >
           <span>Record</span>
-          <div class="w-5 h-5 ml-2 rounded-full bg-red" />
+          <v-icon v-if="isLoadingStream" class="m-2 animate-spin">mdi-loading</v-icon>
+          <div v-else class="w-5 h-5 ml-2 rounded-full bg-red" />
         </button>
       </div>
     </div>
@@ -74,6 +76,7 @@ const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
 const availableStreams = ref<Stream[]>([])
 const isStreamSelectDialogOpen = ref(false)
+const isLoadingStream = ref(false)
 
 const isRecording = computed(() => {
   return mediaRecorder.value !== undefined && mediaRecorder.value.state === 'recording'
@@ -164,10 +167,23 @@ const stopRecording = (): void => {
   }
 }
 
-const updateCurrentStream = async (stream: Stream | undefined): Promise<void> => {
+const updateCurrentStream = async (stream: Stream | undefined): Promise<SweetAlertResult | void> => {
   selectedStream.value = stream
-  if (selectedStream.value === undefined) {
-    mediaStream.value = undefined
+  mediaStream.value = undefined
+  if (selectedStream.value !== undefined && selectedStream.value.id !== 'screenStream') {
+    isLoadingStream.value = true
+    let millisPassed = 0
+    const timeStep = 100
+    const waitingTime = 3000
+    while (isLoadingStream.value && millisPassed < waitingTime) {
+      // @ts-ignore: The media stream can (and probably will) get defined as we selected a stream
+      isLoadingStream.value = mediaStream.value === undefined || !mediaStream.value.active
+      await new Promise((r) => setTimeout(r, timeStep))
+      millisPassed += timeStep
+    }
+    if (isLoadingStream.value) {
+      return Swal.fire({ text: 'Could not load media stream.', icon: 'error' })
+    }
   }
   widget.value.options.streamName = selectedStream.value?.name
 }
