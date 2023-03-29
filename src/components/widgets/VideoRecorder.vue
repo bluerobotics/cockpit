@@ -182,15 +182,12 @@ watch(externalStreams, () => {
     return
   }
 
-  // Retrieve stream from the savedStreamName, otherwise choose the first available stream as a fallback
-  const savedStream =
-    savedStreamName !== undefined
-      ? availableStreams.value.find((s) => s.name === savedStreamName)
-      : availableStreams.value.first()
+  // Retrieve stream from the saved stream name, otherwise choose the first available stream as a fallback
+  const savedStream = savedStreamName ? availableStreams.value.find((s) => s.name === savedStreamName) : undefined
 
-  if (savedStream !== undefined && savedStream !== selectedStream.value) {
+  if (savedStream !== undefined && savedStream !== selectedStream.value && selectedStream.value === undefined) {
     console.debug!('[WebRTC] trying to set stream...')
-    selectedStream.value = savedStream
+    updateCurrentStream(savedStream)
   }
 })
 </script>
