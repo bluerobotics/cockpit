@@ -169,6 +169,7 @@ const updateCurrentStream = async (stream: Stream | undefined): Promise<void> =>
   if (selectedStream.value === undefined) {
     mediaStream.value = undefined
   }
+  widget.value.options.streamName = selectedStream.value?.name
 }
 
 watch(externalStreams, () => {
