@@ -116,7 +116,6 @@ watch(mediaStream, async (newStream, oldStream) => {
     return
   }
 
-  widget.value.options.streamName = selectedStream.value?.name
   videoElement.value.srcObject = newStream
   videoElement.value
     .play()
@@ -129,6 +128,8 @@ watch(mediaStream, async (newStream, oldStream) => {
       streamStatus.value = msg
     })
 })
+
+watch(selectedStream, () => (widget.value.options.streamName = selectedStream.value?.name))
 
 watch(availableStreams, () => {
   const savedStreamName: string | undefined = widget.value.options.streamName
