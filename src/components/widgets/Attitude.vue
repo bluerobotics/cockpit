@@ -271,7 +271,6 @@ const renderCanvas = (): void => {
 
   // Revert translation and rotation
   ctx.translate(-halfCanvasWidth, -halfCanvasHeight)
-  ctx.rotate(-1 * radians(renderVars.rollDegrees))
 
   // Add transparent mask over widget borders
   ctx.globalCompositeOperation = 'source-in'
