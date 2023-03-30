@@ -154,17 +154,16 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
     const blob = new Blob(chunks, { type: 'video/webm' })
     chunks = []
     saveAs(blob, 'video')
+    mediaRecorder.value = undefined
+    if (selectedStream.value?.id === 'screenStream' && mediaStream.value !== undefined) {
+      // If recording the screen stream, stop the tracks also, so the browser removes the recording warning.
+      mediaStream.value.getTracks().forEach((track: MediaStreamTrack) => track.stop())
+    }
   }
 }
 
 const stopRecording = (): void => {
-  if (mediaRecorder.value === undefined || !isRecording.value) return
-  mediaRecorder.value.stop()
-  mediaRecorder.value = undefined
-  // If recording the screen stream, stop the tracks also, so the browser removes the recording warning.
-  if (selectedStream.value?.id === 'screenStream' && mediaStream.value !== undefined) {
-    mediaStream.value.getTracks().forEach((track: MediaStreamTrack) => track.stop())
-  }
+  mediaRecorder.value?.stop()
 }
 
 const updateCurrentStream = async (stream: Stream | undefined): Promise<SweetAlertResult | void> => {
