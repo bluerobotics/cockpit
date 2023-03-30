@@ -132,6 +132,24 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
   }
   if (selectedStream.value?.id === 'screenStream') {
     try {
+      // @ts-ignore: camera permission check is currently available in most browsers, including chromium-based ones
+      const displayPermission = await navigator.permissions.query({ name: 'display-capture' })
+      if (displayPermission.state === 'denied') {
+        const noPermissionHtml = `
+          <p>Your browser is currently blocking screen recording.</p>
+          <p>We are working to solve this automatically for you.</p>
+          <p>By the meantime, please follow the instructions.</p>
+          <br />
+          <l>
+            <li>Copy Cockpit's URL (usually "http://blueos.local:49153").</li>
+            <li>Open the following URL: "chrome://flags/#unsafely-treat-insecure-origin-as-secure".</li>
+            <li>Add Cockpit's URL to the "Insecure origins treated as secure" list.</li>
+            <li>Select "Enabled" on the side menu.</li>
+            <li>Restart your browser.</li>
+          </l>
+          `
+        return Swal.fire({ html: noPermissionHtml, icon: 'error' })
+      }
       // @ts-ignore: preferCurrentTab option is currently available in most browsers, including chromium-based ones
       mediaStream.value = await navigator.mediaDevices.getDisplayMedia({ preferCurrentTab: true })
     } catch (err) {
