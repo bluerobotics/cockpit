@@ -132,6 +132,11 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
   }
   if (selectedStream.value?.id === 'screenStream') {
     try {
+      // @ts-ignore: camera permission check is currently available in most browsers, including chromium-based ones
+      const cameraPermission = await navigator.permissions.query({ name: 'display-capture' })
+      if (cameraPermission.state === 'denied') {
+        await navigator.mediaDevices.getUserMedia({ video: true })
+      }
       // @ts-ignore: preferCurrentTab option is currently available in most browsers, including chromium-based ones
       mediaStream.value = await navigator.mediaDevices.getDisplayMedia({ preferCurrentTab: true })
     } catch (err) {
