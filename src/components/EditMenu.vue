@@ -116,7 +116,7 @@
               autofocus
               hide-details="auto"
               label="Profile name"
-              :rules="[(name) => !!name || 'Name is required']"
+              :rules="[(name: string) => !!name || 'Name is required']"
             />
           </v-form>
         </v-card-text>
