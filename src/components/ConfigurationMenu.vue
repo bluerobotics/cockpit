@@ -38,11 +38,8 @@ import { useDisplay } from 'vuetify'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import ConfigurationDevelopmentView from '../views/ConfigurationDevelopmentView.vue'
-import ConfigurationFrameView from '../views/ConfigurationFrameView.vue'
 import ConfigurationGeneralView from '../views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '../views/ConfigurationJoystickView.vue'
-import ConfigurationPowerView from '../views/ConfigurationPowerView.vue'
-import ConfigurationSensorsView from '../views/ConfigurationSensorsView.vue'
 
 const store = useMainVehicleStore()
 
@@ -56,24 +53,9 @@ const menus = [
     component: ConfigurationGeneralView,
   },
   {
-    icon: 'mdi-altimeter',
-    title: 'Sensors',
-    component: ConfigurationSensorsView,
-  },
-  {
     icon: 'mdi-controller',
     title: 'Joystick',
     component: ConfigurationJoystickView,
-  },
-  {
-    icon: 'mdi-tank',
-    title: 'Frame',
-    component: ConfigurationFrameView,
-  },
-  {
-    icon: 'mdi-lightning-bolt',
-    title: 'Power',
-    component: ConfigurationPowerView,
   },
   {
     icon: 'mdi-dev-to',
