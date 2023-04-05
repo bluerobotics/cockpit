@@ -6164,10 +6164,10 @@ vuetify-loader@^2.0.0-alpha.0:
     querystring "^0.2.1"
     upath "^2.0.1"
 
-vuetify@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-3.0.0.tgz#372eed0663f0ffba53439cd99aa46031e560b0f4"
-  integrity sha512-0olLmKWb+oTaebGTM02+1fWaAgnGDuIt86K3jDv2LnALQ2atSzhDS1SSASJsJCZ2PgFBdDAeJVLcNWWavRYAlQ==
+vuetify@^3.1.13:
+  version "3.1.13"
+  resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-3.1.13.tgz#8236a24e0a7a24ab294ca07c75fdfcf5d74acd44"
+  integrity sha512-mC2UvWqS3Ne/aZ6Q+79kiL36xSe5jGxm0KWWq2e4SRxuqIE14IbyzqfXvU0bEqns0dHU5dOiKCMM9jHZFDLKgQ==
 
 w3c-hr-time@^1.0.2:
   version "1.0.2"
