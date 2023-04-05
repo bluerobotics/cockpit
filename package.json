@@ -20,7 +20,7 @@
   "dependencies": {
     "@mdi/font": "^7.0.96",
     "@vue-leaflet/vue-leaflet": "^0.6.1",
-    "@vueuse/core": "^9.13.0",
+    "@vueuse/core": "9.8.1",
     "browser-or-node": "^2.0.0",
     "colord": "^2.9.3",
     "date-fns": "^2.29.3",
