@@ -130,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog, useMouse, useMouseInElement } from '@vueuse/core'
+import { useConfirmDialog, useMouse, useMouseInElement, useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import Swal from 'sweetalert2'
 import { computed, ref, toRefs, watch } from 'vue'
@@ -166,11 +166,14 @@ const newProfileForm = ref(false)
 const editMode = toRefs(props).editMode
 
 const showDrawer = ref(props.editMode)
-const { x: mouseX } = useMouse()
+const { x: mouseX, y: mouseY } = useMouse()
+const { height: windowHeight } = useWindowSize()
 
 const editMenu = ref()
 const { isOutside: notHoveringEditMenu } = useMouseInElement(editMenu)
-const mouseNearLeftBorder = computed(() => mouseX.value < 50)
+const mouseNearLeftBorder = computed(
+  () => mouseX.value < 50 && mouseY.value > 100 && mouseY.value < windowHeight.value - 100
+)
 
 watch(showDrawer, (isShowing, wasShowing) => {
   if (!wasShowing && isShowing) {
