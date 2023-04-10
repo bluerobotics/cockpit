@@ -5,6 +5,7 @@
     v-model:zoom="zoom"
     v-model:bounds="bounds"
     v-model:center="center"
+    :max-zoom="19"
     class="map"
     @ready="onLeafletReady"
   >
