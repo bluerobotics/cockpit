@@ -44,7 +44,7 @@ import type { Map } from 'leaflet'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
-const zoom = ref(11)
+const zoom = ref(18)
 const bounds = ref(null)
 const center = ref([-27.5935, -48.55854])
 const home = ref(center.value)
