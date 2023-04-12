@@ -4373,10 +4373,10 @@ lazy-val@^1.0.4, lazy-val@^1.0.5:
   resolved "https://registry.yarnpkg.com/lazy-val/-/lazy-val-1.0.5.tgz#6cf3b9f5bc31cee7ee3e369c0832b7583dcd923d"
   integrity sha512-0/BnGCCfyUMkBpeDgWihanIAF9JmZhHBgUhEqzvf+adhNGLoP6TaiI5oF8oyb3I45P+PcnrqihSf01M0l0G5+Q==
 
-leaflet@^1.9.0:
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/leaflet/-/leaflet-1.9.2.tgz#168b6c6ef1d4d1e8409bde2c4ad050c249c4dbe6"
-  integrity sha512-Kc77HQvWO+y9y2oIs3dn5h5sy2kr3j41ewdqCMEUA4N89lgfUUfOBy7wnnHEstDpefiGFObq12FdopGRMx4J7g==
+leaflet@1.9.3:
+  version "1.9.3"
+  resolved "https://registry.yarnpkg.com/leaflet/-/leaflet-1.9.3.tgz#52ec436954964e2d3d39e0d433da4b2500d74414"
+  integrity sha512-iB2cR9vAkDOu5l3HAay2obcUHZ7xwUBBjph8+PGtmW/2lYhbLizWtG7nTeYht36WfOslixQF9D/uSIzhZgGMfQ==
 
 leven@^3.1.0:
   version "3.1.0"
