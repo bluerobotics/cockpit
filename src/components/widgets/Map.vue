@@ -59,6 +59,7 @@
         </svg>
       </l-icon>
     </l-marker>
+    <l-polyline :lat-lngs="vehicleLatLongHistory" />
     <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
   </l-map>
 </template>
@@ -66,7 +67,8 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
-import { LIcon, LMap, LMarker, LTileLayer } from '@vue-leaflet/vue-leaflet'
+import { LIcon, LMap, LMarker, LPolyline, LTileLayer } from '@vue-leaflet/vue-leaflet'
+import { useRefHistory } from '@vueuse/core'
 import type { Map } from 'leaflet'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -84,6 +86,8 @@ const vehiclePosition = computed(() =>
   vehicleStore.coordinates.latitude ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude] : [0, 0]
 )
 const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw).toFixed(2) : 0))
+const { history: vehiclePositionHistory } = useRefHistory(vehiclePosition)
+const vehicleLatLongHistory = computed(() => vehiclePositionHistory.value.map((posHis) => posHis.snapshot))
 const map: Ref<null | any> = ref(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 const leafletObject = ref<null | Map>(null)
 
