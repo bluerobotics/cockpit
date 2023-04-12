@@ -40,7 +40,7 @@
         </svg>
       </l-icon>
     </l-marker>
-    <l-marker :lat-lng="vehiclePosition" name="Vehicle">
+    <l-marker :lat-lng="vehiclePosition ?? [0, 0]" name="Vehicle">
       <l-icon :icon-anchor="[50, 50]">
         <svg
           version="1.1"
@@ -108,11 +108,15 @@ const bounds = ref(null)
 const center = ref([-27.5935, -48.55854])
 const home = ref(center.value)
 const vehiclePosition = computed(() =>
-  vehicleStore.coordinates.latitude ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude] : [0, 0]
+  vehicleStore.coordinates.latitude
+    ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude]
+    : undefined
 )
 const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw).toFixed(2) : 0))
 const { history: vehiclePositionHistory } = useRefHistory(vehiclePosition)
-const vehicleLatLongHistory = computed(() => vehiclePositionHistory.value.map((posHis) => posHis.snapshot))
+const vehicleLatLongHistory = computed(() =>
+  vehiclePositionHistory.value.filter((posHis) => posHis.snapshot !== undefined).map((posHis) => posHis.snapshot)
+)
 const map: Ref<null | any> = ref(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 const leafletObject = ref<null | Map>(null)
 
