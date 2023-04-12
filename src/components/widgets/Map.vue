@@ -44,6 +44,7 @@
         >
           <path
             id="path188"
+            :transform="`rotate(${vehicleHeading}, 50, 50) scale(0.7) translate(25, 25)`"
             d="m 50.137948,2.4018877 c 6.564396,5.061536 14.178589,20.9374463 16.210615,35.7093823 0.98559,
             7.142609 1.338459,14.857115 1.0586,23.119175 -0.158182,4.34397 -0.474545,9.18683 -0.863915,
             12.95891 -0.438042,4.17362 -0.803076,7.05743 -1.33846,10.58615 -0.219021,1.39931 -0.45021,4.24662 -0.705734,
@@ -70,6 +71,7 @@ import type { Map } from 'leaflet'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
+import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const vehicleStore = useMainVehicleStore()
@@ -81,6 +83,7 @@ const home = ref(center.value)
 const vehiclePosition = computed(() =>
   vehicleStore.coordinates.latitude ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude] : [0, 0]
 )
+const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw).toFixed(2) : 0))
 const map: Ref<null | any> = ref(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 const leafletObject = ref<null | Map>(null)
 
