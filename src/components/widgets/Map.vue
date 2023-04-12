@@ -9,6 +9,14 @@
     class="map"
     @ready="onLeafletReady"
   >
+    <v-btn
+      class="options-btn"
+      icon="mdi-dots-vertical"
+      size="x-small"
+      variant="text"
+      flat
+      @click="showOptionsDialog = !showOptionsDialog"
+    />
     <div class="top-left-menu">
       <v-btn
         class="ma-1"
@@ -59,22 +67,39 @@
         </svg>
       </l-icon>
     </l-marker>
-    <l-polyline :lat-lngs="vehicleLatLongHistory" />
+    <l-polyline v-if="widget.options.showVehiclePath" :lat-lngs="vehicleLatLongHistory" />
     <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
   </l-map>
+  <v-dialog v-model="showOptionsDialog" width="auto">
+    <v-card class="pa-2">
+      <v-card-title>Map widget settings</v-card-title>
+      <v-card-text>
+        <v-switch
+          v-model="widget.options.showVehiclePath"
+          class="my-1"
+          label="Show vehicle path"
+          :color="widget.options.showVehiclePath ? 'rgb(0, 20, 80)' : undefined"
+          hide-details
+        />
+      </v-card-text>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
 import { LIcon, LMap, LMarker, LPolyline, LTileLayer } from '@vue-leaflet/vue-leaflet'
-import { useRefHistory } from '@vueuse/core'
+import { useMouseInElement, useRefHistory } from '@vueuse/core'
 import type { Map } from 'leaflet'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
+import { onBeforeMount } from 'vue'
+import { toRefs } from 'vue'
 
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import type { Widget } from '@/types/widgets'
 
 const vehicleStore = useMainVehicleStore()
 
@@ -121,7 +146,7 @@ const onLeafletReady = async (): Promise<void> => {
     return
   }
 
-  leafletObject.value.zoomControl.setPosition('topright')
+  leafletObject.value.zoomControl.setPosition('bottomright')
 
   // It was not possible to find a way to change the position
   // automatically besides waiting 2 seconds before changing it
@@ -134,6 +159,28 @@ const goHome = async (): Promise<void> => {
   }
   center.value = home.value
 }
+
+const props = defineProps<{
+  /**
+   * Widget reference
+   */
+  widget: Widget
+}>()
+
+const widget = toRefs(props).widget
+
+onBeforeMount(() => {
+  // Set initial widget options if they don't exist
+  if (Object.keys(widget.value.options).length === 0) {
+    widget.value.options = {
+      showVehiclePath: true,
+    }
+  }
+})
+
+const { isOutside } = useMouseInElement(map)
+const mouseOverWidgetStyle = computed(() => (isOutside.value ? 'none' : 'block'))
+const showOptionsDialog = ref(false)
 </script>
 
 <style scoped>
@@ -143,5 +190,16 @@ const goHome = async (): Promise<void> => {
 .top-left-menu {
   margin-left: 8px;
   margin-top: 8px;
+}
+.options-btn {
+  z-index: 1002;
+  display: none;
+  position: absolute;
+  margin: 5px;
+  top: 0;
+  right: 0;
+  color: white;
+  filter: drop-shadow(2px 2px black);
+  display: v-bind('mouseOverWidgetStyle');
 }
 </style>
