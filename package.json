@@ -28,6 +28,7 @@
     "floating-vue": "^2.0.0-beta.20",
     "gamepad.js": "^1.0.4",
     "gsap": "^3.11.3",
+    "haversine-distance": "^1.2.1",
     "leaflet": "1.9.3",
     "pinia": "^2.0.13",
     "roboto-fontface": "*",
