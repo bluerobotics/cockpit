@@ -11,7 +11,7 @@
         <p class="text-base text-center">Make sure that a joystick is connected.</p>
         <p class="text-base text-center">You can hit any key to test the joystick connection.</p>
       </div>
-      <div v-else>
+      <div v-else class="flex flex-col items-center">
         <div
           class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-fit"
         >
