@@ -54,7 +54,7 @@ export interface InputSpec {
 
 <script setup lang="ts">
 import { v4 as uuid4 } from 'uuid'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { EventType } from '@/libs/joystick/manager'
 import type { InputWithPrettyName } from '@/libs/joystick/protocols'
@@ -221,7 +221,9 @@ watch(
   () => updateButtonsState()
 )
 
-watch([props.protocolMapping, props.buttonLabelCorrespondency], () => updateLabelsState())
+const buttonLabelCorrespondency = toRefs(props).buttonLabelCorrespondency
+const protocolMapping = toRefs(props).protocolMapping
+watch([protocolMapping, buttonLabelCorrespondency], () => updateLabelsState())
 
 const updateLabelsState = (): void => {
   Object.values(Button).forEach((button) => {
