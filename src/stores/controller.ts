@@ -2,15 +2,9 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { availableGamepadToCockpitMaps } from '@/assets/joystick-profiles'
+import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
-import { type ButtonFunctionCorrespondency } from '@/libs/joystick/protocols'
-import {
-  protocolAvailableAxes,
-  protocolAvailableButtons,
-  protocolAxesLimits,
-  protocolDefaultMapping,
-} from '@/libs/joystick/protocols'
+import { type InputWithPrettyName, allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { type JoystickState, type ProtocolControllerMapping, Joystick, JoystickProtocol } from '@/types/joystick'
 
 export type controllerUpdateCallback = (state: JoystickState, protocolMapping: ProtocolControllerMapping) => void
@@ -18,13 +12,11 @@ export type controllerUpdateCallback = (state: JoystickState, protocolMapping: P
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const mappingProtocol = ref<JoystickProtocol>(JoystickProtocol.MAVLink)
-  const protocolMapping = useStorage('cockpit-protocol-mapping', protocolDefaultMapping(mappingProtocol.value))
+  const protocolMapping = useStorage('cockpit-v0.0.7-protocol-mapping', cockpitStandardToProtocols)
   const cockpitStdMappings = useStorage('cockpit-standard-mappings', availableGamepadToCockpitMaps)
-  const availableAxes = protocolAvailableAxes(mappingProtocol.value)
-  const availableButtons = protocolAvailableButtons(mappingProtocol.value)
-  const axesLimits = protocolAxesLimits(mappingProtocol.value)
-  const allPrettyButtonNames = ref<ButtonFunctionCorrespondency[]>([])
+  const availableAxes = allAvailableAxes
+  const availableButtons = allAvailableButtons
+  const allPrettyButtonNames = ref<InputWithPrettyName[]>([])
 
   const registerControllerUpdateCallback = (callback: controllerUpdateCallback): void => {
     updateCallbacks.value.push(callback)
@@ -63,6 +55,14 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
+  const updateCockpitActionButtonsPrettyNames = (): void => {
+    const cockpitActionButtonsWithPrettyNames: InputWithPrettyName[] = protocolMapping.value.buttons
+      .filter((btn) => btn.protocol === JoystickProtocol.CockpitAction)
+      .map((btn) => ({ input: btn, prettyName: btn.value?.toString() || 'No function' }))
+    allPrettyButtonNames.value = allPrettyButtonNames.value.concat(cockpitActionButtonsWithPrettyNames)
+  }
+  updateCockpitActionButtonsPrettyNames()
+
   return {
     registerControllerUpdateCallback,
     joysticks,
@@ -70,7 +70,6 @@ export const useControllerStore = defineStore('controller', () => {
     cockpitStdMappings,
     availableAxes,
     availableButtons,
-    axesLimits,
     allPrettyButtonNames,
   }
 })

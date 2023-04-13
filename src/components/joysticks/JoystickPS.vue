@@ -57,6 +57,7 @@ import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { EventType } from '@/libs/joystick/manager'
+import type { InputWithPrettyName } from '@/libs/joystick/protocols'
 import { scale } from '@/libs/utils'
 import type { ProtocolControllerMapping } from '@/types/joystick'
 
@@ -124,7 +125,7 @@ const props = defineProps<{
   rightAxisHoriz?: number // State of the horizontal right axis as a floating point number, between -1 and +1
   rightAxisVert?: number // State of the vertical right axis as a floating point number, between -1 and +1
   protocolMapping: ProtocolControllerMapping // Mapping from the Cockpit standard to the protocol functions
-  buttonLabelCorrespondency: { button: number, function: string }[] // Mapping from the protocol functions to human readable names
+  buttonLabelCorrespondency: InputWithPrettyName[] // Mapping from the protocol functions to human readable names
 }>()
 
 const emit = defineEmits<{
@@ -227,11 +228,11 @@ const updateLabelsState = (): void => {
     if (isNaN(Number(button))) return
     const protocolButton = props.protocolMapping.buttons[button as Button] || undefined
     let functionName = undefined
-    if (props.buttonLabelCorrespondency.length === 0) {
-      functionName = button
+    if (props.buttonLabelCorrespondency.length === 0 || !props.buttonLabelCorrespondency.map((b) => b.input.value).includes(button)) {
+      functionName = protocolButton.protocol && protocolButton.value ? `${protocolButton.value} (${protocolButton.protocol})` : 'unassigned'
     } else {
-      const param = props.buttonLabelCorrespondency.find((param) => param.button === protocolButton)
-      functionName = param === undefined ? 'unassigned' : param.function
+      const param = props.buttonLabelCorrespondency.find((btn) => btn.input.protocol === protocolButton.protocol && btn.input.value === protocolButton.value)
+      functionName = param === undefined ? 'unassigned' : param.prettyName
     }
     if (!svg) return
     // @ts-ignore: we already check if button is a number and so if button is a valid index

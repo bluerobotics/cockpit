@@ -32,7 +32,7 @@
           </p>
         </div>
         <div
-          v-if="controllerStore.allPrettyButtonNames.length === 0"
+          v-if="controllerStore.allPrettyButtonNames.every((b) => b.input.protocol === JoystickProtocol.CockpitAction)"
           class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
         >
           <p>Could not stablish communication with the vehicle.</p>
@@ -115,11 +115,13 @@
               <v-select
                 :model-value="axesCorrespondencies[input.value]"
                 :items="controllerStore.availableAxes"
+                item-title="value"
+                return-object
                 hide-details
                 density="compact"
                 variant="solo"
                 class="w-16 m-3"
-                @update:model-value="(newValue: number | string) => updateMapping(input.value, newValue, input.type)"
+                @update:model-value="(newValue: ProtocolInput) => updateMapping(input.value, newValue, input.type)"
               />
               <v-text-field
                 v-model.number="controllerStore.protocolMapping.axesMaxs[input.value]"
@@ -149,14 +151,14 @@
               <v-select
                 :key="input.value"
                 :model-value="buttons[input.value]"
-                :items="buttonFunctions"
-                item-title="function"
-                item-value="button"
+                :items="availableButtons"
+                item-title="prettyName"
+                item-value="input"
                 hide-details
                 density="compact"
                 variant="solo"
                 class="m-3 w-52"
-                @update:model-value="(newValue: number | string) => updateMapping(input.value, newValue, input.type)"
+                @update:model-value="(newValue: ProtocolInput) => updateMapping(input.value, newValue, input.type)"
               />
             </div>
           </div>
@@ -169,16 +171,27 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
 import Swal from 'sweetalert2'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import JoystickPS, { type InputSpec, Axis } from '@/components/joysticks/JoystickPS.vue'
 import { EventType, JoystickModel } from '@/libs/joystick/manager'
 import { useControllerStore } from '@/stores/controller'
-import type { CockpitButton, Joystick } from '@/types/joystick'
+import { type CockpitButton, type Joystick, type ProtocolInput, JoystickProtocol } from '@/types/joystick'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
+
+const availableButtons = computed(() => {
+  const actualButtons = controllerStore.availableButtons.map((btn) => {
+    const prettyBtn = controllerStore.allPrettyButtonNames.find(
+      (b) => btn.protocol === b.input.protocol && btn.value === b.input.value
+    )
+    return { input: btn, prettyName: `${prettyBtn?.prettyName ?? btn.value} (${btn.protocol})` }
+  })
+  actualButtons.push({ input: { protocol: undefined, value: undefined }, prettyName: 'No function' })
+  return actualButtons
+})
 
 const setCurrentInputs = (joystick: Joystick, inputs: InputSpec[]): void => {
   currentJoystick.value = joystick
@@ -217,7 +230,7 @@ watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 const axesCorrespondencies = ref(controllerStore.protocolMapping.axesCorrespondencies)
 const buttons = ref(controllerStore.protocolMapping.buttons)
 
-const updateMapping = (index: number, newValue: string | number, inputType: EventType): void => {
+const updateMapping = (index: number, newValue: ProtocolInput, inputType: EventType): void => {
   if (![EventType.Axis, EventType.Button].includes(inputType)) {
     console.error('Input type should be Axis or Button.')
     return
@@ -226,14 +239,16 @@ const updateMapping = (index: number, newValue: string | number, inputType: Even
   const inputOldValue = oldInputMapping[index]
   // For the index that previously holded the selected value, use the former value of the modified index
   const newInputMapping = oldInputMapping.map((oldValue) => {
-    return oldValue === newValue ? inputOldValue : oldValue
+    const newInputValue =
+      oldValue.protocol === newValue.protocol && oldValue.value === newValue.value ? inputOldValue : oldValue
+    return newInputValue
   })
   newInputMapping[index] = newValue
   if (inputType === EventType.Axis) {
-    axesCorrespondencies.value = newInputMapping as string[]
+    axesCorrespondencies.value = newInputMapping
     currentProtocolMapping.value.axesCorrespondencies = axesCorrespondencies.value
   } else {
-    buttons.value = newInputMapping as number[]
+    buttons.value = newInputMapping
     currentProtocolMapping.value.buttons = buttons.value
   }
 }
