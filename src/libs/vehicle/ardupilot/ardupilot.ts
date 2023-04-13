@@ -24,6 +24,7 @@ import {
   Coordinates,
   Parameter,
   PowerSupply,
+  Velocity,
 } from '@/libs/vehicle/types'
 import { ProtocolControllerState } from '@/types/joystick'
 
@@ -46,6 +47,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     latitude: 0,
     longitude: 0,
   })
+  _velocity = new Velocity({ x: 0, y: 0, z: 0, ground: 0, overall: 0 })
   _cpuLoad = 0 // CPU load in percentage
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
@@ -189,6 +191,12 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         this._coordinates.latitude = position.lat / 1e7 // DegE7 to Deg
         this._coordinates.longitude = position.lon / 1e7 // DegE7 to Deg
         this.onPosition.emit()
+        this._velocity.x = position.vx / 100 // Convert cm/s to m/s
+        this._velocity.y = position.vy / 100 // Convert cm/s to m/s
+        this._velocity.z = position.vz / 100 // Convert cm/s to m/s
+        this._velocity.ground = Math.sqrt(this._velocity.x ** 2 + this._velocity.y ** 2)
+        this._velocity.overall = Math.sqrt(this._velocity.x ** 2 + this._velocity.y ** 2 + this._velocity.z ** 2)
+        this.onVelocity.emit()
         break
       }
       case MAVLinkType.HEARTBEAT: {
@@ -334,6 +342,16 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   position(): Coordinates {
     return this._coordinates
   }
+
+  /**
+   * Return vehicle velocity information
+   *
+   * @returns {Velocity}
+   */
+  velocity(): Velocity {
+    return this._velocity
+  }
+
   /**
    * Return power supply information
    *
