@@ -1,4 +1,5 @@
 import { JoystickModel } from '@/libs/joystick/manager'
+import { CockpitAction } from '@/libs/joystick/protocols'
 import { type GamepadToCockpitStdMapping, type ProtocolControllerMapping, JoystickProtocol } from '@/types/joystick'
 
 // TODO: Adjust mapping for PS5 controller
@@ -19,7 +20,7 @@ export const cockpitStandardToProtocols: ProtocolControllerMapping = {
     { protocol: JoystickProtocol.MAVLink, value: 3 },
     { protocol: JoystickProtocol.MAVLink, value: 9 },
     { protocol: JoystickProtocol.MAVLink, value: 10 },
-    { protocol: undefined, value: undefined },
+    { protocol: JoystickProtocol.CockpitAction, value: CockpitAction.TOGGLE_FULL_SCREEN },
     { protocol: undefined, value: undefined },
     { protocol: JoystickProtocol.MAVLink, value: 4 },
     { protocol: JoystickProtocol.MAVLink, value: 6 },
