@@ -1,4 +1,3 @@
-import { availableGamepadToCockpitMaps } from '@/assets/joystick-profiles'
 import { JoystickModel } from '@/libs/joystick/manager'
 
 /**
@@ -34,7 +33,7 @@ export class ProtocolControllerState {}
  */
 export class Joystick {
   gamepad: Gamepad
-  gamepadToCockpitMap = availableGamepadToCockpitMaps[JoystickModel.Unknown]
+  gamepadToCockpitMap: GamepadToCockpitStdMapping | undefined = undefined
   model = JoystickModel.Unknown
 
   /**
@@ -53,14 +52,16 @@ export class Joystick {
    */
   get state(): JoystickState {
     return {
-      buttons: this.gamepadToCockpitMap.buttons.map((idx) => {
-        if (idx === undefined || this.gamepad.buttons[idx] === undefined) return undefined
-        return this.gamepad.buttons[idx].value
-      }),
-      axes: this.gamepadToCockpitMap.axes.map((idx) => {
-        if (idx === undefined || this.gamepad.axes[idx] === undefined) return undefined
-        return this.gamepad.axes[idx]
-      }),
+      buttons:
+        this.gamepadToCockpitMap?.buttons.map((idx) => {
+          if (idx === undefined || this.gamepad.buttons[idx] === undefined) return undefined
+          return this.gamepad.buttons[idx].value
+        }) || [],
+      axes:
+        this.gamepadToCockpitMap?.axes.map((idx) => {
+          if (idx === undefined || this.gamepad.axes[idx] === undefined) return undefined
+          return this.gamepad.axes[idx]
+        }) || [],
     }
   }
 }
