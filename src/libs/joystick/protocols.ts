@@ -1,3 +1,5 @@
+import { v4 as uuid4 } from 'uuid'
+
 import { round, scale } from '@/libs/utils'
 import { sequentialArray } from '@/libs/utils'
 import {
@@ -81,21 +83,44 @@ export class MavlinkControllerState extends ProtocolControllerState {
 export enum CockpitAction {}
 
 export type CockpitActionCallback = () => void
+
+/**
+ * Callback entry
+ */
+interface CallbackEntry {
+  /**
+   * Unique ID for that callback register
+   */
+  action: CockpitAction
+  /**
+   * Callback to be called
+   */
+  callback: CockpitActionCallback
+}
+
 // @ts-ignore: Typescript does not get that we are initializing the object dinamically
-const actionsCallbacks: { [action in CockpitAction]: CockpitActionCallback } = Object.fromEntries(
-  Object.values(CockpitAction).map((action) => [action, () => console.error(`Action '${action}' has no callback.`)])
-)
-export const registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): void => {
-  actionsCallbacks[action] = callback
+const actionsCallbacks: { [id in string]: CallbackEntry } = {}
+
+export const registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): string => {
+  const id = uuid4()
+  actionsCallbacks[id] = { action, callback }
+  return id
+}
+export const unregisterActionCallback = (id: string): void => {
+  delete actionsCallbacks[id]
 }
 
 export const sendCockpitActions = (joystickState: JoystickState, mapping: ProtocolControllerMapping): void => {
+  const actionsToCallback: CockpitAction[] = []
   joystickState.buttons.forEach((state, idx) => {
     const mappedButton = mapping.buttons[idx]
     if (state && mappedButton.protocol === JoystickProtocol.CockpitAction) {
-      if (Object.keys(actionsCallbacks).includes(mappedButton.value as CockpitAction)) {
-        actionsCallbacks[mappedButton.value as CockpitAction]()
-      }
+      actionsToCallback.push(mappedButton.value as CockpitAction)
+    }
+  })
+  Object.values(actionsCallbacks).forEach((entry) => {
+    if (actionsToCallback.includes(entry.action)) {
+      entry.callback()
     }
   })
 }
