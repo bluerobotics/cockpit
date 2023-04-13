@@ -1,15 +1,15 @@
 import { JoystickModel } from '@/libs/joystick/manager'
-import { CockpitAction } from '@/libs/joystick/protocols'
+import { CockpitAction, MAVLinkAxis } from '@/libs/joystick/protocols'
 import { type GamepadToCockpitStdMapping, type ProtocolControllerMapping, JoystickProtocol } from '@/types/joystick'
 
 // TODO: Adjust mapping for PS5 controller
 export const cockpitStandardToProtocols: ProtocolControllerMapping = {
   name: 'Cockpit Standard Gamepad to Protocols',
   axesCorrespondencies: [
-    { protocol: JoystickProtocol.MAVLink, value: 'y' },
-    { protocol: JoystickProtocol.MAVLink, value: 'x' },
-    { protocol: JoystickProtocol.MAVLink, value: 'r' },
-    { protocol: JoystickProtocol.MAVLink, value: 'z' },
+    { protocol: JoystickProtocol.MAVLink, value: MAVLinkAxis.Y },
+    { protocol: JoystickProtocol.MAVLink, value: MAVLinkAxis.X },
+    { protocol: JoystickProtocol.MAVLink, value: MAVLinkAxis.R },
+    { protocol: JoystickProtocol.MAVLink, value: MAVLinkAxis.Z },
   ],
   axesMins: [-1000, 1000, -1000, 1000],
   axesMaxs: [1000, -1000, 1000, 0],

@@ -55,10 +55,10 @@ export class MavlinkControllerState extends ProtocolControllerState {
       buttons_int += (gamepadButtonState ?? 0) * 2 ** i
     }
 
-    const xIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === 'x')
-    const yIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === 'y')
-    const zIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === 'z')
-    const rIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === 'r')
+    const xIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === MAVLinkAxis.X)
+    const yIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === MAVLinkAxis.Y)
+    const zIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === MAVLinkAxis.Z)
+    const rIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === MAVLinkAxis.R)
 
     const absLimits = mavlinkAxesLimits
 
@@ -127,7 +127,16 @@ export const sendCockpitActions = (joystickState: JoystickState, mapping: Protoc
   })
 }
 
-const mavlinkAvailableAxes = ['x', 'y', 'z', 'r']
+/**
+ * Possible axes in the MAVLink protocol
+ */
+export enum MAVLinkAxis {
+  X = 'x',
+  Y = 'y',
+  Z = 'z',
+  R = 'r',
+}
+const mavlinkAvailableAxes = Object.values(MAVLinkAxis)
 const mavlinkAvailableButtons = sequentialArray(16)
 
 const mavlinkAxesLimits = [-1000, 1000]
