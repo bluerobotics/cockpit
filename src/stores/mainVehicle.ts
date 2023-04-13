@@ -8,6 +8,7 @@ import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
+import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Copter-4.3/apm.pdef.json'
 import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Plane-4.3/apm.pdef.json'
@@ -18,7 +19,7 @@ import type { Altitude, Attitude, Coordinates, PageDescription, Parameter, Power
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { type MetadataFile } from '@/types/ardupilot-metadata'
-import { ProtocolControllerState } from '@/types/joystick'
+import { type JoystickState, type ProtocolControllerMapping, ProtocolControllerState } from '@/types/joystick'
 
 import { useControllerStore } from './controller'
 
@@ -285,15 +286,19 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   const controllerStore = useControllerStore()
-  const currentControllerState = ref<ProtocolControllerState | undefined>()
-  const updateCurrentControllerState = (newState: ProtocolControllerState): void => {
+  const currentControllerState = ref<JoystickState>()
+  const currentProtocolMapping = ref<ProtocolControllerMapping>()
+  const updateCurrentControllerState = (newState: JoystickState, newMapping: ProtocolControllerMapping): void => {
     currentControllerState.value = newState
+    currentProtocolMapping.value = newMapping
   }
   controllerStore.registerControllerUpdateCallback(updateCurrentControllerState)
 
+  // Loop to send MAVLink Manual Control messages
   setInterval(() => {
-    if (currentControllerState.value === undefined || controllerStore.joysticks.size === 0) return
-    sendManualControl(currentControllerState.value)
+    if (!currentControllerState.value || !currentProtocolMapping.value || controllerStore.joysticks.size === 0) return
+    const newControllerState = new MavlinkControllerState(currentControllerState.value, currentProtocolMapping.value)
+    sendManualControl(newControllerState)
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
 

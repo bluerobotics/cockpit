@@ -5,16 +5,14 @@ import { ref } from 'vue'
 import { availableGamepadToCockpitMaps } from '@/assets/joystick-profiles'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import {
-  type MavlinkControllerMapping,
-  MavlinkControllerState,
   protocolAvailableAxes,
   protocolAvailableButtons,
   protocolAxesLimits,
   protocolDefaultMapping,
 } from '@/libs/joystick/protocols'
-import { type ProtocolControllerState, Joystick, JoystickProtocol } from '@/types/joystick'
+import { type JoystickState, type ProtocolControllerMapping, Joystick, JoystickProtocol } from '@/types/joystick'
 
-export type controllerUpdateCallback = (state: ProtocolControllerState) => void
+export type controllerUpdateCallback = (state: JoystickState, protocolMapping: ProtocolControllerMapping) => void
 
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
@@ -58,15 +56,8 @@ export const useControllerStore = defineStore('controller', () => {
     const joystickModel = joystick.model || JoystickModel.Unknown
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
 
-    let newControllerState: ProtocolControllerState | undefined
-    if (mappingProtocol.value === JoystickProtocol.MAVLink) {
-      const mavlinkMapping = protocolMapping.value as MavlinkControllerMapping
-      newControllerState = new MavlinkControllerState(joystick.state, mavlinkMapping)
-    }
-
-    if (newControllerState === undefined) return
     for (const callback of updateCallbacks.value) {
-      callback(newControllerState)
+      callback(joystick.state, protocolMapping.value)
     }
   }
 
