@@ -76,17 +76,19 @@
 </template>
 
 <script setup lang="ts">
-import { SwipeDirection, useFullscreen, useMouse, useMouseInElement, useSwipe } from '@vueuse/core'
+import { SwipeDirection, useDebounceFn, useFullscreen, useMouse, useMouseInElement, useSwipe } from '@vueuse/core'
 import gsap from 'gsap'
 import {
   // type AsyncComponentLoader,
   computed,
+  onBeforeUnmount,
   reactive,
   // defineAsyncComponent,
   ref,
   watch,
 } from 'vue'
 
+import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
 
@@ -117,6 +119,13 @@ const showConfigurationMenu = ref(false)
 const widgetsView = ref()
 const { isSwiping, direction: swipeDirection } = useSwipe(widgetsView)
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
+
+const debouncedToggleFullScreen = useDebounceFn(() => toggleFullscreen(), 500)
+const fullScreenCallbackId = registerActionCallback(CockpitAction.TOGGLE_FULL_SCREEN, debouncedToggleFullScreen)
+
+onBeforeUnmount(() => {
+  unregisterActionCallback(fullScreenCallbackId)
+})
 
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
