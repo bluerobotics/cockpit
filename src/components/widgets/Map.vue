@@ -41,6 +41,13 @@
       </l-icon>
     </l-marker>
     <l-marker :lat-lng="vehiclePosition ?? [0, 0]" name="Vehicle">
+      <l-tooltip>
+        <p>Coordinates: {{ vehiclePosition ?? 'No data available' }}</p>
+        <p>Velocity: {{ `${vehicleStore.velocity.ground?.toFixed(2)} m/s` ?? 'No data available' }}</p>
+        <p>Heading: {{ `${vehicleHeading}°` ?? 'No data available' }}</p>
+        <p>{{ vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}</p>
+        <p>Last seen: {{ timeAgoSeenText }}</p>
+      </l-tooltip>
       <l-icon :icon-anchor="[50, 50]">
         <svg
           version="1.1"
@@ -89,8 +96,9 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
-import { LIcon, LMap, LMarker, LPolyline, LTileLayer } from '@vue-leaflet/vue-leaflet'
+import { LIcon, LMap, LMarker, LPolyline, LTileLayer, LTooltip } from '@vue-leaflet/vue-leaflet'
 import { useMouseInElement, useRefHistory } from '@vueuse/core'
+import { formatDistanceToNow } from 'date-fns'
 import type { Map } from 'leaflet'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -117,6 +125,10 @@ const { history: vehiclePositionHistory } = useRefHistory(vehiclePosition)
 const vehicleLatLongHistory = computed(() =>
   vehiclePositionHistory.value.filter((posHis) => posHis.snapshot !== undefined).map((posHis) => posHis.snapshot)
 )
+const timeAgoSeenText = computed(() => {
+  const lastBeat = vehicleStore.lastHeartbeat
+  return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
+})
 const map: Ref<null | any> = ref(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 const leafletObject = ref<null | Map>(null)
 
