@@ -32,7 +32,7 @@
           </p>
         </div>
         <div
-          v-if="buttonFunctions.length === 0"
+          v-if="controllerStore.allPrettyButtonNames.length === 0"
           class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
         >
           <p>Could not stablish communication with the vehicle.</p>
@@ -71,7 +71,7 @@
           :b16="joystick.state.buttons[16]"
           :b17="joystick.state.buttons[17]"
           :protocol-mapping="currentProtocolMapping"
-          :button-label-correspondency="buttonFunctions"
+          :button-label-correspondency="controllerStore.allPrettyButtonNames"
           @click="(e) => setCurrentInputs(joystick, e)"
         />
         <div class="flex">
@@ -169,67 +169,16 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
 import Swal from 'sweetalert2'
-import { onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import JoystickPS, { type InputSpec, Axis } from '@/components/joysticks/JoystickPS.vue'
 import { EventType, JoystickModel } from '@/libs/joystick/manager'
 import { useControllerStore } from '@/stores/controller'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { CockpitButton, Joystick } from '@/types/joystick'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
-const vehicleStore = useMainVehicleStore()
-
-vehicleStore.requestParametersList()
-
-/**
- * Correspondency between protocol buttons and protocol functions
- */
-interface buttonFunctionCorrespondency {
-  /**
-   * Button which triggers the function
-   */
-  button: number
-  /**
-   * Name of the parameter option
-   */
-  function: string
-}
-const buttonFunctions = reactive<buttonFunctionCorrespondency[]>([])
-
-const buttonsFunctionsUpdateInterval = setInterval(() => {
-  if (buttonFunctions.length === 0) {
-    updateButtonsFunctions()
-  }
-}, 1000)
-onBeforeUnmount(() => {
-  clearInterval(buttonsFunctionsUpdateInterval)
-})
-
-const updateButtonsFunctions = (): void => {
-  if (!vehicleStore.currentParameters || !vehicleStore.parametersTable) return
-  const newButtonsFunctions: buttonFunctionCorrespondency[] = []
-  // @ts-ignore: This type is huge. Needs refactoring typing here.
-  if (vehicleStore.parametersTable['BTN0_FUNCTION'] && vehicleStore.parametersTable['BTN0_FUNCTION']['Values']) {
-    const parameterValues: { title: string, value: number }[] = [] // eslint-disable-line
-    // @ts-ignore: This type is huge. Needs refactoring typing here.
-    Object.entries(vehicleStore.parametersTable['BTN0_FUNCTION']['Values']).forEach((param) => {
-      const rawText = param[1] as string
-      const formatedText = (rawText.charAt(0).toUpperCase() + rawText.slice(1)).replace(new RegExp('_', 'g'), ' ')
-      parameterValues.push({ title: formatedText as string, value: Number(param[0]) })
-    })
-    Object.entries(vehicleStore.currentParameters).forEach((param) => {
-      if (!param[0].startsWith('BTN') || !param[0].endsWith('_FUNCTION')) return
-      const button = Number(param[0].replace('BTN', '').replace('_FUNCTION', ''))
-      const functionName = parameterValues.find((p) => p.value === param[1])?.title
-      if (functionName === undefined) return
-      newButtonsFunctions.push({ button: button, function: functionName })
-    })
-  }
-  Object.assign(buttonFunctions, newButtonsFunctions)
-}
 
 const setCurrentInputs = (joystick: Joystick, inputs: InputSpec[]): void => {
   currentJoystick.value = joystick

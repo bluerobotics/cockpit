@@ -8,7 +8,11 @@ import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import { MavlinkControllerState, sendCockpitActions } from '@/libs/joystick/protocols'
+import {
+  type ButtonFunctionCorrespondency,
+  MavlinkControllerState,
+  sendCockpitActions,
+} from '@/libs/joystick/protocols'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Copter-4.3/apm.pdef.json'
 import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Plane-4.3/apm.pdef.json'
@@ -283,6 +287,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         }
       }
     }
+    requestParametersList()
   })
 
   const controllerStore = useControllerStore()
@@ -325,6 +330,31 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         // eslint-disable-next-line no-undef
       } as RTCConfiguration)
   )
+
+  const updateMavlinkButtonsPrettyNames = (): void => {
+    if (!currentParameters || !parametersTable) return
+    const newButtonsFunctions: ButtonFunctionCorrespondency[] = []
+    // @ts-ignore: This type is huge. Needs refactoring typing here.
+    if (parametersTable['BTN0_FUNCTION'] && parametersTable['BTN0_FUNCTION']['Values']) {
+      const parameterValues: { title: string, value: number }[] = [] // eslint-disable-line
+      // @ts-ignore: This type is huge. Needs refactoring typing here.
+      Object.entries(parametersTable['BTN0_FUNCTION']['Values']).forEach((param) => {
+        const rawText = param[1] as string
+        const formatedText = (rawText.charAt(0).toUpperCase() + rawText.slice(1)).replace(new RegExp('_', 'g'), ' ')
+        parameterValues.push({ title: formatedText as string, value: Number(param[0]) })
+      })
+      Object.entries(currentParameters).forEach((param) => {
+        if (!param[0].startsWith('BTN') || !param[0].endsWith('_FUNCTION')) return
+        const button = Number(param[0].replace('BTN', '').replace('_FUNCTION', ''))
+        const functionName = parameterValues.find((p) => p.value === param[1])?.title
+        if (functionName === undefined) return
+        newButtonsFunctions.push({ button: button, function: functionName })
+      })
+    }
+    controllerStore.allPrettyButtonNames = newButtonsFunctions
+  }
+
+  setInterval(() => updateMavlinkButtonsPrettyNames(), 1000)
 
   return {
     arm,
