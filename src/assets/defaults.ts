@@ -49,6 +49,8 @@ export const widgetProfiles: { [key: string]: Profile } = {
             size: { width: 0.72, height: 0.6 },
             managerVars: { timesMounted: 0 },
             options: {
+              showCenterAim: true,
+              showPitchLines: true,
               showRollPitchValues: true,
               desiredAimRadius: 180,
               pitchHeightFactor: 1000,
