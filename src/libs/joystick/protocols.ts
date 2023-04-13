@@ -59,6 +59,31 @@ export class MavlinkControllerState extends ProtocolControllerState {
   }
 }
 
+/**
+ * Possible Cockpit Actions
+ */
+export enum CockpitAction {}
+
+export type CockpitActionCallback = () => void
+// @ts-ignore: Typescript does not get that we are initializing the object dinamically
+const actionsCallbacks: { [action in CockpitAction]: CockpitActionCallback } = Object.fromEntries(
+  Object.values(CockpitAction).map((action) => [action, () => console.error(`Action '${action}' has no callback.`)])
+)
+export const registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): void => {
+  actionsCallbacks[action] = callback
+}
+
+export const sendCockpitActions = (joystickState: JoystickState, mapping: ProtocolControllerMapping): void => {
+  joystickState.buttons.forEach((state, idx) => {
+    const mappedButton = mapping.buttons[idx]
+    if (state && mappedButton.protocol === JoystickProtocol.CockpitAction) {
+      if (Object.keys(actionsCallbacks).includes(mappedButton.value as CockpitAction)) {
+        actionsCallbacks[mappedButton.value as CockpitAction]()
+      }
+    }
+  })
+}
+
 export const defaultMavlinkControllerMapping = cockpitStandardToMavlink
 export const protocolDefaultMapping = (protocol: JoystickProtocol): ProtocolControllerMapping => {
   switch (protocol) {
