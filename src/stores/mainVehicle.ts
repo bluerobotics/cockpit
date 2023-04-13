@@ -8,7 +8,7 @@ import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import { MavlinkControllerState } from '@/libs/joystick/protocols'
+import { MavlinkControllerState, sendCockpitActions } from '@/libs/joystick/protocols'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Copter-4.3/apm.pdef.json'
 import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Plane-4.3/apm.pdef.json'
@@ -301,6 +301,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     sendManualControl(newControllerState)
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
+
+  // Loop to send Cockpit Action messages
+  setInterval(() => {
+    if (!currentControllerState.value || !currentProtocolMapping.value || controllerStore.joysticks.size === 0) return
+    sendCockpitActions(currentControllerState.value, currentProtocolMapping.value)
+  }, 10)
 
   const rtcConfiguration = computed(
     () =>
