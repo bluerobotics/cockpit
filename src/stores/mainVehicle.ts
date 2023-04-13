@@ -8,11 +8,7 @@ import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import {
-  type ButtonFunctionCorrespondency,
-  MavlinkControllerState,
-  sendCockpitActions,
-} from '@/libs/joystick/protocols'
+import { type InputWithPrettyName, MavlinkControllerState, sendCockpitActions } from '@/libs/joystick/protocols'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Copter-4.3/apm.pdef.json'
 import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Plane-4.3/apm.pdef.json'
@@ -23,7 +19,12 @@ import type { Altitude, Attitude, Coordinates, PageDescription, Parameter, Power
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { type MetadataFile } from '@/types/ardupilot-metadata'
-import { type JoystickState, type ProtocolControllerMapping, ProtocolControllerState } from '@/types/joystick'
+import {
+  type JoystickState,
+  type ProtocolControllerMapping,
+  JoystickProtocol,
+  ProtocolControllerState,
+} from '@/types/joystick'
 
 import { useControllerStore } from './controller'
 
@@ -333,7 +334,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   const updateMavlinkButtonsPrettyNames = (): void => {
     if (!currentParameters || !parametersTable) return
-    const newButtonsFunctions: ButtonFunctionCorrespondency[] = []
+    const newMavlinkButtonsNames: InputWithPrettyName[] = []
     // @ts-ignore: This type is huge. Needs refactoring typing here.
     if (parametersTable['BTN0_FUNCTION'] && parametersTable['BTN0_FUNCTION']['Values']) {
       const parameterValues: { title: string, value: number }[] = [] // eslint-disable-line
@@ -348,10 +349,17 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         const button = Number(param[0].replace('BTN', '').replace('_FUNCTION', ''))
         const functionName = parameterValues.find((p) => p.value === param[1])?.title
         if (functionName === undefined) return
-        newButtonsFunctions.push({ button: button, function: functionName })
+        newMavlinkButtonsNames.push({
+          input: { protocol: JoystickProtocol.MAVLink, value: button },
+          prettyName: functionName,
+        })
       })
     }
-    controllerStore.allPrettyButtonNames = newButtonsFunctions
+    let newAllPrettyButtonNames = controllerStore.allPrettyButtonNames.filter((btn) => {
+      return btn.input.protocol !== JoystickProtocol.MAVLink
+    })
+    newAllPrettyButtonNames = newAllPrettyButtonNames.concat(newMavlinkButtonsNames)
+    controllerStore.allPrettyButtonNames = newAllPrettyButtonNames
   }
 
   setInterval(() => updateMavlinkButtonsPrettyNames(), 1000)

@@ -1,25 +1,25 @@
-import { cockpitStandardToMavlink } from '@/assets/joystick-profiles'
 import { round, scale } from '@/libs/utils'
 import { sequentialArray } from '@/libs/utils'
 import {
   type JoystickState,
   type ProtocolControllerMapping,
+  type ProtocolInput,
   JoystickProtocol,
   ProtocolControllerState,
 } from '@/types/joystick'
 
 /**
- * Correspondency between protocol buttons and protocol functions
+ * Correspondency between protocol input and it's pretty name (usually the actual function it triggers)
  */
-export interface ButtonFunctionCorrespondency {
+export interface InputWithPrettyName {
   /**
-   * Button which triggers the function
+   * Input which triggers the function
    */
-  button: number
+  input: ProtocolInput
   /**
    * Name of the parameter option
    */
-  function: string
+  prettyName: string
 }
 
 /**
@@ -43,18 +43,20 @@ export class MavlinkControllerState extends ProtocolControllerState {
   constructor(joystickState: JoystickState, mapping: ProtocolControllerMapping, target = 1) {
     super()
 
+    const isMavlinkInput = (input: ProtocolInput): boolean => input.protocol === JoystickProtocol.MAVLink
+
     let buttons_int = 0
     for (let i = 0; i < MavlinkControllerState.BUTTONS_PER_BITFIELD; i++) {
-      const gamepadButtonPosition = mapping.buttons.findIndex((v) => v === i)
+      const gamepadButtonPosition = mapping.buttons.findIndex((b) => isMavlinkInput(b) && b.value === i)
       if (gamepadButtonPosition === -1) continue
       const gamepadButtonState = joystickState.buttons[gamepadButtonPosition]
       buttons_int += (gamepadButtonState ?? 0) * 2 ** i
     }
 
-    const xIndex = mapping.axesCorrespondencies.findIndex((v) => v === 'x')
-    const yIndex = mapping.axesCorrespondencies.findIndex((v) => v === 'y')
-    const zIndex = mapping.axesCorrespondencies.findIndex((v) => v === 'z')
-    const rIndex = mapping.axesCorrespondencies.findIndex((v) => v === 'r')
+    const xIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === 'x')
+    const yIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === 'y')
+    const zIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === 'z')
+    const rIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === 'r')
 
     const absLimits = mavlinkAxesLimits
 
@@ -98,38 +100,8 @@ export const sendCockpitActions = (joystickState: JoystickState, mapping: Protoc
   })
 }
 
-export const defaultMavlinkControllerMapping = cockpitStandardToMavlink
-export const protocolDefaultMapping = (protocol: JoystickProtocol): ProtocolControllerMapping => {
-  switch (protocol) {
-    case JoystickProtocol.MAVLink:
-      return defaultMavlinkControllerMapping
-    default:
-      // Mavlink is the current main protocol and will be used by default
-      return defaultMavlinkControllerMapping
-  }
-}
-
 const mavlinkAvailableAxes = ['x', 'y', 'z', 'r']
-export const protocolAvailableAxes = (protocol: JoystickProtocol): (string | number)[] => {
-  switch (protocol) {
-    case JoystickProtocol.MAVLink:
-      return mavlinkAvailableAxes
-    default:
-      // Mavlink is the current main protocol and will be used by default
-      return mavlinkAvailableAxes
-  }
-}
-
 const mavlinkAvailableButtons = sequentialArray(16)
-export const protocolAvailableButtons = (protocol: JoystickProtocol): (string | number)[] => {
-  switch (protocol) {
-    case JoystickProtocol.MAVLink:
-      return mavlinkAvailableButtons
-    default:
-      // Mavlink is the current main protocol and will be used by default
-      return mavlinkAvailableButtons
-  }
-}
 
 const mavlinkAxesLimits = [-1000, 1000]
 export const protocolAxesLimits = (protocol: JoystickProtocol): number[] => {
@@ -141,3 +113,12 @@ export const protocolAxesLimits = (protocol: JoystickProtocol): number[] => {
       return mavlinkAxesLimits
   }
 }
+
+export const allAvailableAxes: ProtocolInput[] = []
+mavlinkAvailableAxes.forEach((axis) => allAvailableAxes.push({ protocol: JoystickProtocol.MAVLink, value: axis }))
+
+export const allAvailableButtons: ProtocolInput[] = []
+mavlinkAvailableButtons.forEach((btn) => allAvailableButtons.push({ protocol: JoystickProtocol.MAVLink, value: btn }))
+Object.values(CockpitAction).forEach((action) => {
+  allAvailableButtons.push({ protocol: JoystickProtocol.CockpitAction, value: action })
+})

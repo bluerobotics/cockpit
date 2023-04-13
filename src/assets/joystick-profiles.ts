@@ -1,14 +1,37 @@
 import { JoystickModel } from '@/libs/joystick/manager'
-import type { MavlinkControllerMapping } from '@/libs/joystick/protocols'
-import type { GamepadToCockpitStdMapping } from '@/types/joystick'
+import { type GamepadToCockpitStdMapping, type ProtocolControllerMapping, JoystickProtocol } from '@/types/joystick'
 
 // TODO: Adjust mapping for PS5 controller
-export const cockpitStandardToMavlink: MavlinkControllerMapping = {
-  name: 'Cockpit Standard Gamepad to Mavlink',
-  axesCorrespondencies: ['y', 'x', 'r', 'z'],
+export const cockpitStandardToProtocols: ProtocolControllerMapping = {
+  name: 'Cockpit Standard Gamepad to Protocols',
+  axesCorrespondencies: [
+    { protocol: JoystickProtocol.MAVLink, value: 'y' },
+    { protocol: JoystickProtocol.MAVLink, value: 'x' },
+    { protocol: JoystickProtocol.MAVLink, value: 'r' },
+    { protocol: JoystickProtocol.MAVLink, value: 'z' },
+  ],
   axesMins: [-1000, 1000, -1000, 1000],
   axesMaxs: [1000, -1000, 1000, 0],
-  buttons: [0, 1, 2, 3, 9, 10, undefined, undefined, 4, 6, 7, 8, 11, 12, 13, 14, 5, undefined],
+  buttons: [
+    { protocol: JoystickProtocol.MAVLink, value: 0 },
+    { protocol: JoystickProtocol.MAVLink, value: 1 },
+    { protocol: JoystickProtocol.MAVLink, value: 2 },
+    { protocol: JoystickProtocol.MAVLink, value: 3 },
+    { protocol: JoystickProtocol.MAVLink, value: 9 },
+    { protocol: JoystickProtocol.MAVLink, value: 10 },
+    { protocol: undefined, value: undefined },
+    { protocol: undefined, value: undefined },
+    { protocol: JoystickProtocol.MAVLink, value: 4 },
+    { protocol: JoystickProtocol.MAVLink, value: 6 },
+    { protocol: JoystickProtocol.MAVLink, value: 7 },
+    { protocol: JoystickProtocol.MAVLink, value: 8 },
+    { protocol: JoystickProtocol.MAVLink, value: 11 },
+    { protocol: JoystickProtocol.MAVLink, value: 12 },
+    { protocol: JoystickProtocol.MAVLink, value: 13 },
+    { protocol: JoystickProtocol.MAVLink, value: 14 },
+    { protocol: JoystickProtocol.MAVLink, value: 5 },
+    { protocol: undefined, value: undefined },
+  ],
 }
 
 /**
