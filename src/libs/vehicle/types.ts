@@ -153,6 +153,26 @@ export class Parameter {
 }
 
 /**
+ * Velocity related data
+ */
+export class Velocity {
+  x: number // Ground X Speed in m/s	 (Latitude, positive north)
+  y: number // Ground Y Speed in m/s	 (Longitude, positive east)
+  z: number // Ground Z Speed in m/s	 (Altitude, positive down)
+  ground: number // Combined X-Y Speed in m/s	 (positive north-east)
+  overall: number // Combined X-Y-Z Speed in m/s	 (positive north-east-down)
+
+  /**
+   * Create object
+   *
+   * @param {Partial<Velocity>} init
+   */
+  public constructor(init?: Partial<Velocity>) {
+    Object.assign(this, init)
+  }
+}
+
+/**
  * Battery abstraction
  */
 export class Battery {
