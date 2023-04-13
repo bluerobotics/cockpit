@@ -17,16 +17,14 @@
       flat
       @click="showOptionsDialog = !showOptionsDialog"
     />
-    <div class="top-left-menu">
-      <v-btn
-        class="ma-1"
-        elevation="2"
-        style="z-index: 1002; border-radius: 0px"
-        icon="mdi-home-map-marker"
-        size="x-small"
-        @click="goHome"
-      ></v-btn>
-    </div>
+    <v-btn
+      class="m-1 mt-2 ml-2"
+      elevation="2"
+      style="z-index: 1002; border-radius: 0px"
+      icon="mdi-home-map-marker"
+      size="x-small"
+      @click="goHome"
+    />
     <l-marker v-if="home" :lat-lng="home">
       <l-icon :icon-size="[24, 24]">
         <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24">
@@ -190,10 +188,6 @@ const showOptionsDialog = ref(false)
 <style scoped>
 .map {
   z-index: 0;
-}
-.top-left-menu {
-  margin-left: 8px;
-  margin-top: 8px;
 }
 .options-btn {
   z-index: 1002;
