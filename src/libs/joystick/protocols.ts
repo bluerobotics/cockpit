@@ -8,8 +8,6 @@ import {
   ProtocolControllerState,
 } from '@/types/joystick'
 
-export type MavlinkControllerMapping = ProtocolControllerMapping
-
 /**
  * Current state of the controller in the MavLink protocol
  */
@@ -25,10 +23,10 @@ export class MavlinkControllerState extends ProtocolControllerState {
   /**
    *
    * @param { JoystickState } joystickState - Cockpit standard mapped values for the joystick
-   * @param { MavlinkControllerMapping } mapping - Gamepad API to Mavlink joystick mapping, where assignments and limits are got from.
+   * @param { ProtocolControllerMapping } mapping - Gamepad API to Protocols joystick mapping, where assignments and limits are got from.
    * @param { number } target - Specify targeted vehicle ID.
    */
-  constructor(joystickState: JoystickState, mapping: MavlinkControllerMapping, target = 1) {
+  constructor(joystickState: JoystickState, mapping: ProtocolControllerMapping, target = 1) {
     super()
 
     let buttons_int = 0
