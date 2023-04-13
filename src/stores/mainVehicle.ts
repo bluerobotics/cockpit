@@ -15,7 +15,15 @@ import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepositor
 import * as ardurover_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Rover-4.2/apm.pdef.json'
 import * as ardusub_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Sub-4.1/apm.pdef.json'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
-import type { Altitude, Attitude, Coordinates, PageDescription, Parameter, PowerSupply } from '@/libs/vehicle/types'
+import type {
+  Altitude,
+  Attitude,
+  Coordinates,
+  PageDescription,
+  Parameter,
+  PowerSupply,
+  Velocity,
+} from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { type MetadataFile } from '@/types/ardupilot-metadata'
@@ -96,6 +104,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
+  const velocity: Velocity = reactive({} as Velocity)
   const parametersTable = reactive({})
   const currentParameters = reactive({})
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
@@ -211,6 +220,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     })
     mainVehicle.value.onPosition.add((newCoordinates: Coordinates) => {
       Object.assign(coordinates, newCoordinates)
+    })
+    mainVehicle.value.onVelocity.add((newVelocity: Velocity) => {
+      Object.assign(velocity, newVelocity)
     })
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
@@ -381,6 +393,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     altitude,
     attitude,
     coordinates,
+    velocity,
     powerSupply,
     mode,
     modes,

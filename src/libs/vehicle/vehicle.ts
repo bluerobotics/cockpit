@@ -10,6 +10,7 @@ import type {
   PageDescription,
   Parameter,
   PowerSupply,
+  Velocity,
 } from '@/libs/vehicle/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,6 +74,7 @@ export abstract class AbstractVehicle<Modes> {
   onPosition = new Signal<Coordinates>()
   onPowerSupply = new Signal<PowerSupply>()
   onParameter = new Signal<Parameter>()
+  onVelocity = new Signal<Velocity>()
 
   /**
    * Constructor for the abstract vehicle type
@@ -105,6 +107,7 @@ export abstract class AbstractVehicle<Modes> {
     this.onPosition.register_caller(() => this.position())
     this.onPowerSupply.register_caller(() => this.powerSupply())
     this.onParameter.register_caller(() => this.lastParameter())
+    this.onVelocity.register_caller(() => this.velocity())
   }
 
   /**
@@ -160,6 +163,7 @@ export abstract class AbstractVehicle<Modes> {
   abstract mode(): Modes
   abstract modesAvailable(): Map<string, Modes>
   abstract position(): Coordinates
+  abstract velocity(): Velocity
   abstract powerSupply(): PowerSupply
   abstract lastParameter(): Parameter
   abstract setMode(mode: Modes): void
