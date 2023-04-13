@@ -9,6 +9,20 @@ import {
 } from '@/types/joystick'
 
 /**
+ * Correspondency between protocol buttons and protocol functions
+ */
+export interface ButtonFunctionCorrespondency {
+  /**
+   * Button which triggers the function
+   */
+  button: number
+  /**
+   * Name of the parameter option
+   */
+  function: string
+}
+
+/**
  * Current state of the controller in the MavLink protocol
  */
 export class MavlinkControllerState extends ProtocolControllerState {

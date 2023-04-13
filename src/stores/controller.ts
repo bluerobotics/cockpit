@@ -4,6 +4,7 @@ import { ref } from 'vue'
 
 import { availableGamepadToCockpitMaps } from '@/assets/joystick-profiles'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
+import { type ButtonFunctionCorrespondency } from '@/libs/joystick/protocols'
 import {
   protocolAvailableAxes,
   protocolAvailableButtons,
@@ -23,6 +24,7 @@ export const useControllerStore = defineStore('controller', () => {
   const availableAxes = protocolAvailableAxes(mappingProtocol.value)
   const availableButtons = protocolAvailableButtons(mappingProtocol.value)
   const axesLimits = protocolAxesLimits(mappingProtocol.value)
+  const allPrettyButtonNames = ref<ButtonFunctionCorrespondency[]>([])
 
   const registerControllerUpdateCallback = (callback: controllerUpdateCallback): void => {
     updateCallbacks.value.push(callback)
@@ -69,5 +71,6 @@ export const useControllerStore = defineStore('controller', () => {
     availableAxes,
     availableButtons,
     axesLimits,
+    allPrettyButtonNames,
   }
 })
