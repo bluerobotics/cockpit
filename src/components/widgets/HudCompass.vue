@@ -180,7 +180,7 @@ const renderCanvas = (): void => {
   // Draw line for each angle
   for (const [angle, x] of Object.entries(renderVars.yawLinesX)) {
     if (x < -90 || x > 90) continue
-    const angleOffsetX = (widget.value.options.yawGainFactor * radians(x)) / Math.cos(radians(x))
+    const angleOffsetX = widget.value.options.yawGainFactor * Math.sin(radians(x))
     const anglePositionX = halfCanvasWidth + angleOffsetX
     ctx.beginPath()
     ctx.moveTo(anglePositionX, refFontSize + stdPad + refTriangleSize + stdPad)
