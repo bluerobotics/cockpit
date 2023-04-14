@@ -75,8 +75,15 @@
         return-object
         @update:model-value="loadProfile"
       />
+      <v-btn
+        class="ml-2"
+        icon="mdi-plus"
+        size="small"
+        variant="outlined"
+        rounded="lg"
+        @click="profileCreationDialog.reveal"
+      />
     </div>
-    <v-btn class="m-1 text-white" @click="profileCreationDialog.reveal"> Create new profile </v-btn>
     <v-btn class="m-1 text-white" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
     <v-switch
       class="flex items-center justify-center m-1 max-h-8"
