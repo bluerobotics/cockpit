@@ -61,8 +61,8 @@ export const widgetProfiles: { [key: string]: Profile } = {
             hash: '6920ce40-5121-4031-b628-678c5449d94a',
             name: 'HUD Compass widget',
             component: WidgetType.HudCompass,
-            position: { x: 0.2, y: 0.85 },
-            size: { width: 0.6, height: 0.12 },
+            position: { x: 0.15, y: 0.9 },
+            size: { width: 0.7, height: 0.065 },
             managerVars: { timesMounted: 0 },
             options: {
               showYawValue: true,
