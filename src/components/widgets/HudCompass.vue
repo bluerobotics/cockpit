@@ -205,10 +205,10 @@ const renderCanvas = (): void => {
   // Add transparent mask over widget borders
   ctx.globalCompositeOperation = 'source-in'
   const grH = ctx.createLinearGradient(0, halfCanvasHeight, canvasSize.value.width, halfCanvasHeight)
-  grH.addColorStop(0.1, colord(widget.value.options.hudColor).alpha(0).toRgbString())
+  grH.addColorStop(0.18, colord(widget.value.options.hudColor).alpha(0).toRgbString())
   grH.addColorStop(0.3, colord(widget.value.options.hudColor).alpha(1).toRgbString())
   grH.addColorStop(0.7, colord(widget.value.options.hudColor).alpha(1).toRgbString())
-  grH.addColorStop(0.9, colord(widget.value.options.hudColor).alpha(0).toRgbString())
+  grH.addColorStop(0.82, colord(widget.value.options.hudColor).alpha(0).toRgbString())
   ctx.fillStyle = grH
   ctx.fillRect(0, 0, canvasSize.value.width, canvasSize.value.height)
 }
