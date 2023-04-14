@@ -169,7 +169,7 @@ const renderCanvas = (): void => {
   const refFontSize = 16
   const refTriangleSize = 10
   const stdPad = 2
-  const minorLinesGap = 15
+  const minorLinesGap = 7
 
   // Set canvas general properties
   ctx.textAlign = 'center'
