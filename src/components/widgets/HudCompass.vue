@@ -252,7 +252,7 @@ watch([renderVars, canvasSize, widget.value.options], () => {
   justify-content: center;
   position: relative;
   min-width: 200px;
-  min-height: 70px;
+  min-height: 60px;
 }
 .options-btn {
   display: none;
