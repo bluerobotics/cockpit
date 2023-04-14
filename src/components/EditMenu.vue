@@ -21,6 +21,7 @@
                 no-data-text="No layers available."
                 hide-details
               />
+              <v-btn class="ml-2" icon="mdi-plus" size="small" variant="outlined" rounded="lg" @click="addLayer" />
               <v-btn
                 class="ml-2"
                 icon="mdi-delete"
@@ -57,7 +58,6 @@
               />
             </div>
           </div>
-          <v-btn class="ma-1" variant="plain" @click="addLayer">Add new layer</v-btn>
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
