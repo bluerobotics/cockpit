@@ -143,7 +143,7 @@ const renderCanvas = (): void => {
   const refFontSize = 16
   const refTriangleSize = 10
   const stdPad = 1
-  const minorLinesGap = 15
+  const minorLinesGap = 5
   const initialPaddingY = 10 * stdPad
 
   // Set canvas general properties
