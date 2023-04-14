@@ -22,14 +22,6 @@
           hide-details
           @change="widget.options.showYawValue = !widget.options.showYawValue"
         />
-        <span>Distance between Yaw lines</span>
-        <v-slider
-          v-model="widget.options.yawGainFactor"
-          label="Yaw lines gain factor"
-          :min="100"
-          :max="500"
-          thumb-label
-        />
         <v-expansion-panels>
           <v-expansion-panel>
             <v-expansion-panel-title>Color</v-expansion-panel-title>
@@ -107,7 +99,6 @@ onBeforeMount(() => {
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
       showYawValue: true,
-      yawGainFactor: 150,
       hudColor: colorSwatches.value[0][0],
     }
   }
@@ -180,7 +171,7 @@ const renderCanvas = (): void => {
   // Draw line for each angle
   for (const [angle, x] of Object.entries(renderVars.yawLinesX)) {
     if (x < -90 || x > 90) continue
-    const angleOffsetX = widget.value.options.yawGainFactor * Math.sin(radians(x))
+    const angleOffsetX = ((2 * halfCanvasWidth) / Math.PI) * Math.sin(radians(x))
     const anglePositionX = halfCanvasWidth + angleOffsetX
     ctx.beginPath()
     ctx.moveTo(anglePositionX, refFontSize + stdPad + refTriangleSize + stdPad)

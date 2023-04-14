@@ -66,7 +66,6 @@ export const widgetProfiles: { [key: string]: Profile } = {
             managerVars: { timesMounted: 0 },
             options: {
               showYawValue: true,
-              yawGainFactor: 150,
               hudColor: '#FFF',
             },
           },
