@@ -209,7 +209,7 @@ const showOptionsDialog = ref(false)
   top: 0;
   right: 0;
   color: white;
-  filter: drop-shadow(2px 2px black);
+  filter: drop-shadow(0.5px 0.5px 0.5px black);
   display: v-bind('mouseOverWidgetStyle');
 }
 </style>
