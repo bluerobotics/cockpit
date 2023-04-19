@@ -46,31 +46,7 @@
         <p>{{ vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}</p>
         <p>Last seen: {{ timeAgoSeenText }}</p>
       </l-tooltip>
-      <l-icon :icon-anchor="[50, 50]">
-        <svg
-          version="1.1"
-          viewBox="0 0 100 100"
-          width="100"
-          height="100"
-          xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            id="path188"
-            :transform="`rotate(${vehicleHeading}, 50, 50) scale(0.7) translate(25, 25)`"
-            d="m 50.137948,2.4018877 c 6.564396,5.061536 14.178589,20.9374463 16.210615,35.7093823 0.98559,
-            7.142609 1.338459,14.857115 1.0586,23.119175 -0.158182,4.34397 -0.474545,9.18683 -0.863915,
-            12.95891 -0.438042,4.17362 -0.803076,7.05743 -1.33846,10.58615 -0.219021,1.39931 -0.45021,4.24662 -0.705734,
-            8.760954 -0.133846,2.12939 -0.328531,2.71346 -1.119439,3.23668 -4.751168,0.9569 -22.113373,
-            1.18244 -26.611018,0.13385 -0.912586,-0.47455 -1.204614,-1.33848 -1.314124,-3.79641 -0.121679,
-            -2.83514 -0.425874,-6.619394 -0.608391,-7.848364 -0.109511,-0.63273 -0.243356,-1.61834 -0.304196,
-            -2.19023 -0.07301,-0.5719 -0.146017,-1.1195 -0.182517,-1.2168 -0.07301,-0.24336 -0.742237,
-            -5.93798 -0.900419,-7.66583 -0.07301,-0.76659 -0.182514,-2.00772 -0.255524,-2.7378 C 32.18133,
-            60.439525 32.278672,48.174195 33.45895,39.328069 35.094446,27.416621 42.369192,8.4623327 49.761287,2.4160307"
-            style="fill: #0d47a1"
-          />
-        </svg>
-      </l-icon>
+      <l-icon :icon-url="genericVehicleMarkerImage" :icon-size="[72, 72]" :icon-anchor="[36, 36]" />
     </l-marker>
     <l-polyline v-if="widget.options.showVehiclePath" :lat-lngs="vehicleLatLongHistory" />
     <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -103,6 +79,7 @@ import { computed, nextTick, ref } from 'vue'
 import { onBeforeMount } from 'vue'
 import { toRefs } from 'vue'
 
+import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
