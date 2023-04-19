@@ -46,7 +46,7 @@
         <p>{{ vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}</p>
         <p>Last seen: {{ timeAgoSeenText }}</p>
       </l-tooltip>
-      <l-icon :icon-url="genericVehicleMarkerImage" :icon-size="[72, 72]" :icon-anchor="[36, 36]" />
+      <l-icon :icon-url="vehicleMarkerImage" :icon-size="[72, 72]" :icon-anchor="[36, 36]" />
     </l-marker>
     <l-polyline v-if="widget.options.showVehiclePath" :lat-lngs="vehicleLatLongHistory" />
     <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -79,7 +79,10 @@ import { computed, nextTick, ref } from 'vue'
 import { onBeforeMount } from 'vue'
 import { toRefs } from 'vue'
 
+import blueBoatMarkerImage from '@/assets/blueboat-marker.png'
+import brov2MarkerImage from '@/assets/brov2-marker.png'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
@@ -104,6 +107,18 @@ const timeAgoSeenText = computed(() => {
   const lastBeat = vehicleStore.lastHeartbeat
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
 })
+
+const vehicleMarkerImage = computed(() => {
+  switch (vehicleStore.vehicleType) {
+    case MavType.MAV_TYPE_SURFACE_BOAT:
+      return blueBoatMarkerImage
+    case MavType.MAV_TYPE_SUBMARINE:
+      return brov2MarkerImage
+    default:
+      return genericVehicleMarkerImage
+  }
+})
+
 const map: Ref<null | any> = ref(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 const leafletObject = ref<null | Map>(null)
 
