@@ -14,7 +14,22 @@ RUN wget https://github.com/TheWaWaR/simple-http-server/releases/download/v0.6.6
     -O /usr/bin/simple-http-server
 RUN chmod +x /usr/bin/simple-http-server
 
-LABEL permissions '{\
+LABEL authors='[\
+    {\
+        "name": "Rafael Araujo Lehmkuhl",\
+        "email": "rafael@bluerobotics.com"\
+    },\
+    {\
+        "name": "Patrick José Pereira",\
+        "email": "patrick@bluerobotics.com"\
+    }\
+]'
+LABEL company='{\
+        "about": "",\
+        "name": "Blue Robotics",\
+        "email": "support@bluerobotics.com"\
+    }'
+LABEL permissions='{\
   "ExposedPorts": {\
     "8000/tcp": {}\
   },\
@@ -28,6 +43,18 @@ LABEL permissions '{\
     }\
   }\
 }'
+LABEL type="other"
+LABEL tags='[\
+        "vehicle-control",\
+        "control-station",\
+        "ground-station",\
+        "navigation",\
+        "joystick",\
+        "mission-planning"\
+    ]'
+LABEL links='{\
+        "support": "https://discuss.bluerobotics.com/c/bluerobotics-software"\
+    }'
 
 # Copy frontend built on frontendBuild to this stage
 COPY --from=frontendBuilder /frontend/dist /cockpit
