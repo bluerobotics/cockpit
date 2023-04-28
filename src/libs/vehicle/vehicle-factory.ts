@@ -110,6 +110,9 @@ function createVehicleFromMessage(message: Uint8Array): void {
     case MavType.MAV_TYPE_SUBMARINE:
       VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Sub)
       break
+    case MavType.MAV_TYPE_SURFACE_BOAT:
+      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Rover)
+      break
     default:
       console.warn(`Vehicle type not supported: ${system_id}/${component_id}: ${heartbeat.mavtype.type}`)
   }
