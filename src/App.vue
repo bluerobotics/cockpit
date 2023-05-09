@@ -9,6 +9,15 @@
           <v-btn prepend-icon="mdi-pencil" variant="plain" @click="widgetStore.editingMode = !widgetStore.editingMode"
             >Edit mode</v-btn
           >
+          <v-btn v-if="route.name !== 'widgets-view'" prepend-icon="mdi-send" variant="plain" to="/">Flight</v-btn>
+          <v-btn
+            v-if="route.name !== 'Mission planning'"
+            prepend-icon="mdi-map-marker-radius"
+            variant="plain"
+            to="/mission-planning"
+          >
+            Mission planning
+          </v-btn>
           <v-btn prepend-icon="mdi-cog" variant="plain" @click="showConfigurationMenu = true">Configuration</v-btn>
           <v-btn :prepend-icon="fullScreenToggleIcon" variant="plain" @click="toggleFullscreen">
             {{ isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen' }}
@@ -40,6 +49,7 @@ import {
   ref,
   watch,
 } from 'vue'
+import { useRoute } from 'vue-router'
 
 import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
@@ -73,6 +83,7 @@ const showMainMenuButton = (show: boolean): void => {
   }
 }
 
+const route = useRoute()
 const routerSection = ref()
 const { isSwiping, direction: swipeDirection } = useSwipe(routerSection)
 watch(isSwiping, () => {
