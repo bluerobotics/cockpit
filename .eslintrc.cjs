@@ -37,6 +37,7 @@ module.exports = {
     ],
     'jsdoc/require-param-description': 0,
     'jsdoc/require-returns-description': 0,
+    'jsdoc/newline-after-description': 'off',
     'max-len': ['error', { code: 120, ignoreUrls: true, ignoreComments: true }],
     'no-alert': 'off',
     'no-console': 'off',
