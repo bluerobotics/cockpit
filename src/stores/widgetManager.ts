@@ -3,12 +3,14 @@ import '@/libs/cosmos'
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
+import { ref } from 'vue'
 
 import { widgetProfile, widgetProfiles } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
 import type { Layer, Profile, Widget, WidgetType } from '@/types/widgets'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
+  const editingMode = ref(false)
   const currentProfile = useStorage('cockpit-current-profile', widgetProfile)
   const savedProfiles = useStorage('cockpit-saved-profiles', widgetProfiles)
 
@@ -137,6 +139,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   return {
+    editingMode,
     currentProfile,
     savedProfiles,
     loadProfile,
