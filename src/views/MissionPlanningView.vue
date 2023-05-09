@@ -49,8 +49,18 @@
         No waypoints added to the mission.
       </p>
       <div v-for="(waypoint, index) in missionStore.currentPlanningWaypoints" :key="waypoint.id">
-        <p class="text-base text-slate-100">Waypoint {{ index }} ({{ waypoint.type }})</p>
-        <p class="text-sm text-slate-200">Altitude: {{ waypoint.altitude }} m</p>
+        <div class="flex items-center justify-around px-4">
+          <div>
+            <p class="text-base text-slate-100">Waypoint {{ index }} ({{ waypoint.type }})</p>
+            <p class="text-sm text-slate-200">Altitude: {{ waypoint.altitude }} m</p>
+          </div>
+          <button
+            class="flex items-center justify-center w-6 h-6 m-2 rounded-sm text-slate-400"
+            @click="removeWaypoint(waypoint)"
+          >
+            <v-icon>mdi-delete</v-icon>
+          </button>
+        </div>
         <div v-if="index !== missionStore.currentPlanningWaypoints.length - 1" class="w-full h-px my-3 bg-gray-50" />
       </div>
     </div>
@@ -61,7 +71,7 @@
 import 'leaflet/dist/leaflet.css'
 
 import { saveAs } from 'file-saver'
-import L, { type LatLngTuple, Map } from 'leaflet'
+import L, { type LatLngTuple, Map, Marker } from 'leaflet'
 import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
@@ -80,6 +90,7 @@ const currentWaypointType = ref<WaypointType>(WaypointType.TAKEOFF)
 const currentWaypointAltitude = ref(0)
 const defaultCruiseSpeed = ref(1)
 const useRelativeAltitude = ref(true)
+const waypointMarkers = ref<{ [id: string]: Marker }>({})
 
 const goHome = async (): Promise<void> => {
   if (!home.value || !planningMap.value) return
@@ -98,11 +109,16 @@ watch(zoom, (newZoom, oldZoom) => {
 const addWaypoint = (coordinates: [number, number], altitude: number, type: WaypointType): void => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
   const waypointId = uuid()
-  missionStore.currentPlanningWaypoints.push({ id: waypointId, coordinates, altitude, type })
+  const waypoint: Waypoint = { id: waypointId, coordinates, altitude, type }
+  missionStore.currentPlanningWaypoints.push(waypoint)
   const newMarker = L.marker(coordinates, { draggable: true })
   newMarker.on('move', (e) => {
     // @ts-ignore: Event has the latlng property
     missionStore.moveWaypoint(waypointId, e.latlng)
+  })
+  newMarker.on('contextmenu', () => {
+    // @ts-ignore: Event has the latlng property
+    removeWaypoint(waypoint)
   })
   var markerIcon = L.divIcon({
     className: 'marker-icon',
@@ -110,7 +126,17 @@ const addWaypoint = (coordinates: [number, number], altitude: number, type: Wayp
     iconAnchor: [8, 8],
   })
   newMarker.setIcon(markerIcon)
-  newMarker.addTo(planningMap.value)
+  planningMap.value.addLayer(newMarker)
+  // @ts-ignore: Marker type is always a layer and thus can be deleted
+  waypointMarkers.value[waypointId] = newMarker
+}
+
+const removeWaypoint = (waypoint: Waypoint): void => {
+  const index = missionStore.currentPlanningWaypoints.indexOf(waypoint)
+  missionStore.currentPlanningWaypoints.splice(index, 1)
+  // @ts-ignore: Marker type is always a layer and thus can be deleted
+  planningMap.value?.removeLayer(waypointMarkers.value[waypoint.id])
+  delete waypointMarkers.value[waypoint.id]
 }
 
 const saveMissionToFile = async (): Promise<void> => {
