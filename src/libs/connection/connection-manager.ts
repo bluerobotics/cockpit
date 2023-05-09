@@ -17,7 +17,6 @@ export class ConnectionManager {
 
   /**
    * Return the connections available
-   *
    * @returns {Connection.Abstract[]}
    */
   static connections(): Connection.Abstract[] {
@@ -27,7 +26,6 @@ export class ConnectionManager {
 
   /**
    * Add a specific connection
-   *
    * @param  {Connection.URI} uri
    * @param  {Protocol.Type} vehicleProtocol
    */
@@ -48,7 +46,6 @@ export class ConnectionManager {
 
   /**
    * Add a connection on connection manager
-   *
    * @param  {Connection.Abstract} connection
    */
   private static _addConnection(connection: Connection.Abstract): void {
@@ -62,7 +59,6 @@ export class ConnectionManager {
 
   /**
    * Update the main connection if necessary
-   *
    * @returns {void}
    */
   private static _updateMainConnection(): void {
@@ -85,7 +81,6 @@ export class ConnectionManager {
 
   /**
    * Return the main connection used as data source
-   *
    * @returns {Connection.Abstract}
    */
   static mainConnection(): Connection.Abstract | undefined {
@@ -96,7 +91,6 @@ export class ConnectionManager {
 
   /**
    * Write data to main connection
-   *
    * @param  {Uint8Array} data
    * @returns {boolean}
    */

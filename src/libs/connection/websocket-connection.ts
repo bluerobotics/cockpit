@@ -12,7 +12,6 @@ export class WebSocketConnection extends Connection.Abstract {
 
   /**
    * Websocket constructor
-   *
    * @param  {Connection.URI} uri
    * @param  {Protocol.Type} vehicleProtocol
    */
@@ -24,7 +23,6 @@ export class WebSocketConnection extends Connection.Abstract {
 
   /**
    * Disconnect the websocket
-   *
    * @returns {boolean}
    */
   disconnect(): boolean {
@@ -34,7 +32,6 @@ export class WebSocketConnection extends Connection.Abstract {
 
   /**
    * Do the websocket connection
-   *
    * @returns {boolean}
    */
   connect(): boolean {
@@ -44,7 +41,6 @@ export class WebSocketConnection extends Connection.Abstract {
 
   /**
    * Check if connection is still alive
-   *
    * @returns {boolean}
    */
   isConnected(): boolean {
@@ -54,7 +50,6 @@ export class WebSocketConnection extends Connection.Abstract {
 
   /**
    * Write data to websocket
-   *
    * @param  {Uint8Array} data
    * @returns {boolean}
    */
@@ -65,7 +60,6 @@ export class WebSocketConnection extends Connection.Abstract {
 
   /**
    * Create internal websocket connection
-   *
    * @param  {Connection.URI} uri
    * @returns {WebSocket}
    */

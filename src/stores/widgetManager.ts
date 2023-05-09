@@ -14,7 +14,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Get layer where given widget is at
-   *
    * @returns { Layer }
    * @param { Widget } widget - Widget
    */
@@ -31,7 +30,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Adds new profile to the store
-   *
    * @param { string } name - Custom name for the profile
    * @param { Layer[] } profileLayers - Layers that define the profile
    * @returns { Profile } The profile object just created
@@ -48,7 +46,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Change current profile for given one
-   *
    * @param { Profile } profile - Profile to be loaded
    */
   function loadProfile(profile: Profile): void {
@@ -82,7 +79,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Deletes a layer from the store
-   *
    * @param { Layer } layer - Layer
    */
   function deleteLayer(layer: Layer): void {
@@ -92,7 +88,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Add widget with given type to given layer
-   *
    * @param { WidgetType } widgetType - Type of the widget
    * @param { Layer } layer - Layer
    */
@@ -111,7 +106,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Delete widget
-   *
    * @param { Widget } widget - Widget
    */
   function deleteWidget(widget: Widget): void {
@@ -122,7 +116,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Send widget to the beggining (front) of the widgets list
-   *
    * @param { Widget } widget - Widget
    */
   function bringWidgetFront(widget: Widget): void {
@@ -134,7 +127,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Send widget to the end (back) of the widgets list
-   *
    * @param { Widget } widget - Widget
    */
   function sendWidgetBack(widget: Widget): void {

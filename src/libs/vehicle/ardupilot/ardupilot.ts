@@ -61,7 +61,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   /**
    * Function for subclass inheritance
    * Helps to deal with specialized vehicles that has particular or custom behaviour
-   *
    * @param {Package} mavlink message
    */
   protected onMAVLinkPackage(mavlink: Package): void {
@@ -72,7 +71,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Construct a new generic ArduPilot type
-   *
    * @param {Vehicle.Type} type
    */
   constructor(type: Vehicle.Type) {
@@ -82,7 +80,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   /**
    * Helper to send long mavlink commands
    * Each parameter depends of the value specified by the protocol
-   *
    * @param {MavCmd} mav_command
    * @param {number} param1
    * @param {number} param2
@@ -124,7 +121,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Send a mavlink message
-   *
    * @param {MavMessage} message
    */
   write(message: MavMessage): void {
@@ -142,7 +138,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    *  Decode incoming message
-   *
    * @param {Uint8Array} message
    */
   onMessage(message: Uint8Array): void {
@@ -248,7 +243,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Helper function to arm/disarm the vehicle
-   *
    * @param {boolean} arm
    * @param {boolean} force
    */
@@ -262,7 +256,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Arm vehicle
-   *
    * @returns {boolean}
    */
   arm(): boolean {
@@ -272,7 +265,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Return vehicle altitude-related data
-   *
    * @returns {Altitude}
    */
   altitude(): Altitude {
@@ -281,7 +273,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Return vehicle attitude
-   *
    * @returns {Attitude}
    */
   attitude(): Attitude {
@@ -290,7 +281,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Get batteries status
-   *
    * @returns {Battery[]}
    */
   batteries(): Battery[] {
@@ -299,7 +289,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Vehicle specific configuration pages
-   *
    * @returns {PageDescription[]}
    */
   configurationPages(): PageDescription[] {
@@ -308,7 +297,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Get CPU load percentage
-   *
    * @returns {number}
    */
   cpuLoad(): number {
@@ -317,7 +305,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Disarm vehicle
-   *
    * @returns {boolean}
    */
   disarm(): boolean {
@@ -327,7 +314,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Check if vehicle is armed
-   *
    * @returns {boolean}
    */
   isArmed(): boolean {
@@ -336,7 +322,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Return vehicle position information
-   *
    * @returns {Coordinates}
    */
   position(): Coordinates {
@@ -345,7 +330,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Return vehicle velocity information
-   *
    * @returns {Velocity}
    */
   velocity(): Velocity {
@@ -354,7 +338,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Return power supply information
-   *
    * @returns {PowerSupply}
    */
   powerSupply(): PowerSupply {
@@ -363,7 +346,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Return power supply information
-   *
    * @returns {Parameter}
    */
   lastParameter(): Parameter {
@@ -372,7 +354,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Send manual control
-   *
    * @param {'ProtocolControllerState'} controllerState Current state of the controller
    */
   sendManualControl(controllerState: ProtocolControllerState): void {
@@ -408,7 +389,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Set vehicle flight mode
-   *
    * @param {'Modes'} mode Custom vehicle mode
    */
   setMode(mode: Modes): void {

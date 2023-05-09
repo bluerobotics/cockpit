@@ -22,7 +22,6 @@ export class Session {
 
   /**
    * Creates a new Session instance, connecting with a given Stream
-   *
    * @param {string} sessionId - Unique ID of the session, given by the signalling server
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {Stream} stream - The Stream instance for which this Session will be created with, given by the signalling server
@@ -57,7 +56,6 @@ export class Session {
 
   /**
    * Whether the session has ended
-   *
    * @returns {boolean} true if the session has ended, false otherwise
    */
   public hasEnded(): boolean {
@@ -66,7 +64,6 @@ export class Session {
 
   /**
    * Whether the session is connected
-   *
    * @returns {boolean} true if the session is connected, false otherwise
    */
   public isConnected(): boolean {
@@ -75,7 +72,6 @@ export class Session {
 
   /**
    * Updates its status
-   *
    * @param {string} status - its new status
    */
   public updateStatus(status: string): void {
@@ -84,7 +80,6 @@ export class Session {
 
   /**
    * Creates its RTCPeerConnection, registering all callbacks
-   *
    * @param {RTCConfiguration} configuration - Configuration for the RTC connection, such as Turn and Stun servers
    * @returns {RTCPeerConnection} - A new instance of RTCPeerConnection
    */
@@ -111,7 +106,6 @@ export class Session {
 
   /**
    * Defines the behavior for when a remote SDP is received from the signalling server
-   *
    * @param {RTCSessionDescription} description - The SDP received from the signalling server
    */
   public onIncomingSDP(description: RTCSessionDescription): void {
@@ -141,7 +135,6 @@ export class Session {
 
   /**
    * Defines the behavior for when a local SDP is created by its RTCPeerConnection
-   *
    * @param {RTCSessionDescriptionInit} description - The local SDP created by its RTCPeerConnection
    */
   private onAnswerCreated(description: RTCSessionDescriptionInit): void {
@@ -169,7 +162,6 @@ export class Session {
 
   /**
    * Defines the behavior for when it receives an ICE candidate from the signalling server
-   *
    * @param {RTCIceCandidateInit} candidate - The ICE candidate received from the signalling server
    */
   public onIncomingICE(candidate: RTCIceCandidateInit): void {
@@ -183,7 +175,6 @@ export class Session {
 
   /**
    * Defines the behavior for when a local ICE candidate is created by its RTCPeerConnection
-   *
    * @param {RTCPeerConnectionIceEventInit} event - the ICE candidate created by its RTCPeerConnection
    */
   private onIceCandidate(event: RTCPeerConnectionIceEventInit): void {
@@ -196,7 +187,6 @@ export class Session {
 
   /**
    * Defines the behavior for when a ICE negotation fails. Read more about it [here](https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/icecandidateerror_event)
-   *
    * @param {Event} event - the ICE candidate created by its RTCPeerConnection
    */
   private onIceCandidateError(event: Event): void {
@@ -206,7 +196,6 @@ export class Session {
 
   /**
    * Defines the behavior for when a track is added to its RTCPeerConnection
-   *
    * @param {RTCTrackEvent} event - The RTCTrackEvent given by its RTCPeerConnection
    */
   private onTrackAddedCallback(event: RTCTrackEvent): void {
@@ -215,7 +204,6 @@ export class Session {
 
   /**
    * Defines the behavior for when a track is added to its RTCPeerConnection
-   *
    * @param {Event} _event - The RTCTrackEvent given by its RTCPeerConnection
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

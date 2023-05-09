@@ -3,7 +3,6 @@ import { isBrowser } from 'browser-or-node'
 declare global {
   /**
    * Running time assert for development
-   *
    * @param {boolean} result
    * @param {string?} message
    * @returns {void}
@@ -12,7 +11,6 @@ declare global {
 
   /**
    * Warn developer when something is not implemented
-   *
    * @param {string} message
    * @returns {void}
    */
@@ -20,7 +18,6 @@ declare global {
 
   /**
    * Helper to avoid unused warnings
-   *
    * @template T
    * @param {T} variable
    * @returns {void}
@@ -33,35 +30,30 @@ declare global {
   interface Array<T> {
     /**
      * Return the first element of array
-     *
      * @returns T | undefined
      */
     first(): T | undefined
 
     /**
      * Check if array is empty
-     *
      * @returns boolean
      */
     isEmpty(): boolean
 
     /**
      * Return the last element of array
-     *
      * @returns T | undefined
      */
     last(): T | undefined
 
     /**
      * Return a random element if available
-     *
      * @returns T | undefined
      */
     random(): T | undefined
 
     /**
      * Return the sum of all ements
-     *
      * @returns number
      */
     sum(): number

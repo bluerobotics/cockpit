@@ -26,7 +26,6 @@ export class Signaller {
   private shouldReconnect: boolean
   /**
    * Creates a new Signaller instance
-   *
    * @param {URL} url - URL of the signalling server
    * @param {boolean} shouldReconnect - If it should try to reconnect if the WebSocket connection is lost
    * @param {OnOpenCallback} onOpen - An optional callback for when signalling opens its WebSocket connection
@@ -119,7 +118,6 @@ export class Signaller {
 
   /**
    * Requests the signalling server for a new consumer ID
-   *
    * @param {OnConsumerIdReceivedCallback} onConsumerIdReceived - A callback for when the requested consumer id is received
    * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
@@ -175,7 +173,6 @@ export class Signaller {
 
   /**
    * Whether or not its WebSocket is OPEN (aka 'connected')
-   *
    * @returns {boolean} true when OPEN (aka 'connected')
    */
   public isConnected(): boolean {
@@ -184,7 +181,6 @@ export class Signaller {
 
   /**
    * Requests the signalling server for the list of the streams available
-   *
    * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
   public requestStreams(onStatusChanged?: OnStatusChangeCallback): void {
@@ -211,7 +207,6 @@ export class Signaller {
 
   /**
    * Requests the signalling server for a new session ID
-   *
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
    * @param {OnSessionIdReceivedCallback} onSessionIdReceived - A callback for when the requested session id is received
@@ -281,7 +276,6 @@ export class Signaller {
 
   /**
    * Sends an ICE candidate to the signalling server
-   *
    * @param {string} sessionId - Unique ID of the session, given by the signalling server
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
@@ -323,7 +317,6 @@ export class Signaller {
 
   /**
    * Sends an SDP to the signalling server
-   *
    * @param {string} sessionId - Unique ID of the session, given by the signalling server
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
@@ -363,7 +356,6 @@ export class Signaller {
 
   /**
    * Parses a given "sessionStart" Asnwer received by the signalling server
-   *
    * @param {MessageEvent} ev - Message to be parsed. This should be a "startSession" message
    * @returns {string | undefined} - The Session ID received from the signalling server
    */
@@ -383,7 +375,6 @@ export class Signaller {
 
   /**
    * Parses a "endSession" Question received by the signalling server
-   *
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
    * @param {string} sessionId - Unique ID of the session, given by the signalling server
@@ -447,7 +438,6 @@ export class Signaller {
 
   /**
    * Parses Negotiation messages received from the signalling server
-   *
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
    * @param {string} sessionId - Unique ID of the session, given by the signalling server
@@ -515,7 +505,6 @@ export class Signaller {
 
   /**
    * Parses "availableStreams" Answer received from the signalling server
-   *
    * @param {OnAvailableStreamsCallback} onAvailableStreams - A callback for when an "availableStreams" Answer is received
    * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
@@ -560,7 +549,6 @@ export class Signaller {
 
   /**
    * Ends the Websocket and cleans up the registered callbacks, without reconnecting it
-   *
    * @param {string} reason - The id of the caller, just for debugging purposes
    */
   public end(reason: string): void {
@@ -584,7 +572,6 @@ export class Signaller {
 
   /**
    * Connects to the signalling server
-   *
    * @returns {WebSocket} - The WebSocket object for signalling connection
    */
   private connect(): WebSocket {
@@ -627,7 +614,6 @@ export class Signaller {
 
   /**
    * The onOpen callback for its WebSocket
-   *
    * @param {Event} event - The WebSocket's onOpen event
    */
   private onOpenCallback(event: Event): void {
@@ -640,7 +626,6 @@ export class Signaller {
 
   /**
    * The onClose callback for its WebSocket
-   *
    * @param {CloseEvent} event - The WebSocket's onClose event
    */
   private onCloseCallback(event: CloseEvent): void {
@@ -660,7 +645,6 @@ export class Signaller {
 
   /**
    * The onError callback for its WebSocket
-   *
    * @param {Event} event - The WebSocket's onError event
    */
   private onErrorCallback(event: Event): void {

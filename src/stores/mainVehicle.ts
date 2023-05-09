@@ -38,7 +38,6 @@ import { useControllerStore } from './controller'
 
 /**
  * This is an abstraction that holds a customizable parameter that can fallback to a default value
- *
  * @template T The customizable parameter type
  */
 class CustomizableParameter<T> {
@@ -56,7 +55,6 @@ class CustomizableParameter<T> {
 
   /**
    * Sets the URI to a given custom one
-   *
    * @param {T} val
    */
   set val(val: T) {
@@ -119,7 +117,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   /**
    * Check if vehicle is online (no more than 5 seconds passed since last heartbeat)
-   *
    * @returns { boolean } True if vehicle is online
    */
   const isVehicleOnline = computed(() => {
@@ -142,7 +139,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   /**
    * Send manual control message
-   *
    * @param {ProtocolControllerState} controllerState Current state of the controller
    */
   function sendManualControl(controllerState: ProtocolControllerState): void {
@@ -165,7 +161,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   /**
    * List of available flight modes
-   *
    * @returns {Array<string>}
    */
   function modesAvailable(): Array<string> {
@@ -176,7 +171,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   /**
    * Set vehicle flight mode
-   *
    * @param {string} modeName
    */
   function setFlightMode(modeName: string): void {

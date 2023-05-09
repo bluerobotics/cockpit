@@ -21,7 +21,6 @@ export class VehicleFactory {
 
   /**
    * Create vehicle based on the firmware and vehicle type
-   *
    * @param {Vehicle.Firmware} firmware
    * @param {Vehicle.Type} type
    * @returns {Vehicle.Abstract | undefined}
@@ -50,7 +49,6 @@ export class VehicleFactory {
 
   /**
    * Create ArduPilot vehicle based on the category
-   *
    * @param  {Vehicle.Type} type
    * @returns {Vehicle.Abstract | undefined}
    */
@@ -71,7 +69,6 @@ export class VehicleFactory {
 
   /**
    * Return a list of vehicles available
-   *
    * @returns {WeakRef<Vehicle.Abstract>[]}
    */
   static vehicles(): WeakRef<Vehicle.Abstract>[] {
@@ -84,7 +81,6 @@ export class VehicleFactory {
 
 /**
  * Create vehicle from message
- *
  * @param {Uint8Array} message
  */
 function createVehicleFromMessage(message: Uint8Array): void {
