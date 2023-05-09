@@ -2,7 +2,7 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 
-import type { Waypoint } from '@/types/mission'
+import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
 export const useMissionStore = defineStore('mission', () => {
   const missionName = useStorage('cockpit-mission-name', '')
@@ -10,7 +10,7 @@ export const useMissionStore = defineStore('mission', () => {
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
 
-  const moveWaypoint = (id: string, newCoordinates: [number, number]): void => {
+  const moveWaypoint = (id: string, newCoordinates: WaypointCoordinates): void => {
     const waypoint = currentPlanningWaypoints.find((w) => w.id === id)
     if (waypoint === undefined) {
       throw Error(`Could not move waypoint. No waypoint with id ${id} was found.`)
