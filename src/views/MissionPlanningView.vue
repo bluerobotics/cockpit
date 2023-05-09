@@ -24,6 +24,9 @@
       >
         Land
       </button>
+      <div class="w-full h-px my-3 bg-gray-50" />
+      <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
+      <input v-model="currentWaypointAltitude" class="px-2 m-1 rounded-sm bg-slate-100" />
     </div>
   </div>
 </template>
@@ -46,6 +49,7 @@ const mapCenter = ref([-27.5935, -48.55854])
 const home = ref(mapCenter.value)
 const zoom = ref(18)
 const currentWaypointType = ref<WaypointType>(WaypointType.TAKEOFF)
+const currentWaypointAltitude = ref(0)
 
 const goHome = async (): Promise<void> => {
   if (!home.value || !planningMap.value) return
@@ -75,7 +79,7 @@ onMounted(() => {
   goHome()
 
   planningMap.value.on('click', (e) => {
-    addWaypoint(e.latlng as unknown as [number, number], 0, currentWaypointType.value)
+    addWaypoint(e.latlng as unknown as [number, number], currentWaypointAltitude.value, currentWaypointType.value)
   })
 })
 
