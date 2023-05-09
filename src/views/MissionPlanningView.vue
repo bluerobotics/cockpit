@@ -28,6 +28,9 @@
       <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
       <input v-model="currentWaypointAltitude" class="px-2 m-1 rounded-sm bg-slate-100" />
       <div class="w-full h-px my-3 bg-gray-50" />
+      <p class="m-1 overflow-visible text-sm text-slate-200">Use relative altitude?</p>
+      <input v-model="useRelativeAltitude" type="checkbox" class="m-1" />
+      <div class="w-full h-px my-3 bg-gray-50" />
       <p class="m-1 overflow-visible text-sm text-slate-200">Default cruise speed (m/s)</p>
       <input v-model="defaultCruiseSpeed" class="px-2 m-1 rounded-sm bg-slate-100" />
     </div>
@@ -66,6 +69,7 @@ const zoom = ref(18)
 const currentWaypointType = ref<WaypointType>(WaypointType.TAKEOFF)
 const currentWaypointAltitude = ref(0)
 const defaultCruiseSpeed = ref(1)
+const useRelativeAltitude = ref(true)
 
 const goHome = async (): Promise<void> => {
   if (!home.value || !planningMap.value) return
