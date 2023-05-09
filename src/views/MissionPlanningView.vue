@@ -79,6 +79,12 @@ onMounted(() => {
   })
 })
 
+watch(planningMap, (newMap, oldMap) => {
+  if (planningMap.value !== undefined && newMap?.options === undefined) {
+    planningMap.value = oldMap
+  }
+})
+
 const missionWaypointsPolyline = ref()
 watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
