@@ -8,8 +8,14 @@
 import 'leaflet/dist/leaflet.css'
 
 import L, { type LatLngTuple, type Map } from 'leaflet'
+import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
 import { onMounted, ref, watch } from 'vue'
+
+import { useMissionStore } from '@/stores/mission'
+import type { WaypointType } from '@/types/mission'
+
+const missionStore = useMissionStore()
 
 const planningMap: Ref<Map | undefined> = ref()
 const mapCenter = ref([-27.5935, -48.55854])
@@ -18,7 +24,15 @@ const zoom = ref(18)
 
 const goHome = async (): Promise<void> => {
   if (!home.value || !planningMap.value) return
-  planningMap.value?.flyTo(home.value as LatLngTuple)
+  planningMap.value?.panTo(home.value as LatLngTuple)
+}
+
+const addWaypoint = (coordinates: [number, number], altitude: number, type: WaypointType): void => {
+  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+  const waypointId = uuid()
+  missionStore.currentPlanningWaypoints.push({ id: waypointId, coordinates, altitude, type })
+  const newMarker = L.marker(coordinates)
+  newMarker.addTo(planningMap.value)
 }
 
 onMounted(() => {
@@ -30,6 +44,19 @@ onMounted(() => {
   planningMap.value.zoomControl.setPosition('bottomright')
 
   goHome()
+
+  planningMap.value.on('click', (e) => {
+    addWaypoint(e.latlng as unknown as [number, number], 0, 'pass_by')
+  })
+})
+
+const missionWaypointsPolyline = ref()
+watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
+  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+  if (missionWaypointsPolyline.value === undefined) {
+    missionWaypointsPolyline.value = L.polyline(newWaypoints.map((w) => w.coordinates)).addTo(planningMap.value)
+  }
+  missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
 })
 
 // Try to update home position based on browser geolocation
