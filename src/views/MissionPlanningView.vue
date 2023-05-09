@@ -237,6 +237,9 @@ onMounted(() => {
 
   planningMap.value.on('click', (e) => {
     addWaypoint(e.latlng as unknown as [number, number], currentWaypointAltitude.value, currentWaypointType.value)
+    if (currentWaypointType.value === WaypointType.TAKEOFF) {
+      currentWaypointType.value = WaypointType.PASS_BY
+    }
   })
 
   const layerControl = L.control.layers(baseMaps)
