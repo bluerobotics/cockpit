@@ -26,3 +26,43 @@ export type Waypoint = {
    */
   type: WaypointType
 }
+
+export type CockpitMission = {
+  /**
+   * Version of the mission file. Used for compatibility checking.
+   */
+  version: number
+  /**
+   * General Cockpit settings
+   */
+  settings: {
+    /**
+     * The coordinates of the map center when the user saved the file
+     */
+    mapCenter: WaypointCoordinates
+    /**
+     * The zoom of the map when the user saved the file
+     */
+    zoom: number
+    /**
+     * The type to be used for the next placed waypoint
+     */
+    currentWaypointType: WaypointType
+    /**
+     * The altitude to be used for the next placed waypoint
+     */
+    currentWaypointAltitude: number
+    /**
+     * To use or not altitudes relative to the home altitude
+     */
+    useRelativeAltitude: boolean
+    /**
+     * The default speed to be used on the mission
+     */
+    defaultCruiseSpeed: number
+  }
+  /**
+   * The waypoints of the mission
+   */
+  waypoints: Waypoint[]
+}
