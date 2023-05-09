@@ -6,9 +6,14 @@
       </button>
       <div ref="mainMenu" class="main-menu">
         <div class="main-menu-content">
-          <v-btn prepend-icon="mdi-pencil" variant="plain" @click="widgetStore.editingMode = !widgetStore.editingMode"
-            >Edit mode</v-btn
+          <v-btn
+            v-if="route.name === 'widgets-view'"
+            prepend-icon="mdi-pencil"
+            variant="plain"
+            @click="widgetStore.editingMode = !widgetStore.editingMode"
           >
+            Edit mode
+          </v-btn>
           <v-btn v-if="route.name !== 'widgets-view'" prepend-icon="mdi-send" variant="plain" to="/">Flight</v-btn>
           <v-btn
             v-if="route.name !== 'Mission planning'"
