@@ -132,7 +132,7 @@ watch([home, planningMap], () => {
 })
 </script>
 
-<style scoped>
+<style>
 #planningMap {
   position: absolute;
   z-index: 0;
