@@ -31,7 +31,11 @@ const addWaypoint = (coordinates: [number, number], altitude: number, type: Wayp
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
   const waypointId = uuid()
   missionStore.currentPlanningWaypoints.push({ id: waypointId, coordinates, altitude, type })
-  const newMarker = L.marker(coordinates)
+  const newMarker = L.marker(coordinates, { draggable: true })
+  newMarker.on('move', (e) => {
+    // @ts-ignore: Event has the latlng property
+    missionStore.moveWaypoint(waypointId, e.latlng)
+  })
   newMarker.addTo(planningMap.value)
 }
 
