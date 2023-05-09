@@ -141,7 +141,7 @@ watch(zoom, (newZoom, oldZoom) => {
 })
 
 const addWaypoint = (
-  coordinates: [number, number],
+  coordinates: WaypointCoordinates,
   altitude: number,
   type: WaypointType,
   altitudeReferenceType: AltitudeReferenceType
@@ -151,9 +151,9 @@ const addWaypoint = (
   const waypoint: Waypoint = { id: waypointId, coordinates, altitude, type, altitudeReferenceType }
   missionStore.currentPlanningWaypoints.push(waypoint)
   const newMarker = L.marker(coordinates, { draggable: true })
-  newMarker.on('move', (e) => {
-    // @ts-ignore: Event has the latlng property
-    missionStore.moveWaypoint(waypointId, e.latlng)
+  // @ts-ignore - onMove is a valid LeafletMouseEvent
+  newMarker.on('move', (e: L.LeafletMouseEvent) => {
+    missionStore.moveWaypoint(waypointId, [e.latlng.lat, e.latlng.lng])
   })
   newMarker.on('contextmenu', () => {
     // @ts-ignore: Event has the latlng property
@@ -268,7 +268,7 @@ onMounted(() => {
 
   planningMap.value.on('click', (e) => {
     addWaypoint(
-      e.latlng as unknown as [number, number],
+      [e.latlng.lat, e.latlng.lng],
       currentWaypointAltitude.value,
       currentWaypointType.value,
       currentWaypointAltitudeRefType.value
