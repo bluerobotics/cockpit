@@ -77,6 +77,12 @@ const addWaypoint = (coordinates: [number, number], altitude: number, type: Wayp
     // @ts-ignore: Event has the latlng property
     missionStore.moveWaypoint(waypointId, e.latlng)
   })
+  var markerIcon = L.divIcon({
+    className: 'marker-icon',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  })
+  newMarker.setIcon(markerIcon)
   newMarker.addTo(planningMap.value)
 }
 
@@ -138,5 +144,9 @@ watch([home, planningMap], () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.marker-icon {
+  background-color: rgb(0, 110, 255);
+  border-radius: 12px;
 }
 </style>
