@@ -1,19 +1,43 @@
 <template>
   <div class="mission-planning">
     <div id="planningMap" ref="planningMap" />
+    <div class="absolute left-0 flex flex-col w-32 h-auto p-4 m-4 rounded-md bg-slate-700 opacity-90">
+      <p class="text-sm text-slate-200">Waypoint type</p>
+      <button
+        :class="{ 'bg-slate-50': currentWaypointType === WaypointType.TAKEOFF }"
+        class="h-6 m-2 font-medium rounded-sm bg-slate-300"
+        @click="currentWaypointType = WaypointType.TAKEOFF"
+      >
+        Takeoff
+      </button>
+      <button
+        :class="{ 'bg-slate-50': currentWaypointType === WaypointType.PASS_BY }"
+        class="h-6 m-2 font-medium rounded-sm bg-slate-300"
+        @click="currentWaypointType = WaypointType.PASS_BY"
+      >
+        Pass-by
+      </button>
+      <button
+        :class="{ 'bg-slate-50': currentWaypointType === WaypointType.LAND }"
+        class="h-6 m-2 font-medium rounded-sm bg-slate-300"
+        @click="currentWaypointType = WaypointType.LAND"
+      >
+        Land
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
-import L, { type LatLngTuple, type Map } from 'leaflet'
+import L, { type LatLngTuple, Map } from 'leaflet'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
 import { onMounted, ref, watch } from 'vue'
 
 import { useMissionStore } from '@/stores/mission'
-import type { WaypointType } from '@/types/mission'
+import { WaypointType } from '@/types/mission'
 
 const missionStore = useMissionStore()
 
@@ -21,6 +45,7 @@ const planningMap: Ref<Map | undefined> = ref()
 const mapCenter = ref([-27.5935, -48.55854])
 const home = ref(mapCenter.value)
 const zoom = ref(18)
+const currentWaypointType = ref<WaypointType>(WaypointType.TAKEOFF)
 
 const goHome = async (): Promise<void> => {
   if (!home.value || !planningMap.value) return
@@ -50,7 +75,7 @@ onMounted(() => {
   goHome()
 
   planningMap.value.on('click', (e) => {
-    addWaypoint(e.latlng as unknown as [number, number], 0, 'pass_by')
+    addWaypoint(e.latlng as unknown as [number, number], 0, currentWaypointType.value)
   })
 })
 
