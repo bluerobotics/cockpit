@@ -66,6 +66,12 @@
         <div v-if="index !== missionStore.currentPlanningWaypoints.length - 1" class="w-full h-px my-3 bg-gray-50" />
       </div>
     </div>
+    <v-btn
+      class="absolute bottom-0 left-0 m-3 rounded-sm shadow-sm bg-slate-50"
+      icon="mdi-home-map-marker"
+      size="x-small"
+      @click="goHome"
+    />
   </div>
 </template>
 
