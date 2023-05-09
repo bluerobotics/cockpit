@@ -42,11 +42,13 @@
       <l-tooltip>
         <p>Coordinates: {{ vehiclePosition ?? 'No data available' }}</p>
         <p>Velocity: {{ `${vehicleStore.velocity.ground?.toFixed(2)} m/s` ?? 'No data available' }}</p>
-        <p>Heading: {{ `${vehicleHeading}°` ?? 'No data available' }}</p>
+        <p>Heading: {{ `${vehicleHeading.toFixed(2)}°` ?? 'No data available' }}</p>
         <p>{{ vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}</p>
         <p>Last seen: {{ timeAgoSeenText }}</p>
       </l-tooltip>
-      <l-icon :icon-url="vehicleMarkerImage" :icon-size="[72, 72]" :icon-anchor="[36, 36]" />
+      <l-icon :icon-anchor="[50, 50]">
+        <vehicle-icon :type="vehicleStore.vehicleType" :heading="vehicleHeading" />
+      </l-icon>
     </l-marker>
     <l-polyline v-if="widget.options.showVehiclePath" :lat-lngs="vehicleLatLongHistory" />
     <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -79,13 +81,11 @@ import { computed, nextTick, ref } from 'vue'
 import { onBeforeMount } from 'vue'
 import { toRefs } from 'vue'
 
-import blueBoatMarkerImage from '@/assets/blueboat-marker.png'
-import brov2MarkerImage from '@/assets/brov2-marker.png'
-import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
-import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
+
+import VehicleIcon from './VehicleIcon.vue'
 
 const vehicleStore = useMainVehicleStore()
 
@@ -98,7 +98,7 @@ const vehiclePosition = computed(() =>
     ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude]
     : undefined
 )
-const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw).toFixed(2) : 0))
+const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw) : 0))
 const { history: vehiclePositionHistory } = useRefHistory(vehiclePosition)
 const vehicleLatLongHistory = computed(() =>
   vehiclePositionHistory.value.filter((posHis) => posHis.snapshot !== undefined).map((posHis) => posHis.snapshot)
@@ -106,17 +106,6 @@ const vehicleLatLongHistory = computed(() =>
 const timeAgoSeenText = computed(() => {
   const lastBeat = vehicleStore.lastHeartbeat
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
-})
-
-const vehicleMarkerImage = computed(() => {
-  switch (vehicleStore.vehicleType) {
-    case MavType.MAV_TYPE_SURFACE_BOAT:
-      return blueBoatMarkerImage
-    case MavType.MAV_TYPE_SUBMARINE:
-      return brov2MarkerImage
-    default:
-      return genericVehicleMarkerImage
-  }
 })
 
 const map: Ref<null | any> = ref(null) // eslint-disable-line @typescript-eslint/no-explicit-any
