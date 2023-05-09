@@ -68,12 +68,12 @@ import type { Ref } from 'vue'
 import { onMounted, ref, watch } from 'vue'
 
 import { useMissionStore } from '@/stores/mission'
-import { type CockpitMission, type Waypoint, WaypointType } from '@/types/mission'
+import { type CockpitMission, type Waypoint, type WaypointCoordinates, WaypointType } from '@/types/mission'
 
 const missionStore = useMissionStore()
 
 const planningMap: Ref<Map | undefined> = ref()
-const mapCenter = ref([-27.5935, -48.55854])
+const mapCenter = ref<WaypointCoordinates>([-27.5935, -48.55854])
 const home = ref(mapCenter.value)
 const zoom = ref(18)
 const currentWaypointType = ref<WaypointType>(WaypointType.TAKEOFF)
@@ -83,8 +83,17 @@ const useRelativeAltitude = ref(true)
 
 const goHome = async (): Promise<void> => {
   if (!home.value || !planningMap.value) return
-  planningMap.value?.panTo(home.value as LatLngTuple)
+  mapCenter.value = home.value
 }
+
+watch(mapCenter, (newCenter, oldCenter) => {
+  if (newCenter.toString() === oldCenter.toString()) return
+  planningMap.value?.panTo(newCenter as LatLngTuple)
+})
+watch(zoom, (newZoom, oldZoom) => {
+  if (newZoom === oldZoom) return
+  planningMap.value?.setZoom(zoom.value)
+})
 
 const addWaypoint = (coordinates: [number, number], altitude: number, type: WaypointType): void => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
@@ -180,6 +189,15 @@ onMounted(() => {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
+
+  planningMap.value.on('moveend', () => {
+    if (planningMap.value === undefined) return
+    mapCenter.value = [planningMap.value?.getCenter().lat, planningMap.value?.getCenter().lng] ?? mapCenter.value
+  })
+  planningMap.value.on('zoomend', () => {
+    if (planningMap.value === undefined) return
+    zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
+  })
 
   goHome()
 
