@@ -1,7 +1,9 @@
 <template>
   <div class="mission-planning">
     <div id="planningMap" ref="planningMap" />
-    <div class="absolute left-0 flex flex-col w-32 h-auto p-4 m-4 rounded-md bg-slate-700 opacity-90">
+    <div
+      class="absolute left-0 flex flex-col w-32 h-auto p-4 m-4 rounded-md bg-slate-700 opacity-90 scrollbar-hide overflow-y-scroll max-h-[80%]"
+    >
       <p class="text-sm text-slate-200">Waypoint type</p>
       <button
         :class="{ 'bg-slate-50': currentWaypointType === WaypointType.TAKEOFF }"
