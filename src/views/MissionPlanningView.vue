@@ -87,7 +87,21 @@ const addWaypoint = (coordinates: [number, number], altitude: number, type: Wayp
 }
 
 onMounted(() => {
-  planningMap.value = L.map('planningMap').setView(mapCenter.value as LatLngTuple, zoom.value)
+  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap',
+  })
+  const esri = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19, attribution: '© Esri World Imagery' }
+  )
+
+  const baseMaps = {
+    'OpenStreetMap': osm,
+    'Esri World Imagery': esri,
+  }
+
+  planningMap.value = L.map('planningMap', { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -99,6 +113,9 @@ onMounted(() => {
   planningMap.value.on('click', (e) => {
     addWaypoint(e.latlng as unknown as [number, number], currentWaypointAltitude.value, currentWaypointType.value)
   })
+
+  const layerControl = L.control.layers(baseMaps)
+  planningMap.value.addControl(layerControl)
 })
 
 watch(planningMap, (newMap, oldMap) => {
