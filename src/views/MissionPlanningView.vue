@@ -28,6 +28,18 @@
       <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
       <input v-model="currentWaypointAltitude" class="px-2 m-1 rounded-sm bg-slate-100" />
     </div>
+    <div
+      class="absolute right-0 flex flex-col p-4 m-4 scrollbar-hide overflow-y-scroll rounded-md max-h-[70%] w-52 bg-slate-700 opacity-90"
+    >
+      <p v-if="missionStore.currentPlanningWaypoints.length === 0" class="text-lg text-center text-slate-100">
+        No waypoints added to the mission.
+      </p>
+      <div v-for="(waypoint, index) in missionStore.currentPlanningWaypoints" :key="waypoint.id">
+        <p class="text-base text-slate-100">Waypoint {{ index }} ({{ waypoint.type }})</p>
+        <p class="text-sm text-slate-200">Altitude: {{ waypoint.altitude }} m</p>
+        <div v-if="index !== missionStore.currentPlanningWaypoints.length - 1" class="w-full h-px my-3 bg-gray-50" />
+      </div>
+    </div>
   </div>
 </template>
 
