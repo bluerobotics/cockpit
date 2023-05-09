@@ -6,6 +6,16 @@ export enum WaypointType {
   TAKEOFF = 'Takeoff',
   LAND = 'Land',
 }
+
+/**
+ * Possible types for waypoints. Usually used to decide what function should the waypoint perform.
+ */
+export enum AltitudeReferenceType {
+  ABSOLUTE_RELATIVE_TO_MSL = 'Absolute (relative to mean sea level)',
+  RELATIVE_TO_HOME = 'Relative to home',
+  RELATIVE_TO_TERRAIN = 'Relative to terrain',
+}
+
 export type WaypointCoordinates = [number, number]
 
 export type Waypoint = {
@@ -21,6 +31,10 @@ export type Waypoint = {
    * Altitude of the waypoint.
    */
   altitude: number
+  /**
+   * Type of reference to the altitude value.
+   */
+  altitudeReferenceType: AltitudeReferenceType
   /**
    * The type of the waypoint. Usually used to decide what function should the waypoint perform.
    */
@@ -55,7 +69,7 @@ export type CockpitMission = {
     /**
      * To use or not altitudes relative to the home altitude
      */
-    useRelativeAltitude: boolean
+    currentWaypointAltitudeRefType: AltitudeReferenceType
     /**
      * The default speed to be used on the mission
      */

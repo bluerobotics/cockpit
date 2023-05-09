@@ -30,8 +30,28 @@
       <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
       <input v-model="currentWaypointAltitude" class="px-2 m-1 rounded-sm bg-slate-100" />
       <div class="w-full h-px my-3 bg-gray-50" />
-      <p class="m-1 overflow-visible text-sm text-slate-200">Use relative altitude?</p>
-      <input v-model="useRelativeAltitude" type="checkbox" class="m-1" />
+      <p class="m-1 overflow-visible text-sm text-slate-200">Altitude type:</p>
+      <button
+        :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }"
+        class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
+        @click="currentWaypointAltitudeRefType = AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL"
+      >
+        {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
+      </button>
+      <button
+        :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.RELATIVE_TO_HOME }"
+        class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
+        @click="currentWaypointAltitudeRefType = AltitudeReferenceType.RELATIVE_TO_HOME"
+      >
+        {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
+      </button>
+      <button
+        :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.RELATIVE_TO_TERRAIN }"
+        class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
+        @click="currentWaypointAltitudeRefType = AltitudeReferenceType.RELATIVE_TO_TERRAIN"
+      >
+        {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
+      </button>
       <div class="w-full h-px my-3 bg-gray-50" />
       <p class="m-1 overflow-visible text-sm text-slate-200">Default cruise speed (m/s)</p>
       <input v-model="defaultCruiseSpeed" class="px-2 m-1 rounded-sm bg-slate-100" />
@@ -86,7 +106,13 @@ import type { Ref } from 'vue'
 import { onMounted, ref, watch } from 'vue'
 
 import { useMissionStore } from '@/stores/mission'
-import { type CockpitMission, type Waypoint, type WaypointCoordinates, WaypointType } from '@/types/mission'
+import {
+  type CockpitMission,
+  type Waypoint,
+  type WaypointCoordinates,
+  AltitudeReferenceType,
+  WaypointType,
+} from '@/types/mission'
 
 const missionStore = useMissionStore()
 
@@ -97,7 +123,7 @@ const zoom = ref(18)
 const currentWaypointType = ref<WaypointType>(WaypointType.TAKEOFF)
 const currentWaypointAltitude = ref(0)
 const defaultCruiseSpeed = ref(1)
-const useRelativeAltitude = ref(true)
+const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = ref<{ [id: string]: Marker }>({})
 
 const goHome = async (): Promise<void> => {
@@ -114,10 +140,15 @@ watch(zoom, (newZoom, oldZoom) => {
   planningMap.value?.setZoom(zoom.value)
 })
 
-const addWaypoint = (coordinates: [number, number], altitude: number, type: WaypointType): void => {
+const addWaypoint = (
+  coordinates: [number, number],
+  altitude: number,
+  type: WaypointType,
+  altitudeReferenceType: AltitudeReferenceType
+): void => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
   const waypointId = uuid()
-  const waypoint: Waypoint = { id: waypointId, coordinates, altitude, type }
+  const waypoint: Waypoint = { id: waypointId, coordinates, altitude, type, altitudeReferenceType }
   missionStore.currentPlanningWaypoints.push(waypoint)
   const newMarker = L.marker(coordinates, { draggable: true })
   newMarker.on('move', (e) => {
@@ -155,7 +186,7 @@ const saveMissionToFile = async (): Promise<void> => {
       zoom: zoom.value,
       currentWaypointType: currentWaypointType.value,
       currentWaypointAltitude: currentWaypointAltitude.value,
-      useRelativeAltitude: useRelativeAltitude.value,
+      currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
       defaultCruiseSpeed: defaultCruiseSpeed.value,
     },
     waypoints: missionStore.currentPlanningWaypoints,
@@ -180,7 +211,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
         maybeMission['settings']['zoom'] !== undefined &&
         maybeMission['settings']['currentWaypointType'] !== undefined &&
         maybeMission['settings']['currentWaypointAltitude'] !== undefined &&
-        maybeMission['settings']['useRelativeAltitude'] !== undefined &&
+        maybeMission['settings']['currentWaypointAltitudeRefType'] !== undefined &&
         maybeMission['settings']['defaultCruiseSpeed'] !== undefined &&
         maybeMission['waypoints'] !== undefined
       )
@@ -192,10 +223,10 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     zoom.value = maybeMission['settings']['zoom']
     currentWaypointType.value = maybeMission['settings']['currentWaypointType']
     currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
-    useRelativeAltitude.value = maybeMission['settings']['useRelativeAltitude']
+    currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
     defaultCruiseSpeed.value = maybeMission['settings']['defaultCruiseSpeed']
     maybeMission['waypoints'].forEach((w: Waypoint) => {
-      addWaypoint(w.coordinates, w.altitude, w.type)
+      addWaypoint(w.coordinates, w.altitude, w.type, w.altitudeReferenceType)
     })
   }
   // @ts-ignore: We know the event type and need refactor of the event typing
@@ -236,7 +267,12 @@ onMounted(() => {
   goHome()
 
   planningMap.value.on('click', (e) => {
-    addWaypoint(e.latlng as unknown as [number, number], currentWaypointAltitude.value, currentWaypointType.value)
+    addWaypoint(
+      e.latlng as unknown as [number, number],
+      currentWaypointAltitude.value,
+      currentWaypointType.value,
+      currentWaypointAltitudeRefType.value
+    )
     if (currentWaypointType.value === WaypointType.TAKEOFF) {
       currentWaypointType.value = WaypointType.PASS_BY
     }
