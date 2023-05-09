@@ -33,6 +33,14 @@
       <div class="w-full h-px my-3 bg-gray-50" />
       <p class="m-1 overflow-visible text-sm text-slate-200">Default cruise speed (m/s)</p>
       <input v-model="defaultCruiseSpeed" class="px-2 m-1 rounded-sm bg-slate-100" />
+      <div class="w-full h-px my-3 bg-gray-50" />
+      <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="saveMissionToFile">Save</button>
+      <button class="h-6 m-2 font-medium rounded-sm bg-slate-300">
+        <label class="block w-full h-full cursor-pointer">
+          <input type="file" accept=".cmp" hidden @change="(e) => loadMissionFromFile(e)" />
+          Load
+        </label>
+      </button>
     </div>
     <div
       class="absolute right-0 flex flex-col p-4 m-4 scrollbar-hide overflow-y-scroll rounded-md max-h-[70%] w-52 bg-slate-700 opacity-90"
@@ -52,13 +60,15 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
+import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, Map } from 'leaflet'
+import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
 import { onMounted, ref, watch } from 'vue'
 
 import { useMissionStore } from '@/stores/mission'
-import { WaypointType } from '@/types/mission'
+import { type CockpitMission, type Waypoint, WaypointType } from '@/types/mission'
 
 const missionStore = useMissionStore()
 
@@ -92,6 +102,61 @@ const addWaypoint = (coordinates: [number, number], altitude: number, type: Wayp
   })
   newMarker.setIcon(markerIcon)
   newMarker.addTo(planningMap.value)
+}
+
+const saveMissionToFile = async (): Promise<void> => {
+  const cockpitMissionFile: CockpitMission = {
+    version: 0,
+    settings: {
+      mapCenter: mapCenter.value,
+      zoom: zoom.value,
+      currentWaypointType: currentWaypointType.value,
+      currentWaypointAltitude: currentWaypointAltitude.value,
+      useRelativeAltitude: useRelativeAltitude.value,
+      defaultCruiseSpeed: defaultCruiseSpeed.value,
+    },
+    waypoints: missionStore.currentPlanningWaypoints,
+  }
+  const blob = new Blob([JSON.stringify(cockpitMissionFile, null, 2)], {
+    type: 'application/json',
+  })
+  saveAs(blob, 'mission_plan.cmp')
+}
+
+const loadMissionFromFile = async (e: Event): Promise<void> => {
+  var reader = new FileReader()
+  reader.onload = (event: Event) => {
+    // @ts-ignore: We know the event type and need refactor of the event typing
+    const contents = event.target.result
+    const maybeMission = JSON.parse(contents)
+    if (
+      !(
+        maybeMission['version'] !== undefined &&
+        maybeMission['settings'] !== undefined &&
+        maybeMission['settings']['mapCenter'] !== undefined &&
+        maybeMission['settings']['zoom'] !== undefined &&
+        maybeMission['settings']['currentWaypointType'] !== undefined &&
+        maybeMission['settings']['currentWaypointAltitude'] !== undefined &&
+        maybeMission['settings']['useRelativeAltitude'] !== undefined &&
+        maybeMission['settings']['defaultCruiseSpeed'] !== undefined &&
+        maybeMission['waypoints'] !== undefined
+      )
+    ) {
+      Swal.fire({ icon: 'error', text: 'Invalid mission file.', timer: 3000 })
+      return
+    }
+    mapCenter.value = maybeMission['settings']['mapCenter']
+    zoom.value = maybeMission['settings']['zoom']
+    currentWaypointType.value = maybeMission['settings']['currentWaypointType']
+    currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
+    useRelativeAltitude.value = maybeMission['settings']['useRelativeAltitude']
+    defaultCruiseSpeed.value = maybeMission['settings']['defaultCruiseSpeed']
+    maybeMission['waypoints'].forEach((w: Waypoint) => {
+      addWaypoint(w.coordinates, w.altitude, w.type)
+    })
+  }
+  // @ts-ignore: We know the event type and need refactor of the event typing
+  reader.readAsText(e.target.files[0])
 }
 
 onMounted(() => {
