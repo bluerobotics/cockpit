@@ -48,7 +48,6 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
 
   /**
    * Get vehicle flight mode
-   *
    * @returns {CustomMode}
    */
   mode(): CustomMode {
@@ -57,7 +56,6 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
 
   /**
    * Get a list of available modes
-   *
    * @returns {Map<string, CustomMode>}
    */
   modesAvailable(): Map<string, CustomMode> {
@@ -72,7 +70,6 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
 
   /**
    * Deal with MAVLink messages necessary for vehicles of type sub
-   *
    * @param {Package} mavlink
    */
   onMAVLinkPackage(mavlink: Package): void {

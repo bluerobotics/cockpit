@@ -56,7 +56,6 @@ export class Coordinates {
 
   /**
    * Create object
-   *
    * @param {Partial<Coordinates>} init
    */
   public constructor(init?: Partial<Coordinates>) {
@@ -65,7 +64,6 @@ export class Coordinates {
 
   /**
    * Set position
-   *
    * @param {number} latitude
    * @param {number} longitude
    * @param {Precision} precision
@@ -88,7 +86,6 @@ export class Coordinates {
 
   /**
    * Set altitude information
-   *
    * @param  {number?} altitude
    * @returns {Coordinates}
    */
@@ -111,7 +108,6 @@ export class Attitude {
 
   /**
    * Create object
-   *
    * @param {Partial<Attitude>} init
    */
   public constructor(init?: Partial<Attitude>) {
@@ -127,7 +123,6 @@ export class Altitude {
 
   /**
    * Create object
-   *
    * @param {Partial<Altitude>} init
    */
   public constructor(init?: Partial<Altitude>) {
@@ -164,7 +159,6 @@ export class Velocity {
 
   /**
    * Create object
-   *
    * @param {Partial<Velocity>} init
    */
   public constructor(init?: Partial<Velocity>) {
@@ -181,7 +175,6 @@ export class Battery {
 
   /**
    * Create object
-   *
    * @param {Partial<Battery>} init
    */
   public constructor(init?: Partial<Battery>) {
@@ -190,7 +183,6 @@ export class Battery {
 
   /**
    * Number of cells in the battery
-   *
    * @returns {number}
    */
   numberOfCells(): number {

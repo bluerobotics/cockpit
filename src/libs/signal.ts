@@ -15,7 +15,6 @@ export class Signal<T> {
 
   /**
    * Add slot, called when emit is raised
-   *
    * @param  {Function} slot
    * @returns {Signal<'T'>}
    */
@@ -27,7 +26,6 @@ export class Signal<T> {
 
   /**
    * Called only once when an emit is raised
-   *
    * @param  {Function} slot
    * @returns {Signal<'T'>}
    */
@@ -39,7 +37,6 @@ export class Signal<T> {
 
   /**
    * Remove a specific slot from the notification list
-   *
    * @param  {Function} slot
    * @returns {Signal<'T'>}
    */
@@ -52,7 +49,6 @@ export class Signal<T> {
 
   /**
    * Remove all callbacks
-   *
    * @returns {Signal<'T'>}
    */
   public clear(): Signal<T> {
@@ -64,7 +60,6 @@ export class Signal<T> {
 
   /**
    * Register function to be called when emit is used
-   *
    * @param {Function} caller
    */
   public register_caller(caller: () => T): void {
@@ -73,7 +68,6 @@ export class Signal<T> {
 
   /**
    * Emit signal with desired value
-   *
    * @param {'T'} payload
    */
   public emit_value(payload: T): void {
@@ -94,7 +88,6 @@ export class Signal<T> {
 
   /**
    *  Notify all slots
-   *
    * @param {Function[]} slots
    * @param {'T'} payload
    */
@@ -115,7 +108,6 @@ export class SignalTyped {
 
   /**
    * Add slots for generic types
-   *
    * @param {string} typeof_value
    * @param {Function} slot
    * @returns {SignalTyped}
@@ -133,7 +125,6 @@ export class SignalTyped {
 
   /**
    * Called only once when an emit is raised
-   *
    * @param {string} typeof_value
    * @param {Function} slot
    * @returns {SignalTyped}
@@ -151,7 +142,6 @@ export class SignalTyped {
 
   /**
    * Remove a specific slot from the notification list
-   *
    * @param {string} typeof_value
    * @param {Function} slot
    * @returns {SignalTyped}
@@ -174,7 +164,6 @@ export class SignalTyped {
 
   /**
    * Remove all callbacks
-   *
    * @returns {SignalTyped}
    */
   public clear(): SignalTyped {
@@ -186,7 +175,6 @@ export class SignalTyped {
 
   /**
    * Emit signal with desired value
-   *
    * @param {string} typeof_value
    * @param {'T'} payload
    */
@@ -199,7 +187,6 @@ export class SignalTyped {
 
   /**
    *  Notify all slots
-   *
    * @param {Function} slots
    * @param {'T'} payload
    */

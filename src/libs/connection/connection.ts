@@ -18,7 +18,6 @@ export enum Type {
 export namespace Type {
   /**
    * Return a connection type from a uri protocol
-   *
    * @param  {string} protocol
    * @returns {Type}
    */
@@ -41,7 +40,6 @@ export namespace Type {
 export class URI extends URL {
   /**
    * Check if protocol is secure
-   *
    * @returns {boolean}
    */
   isSecure(): boolean {
@@ -49,7 +47,6 @@ export class URI extends URL {
   }
   /**
    * Return connection type from URL string
-   *
    * @returns {Type}
    */
   type(): Type {
@@ -70,7 +67,6 @@ export abstract class Abstract {
 
   /**
    * Return the connection uri
-   *
    * @returns {URI}
    */
   uri(): URI {
@@ -79,7 +75,6 @@ export abstract class Abstract {
 
   /**
    * Abstract class constructor
-   *
    * @param {URI} uri
    * @param {Protocol.Type} vehicleProtocol
    */
@@ -90,7 +85,6 @@ export abstract class Abstract {
 
   /**
    * Return vehicle communication protocol
-   *
    * @returns {Protocol.Type}
    */
   protocolType(): Protocol.Type {

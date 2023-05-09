@@ -13,7 +13,6 @@ export enum Type {
 
 /**
  * Return the generated name from a specific type
- *
  * @param {Type} type
  * @returns {string}
  */

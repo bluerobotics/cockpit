@@ -50,7 +50,6 @@ export class ArduPlane extends ArduPilotVehicle<CustomMode> {
 
   /**
    * Get vehicle flight mode
-   *
    * @returns {CustomMode}
    */
   mode(): CustomMode {
@@ -59,7 +58,6 @@ export class ArduPlane extends ArduPilotVehicle<CustomMode> {
 
   /**
    * Get a list of available modes
-   *
    * @returns {Map<string, CustomMode>}
    */
   modesAvailable(): Map<string, CustomMode> {

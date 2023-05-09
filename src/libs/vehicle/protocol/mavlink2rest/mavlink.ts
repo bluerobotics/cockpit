@@ -7,7 +7,6 @@ import * as Protocol from '../protocol'
 export class MAVLink2Rest extends Protocol.Abstract {
   /**
    * Return the protocol type used
-   *
    * @returns {Protocol}
    */
   type(): Protocol.Type {
@@ -16,7 +15,6 @@ export class MAVLink2Rest extends Protocol.Abstract {
 
   /**
    * Write data over the protocol
-   *
    * @param {Uint8Array} data
    * @returns {Protocol}
    */
@@ -28,7 +26,6 @@ export class MAVLink2Rest extends Protocol.Abstract {
 
   /**
    * Set callback used for communication
-   *
    * @param {(data: Uint8Array) => void} callback
    */
   onRead(callback: (data: Uint8Array) => void): void {

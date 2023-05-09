@@ -39,7 +39,6 @@ export enum Type {
 
 /**
  * Create funny name based on the vehicle type
- *
  * @param {Type} type
  * @returns {FunnyName.Type}
  */
@@ -78,7 +77,6 @@ export abstract class AbstractVehicle<Modes> {
 
   /**
    * Constructor for the abstract vehicle type
-   *
    * @param {Firmware} firmware
    * @param {Type} type
    */
@@ -112,7 +110,6 @@ export abstract class AbstractVehicle<Modes> {
 
   /**
    * Return the firmware type of the vehicle
-   *
    * @returns {Type}
    */
   firmware(): Type {
@@ -121,7 +118,6 @@ export abstract class AbstractVehicle<Modes> {
 
   /**
    * Return the vehicle type
-   *
    * @returns {Type}
    */
   type(): Type {
@@ -130,7 +126,6 @@ export abstract class AbstractVehicle<Modes> {
 
   /**
    * Return the icon based on the vehicle type
-   *
    * @returns {string}
    */
   icon(): string {

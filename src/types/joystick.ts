@@ -38,7 +38,6 @@ export class Joystick {
 
   /**
    * Create joystick component
-   *
    * @param {Gamepad} gamepad Axis to be set
    */
   constructor(gamepad: Gamepad) {
@@ -47,7 +46,6 @@ export class Joystick {
 
   /**
    * Returns current state of axes and buttons
-   *
    * @returns {JoystickState}
    */
   get state(): JoystickState {

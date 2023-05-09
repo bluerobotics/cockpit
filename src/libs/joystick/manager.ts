@@ -34,7 +34,6 @@ const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
 export namespace EventType {
   /**
    * Return a list of possible events for gamepad api
-   *
    * @returns {Array<string>}
    */
   export function events(): Array<string> {
@@ -43,7 +42,6 @@ export namespace EventType {
 
   /**
    * Return enum value from Gamepad API event
-   *
    * @param {string} type
    * @returns {EventType}
    */
@@ -226,7 +224,6 @@ class JoystickManager {
 
   /**
    * Singleton access
-   *
    * @returns {JoystickManager}
    */
   static self(): JoystickManager {
@@ -235,7 +232,6 @@ class JoystickManager {
 
   /**
    * Callback to be used and receive joystick updates
-   *
    * @param {callbackJoystickEventType} callback
    */
   onJoystickUpdate(callback: callbackJoystickEventType): void {
@@ -244,7 +240,6 @@ class JoystickManager {
 
   /**
    * Get Vendor ID and Product ID from joystick
-   *
    * @param {Gamepad} gamepad Object
    * @returns {'vendor_id: string | undefined, product_id: string | undefined'} VID and PID
    */
@@ -262,7 +257,6 @@ class JoystickManager {
 
   /**
    * Get joystick model
-   *
    * @param {Gamepad} gamepad Object
    * @returns {JoystickModel} Joystick model
    */
@@ -277,7 +271,6 @@ class JoystickManager {
 
   /**
    * Request user for joystick HID access
-   *
    * @param {Gamepad} gamepad object
    */
   private getHID(gamepad: Gamepad): void {
@@ -316,7 +309,6 @@ class JoystickManager {
 
   /**
    * Process joystick event internally
-   *
    * @param {JoystickEvent} event
    */
   private processJoystickUpdate(event: JoystickEvent): void {
@@ -342,7 +334,6 @@ class JoystickManager {
 
   /**
    * Register joystick event callback
-   *
    * @param {callbackJoystickStateEventType} callback
    */
   onJoystickStateUpdate(callback: callbackJoystickStateEventType): void {

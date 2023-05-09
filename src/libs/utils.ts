@@ -28,7 +28,6 @@ export const range = (min: number, max: number): number[] => {
 
 /**
  * Create a zero-indexed, sequential array with desired length
- *
  * @param {number} length Length of the array
  * @returns {number[]} Array with desired length starting at 0
  */
@@ -38,7 +37,6 @@ export const sequentialArray = (length: number): number[] => {
 
 /**
  * Simple scale function
- *
  * @param {number} input Input value
  * @param {number} inputMin Input lowest point
  * @param {number} inputMax Input maximum point
