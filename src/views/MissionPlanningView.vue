@@ -111,6 +111,7 @@ import {
   type Waypoint,
   type WaypointCoordinates,
   AltitudeReferenceType,
+  instanceOfCockpitMission,
   WaypointType,
 } from '@/types/mission'
 
@@ -203,19 +204,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     // @ts-ignore: We know the event type and need refactor of the event typing
     const contents = event.target.result
     const maybeMission = JSON.parse(contents)
-    if (
-      !(
-        maybeMission['version'] !== undefined &&
-        maybeMission['settings'] !== undefined &&
-        maybeMission['settings']['mapCenter'] !== undefined &&
-        maybeMission['settings']['zoom'] !== undefined &&
-        maybeMission['settings']['currentWaypointType'] !== undefined &&
-        maybeMission['settings']['currentWaypointAltitude'] !== undefined &&
-        maybeMission['settings']['currentWaypointAltitudeRefType'] !== undefined &&
-        maybeMission['settings']['defaultCruiseSpeed'] !== undefined &&
-        maybeMission['waypoints'] !== undefined
-      )
-    ) {
+    if (!instanceOfCockpitMission(maybeMission)) {
       Swal.fire({ icon: 'error', text: 'Invalid mission file.', timer: 3000 })
       return
     }

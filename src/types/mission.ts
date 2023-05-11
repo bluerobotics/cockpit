@@ -80,3 +80,22 @@ export type CockpitMission = {
    */
   waypoints: Waypoint[]
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const instanceOfCockpitMission = (maybeMission: any): maybeMission is CockpitMission => {
+  const requiredKeys = ['version', 'settings', 'waypoints']
+  const requiredSettingsKeys = [
+    'mapCenter',
+    'zoom',
+    'currentWaypointType',
+    'currentWaypointAltitude',
+    'currentWaypointAltitudeRefType',
+    'defaultCruiseSpeed',
+  ]
+
+  const isValidMission =
+    requiredKeys.every((key) => maybeMission[key] !== undefined) &&
+    requiredSettingsKeys.every((key) => maybeMission.settings[key] !== undefined)
+
+  return isValidMission
+}
