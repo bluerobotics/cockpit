@@ -25,6 +25,14 @@
       size="x-small"
       @click="goHome"
     />
+    <v-btn
+      class="absolute bottom-0 m-3 left-20 bg-slate-50"
+      elevation="2"
+      style="z-index: 1002; border-radius: 0px"
+      icon="mdi-download"
+      size="x-small"
+      @click="downloadMissionFromVehicle"
+    />
     <l-marker v-if="home" :lat-lng="home">
       <l-icon :icon-size="[24, 24]">
         <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24">
@@ -67,6 +75,14 @@
       </v-card-text>
     </v-card>
   </v-dialog>
+  <v-progress-linear
+    v-if="fetchingMission"
+    :model-value="missionFetchProgress"
+    height="10"
+    absolute
+    bottom
+    color="rgba(0, 110, 255, 0.8)"
+  />
 </template>
 
 <script setup lang="ts">
@@ -76,15 +92,18 @@ import { LIcon, LMap, LMarker, LPolyline, LTileLayer, LTooltip } from '@vue-leaf
 import { useMouseInElement, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import type { Map } from 'leaflet'
+import Swal from 'sweetalert2'
 import { type Ref, computed, nextTick, onBeforeMount, ref, toRefs } from 'vue'
 
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 import type { Widget } from '@/types/widgets'
 
 import VehicleIcon from './VehicleIcon.vue'
 
 const vehicleStore = useMainVehicleStore()
+const missionStore = useMissionStore()
 
 const zoom = ref(18)
 const bounds = ref(null)
@@ -150,6 +169,30 @@ const goHome = async (): Promise<void> => {
     return
   }
   center.value = home.value
+}
+
+const fetchingMission = ref(false)
+const missionFetchProgress = ref(0)
+const downloadMissionFromVehicle = async (): Promise<void> => {
+  fetchingMission.value = true
+  missionFetchProgress.value = 0
+  while (missionStore.currentPlanningWaypoints.length > 0) {
+    missionStore.currentPlanningWaypoints.pop()
+  }
+  const loadingCallback = async (loadingPerc: number): Promise<void> => {
+    missionFetchProgress.value = loadingPerc
+  }
+  try {
+    const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
+    missionItemsInVehicle.forEach((w) => {
+      missionStore.currentPlanningWaypoints.push(w)
+      Swal.fire({ icon: 'success', title: 'Mission download succeed!', timer: 2000 })
+    })
+  } catch (error) {
+    Swal.fire({ icon: 'error', title: 'Mission download failed', text: error as string, timer: 5000 })
+  } finally {
+    fetchingMission.value = false
+  }
 }
 
 const props = defineProps<{

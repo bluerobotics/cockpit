@@ -170,6 +170,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return await mainVehicle.value?.uploadMission(items, loadingCallback)
   }
 
+  /**
+   * Get current mission from vehicle
+   * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
+   * @returns { Promise<Waypoint[]> } Mission items that were on the vehicle
+   */
+  async function fetchMission(loadingCallback: MissionLoadingCallback): Promise<Waypoint[]> {
+    return (await mainVehicle.value?.fetchMission(loadingCallback)) ?? []
+  }
 
   /**
    * Clear all missions that are on the vehicle
@@ -396,6 +404,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     setFlightMode,
     sendGcsHeartbeat,
     requestParametersList,
+    fetchMission,
     uploadMission,
     clearMissions,
     globalAddress,
