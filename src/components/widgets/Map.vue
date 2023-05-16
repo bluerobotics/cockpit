@@ -18,7 +18,7 @@
       @click="showOptionsDialog = !showOptionsDialog"
     />
     <v-btn
-      class="absolute bottom-0 left-0 m-3"
+      class="absolute bottom-0 left-0 m-3 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-home-map-marker"
