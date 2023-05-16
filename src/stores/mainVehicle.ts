@@ -170,6 +170,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return await mainVehicle.value?.uploadMission(items, loadingCallback)
   }
 
+
+  /**
+   * Clear all missions that are on the vehicle
+   */
+  async function clearMissions(): Promise<void> {
+    mainVehicle.value?.clearMissions()
+  }
+
   /**
    * List of available flight modes
    * @returns {Array<string>}
@@ -389,6 +397,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     sendGcsHeartbeat,
     requestParametersList,
     uploadMission,
+    clearMissions,
     globalAddress,
     mainConnectionURI,
     webRTCSignallingURI,
