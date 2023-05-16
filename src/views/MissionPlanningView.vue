@@ -313,6 +313,32 @@ onMounted(() => {
   planningMap.value.addControl(layerControl)
 })
 
+const vehicleMarker = ref<L.Marker>()
+watch(vehicleStore.coordinates, () => {
+  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+
+  const position = vehicleStore.coordinates.latitude
+    ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude]
+    : undefined
+  if (position === undefined) return
+
+  if (vehicleMarker.value === undefined) {
+    vehicleMarker.value = L.marker(position as LatLngTuple)
+    var vehicleMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
+    vehicleMarker.value.setIcon(vehicleMarkerIcon)
+    const vehicleMarkerTooltip = L.tooltip({
+      content: 'V',
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
+    vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
+    planningMap.value.addLayer(vehicleMarker.value)
+  }
+  vehicleMarker.value.setLatLng(position as LatLngTuple)
+})
+
 watch(planningMap, (newMap, oldMap) => {
   if (planningMap.value !== undefined && newMap?.options === undefined) {
     planningMap.value = oldMap
