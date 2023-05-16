@@ -94,6 +94,12 @@
       size="x-small"
       @click="goHome"
     />
+    <v-btn
+      class="absolute bottom-0 m-3 rounded-sm shadow-sm left-10 bg-slate-50"
+      icon="mdi-image-filter-center-focus-strong"
+      size="x-small"
+      @click="vehiclePosition ? (mapCenter = vehiclePosition) : null"
+    />
     <v-progress-linear
       v-if="uploadingMission"
       :model-value="missionUploadProgress"
@@ -113,7 +119,7 @@ import L, { type LatLngTuple, Map, Marker } from 'leaflet'
 import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -313,17 +319,20 @@ onMounted(() => {
   planningMap.value.addControl(layerControl)
 })
 
+const vehiclePosition = computed((): [number, number] | undefined =>
+  vehicleStore.coordinates.latitude
+    ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude]
+    : undefined
+)
+
 const vehicleMarker = ref<L.Marker>()
 watch(vehicleStore.coordinates, () => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
 
-  const position = vehicleStore.coordinates.latitude
-    ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude]
-    : undefined
-  if (position === undefined) return
+  if (vehiclePosition.value === undefined) return
 
   if (vehicleMarker.value === undefined) {
-    vehicleMarker.value = L.marker(position as LatLngTuple)
+    vehicleMarker.value = L.marker(vehiclePosition.value)
     var vehicleMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
     vehicleMarker.value.setIcon(vehicleMarkerIcon)
     const vehicleMarkerTooltip = L.tooltip({
@@ -336,7 +345,7 @@ watch(vehicleStore.coordinates, () => {
     vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
     planningMap.value.addLayer(vehicleMarker.value)
   }
-  vehicleMarker.value.setLatLng(position as LatLngTuple)
+  vehicleMarker.value.setLatLng(vehiclePosition.value)
 })
 
 const homeMarker = ref<L.Marker>()
