@@ -187,6 +187,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Start mission that is on the vehicle
+   */
+  async function startMission(): Promise<void> {
+    mainVehicle.value?.startMission()
+  }
+
+  /**
    * List of available flight modes
    * @returns {Array<string>}
    */
@@ -407,6 +414,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     fetchMission,
     uploadMission,
     clearMissions,
+    startMission,
     globalAddress,
     mainConnectionURI,
     webRTCSignallingURI,

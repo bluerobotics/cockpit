@@ -33,6 +33,14 @@
       size="x-small"
       @click="downloadMissionFromVehicle"
     />
+    <v-btn
+      class="absolute bottom-0 mb-3 ml-1 left-32 bg-slate-50"
+      elevation="2"
+      style="z-index: 1002; border-radius: 0px"
+      icon="mdi-play"
+      size="x-small"
+      @click="executeMissionOnVehicle"
+    />
     <l-marker v-if="home" :lat-lng="home">
       <l-icon :icon-size="[24, 24]">
         <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24">
@@ -193,6 +201,10 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
   } finally {
     fetchingMission.value = false
   }
+}
+
+const executeMissionOnVehicle = (): void => {
+  vehicleStore.startMission()
 }
 
 const props = defineProps<{
