@@ -161,7 +161,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     }
 
     // Update our internal messages
-    this._messages.set(mavlink_message.message.type, mavlink_message.message)
+    this._messages.set(mavlink_message.message.type, { ...mavlink_message.message, epoch: new Date().getTime() })
 
     // TODO: Maybe create a signal class to deal with MAVLink only
     // Where add will use the template argument type to define the lambda argument type
