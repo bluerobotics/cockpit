@@ -63,6 +63,7 @@
           Load
         </label>
       </button>
+      <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="uploadMissionToVehicle">Upload</button>
     </div>
     <div
       class="absolute right-0 flex flex-col p-4 m-4 scrollbar-hide overflow-y-scroll rounded-md max-h-[70%] w-52 bg-slate-700 opacity-90"
@@ -92,6 +93,14 @@
       size="x-small"
       @click="goHome"
     />
+    <v-progress-linear
+      v-if="uploadingMission"
+      :model-value="missionUploadProgress"
+      absolute
+      bottom
+      height="10"
+      color="rgba(0, 110, 255, 0.8)"
+    />
   </div>
 </template>
 
@@ -105,6 +114,7 @@ import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
 import { onMounted, ref, watch } from 'vue'
 
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import {
   type CockpitMission,
@@ -116,6 +126,26 @@ import {
 } from '@/types/mission'
 
 const missionStore = useMissionStore()
+const vehicleStore = useMainVehicleStore()
+
+const clearMissionOnVehicle = (): void => {
+const uploadingMission = ref(false)
+const missionUploadProgress = ref(0)
+const uploadMissionToVehicle = async (): Promise<void> => {
+  uploadingMission.value = true
+  missionUploadProgress.value = 0
+  const loadingCallback = async (loadingPerc: number): Promise<void> => {
+    missionUploadProgress.value = loadingPerc
+  }
+  try {
+    await vehicleStore.uploadMission(missionStore.currentPlanningWaypoints, loadingCallback)
+    Swal.fire({ icon: 'success', title: 'Mission upload succeed!', timer: 2000 })
+  } catch (error) {
+    Swal.fire({ icon: 'error', title: 'Mission upload failed', text: error as string, timer: 5000 })
+  } finally {
+    uploadingMission.value = false
+  }
+}
 
 const planningMap: Ref<Map | undefined> = ref()
 const mapCenter = ref<WaypointCoordinates>([-27.5935, -48.55854])
