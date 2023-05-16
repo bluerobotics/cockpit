@@ -9,10 +9,13 @@ import {
   MavCmd,
   MavComponent,
   MAVLinkType,
+  MavMissionResult,
+  MavMissionType,
   MavModeFlag,
   MavState,
   MavType,
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
@@ -409,5 +412,124 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       target_component: 0,
     }
     this.write(paramRequestMessage)
+  }
+
+  /**
+   * Send number of mission items that will be uploaded next
+   * @param { number } itemsCount Number of mission items that will be sent
+   * @param { MavMissionType } missionType Type of mission to be executed
+   */
+  sendMissionCount(itemsCount: number, missionType: MavMissionType): void {
+    const message: Message.MissionCount = {
+      type: MAVLinkType.MISSION_COUNT,
+      target_system: 1,
+      target_component: 1,
+      count: itemsCount,
+      mission_type: { type: missionType },
+    }
+
+    this.write(message)
+  }
+
+  /**
+   * Request the list of mission items from the vehicle
+   * @param { MavMissionType } missionType Type of mission to be executed
+   */
+  requestMissionItemsList(missionType: MavMissionType): void {
+    const message: Message.MissionRequestList = {
+      type: MAVLinkType.MISSION_REQUEST_LIST,
+      target_system: 1,
+      target_component: 1,
+      mission_type: { type: missionType },
+    }
+
+    this.write(message)
+  }
+
+  /**
+   * Request a mission item from the vehicle
+   * @param { number } seq Number of the mission item to be requested
+   * @param { MavMissionType } missionType Type of mission to be executed
+   */
+  requestMissionItem(seq: number, missionType: MavMissionType): void {
+    const message: Message.MissionRequestInt = {
+      type: MAVLinkType.MISSION_REQUEST_INT,
+      target_system: 0,
+      target_component: 0,
+      seq: seq,
+      mission_type: { type: missionType },
+    }
+
+    this.write(message)
+  }
+
+  /**
+   * Send acknowledgment about mission items to the vehicle
+   * @param { boolean } success Wheter the transferring of mission items was successful or not
+   * @param { MavMissionType } missionType Type of mission to be executed
+   */
+  sendMissionAck(success: boolean, missionType: MavMissionType): void {
+    const message: Message.MissionAck = {
+      type: MAVLinkType.MISSION_ACK,
+      target_system: 0,
+      target_component: 0,
+      mavtype: { type: success ? MavMissionResult.MAV_MISSION_ACCEPTED : MavMissionResult.MAV_MISSION_DENIED },
+      mission_type: { type: missionType },
+    }
+
+    this.write(message)
+  }
+
+  /**
+   * Send mission item
+   * @param { number } waypointSeq
+   * @param { MavFrame } frame
+   * @param { MavCmd } command
+   * @param { boolean } current
+   * @param { boolean } autocontinue
+   * @param { number } param1
+   * @param { number } param2
+   * @param { number } param3
+   * @param { number } param4
+   * @param { number } param5
+   * @param { number } param6
+   * @param { number } param7
+   * @param { MavMissionType } missionType Type of mission to be executed
+   */
+  sendMissionItem(
+    waypointSeq: number,
+    frame: MavFrame,
+    command: MavCmd,
+    current: boolean,
+    autocontinue: boolean,
+    param1: number,
+    param2: number,
+    param3: number,
+    param4: number,
+    param5: number,
+    param6: number,
+    param7: number,
+    missionType: MavMissionType
+  ): void {
+    const message: Message.MissionItem = {
+      type: MAVLinkType.MISSION_ITEM,
+      target_system: 1,
+      target_component: 1,
+      seq: waypointSeq,
+      frame: { type: frame },
+      command: { type: command },
+      current: current ? 1 : 0,
+      autocontinue: autocontinue ? 1 : 0,
+      param1: param1,
+      param2: param2,
+      param3: param3,
+      param4: param4,
+      x: param5,
+      y: param6,
+      z: param7,
+      mission_type: { type: missionType },
+    }
+
+    this.write(message)
   }
 }
