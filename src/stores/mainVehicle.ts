@@ -33,6 +33,7 @@ import {
   JoystickProtocol,
   ProtocolControllerState,
 } from '@/types/joystick'
+import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
 
 import { useControllerStore } from './controller'
 
@@ -157,6 +158,16 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   function requestParametersList(): void {
     mainVehicle.value?.requestParametersList()
+  }
+
+  /**
+   * Upload mission items to vehicle
+   * @param { Waypoint[] } items Mission items that will be sent
+   * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
+   * @returns { Promise<Waypoint[]> } Mission items that were on the vehicle
+   */
+  async function uploadMission(items: Waypoint[], loadingCallback: MissionLoadingCallback): Promise<void> {
+    return await mainVehicle.value?.uploadMission(items, loadingCallback)
   }
 
   /**
@@ -377,6 +388,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     setFlightMode,
     sendGcsHeartbeat,
     requestParametersList,
+    uploadMission,
     globalAddress,
     mainConnectionURI,
     webRTCSignallingURI,

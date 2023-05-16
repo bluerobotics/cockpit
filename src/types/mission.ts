@@ -99,3 +99,8 @@ export const instanceOfCockpitMission = (maybeMission: any): maybeMission is Coc
 
   return isValidMission
 }
+
+export type MissionLoadingCallback = (loadingPercentage: number) => Promise<void>
+export const defaultLoadingCallback: MissionLoadingCallback = async (): Promise<void> => {
+  return
+}
