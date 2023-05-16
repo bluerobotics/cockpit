@@ -339,6 +339,30 @@ watch(vehicleStore.coordinates, () => {
   vehicleMarker.value.setLatLng(position as LatLngTuple)
 })
 
+const homeMarker = ref<L.Marker>()
+watch(home, () => {
+  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+
+  const position = home.value
+  if (position === undefined) return
+
+  if (homeMarker.value === undefined) {
+    homeMarker.value = L.marker(position as LatLngTuple)
+    var homeMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
+    homeMarker.value.setIcon(homeMarkerIcon)
+    const homeMarkerTooltip = L.tooltip({
+      content: 'H',
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
+    homeMarker.value.bindTooltip(homeMarkerTooltip)
+    planningMap.value.addLayer(homeMarker.value)
+  }
+  homeMarker.value.setLatLng(home.value)
+})
+
 watch(planningMap, (newMap, oldMap) => {
   if (planningMap.value !== undefined && newMap?.options === undefined) {
     planningMap.value = oldMap
