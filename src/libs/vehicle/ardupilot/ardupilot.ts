@@ -606,6 +606,48 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
+   * Start mission that is on the vehicle
+   */
+  async startMission(): Promise<void> {
+    // Start by reseting the current mode to LOITER (or ALT_HOLD for submarines)
+    // This is necessary as the vehicle can be in a mission and will not answer until getting off of the AUTO mode
+    let resetModeName = 'LOITER'
+    if ([Vehicle.Type.Sub].includes(this._type)) {
+      resetModeName = 'ALT_HOLD'
+    }
+    const resetMode = this.modesAvailable().get(resetModeName)
+    if (resetMode === undefined) {
+      throw Error(
+        `${resetModeName} mode is not available.
+        Please put the vehicle in ${resetModeName} mode manually so a new mission can be started.`
+      )
+    }
+    this.setMode(resetMode as Modes)
+
+    // Check if the vehicle got off of the AUTO mode
+    const initialTimeResetModeCheck = new Date().getTime()
+    while (this.mode() !== resetMode && new Date().getTime() - initialTimeResetModeCheck < 10000) {
+      this.setMode(resetMode as Modes)
+      await new Promise((r) => setTimeout(r, 100))
+    }
+    if (this.mode() !== resetMode) {
+      throw Error(`Could not put vehicle in ${resetModeName} mode. Please do it manually.`)
+    }
+
+    // Arming the vehicle is necessary to successfully start a mission
+    const initialTimeArmCheck = new Date().getTime()
+    while (!this.isArmed() && new Date().getTime() - initialTimeArmCheck < 5000) {
+      this.arm()
+      await new Promise((r) => setTimeout(r, 100))
+    }
+    if (!this.isArmed) {
+      throw Error('Could not arm the vehicle. Please arm it manually.')
+    }
+
+    this.sendCommandLong(MavCmd.MAV_CMD_MISSION_START, 0, 0)
+  }
+
+  /**
    * Upload mission items to vehicle
    * @param { Waypoint[] } items Mission items that will be sent
    * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
