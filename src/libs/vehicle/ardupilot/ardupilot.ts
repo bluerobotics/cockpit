@@ -536,6 +536,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this.write(message)
   }
 
+
+  /**
+   * Clear mission that is on the vehicle
+   */
+  async clearMissions(): Promise<void> {
+    this.uploadMission([])
+  }
+
   /**
    * Upload mission items to vehicle
    * @param { Waypoint[] } items Mission items that will be sent
