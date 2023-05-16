@@ -19,6 +19,7 @@ import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
+import { convertCockpitWaypointsToMavlink } from '@/libs/vehicle/ardupilot/types'
 import {
   type PageDescription,
   Altitude,
@@ -30,6 +31,7 @@ import {
   Velocity,
 } from '@/libs/vehicle/types'
 import { ProtocolControllerState } from '@/types/joystick'
+import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import * as Vehicle from '../vehicle'
 
@@ -55,6 +57,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
   _lastParameter = new Parameter()
+  _currentCockpitMissionItemsOnPlanning: Waypoint[] = []
   _vehicleSpecificErrors = [0, 0, 0, 0]
 
   _messages: MAVLinkMessageDictionary = new Map()
@@ -531,5 +534,52 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     }
 
     this.write(message)
+  }
+
+  /**
+   * Upload mission items to vehicle
+   * @param { Waypoint[] } items Mission items that will be sent
+   * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
+   */
+  async uploadMission(items: Waypoint[], loadingCallback = defaultLoadingCallback): Promise<void> {
+    // Convert from Cockpit waypoints to MAVLink waypoints
+    this._currentCockpitMissionItemsOnPlanning = items
+    const mavlinkWaypoints = convertCockpitWaypointsToMavlink(items)
+
+    // Only deal with regular mission items for now
+    const missionType = MavMissionType.MAV_MISSION_TYPE_MISSION
+
+    // Say to the vehicle how many mission items we are going to send
+    this.sendMissionCount(mavlinkWaypoints.length, missionType)
+
+    // Send the mission items one by one, only sending the next when explicitly requested by the vehicle
+    let missionAck: MavMissionResult | undefined = undefined
+    const initTimeUpload = new Date().getTime()
+    let timeoutReachedUpload = false
+    while (missionAck === undefined && !timeoutReachedUpload) {
+      await new Promise((r) => setTimeout(r, 100))
+      timeoutReachedUpload = new Date().getTime() - initTimeUpload > 10000
+      const lastMissionItemRequestMessage =
+        this._messages.get(MAVLinkType.MISSION_REQUEST) || this._messages.get(MAVLinkType.MISSION_REQUEST_INT)
+      if (lastMissionItemRequestMessage === undefined || lastMissionItemRequestMessage.epoch < initTimeUpload) continue
+      this.write(mavlinkWaypoints[lastMissionItemRequestMessage.seq])
+
+      // Stop when the vehicle send a acknowledgement stating that all waypoints were successfully received or that the upload failed
+      const lastMissionAckMessage = this._messages.get(MAVLinkType.MISSION_ACK)
+      const ackReceived = lastMissionAckMessage !== undefined && lastMissionAckMessage.epoch > initTimeUpload
+      if (ackReceived) {
+        missionAck = lastMissionAckMessage.mavtype.type
+      }
+      loadingCallback((100 * lastMissionItemRequestMessage.seq) / mavlinkWaypoints.length)
+    }
+
+    if (missionAck === undefined) {
+      throw Error('Did not receive acknowledgment of mission upload.')
+    } else if (missionAck !== MavMissionResult.MAV_MISSION_ACCEPTED) {
+      throw Error(`Failed uploading mission. Result received: ${missionAck}.`)
+    }
+
+    loadingCallback(100)
+    console.debug('Successfully sent all mission items.')
   }
 }
