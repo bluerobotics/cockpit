@@ -49,6 +49,19 @@
       size="x-small"
       @click="executeMissionOnVehicle"
     />
+    <l-marker
+      v-for="(waypoint, i) in missionStore.currentPlanningWaypoints"
+      :key="waypoint.id"
+      :lat-lng="waypoint.coordinates"
+    >
+      <l-icon :icon-anchor="[12, 12]" class-name="markerIcon">
+        <div>{{ i }}</div>
+      </l-icon>
+    </l-marker>
+    <l-polyline
+      :lat-lngs="missionStore.currentPlanningWaypoints.map((w) => w.coordinates)"
+      color="rgba(1, 1, 1, 0.5)"
+    ></l-polyline>
     <l-marker v-if="home" :lat-lng="home">
       <l-icon :icon-size="[24, 24]">
         <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24">
@@ -238,7 +251,7 @@ const mouseOverWidgetStyle = computed(() => (isOutside.value ? 'none' : 'block')
 const showOptionsDialog = ref(false)
 </script>
 
-<style scoped>
+<style>
 .map {
   z-index: 0;
 }
@@ -252,5 +265,17 @@ const showOptionsDialog = ref(false)
   color: white;
   filter: drop-shadow(0.5px 0.5px 0.5px black);
   display: v-bind('mouseOverWidgetStyle');
+}
+.markerIcon {
+  background-color: rgb(0, 110, 255);
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
