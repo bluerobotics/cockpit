@@ -26,6 +26,14 @@
       @click="goHome"
     />
     <v-btn
+      class="absolute bottom-0 m-3 left-10 bg-slate-50"
+      elevation="2"
+      style="z-index: 1002; border-radius: 0px"
+      icon="mdi-image-filter-center-focus-strong"
+      size="x-small"
+      @click="vehiclePosition ? (center = vehiclePosition) : null"
+    />
+    <v-btn
       class="absolute bottom-0 m-3 left-20 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
