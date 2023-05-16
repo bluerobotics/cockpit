@@ -64,6 +64,7 @@
         </label>
       </button>
       <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="uploadMissionToVehicle">Upload</button>
+      <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="clearMissionOnVehicle">Clear</button>
     </div>
     <div
       class="absolute right-0 flex flex-col p-4 m-4 scrollbar-hide overflow-y-scroll rounded-md max-h-[70%] w-52 bg-slate-700 opacity-90"
@@ -129,6 +130,9 @@ const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 
 const clearMissionOnVehicle = (): void => {
+  vehicleStore.clearMissions()
+}
+
 const uploadingMission = ref(false)
 const missionUploadProgress = ref(0)
 const uploadMissionToVehicle = async (): Promise<void> => {
