@@ -19,7 +19,7 @@ import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
-import { convertCockpitWaypointsToMavlink } from '@/libs/vehicle/ardupilot/types'
+import { convertCockpitWaypointsToMavlink, convertMavlinkWaypointsToCockpit } from '@/libs/vehicle/ardupilot/types'
 import {
   type PageDescription,
   Altitude,
@@ -58,6 +58,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _powerSupply = new PowerSupply()
   _lastParameter = new Parameter()
   _currentCockpitMissionItemsOnPlanning: Waypoint[] = []
+  _currentMavlinkMissionItemsOnVehicle: Message.MissionItemInt[] = []
   _vehicleSpecificErrors = [0, 0, 0, 0]
 
   _messages: MAVLinkMessageDictionary = new Map()
@@ -536,6 +537,66 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this.write(message)
   }
 
+  /**
+   * Fetch mission items from the vehicle
+   * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
+   * @returns { Promise<Waypoint[]> } Mission items that were on the vehicle
+   */
+  async fetchMission(loadingCallback = defaultLoadingCallback): Promise<Waypoint[]> {
+    // Only deal with regular mission items for now
+    const missionType = MavMissionType.MAV_MISSION_TYPE_MISSION
+
+    // Get number of mission items to be downloaded
+    const initTimeCount = new Date().getTime()
+    let timeoutReachedCount = false
+    let itemsCount: number | undefined = undefined
+    this.requestMissionItemsList(missionType)
+    while (itemsCount === undefined && !timeoutReachedCount) {
+      const lastMissionCountMessage = this._messages.get(MAVLinkType.MISSION_COUNT)
+      if (lastMissionCountMessage !== undefined && lastMissionCountMessage.epoch > initTimeCount) {
+        itemsCount = lastMissionCountMessage.count
+        break
+      }
+      await new Promise((r) => setTimeout(r, 100))
+      timeoutReachedCount = new Date().getTime() - initTimeCount > 10000
+    }
+    if (itemsCount === undefined) {
+      throw Error('Did not receive number of mission items from vehicle.')
+    }
+
+    // Download all mission items from the vehicle
+    const missionItems: Message.MissionItemInt[] = []
+    let allItemsDownloaded = false
+    let itemToDownload = 0
+    const initTimeDown = new Date().getTime()
+    let timeoutReachedDownload = false
+    while (!allItemsDownloaded && !timeoutReachedDownload) {
+      await new Promise((r) => setTimeout(r, 100))
+      timeoutReachedDownload = new Date().getTime() - initTimeDown > 10000
+      loadingCallback((100 * itemToDownload) / itemsCount)
+
+      // Request the next mission item (starting at 0)
+      this.requestMissionItem(itemToDownload, missionType)
+
+      // Check if the last mission item received belongs to this fetch or is from an old fetch
+      const lastMissionItemMessage = this._messages.get(MAVLinkType.MISSION_ITEM_INT)
+      if (lastMissionItemMessage === undefined || lastMissionItemMessage.epoch < initTimeDown) continue
+      if (lastMissionItemMessage.seq === itemToDownload) {
+        const { ['epoch']: _, ...lastMissionItem } = lastMissionItemMessage // eslint-disable-line @typescript-eslint/no-unused-vars
+        missionItems.push(lastMissionItem as Message.MissionItemInt)
+        // Only request the next mission item if the previous one was already received
+        itemToDownload += 1
+        if (itemToDownload === itemsCount) {
+          allItemsDownloaded = true
+          console.debug('Successfully dowloaded all mission items.')
+          loadingCallback(100)
+        }
+      }
+    }
+    this.sendMissionAck(allItemsDownloaded, missionType)
+    this._currentMavlinkMissionItemsOnVehicle = missionItems
+    return convertMavlinkWaypointsToCockpit(missionItems)
+  }
 
   /**
    * Clear mission that is on the vehicle
