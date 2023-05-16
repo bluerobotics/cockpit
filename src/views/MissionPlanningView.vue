@@ -196,6 +196,14 @@ const addWaypoint = (
     iconAnchor: [8, 8],
   })
   newMarker.setIcon(markerIcon)
+  const markerTooltip = L.tooltip({
+    content: `${Object.keys(waypointMarkers.value).length}`,
+    permanent: true,
+    direction: 'center',
+    className: 'waypoint-tooltip',
+    opacity: 1,
+  })
+  newMarker.bindTooltip(markerTooltip)
   planningMap.value.addLayer(newMarker)
   // @ts-ignore: Marker type is always a layer and thus can be deleted
   waypointMarkers.value[waypointId] = newMarker
@@ -348,5 +356,11 @@ watch([home, planningMap], () => {
 .marker-icon {
   background-color: rgb(0, 110, 255);
   border-radius: 12px;
+}
+.waypoint-tooltip {
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+  color: white;
 }
 </style>
