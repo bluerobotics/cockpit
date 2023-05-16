@@ -76,10 +76,7 @@ import { LIcon, LMap, LMarker, LPolyline, LTileLayer, LTooltip } from '@vue-leaf
 import { useMouseInElement, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import type { Map } from 'leaflet'
-import type { Ref } from 'vue'
-import { computed, nextTick, ref } from 'vue'
-import { onBeforeMount } from 'vue'
-import { toRefs } from 'vue'
+import { type Ref, computed, nextTick, onBeforeMount, ref, toRefs } from 'vue'
 
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
