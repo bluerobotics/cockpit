@@ -50,6 +50,9 @@
           <template v-if="widget.component === WidgetType.VideoRecorder">
             <VideoRecorder :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.ImageViewer">
+            <ImageView :widget="widget" />
+          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
@@ -65,6 +68,7 @@ import {
   ref,
 } from 'vue'
 
+import ImageView from '@/components/widgets/ImageView.vue'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
 
