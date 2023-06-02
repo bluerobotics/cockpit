@@ -1,6 +1,6 @@
 <template>
   <div>
-    <img :src="src" />
+    <img :src="src" draggable="false" />
     <v-btn
       class="options-btn"
       icon="mdi-dots-vertical"
