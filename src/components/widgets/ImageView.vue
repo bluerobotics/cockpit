@@ -13,7 +13,12 @@
       <v-card class="pa-2">
         <v-card-title>Image URL</v-card-title>
         <v-card-text>
-          <v-text-field v-model="src" label="Image URL" outlined></v-text-field>
+          <v-text-field
+            label="Image URL"
+            :model-value="widget.options.src"
+            outlined
+            @change="widget.options.src = $event.srcElement.value"
+          ></v-text-field>
         </v-card-text>
         <v-card-actions>
           <v-btn color="primary" text @click="showOptionsDialog = false">Close</v-btn>
@@ -24,10 +29,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onBeforeMount, ref, toRefs } from 'vue'
 
-const src = ref<string | undefined>()
+import type { Widget } from '@/types/widgets'
+
 const showOptionsDialog = ref(false)
+const props = defineProps<{
+  /**
+   * Widget reference
+   */
+  widget: Widget
+}>()
+const widget = toRefs(props).widget
+
+onBeforeMount(() => {
+  // Set initial widget options if they don't exist
+  if (Object.keys(widget.value.options).length === 0) {
+    widget.value.options = {
+      src: '',
+    }
+  }
+})
+
+const src = computed(() => widget.value.options.src ?? '')
 </script>
 
 <style scoped>
