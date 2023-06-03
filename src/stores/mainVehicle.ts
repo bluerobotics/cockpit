@@ -302,8 +302,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       setFlightMode: setFlightMode,
     }
     const mavlinkArmId = registerActionCallback(CockpitAction.MAVLINK_ARM, arm)
+    const mavlinkDisarmId = registerActionCallback(CockpitAction.MAVLINK_DISARM, disarm)
     onBeforeUnmount(() => {
       unregisterActionCallback(mavlinkArmId)
+      unregisterActionCallback(mavlinkDisarmId)
     })
   })
 
