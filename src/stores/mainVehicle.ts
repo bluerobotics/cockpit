@@ -1,6 +1,6 @@
 import { useStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { type Ref, computed, reactive, ref, watch } from 'vue'
+import { type Ref, computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
@@ -8,7 +8,14 @@ import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import { type InputWithPrettyName, MavlinkControllerState, sendCockpitActions } from '@/libs/joystick/protocols'
+import {
+  type InputWithPrettyName,
+  CockpitAction,
+  MavlinkControllerState,
+  registerActionCallback,
+  sendCockpitActions,
+  unregisterActionCallback,
+} from '@/libs/joystick/protocols'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Copter-4.3/apm.pdef.json'
 import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Plane-4.3/apm.pdef.json'
@@ -294,6 +301,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       },
       setFlightMode: setFlightMode,
     }
+    const mavlinkArmId = registerActionCallback(CockpitAction.MAVLINK_ARM, arm)
+    onBeforeUnmount(() => {
+      unregisterActionCallback(mavlinkArmId)
+    })
   })
 
   watch(vehicleType, (newType, oldType) => {
