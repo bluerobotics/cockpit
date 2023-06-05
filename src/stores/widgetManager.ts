@@ -32,18 +32,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Adds new profile to the store
-   * @param { string } name - Custom name for the profile
-   * @param { Layer[] } profileLayers - Layers that define the profile
-   * @returns { Profile } The profile object just created
+   * @param { Profile } profile - The profile to be saved
    */
-  function saveProfile(name: string, profileLayers: Layer[]): Profile {
-    const savedProfilesNames = Object.values(savedProfiles.value).map((profile: Profile) => profile.name)
-    if (savedProfilesNames.includes(name)) {
+  function saveProfile(profile: Profile): void {
+    const savedProfilesNames = Object.values(savedProfiles.value).map((p: Profile) => p.name)
+    if (savedProfilesNames.includes(profile.name)) {
       throw new Error('This name is already used in another profile.')
     }
-    const newProfile = { name, layers: profileLayers }
-    savedProfiles.value[uuid4()] = newProfile
-    return newProfile
+    savedProfiles.value[uuid4()] = profile
   }
 
   /**
