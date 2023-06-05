@@ -667,13 +667,21 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     let missionAck: MavMissionResult | undefined = undefined
     const initTimeUpload = new Date().getTime()
     let timeoutReachedUpload = false
+    let epochLastRequestAnswered = -1
+    let lastSeqRequested = -1
     while (missionAck === undefined && !timeoutReachedUpload) {
-      await new Promise((r) => setTimeout(r, 100))
+      await new Promise((r) => setTimeout(r, 10))
       timeoutReachedUpload = new Date().getTime() - initTimeUpload > 10000
       const lastMissionItemRequestMessage =
         this._messages.get(MAVLinkType.MISSION_REQUEST) || this._messages.get(MAVLinkType.MISSION_REQUEST_INT)
-      if (lastMissionItemRequestMessage === undefined || lastMissionItemRequestMessage.epoch < initTimeUpload) continue
+      if (lastMissionItemRequestMessage === undefined) continue
+      const requestFromOtherUpload = lastMissionItemRequestMessage.epoch < initTimeUpload
+      const requestAlreadyAnswered = epochLastRequestAnswered === lastMissionItemRequestMessage.epoch
+      const lastItemRequested = lastSeqRequested === mavlinkWaypoints.length - 1
+      if ((requestFromOtherUpload || requestAlreadyAnswered) && !lastItemRequested) continue
       this.write(mavlinkWaypoints[lastMissionItemRequestMessage.seq])
+      epochLastRequestAnswered = lastMissionItemRequestMessage.epoch
+      lastSeqRequested = lastMissionItemRequestMessage.seq
 
       // Stop when the vehicle send a acknowledgement stating that all waypoints were successfully received or that the upload failed
       const lastMissionAckMessage = this._messages.get(MAVLinkType.MISSION_ACK)
