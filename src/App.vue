@@ -16,6 +16,11 @@
         <div class="grow" />
         <Alerter class="max-w-sm min-w-fit" />
         <div class="grow" />
+        <div
+          class="flex items-center justify-center m-2 text-sm font-bold text-center text-white select-none min-w-[80px]"
+        >
+          {{ format(timeNow, 'E LLL do HH:mm') }}
+        </div>
       </div>
       <div ref="mainMenu" class="main-menu">
         <div class="flex flex-col items-center justify-around p-5">
@@ -84,7 +89,8 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useDebounceFn, useFullscreen } from '@vueuse/core'
+import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp } from '@vueuse/core'
+import { format } from 'date-fns'
 import {
   // type AsyncComponentLoader,
   computed,
@@ -126,6 +132,9 @@ const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscree
 // Mission identification
 const store = useMissionStore()
 const showMissionOptionsDialog = ref(false)
+
+// Clock
+const timeNow = useTimestamp({ interval: 1000 })
 
 const mainMenuOpacity = computed(() => (showMainMenu.value ? '100%' : '0%'))
 </script>
