@@ -150,7 +150,7 @@ import Swal from 'sweetalert2'
 import { computed, ref, toRefs, watch } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { WidgetType } from '@/types/widgets'
+import { isProfile, WidgetType } from '@/types/widgets'
 
 const store = useWidgetManagerStore()
 
@@ -259,13 +259,12 @@ const importProfile = (e: Event): void => {
     // @ts-ignore: We know the event type and need refactor of the event typing
     const contents = event.target.result
     const maybeProfile = JSON.parse(contents)
-    try {
-      const newProfile = store.saveProfile(maybeProfile)
-      store.loadProfile(newProfile)
-    } catch {
+    if (!isProfile(maybeProfile)) {
       Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
       return
     }
+    const newProfile = store.saveProfile(maybeProfile)
+    store.loadProfile(newProfile)
   }
   // @ts-ignore: We know the event type and need refactor of the event typing
   reader.readAsText(e.target.files[0])
