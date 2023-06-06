@@ -2,7 +2,7 @@
   <v-app>
     <v-main>
       <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex">
-        <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu(true)">
+        <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
           <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
         </button>
       </div>
@@ -45,16 +45,13 @@
 </template>
 
 <script setup lang="ts">
-import { SwipeDirection, useDebounceFn, useFullscreen, useMouse, useMouseInElement, useSwipe } from '@vueuse/core'
-import gsap from 'gsap'
+import { onClickOutside, useDebounceFn, useFullscreen } from '@vueuse/core'
 import {
   // type AsyncComponentLoader,
   computed,
   onBeforeUnmount,
-  reactive,
   // defineAsyncComponent,
   ref,
-  watch,
 } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -68,27 +65,13 @@ const widgetStore = useWidgetManagerStore()
 const showConfigurationMenu = ref(false)
 
 // Main menu
-const showMainMenu = (show: boolean): void => {
-  gsap.to('.main-menu', show ? { x: 370, duration: 0.25 } : { x: -300, duration: 0.25 })
-}
+const showMainMenu = ref(false)
 
 const mainMenu = ref()
-const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
-watch(notHoveringMainMenu, (isNotHovering) => {
-  if (isNotHovering) {
-    showMainMenu(false)
-  }
-})
+onClickOutside(mainMenu, () => (showMainMenu.value = false))
 
 const route = useRoute()
 const routerSection = ref()
-const { isSwiping, direction: swipeDirection } = useSwipe(routerSection)
-watch(isSwiping, () => {
-  if (!isSwiping.value || [SwipeDirection.NONE, null].includes(swipeDirection.value)) return
-  if ([SwipeDirection.LEFT, SwipeDirection.RIGHT].includes(swipeDirection.value as SwipeDirection)) {
-    showMainMenu(swipeDirection.value === SwipeDirection.RIGHT)
-  }
-})
 
 // Full screen toggling
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
@@ -98,6 +81,8 @@ const fullScreenCallbackId = registerActionCallback(CockpitAction.TOGGLE_FULL_SC
 onBeforeUnmount(() => unregisterActionCallback(fullScreenCallbackId))
 
 const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscreen-exit' : 'mdi-overscan'))
+
+const mainMenuOpacity = computed(() => (showMainMenu.value ? '100%' : '0%'))
 </script>
 
 <style>
@@ -115,9 +100,14 @@ body {
   filter: invert(100%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(100%) contrast(90%);
 }
 .main-menu {
+  opacity: v-bind('mainMenuOpacity');
+  transition: opacity 0.1s ease-in-out;
   position: absolute;
-  left: -400px;
-  top: 60px;
+  top: 50%;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, -50%);
+  height: 300px;
   width: 300px;
   z-index: 60;
   background-color: rgba(47, 57, 66, 0.8);
