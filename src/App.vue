@@ -1,10 +1,11 @@
 <template>
   <v-app>
     <v-main>
-      <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex"></div>
-      <button class="main-menu-button" @click="showMainMenu(true)" @mouseover="showMainMenu(true)">
-        <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
-      </button>
+      <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex">
+        <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu(true)">
+          <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
+        </button>
+      </div>
       <div ref="mainMenu" class="main-menu">
         <div class="main-menu-content">
           <v-btn
@@ -74,20 +75,10 @@ const showMainMenu = (show: boolean): void => {
 const mainMenu = ref()
 const { isOutside: notHoveringMainMenu } = useMouseInElement(mainMenu)
 watch(notHoveringMainMenu, (isNotHovering) => {
-  if (isNotHovering && !mouseNearMainButton.value) {
+  if (isNotHovering) {
     showMainMenu(false)
   }
 })
-
-const mouse = reactive(useMouse())
-const mouseNearMainButton = computed(() => mouse.x < 100 && mouse.y < 100)
-watch(mouseNearMainButton, (isNear) => showMainMenuButton(isNear && !widgetStore.editingMode))
-const showMainMenuButton = (show: boolean): void => {
-  gsap.to('.main-menu-button', show ? { x: 175, duration: 0.25 } : { x: -200, duration: 0.25 })
-  if (!show && notHoveringMainMenu.value) {
-    showMainMenu(false)
-  }
-}
 
 const route = useRoute()
 const routerSection = ref()
@@ -115,21 +106,7 @@ body {
   /* Removes the scrollbar */
   overflow: hidden !important;
 }
-.main-menu-button {
-  position: absolute;
-  left: -200px;
-  top: 0px;
-  width: 100px;
-  height: 60px;
-  background-color: rgba(47, 57, 66, 0.8);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(1px);
-}
 .main-menu-button-image {
-  margin-left: 20px;
   width: 80%;
   height: 80%;
   filter: invert(87%) sepia(5%) saturate(2994%) hue-rotate(140deg) brightness(93%) contrast(90%);
