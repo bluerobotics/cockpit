@@ -84,6 +84,7 @@
       />
     </div>
     <v-btn class="m-1 text-white" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
+    <v-btn class="m-1 text-white" @click="exportCurrentProfile">Export current profile</v-btn>
     <v-switch
       class="flex items-center justify-center m-1 max-h-8"
       label="Grid"
@@ -137,6 +138,7 @@
 
 <script setup lang="ts">
 import { useConfirmDialog, useMouse, useMouseInElement, useWindowSize } from '@vueuse/core'
+import { saveAs } from 'file-saver'
 import gsap from 'gsap'
 import Swal from 'sweetalert2'
 import { computed, ref, toRefs, watch } from 'vue'
@@ -238,6 +240,11 @@ const resetProfiles = (): void => {
   store.resetSavedProfiles()
   store.resetCurrentProfile()
   selectedLayer.value = store.currentProfile.layers[0]
+}
+
+const exportCurrentProfile = (): void => {
+  var blob = new Blob([JSON.stringify(store.currentProfile)], { type: 'text/plain;charset=utf-8' })
+  saveAs(blob, `cockpit-widget-profile.json`)
 }
 const addLayer = (): void => {
   store.addLayer()
