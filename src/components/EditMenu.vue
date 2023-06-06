@@ -73,7 +73,6 @@
         no-data-text="No layer profiles"
         hide-details
         return-object
-        @update:model-value="loadProfile"
       />
       <v-btn
         class="ml-2"
@@ -213,9 +212,11 @@ const availableLayers = computed(() =>
   }))
 )
 
-const loadProfile = (): void => {
-  selectedLayer.value = store.currentProfile.layers[0]
-}
+watch(
+  () => store.currentProfile,
+  () => (selectedLayer.value = store.currentProfile.layers[0])
+)
+
 const createNewProfile = async (): Promise<void> => {
   profileCreationDialogRevealed.value = false
   try {
