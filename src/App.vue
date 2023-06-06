@@ -109,10 +109,10 @@ body {
 .main-menu-button-image {
   width: 80%;
   height: 80%;
-  filter: invert(87%) sepia(5%) saturate(2994%) hue-rotate(140deg) brightness(93%) contrast(90%);
+  filter: invert(100%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(100%) contrast(100%);
 }
-.main-menu-button-image:active {
-  filter: invert(87%) sepia(5%) saturate(4000%) hue-rotate(140deg) brightness(60%) contrast(100%);
+.main-menu-button-image:hover {
+  filter: invert(100%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(100%) contrast(90%);
 }
 .main-menu {
   position: absolute;
