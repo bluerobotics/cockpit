@@ -1,7 +1,7 @@
 <template>
   <div class="relative flex-grow mx-1 my-1.5">
     <div
-      class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer whitespace-nowrap bg-slate-800/75"
+      class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap bg-slate-800/75"
       @click="toggleExpandedAlerts()"
     >
       <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100">{{ currentAlert.message }}</p>
