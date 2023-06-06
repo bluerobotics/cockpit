@@ -5,6 +5,9 @@
         <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
           <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
         </button>
+        <div class="grow" />
+        <Alerter class="max-w-sm min-w-fit" />
+        <div class="grow" />
       </div>
       <div ref="mainMenu" class="main-menu">
         <div class="flex flex-col items-center justify-around p-5">
@@ -75,6 +78,7 @@ import { useRoute } from 'vue-router'
 import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
 
+import Alerter from './components/widgets/Alerter.vue'
 import { useWidgetManagerStore } from './stores/widgetManager'
 
 const widgetStore = useWidgetManagerStore()
