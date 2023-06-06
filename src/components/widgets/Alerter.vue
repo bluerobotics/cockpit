@@ -1,8 +1,8 @@
 <template>
   <div class="relative flex-grow mx-1 my-1.5">
     <div
+      ref="currentAlertBar"
       class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap bg-slate-800/75"
-      @click="toggleExpandedAlerts()"
     >
       <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100">{{ currentAlert.message }}</p>
       <p class="mx-1 text-gray-100">
@@ -10,8 +10,9 @@
       </p>
     </div>
     <div
-      class="absolute w-full p-2 transition-all rounded top-12 max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
-      :class="{ 'opacity-0': !isShowingExpandedAlerts }"
+      ref="expandedAlertsBar"
+      class="expanded-alerts-bar absolute w-full p-2 transition-all rounded top-12 max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
+      :class="{ 'opacity-0 invisible': !isShowingExpandedAlerts }"
     >
       <div v-for="(alert, i) in alertStore.sortedAlerts.reverse()" :key="alert.time_created.toISOString()">
         <div class="flex items-center justify-between whitespace-nowrap">
@@ -27,9 +28,10 @@
 </template>
 
 <script setup lang="ts">
-import { useTimestamp, useToggle } from '@vueuse/core'
+import { useElementHover, useTimestamp, useToggle } from '@vueuse/core'
 import { format } from 'date-fns'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { watch } from 'vue'
 
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
@@ -52,4 +54,23 @@ const currentAlert = computed((): Alert => {
 })
 
 const [isShowingExpandedAlerts, toggleExpandedAlerts] = useToggle()
+
+const currentAlertBar = ref()
+const isCurrentAlertBarHovered = useElementHover(currentAlertBar)
+const expandedAlertsBar = ref()
+const isExpandedAlertsBarHovered = useElementHover(expandedAlertsBar)
+watch(isCurrentAlertBarHovered, () => {
+  if (isShowingExpandedAlerts.value) return
+  toggleExpandedAlerts()
+})
+watch(isExpandedAlertsBarHovered, (isHovering, wasHovering) => {
+  if (!(wasHovering && !isHovering)) return
+  toggleExpandedAlerts()
+})
 </script>
+
+<style scoped>
+.expanded-alerts-bar[invisible] {
+  display: none;
+}
+</style>
