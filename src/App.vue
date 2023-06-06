@@ -5,6 +5,14 @@
         <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
           <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
         </button>
+        <div class="flex flex-col items-center justify-center h-full ml-3 mr-1">
+          <p
+            class="overflow-hidden text-lg font-medium leading-none text-white cursor-pointer select-none max-h-9"
+            @click="showMissionOptionsDialog = true"
+          >
+            {{ store.missionName }}
+          </p>
+        </div>
         <div class="grow" />
         <Alerter class="max-w-sm min-w-fit" />
         <div class="grow" />
@@ -57,6 +65,17 @@
         </v-dialog>
       </teleport>
 
+      <teleport to="body">
+        <v-dialog v-model="showMissionOptionsDialog" width="50%">
+          <v-card class="pa-2">
+            <v-card-title>Mission configuration</v-card-title>
+            <v-card-text>
+              <v-text-field v-model="store.missionName" hide-details="auto" label="Mission name" />
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+      </teleport>
+
       <div ref="routerSection">
         <router-view />
       </div>
@@ -77,6 +96,7 @@ import { useRoute } from 'vue-router'
 
 import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
+import { useMissionStore } from '@/stores/mission'
 
 import Alerter from './components/widgets/Alerter.vue'
 import { useWidgetManagerStore } from './stores/widgetManager'
@@ -102,6 +122,10 @@ const fullScreenCallbackId = registerActionCallback(CockpitAction.TOGGLE_FULL_SC
 onBeforeUnmount(() => unregisterActionCallback(fullScreenCallbackId))
 
 const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscreen-exit' : 'mdi-overscan'))
+
+// Mission identification
+const store = useMissionStore()
+const showMissionOptionsDialog = ref(false)
 
 const mainMenuOpacity = computed(() => (showMainMenu.value ? '100%' : '0%'))
 </script>
