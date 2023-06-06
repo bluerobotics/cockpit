@@ -85,6 +85,12 @@
     </div>
     <v-btn class="m-1 text-white" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
     <v-btn class="m-1 text-white" @click="exportCurrentProfile">Export current profile</v-btn>
+    <v-btn class="m-1 text-white">
+      <label class="flex items-center justify-center h-8 cursor-pointer">
+        <input type="file" accept="application/json" hidden @change="(e: Event) => importProfile(e)" />
+        Import profile
+      </label>
+    </v-btn>
     <v-switch
       class="flex items-center justify-center m-1 max-h-8"
       label="Grid"
@@ -245,6 +251,24 @@ const resetProfiles = (): void => {
 const exportCurrentProfile = (): void => {
   var blob = new Blob([JSON.stringify(store.currentProfile)], { type: 'text/plain;charset=utf-8' })
   saveAs(blob, `cockpit-widget-profile.json`)
+}
+
+const importProfile = (e: Event): void => {
+  var reader = new FileReader()
+  reader.onload = (event: Event) => {
+    // @ts-ignore: We know the event type and need refactor of the event typing
+    const contents = event.target.result
+    const maybeProfile = JSON.parse(contents)
+    try {
+      const newProfile = store.saveProfile(maybeProfile)
+      store.loadProfile(newProfile)
+    } catch {
+      Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
+      return
+    }
+  }
+  // @ts-ignore: We know the event type and need refactor of the event typing
+  reader.readAsText(e.target.files[0])
 }
 const addLayer = (): void => {
   store.addLayer()
