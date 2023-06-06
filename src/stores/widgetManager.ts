@@ -33,13 +33,26 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   /**
    * Adds new profile to the store
    * @param { Profile } profile - The profile to be saved
+   * @returns { Profile } The profile object just created
    */
-  function saveProfile(profile: Profile): void {
+  function saveProfile(profile: Profile): Profile {
     const savedProfilesNames = Object.values(savedProfiles.value).map((p: Profile) => p.name)
-    if (savedProfilesNames.includes(profile.name)) {
-      throw new Error('This name is already used in another profile.')
+    let newName = profile.name
+    let nameVersion = 0
+    // Check if there's already a profile with this name
+    while (savedProfilesNames.includes(newName)) {
+      // Check if there's already a profile with this name and a versioning
+      if (newName.length > 3 && newName.at(-3) === '(' && newName.at(-1) === ')' && !isNaN(Number(newName.at(-2)))) {
+        // If so, increase the version number and remove the versioning part, so the new version can be applied
+        nameVersion = parseInt(newName.at(-2) as string)
+        newName = `${newName.substring(0, newName.length - 3)}`
+      }
+      newName = `${newName} (${nameVersion + 1})`
     }
-    savedProfiles.value[uuid4()] = profile
+
+    const newProfile = { ...profile, ...{ name: newName } }
+    savedProfiles.value[uuid4()] = newProfile
+    return newProfile
   }
 
   /**
