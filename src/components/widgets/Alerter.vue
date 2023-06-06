@@ -1,9 +1,8 @@
 <template>
   <div
-    :class="`bg-${levelColor(currentAlert.level)}`"
-    class="flex items-center justify-between rounded p-2 whitespace-nowrap overflow-hidden flex-grow m-1"
+    class="flex items-center justify-between flex-grow p-2 mx-1 my-1.5 overflow-hidden rounded whitespace-nowrap bg-slate-800/75"
   >
-    <p class="mx-1 text-xl font-medium text-gray-100 overflow-hidden">{{ currentAlert.message }}</p>
+    <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100">{{ currentAlert.message }}</p>
     <p class="mx-1 text-gray-100">
       {{ formattedDate(currentAlert.time_created || new Date()) }}
     </p>
@@ -34,21 +33,4 @@ const currentAlert = computed((): Alert => {
   }
   return alertStore.alerts.last()!
 })
-
-const levelColor = (level: AlertLevel): string => {
-  switch (level) {
-    case AlertLevel.Critical:
-      return 'critical'
-    case AlertLevel.Error:
-      return 'error'
-    case AlertLevel.Info:
-      return 'info'
-    case AlertLevel.Success:
-      return 'success'
-    case AlertLevel.Warning:
-      return 'warning'
-    default:
-      return 'info'
-  }
-}
 </script>
