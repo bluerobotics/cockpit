@@ -7,26 +7,43 @@
         </button>
       </div>
       <div ref="mainMenu" class="main-menu">
-        <div class="main-menu-content">
+        <div class="flex flex-col items-center justify-around p-5">
           <v-btn
             v-if="route.name === 'widgets-view'"
             prepend-icon="mdi-pencil"
-            variant="plain"
+            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
             @click="widgetStore.editingMode = !widgetStore.editingMode"
           >
             Edit mode
           </v-btn>
-          <v-btn v-if="route.name !== 'widgets-view'" prepend-icon="mdi-send" variant="plain" to="/">Flight</v-btn>
+          <v-btn
+            v-if="route.name !== 'widgets-view'"
+            prepend-icon="mdi-send"
+            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
+            to="/"
+          >
+            Flight
+          </v-btn>
           <v-btn
             v-if="route.name !== 'Mission planning'"
             prepend-icon="mdi-map-marker-radius"
-            variant="plain"
+            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
             to="/mission-planning"
           >
             Mission planning
           </v-btn>
-          <v-btn prepend-icon="mdi-cog" variant="plain" @click="showConfigurationMenu = true">Configuration</v-btn>
-          <v-btn :prepend-icon="fullScreenToggleIcon" variant="plain" @click="toggleFullscreen">
+          <v-btn
+            prepend-icon="mdi-cog"
+            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
+            @click="showConfigurationMenu = true"
+          >
+            Configuration
+          </v-btn>
+          <v-btn
+            :prepend-icon="fullScreenToggleIcon"
+            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
+            @click="toggleFullscreen"
+          >
             {{ isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen' }}
           </v-btn>
         </div>
@@ -107,15 +124,12 @@ body {
   left: 50%;
   margin-right: -50%;
   transform: translate(-50%, -50%);
-  height: 300px;
+  height: fit-content;
+  border-radius: 5px;
+  box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.3);
   width: 300px;
   z-index: 60;
   background-color: rgba(47, 57, 66, 0.8);
   backdrop-filter: blur(1px);
-}
-.main-menu-content {
-  color: white;
-  margin-left: 45px;
-  padding: 3px;
 }
 </style>
