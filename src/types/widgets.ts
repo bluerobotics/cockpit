@@ -81,3 +81,47 @@ export type Profile = {
    */
   name: string
 }
+
+export const isWidget = (maybeWidget: Widget): maybeWidget is Widget => {
+  const widgetProps = ['hash', 'component', 'position', 'size', 'name', 'options', 'managerVars']
+  const managetVarsProps = ['timesMounted']
+  let realWidget = true
+  widgetProps.forEach((p) => {
+    // @ts-ignore
+    if (maybeWidget[p] !== undefined) return
+    realWidget = false
+  })
+  if (maybeWidget['managerVars'] === undefined) {
+    return false
+  }
+  managetVarsProps.forEach((p) => {
+    // @ts-ignore
+    if (maybeWidget['managerVars'][p] !== undefined) return
+    realWidget = false
+  })
+  return realWidget
+}
+
+export const isLayer = (maybeLayer: Layer): maybeLayer is Layer => {
+  let widgetsAreReal = true
+  if (!Array.isArray(maybeLayer.widgets)) {
+    return false
+  }
+  maybeLayer.widgets.forEach((w) => {
+    if (isWidget(w)) return
+    widgetsAreReal = false
+  })
+  return maybeLayer.name !== undefined && maybeLayer.hash !== undefined && widgetsAreReal
+}
+
+export const isProfile = (maybeProfile: Profile): maybeProfile is Profile => {
+  let layersAreReal = true
+  if (!Array.isArray(maybeProfile.layers)) {
+    return false
+  }
+  maybeProfile.layers.forEach((l) => {
+    if (isLayer(l)) return
+    layersAreReal = false
+  })
+  return maybeProfile.name !== undefined && layersAreReal
+}
