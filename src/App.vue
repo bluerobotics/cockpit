@@ -22,12 +22,12 @@
           {{ format(timeNow, 'E LLL do HH:mm') }}
         </div>
       </div>
-      <div ref="mainMenu" class="main-menu">
+      <Dialog v-model:show="showMainMenu">
         <div class="flex flex-col items-center justify-around p-5">
           <v-btn
             v-if="route.name === 'widgets-view'"
             prepend-icon="mdi-pencil"
-            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
+            class="w-full m-1 text-white action-button bg-slate-500 hover:bg-slate-400"
             @click="widgetStore.editingMode = !widgetStore.editingMode"
           >
             Edit mode
@@ -35,7 +35,7 @@
           <v-btn
             v-if="route.name !== 'widgets-view'"
             prepend-icon="mdi-send"
-            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
+            class="w-full m-1 text-white action-button bg-slate-500 hover:bg-slate-400"
             to="/"
           >
             Flight
@@ -43,27 +43,27 @@
           <v-btn
             v-if="route.name !== 'Mission planning'"
             prepend-icon="mdi-map-marker-radius"
-            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
+            class="w-full m-1 text-white action-button bg-slate-500 hover:bg-slate-400"
             to="/mission-planning"
           >
             Mission planning
           </v-btn>
           <v-btn
             prepend-icon="mdi-cog"
-            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
+            class="w-full m-1 text-white action-button bg-slate-500 hover:bg-slate-400"
             @click="showConfigurationMenu = true"
           >
             Configuration
           </v-btn>
           <v-btn
             :prepend-icon="fullScreenToggleIcon"
-            class="w-full m-1 text-white bg-slate-500 hover:bg-slate-400"
+            class="w-full m-1 text-white action-button bg-slate-500 hover:bg-slate-400"
             @click="toggleFullscreen"
           >
             {{ isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen' }}
           </v-btn>
         </div>
-      </div>
+      </Dialog>
       <teleport to="body">
         <v-dialog v-model="showConfigurationMenu" transition="dialog-bottom-transition" width="100%" height="100%">
           <ConfigurationMenu />
@@ -104,6 +104,7 @@ import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
 import { useMissionStore } from '@/stores/mission'
 
+import Dialog from './components/Dialog.vue'
 import Alerter from './components/widgets/Alerter.vue'
 import { useWidgetManagerStore } from './stores/widgetManager'
 
@@ -135,8 +136,6 @@ const showMissionOptionsDialog = ref(false)
 
 // Clock
 const timeNow = useTimestamp({ interval: 1000 })
-
-const mainMenuOpacity = computed(() => (showMainMenu.value ? '100%' : '0%'))
 </script>
 
 <style>
@@ -152,21 +151,5 @@ body {
 }
 .main-menu-button-image:hover {
   filter: invert(100%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(100%) contrast(90%);
-}
-.main-menu {
-  opacity: v-bind('mainMenuOpacity');
-  transition: opacity 0.1s ease-in-out;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin-right: -50%;
-  transform: translate(-50%, -50%);
-  height: fit-content;
-  border-radius: 5px;
-  box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.3);
-  width: 300px;
-  z-index: 60;
-  background-color: rgba(47, 57, 66, 0.8);
-  backdrop-filter: blur(1px);
 }
 </style>
