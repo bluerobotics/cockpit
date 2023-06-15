@@ -92,7 +92,7 @@ module.exports = {
       'error',
       {
         code: 120,
-        template: 160,
+        template: 120,
         tabWidth: 4,
         comments: 160,
         ignoreComments: true,
