@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-main>
-      <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex">
+      <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex backdrop-blur-[2px]">
         <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
           <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
         </button>
