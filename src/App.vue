@@ -22,6 +22,7 @@
           {{ format(timeNow, 'E LLL do HH:mm') }}
         </div>
       </div>
+      <div class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between"></div>
       <Dialog v-model:show="showMainMenu">
         <div class="flex flex-col items-center justify-around p-5">
           <v-btn
