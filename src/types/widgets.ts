@@ -13,7 +13,6 @@ export enum WidgetType {
   Joystick = 'Joystick',
   Map = 'Map',
   MissionInfo = 'MissionInfo',
-  PowerBar = 'PowerBar',
   PowerSupply = 'PowerSupply',
   VideoPlayer = 'VideoPlayer',
   VideoRecorder = 'VideoRecorder',
