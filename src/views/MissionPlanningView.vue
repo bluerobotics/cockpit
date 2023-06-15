@@ -89,13 +89,13 @@
       </div>
     </div>
     <v-btn
-      class="absolute bottom-0 left-0 m-3 rounded-sm shadow-sm bg-slate-50"
+      class="absolute m-3 rounded-sm shadow-sm left-36 bottom-14 bg-slate-50"
       icon="mdi-home-map-marker"
       size="x-small"
       @click="goHome"
     />
     <v-btn
-      class="absolute bottom-0 m-3 rounded-sm shadow-sm left-10 bg-slate-50"
+      class="absolute m-3 rounded-sm shadow-sm bottom-14 left-48 bg-slate-50"
       icon="mdi-image-filter-center-focus-strong"
       size="x-small"
       @click="vehiclePosition ? (mapCenter = vehiclePosition) : null"
