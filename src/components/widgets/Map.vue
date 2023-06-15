@@ -18,7 +18,7 @@
       @click="showOptionsDialog = !showOptionsDialog"
     />
     <v-btn
-      class="absolute bottom-0 left-0 m-3 bg-slate-50"
+      class="absolute left-0 m-3 bottom-12 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-home-map-marker"
@@ -26,7 +26,7 @@
       @click="goHome"
     />
     <v-btn
-      class="absolute bottom-0 m-3 left-10 bg-slate-50"
+      class="absolute m-3 bottom-12 left-10 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-image-filter-center-focus-strong"
@@ -34,7 +34,7 @@
       @click="vehiclePosition ? (center = vehiclePosition) : null"
     />
     <v-btn
-      class="absolute bottom-0 m-3 left-20 bg-slate-50"
+      class="absolute m-3 bottom-12 left-20 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-download"
@@ -42,7 +42,7 @@
       @click="downloadMissionFromVehicle"
     />
     <v-btn
-      class="absolute bottom-0 mb-3 ml-1 left-32 bg-slate-50"
+      class="absolute mb-3 ml-1 bottom-12 left-32 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-play"
@@ -277,5 +277,8 @@ const showOptionsDialog = ref(false)
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.leaflet-control-zoom {
+  transform: translateY(-30px);
 }
 </style>
