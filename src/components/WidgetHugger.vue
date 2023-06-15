@@ -467,8 +467,8 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
 }
 .editing-buttons {
   position: absolute;
-  left: 5px;
-  bottom: 5px;
+  left: calc(50% - 16px);
+  bottom: calc(50% - 16px);
 }
 .resizer.allowResizing {
   width: 10px;
