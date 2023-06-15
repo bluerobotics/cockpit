@@ -97,6 +97,8 @@ module.exports = {
         comments: 160,
         ignoreComments: true,
         ignoreTrailingComments: true,
+        ignoreHTMLAttributeValues: true,
+        ignoreHTMLTextContents: true,
         ignoreUrls: true,
       },
     ],
