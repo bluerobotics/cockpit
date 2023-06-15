@@ -33,15 +33,6 @@ export const widgetProfiles: { [key: string]: Profile } = {
             },
           },
           {
-            hash: 'a27ffc81-42ae-4d11-883c-12a744e019e1',
-            name: 'PowerBar',
-            component: WidgetType.PowerBar,
-            position: { x: 0.1, y: 0.0 },
-            size: { width: 0.8, height: 0.06 },
-            managerVars: { timesMounted: 0 },
-            options: {},
-          },
-          {
             hash: '0230b90e-0c6d-45ba-94e1-994a074b76c7',
             name: 'Attitude widget',
             component: WidgetType.Attitude,
