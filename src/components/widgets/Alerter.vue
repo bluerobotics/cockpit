@@ -59,7 +59,14 @@ const currentAlertBar = ref()
 const isCurrentAlertBarHovered = useElementHover(currentAlertBar)
 const expandedAlertsBar = ref()
 const isExpandedAlertsBarHovered = useElementHover(expandedAlertsBar)
-watch(isCurrentAlertBarHovered, () => {
+watch(isCurrentAlertBarHovered, (isHovered, wasHovered) => {
+  if (wasHovered && !isHovered) {
+    setTimeout(() => {
+      if (!isExpandedAlertsBarHovered.value && !isCurrentAlertBarHovered.value && isShowingExpandedAlerts.value) {
+        toggleExpandedAlerts()
+      }
+    }, 250)
+  }
   if (isShowingExpandedAlerts.value) return
   toggleExpandedAlerts()
 })
