@@ -3,6 +3,7 @@
  * The enum value is equal to the component's filename, without the '.vue' extension
  */
 export enum MiniWidgetType {
+  ArmerButton = 'ArmerButton',
 }
 
 export type MiniWidget = {
