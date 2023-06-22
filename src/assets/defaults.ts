@@ -98,6 +98,10 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
             component: MiniWidgetType.BaseCommIndicator,
             options: {},
           },
+          {
+            component: MiniWidgetType.JoystickCommIndicator,
+            options: {},
+          },
         ],
       },
       {
