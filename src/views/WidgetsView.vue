@@ -35,6 +35,9 @@
           <template v-if="widget.component === WidgetType.Map">
             <Map :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.MiniWidgetsBar">
+            <MiniWidgetsBar :widget="widget" />
+          </template>
           <template v-if="widget.component === WidgetType.MissionInfo">
             <MissionInfo :widget="widget" />
           </template>
@@ -78,6 +81,7 @@ import DepthHUD from '../components/widgets/DepthHUD.vue'
 import HudCompass from '../components/widgets/HudCompass.vue'
 import Indicators from '../components/widgets/Indicators.vue'
 import Map from '../components/widgets/Map.vue'
+import MiniWidgetsBar from '../components/widgets/MiniWidgetsBar.vue'
 import MissionInfo from '../components/widgets/MissionInfo.vue'
 import PowerSupply from '../components/widgets/PowerSupply.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
