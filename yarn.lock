@@ -5545,19 +5545,6 @@ smart-buffer@^4.0.2:
   resolved "https://registry.yarnpkg.com/smart-buffer/-/smart-buffer-4.2.0.tgz#6e1d71fa4f18c05f7d0ff216dd16a481d0e8d9ae"
   integrity sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==
 
-sortablejs-vue3@^1.2.9:
-  version "1.2.9"
-  resolved "https://registry.yarnpkg.com/sortablejs-vue3/-/sortablejs-vue3-1.2.9.tgz#782fbce79dd2c94529c4e94fe19ba67218ced6a6"
-  integrity sha512-l0IIBdu+nRIwC2+KOkiavXw5vRfsn6MIPVSVSf7ItBevcuRZ4mVzC7dgnr/Hs/VPH2Q+nF2PYP3FsrnrG+7qCw==
-  dependencies:
-    sortablejs "^1.15.0"
-    vue "^3.2.37"
-
-sortablejs@^1.15.0:
-  version "1.15.0"
-  resolved "https://registry.yarnpkg.com/sortablejs/-/sortablejs-1.15.0.tgz#53230b8aa3502bb77a29e2005808ffdb4a5f7e2a"
-  integrity sha512-bv9qgVMjUMf89wAvM6AxVvS/4MX3sPeN0+agqShejLU5z5GX4C75ow1O2e5k4L6XItUyAK3gH6AxSbXrOM5e8w==
-
 "source-map-js@>=0.6.2 <2.0.0", source-map-js@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/source-map-js/-/source-map-js-1.0.2.tgz#adbc361d9c62df380125e7f161f71c826f1e490c"
@@ -6197,6 +6184,11 @@ vue-demi@>=0.14.0:
   resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.14.5.tgz#676d0463d1a1266d5ab5cba932e043d8f5f2fbd9"
   integrity sha512-o9NUVpl/YlsGJ7t+xuqJKx8EBGf1quRhCiT6D/J0pfwmk9zUwYkC7yrF4SZCe6fETvSM3UNL2edcbYrSyc4QHA==
 
+vue-draggable-plus@^0.2.0-beta.2:
+  version "0.2.0-beta.2"
+  resolved "https://registry.yarnpkg.com/vue-draggable-plus/-/vue-draggable-plus-0.2.0-beta.2.tgz#a73252c550ab6e162d6e03494f9dc07601307898"
+  integrity sha512-ASa++JzCySOtB1m3TFWB31KsU+qoJpnUqCphgoP1T2cutL+Ph44xz7WQULCrXz2MeW+HSpoRJMR84nVHn0FAOA==
+
 vue-eslint-parser@^8.0.0, vue-eslint-parser@^8.0.1:
   version "8.3.0"
   resolved "https://registry.yarnpkg.com/vue-eslint-parser/-/vue-eslint-parser-8.3.0.tgz#5d31129a1b3dd89c0069ca0a1c88f970c360bd0d"
@@ -6238,7 +6230,7 @@ vue-tsc@^1.0.9:
     "@volar/vue-language-core" "1.0.9"
     "@volar/vue-typescript" "1.0.9"
 
-vue@^3.2.37, vue@^3.3.4:
+vue@^3.3.4:
   version "3.3.4"
   resolved "https://registry.yarnpkg.com/vue/-/vue-3.3.4.tgz#8ed945d3873667df1d0fcf3b2463ada028f88bd6"
   integrity sha512-VTyEYn3yvIeY1Py0WaYGZsXnz3y5UnGi62GjVEqvEGPl6nxbOrCXbVOTQWBEJUqAyTUk2uJ5JLVnYJ6ZzGbrSw==
