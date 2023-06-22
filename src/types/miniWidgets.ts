@@ -4,6 +4,7 @@
  */
 export enum MiniWidgetType {
   ArmerButton = 'ArmerButton',
+  DepthIndicator = 'DepthIndicator',
 }
 
 export type MiniWidget = {
