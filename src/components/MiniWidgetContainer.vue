@@ -16,7 +16,11 @@
       :class="{ 'flex-wrap': wrap }"
     >
       <template #item="{ element }">
-        <MiniWidgetHugger :container="container" :widget="element"></MiniWidgetHugger>
+        <MiniWidgetHugger :container="container" :widget="element">
+          <template v-if="element.component === MiniWidgetType.ArmerButton">
+            <ArmerButton />
+          </template>
+        </MiniWidgetHugger>
       </template>
     </Sortable>
   </div>
@@ -43,6 +47,7 @@ import { type MiniWidgetContainer, MiniWidgetType } from '@/types/miniWidgets'
 
 import Button from './Button.vue'
 import Dialog from './Dialog.vue'
+import ArmerButton from './mini-widgets/ArmerButton.vue'
 import MiniWidgetHugger from './MiniWidgetHugger.vue'
 
 // eslint-disable-next-line jsdoc/require-jsdoc
