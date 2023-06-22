@@ -93,7 +93,12 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
     containers: [
       {
         name: 'Top-right container',
-        widgets: [],
+        widgets: [
+          {
+            component: MiniWidgetType.BaseCommIndicator,
+            options: {},
+          },
+        ],
       },
       {
         name: 'Bottom-left container',

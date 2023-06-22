@@ -20,6 +20,9 @@
           <template v-if="element.component === MiniWidgetType.ArmerButton">
             <ArmerButton />
           </template>
+          <template v-if="element.component === MiniWidgetType.BaseCommIndicator">
+            <BaseCommIndicator />
+          </template>
           <template v-if="element.component === MiniWidgetType.DepthIndicator">
             <DepthIndicator />
           </template>
@@ -54,6 +57,7 @@ import { type MiniWidgetContainer, MiniWidgetType } from '@/types/miniWidgets'
 import Button from './Button.vue'
 import Dialog from './Dialog.vue'
 import ArmerButton from './mini-widgets/ArmerButton.vue'
+import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
 import DepthIndicator from './mini-widgets/DepthIndicator.vue'
 import ModeSelector from './mini-widgets/ModeSelector.vue'
 import MiniWidgetHugger from './MiniWidgetHugger.vue'
