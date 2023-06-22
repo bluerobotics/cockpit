@@ -32,7 +32,7 @@
         <MiniWidgetContainer :container="miniWidgetsStore.currentMiniWidgetsProfile.containers[3]" class="flex-1" />
       </div>
       <Dialog v-model:show="showMainMenu">
-        <div class="flex flex-col items-center justify-around p-5">
+        <div class="flex flex-col items-center justify-around">
           <v-btn
             v-if="route.name === 'widgets-view'"
             prepend-icon="mdi-pencil"

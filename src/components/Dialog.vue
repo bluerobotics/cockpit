@@ -1,6 +1,6 @@
 <template>
   <dialog ref="dialogRef" class="modal">
-    <div ref="dialogContentRef" class="flex flex-col items-center justify-center w-full h-full">
+    <div ref="dialogContentRef" class="flex flex-col items-center justify-center w-full h-full p-5 backdrop-blur-sm">
       <slot></slot>
     </div>
   </dialog>
@@ -61,9 +61,9 @@ watch(show, () => {
   transform: translate(-50%, -50%);
   height: fit-content;
   width: 300px;
-  background-color: rgba(47, 57, 66, 0.8);
+  background-color: rgba(71, 85, 105, 0.3);
   backdrop-filter: blur(1px);
-  box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.25);
   border-radius: 5px;
 }
 .modal::backdrop {
