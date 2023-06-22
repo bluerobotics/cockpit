@@ -1,3 +1,4 @@
+import { type MiniWidgetProfile, MiniWidgetType } from '@/types/miniWidgets'
 import { type Profile, WidgetType } from '@/types/widgets'
 
 export const defaultGlobalAddress = 'blueos.local'
@@ -85,3 +86,42 @@ export const widgetProfiles: { [key: string]: Profile } = {
   },
 }
 export const widgetProfile = Object.values(widgetProfiles)[0]
+
+export const miniWidgetsProfiles: MiniWidgetProfile[] = [
+  {
+    name: 'Default Cockpit Mini Widget profile',
+    containers: [
+      {
+        name: 'Top-right container',
+        widgets: [],
+      },
+      {
+        name: 'Bottom-left container',
+        widgets: [],
+      },
+      {
+        name: 'Bottom-center container',
+        widgets: [
+          {
+            component: MiniWidgetType.DepthIndicator,
+            options: {},
+          },
+        ],
+      },
+      {
+        name: 'Bottom-right container',
+        widgets: [
+          {
+            component: MiniWidgetType.ArmerButton,
+            options: {},
+          },
+          {
+            component: MiniWidgetType.ModeSelector,
+            options: {},
+          },
+        ],
+      },
+    ],
+  },
+]
+export const miniWidgetsProfile = miniWidgetsProfiles[0]
