@@ -12,6 +12,10 @@ export enum MiniWidgetType {
 
 export type MiniWidget = {
   /**
+   * Unique identifier for the widget
+   */
+  hash: string
+  /**
    * Component type of the widget
    */
   component: MiniWidgetType

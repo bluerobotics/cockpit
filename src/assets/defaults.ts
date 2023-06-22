@@ -95,10 +95,12 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
         name: 'Top-right container',
         widgets: [
           {
+            hash: '5b21cf5b-5849-413a-8bee-f1c4b42522f8',
             component: MiniWidgetType.BaseCommIndicator,
             options: {},
           },
           {
+            hash: '41354445-2057-4574-80f5-bdc6d394dfe7',
             component: MiniWidgetType.JoystickCommIndicator,
             options: {},
           },
@@ -112,6 +114,7 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
         name: 'Bottom-center container',
         widgets: [
           {
+            hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
             component: MiniWidgetType.DepthIndicator,
             options: {},
           },
@@ -121,10 +124,12 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
         name: 'Bottom-right container',
         widgets: [
           {
+            hash: '837a6722-1e54-4ace-9a92-d9c5af059d16',
             component: MiniWidgetType.ArmerButton,
             options: {},
           },
           {
+            hash: 'c6301929-cdfc-48af-9fdd-c87ce65d7395',
             component: MiniWidgetType.ModeSelector,
             options: {},
           },

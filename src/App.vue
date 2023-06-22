@@ -16,7 +16,10 @@
         <div class="grow" />
         <Alerter class="max-w-sm min-w-fit" />
         <div class="flex-1">
-          <MiniWidgetContainer :container="miniWidgetsStore.currentMiniWidgetsProfile.containers[0]" />
+          <MiniWidgetContainer
+            :container="widgetStore.currentMiniWidgetsProfile.containers[0]"
+            :allow-editing="widgetStore.editingMode"
+          />
         </div>
         <div
           class="flex items-center justify-center m-2 text-sm font-bold text-center text-white select-none min-w-[80px]"
@@ -25,11 +28,23 @@
         </div>
       </div>
       <div class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between">
-        <MiniWidgetContainer :container="miniWidgetsStore.currentMiniWidgetsProfile.containers[1]" class="flex-1" />
+        <MiniWidgetContainer
+          :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
+          :allow-editing="widgetStore.editingMode"
+          class="flex-1"
+        />
         <div />
-        <MiniWidgetContainer :container="miniWidgetsStore.currentMiniWidgetsProfile.containers[2]" class="flex-1" />
+        <MiniWidgetContainer
+          :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
+          :allow-editing="widgetStore.editingMode"
+          class="flex-1"
+        />
         <div />
-        <MiniWidgetContainer :container="miniWidgetsStore.currentMiniWidgetsProfile.containers[3]" class="flex-1" />
+        <MiniWidgetContainer
+          :container="widgetStore.currentMiniWidgetsProfile.containers[3]"
+          :allow-editing="widgetStore.editingMode"
+          class="flex-1"
+        />
       </div>
       <Dialog v-model:show="showMainMenu">
         <div class="flex flex-col items-center justify-around">
@@ -111,7 +126,6 @@ import { useRoute } from 'vue-router'
 
 import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
-import { useMiniWidgetsManagerStore } from '@/stores/miniWidgetsManager'
 import { useMissionStore } from '@/stores/mission'
 
 import Dialog from './components/Dialog.vue'
@@ -120,7 +134,6 @@ import Alerter from './components/widgets/Alerter.vue'
 import { useWidgetManagerStore } from './stores/widgetManager'
 
 const widgetStore = useWidgetManagerStore()
-const miniWidgetsStore = useMiniWidgetsManagerStore()
 
 const showConfigurationMenu = ref(false)
 
