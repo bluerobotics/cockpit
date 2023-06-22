@@ -11,7 +11,7 @@
   </div>
   <div ref="widgetOverlay" class="widgetOverlay" :class="{ allowMoving, draggingWidget, hoveringWidgetOrOverlay }" />
   <div ref="outerWidgetRef" class="outerWidget">
-    <div ref="innerWidgetRef" class="innerWidget">
+    <div ref="innerWidgetRef" class="innerWidget" :class="{ 'overflow-hidden': hideOverflow }">
       <slot></slot>
     </div>
     <div ref="resizerRef" class="resizer" :class="{ draggingResizer, hoveringResizer, allowResizing }" />
@@ -122,6 +122,10 @@ export interface Props {
    * To allow or not the widget to be deleted
    */
   allowDeleting?: boolean
+  /**
+   * To hide or not content that overflows the widget area
+   */
+  hideOverflow?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -131,6 +135,7 @@ const props = withDefaults(defineProps<Props>(), {
   allowResizing: true,
   allowOrdering: true,
   allowDeleting: true,
+  hideOverflow: false,
 })
 
 const emit = defineEmits<{
@@ -458,7 +463,6 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
 .innerWidget {
   width: 100%;
   height: 100%;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
