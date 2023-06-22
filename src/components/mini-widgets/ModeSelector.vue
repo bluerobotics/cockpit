@@ -1,0 +1,26 @@
+<template>
+  <div class="custom-select">
+    <Dropdown v-model="currentMode" :options="vehicleStore.modesAvailable()" class="m-2" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+
+import { useMainVehicleStore } from '@/stores/mainVehicle'
+
+import Dropdown from '../Dropdown.vue'
+
+const vehicleStore = useMainVehicleStore()
+const currentMode = ref()
+
+watch(currentMode, () => {
+  if (currentMode.value === undefined) return
+  vehicleStore.setFlightMode(currentMode.value)
+})
+
+// eslint-disable-next-line no-undef
+let modeUpdateInterval: NodeJS.Timer | undefined = undefined
+onMounted(() => (modeUpdateInterval = setInterval(() => (currentMode.value = vehicleStore.mode), 500)))
+onUnmounted(() => clearInterval(modeUpdateInterval))
+</script>
