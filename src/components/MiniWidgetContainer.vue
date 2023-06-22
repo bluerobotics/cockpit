@@ -20,6 +20,9 @@
           <template v-if="element.component === MiniWidgetType.ArmerButton">
             <ArmerButton />
           </template>
+          <template v-if="element.component === MiniWidgetType.DepthIndicator">
+            <DepthIndicator />
+          </template>
         </MiniWidgetHugger>
       </template>
     </Sortable>
@@ -48,6 +51,7 @@ import { type MiniWidgetContainer, MiniWidgetType } from '@/types/miniWidgets'
 import Button from './Button.vue'
 import Dialog from './Dialog.vue'
 import ArmerButton from './mini-widgets/ArmerButton.vue'
+import DepthIndicator from './mini-widgets/DepthIndicator.vue'
 import MiniWidgetHugger from './MiniWidgetHugger.vue'
 
 // eslint-disable-next-line jsdoc/require-jsdoc
