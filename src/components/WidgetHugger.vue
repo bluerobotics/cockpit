@@ -416,7 +416,7 @@ const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
 widgetDeleteDialog.onConfirm(() => emit('remove'))
 </script>
 
-<style scoped>
+<style>
 .widgetOverlay {
   --overlayOverSize: 10px;
   position: absolute;
