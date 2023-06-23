@@ -416,6 +416,7 @@ const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
 widgetDeleteDialog.onConfirm(() => emit('remove'))
 
 const mouseOverWidgetStyle = computed(() => (hoveringWidgetOrOverlay.value ? 'block' : 'none'))
+const optionsBtnTopStyle = computed(() => `${48 - constrain(widget.value.position.y * windowHeight.value, 0, 48)}px`)
 </script>
 
 <style>
@@ -489,7 +490,7 @@ const mouseOverWidgetStyle = computed(() => (hoveringWidgetOrOverlay.value ? 'bl
   display: none;
   position: absolute;
   margin: 5px;
-  top: 100px;
+  top: v-bind('optionsBtnTopStyle');
   right: 0;
   color: white;
   filter: drop-shadow(0.5px 0.5px 0.5px black);
