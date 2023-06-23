@@ -414,6 +414,8 @@ const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
 const widgetDeleteDialogRevealed = ref(false)
 const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
 widgetDeleteDialog.onConfirm(() => emit('remove'))
+
+const mouseOverWidgetStyle = computed(() => (hoveringWidgetOrOverlay.value ? 'block' : 'none'))
 </script>
 
 <style>
@@ -482,5 +484,15 @@ widgetDeleteDialog.onConfirm(() => emit('remove'))
   position: absolute;
   left: 100%;
   top: 100%;
+}
+.options-btn {
+  display: none;
+  position: absolute;
+  margin: 5px;
+  top: 100px;
+  right: 0;
+  color: white;
+  filter: drop-shadow(0.5px 0.5px 0.5px black);
+  display: v-bind('mouseOverWidgetStyle');
 }
 </style>
