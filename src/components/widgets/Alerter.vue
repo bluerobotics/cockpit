@@ -46,11 +46,11 @@ const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
 const currentAlert = computed((): Alert => {
   const secsNow = new Date(timeNow.value).getSeconds()
-  const secsLastAlert = alertStore.alerts.last()?.time_created.getSeconds() || secsNow - alertPersistencyInterval - 1
+  const secsLastAlert = alertStore.alerts.first()?.time_created.getSeconds() || secsNow - alertPersistencyInterval - 1
   if (secsNow - secsLastAlert > alertPersistencyInterval) {
     return new Alert(AlertLevel.Info, 'No recent alerts.')
   }
-  return alertStore.alerts.last()!
+  return alertStore.alerts.first()!
 })
 
 const [isShowingExpandedAlerts, toggleExpandedAlerts] = useToggle()
