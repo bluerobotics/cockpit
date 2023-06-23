@@ -66,7 +66,6 @@
 </template>
 
 <script setup lang="ts">
-import { useMouseInElement } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
@@ -152,10 +151,6 @@ watch(availableStreams, () => {
 const flipStyle = computed(() => {
   return `scale(${widget.value.options.flipHorizontally ? -1 : 1}, ${widget.value.options.flipVertically ? -1 : 1})`
 })
-
-const videoWidget = ref()
-const { isOutside } = useMouseInElement(videoWidget)
-const mouseOverWidgetStyle = computed(() => (isOutside.value ? 'none' : 'block'))
 </script>
 
 <style scoped>
@@ -188,15 +183,5 @@ video {
   padding: 10px;
   color: white;
   border: 2px solid rgb(0, 20, 80);
-}
-.options-btn {
-  display: none;
-  position: absolute;
-  margin: 5px;
-  top: 0;
-  right: 0;
-  color: white;
-  filter: drop-shadow(0.5px 0.5px 0.5px black);
-  display: v-bind('mouseOverWidgetStyle');
 }
 </style>

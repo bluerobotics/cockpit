@@ -118,7 +118,7 @@
 import 'leaflet/dist/leaflet.css'
 
 import { LIcon, LMap, LMarker, LPolyline, LTileLayer, LTooltip } from '@vue-leaflet/vue-leaflet'
-import { useMouseInElement, useRefHistory } from '@vueuse/core'
+import { useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import type { Map } from 'leaflet'
 import Swal from 'sweetalert2'
@@ -246,25 +246,12 @@ onBeforeMount(() => {
   }
 })
 
-const { isOutside } = useMouseInElement(map)
-const mouseOverWidgetStyle = computed(() => (isOutside.value ? 'none' : 'block'))
 const showOptionsDialog = ref(false)
 </script>
 
 <style>
 .map {
   z-index: 0;
-}
-.options-btn {
-  z-index: 1002;
-  display: none;
-  position: absolute;
-  margin: 5px;
-  top: 0;
-  right: 0;
-  color: white;
-  filter: drop-shadow(0.5px 0.5px 0.5px black);
-  display: v-bind('mouseOverWidgetStyle');
 }
 .markerIcon {
   background-color: rgb(0, 110, 255);

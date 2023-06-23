@@ -95,14 +95,4 @@ onBeforeMount(() => {
   justify-content: center;
   white-space: nowrap;
 }
-.options-btn {
-  display: none;
-  position: absolute;
-  margin: 5px;
-  top: 0;
-  right: 0;
-}
-.indications:hover .options-btn {
-  display: block;
-}
 </style>
