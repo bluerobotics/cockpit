@@ -9,10 +9,10 @@
       @click="showOptionsDialog = !showOptionsDialog"
     />
     <template v-if="widget.options.showMissionName">
-      <p class="text-h3 text-left text-white">{{ store.missionName }}</p>
+      <p class="text-left text-white text-h3">{{ store.missionName }}</p>
     </template>
     <template v-if="widget.options.showMissionUptime">
-      <p class="text-h5 text-left text-white">Uptime: {{ missionUptimeString }}</p>
+      <p class="text-left text-white text-h5">Uptime: {{ missionUptimeString }}</p>
     </template>
   </v-sheet>
   <v-dialog v-model="showOptionsDialog" width="50%">
@@ -75,16 +75,6 @@ onBeforeMount(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-}
-.options-btn {
-  display: none;
-  position: absolute;
-  margin: 5px;
-  top: 0;
-  right: 0;
-}
-.main-sheet:hover .options-btn {
-  display: block;
 }
 .main-sheet p {
   text-shadow: 1px 1px 1px black;

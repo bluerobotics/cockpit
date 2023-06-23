@@ -243,16 +243,4 @@ watch([renderVars, canvasSize, widget.value.options], () => {
   min-width: 150px;
   min-height: 200px;
 }
-.options-btn {
-  display: none;
-  position: absolute;
-  margin: 5px;
-  top: 0;
-  right: 0;
-  color: white;
-  filter: drop-shadow(0.5px 0.5px 0.5px black);
-}
-.main:hover .options-btn {
-  display: block;
-}
 </style>
