@@ -22,19 +22,22 @@
       <div v-for="item in container.widgets" :key="item.hash">
         <div :class="{ 'select-none pointer-events-none': allowEditing }">
           <template v-if="item.component === MiniWidgetType.ArmerButton">
-            <ArmerButton />
+            <ArmerButton :options="item.options" />
           </template>
           <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
-            <BaseCommIndicator />
+            <BaseCommIndicator :options="item.options" />
           </template>
           <template v-if="item.component === MiniWidgetType.DepthIndicator">
-            <DepthIndicator />
+            <DepthIndicator :options="item.options" />
           </template>
           <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
-            <JoystickCommIndicator />
+            <JoystickCommIndicator :options="item.options" />
+          </template>
+          <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
+            <MiniVideoRecorder :options="item.options" />
           </template>
           <template v-if="item.component === MiniWidgetType.ModeSelector">
-            <ModeSelector />
+            <ModeSelector :options="item.options" />
           </template>
         </div>
       </div>
@@ -56,19 +59,22 @@
         <div v-for="item in allAvailableWidgets" :key="item.hash">
           <div class="pointer-events-none select-none">
             <template v-if="item.component === MiniWidgetType.ArmerButton">
-              <ArmerButton />
+              <ArmerButton :options="item.options" />
             </template>
             <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
-              <BaseCommIndicator />
+              <BaseCommIndicator :options="item.options" />
             </template>
             <template v-if="item.component === MiniWidgetType.DepthIndicator">
-              <DepthIndicator />
+              <DepthIndicator :options="item.options" />
             </template>
             <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
-              <JoystickCommIndicator />
+              <JoystickCommIndicator :options="item.options" />
+            </template>
+            <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
+              <MiniVideoRecorder :options="item.options" />
             </template>
             <template v-if="item.component === MiniWidgetType.ModeSelector">
-              <ModeSelector />
+              <ModeSelector :options="item.options" />
             </template>
           </div>
         </div>
@@ -101,19 +107,22 @@
           <div v-for="item in trashList" :key="item.hash">
             <div class="pointer-events-none select-none">
               <template v-if="item.component === MiniWidgetType.ArmerButton">
-                <ArmerButton />
+                <ArmerButton :options="item.options" />
               </template>
               <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
-                <BaseCommIndicator />
+                <BaseCommIndicator :options="item.options" />
               </template>
               <template v-if="item.component === MiniWidgetType.DepthIndicator">
-                <DepthIndicator />
+                <DepthIndicator :options="item.options" />
               </template>
               <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
-                <JoystickCommIndicator />
+                <JoystickCommIndicator :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
+                <MiniVideoRecorder :options="item.options" />
               </template>
               <template v-if="item.component === MiniWidgetType.ModeSelector">
-                <ModeSelector />
+                <ModeSelector :options="item.options" />
               </template>
             </div>
           </div>
