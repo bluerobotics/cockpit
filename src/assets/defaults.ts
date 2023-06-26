@@ -11,17 +11,6 @@ export const widgetProfiles: { [key: string]: Profile } = {
         name: 'Layer dragonfly',
         widgets: [
           {
-            hash: '4ee737c2-a49c-4899-b045-954bc4af238a',
-            name: 'Video Recorder widget',
-            component: WidgetType.VideoRecorder,
-            position: { x: 0.01, y: 0.45 },
-            size: { width: 0.05, height: 0.1 },
-            managerVars: { timesMounted: 0 },
-            options: {
-              streamName: undefined,
-            },
-          },
-          {
             hash: '8b1448f5-3f07-4bfc-8a0e-5d491993f858',
             name: 'Depth HUD widget',
             component: WidgetType.DepthHUD,
