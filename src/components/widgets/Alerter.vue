@@ -29,9 +29,8 @@
 
 <script setup lang="ts">
 import { useElementHover, useTimestamp, useToggle } from '@vueuse/core'
-import { format } from 'date-fns'
-import { computed, ref } from 'vue'
-import { watch } from 'vue'
+import { differenceInSeconds, format } from 'date-fns'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
@@ -44,13 +43,24 @@ const alertPersistencyInterval = 10 // in seconds
 
 const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
-const currentAlert = computed((): Alert => {
-  const secsNow = new Date(timeNow.value).getSeconds()
-  const secsLastAlert = alertStore.alerts.first()?.time_created.getSeconds() || secsNow - alertPersistencyInterval - 1
-  if (secsNow - secsLastAlert > alertPersistencyInterval) {
-    return new Alert(AlertLevel.Info, 'No recent alerts.')
-  }
-  return alertStore.alerts.first()!
+const currentAlert = ref(alertStore.alerts[0])
+
+// eslint-disable-next-line no-undef
+let currentAlertInterval: NodeJS.Timer | undefined = undefined
+onMounted(() => {
+  currentAlertInterval = setInterval(() => {
+    const dateNow = new Date(timeNow.value)
+    const secsSinceLastAlert = differenceInSeconds(dateNow, alertStore.alerts.first()?.time_created || dateNow)
+    if (secsSinceLastAlert > alertPersistencyInterval) {
+      currentAlert.value = new Alert(AlertLevel.Info, 'No recent alerts.')
+      return
+    }
+    currentAlert.value = alertStore.alerts.first()!
+  }, 1000)
+})
+
+onUnmounted(() => {
+  clearInterval(currentAlertInterval)
 })
 
 const [isShowingExpandedAlerts, toggleExpandedAlerts] = useToggle()
