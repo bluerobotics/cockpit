@@ -133,6 +133,11 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
             component: MiniWidgetType.ModeSelector,
             options: {},
           },
+          {
+            hash: 'a4d0d6ce-9978-40f2-89ab-958f91137177',
+            component: MiniWidgetType.MiniVideoRecorder,
+            options: {},
+          },
         ],
       },
     ],
