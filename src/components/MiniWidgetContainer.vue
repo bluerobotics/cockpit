@@ -146,6 +146,7 @@ import ArmerButton from './mini-widgets/ArmerButton.vue'
 import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
 import DepthIndicator from './mini-widgets/DepthIndicator.vue'
 import JoystickCommIndicator from './mini-widgets/JoystickCommIndicator.vue'
+import MiniVideoRecorder from './mini-widgets/MiniVideoRecorder.vue'
 import ModeSelector from './mini-widgets/ModeSelector.vue'
 
 // eslint-disable-next-line jsdoc/require-jsdoc
