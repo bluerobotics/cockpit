@@ -1,6 +1,6 @@
 <template>
-  <div class="custom-select">
-    <Dropdown v-model="currentMode" :options="vehicleStore.modesAvailable()" class="m-2" />
+  <div>
+    <Dropdown v-model="currentMode" :options="vehicleStore.modesAvailable()" />
   </div>
 </template>
 
