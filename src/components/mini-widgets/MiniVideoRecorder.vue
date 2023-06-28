@@ -95,7 +95,6 @@ const isRecording = computed(() => {
 
 onBeforeMount(async () => {
   // Set initial widget options if they don't exist
-  console.log(options.value)
   if (Object.keys(options.value).length === 0) {
     options.value = {
       streamName: undefined as string | undefined,
