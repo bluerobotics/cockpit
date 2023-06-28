@@ -177,7 +177,7 @@ const renderCanvas = (): void => {
     ctx.stroke()
   }
 
-  const indicatorY = renderVars.indicatorY
+  const indicatorY = Math.max(renderVars.indicatorY, 0)
 
   ctx.strokeStyle = widget.value.options.hudColor
   ctx.fillStyle = widget.value.options.hudColor
