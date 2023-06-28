@@ -31,19 +31,16 @@
         <MiniWidgetContainer
           :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
           :allow-editing="widgetStore.editingMode"
-          class="flex-1"
         />
         <div />
         <MiniWidgetContainer
           :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
           :allow-editing="widgetStore.editingMode"
-          class="flex-1"
         />
         <div />
         <MiniWidgetContainer
           :container="widgetStore.currentMiniWidgetsProfile.containers[3]"
           :allow-editing="widgetStore.editingMode"
-          class="flex-1"
         />
       </div>
       <Dialog v-model:show="showMainMenu">
