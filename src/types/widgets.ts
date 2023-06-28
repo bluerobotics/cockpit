@@ -9,6 +9,7 @@ export enum WidgetType {
   Compass = 'Compass',
   DepthHUD = 'DepthHUD',
   HudCompass = 'HudCompass',
+  ImageViewer = 'ImageViewer',
   Indicators = 'Indicators',
   Joystick = 'Joystick',
   Map = 'Map',
@@ -17,7 +18,6 @@ export enum WidgetType {
   PowerSupply = 'PowerSupply',
   VideoPlayer = 'VideoPlayer',
   VideoRecorder = 'VideoRecorder',
-  ImageViewer = 'ImageViewer',
 }
 
 export type Widget = {

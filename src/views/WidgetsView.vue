@@ -29,6 +29,9 @@
           <template v-if="widget.component === WidgetType.HudCompass">
             <HudCompass :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.ImageViewer">
+            <ImageView :widget="widget" />
+          </template>
           <template v-if="widget.component === WidgetType.Indicators">
             <Indicators :widget="widget" />
           </template>
@@ -49,9 +52,6 @@
           </template>
           <template v-if="widget.component === WidgetType.VideoRecorder">
             <VideoRecorder :widget="widget" />
-          </template>
-          <template v-if="widget.component === WidgetType.ImageViewer">
-            <ImageView :widget="widget" />
           </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
