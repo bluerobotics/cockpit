@@ -13,8 +13,8 @@
       :disabled="!allowEditing"
       animation="150"
       group="generalGroup"
-      class="flex items-center justify-center w-full h-full gap-2 px-2"
-      :class="{ 'flex-wrap': wrap }"
+      class="flex items-center w-full h-full gap-2 px-2"
+      :class="[wrap ? 'flex-wrap' : '', widgetsAlignment]"
       @start="showWidgetTrashArea = true"
       @end="showWidgetTrashArea = false"
       @add="refreshWidgetsHashs"
@@ -163,21 +163,29 @@ interface Props {
    * To wrap widgets to other lines or not
    */
   wrap?: boolean
+  /**
+   * Where to align the widgets to
+   */
+  align?: 'start' | 'center' | 'end'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   allowEditing: false,
   wrap: false,
+  align: 'center',
 })
 
 const container = toRefs(props).container
 const allowEditing = toRefs(props).allowEditing
 const wrap = toRefs(props).wrap
+const align = toRefs(props).align
 
 const showWidgetAddButton = ref(false)
 const addButton = ref<HTMLElement>()
 const miniWidgetContainer = ref<HTMLElement>()
 const hoveringContainer = useElementHover(miniWidgetContainer)
+
+const widgetsAlignment = computed(() => `justify-${align.value}`)
 
 // eslint-disable-next-line no-undef
 let closeAddButtonTimeout: NodeJS.Timeout | undefined = undefined
