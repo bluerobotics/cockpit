@@ -14,7 +14,7 @@
       class="expanded-alerts-bar absolute w-full p-2 transition-all rounded top-12 max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
       :class="{ 'opacity-0 invisible': !isShowingExpandedAlerts }"
     >
-      <div v-for="(alert, i) in alertStore.sortedAlerts.reverse()" :key="alert.time_created.toISOString()">
+      <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
         <div class="flex items-center justify-between whitespace-nowrap">
           <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
           <p class="mx-1">
@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { useElementHover, useTimestamp, useToggle } from '@vueuse/core'
 import { differenceInSeconds, format } from 'date-fns'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
@@ -83,6 +83,13 @@ watch(isCurrentAlertBarHovered, (isHovered, wasHovered) => {
 watch(isExpandedAlertsBarHovered, (isHovering, wasHovering) => {
   if (!(wasHovering && !isHovering)) return
   toggleExpandedAlerts()
+})
+
+const sortedAlertsReversed = computed(() => {
+  // We copy the sortedAlerts list before reversing it, otherwise the reverse function, which
+  // is performed in-place, will mutate the original list, and be sorted again, and mutate, and
+  // sort, in an infinite loop that will crash the app.
+  return [...alertStore.sortedAlerts].reverse()
 })
 </script>
 
