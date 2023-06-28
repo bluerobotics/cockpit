@@ -44,48 +44,50 @@
     </VueDraggable>
   </div>
   <teleport to="body">
-    <div
-      v-if="showWidgetAddMenu"
-      ref="widgetAddMenu"
-      class="absolute w-64 h-1/3 -translate-x-32 -translate-y-1/2 top-1/2 left-1/2 bg-slate-500/40 z-[65] rounded-2xl transition-all backdrop-blur-sm p-5"
-    >
-      <VueDraggable
-        v-model="allAvailableWidgets"
-        animation="150"
-        :group="widgetAddMenuGroupOptions"
-        :sort="false"
-        class="flex flex-col items-center w-full h-full gap-2 overflow-auto scrollbar-hide bottom-trans-grad"
+    <Transition>
+      <div
+        v-if="showWidgetAddMenu"
+        ref="widgetAddMenu"
+        class="absolute w-64 h-1/3 -translate-x-32 -translate-y-1/2 top-1/2 left-1/2 bg-slate-500/40 z-[65] rounded-2xl transition-all backdrop-blur-sm p-5"
       >
-        <div v-for="item in allAvailableWidgets" :key="item.hash">
-          <div class="pointer-events-none select-none">
-            <template v-if="item.component === MiniWidgetType.ArmerButton">
-              <ArmerButton :options="item.options" />
-            </template>
-            <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
-              <BaseCommIndicator :options="item.options" />
-            </template>
-            <template v-if="item.component === MiniWidgetType.DepthIndicator">
-              <DepthIndicator :options="item.options" />
-            </template>
-            <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
-              <JoystickCommIndicator :options="item.options" />
-            </template>
-            <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
-              <MiniVideoRecorder :options="item.options" />
-            </template>
-            <template v-if="item.component === MiniWidgetType.ModeSelector">
-              <ModeSelector :options="item.options" />
-            </template>
+        <VueDraggable
+          v-model="allAvailableWidgets"
+          animation="150"
+          :group="widgetAddMenuGroupOptions"
+          :sort="false"
+          class="flex flex-col items-center w-full h-full gap-2 overflow-auto scrollbar-hide bottom-trans-grad"
+        >
+          <div v-for="item in allAvailableWidgets" :key="item.hash">
+            <div class="pointer-events-none select-none">
+              <template v-if="item.component === MiniWidgetType.ArmerButton">
+                <ArmerButton :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
+                <BaseCommIndicator :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.DepthIndicator">
+                <DepthIndicator :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
+                <JoystickCommIndicator :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
+                <MiniVideoRecorder :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.ModeSelector">
+                <ModeSelector :options="item.options" />
+              </template>
+            </div>
           </div>
-        </div>
-      </VueDraggable>
-      <button
-        class="absolute top-0 right-0 m-2 transition-all text-slate-400 hover:text-slate-200"
-        @click="showWidgetAddMenu = !showWidgetAddMenu"
-      >
-        <FontAwesomeIcon icon="fa-solid fa-close" />
-      </button>
-    </div>
+        </VueDraggable>
+        <button
+          class="absolute top-0 right-0 m-2 transition-all text-slate-400 hover:text-slate-200"
+          @click="showWidgetAddMenu = !showWidgetAddMenu"
+        >
+          <FontAwesomeIcon icon="fa-solid fa-close" />
+        </button>
+      </div>
+    </Transition>
   </teleport>
   <teleport to="body">
     <div
