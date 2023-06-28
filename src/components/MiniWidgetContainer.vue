@@ -162,7 +162,7 @@ interface Props {
   /**
    * To wrap widgets to other lines or not
    */
-  wrap: boolean
+  wrap?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
