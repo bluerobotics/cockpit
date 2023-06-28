@@ -2,7 +2,7 @@
   <div class="custom-select">
     <select
       v-model="modelValue"
-      class="flex items-center justify-center py-1 pl-2 pr-8 text-base font-bold transition-all border-0 rounded-md shadow-inner cursor-pointer w-36 h-9 bg-slate-800/60 text-slate-100 hover:bg-slate-600/60"
+      class="flex items-center justify-center w-full py-1 pl-2 pr-8 text-base font-bold transition-all border-0 rounded-md shadow-inner cursor-pointer h-9 bg-slate-800/60 text-slate-100 hover:bg-slate-600/60"
       :class="{ 'pointer-events-none': disabled }"
       @update:model-value="(newChosenOption: unknown) => emit('update:modelValue', newChosenOption)"
     >
@@ -55,6 +55,7 @@ const nameKey = toRefs(props).nameKey
 <style scoped>
 .custom-select {
   position: relative;
+  width: 100%;
 }
 .custom-arrow {
   position: absolute;
