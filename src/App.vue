@@ -19,6 +19,7 @@
           <MiniWidgetContainer
             :container="widgetStore.currentMiniWidgetsProfile.containers[0]"
             :allow-editing="widgetStore.editingMode"
+            align="end"
           />
         </div>
         <div
@@ -31,16 +32,19 @@
         <MiniWidgetContainer
           :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
           :allow-editing="widgetStore.editingMode"
+          align="start"
         />
         <div />
         <MiniWidgetContainer
           :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
           :allow-editing="widgetStore.editingMode"
+          align="center"
         />
         <div />
         <MiniWidgetContainer
           :container="widgetStore.currentMiniWidgetsProfile.containers[3]"
           :allow-editing="widgetStore.editingMode"
+          align="end"
         />
       </div>
       <Dialog v-model:show="showMainMenu">
