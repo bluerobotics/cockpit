@@ -90,47 +90,49 @@
     </Transition>
   </teleport>
   <teleport to="body">
-    <div
-      v-if="showWidgetTrashArea"
-      ref="widgetTrashArea"
-      class="absolute w-64 h-64 -translate-x-32 -translate-y-32 top-1/2 left-1/2 bg-slate-500/50 z-[65] rounded-3xl flex items-center justify-center hover:bg-slate-200/50 transition-all"
-    >
-      <div class="relative w-full h-full">
-        <FontAwesomeIcon
-          icon="fa-solid fa-trash"
-          class="absolute h-24 transition-all -translate-x-12 -translate-y-12 top-1/2 left-1/2 text-slate-50/30"
-        />
-        <VueDraggable
-          v-model="trashList"
-          animation="150"
-          group="generalGroup"
-          class="flex flex-wrap items-center justify-center w-full h-full gap-2"
-        >
-          <div v-for="item in trashList" :key="item.hash">
-            <div class="pointer-events-none select-none">
-              <template v-if="item.component === MiniWidgetType.ArmerButton">
-                <ArmerButton :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
-                <BaseCommIndicator :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.DepthIndicator">
-                <DepthIndicator :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
-                <JoystickCommIndicator :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
-                <MiniVideoRecorder :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.ModeSelector">
-                <ModeSelector :options="item.options" />
-              </template>
+    <Transition>
+      <div
+        v-if="showWidgetTrashArea"
+        ref="widgetTrashArea"
+        class="absolute w-64 h-64 -translate-x-32 -translate-y-32 top-1/2 left-1/2 bg-slate-500/50 z-[65] rounded-3xl flex items-center justify-center hover:bg-slate-200/50 transition-all"
+      >
+        <div class="relative w-full h-full">
+          <FontAwesomeIcon
+            icon="fa-solid fa-trash"
+            class="absolute h-24 transition-all -translate-x-12 -translate-y-12 top-1/2 left-1/2 text-slate-50/30"
+          />
+          <VueDraggable
+            v-model="trashList"
+            animation="150"
+            group="generalGroup"
+            class="flex flex-wrap items-center justify-center w-full h-full gap-2"
+          >
+            <div v-for="item in trashList" :key="item.hash">
+              <div class="pointer-events-none select-none">
+                <template v-if="item.component === MiniWidgetType.ArmerButton">
+                  <ArmerButton :options="item.options" />
+                </template>
+                <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
+                  <BaseCommIndicator :options="item.options" />
+                </template>
+                <template v-if="item.component === MiniWidgetType.DepthIndicator">
+                  <DepthIndicator :options="item.options" />
+                </template>
+                <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
+                  <JoystickCommIndicator :options="item.options" />
+                </template>
+                <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
+                  <MiniVideoRecorder :options="item.options" />
+                </template>
+                <template v-if="item.component === MiniWidgetType.ModeSelector">
+                  <ModeSelector :options="item.options" />
+                </template>
+              </div>
             </div>
-          </div>
-        </VueDraggable>
+          </VueDraggable>
+        </div>
       </div>
-    </div>
+    </Transition>
   </teleport>
 </template>
 
