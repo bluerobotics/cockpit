@@ -93,6 +93,11 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
             component: MiniWidgetType.JoystickCommIndicator,
             options: {},
           },
+          {
+            hash: '7b31c4c4-e273-4f75-b0b7-d56263c4177d',
+            component: MiniWidgetType.BatteryIndicator,
+            options: {},
+          },
         ],
       },
       {
