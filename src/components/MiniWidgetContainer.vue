@@ -27,6 +27,9 @@
           <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
             <BaseCommIndicator :options="item.options" />
           </template>
+          <template v-if="item.component === MiniWidgetType.BatteryIndicator">
+            <BatteryIndicator :options="item.options" />
+          </template>
           <template v-if="item.component === MiniWidgetType.DepthIndicator">
             <DepthIndicator :options="item.options" />
           </template>
@@ -64,6 +67,9 @@
               </template>
               <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
                 <BaseCommIndicator :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.BatteryIndicator">
+                <BatteryIndicator :options="item.options" />
               </template>
               <template v-if="item.component === MiniWidgetType.DepthIndicator">
                 <DepthIndicator :options="item.options" />
@@ -115,6 +121,9 @@
                 <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
                   <BaseCommIndicator :options="item.options" />
                 </template>
+                <template v-if="item.component === MiniWidgetType.BatteryIndicator">
+                  <BatteryIndicator :options="item.options" />
+                </template>
                 <template v-if="item.component === MiniWidgetType.DepthIndicator">
                   <DepthIndicator :options="item.options" />
                 </template>
@@ -148,6 +157,7 @@ import { type MiniWidget, type MiniWidgetContainer, MiniWidgetType } from '@/typ
 
 import ArmerButton from './mini-widgets/ArmerButton.vue'
 import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
+import BatteryIndicator from './mini-widgets/BatteryIndicator.vue'
 import DepthIndicator from './mini-widgets/DepthIndicator.vue'
 import JoystickCommIndicator from './mini-widgets/JoystickCommIndicator.vue'
 import MiniVideoRecorder from './mini-widgets/MiniVideoRecorder.vue'
