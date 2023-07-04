@@ -1,6 +1,6 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 import { Alert, AlertLevel } from '../types/alert'
 
@@ -44,6 +44,36 @@ export const useAlertStore = defineStore('alert', () => {
         break
     }
   }
+
+  // Alert speech syntesis routine
+  const synth = window.speechSynthesis
+
+  // We need to cache these otherwise they get garbage collected...
+  const utterance_cache: SpeechSynthesisUtterance[] = []
+
+  /**
+   * Speaks a text out loud using the browsers TTS engine
+   * @param {string} text string
+   */
+  function speak(text: string): void {
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance_cache.push(utterance)
+    utterance.onend = function () {
+      delete utterance_cache[utterance_cache.indexOf(utterance)]
+    }
+    utterance.onerror = function (event) {
+      console.error(`SpeechSynthesisUtterance error: ${event.error}`)
+    }
+    synth.speak(utterance)
+  }
+
+  watch(alerts, () => {
+    const lastAlert = alerts.slice(-1)[0]
+    const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === lastAlert.level)
+    if (alertLevelEnabled === undefined || !enableVoiceAlerts.value || !alertLevelEnabled.enabled) return
+    speak(lastAlert.level)
+    speak(lastAlert.message)
+  })
 
   return { alerts, enableVoiceAlerts, enabledAlertLevels, sortedAlerts, pushAlert }
 })
