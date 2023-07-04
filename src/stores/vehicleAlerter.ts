@@ -12,6 +12,10 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
 
   const pitchDegreeLimit = ref(30)
 
+  watch(vehicleStore.statusText, () => {
+    alertStore.pushAlert(new Alert(vehicleStore.statusText.severity, `Status: ${vehicleStore.statusText.text}`))
+  })
+
   watch(
     () => vehicleStore.isArmed,
     (isArmedNow) => {
