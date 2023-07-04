@@ -2,9 +2,16 @@ import { v4 as uuid } from 'uuid'
 
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { round } from '@/libs/utils'
+import { AlertLevel } from '@/types/alert'
 import { type Waypoint, AltitudeReferenceType, WaypointType } from '@/types/mission'
 
-import { MavCmd, MavFrame, MAVLinkType, MavMissionType } from '../../connection/m2r/messages/mavlink2rest-enum'
+import {
+  MavCmd,
+  MavFrame,
+  MAVLinkType,
+  MavMissionType,
+  MavSeverity,
+} from '../../connection/m2r/messages/mavlink2rest-enum'
 
 const cockpitMavlinkFrameCorrespondency: [MavFrame, AltitudeReferenceType][] = [
   [MavFrame.MAV_FRAME_GLOBAL_INT, AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL],
@@ -60,4 +67,23 @@ export const convertMavlinkWaypointsToCockpit = (mavlinkWaypoints: Message.Missi
       type: mavlinkWaypoint.command.type === MavCmd.MAV_CMD_NAV_WAYPOINT ? WaypointType.PASS_BY : WaypointType.TAKEOFF,
     }
   })
+}
+
+export const alertLevelFromMavSeverity = {
+  // System is unusable. This is a "panic" condition.
+  [MavSeverity.MAV_SEVERITY_EMERGENCY]: AlertLevel.Critical,
+  // Action should be taken immediately. Indicates error in non-critical systems.
+  [MavSeverity.MAV_SEVERITY_ALERT]: AlertLevel.Critical,
+  // Action must be taken immediately. Indicates failure in a primary system.
+  [MavSeverity.MAV_SEVERITY_CRITICAL]: AlertLevel.Critical,
+  // Indicates an error in secondary/redundant systems.
+  [MavSeverity.MAV_SEVERITY_ERROR]: AlertLevel.Error,
+  // Indicates about a possible future error if this is not resolved within a given timeframe. Example would be a low battery warning.
+  [MavSeverity.MAV_SEVERITY_WARNING]: AlertLevel.Warning,
+  // An unusual event has occurred, though not an error condition. This should be investigated for the root cause.
+  [MavSeverity.MAV_SEVERITY_NOTICE]: AlertLevel.Warning,
+  // Normal operational messages. Useful for logging. No action is required for these messages.
+  [MavSeverity.MAV_SEVERITY_INFO]: AlertLevel.Info,
+  // Useful non-operational messages that can assist in debugging. These should not occur during normal operation.
+  [MavSeverity.MAV_SEVERITY_DEBUG]: AlertLevel.Info,
 }
