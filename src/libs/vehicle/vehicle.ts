@@ -10,6 +10,7 @@ import type {
   PageDescription,
   Parameter,
   PowerSupply,
+  StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
 
@@ -73,6 +74,7 @@ export abstract class AbstractVehicle<Modes> {
   onPosition = new Signal<Coordinates>()
   onPowerSupply = new Signal<PowerSupply>()
   onParameter = new Signal<Parameter>()
+  onStatusText = new Signal<StatusText>()
   onVelocity = new Signal<Velocity>()
 
   /**
@@ -105,6 +107,7 @@ export abstract class AbstractVehicle<Modes> {
     this.onPosition.register_caller(() => this.position())
     this.onPowerSupply.register_caller(() => this.powerSupply())
     this.onParameter.register_caller(() => this.lastParameter())
+    this.onStatusText.register_caller(() => this.statusText())
     this.onVelocity.register_caller(() => this.velocity())
   }
 
@@ -161,5 +164,6 @@ export abstract class AbstractVehicle<Modes> {
   abstract velocity(): Velocity
   abstract powerSupply(): PowerSupply
   abstract lastParameter(): Parameter
+  abstract statusText(): StatusText
   abstract setMode(mode: Modes): void
 }

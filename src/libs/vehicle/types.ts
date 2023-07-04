@@ -1,3 +1,5 @@
+import { AlertLevel } from '@/types/alert'
+
 /**
  * Dilution of precision
  */
@@ -164,6 +166,14 @@ export class Velocity {
   public constructor(init?: Partial<Velocity>) {
     Object.assign(this, init)
   }
+}
+
+/**
+ * Status message
+ */
+export class StatusText {
+  severity: AlertLevel
+  text: string | undefined
 }
 
 /**
