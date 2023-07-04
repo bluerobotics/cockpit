@@ -15,7 +15,7 @@
       :class="{ 'opacity-0 invisible': !isShowingExpandedAlerts }"
     >
       <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
-        <div class="flex items-center justify-between whitespace-nowrap">
+        <div v-tooltip.bottom="alert.message" class="flex items-center justify-between whitespace-nowrap">
           <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
           <p class="mx-1">
             {{ formattedDate(alert.time_created || new Date()) }}
