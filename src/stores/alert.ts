@@ -1,17 +1,17 @@
 import { defineStore } from 'pinia'
-import { type Ref, computed, ref } from 'vue'
+import { computed, reactive } from 'vue'
 
 import { Alert, AlertLevel } from '../types/alert'
 
 export const useAlertStore = defineStore('alert', () => {
-  const alerts: Ref<Alert[]> = ref([new Alert(AlertLevel.Success, 'Cockpit started')])
+  const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
 
   const sortedAlerts = computed(() => {
-    return alerts.value.sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
+    return alerts.sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
   })
 
   const pushAlert = (alert: Alert): void => {
-    alerts.value.push(alert)
+    alerts.push(alert)
 
     switch (alert.level) {
       case AlertLevel.Success:
