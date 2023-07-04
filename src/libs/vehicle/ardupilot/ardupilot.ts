@@ -19,7 +19,11 @@ import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
-import { convertCockpitWaypointsToMavlink, convertMavlinkWaypointsToCockpit } from '@/libs/vehicle/ardupilot/types'
+import {
+  alertLevelFromMavSeverity,
+  convertCockpitWaypointsToMavlink,
+  convertMavlinkWaypointsToCockpit,
+} from '@/libs/vehicle/ardupilot/types'
 import {
   type PageDescription,
   Altitude,
@@ -28,6 +32,7 @@ import {
   Coordinates,
   Parameter,
   PowerSupply,
+  StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
 import { ProtocolControllerState } from '@/types/joystick'
@@ -59,6 +64,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _lastParameter = new Parameter()
   _currentCockpitMissionItemsOnPlanning: Waypoint[] = []
   _currentMavlinkMissionItemsOnVehicle: Message.MissionItemInt[] = []
+  _statusText = new StatusText()
   _vehicleSpecificErrors = [0, 0, 0, 0]
 
   _messages: MAVLinkMessageDictionary = new Map()
@@ -241,6 +247,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         break
       }
 
+      case MAVLinkType.STATUSTEXT: {
+        const statusText = mavlink_message.message as Message.Statustext
+        this._statusText.text = statusText.text.filter((char) => char.toString() !== '\u0000').join('')
+        this._statusText.severity = alertLevelFromMavSeverity[statusText.severity.type]
+        this.onStatusText.emit()
+        break
+      }
+
       default:
         break
     }
@@ -357,6 +371,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   lastParameter(): Parameter {
     return this._lastParameter
+  }
+
+  /**
+   * Return status text information
+   * @returns {StatusText}
+   */
+  statusText(): StatusText {
+    return this._statusText
   }
 
   /**
