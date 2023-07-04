@@ -37,6 +37,7 @@ import { useDisplay } from 'vuetify'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
+import ConfigurationAlertsView from '../views/ConfigurationAlertsView.vue'
 import ConfigurationDevelopmentView from '../views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from '../views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '../views/ConfigurationJoystickView.vue'
@@ -56,6 +57,11 @@ const menus = [
     icon: 'mdi-controller',
     title: 'Joystick',
     component: ConfigurationJoystickView,
+  },
+  {
+    icon: 'mdi-bell-ring',
+    title: 'Alerts',
+    component: ConfigurationAlertsView,
   },
   {
     icon: 'mdi-dev-to',

@@ -1,3 +1,4 @@
+import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive } from 'vue'
 
@@ -5,6 +6,14 @@ import { Alert, AlertLevel } from '../types/alert'
 
 export const useAlertStore = defineStore('alert', () => {
   const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
+  const enableVoiceAlerts = useStorage('cockpit-enable-voice-alerts', true)
+  const enabledAlertLevels = useStorage('cockpit-enabled-alert-levels', [
+    { level: AlertLevel.Success, enabled: true },
+    { level: AlertLevel.Error, enabled: true },
+    { level: AlertLevel.Info, enabled: true },
+    { level: AlertLevel.Warning, enabled: true },
+    { level: AlertLevel.Critical, enabled: true },
+  ])
 
   const sortedAlerts = computed(() => {
     return alerts.sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
@@ -36,5 +45,5 @@ export const useAlertStore = defineStore('alert', () => {
     }
   }
 
-  return { alerts, sortedAlerts, pushAlert }
+  return { alerts, enableVoiceAlerts, enabledAlertLevels, sortedAlerts, pushAlert }
 })
