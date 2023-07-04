@@ -29,6 +29,7 @@ import type {
   PageDescription,
   Parameter,
   PowerSupply,
+  StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
@@ -122,6 +123,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const icon = ref<string | undefined>(undefined)
   const configurationPages = ref<PageDescription[]>([])
   const timeNow = useTimestamp({ interval: 100 })
+  const statusText: StatusText = reactive({} as StatusText)
 
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -270,6 +272,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onParameter.add((newParameter: Parameter) => {
       const newCurrentParameters = { ...currentParameters, ...{ [newParameter.name]: newParameter.value } }
       Object.assign(currentParameters, newCurrentParameters)
+    })
+    mainVehicle.value.onStatusText.add((newStatusText: StatusText) => {
+      Object.assign(statusText, newStatusText)
     })
     mainVehicle.value.onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.system_id != 1 || pack.header.component_id != 1) {
@@ -445,6 +450,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     coordinates,
     velocity,
     powerSupply,
+    statusText,
     mode,
     modes,
     isArmed,
