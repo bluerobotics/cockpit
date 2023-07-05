@@ -5,9 +5,10 @@
       class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap bg-slate-800/75"
     >
       <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100">{{ currentAlert.message }}</p>
-      <p class="mx-1 text-gray-100">
-        {{ formattedDate(currentAlert.time_created || new Date()) }}
-      </p>
+      <div class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100">
+        <p>{{ formattedDate(currentAlert.time_created || new Date()) }}</p>
+        <p>{{ currentAlert.level.toUpperCase() }}</p>
+      </div>
     </div>
     <div
       ref="expandedAlertsBar"
@@ -17,9 +18,12 @@
       <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
         <div v-tooltip.bottom="alert.message" class="flex items-center justify-between whitespace-nowrap">
           <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
-          <p class="mx-1">
-            {{ formattedDate(alert.time_created || new Date()) }}
-          </p>
+          <div
+            class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
+          >
+            <p>{{ formattedDate(alert.time_created || new Date()) }}</p>
+            <p>{{ alert.level.toUpperCase() }}</p>
+          </div>
         </div>
         <div v-if="i !== alertStore.alerts.length - 1" class="h-px mx-1 mb-2 bg-slate-50/30" />
       </div>
