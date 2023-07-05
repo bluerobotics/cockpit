@@ -6,7 +6,11 @@
       :class="{ 'pointer-events-none': disabled }"
       @update:model-value="(newChosenOption: unknown) => emit('update:modelValue', newChosenOption)"
     >
-      <option v-for="option in options" :key="(option as string)" :value="option">
+      <option
+        v-for="option in options"
+        :key="(option as string)"
+        :value="valueKey ? (option as Record<string, any>)[valueKey] : option"
+      >
         {{ nameKey !== undefined ? (option as any)[nameKey] : option }}
       </option>
     </select>
@@ -35,11 +39,16 @@ export interface Props {
    * To disable dropdown selection or not
    */
   nameKey?: string
+  /**
+   * To disable dropdown selection or not
+   */
+  valueKey?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   nameKey: undefined,
+  valueKey: undefined,
 })
 
 const emit = defineEmits<{
@@ -50,6 +59,7 @@ const options = toRefs(props).options
 const disabled = toRefs(props).disabled
 const modelValue = toRefs(props).modelValue
 const nameKey = toRefs(props).nameKey
+const valueKey = toRefs(props).valueKey
 </script>
 
 <style scoped>
