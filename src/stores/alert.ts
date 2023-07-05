@@ -7,6 +7,9 @@ import { Alert, AlertLevel } from '../types/alert'
 export const useAlertStore = defineStore('alert', () => {
   const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
   const enableVoiceAlerts = useStorage('cockpit-enable-voice-alerts', true)
+  // eslint-disable-next-line jsdoc/require-jsdoc
+  const availableAlertSpeechVoices = reactive<SpeechSynthesisVoice[]>([])
+  const selectedAlertSpeechVoiceName = useStorage<string | undefined>('cockpit-selected-alert-speech-voice', undefined)
   const enabledAlertLevels = useStorage('cockpit-enabled-alert-levels', [
     { level: AlertLevel.Success, enabled: true },
     { level: AlertLevel.Error, enabled: true },
@@ -51,12 +54,30 @@ export const useAlertStore = defineStore('alert', () => {
   // We need to cache these otherwise they get garbage collected...
   const utterance_cache: SpeechSynthesisUtterance[] = []
 
+  synth.onvoiceschanged = () => {
+    synth.getVoices().forEach((voice) => {
+      availableAlertSpeechVoices.push(voice)
+      if (selectedAlertSpeechVoiceName.value === undefined && voice.default) {
+        selectedAlertSpeechVoiceName.value = voice.name
+      }
+    })
+  }
+
+  const availableAlertSpeechVoiceNames = computed(() =>
+    availableAlertSpeechVoices.map((v) => ({ value: v.name, name: `${v.name} (${v.lang})` }))
+  )
+
   /**
    * Speaks a text out loud using the browsers TTS engine
    * @param {string} text string
    */
   function speak(text: string): void {
     const utterance = new SpeechSynthesisUtterance(text)
+    const voice = availableAlertSpeechVoices.find((v) => v.name === selectedAlertSpeechVoiceName.value)
+    if (voice) {
+      utterance.voice = voice
+      utterance.lang = voice.lang
+    }
     utterance_cache.push(utterance)
     utterance.onend = function () {
       delete utterance_cache[utterance_cache.indexOf(utterance)]
@@ -75,5 +96,13 @@ export const useAlertStore = defineStore('alert', () => {
     speak(lastAlert.message)
   })
 
-  return { alerts, enableVoiceAlerts, enabledAlertLevels, sortedAlerts, pushAlert }
+  return {
+    alerts,
+    enableVoiceAlerts,
+    enabledAlertLevels,
+    selectedAlertSpeechVoiceName,
+    availableAlertSpeechVoiceNames,
+    sortedAlerts,
+    pushAlert,
+  }
 })
