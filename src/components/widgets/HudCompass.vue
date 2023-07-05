@@ -109,10 +109,10 @@ onMounted(() => {
 })
 
 // Make canvas size follows window resizing
-const { width: windowWidth, height: windowHeight } = useWindowSize()
+const { width: windowWidth } = useWindowSize()
 const canvasSize = computed(() => ({
   width: widget.value.size.width * windowWidth.value,
-  height: widget.value.size.height * windowHeight.value,
+  height: 64,
 }))
 
 // The implementation below makes sure we don't update the Yaw value in the widget whenever
@@ -175,14 +175,14 @@ const renderCanvas = (): void => {
     const anglePositionX = halfCanvasWidth + angleOffsetX
     ctx.beginPath()
     ctx.moveTo(anglePositionX, refFontSize + stdPad + refTriangleSize + stdPad)
-    ctx.lineTo(anglePositionX, canvasSize.value.height - linesFontSize - stdPad - minorLinesGap)
+    ctx.lineTo(anglePositionX, halfCanvasHeight * 2 - linesFontSize - stdPad - minorLinesGap)
     ctx.lineWidth = '1'
 
     // For angles that are multiple of 15 degrees, use a bolder line and write angle down
     if (Number(angle) % 15 === 0) {
       ctx.lineWidth = '2'
-      ctx.lineTo(anglePositionX, canvasSize.value.height - linesFontSize - stdPad)
-      ctx.fillText(angleRender(Number(angle)), anglePositionX, canvasSize.value.height - stdPad)
+      ctx.lineTo(anglePositionX, halfCanvasHeight * 2 - linesFontSize - stdPad)
+      ctx.fillText(angleRender(Number(angle)), anglePositionX, halfCanvasHeight * 2 - stdPad)
     }
     ctx.stroke()
   }
@@ -210,7 +210,7 @@ const renderCanvas = (): void => {
   grH.addColorStop(0.7, colord(widget.value.options.hudColor).alpha(1).toRgbString())
   grH.addColorStop(0.82, colord(widget.value.options.hudColor).alpha(0).toRgbString())
   ctx.fillStyle = grH
-  ctx.fillRect(0, 0, canvasSize.value.width, canvasSize.value.height)
+  ctx.fillRect(0, 0, canvasSize.value.width, halfCanvasHeight * 2)
 }
 
 // Update the X position of each line in the render variables with GSAP to smooth the transition
