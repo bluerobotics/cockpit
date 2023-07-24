@@ -187,6 +187,17 @@ export class WebRTCManager {
     const [remoteStream] = event.streams
     this.mediaStream.value = remoteStream
 
+    // Assign 'motion' contentHint to media stream video tracks, so it performs better on low bandwith situations
+    // More on that here: https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrack/contentHint
+    const videoTracks = this.mediaStream.value.getVideoTracks().filter((t) => t.kind === 'video')
+    videoTracks.forEach((track) => {
+      if (!('contentHint' in track)) {
+        console.error('MediaStreamTrack contentHint attribute not supported.')
+        return
+      }
+      track.contentHint = 'motion'
+    })
+
     console.groupCollapsed('[WebRTC] Track added')
     console.debug('Event:', event)
     console.debug('Settings:', event.track.getSettings?.())
