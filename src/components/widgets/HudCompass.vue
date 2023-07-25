@@ -55,7 +55,7 @@ const props = defineProps<{
 const widget = toRefs(props).widget
 
 // Pre-defined HUD colors
-const colorSwatches = ref([['#FF2D2D'], ['#0ADB0ACC'], ['#FFFFFF']])
+const colorSwatches = ref([['#FFFFFF'], ['#FF2D2D'], ['#0ADB0ACC']])
 const showOptionsDialog = ref(false)
 
 // prettier-ignore
