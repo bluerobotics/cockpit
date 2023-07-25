@@ -10,7 +10,8 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
   const alertStore = useAlertStore()
 
   watch(vehicleStore.statusText, () => {
-    alertStore.pushAlert(new Alert(vehicleStore.statusText.severity, `Status: ${vehicleStore.statusText.text}`))
+    if (!vehicleStore.statusText.text) return
+    alertStore.pushAlert(new Alert(vehicleStore.statusText.severity, vehicleStore.statusText.text))
   })
 
   watch(
