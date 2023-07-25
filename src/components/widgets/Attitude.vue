@@ -113,7 +113,7 @@ const renderVars = reactive<RenderVariables>({
 })
 
 // Pre-defined HUD colors
-const colorSwatches = ref([['#FF2D2D'], ['#0ADB0ACC'], ['#FFFFFF']])
+const colorSwatches = ref([['#FFFFFF'], ['#FF2D2D'], ['#0ADB0ACC']])
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
