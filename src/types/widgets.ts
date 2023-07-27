@@ -8,7 +8,7 @@ export enum WidgetType {
   Attitude = 'Attitude',
   Compass = 'Compass',
   DepthHUD = 'DepthHUD',
-  HudCompass = 'HudCompass',
+  CompassHUD = 'CompassHUD',
   ImageViewer = 'ImageViewer',
   Indicators = 'Indicators',
   Joystick = 'Joystick',
