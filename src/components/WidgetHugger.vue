@@ -14,80 +14,24 @@
     <div ref="innerWidgetRef" class="innerWidget" :class="{ 'overflow-hidden': hideOverflow }">
       <slot></slot>
     </div>
-    <div ref="resizerRef" class="resizer" :class="{ draggingResizer, hoveringResizer, allowResizing }" />
-    <div v-if="hoveringWidgetOrOverlay || !notHoveringEditMenu" class="editing-buttons">
-      <v-menu v-if="allowResizing || allowOrdering || allowDeleting" location="top">
-        <template #activator="{ props: menuProps }">
-          <v-btn v-bind="menuProps" size="x-small" icon="mdi-pencil" color="white" />
-        </template>
-        <v-list ref="widgetEditMenu">
-          <v-btn
-            v-if="allowOrdering"
-            class="ma-1"
-            size="x-small"
-            icon="mdi-arrow-down-thick"
-            @click="emit('send-back')"
-          />
-          <v-btn
-            v-if="allowOrdering"
-            class="ma-1"
-            size="x-small"
-            icon="mdi-arrow-up-thick"
-            @click="emit('bring-front')"
-          />
-          <v-btn
-            v-if="allowResizing"
-            class="ma-1"
-            size="x-small"
-            :icon="isFullScreen ? 'mdi-window-restore' : 'mdi-overscan'"
-            @click="toggleFullScreen"
-          />
-          <v-btn
-            v-if="allowResizing"
-            class="ma-1"
-            size="x-small"
-            :icon="isFullWidth ? 'mdi-window-restore' : 'mdi-arrow-split-vertical'"
-            @click="toggleFullWidth"
-          />
-          <v-btn
-            v-if="allowResizing"
-            class="ma-1"
-            size="x-small"
-            :icon="isFullHeight ? 'mdi-window-restore' : 'mdi-arrow-split-horizontal'"
-            @click="toggleFullHeight"
-          />
-          <v-btn
-            v-if="allowDeleting"
-            class="ma-1"
-            size="x-small"
-            icon="mdi-close-thick"
-            @click="widgetDeleteDialog.reveal"
-          />
-        </v-list>
-      </v-menu>
-    </div>
-    <teleport to="body">
-      <v-dialog v-model="widgetDeleteDialogRevealed" width="auto">
-        <v-card class="pa-2">
-          <v-card-title>Delete widget?</v-card-title>
-          <v-card-actions>
-            <v-btn @click="widgetDeleteDialog.confirm">Yes</v-btn>
-            <v-btn @click="widgetDeleteDialog.cancel">Cancel</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </teleport>
+    <div class="resize-handle top-left" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
+    <div class="resize-handle top-right" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
+    <div class="resize-handle bottom-left" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
+    <div class="resize-handle bottom-right" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
+    <div class="resize-handle left" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
+    <div class="resize-handle right" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
+    <div class="resize-handle top" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
+    <div class="resize-handle bottom" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog, useElementBounding, useElementHover, useMouseInElement, useWindowSize } from '@vueuse/core'
-import { type Ref, computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { useElementBounding, useElementHover, useWindowSize } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, toRefs } from 'vue'
 
-import useDragInElement from '@/composables/drag'
-import { constrain, isEqual, round } from '@/libs/utils'
+import { constrain, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
-import type { Point2D, SizeRect2D } from '@/types/general'
+import type { Point2D } from '@/types/general'
 import type { Widget } from '@/types/widgets'
 
 /**
@@ -99,14 +43,6 @@ export interface Props {
    */
   widget: Widget
   /**
-   * To snap or not the widget to the grid while moving it
-   */
-  snapToGrid?: boolean
-  /**
-   * The distance between each grid line
-   */
-  gridInterval?: number
-  /**
    * To allow or not the widget to be moved
    */
   allowMoving?: boolean
@@ -114,14 +50,6 @@ export interface Props {
    * To allow or not the widget to be resized
    */
   allowResizing?: boolean
-  /**
-   * To allow or not the widget to be ordered
-   */
-  allowOrdering?: boolean
-  /**
-   * To allow or not the widget to be deleted
-   */
-  allowDeleting?: boolean
   /**
    * To hide or not content that overflows the widget area
    */
@@ -133,30 +61,16 @@ const props = withDefaults(defineProps<Props>(), {
   gridInterval: 0.02,
   allowMoving: true,
   allowResizing: true,
-  allowOrdering: true,
-  allowDeleting: true,
   hideOverflow: false,
 })
-
-const emit = defineEmits<{
-  (e: 'drop', position: Point2D): void
-  (e: 'send-back'): void
-  (e: 'bring-front'): void
-  (e: 'remove'): void
-}>()
 
 const widget = toRefs(props).widget
 const allowMoving = toRefs(props).allowMoving
 const allowResizing = toRefs(props).allowResizing
-const snapToGrid = toRefs(props).snapToGrid
-const gridInterval = toRefs(props).gridInterval
 const outerWidgetRef = ref<HTMLElement | undefined>()
 const innerWidgetRef = ref<HTMLElement | undefined>()
-const resizerRef = ref<HTMLElement>()
-const lastNonMaximizedX = ref(props.widget.position.x)
-const lastNonMaximizedY = ref(props.widget.position.y)
-const lastNonMaximizedWidth = ref(props.widget.size.width)
-const lastNonMaximizedHeight = ref(props.widget.size.height)
+const widgetLayer = computed(() => outerWidgetRef.value?.parentElement)
+const widgetResizeHandles = computed(() => outerWidgetRef.value?.getElementsByClassName('resize-handle'))
 
 const devStore = useDevelopmentStore()
 
@@ -167,42 +81,120 @@ const hoveringOverlay = useElementHover(widgetOverlay)
 const hoveringWidgetItself = useElementHover(outerWidgetRef)
 const hoveringWidgetOrOverlay = computed(() => hoveringOverlay.value || hoveringWidgetItself.value)
 
-const widgetEditMenu = ref()
-const { isOutside: notHoveringEditMenu } = useMouseInElement(widgetEditMenu)
+const draggingWidget = ref(false)
+const isResizing = ref(false)
+const resizeHandle = ref<EventTarget | null>(null)
+const layerSize = computed(() => ({
+  width: widgetLayer.value?.getBoundingClientRect().width || 1,
+  height: widgetLayer.value?.getBoundingClientRect().height || 1,
+}))
+const initialMousePos = ref<Point2D | undefined>(undefined)
+const initialWidgetPos = ref(props.widget.position)
+const initialWidgetSize = ref(props.widget.size)
 
-const { position: widgetRawPosition, dragging: draggingWidget } = useDragInElement(
-  innerWidgetRef as Ref<HTMLElement>,
-  props.widget.position,
-  allowMoving,
-  snapToGrid,
-  gridInterval.value
-)
+const handleDragStart = (event: MouseEvent): void => {
+  if (!allowMoving.value || isResizing.value || event.button !== 0 || !outerWidgetRef.value) return
+  draggingWidget.value = true
+  initialMousePos.value = { x: event.clientX, y: event.clientY }
+  initialWidgetPos.value = widget.value.position
+  outerWidgetRef.value.style.cursor = 'grabbing'
+  event.stopPropagation()
+  event.preventDefault()
+}
 
-const {
-  position: resizerPosition,
-  dragging: draggingResizer,
-  hovering: hoveringResizer,
-} = useDragInElement(
-  resizerRef as Ref<HTMLElement>,
-  {
-    x: props.widget.position.x + props.widget.size.width,
-    y: props.widget.position.y + props.widget.size.height,
-  },
-  allowResizing,
-  snapToGrid,
-  gridInterval.value
-)
+const handleResizeStart = (event: MouseEvent): void => {
+  if (!allowResizing.value || draggingWidget.value || !outerWidgetRef.value) return
+  isResizing.value = true
+  resizeHandle.value = event.target
+  initialMousePos.value = { x: event.clientX, y: event.clientY }
+  initialWidgetPos.value = widget.value.position
+  initialWidgetSize.value = widget.value.size
+  event.stopPropagation()
+  event.preventDefault()
+}
+
+const handleDrag = (event: MouseEvent): void => {
+  if (!draggingWidget.value || !initialMousePos.value) return
+
+  const dx = (event.clientX - initialMousePos.value.x) / layerSize.value.width
+  const dy = (event.clientY - initialMousePos.value.y) / layerSize.value.height
+
+  widget.value.position = {
+    x: constrain(initialWidgetPos.value.x + dx, 0, 1 - widget.value.size.width),
+    y: constrain(initialWidgetPos.value.y + dy, 0, 1 - widget.value.size.height),
+  }
+}
+
+const handleResize = (event: MouseEvent): void => {
+  if (!isResizing.value || !initialMousePos.value || !resizeHandle.value) return
+
+  const dx = (event.clientX - initialMousePos.value.x) / layerSize.value.width
+  const dy = (event.clientY - initialMousePos.value.y) / layerSize.value.height
+
+  let newLeft = initialWidgetPos.value.x
+  let newTop = initialWidgetPos.value.y
+  let newWidth = initialWidgetSize.value.width
+  let newHeight = initialWidgetSize.value.height
+
+  if ((resizeHandle.value as HTMLElement).classList.contains('top-left')) {
+    newWidth -= dx
+    newHeight -= dy
+    newLeft += dx
+    newTop += dy
+  } else if ((resizeHandle.value as HTMLElement).classList.contains('top-right')) {
+    newWidth += dx
+    newHeight -= dy
+    newTop += dy
+  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom-left')) {
+    newWidth -= dx
+    newHeight += dy
+    newLeft += dx
+  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom-right')) {
+    newWidth += dx
+    newHeight += dy
+  } else if ((resizeHandle.value as HTMLElement).classList.contains('left')) {
+    newWidth -= dx
+    newLeft += dx
+  } else if ((resizeHandle.value as HTMLElement).classList.contains('right')) {
+    newWidth += dx
+  } else if ((resizeHandle.value as HTMLElement).classList.contains('top')) {
+    newHeight -= dy
+    newTop += dy
+  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom')) {
+    newHeight += dy
+  }
+
+  widget.value.position = {
+    x: constrain(newLeft, 0, 1 - widget.value.size.width),
+    y: constrain(newTop, 0, 1 - widget.value.size.height),
+  }
+  widget.value.size = {
+    width: constrain(newWidth, 0.01, 1),
+    height: constrain(newHeight, 0.01, 1),
+  }
+}
+
+const handleEnd = (): void => {
+  if (!outerWidgetRef.value) return
+  if (draggingWidget.value) {
+    draggingWidget.value = false
+    outerWidgetRef.value.style.cursor = 'grab'
+  } else if (isResizing.value) {
+    isResizing.value = false
+    resizeHandle.value = null
+  }
+}
 
 const resizeWidgetToMinimalSize = (): void => {
   let stillAutoResizing = false
   if (innerWidgetRef.value === undefined) return
   const { clientHeight, clientWidth, scrollWidth, scrollHeight } = innerWidgetRef.value
   if (scrollWidth > 1.05 * clientWidth) {
-    widgetFinalSize.value.width = (1.1 * scrollWidth) / windowWidth.value
+    widget.value.size.width = (1.1 * scrollWidth) / windowWidth.value
     stillAutoResizing = true
   }
   if (scrollHeight > 1.05 * clientHeight) {
-    widgetFinalSize.value.height = (1.1 * scrollHeight) / windowHeight.value
+    widget.value.size.height = (1.1 * scrollHeight) / windowHeight.value
     stillAutoResizing = true
   }
 
@@ -215,6 +207,24 @@ onMounted(async () => {
   }
   makeWidgetRespectWalls()
   widget.value.managerVars.timesMounted += 1
+
+  if (widgetResizeHandles.value) {
+    for (var i = 0; i < widgetResizeHandles.value.length; i++) {
+      var handle = widgetResizeHandles.value[i]
+      // @ts-ignore
+      handle.addEventListener('mousedown', handleResizeStart)
+    }
+  }
+
+  outerWidgetRef.value?.addEventListener('mousedown', function (event: MouseEvent) {
+    if (event.button === 0) {
+      handleDragStart(event)
+    }
+  })
+
+  document.addEventListener('mousemove', handleDrag)
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', handleEnd)
 })
 
 const outerBounds = useElementBounding(outerWidgetRef)
@@ -222,173 +232,24 @@ const outerBounds = useElementBounding(outerWidgetRef)
 const makeWidgetRespectWalls = (): void => {
   for (const bound of [outerBounds.left.value, outerBounds.right.value]) {
     if (bound < 0 || bound > windowWidth.value) {
-      widgetFinalPosition.value.x = 1 - widgetFinalSize.value.width
+      widget.value.position.x = 1 - widget.value.size.width
     }
   }
   for (const bound of [outerBounds.top.value, outerBounds.bottom.value]) {
     if (bound < 0 || bound > windowHeight.value) {
-      widgetFinalPosition.value.y = 1 - widgetFinalSize.value.height
+      widget.value.position.y = 1 - widget.value.size.height
     }
   }
 }
 
-const widgetFinalPosition = ref(props.widget.position)
-watch(widgetRawPosition, (position) => {
-  if (innerWidgetRef.value === undefined || resizerRef.value === undefined) {
-    return
-  }
-  const widgetLimits = innerWidgetRef.value.getBoundingClientRect()
-  const maxX = 1 - widgetLimits.width / windowWidth.value
-  const maxY = 1 - widgetLimits.height / windowHeight.value
-  widgetFinalPosition.value = {
-    x: constrain(position.x, 0, maxX),
-    y: constrain(position.y, 0, maxY),
-  }
-})
-
-const widgetFinalSize = ref(props.widget.size)
-watch(resizerPosition, (position) => {
-  if (!outerWidgetRef.value || !innerWidgetRef.value) {
-    return
-  }
-  const widgetLimits = {
-    x: outerWidgetRef.value.getBoundingClientRect().x / windowWidth.value,
-    y: outerWidgetRef.value.getBoundingClientRect().y / windowHeight.value,
-  }
-
-  const oldSize = widgetFinalSize.value
-  widgetFinalSize.value = {
-    width: constrain(position.x - widgetLimits.x, 0.01, 1),
-    height: constrain(position.y - widgetLimits.y, 0.01, 1),
-  }
-
-  const growingWidth = widgetFinalSize.value.width > oldSize.width
-  const growingHeight = widgetFinalSize.value.height > oldSize.height
-
-  const { clientWidth, clientHeight, scrollWidth, scrollHeight } = innerWidgetRef.value
-
-  if (scrollHeight > clientHeight && !growingHeight) {
-    widgetFinalSize.value.height = oldSize.height
-  }
-
-  if (scrollWidth > clientWidth && !growingWidth) {
-    widgetFinalSize.value.width = oldSize.width
-  }
-})
-
-const fullScreenPosition = { x: 0, y: 0 }
-const fullScreenSize = { width: 1, height: 1 }
-const toggleFullScreen = (): void => {
-  if (!isFullScreen.value) {
-    widgetFinalPosition.value = fullScreenPosition
-    widgetFinalSize.value = fullScreenSize
-    return
-  }
-
-  if (lastNonMaximizedX.value === 0) {
-    lastNonMaximizedX.value = defaultRestoredPosition().x
-  }
-  if (lastNonMaximizedY.value === fullScreenPosition.y) {
-    lastNonMaximizedY.value = defaultRestoredPosition().y
-  }
-  if (lastNonMaximizedWidth.value === fullScreenSize.width) {
-    lastNonMaximizedX.value = defaultRestoredSize().width
-  }
-  if (lastNonMaximizedHeight.value === fullScreenSize.height) {
-    lastNonMaximizedHeight.value = defaultRestoredSize().height
-  }
-  widgetFinalPosition.value = {
-    x: lastNonMaximizedX.value,
-    y: lastNonMaximizedY.value,
-  }
-  widgetFinalSize.value = {
-    width: lastNonMaximizedWidth.value,
-    height: lastNonMaximizedHeight.value,
-  }
-}
-
-const toggleFullWidth = (): void => {
-  if (!isFullWidth.value) {
-    widgetFinalPosition.value.x = 0
-    widgetFinalSize.value.width = 1
-    return
-  }
-
-  // If last non-maximized X position and width are from a maximized state (X at 0% and
-  // width at 100%), use a pre-defined position/width so we can effectively get out of maximized
-  // state. This happens, for example, when the initial widget state is maximized.
-  if (lastNonMaximizedX.value === 0) {
-    lastNonMaximizedX.value = defaultRestoredPosition().x
-  }
-  if (lastNonMaximizedWidth.value === 1) {
-    lastNonMaximizedWidth.value = defaultRestoredSize().width
-  }
-
-  widgetFinalPosition.value.x = lastNonMaximizedX.value
-  widgetFinalSize.value.width = lastNonMaximizedWidth.value
-}
-
-const toggleFullHeight = (): void => {
-  if (!isFullHeight.value) {
-    widgetFinalPosition.value.y = 0
-    widgetFinalSize.value.height = 1
-    return
-  }
-
-  // If last non-maximized Y position and height are from a maximized state (Y at 0% and
-  // height at 100%), use a pre-defined position/height so we can effectively get out of maximized
-  // state. This happens, for example, when the initial widget state is maximized.
-  if (lastNonMaximizedY.value === 0) {
-    lastNonMaximizedY.value = defaultRestoredPosition().y
-  }
-  if (lastNonMaximizedHeight.value === 1) {
-    lastNonMaximizedHeight.value = defaultRestoredSize().height
-  }
-
-  widgetFinalPosition.value.y = lastNonMaximizedY.value
-  widgetFinalSize.value.height = lastNonMaximizedHeight.value
-}
-
-const defaultRestoredPosition = (): Point2D => ({ x: 0.15, y: 0.15 })
-const defaultRestoredSize = (): SizeRect2D => ({ width: 0.7, height: 0.7 })
-
-watch(widgetFinalPosition, () => {
-  if (!isFullScreenPosition.value) {
-    lastNonMaximizedX.value = widgetFinalPosition.value.x
-    lastNonMaximizedY.value = widgetFinalPosition.value.y
-  }
-  widget.value.position = widgetFinalPosition.value
-})
-watch(widgetFinalSize, () => {
-  if (!isFullScreenSize.value) {
-    lastNonMaximizedWidth.value = widgetFinalSize.value.width
-    lastNonMaximizedHeight.value = widgetFinalSize.value.height
-  }
-  widget.value.size = widgetFinalSize.value
-})
-
 const sizeStyle = computed(() => ({
-  width: `${100 * widgetFinalSize.value.width}%`,
-  height: `${100 * widgetFinalSize.value.height}%`,
+  width: `${100 * widget.value.size.width}%`,
+  height: `${100 * widget.value.size.height}%`,
 }))
 
-const isFullScreenPosition = computed(() => isEqual(widgetFinalPosition.value, fullScreenPosition))
-const isFullScreenSize = computed(() => isEqual(widgetFinalSize.value, fullScreenSize))
-const isFullScreen = computed(() => {
-  return isFullScreenPosition.value && isFullScreenSize.value
-})
-
-const isFullWidth = computed(() => {
-  return widgetFinalPosition.value.x === 0 && widgetFinalSize.value.width === 1
-})
-
-const isFullHeight = computed(() => {
-  return widgetFinalPosition.value.y === 0 && widgetFinalSize.value.height === 1
-})
-
 const positionStyle = computed(() => ({
-  left: `${100 * widgetFinalPosition.value.x}%`,
-  top: `${100 * widgetFinalPosition.value.y}%`,
+  left: `${100 * widget.value.position.x}%`,
+  top: `${100 * widget.value.position.y}%`,
 }))
 
 const overlayDisplayStyle = computed(() => {
@@ -410,10 +271,6 @@ const cursorStyle = computed(() => {
 })
 
 const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
-
-const widgetDeleteDialogRevealed = ref(false)
-const widgetDeleteDialog = useConfirmDialog(widgetDeleteDialogRevealed)
-widgetDeleteDialog.onConfirm(() => emit('remove'))
 
 const mouseOverWidgetStyle = computed(() => (hoveringWidgetOrOverlay.value ? 'block' : 'none'))
 const optionsBtnTopStyle = computed(() => `${48 - constrain(widget.value.position.y * windowHeight.value, 0, 48)}px`)
@@ -477,15 +334,6 @@ const optionsBtnTopStyle = computed(() => `${48 - constrain(widget.value.positio
   left: calc(50% - 16px);
   bottom: calc(50% - 16px);
 }
-.resizer.allowResizing {
-  width: 10px;
-  height: 10px;
-  cursor: se-resize;
-  user-select: none;
-  position: absolute;
-  left: 100%;
-  top: 100%;
-}
 .options-btn {
   display: none;
   position: absolute;
@@ -495,5 +343,72 @@ const optionsBtnTopStyle = computed(() => `${48 - constrain(widget.value.positio
   color: white;
   filter: drop-shadow(0.5px 0.5px 0.5px black);
   display: v-bind('mouseOverWidgetStyle');
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border: 1px solid black;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.resize-handle.hoveringWidgetOrOverlay.allowResizing {
+  opacity: 1;
+}
+
+.resize-handle.top-left.allowResizing {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.resize-handle.top-right.allowResizing {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.resize-handle.bottom-left.allowResizing {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.resize-handle.bottom-right.allowResizing {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+
+.resize-handle.left.allowResizing {
+  top: 50%;
+  left: -5px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.resize-handle.right.allowResizing {
+  top: 50%;
+  right: -5px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.resize-handle.top.allowResizing {
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+
+.resize-handle.bottom.allowResizing {
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
 }
 </style>

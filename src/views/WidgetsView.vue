@@ -1,5 +1,5 @@
 <template>
-  <SnappingGrid v-if="showGrid && store.editingMode" :grid-interval="gridInterval" class="snapping-grid" />
+  <SnappingGrid v-if="store.showGrid && store.editingMode" :grid-interval="store.gridInterval" class="snapping-grid" />
   <div class="widgets-view">
     <div v-for="layer in store.currentProfile.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
       <template v-for="widget in layer.widgets.slice().reverse()" :key="widget">
@@ -8,13 +8,8 @@
           :widget="widget"
           :allow-moving="store.editingMode"
           :allow-resizing="store.editingMode"
-          :allow-ordering="store.editingMode"
-          :allow-deleting="store.editingMode"
-          :snap-to-grid="showGrid"
-          :grid-interval="gridInterval"
-          @send-back="store.sendWidgetBack(widget)"
-          @bring-front="store.bringWidgetFront(widget)"
-          @remove="store.deleteWidget(widget)"
+          :snap-to-grid="store.showGrid"
+          :grid-interval="store.gridInterval"
         >
           <template v-if="widget.component === WidgetType.Attitude">
             <Attitude :widget="widget" />
@@ -83,9 +78,6 @@ import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 import VideoRecorder from '../components/widgets/VideoRecorder.vue'
 
 const store = useWidgetManagerStore()
-
-const showGrid = ref(true)
-const gridInterval = ref(0.01)
 
 // TODO: Make this work
 // This function allows us to load any component without declaring it in the template, just

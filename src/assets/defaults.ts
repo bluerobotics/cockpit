@@ -16,7 +16,13 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.DepthHUD,
             position: { x: 0.88, y: 0.23 },
             size: { width: 0.1, height: 0.62 },
-            managerVars: { timesMounted: 0 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
             options: {
               showDepthValue: true,
               hudColor: '#FFFFFF',
@@ -28,7 +34,13 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.Attitude,
             position: { x: 0.14, y: 0.2 },
             size: { width: 0.72, height: 0.6 },
-            managerVars: { timesMounted: 0 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
             options: {
               showCenterAim: true,
               showPitchLines: true,
@@ -44,7 +56,13 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.HudCompass,
             position: { x: 0.15, y: 0.84 },
             size: { width: 0.7, height: 0.065 },
-            managerVars: { timesMounted: 0 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
             options: {
               showYawValue: true,
               hudColor: '#FFF',
@@ -62,7 +80,13 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.VideoPlayer,
             position: { x: 0, y: 0 },
             size: { width: 1, height: 1 },
-            managerVars: { timesMounted: 0 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
             options: {
               videoFitStyle: 'cover',
               flipHorizontally: false,
