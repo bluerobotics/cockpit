@@ -367,7 +367,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   setInterval(() => {
     if (!currentControllerState.value || !currentProtocolMapping.value || controllerStore.joysticks.size === 0) return
     const newControllerState = new MavlinkControllerState(currentControllerState.value, currentProtocolMapping.value)
-    sendManualControl(newControllerState)
+    if (controllerStore.enableForwarding) {
+      sendManualControl(newControllerState)
+    }
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
 
