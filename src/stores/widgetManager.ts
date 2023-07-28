@@ -1,17 +1,23 @@
 import '@/libs/cosmos'
 
 import { useStorage } from '@vueuse/core'
+import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
+import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
 import { computed, ref } from 'vue'
 
 import { widgetProfile, widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
-import type { Layer, Profile, Widget, WidgetType } from '@/types/widgets'
+import { isEqual } from '@/libs/utils'
+import type { Point2D, SizeRect2D } from '@/types/general'
+import { type Layer, type Profile, type Widget, type WidgetType, isLayer, isProfile } from '@/types/widgets'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
+  const showGrid = ref(true)
+  const gridInterval = ref(0.01)
   const currentProfile = useStorage('cockpit-current-profile', widgetProfile)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile', miniWidgetsProfile)
   const savedProfiles = useStorage('cockpit-saved-profiles', widgetProfiles)
@@ -178,7 +184,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       position: { x: 0.4, y: 0.32 },
       size: { width: 0.2, height: 0.36 },
       options: {},
-      managerVars: { timesMounted: 0 },
+      managerVars: {
+        timesMounted: 0,
+        lastNonMaximizedX: 0.4,
+        lastNonMaximizedY: 0.32,
+        lastNonMaximizedWidth: 0.2,
+        lastNonMaximizedHeight: 0.36,
+      },
     })
   }
 
@@ -192,30 +204,52 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     layer.widgets.splice(index, 1)
   }
 
-  /**
-   * Send widget to the beggining (front) of the widgets list
-   * @param { Widget } widget - Widget
-   */
-  function bringWidgetFront(widget: Widget): void {
-    const layer = layerFromWidget(widget)
-    const index = layer.widgets.indexOf(widget)
-    layer.widgets.splice(index, 1)
-    layer.widgets.unshift(widget)
+  const fullScreenPosition = { x: 0, y: 0 }
+  const fullScreenSize = { width: 1, height: 1 }
+  const defaultRestoredPosition: Point2D = { x: 0.15, y: 0.15 }
+  const defaultRestoredSize: SizeRect2D = { width: 0.7, height: 0.7 }
+
+  const toggleFullScreen = (widget: Widget): void => {
+    if (!isFullScreen(widget)) {
+      widget.managerVars.lastNonMaximizedX = widget.position.x
+      widget.managerVars.lastNonMaximizedY = widget.position.y
+      widget.managerVars.lastNonMaximizedWidth = widget.size.width
+      widget.managerVars.lastNonMaximizedHeight = widget.size.height
+      widget.position = fullScreenPosition
+      widget.size = fullScreenSize
+      return
+    }
+
+    if (widget.managerVars.lastNonMaximizedX === 0) {
+      widget.managerVars.lastNonMaximizedX = defaultRestoredPosition.x
+    }
+    if (widget.managerVars.lastNonMaximizedY === fullScreenPosition.y) {
+      widget.managerVars.lastNonMaximizedY = defaultRestoredPosition.y
+    }
+    if (widget.managerVars.lastNonMaximizedWidth === fullScreenSize.width) {
+      widget.managerVars.lastNonMaximizedWidth = defaultRestoredSize.width
+    }
+    if (widget.managerVars.lastNonMaximizedHeight === fullScreenSize.height) {
+      widget.managerVars.lastNonMaximizedHeight = defaultRestoredSize.height
+    }
+    widget.position = {
+      x: widget.managerVars.lastNonMaximizedX,
+      y: widget.managerVars.lastNonMaximizedY,
+    }
+    widget.size = {
+      width: widget.managerVars.lastNonMaximizedWidth,
+      height: widget.managerVars.lastNonMaximizedHeight,
+    }
   }
 
-  /**
-   * Send widget to the end (back) of the widgets list
-   * @param { Widget } widget - Widget
-   */
-  function sendWidgetBack(widget: Widget): void {
-    const layer = layerFromWidget(widget)
-    const index = layer.widgets.indexOf(widget)
-    layer.widgets.splice(index, 1)
-    layer.widgets.push(widget)
+  const isFullScreen = (widget: Widget): boolean => {
+    return isEqual(widget.position, fullScreenPosition) && isEqual(widget.size, fullScreenSize)
   }
 
   return {
     editingMode,
+    showGrid,
+    gridInterval,
     currentProfile,
     currentLayer,
     currentMiniWidgetsProfile,
@@ -234,7 +268,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     importLayer,
     addWidget,
     deleteWidget,
-    bringWidgetFront,
-    sendWidgetBack,
+    toggleFullScreen,
+    isFullScreen,
   }
 })

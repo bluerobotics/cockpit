@@ -53,6 +53,22 @@ export type Widget = {
      * Number of times the widget was mounted
      */
     timesMounted: number
+    /**
+     * Last widget X position when it wasn't maximized
+     */
+    lastNonMaximizedX: number
+    /**
+     * Last widget Y position when it wasn't maximized
+     */
+    lastNonMaximizedY: number
+    /**
+     * Last widget width when it wasn't maximized
+     */
+    lastNonMaximizedWidth: number
+    /**
+     * Last widget height when it wasn't maximized
+     */
+    lastNonMaximizedHeight: number
   }
 }
 
