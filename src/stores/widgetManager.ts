@@ -79,6 +79,28 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     savedProfiles.value = widgetProfiles
   }
 
+  const exportCurrentProfile = (): void => {
+    const blob = new Blob([JSON.stringify(currentProfile.value)], { type: 'text/plain;charset=utf-8' })
+    saveAs(blob, `cockpit-widget-profile.json`)
+  }
+
+  const importProfile = (e: Event): void => {
+    const reader = new FileReader()
+    reader.onload = (event: Event) => {
+      // @ts-ignore: We know the event type and need refactor of the event typing
+      const contents = event.target.result
+      const maybeProfile = JSON.parse(contents)
+      if (!isProfile(maybeProfile)) {
+        Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
+        return
+      }
+      const newProfile = saveProfile(maybeProfile)
+      loadProfile(newProfile)
+    }
+    // @ts-ignore: We know the event type and need refactor of the event typing
+    reader.readAsText(e.target.files[0])
+  }
+
   /**
    * Adds new layer to the store, with a randomly generated hash with UUID4 pattern
    */
@@ -199,6 +221,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     saveProfile,
     resetCurrentProfile,
     resetSavedProfiles,
+    exportCurrentProfile,
+    importProfile,
     addLayer,
     deleteLayer,
     renameLayer,
