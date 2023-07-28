@@ -1,15 +1,13 @@
 <template>
   <SnappingGrid v-if="store.showGrid && store.editingMode" :grid-interval="store.gridInterval" class="snapping-grid" />
   <div class="widgets-view">
-    <div v-for="layer in store.currentProfile.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
-      <template v-for="widget in layer.widgets.slice().reverse()" :key="widget">
+    <div v-for="view in store.currentProfile.views.slice().reverse()" :key="view.hash" class="widget-view">
+      <template v-for="widget in view.widgets.slice().reverse()" :key="widget">
         <WidgetHugger
           v-if="Object.values(WidgetType).includes(widget.component)"
           :widget="widget"
           :allow-moving="store.editingMode"
           :allow-resizing="store.editingMode"
-          :snap-to-grid="store.showGrid"
-          :grid-interval="store.gridInterval"
         >
           <template v-if="widget.component === WidgetType.Attitude">
             <Attitude :widget="widget" />
@@ -103,7 +101,7 @@ const store = useWidgetManagerStore()
 .snapping-grid {
   z-index: 40;
 }
-.widget-layer {
+.widget-view {
   position: absolute;
   width: 100%;
   height: 100%;

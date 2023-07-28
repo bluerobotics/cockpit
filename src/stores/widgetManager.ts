@@ -12,32 +12,32 @@ import { miniWidgetsProfile } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
 import { isEqual } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
-import { type Layer, type Profile, type Widget, type WidgetType, isLayer, isProfile } from '@/types/widgets'
+import { type Profile, type View, type Widget, type WidgetType, isProfile, isView } from '@/types/widgets'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
-  const currentProfile = useStorage('cockpit-current-profile', widgetProfile)
+  const currentProfile = useStorage('cockpit-current-profile-v2', widgetProfile)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile', miniWidgetsProfile)
-  const savedProfiles = useStorage('cockpit-saved-profiles', widgetProfiles)
+  const savedProfiles = useStorage('cockpit-saved-profiles-v2', widgetProfiles)
 
-  const currentLayer = computed(() => currentProfile.value.layers[0])
+  const currentView = computed(() => currentProfile.value.views[0])
 
   /**
-   * Get layer where given widget is at
-   * @returns { Layer }
+   * Get view where given widget is at
+   * @returns { View }
    * @param { Widget } widget - Widget
    */
-  function layerFromWidget(widget: Widget): Layer {
-    for (const layer of currentProfile.value.layers) {
-      for (const itWidget of layer.widgets) {
+  function viewFromWidget(widget: Widget): View {
+    for (const view of currentProfile.value.views) {
+      for (const itWidget of view.widgets) {
         if (itWidget === widget) {
-          return layer
+          return view
         }
       }
     }
-    throw new Error(`No layer found for widget with hash ${widget.hash}`)
+    throw new Error(`No view found for widget with hash ${widget.hash}`)
   }
 
   /**
@@ -110,74 +110,74 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   /**
-   * Adds new layer to the store, with a randomly generated hash with UUID4 pattern
+   * Adds new view to the store, with a randomly generated hash with UUID4 pattern
    */
-  function addLayer(): void {
-    currentProfile.value.layers.unshift({
+  function addView(): void {
+    currentProfile.value.views.unshift({
       hash: uuid4(),
-      name: `Layer ${Words.animalsOcean.random()}`,
+      name: `${Words.animalsOcean.random()} view`,
       widgets: [],
     })
   }
 
   /**
-   * Deletes a layer from the store
-   * @param { Layer } layer - Layer
+   * Deletes a view from the store
+   * @param { View } view - View
    */
-  function deleteLayer(layer: Layer): void {
-    const index = currentProfile.value.layers.indexOf(layer)
-    currentProfile.value.layers.splice(index, 1)
+  function deleteView(view: View): void {
+    const index = currentProfile.value.views.indexOf(view)
+    currentProfile.value.views.splice(index, 1)
   }
 
   /**
-   * Rename a layer
-   * @param { Layer } layer - Layer
-   * @param { string } name - New name of the layer
+   * Rename a view
+   * @param { View } view - View
+   * @param { string } name - New name of the view
    */
-  function renameLayer(layer: Layer, name: string): void {
-    const index = currentProfile.value.layers.indexOf(layer)
-    currentProfile.value.layers[index].name = name
+  function renameView(view: View, name: string): void {
+    const index = currentProfile.value.views.indexOf(view)
+    currentProfile.value.views[index].name = name
   }
 
   /**
-   * Select a layer to be used
-   * @param { Layer } layer - Layer
+   * Select a view to be used
+   * @param { View } view - View
    */
-  const selectLayer = (layer: Layer): void => {
-    const index = currentProfile.value.layers.indexOf(layer)
-    currentProfile.value.layers.splice(index, 1)
-    currentProfile.value.layers.unshift(layer)
+  const selectView = (view: View): void => {
+    const index = currentProfile.value.views.indexOf(view)
+    currentProfile.value.views.splice(index, 1)
+    currentProfile.value.views.unshift(view)
   }
 
-  const exportCurrentLayer = (): void => {
-    const blob = new Blob([JSON.stringify(currentLayer.value)], { type: 'text/plain;charset=utf-8' })
-    saveAs(blob, `cockpit-widget-layer.json`)
+  const exportCurrentView = (): void => {
+    const blob = new Blob([JSON.stringify(currentView.value)], { type: 'text/plain;charset=utf-8' })
+    saveAs(blob, `cockpit-widget-view.json`)
   }
 
-  const importLayer = (e: Event): void => {
+  const importView = (e: Event): void => {
     const reader = new FileReader()
     reader.onload = (event: Event) => {
       // @ts-ignore: We know the event type and need refactor of the event typing
       const contents = event.target.result
-      const maybeLayer = JSON.parse(contents)
-      if (!isLayer(maybeLayer)) {
-        Swal.fire({ icon: 'error', text: 'Invalid layer file.', timer: 3000 })
+      const maybeView = JSON.parse(contents)
+      if (!isView(maybeView)) {
+        Swal.fire({ icon: 'error', text: 'Invalid view file.', timer: 3000 })
         return
       }
-      currentProfile.value.layers.unshift(maybeLayer)
+      currentProfile.value.views.unshift(maybeView)
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
     reader.readAsText(e.target.files[0])
   }
 
   /**
-   * Add widget with given type to given layer
+   * Add widget with given type to given view
    * @param { WidgetType } widgetType - Type of the widget
-   * @param { Layer } layer - Layer
+   * @param { View } view - View
    */
-  function addWidget(widgetType: WidgetType, layer: Layer): void {
+  function addWidget(widgetType: WidgetType, view: View): void {
     const widgetHash = uuid4()
-    layer.widgets.unshift({
+    view.widgets.unshift({
       hash: widgetHash,
       name: widgetType,
       component: widgetType,
@@ -199,9 +199,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Widget } widget - Widget
    */
   function deleteWidget(widget: Widget): void {
-    const layer = layerFromWidget(widget)
-    const index = layer.widgets.indexOf(widget)
-    layer.widgets.splice(index, 1)
+    const view = viewFromWidget(widget)
+    const index = view.widgets.indexOf(widget)
+    view.widgets.splice(index, 1)
   }
 
   const fullScreenPosition = { x: 0, y: 0 }
@@ -251,7 +251,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     showGrid,
     gridInterval,
     currentProfile,
-    currentLayer,
+    currentView,
     currentMiniWidgetsProfile,
     savedProfiles,
     loadProfile,
@@ -260,12 +260,12 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     resetSavedProfiles,
     exportCurrentProfile,
     importProfile,
-    addLayer,
-    deleteLayer,
-    renameLayer,
-    selectLayer,
-    exportCurrentLayer,
-    importLayer,
+    addView,
+    deleteView,
+    renameView,
+    selectView,
+    exportCurrentView,
+    importView,
     addWidget,
     deleteWidget,
     toggleFullScreen,
