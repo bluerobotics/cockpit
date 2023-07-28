@@ -17,6 +17,7 @@ export const useControllerStore = defineStore('controller', () => {
   const availableAxes = allAvailableAxes
   const availableButtons = allAvailableButtons
   const allPrettyButtonNames = ref<InputWithPrettyName[]>([])
+  const enableForwarding = ref(true)
 
   const registerControllerUpdateCallback = (callback: controllerUpdateCallback): void => {
     updateCallbacks.value.push(callback)
@@ -65,6 +66,7 @@ export const useControllerStore = defineStore('controller', () => {
 
   return {
     registerControllerUpdateCallback,
+    enableForwarding,
     joysticks,
     protocolMapping,
     cockpitStdMappings,
