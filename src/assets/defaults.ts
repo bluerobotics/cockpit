@@ -68,12 +68,6 @@ export const widgetProfiles: { [key: string]: Profile } = {
               hudColor: '#FFF',
             },
           },
-        ],
-      },
-      {
-        hash: 'ba3ab6ab-7f34-49be-90e1-63e5b2c3845a',
-        name: 'Main video layer',
-        widgets: [
           {
             hash: '6439e791-3031-4928-aff2-8bd9af713798',
             name: 'Main video widget',
