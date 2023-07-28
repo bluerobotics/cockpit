@@ -1,6 +1,5 @@
 <template>
   <SnappingGrid v-if="showGrid && store.editingMode" :grid-interval="gridInterval" class="snapping-grid" />
-  <EditMenu v-model:edit-mode="store.editingMode" v-model:show-grid="showGrid" />
   <div class="widgets-view">
     <div v-for="layer in store.currentProfile.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
       <template v-for="widget in layer.widgets.slice().reverse()" :key="widget">
@@ -57,22 +56,18 @@
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
       </template>
+      <div class="w-full h-full bg-slate-500" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  // type AsyncComponentLoader,
-  // defineAsyncComponent,
-  ref,
-} from 'vue'
+// import { type AsyncComponentLoader, defineAsyncComponent } from 'vue'
 
 import ImageView from '@/components/widgets/ImageView.vue'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
 
-import EditMenu from '../components/EditMenu.vue'
 import SnappingGrid from '../components/SnappingGrid.vue'
 import WidgetHugger from '../components/WidgetHugger.vue'
 import Attitude from '../components/widgets/Attitude.vue'
@@ -105,16 +100,21 @@ const gridInterval = ref(0.01)
 
 <style scoped>
 .widgets-view {
-  min-height: 100vh;
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 .snapping-grid {
   z-index: 40;
 }
 .widget-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;

@@ -1,141 +1,129 @@
 <template>
-  <div v-if="editMode" class="w-full h-full pointer-events-none position-absolute editing-mode-overlay" />
+  <div class="w-full h-full bg-slate-600 z-[60]"></div>
   <div
-    ref="editMenu"
-    class="flex flex-col items-center justify-between h-full px-2 py-6 m-0 overflow-y-auto text-white nav-drawer"
+    class="relative flex flex-col justify-between px-1 text-white edit-panel left-panel"
+    :class="{ active: editMode }"
   >
-    <p class="my-1 text-xl font-semibold">Edit menu</p>
-    <div class="w-11/12 h-px my-1 bg-white" />
-    <v-expansion-panels v-model="openPanels">
-      <v-expansion-panel>
-        <v-expansion-panel-title>Current profile: {{ store.currentProfile.name }} </v-expansion-panel-title>
-        <v-expansion-panel-text class="pa-2">
-          <div v-if="selectedLayer !== undefined">
-            <p class="mt-4">Layer</p>
-            <div class="flex items-center m-2">
-              <v-select
-                v-model="selectedLayer"
-                :items="availableLayers"
-                density="compact"
-                variant="outlined"
-                no-data-text="No layers available."
-                hide-details
-              />
-              <v-btn class="ml-2" icon="mdi-plus" size="small" variant="outlined" rounded="lg" @click="addLayer" />
-              <v-btn
-                class="ml-2"
-                icon="mdi-delete"
-                size="small"
-                variant="outlined"
-                rounded="lg"
-                @click="layerDeleteDialog.reveal"
-              />
-            </div>
-            <p class="mt-4">Widgets</p>
-            <template v-if="selectedLayer.widgets.length > 0">
-              <li v-for="widget in selectedLayer.widgets" :key="widget.hash" class="pl-6">
-                {{ widget.component }}
-              </li>
-            </template>
-            <p v-else class="pl-6">No widgets in layer.</p>
-            <div class="flex items-center m-3">
-              <v-select
-                v-model="selectedWidgetType"
-                :items="availableWidgetTypes"
-                density="compact"
-                variant="outlined"
-                label="Widget type"
-                hide-details
-              />
-              <v-btn
-                class="ml-2"
-                icon="mdi-plus"
-                size="small"
-                rounded="lg"
-                :disabled="selectedWidgetType === undefined"
-                variant="outlined"
-                @click="addWidget"
-              />
-            </div>
-          </div>
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels>
-    <div class="flex items-center w-10/12 my-2 justify-evenly">
-      <v-select
-        v-model="store.currentProfile"
-        :items="Object.values(store.savedProfiles)"
-        item-title="name"
-        class="w-10/12 m-1 max-h-16"
-        density="compact"
-        variant="outlined"
-        label="Layer profiles"
-        no-data-text="No layer profiles"
-        hide-details
-        return-object
-      />
-      <v-btn
-        class="ml-2"
-        icon="mdi-plus"
-        size="small"
-        variant="outlined"
-        rounded="lg"
-        @click="profileCreationDialog.reveal"
-      />
-    </div>
-    <v-btn class="m-1 text-white" @click="profileResetDialog.reveal"> Reset profiles </v-btn>
-    <v-btn class="m-1 text-white" @click="exportCurrentProfile">Export current profile</v-btn>
-    <v-btn class="m-1 text-white">
-      <label class="flex items-center justify-center h-8 cursor-pointer">
-        <input type="file" accept="application/json" hidden @change="(e: Event) => importProfile(e)" />
-        Import profile
-      </label>
-    </v-btn>
-    <v-switch
-      class="flex items-center justify-center m-1 max-h-8"
-      label="Grid"
-      :model-value="showGrid"
-      hide-details
-      @change="emit('update:showGrid', !showGrid)"
+    <div
+      class="absolute text-2xl transition-all cursor-pointer text-slate-500 aspect-square mdi mdi-close hover:text-slate-300 left-2 top-2"
+      @click="emit('update:editMode', false)"
     />
-    <v-btn class="w-10/12" variant="outlined" @click="emit('update:editMode', false)">Exit edit mode</v-btn>
+    <p class="flex items-center justify-center mt-10 text-xl font-semibold select-none">Edit interface</p>
+    <div class="w-full h-px my-2 sm bg-slate-800/40" />
+    <div ref="viewsContainer" class="flex flex-col items-center justify-between w-full shrink overflow-y-clip h-[30%]">
+      <p class="mb-3 text-lg font-semibold select-none">Views</p>
+      <div class="w-full px-2 overflow-x-hidden overflow-y-auto">
+        <TransitionGroup name="fade-and-suffle">
+          <div
+            v-for="layer in store.currentProfile.layers"
+            :key="layer.hash"
+            class="flex items-center justify-between w-full my-1"
+          >
+            <Button class="flex items-center justify-center w-full overflow-auto" @click="store.selectLayer(layer)">
+              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ layer.name }}</p>
+            </Button>
+            <Button
+              class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-pencil hover:bg-slate-500"
+              @click=";[(layerBeingRenamed = layer), (newLayerName = layer.name), (layerRenameDialogRevealed = true)]"
+            />
+            <Button
+              class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
+              @click="store.deleteLayer(layer)"
+            />
+          </div>
+        </TransitionGroup>
+      </div>
+      <div class="grow" />
+      <div class="w-full px-2 mt-3">
+        <Button
+          class="flex items-center justify-center w-full h-8 bg-slate-700 mdi mdi-plus hover:bg-slate-500"
+          @click=";[store.addLayer(), (layerBeingRenamed = store.currentLayer), (layerRenameDialogRevealed = true)]"
+        />
+      </div>
+    </div>
+    <div class="w-full h-px my-2 sm bg-slate-800/40" />
+    <div
+      ref="currentWidgetsContainer"
+      class="flex flex-col items-center justify-between w-full overflow-y-clip h-[35%]"
+    >
+      <p class="text-lg font-semibold select-none">Current widgets</p>
+      <div class="grow" />
+      <VueDraggable
+        v-model="store.currentProfile.layers[0].widgets"
+        class="flex flex-col items-center w-full px-2 overflow-x-hidden overflow-y-auto grow"
+        animation="150"
+        group="regularWidgetsGroup"
+      >
+        <TransitionGroup name="fade">
+          <div
+            v-for="widget in store.currentProfile.layers[0].widgets"
+            :key="widget.hash"
+            class="flex items-center justify-between w-full my-1"
+          >
+            <Button class="flex items-center justify-center w-full overflow-auto cursor-grab active:cursor-grabbing">
+              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ widget.name }}</p>
+            </Button>
+            <Button
+              class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-fullscreen hover:bg-slate-500"
+              :class="{ 'mdi-fullscreen-exit': store.isFullScreen(widget) }"
+              @click="store.toggleFullScreen(widget)"
+            />
+            <Button
+              class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
+              @click="store.deleteWidget(widget)"
+            />
+          </div>
+        </TransitionGroup>
+      </VueDraggable>
+      <div class="grow" />
+    </div>
+    <div class="w-full h-px my-2 sm bg-slate-800/40" />
+    <div ref="managementContainer" class="flex flex-col items-center justify-center w-full px-2 shrink">
+      <Button class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500">
+        <label class="flex items-center justify-center h-8 overflow-auto cursor-pointer">
+          <input type="file" accept="application/json" hidden @change="(e: Event) => store.importLayer(e)" />
+          <p class="overflow-hidden text-ellipsis whitespace-nowrap">Import view</p>
+        </label>
+      </Button>
+      <Button
+        class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500"
+        @click="store.exportCurrentLayer"
+      >
+        <p class="overflow-hidden text-ellipsis whitespace-nowrap">Export current view</p>
+      </Button>
+      <div />
+    </div>
+    <div class="w-full h-px mt-4 bg-slate-800/40" />
+  </div>
+  <div class="flex items-center justify-between text-white edit-panel middle-panel" :class="{ active: editMode }"></div>
+  <div class="flex items-center justify-between py-2 edit-panel bottom-panel" :class="{ active: editMode }">
+    <div class="w-px h-full mr-2 bg-slate-800/40" />
+    <div
+      ref="availableWidgetsContainer"
+      class="flex items-center justify-between w-full h-full overflow-x-auto text-white aspect-square"
+    >
+      <div
+        v-for="widgetType in availableWidgetTypes"
+        :key="widgetType"
+        class="flex flex-col items-center justify-center p-2 mx-3 rounded-md bg-slate-500 h-5/6 aspect-square"
+      >
+        {{ widgetType }}
+        <div
+          class="flex items-center justify-center w-8 m-2 transition-all rounded-md cursor-pointer bg-slate-700 aspect-square mdi mdi-plus hover:bg-slate-400"
+          @click="store.addWidget(widgetType, store.currentLayer)"
+        />
+      </div>
+    </div>
   </div>
   <teleport to="body">
-    <v-dialog v-model="layerDeleteDialogRevealed" width="auto">
+    <v-dialog v-model="layerRenameDialogRevealed" width="20rem">
       <v-card class="pa-2">
-        <v-card-title>Delete layer?</v-card-title>
-        <v-card-actions>
-          <v-btn @click="layerDeleteDialog.confirm">Yes</v-btn>
-          <v-btn @click="layerDeleteDialog.cancel">Cancel</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-    <v-dialog v-model="profileResetDialogRevealed" width="auto">
-      <v-card class="pa-2">
-        <v-card-title>Reset profiles?</v-card-title>
-        <v-card-actions>
-          <v-btn @click="profileResetDialog.confirm">Yes</v-btn>
-          <v-btn @click="profileResetDialog.cancel">Cancel</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-    <v-dialog v-model="profileCreationDialogRevealed" width="50%">
-      <v-card class="pa-2">
-        <v-card-title>New profile</v-card-title>
         <v-card-text>
-          <v-form v-model="newProfileForm" @submit.prevent="createNewProfile">
-            <v-text-field
-              v-model="newProfileName"
-              autofocus
-              hide-details="auto"
-              label="Profile name"
-              :rules="[(name: string) => !!name || 'Name is required']"
-            />
-          </v-form>
+          <v-text-field v-model="newLayerName" counter="25" label="New layer name" />
         </v-card-text>
-        <v-card-actions>
-          <v-btn :disabled="!newProfileForm" @click="createNewProfile()">Create</v-btn>
-          <v-btn @click="profileCreationDialog.cancel">Cancel</v-btn>
+        <v-card-actions class="flex justify-end">
+          <v-btn @click="layerRenameDialog.confirm">Save</v-btn>
+          <v-btn @click="layerRenameDialog.cancel">Cancel</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -143,22 +131,23 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog, useMouse, useMouseInElement, useWindowSize } from '@vueuse/core'
-import { saveAs } from 'file-saver'
-import gsap from 'gsap'
-import Swal from 'sweetalert2'
-import { computed, ref, toRefs, watch } from 'vue'
+import { useConfirmDialog } from '@vueuse/core'
+import { computed, onMounted, ref, toRefs, watch } from 'vue'
+import { nextTick } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { isProfile, WidgetType } from '@/types/widgets'
+import { type Widget, WidgetType } from '@/types/widgets'
+
+import Button from './Button.vue'
 
 const store = useWidgetManagerStore()
+const trashList = ref<Widget[]>([])
+watch(trashList, () => {
+  nextTick(() => (trashList.value = []))
+})
 
 const props = defineProps<{
-  /**
-   * To show or not the snapping grid on the background (model prop)
-   */
-  showGrid: boolean
   /**
    * Whether or not the interface is in edit mode
    */
@@ -170,144 +159,80 @@ const emit = defineEmits<{
   (e: 'update:editMode', editMode: boolean): void
 }>()
 
-const openPanels = ref([0])
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
-const selectedWidgetType = ref()
-const selectedLayer = ref(store.currentProfile.layers[0])
-const newProfileName = ref('')
-const newProfileForm = ref(false)
 
 const editMode = toRefs(props).editMode
 
-const showDrawer = ref(props.editMode)
-const { x: mouseX, y: mouseY } = useMouse()
-const { height: windowHeight } = useWindowSize()
-
-const editMenu = ref()
-const { isOutside: notHoveringEditMenu } = useMouseInElement(editMenu)
-const mouseNearLeftBorder = computed(
-  () => mouseX.value < 50 && mouseY.value > 100 && mouseY.value < windowHeight.value - 100
-)
-
-watch(showDrawer, (isShowing, wasShowing) => {
-  if (!wasShowing && isShowing) {
-    gsap.to('.nav-drawer', { x: 400, duration: 0.25 })
-  } else if (wasShowing && !isShowing) {
-    gsap.to('.nav-drawer', { x: -400, duration: 0.25 })
-  }
+const layerBeingRenamed = ref(store.currentLayer)
+const newLayerName = ref('')
+const layerRenameDialogRevealed = ref(false)
+const layerRenameDialog = useConfirmDialog(layerRenameDialogRevealed)
+layerRenameDialog.onConfirm(() => {
+  store.renameLayer(layerBeingRenamed.value, newLayerName.value)
+  newLayerName.value = ''
 })
 
-watch(mouseNearLeftBorder, (isNear, wasNear) => {
-  if (editMode.value && !wasNear && isNear) {
-    showDrawer.value = true
-  }
+const availableWidgetsContainer = ref()
+onMounted(() => {
+  availableWidgetsContainer.value.addEventListener('wheel', function (e: WheelEvent) {
+    if (e.deltaY > 0) availableWidgetsContainer.value.scrollLeft += 100
+    else availableWidgetsContainer.value.scrollLeft -= 100
+  })
 })
-
-watch(notHoveringEditMenu, (isNotHovering, wasNotHovering) => {
-  if (!wasNotHovering && isNotHovering) {
-    showDrawer.value = false
-  }
-})
-
-watch(editMode, (isEditMode, wasEditMode) => {
-  showDrawer.value = !wasEditMode && isEditMode
-})
-
-const availableLayers = computed(() =>
-  store.currentProfile.layers.slice().map((layer) => ({
-    title: layer.name,
-    value: layer,
-  }))
-)
-
-watch(
-  () => store.currentProfile,
-  () => (selectedLayer.value = store.currentProfile.layers[0])
-)
-
-const createNewProfile = async (): Promise<void> => {
-  profileCreationDialogRevealed.value = false
-  try {
-    const newProfile = { name: newProfileName.value, layers: JSON.parse(JSON.stringify(store.currentProfile.layers)) }
-    store.saveProfile(newProfile)
-    store.loadProfile(newProfile)
-    newProfileName.value = ''
-    profileCreationDialog.confirm()
-  } catch (error) {
-    await Swal.fire({ title: 'Could not create new profile!', text: error as string, icon: 'error' })
-    profileCreationDialogRevealed.value = true
-  }
-}
-const deleteLayer = (): void => {
-  store.deleteLayer(selectedLayer.value)
-  selectedLayer.value = store.currentProfile.layers[0]
-}
-const resetProfiles = (): void => {
-  store.resetSavedProfiles()
-  store.resetCurrentProfile()
-  selectedLayer.value = store.currentProfile.layers[0]
-}
-
-const exportCurrentProfile = (): void => {
-  var blob = new Blob([JSON.stringify(store.currentProfile)], { type: 'text/plain;charset=utf-8' })
-  saveAs(blob, `cockpit-widget-profile.json`)
-}
-
-const importProfile = (e: Event): void => {
-  var reader = new FileReader()
-  reader.onload = (event: Event) => {
-    // @ts-ignore: We know the event type and need refactor of the event typing
-    const contents = event.target.result
-    const maybeProfile = JSON.parse(contents)
-    if (!isProfile(maybeProfile)) {
-      Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
-      return
-    }
-    const newProfile = store.saveProfile(maybeProfile)
-    store.loadProfile(newProfile)
-  }
-  // @ts-ignore: We know the event type and need refactor of the event typing
-  reader.readAsText(e.target.files[0])
-}
-const addLayer = (): void => {
-  store.addLayer()
-  selectedLayer.value = store.currentProfile.layers[0]
-}
-
-const addWidget = (): void => {
-  if (selectedWidgetType.value === undefined) return
-  if (selectedLayer.value === undefined) return
-  store.addWidget(selectedWidgetType.value, selectedLayer.value)
-}
-
-const layerDeleteDialogRevealed = ref(false)
-const layerDeleteDialog = useConfirmDialog(layerDeleteDialogRevealed)
-layerDeleteDialog.onConfirm(deleteLayer)
-
-const profileCreationDialogRevealed = ref(false)
-const profileCreationDialog = useConfirmDialog(profileCreationDialogRevealed)
-
-const profileResetDialogRevealed = ref(false)
-const profileResetDialog = useConfirmDialog(profileResetDialogRevealed)
-profileResetDialog.onConfirm(resetProfiles)
 </script>
 
 <style scoped>
-.nav-drawer {
+.edit-panel {
+  transition: all 0.2s;
   position: absolute;
-  left: -400px;
-  width: 380px;
   z-index: 60;
-  background-color: rgba(47, 57, 66, 0.8);
-  backdrop-filter: blur(1px);
+  background-color: rgb(71 85 105);
 }
-.editing-mode-overlay {
-  border: 8px solid;
-  border-image: linear-gradient(45deg, rgba(64, 152, 224, 0.7), rgba(234, 255, 47, 0.7)) 1;
-  z-index: 55;
+.left-panel {
+  top: 0%;
+  height: 80%;
+  width: 20%;
+  left: -20%;
+}
+.left-panel.active {
+  left: 0%;
+}
+.middle-panel {
+  bottom: -20%;
+  left: -20%;
+  height: 20%;
+  width: 20%;
+}
+.middle-panel.active {
+  bottom: 0%;
+  left: 0%;
+}
+.bottom-panel {
+  right: 0%;
+  bottom: -20%;
+  height: 20%;
+  width: 80%;
+}
+.bottom-panel.active {
+  bottom: 0%;
 }
 .v-expansion-panel {
   background-color: rgba(0, 0, 0, 0);
   color: white;
+}
+
+.fade-and-suffle-move,
+.fade-and-suffle-enter-active,
+.fade-and-suffle-leave-active,
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
+}
+.fade-and-suffle-enter-from,
+.fade-enter-from,
+.fade-and-suffle-leave-to,
+.fade-leave-to {
+  opacity: 0;
+  transform: scaleY(0.01) translate(30px, 0);
 }
 </style>
