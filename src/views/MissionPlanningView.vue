@@ -1,91 +1,91 @@
 <template>
   <div class="mission-planning">
     <div id="planningMap" ref="planningMap" />
-    <div
-      class="absolute left-0 flex flex-col w-32 h-auto p-4 m-4 rounded-md bg-slate-700 opacity-90 scrollbar-hide overflow-y-scroll max-h-[80%]"
-    >
-      <p class="text-sm text-slate-200">Waypoint type</p>
-      <button
-        :class="{ 'bg-slate-50': currentWaypointType === WaypointType.TAKEOFF }"
-        class="h-6 m-2 font-medium rounded-sm bg-slate-300"
-        @click="currentWaypointType = WaypointType.TAKEOFF"
-      >
-        Takeoff
-      </button>
-      <button
-        :class="{ 'bg-slate-50': currentWaypointType === WaypointType.PASS_BY }"
-        class="h-6 m-2 font-medium rounded-sm bg-slate-300"
-        @click="currentWaypointType = WaypointType.PASS_BY"
-      >
-        Pass-by
-      </button>
-      <button
-        :class="{ 'bg-slate-50': currentWaypointType === WaypointType.LAND }"
-        class="h-6 m-2 font-medium rounded-sm bg-slate-300"
-        @click="currentWaypointType = WaypointType.LAND"
-      >
-        Land
-      </button>
-      <div class="w-full h-px my-3 bg-gray-50" />
-      <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
-      <input v-model="currentWaypointAltitude" class="px-2 m-1 rounded-sm bg-slate-100" />
-      <div class="w-full h-px my-3 bg-gray-50" />
-      <p class="m-1 overflow-visible text-sm text-slate-200">Altitude type:</p>
-      <button
-        :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }"
-        class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
-        @click="currentWaypointAltitudeRefType = AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL"
-      >
-        {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
-      </button>
-      <button
-        :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.RELATIVE_TO_HOME }"
-        class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
-        @click="currentWaypointAltitudeRefType = AltitudeReferenceType.RELATIVE_TO_HOME"
-      >
-        {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
-      </button>
-      <button
-        :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.RELATIVE_TO_TERRAIN }"
-        class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
-        @click="currentWaypointAltitudeRefType = AltitudeReferenceType.RELATIVE_TO_TERRAIN"
-      >
-        {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
-      </button>
-      <div class="w-full h-px my-3 bg-gray-50" />
-      <p class="m-1 overflow-visible text-sm text-slate-200">Default cruise speed (m/s)</p>
-      <input v-model="defaultCruiseSpeed" class="px-2 m-1 rounded-sm bg-slate-100" />
-      <div class="w-full h-px my-3 bg-gray-50" />
-      <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="saveMissionToFile">Save</button>
-      <button class="h-6 m-2 font-medium rounded-sm bg-slate-300">
-        <label class="block w-full h-full cursor-pointer">
-          <input type="file" accept=".cmp" hidden @change="(e) => loadMissionFromFile(e)" />
-          Load
-        </label>
-      </button>
-      <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="uploadMissionToVehicle">Upload</button>
-      <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="clearMissionOnVehicle">Clear</button>
+    <div class="absolute left-0 w-40 h-auto flex flex-col p-2 m-4 rounded-md bg-slate-700 opacity-90 max-h-[80%]">
+      <div class="flex flex-col w-full h-full p-2 overflow-y-scroll">
+        <p class="text-sm text-slate-200">Waypoint type</p>
+        <button
+          :class="{ 'bg-slate-50': currentWaypointType === WaypointType.TAKEOFF }"
+          class="h-6 m-2 font-medium rounded-sm bg-slate-300"
+          @click="currentWaypointType = WaypointType.TAKEOFF"
+        >
+          Takeoff
+        </button>
+        <button
+          :class="{ 'bg-slate-50': currentWaypointType === WaypointType.PASS_BY }"
+          class="h-6 m-2 font-medium rounded-sm bg-slate-300"
+          @click="currentWaypointType = WaypointType.PASS_BY"
+        >
+          Pass-by
+        </button>
+        <button
+          :class="{ 'bg-slate-50': currentWaypointType === WaypointType.LAND }"
+          class="h-6 m-2 font-medium rounded-sm bg-slate-300"
+          @click="currentWaypointType = WaypointType.LAND"
+        >
+          Land
+        </button>
+        <div class="w-full h-px my-3 bg-gray-50" />
+        <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
+        <input v-model="currentWaypointAltitude" class="px-2 m-1 rounded-sm bg-slate-100" />
+        <div class="w-full h-px my-3 bg-gray-50" />
+        <p class="m-1 overflow-visible text-sm text-slate-200">Altitude type:</p>
+        <button
+          :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }"
+          class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
+          @click="currentWaypointAltitudeRefType = AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL"
+        >
+          {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
+        </button>
+        <button
+          :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.RELATIVE_TO_HOME }"
+          class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
+          @click="currentWaypointAltitudeRefType = AltitudeReferenceType.RELATIVE_TO_HOME"
+        >
+          {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
+        </button>
+        <button
+          :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.RELATIVE_TO_TERRAIN }"
+          class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
+          @click="currentWaypointAltitudeRefType = AltitudeReferenceType.RELATIVE_TO_TERRAIN"
+        >
+          {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
+        </button>
+        <div class="w-full h-px my-3 bg-gray-50" />
+        <p class="m-1 overflow-visible text-sm text-slate-200">Default cruise speed (m/s)</p>
+        <input v-model="defaultCruiseSpeed" class="px-2 m-1 rounded-sm bg-slate-100" />
+        <div class="w-full h-px my-3 bg-gray-50" />
+        <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="saveMissionToFile">Save</button>
+        <button class="h-6 m-2 font-medium rounded-sm bg-slate-300">
+          <label class="block w-full h-full cursor-pointer">
+            <input type="file" accept=".cmp" hidden @change="(e) => loadMissionFromFile(e)" />
+            Load
+          </label>
+        </button>
+        <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="uploadMissionToVehicle">Upload</button>
+        <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="clearMissionOnVehicle">Clear</button>
+      </div>
     </div>
-    <div
-      class="absolute right-0 flex flex-col p-4 m-4 scrollbar-hide overflow-y-scroll rounded-md max-h-[70%] w-52 bg-slate-700 opacity-90"
-    >
-      <p v-if="missionStore.currentPlanningWaypoints.length === 0" class="text-lg text-center text-slate-100">
-        No waypoints added to the mission.
-      </p>
-      <div v-for="(waypoint, index) in missionStore.currentPlanningWaypoints" :key="waypoint.id">
-        <div class="flex items-center justify-around px-4">
-          <div>
-            <p class="text-base text-slate-100">Waypoint {{ index }} ({{ waypoint.type }})</p>
-            <p class="text-sm text-slate-200">Altitude: {{ waypoint.altitude }} m</p>
+    <div class="absolute flex flex-col right-0 m-4 p-2 rounded-md max-h-[70%] w-52 bg-slate-700 opacity-90">
+      <div class="flex flex-col w-full h-full p-2 overflow-y-scroll">
+        <p v-if="missionStore.currentPlanningWaypoints.length === 0" class="text-lg text-center text-slate-100">
+          No waypoints added to the mission.
+        </p>
+        <div v-for="(waypoint, index) in missionStore.currentPlanningWaypoints" :key="waypoint.id">
+          <div class="flex items-center justify-around px-4">
+            <div>
+              <p class="text-base text-slate-100">Waypoint {{ index }} ({{ waypoint.type }})</p>
+              <p class="text-sm text-slate-200">Altitude: {{ waypoint.altitude }} m</p>
+            </div>
+            <button
+              class="flex items-center justify-center w-6 h-6 m-2 rounded-sm text-slate-400"
+              @click="removeWaypoint(waypoint)"
+            >
+              <v-icon>mdi-delete</v-icon>
+            </button>
           </div>
-          <button
-            class="flex items-center justify-center w-6 h-6 m-2 rounded-sm text-slate-400"
-            @click="removeWaypoint(waypoint)"
-          >
-            <v-icon>mdi-delete</v-icon>
-          </button>
+          <div v-if="index !== missionStore.currentPlanningWaypoints.length - 1" class="w-full h-px my-3 bg-gray-50" />
         </div>
-        <div v-if="index !== missionStore.currentPlanningWaypoints.length - 1" class="w-full h-px my-3 bg-gray-50" />
       </div>
     </div>
     <v-btn
