@@ -3,7 +3,7 @@ import '@/libs/cosmos'
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { widgetProfile, widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
@@ -15,6 +15,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentProfile = useStorage('cockpit-current-profile', widgetProfile)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile', miniWidgetsProfile)
   const savedProfiles = useStorage('cockpit-saved-profiles', widgetProfiles)
+
+  const currentLayer = computed(() => currentProfile.value.layers[0])
 
   /**
    * Get layer where given widget is at
@@ -215,6 +217,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   return {
     editingMode,
     currentProfile,
+    currentLayer,
     currentMiniWidgetsProfile,
     savedProfiles,
     loadProfile,
