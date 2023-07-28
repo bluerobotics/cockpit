@@ -89,6 +89,27 @@ export const widgetProfiles: { [key: string]: Profile } = {
           },
         ],
       },
+      {
+        hash: 'f8a76470-9122-44f7-97f7-4555a59ee9c4',
+        name: 'Map view',
+        widgets: [
+          {
+            hash: '6439e791-3031-4928-aff2-8bd9af713798',
+            name: 'Main Map',
+            component: WidgetType.Map,
+            position: { x: 0, y: 0 },
+            size: { width: 1, height: 1 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
+            options: {},
+          },
+        ],
+      },
     ],
   },
 }
