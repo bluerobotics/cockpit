@@ -119,6 +119,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentProfile.value.layers.unshift(layer)
   }
 
+  const exportCurrentLayer = (): void => {
+    const blob = new Blob([JSON.stringify(currentLayer.value)], { type: 'text/plain;charset=utf-8' })
+    saveAs(blob, `cockpit-widget-layer.json`)
+  }
+
 
   /**
    * Add widget with given type to given layer
@@ -183,6 +188,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     deleteLayer,
     renameLayer,
     selectLayer,
+    exportCurrentLayer,
     addWidget,
     deleteWidget,
     bringWidgetFront,
