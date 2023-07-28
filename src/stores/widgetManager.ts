@@ -100,6 +100,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   /**
+   * Rename a layer
+   * @param { Layer } layer - Layer
+   * @param { string } name - New name of the layer
+   */
+  function renameLayer(layer: Layer, name: string): void {
+    const index = currentProfile.value.layers.indexOf(layer)
+    currentProfile.value.layers[index].name = name
+  }
+
+
+  /**
    * Add widget with given type to given layer
    * @param { WidgetType } widgetType - Type of the widget
    * @param { Layer } layer - Layer
@@ -160,6 +171,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     resetSavedProfiles,
     addLayer,
     deleteLayer,
+    renameLayer,
     addWidget,
     deleteWidget,
     bringWidgetFront,
