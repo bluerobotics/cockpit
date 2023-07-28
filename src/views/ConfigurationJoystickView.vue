@@ -172,6 +172,8 @@
 import { saveAs } from 'file-saver'
 import Swal from 'sweetalert2'
 import { computed, ref, watch } from 'vue'
+import { onMounted } from 'vue'
+import { onUnmounted } from 'vue'
 
 import JoystickPS, { type InputSpec, Axis } from '@/components/joysticks/JoystickPS.vue'
 import { EventType, JoystickModel } from '@/libs/joystick/manager'
@@ -181,6 +183,14 @@ import { type CockpitButton, type Joystick, type ProtocolInput, JoystickProtocol
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
+
+onMounted(() => {
+  controllerStore.enableForwarding = false
+})
+
+onUnmounted(() => {
+  controllerStore.enableForwarding = true
+})
 
 const availableButtons = computed(() => {
   const actualButtons = controllerStore.availableButtons.map((btn) => {
