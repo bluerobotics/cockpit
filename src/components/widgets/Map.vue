@@ -122,7 +122,7 @@ import { useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import type { Map } from 'leaflet'
 import Swal from 'sweetalert2'
-import { type Ref, computed, nextTick, onBeforeMount, ref, toRefs } from 'vue'
+import { type Ref, computed, nextTick, onBeforeMount, ref, toRefs, watch } from 'vue'
 
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -236,6 +236,10 @@ const props = defineProps<{
 }>()
 
 const widget = toRefs(props).widget
+
+watch(props.widget, () => {
+  leafletObject.value?.invalidateSize()
+})
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
