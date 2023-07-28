@@ -54,12 +54,12 @@ let currentAlertInterval: NodeJS.Timer | undefined = undefined
 onMounted(() => {
   currentAlertInterval = setInterval(() => {
     const dateNow = new Date(timeNow.value)
-    const secsSinceLastAlert = differenceInSeconds(dateNow, alertStore.alerts.first()?.time_created || dateNow)
+    const secsSinceLastAlert = differenceInSeconds(dateNow, alertStore.alerts.last()?.time_created || dateNow)
     if (secsSinceLastAlert > alertPersistencyInterval) {
       currentAlert.value = new Alert(AlertLevel.Info, 'No recent alerts.')
       return
     }
-    currentAlert.value = alertStore.alerts.first()!
+    currentAlert.value = alertStore.alerts.last()!
   }, 1000)
 })
 
