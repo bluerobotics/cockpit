@@ -5,7 +5,7 @@ export const defaultGlobalAddress = 'blueos.local'
 export const widgetProfiles: { [key: string]: Profile } = {
   'c2bcf04d-048f-496f-9d78-fc4002608028': {
     name: 'Default Cockpit profile',
-    layers: [
+    views: [
       {
         hash: 'eddd8e53-88c3-46a9-9e50-909227661f38',
         name: 'Video view',

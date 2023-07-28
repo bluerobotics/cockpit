@@ -15,20 +15,20 @@
       <div class="w-full px-2 overflow-x-hidden overflow-y-auto">
         <TransitionGroup name="fade-and-suffle">
           <div
-            v-for="layer in store.currentProfile.layers"
-            :key="layer.hash"
+            v-for="view in store.currentProfile.views"
+            :key="view.hash"
             class="flex items-center justify-between w-full my-1"
           >
-            <Button class="flex items-center justify-center w-full overflow-auto" @click="store.selectLayer(layer)">
-              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ layer.name }}</p>
+            <Button class="flex items-center justify-center w-full overflow-auto" @click="store.selectView(view)">
+              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ view.name }}</p>
             </Button>
             <Button
               class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-pencil hover:bg-slate-500"
-              @click=";[(layerBeingRenamed = layer), (newLayerName = layer.name), (layerRenameDialogRevealed = true)]"
+              @click=";[(viewBeingRenamed = view), (newViewName = view.name), (viewRenameDialogRevealed = true)]"
             />
             <Button
               class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
-              @click="store.deleteLayer(layer)"
+              @click="store.deleteView(view)"
             />
           </div>
         </TransitionGroup>
@@ -37,7 +37,7 @@
       <div class="w-full px-2 mt-3">
         <Button
           class="flex items-center justify-center w-full h-8 bg-slate-700 mdi mdi-plus hover:bg-slate-500"
-          @click=";[store.addLayer(), (layerBeingRenamed = store.currentLayer), (layerRenameDialogRevealed = true)]"
+          @click=";[store.addView(), (viewBeingRenamed = store.currentView), (viewRenameDialogRevealed = true)]"
         />
       </div>
     </div>
@@ -49,14 +49,14 @@
       <p class="text-lg font-semibold select-none">Current widgets</p>
       <div class="grow" />
       <VueDraggable
-        v-model="store.currentProfile.layers[0].widgets"
+        v-model="store.currentProfile.views[0].widgets"
         class="flex flex-col items-center w-full px-2 overflow-x-hidden overflow-y-auto grow"
         animation="150"
         group="regularWidgetsGroup"
       >
         <TransitionGroup name="fade">
           <div
-            v-for="widget in store.currentProfile.layers[0].widgets"
+            v-for="widget in store.currentProfile.views[0].widgets"
             :key="widget.hash"
             class="flex items-center justify-between w-full my-1"
           >
@@ -81,13 +81,13 @@
     <div ref="managementContainer" class="flex flex-col items-center justify-center w-full px-2 shrink">
       <Button class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500">
         <label class="flex items-center justify-center h-8 overflow-auto cursor-pointer">
-          <input type="file" accept="application/json" hidden @change="(e: Event) => store.importLayer(e)" />
+          <input type="file" accept="application/json" hidden @change="(e: Event) => store.importView(e)" />
           <p class="overflow-hidden text-ellipsis whitespace-nowrap">Import view</p>
         </label>
       </Button>
       <Button
         class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500"
-        @click="store.exportCurrentLayer"
+        @click="store.exportCurrentView"
       >
         <p class="overflow-hidden text-ellipsis whitespace-nowrap">Export current view</p>
       </Button>
@@ -110,20 +110,20 @@
         {{ widgetType }}
         <div
           class="flex items-center justify-center w-8 m-2 transition-all rounded-md cursor-pointer bg-slate-700 aspect-square mdi mdi-plus hover:bg-slate-400"
-          @click="store.addWidget(widgetType, store.currentLayer)"
+          @click="store.addWidget(widgetType, store.currentView)"
         />
       </div>
     </div>
   </div>
   <teleport to="body">
-    <v-dialog v-model="layerRenameDialogRevealed" width="20rem">
+    <v-dialog v-model="viewRenameDialogRevealed" width="20rem">
       <v-card class="pa-2">
         <v-card-text>
-          <v-text-field v-model="newLayerName" counter="25" label="New layer name" />
+          <v-text-field v-model="newViewName" counter="25" label="New view name" />
         </v-card-text>
         <v-card-actions class="flex justify-end">
-          <v-btn @click="layerRenameDialog.confirm">Save</v-btn>
-          <v-btn @click="layerRenameDialog.cancel">Cancel</v-btn>
+          <v-btn @click="viewRenameDialog.confirm">Save</v-btn>
+          <v-btn @click="viewRenameDialog.cancel">Cancel</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -163,13 +163,13 @@ const availableWidgetTypes = computed(() => Object.values(WidgetType))
 
 const editMode = toRefs(props).editMode
 
-const layerBeingRenamed = ref(store.currentLayer)
-const newLayerName = ref('')
-const layerRenameDialogRevealed = ref(false)
-const layerRenameDialog = useConfirmDialog(layerRenameDialogRevealed)
-layerRenameDialog.onConfirm(() => {
-  store.renameLayer(layerBeingRenamed.value, newLayerName.value)
-  newLayerName.value = ''
+const viewBeingRenamed = ref(store.currentView)
+const newViewName = ref('')
+const viewRenameDialogRevealed = ref(false)
+const viewRenameDialog = useConfirmDialog(viewRenameDialogRevealed)
+viewRenameDialog.onConfirm(() => {
+  store.renameView(viewBeingRenamed.value, newViewName.value)
+  newViewName.value = ''
 })
 
 const availableWidgetsContainer = ref()

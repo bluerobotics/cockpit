@@ -69,7 +69,7 @@ const allowMoving = toRefs(props).allowMoving
 const allowResizing = toRefs(props).allowResizing
 const outerWidgetRef = ref<HTMLElement | undefined>()
 const innerWidgetRef = ref<HTMLElement | undefined>()
-const widgetLayer = computed(() => outerWidgetRef.value?.parentElement)
+const widgetView = computed(() => outerWidgetRef.value?.parentElement)
 const widgetResizeHandles = computed(() => outerWidgetRef.value?.getElementsByClassName('resize-handle'))
 
 const devStore = useDevelopmentStore()
@@ -84,9 +84,9 @@ const hoveringWidgetOrOverlay = computed(() => hoveringOverlay.value || hovering
 const draggingWidget = ref(false)
 const isResizing = ref(false)
 const resizeHandle = ref<EventTarget | null>(null)
-const layerSize = computed(() => ({
-  width: widgetLayer.value?.getBoundingClientRect().width || 1,
-  height: widgetLayer.value?.getBoundingClientRect().height || 1,
+const viewSize = computed(() => ({
+  width: widgetView.value?.getBoundingClientRect().width || 1,
+  height: widgetView.value?.getBoundingClientRect().height || 1,
 }))
 const initialMousePos = ref<Point2D | undefined>(undefined)
 const initialWidgetPos = ref(props.widget.position)
@@ -116,8 +116,8 @@ const handleResizeStart = (event: MouseEvent): void => {
 const handleDrag = (event: MouseEvent): void => {
   if (!draggingWidget.value || !initialMousePos.value) return
 
-  const dx = (event.clientX - initialMousePos.value.x) / layerSize.value.width
-  const dy = (event.clientY - initialMousePos.value.y) / layerSize.value.height
+  const dx = (event.clientX - initialMousePos.value.x) / viewSize.value.width
+  const dy = (event.clientY - initialMousePos.value.y) / viewSize.value.height
 
   widget.value.position = {
     x: constrain(initialWidgetPos.value.x + dx, 0, 1 - widget.value.size.width),
@@ -128,8 +128,8 @@ const handleDrag = (event: MouseEvent): void => {
 const handleResize = (event: MouseEvent): void => {
   if (!isResizing.value || !initialMousePos.value || !resizeHandle.value) return
 
-  const dx = (event.clientX - initialMousePos.value.x) / layerSize.value.width
-  const dy = (event.clientY - initialMousePos.value.y) / layerSize.value.height
+  const dx = (event.clientX - initialMousePos.value.x) / viewSize.value.width
+  const dy = (event.clientY - initialMousePos.value.y) / viewSize.value.height
 
   let newLeft = initialWidgetPos.value.x
   let newTop = initialWidgetPos.value.y
