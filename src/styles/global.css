@@ -24,3 +24,21 @@
 .v-leave-to {
     opacity: 0;
 }
+
+::-webkit-scrollbar {
+    width: 0.5em;
+    height: 0.5em;
+}
+::-webkit-scrollbar-track {
+    background-color: hsla(0, 0%, 0%, 0.1);
+    border-radius: 100vw;
+    margin-block: 0.5rem;
+    margin-inline: 0.5rem;
+}
+::-webkit-scrollbar-thumb {
+    background-color: hsla(0, 0%, 0%, 0.2);
+    border-radius: 100vw;
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: hsla(0, 0%, 0%, 0.411);
+}
