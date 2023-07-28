@@ -124,6 +124,21 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     saveAs(blob, `cockpit-widget-layer.json`)
   }
 
+  const importLayer = (e: Event): void => {
+    const reader = new FileReader()
+    reader.onload = (event: Event) => {
+      // @ts-ignore: We know the event type and need refactor of the event typing
+      const contents = event.target.result
+      const maybeLayer = JSON.parse(contents)
+      if (!isLayer(maybeLayer)) {
+        Swal.fire({ icon: 'error', text: 'Invalid layer file.', timer: 3000 })
+        return
+      }
+      currentProfile.value.layers.unshift(maybeLayer)
+    }
+    // @ts-ignore: We know the event type and need refactor of the event typing
+    reader.readAsText(e.target.files[0])
+  }
 
   /**
    * Add widget with given type to given layer
@@ -189,6 +204,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     renameLayer,
     selectLayer,
     exportCurrentLayer,
+    importLayer,
     addWidget,
     deleteWidget,
     bringWidgetFront,
