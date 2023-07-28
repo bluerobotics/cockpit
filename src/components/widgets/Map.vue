@@ -23,7 +23,7 @@
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-home-map-marker"
       size="x-small"
-      @click="goHome"
+      @click="whoToFollow = WhoToFollow.HOME"
     />
     <v-btn
       class="absolute m-3 bottom-12 left-10 bg-slate-50"
@@ -31,7 +31,7 @@
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-image-filter-center-focus-strong"
       size="x-small"
-      @click="vehiclePosition ? (center = vehiclePosition) : null"
+      @click="whoToFollow = WhoToFollow.VEHICLE"
     />
     <v-btn
       class="absolute m-3 bottom-12 left-20 bg-slate-50"
@@ -122,7 +122,7 @@ import { useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import type { Map } from 'leaflet'
 import Swal from 'sweetalert2'
-import { type Ref, computed, nextTick, onBeforeMount, ref, toRefs, watch } from 'vue'
+import { type Ref, computed, nextTick, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -241,6 +241,23 @@ watch(props.widget, () => {
   leafletObject.value?.invalidateSize()
 })
 
+// eslint-disable-next-line jsdoc/require-jsdoc
+enum WhoToFollow {
+  HOME = 'Home',
+  VEHICLE = 'Vehicle',
+}
+
+const whoToFollow = ref(WhoToFollow.VEHICLE)
+
+const followSomething = (): void => {
+  if (whoToFollow.value === WhoToFollow.HOME && home.value) {
+    center.value = home.value
+  } else if (whoToFollow.value === WhoToFollow.VEHICLE && vehiclePosition.value) {
+    center.value = vehiclePosition.value
+  }
+}
+
+let followInterval: ReturnType<typeof setInterval> | undefined = undefined
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (Object.keys(widget.value.options).length === 0) {
@@ -248,6 +265,11 @@ onBeforeMount(() => {
       showVehiclePath: true,
     }
   }
+  followInterval = setInterval(followSomething, 500)
+})
+
+onBeforeUnmount(() => {
+  clearInterval(followInterval)
 })
 
 const showOptionsDialog = ref(false)
