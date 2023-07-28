@@ -92,13 +92,13 @@
       class="absolute m-3 rounded-sm shadow-sm left-44 bottom-14 bg-slate-50"
       icon="mdi-home-map-marker"
       size="x-small"
-      @click="goHome"
+      @click="whoToFollow = WhoToFollow.HOME"
     />
     <v-btn
       class="absolute m-3 rounded-sm shadow-sm bottom-14 left-56 bg-slate-50"
       icon="mdi-image-filter-center-focus-strong"
       size="x-small"
-      @click="vehiclePosition ? (mapCenter = vehiclePosition) : null"
+      @click="whoToFollow = WhoToFollow.VEHICLE"
     />
     <v-progress-linear
       v-if="uploadingMission"
@@ -119,7 +119,7 @@ import L, { type LatLngTuple, Map, Marker } from 'leaflet'
 import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -270,6 +270,23 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
   reader.readAsText(e.target.files[0])
 }
 
+// eslint-disable-next-line jsdoc/require-jsdoc
+enum WhoToFollow {
+  HOME = 'Home',
+  VEHICLE = 'Vehicle',
+}
+
+const whoToFollow = ref(WhoToFollow.VEHICLE)
+
+const followSomething = (): void => {
+  if (whoToFollow.value === WhoToFollow.HOME && home.value) {
+    mapCenter.value = home.value
+  } else if (whoToFollow.value === WhoToFollow.VEHICLE && vehiclePosition.value) {
+    mapCenter.value = vehiclePosition.value
+  }
+}
+
+let followInterval: ReturnType<typeof setInterval> | undefined = undefined
 onMounted(() => {
   const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -317,6 +334,12 @@ onMounted(() => {
 
   const layerControl = L.control.layers(baseMaps)
   planningMap.value.addControl(layerControl)
+
+  followInterval = setInterval(followSomething, 500)
+})
+
+onUnmounted(() => {
+  clearInterval(followInterval)
 })
 
 const vehiclePosition = computed((): [number, number] | undefined =>
