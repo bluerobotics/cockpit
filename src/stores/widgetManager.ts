@@ -109,6 +109,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentProfile.value.layers[index].name = name
   }
 
+  /**
+   * Select a layer to be used
+   * @param { Layer } layer - Layer
+   */
+  const selectLayer = (layer: Layer): void => {
+    const index = currentProfile.value.layers.indexOf(layer)
+    currentProfile.value.layers.splice(index, 1)
+    currentProfile.value.layers.unshift(layer)
+  }
+
 
   /**
    * Add widget with given type to given layer
@@ -172,6 +182,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     addLayer,
     deleteLayer,
     renameLayer,
+    selectLayer,
     addWidget,
     deleteWidget,
     bringWidgetFront,
