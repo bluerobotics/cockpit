@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { useMouseInElement, useTimestamp } from '@vueuse/core'
-import { intervalToDuration } from 'date-fns'
+import { format, intervalToDuration } from 'date-fns'
 import { saveAs } from 'file-saver'
 import Swal, { type SweetAlertResult } from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
@@ -63,8 +63,10 @@ import adapter from 'webrtc-adapter'
 import { WebRTCManager } from '@/composables/webRTC'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 
 const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
+const { missionName } = useMissionStore()
 
 console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
@@ -183,7 +185,7 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
   mediaRecorder.value.onstop = () => {
     const blob = new Blob(chunks, { type: 'video/webm' })
     chunks = []
-    saveAs(blob, 'video')
+    saveAs(blob, `${missionName} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`)
     mediaRecorder.value = undefined
     if (selectedStream.value?.id === 'screenStream' && mediaStream.value !== undefined) {
       // If recording the screen stream, stop the tracks also, so the browser removes the recording warning.
