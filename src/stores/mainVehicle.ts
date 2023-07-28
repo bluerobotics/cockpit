@@ -376,7 +376,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   // Loop to send Cockpit Action messages
   setInterval(() => {
     if (!currentControllerState.value || !currentProtocolMapping.value || controllerStore.joysticks.size === 0) return
-    sendCockpitActions(currentControllerState.value, currentProtocolMapping.value)
+    if (controllerStore.enableForwarding) {
+      sendCockpitActions(currentControllerState.value, currentProtocolMapping.value)
+    }
   }, 10)
 
   const rtcConfiguration = computed(
