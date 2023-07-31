@@ -81,6 +81,7 @@ export class MavlinkControllerState extends ProtocolControllerState {
  * Possible Cockpit Actions
  */
 export enum CockpitAction {
+  GO_TO_NEXT_VIEW = 'Go to next view',
   TOGGLE_FULL_SCREEN = 'Toggle full-screen',
   MAVLINK_ARM = 'Mavlink Command - Arm',
   MAVLINK_DISARM = 'Mavlink Command - Disarm',

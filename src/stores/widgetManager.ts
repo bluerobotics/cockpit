@@ -1,15 +1,16 @@
 import '@/libs/cosmos'
 
-import { useStorage } from '@vueuse/core'
+import { useDebounceFn, useStorage } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
 import { widgetProfile, widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
+import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
 import { isEqual } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import { type Profile, type View, type Widget, type WidgetType, isProfile, isView } from '@/types/widgets'
@@ -252,6 +253,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const isFullScreen = (widget: Widget): boolean => {
     return isEqual(widget.position, fullScreenPosition) && isEqual(widget.size, fullScreenSize)
   }
+
+  const selectNextView = (): void => {
+    const newIndex = currentViewIndex.value === currentProfile.value.views.length - 1 ? 0 : currentViewIndex.value + 1
+    selectView(currentProfile.value.views[newIndex])
+  }
+  const debouncedSelectNextView = useDebounceFn(() => selectNextView(), 500)
+  const selectNextViewCallbackId = registerActionCallback(CockpitAction.GO_TO_NEXT_VIEW, debouncedSelectNextView)
+  onBeforeUnmount(() => unregisterActionCallback(selectNextViewCallbackId))
+
 
   return {
     editingMode,
