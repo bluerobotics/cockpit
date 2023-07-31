@@ -96,7 +96,7 @@
     />
     <v-btn
       class="absolute m-3 rounded-sm shadow-sm bottom-14 left-56 bg-slate-50"
-      icon="mdi-image-filter-center-focus-strong"
+      icon="mdi-airplane-marker"
       size="x-small"
       @click="whoToFollow = WhoToFollow.VEHICLE"
     />
