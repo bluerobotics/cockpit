@@ -141,7 +141,13 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
       },
       {
         name: 'Bottom-left container',
-        widgets: [],
+        widgets: [
+          {
+            hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
+            component: MiniWidgetType.ViewSelector,
+            options: {},
+          },
+        ],
       },
       {
         name: 'Bottom-center container',
