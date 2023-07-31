@@ -1,7 +1,7 @@
 <template>
   <div class="mission-planning">
     <div id="planningMap" ref="planningMap" />
-    <div class="absolute left-0 w-40 h-auto flex flex-col p-2 m-4 rounded-md bg-slate-700 opacity-90 max-h-[80%]">
+    <div class="absolute left-0 w-40 h-auto flex flex-col p-2 m-4 rounded-md bg-slate-700 opacity-90 max-h-[85%]">
       <div class="flex flex-col w-full h-full p-2 overflow-y-scroll">
         <p class="text-sm text-slate-200">Waypoint type</p>
         <button
@@ -89,13 +89,13 @@
       </div>
     </div>
     <v-btn
-      class="absolute m-3 rounded-sm shadow-sm left-36 bottom-14 bg-slate-50"
+      class="absolute m-3 rounded-sm shadow-sm left-44 bottom-14 bg-slate-50"
       icon="mdi-home-map-marker"
       size="x-small"
       @click="goHome"
     />
     <v-btn
-      class="absolute m-3 rounded-sm shadow-sm bottom-14 left-48 bg-slate-50"
+      class="absolute m-3 rounded-sm shadow-sm bottom-14 left-56 bg-slate-50"
       icon="mdi-image-filter-center-focus-strong"
       size="x-small"
       @click="vehiclePosition ? (mapCenter = vehiclePosition) : null"
