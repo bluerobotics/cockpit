@@ -29,7 +29,7 @@
       class="absolute m-3 bottom-12 left-10 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
-      icon="mdi-image-filter-center-focus-strong"
+      icon="mdi-airplane-marker"
       size="x-small"
       @click="whoToFollow = WhoToFollow.VEHICLE"
     />
