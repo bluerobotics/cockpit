@@ -262,6 +262,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const selectNextViewCallbackId = registerActionCallback(CockpitAction.GO_TO_NEXT_VIEW, debouncedSelectNextView)
   onBeforeUnmount(() => unregisterActionCallback(selectNextViewCallbackId))
 
+  const selectPreviousView = (): void => {
+    const newIndex = currentViewIndex.value === 0 ? currentProfile.value.views.length - 1 : currentViewIndex.value - 1
+    selectView(currentProfile.value.views[newIndex])
+  }
+  const debouncedSelectPreviousView = useDebounceFn(() => selectPreviousView(), 500)
+  const selectPrevViewCBId = registerActionCallback(CockpitAction.GO_TO_PREVIOUS_VIEW, debouncedSelectPreviousView)
+  onBeforeUnmount(() => unregisterActionCallback(selectPrevViewCBId))
 
   return {
     editingMode,
