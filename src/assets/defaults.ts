@@ -5,18 +5,24 @@ export const defaultGlobalAddress = 'blueos.local'
 export const widgetProfiles: { [key: string]: Profile } = {
   'c2bcf04d-048f-496f-9d78-fc4002608028': {
     name: 'Default Cockpit profile',
-    layers: [
+    views: [
       {
         hash: 'eddd8e53-88c3-46a9-9e50-909227661f38',
-        name: 'Layer dragonfly',
+        name: 'Video view',
         widgets: [
           {
             hash: '8b1448f5-3f07-4bfc-8a0e-5d491993f858',
-            name: 'Depth HUD widget',
+            name: 'Depth HUD',
             component: WidgetType.DepthHUD,
             position: { x: 0.88, y: 0.23 },
             size: { width: 0.1, height: 0.62 },
-            managerVars: { timesMounted: 0 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
             options: {
               showDepthValue: true,
               hudColor: '#FFFFFF',
@@ -24,11 +30,17 @@ export const widgetProfiles: { [key: string]: Profile } = {
           },
           {
             hash: '0230b90e-0c6d-45ba-94e1-994a074b76c7',
-            name: 'Attitude widget',
+            name: 'Attitude HUD',
             component: WidgetType.Attitude,
             position: { x: 0.14, y: 0.2 },
             size: { width: 0.72, height: 0.6 },
-            managerVars: { timesMounted: 0 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
             options: {
               showCenterAim: true,
               showPitchLines: true,
@@ -40,34 +52,61 @@ export const widgetProfiles: { [key: string]: Profile } = {
           },
           {
             hash: '6920ce40-5121-4031-b628-678c5449d94a',
-            name: 'HUD Compass widget',
-            component: WidgetType.HudCompass,
+            name: 'HUD Compass',
+            component: WidgetType.CompassHUD,
             position: { x: 0.15, y: 0.84 },
             size: { width: 0.7, height: 0.065 },
-            managerVars: { timesMounted: 0 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
             options: {
               showYawValue: true,
               hudColor: '#FFF',
             },
           },
-        ],
-      },
-      {
-        hash: 'ba3ab6ab-7f34-49be-90e1-63e5b2c3845a',
-        name: 'Main video layer',
-        widgets: [
           {
             hash: '6439e791-3031-4928-aff2-8bd9af713798',
-            name: 'Main video widget',
+            name: 'Video player',
             component: WidgetType.VideoPlayer,
             position: { x: 0, y: 0 },
             size: { width: 1, height: 1 },
-            managerVars: { timesMounted: 0 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
             options: {
               videoFitStyle: 'cover',
               flipHorizontally: false,
               flipVertically: false,
             },
+          },
+        ],
+      },
+      {
+        hash: 'f8a76470-9122-44f7-97f7-4555a59ee9c4',
+        name: 'Map view',
+        widgets: [
+          {
+            hash: '6439e791-3031-4928-aff2-8bd9af713798',
+            name: 'Main Map',
+            component: WidgetType.Map,
+            position: { x: 0, y: 0 },
+            size: { width: 1, height: 1 },
+            managerVars: {
+              timesMounted: 0,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
+            options: {},
           },
         ],
       },

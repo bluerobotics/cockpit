@@ -8,7 +8,7 @@ export enum WidgetType {
   Attitude = 'Attitude',
   Compass = 'Compass',
   DepthHUD = 'DepthHUD',
-  HudCompass = 'HudCompass',
+  CompassHUD = 'CompassHUD',
   ImageViewer = 'ImageViewer',
   Indicators = 'Indicators',
   Joystick = 'Joystick',
@@ -53,29 +53,45 @@ export type Widget = {
      * Number of times the widget was mounted
      */
     timesMounted: number
+    /**
+     * Last widget X position when it wasn't maximized
+     */
+    lastNonMaximizedX: number
+    /**
+     * Last widget Y position when it wasn't maximized
+     */
+    lastNonMaximizedY: number
+    /**
+     * Last widget width when it wasn't maximized
+     */
+    lastNonMaximizedWidth: number
+    /**
+     * Last widget height when it wasn't maximized
+     */
+    lastNonMaximizedHeight: number
   }
 }
 
-export type Layer = {
+export type View = {
   /**
-   * Unique identifier for the layer
+   * Unique identifier for the view
    */
   hash: string
   /**
-   * Array of widgets that are stored in the layer
+   * Array of widgets that are stored in the view
    */
   widgets: Widget[]
   /**
-   * Editable name for the layer
+   * Editable name for the view
    */
   name: string
 }
 
 export type Profile = {
   /**
-   * Array of layers that are stored in the profile
+   * Array of views that are stored in the profile
    */
-  layers: Layer[]
+  views: View[]
   /**
    * Editable name for the profile
    */
@@ -102,26 +118,26 @@ export const isWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   return realWidget
 }
 
-export const isLayer = (maybeLayer: Layer): maybeLayer is Layer => {
+export const isView = (maybeView: View): maybeView is View => {
   let widgetsAreReal = true
-  if (!Array.isArray(maybeLayer.widgets)) {
+  if (!Array.isArray(maybeView.widgets)) {
     return false
   }
-  maybeLayer.widgets.forEach((w) => {
+  maybeView.widgets.forEach((w) => {
     if (isWidget(w)) return
     widgetsAreReal = false
   })
-  return maybeLayer.name !== undefined && maybeLayer.hash !== undefined && widgetsAreReal
+  return maybeView.name !== undefined && maybeView.hash !== undefined && widgetsAreReal
 }
 
 export const isProfile = (maybeProfile: Profile): maybeProfile is Profile => {
-  let layersAreReal = true
-  if (!Array.isArray(maybeProfile.layers)) {
+  let viewsAreReal = true
+  if (!Array.isArray(maybeProfile.views)) {
     return false
   }
-  maybeProfile.layers.forEach((l) => {
-    if (isLayer(l)) return
-    layersAreReal = false
+  maybeProfile.views.forEach((l) => {
+    if (isView(l)) return
+    viewsAreReal = false
   })
-  return maybeProfile.name !== undefined && layersAreReal
+  return maybeProfile.name !== undefined && viewsAreReal
 }

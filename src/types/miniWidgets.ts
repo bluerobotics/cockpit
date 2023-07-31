@@ -43,7 +43,7 @@ export type MiniWidgetContainer = {
 
 export type MiniWidgetProfile = {
   /**
-   * Array of layers that are stored in the profile
+   * Array of views that are stored in the profile
    */
   containers: MiniWidgetContainer[]
   /**

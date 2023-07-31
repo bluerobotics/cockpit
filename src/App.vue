@@ -1,52 +1,6 @@
 <template>
   <v-app>
     <v-main>
-      <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex backdrop-blur-[2px]">
-        <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
-          <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
-        </button>
-        <div class="flex flex-col items-center justify-center h-full ml-3 mr-1">
-          <p
-            class="overflow-hidden text-lg font-medium leading-none text-white cursor-pointer select-none max-h-9"
-            @click="showMissionOptionsDialog = true"
-          >
-            {{ store.missionName }}
-          </p>
-        </div>
-        <div class="grow" />
-        <Alerter class="max-w-sm min-w-fit" />
-        <div class="flex-1">
-          <MiniWidgetContainer
-            :container="widgetStore.currentMiniWidgetsProfile.containers[0]"
-            :allow-editing="widgetStore.editingMode"
-            align="end"
-          />
-        </div>
-        <div
-          class="flex items-center justify-center m-2 text-sm font-bold text-center text-white select-none min-w-[80px]"
-        >
-          {{ format(timeNow, 'E LLL do HH:mm') }}
-        </div>
-      </div>
-      <div class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between">
-        <MiniWidgetContainer
-          :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
-          :allow-editing="widgetStore.editingMode"
-          align="start"
-        />
-        <div />
-        <MiniWidgetContainer
-          :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
-          :allow-editing="widgetStore.editingMode"
-          align="center"
-        />
-        <div />
-        <MiniWidgetContainer
-          :container="widgetStore.currentMiniWidgetsProfile.containers[3]"
-          :allow-editing="widgetStore.editingMode"
-          align="end"
-        />
-      </div>
       <Dialog v-model:show="showMainMenu">
         <div class="flex flex-col items-center justify-around">
           <v-btn
@@ -106,8 +60,57 @@
         </v-dialog>
       </teleport>
 
-      <div ref="routerSection">
-        <router-view />
+      <div ref="routerSection" class="router-view">
+        <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
+          <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex backdrop-blur-[2px]">
+            <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
+              <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
+            </button>
+            <div class="flex flex-col items-center justify-center h-full ml-3 mr-1">
+              <p
+                class="overflow-hidden text-lg font-medium leading-none text-white cursor-pointer select-none max-h-9"
+                @click="showMissionOptionsDialog = true"
+              >
+                {{ store.missionName }}
+              </p>
+            </div>
+            <div class="grow" />
+            <Alerter class="max-w-sm min-w-fit" />
+            <div class="flex-1">
+              <MiniWidgetContainer
+                :container="widgetStore.currentMiniWidgetsProfile.containers[0]"
+                :allow-editing="widgetStore.editingMode"
+                align="end"
+              />
+            </div>
+            <div
+              class="flex items-center justify-center m-2 text-sm font-bold text-center text-white select-none min-w-[80px]"
+            >
+              {{ format(timeNow, 'E LLL do HH:mm') }}
+            </div>
+          </div>
+          <div class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between">
+            <MiniWidgetContainer
+              :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
+              :allow-editing="widgetStore.editingMode"
+              align="start"
+            />
+            <div />
+            <MiniWidgetContainer
+              :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
+              :allow-editing="widgetStore.editingMode"
+              align="center"
+            />
+            <div />
+            <MiniWidgetContainer
+              :container="widgetStore.currentMiniWidgetsProfile.containers[3]"
+              :allow-editing="widgetStore.editingMode"
+              align="end"
+            />
+          </div>
+          <router-view />
+        </div>
+        <EditMenu v-model:edit-mode="widgetStore.editingMode" v-model:show-grid="widgetStore.showGrid" />
       </div>
     </v-main>
   </v-app>
@@ -130,6 +133,7 @@ import { CockpitAction, registerActionCallback, unregisterActionCallback } from 
 import { useMissionStore } from '@/stores/mission'
 
 import Dialog from './components/Dialog.vue'
+import EditMenu from './components/EditMenu.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import Alerter from './components/widgets/Alerter.vue'
 import { useWidgetManagerStore } from './stores/widgetManager'
@@ -177,5 +181,23 @@ body {
 }
 .main-menu-button-image:hover {
   filter: invert(100%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(100%) contrast(90%);
+}
+.router-view {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.main-view {
+  transition: all 0.2s;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  right: 0%;
+  top: 0%;
+}
+.main-view.edit-mode {
+  transform: scale(0.8);
+  right: -10%;
+  top: -10%;
 }
 </style>

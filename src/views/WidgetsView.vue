@@ -1,21 +1,13 @@
 <template>
-  <SnappingGrid v-if="showGrid && store.editingMode" :grid-interval="gridInterval" class="snapping-grid" />
-  <EditMenu v-model:edit-mode="store.editingMode" v-model:show-grid="showGrid" />
+  <SnappingGrid v-if="store.showGrid && store.editingMode" :grid-interval="store.gridInterval" class="snapping-grid" />
   <div class="widgets-view">
-    <div v-for="layer in store.currentProfile.layers.slice().reverse()" :key="layer.hash" class="widget-layer">
-      <template v-for="widget in layer.widgets.slice().reverse()" :key="widget">
+    <div v-for="view in store.currentProfile.views.slice().reverse()" :key="view.hash" class="widget-view">
+      <template v-for="widget in view.widgets.slice().reverse()" :key="widget">
         <WidgetHugger
           v-if="Object.values(WidgetType).includes(widget.component)"
           :widget="widget"
           :allow-moving="store.editingMode"
           :allow-resizing="store.editingMode"
-          :allow-ordering="store.editingMode"
-          :allow-deleting="store.editingMode"
-          :snap-to-grid="showGrid"
-          :grid-interval="gridInterval"
-          @send-back="store.sendWidgetBack(widget)"
-          @bring-front="store.bringWidgetFront(widget)"
-          @remove="store.deleteWidget(widget)"
         >
           <template v-if="widget.component === WidgetType.Attitude">
             <Attitude :widget="widget" />
@@ -26,8 +18,8 @@
           <template v-if="widget.component === WidgetType.DepthHUD">
             <DepthHUD :widget="widget" />
           </template>
-          <template v-if="widget.component === WidgetType.HudCompass">
-            <HudCompass :widget="widget" />
+          <template v-if="widget.component === WidgetType.CompassHUD">
+            <CompassHUD :widget="widget" />
           </template>
           <template v-if="widget.component === WidgetType.ImageViewer">
             <ImageView :widget="widget" />
@@ -57,28 +49,24 @@
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
       </template>
+      <div class="w-full h-full bg-slate-500" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  // type AsyncComponentLoader,
-  // defineAsyncComponent,
-  ref,
-} from 'vue'
+// import { type AsyncComponentLoader, defineAsyncComponent } from 'vue'
 
 import ImageView from '@/components/widgets/ImageView.vue'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
 
-import EditMenu from '../components/EditMenu.vue'
 import SnappingGrid from '../components/SnappingGrid.vue'
 import WidgetHugger from '../components/WidgetHugger.vue'
 import Attitude from '../components/widgets/Attitude.vue'
 import Compass from '../components/widgets/Compass.vue'
+import CompassHUD from '../components/widgets/CompassHUD.vue'
 import DepthHUD from '../components/widgets/DepthHUD.vue'
-import HudCompass from '../components/widgets/HudCompass.vue'
 import Indicators from '../components/widgets/Indicators.vue'
 import Map from '../components/widgets/Map.vue'
 import MiniWidgetsBar from '../components/widgets/MiniWidgetsBar.vue'
@@ -88,9 +76,6 @@ import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 import VideoRecorder from '../components/widgets/VideoRecorder.vue'
 
 const store = useWidgetManagerStore()
-
-const showGrid = ref(true)
-const gridInterval = ref(0.01)
 
 // TODO: Make this work
 // This function allows us to load any component without declaring it in the template, just
@@ -105,16 +90,21 @@ const gridInterval = ref(0.01)
 
 <style scoped>
 .widgets-view {
-  min-height: 100vh;
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 .snapping-grid {
   z-index: 40;
 }
-.widget-layer {
+.widget-view {
+  position: absolute;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;
