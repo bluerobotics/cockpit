@@ -42,3 +42,7 @@
 ::-webkit-scrollbar-thumb:hover {
     background-color: hsla(0, 0%, 0%, 0.411);
 }
+
+select:focus {
+    outline: none;
+}
