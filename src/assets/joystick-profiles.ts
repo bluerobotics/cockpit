@@ -18,10 +18,10 @@ export const cockpitStandardToProtocols: ProtocolControllerMapping = {
     { protocol: JoystickProtocol.MAVLink, value: 1 },
     { protocol: JoystickProtocol.MAVLink, value: 2 },
     { protocol: JoystickProtocol.MAVLink, value: 3 },
+    { protocol: JoystickProtocol.CockpitAction, value: CockpitAction.GO_TO_PREVIOUS_VIEW },
+    { protocol: JoystickProtocol.CockpitAction, value: CockpitAction.GO_TO_NEXT_VIEW },
     { protocol: JoystickProtocol.MAVLink, value: 9 },
     { protocol: JoystickProtocol.MAVLink, value: 10 },
-    { protocol: JoystickProtocol.CockpitAction, value: CockpitAction.TOGGLE_FULL_SCREEN },
-    { protocol: undefined, value: undefined },
     { protocol: JoystickProtocol.MAVLink, value: 4 },
     { protocol: JoystickProtocol.MAVLink, value: 6 },
     { protocol: JoystickProtocol.MAVLink, value: 7 },
@@ -31,7 +31,7 @@ export const cockpitStandardToProtocols: ProtocolControllerMapping = {
     { protocol: JoystickProtocol.MAVLink, value: 13 },
     { protocol: JoystickProtocol.MAVLink, value: 14 },
     { protocol: JoystickProtocol.MAVLink, value: 5 },
-    { protocol: undefined, value: undefined },
+    { protocol: JoystickProtocol.CockpitAction, value: CockpitAction.TOGGLE_FULL_SCREEN },
   ],
 }
 
