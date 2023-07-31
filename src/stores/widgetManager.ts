@@ -21,8 +21,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentProfile = useStorage('cockpit-current-profile-v2', widgetProfile)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile', miniWidgetsProfile)
   const savedProfiles = useStorage('cockpit-saved-profiles-v2', widgetProfiles)
+  const currentViewIndex = useStorage('cockpit-current-view-index', 0)
 
-  const currentView = computed(() => currentProfile.value.views[0])
+  const currentView = computed(() => currentProfile.value.views[currentViewIndex.value])
+
+  const viewsToShow = computed((): View[] => {
+    const viewsOnShowOrder = currentProfile.value.views.slice()
+    viewsOnShowOrder.splice(currentViewIndex.value, 1)
+    viewsOnShowOrder.push(currentProfile.value.views[currentViewIndex.value])
+    return viewsOnShowOrder
+  })
 
   /**
    * Get view where given widget is at
@@ -145,8 +153,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   const selectView = (view: View): void => {
     const index = currentProfile.value.views.indexOf(view)
-    currentProfile.value.views.splice(index, 1)
-    currentProfile.value.views.unshift(view)
+    currentViewIndex.value = index
   }
 
   const exportCurrentView = (): void => {
@@ -252,6 +259,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     gridInterval,
     currentProfile,
     currentView,
+    viewsToShow,
     currentMiniWidgetsProfile,
     savedProfiles,
     loadProfile,
