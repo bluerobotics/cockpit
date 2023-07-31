@@ -426,4 +426,7 @@ watch([home, planningMap], () => {
   box-shadow: none;
   color: white;
 }
+.leaflet-top {
+  margin-top: 50px;
+}
 </style>
