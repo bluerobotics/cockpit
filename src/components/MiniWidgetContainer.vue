@@ -42,6 +42,9 @@
           <template v-if="item.component === MiniWidgetType.ModeSelector">
             <ModeSelector :options="item.options" />
           </template>
+          <template v-if="item.component === MiniWidgetType.ViewSelector">
+            <ViewSelector :options="item.options" />
+          </template>
         </div>
       </div>
     </VueDraggable>
@@ -82,6 +85,9 @@
               </template>
               <template v-if="item.component === MiniWidgetType.ModeSelector">
                 <ModeSelector :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.ViewSelector">
+                <ViewSelector :options="item.options" />
               </template>
             </div>
           </div>
@@ -136,6 +142,9 @@
                 <template v-if="item.component === MiniWidgetType.ModeSelector">
                   <ModeSelector :options="item.options" />
                 </template>
+                <template v-if="item.component === MiniWidgetType.ViewSelector">
+                  <ViewSelector :options="item.options" />
+                </template>
               </div>
             </div>
           </VueDraggable>
@@ -162,6 +171,7 @@ import DepthIndicator from './mini-widgets/DepthIndicator.vue'
 import JoystickCommIndicator from './mini-widgets/JoystickCommIndicator.vue'
 import MiniVideoRecorder from './mini-widgets/MiniVideoRecorder.vue'
 import ModeSelector from './mini-widgets/ModeSelector.vue'
+import ViewSelector from './mini-widgets/ViewSelector.vue'
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 interface Props {
