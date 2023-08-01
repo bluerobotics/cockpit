@@ -145,6 +145,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   function renameView(view: View, name: string): void {
     const index = currentProfile.value.views.indexOf(view)
+    if (name.length === 0) {
+      Swal.fire({ icon: 'error', text: 'View name cannot be blank.', timer: 2000 })
+      return
+    }
     currentProfile.value.views[index].name = name
   }
 
