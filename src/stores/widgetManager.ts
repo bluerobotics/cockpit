@@ -24,7 +24,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const savedProfiles = useStorage('cockpit-saved-profiles-v2', widgetProfiles)
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
 
-  const currentView = computed(() => currentProfile.value.views[currentViewIndex.value])
+  const currentView = computed<View>({
+    get() {
+      return currentProfile.value.views[currentViewIndex.value]
+    },
+    set(newValue) {
+      currentProfile.value.views[currentViewIndex.value] = newValue
+    },
+  })
 
   const viewsToShow = computed((): View[] => {
     const viewsOnShowOrder = currentProfile.value.views.slice()
