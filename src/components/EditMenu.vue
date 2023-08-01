@@ -49,14 +49,14 @@
       <p class="text-lg font-semibold select-none">Current widgets</p>
       <div class="grow" />
       <VueDraggable
-        v-model="store.currentProfile.views[0].widgets"
+        v-model="store.currentView.widgets"
         class="flex flex-col items-center w-full px-2 overflow-x-hidden overflow-y-auto grow"
         animation="150"
         group="regularWidgetsGroup"
       >
         <TransitionGroup name="fade">
           <div
-            v-for="widget in store.currentProfile.views[0].widgets"
+            v-for="widget in store.currentView.widgets"
             :key="widget.hash"
             class="flex items-center justify-between w-full my-1"
           >
