@@ -151,11 +151,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return
     }
 
+    const hashCurrentView = currentView.value.hash
     const index = currentProfile.value.views.indexOf(view)
     currentProfile.value.views.splice(index, 1)
-    if (index === currentViewIndex.value) {
+    const newIndexCurrentView = currentProfile.value.views.findIndex((v) => v.hash === hashCurrentView)
+    if (newIndexCurrentView === -1 || index === currentViewIndex.value) {
       currentViewIndex.value = 0
+      return
     }
+    currentViewIndex.value = newIndexCurrentView
   }
 
   /**
