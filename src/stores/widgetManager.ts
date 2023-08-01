@@ -152,6 +152,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
     const index = currentProfile.value.views.indexOf(view)
     currentProfile.value.views.splice(index, 1)
+    if (index === currentViewIndex.value) {
+      currentViewIndex.value = 0
+    }
   }
 
   /**
