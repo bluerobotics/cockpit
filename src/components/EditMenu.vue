@@ -24,7 +24,7 @@
             </Button>
             <Button
               class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-pencil hover:bg-slate-500"
-              @click=";[(viewBeingRenamed = view), (newViewName = view.name), (viewRenameDialogRevealed = true)]"
+              @click="renameView(view)"
             />
             <Button
               class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
@@ -37,7 +37,7 @@
       <div class="w-full px-2 mt-3">
         <Button
           class="flex items-center justify-center w-full h-8 bg-slate-700 mdi mdi-plus hover:bg-slate-500"
-          @click=";[store.addView(), (viewBeingRenamed = store.currentView), (viewRenameDialogRevealed = true)]"
+          @click="addNewView"
         />
       </div>
     </div>
@@ -137,7 +137,7 @@ import { nextTick } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { type Widget, WidgetType } from '@/types/widgets'
+import { type View, type Widget, WidgetType } from '@/types/widgets'
 
 import Button from './Button.vue'
 
@@ -170,6 +170,17 @@ viewRenameDialog.onConfirm(() => {
   store.renameView(viewBeingRenamed.value, newViewName.value)
   newViewName.value = ''
 })
+
+const addNewView = (): void => {
+  store.addView()
+  renameView(store.currentView)
+}
+
+const renameView = (view: View): void => {
+  viewBeingRenamed.value = view
+  newViewName.value = view.name
+  viewRenameDialogRevealed.value = true
+}
 
 const availableWidgetsContainer = ref()
 onMounted(() => {
