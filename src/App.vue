@@ -110,7 +110,7 @@
           </div>
           <router-view />
         </div>
-        <EditMenu v-model:edit-mode="widgetStore.editingMode" v-model:show-grid="widgetStore.showGrid" />
+        <EditMenu v-model:edit-mode="widgetStore.editingMode" />
       </div>
     </v-main>
   </v-app>

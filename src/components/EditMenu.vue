@@ -155,7 +155,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:showGrid', showGrid: boolean): void
   (e: 'update:editMode', editMode: boolean): void
 }>()
 

@@ -57,8 +57,6 @@ export interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  snapToGrid: true,
-  gridInterval: 0.02,
   allowMoving: true,
   allowResizing: true,
   hideOverflow: false,
