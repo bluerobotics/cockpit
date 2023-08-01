@@ -141,6 +141,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { View } view - View
    */
   function deleteView(view: View): void {
+    if (currentProfile.value.views.length === 1) {
+      Swal.fire({
+        icon: 'error',
+        text: 'Cannot remove last view. Please create another before deleting this one.',
+        timer: 4000,
+      })
+      return
+    }
+
     const index = currentProfile.value.views.indexOf(view)
     currentProfile.value.views.splice(index, 1)
   }
