@@ -134,6 +134,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       name: `${Words.animalsOcean.random()} view`,
       widgets: [],
     })
+    currentViewIndex.value = 0
   }
 
   /**
