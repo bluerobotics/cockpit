@@ -97,7 +97,9 @@ export const useAlertStore = defineStore('alert', () => {
     )
       return
     speak(lastAlert.level)
-    speak(lastAlert.message)
+    // remove leading # if present
+    const message = lastAlert.message.startsWith('#') ? lastAlert.message.slice(1) : lastAlert.message
+    speak(message)
   })
 
   return {
