@@ -1,4 +1,5 @@
 import 'floating-vue/dist/style.css'
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { far } from '@fortawesome/free-regular-svg-icons'
@@ -7,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import FloatingVue from 'floating-vue'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
+import VueVirtualScroller from 'vue-virtual-scroller'
 
 import App from './App.vue'
 import vuetify from './plugins/vuetify'
@@ -18,5 +20,5 @@ loadFonts()
 
 const app = createApp(App)
 app.component('FontAwesomeIcon', FontAwesomeIcon)
-app.use(router).use(vuetify).use(createPinia()).use(FloatingVue)
+app.use(router).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
 app.mount('#app')
