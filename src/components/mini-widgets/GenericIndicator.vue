@@ -36,7 +36,15 @@
             />
           </div>
         </div>
+        <div class="flex items-center justify-center w-full mt-2">
+          <input
+            v-model="iconSearchString"
+            class="w-40 px-2 py-1 rounded-md bg-slate-200"
+            placeholder="Search icons..."
+          />
+        </div>
         <RecycleScroller
+          v-if="iconSearchString === ''"
           v-slot="{ item }"
           class="w-full h-40 mt-3"
           :items="iconsNames.filter((name) => name.includes(iconSearchString))"
@@ -46,6 +54,15 @@
           <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="options.iconName = item">
           </span>
         </RecycleScroller>
+        <div v-else class="grid w-full h-40 grid-cols-6 mt-3 overflow-x-hidden overflow-y-scroll">
+          <span
+            v-for="icon in iconsNames.filter((name) => name.includes(iconSearchString))"
+            :key="icon"
+            class="m-1 text-white cursor-pointer mdi icon-symbol"
+            :class="[icon]"
+            @click="options.iconName = icon"
+          />
+        </div>
       </div>
     </div>
   </Dialog>
@@ -100,6 +117,7 @@ watch(options, updateVariableState)
 let iconsNames: string[] = []
 
 const showConfigurationMenu = ref(false)
+const iconSearchString = ref('')
 </script>
 
 <style>
