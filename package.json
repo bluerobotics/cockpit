@@ -44,6 +44,7 @@
     "vue": "^3.3.4",
     "vue-draggable-plus": "^0.2.0-beta.2",
     "vue-router": "^4.0.14",
+    "vue-virtual-scroller": "^2.0.0-beta.8",
     "vuetify": "^3.1.13",
     "webfontloader": "^1.0.0",
     "webrtc-adapter": "^8.2.0"
