@@ -7,6 +7,7 @@ export enum MiniWidgetType {
   BaseCommIndicator = 'BaseCommIndicator',
   BatteryIndicator = 'BatteryIndicator',
   DepthIndicator = 'DepthIndicator',
+  GenericIndicator = 'GenericIndicator',
   JoystickCommIndicator = 'JoystickCommIndicator',
   MiniVideoRecorder = 'MiniVideoRecorder',
   ModeSelector = 'ModeSelector',
