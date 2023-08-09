@@ -36,12 +36,23 @@
             />
           </div>
         </div>
+        <RecycleScroller
+          v-slot="{ item }"
+          class="w-full h-40 mt-3"
+          :items="iconsNames.filter((name) => name.includes(iconSearchString))"
+          :item-size="40"
+          :grid-items="6"
+        >
+          <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="options.iconName = item">
+          </span>
+        </RecycleScroller>
       </div>
     </div>
   </Dialog>
 </template>
 
 <script setup lang="ts">
+import * as MdiExports from '@mdi/js/mdi'
 import { toReactive } from '@vueuse/core'
 import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
 
@@ -69,6 +80,10 @@ onBeforeMount(() => {
       variableMultiplier: 1,
     })
   }
+
+  iconsNames = Object.keys(MdiExports).map((originalName) => {
+    return originalName.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
+  })
 })
 
 const store = useMainVehicleStore()
@@ -82,6 +97,7 @@ const updateVariableState = (): void => {
 watch(store.genericVariables, updateVariableState)
 watch(options, updateVariableState)
 
+let iconsNames: string[] = []
 
 const showConfigurationMenu = ref(false)
 </script>
