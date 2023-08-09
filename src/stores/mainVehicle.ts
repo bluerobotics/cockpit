@@ -124,6 +124,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const configurationPages = ref<PageDescription[]>([])
   const timeNow = useTimestamp({ interval: 100 })
   const statusText: StatusText = reactive({} as StatusText)
+  const genericVariables: Record<string, unknown> = reactive({})
 
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -275,6 +276,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     })
     mainVehicle.value.onStatusText.add((newStatusText: StatusText) => {
       Object.assign(statusText, newStatusText)
+    })
+    mainVehicle.value.onGenericVariables.add((newGenericVariablesState: Record<string, unknown>) => {
+      Object.assign(genericVariables, newGenericVariablesState)
     })
     mainVehicle.value.onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.system_id != 1 || pack.header.component_id != 1) {
@@ -464,5 +468,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     currentParameters,
     configurationPages,
     rtcConfiguration,
+    genericVariables,
   }
 })
