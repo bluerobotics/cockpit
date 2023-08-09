@@ -33,6 +33,9 @@
           <template v-if="item.component === MiniWidgetType.DepthIndicator">
             <DepthIndicator :options="item.options" />
           </template>
+          <template v-if="item.component === MiniWidgetType.GenericIndicator">
+            <GenericIndicator :options="item.options" />
+          </template>
           <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
             <JoystickCommIndicator :options="item.options" />
           </template>
@@ -76,6 +79,9 @@
               </template>
               <template v-if="item.component === MiniWidgetType.DepthIndicator">
                 <DepthIndicator :options="item.options" />
+              </template>
+              <template v-if="item.component === MiniWidgetType.GenericIndicator">
+                <GenericIndicator :options="item.options" />
               </template>
               <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
                 <JoystickCommIndicator :options="item.options" />
@@ -133,6 +139,9 @@
                 <template v-if="item.component === MiniWidgetType.DepthIndicator">
                   <DepthIndicator :options="item.options" />
                 </template>
+                <template v-if="item.component === MiniWidgetType.GenericIndicator">
+                  <GenericIndicator :options="item.options" />
+                </template>
                 <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
                   <JoystickCommIndicator :options="item.options" />
                 </template>
@@ -168,6 +177,7 @@ import ArmerButton from './mini-widgets/ArmerButton.vue'
 import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
 import BatteryIndicator from './mini-widgets/BatteryIndicator.vue'
 import DepthIndicator from './mini-widgets/DepthIndicator.vue'
+import GenericIndicator from './mini-widgets/GenericIndicator.vue'
 import JoystickCommIndicator from './mini-widgets/JoystickCommIndicator.vue'
 import MiniVideoRecorder from './mini-widgets/MiniVideoRecorder.vue'
 import ModeSelector from './mini-widgets/ModeSelector.vue'
