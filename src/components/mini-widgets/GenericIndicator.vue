@@ -106,7 +106,12 @@ onBeforeMount(() => {
 const store = useMainVehicleStore()
 
 const currentState = ref<unknown>(0)
-const parsedState = computed(() => round(Number(options.variableMultiplier) * Number(currentState.value)))
+const parsedState = computed(() => {
+  if (currentState.value) {
+    return round(Number(options.variableMultiplier) * Number(currentState.value)).toString()
+  }
+  return '--'
+})
 
 const updateVariableState = (): void => {
   currentState.value = store.genericVariables[options.variableName as string]
