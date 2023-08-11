@@ -95,10 +95,29 @@
     </div>
     <div class="w-full h-px mt-4 bg-slate-800/40" />
   </div>
-  <div class="flex items-center justify-between text-white edit-panel middle-panel" :class="{ active: editMode }"></div>
+  <div
+    class="flex flex-col items-center justify-center px-3 text-white edit-panel middle-panel"
+    :class="{ active: editMode }"
+  >
+    <Button
+      class="flex items-center justify-center w-full h-8 my-1 hover:bg-slate-500"
+      :class="{ 'bg-slate-700': widgetMode !== WidgetMode.RegularWidgets }"
+      @click="widgetMode = WidgetMode.RegularWidgets"
+    >
+      <p class="overflow-hidden text-ellipsis whitespace-nowrap">Regular widgets</p>
+    </Button>
+    <Button
+      class="flex items-center justify-center w-full h-8 my-1 hover:bg-slate-500"
+      :class="{ 'bg-slate-700': widgetMode !== WidgetMode.MiniWidgets }"
+      @click="widgetMode = WidgetMode.MiniWidgets"
+    >
+      <p class="overflow-hidden text-ellipsis whitespace-nowrap">Mini widgets</p>
+    </Button>
+  </div>
   <div class="flex items-center justify-between py-2 edit-panel bottom-panel" :class="{ active: editMode }">
     <div class="w-px h-full mr-2 bg-slate-800/40" />
     <div
+      v-show="widgetMode === WidgetMode.RegularWidgets"
       ref="availableWidgetsContainer"
       class="flex items-center justify-between w-full h-full overflow-x-auto text-white aspect-square"
     >
@@ -112,6 +131,21 @@
           class="flex items-center justify-center w-8 m-2 transition-all rounded-md cursor-pointer bg-slate-700 aspect-square mdi mdi-plus hover:bg-slate-400"
           @click="store.addWidget(widgetType, store.currentView)"
         />
+      </div>
+    </div>
+    <div
+      v-show="widgetMode === WidgetMode.MiniWidgets"
+      ref="availableMiniWidgetsContainer"
+      class="flex items-center w-full h-full gap-2 overflow-auto"
+    >
+      <div
+        v-for="item in availableMiniWidgetTypes"
+        :key="item.hash"
+        class="flex flex-col items-center justify-center p-2 mx-3 rounded-md h-5/6 w-fit text-slate-100"
+      >
+        <div class="m-2 pointer-events-none select-none">
+          <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
+        </div>
       </div>
     </div>
   </div>
@@ -132,14 +166,17 @@
 
 <script setup lang="ts">
 import { useConfirmDialog } from '@vueuse/core'
+import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
-import { VueDraggable } from 'vue-draggable-plus'
+import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import { MiniWidgetType } from '@/types/miniWidgets'
 import { type View, type Widget, WidgetType } from '@/types/widgets'
 
 import Button from './Button.vue'
+import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
 
 const store = useWidgetManagerStore()
 const trashList = ref<Widget[]>([])
@@ -159,6 +196,16 @@ const emit = defineEmits<{
 }>()
 
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
+const availableMiniWidgetTypes = computed(() =>
+  Object.values(MiniWidgetType).map((widgetType) => ({ component: widgetType, options: {}, hash: uuid() }))
+)
+
+const widgetAddMenuGroupOptions = {
+  name: 'generalGroup',
+  pull: 'clone',
+  put: false,
+  revertClone: false,
+}
 
 const editMode = toRefs(props).editMode
 
@@ -183,12 +230,33 @@ const renameView = (view: View): void => {
 }
 
 const availableWidgetsContainer = ref()
+const availableMiniWidgetsContainer = ref()
+
+// @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
+const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
+  animation: '150',
+  group: widgetAddMenuGroupOptions,
+  sort: false,
+})
+useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidgetsContainerOptions)
+
 onMounted(() => {
-  availableWidgetsContainer.value.addEventListener('wheel', function (e: WheelEvent) {
-    if (e.deltaY > 0) availableWidgetsContainer.value.scrollLeft += 100
-    else availableWidgetsContainer.value.scrollLeft -= 100
+  const widgetContainers = [availableWidgetsContainer.value, availableMiniWidgetsContainer.value]
+  widgetContainers.forEach((container) => {
+    container.addEventListener('wheel', function (e: WheelEvent) {
+      if (e.deltaY > 0) container.scrollLeft += 100
+      else container.scrollLeft -= 100
+    })
   })
 })
+
+// eslint-disable-next-line jsdoc/require-jsdoc, no-redeclare
+enum WidgetMode {
+  RegularWidgets,
+  MiniWidgets,
+}
+
+const widgetMode = ref(WidgetMode.MiniWidgets)
 </script>
 
 <style scoped>
