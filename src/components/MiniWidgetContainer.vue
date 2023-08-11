@@ -1,13 +1,5 @@
 <template>
   <div ref="miniWidgetContainer" class="relative flex items-center justify-center w-full h-full">
-    <div
-      ref="addButton"
-      class="transition-all z-[63] absolute flex items-center justify-center text-slate-50 hover:text-green-500 cursor-pointer top-1/2 left-1/2 -translate-y-2 -translate-x-2 h-4"
-      :class="{ 'pointer-events-none opacity-0': !showWidgetAddButton }"
-      @click="showWidgetAddMenu = true"
-    >
-      <FontAwesomeIcon icon="fa-solid fa-circle-plus" size="xl" class="transition-all" />
-    </div>
     <VueDraggable
       v-model="container.widgets"
       :disabled="!allowEditing"
@@ -26,35 +18,6 @@
       </div>
     </VueDraggable>
   </div>
-  <teleport to="body">
-    <Transition>
-      <div
-        v-if="showWidgetAddMenu"
-        ref="widgetAddMenu"
-        class="absolute w-64 h-1/3 -translate-x-32 -translate-y-1/2 top-1/2 left-1/2 bg-slate-500/40 z-[65] rounded-2xl transition-all backdrop-blur-sm p-5"
-      >
-        <VueDraggable
-          v-model="allAvailableWidgets"
-          animation="150"
-          :group="widgetAddMenuGroupOptions"
-          :sort="false"
-          class="flex flex-col items-center w-full h-full gap-2 overflow-auto scrollbar-hide bottom-trans-grad"
-        >
-          <div v-for="item in allAvailableWidgets" :key="item.hash">
-            <div class="pointer-events-none select-none">
-              <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
-            </div>
-          </div>
-        </VueDraggable>
-        <button
-          class="absolute top-0 right-0 m-2 transition-all text-slate-400 hover:text-slate-200"
-          @click="showWidgetAddMenu = !showWidgetAddMenu"
-        >
-          <FontAwesomeIcon icon="fa-solid fa-close" />
-        </button>
-      </div>
-    </Transition>
-  </teleport>
   <teleport to="body">
     <Transition>
       <div
@@ -86,14 +49,13 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useElementHover } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { ref, toRefs, watch } from 'vue'
 import { computed } from 'vue'
 import { nextTick } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
-import { type MiniWidget, type MiniWidgetContainer, MiniWidgetType } from '@/types/miniWidgets'
+import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
 
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
 
@@ -128,42 +90,9 @@ const allowEditing = toRefs(props).allowEditing
 const wrap = toRefs(props).wrap
 const align = toRefs(props).align
 
-const showWidgetAddButton = ref(false)
-const addButton = ref<HTMLElement>()
 const miniWidgetContainer = ref<HTMLElement>()
-const hoveringContainer = useElementHover(miniWidgetContainer)
 
 const widgetsAlignment = computed(() => `justify-${align.value}`)
-
-// eslint-disable-next-line no-undef
-let closeAddButtonTimeout: NodeJS.Timeout | undefined = undefined
-watch(hoveringContainer, (isHovered, wasHovered) => {
-  if (!allowEditing.value) return
-  if (addButton.value === undefined || miniWidgetContainer.value === undefined) return
-  if (closeAddButtonTimeout !== undefined) {
-    clearTimeout(closeAddButtonTimeout)
-  }
-  const containerBounds = miniWidgetContainer.value.getBoundingClientRect()
-  const buttonBounds = addButton.value.getBoundingClientRect()
-  const containerInScreenTop = containerBounds.y < window.innerHeight / 2
-  if (!wasHovered && isHovered) {
-    addButton.value.style.top = containerInScreenTop
-      ? `${containerBounds.height + 1.5 * buttonBounds.height}px`
-      : `${0 - 1.5 * buttonBounds.height}px`
-    showWidgetAddButton.value = true
-  }
-  if (wasHovered && !isHovered) {
-    closeAddButtonTimeout = setTimeout(() => {
-      if (addButton.value === undefined) return
-      addButton.value.style.top = '50%'
-      showWidgetAddButton.value = false
-    }, 1500)
-  }
-})
-
-const showWidgetAddMenu = ref(false)
-const widgetAddMenu = ref()
-onClickOutside(widgetAddMenu, () => (showWidgetAddMenu.value = false))
 
 const refreshWidgetsHashs = (): void => {
   container.value.widgets = container.value.widgets.map((w) => ({ ...w, ...{ hash: uuid() } }))
@@ -175,16 +104,6 @@ const trashList = ref<MiniWidget[]>([])
 watch(trashList, () => {
   nextTick(() => (trashList.value = []))
 })
-const allAvailableWidgets = computed(() =>
-  Object.values(MiniWidgetType).map((widgetType) => ({ component: widgetType, options: {}, hash: uuid() }))
-)
-
-const widgetAddMenuGroupOptions = {
-  name: 'generalGroup',
-  pull: 'clone',
-  put: false,
-  revertClone: false,
-}
 </script>
 
 <style>
