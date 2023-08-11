@@ -21,33 +21,7 @@
     >
       <div v-for="item in container.widgets" :key="item.hash">
         <div :class="{ 'select-none pointer-events-none': allowEditing }">
-          <template v-if="item.component === MiniWidgetType.ArmerButton">
-            <ArmerButton :options="item.options" />
-          </template>
-          <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
-            <BaseCommIndicator :options="item.options" />
-          </template>
-          <template v-if="item.component === MiniWidgetType.BatteryIndicator">
-            <BatteryIndicator :options="item.options" />
-          </template>
-          <template v-if="item.component === MiniWidgetType.DepthIndicator">
-            <DepthIndicator :options="item.options" />
-          </template>
-          <template v-if="item.component === MiniWidgetType.GenericIndicator">
-            <GenericIndicator :options="item.options" />
-          </template>
-          <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
-            <JoystickCommIndicator :options="item.options" />
-          </template>
-          <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
-            <MiniVideoRecorder :options="item.options" />
-          </template>
-          <template v-if="item.component === MiniWidgetType.ModeSelector">
-            <ModeSelector :options="item.options" />
-          </template>
-          <template v-if="item.component === MiniWidgetType.ViewSelector">
-            <ViewSelector :options="item.options" />
-          </template>
+          <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
         </div>
       </div>
     </VueDraggable>
@@ -68,33 +42,7 @@
         >
           <div v-for="item in allAvailableWidgets" :key="item.hash">
             <div class="pointer-events-none select-none">
-              <template v-if="item.component === MiniWidgetType.ArmerButton">
-                <ArmerButton :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
-                <BaseCommIndicator :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.BatteryIndicator">
-                <BatteryIndicator :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.DepthIndicator">
-                <DepthIndicator :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.GenericIndicator">
-                <GenericIndicator :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
-                <JoystickCommIndicator :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
-                <MiniVideoRecorder :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.ModeSelector">
-                <ModeSelector :options="item.options" />
-              </template>
-              <template v-if="item.component === MiniWidgetType.ViewSelector">
-                <ViewSelector :options="item.options" />
-              </template>
+              <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
             </div>
           </div>
         </VueDraggable>
@@ -127,33 +75,7 @@
           >
             <div v-for="item in trashList" :key="item.hash">
               <div class="pointer-events-none select-none">
-                <template v-if="item.component === MiniWidgetType.ArmerButton">
-                  <ArmerButton :options="item.options" />
-                </template>
-                <template v-if="item.component === MiniWidgetType.BaseCommIndicator">
-                  <BaseCommIndicator :options="item.options" />
-                </template>
-                <template v-if="item.component === MiniWidgetType.BatteryIndicator">
-                  <BatteryIndicator :options="item.options" />
-                </template>
-                <template v-if="item.component === MiniWidgetType.DepthIndicator">
-                  <DepthIndicator :options="item.options" />
-                </template>
-                <template v-if="item.component === MiniWidgetType.GenericIndicator">
-                  <GenericIndicator :options="item.options" />
-                </template>
-                <template v-if="item.component === MiniWidgetType.JoystickCommIndicator">
-                  <JoystickCommIndicator :options="item.options" />
-                </template>
-                <template v-if="item.component === MiniWidgetType.MiniVideoRecorder">
-                  <MiniVideoRecorder :options="item.options" />
-                </template>
-                <template v-if="item.component === MiniWidgetType.ModeSelector">
-                  <ModeSelector :options="item.options" />
-                </template>
-                <template v-if="item.component === MiniWidgetType.ViewSelector">
-                  <ViewSelector :options="item.options" />
-                </template>
+                <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
               </div>
             </div>
           </VueDraggable>
@@ -173,15 +95,7 @@ import { VueDraggable } from 'vue-draggable-plus'
 
 import { type MiniWidget, type MiniWidgetContainer, MiniWidgetType } from '@/types/miniWidgets'
 
-import ArmerButton from './mini-widgets/ArmerButton.vue'
-import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
-import BatteryIndicator from './mini-widgets/BatteryIndicator.vue'
-import DepthIndicator from './mini-widgets/DepthIndicator.vue'
-import GenericIndicator from './mini-widgets/GenericIndicator.vue'
-import JoystickCommIndicator from './mini-widgets/JoystickCommIndicator.vue'
-import MiniVideoRecorder from './mini-widgets/MiniVideoRecorder.vue'
-import ModeSelector from './mini-widgets/ModeSelector.vue'
-import ViewSelector from './mini-widgets/ViewSelector.vue'
+import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 interface Props {
