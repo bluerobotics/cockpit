@@ -41,6 +41,21 @@
         />
       </div>
     </div>
+    <div ref="managementContainer" class="flex flex-col items-center justify-center w-full px-2 shrink">
+      <Button class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500">
+        <label class="flex items-center justify-center h-8 overflow-auto cursor-pointer">
+          <input type="file" accept="application/json" hidden @change="(e: Event) => store.importView(e)" />
+          <p class="overflow-hidden text-ellipsis whitespace-nowrap">Import view</p>
+        </label>
+      </Button>
+      <Button
+        class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500"
+        @click="store.exportCurrentView"
+      >
+        <p class="overflow-hidden text-ellipsis whitespace-nowrap">Export current view</p>
+      </Button>
+      <div />
+    </div>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
     <div
       ref="currentWidgetsContainer"
@@ -76,22 +91,6 @@
         </TransitionGroup>
       </VueDraggable>
       <div class="grow" />
-    </div>
-    <div class="w-full h-px my-2 sm bg-slate-800/40" />
-    <div ref="managementContainer" class="flex flex-col items-center justify-center w-full px-2 shrink">
-      <Button class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500">
-        <label class="flex items-center justify-center h-8 overflow-auto cursor-pointer">
-          <input type="file" accept="application/json" hidden @change="(e: Event) => store.importView(e)" />
-          <p class="overflow-hidden text-ellipsis whitespace-nowrap">Import view</p>
-        </label>
-      </Button>
-      <Button
-        class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500"
-        @click="store.exportCurrentView"
-      >
-        <p class="overflow-hidden text-ellipsis whitespace-nowrap">Export current view</p>
-      </Button>
-      <div />
     </div>
     <div class="w-full h-px mt-4 bg-slate-800/40" />
   </div>
