@@ -64,9 +64,9 @@
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
           <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex backdrop-blur-[2px]">
             <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
-              <img class="main-menu-button-image" src="@/assets/blue-robotics-logo.svg" />
+              <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
             </button>
-            <div class="flex flex-col items-center justify-center h-full ml-3 mr-1">
+            <div class="flex items-center justify-center h-full ml-3 mr-1">
               <p
                 class="overflow-hidden text-lg font-medium leading-none text-white cursor-pointer select-none max-h-9"
                 @click="showMissionOptionsDialog = true"
@@ -173,14 +173,6 @@ html,
 body {
   /* Removes the scrollbar */
   overflow: hidden !important;
-}
-.main-menu-button-image {
-  width: 80%;
-  height: 80%;
-  filter: invert(100%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(100%) contrast(100%);
-}
-.main-menu-button-image:hover {
-  filter: invert(100%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(100%) contrast(90%);
 }
 .router-view {
   width: 100%;
