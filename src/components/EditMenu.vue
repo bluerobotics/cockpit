@@ -126,11 +126,11 @@
         :key="widgetType"
         class="flex flex-col items-center justify-center p-2 mx-3 rounded-md bg-slate-500 h-5/6 aspect-square"
       >
-        {{ widgetType }}
         <div
           class="flex items-center justify-center w-8 m-2 transition-all rounded-md cursor-pointer bg-slate-700 aspect-square mdi mdi-plus hover:bg-slate-400"
           @click="store.addWidget(widgetType, store.currentView)"
         />
+        {{ widgetType }}
       </div>
     </div>
     <div
