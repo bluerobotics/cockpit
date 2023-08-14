@@ -82,6 +82,11 @@ export const availableGamepadToCockpitMaps: { [key in JoystickModel]: GamepadToC
     axes: [0, 1, 2, 3],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
   },
+  [JoystickModel.XboxController_Wired]: {
+    name: 'Xbox Controller (wired)',
+    axes: [0, 1, 2, 3],
+    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+  },
   [JoystickModel.Unknown]: {
     name: 'Standard gamepad',
     axes: [0, 1, 2, 3, 4, 5, 6, 7],
