@@ -64,6 +64,13 @@ export const useControllerStore = defineStore('controller', () => {
   }
   updateCockpitActionButtonsPrettyNames()
 
+  // If there's a mapping in our database that is not on the user storage, add it to the user
+  // This will happen whenever a new joystick profile is added to Cockpit's database
+  Object.entries(availableGamepadToCockpitMaps).forEach(([k, v]) => {
+    if (Object.keys(cockpitStdMappings.value).includes(k)) return
+    cockpitStdMappings.value[k as JoystickModel] = v
+  })
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
