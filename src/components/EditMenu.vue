@@ -255,7 +255,7 @@ enum WidgetMode {
   MiniWidgets,
 }
 
-const widgetMode = ref(WidgetMode.MiniWidgets)
+const widgetMode = ref(WidgetMode.RegularWidgets)
 </script>
 
 <style scoped>
