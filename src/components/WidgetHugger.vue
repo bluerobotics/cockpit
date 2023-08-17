@@ -341,6 +341,7 @@ const optionsBtnTopStyle = computed(() => `${48 - constrain(widget.value.positio
   color: white;
   filter: drop-shadow(0.5px 0.5px 0.5px black);
   display: v-bind('mouseOverWidgetStyle');
+  cursor: pointer;
 }
 
 .resize-handle {
