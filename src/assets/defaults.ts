@@ -1,7 +1,7 @@
 import { type MiniWidgetProfile, MiniWidgetType } from '@/types/miniWidgets'
 import { type Profile, WidgetType } from '@/types/widgets'
 
-export const defaultGlobalAddress = 'blueos.local'
+export const defaultGlobalAddress = process.env.NODE_ENV === 'development' ? 'blueos.local' : window.location.hostname
 export const widgetProfiles: { [key: string]: Profile } = {
   'c2bcf04d-048f-496f-9d78-fc4002608028': {
     name: 'Default Cockpit profile',
