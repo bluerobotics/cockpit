@@ -3,8 +3,10 @@ import type {
   MAVLinkMessageDictionary,
   Message as MavMessage,
   Package,
+  Type,
 } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
+  GpsFixType,
   MavAutopilot,
   MavCmd,
   MavComponent,
@@ -19,6 +21,7 @@ import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
+import { round } from '@/libs/utils'
 import {
   alertLevelFromMavSeverity,
   convertCockpitWaypointsToMavlink,
@@ -30,8 +33,10 @@ import {
   Attitude,
   Battery,
   Coordinates,
+  FixTypeGPS,
   Parameter,
   PowerSupply,
+  StatusGPS,
   StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
@@ -65,6 +70,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _currentCockpitMissionItemsOnPlanning: Waypoint[] = []
   _currentMavlinkMissionItemsOnVehicle: Message.MissionItemInt[] = []
   _statusText = new StatusText()
+  _statusGPS = new StatusGPS()
   _vehicleSpecificErrors = [0, 0, 0, 0]
 
   _messages: MAVLinkMessageDictionary = new Map()
@@ -205,6 +211,26 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         this._velocity.ground = Math.sqrt(this._velocity.x ** 2 + this._velocity.y ** 2)
         this._velocity.overall = Math.sqrt(this._velocity.x ** 2 + this._velocity.y ** 2 + this._velocity.z ** 2)
         this.onVelocity.emit()
+        break
+      }
+      case MAVLinkType.GPS_RAW_INT: {
+        const gpsMessage = mavlink_message.message as Message.GpsRawInt
+        this._statusGPS.visibleSatellites = gpsMessage.satellites_visible
+        this._statusGPS.HDOP = round(gpsMessage.eph / 100)
+        this._statusGPS.VDOP = round(gpsMessage.epv / 100)
+        const arduPilotGPSFixTable = {
+          [GpsFixType.GPS_FIX_TYPE_NO_GPS]: FixTypeGPS.NO_GPS,
+          [GpsFixType.GPS_FIX_TYPE_NO_FIX]: FixTypeGPS.NO_FIX,
+          [GpsFixType.GPS_FIX_TYPE_2D_FIX]: FixTypeGPS.FIX_2D,
+          [GpsFixType.GPS_FIX_TYPE_3D_FIX]: FixTypeGPS.FIX_3D,
+          [GpsFixType.GPS_FIX_TYPE_DGPS]: FixTypeGPS.DGPS,
+          [GpsFixType.GPS_FIX_TYPE_RTK_FLOAT]: FixTypeGPS.RTK_FLOAT,
+          [GpsFixType.GPS_FIX_TYPE_RTK_FIXED]: FixTypeGPS.RTK_FIXED,
+          [GpsFixType.GPS_FIX_TYPE_STATIC]: FixTypeGPS.STATIC,
+          [GpsFixType.GPS_FIX_TYPE_PPP]: FixTypeGPS.PPP,
+        }
+        this._statusGPS.fixType = arduPilotGPSFixTable[(gpsMessage.fix_type as unknown as Type<GpsFixType>).type]
+        this.onStatusGPS.emit()
         break
       }
       case MAVLinkType.HEARTBEAT: {
@@ -387,6 +413,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   statusText(): StatusText {
     return this._statusText
+  }
+
+  /**
+   * Return GPS status information
+   * @returns {StatusGPS}
+   */
+  statusGPS(): StatusGPS {
+    return this._statusGPS
   }
 
   /**
