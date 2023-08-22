@@ -11,6 +11,7 @@ export enum MiniWidgetType {
   JoystickCommIndicator = 'JoystickCommIndicator',
   MiniVideoRecorder = 'MiniVideoRecorder',
   ModeSelector = 'ModeSelector',
+  SatelliteIndicator = 'SatelliteIndicator',
   ViewSelector = 'ViewSelector',
 }
 
