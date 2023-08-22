@@ -19,9 +19,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
-  const currentProfile = useStorage('cockpit-current-profile-v3', widgetProfile)
-  const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile', miniWidgetsProfile)
-  const savedProfiles = useStorage('cockpit-saved-profiles-v3', widgetProfiles)
+  const currentProfile = useStorage('cockpit-current-profile-v4', widgetProfile)
+  const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v2', miniWidgetsProfile)
+  const savedProfiles = useStorage('cockpit-saved-profiles-v4', widgetProfiles)
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
 
   const currentView = computed<View>({
@@ -133,6 +133,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       hash: uuid4(),
       name: `${Words.animalsOcean.random()} view`,
       widgets: [],
+      miniWidgetContainers: [
+        { name: 'Bottom-left container', widgets: [] },
+        { name: 'Bottom-center container', widgets: [] },
+        { name: 'Bottom-right container', widgets: [] },
+      ],
     })
     currentViewIndex.value = 0
   }

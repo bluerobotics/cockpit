@@ -1,4 +1,5 @@
 import type { Point2D, SizeRect2D } from './general'
+import type { MiniWidgetContainer } from './miniWidgets'
 
 /**
  * Available components to be used in the Widget system
@@ -81,6 +82,11 @@ export type View = {
    * Array of widgets that are stored in the view
    */
   widgets: Widget[]
+  /**
+   * Array of mini-widget containers associated with this view.
+   * Mainly used for storing the configuration of the mini-widgets in the bottom bar.
+   */
+  miniWidgetContainers: MiniWidgetContainer[]
   /**
    * Editable name for the view
    */

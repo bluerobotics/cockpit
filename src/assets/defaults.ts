@@ -92,6 +92,48 @@ export const widgetProfiles: { [key: string]: Profile } = {
             },
           },
         ],
+        miniWidgetContainers: [
+          {
+            name: 'Bottom-left container',
+            widgets: [
+              {
+                hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
+                component: MiniWidgetType.ViewSelector,
+                options: {},
+              },
+            ],
+          },
+          {
+            name: 'Bottom-center container',
+            widgets: [
+              {
+                hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
+                component: MiniWidgetType.DepthIndicator,
+                options: {},
+              },
+            ],
+          },
+          {
+            name: 'Bottom-right container',
+            widgets: [
+              {
+                hash: '837a6722-1e54-4ace-9a92-d9c5af059d16',
+                component: MiniWidgetType.ArmerButton,
+                options: {},
+              },
+              {
+                hash: 'c6301929-cdfc-48af-9fdd-c87ce65d7395',
+                component: MiniWidgetType.ModeSelector,
+                options: {},
+              },
+              {
+                hash: 'a4d0d6ce-9978-40f2-89ab-958f91137177',
+                component: MiniWidgetType.MiniVideoRecorder,
+                options: {},
+              },
+            ],
+          },
+        ],
       },
       {
         hash: 'f8a76470-9122-44f7-97f7-4555a59ee9c4',
@@ -113,6 +155,20 @@ export const widgetProfiles: { [key: string]: Profile } = {
             },
             options: {},
           },
+        ],
+        miniWidgetContainers: [
+          {
+            name: 'Bottom-left container',
+            widgets: [
+              {
+                hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
+                component: MiniWidgetType.ViewSelector,
+                options: {},
+              },
+            ],
+          },
+          { name: 'Bottom-center container', widgets: [] },
+          { name: 'Bottom-right container', widgets: [] },
         ],
       },
     ],
@@ -140,46 +196,6 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
           {
             hash: '7b31c4c4-e273-4f75-b0b7-d56263c4177d',
             component: MiniWidgetType.BatteryIndicator,
-            options: {},
-          },
-        ],
-      },
-      {
-        name: 'Bottom-left container',
-        widgets: [
-          {
-            hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
-            component: MiniWidgetType.ViewSelector,
-            options: {},
-          },
-        ],
-      },
-      {
-        name: 'Bottom-center container',
-        widgets: [
-          {
-            hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
-            component: MiniWidgetType.DepthIndicator,
-            options: {},
-          },
-        ],
-      },
-      {
-        name: 'Bottom-right container',
-        widgets: [
-          {
-            hash: '837a6722-1e54-4ace-9a92-d9c5af059d16',
-            component: MiniWidgetType.ArmerButton,
-            options: {},
-          },
-          {
-            hash: 'c6301929-cdfc-48af-9fdd-c87ce65d7395',
-            component: MiniWidgetType.ModeSelector,
-            options: {},
-          },
-          {
-            hash: 'a4d0d6ce-9978-40f2-89ab-958f91137177',
-            component: MiniWidgetType.MiniVideoRecorder,
             options: {},
           },
         ],
