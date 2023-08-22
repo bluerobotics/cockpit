@@ -91,19 +91,19 @@
           </div>
           <div class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between">
             <MiniWidgetContainer
-              :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
+              :container="widgetStore.currentView.miniWidgetContainers[0]"
               :allow-editing="widgetStore.editingMode"
               align="start"
             />
             <div />
             <MiniWidgetContainer
-              :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
+              :container="widgetStore.currentView.miniWidgetContainers[1]"
               :allow-editing="widgetStore.editingMode"
               align="center"
             />
             <div />
             <MiniWidgetContainer
-              :container="widgetStore.currentMiniWidgetsProfile.containers[3]"
+              :container="widgetStore.currentView.miniWidgetContainers[2]"
               :allow-editing="widgetStore.editingMode"
               align="end"
             />
