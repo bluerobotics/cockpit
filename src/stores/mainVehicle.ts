@@ -29,6 +29,7 @@ import type {
   PageDescription,
   Parameter,
   PowerSupply,
+  StatusGPS,
   StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
@@ -124,6 +125,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const configurationPages = ref<PageDescription[]>([])
   const timeNow = useTimestamp({ interval: 100 })
   const statusText: StatusText = reactive({} as StatusText)
+  const statusGPS: StatusGPS = reactive({} as StatusGPS)
   const genericVariables: Record<string, unknown> = reactive({})
 
   const mode = ref<string | undefined>(undefined)
@@ -276,6 +278,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     })
     mainVehicle.value.onStatusText.add((newStatusText: StatusText) => {
       Object.assign(statusText, newStatusText)
+    })
+    mainVehicle.value.onStatusGPS.add((newStatusGPS: StatusGPS) => {
+      Object.assign(statusGPS, newStatusGPS)
     })
     mainVehicle.value.onGenericVariables.add((newGenericVariablesState: Record<string, unknown>) => {
       Object.assign(genericVariables, newGenericVariablesState)
@@ -459,6 +464,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     velocity,
     powerSupply,
     statusText,
+    statusGPS,
     mode,
     modes,
     isArmed,

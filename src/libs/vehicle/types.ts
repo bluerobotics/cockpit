@@ -177,6 +177,31 @@ export class StatusText {
 }
 
 /**
+ * Possible fix types for GPS
+ */
+export enum FixTypeGPS {
+  NO_GPS = 'No GPS',
+  NO_FIX = 'No fix',
+  FIX_2D = '2D fix',
+  FIX_3D = '3D fix',
+  DGPS = 'DGPS fix',
+  RTK_FLOAT = 'RTK float',
+  RTK_FIXED = 'RTK fix',
+  STATIC = 'Static',
+  PPP = 'PPP fix',
+}
+
+/**
+ * GPS status
+ */
+export class StatusGPS {
+  visibleSatellites = 0
+  fixType = FixTypeGPS.NO_GPS
+  HDOP: number
+  VDOP: number
+}
+
+/**
  * Battery abstraction
  */
 export class Battery {
