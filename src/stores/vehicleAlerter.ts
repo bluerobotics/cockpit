@@ -26,4 +26,13 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
       alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle ${state}`))
     }
   )
+
+  watch(
+    () => vehicleStore.isVehicleOnline,
+    (isOnlineNow) => {
+      const alertLevel = isOnlineNow ? AlertLevel.Success : AlertLevel.Error
+      const alertMessage = isOnlineNow ? 'connected' : 'disconnected'
+      alertStore.pushAlert(new Alert(alertLevel, `Vehicle ${alertMessage}`))
+    }
+  )
 })
