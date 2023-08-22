@@ -23,6 +23,9 @@
   <template v-if="widgetType === MiniWidgetType.ModeSelector">
     <ModeSelector :options="options" />
   </template>
+  <template v-if="widgetType === MiniWidgetType.SatelliteIndicator">
+    <SatelliteIndicator :options="options" />
+  </template>
   <template v-if="widgetType === MiniWidgetType.ViewSelector">
     <ViewSelector :options="options" />
   </template>
@@ -41,6 +44,7 @@ import GenericIndicator from './mini-widgets/GenericIndicator.vue'
 import JoystickCommIndicator from './mini-widgets/JoystickCommIndicator.vue'
 import MiniVideoRecorder from './mini-widgets/MiniVideoRecorder.vue'
 import ModeSelector from './mini-widgets/ModeSelector.vue'
+import SatelliteIndicator from './mini-widgets/SatelliteIndicator.vue'
 import ViewSelector from './mini-widgets/ViewSelector.vue'
 
 const props = defineProps<{
