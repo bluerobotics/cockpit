@@ -35,7 +35,6 @@ import type {
 } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
-import { Alert, AlertLevel } from '@/types/alert'
 import { type MetadataFile } from '@/types/ardupilot-metadata'
 import {
   type JoystickState,
@@ -45,7 +44,6 @@ import {
 } from '@/types/joystick'
 import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
 
-import { useAlertStore } from './alert'
 import { useControllerStore } from './controller'
 
 /**
@@ -97,8 +95,6 @@ class CustomizableParameter<T> {
 }
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
-  const alertStore = useAlertStore()
-
   const cpuLoad = ref<number>()
   const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
   const _mainConnectionURI = new CustomizableParameter<Connection.URI>(() => {
@@ -249,7 +245,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     modes.value = mainVehicle.value.modesAvailable()
     icon.value = mainVehicle.value.icon()
     configurationPages.value = mainVehicle.value.configurationPages()
-    alertStore.pushAlert(new Alert(AlertLevel.Success, 'Vehicle connected'))
 
     mainVehicle.value.onAltitude.add((newAltitude: Altitude) => {
       Object.assign(altitude, newAltitude)
