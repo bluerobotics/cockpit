@@ -350,15 +350,17 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         metadata = ardurover_metadata
       }
 
+      const updatedParameterTable = {}
       for (const category of Object.values(metadata)) {
         for (const [name, parameter] of Object.entries(category)) {
           if (!isNaN(Number(parameter))) {
             continue
           }
           const newParameterTable = { ...parametersTable, ...{ [name]: parameter } }
-          Object.assign(parametersTable, newParameterTable)
+          Object.assign(updatedParameterTable, newParameterTable)
         }
       }
+      Object.assign(parametersTable, updatedParameterTable)
     }
     requestParametersList()
   })
