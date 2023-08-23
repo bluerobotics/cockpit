@@ -150,10 +150,58 @@ export interface GamepadToCockpitStdMapping {
 }
 
 /**
+ * Buttons for PS4 controller
+ */
+export enum JoystickButton {
+  B0 = 0, // Bottom button in right cluster
+  B1 = 1, // Right button in right cluster
+  B2 = 2, // Left button in right cluster
+  B3 = 3, // Top button in right cluster
+  B4 = 4, // Top left front button
+  B5 = 5, // Top right front button
+  B6 = 6, // Bottom left front button
+  B7 = 7, // Bottom right front button
+  B8 = 8, // Left button in center cluster
+  B9 = 9, // Right button in center cluster
+  B10 = 10, // Left stick pressed button
+  B11 = 11, // Right stick pressed button
+  B12 = 12, // Top button in left cluster
+  B13 = 13, // Bottom button in left cluster
+  B14 = 14, // Left button in left cluster
+  B15 = 15, // Right button in left cluster
+  B16 = 16, // Center button in center cluster
+  B17 = 17, // 	Extra non-standard buttons
+}
+
+/**
+ * Joystick axis
+ */
+export enum JoystickAxis {
+  HORIZONTAL_LEFT = 0, // Horizontal axis for left stick (negative left/positive right)
+  VERTICAL_LEFT = 1, // Vertical axis for left stick (negative up/positive down)
+  HORIZONTAL_RIGHT = 2, // Horizontal axis for right stick (negative left/positive right)
+  VERTICAL_RIGHT = 3, // Vertical axis for right stick (negative up/positive down)
+}
+
+/**
  * Possible inputs types coming from a joystick
  */
 export enum InputType {
   Unknown = 'unknown',
   Axis = 'axis',
   Button = 'button',
+}
+
+/**
+ * Possible joystick input
+ */
+export interface JoystickInput {
+  /**
+   * Input type (Axis or Button)
+   */
+  type: InputType.Axis | InputType.Button
+  /**
+   * Input value
+   */
+  value: JoystickAxis | JoystickButton
 }

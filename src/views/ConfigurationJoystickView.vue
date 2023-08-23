@@ -98,7 +98,7 @@
             <div v-if="input.type === InputType.Axis" class="flex items-center justify-between ma-2">
               <v-icon class="mr-3"
                 >{{
-                  [Axis.HORIZONTAL_LEFT, Axis.HORIZONTAL_RIGHT].includes(Number(input.value))
+                  [JoystickAxis.HORIZONTAL_LEFT, JoystickAxis.HORIZONTAL_RIGHT].includes(Number(input.value))
                     ? 'mdi-pan-horizontal'
                     : 'mdi-pan-vertical'
                 }}
@@ -175,10 +175,18 @@ import { computed, ref, watch } from 'vue'
 import { onMounted } from 'vue'
 import { onUnmounted } from 'vue'
 
-import JoystickPS, { type InputSpec, Axis } from '@/components/joysticks/JoystickPS.vue'
+import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { useControllerStore } from '@/stores/controller'
-import { type CockpitButton, type Joystick, type ProtocolInput, InputType, JoystickProtocol } from '@/types/joystick'
+import {
+  type CockpitButton,
+  type Joystick,
+  type JoystickInput,
+  type ProtocolInput,
+  InputType,
+  JoystickAxis,
+  JoystickProtocol,
+} from '@/types/joystick'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
@@ -203,7 +211,7 @@ const availableButtons = computed(() => {
   return actualButtons
 })
 
-const setCurrentInputs = (joystick: Joystick, inputs: InputSpec[]): void => {
+const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => {
   currentJoystick.value = joystick
   currentInputs.value = inputs
   inputClickedDialog.value = true
@@ -214,7 +222,7 @@ const remappingInput = ref(false)
 const justRemappedInput = ref<boolean>()
 const inputClickedDialog = ref(false)
 
-const remapInput = async (input: InputSpec): Promise<void> => {
+const remapInput = async (input: JoystickInput): Promise<void> => {
   justRemappedInput.value = undefined
   let pressedButtonIndex = undefined
   let millisPassed = 0
