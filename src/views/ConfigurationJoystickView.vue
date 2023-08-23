@@ -226,23 +226,40 @@ const remappingInput = ref(false)
 const justRemappedInput = ref<boolean>()
 const inputClickedDialog = ref(false)
 
+/**
+ * Remaps the input of a given joystick. The function waits for a button press on the joystick and then
+ * updates the mapping to associate the joystick input with the pressed button. If no button is pressed
+ * within a specified waiting time, the remapping is considered unsuccessful.
+ * @param {Joystick} joystick - The joystick object that needs input remapping.
+ * @param {JoystickInput} input - The joystick input that is to be remapped.
+ * @returns {Promise<void>} A promise that resolves once the remapping process is complete.
+ */
 const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<void> => {
+  // Initialize the remapping state
   justRemappedInput.value = undefined
   let pressedButtonIndex = undefined
   let millisPassed = 0
   const waitingTime = 5000
   remappingInput.value = true
+
+  // Wait for a button press or until the waiting time expires
   while ([undefined, -1].includes(pressedButtonIndex) && millisPassed < waitingTime) {
+    // Check if any button on the joystick is pressed, and if so, get it's index
     pressedButtonIndex = joystick.gamepad.buttons.findIndex((button) => button.value === 1)
     await new Promise((r) => setTimeout(r, 100))
     millisPassed += 100
   }
+
+  // End the remapping process
   remappingInput.value = false
+
+  // If a button was pressed, update the mapping of that joystick model in the controller store and return
   if (![undefined, -1].includes(pressedButtonIndex)) {
     justRemappedInput.value = true
     controllerStore.cockpitStdMappings[joystick.model].buttons[input.value] = pressedButtonIndex as CockpitButton
     return
   }
+  // If remapping was unsuccessful, indicate it, so we can warn the user
   justRemappedInput.value = false
 }
 
