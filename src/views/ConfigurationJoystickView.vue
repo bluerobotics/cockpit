@@ -90,7 +90,7 @@
     </template>
   </BaseConfigurationView>
   <teleport to="body">
-    <v-dialog v-model="inputClickedDialog" width="auto">
+    <v-dialog v-if="currentJoystick" v-model="inputClickedDialog" width="auto">
       <v-card class="pa-2">
         <v-card-title>Update mapping</v-card-title>
         <v-card-text class="flex flex-col justify-between align-center">
@@ -145,7 +145,11 @@
                     : 'No input detected.'
                 }}
               </p>
-              <v-btn class="w-40 mx-auto my-2" :disabled="remappingInput" @click="remapInput(input)">
+              <v-btn
+                class="w-40 mx-auto my-2"
+                :disabled="remappingInput"
+                @click="remapInput(currentJoystick as Joystick, input)"
+              >
                 {{ remappingInput ? 'Remapping' : 'Remap button' }}
               </v-btn>
               <v-select
@@ -222,22 +226,21 @@ const remappingInput = ref(false)
 const justRemappedInput = ref<boolean>()
 const inputClickedDialog = ref(false)
 
-const remapInput = async (input: JoystickInput): Promise<void> => {
+const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<void> => {
   justRemappedInput.value = undefined
   let pressedButtonIndex = undefined
   let millisPassed = 0
   const waitingTime = 5000
   remappingInput.value = true
   while ([undefined, -1].includes(pressedButtonIndex) && millisPassed < waitingTime) {
-    pressedButtonIndex = currentJoystick.value?.gamepad.buttons.findIndex((button) => button.value === 1)
+    pressedButtonIndex = joystick.gamepad.buttons.findIndex((button) => button.value === 1)
     await new Promise((r) => setTimeout(r, 100))
     millisPassed += 100
   }
   remappingInput.value = false
   if (![undefined, -1].includes(pressedButtonIndex)) {
     justRemappedInput.value = true
-    const joystickModel = controllerStore.joysticks.get(0)?.model || JoystickModel.Unknown
-    controllerStore.cockpitStdMappings[joystickModel].buttons[input.value] = pressedButtonIndex as CockpitButton
+    controllerStore.cockpitStdMappings[joystick.model].buttons[input.value] = pressedButtonIndex as CockpitButton
     return
   }
   justRemappedInput.value = false
