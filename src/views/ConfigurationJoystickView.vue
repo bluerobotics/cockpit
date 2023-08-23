@@ -98,7 +98,7 @@
             <div v-if="input.type === InputType.Axis" class="flex items-center justify-between ma-2">
               <v-icon class="mr-3"
                 >{{
-                  [JoystickAxis.HORIZONTAL_LEFT, JoystickAxis.HORIZONTAL_RIGHT].includes(Number(input.value))
+                  [JoystickAxis.A0, JoystickAxis.A2].includes(Number(input.value))
                     ? 'mdi-pan-horizontal'
                     : 'mdi-pan-vertical'
                 }}
