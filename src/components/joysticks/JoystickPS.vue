@@ -44,7 +44,7 @@ export interface InputSpec {
   /**
    * Input type (Axis or Button)
    */
-  type: EventType | EventType
+  type: InputType.Axis | InputType.Button
   /**
    * Input value
    */
@@ -56,10 +56,10 @@ export interface InputSpec {
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
-import { EventType } from '@/libs/joystick/manager'
 import type { InputWithPrettyName } from '@/libs/joystick/protocols'
 import { scale } from '@/libs/utils'
 import type { ProtocolControllerMapping } from '@/types/joystick'
+import { InputType } from '@/types/joystick'
 
 const textColor = '#747474'
 
@@ -136,10 +136,10 @@ const emit = defineEmits<{
 const findInputFromPath = (path: string): InputSpec[] => {
   const inputs: InputSpec[] = []
   Object.entries(buttonPath).filter(([, v]) => v === path).forEach((button) => {
-    inputs.push({ type: EventType.Button, value: button[0] as unknown as Button })
+    inputs.push({ type: InputType.Button, value: button[0] as unknown as Button })
   })
   Object.entries(axisPath).filter(([, v]) => v === path).forEach((axis) => {
-    inputs.push({ type: EventType.Axis, value: axis[0] as unknown as Axis })
+    inputs.push({ type: InputType.Axis, value: axis[0] as unknown as Axis })
   })
   return inputs
 }
