@@ -148,3 +148,12 @@ export interface GamepadToCockpitStdMapping {
    */
   buttons: CockpitButton[]
 }
+
+/**
+ * Possible inputs types coming from a joystick
+ */
+export enum InputType {
+  Unknown = 'unknown',
+  Axis = 'axis',
+  Button = 'button',
+}

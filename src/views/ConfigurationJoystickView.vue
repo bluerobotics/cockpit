@@ -95,7 +95,7 @@
         <v-card-title>Update mapping</v-card-title>
         <v-card-text class="flex flex-col justify-between align-center">
           <div v-for="(input, i) in currentInputs" :key="i" class="flex flex-col items-center justify-between">
-            <div v-if="input.type === EventType.Axis" class="flex items-center justify-between ma-2">
+            <div v-if="input.type === InputType.Axis" class="flex items-center justify-between ma-2">
               <v-icon class="mr-3"
                 >{{
                   [Axis.HORIZONTAL_LEFT, Axis.HORIZONTAL_RIGHT].includes(Number(input.value))
@@ -133,7 +133,7 @@
                 hide-details
               />
             </div>
-            <div v-if="input.type === EventType.Button" class="flex flex-col justify-between align-center">
+            <div v-if="input.type === InputType.Button" class="flex flex-col justify-between align-center">
               <p>
                 {{
                   remappingInput
@@ -176,9 +176,9 @@ import { onMounted } from 'vue'
 import { onUnmounted } from 'vue'
 
 import JoystickPS, { type InputSpec, Axis } from '@/components/joysticks/JoystickPS.vue'
-import { EventType, JoystickModel } from '@/libs/joystick/manager'
+import { JoystickModel } from '@/libs/joystick/manager'
 import { useControllerStore } from '@/stores/controller'
-import { type CockpitButton, type Joystick, type ProtocolInput, JoystickProtocol } from '@/types/joystick'
+import { type CockpitButton, type Joystick, type ProtocolInput, InputType, JoystickProtocol } from '@/types/joystick'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
@@ -240,12 +240,12 @@ watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 const axesCorrespondencies = ref(controllerStore.protocolMapping.axesCorrespondencies)
 const buttons = ref(controllerStore.protocolMapping.buttons)
 
-const updateMapping = (index: number, newValue: ProtocolInput, inputType: EventType): void => {
-  if (![EventType.Axis, EventType.Button].includes(inputType)) {
+const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputType): void => {
+  if (![InputType.Axis, InputType.Button].includes(inputType)) {
     console.error('Input type should be Axis or Button.')
     return
   }
-  const oldInputMapping = inputType === EventType.Axis ? axesCorrespondencies.value : buttons.value
+  const oldInputMapping = inputType === InputType.Axis ? axesCorrespondencies.value : buttons.value
   const undefinedInput = { protocol: undefined, value: undefined }
   // Let at 'unnassigned' state indexes that previously held the selected value
   const newInputMapping = oldInputMapping.map((oldValue) => {
@@ -254,7 +254,7 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: EventT
     return newInputValue
   })
   newInputMapping[index] = newValue
-  if (inputType === EventType.Axis) {
+  if (inputType === InputType.Axis) {
     axesCorrespondencies.value = newInputMapping
     currentProtocolMapping.value.axesCorrespondencies = axesCorrespondencies.value
   } else {
