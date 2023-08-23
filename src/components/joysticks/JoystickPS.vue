@@ -43,10 +43,10 @@ const buttonPath: { [key in JoystickButton]: string } = {
 }
 
 const axisPath: { [key in JoystickAxis]: string } = {
-  [JoystickAxis.HORIZONTAL_LEFT]: 'path_b10',
-  [JoystickAxis.VERTICAL_LEFT]: 'path_b10',
-  [JoystickAxis.HORIZONTAL_RIGHT]: 'path_b11',
-  [JoystickAxis.VERTICAL_RIGHT]: 'path_b11',
+  [JoystickAxis.A0]: 'path_b10',
+  [JoystickAxis.A1]: 'path_b10',
+  [JoystickAxis.A2]: 'path_b11',
+  [JoystickAxis.A3]: 'path_b11',
 }
 
 /* eslint-disable  */
@@ -138,8 +138,8 @@ onBeforeUnmount(async () => {
 watch(
   () => [props.leftAxisHoriz, props.leftAxisVert, props.rightAxisHoriz, props.rightAxisVert],
   () => {
-    setAxes([JoystickAxis.HORIZONTAL_LEFT, JoystickAxis.VERTICAL_LEFT], [props.leftAxisHoriz ?? 0, props.leftAxisVert ?? 0] )
-    setAxes([JoystickAxis.HORIZONTAL_RIGHT, JoystickAxis.VERTICAL_RIGHT], [props.rightAxisHoriz ?? 0, props.rightAxisVert ?? 0] )
+    setAxes([JoystickAxis.A0, JoystickAxis.A1], [props.leftAxisHoriz ?? 0, props.leftAxisVert ?? 0] )
+    setAxes([JoystickAxis.A2, JoystickAxis.A3], [props.rightAxisHoriz ?? 0, props.rightAxisVert ?? 0] )
   }
 )
 
@@ -236,16 +236,16 @@ function toggleButton(button: JoystickButton, state: boolean): void {
 /**
  * Set axis position
  *
- * @param {[JoystickAxis.HORIZONTAL_LEFT, JoystickAxis.VERTICAL_LEFT] | [JoystickAxis.HORIZONTAL_RIGHT, JoystickAxis.VERTICAL_RIGHT]} axes Axes combination to be set
+ * @param {[JoystickAxis.A0, JoystickAxis.A1] | [JoystickAxis.A2, JoystickAxis.A3]} axes Axes combination to be set
  * @param {[number, number]} horizontalValue Horizontal and vertical axes values between [-1, 1]
  * @returns {void}
  */
-function setAxes(axes: [JoystickAxis.HORIZONTAL_LEFT, JoystickAxis.VERTICAL_LEFT] | [JoystickAxis.HORIZONTAL_RIGHT, JoystickAxis.VERTICAL_RIGHT], values: [number, number]): void {
+function setAxes(axes: [JoystickAxis.A0, JoystickAxis.A1] | [JoystickAxis.A2, JoystickAxis.A3], values: [number, number]): void {
   let xValue
   let yValue
   switch (props.model) {
     case Models.PS5: {
-      xValue = axes[0] == JoystickAxis.HORIZONTAL_LEFT ? scale(values[0], -1, 1, -3920.9, -3882.1) : scale(values[0], -1, 1, -4144.8, -4106.1)
+      xValue = axes[0] == JoystickAxis.A0 ? scale(values[0], -1, 1, -3920.9, -3882.1) : scale(values[0], -1, 1, -4144.8, -4106.1)
       yValue = scale(values[1], -1, 1, -2192.7, -2153.9)
       break
     }

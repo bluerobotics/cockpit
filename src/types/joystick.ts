@@ -177,10 +177,10 @@ export enum JoystickButton {
  * Joystick axis
  */
 export enum JoystickAxis {
-  HORIZONTAL_LEFT = 0, // Horizontal axis for left stick (negative left/positive right)
-  VERTICAL_LEFT = 1, // Vertical axis for left stick (negative up/positive down)
-  HORIZONTAL_RIGHT = 2, // Horizontal axis for right stick (negative left/positive right)
-  VERTICAL_RIGHT = 3, // Vertical axis for right stick (negative up/positive down)
+  A0 = 0, // Horizontal axis for left stick (negative left/positive right)
+  A1 = 1, // Vertical axis for left stick (negative up/positive down)
+  A2 = 2, // Horizontal axis for right stick (negative left/positive right)
+  A3 = 3, // Vertical axis for right stick (negative up/positive down)
 }
 
 /**
