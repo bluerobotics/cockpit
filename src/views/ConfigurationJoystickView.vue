@@ -206,6 +206,14 @@ onUnmounted(() => {
   controllerStore.enableForwarding = true
 })
 
+const currentJoystick = ref<Joystick>()
+const currentInputs = ref()
+const remappingInput = ref(false)
+const justRemappedInput = ref<boolean>()
+const inputClickedDialog = ref(false)
+
+watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
+
 const availableButtons = computed(() => {
   const actualButtons = controllerStore.availableButtons.map((btn) => {
     const prettyBtn = controllerStore.allPrettyButtonNames.find(
@@ -230,11 +238,6 @@ const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => 
   currentInputs.value = inputs
   inputClickedDialog.value = true
 }
-const currentJoystick = ref<Joystick>()
-const currentInputs = ref()
-const remappingInput = ref(false)
-const justRemappedInput = ref<boolean>()
-const inputClickedDialog = ref(false)
 
 /**
  * Remaps the input of a given joystick. The function waits for a button press on the joystick and then
@@ -272,8 +275,6 @@ const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<voi
   // If remapping was unsuccessful, indicate it, so we can warn the user
   justRemappedInput.value = false
 }
-
-watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 
 /**
  * Updates which physical button or axis in the joystick maps to it's correspondent virtual input.
