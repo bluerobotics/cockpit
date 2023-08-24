@@ -276,18 +276,18 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
     return
   }
   const oldInputMapping = inputType === InputType.Axis ? axesCorrespondencies.value : buttonsCorrespondencies.value
-  const undefinedInput = { protocol: undefined, value: undefined }
-  // Let at 'unnassigned' state indexes that previously held the selected value
-  const newInputMapping = oldInputMapping.map((oldValue) => {
-    const newInputValue =
-      oldValue.protocol === newValue.protocol && oldValue.value === newValue.value ? undefinedInput : oldValue
-    return newInputValue
-  })
-  newInputMapping[index] = newValue
   if (inputType === InputType.Axis) {
+    const undefinedInput = { protocol: undefined, value: undefined }
+    // Let at 'unnassigned' state indexes that previously held the selected value
+    const newInputMapping = oldInputMapping.map((oldValue) => {
+      return oldValue.protocol === newValue.protocol && oldValue.value === newValue.value ? undefinedInput : oldValue
+    })
+    newInputMapping[index] = newValue
     axesCorrespondencies.value = newInputMapping
     currentProtocolMapping.value.axesCorrespondencies = axesCorrespondencies.value
   } else {
+    const newInputMapping = oldInputMapping
+    newInputMapping[index] = newValue
     buttonsCorrespondencies.value = newInputMapping
     currentProtocolMapping.value.buttonsCorrespondencies = buttonsCorrespondencies.value
   }
