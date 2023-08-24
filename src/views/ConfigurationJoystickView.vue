@@ -119,13 +119,13 @@
               />
               <v-select
                 :model-value="axesCorrespondencies[input.value]"
-                :items="controllerStore.availableAxes"
-                item-title="value"
-                return-object
+                :items="availableAxes"
+                item-title="prettyName"
+                item-value="input"
                 hide-details
                 density="compact"
                 variant="solo"
-                class="w-16 m-3"
+                class="w-40 m-3"
                 @update:model-value="(newValue: ProtocolInput) => updateMapping(input.value, newValue, input.type)"
               />
               <v-text-field
@@ -215,6 +215,14 @@ const availableButtons = computed(() => {
   })
   actualButtons.push({ input: { protocol: undefined, value: undefined }, prettyName: 'No function' })
   return actualButtons
+})
+
+const availableAxes = computed(() => {
+  const actualAxes = controllerStore.availableAxes.map((axis) => {
+    return { input: axis, prettyName: `${axis.value} axis` }
+  })
+  actualAxes.push({ input: { protocol: undefined, value: undefined }, prettyName: 'No function' })
+  return actualAxes
 })
 
 const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => {
