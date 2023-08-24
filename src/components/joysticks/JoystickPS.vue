@@ -181,7 +181,7 @@ const updateLabelsState = (): void => {
     const protocolButton = props.protocolMapping.buttonsCorrespondencies[button as JoystickButton] || undefined
     let functionName = undefined
     if (props.buttonLabelCorrespondency.length === 0 || !props.buttonLabelCorrespondency.map((b) => b.input.value).includes(button)) {
-      functionName = protocolButton.protocol && protocolButton.value ? `${protocolButton.value} (${protocolButton.protocol})` : 'unassigned'
+      functionName = protocolButton.protocol !== undefined && protocolButton.value !== undefined ? `${protocolButton.value} (${protocolButton.protocol})` : 'unassigned'
     } else {
       const param = props.buttonLabelCorrespondency.find((btn) => btn.input.protocol === protocolButton.protocol && btn.input.value === protocolButton.value)
       functionName = param === undefined ? 'unassigned' : param.prettyName
