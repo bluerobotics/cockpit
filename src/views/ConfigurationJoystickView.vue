@@ -159,7 +159,7 @@
               </v-btn>
               <v-select
                 :key="input.value"
-                :model-value="buttons[input.value]"
+                :model-value="buttonsCorrespondencies[input.value]"
                 :items="availableButtons"
                 item-title="prettyName"
                 item-value="input"
@@ -268,14 +268,14 @@ const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<voi
 watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 
 const axesCorrespondencies = ref(controllerStore.protocolMapping.axesCorrespondencies)
-const buttons = ref(controllerStore.protocolMapping.buttons)
+const buttonsCorrespondencies = ref(controllerStore.protocolMapping.buttonsCorrespondencies)
 
 const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputType): void => {
   if (![InputType.Axis, InputType.Button].includes(inputType)) {
     console.error('Input type should be Axis or Button.')
     return
   }
-  const oldInputMapping = inputType === InputType.Axis ? axesCorrespondencies.value : buttons.value
+  const oldInputMapping = inputType === InputType.Axis ? axesCorrespondencies.value : buttonsCorrespondencies.value
   const undefinedInput = { protocol: undefined, value: undefined }
   // Let at 'unnassigned' state indexes that previously held the selected value
   const newInputMapping = oldInputMapping.map((oldValue) => {
@@ -288,12 +288,15 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
     axesCorrespondencies.value = newInputMapping
     currentProtocolMapping.value.axesCorrespondencies = axesCorrespondencies.value
   } else {
-    buttons.value = newInputMapping
-    currentProtocolMapping.value.buttons = buttons.value
+    buttonsCorrespondencies.value = newInputMapping
+    currentProtocolMapping.value.buttonsCorrespondencies = buttonsCorrespondencies.value
   }
 }
 
 const currentProtocolMapping = ref(controllerStore.protocolMapping)
 watch(axesCorrespondencies, () => (controllerStore.protocolMapping.axesCorrespondencies = axesCorrespondencies.value))
-watch(buttons, () => (controllerStore.protocolMapping.buttons = buttons.value))
+watch(
+  buttonsCorrespondencies,
+  () => (controllerStore.protocolMapping.buttonsCorrespondencies = buttonsCorrespondencies.value)
+)
 </script>
