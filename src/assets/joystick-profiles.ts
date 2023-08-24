@@ -13,7 +13,7 @@ export const cockpitStandardToProtocols: ProtocolControllerMapping = {
   ],
   axesMins: [-1000, 1000, -1000, 1000],
   axesMaxs: [1000, -1000, 1000, 0],
-  buttons: [
+  buttonsCorrespondencies: [
     { protocol: JoystickProtocol.MAVLink, value: 0 },
     { protocol: JoystickProtocol.MAVLink, value: 1 },
     { protocol: JoystickProtocol.MAVLink, value: 2 },

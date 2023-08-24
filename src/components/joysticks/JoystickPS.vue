@@ -178,7 +178,7 @@ watch([protocolMapping, buttonLabelCorrespondency], () => updateLabelsState())
 const updateLabelsState = (): void => {
   Object.values(JoystickButton).forEach((button) => {
     if (isNaN(Number(button))) return
-    const protocolButton = props.protocolMapping.buttons[button as JoystickButton] || undefined
+    const protocolButton = props.protocolMapping.buttonsCorrespondencies[button as JoystickButton] || undefined
     let functionName = undefined
     if (props.buttonLabelCorrespondency.length === 0 || !props.buttonLabelCorrespondency.map((b) => b.input.value).includes(button)) {
       functionName = protocolButton.protocol && protocolButton.value ? `${protocolButton.value} (${protocolButton.protocol})` : 'unassigned'

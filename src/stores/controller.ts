@@ -59,7 +59,7 @@ export const useControllerStore = defineStore('controller', () => {
   }
 
   const updateCockpitActionButtonsPrettyNames = (): void => {
-    const cockpitActionButtonsWithPrettyNames: InputWithPrettyName[] = protocolMapping.value.buttons
+    const cockpitActionButtonsWithPrettyNames: InputWithPrettyName[] = protocolMapping.value.buttonsCorrespondencies
       .filter((btn) => btn.protocol === JoystickProtocol.CockpitAction)
       .map((btn) => ({ input: btn, prettyName: btn.value?.toString() || 'No function' }))
     allPrettyButtonNames.value = allPrettyButtonNames.value.concat(cockpitActionButtonsWithPrettyNames)

@@ -49,7 +49,7 @@ export class MavlinkControllerState extends ProtocolControllerState {
 
     let buttons_int = 0
     for (let i = 0; i < MavlinkControllerState.BUTTONS_PER_BITFIELD; i++) {
-      const gamepadButtonPosition = mapping.buttons.findIndex((b) => isMavlinkInput(b) && b.value === i)
+      const gamepadButtonPosition = mapping.buttonsCorrespondencies.findIndex((b) => isMavlinkInput(b) && b.value === i)
       if (gamepadButtonPosition === -1) continue
       const gamepadButtonState = joystickState.buttons[gamepadButtonPosition]
       buttons_int += (gamepadButtonState ?? 0) * 2 ** i
@@ -119,7 +119,7 @@ export const unregisterActionCallback = (id: string): void => {
 export const sendCockpitActions = (joystickState: JoystickState, mapping: ProtocolControllerMapping): void => {
   const actionsToCallback: CockpitAction[] = []
   joystickState.buttons.forEach((state, idx) => {
-    const mappedButton = mapping.buttons[idx]
+    const mappedButton = mapping.buttonsCorrespondencies[idx]
     if (state && mappedButton.protocol === JoystickProtocol.CockpitAction) {
       actionsToCallback.push(mappedButton.value as CockpitAction)
     }

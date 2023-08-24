@@ -103,7 +103,7 @@ export interface ProtocolControllerMapping {
    * Correspondency from Gamepad API to protocol button.
    * Corresponds to which button in the protocol should the Nth button be mapped to.
    */
-  buttons: ProtocolInput[]
+  buttonsCorrespondencies: ProtocolInput[]
 }
 
 export type CockpitButton = undefined | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 // eslint-disable-line
