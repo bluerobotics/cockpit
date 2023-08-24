@@ -278,22 +278,35 @@ watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 const axesCorrespondencies = ref(controllerStore.protocolMapping.axesCorrespondencies)
 const buttonsCorrespondencies = ref(controllerStore.protocolMapping.buttonsCorrespondencies)
 
+/**
+ * Updates which physical button or axis in the joystick maps to it's correspondent virtual input.
+ * @param {number} index - The index of the input mapping to update.
+ * @param {ProtocolInput} newValue - The new value for the input mapping.
+ * @param {InputType} inputType - The type of input (either Axis or Button).
+ */
 const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputType): void => {
+  // Ensure the input type is either a Axis or a Button
   if (![InputType.Axis, InputType.Button].includes(inputType)) {
     console.error('Input type should be Axis or Button.')
     return
   }
+
+  // Get the current input mapping based on the input type
   const oldInputMapping = inputType === InputType.Axis ? axesCorrespondencies.value : buttonsCorrespondencies.value
+
   if (inputType === InputType.Axis) {
+    // If the input type is an Axis, create a new input mapping, unassigning indexes use to held
+    // the selected value, so we don't have two axis sending data to the same channel
     const undefinedInput = { protocol: undefined, value: undefined }
-    // Let at 'unnassigned' state indexes that previously held the selected value
     const newInputMapping = oldInputMapping.map((oldValue) => {
       return oldValue.protocol === newValue.protocol && oldValue.value === newValue.value ? undefinedInput : oldValue
     })
+    // Update the axes correspondences and current protocol mapping
     newInputMapping[index] = newValue
     axesCorrespondencies.value = newInputMapping
     currentProtocolMapping.value.axesCorrespondencies = axesCorrespondencies.value
   } else {
+    // If the input type is a Button, simply update the value at the specified index
     const newInputMapping = oldInputMapping
     newInputMapping[index] = newValue
     buttonsCorrespondencies.value = newInputMapping
