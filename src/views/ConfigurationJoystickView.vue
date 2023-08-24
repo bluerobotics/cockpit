@@ -70,7 +70,7 @@
           :b15="joystick.state.buttons[15]"
           :b16="joystick.state.buttons[16]"
           :b17="joystick.state.buttons[17]"
-          :protocol-mapping="currentProtocolMapping"
+          :protocol-mapping="controllerStore.protocolMapping"
           :button-label-correspondency="controllerStore.allPrettyButtonNames"
           @click="(e) => setCurrentInputs(joystick, e)"
         />
@@ -118,7 +118,7 @@
                 hide-details
               />
               <v-select
-                :model-value="axesCorrespondencies[input.value]"
+                :model-value="controllerStore.protocolMapping.axesCorrespondencies[input.value]"
                 :items="availableAxes"
                 item-title="prettyName"
                 item-value="input"
@@ -159,7 +159,7 @@
               </v-btn>
               <v-select
                 :key="input.value"
-                :model-value="buttonsCorrespondencies[input.value]"
+                :model-value="controllerStore.protocolMapping.buttonsCorrespondencies[input.value]"
                 :items="availableButtons"
                 item-title="prettyName"
                 item-value="input"
@@ -275,9 +275,6 @@ const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<voi
 
 watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 
-const axesCorrespondencies = ref(controllerStore.protocolMapping.axesCorrespondencies)
-const buttonsCorrespondencies = ref(controllerStore.protocolMapping.buttonsCorrespondencies)
-
 /**
  * Updates which physical button or axis in the joystick maps to it's correspondent virtual input.
  * @param {number} index - The index of the input mapping to update.
@@ -292,7 +289,10 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
   }
 
   // Get the current input mapping based on the input type
-  const oldInputMapping = inputType === InputType.Axis ? axesCorrespondencies.value : buttonsCorrespondencies.value
+  const oldInputMapping =
+    inputType === InputType.Axis
+      ? controllerStore.protocolMapping.axesCorrespondencies
+      : controllerStore.protocolMapping.buttonsCorrespondencies
 
   if (inputType === InputType.Axis) {
     // If the input type is an Axis, create a new input mapping, unassigning indexes use to held
@@ -303,21 +303,12 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
     })
     // Update the axes correspondences and current protocol mapping
     newInputMapping[index] = newValue
-    axesCorrespondencies.value = newInputMapping
-    currentProtocolMapping.value.axesCorrespondencies = axesCorrespondencies.value
+    controllerStore.protocolMapping.axesCorrespondencies = newInputMapping
   } else {
     // If the input type is a Button, simply update the value at the specified index
     const newInputMapping = oldInputMapping
     newInputMapping[index] = newValue
-    buttonsCorrespondencies.value = newInputMapping
-    currentProtocolMapping.value.buttonsCorrespondencies = buttonsCorrespondencies.value
+    controllerStore.protocolMapping.buttonsCorrespondencies = newInputMapping
   }
 }
-
-const currentProtocolMapping = ref(controllerStore.protocolMapping)
-watch(axesCorrespondencies, () => (controllerStore.protocolMapping.axesCorrespondencies = axesCorrespondencies.value))
-watch(
-  buttonsCorrespondencies,
-  () => (controllerStore.protocolMapping.buttonsCorrespondencies = buttonsCorrespondencies.value)
-)
 </script>
