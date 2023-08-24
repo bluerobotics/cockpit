@@ -1,5 +1,7 @@
 import { useStorage } from '@vueuse/core'
+import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
+import Swal from 'sweetalert2'
 import { ref } from 'vue'
 
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
@@ -71,6 +73,27 @@ export const useControllerStore = defineStore('controller', () => {
     cockpitStdMappings.value[k as JoystickModel] = v
   })
 
+  const downloadJoystickProfile = (joystick: Joystick): void => {
+    const blob = new Blob([JSON.stringify(joystick.gamepadToCockpitMap)], { type: 'text/plain;charset=utf-8' })
+    saveAs(blob, `cockpit-std-profile-joystick-${joystick.model}.json`)
+  }
+
+  const loadJoystickProfile = async (joystick: Joystick, e: Event): Promise<void> => {
+    const reader = new FileReader()
+    reader.onload = (event: Event) => {
+      // @ts-ignore: We know the event type and need refactor of the event typing
+      const contents = event.target.result
+      const maybeProfile = JSON.parse(contents)
+      if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
+        Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
+        return
+      }
+      cockpitStdMappings.value[joystick.model] = maybeProfile
+    }
+    // @ts-ignore: We know the event type and need refactor of the event typing
+    reader.readAsText(e.target.files[0])
+  }
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -80,5 +103,7 @@ export const useControllerStore = defineStore('controller', () => {
     availableAxes,
     availableButtons,
     allPrettyButtonNames,
+    downloadJoystickProfile,
+    loadJoystickProfile,
   }
 })

@@ -77,12 +77,17 @@
         <div class="flex">
           <button
             class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
-            @click="downloadJoystickProfile(joystick)"
+            @click="controllerStore.downloadJoystickProfile(joystick)"
           >
             Download profile
           </button>
           <label class="w-auto p-3 m-2 font-medium rounded-md shadow-md cursor-pointer text-uppercase">
-            <input type="file" accept="application/json" hidden @change="(e) => loadJoystickProfile(joystick, e)" />
+            <input
+              type="file"
+              accept="application/json"
+              hidden
+              @change="(e) => controllerStore.loadJoystickProfile(joystick, e)"
+            />
             Load profile
           </label>
         </div>
@@ -173,14 +178,11 @@
 </template>
 
 <script setup lang="ts">
-import { saveAs } from 'file-saver'
-import Swal from 'sweetalert2'
 import { computed, ref, watch } from 'vue'
 import { onMounted } from 'vue'
 import { onUnmounted } from 'vue'
 
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
-import { JoystickModel } from '@/libs/joystick/manager'
 import { useControllerStore } from '@/stores/controller'
 import {
   type CockpitButton,
@@ -289,27 +291,6 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
     buttons.value = newInputMapping
     currentProtocolMapping.value.buttons = buttons.value
   }
-}
-
-const downloadJoystickProfile = (joystick: Joystick): void => {
-  var blob = new Blob([JSON.stringify(joystick.gamepadToCockpitMap)], { type: 'text/plain;charset=utf-8' })
-  saveAs(blob, `cockpit-std-profile-joystick-${joystick.model}.json`)
-}
-
-const loadJoystickProfile = async (joystick: Joystick, e: Event): Promise<void> => {
-  var reader = new FileReader()
-  reader.onload = (event: Event) => {
-    // @ts-ignore: We know the event type and need refactor of the event typing
-    const contents = event.target.result
-    const maybeProfile = JSON.parse(contents)
-    if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
-      Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
-      return
-    }
-    controllerStore.cockpitStdMappings[joystick.model] = maybeProfile
-  }
-  // @ts-ignore: We know the event type and need refactor of the event typing
-  reader.readAsText(e.target.files[0])
 }
 
 const currentProtocolMapping = ref(controllerStore.protocolMapping)
