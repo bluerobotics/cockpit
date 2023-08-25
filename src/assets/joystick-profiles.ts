@@ -65,7 +65,7 @@ export const availableGamepadToCockpitMaps: { [key in JoystickModel]: GamepadToC
   [JoystickModel.DualSense]: {
     name: 'DualSense',
     axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 10, 12, 13, 14, 15, 16, 17],
+    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
   },
   [JoystickModel.DualShock4]: {
     name: 'DualShock4',
