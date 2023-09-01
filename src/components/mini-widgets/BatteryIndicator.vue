@@ -27,14 +27,14 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 const store = useMainVehicleStore()
 
 const voltageDisplayValue = computed(() => {
-  if (store.powerSupply.voltage === undefined) return NaN
+  if (store?.powerSupply?.voltage === undefined) return NaN
   return Math.abs(store.powerSupply.voltage) >= 100
     ? store.powerSupply.voltage.toFixed(0)
     : store.powerSupply.voltage.toFixed(1)
 })
 
 const currentDisplayValue = computed(() => {
-  if (store.powerSupply.current === undefined) return NaN
+  if (store?.powerSupply?.current === undefined) return NaN
   return Math.abs(store.powerSupply.current) >= 100
     ? store.powerSupply.current.toFixed(0)
     : store.powerSupply.current.toFixed(1)
