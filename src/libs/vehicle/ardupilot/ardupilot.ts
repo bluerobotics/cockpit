@@ -614,7 +614,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
    * @returns { Promise<Waypoint[]> } Mission items that were on the vehicle
    */
-  async fetchMission(loadingCallback = defaultLoadingCallback): Promise<Waypoint[]> {
+  async fetchMission(loadingCallback: MissionLoadingCallback = defaultLoadingCallback): Promise<Waypoint[]> {
     // Only deal with regular mission items for now
     const missionType = MavMissionType.MAV_MISSION_TYPE_MISSION
 
@@ -724,7 +724,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @param { Waypoint[] } items Mission items that will be sent
    * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
    */
-  async uploadMission(items: Waypoint[], loadingCallback = defaultLoadingCallback): Promise<void> {
+  async uploadMission(
+    items: Waypoint[],
+    loadingCallback: MissionLoadingCallback = defaultLoadingCallback
+  ): Promise<void> {
     // Convert from Cockpit waypoints to MAVLink waypoints
     this._currentCockpitMissionItemsOnPlanning = items
     const mavlinkWaypoints = convertCockpitWaypointsToMavlink(items)
