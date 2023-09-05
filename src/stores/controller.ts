@@ -6,8 +6,8 @@ import { ref } from 'vue'
 
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
-import { type InputWithPrettyName, allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
-import { type JoystickState, type ProtocolControllerMapping, Joystick, JoystickProtocol } from '@/types/joystick'
+import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
+import { type JoystickState, type ProtocolControllerMapping, Joystick } from '@/types/joystick'
 
 export type controllerUpdateCallback = (state: JoystickState, protocolMapping: ProtocolControllerMapping) => void
 
@@ -18,7 +18,6 @@ export const useControllerStore = defineStore('controller', () => {
   const cockpitStdMappings = useStorage('cockpit-standard-mappings', availableGamepadToCockpitMaps)
   const availableProtocolAxesFunctions = allAvailableAxes
   const availableProtocolButtonFunctions = allAvailableButtons
-  const allPrettyButtonNames = ref<InputWithPrettyName[]>([])
   const enableForwarding = ref(true)
 
   const registerControllerUpdateCallback = (callback: controllerUpdateCallback): void => {
@@ -58,14 +57,6 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
-  const updateCockpitActionButtonsPrettyNames = (): void => {
-    const cockpitActionButtonsWithPrettyNames: InputWithPrettyName[] = protocolMapping.value.buttonsCorrespondencies
-      .filter((btn) => btn.protocol === JoystickProtocol.CockpitAction)
-      .map((btn) => ({ input: btn, prettyName: btn.value?.toString() || 'No function' }))
-    allPrettyButtonNames.value = allPrettyButtonNames.value.concat(cockpitActionButtonsWithPrettyNames)
-  }
-  updateCockpitActionButtonsPrettyNames()
-
   // If there's a mapping in our database that is not on the user storage, add it to the user
   // This will happen whenever a new joystick profile is added to Cockpit's database
   Object.entries(availableGamepadToCockpitMaps).forEach(([k, v]) => {
@@ -102,7 +93,6 @@ export const useControllerStore = defineStore('controller', () => {
     cockpitStdMappings,
     availableProtocolAxesFunctions,
     availableProtocolButtonFunctions,
-    allPrettyButtonNames,
     downloadJoystickProfile,
     loadJoystickProfile,
   }

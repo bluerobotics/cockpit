@@ -32,7 +32,11 @@
           </p>
         </div>
         <div
-          v-if="controllerStore.allPrettyButtonNames.every((b) => b.input.protocol === JoystickProtocol.CockpitAction)"
+          v-if="
+            controllerStore.availableProtocolButtonFunctions.every(
+              (b) => b.input.protocol === JoystickProtocol.CockpitAction
+            )
+          "
           class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
         >
           <p>Could not stablish communication with the vehicle.</p>
@@ -72,7 +76,7 @@
             :b16="joystick.state.buttons[16]"
             :b17="joystick.state.buttons[17]"
             :protocol-mapping="controllerStore.protocolMapping"
-            :button-label-correspondency="controllerStore.allPrettyButtonNames"
+            :button-label-correspondency="controllerStore.availableProtocolButtonFunctions"
             @click="(e) => setCurrentInputs(joystick, e)"
           />
         </div>
@@ -127,7 +131,7 @@
             :b16="currentJoystick.state.buttons[16]"
             :b17="currentJoystick.state.buttons[17]"
             :protocol-mapping="controllerStore.protocolMapping"
-            :button-label-correspondency="controllerStore.allPrettyButtonNames"
+            :button-label-correspondency="controllerStore.availableProtocolButtonFunctions"
           />
           <div>
             <div v-for="(input, i) in currentInputs" :key="i" class="flex flex-col items-center justify-between">
@@ -150,7 +154,7 @@
                 />
                 <v-select
                   :model-value="controllerStore.protocolMapping.axesCorrespondencies[input.value]"
-                  :items="availableProtocolAxesFunctions"
+                  :items="controllerStore.availableProtocolAxesFunctions"
                   item-title="prettyName"
                   item-value="input"
                   hide-details
@@ -238,7 +242,7 @@ import { onUnmounted } from 'vue'
 import Button from '@/components/Button.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { MavParamType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { mavlinkAvailableButtons } from '@/libs/joystick/protocols'
+import { type InputWithPrettyName, mavlinkAvailableButtons, OtherProtocol } from '@/libs/joystick/protocols'
 import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -275,20 +279,12 @@ watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 
 const availableProtocolButtonFunctions = computed(() => {
   // eslint-disable-next-line jsdoc/require-jsdoc
-  const organizedButtons: { [key in JoystickProtocol]: { input: ProtocolInput; prettyName: string }[] } = {
+  const organizedButtons: { [key in JoystickProtocol]: InputWithPrettyName[] } = {
     [JoystickProtocol.MAVLink]: [],
     [JoystickProtocol.CockpitAction]: [],
     [JoystickProtocol.Other]: [],
   }
-  controllerStore.availableProtocolButtonFunctions.forEach((btn) => {
-    const prettyBtn = controllerStore.allPrettyButtonNames.find(
-      (b) => btn.protocol === b.input.protocol && btn.value === b.input.value
-    )
-    organizedButtons[btn.protocol || JoystickProtocol.Other].push({
-      input: btn,
-      prettyName: `${prettyBtn?.prettyName ?? btn.value}`,
-    })
-  })
+  controllerStore.availableProtocolButtonFunctions.forEach((btn) => organizedButtons[btn.input.protocol].push(btn))
   vehicleStore.buttonParameterTable.forEach((btn) => {
     if (organizedButtons[JoystickProtocol.MAVLink].map((b) => b.prettyName).includes(btn.title)) return
     organizedButtons[JoystickProtocol.MAVLink].push({
@@ -296,19 +292,7 @@ const availableProtocolButtonFunctions = computed(() => {
       prettyName: btn.title,
     })
   })
-  organizedButtons[JoystickProtocol.Other].push({
-    input: { protocol: undefined, value: undefined },
-    prettyName: 'No function',
-  })
   return organizedButtons
-})
-
-const availableProtocolAxesFunctions = computed(() => {
-  const actualAxes = controllerStore.availableProtocolAxesFunctions.map((axis) => {
-    return { input: axis, prettyName: `${axis.value} axis` }
-  })
-  actualAxes.push({ input: { protocol: undefined, value: undefined }, prettyName: 'No function' })
-  return actualAxes
 })
 
 const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => {

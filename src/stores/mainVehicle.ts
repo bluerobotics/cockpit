@@ -442,11 +442,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         })
       })
     }
-    let newAllPrettyButtonNames = controllerStore.allPrettyButtonNames.filter((btn) => {
+    if (newMavlinkButtonsNames.isEmpty()) return
+    let newProtocolButtonsFunctions = controllerStore.availableProtocolButtonFunctions.filter((btn) => {
       return btn.input.protocol !== JoystickProtocol.MAVLink
     })
-    newAllPrettyButtonNames = newAllPrettyButtonNames.concat(newMavlinkButtonsNames)
-    controllerStore.allPrettyButtonNames = newAllPrettyButtonNames
+    newProtocolButtonsFunctions = newProtocolButtonsFunctions.concat(newMavlinkButtonsNames)
+    controllerStore.availableProtocolButtonFunctions = newProtocolButtonsFunctions
   }
 
   setInterval(() => updateMavlinkButtonsPrettyNames(), 1000)
