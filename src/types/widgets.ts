@@ -13,7 +13,6 @@ export enum WidgetType {
   Indicators = 'Indicators',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
-  MissionInfo = 'MissionInfo',
   VideoPlayer = 'VideoPlayer',
   VideoRecorder = 'VideoRecorder',
 }
