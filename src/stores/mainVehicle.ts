@@ -21,6 +21,7 @@ import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterReposito
 import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Plane-4.3/apm.pdef.json'
 import * as ardurover_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Rover-4.2/apm.pdef.json'
 import * as ardusub_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Sub-4.1/apm.pdef.json'
+import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
   Altitude,
@@ -31,6 +32,7 @@ import type {
   PowerSupply,
   StatusGPS,
   StatusText,
+  VehicleConfigurationSettings,
   Velocity,
 } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
@@ -148,6 +150,16 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   function disarm(): void {
     mainVehicle.value?.disarm()
+  }
+
+  /**
+   * Configure the vehicle somehow
+   * @param { VehicleConfigurationSettings } settings Configuration data
+   */
+  function configure(settings: VehicleConfigurationSettings): void {
+    if (mainVehicle.value?.firmware() === Vehicle.Firmware.ArduPilot) {
+      mainVehicle.value?.setParameter(settings as ArduPilotParameterSetData)
+    }
   }
 
   /**
@@ -444,6 +456,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     setFlightMode,
     sendGcsHeartbeat,
     requestParametersList,
+    configure,
     fetchMission,
     uploadMission,
     clearMissions,
