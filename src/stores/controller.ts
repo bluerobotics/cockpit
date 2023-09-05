@@ -16,8 +16,8 @@ export const useControllerStore = defineStore('controller', () => {
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMapping = useStorage('cockpit-v0.0.7-protocol-mapping', cockpitStandardToProtocols)
   const cockpitStdMappings = useStorage('cockpit-standard-mappings', availableGamepadToCockpitMaps)
-  const availableAxes = allAvailableAxes
-  const availableButtons = allAvailableButtons
+  const availableProtocolAxesFunctions = allAvailableAxes
+  const availableProtocolButtonFunctions = allAvailableButtons
   const allPrettyButtonNames = ref<InputWithPrettyName[]>([])
   const enableForwarding = ref(true)
 
@@ -100,8 +100,8 @@ export const useControllerStore = defineStore('controller', () => {
     joysticks,
     protocolMapping,
     cockpitStdMappings,
-    availableAxes,
-    availableButtons,
+    availableProtocolAxesFunctions,
+    availableProtocolButtonFunctions,
     allPrettyButtonNames,
     downloadJoystickProfile,
     loadJoystickProfile,

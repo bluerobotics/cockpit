@@ -433,11 +433,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       })
       Object.entries(currentParameters).forEach((param) => {
         if (!param[0].startsWith('BTN') || !param[0].endsWith('_FUNCTION')) return
-        const button = Number(param[0].replace('BTN', '').replace('_FUNCTION', ''))
+        const buttonId = Number(param[0].replace('BTN', '').replace('_FUNCTION', ''))
         const functionName = buttonParameterTable.find((p) => p.value === param[1])?.title
         if (functionName === undefined) return
         newMavlinkButtonsNames.push({
-          input: { protocol: JoystickProtocol.MAVLink, value: button },
+          input: { protocol: JoystickProtocol.MAVLink, value: buttonId },
           prettyName: functionName,
         })
       })
