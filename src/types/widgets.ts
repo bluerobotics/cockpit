@@ -11,7 +11,6 @@ export enum WidgetType {
   CompassHUD = 'CompassHUD',
   ImageViewer = 'ImageViewer',
   Indicators = 'Indicators',
-  Joystick = 'Joystick',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
   MissionInfo = 'MissionInfo',
