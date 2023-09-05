@@ -161,11 +161,22 @@ export const protocolAxesLimits = (protocol: JoystickProtocol): number[] => {
   }
 }
 
-export const allAvailableAxes: ProtocolInput[] = []
-mavlinkAvailableAxes.forEach((axis) => allAvailableAxes.push({ protocol: JoystickProtocol.MAVLink, value: axis }))
+export const allAvailableAxes: InputWithPrettyName[] = []
+mavlinkAvailableAxes.forEach((axis) =>
+  allAvailableAxes.push({ input: { protocol: JoystickProtocol.MAVLink, value: axis }, prettyName: axis })
+)
 
-export const allAvailableButtons: ProtocolInput[] = []
-mavlinkAvailableButtons.forEach((btn) => allAvailableButtons.push({ protocol: JoystickProtocol.MAVLink, value: btn }))
-Object.values(CockpitAction).forEach((action) => {
-  allAvailableButtons.push({ protocol: JoystickProtocol.CockpitAction, value: action })
-})
+Object.values(OtherProtocol).forEach((fn) =>
+  allAvailableAxes.push({ input: { protocol: JoystickProtocol.Other, value: fn }, prettyName: fn })
+)
+
+export const allAvailableButtons: InputWithPrettyName[] = []
+mavlinkAvailableButtons.forEach((btn) =>
+  allAvailableButtons.push({ input: { protocol: JoystickProtocol.MAVLink, value: btn }, prettyName: btn.toString() })
+)
+Object.values(CockpitAction).forEach((action) =>
+  allAvailableButtons.push({ input: { protocol: JoystickProtocol.CockpitAction, value: action }, prettyName: action })
+)
+Object.values(OtherProtocol).forEach((fn) =>
+  allAvailableButtons.push({ input: { protocol: JoystickProtocol.Other, value: fn }, prettyName: fn })
+)
