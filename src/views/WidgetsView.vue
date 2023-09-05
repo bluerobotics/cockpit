@@ -36,9 +36,6 @@
           <template v-if="widget.component === WidgetType.VideoPlayer">
             <VideoPlayer :widget="widget" />
           </template>
-          <template v-if="widget.component === WidgetType.VideoRecorder">
-            <VideoRecorder :widget="widget" />
-          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
@@ -65,7 +62,6 @@ import Indicators from '../components/widgets/Indicators.vue'
 import Map from '../components/widgets/Map.vue'
 import MiniWidgetsBar from '../components/widgets/MiniWidgetsBar.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
-import VideoRecorder from '../components/widgets/VideoRecorder.vue'
 
 const store = useWidgetManagerStore()
 

@@ -14,7 +14,6 @@ export enum WidgetType {
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
   VideoPlayer = 'VideoPlayer',
-  VideoRecorder = 'VideoRecorder',
 }
 
 export type Widget = {
