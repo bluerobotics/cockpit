@@ -269,9 +269,6 @@ const cursorStyle = computed(() => {
 })
 
 const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
-
-const mouseOverWidgetStyle = computed(() => (hoveringWidgetOrOverlay.value ? 'block' : 'none'))
-const optionsBtnTopStyle = computed(() => `${48 - constrain(widget.value.position.y * windowHeight.value, 0, 48)}px`)
 </script>
 
 <style>
@@ -331,17 +328,6 @@ const optionsBtnTopStyle = computed(() => `${48 - constrain(widget.value.positio
   position: absolute;
   left: calc(50% - 16px);
   bottom: calc(50% - 16px);
-}
-.options-btn {
-  display: none;
-  position: absolute;
-  margin: 5px;
-  top: v-bind('optionsBtnTopStyle');
-  right: 0;
-  color: white;
-  filter: drop-shadow(0.5px 0.5px 0.5px black);
-  display: v-bind('mouseOverWidgetStyle');
-  cursor: pointer;
 }
 
 .resize-handle {
