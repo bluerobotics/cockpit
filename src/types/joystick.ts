@@ -53,12 +53,12 @@ export class Joystick {
     return {
       buttons:
         this.gamepadToCockpitMap?.buttons.map((idx) => {
-          if (idx === undefined || this.gamepad.buttons[idx] === undefined) return undefined
+          if (idx === null || this.gamepad.buttons[idx] === undefined) return undefined
           return this.gamepad.buttons[idx].value
         }) || [],
       axes:
         this.gamepadToCockpitMap?.axes.map((idx) => {
-          if (idx === undefined || this.gamepad.axes[idx] === undefined) return undefined
+          if (idx === null || this.gamepad.axes[idx] === undefined) return undefined
           return this.gamepad.axes[idx]
         }) || [],
     }
@@ -107,8 +107,8 @@ export interface ProtocolControllerMapping {
   buttonsCorrespondencies: ProtocolInput[]
 }
 
-export type CockpitButton = undefined | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 // eslint-disable-line
-export type CockpitAxis = undefined | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+export type CockpitButton = null | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 // eslint-disable-line
+export type CockpitAxis = null | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 /**
  * This interface defines the mapping for a specific controller from the Gamepad API to Cockpit's standard.
