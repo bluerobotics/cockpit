@@ -252,3 +252,8 @@ export interface PageDescription {
    */
   component: any // eslint-disable-line @typescript-eslint/no-explicit-any
 }
+
+/**
+ * Base interface for settings package used to configure a vehicle
+ */
+export interface VehicleConfigurationSettings {}
