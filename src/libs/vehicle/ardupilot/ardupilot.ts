@@ -14,6 +14,7 @@ import {
   MavMissionResult,
   MavMissionType,
   MavModeFlag,
+  MavParamType,
   MavState,
   MavType,
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -23,6 +24,7 @@ import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
 import { round } from '@/libs/utils'
 import {
+  type ArduPilotParameterSetData,
   alertLevelFromMavSeverity,
   convertCockpitWaypointsToMavlink,
   convertMavlinkWaypointsToCockpit,
@@ -488,6 +490,28 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       target_component: 0,
     }
     this.write(paramRequestMessage)
+  }
+
+  /**
+   * Request parameters list from vehicle
+   * @param { ArduPilotParameterSetData } settings Data used to set a parameter
+   */
+  setParameter(settings: ArduPilotParameterSetData): void {
+    const param_name = [...settings.id]
+    while (param_name.length < 16) {
+      param_name.push('\0')
+    }
+    const paramSetMessage: Message.ParamSet = {
+      type: MAVLinkType.PARAM_SET,
+      target_system: 0,
+      target_component: 0,
+      // @ts-ignore: The correct type is indeed a char array
+      param_id: param_name,
+      param_value: settings.value,
+      // @ts-ignore: The correct type is indeed a Type<MavParamType>
+      param_type: settings.type ?? { type: MavParamType.MAV_PARAM_TYPE_UINT8 },
+    }
+    this.write(paramSetMessage)
   }
 
   /**
