@@ -36,9 +36,6 @@
           <template v-if="widget.component === WidgetType.MissionInfo">
             <MissionInfo :widget="widget" />
           </template>
-          <template v-if="widget.component === WidgetType.PowerSupply">
-            <PowerSupply :widget="widget" />
-          </template>
           <template v-if="widget.component === WidgetType.VideoPlayer">
             <VideoPlayer :widget="widget" />
           </template>
@@ -71,7 +68,6 @@ import Indicators from '../components/widgets/Indicators.vue'
 import Map from '../components/widgets/Map.vue'
 import MiniWidgetsBar from '../components/widgets/MiniWidgetsBar.vue'
 import MissionInfo from '../components/widgets/MissionInfo.vue'
-import PowerSupply from '../components/widgets/PowerSupply.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 import VideoRecorder from '../components/widgets/VideoRecorder.vue'
 
