@@ -10,14 +10,6 @@
     @ready="onLeafletReady"
   >
     <v-btn
-      class="options-btn"
-      icon="mdi-dots-vertical"
-      size="x-small"
-      variant="text"
-      flat
-      @click="showOptionsDialog = !showOptionsDialog"
-    />
-    <v-btn
       class="absolute left-0 m-3 bottom-12 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
@@ -90,7 +82,7 @@
     <l-polyline v-if="widget.options.showVehiclePath" :lat-lngs="vehicleLatLongHistory" />
     <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
   </l-map>
-  <v-dialog v-model="showOptionsDialog" width="auto">
+  <v-dialog v-model="widget.managerVars.configMenuOpen" width="auto">
     <v-card class="pa-2">
       <v-card-title>Map widget settings</v-card-title>
       <v-card-text>
@@ -271,8 +263,6 @@ onBeforeMount(() => {
 onBeforeUnmount(() => {
   clearInterval(followInterval)
 })
-
-const showOptionsDialog = ref(false)
 </script>
 
 <style>

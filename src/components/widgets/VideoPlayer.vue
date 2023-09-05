@@ -6,16 +6,8 @@
     <video ref="videoElement" muted autoplay playsinline disablePictureInPicture>
       Your browser does not support the video tag.
     </video>
-    <v-btn
-      class="options-btn"
-      icon="mdi-dots-vertical"
-      size="x-small"
-      variant="text"
-      flat
-      @click="showOptionsDialog = !showOptionsDialog"
-    />
   </div>
-  <v-dialog v-model="showOptionsDialog" width="auto">
+  <v-dialog v-model="widget.managerVars.configMenuOpen" width="auto">
     <v-card class="pa-2">
       <v-card-title>Video widget config</v-card-title>
       <v-card-text>
@@ -88,7 +80,6 @@ const props = defineProps<{
 const widget = toRefs(props).widget
 
 const selectedStream = ref<Stream | undefined>()
-const showOptionsDialog = ref(false)
 const videoElement = ref<HTMLVideoElement | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
 const { availableStreams, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(selectedStream)
