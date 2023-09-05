@@ -141,7 +141,7 @@ export enum MAVLinkAxis {
   R = 'r',
 }
 const mavlinkAvailableAxes = Object.values(MAVLinkAxis)
-const mavlinkAvailableButtons = sequentialArray(16)
+export const mavlinkAvailableButtons = sequentialArray(16)
 
 const mavlinkAxesLimits = [-1000, 1000]
 export const protocolAxesLimits = (protocol: JoystickProtocol): number[] => {
