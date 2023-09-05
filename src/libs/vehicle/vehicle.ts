@@ -122,10 +122,10 @@ export abstract class AbstractVehicle<Modes> {
 
   /**
    * Return the firmware type of the vehicle
-   * @returns {Type}
+   * @returns {Firmware}
    */
-  firmware(): Type {
-    return this._type
+  firmware(): Firmware {
+    return this._firmware
   }
 
   /**
