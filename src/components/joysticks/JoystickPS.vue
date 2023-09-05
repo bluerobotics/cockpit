@@ -179,13 +179,8 @@ const updateLabelsState = (): void => {
   Object.values(JoystickButton).forEach((button) => {
     if (isNaN(Number(button))) return
     const protocolButton = props.protocolMapping.buttonsCorrespondencies[button as JoystickButton] || undefined
-    let functionName = undefined
-    if (props.buttonLabelCorrespondency.length === 0 || !props.buttonLabelCorrespondency.map((b) => b.input.value).includes(button)) {
-      functionName = protocolButton.protocol !== undefined && protocolButton.value !== undefined ? `${protocolButton.value} (${protocolButton.protocol})` : 'unassigned'
-    } else {
-      const param = props.buttonLabelCorrespondency.find((btn) => btn.input.protocol === protocolButton.protocol && btn.input.value === protocolButton.value)
-      functionName = param === undefined ? 'unassigned' : param.prettyName
-    }
+    const param = props.buttonLabelCorrespondency.find((btn) => btn.input.protocol === protocolButton.protocol && btn.input.value === protocolButton.value)
+    const functionName = param === undefined ? `${protocolButton.value} (${protocolButton.protocol})` : param.prettyName
     if (!svg) return
     // @ts-ignore: we already check if button is a number and so if button is a valid index
     const labelId = buttonPath[button].replace('path', 'text')
