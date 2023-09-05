@@ -1,16 +1,8 @@
 <template>
   <div class="main">
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
-    <v-btn
-      class="options-btn"
-      icon="mdi-dots-vertical"
-      size="x-small"
-      variant="text"
-      flat
-      @click="showOptionsDialog = !showOptionsDialog"
-    />
   </div>
-  <v-dialog v-model="showOptionsDialog" min-width="400" max-width="35%">
+  <v-dialog v-model="widget.managerVars.configMenuOpen" min-width="400" max-width="35%">
     <v-card class="pa-2">
       <v-card-title>HUD Compass widget config</v-card-title>
       <v-card-text>
@@ -56,7 +48,6 @@ const widget = toRefs(props).widget
 
 // Pre-defined HUD colors
 const colorSwatches = ref([['#FFFFFF'], ['#FF2D2D'], ['#0ADB0ACC']])
-const showOptionsDialog = ref(false)
 
 // prettier-ignore
 const angleRender = (angle: number): string => {

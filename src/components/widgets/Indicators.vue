@@ -1,13 +1,5 @@
 <template>
   <v-sheet rounded color="rgba(255, 255, 255, 0.9)" class="indications">
-    <v-btn
-      class="options-btn"
-      icon="mdi-dots-vertical"
-      size="x-small"
-      variant="text"
-      flat
-      @click="showOptionsDialog = !showOptionsDialog"
-    />
     <template v-if="widget.options.showDebugInfo">
       <p class="font-weight-bold text-body-1">Vehicle online?</p>
       <p class="text-body-1">{{ store.isVehicleOnline }}</p>
@@ -41,7 +33,7 @@
       </p>
     </template>
   </v-sheet>
-  <v-dialog v-model="showOptionsDialog" width="auto">
+  <v-dialog v-model="widget.managerVars.configMenuOpen" width="auto">
     <v-card class="pa-2">
       <v-card-title>Indicators widget config</v-card-title>
       <v-card-text>
@@ -55,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeMount, ref, toRefs } from 'vue'
+import { onBeforeMount, toRefs } from 'vue'
 
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -70,7 +62,6 @@ const props = defineProps<{
 }>()
 
 const widget = toRefs(props).widget
-const showOptionsDialog = ref(false)
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist

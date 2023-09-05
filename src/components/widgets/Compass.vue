@@ -13,7 +13,7 @@
       draggable="false"
     />
   </div>
-  <Dialog v-model:show="showConfigurationMenu" class="w-72">
+  <Dialog v-model:show="widget.managerVars.configMenuOpen" class="w-72">
     <div class="w-full h-full">
       <div class="flex flex-col items-center justify-around">
         <div class="flex items-center justify-between w-full my-1">
@@ -23,11 +23,10 @@
       </div>
     </div>
   </Dialog>
-  <span class="options-btn mdi mdi-dots-vertical" @click="showConfigurationMenu = !showConfigurationMenu" />
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, toRefs } from 'vue'
+import { computed, onBeforeMount, toRefs } from 'vue'
 
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
@@ -49,7 +48,6 @@ enum HeadingStyle {
 }
 const headingOptions = Object.values(HeadingStyle)
 
-const showConfigurationMenu = ref(false)
 const props = defineProps<{
   /**
    * Widget reference

@@ -1,15 +1,7 @@
 <template>
   <div class="w-full h-full">
     <img :src="src" draggable="false" />
-    <v-btn
-      class="options-btn"
-      icon="mdi-dots-vertical"
-      size="x-small"
-      variant="text"
-      flat
-      @click="showOptionsDialog = !showOptionsDialog"
-    />
-    <v-dialog v-model="showOptionsDialog" min-width="400" max-width="35%">
+    <v-dialog v-model="widget.managerVars.configMenuOpen" min-width="400" max-width="35%">
       <v-card class="pa-2">
         <v-card-title>Image URL</v-card-title>
         <v-card-text>
@@ -25,7 +17,7 @@
           </div>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="primary" text @click="showOptionsDialog = false">Close</v-btn>
+          <v-btn color="primary" text @click="widget.managerVars.configMenuOpen = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -33,13 +25,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, toRefs } from 'vue'
+import { computed, onBeforeMount, toRefs } from 'vue'
 
 import type { Widget } from '@/types/widgets'
 
 import Dropdown from '../Dropdown.vue'
 
-const showOptionsDialog = ref(false)
 const props = defineProps<{
   /**
    * Widget reference
