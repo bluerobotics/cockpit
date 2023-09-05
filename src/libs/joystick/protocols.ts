@@ -78,6 +78,13 @@ export class MavlinkControllerState extends ProtocolControllerState {
 }
 
 /**
+ * Possible other protocol functions
+ */
+export enum OtherProtocol {
+  NO_FUNCTION = 'No function',
+}
+
+/**
  * Possible Cockpit Actions
  */
 export enum CockpitAction {

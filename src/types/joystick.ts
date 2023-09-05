@@ -72,11 +72,11 @@ export interface ProtocolInput {
   /**
    * Protocol which this input is used to
    */
-  protocol: JoystickProtocol | undefined
+  protocol: JoystickProtocol
   /**
    * Value for that input
    */
-  value: number | string | undefined
+  value: number | string
 }
 
 /**

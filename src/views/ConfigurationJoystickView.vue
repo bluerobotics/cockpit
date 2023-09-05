@@ -376,7 +376,7 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
   if (inputType === InputType.Axis) {
     // If the input type is an Axis, create a new input mapping, unassigning indexes use to held
     // the selected value, so we don't have two axis sending data to the same channel
-    const undefinedInput = { protocol: undefined, value: undefined }
+    const undefinedInput = { protocol: JoystickProtocol.Other, value: OtherProtocol.NO_FUNCTION }
     const newInputMapping = oldInputMapping.map((oldValue) => {
       return oldValue.protocol === newValue.protocol && oldValue.value === newValue.value ? undefinedInput : oldValue
     })
