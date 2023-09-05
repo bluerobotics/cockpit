@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid'
 
+import type { MavParamType } from '@/libs/connection/m2r/dialects/ardupilotmega/MavParamType'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { round } from '@/libs/utils'
 import { AlertLevel } from '@/types/alert'
@@ -12,6 +13,7 @@ import {
   MavMissionType,
   MavSeverity,
 } from '../../connection/m2r/messages/mavlink2rest-enum'
+import type { VehicleConfigurationSettings } from '../types'
 
 const cockpitMavlinkFrameCorrespondency: [MavFrame, AltitudeReferenceType][] = [
   [MavFrame.MAV_FRAME_GLOBAL_INT, AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL],
@@ -86,4 +88,22 @@ export const alertLevelFromMavSeverity = {
   [MavSeverity.MAV_SEVERITY_INFO]: AlertLevel.Info,
   // Useful non-operational messages that can assist in debugging. These should not occur during normal operation.
   [MavSeverity.MAV_SEVERITY_DEBUG]: AlertLevel.Info,
+}
+
+/**
+ * Data needed for setting a parameter on a ArduPilot vehicle
+ */
+export interface ArduPilotParameterSetData extends VehicleConfigurationSettings {
+  /**
+   * Name of the parameter to be set
+   */
+  id: string
+  /**
+   * New value for the parameter
+   */
+  value: number
+  /**
+   * Parameter type (e.g.: INT8, UINT16)
+   */
+  type?: MavParamType
 }
