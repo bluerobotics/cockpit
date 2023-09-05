@@ -14,7 +14,7 @@ export type controllerUpdateCallback = (state: JoystickState, protocolMapping: P
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMapping = useStorage('cockpit-v0.0.7-protocol-mapping', cockpitStandardToProtocols)
+  const protocolMapping = useStorage('cockpit-protocol-mapping-v3', cockpitStandardToProtocols)
   const cockpitStdMappings = useStorage('cockpit-standard-mappings', availableGamepadToCockpitMaps)
   const availableProtocolAxesFunctions = allAvailableAxes
   const availableProtocolButtonFunctions = allAvailableButtons
