@@ -7,6 +7,7 @@ import { JoystickModel } from '@/libs/joystick/manager'
 export enum JoystickProtocol {
   MAVLink = 'mavlink',
   CockpitAction = 'cockpit-action',
+  Other = 'other',
 }
 
 /**
