@@ -87,6 +87,10 @@
               class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
               @click="store.deleteWidget(widget)"
             />
+            <Button
+              class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-pencil hover:bg-slate-500"
+              @click="store.openWidgetConfigMenu(widget)"
+            />
           </div>
         </TransitionGroup>
       </VueDraggable>

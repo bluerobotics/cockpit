@@ -18,6 +18,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             size: { width: 0.1, height: 0.62 },
             managerVars: {
               timesMounted: 0,
+              configMenuOpen: false,
               lastNonMaximizedX: 0.4,
               lastNonMaximizedY: 0.32,
               lastNonMaximizedWidth: 0.2,
@@ -36,6 +37,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             size: { width: 0.72, height: 0.6 },
             managerVars: {
               timesMounted: 0,
+              configMenuOpen: false,
               lastNonMaximizedX: 0.4,
               lastNonMaximizedY: 0.32,
               lastNonMaximizedWidth: 0.2,
@@ -58,6 +60,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             size: { width: 0.7, height: 0.065 },
             managerVars: {
               timesMounted: 0,
+              configMenuOpen: false,
               lastNonMaximizedX: 0.4,
               lastNonMaximizedY: 0.32,
               lastNonMaximizedWidth: 0.2,
@@ -76,6 +79,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             size: { width: 1, height: 1 },
             managerVars: {
               timesMounted: 0,
+              configMenuOpen: false,
               lastNonMaximizedX: 0.4,
               lastNonMaximizedY: 0.32,
               lastNonMaximizedWidth: 0.2,
@@ -101,6 +105,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             size: { width: 1, height: 1 },
             managerVars: {
               timesMounted: 0,
+              configMenuOpen: false,
               lastNonMaximizedX: 0.4,
               lastNonMaximizedY: 0.32,
               lastNonMaximizedWidth: 0.2,

@@ -54,6 +54,10 @@ export type Widget = {
      */
     timesMounted: number
     /**
+     * If the configuration menu is open or not
+     */
+    configMenuOpen: boolean
+    /**
      * Last widget X position when it wasn't maximized
      */
     lastNonMaximizedX: number

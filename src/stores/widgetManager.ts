@@ -19,9 +19,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
-  const currentProfile = useStorage('cockpit-current-profile-v2', widgetProfile)
+  const currentProfile = useStorage('cockpit-current-profile-v3', widgetProfile)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile', miniWidgetsProfile)
-  const savedProfiles = useStorage('cockpit-saved-profiles-v2', widgetProfiles)
+  const savedProfiles = useStorage('cockpit-saved-profiles-v3', widgetProfiles)
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
 
   const currentView = computed<View>({
@@ -222,6 +222,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       options: {},
       managerVars: {
         timesMounted: 0,
+        configMenuOpen: false,
         lastNonMaximizedX: 0.4,
         lastNonMaximizedY: 0.32,
         lastNonMaximizedWidth: 0.2,
@@ -238,6 +239,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const view = viewFromWidget(widget)
     const index = view.widgets.indexOf(widget)
     view.widgets.splice(index, 1)
+  }
+
+  /**
+   * Open widget configuration menu
+   * @param { Widget } widget - Widget
+   */
+  const openWidgetConfigMenu = (widget: Widget): void => {
+    widget.managerVars.configMenuOpen = true
   }
 
   const fullScreenPosition = { x: 0, y: 0 }
@@ -321,6 +330,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     importView,
     addWidget,
     deleteWidget,
+    openWidgetConfigMenu,
     toggleFullScreen,
     isFullScreen,
   }
