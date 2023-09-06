@@ -87,9 +87,9 @@ onMounted(() => {
 })
 
 // Make canvas size follows window resizing
-const { width: windowWidth, height: windowHeight } = useWindowSize()
+const { height: windowHeight } = useWindowSize()
 const canvasSize = computed(() => ({
-  width: widget.value.size.width * windowWidth.value,
+  width: 128,
   height: widget.value.size.height * windowHeight.value,
 }))
 
