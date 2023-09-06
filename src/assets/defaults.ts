@@ -14,8 +14,8 @@ export const widgetProfiles: { [key: string]: Profile } = {
             hash: '8b1448f5-3f07-4bfc-8a0e-5d491993f858',
             name: 'Depth HUD',
             component: WidgetType.DepthHUD,
-            position: { x: 0.88, y: 0.23 },
-            size: { width: 0.1, height: 0.62 },
+            position: { x: 0.89, y: 0.23 },
+            size: { width: 0.09, height: 0.62 },
             managerVars: {
               timesMounted: 0,
               configMenuOpen: false,
