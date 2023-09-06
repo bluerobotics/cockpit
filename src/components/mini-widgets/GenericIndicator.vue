@@ -9,26 +9,26 @@
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ options.variableName }}</span>
     </div>
   </div>
-  <Dialog v-model:show="showConfigurationMenu" class="w-72">
+  <Dialog v-model:show="showConfigurationMenu" class="w-80">
     <div class="w-full h-full">
       <div class="flex flex-col items-center justify-around">
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Name</span>
-          <div class="w-40">
+          <div class="w-48">
             <Dropdown v-model="options.variableName" :options="Object.keys(store.genericVariables)" />
           </div>
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Unit</span>
-          <input v-model="options.variableUnit" class="w-40 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="options.variableUnit" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Multiplier</span>
-          <input v-model="options.variableMultiplier" class="w-40 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="options.variableMultiplier" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Icon</span>
-          <div class="relative w-40">
+          <div class="relative w-48">
             <input v-model="options.iconName" class="w-full py-1 pl-2 pr-8 rounded-md bg-slate-200" />
             <span
               class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi"
@@ -39,7 +39,7 @@
         <div class="flex items-center justify-center w-full mt-2">
           <input
             v-model="iconSearchString"
-            class="w-40 px-2 py-1 rounded-md bg-slate-200"
+            class="w-48 px-2 py-1 rounded-md bg-slate-200"
             placeholder="Search icons..."
           />
         </div>
@@ -48,7 +48,7 @@
           v-slot="{ item }"
           class="w-full h-40 mt-3"
           :items="iconsNames.filter((name) => name.includes(iconSearchString))"
-          :item-size="40"
+          :item-size="46"
           :grid-items="6"
         >
           <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="options.iconName = item">
