@@ -11,7 +11,23 @@
   </div>
   <Dialog v-model:show="showConfigurationMenu" class="w-80">
     <div class="w-full h-full">
-      <div class="flex flex-col items-center justify-around">
+      <div class="flex items-center mb-3 justify-evenly">
+        <div
+          class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
+          :class="{ 'bg-slate-400': currentTab === 'templates' }"
+          @click="currentTab = 'templates'"
+        >
+          Templates
+        </div>
+        <div
+          class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
+          :class="{ 'bg-slate-400': currentTab === 'custom' }"
+          @click="currentTab = 'custom'"
+        >
+          Custom
+        </div>
+      </div>
+      <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Name</span>
           <div class="w-48">
@@ -64,6 +80,22 @@
           />
         </div>
       </div>
+      <div v-if="currentTab === 'templates'" class="flex flex-wrap items-center justify-around">
+        <div
+          v-for="(template, i) in genericIndicatorTemplates"
+          :key="i"
+          class="flex items-center w-[6.25rem] h-12 py-1 pl-6 pr-1 rounded-md text-white justify-center cursor-pointer hover:bg-slate-100/20 transition-all"
+          @click="setIndicatorFromTemplate(template)"
+        >
+          <span class="relative w-[2rem] mdi icon-symbol" :class="[template.iconName]"></span>
+          <div class="flex flex-col items-start justify-center ml-1 min-w-[4rem] max-w-[6rem] select-none">
+            <span class="text-xl font-semibold leading-6 w-fit">
+              {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }} {{ template.variableUnit }}
+            </span>
+            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ template.variableName }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </Dialog>
 </template>
@@ -76,6 +108,7 @@ import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
 import Dropdown from '@/components/Dropdown.vue'
 import { round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { type GenericIndicatorTemplate, genericIndicatorTemplates } from '@/types/genericIndicator'
 
 import Dialog from '../Dialog.vue'
 
@@ -123,6 +156,14 @@ let iconsNames: string[] = []
 
 const showConfigurationMenu = ref(false)
 const iconSearchString = ref('')
+const currentTab = ref('templates')
+
+const setIndicatorFromTemplate = (template: GenericIndicatorTemplate): void => {
+  options.variableName = template.variableName
+  options.iconName = template.iconName
+  options.variableUnit = template.variableUnit
+  options.variableMultiplier = template.variableMultiplier
+}
 </script>
 
 <style>
