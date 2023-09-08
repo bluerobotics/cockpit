@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import * as MdiExports from '@mdi/js/mdi'
 import { toReactive } from '@vueuse/core'
-import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
 import Dropdown from '@/components/Dropdown.vue'
 import { round } from '@/libs/utils'
@@ -151,6 +151,7 @@ const updateVariableState = (): void => {
 }
 watch(store.genericVariables, updateVariableState)
 watch(options, updateVariableState)
+onMounted(() => updateVariableState())
 
 let iconsNames: string[] = []
 
