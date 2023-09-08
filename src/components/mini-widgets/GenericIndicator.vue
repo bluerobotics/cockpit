@@ -140,7 +140,7 @@ const store = useMainVehicleStore()
 
 const currentState = ref<unknown>(0)
 const parsedState = computed(() => {
-  if (currentState.value) {
+  if (currentState.value !== undefined) {
     return round(Number(options.variableMultiplier) * Number(currentState.value)).toString()
   }
   return '--'
