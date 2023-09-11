@@ -192,4 +192,7 @@ body {
   right: -10%;
   top: -10%;
 }
+.swal2-container {
+  z-index: 10000;
+}
 </style>
