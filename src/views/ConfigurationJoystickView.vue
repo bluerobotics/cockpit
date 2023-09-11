@@ -376,38 +376,40 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
     // When we use an unmapped MAVLink function, we use the same mapping but we have te new function to that button
     if (newValue.protocol === JoystickProtocol.MAVLink && typeof newValue.value !== 'number') {
       const buttonParameterValue = vehicleStore.buttonParameterTable.find((btn) => btn.title === newValue.value)?.value
-      if (buttonParameterValue !== undefined) {
-        let mavlinkButton: undefined | number = undefined
-        if (oldInputMapping[index].protocol === JoystickProtocol.MAVLink) {
-          mavlinkButton = oldInputMapping[index].value as number
-        } else {
-          const usedMavlinkButtons = oldInputMapping
-            .filter((i) => i.protocol === JoystickProtocol.MAVLink)
-            .map((i) => i.value)
-          const availableMavlinkButtons = mavlinkAvailableButtons.filter((b) => !usedMavlinkButtons.includes(b))
-          if (!availableMavlinkButtons.isEmpty()) {
-            mavlinkButton = availableMavlinkButtons[0]
-          }
-        }
-        if (mavlinkButton === undefined) {
-          const errorMessage = `None of the 16 MAVLink Manual Control buttons are available.
-              Please assign "No function" to one already used.`
-          console.error(errorMessage)
-          Swal.fire({
-            text: errorMessage,
-            icon: 'error',
-            timer: 5000,
-          })
-          return
-        }
-        newInput = { protocol: JoystickProtocol.MAVLink, value: mavlinkButton }
-        const configurationSettings: ArduPilotParameterSetData = {
-          id: `BTN${mavlinkButton}_FUNCTION`,
-          value: buttonParameterValue,
-          type: { type: MavParamType.MAV_PARAM_TYPE_INT8 },
-        }
-        vehicleStore.configure(configurationSettings)
+      if (buttonParameterValue === undefined) {
+        Swal.fire({ text: `Could not find MAVLink parameter ${newValue.value}.`, icon: 'error', timer: 5000 })
+        return
       }
+      let mavlinkButton: undefined | number = undefined
+      if (oldInputMapping[index].protocol === JoystickProtocol.MAVLink) {
+        mavlinkButton = oldInputMapping[index].value as number
+      } else {
+        const usedMavlinkButtons = oldInputMapping
+          .filter((i) => i.protocol === JoystickProtocol.MAVLink)
+          .map((i) => i.value)
+        const availableMavlinkButtons = mavlinkAvailableButtons.filter((b) => !usedMavlinkButtons.includes(b))
+        if (!availableMavlinkButtons.isEmpty()) {
+          mavlinkButton = availableMavlinkButtons[0]
+        }
+      }
+      if (mavlinkButton === undefined) {
+        const errorMessage = `None of the 16 MAVLink Manual Control buttons are available.
+            Please assign "No function" to one already used.`
+        console.error(errorMessage)
+        Swal.fire({
+          text: errorMessage,
+          icon: 'error',
+          timer: 5000,
+        })
+        return
+      }
+      newInput = { protocol: JoystickProtocol.MAVLink, value: mavlinkButton }
+      const configurationSettings: ArduPilotParameterSetData = {
+        id: `BTN${mavlinkButton}_FUNCTION`,
+        value: buttonParameterValue,
+        type: { type: MavParamType.MAV_PARAM_TYPE_INT8 },
+      }
+      vehicleStore.configure(configurationSettings)
     }
 
     newInputMapping[index] = newInput
