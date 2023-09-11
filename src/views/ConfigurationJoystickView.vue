@@ -396,11 +396,7 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
         const errorMessage = `None of the 16 MAVLink Manual Control buttons are available.
             Please assign "No function" to one already used.`
         console.error(errorMessage)
-        Swal.fire({
-          text: errorMessage,
-          icon: 'error',
-          timer: 5000,
-        })
+        Swal.fire({ text: errorMessage, icon: 'error', timer: 5000 })
         return
       }
       newInput = { protocol: JoystickProtocol.MAVLink, value: mavlinkButton }
