@@ -380,22 +380,28 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
         Swal.fire({ text: `Could not find MAVLink parameter ${newValue.value}.`, icon: 'error', timer: 5000 })
         return
       }
+
       let mavlinkButton: undefined | number = undefined
-      if (oldInputMapping[index].protocol === JoystickProtocol.MAVLink) {
-        // If the selected Cockpit button is already mapped to be used with MAVLink functions, re-use it
-        mavlinkButton = oldInputMapping[index].value as number
-      } else {
-        // If not, we should look for a MAVLink button that is not being used already and use it
-        const usedMavlinkButtons = oldInputMapping
-          .filter((i) => i.protocol === JoystickProtocol.MAVLink)
-          .map((i) => i.value)
-        const availableMavlinkButtons = mavlinkAvailableButtons.filter((b) => !usedMavlinkButtons.includes(b))
-        if (!availableMavlinkButtons.isEmpty()) {
-          mavlinkButton = availableMavlinkButtons[0]
+      const usedMavButtons = oldInputMapping.filter((i) => i.protocol === JoystickProtocol.MAVLink).map((i) => i.value)
+      const availableMavButtons = mavlinkAvailableButtons.filter((b) => !usedMavButtons.includes(b))
+      const oldButtonInput = oldInputMapping[index]
+
+      if (oldButtonInput.protocol !== JoystickProtocol.MAVLink && !availableMavButtons.isEmpty()) {
+        mavlinkButton = availableMavButtons[0]
+      } else if (oldButtonInput.protocol === JoystickProtocol.MAVLink) {
+        // Check if there's more than one Cockpit button assigned to this same MAVLink button
+        const doubleMapped = usedMavButtons.filter((b) => b === oldButtonInput.value).length > 1
+        if (doubleMapped && !availableMavButtons.isEmpty()) {
+          // In case there's a double mapping but there are MAVLink buttons still not used, pick one.
+          mavlinkButton = availableMavButtons[0]
+        } else if (!doubleMapped) {
+          // If there's onlyy one Cockpit button mapped to this MAVLink button, use it.
+          mavlinkButton = oldButtonInput.value as number
         }
       }
+
       if (mavlinkButton === undefined) {
-        // If the variable is still undefined, it means we could not find an available MAVLink button, thus we cannot proceed mapping
+        // If the variable is still undefined, it means we could not find an available MAVLink button to be used, thus we cannot proceed mapping.
         const errorMessage = `None of the 16 MAVLink Manual Control buttons are available.
             Please assign "No function" to one already used.`
         console.error(errorMessage)
