@@ -49,10 +49,13 @@ export class MavlinkControllerState extends ProtocolControllerState {
 
     let buttons_int = 0
     for (let i = 0; i < MavlinkControllerState.BUTTONS_PER_BITFIELD; i++) {
-      const gamepadButtonPosition = mapping.buttonsCorrespondencies.findIndex((b) => isMavlinkInput(b) && b.value === i)
-      if (gamepadButtonPosition === -1) continue
-      const gamepadButtonState = joystickState.buttons[gamepadButtonPosition]
-      buttons_int += (gamepadButtonState ?? 0) * 2 ** i
+      let buttonState = 0
+      mapping.buttonsCorrespondencies.forEach((b, idx) => {
+        if (isMavlinkInput(b) && b.value === i && joystickState.buttons[idx]) {
+          buttonState = 1
+        }
+      })
+      buttons_int += buttonState * 2 ** i
     }
 
     const xIndex = mapping.axesCorrespondencies.findIndex((v) => isMavlinkInput(v) && v.value === MAVLinkAxis.X)
