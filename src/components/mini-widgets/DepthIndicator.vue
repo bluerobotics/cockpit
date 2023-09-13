@@ -3,7 +3,7 @@
     <img src="@/assets/depth-icon.svg" class="h-full" :draggable="false" />
     <div class="flex flex-col items-start justify-center ml-1 min-w-[4rem] max-w-[6rem] select-none">
       <div>
-        <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ round(averageDepth, 2) }}</span>
+        <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ round(averageDepth, 2).toFixed(2) }}</span>
         <span class="text-xl font-semibold leading-6 w-fit"> m</span>
       </div>
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">Depth</span>
