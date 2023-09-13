@@ -382,8 +382,10 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
       }
       let mavlinkButton: undefined | number = undefined
       if (oldInputMapping[index].protocol === JoystickProtocol.MAVLink) {
+        // If the selected Cockpit button is already mapped to be used with MAVLink functions, re-use it
         mavlinkButton = oldInputMapping[index].value as number
       } else {
+        // If not, we should look for a MAVLink button that is not being used already and use it
         const usedMavlinkButtons = oldInputMapping
           .filter((i) => i.protocol === JoystickProtocol.MAVLink)
           .map((i) => i.value)
@@ -393,6 +395,7 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
         }
       }
       if (mavlinkButton === undefined) {
+        // If the variable is still undefined, it means we could not find an available MAVLink button, thus we cannot proceed mapping
         const errorMessage = `None of the 16 MAVLink Manual Control buttons are available.
             Please assign "No function" to one already used.`
         console.error(errorMessage)
