@@ -4,7 +4,7 @@
     @click="showConfigurationMenu = !showConfigurationMenu"
   >
     <span class="relative w-[2rem] mdi icon-symbol" :class="[options.iconName]"></span>
-    <div class="flex flex-col items-start justify-center mx-1 select-none w-fit">
+    <div class="flex flex-col items-start justify-center mx-1 select-none w-fit min-w-[3rem]">
       <div>
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
         <span class="text-xl font-semibold leading-6 w-fit">
