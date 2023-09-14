@@ -181,6 +181,23 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     // Update our internal messages
     this._messages.set(mavlink_message.message.type, { ...mavlink_message.message, epoch: new Date().getTime() })
 
+    const mavlinkIdentificationKeys = [
+      'cam_idx',
+      'camera_id',
+      'compass_id',
+      'gcs_system_id',
+      'gimbal_device_id',
+      'gps_id',
+      'hw_unique_id',
+      'id',
+      'idx',
+      'rtk_receiver_id',
+      'sensor_id',
+      'storage_id',
+      'stream_id',
+      'uas_id',
+    ]
+
     /**
      * Allows handling messages that are shared by multiple devices, splitting them out by detected device IDs.
      * @param { Record<string, unknown> } obj The object to be searched for
@@ -190,7 +207,17 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const getDeepVariables = (obj: Record<string, unknown>, acc: Record<string, unknown>, baseKey?: string): void => {
       Object.entries(obj).forEach(([k, v]) => {
         if (v instanceof Object) {
-          getDeepVariables(v as Record<string, unknown>, acc, k)
+          let identifier: string | undefined = undefined
+          Object.keys(v).forEach((subKey) => {
+            if (mavlinkIdentificationKeys.includes(subKey)) {
+              identifier = subKey
+            }
+          })
+          if (identifier === undefined) {
+            getDeepVariables(v as Record<string, unknown>, acc, k)
+          } else {
+            getDeepVariables(v as Record<string, unknown>, acc, `${k}.ID${v[identifier]}`)
+          }
         } else {
           if (baseKey === undefined) {
             acc[k] = v
