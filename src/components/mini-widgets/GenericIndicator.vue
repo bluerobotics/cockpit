@@ -44,6 +44,10 @@
           </div>
         </div>
         <div class="flex items-center justify-between w-full my-1">
+          <span class="mr-1 text-slate-100">Fractional digits</span>
+          <input v-model="options.fractionalDigits" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+        </div>
+        <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Unit</span>
           <input v-model="options.variableUnit" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
@@ -135,6 +139,7 @@ onBeforeMount(() => {
     Object.assign(options, {
       displayName: '',
       variableName: '',
+      fractionalDigits: 1,
       iconName: 'mdi-help-box',
       variableUnit: '%',
       variableMultiplier: 1,
@@ -151,7 +156,10 @@ const store = useMainVehicleStore()
 const currentState = ref<unknown>(0)
 const parsedState = computed(() => {
   if (currentState.value !== undefined) {
-    return round(Number(options.variableMultiplier) * Number(currentState.value)).toString()
+    return round(
+      Number(options.variableMultiplier) * Number(currentState.value),
+      options.fractionalDigits as number
+    ).toFixed(options.fractionalDigits as number)
   }
   return '--'
 })
