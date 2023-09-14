@@ -5,7 +5,12 @@
   >
     <span class="relative w-[2rem] mdi icon-symbol" :class="[options.iconName]"></span>
     <div class="flex flex-col items-start justify-center mx-1 select-none w-fit">
-      <span class="text-xl font-semibold leading-6 w-fit">{{ parsedState }} {{ options.variableUnit }}</span>
+      <div>
+        <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
+        <span class="text-xl font-semibold leading-6 w-fit">
+          {{ String.fromCharCode(0x20) }} {{ options.variableUnit }}
+        </span>
+      </div>
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ options.displayName }}</span>
     </div>
   </div>
