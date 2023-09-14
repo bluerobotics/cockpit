@@ -11,8 +11,8 @@
   <template v-if="widgetType === MiniWidgetType.DepthIndicator">
     <DepthIndicator :options="options" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.GenericIndicator">
-    <GenericIndicator :options="options" />
+  <template v-if="widgetType === MiniWidgetType.VeryGenericIndicator">
+    <VeryGenericIndicator :options="options" />
   </template>
   <template v-if="widgetType === MiniWidgetType.JoystickCommIndicator">
     <JoystickCommIndicator :options="options" />
@@ -40,11 +40,11 @@ import ArmerButton from './mini-widgets/ArmerButton.vue'
 import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
 import BatteryIndicator from './mini-widgets/BatteryIndicator.vue'
 import DepthIndicator from './mini-widgets/DepthIndicator.vue'
-import GenericIndicator from './mini-widgets/GenericIndicator.vue'
 import JoystickCommIndicator from './mini-widgets/JoystickCommIndicator.vue'
 import MiniVideoRecorder from './mini-widgets/MiniVideoRecorder.vue'
 import ModeSelector from './mini-widgets/ModeSelector.vue'
 import SatelliteIndicator from './mini-widgets/SatelliteIndicator.vue'
+import VeryGenericIndicator from './mini-widgets/VeryGenericIndicator.vue'
 import ViewSelector from './mini-widgets/ViewSelector.vue'
 
 const props = defineProps<{
