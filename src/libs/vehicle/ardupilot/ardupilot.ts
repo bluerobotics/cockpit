@@ -181,6 +181,28 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     // Update our internal messages
     this._messages.set(mavlink_message.message.type, { ...mavlink_message.message, epoch: new Date().getTime() })
 
+    /**
+     * Allows handling messages that are shared by multiple devices, splitting them out by detected device IDs.
+     * @param { Record<string, unknown> } obj The object to be searched for
+     * @param { Record<string, unknown> } acc The destination object for the variables found
+     * @param { string } baseKey A string to be added in front of the actual object keys. Used for deep nested key-value pairs
+     */
+    const getDeepVariables = (obj: Record<string, unknown>, acc: Record<string, unknown>, baseKey?: string): void => {
+      Object.entries(obj).forEach(([k, v]) => {
+        if (v instanceof Object) {
+          getDeepVariables(v as Record<string, unknown>, acc, k)
+        } else {
+          if (baseKey === undefined) {
+            acc[k] = v
+          } else {
+            acc[`${baseKey}.${k}`] = v
+          }
+        }
+      })
+    }
+
+    getDeepVariables(Object.fromEntries(this._messages), this._genericVariables)
+
     // TODO: Maybe create a signal class to deal with MAVLink only
     // Where add will use the template argument type to define the lambda argument type
     this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
