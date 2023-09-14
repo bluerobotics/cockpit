@@ -1,10 +1,10 @@
 <template>
   <div
-    class="flex items-center w-[6.25rem] h-12 py-1 text-white justify-center cursor-pointer hover:bg-slate-100/20 transition-all"
+    class="flex items-center justify-center h-12 py-1 text-white transition-all cursor-pointer w-fit hover:bg-slate-100/20"
     @click="showConfigurationMenu = !showConfigurationMenu"
   >
     <span class="relative w-[2rem] mdi icon-symbol" :class="[options.iconName]"></span>
-    <div class="flex flex-col items-start justify-center ml-1 min-w-[4rem] max-w-[6rem] select-none">
+    <div class="flex flex-col items-start justify-center mx-1 select-none w-fit">
       <span class="text-xl font-semibold leading-6 w-fit">{{ parsedState }} {{ options.variableUnit }}</span>
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ options.displayName }}</span>
     </div>
