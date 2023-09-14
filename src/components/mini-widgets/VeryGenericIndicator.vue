@@ -95,7 +95,7 @@
       </div>
       <div v-if="currentTab === 'templates'" class="flex flex-wrap items-center justify-around">
         <div
-          v-for="(template, i) in genericIndicatorTemplates"
+          v-for="(template, i) in veryGenericIndicatorTemplates"
           :key="i"
           class="flex items-center w-[6.25rem] h-12 py-1 pl-6 pr-1 rounded-md text-white justify-center cursor-pointer hover:bg-slate-100/20 transition-all"
           @click="setIndicatorFromTemplate(template)"
@@ -121,7 +121,7 @@ import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 import Dropdown from '@/components/Dropdown.vue'
 import { round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import { type GenericIndicatorTemplate, genericIndicatorTemplates } from '@/types/genericIndicator'
+import { type VeryGenericIndicatorTemplate, veryGenericIndicatorTemplates } from '@/types/genericIndicator'
 
 import Dialog from '../Dialog.vue'
 
@@ -177,7 +177,7 @@ const showConfigurationMenu = ref(false)
 const iconSearchString = ref('')
 const currentTab = ref('templates')
 
-const setIndicatorFromTemplate = (template: GenericIndicatorTemplate): void => {
+const setIndicatorFromTemplate = (template: VeryGenericIndicatorTemplate): void => {
   options.displayName = template.displayName
   options.variableName = template.variableName
   options.iconName = template.iconName
