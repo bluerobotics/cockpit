@@ -6,7 +6,7 @@
     <span class="relative w-[2rem] mdi icon-symbol" :class="[options.iconName]"></span>
     <div class="flex flex-col items-start justify-center ml-1 min-w-[4rem] max-w-[6rem] select-none">
       <span class="text-xl font-semibold leading-6 w-fit">{{ parsedState }} {{ options.variableUnit }}</span>
-      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ options.variableName }}</span>
+      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ options.displayName }}</span>
     </div>
   </div>
   <Dialog v-model:show="showConfigurationMenu" class="w-80">
@@ -29,7 +29,11 @@
       </div>
       <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
         <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Name</span>
+          <span class="mr-1 text-slate-100">Display name</span>
+          <input v-model="options.displayName" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+        </div>
+        <div class="flex items-center justify-between w-full my-1">
+          <span class="mr-1 text-slate-100">Variable</span>
           <div class="w-48">
             <Dropdown v-model="options.variableName" :options="Object.keys(store.genericVariables)" />
           </div>
@@ -92,7 +96,7 @@
             <span class="text-xl font-semibold leading-6 w-fit">
               {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }} {{ template.variableUnit }}
             </span>
-            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ template.variableName }}</span>
+            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ template.displayName }}</span>
           </div>
         </div>
       </div>
@@ -124,6 +128,7 @@ onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (Object.keys(options).length === 0) {
     Object.assign(options, {
+      displayName: '',
       variableName: '',
       iconName: 'mdi-help-box',
       variableUnit: '%',
@@ -160,6 +165,7 @@ const iconSearchString = ref('')
 const currentTab = ref('templates')
 
 const setIndicatorFromTemplate = (template: GenericIndicatorTemplate): void => {
+  options.displayName = template.displayName
   options.variableName = template.variableName
   options.iconName = template.iconName
   options.variableUnit = template.variableUnit

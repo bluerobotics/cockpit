@@ -3,6 +3,10 @@
  */
 export interface GenericIndicatorTemplate {
   /**
+   * Name to be displayed on the widget
+   */
+  displayName: string
+  /**
    * Name of the variable to be fetched
    */
   variableName: string
@@ -22,48 +26,56 @@ export interface GenericIndicatorTemplate {
 
 export const genericIndicatorTemplates: GenericIndicatorTemplate[] = [
   {
+    displayName: 'Cam Tilt',
     variableName: 'CamTilt',
     iconName: 'mdi-camera-retake',
     variableUnit: '%',
     variableMultiplier: 100,
   },
   {
+    displayName: 'Cam Pan',
     variableName: 'CamPan',
     iconName: 'mdi-camera-retake',
     variableUnit: '%',
     variableMultiplier: 100,
   },
   {
+    displayName: 'Tether Turns',
     variableName: 'TetherTrn',
     iconName: 'mdi-horizontal-rotate-clockwise',
     variableUnit: 'x',
     variableMultiplier: 100,
   },
   {
+    displayName: 'Lights (1)',
     variableName: 'Lights1',
     iconName: 'mdi-flashlight',
     variableUnit: '%',
     variableMultiplier: 100,
   },
   {
+    displayName: 'Lights (2)',
     variableName: 'Lights2',
     iconName: 'mdi-flashlight',
     variableUnit: '%',
     variableMultiplier: 100,
   },
   {
+    displayName: 'Pilot Gain',
     variableName: 'PilotGain',
     iconName: 'mdi-account-hard-hat',
     variableUnit: '%',
     variableMultiplier: 100,
   },
   {
+    displayName: 'Input Hold',
     variableName: 'InputHold',
     iconName: 'mdi-gesture-tap-hold',
     variableUnit: '',
     variableMultiplier: 1,
   },
   {
+    displayName: 'Roll Pitch',
     variableName: 'RollPitch',
     iconName: 'mdi-controller',
     variableUnit: '',
