@@ -56,6 +56,7 @@
 import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { format, intervalToDuration } from 'date-fns'
 import { saveAs } from 'file-saver'
+import fixWebmDuration from 'fix-webm-duration'
 import Swal, { type SweetAlertResult } from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import adapter from 'webrtc-adapter'
@@ -184,8 +185,10 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
 
   mediaRecorder.value.onstop = () => {
     const blob = new Blob(chunks, { type: 'video/webm' })
+    fixWebmDuration(blob, Date.now() - timeRecordingStart.value.getTime()).then((fixedBlob) => {
+      saveAs(fixedBlob, `${missionName} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`)
+    })
     chunks = []
-    saveAs(blob, `${missionName} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`)
     mediaRecorder.value = undefined
     if (selectedStream.value?.id === 'screenStream' && mediaStream.value !== undefined) {
       // If recording the screen stream, stop the tracks also, so the browser removes the recording warning.
