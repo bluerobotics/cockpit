@@ -1,7 +1,7 @@
 /**
  * Variables that define generic indicator
  */
-export interface VeryGenericIndicatorTemplate {
+export interface VeryGenericIndicatorPreset {
   /**
    * Name to be displayed on the widget
    */
@@ -28,7 +28,7 @@ export interface VeryGenericIndicatorTemplate {
   variableMultiplier: number
 }
 
-export const veryGenericIndicatorTemplates: VeryGenericIndicatorTemplate[] = [
+export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
   {
     displayName: 'Cam Tilt',
     variableName: 'CamTilt',
