@@ -1,10 +1,10 @@
 # Build frontend
-FROM --platform=$BUILDPLATFORM node:16-buster-slim AS frontendBuilder
+FROM --platform=$BUILDPLATFORM oven/bun AS frontendBuilder
 
 RUN mkdir /frontend && ls /frontend
 COPY . /frontend
-RUN --mount=type=cache,target=/frontend/node_modules yarn --cwd /frontend install --network-timeout=300000
-RUN --mount=type=cache,target=/frontend/node_modules yarn --cwd /frontend build
+RUN bun install --cwd /frontend
+RUN bun run --cwd /frontend build
 
 FROM alpine:3.14
 
