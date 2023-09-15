@@ -35,6 +35,7 @@
             animation="150"
             group="generalGroup"
             class="flex flex-wrap items-center justify-center w-full h-full gap-2"
+            @add="trashList = []"
           >
             <div v-for="item in trashList" :key="item.hash">
               <div class="pointer-events-none select-none">
@@ -50,9 +51,8 @@
 
 <script setup lang="ts">
 import { v4 as uuid } from 'uuid'
-import { ref, toRefs, watch } from 'vue'
+import { ref, toRefs } from 'vue'
 import { computed } from 'vue'
-import { nextTick } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
@@ -101,7 +101,4 @@ const refreshWidgetsHashs = (): void => {
 const showWidgetTrashArea = ref(false)
 
 const trashList = ref<MiniWidget[]>([])
-watch(trashList, () => {
-  nextTick(() => (trashList.value = []))
-})
 </script>
