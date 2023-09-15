@@ -19,10 +19,10 @@
       <div class="flex items-center mb-3 justify-evenly">
         <div
           class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
-          :class="{ 'bg-slate-400': currentTab === 'templates' }"
-          @click="currentTab = 'templates'"
+          :class="{ 'bg-slate-400': currentTab === 'presets' }"
+          @click="currentTab = 'presets'"
         >
-          Templates
+          Presets
         </div>
         <div
           class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
@@ -93,9 +93,9 @@
           />
         </div>
       </div>
-      <div v-if="currentTab === 'templates'" class="flex flex-wrap items-center justify-around">
+      <div v-if="currentTab === 'presets'" class="flex flex-wrap items-center justify-around">
         <div
-          v-for="(template, i) in veryGenericIndicatorTemplates"
+          v-for="(template, i) in veryGenericIndicatorPresets"
           :key="i"
           class="flex items-center w-[6.25rem] h-12 py-1 pl-6 pr-1 rounded-md text-white justify-center cursor-pointer hover:bg-slate-100/20 transition-all"
           @click="setIndicatorFromTemplate(template)"
@@ -121,7 +121,7 @@ import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 import Dropdown from '@/components/Dropdown.vue'
 import { round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import { type VeryGenericIndicatorTemplate, veryGenericIndicatorTemplates } from '@/types/genericIndicator'
+import { type VeryGenericIndicatorPreset, veryGenericIndicatorPresets } from '@/types/genericIndicator'
 
 import Dialog from '../Dialog.vue'
 
@@ -175,9 +175,9 @@ let iconsNames: string[] = []
 
 const showConfigurationMenu = ref(false)
 const iconSearchString = ref('')
-const currentTab = ref('templates')
+const currentTab = ref('presets')
 
-const setIndicatorFromTemplate = (template: VeryGenericIndicatorTemplate): void => {
+const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void => {
   options.displayName = template.displayName
   options.variableName = template.variableName
   options.iconName = template.iconName
