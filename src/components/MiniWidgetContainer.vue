@@ -105,9 +105,3 @@ watch(trashList, () => {
   nextTick(() => (trashList.value = []))
 })
 </script>
-
-<style>
-.bottom-trans-grad {
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 75%, rgba(0, 0, 0, 0) 100%);
-}
-</style>
