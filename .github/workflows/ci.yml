@@ -20,15 +20,19 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt install -y xvfb yarn
+          sudo apt install -y xvfb
 
-      - name: Run yarn
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Run bun
         run: |
-          yarn install --frozen-lockfile --network-timeout 300000
-          yarn lint
-          yarn typecheck
-          yarn build
-          xvfb-run --auto-servernum yarn test:ci
+          bun install --frozen-lockfile
+          bun run lint
+          bun run typecheck
+          bun run build
+          xvfb-run --auto-servernum bun test:ci
 
   deploy-electron:
     needs: test
@@ -44,27 +48,21 @@ jobs:
           suffix: linux
           extension: AppImage
 
-        - os: windows-latest
-          suffix: windows
-          extension: exe
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      # Use node to install yarn in all OSs
-      - name: Install node
-        uses: actions/setup-node@v3
+      - uses: oven-sh/setup-bun@v1
         with:
-          node-version: 16
+          bun-version: latest
 
       - name: Build electron
         run: |
-          npm install --global yarn
-          yarn install --frozen-lockfile --network-timeout 300000
-          yarn build
-          yarn deploy:electron
+          bun install --frozen-lockfile
+          bun run build
+          bun deploy:electron
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
