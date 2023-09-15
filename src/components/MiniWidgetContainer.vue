@@ -11,7 +11,12 @@
       @end="showWidgetTrashArea = false"
       @add="refreshWidgetsHashs"
     >
-      <div v-for="item in container.widgets" :key="item.hash">
+      <div
+        v-for="item in container.widgets"
+        :key="item.hash"
+        class="rounded-md"
+        :class="{ 'cursor-grab': allowEditing, 'hover:bg-slate-400': allowEditing && !mousePressed }"
+      >
         <div :class="{ 'select-none pointer-events-none': allowEditing }">
           <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
         </div>
@@ -50,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { useMousePressed } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { ref, toRefs } from 'vue'
 import { computed } from 'vue'
@@ -101,4 +107,6 @@ const refreshWidgetsHashs = (): void => {
 const showWidgetTrashArea = ref(false)
 
 const trashList = ref<MiniWidget[]>([])
+
+const { pressed: mousePressed } = useMousePressed()
 </script>
