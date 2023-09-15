@@ -144,7 +144,8 @@
       <div
         v-for="item in availableMiniWidgetTypes"
         :key="item.hash"
-        class="flex flex-col items-center justify-center p-2 mx-3 rounded-md h-5/6 w-fit text-slate-100"
+        class="flex flex-col items-center justify-center p-2 mx-3 transition-all rounded-md h-5/6 w-fit text-slate-100 cursor-grab"
+        :class="{ 'hover:bg-slate-400': !mousePressed }"
       >
         <div class="m-2 pointer-events-none select-none">
           <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
@@ -168,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog } from '@vueuse/core'
+import { useConfirmDialog, useMousePressed } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
@@ -260,6 +261,8 @@ enum WidgetMode {
 }
 
 const widgetMode = ref(WidgetMode.RegularWidgets)
+
+const { pressed: mousePressed } = useMousePressed()
 </script>
 
 <style scoped>
@@ -315,5 +318,9 @@ const widgetMode = ref(WidgetMode.RegularWidgets)
 .fade-leave-to {
   opacity: 0;
   transform: scaleY(0.01) translate(30px, 0);
+}
+
+.sortable-ghost {
+  cursor: grabbing;
 }
 </style>
