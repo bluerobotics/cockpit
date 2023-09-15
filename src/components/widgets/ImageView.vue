@@ -17,7 +17,7 @@
           </div>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="primary" text @click="widget.managerVars.configMenuOpen = false">Close</v-btn>
+          <v-btn color="primary" @click="widget.managerVars.configMenuOpen = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
