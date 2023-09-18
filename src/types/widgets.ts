@@ -55,6 +55,10 @@ export type Widget = {
      */
     configMenuOpen: boolean
     /**
+     * If the widget should be allowed to move
+     */
+    allowMoving: boolean
+    /**
      * Last widget X position when it wasn't maximized
      */
     lastNonMaximizedX: number
