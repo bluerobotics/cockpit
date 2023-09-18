@@ -5,7 +5,7 @@ import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { widgetProfile, widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
@@ -228,7 +228,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       managerVars: {
         timesMounted: 0,
         configMenuOpen: false,
-        allowMoving: false,
+        allowMoving: true,
         lastNonMaximizedX: 0.4,
         lastNonMaximizedY: 0.32,
         lastNonMaximizedWidth: 0.2,
@@ -292,6 +292,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       height: widget.managerVars.lastNonMaximizedHeight,
     }
   }
+
+  const resetWidgetsEditingState = (): void => {
+    currentProfile.value.views.forEach((view) => {
+      view.widgets.forEach((widget) => {
+        widget.managerVars.allowMoving = editingMode.value
+      })
+    })
+  }
+
+  watch(editingMode, () => resetWidgetsEditingState())
+  resetWidgetsEditingState()
 
   const isFullScreen = (widget: Widget): boolean => {
     return isEqual(widget.position, fullScreenPosition) && isEqual(widget.size, fullScreenSize)
