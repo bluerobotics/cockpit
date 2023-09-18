@@ -1,6 +1,16 @@
 import { type MiniWidgetProfile, MiniWidgetType } from '@/types/miniWidgets'
 import { type Profile, WidgetType } from '@/types/widgets'
 
+const defaultManagerVars = {
+  timesMounted: 0,
+  configMenuOpen: false,
+  allowMoving: false,
+  lastNonMaximizedX: 0.4,
+  lastNonMaximizedY: 0.32,
+  lastNonMaximizedWidth: 0.2,
+  lastNonMaximizedHeight: 0.36,
+}
+
 export const defaultGlobalAddress = process.env.NODE_ENV === 'development' ? 'blueos.local' : window.location.hostname
 export const widgetProfiles: { [key: string]: Profile } = {
   'c2bcf04d-048f-496f-9d78-fc4002608028': {
@@ -16,15 +26,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.DepthHUD,
             position: { x: 0.89, y: 0.23 },
             size: { width: 0.09, height: 0.62 },
-            managerVars: {
-              timesMounted: 0,
-              configMenuOpen: false,
-              allowMoving: false,
-              lastNonMaximizedX: 0.4,
-              lastNonMaximizedY: 0.32,
-              lastNonMaximizedWidth: 0.2,
-              lastNonMaximizedHeight: 0.36,
-            },
+            managerVars: defaultManagerVars,
             options: {
               showDepthValue: true,
               hudColor: '#FFFFFF',
@@ -36,15 +38,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.Attitude,
             position: { x: 0.14, y: 0.2 },
             size: { width: 0.72, height: 0.6 },
-            managerVars: {
-              timesMounted: 0,
-              configMenuOpen: false,
-              allowMoving: false,
-              lastNonMaximizedX: 0.4,
-              lastNonMaximizedY: 0.32,
-              lastNonMaximizedWidth: 0.2,
-              lastNonMaximizedHeight: 0.36,
-            },
+            managerVars: defaultManagerVars,
             options: {
               showCenterAim: true,
               showPitchLines: true,
@@ -60,15 +54,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.CompassHUD,
             position: { x: 0.15, y: 0.84 },
             size: { width: 0.7, height: 0.065 },
-            managerVars: {
-              timesMounted: 0,
-              configMenuOpen: false,
-              allowMoving: false,
-              lastNonMaximizedX: 0.4,
-              lastNonMaximizedY: 0.32,
-              lastNonMaximizedWidth: 0.2,
-              lastNonMaximizedHeight: 0.36,
-            },
+            managerVars: defaultManagerVars,
             options: {
               showYawValue: true,
               hudColor: '#FFF',
@@ -80,15 +66,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.VideoPlayer,
             position: { x: 0, y: 0 },
             size: { width: 1, height: 1 },
-            managerVars: {
-              timesMounted: 0,
-              configMenuOpen: false,
-              allowMoving: false,
-              lastNonMaximizedX: 0.4,
-              lastNonMaximizedY: 0.32,
-              lastNonMaximizedWidth: 0.2,
-              lastNonMaximizedHeight: 0.36,
-            },
+            managerVars: defaultManagerVars,
             options: {
               videoFitStyle: 'cover',
               flipHorizontally: false,
@@ -149,15 +127,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.Map,
             position: { x: 0, y: 0 },
             size: { width: 1, height: 1 },
-            managerVars: {
-              timesMounted: 0,
-              configMenuOpen: false,
-              allowMoving: false,
-              lastNonMaximizedX: 0.4,
-              lastNonMaximizedY: 0.32,
-              lastNonMaximizedWidth: 0.2,
-              lastNonMaximizedHeight: 0.36,
-            },
+            managerVars: defaultManagerVars,
             options: {},
           },
         ],
