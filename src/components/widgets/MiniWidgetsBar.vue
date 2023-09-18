@@ -1,27 +1,19 @@
 <template>
-  <div ref="widgetBar" class="flex flex-col items-center justify-center w-full h-full p-2 rounded-md bg-slate-600/50">
+  <div class="flex flex-col items-center justify-center w-full h-full p-2 rounded-md bg-slate-600/50">
     <MiniWidgetContainer
       :container="widget.options.miniWidgetsContainer"
       :wrap="true"
-      :allow-editing="allowEditing || widgetStore.editingMode"
+      :allow-editing="widgetStore.editingMode"
+      @choose-mini-widget="widget.managerVars.allowMoving = false"
+      @unchoose-mini-widget="widget.managerVars.allowMoving = true"
     />
-    <button
-      v-if="hovering || allowEditing"
-      :class="{ 'text-slate-700': !allowEditing }"
-      class="absolute top-0 right-0 m-1 transition-all text-slate-100"
-      @click="allowEditing = !allowEditing"
-    >
-      <FontAwesomeIcon icon="fa-solid fa-pen" />
-    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { toRefs } from 'vue'
 import { onBeforeMount } from 'vue'
-import { ref } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -37,10 +29,6 @@ const props = defineProps<{
 const widget = toRefs(props).widget
 
 const widgetStore = useWidgetManagerStore()
-const allowEditing = ref(false)
-
-const widgetBar = ref()
-const hovering = useElementHover(widgetBar)
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist

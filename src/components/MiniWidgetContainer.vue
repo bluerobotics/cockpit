@@ -10,6 +10,8 @@
       @start="showWidgetTrashArea = true"
       @end="showWidgetTrashArea = false"
       @add="refreshWidgetsHashs"
+      @choose="(event) => emit('chooseMiniWidget', event)"
+      @unchoose="(event) => emit('unchooseMiniWidget', event)"
     >
       <div
         v-for="item in container.widgets"
@@ -64,6 +66,11 @@ import { VueDraggable } from 'vue-draggable-plus'
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
 
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
+
+const emit = defineEmits<{
+  (e: 'chooseMiniWidget', value: unknown): void
+  (e: 'unchooseMiniWidget', value: unknown): void
+}>()
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 interface Props {
