@@ -6,7 +6,7 @@
         <WidgetHugger
           v-if="Object.values(WidgetType).includes(widget.component)"
           :widget="widget"
-          :allow-moving="store.editingMode"
+          :allow-moving="widget.managerVars.allowMoving"
           :allow-resizing="store.editingMode"
         >
           <template v-if="widget.component === WidgetType.Attitude">
