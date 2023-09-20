@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Dropdown v-model="currentMode" :options="vehicleStore.modesAvailable()" />
+    <Dropdown v-model="currentMode" :options="vehicleStore.modesAvailable()" class="min-w-[128px]" />
   </div>
 </template>
 
