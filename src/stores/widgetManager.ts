@@ -13,6 +13,7 @@ import * as Words from '@/libs/funny-name/words'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
 import { isEqual } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
+import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
 import { type Profile, type View, type Widget, type WidgetType, isProfile, isView } from '@/types/widgets'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
@@ -248,6 +249,28 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   /**
+   * Delete mini-widget
+   * @param { MiniWidget } miniWidget - Mini-widget
+   */
+  function deleteMiniWidget(miniWidget: MiniWidget): void {
+    let widgetContainer: MiniWidgetContainer | undefined = undefined
+
+    currentProfile.value.views.forEach((view) => {
+      const possibleContainer = view.miniWidgetContainers.find((container) => container.widgets.includes(miniWidget))
+      if (possibleContainer !== undefined) widgetContainer = possibleContainer
+    })
+
+    if (widgetContainer === undefined) {
+      Swal.fire({ icon: 'error', text: 'Mini-widget container not found.', timer: 3000 })
+      return
+    }
+
+    const realContainer = widgetContainer as MiniWidgetContainer
+    const index = realContainer.widgets.indexOf(miniWidget)
+    realContainer.widgets.splice(index, 1)
+  }
+
+  /**
    * Open widget configuration menu
    * @param { Widget } widget - Widget
    */
@@ -347,6 +370,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     importView,
     addWidget,
     deleteWidget,
+    deleteMiniWidget,
     openWidgetConfigMenu,
     toggleFullScreen,
     isFullScreen,
