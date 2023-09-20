@@ -201,7 +201,15 @@ const emit = defineEmits<{
 
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const availableMiniWidgetTypes = computed(() =>
-  Object.values(MiniWidgetType).map((widgetType) => ({ component: widgetType, options: {}, hash: uuid() }))
+  Object.values(MiniWidgetType).map((widgetType) => ({
+    component: widgetType,
+    options: {},
+    hash: uuid(),
+    managerVars: {
+      timesMounted: 0,
+      configMenuOpen: false,
+    },
+  }))
 )
 
 const widgetAddMenuGroupOptions = {

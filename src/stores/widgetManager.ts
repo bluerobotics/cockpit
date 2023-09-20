@@ -20,9 +20,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
-  const currentProfile = useStorage('cockpit-current-profile-v4', widgetProfile)
-  const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v2', miniWidgetsProfile)
-  const savedProfiles = useStorage('cockpit-saved-profiles-v4', widgetProfiles)
+  const currentProfile = useStorage('cockpit-current-profile-v5', widgetProfile)
+  const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v3', miniWidgetsProfile)
+  const savedProfiles = useStorage('cockpit-saved-profiles-v5', widgetProfiles)
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
 
   const currentView = computed<View>({

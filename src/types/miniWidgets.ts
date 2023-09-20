@@ -31,6 +31,16 @@ export type MiniWidget = {
   /**
    * External variables used by the widget manager
    */
+  managerVars: {
+    /**
+     * Number of times the mini-widget was mounted
+     */
+    timesMounted: number
+    /**
+     * If the configuration menu is open or not
+     */
+    configMenuOpen: boolean
+  }
 }
 
 export type MiniWidgetContainer = {

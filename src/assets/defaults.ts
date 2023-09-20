@@ -1,7 +1,7 @@
 import { type MiniWidgetProfile, MiniWidgetType } from '@/types/miniWidgets'
 import { type Profile, WidgetType } from '@/types/widgets'
 
-const defaultManagerVars = {
+const defaultWidgetManagerVars = {
   timesMounted: 0,
   configMenuOpen: false,
   allowMoving: false,
@@ -9,6 +9,11 @@ const defaultManagerVars = {
   lastNonMaximizedY: 0.32,
   lastNonMaximizedWidth: 0.2,
   lastNonMaximizedHeight: 0.36,
+}
+
+const defaultMiniWidgetManagerVars = {
+  timesMounted: 0,
+  configMenuOpen: false,
 }
 
 export const defaultGlobalAddress = process.env.NODE_ENV === 'development' ? 'blueos.local' : window.location.hostname
@@ -26,7 +31,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.DepthHUD,
             position: { x: 0.89, y: 0.23 },
             size: { width: 0.09, height: 0.62 },
-            managerVars: defaultManagerVars,
+            managerVars: defaultWidgetManagerVars,
             options: {
               showDepthValue: true,
               hudColor: '#FFFFFF',
@@ -38,7 +43,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.Attitude,
             position: { x: 0.14, y: 0.2 },
             size: { width: 0.72, height: 0.6 },
-            managerVars: defaultManagerVars,
+            managerVars: defaultWidgetManagerVars,
             options: {
               showCenterAim: true,
               showPitchLines: true,
@@ -54,7 +59,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.CompassHUD,
             position: { x: 0.15, y: 0.84 },
             size: { width: 0.7, height: 0.065 },
-            managerVars: defaultManagerVars,
+            managerVars: defaultWidgetManagerVars,
             options: {
               showYawValue: true,
               hudColor: '#FFF',
@@ -66,7 +71,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.VideoPlayer,
             position: { x: 0, y: 0 },
             size: { width: 1, height: 1 },
-            managerVars: defaultManagerVars,
+            managerVars: defaultWidgetManagerVars,
             options: {
               videoFitStyle: 'cover',
               flipHorizontally: false,
@@ -81,6 +86,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
               {
                 hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
                 component: MiniWidgetType.ViewSelector,
+                managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
             ],
@@ -91,6 +97,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
               {
                 hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
                 component: MiniWidgetType.DepthIndicator,
+                managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
             ],
@@ -101,16 +108,19 @@ export const widgetProfiles: { [key: string]: Profile } = {
               {
                 hash: '837a6722-1e54-4ace-9a92-d9c5af059d16',
                 component: MiniWidgetType.ArmerButton,
+                managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
               {
                 hash: 'c6301929-cdfc-48af-9fdd-c87ce65d7395',
                 component: MiniWidgetType.ModeSelector,
+                managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
               {
                 hash: 'a4d0d6ce-9978-40f2-89ab-958f91137177',
                 component: MiniWidgetType.MiniVideoRecorder,
+                managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
             ],
@@ -127,7 +137,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
             component: WidgetType.Map,
             position: { x: 0, y: 0 },
             size: { width: 1, height: 1 },
-            managerVars: defaultManagerVars,
+            managerVars: defaultWidgetManagerVars,
             options: {},
           },
         ],
@@ -138,6 +148,7 @@ export const widgetProfiles: { [key: string]: Profile } = {
               {
                 hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
                 component: MiniWidgetType.ViewSelector,
+                managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
             ],
@@ -161,16 +172,19 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
           {
             hash: '5b21cf5b-5849-413a-8bee-f1c4b42522f8',
             component: MiniWidgetType.BaseCommIndicator,
+            managerVars: defaultMiniWidgetManagerVars,
             options: {},
           },
           {
             hash: '41354445-2057-4574-80f5-bdc6d394dfe7',
             component: MiniWidgetType.JoystickCommIndicator,
+            managerVars: defaultMiniWidgetManagerVars,
             options: {},
           },
           {
             hash: '7b31c4c4-e273-4f75-b0b7-d56263c4177d',
             component: MiniWidgetType.BatteryIndicator,
+            managerVars: defaultMiniWidgetManagerVars,
             options: {},
           },
         ],
