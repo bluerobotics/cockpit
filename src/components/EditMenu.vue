@@ -58,7 +58,7 @@
     </div>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
     <div
-      ref="currentWidgetsContainer"
+      v-show="widgetMode === WidgetMode.RegularWidgets"
       class="flex flex-col items-center justify-between w-full overflow-y-clip h-[35%]"
     >
       <p class="text-lg font-semibold select-none">Current widgets</p>
@@ -94,6 +94,45 @@
           </div>
         </TransitionGroup>
       </VueDraggable>
+      <div class="grow" />
+    </div>
+    <div
+      v-show="widgetMode === WidgetMode.MiniWidgets"
+      class="flex flex-col items-center justify-between w-full overflow-y-auto h-[35%]"
+    >
+      <p class="text-lg font-semibold select-none">Current mini-widgets</p>
+      <div class="grow" />
+      <div
+        v-for="miniWidgetContainer in store.currentView.miniWidgetContainers"
+        :key="miniWidgetContainer.name"
+        class="w-full"
+      >
+        <span class="w-full px-1 text-sm text-left select-none text-slate-400">{{ miniWidgetContainer.name }}</span>
+        <div class="flex flex-col items-center w-full px-3 overflow-x-hidden grow">
+          <TransitionGroup name="fade">
+            <div v-if="miniWidgetContainer.widgets.isEmpty()" class="flex items-center justify-between w-full my-1">
+              ---
+            </div>
+            <div
+              v-for="widget in miniWidgetContainer.widgets"
+              :key="widget.hash"
+              class="flex items-center justify-between w-full my-1"
+            >
+              <div class="flex items-center justify-start w-full overflow-auto">
+                <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">{{ widget.component }}</p>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 ml-1 text-xs transition-all rounded-sm cursor-pointer bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
+                @click="store.deleteMiniWidget(widget)"
+              />
+              <div
+                class="flex items-center justify-center w-8 ml-1 text-xs transition-all rounded-sm cursor-pointer bg-slate-700 aspect-square mdi mdi-pencil hover:bg-slate-500"
+                @click="widget.managerVars.configMenuOpen = true"
+              />
+            </div>
+          </TransitionGroup>
+        </div>
+      </div>
       <div class="grow" />
     </div>
     <div class="w-full h-px mt-4 bg-slate-800/40" />
