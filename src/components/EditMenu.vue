@@ -142,13 +142,13 @@
       class="flex items-center w-full h-full gap-2 overflow-auto"
     >
       <div
-        v-for="item in availableMiniWidgetTypes"
-        :key="item.hash"
+        v-for="miniWidget in availableMiniWidgetTypes"
+        :key="miniWidget.hash"
         class="flex flex-col items-center justify-center p-2 mx-3 transition-all rounded-md h-5/6 w-fit text-slate-100 cursor-grab"
         :class="{ 'hover:bg-slate-400': !mousePressed }"
       >
         <div class="m-2 pointer-events-none select-none">
-          <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
+          <MiniWidgetInstantiator :mini-widget="miniWidget" />
         </div>
       </div>
     </div>

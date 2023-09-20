@@ -65,6 +65,7 @@ import { WebRTCManager } from '@/composables/webRTC'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import type { MiniWidget } from '@/types/miniWidgets'
 
 const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
 const { missionName } = useMissionStore()
@@ -73,12 +74,11 @@ console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
 const props = defineProps<{
   /**
-   * Mini-widget options
+   * Configuration of the widget
    */
-  options: Record<string, unknown>
+  miniWidget: MiniWidget
 }>()
-
-const options = toRefs(props).options
+const miniWidget = toRefs(props).miniWidget
 
 const selectedStream = ref<Stream | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
@@ -98,8 +98,8 @@ const isRecording = computed(() => {
 
 onBeforeMount(async () => {
   // Set initial widget options if they don't exist
-  if (Object.keys(options.value).length === 0) {
-    options.value = {
+  if (Object.keys(miniWidget.value.options).length === 0) {
+    miniWidget.value.options = {
       streamName: undefined as string | undefined,
     }
   }
@@ -227,11 +227,11 @@ const updateCurrentStream = async (stream: Stream | undefined): Promise<SweetAle
       return Swal.fire({ text: 'Could not load media stream.', icon: 'error' })
     }
   }
-  options.value.streamName = selectedStream.value?.name
+  miniWidget.value.options.streamName = selectedStream.value?.name
 }
 
 watch(externalStreams, () => {
-  const savedStreamName: string | undefined = options.value.streamName as string
+  const savedStreamName: string | undefined = miniWidget.value.options.streamName as string
   availableStreams.value = externalStreams.value
   if (!availableStreams.value.find((stream) => stream.id === 'screenStream')) {
     addScreenStream()

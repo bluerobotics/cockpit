@@ -1,40 +1,40 @@
 <template>
-  <template v-if="widgetType === MiniWidgetType.ArmerButton">
-    <ArmerButton :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.ArmerButton">
+    <ArmerButton :options="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.BaseCommIndicator">
-    <BaseCommIndicator :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.BaseCommIndicator">
+    <BaseCommIndicator :mini-widget="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.BatteryIndicator">
-    <BatteryIndicator :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.BatteryIndicator">
+    <BatteryIndicator :mini-widget="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.DepthIndicator">
-    <DepthIndicator :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.DepthIndicator">
+    <DepthIndicator :mini-widget="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.VeryGenericIndicator">
-    <VeryGenericIndicator :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.VeryGenericIndicator">
+    <VeryGenericIndicator :mini-widget="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.JoystickCommIndicator">
-    <JoystickCommIndicator :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.JoystickCommIndicator">
+    <JoystickCommIndicator :mini-widget="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.MiniVideoRecorder">
-    <MiniVideoRecorder :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.MiniVideoRecorder">
+    <MiniVideoRecorder :mini-widget="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.ModeSelector">
-    <ModeSelector :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.ModeSelector">
+    <ModeSelector :options="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.SatelliteIndicator">
-    <SatelliteIndicator :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.SatelliteIndicator">
+    <SatelliteIndicator :mini-widget="miniWidget" />
   </template>
-  <template v-if="widgetType === MiniWidgetType.ViewSelector">
-    <ViewSelector :options="options" />
+  <template v-if="miniWidget.component === MiniWidgetType.ViewSelector">
+    <ViewSelector :options="miniWidget" />
   </template>
 </template>
 
 <script setup lang="ts">
 import { toRefs } from 'vue'
 
-import { MiniWidgetType } from '@/types/miniWidgets'
+import { type MiniWidget, MiniWidgetType } from '@/types/miniWidgets'
 
 import ArmerButton from './mini-widgets/ArmerButton.vue'
 import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
@@ -49,15 +49,10 @@ import ViewSelector from './mini-widgets/ViewSelector.vue'
 
 const props = defineProps<{
   /**
-   * Type of mini-widget to return
+   * Mini-widget instance
    */
-  widgetType: MiniWidgetType
-  /**
-   * Options to pass to mini-widget
-   */
-  options: Record<string, unknown>
+  miniWidget: MiniWidget
 }>()
 
-const widgetType = toRefs(props).widgetType
-const options = toRefs(props).options
+const miniWidget = toRefs(props).miniWidget
 </script>

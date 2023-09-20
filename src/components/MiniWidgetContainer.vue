@@ -14,13 +14,13 @@
       @unchoose="(event) => emit('unchooseMiniWidget', event)"
     >
       <div
-        v-for="item in container.widgets"
-        :key="item.hash"
+        v-for="miniWidget in container.widgets"
+        :key="miniWidget.hash"
         class="rounded-md"
         :class="{ 'cursor-grab': allowEditing, 'hover:bg-slate-400': allowEditing && !mousePressed }"
       >
         <div :class="{ 'select-none pointer-events-none': allowEditing }">
-          <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
+          <MiniWidgetInstantiator :mini-widget="miniWidget" />
         </div>
       </div>
     </VueDraggable>
@@ -44,9 +44,9 @@
             class="flex flex-wrap items-center justify-center w-full h-full gap-2"
             @add="trashList = []"
           >
-            <div v-for="item in trashList" :key="item.hash">
+            <div v-for="miniWidget in trashList" :key="miniWidget.hash">
               <div class="pointer-events-none select-none">
-                <MiniWidgetInstantiator :widget-type="item.component" :options="item.options" />
+                <MiniWidgetInstantiator :mini-widget="miniWidget" />
               </div>
             </div>
           </VueDraggable>
