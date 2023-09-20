@@ -1,7 +1,6 @@
 <template>
   <div
     class="flex items-center justify-center h-12 py-1 text-white transition-all cursor-pointer w-fit hover:bg-slate-100/20"
-    @click="showConfigurationMenu = !showConfigurationMenu"
   >
     <span class="relative w-[2rem] mdi icon-symbol" :class="[miniWidget.options.iconName]"></span>
     <div class="flex flex-col items-start justify-center mx-1 select-none w-fit min-w-[3rem]">
@@ -14,7 +13,7 @@
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ miniWidget.options.displayName }}</span>
     </div>
   </div>
-  <Dialog v-model:show="showConfigurationMenu" class="w-80">
+  <Dialog v-model:show="miniWidget.managerVars.configMenuOpen" class="w-80">
     <div class="w-full h-full">
       <div class="flex items-center mb-3 justify-evenly">
         <div
@@ -119,13 +118,13 @@
 
 <script setup lang="ts">
 import * as MdiExports from '@mdi/js/mdi'
-import { toReactive } from '@vueuse/core'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
 import Dropdown from '@/components/Dropdown.vue'
 import { round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { type VeryGenericIndicatorPreset, veryGenericIndicatorPresets } from '@/types/genericIndicator'
+import type { MiniWidget } from '@/types/miniWidgets'
 
 import Dialog from '../Dialog.vue'
 
