@@ -3,15 +3,15 @@
     class="flex items-center justify-center h-12 py-1 text-white transition-all cursor-pointer w-fit hover:bg-slate-100/20"
     @click="showConfigurationMenu = !showConfigurationMenu"
   >
-    <span class="relative w-[2rem] mdi icon-symbol" :class="[options.iconName]"></span>
+    <span class="relative w-[2rem] mdi icon-symbol" :class="[miniWidget.options.iconName]"></span>
     <div class="flex flex-col items-start justify-center mx-1 select-none w-fit min-w-[3rem]">
       <div>
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
         <span class="text-xl font-semibold leading-6 w-fit">
-          {{ String.fromCharCode(0x20) }} {{ options.variableUnit }}
+          {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }}
         </span>
       </div>
-      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ options.displayName }}</span>
+      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ miniWidget.options.displayName }}</span>
     </div>
   </div>
   <Dialog v-model:show="showConfigurationMenu" class="w-80">
@@ -35,33 +35,33 @@
       <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Display name</span>
-          <input v-model="options.displayName" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="miniWidget.options.displayName" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Variable</span>
           <div class="w-48">
-            <Dropdown v-model="options.variableName" :options="Object.keys(store.genericVariables)" />
+            <Dropdown v-model="miniWidget.options.variableName" :options="Object.keys(store.genericVariables)" />
           </div>
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Fractional digits</span>
-          <input v-model="options.fractionalDigits" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="miniWidget.options.fractionalDigits" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Unit</span>
-          <input v-model="options.variableUnit" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="miniWidget.options.variableUnit" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Multiplier</span>
-          <input v-model="options.variableMultiplier" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="miniWidget.options.variableMultiplier" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Icon</span>
           <div class="relative w-48">
-            <input v-model="options.iconName" class="w-full py-1 pl-2 pr-8 rounded-md bg-slate-200" />
+            <input v-model="miniWidget.options.iconName" class="w-full py-1 pl-2 pr-8 rounded-md bg-slate-200" />
             <span
               class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi"
-              :class="[options.iconName]"
+              :class="[miniWidget.options.iconName]"
             />
           </div>
         </div>
@@ -80,7 +80,11 @@
           :item-size="46"
           :grid-items="6"
         >
-          <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="options.iconName = item">
+          <span
+            class="m-1 text-white cursor-pointer mdi icon-symbol"
+            :class="[item]"
+            @click="miniWidget.options.iconName = item"
+          >
           </span>
         </RecycleScroller>
         <div v-else class="grid w-full h-40 grid-cols-6 mt-3 overflow-x-hidden overflow-y-scroll">
@@ -89,7 +93,7 @@
             :key="icon"
             class="m-1 text-white cursor-pointer mdi icon-symbol"
             :class="[icon]"
-            @click="options.iconName = icon"
+            @click="miniWidget.options.iconName = icon"
           />
         </div>
       </div>
@@ -129,14 +133,14 @@ const props = defineProps<{
   /**
    * Configuration of the widget
    */
-  options: Record<string, unknown>
+  miniWidget: MiniWidget
 }>()
-const options = toReactive(toRefs(props).options)
+const miniWidget = toRefs(props).miniWidget
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  if (Object.keys(options).length === 0) {
-    Object.assign(options, {
+  if (Object.keys(miniWidget.value.options).length === 0) {
+    Object.assign(miniWidget.value.options, {
       displayName: '',
       variableName: '',
       fractionalDigits: 1,
@@ -157,32 +161,31 @@ const currentState = ref<unknown>(0)
 const parsedState = computed(() => {
   if (currentState.value !== undefined) {
     return round(
-      Number(options.variableMultiplier) * Number(currentState.value),
-      options.fractionalDigits as number
-    ).toFixed(options.fractionalDigits as number)
+      Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value),
+      miniWidget.value.options.fractionalDigits as number
+    ).toFixed(miniWidget.value.options.fractionalDigits as number)
   }
   return '--'
 })
 
 const updateVariableState = (): void => {
-  currentState.value = store.genericVariables[options.variableName as string]
+  currentState.value = store.genericVariables[miniWidget.value.options.variableName as string]
 }
 watch(store.genericVariables, updateVariableState)
-watch(options, updateVariableState)
+watch(miniWidget.value.options, updateVariableState)
 onMounted(() => updateVariableState())
 
 let iconsNames: string[] = []
 
-const showConfigurationMenu = ref(false)
 const iconSearchString = ref('')
 const currentTab = ref('presets')
 
 const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void => {
-  options.displayName = template.displayName
-  options.variableName = template.variableName
-  options.iconName = template.iconName
-  options.variableUnit = template.variableUnit
-  options.variableMultiplier = template.variableMultiplier
+  miniWidget.value.options.displayName = template.displayName
+  miniWidget.value.options.variableName = template.variableName
+  miniWidget.value.options.iconName = template.iconName
+  miniWidget.value.options.variableUnit = template.variableUnit
+  miniWidget.value.options.variableMultiplier = template.variableMultiplier
 }
 </script>
 
