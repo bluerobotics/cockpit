@@ -23,7 +23,7 @@
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
               <div class="grow" />
               <div class="icon-btn mdi mdi-cog" @click="renameView(view)" />
-              <div class="icon-btn mdi mdi-trash-can" @click="store.deleteView(view)" />
+              <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteView(view)" />
             </Button>
           </div>
         </TransitionGroup>
