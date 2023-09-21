@@ -19,7 +19,11 @@
             :key="view.hash"
             class="flex items-center justify-between w-full my-1"
           >
-            <Button class="flex items-center justify-center w-full h-8 overflow-auto" @click="store.selectView(view)">
+            <Button
+              class="flex items-center justify-center w-full h-8 overflow-auto"
+              :class="{ 'selected-view': view === store.currentView }"
+              @click="store.selectView(view)"
+            >
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
               <div class="grow" />
               <div class="icon-btn mdi mdi-cog" @click="renameView(view)" />
@@ -364,5 +368,9 @@ const { pressed: mousePressed } = useMousePressed()
 }
 .icon-btn:hover {
   @apply bg-slate-500;
+}
+
+.selected-view {
+  @apply bg-slate-400;
 }
 </style>
