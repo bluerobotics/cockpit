@@ -81,8 +81,8 @@
                 :class="{ 'mdi-fullscreen-exit': store.isFullScreen(widget) }"
                 @click="store.toggleFullScreen(widget)"
               />
-              <div class="icon-btn mdi mdi-trash-can" @click="store.deleteWidget(widget)" />
               <div class="icon-btn mdi mdi-pencil" @click="store.openWidgetConfigMenu(widget)" />
+              <div class="icon-btn mdi mdi-trash-can" @click="store.deleteWidget(widget)" />
             </Button>
           </div>
         </TransitionGroup>
@@ -114,8 +114,8 @@
               <div class="flex items-center justify-start w-full overflow-auto">
                 <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">{{ widget.component }}</p>
               </div>
-              <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
               <div class="icon-btn mdi mdi-pencil" @click="widget.managerVars.configMenuOpen = true" />
+              <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
             </div>
           </TransitionGroup>
         </div>
