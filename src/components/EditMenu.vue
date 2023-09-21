@@ -19,11 +19,12 @@
             :key="view.hash"
             class="flex items-center justify-between w-full my-1"
           >
-            <Button class="flex items-center justify-center w-full overflow-auto" @click="store.selectView(view)">
-              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ view.name }}</p>
+            <Button class="flex items-center justify-center w-full h-8 overflow-auto" @click="store.selectView(view)">
+              <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
+              <div class="grow" />
+              <div class="icon-btn mdi mdi-pencil" @click="renameView(view)" />
+              <div class="icon-btn mdi mdi-trash-can" @click="store.deleteView(view)" />
             </Button>
-            <div class="icon-btn mdi mdi-pencil" @click="renameView(view)" />
-            <div class="icon-btn mdi mdi-trash-can" @click="store.deleteView(view)" />
           </div>
         </TransitionGroup>
       </div>
