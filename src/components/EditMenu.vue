@@ -22,7 +22,7 @@
             <Button class="flex items-center justify-center w-full h-8 overflow-auto" @click="store.selectView(view)">
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
               <div class="grow" />
-              <div class="icon-btn mdi mdi-pencil" @click="renameView(view)" />
+              <div class="icon-btn mdi mdi-cog" @click="renameView(view)" />
               <div class="icon-btn mdi mdi-trash-can" @click="store.deleteView(view)" />
             </Button>
           </div>
@@ -81,7 +81,7 @@
                 :class="{ 'mdi-fullscreen-exit': store.isFullScreen(widget) }"
                 @click="store.toggleFullScreen(widget)"
               />
-              <div class="icon-btn mdi mdi-pencil" @click="store.openWidgetConfigMenu(widget)" />
+              <div class="icon-btn mdi mdi-cog" @click="store.openWidgetConfigMenu(widget)" />
               <div class="icon-btn mdi mdi-trash-can" @click="store.deleteWidget(widget)" />
             </Button>
           </div>
@@ -114,7 +114,7 @@
               <div class="flex items-center justify-start w-full overflow-auto">
                 <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">{{ widget.component }}</p>
               </div>
-              <div class="icon-btn mdi mdi-pencil" @click="widget.managerVars.configMenuOpen = true" />
+              <div class="icon-btn mdi mdi-cog" @click="widget.managerVars.configMenuOpen = true" />
               <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
             </div>
           </TransitionGroup>
