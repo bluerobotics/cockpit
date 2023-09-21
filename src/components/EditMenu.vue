@@ -29,26 +29,16 @@
         </TransitionGroup>
       </div>
       <div class="grow" />
-      <div class="w-full px-2 mt-3">
-        <Button
-          class="flex items-center justify-center w-full h-8 bg-slate-700 mdi mdi-plus hover:bg-slate-500"
-          @click="addNewView"
-        />
-      </div>
     </div>
-    <div ref="managementContainer" class="flex flex-col items-center justify-center w-full px-2 shrink">
-      <Button class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500">
-        <label class="flex items-center justify-center h-8 overflow-auto cursor-pointer">
+    <div ref="managementContainer" class="flex items-center justify-center w-full px-2">
+      <div class="icon-btn mdi mdi-plus" @click="addNewView" />
+      <div class="icon-btn">
+        <label class="flex items-center justify-center w-full h-full cursor-pointer">
           <input type="file" accept="application/json" hidden @change="(e: Event) => store.importView(e)" />
-          <p class="overflow-hidden text-ellipsis whitespace-nowrap">Import view</p>
+          <span class="mdi mdi-upload" />
         </label>
-      </Button>
-      <Button
-        class="flex items-center justify-center w-full h-8 my-1 bg-slate-700 hover:bg-slate-500"
-        @click="store.exportCurrentView"
-      >
-        <p class="overflow-hidden text-ellipsis whitespace-nowrap">Export current view</p>
-      </Button>
+      </div>
+      <div class="icon-btn mdi mdi-download" @click="store.exportCurrentView" />
       <div />
     </div>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
