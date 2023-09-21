@@ -22,14 +22,8 @@
             <Button class="flex items-center justify-center w-full overflow-auto" @click="store.selectView(view)">
               <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ view.name }}</p>
             </Button>
-            <Button
-              class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-pencil hover:bg-slate-500"
-              @click="renameView(view)"
-            />
-            <Button
-              class="flex items-center justify-center w-8 ml-2 bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
-              @click="store.deleteView(view)"
-            />
+            <div class="icon-btn mdi mdi-pencil" @click="renameView(view)" />
+            <div class="icon-btn mdi mdi-trash-can" @click="store.deleteView(view)" />
           </div>
         </TransitionGroup>
       </div>
@@ -82,18 +76,12 @@
               <p class="overflow-hidden text-sm text-ellipsis whitespace-nowrap">{{ widget.name }}</p>
               <div class="grow" />
               <div
-                class="flex items-center justify-center w-6 ml-1 text-sm transition-all rounded-sm cursor-pointer bg-slate-700 aspect-square mdi mdi-fullscreen hover:bg-slate-500"
+                class="icon-btn mdi mdi-fullscreen"
                 :class="{ 'mdi-fullscreen-exit': store.isFullScreen(widget) }"
                 @click="store.toggleFullScreen(widget)"
               />
-              <div
-                class="flex items-center justify-center w-6 ml-1 text-sm transition-all rounded-sm cursor-pointer bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
-                @click="store.deleteWidget(widget)"
-              />
-              <div
-                class="flex items-center justify-center w-6 ml-1 text-sm transition-all rounded-sm cursor-pointer bg-slate-700 aspect-square mdi mdi-pencil hover:bg-slate-500"
-                @click="store.openWidgetConfigMenu(widget)"
-              />
+              <div class="icon-btn mdi mdi-trash-can" @click="store.deleteWidget(widget)" />
+              <div class="icon-btn mdi mdi-pencil" @click="store.openWidgetConfigMenu(widget)" />
             </Button>
           </div>
         </TransitionGroup>
@@ -120,19 +108,13 @@
             <div
               v-for="widget in miniWidgetContainer.widgets"
               :key="widget.hash"
-              class="flex items-center justify-between w-full my-1"
+              class="flex items-center justify-between w-full h-10 my-1"
             >
               <div class="flex items-center justify-start w-full overflow-auto">
                 <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">{{ widget.component }}</p>
               </div>
-              <div
-                class="flex items-center justify-center w-8 ml-1 text-xs transition-all rounded-sm cursor-pointer bg-slate-700 aspect-square mdi mdi-trash-can hover:bg-slate-500"
-                @click="store.deleteMiniWidget(widget)"
-              />
-              <div
-                class="flex items-center justify-center w-8 ml-1 text-xs transition-all rounded-sm cursor-pointer bg-slate-700 aspect-square mdi mdi-pencil hover:bg-slate-500"
-                @click="widget.managerVars.configMenuOpen = true"
-              />
+              <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
+              <div class="icon-btn mdi mdi-pencil" @click="widget.managerVars.configMenuOpen = true" />
             </div>
           </TransitionGroup>
         </div>
@@ -373,5 +355,23 @@ const { pressed: mousePressed } = useMousePressed()
 
 .sortable-ghost {
   cursor: grabbing;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.5rem;
+  aspect-ratio: 1;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  margin-left: 0.25rem;
+  transition: all;
+  border-radius: 0.125rem;
+  cursor: pointer;
+  @apply bg-slate-700;
+}
+.icon-btn:hover {
+  @apply bg-slate-500;
 }
 </style>
