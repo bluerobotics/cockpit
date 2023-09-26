@@ -10,38 +10,40 @@
     />
     <p class="flex items-center justify-center mt-10 text-xl font-semibold select-none">Edit interface</p>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
-    <div ref="profilesContainer" class="flex flex-col items-center justify-center w-full px-2 shrink">
+    <div class="flex flex-col items-center justify-center w-full px-2 shrink overflow-y-clip h-[35%]">
       <p class="mb-3 text-lg font-semibold select-none">Profiles</p>
-      <TransitionGroup name="fade-and-suffle">
-        <div
-          v-for="profile in store.allProfiles"
-          :key="profile.hash"
-          class="flex items-center justify-between w-full my-1"
-        >
-          <Button
-            class="flex items-center justify-center w-full h-8 overflow-auto"
-            :class="{ 'selected-view': profile.hash === store.currentProfile.hash }"
-            @click="store.loadProfile(profile)"
+      <div class="w-full px-2 overflow-x-hidden overflow-y-auto">
+        <TransitionGroup name="fade-and-suffle">
+          <div
+            v-for="profile in store.allProfiles"
+            :key="profile.hash"
+            class="flex items-center justify-between w-full my-1"
           >
-            <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
-            <div class="grow" />
-            <div class="icon-btn mdi mdi-download" @click.stop="store.exportProfile(profile)" />
-            <template v-if="!store.isDefaultProfile(profile)">
-              <div class="icon-btn mdi mdi-cog" @click.stop="renameProfile(profile)" />
-              <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
-            </template>
-          </Button>
-        </div>
-        <div class="flex mt-2">
-          <div class="icon-btn mdi mdi-plus" @click="addNewProfile" />
-          <div class="icon-btn">
-            <label class="flex items-center justify-center w-full h-full cursor-pointer">
-              <input type="file" accept="application/json" hidden @change="(e: Event) => store.importProfile(e)" />
-              <span class="mdi mdi-upload" />
-            </label>
+            <Button
+              class="flex items-center justify-center w-full h-8 overflow-auto"
+              :class="{ 'selected-view': profile.hash === store.currentProfile.hash }"
+              @click="store.loadProfile(profile)"
+            >
+              <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
+              <div class="grow" />
+              <div class="icon-btn mdi mdi-download" @click.stop="store.exportProfile(profile)" />
+              <template v-if="!store.isDefaultProfile(profile)">
+                <div class="icon-btn mdi mdi-cog" @click.stop="renameProfile(profile)" />
+                <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
+              </template>
+            </Button>
           </div>
+        </TransitionGroup>
+      </div>
+      <div class="flex mt-2">
+        <div class="icon-btn mdi mdi-plus" @click="addNewProfile" />
+        <div class="icon-btn">
+          <label class="flex items-center justify-center w-full h-full cursor-pointer">
+            <input type="file" accept="application/json" hidden @change="(e: Event) => store.importProfile(e)" />
+            <span class="mdi mdi-upload" />
+          </label>
         </div>
-      </TransitionGroup>
+      </div>
     </div>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
     <div ref="viewsContainer" class="flex flex-col items-center justify-between w-full shrink overflow-y-clip h-[30%]">
