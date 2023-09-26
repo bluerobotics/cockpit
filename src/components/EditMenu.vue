@@ -10,6 +10,35 @@
     />
     <p class="flex items-center justify-center mt-10 text-xl font-semibold select-none">Edit interface</p>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
+    <div ref="profilesContainer" class="flex flex-col items-center justify-center w-full px-2 shrink">
+      <p class="mb-3 text-lg font-semibold select-none">Profiles</p>
+      <TransitionGroup name="fade-and-suffle">
+        <div
+          v-for="profile in store.savedProfiles"
+          :key="profile.name"
+          class="flex items-center justify-between w-full my-1"
+        >
+          <Button
+            class="flex items-center justify-center w-full h-8 overflow-auto"
+            :class="{ 'selected-view': profile === store.currentProfile }"
+            @click="store.loadProfile(profile)"
+          >
+            <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
+            <div class="grow" />
+          </Button>
+        </div>
+        <div class="flex mt-2">
+          <div class="icon-btn">
+            <label class="flex items-center justify-center w-full h-full cursor-pointer">
+              <input type="file" accept="application/json" hidden @change="(e: Event) => store.importProfile(e)" />
+              <span class="mdi mdi-upload" />
+            </label>
+          </div>
+          <div class="icon-btn mdi mdi-download" @click="store.exportCurrentProfile" />
+        </div>
+      </TransitionGroup>
+    </div>
+    <div class="w-full h-px my-2 sm bg-slate-800/40" />
     <div ref="viewsContainer" class="flex flex-col items-center justify-between w-full shrink overflow-y-clip h-[30%]">
       <p class="mb-3 text-lg font-semibold select-none">Views</p>
       <div class="w-full px-2 overflow-x-hidden overflow-y-auto">
