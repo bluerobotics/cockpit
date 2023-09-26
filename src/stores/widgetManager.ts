@@ -7,7 +7,7 @@ import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { widgetProfile, widgetProfiles } from '@/assets/defaults'
+import { widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import * as Words from '@/libs/funny-name/words'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
@@ -118,13 +118,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return
     }
     currentProfileIndex.value = profileIndex
-  }
-
-  /**
-   * Reset current profile to original state
-   */
-  function resetCurrentProfile(): void {
-    currentProfile.value = widgetProfile
   }
 
   /**
@@ -401,7 +394,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     allProfiles,
     loadProfile,
     saveProfile,
-    resetCurrentProfile,
     resetSavedProfiles,
     exportCurrentProfile,
     importProfile,
