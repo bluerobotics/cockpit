@@ -25,6 +25,11 @@
           >
             <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
             <div class="grow" />
+            <div
+              v-if="!store.isDefaultProfile(profile)"
+              class="icon-btn mdi mdi-trash-can"
+              @click.stop="store.deleteProfile(profile)"
+            />
           </Button>
         </div>
         <div class="flex mt-2">
