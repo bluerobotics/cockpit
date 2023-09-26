@@ -25,6 +25,7 @@
           >
             <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
             <div class="grow" />
+            <div class="icon-btn mdi mdi-download" @click="store.exportProfile(profile)" />
             <template v-if="!store.isDefaultProfile(profile)">
               <div class="icon-btn mdi mdi-cog" @click="renameProfile(profile)" />
               <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
@@ -39,7 +40,6 @@
               <span class="mdi mdi-upload" />
             </label>
           </div>
-          <div class="icon-btn mdi mdi-download" @click="store.exportCurrentProfile" />
         </div>
       </TransitionGroup>
     </div>
