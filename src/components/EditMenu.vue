@@ -25,9 +25,9 @@
           >
             <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
             <div class="grow" />
-            <div class="icon-btn mdi mdi-download" @click="store.exportProfile(profile)" />
+            <div class="icon-btn mdi mdi-download" @click.stop="store.exportProfile(profile)" />
             <template v-if="!store.isDefaultProfile(profile)">
-              <div class="icon-btn mdi mdi-cog" @click="renameProfile(profile)" />
+              <div class="icon-btn mdi mdi-cog" @click.stop="renameProfile(profile)" />
               <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
             </template>
           </Button>
@@ -60,7 +60,7 @@
             >
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
               <div class="grow" />
-              <div class="icon-btn mdi mdi-cog" @click="renameView(view)" />
+              <div class="icon-btn mdi mdi-cog" @click.stop="renameView(view)" />
               <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteView(view)" />
             </Button>
           </div>
