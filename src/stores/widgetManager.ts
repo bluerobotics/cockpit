@@ -393,8 +393,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       userProfile.hash = uuid4()
       savedProfiles.value.push(userProfile)
     })
+    loadProfile(savedProfiles.value[0])
   }
-  loadProfile(savedProfiles.value[0])
 
   const resetWidgetsEditingState = (forcedState?: boolean): void => {
     currentProfile.value.views.forEach((view) => {
