@@ -316,10 +316,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
   }
 
-  const resetWidgetsEditingState = (): void => {
+  const resetWidgetsEditingState = (forcedState?: boolean): void => {
     currentProfile.value.views.forEach((view) => {
       view.widgets.forEach((widget) => {
-        widget.managerVars.allowMoving = editingMode.value
+        widget.managerVars.allowMoving = forcedState === undefined ? editingMode.value : forcedState
       })
     })
   }
