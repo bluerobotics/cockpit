@@ -70,7 +70,7 @@
       </div>
       <div class="grow" />
     </div>
-    <div ref="managementContainer" class="flex items-center justify-center w-full px-2">
+    <div ref="managementContainer" class="flex items-center justify-center w-full px-2 mt-2">
       <div class="icon-btn mdi mdi-plus" @click="addNewView" />
       <div class="icon-btn">
         <label class="flex items-center justify-center w-full h-full cursor-pointer">
