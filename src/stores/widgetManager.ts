@@ -318,6 +318,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
   }
 
+  // If the user does not have it's own profiles yet, create them
+  if (Object.entries(savedProfiles.value).isEmpty()) {
+    Object.values(widgetProfiles).forEach((profile) => {
+      const userProfile = structuredClone(profile)
+      userProfile.name = userProfile.name.replace('Default', 'User')
+      savedProfiles.value[uuid4()] = userProfile
+    })
+  }
+  loadProfile(Object.values(savedProfiles.value)[0])
+
   const resetWidgetsEditingState = (forcedState?: boolean): void => {
     currentProfile.value.views.forEach((view) => {
       view.widgets.forEach((widget) => {
