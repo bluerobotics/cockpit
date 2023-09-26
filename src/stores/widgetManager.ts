@@ -41,7 +41,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return allProfiles.value[currentProfileIndex.value]
     },
     set(newValue) {
-      const userProfileHashs = savedProfiles.value.map((p) => p.hash)
       const allProfileHashs = allProfiles.value.map((p) => p.hash)
 
       if (!allProfileHashs.includes(newValue.hash)) {
@@ -49,7 +48,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         return
       }
 
-      if (allProfileHashs.includes(newValue.hash) && !userProfileHashs.includes(newValue.hash)) {
+      if (isDefaultProfile(newValue)) {
         Swal.fire({ icon: 'error', text: 'Cannot edit a default profile. Please pick another one.', timer: 3000 })
         return
       }
@@ -178,6 +177,38 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const profileIndex = allProfiles.value.findIndex((p) => p.hash === savedProfiles.value[0].hash)
     currentProfileIndex.value = profileIndex
     addView()
+  }
+
+  const isUserProfile = (profile: Profile): boolean => {
+    return savedProfiles.value.map((p) => p.hash).includes(profile.hash)
+  }
+
+  const isDefaultProfile = (profile: Profile): boolean => {
+    return widgetProfiles.map((p) => p.hash).includes(profile.hash)
+  }
+
+  /**
+   * Deletes a profile from the store
+   * @param { Profile } profile - Profile
+   */
+  function deleteProfile(profile: Profile): void {
+    if (!isUserProfile(profile) && !isDefaultProfile(profile)) {
+      Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
+      return
+    }
+
+    if (isDefaultProfile(profile)) {
+      Swal.fire({ icon: 'error', text: 'Cannot delete a default profile.', timer: 3000 })
+      return
+    }
+
+    const currentProfileHash = currentProfile.value.hash
+    const savedProfileIndex = savedProfiles.value.findIndex((p) => p.hash === profile.hash)
+    currentProfileIndex.value = 0
+    savedProfiles.value.splice(savedProfileIndex, 1)
+    if (currentProfileHash !== profile.hash) {
+      currentProfileIndex.value = allProfiles.value.findIndex((p) => p.hash === currentProfileHash)
+    }
   }
 
   /**
@@ -406,12 +437,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentMiniWidgetsProfile,
     savedProfiles,
     allProfiles,
+    isDefaultProfile,
     loadProfile,
     saveProfile,
     resetSavedProfiles,
     exportCurrentProfile,
     importProfile,
     addProfile,
+    deleteProfile,
     addView,
     deleteView,
     renameView,
