@@ -14,7 +14,7 @@
       <p class="mb-3 text-lg font-semibold select-none">Profiles</p>
       <TransitionGroup name="fade-and-suffle">
         <div
-          v-for="profile in store.savedProfiles"
+          v-for="profile in store.allProfiles"
           :key="profile.name"
           class="flex items-center justify-between w-full my-1"
         >
