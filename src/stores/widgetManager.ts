@@ -20,12 +20,12 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
-  const currentProfile = useStorage('cockpit-current-profile-v6', widgetProfile)
+  const currentProfile = useStorage('cockpit-current-profile-v7', widgetProfile)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v3', miniWidgetsProfile)
-  const savedProfiles = useStorage<{ [key: string]: Profile }>('cockpit-saved-profiles-v6', {})
+  const savedProfiles = useStorage<Profile[]>('cockpit-saved-profiles-v7', [])
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
 
-  const allProfiles = computed(() => ({ ...widgetProfiles, ...savedProfiles.value }))
+  const allProfiles = computed(() => [...widgetProfiles, ...savedProfiles.value])
 
   const currentView = computed<View>({
     get() {
@@ -65,7 +65,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @returns { Profile } The profile object just created
    */
   function saveProfile(profile: Profile): Profile {
-    const savedProfilesNames = Object.values(savedProfiles.value).map((p: Profile) => p.name)
+    const savedProfilesNames = savedProfiles.value.map((p: Profile) => p.name)
     let newName = profile.name
     let nameVersion = 0
     // Check if there's already a profile with this name
@@ -80,7 +80,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
 
     const newProfile = { ...profile, ...{ name: newName } }
-    savedProfiles.value[uuid4()] = newProfile
+    savedProfiles.value.push(newProfile)
     return newProfile
   }
 
@@ -103,7 +103,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * Reset saved profiles to original state
    */
   function resetSavedProfiles(): void {
-    savedProfiles.value = widgetProfiles
+    savedProfiles.value.splice(0, savedProfiles.value.length)
   }
 
   const exportCurrentProfile = (): void => {
@@ -319,14 +319,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   // If the user does not have it's own profiles yet, create them
-  if (Object.entries(savedProfiles.value).isEmpty()) {
-    Object.values(widgetProfiles).forEach((profile) => {
+  if (savedProfiles.value.isEmpty()) {
+    widgetProfiles.forEach((profile) => {
+      // @ts-ignore: structuredClone is a thing since a long time ago
       const userProfile = structuredClone(profile)
       userProfile.name = userProfile.name.replace('Default', 'User')
-      savedProfiles.value[uuid4()] = userProfile
+      userProfile.hash = uuid4()
+      savedProfiles.value.push(userProfile)
     })
   }
-  loadProfile(Object.values(savedProfiles.value)[0])
+  loadProfile(savedProfiles.value[0])
 
   const resetWidgetsEditingState = (forcedState?: boolean): void => {
     currentProfile.value.views.forEach((view) => {

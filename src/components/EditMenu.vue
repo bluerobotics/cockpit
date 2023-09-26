@@ -15,12 +15,12 @@
       <TransitionGroup name="fade-and-suffle">
         <div
           v-for="profile in store.allProfiles"
-          :key="profile.name"
+          :key="profile.hash"
           class="flex items-center justify-between w-full my-1"
         >
           <Button
             class="flex items-center justify-center w-full h-8 overflow-auto"
-            :class="{ 'selected-view': profile === store.currentProfile }"
+            :class="{ 'selected-view': profile.hash === store.currentProfile.hash }"
             @click="store.loadProfile(profile)"
           >
             <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>

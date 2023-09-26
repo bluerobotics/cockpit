@@ -99,6 +99,10 @@ export type View = {
 
 export type Profile = {
   /**
+   * Unique identifier for the profile
+   */
+  hash: string
+  /**
    * Array of views that are stored in the profile
    */
   views: View[]
