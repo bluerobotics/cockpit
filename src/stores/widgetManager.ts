@@ -167,6 +167,20 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   /**
+   * Adds new profile to the store
+   */
+  function addProfile(): void {
+    savedProfiles.value.unshift({
+      hash: uuid4(),
+      name: `${Words.animalsOcean.random()} profile`,
+      views: [],
+    })
+    const profileIndex = allProfiles.value.findIndex((p) => p.hash === savedProfiles.value[0].hash)
+    currentProfileIndex.value = profileIndex
+    addView()
+  }
+
+  /**
    * Deletes a view from the store
    * @param { View } view - View
    */
@@ -397,6 +411,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     resetSavedProfiles,
     exportCurrentProfile,
     importProfile,
+    addProfile,
     addView,
     deleteView,
     renameView,

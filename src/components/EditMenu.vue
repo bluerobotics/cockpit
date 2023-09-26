@@ -28,6 +28,7 @@
           </Button>
         </div>
         <div class="flex mt-2">
+          <div class="icon-btn mdi mdi-plus" @click="addNewProfile" />
           <div class="icon-btn">
             <label class="flex items-center justify-center w-full h-full cursor-pointer">
               <input type="file" accept="application/json" hidden @change="(e: Event) => store.importProfile(e)" />
@@ -215,6 +216,19 @@
       </v-card>
     </v-dialog>
   </teleport>
+  <teleport to="body">
+    <v-dialog v-model="profileRenameDialogRevealed" width="20rem">
+      <v-card class="pa-2">
+        <v-card-text>
+          <v-text-field v-model="newProfileName" counter="25" label="New profile name" />
+        </v-card-text>
+        <v-card-actions class="flex justify-end">
+          <v-btn @click="profileRenameDialog.confirm">Save</v-btn>
+          <v-btn @click="profileRenameDialog.cancel">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -226,7 +240,7 @@ import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-dragga
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { MiniWidgetType } from '@/types/miniWidgets'
-import { type View, type Widget, WidgetType } from '@/types/widgets'
+import { type Profile, type View, type Widget, WidgetType } from '@/types/widgets'
 
 import Button from './Button.vue'
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
@@ -279,15 +293,35 @@ viewRenameDialog.onConfirm(() => {
   newViewName.value = ''
 })
 
+const profileBeingRenamed = ref(store.currentProfile)
+const newProfileName = ref('')
+const profileRenameDialogRevealed = ref(false)
+const profileRenameDialog = useConfirmDialog(profileRenameDialogRevealed)
+profileRenameDialog.onConfirm(() => {
+  profileBeingRenamed.value.name = newProfileName.value
+  newProfileName.value = ''
+})
+
 const addNewView = (): void => {
   store.addView()
   renameView(store.currentView)
+}
+
+const addNewProfile = (): void => {
+  store.addProfile()
+  renameProfile(store.currentProfile)
 }
 
 const renameView = (view: View): void => {
   viewBeingRenamed.value = view
   newViewName.value = view.name
   viewRenameDialogRevealed.value = true
+}
+
+const renameProfile = (profile: Profile): void => {
+  profileBeingRenamed.value = profile
+  newProfileName.value = profile.name
+  profileRenameDialogRevealed.value = true
 }
 
 const availableWidgetsContainer = ref()
