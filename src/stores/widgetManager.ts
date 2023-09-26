@@ -325,7 +325,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   watch(editingMode, () => resetWidgetsEditingState())
-  resetWidgetsEditingState()
+  resetWidgetsEditingState(false)
 
   const isFullScreen = (widget: Widget): boolean => {
     return isEqual(widget.position, fullScreenPosition) && isEqual(widget.size, fullScreenSize)
