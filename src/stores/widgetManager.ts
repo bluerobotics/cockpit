@@ -126,8 +126,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     savedProfiles.value.splice(0, savedProfiles.value.length)
   }
 
-  const exportCurrentProfile = (): void => {
-    const blob = new Blob([JSON.stringify(currentProfile.value)], { type: 'text/plain;charset=utf-8' })
+  const exportProfile = (profile: Profile): void => {
+    const blob = new Blob([JSON.stringify(profile)], { type: 'text/plain;charset=utf-8' })
     saveAs(blob, `cockpit-widget-profile.json`)
   }
 
@@ -441,7 +441,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     loadProfile,
     saveProfile,
     resetSavedProfiles,
-    exportCurrentProfile,
+    exportProfile,
     importProfile,
     addProfile,
     deleteProfile,
