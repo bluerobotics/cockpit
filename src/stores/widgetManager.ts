@@ -20,10 +20,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
-  const currentProfile = useStorage('cockpit-current-profile-v7', widgetProfile)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v3', miniWidgetsProfile)
   const savedProfiles = useStorage<Profile[]>('cockpit-saved-profiles-v7', [])
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
+  const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
 
   const allProfiles = computed(() => [...widgetProfiles, ...savedProfiles.value])
 
@@ -33,6 +33,29 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     },
     set(newValue) {
       currentProfile.value.views[currentViewIndex.value] = newValue
+    },
+  })
+
+  const currentProfile = computed<Profile>({
+    get() {
+      return allProfiles.value[currentProfileIndex.value]
+    },
+    set(newValue) {
+      const userProfileHashs = savedProfiles.value.map((p) => p.hash)
+      const allProfileHashs = allProfiles.value.map((p) => p.hash)
+
+      if (!allProfileHashs.includes(newValue.hash)) {
+        Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
+        return
+      }
+
+      if (allProfileHashs.includes(newValue.hash) && !userProfileHashs.includes(newValue.hash)) {
+        Swal.fire({ icon: 'error', text: 'Cannot edit a default profile. Please pick another one.', timer: 3000 })
+        return
+      }
+
+      const profileIndex = savedProfiles.value.findIndex((p) => p.hash === newValue.hash)
+      savedProfiles.value[profileIndex] = newValue
     },
   })
 
@@ -89,7 +112,12 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Profile } profile - Profile to be loaded
    */
   function loadProfile(profile: Profile): void {
-    currentProfile.value = profile
+    const profileIndex = allProfiles.value.findIndex((p) => p.hash === profile.hash)
+    if (profileIndex === -1) {
+      Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
+      return
+    }
+    currentProfileIndex.value = profileIndex
   }
 
   /**
