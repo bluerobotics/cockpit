@@ -259,8 +259,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentViewIndex.value = index
   }
 
-  const exportCurrentView = (): void => {
-    const blob = new Blob([JSON.stringify(currentView.value)], { type: 'text/plain;charset=utf-8' })
+  const exportView = (view: View): void => {
+    const blob = new Blob([JSON.stringify(view)], { type: 'text/plain;charset=utf-8' })
     saveAs(blob, `cockpit-widget-view.json`)
   }
 
@@ -449,7 +449,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     deleteView,
     renameView,
     selectView,
-    exportCurrentView,
+    exportView,
     importView,
     addWidget,
     deleteWidget,
