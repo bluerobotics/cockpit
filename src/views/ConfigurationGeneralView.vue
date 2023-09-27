@@ -229,6 +229,10 @@ const addNewVehicleConnection = async (): Promise<void> => {
 const setGlobalAddress = async (): Promise<void> => {
   await globalAddressForm.value.validate()
   mainVehicleStore.globalAddress = newGlobalAddress.value
+
+  // Temporary solution to actually set the address and connect the vehicle, since this is non-reactive today.
+  // TODO: Modify the store variables to be reactive.
+  location.reload()
 }
 
 const setWebRTCSignallingURI = async (): Promise<void> => {
