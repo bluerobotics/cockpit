@@ -14,6 +14,14 @@
           hide-details
           @change="widget.options.showYawValue = !widget.options.showYawValue"
         />
+        <v-switch
+          class="ma-1"
+          label="Use -180/+180 range"
+          :color="widget.options.useNegativeRange ? 'rgb(0, 20, 80)' : undefined"
+          :model-value="widget.options.useNegativeRange"
+          hide-details
+          @change="widget.options.useNegativeRange = !widget.options.useNegativeRange"
+        />
         <v-expansion-panels>
           <v-expansion-panel>
             <v-expansion-panel-title>Color</v-expansion-panel-title>
