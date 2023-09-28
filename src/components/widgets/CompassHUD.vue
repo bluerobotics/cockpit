@@ -203,7 +203,7 @@ const renderCanvas = (): void => {
     if (!widget.value.options.useNegativeRange) {
       finalAngle = finalAngle < 0 ? finalAngle + 360 : finalAngle
     }
-    ctx.fillText(`${finalAngle.toFixed(2)}°`, halfCanvasWidth, refFontSize)
+    ctx.fillText(`${finalAngle.toFixed(1)}°`, halfCanvasWidth, refFontSize)
   }
 
   // Draw reference triangle
