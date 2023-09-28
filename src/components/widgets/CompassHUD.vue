@@ -52,15 +52,19 @@ const colorSwatches = ref([['#FFFFFF'], ['#FF2D2D'], ['#0ADB0ACC']])
 // prettier-ignore
 const angleRender = (angle: number): string => {
   switch (angle) {
+    case -180: return 'S'
+    case -135: return 'SW'
+    case -90: return 'W'
+    case -45: return 'NW'
     case 0: return 'N'
     case 45: return 'NE'
     case 90: return 'E'
     case 135: return 'SE'
     case 180: return 'S'
-    case -180: return 'S'
-    case -135: return 'SW'
-    case -90: return 'W'
-    case -45: return 'NW'
+    case 225: return 'SW'
+    case 270: return 'W'
+    case 315: return 'NW'
+    case 360: return 'N'
     default:
       return `${angle}°`
   }
@@ -91,6 +95,7 @@ onBeforeMount(() => {
     widget.value.options = {
       showYawValue: true,
       hudColor: colorSwatches.value[0][0],
+      useNegativeRange: false,
     }
   }
 })
@@ -173,7 +178,11 @@ const renderCanvas = (): void => {
     if (Number(angle) % 15 === 0) {
       ctx.lineWidth = '2'
       ctx.lineTo(anglePositionX, halfCanvasHeight * 2 - linesFontSize - stdPad)
-      ctx.fillText(angleRender(Number(angle)), anglePositionX, halfCanvasHeight * 2 - stdPad)
+      let finalAngle = Number(angle)
+      if (!widget.value.options.useNegativeRange) {
+        finalAngle = finalAngle < 0 ? finalAngle + 360 : finalAngle
+      }
+      ctx.fillText(angleRender(Number(finalAngle)), anglePositionX, halfCanvasHeight * 2 - stdPad)
     }
     ctx.stroke()
   }
@@ -181,7 +190,12 @@ const renderCanvas = (): void => {
   // Draw reference text
   if (widget.value.options.showYawValue) {
     ctx.font = `bold ${refFontSize}px Arial`
-    ctx.fillText(`${yaw.value.toFixed(2)}°`, halfCanvasWidth, refFontSize)
+
+    let finalAngle = Number(yaw.value)
+    if (!widget.value.options.useNegativeRange) {
+      finalAngle = finalAngle < 0 ? finalAngle + 360 : finalAngle
+    }
+    ctx.fillText(`${finalAngle.toFixed(2)}°`, halfCanvasWidth, refFontSize)
   }
 
   // Draw reference triangle
