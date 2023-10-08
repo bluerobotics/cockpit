@@ -53,6 +53,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         return
       }
 
+      currentViewIndex.value = 0
       const profileIndex = savedProfiles.value.findIndex((p) => p.hash === newValue.hash)
       savedProfiles.value[profileIndex] = newValue
     },
@@ -117,6 +118,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return
     }
     currentProfileIndex.value = profileIndex
+    currentViewIndex.value = 0
   }
 
   /**
