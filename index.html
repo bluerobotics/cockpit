@@ -17,9 +17,69 @@
 </head>
 
 <body>
+    <div id="browser-overlay">
+        <div id="browser-overlay-message">
+            <p>Please use Google Chrome or Microsoft Edge for the best experience on our website.</p>
+            <button id="proceed-browser-overlay">Proceed Anyway</button>
+        </div>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
     <link rel="stylesheet" href="/src/styles/global.css">
-</body>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const overlay = document.getElementById('browser-overlay')
+            const content = document.getElementById('app')
+            const proceedButton = document.getElementById('proceed-browser-overlay');
+
+            const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
+            const isEdge = /Edg/.test(navigator.userAgent)
+
+            if (!isChrome && !isEdge) {
+                overlay.style.display = 'flex'
+                content.style.display = 'none'
+            }
+
+            proceedButton.addEventListener('click', function() {
+                overlay.style.display = 'none';
+                content.style.display = 'block';
+            });
+        })
+    </script>
+
+    <style>
+        #browser-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        #browser-overlay-message {
+            color: #fff;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        #browser-overlay-message button {
+            background-color: #525252;
+            border: none;
+            color: white;
+            padding: 5px 8px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            transition-duration: 0.4s;
+            cursor: pointer;
+        }
+    </style>
+</body>
 </html>
