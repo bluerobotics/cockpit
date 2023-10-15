@@ -15,6 +15,7 @@ export enum WidgetType {
   Indicators = 'Indicators',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
+  URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',
 }
 
