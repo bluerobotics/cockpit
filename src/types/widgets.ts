@@ -10,6 +10,7 @@ export enum WidgetType {
   Compass = 'Compass',
   DepthHUD = 'DepthHUD',
   CompassHUD = 'CompassHUD',
+  IFrame = 'IFrame',
   ImageViewer = 'ImageViewer',
   Indicators = 'Indicators',
   Map = 'Map',
