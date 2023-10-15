@@ -1,5 +1,5 @@
 # Build frontend
-FROM --platform=$BUILDPLATFORM oven/bun AS frontendBuilder
+FROM --platform=$BUILDPLATFORM oven/bun:1.0.3-slim AS frontendBuilder
 
 RUN mkdir /frontend && ls /frontend
 COPY . /frontend
