@@ -36,6 +36,9 @@
           <template v-if="widget.component === WidgetType.MiniWidgetsBar">
             <MiniWidgetsBar :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.URLVideoPlayer">
+            <URLVideoPlayer :widget="widget" />
+          </template>
           <template v-if="widget.component === WidgetType.VideoPlayer">
             <VideoPlayer :widget="widget" />
           </template>
@@ -65,6 +68,7 @@ import IFrame from '../components/widgets/IFrame.vue'
 import Indicators from '../components/widgets/Indicators.vue'
 import Map from '../components/widgets/Map.vue'
 import MiniWidgetsBar from '../components/widgets/MiniWidgetsBar.vue'
+import URLVideoPlayer from '../components/widgets/URLVideoPlayer.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
 
 const store = useWidgetManagerStore()
