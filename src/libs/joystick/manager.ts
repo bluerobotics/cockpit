@@ -21,6 +21,7 @@ export enum JoystickModel {
   XboxOneS_Bluetooth = 'Xbox One S (bluetooth)',
   XboxController_Bluetooth = 'Xbox controller (bluetooth)',
   XboxController_Wired = 'Xbox controller (wired)',
+  XboxController_360 = 'Xbox 360 controller',
   Unknown = 'Unknown Joystick Model',
 }
 
@@ -31,6 +32,7 @@ const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   ['045e:02e0', JoystickModel.XboxOneS_Bluetooth],
   ['045e:0b13', JoystickModel.XboxController_Bluetooth],
   ['045e:0b12', JoystickModel.XboxController_Wired],
+  ['28de:11ff', JoystickModel.XboxController_360],
 ])
 
 // Necessary to add functions
