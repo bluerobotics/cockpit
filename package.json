@@ -9,6 +9,7 @@
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "electron-builder --dir",
     "deploy:electron": "electron-builder --publish=never",
+    "deploy:flatpak": "electron-builder --x64 --linux flatpak",
     "dev": "vite",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "preview": "vite preview --port 5050",
@@ -101,6 +102,24 @@
     "appId": "org.bluerobotics.cockpit",
     "mac": {
       "category": "public.app-category.entertainment"
+    },
+    "flatpak": {
+      "base": "org.electronjs.Electron2.BaseApp",
+      "baseVersion": "22.08",
+      "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
+      "finishArgs": [
+        "--socket=wayland",
+        "--socket=x11",
+        "--share=ipc",
+        "--device=dri",
+        "--socket=pulseaudio",
+        "--filesystem=/run/udev:ro",
+        "--share=network",
+        "--talk-name=org.freedesktop.Notifications"
+      ],
+      "runtime": "org.freedesktop.Platform",
+      "runtimeVersion": "22.08",
+      "sdk": "org.freedesktop.Sdk"
     }
   }
 }
