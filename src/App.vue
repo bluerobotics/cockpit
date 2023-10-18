@@ -166,6 +166,21 @@ const showMissionOptionsDialog = ref(false)
 
 // Clock
 const timeNow = useTimestamp({ interval: 1000 })
+
+// Control showing mouse
+let hideMouseTimeoutId: ReturnType<typeof setInterval>
+
+const hideMouse = (): void => {
+  document.body.classList.add('hide-cursor')
+}
+
+const resetHideMouseTimeout = (): void => {
+  clearTimeout(hideMouseTimeoutId)
+  document.body.classList.remove('hide-cursor')
+  hideMouseTimeoutId = setTimeout(hideMouse, 5000)
+}
+
+document.addEventListener('mousemove', resetHideMouseTimeout)
 </script>
 
 <style>
@@ -173,6 +188,9 @@ html,
 body {
   /* Removes the scrollbar */
   overflow: hidden !important;
+}
+body.hide-cursor {
+  cursor: none;
 }
 .router-view {
   width: 100%;
