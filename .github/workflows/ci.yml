@@ -107,6 +107,50 @@ jobs:
           prerelease: true
           file_glob: true
 
+  deploy-flatpak:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install flatpak
+        run: |
+          sudo apt install -y flatpak flatpak-builder
+          sudo flatpak remote-add --system flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak remote-add --user flathub https://flathub.org/repo/flathub.flatpakrepo || true
+
+      - name: Build electron
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+          env DEBUG="@malept/flatpak-bundler" bun deploy:flatpak
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cockpit-flatpak
+          path: dist/cockpit*.flatpak
+          if-no-files-found: error
+
+      - name: Upload Release
+        uses: svenstaro/upload-release-action@v2
+        if: startsWith(github.ref, 'refs/tags/') && success()
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/cockpit*.flatpak
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
+          file_glob: true
+
   deploy-blueos-extension:
     needs: test
     runs-on: ubuntu-latest
