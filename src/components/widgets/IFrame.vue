@@ -3,6 +3,7 @@
     <iframe
       v-show="iframe_loaded"
       :src="widget.options.source"
+      :style="iframeStyle"
       frameborder="0"
       height="100%"
       width="100%"
@@ -30,9 +31,12 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, onBeforeMount, ref, toRefs } from 'vue'
+import { computed, defineProps, onBeforeMount, ref, toRefs } from 'vue'
 
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+
+const widgetManagerStore = useWidgetManagerStore()
 
 const props = defineProps<{
   /**
@@ -52,6 +56,13 @@ onBeforeMount(() => {
   widget.value.options = {
     source: 'http://blueos.local',
   }
+})
+
+const iframeStyle = computed<string>(() => {
+  if (widgetManagerStore.editingMode) {
+    return 'pointer-events:none; border:0;'
+  }
+  return ''
 })
 
 /**
