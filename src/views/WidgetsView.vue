@@ -42,6 +42,9 @@
           <template v-if="widget.component === WidgetType.VideoPlayer">
             <VideoPlayer :widget="widget" />
           </template>
+          <template v-if="widget.component === WidgetType.VirtualHorizon">
+            <VirtualHorizon :widget="widget" />
+          </template>
           <!-- TODO: Use the line below instead of the 12 lines above -->
           <!-- <component :is="componentFromType(widget.component)"></component> -->
         </WidgetHugger>
@@ -70,6 +73,7 @@ import Map from '../components/widgets/Map.vue'
 import MiniWidgetsBar from '../components/widgets/MiniWidgetsBar.vue'
 import URLVideoPlayer from '../components/widgets/URLVideoPlayer.vue'
 import VideoPlayer from '../components/widgets/VideoPlayer.vue'
+import VirtualHorizon from '../components/widgets/VirtualHorizon.vue'
 
 const store = useWidgetManagerStore()
 

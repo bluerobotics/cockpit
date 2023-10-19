@@ -17,6 +17,7 @@ export enum WidgetType {
   MiniWidgetsBar = 'MiniWidgetsBar',
   URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',
+  VirtualHorizon = 'VirtualHorizon',
 }
 
 export type Widget = {
