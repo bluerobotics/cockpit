@@ -119,6 +119,9 @@ const renderCanvas = (): void => {
   ctx.rotate(radians(-90))
 
   // Draw line and identification for each cardinal and sub-cardinal angle
+  if (widget.value.options.headingStyle == HeadingStyle.HEAD_UP) {
+    ctx.rotate(radians(renderVariables.yawAngleDegrees))
+  }
   for (const [angleDegrees, angleName] of Object.entries(mainAngles)) {
     ctx.save()
 
@@ -157,7 +160,11 @@ const renderCanvas = (): void => {
   ctx.stroke()
 
   // Draw central indicator
-  ctx.rotate(radians(renderVariables.yawAngleDegrees))
+  if (widget.value.options.headingStyle == HeadingStyle.NORTH_UP) {
+    ctx.rotate(radians(renderVariables.yawAngleDegrees))
+  } else {
+    ctx.rotate(-radians(renderVariables.yawAngleDegrees))
+  }
   ctx.beginPath()
   ctx.lineWidth = 1
   ctx.strokeStyle = 'red'
