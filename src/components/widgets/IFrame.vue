@@ -22,6 +22,9 @@
             @keydown.enter="widget.options.source = $event.srcElement.value"
           />
         </v-card-text>
+        <v-card-text>
+          <v-slider v-model="transparency" label="Transparency" :min="0" :max="90" />
+        </v-card-text>
         <v-card-actions>
           <v-btn color="primary" @click="widget.managerVars.configMenuOpen = false">Close</v-btn>
         </v-card-actions>
@@ -47,6 +50,7 @@ const props = defineProps<{
 const widget = toRefs(props).widget
 
 const iframe_loaded = ref(false)
+const transparency = ref(0)
 
 onBeforeMount(() => {
   if (Object.keys(widget.value.options).length !== 0) {
@@ -63,6 +67,10 @@ const iframeStyle = computed<string>(() => {
     return 'pointer-events:none; border:0;'
   }
   return ''
+})
+
+const iframeOpacity = computed<number>(() => {
+  return (100 - transparency.value) / 100
 })
 
 /**
@@ -82,5 +90,6 @@ iframe {
   flex-grow: 1;
   margin: 0;
   padding: 0;
+  opacity: calc(v-bind('iframeOpacity'));
 }
 </style>
