@@ -84,9 +84,15 @@ const renderCanvas = (): void => {
   const zeroPitchLineHeight = pitchGainFactor * (renderVariables.pitchAngleDegrees / 90) * outerCircleRadius
 
   // Draw virtual horizon ground and sky
-  ctx.fillStyle = 'rgb(69, 144, 190)'
+  const skyGradient = ctx.createLinearGradient(0, -outerCircleRadius, 0, outerCircleRadius)
+  skyGradient.addColorStop(0, 'rgb(69, 144, 190)')
+  skyGradient.addColorStop(1, 'rgb(137, 190, 228)')
+  ctx.fillStyle = skyGradient
   ctx.fillRect(-1.5 * outerCircleRadius, zeroPitchLineHeight, +3 * outerCircleRadius, -3 * outerCircleRadius)
-  ctx.fillStyle = 'rgb(152, 104, 76)'
+  const groundGradient = ctx.createLinearGradient(0, -outerCircleRadius, 0, outerCircleRadius)
+  groundGradient.addColorStop(0, 'rgb(176, 117, 80)')
+  groundGradient.addColorStop(1, 'rgb(200, 149, 98)')
+  ctx.fillStyle = groundGradient
   ctx.fillRect(-1.5 * outerCircleRadius, zeroPitchLineHeight, +3 * outerCircleRadius, 3 * outerCircleRadius)
 
   // Draw virtual horizon moving line
