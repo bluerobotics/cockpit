@@ -14,7 +14,7 @@ import { CockpitAction, registerActionCallback, unregisterActionCallback } from 
 import { isEqual } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
-import { type Profile, type View, type Widget, type WidgetType, isProfile, isView } from '@/types/widgets'
+import { type Profile, type View, type Widget, isProfile, isView, WidgetType } from '@/types/widgets'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
@@ -64,6 +64,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     viewsOnShowOrder.splice(currentViewIndex.value, 1)
     viewsOnShowOrder.push(currentProfile.value.views[currentViewIndex.value])
     return viewsOnShowOrder
+  })
+
+  const miniWidgetContainersInCurrentView = computed(() => {
+    const barContainers = currentView.value.miniWidgetContainers
+    const floatingWidgetContainers = currentView.value.widgets
+      .filter((w) => w.component === WidgetType.MiniWidgetsBar)
+      .filter((w) => w.options && w.options.miniWidgetsContainer)
+      .map((w) => w.options.miniWidgetsContainer)
+    return [...barContainers, ...floatingWidgetContainers]
   })
 
   /**
@@ -437,6 +446,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentProfile,
     currentView,
     viewsToShow,
+    miniWidgetContainersInCurrentView,
     currentMiniWidgetsProfile,
     savedProfiles,
     allProfiles,
