@@ -126,7 +126,7 @@
       <p class="text-lg font-semibold select-none">Current mini-widgets</p>
       <div class="grow" />
       <div
-        v-for="miniWidgetContainer in store.currentView.miniWidgetContainers"
+        v-for="miniWidgetContainer in store.miniWidgetContainersInCurrentView"
         :key="miniWidgetContainer.name"
         class="w-full"
       >
