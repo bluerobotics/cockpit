@@ -4,9 +4,9 @@
       ref="currentAlertBar"
       class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap bg-slate-800/75"
     >
-      <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100">{{ currentAlert.message }}</p>
+      <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100">{{ currentAlert?.message }}</p>
       <div class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100">
-        <p>{{ formattedDate(currentAlert.time_created || new Date()) }}</p>
+        <p>{{ formattedDate(currentAlert?.time_created || new Date()) }}</p>
         <p>{{ currentAlert.level.toUpperCase() }}</p>
       </div>
     </div>
@@ -47,7 +47,7 @@ const alertPersistencyInterval = 10 // in seconds
 
 const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
-const currentAlert = ref(alertStore.alerts[0])
+const currentAlert = ref(alertStore.alerts?.[0] ?? undefined)
 
 // eslint-disable-next-line no-undef
 let currentAlertInterval: NodeJS.Timer | undefined = undefined
