@@ -249,6 +249,22 @@ watch(externalStreams, () => {
     updateCurrentStream(savedStream)
   }
 })
+
+// Try to prevent user from closing Cockpit when a stream is being recorded
+watch(isRecording, () => {
+  if (!isRecording.value) {
+    window.onbeforeunload = null
+    return
+  }
+  window.onbeforeunload = () => {
+    const alertMsg = `
+      You have a video recording ongoing.
+      Remember to stop it before closing Cockpit, or the record will be lost.
+    `
+    Swal.fire({ text: alertMsg, icon: 'warning' })
+    return 'I hope the user does not click on the leave button.'
+  }
+})
 </script>
 
 <style scoped>
