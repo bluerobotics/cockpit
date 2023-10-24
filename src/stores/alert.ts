@@ -1,6 +1,6 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import { Alert, AlertLevel } from '../types/alert'
 
@@ -49,29 +49,37 @@ export const useAlertStore = defineStore('alert', () => {
   }
 
   // Alert speech syntesis routine
-  const synth = window.speechSynthesis
+  const synth = ref(window.speechSynthesis)
 
   // We need to cache these otherwise they get garbage collected...
+  let availableAlertSpeechVoiceNames
   const utterance_cache: SpeechSynthesisUtterance[] = []
+  if (synth.value !== undefined) {
+    synth.value.onvoiceschanged = () => {
+      synth.value.getVoices().forEach((voice) => {
+        availableAlertSpeechVoices.push(voice)
+        if (selectedAlertSpeechVoiceName.value === undefined && voice.default) {
+          selectedAlertSpeechVoiceName.value = voice.name
+        }
+      })
+    }
 
-  synth.onvoiceschanged = () => {
-    synth.getVoices().forEach((voice) => {
-      availableAlertSpeechVoices.push(voice)
-      if (selectedAlertSpeechVoiceName.value === undefined && voice.default) {
-        selectedAlertSpeechVoiceName.value = voice.name
-      }
-    })
+    availableAlertSpeechVoiceNames = computed(() =>
+      availableAlertSpeechVoices.map((v) => ({ value: v.name, name: `${v.name} (${v.lang})` }))
+    )
+  } else {
+    availableAlertSpeechVoiceNames = computed(() => [])
   }
-
-  const availableAlertSpeechVoiceNames = computed(() =>
-    availableAlertSpeechVoices.map((v) => ({ value: v.name, name: `${v.name} (${v.lang})` }))
-  )
 
   /**
    * Speaks a text out loud using the browsers TTS engine
    * @param {string} text string
    */
   function speak(text: string): void {
+    if (!synth.value) {
+      console.warn('No speechSynthesis available')
+      return
+    }
     const utterance = new SpeechSynthesisUtterance(text)
     const voice = availableAlertSpeechVoices.find((v) => v.name === selectedAlertSpeechVoiceName.value)
     if (voice) {
@@ -85,7 +93,7 @@ export const useAlertStore = defineStore('alert', () => {
     utterance.onerror = function (event) {
       console.error(`SpeechSynthesisUtterance error: ${event.error}`)
     }
-    synth.speak(utterance)
+    synth.value.speak(utterance)
   }
 
   watch(alerts, () => {
