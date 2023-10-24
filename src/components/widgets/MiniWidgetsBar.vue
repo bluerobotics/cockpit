@@ -11,9 +11,9 @@
 </template>
 
 <script setup lang="ts">
-import { v4 as uuid } from 'uuid'
-import { onBeforeMount, toRefs } from 'vue'
+import { capitalize, onBeforeMount, toRefs } from 'vue'
 
+import * as Words from '@/libs/funny-name/words'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
@@ -34,7 +34,7 @@ onBeforeMount(() => {
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
       miniWidgetsContainer: {
-        name: uuid(),
+        name: `${capitalize(Words.animalsOcean.random() || 'Plankton')} floating container`,
         widgets: [],
       },
     }
