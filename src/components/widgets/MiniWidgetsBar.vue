@@ -12,8 +12,7 @@
 
 <script setup lang="ts">
 import { v4 as uuid } from 'uuid'
-import { toRefs } from 'vue'
-import { onBeforeMount } from 'vue'
+import { onBeforeMount, toRefs } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
