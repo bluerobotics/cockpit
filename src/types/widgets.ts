@@ -12,7 +12,6 @@ export enum WidgetType {
   CompassHUD = 'CompassHUD',
   IFrame = 'IFrame',
   ImageViewer = 'ImageViewer',
-  Indicators = 'Indicators',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
   URLVideoPlayer = 'URLVideoPlayer',
