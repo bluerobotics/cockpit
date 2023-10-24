@@ -27,9 +27,6 @@
           <template v-if="widget.component === WidgetType.ImageViewer">
             <ImageView :widget="widget" />
           </template>
-          <template v-if="widget.component === WidgetType.Indicators">
-            <Indicators :widget="widget" />
-          </template>
           <template v-if="widget.component === WidgetType.Map">
             <Map :widget="widget" />
           </template>
@@ -68,7 +65,6 @@ import Compass from '../components/widgets/Compass.vue'
 import CompassHUD from '../components/widgets/CompassHUD.vue'
 import DepthHUD from '../components/widgets/DepthHUD.vue'
 import IFrame from '../components/widgets/IFrame.vue'
-import Indicators from '../components/widgets/Indicators.vue'
 import Map from '../components/widgets/Map.vue'
 import MiniWidgetsBar from '../components/widgets/MiniWidgetsBar.vue'
 import URLVideoPlayer from '../components/widgets/URLVideoPlayer.vue'
