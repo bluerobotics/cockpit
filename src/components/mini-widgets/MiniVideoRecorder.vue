@@ -186,7 +186,8 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
   mediaRecorder.value.onstop = () => {
     const blob = new Blob(chunks, { type: 'video/webm' })
     fixWebmDuration(blob, Date.now() - timeRecordingStart.value.getTime()).then((fixedBlob) => {
-      saveAs(fixedBlob, `${missionName} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`)
+      const fileName = `${missionName || 'Cockpit'} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`
+      saveAs(fixedBlob, fileName)
     })
     chunks = []
     mediaRecorder.value = undefined
