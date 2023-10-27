@@ -154,7 +154,7 @@ const routerSection = ref()
 // Full screen toggling
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 
-const debouncedToggleFullScreen = useDebounceFn(() => toggleFullscreen(), 500)
+const debouncedToggleFullScreen = useDebounceFn(() => toggleFullscreen(), 10)
 const fullScreenCallbackId = registerActionCallback(CockpitAction.TOGGLE_FULL_SCREEN, debouncedToggleFullScreen)
 onBeforeUnmount(() => unregisterActionCallback(fullScreenCallbackId))
 
