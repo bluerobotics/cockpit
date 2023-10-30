@@ -16,6 +16,7 @@ export class Session {
   private ended: boolean
   private signaller: Signaller
   private peerConnection: RTCPeerConnection
+  private selectedICEIPs: string[]
   public rtcConfiguration: RTCConfiguration
   public onTrackAdded?: OnTrackAddedCallback
   public onClose?: OnCloseCallback
@@ -27,6 +28,7 @@ export class Session {
    * @param {Stream} stream - The Stream instance for which this Session will be created with, given by the signalling server
    * @param {Signaller} signaller - The Signaller instance for this Session to use
    * @param {RTCConfiguration} rtcConfiguration - Configuration for the RTC connection, such as Turn and Stun servers
+   * @param {string[]} selectedICEIPs - A whitelist for ICE IP addresses, ignored if empty
    * @param {OnTrackAddedCallback} onTrackAdded - An optional callback for when a track is added to this session
    * @param {OnCloseCallback} onClose - An optional callback for when this session closes
    */
@@ -36,6 +38,7 @@ export class Session {
     stream: Stream,
     signaller: Signaller,
     rtcConfiguration: RTCConfiguration,
+    selectedICEIPs: string[] = [],
     onTrackAdded?: OnTrackAddedCallback,
     onClose?: OnCloseCallback
   ) {
@@ -48,6 +51,7 @@ export class Session {
     this.signaller = signaller
     this.rtcConfiguration = rtcConfiguration
     this.ended = false
+    this.selectedICEIPs = selectedICEIPs
 
     this.peerConnection = this.createRTCPeerConnection(rtcConfiguration)
 
@@ -165,6 +169,12 @@ export class Session {
    * @param {RTCIceCandidateInit} candidate - The ICE candidate received from the signalling server
    */
   public onIncomingICE(candidate: RTCIceCandidateInit): void {
+    // Ignores unwanted routes, useful, for example, to prevent WebRTC to chose the wrong route, like when the OS default is WiFi but you want to receive the video via tether because of reliability
+    if (candidate.candidate && !this.selectedICEIPs.some((address) => candidate.candidate!.includes(address))) {
+      console.debug(`[WebRTC] [Session] ICE candidate ignored: ${JSON.stringify(candidate, null, 4)}`)
+      return
+    }
+
     this.peerConnection
       .addIceCandidate(candidate)
       .then(() => console.debug(`[WebRTC] [Session] ICE candidate added: ${JSON.stringify(candidate, null, 4)}`))

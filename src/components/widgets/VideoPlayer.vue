@@ -35,6 +35,17 @@
           hide-details
           return-object
         />
+        <v-text-field
+          v-model="selectedICEIPs"
+          label="Selected IP Address"
+          class="uri-input my-3"
+          validate-on="lazy input"
+          density="compact"
+          variant="outlined"
+          type="input"
+          hint="IP Address of the Vehicle to be used for the WebRTC ICE Routing, usually, the IP of the tether/cabled interface. Blank means any route. E.g: 192.168.2.2"
+          :rules="[isValidHostAddress]"
+        />
         <v-banner-text>Saved stream name: "{{ widget.options.streamName }}"</v-banner-text>
         <v-banner-text>Signaller Status: {{ signallerStatus }}</v-banner-text>
         <v-banner-text>Stream Status: {{ streamStatus }}</v-banner-text>
@@ -66,6 +77,30 @@ import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
+// FIXME: Why can't I just import a property from another component?
+// import isValidHostAddress from '@/views/ConfigurationGeneralView.vue'
+const isValidHostAddress = (value: string): boolean | string => {
+  if (value.length >= 255) {
+    return 'Address is too long'
+  }
+
+  // Regexes from https://stackoverflow.com/a/106223/3850957
+  const ipRegex = new RegExp(
+    '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$'
+  )
+  const hostnameRegex = new RegExp(
+    '^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$'
+  )
+
+  if (ipRegex.test(value) || hostnameRegex.test(value)) {
+    return true
+  }
+
+  return 'Invalid host address. Should be an IP address or a hostname'
+}
+
+const mainVehicleStore = useMainVehicleStore()
+
 const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
 
 console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
@@ -79,10 +114,15 @@ const props = defineProps<{
 
 const widget = toRefs(props).widget
 
+const selectedICEIPsField = ref<string | undefined>()
+const selectedICEIPs = ref<string | undefined>()
 const selectedStream = ref<Stream | undefined>()
 const videoElement = ref<HTMLVideoElement | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-const { availableStreams, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(selectedStream)
+const { availableStreams, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(
+  selectedStream,
+  selectedICEIPs
+)
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
@@ -119,6 +159,15 @@ watch(mediaStream, async (newStream, oldStream) => {
     })
 })
 
+watch(selectedICEIPsField, async (oldAddr, newAddr) => {
+  if (!newAddr || isValidHostAddress(newAddr)) {
+    return
+  }
+
+  selectedICEIPs.value = selectedICEIPsField.value
+})
+
+
 watch(selectedStream, () => (widget.value.options.streamName = selectedStream.value?.name))
 
 watch(availableStreams, () => {
@@ -133,7 +182,7 @@ watch(availableStreams, () => {
       ? availableStreams.value.find((s) => s.name === savedStreamName)
       : availableStreams.value.first()
 
-  if (savedStream !== undefined && savedStream !== selectedStream.value) {
+  if (savedStream !== undefined && savedStream.id !== selectedStream.value?.id) {
     console.debug!('[WebRTC] trying to set stream...')
     selectedStream.value = savedStream
   }
