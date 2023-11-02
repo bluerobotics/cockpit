@@ -111,7 +111,7 @@
         "--socket=wayland",
         "--socket=x11",
         "--share=ipc",
-        "--device=dri",
+        "--device=all",
         "--socket=pulseaudio",
         "--filesystem=/run/udev:ro",
         "--share=network",
