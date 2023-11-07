@@ -1,4 +1,8 @@
-# Cockpit
+<div align="center">
+  <img src="./public/images/cockpit-banner.png"><br>
+</div>
+
+------------------------
 
 An intuitive and customizable cross-platform ground control station for remote vehicles of all types.
 
