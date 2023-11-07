@@ -214,6 +214,11 @@
       <v-card class="pa-2">
         <v-card-text>
           <v-text-field v-model="newViewName" counter="25" label="New view name" />
+          <v-switch
+            v-model="store.currentView.showBottomBarOnBoot"
+            label="Show bottom bar on boot"
+            class="m-2 text-slate-800"
+          />
         </v-card-text>
         <v-card-actions class="flex justify-end">
           <v-btn @click="viewRenameDialog.confirm">Save</v-btn>

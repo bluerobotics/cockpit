@@ -97,6 +97,10 @@ export type View = {
    * Editable name for the view
    */
   name: string
+  /**
+   * To show or not the bottom bar on boot.
+   */
+  showBottomBarOnBoot: boolean
 }
 
 export type Profile = {

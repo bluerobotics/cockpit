@@ -5,7 +5,7 @@ import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 
 import { widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
@@ -172,6 +172,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         { name: 'Bottom-center container', widgets: [] },
         { name: 'Bottom-right container', widgets: [] },
       ],
+      showBottomBarOnBoot: true,
     })
     currentViewIndex.value = 0
   }
@@ -438,6 +439,18 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const debouncedSelectPreviousView = useDebounceFn(() => selectPreviousView(), 10)
   const selectPrevViewCBId = registerActionCallback(CockpitAction.GO_TO_PREVIOUS_VIEW, debouncedSelectPreviousView)
   onBeforeUnmount(() => unregisterActionCallback(selectPrevViewCBId))
+
+  // Profile migrations
+  // TODO: remove on first stable release
+  onBeforeMount(() => {
+    savedProfiles.value.forEach((p) =>
+      p.views.forEach((v) => {
+        if (v.showBottomBarOnBoot === undefined) {
+          v.showBottomBarOnBoot = true
+        }
+      })
+    )
+  })
 
   return {
     editingMode,

@@ -89,25 +89,30 @@
               {{ format(timeNow, 'E LLL do HH:mm') }}
             </div>
           </div>
-          <div class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between">
-            <MiniWidgetContainer
-              :container="widgetStore.currentView.miniWidgetContainers[0]"
-              :allow-editing="widgetStore.editingMode"
-              align="start"
-            />
-            <div />
-            <MiniWidgetContainer
-              :container="widgetStore.currentView.miniWidgetContainers[1]"
-              :allow-editing="widgetStore.editingMode"
-              align="center"
-            />
-            <div />
-            <MiniWidgetContainer
-              :container="widgetStore.currentView.miniWidgetContainers[2]"
-              :allow-editing="widgetStore.editingMode"
-              align="end"
-            />
-          </div>
+          <Transition name="fade">
+            <div
+              v-if="widgetStore.currentView.showBottomBarOnBoot"
+              class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between"
+            >
+              <MiniWidgetContainer
+                :container="widgetStore.currentView.miniWidgetContainers[0]"
+                :allow-editing="widgetStore.editingMode"
+                align="start"
+              />
+              <div />
+              <MiniWidgetContainer
+                :container="widgetStore.currentView.miniWidgetContainers[1]"
+                :allow-editing="widgetStore.editingMode"
+                align="center"
+              />
+              <div />
+              <MiniWidgetContainer
+                :container="widgetStore.currentView.miniWidgetContainers[2]"
+                :allow-editing="widgetStore.editingMode"
+                align="end"
+              />
+            </div>
+          </Transition>
           <router-view />
         </div>
         <EditMenu v-model:edit-mode="widgetStore.editingMode" />
@@ -212,5 +217,15 @@ body.hide-cursor {
 }
 .swal2-container {
   z-index: 10000;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate(0, 100px);
 }
 </style>
