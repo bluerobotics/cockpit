@@ -96,6 +96,7 @@ export enum CockpitAction {
   TOGGLE_FULL_SCREEN = 'Toggle full-screen',
   MAVLINK_ARM = 'Mavlink Command - Arm',
   MAVLINK_DISARM = 'Mavlink Command - Disarm',
+  TOGGLE_BOTTOM_BAR = 'Toggle bottom bar',
 }
 
 export type CockpitActionCallback = () => void
