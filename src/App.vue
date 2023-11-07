@@ -91,7 +91,7 @@
           </div>
           <Transition name="fade">
             <div
-              v-if="widgetStore.currentView.showBottomBarOnBoot"
+              v-if="showBottomBarNow"
               class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between"
             >
               <MiniWidgetContainer
@@ -130,6 +130,7 @@ import {
   onBeforeUnmount,
   // defineAsyncComponent,
   ref,
+  watch,
 } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -186,6 +187,15 @@ const resetHideMouseTimeout = (): void => {
 }
 
 document.addEventListener('mousemove', resetHideMouseTimeout)
+
+// Control bottom bar momentary hiding
+const showBottomBarNow = ref(widgetStore.currentView.showBottomBarOnBoot)
+watch([() => widgetStore.currentView, () => widgetStore.currentView.showBottomBarOnBoot], () => {
+  showBottomBarNow.value = widgetStore.currentView.showBottomBarOnBoot
+})
+const debouncedToggleBottomBar = useDebounceFn(() => (showBottomBarNow.value = !showBottomBarNow.value), 25)
+const bottomBarToggleCallbackId = registerActionCallback(CockpitAction.TOGGLE_BOTTOM_BAR, debouncedToggleBottomBar)
+onBeforeUnmount(() => unregisterActionCallback(bottomBarToggleCallbackId))
 </script>
 
 <style>
