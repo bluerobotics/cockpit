@@ -52,7 +52,7 @@
         <div class="flex items-center justify-center w-full">
           <JoystickPS
             class="w-[70%]"
-            model="PS4"
+            :model="joystick.model"
             :left-axis-horiz="joystick.state.axes[0]"
             :left-axis-vert="joystick.state.axes[1]"
             :right-axis-horiz="joystick.state.axes[2]"
@@ -107,7 +107,7 @@
         <v-card-text class="flex justify-between align-center">
           <JoystickPS
             class="w-[50%] p-6"
-            model="PS4"
+            :model="currentJoystick.model"
             :left-axis-horiz="currentJoystick.state.axes[0]"
             :left-axis-vert="currentJoystick.state.axes[1]"
             :right-axis-horiz="currentJoystick.state.axes[2]"
