@@ -6,6 +6,7 @@
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
+import { JoystickModel } from '@/libs/joystick/manager'
 import type { InputWithPrettyName } from '@/libs/joystick/protocols'
 import { scale } from '@/libs/utils'
 import { type JoystickInput, type ProtocolControllerMapping, JoystickAxis, JoystickButton } from '@/types/joystick'
@@ -14,12 +15,22 @@ import { InputType } from '@/types/joystick'
 const textColor = '#747474'
 
 /**
- * Joystick models
+ * Joystick SVG models
  */
-enum Models {
+enum SVGModel {
   PS4 = 'PS4',
   PS5 = 'PS5',
+  LogitechExtreme3DPro = 'LogitechExtreme3DPro',
 }
+
+const joystickSvgModel = computed(() => {
+  switch (joystickModel.value) {
+    case JoystickModel.LogitechExtreme3DPro:
+      return SVGModel.LogitechExtreme3DPro
+    default:
+      return SVGModel.PS4
+  }
+})
 
 const buttonPath: { [key in JoystickButton]: string } = {
   [JoystickButton.B0]: 'path_b0',
@@ -42,12 +53,24 @@ const buttonPath: { [key in JoystickButton]: string } = {
   [JoystickButton.B17]: 'path_b17',
 }
 
-const axisPath: { [key in JoystickAxis]: string } = {
-  [JoystickAxis.A0]: 'path_b10',
-  [JoystickAxis.A1]: 'path_b10',
-  [JoystickAxis.A2]: 'path_b11',
-  [JoystickAxis.A3]: 'path_b11',
-}
+const axisPath = computed((): { [key in JoystickAxis]: string } => {
+  switch (joystickSvgModel.value) {
+    case SVGModel.LogitechExtreme3DPro:
+      return {
+        [JoystickAxis.A0]: 'path_b14',
+        [JoystickAxis.A1]: 'path_b14',
+        [JoystickAxis.A2]: 'path_b13',
+        [JoystickAxis.A3]: 'path_b12',
+      }
+    default:
+      return {
+        [JoystickAxis.A0]: 'path_b10',
+        [JoystickAxis.A1]: 'path_b10',
+        [JoystickAxis.A2]: 'path_b11',
+        [JoystickAxis.A3]: 'path_b11',
+      }
+  }
+})
 
 /* eslint-disable  */
 const props = defineProps<{
@@ -144,7 +167,7 @@ watch(
 )
 
 const joystick_svg_path = computed(() => {
-  return `/images/${props.model}.svg`
+  return `/images/${joystickSvgModel.value}.svg`
 })
 
 watch(
@@ -173,6 +196,7 @@ watch(
 
 const buttonLabelCorrespondency = toRefs(props).buttonLabelCorrespondency
 const protocolMapping = toRefs(props).protocolMapping
+const joystickModel = toRefs(props).model
 watch([protocolMapping, buttonLabelCorrespondency], () => updateLabelsState())
 
 const updateLabelsState = (): void => {
@@ -238,10 +262,15 @@ function toggleButton(button: JoystickButton, state: boolean): void {
 function setAxes(axes: [JoystickAxis.A0, JoystickAxis.A1] | [JoystickAxis.A2, JoystickAxis.A3], values: [number, number]): void {
   let xValue
   let yValue
-  switch (props.model) {
-    case Models.PS5: {
+  switch (joystickModel.value) {
+    case SVGModel.PS5: {
       xValue = axes[0] == JoystickAxis.A0 ? scale(values[0], -1, 1, -3920.9, -3882.1) : scale(values[0], -1, 1, -4144.8, -4106.1)
       yValue = scale(values[1], -1, 1, -2192.7, -2153.9)
+      break
+    }
+    case SVGModel.LogitechExtreme3DPro: {
+      xValue = scale(values[0], -1, 1, -15, 15)
+      yValue = scale(values[1], -1, 1, -15, 15)
       break
     }
     default: {
@@ -251,6 +280,6 @@ function setAxes(axes: [JoystickAxis.A0, JoystickAxis.A1] | [JoystickAxis.A2, Jo
     }
   }
 
-  svg?.getElementById(axisPath[axes[0]])?.setAttribute('transform', `translate(${xValue} ${yValue})`)
+  svg?.getElementById(axisPath.value[axes[0]])?.setAttribute('transform', `translate(${xValue} ${yValue})`)
 }
 </script>
