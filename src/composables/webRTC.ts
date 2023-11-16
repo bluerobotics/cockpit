@@ -41,6 +41,7 @@ export class WebRTCManager {
   private streamName: string | undefined
   private session: Session | undefined
   private rtcConfiguration: RTCConfiguration
+  private selectedICEIPs: string | undefined
 
   private hasEnded = false
   private signaller: Signaller
@@ -78,9 +79,13 @@ export class WebRTCManager {
   /**
    *
    * @param { Ref<Stream | undefined> } selectedStream - Stream to receive stream from
+   * @param { Ref<string> } selectedICEIPs
    * @returns { startStreamReturn }
    */
-  public startStream(selectedStream: Ref<Stream | undefined>): startStreamReturn {
+  public startStream(
+    selectedStream: Ref<Stream | undefined>,
+    selectedICEIPs: Ref<string | undefined>
+  ): startStreamReturn {
     watch(selectedStream, (newStream, oldStream) => {
       if (newStream?.id === oldStream?.id) {
         return
@@ -96,6 +101,28 @@ export class WebRTCManager {
         this.startSession()
       }
     })
+
+    watch(selectedICEIPs, (newIp, oldIp) => {
+      if (newIp === oldIp) {
+        return
+      }
+
+      const msg = `Selected IP changed from "${oldIp}" to "${newIp}".`
+      console.debug('[WebRTC] ' + msg)
+
+      this.selectedICEIPs = newIp
+
+      if (this.streamName !== undefined) {
+        this.stopSession(msg)
+      }
+
+      if (this.streamName !== undefined) {
+        this.startSession()
+      }
+    })
+
+    // FIXME: I want to assign this.selectedICEIPs when startStream is first called
+    // this.selectedICEIPs = selectedICEIPs.value
 
     return {
       availableStreams: this.availableStreams,
@@ -294,6 +321,11 @@ export class WebRTCManager {
    * @param {string} receivedSessionId
    */
   private onSessionIdReceived(stream: Stream, producerId: string, receivedSessionId: string): void {
+    const selectedICEIPs = []
+    if (this.selectedICEIPs) {
+      selectedICEIPs.push(this.selectedICEIPs)
+    }
+
     // Create a new Session with the received Session ID
     this.session = new Session(
       receivedSessionId,
@@ -301,6 +333,7 @@ export class WebRTCManager {
       stream,
       this.signaller,
       this.rtcConfiguration,
+      selectedICEIPs,
       (event: RTCTrackEvent): void => this.onTrackAdded(event),
       (_sessionId, reason) => this.onSessionClosed(reason)
     )

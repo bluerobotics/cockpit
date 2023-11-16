@@ -82,7 +82,7 @@ const miniWidget = toRefs(props).miniWidget
 
 const selectedStream = ref<Stream | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-const { availableStreams: externalStreams, mediaStream } = webRTCManager.startStream(selectedStream)
+const { availableStreams: externalStreams, mediaStream } = webRTCManager.startStream(selectedStream, ref(undefined))
 const mediaRecorder = ref<MediaRecorder>()
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
