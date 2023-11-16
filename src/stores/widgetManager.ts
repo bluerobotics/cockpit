@@ -9,6 +9,7 @@ import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 
 import { widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
+import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import * as Words from '@/libs/funny-name/words'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
 import { isEqual } from '@/libs/utils'
@@ -16,7 +17,10 @@ import type { Point2D, SizeRect2D } from '@/types/general'
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
 import { type Profile, type View, type Widget, isProfile, isView, WidgetType } from '@/types/widgets'
 
+import { useMainVehicleStore } from './mainVehicle'
+
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
+  const vehicleStore = useMainVehicleStore()
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
@@ -157,6 +161,24 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
     reader.readAsText(e.target.files[0])
+  }
+
+  const importProfilesFromVehicle = async (): Promise<void> => {
+    const newProfiles = await getKeyDataFromCockpitVehicleStorage(
+      vehicleStore.globalAddress,
+      'cockpit-saved-profiles-v7'
+    )
+    savedProfiles.value = newProfiles
+    Swal.fire({ icon: 'success', text: 'Cockpit profiles imported from vehicle.', timer: 3000 })
+  }
+
+  const exportProfilesToVehicle = async (): Promise<void> => {
+    await setKeyDataOnCockpitVehicleStorage(
+      vehicleStore.globalAddress,
+      'cockpit-saved-profiles-v7',
+      savedProfiles.value
+    )
+    Swal.fire({ icon: 'success', text: 'Cockpit profiles exported to vehicle.', timer: 3000 })
   }
 
   /**
@@ -483,5 +505,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     openWidgetConfigMenu,
     toggleFullScreen,
     isFullScreen,
+    importProfilesFromVehicle,
+    exportProfilesToVehicle,
   }
 })
