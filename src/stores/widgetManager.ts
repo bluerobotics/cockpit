@@ -422,8 +422,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
   }
 
-  // If the user does not have it's own profiles yet, create them
+  // If the user does not have it's own profiles yet, try to fetch them from the vehicle, and if it fails, create default ones
   if (savedProfiles.value.isEmpty()) {
+    importProfilesFromVehicle()
     widgetProfiles.forEach((profile) => {
       // @ts-ignore: structuredClone is a thing since a long time ago
       const userProfile = structuredClone(profile)
