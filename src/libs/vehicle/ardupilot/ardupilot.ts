@@ -168,6 +168,13 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     try {
       mavlink_message = JSON.parse(text_message) as Package
     } catch (error) {
+      const pattern = /Ok\((\d+)\)/
+      const match = pattern.exec(text_message)
+      if (match) {
+        const number: string = match[1]
+        console.debug(`Ok result from mavlink2rest: ${number}`)
+        return
+      }
       console.error(`Failed to parse mavlink message: ${text_message}`)
       return
     }
