@@ -2,13 +2,13 @@
   <BaseConfigurationView>
     <template #title>General configuration</template>
     <template #content>
-      <v-card class="pa-5 pb-2 ma-4" max-width="600px">
+      <v-card class="pb-2 pa-5 ma-4" max-width="600px">
         <v-icon :icon="'mdi-earth'" class="mr-3" />
         <span class="text-h6">Global vehicle address</span>
         <v-form
           ref="globalAddressForm"
           v-model="globalAddressFormValid"
-          class="d-flex justify-center align-center"
+          class="justify-center d-flex align-center"
           @submit.prevent="setGlobalAddress"
         >
           <v-text-field
@@ -20,13 +20,13 @@
             :rules="[isValidHostAddress]"
           />
 
-          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="pa-0 mx-1 mb-5" rounded="lg" flat type="submit" />
+          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
           <v-template>
             <v-btn
               v-tooltip.bottom="'Reset to default'"
               :disabled="newGlobalAddress === defaultGlobalAddress"
               icon="mdi-refresh"
-              class="pa-0 mx-1 mb-5"
+              class="mx-1 mb-5 pa-0"
               rounded="lg"
               flat
               @click="resetGlobalAddress"
@@ -35,20 +35,20 @@
         </v-form>
         <span>Current address: {{ mainVehicleStore.globalAddress }} </span><br />
       </v-card>
-      <v-card class="pa-5 pb-2 ma-4" max-width="600px">
+      <v-card class="pb-2 pa-5 ma-4" max-width="600px">
         <v-progress-circular v-if="vehicleConnected === undefined" indeterminate size="24" class="mr-3" />
         <v-icon v-else :icon="vehicleConnected ? 'mdi-lan-connect' : 'mdi-lan-disconnect'" class="mr-3" />
         <span class="text-h6">Mavlink2Rest connection</span>
         <v-form
           ref="connectionForm"
           v-model="connectionFormValid"
-          class="d-flex justify-center align-center"
+          class="justify-center d-flex align-center"
           @submit.prevent="addNewVehicleConnection"
         >
           <v-checkbox
             v-model="connectionURI.isCustom"
             v-tooltip.bottom="'Enable custom'"
-            class="pa-0 mx-1 mb-5"
+            class="mx-1 mb-5 pa-0"
             rounded="lg"
             hide-details
           />
@@ -64,13 +64,13 @@
             :rules="[isValidSocketConnectionURI]"
           />
 
-          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="pa-0 mx-1 mb-5" rounded="lg" flat type="submit" />
+          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
           <v-template>
             <v-btn
               v-tooltip.bottom="'Reset to default'"
               :disabled="connectionURI.toString() === connectionURI.defaultValue.toString()"
               icon="mdi-refresh"
-              class="pa-0 mx-1 mb-5"
+              class="mx-1 mb-5 pa-0"
               rounded="lg"
               flat
               @click="resetVehicleConnection"
@@ -85,19 +85,19 @@
           }}</span
         >
       </v-card>
-      <v-card class="pa-5 pb-2 ma-4" max-width="600px">
+      <v-card class="pb-2 pa-5 ma-4" max-width="600px">
         <v-icon :icon="'mdi-lan-pending'" class="mr-3" />
         <span class="text-h6">WebRTC connection</span>
         <v-form
           ref="webRTCSignallingForm"
           v-model="webRTCSignallingFormValid"
-          class="d-flex justify-center align-center"
+          class="justify-center d-flex align-center"
           @submit.prevent="setWebRTCSignallingURI"
         >
           <v-checkbox
             v-model="webRTCSignallingURI.isCustom"
             v-tooltip.bottom="'Enable custom'"
-            class="pa-0 mx-1 mb-5"
+            class="mx-1 mb-5 pa-0"
             rounded="lg"
             hide-details
           />
@@ -113,13 +113,13 @@
             :rules="[isValidSocketConnectionURI]"
           />
 
-          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="pa-0 mx-1 mb-5" rounded="lg" flat type="submit" />
+          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
           <v-template>
             <v-btn
               v-tooltip.bottom="'Reset to default'"
               :disabled="webRTCSignallingURI.val.toString() === webRTCSignallingURI.defaultValue.toString()"
               icon="mdi-refresh"
-              class="pa-0 mx-1 mb-5"
+              class="mx-1 mb-5 pa-0"
               rounded="lg"
               flat
               @click="resetWebRTCSignallingURI"
