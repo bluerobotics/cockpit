@@ -86,7 +86,7 @@ const smallestDimension = computed(() => (width.value < height.value ? width.val
 
 // Renders the updated canvas state
 const renderCanvas = (): void => {
-  if (canvasRef.value === undefined) return
+  if (canvasRef.value === undefined || canvasRef.value === null) return
   if (canvasContext.value === undefined) canvasContext.value = canvasRef.value.getContext('2d')
   const ctx = canvasContext.value
   resetCanvas(ctx)
