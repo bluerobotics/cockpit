@@ -138,6 +138,7 @@ import { ref, watch } from 'vue'
 import { defaultGlobalAddress } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
+import { isValidNetworkAddress } from '@/libs/utils'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
@@ -164,23 +165,7 @@ watch(
 )
 
 const isValidHostAddress = (value: string): boolean | string => {
-  if (value.length >= 255) {
-    return 'Address is too long'
-  }
-
-  // Regexes from https://stackoverflow.com/a/106223/3850957
-  const ipRegex = new RegExp(
-    '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$'
-  )
-  const hostnameRegex = new RegExp(
-    '^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$'
-  )
-
-  if (ipRegex.test(value) || hostnameRegex.test(value)) {
-    return true
-  }
-
-  return 'Invalid host address. Should be an IP address or a hostname'
+  return isValidNetworkAddress(value) ?? 'Invalid host address. Should be an IP address or a hostname'
 }
 
 const isValidSocketConnectionURI = (value: string): boolean | string => {

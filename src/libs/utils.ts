@@ -59,3 +59,22 @@ export const resetCanvas = (context: CanvasRenderingContext2D): void => {
   context.clearRect(0, 0, context.canvas.width, context.canvas.height)
   context.globalCompositeOperation = 'source-over'
 }
+
+export const isValidNetworkAddress = (maybeAddress: string): boolean => {
+  if (maybeAddress && maybeAddress.length >= 255) {
+    return false
+  }
+
+  // Regexes from https://stackoverflow.com/a/106223/3850957
+  const ipRegex = new RegExp(
+    '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$'
+  )
+  const hostnameRegex = new RegExp(
+    '^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$'
+  )
+
+  if (ipRegex.test(maybeAddress) || hostnameRegex.test(maybeAddress)) {
+    return true
+  }
+  return false
+}
