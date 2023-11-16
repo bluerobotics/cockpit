@@ -133,7 +133,7 @@ watch(availableStreams, () => {
       ? availableStreams.value.find((s) => s.name === savedStreamName)
       : availableStreams.value.first()
 
-  if (savedStream !== undefined && savedStream !== selectedStream.value) {
+  if (savedStream !== undefined && savedStream.id !== selectedStream.value?.id) {
     console.debug!('[WebRTC] trying to set stream...')
     selectedStream.value = savedStream
   }
