@@ -43,6 +43,16 @@
             <span class="mdi mdi-upload" />
           </label>
         </div>
+        <div
+          v-tooltip="'Export profiles to vehicle.'"
+          class="icon-btn mdi mdi-briefcase-upload"
+          @click="store.exportProfilesToVehicle"
+        />
+        <div
+          v-tooltip="'Import profiles from vehicle.'"
+          class="icon-btn mdi mdi-briefcase-download"
+          @click="store.importProfilesFromVehicle"
+        />
       </div>
     </div>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
