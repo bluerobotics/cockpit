@@ -170,7 +170,12 @@ export class Session {
    */
   public onIncomingICE(candidate: RTCIceCandidateInit): void {
     // Ignores unwanted routes, useful, for example, to prevent WebRTC to chose the wrong route, like when the OS default is WiFi but you want to receive the video via tether because of reliability
-    if (candidate.candidate && !this.selectedICEIPs.some((address) => candidate.candidate!.includes(address))) {
+    if (
+      candidate.candidate &&
+      Array.isArray(this.selectedICEIPs) &&
+      !this.selectedICEIPs.isEmpty() &&
+      !this.selectedICEIPs.some((address) => candidate.candidate!.includes(address))
+    ) {
       console.debug(`[WebRTC] [Session] ICE candidate ignored: ${JSON.stringify(candidate, null, 4)}`)
       return
     }
