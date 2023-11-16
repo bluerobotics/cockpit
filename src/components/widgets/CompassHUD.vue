@@ -146,10 +146,7 @@ const angleX = (angle: number): number => {
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
 const renderCanvas = (): void => {
-  if (canvasRef.value === undefined) {
-    console.error('Canvas ref undefined!')
-    return
-  }
+  if (canvasRef.value === undefined || canvasRef.value === null) return
   if (canvasContext.value === undefined) {
     console.warn('Canvas context undefined!')
     canvasContext.value = canvasRef.value.getContext('2d')
