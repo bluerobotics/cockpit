@@ -168,6 +168,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       vehicleStore.globalAddress,
       'cockpit-saved-profiles-v7'
     )
+    if (!Array.isArray(newProfiles) || !newProfiles.every((profile) => isProfile(profile))) {
+      Swal.fire({ icon: 'error', text: 'Could not import profiles from vehicle. Invalid data.', timer: 3000 })
+      return
+    }
     savedProfiles.value = newProfiles
     Swal.fire({ icon: 'success', text: 'Cockpit profiles imported from vehicle.', timer: 3000 })
   }
