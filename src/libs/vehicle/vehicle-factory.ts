@@ -117,6 +117,15 @@ function createVehicleFromMessage(message: Uint8Array): void {
     case MavType.MAV_TYPE_FIXED_WING:
       VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Plane)
       break
+    case MavType.MAV_TYPE_TRICOPTER:
+    case MavType.MAV_TYPE_COAXIAL:
+    case MavType.MAV_TYPE_HEXAROTOR:
+    case MavType.MAV_TYPE_HELICOPTER:
+    case MavType.MAV_TYPE_OCTOROTOR:
+    case MavType.MAV_TYPE_DODECAROTOR:
+    case MavType.MAV_TYPE_QUADROTOR:
+      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Copter)
+      break
     default:
       console.warn(`Vehicle type not supported: ${system_id}/${component_id}: ${heartbeat.mavtype.type}`)
   }
