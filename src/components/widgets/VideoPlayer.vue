@@ -38,7 +38,7 @@
         <v-combobox
           v-model="selectedICEIPsField"
           multiple
-          :items="availableICEIPsBuffer"
+          :items="videoStore.availableIceIps"
           label="Allowed WebRTC remote IP Addresses"
           class="w-full my-3 uri-input"
           variant="outlined"
@@ -76,7 +76,10 @@ import { WebRTCManager } from '@/composables/webRTC'
 import { isValidNetworkAddress } from '@/libs/utils'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useVideoStore } from '@/stores/video'
 import type { Widget } from '@/types/widgets'
+
+const videoStore = useVideoStore()
 
 const isValidHostAddress = (value: string): boolean | string => {
   return isValidNetworkAddress(value) ?? 'Invalid host address. Should be an IP address or a hostname'
@@ -95,7 +98,6 @@ const props = defineProps<{
 
 const widget = toRefs(props).widget
 
-const availableICEIPsBuffer = ref<string[]>([])
 const selectedICEIPsField = ref<string[]>([])
 const selectedICEIPs = ref<string[] | undefined>()
 const selectedStream = ref<Stream | undefined>()
@@ -147,8 +149,9 @@ watch(selectedICEIPsField, () => {
 })
 
 setInterval(() => {
-  const combinedArray = [...availableICEIPsBuffer.value, ...availableICEIPs.value]
-  availableICEIPsBuffer.value = combinedArray.filter((value, index, array) => array.indexOf(value) === index)
+  const combinedIps = [...videoStore.availableIceIps, ...availableICEIPs.value]
+  const uniqueIps = combinedIps.filter((value, index, array) => array.indexOf(value) === index)
+  videoStore.availableIceIps = uniqueIps
 }, 1000)
 
 watch(selectedStream, () => (widget.value.options.streamName = selectedStream.value?.name))
