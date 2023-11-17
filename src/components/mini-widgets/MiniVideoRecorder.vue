@@ -57,6 +57,7 @@ import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { format, intervalToDuration } from 'date-fns'
 import { saveAs } from 'file-saver'
 import fixWebmDuration from 'fix-webm-duration'
+import { storeToRefs } from 'pinia'
 import Swal, { type SweetAlertResult } from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import adapter from 'webrtc-adapter'
@@ -65,7 +66,11 @@ import { WebRTCManager } from '@/composables/webRTC'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import { useVideoStore } from '@/stores/video'
 import type { MiniWidget } from '@/types/miniWidgets'
+
+const videoStore = useVideoStore()
+const { allowedIceIps } = storeToRefs(videoStore)
 
 const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
 const { missionName } = useMissionStore()
@@ -82,7 +87,7 @@ const miniWidget = toRefs(props).miniWidget
 
 const selectedStream = ref<Stream | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-const { availableStreams: externalStreams, mediaStream } = webRTCManager.startStream(selectedStream, ref(undefined))
+const { availableStreams: externalStreams, mediaStream } = webRTCManager.startStream(selectedStream, allowedIceIps)
 const mediaRecorder = ref<MediaRecorder>()
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
