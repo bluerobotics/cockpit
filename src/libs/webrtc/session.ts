@@ -4,6 +4,7 @@ import type { Stream } from '@/libs/webrtc/signalling_protocol'
 
 type OnCloseCallback = (sessionId: string, reason: string) => void
 type OnTrackAddedCallback = (event: RTCTrackEvent) => void
+type onNewIceRemoteAddressCallback = (availableICEIPs: string[]) => void
 
 /**
  * An abstraction for the Mavlink Camera Manager WebRTC Session
@@ -16,9 +17,11 @@ export class Session {
   private ended: boolean
   private signaller: Signaller
   private peerConnection: RTCPeerConnection
+  private availableICEIPs: string[]
   private selectedICEIPs: string[]
   public rtcConfiguration: RTCConfiguration
   public onTrackAdded?: OnTrackAddedCallback
+  public onNewIceRemoteAddress?: onNewIceRemoteAddressCallback
   public onClose?: OnCloseCallback
 
   /**
@@ -30,6 +33,7 @@ export class Session {
    * @param {RTCConfiguration} rtcConfiguration - Configuration for the RTC connection, such as Turn and Stun servers
    * @param {string[]} selectedICEIPs - A whitelist for ICE IP addresses, ignored if empty
    * @param {OnTrackAddedCallback} onTrackAdded - An optional callback for when a track is added to this session
+   * @param {onNewIceRemoteAddressCallback} onNewIceRemoteAddress - An optional callback for when a new ICE candidate IP addres is available
    * @param {OnCloseCallback} onClose - An optional callback for when this session closes
    */
   constructor(
@@ -40,17 +44,20 @@ export class Session {
     rtcConfiguration: RTCConfiguration,
     selectedICEIPs: string[] = [],
     onTrackAdded?: OnTrackAddedCallback,
+    onNewIceRemoteAddress?: onNewIceRemoteAddressCallback,
     onClose?: OnCloseCallback
   ) {
     this.id = sessionId
     this.consumerId = consumerId
     this.stream = stream
     this.onTrackAdded = onTrackAdded
+    this.onNewIceRemoteAddress = onNewIceRemoteAddress
     this.onClose = onClose
     this.status = ''
     this.signaller = signaller
     this.rtcConfiguration = rtcConfiguration
     this.ended = false
+    this.availableICEIPs = []
     this.selectedICEIPs = selectedICEIPs
 
     this.peerConnection = this.createRTCPeerConnection(rtcConfiguration)
@@ -169,6 +176,18 @@ export class Session {
    * @param {RTCIceCandidateInit} candidate - The ICE candidate received from the signalling server
    */
   public onIncomingICE(candidate: RTCIceCandidateInit): void {
+    // Save the candidate IP address (only accepting IPv4 for now) on a list of remote available IPs
+    const ipv4Regex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g
+    const extractIPv4 = (cand: string): string | undefined => {
+      const matches = cand.match(ipv4Regex)
+      return matches?.find((ip) => !ip.includes(':'))
+    }
+    const ipAddress = extractIPv4(candidate.candidate!)
+    if (ipAddress && !this.availableICEIPs.includes(ipAddress) && this.onNewIceRemoteAddress) {
+      this.availableICEIPs.push(ipAddress)
+      this.onNewIceRemoteAddress(this.availableICEIPs)
+    }
+
     // Ignores unwanted routes, useful, for example, to prevent WebRTC to chose the wrong route, like when the OS default is WiFi but you want to receive the video via tether because of reliability
     if (
       candidate.candidate &&
@@ -276,6 +295,7 @@ export class Session {
 
     // Unlink parent callbacks
     this.onTrackAdded = undefined
+    this.onNewIceRemoteAddress = undefined
     this.onClose = undefined
 
     this.ended = true
