@@ -46,7 +46,7 @@ export class WebRTCManager {
   private streamName: string | undefined
   private session: Session | undefined
   private rtcConfiguration: RTCConfiguration
-  private selectedICEIPs: string | undefined
+  private selectedICEIPs: string[] | undefined
 
   private hasEnded = false
   private signaller: Signaller
@@ -84,12 +84,12 @@ export class WebRTCManager {
   /**
    *
    * @param { Ref<Stream | undefined> } selectedStream - Stream to receive stream from
-   * @param { Ref<string> } selectedICEIPs
+   * @param { Ref<string[]> } selectedICEIPs
    * @returns { startStreamReturn }
    */
   public startStream(
     selectedStream: Ref<Stream | undefined>,
-    selectedICEIPs: Ref<string | undefined>
+    selectedICEIPs: Ref<string[] | undefined>
   ): startStreamReturn {
     watch(selectedStream, (newStream, oldStream) => {
       if (newStream?.id === oldStream?.id) {
@@ -107,15 +107,15 @@ export class WebRTCManager {
       }
     })
 
-    watch(selectedICEIPs, (newIp, oldIp) => {
-      if (newIp === oldIp) {
+    watch(selectedICEIPs, (newIps, oldIps) => {
+      if (newIps === oldIps) {
         return
       }
 
-      const msg = `Selected IP changed from "${oldIp}" to "${newIp}".`
+      const msg = `Selected IPs changed from "${oldIps}" to "${newIps}".`
       console.debug('[WebRTC] ' + msg)
 
-      this.selectedICEIPs = newIp
+      this.selectedICEIPs = newIps
 
       if (this.streamName !== undefined) {
         this.stopSession(msg)
@@ -327,11 +327,6 @@ export class WebRTCManager {
    * @param {string} receivedSessionId
    */
   private onSessionIdReceived(stream: Stream, producerId: string, receivedSessionId: string): void {
-    const selectedICEIPs = []
-    if (this.selectedICEIPs) {
-      selectedICEIPs.push(this.selectedICEIPs)
-    }
-
     // Create a new Session with the received Session ID
     this.session = new Session(
       receivedSessionId,
@@ -339,7 +334,7 @@ export class WebRTCManager {
       stream,
       this.signaller,
       this.rtcConfiguration,
-      selectedICEIPs,
+      this.selectedICEIPs,
       (event: RTCTrackEvent): void => this.onTrackAdded(event),
       (availableICEIPs: string[]) => (this.availableICEIPs.value = availableICEIPs),
       (_sessionId, reason) => this.onSessionClosed(reason)
