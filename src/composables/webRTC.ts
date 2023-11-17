@@ -46,7 +46,7 @@ export class WebRTCManager {
   private streamName: string | undefined
   private session: Session | undefined
   private rtcConfiguration: RTCConfiguration
-  private selectedICEIPs: string[] | undefined
+  private selectedICEIPs: string[] = []
 
   private hasEnded = false
   private signaller: Signaller
@@ -87,10 +87,9 @@ export class WebRTCManager {
    * @param { Ref<string[]> } selectedICEIPs
    * @returns { startStreamReturn }
    */
-  public startStream(
-    selectedStream: Ref<Stream | undefined>,
-    selectedICEIPs: Ref<string[] | undefined>
-  ): startStreamReturn {
+  public startStream(selectedStream: Ref<Stream | undefined>, selectedICEIPs: Ref<string[]>): startStreamReturn {
+    this.selectedICEIPs = selectedICEIPs.value
+
     watch(selectedStream, (newStream, oldStream) => {
       if (newStream?.id === oldStream?.id) {
         return
@@ -125,9 +124,6 @@ export class WebRTCManager {
         this.startSession()
       }
     })
-
-    // FIXME: I want to assign this.selectedICEIPs when startStream is first called
-    // this.selectedICEIPs = selectedICEIPs.value
 
     return {
       availableStreams: this.availableStreams,
