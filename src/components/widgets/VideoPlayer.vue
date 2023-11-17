@@ -69,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
@@ -80,6 +81,7 @@ import { useVideoStore } from '@/stores/video'
 import type { Widget } from '@/types/widgets'
 
 const videoStore = useVideoStore()
+const { allowedIceIps } = storeToRefs(videoStore)
 
 const isValidHostAddress = (value: string): boolean | string => {
   return isValidNetworkAddress(value) ?? 'Invalid host address. Should be an IP address or a hostname'
@@ -98,14 +100,13 @@ const props = defineProps<{
 
 const widget = toRefs(props).widget
 
-const selectedICEIPsField = ref<string[]>([])
-const selectedICEIPs = ref<string[] | undefined>()
+const selectedICEIPsField = ref<string[]>(allowedIceIps.value)
 const selectedStream = ref<Stream | undefined>()
 const videoElement = ref<HTMLVideoElement | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
 const { availableStreams, availableICEIPs, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(
   selectedStream,
-  selectedICEIPs
+  allowedIceIps
 )
 
 onBeforeMount(() => {
@@ -145,7 +146,7 @@ watch(mediaStream, async (newStream, oldStream) => {
 
 watch(selectedICEIPsField, () => {
   const validSelectedIPs = selectedICEIPsField.value.filter((address) => isValidHostAddress(address))
-  selectedICEIPs.value = validSelectedIPs
+  allowedIceIps.value = validSelectedIPs
 })
 
 setInterval(() => {
