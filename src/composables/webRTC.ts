@@ -16,6 +16,10 @@ interface startStreamReturn {
    */
   availableStreams: Ref<Array<Stream>>
   /**
+   * A list of IPs from WebRTC candidates that are available
+   */
+  availableICEIPs: Ref<Array<string>>
+  /**
    * MediaStream object, if WebRTC stream is chosen
    */
   mediaStream: Ref<MediaStream | undefined>
@@ -34,6 +38,7 @@ interface startStreamReturn {
  */
 export class WebRTCManager {
   private availableStreams: Ref<Array<Stream>> = ref(new Array<Stream>())
+  private availableICEIPs: Ref<Array<string>> = ref(new Array<string>())
   private mediaStream: Ref<MediaStream | undefined> = ref()
   private signallerStatus: Ref<string> = ref('waiting...')
   private streamStatus: Ref<string> = ref('waiting...')
@@ -126,6 +131,7 @@ export class WebRTCManager {
 
     return {
       availableStreams: this.availableStreams,
+      availableICEIPs: this.availableICEIPs,
       mediaStream: this.mediaStream,
       signallerStatus: this.signallerStatus,
       streamStatus: this.streamStatus,
@@ -335,6 +341,7 @@ export class WebRTCManager {
       this.rtcConfiguration,
       selectedICEIPs,
       (event: RTCTrackEvent): void => this.onTrackAdded(event),
+      (availableICEIPs: string[]) => (this.availableICEIPs.value = availableICEIPs),
       (_sessionId, reason) => this.onSessionClosed(reason)
     )
 
