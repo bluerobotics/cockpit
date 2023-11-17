@@ -35,16 +35,16 @@
           hide-details
           return-object
         />
-        <v-text-field
-          v-model="selectedICEIPs"
-          label="Selected IP Address"
-          class="my-3 uri-input"
-          validate-on="lazy input"
-          density="compact"
+        <v-combobox
+          v-model="selectedICEIPsField"
+          multiple
+          :items="availableICEIPsBuffer"
+          label="Allowed WebRTC remote IP Addresses"
+          class="w-full my-3 uri-input"
           variant="outlined"
-          type="input"
-          hint="IP Address of the Vehicle to be used for the WebRTC ICE Routing, usually, the IP of the tether/cabled interface. Blank means any route. E.g: 192.168.2.2"
-          :rules="[isValidHostAddress]"
+          chips
+          clearable
+          hint="IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the tether/cabled interface. Blank means any route. E.g: 192.168.2.2"
         />
         <v-banner-text>Saved stream name: "{{ widget.options.streamName }}"</v-banner-text>
         <v-banner-text>Signaller Status: {{ signallerStatus }}</v-banner-text>
@@ -95,12 +95,13 @@ const props = defineProps<{
 
 const widget = toRefs(props).widget
 
-const selectedICEIPsField = ref<string | undefined>()
-const selectedICEIPs = ref<string | undefined>()
+const availableICEIPsBuffer = ref<string[]>([])
+const selectedICEIPsField = ref<string[]>([])
+const selectedICEIPs = ref<string[] | undefined>()
 const selectedStream = ref<Stream | undefined>()
 const videoElement = ref<HTMLVideoElement | undefined>()
 const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-const { availableStreams, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(
+const { availableStreams, availableICEIPs, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(
   selectedStream,
   selectedICEIPs
 )
@@ -140,13 +141,15 @@ watch(mediaStream, async (newStream, oldStream) => {
     })
 })
 
-watch(selectedICEIPsField, async (oldAddr, newAddr) => {
-  if (!newAddr || isValidHostAddress(newAddr)) {
-    return
-  }
-
-  selectedICEIPs.value = selectedICEIPsField.value
+watch(selectedICEIPsField, () => {
+  const validSelectedIPs = selectedICEIPsField.value.filter((address) => isValidHostAddress(address))
+  selectedICEIPs.value = validSelectedIPs
 })
+
+setInterval(() => {
+  const combinedArray = [...availableICEIPsBuffer.value, ...availableICEIPs.value]
+  availableICEIPsBuffer.value = combinedArray.filter((value, index, array) => array.indexOf(value) === index)
+}, 1000)
 
 watch(selectedStream, () => (widget.value.options.streamName = selectedStream.value?.name))
 
