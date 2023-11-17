@@ -106,6 +106,7 @@ function createVehicleFromMessage(message: Uint8Array): void {
     case MavType.MAV_TYPE_SUBMARINE:
       VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Sub)
       break
+    case MavType.MAV_TYPE_GROUND_ROVER:
     case MavType.MAV_TYPE_SURFACE_BOAT:
       VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Rover)
       break
