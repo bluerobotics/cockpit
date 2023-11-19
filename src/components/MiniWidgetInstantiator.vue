@@ -1,4 +1,7 @@
 <template>
+  <template v-if="miniWidget.component === MiniWidgetType.AltitudeIndicator">
+    <AltitudeIndicator :mini-widget="miniWidget" />
+  </template>
   <template v-if="miniWidget.component === MiniWidgetType.ArmerButton">
     <ArmerButton :options="miniWidget" />
   </template>
@@ -36,6 +39,7 @@ import { toRefs } from 'vue'
 
 import { type MiniWidget, MiniWidgetType } from '@/types/miniWidgets'
 
+import AltitudeIndicator from './mini-widgets/RelativeAltitudeIndicator.vue'
 import ArmerButton from './mini-widgets/ArmerButton.vue'
 import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
 import BatteryIndicator from './mini-widgets/BatteryIndicator.vue'

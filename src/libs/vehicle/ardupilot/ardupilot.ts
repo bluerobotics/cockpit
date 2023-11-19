@@ -54,7 +54,7 @@ export type ArduPilot = ArduPilotVehicle<any>
  * Generic ArduPilot vehicle
  */
 export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
-  _altitude = new Altitude({ msl: 0 })
+  _altitude = new Altitude({ msl: 0, rel: 0})
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0
@@ -269,6 +269,8 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         this._velocity.ground = Math.sqrt(this._velocity.x ** 2 + this._velocity.y ** 2)
         this._velocity.overall = Math.sqrt(this._velocity.x ** 2 + this._velocity.y ** 2 + this._velocity.z ** 2)
         this.onVelocity.emit()
+        this._altitude.rel = position.relative_alt / 1000 // (mm to meters)
+        this.onAltitude.emit()
         break
       }
       case MAVLinkType.GPS_RAW_INT: {
