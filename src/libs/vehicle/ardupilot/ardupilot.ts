@@ -54,7 +54,7 @@ export type ArduPilot = ArduPilotVehicle<any>
  * Generic ArduPilot vehicle
  */
 export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
-  _altitude = new Altitude({ msl: 0, rel: 0})
+  _altitude = new Altitude({ msl: 0, rel: 0 })
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0

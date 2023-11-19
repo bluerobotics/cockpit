@@ -1,6 +1,6 @@
 <template>
-  <template v-if="miniWidget.component === MiniWidgetType.AltitudeIndicator">
-    <AltitudeIndicator :mini-widget="miniWidget" />
+  <template v-if="miniWidget.component === MiniWidgetType.RelativeAltitudeIndicator">
+    <RelativeAltitudeIndicator :mini-widget="miniWidget" />
   </template>
   <template v-if="miniWidget.component === MiniWidgetType.ArmerButton">
     <ArmerButton :options="miniWidget" />
@@ -39,7 +39,6 @@ import { toRefs } from 'vue'
 
 import { type MiniWidget, MiniWidgetType } from '@/types/miniWidgets'
 
-import AltitudeIndicator from './mini-widgets/RelativeAltitudeIndicator.vue'
 import ArmerButton from './mini-widgets/ArmerButton.vue'
 import BaseCommIndicator from './mini-widgets/BaseCommIndicator.vue'
 import BatteryIndicator from './mini-widgets/BatteryIndicator.vue'
@@ -47,6 +46,7 @@ import DepthIndicator from './mini-widgets/DepthIndicator.vue'
 import JoystickCommIndicator from './mini-widgets/JoystickCommIndicator.vue'
 import MiniVideoRecorder from './mini-widgets/MiniVideoRecorder.vue'
 import ModeSelector from './mini-widgets/ModeSelector.vue'
+import RelativeAltitudeIndicator from './mini-widgets/RelativeAltitudeIndicator.vue'
 import SatelliteIndicator from './mini-widgets/SatelliteIndicator.vue'
 import VeryGenericIndicator from './mini-widgets/VeryGenericIndicator.vue'
 import ViewSelector from './mini-widgets/ViewSelector.vue'
