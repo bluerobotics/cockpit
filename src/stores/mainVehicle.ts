@@ -254,21 +254,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return (vehicle as ArduPilot) || undefined
   }
 
-  /**
-   * Retrieves the first key from a Map where the associated value matches the specified value.
-   * @param {Map<string, number>} map
-   * @param {number} value
-   * @returns {string | undefined}
-   */
-  function getStringFromValue(map: Map<string, number>, value: number): string | undefined {
-    for (const [key, val] of map.entries()) {
-      if (val === value) {
-        return key
-      }
-    }
-    return undefined
-  }
-
   VehicleFactory.onVehicles.once((vehicles: WeakRef<Vehicle.Abstract>[]) => {
     mainVehicle.value = getAutoPilot(vehicles)
     modes.value = mainVehicle.value.modesAvailable()
@@ -318,9 +303,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       firmwareType.value = heartbeat.autopilot.type
       vehicleType.value = heartbeat.mavtype.type
       lastHeartbeat.value = new Date()
-      if (modes.value !== undefined) {
-        mode.value = getStringFromValue(modes.value, heartbeat.custom_mode)
-      }
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getAutoPilot(vehicles).onMode.add((vehicleMode: any) => {
