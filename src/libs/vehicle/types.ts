@@ -122,7 +122,7 @@ export class Attitude {
  */
 export class Altitude {
   msl: number // Mean Sea Level, in meters
-
+  rel: number // Relative altitude, in meters
   /**
    * Create object
    * @param {Partial<Altitude>} init
