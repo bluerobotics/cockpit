@@ -1,3 +1,7 @@
+import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
+import { MAVLinkType, MavModeFlag } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
+
 import * as Vehicle from '../vehicle'
 import { ArduPilotVehicle } from './ardupilot'
 
@@ -95,5 +99,38 @@ export class ArduCopter extends ArduPilotVehicle<CustomMode> {
         modeMap.set(key, value)
       })
     return modeMap
+  }
+
+  /**
+   * Deal with MAVLink messages necessary for vehicles of type copter
+   * @param {Package} mavlink
+   */
+  onMAVLinkPackage(mavlink: Package): void {
+    const { system_id, component_id } = mavlink.header
+    if (system_id != 1 || component_id !== 1) {
+      return
+    }
+
+    switch (mavlink.message.type) {
+      case MAVLinkType.HEARTBEAT: {
+        const heartbeat = mavlink.message as Message.Heartbeat
+
+        // The special case where base_mode was not set by the vehicle
+        if ((heartbeat.base_mode.bits as number) === 0) {
+          this._mode = CustomMode.PRE_FLIGHT
+          this.onMode.emit()
+          return
+        }
+
+        // We only deal with the custom modes since this is how ArduPilot works
+        if (!(heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
+          console.log(`no custom: ${JSON.stringify(heartbeat.base_mode)}`)
+          return
+        }
+
+        this._mode = heartbeat.custom_mode as CustomMode
+        this.onMode.emit()
+      }
+    }
   }
 }
