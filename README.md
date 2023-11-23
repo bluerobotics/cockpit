@@ -45,6 +45,8 @@ If that's not your case and you want to install the necessary backends, follow t
 
 Follow the instructions provided [here](https://docs.bluerobotics.com/ardusub-zola/software/control-station/Cockpit-0.0/advanced-usage/#general) to connect Cockpit to your vehicle.
 
-If you're serving `mavlink2rest` and `mavlink-camera-manager` in the same machine as Cockpit, you can just use `127.0.0.1` as your "Global vehicle address" and everything should work.
+If you're running a BlueOS instance, just put the IP address of it in "Global vehicle address" and click the "apply" button.
 
+If you're serving `mavlink2rest` in the same machine as Cockpit, activate the checkmark for "Mavlink2Rest connection" and use `ws://127.0.0.1:6040/v1/ws/mavlink` there (if you're running a mavlink2rest version before 0.11.15, omit the `/v1` in the URL).
 
+If you're serving `mavlink-camera-manager` in the same machine as Cockpit, activate the checkmark for "WebRTC connection" and use `ws://127.0.0.1:6020` there.
