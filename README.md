@@ -8,7 +8,11 @@ An intuitive and customizable cross-platform ground control station for remote v
 
 # Development
 
-Cockpit is typically installed as an Electron application or BlueOS Extension, but for development purposes it is valuable to run it locally. To do so, you can install the dependencies with:
+Cockpit is typically installed as an Electron application or BlueOS Extension, but for development purposes it is valuable to run it locally.
+
+To do so, you should first [install bun](https://bun.sh/docs/installation). We really recomend following their documented instructions, as it was already reported by some that installing `bun` from alternatives like Snap has not worked properly.
+
+With `bun` installed, you can enter the repository folder and follow the steps below:
 
 ```
 bun install
