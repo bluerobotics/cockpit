@@ -1,11 +1,11 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
 export const useMissionStore = defineStore('mission', () => {
-  const missionName = useStorage('cockpit-mission-name', '')
+  const missionName = ref('')
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
