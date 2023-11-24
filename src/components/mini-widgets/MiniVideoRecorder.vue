@@ -57,6 +57,7 @@ import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { format, intervalToDuration } from 'date-fns'
 import { saveAs } from 'file-saver'
 import fixWebmDuration from 'fix-webm-duration'
+import localforage from 'localforage'
 import { storeToRefs } from 'pinia'
 import Swal, { type SweetAlertResult } from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
@@ -99,6 +100,14 @@ const timeNow = useTimestamp({ interval: 100 })
 
 const isRecording = computed(() => {
   return mediaRecorder.value !== undefined && mediaRecorder.value.state === 'recording'
+})
+
+const cockpitVideoDB = localforage.createInstance({
+  driver: localforage.INDEXEDDB,
+  name: 'CockpitVideoDB',
+  storeName: 'cockpit-video-db',
+  version: 1.0,
+  description: 'Local backups of Cockpit video recordings to be retrieved in case of failure.',
 })
 
 onBeforeMount(async () => {
@@ -187,12 +196,16 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
   mediaRecorder.value = new MediaRecorder(mediaStream.value)
   mediaRecorder.value.start(1000)
   let chunks: Blob[] = []
-  mediaRecorder.value.ondataavailable = (e) => chunks.push(e.data)
+  mediaRecorder.value.ondataavailable = async (e) => {
+    chunks.push(e.data)
+    await cockpitVideoDB.setItem(fileName, chunks)
+  }
 
   mediaRecorder.value.onstop = () => {
     const blob = new Blob(chunks, { type: 'video/webm' })
     fixWebmDuration(blob, Date.now() - timeRecordingStart.value.getTime()).then((fixedBlob) => {
       saveAs(fixedBlob, fileName)
+      cockpitVideoDB.removeItem(fileName)
     })
     chunks = []
     mediaRecorder.value = undefined
