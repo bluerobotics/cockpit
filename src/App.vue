@@ -76,6 +76,7 @@
             </div>
             <div class="grow" />
             <Alerter class="max-w-sm min-w-fit" />
+            <div class="grow" />
             <div class="flex-1">
               <MiniWidgetContainer
                 :container="widgetStore.currentMiniWidgetsProfile.containers[0]"
