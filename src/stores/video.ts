@@ -48,5 +48,33 @@ export const useVideoStore = defineStore('video', () => {
     })
   })
 
+  // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
+  const iceIpCheckInterval = setInterval(() => {
+    // Pass if there are no available IPs yet or if the user has already set the allowed ones
+    if (availableIceIps.value === undefined || !allowedIceIps.value.isEmpty()) {
+      return
+    }
+    // If there's more than one IP candidate available, send a warning an clear the check routine
+    if (availableIceIps.value.length >= 1) {
+      Swal.fire({
+        html: `
+          <p>Cockpit detected more than one IP being used to route the video streaming. This situation often leads to
+          video stuterring, specially if one of the IPs is from a non-wired connection.</p>
+          </br>
+          <p>To prevent issues and archieve an optimum streaming experience, please:</p>
+          <ol>
+            <li>1. Open the configuration of one of your video widgets.</li>
+            <li>2. Choose the IP that should be used for the video streaming.</li>
+          </ol>
+        `,
+        icon: 'warning',
+        customClass: {
+          htmlContainer: 'text-left',
+        },
+      })
+      clearInterval(iceIpCheckInterval)
+    }
+  }, 5000)
+
   return { availableIceIps, allowedIceIps }
 })
