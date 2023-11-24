@@ -150,7 +150,7 @@ watch(selectedICEIPsField, () => {
 })
 
 setInterval(() => {
-  const combinedIps = [...videoStore.availableIceIps, ...availableICEIPs.value]
+  const combinedIps = [...(videoStore.availableIceIps ?? []), ...availableICEIPs.value]
   const uniqueIps = combinedIps.filter((value, index, array) => array.indexOf(value) === index)
   videoStore.availableIceIps = uniqueIps
 }, 1000)
