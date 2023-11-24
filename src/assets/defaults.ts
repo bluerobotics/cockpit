@@ -19,7 +19,7 @@ const defaultMiniWidgetManagerVars = {
 export const defaultGlobalAddress = process.env.NODE_ENV === 'development' ? 'blueos.local' : window.location.hostname
 export const widgetProfiles: Profile[] = [
   {
-    name: 'Default submarine profile',
+    name: 'ROV default',
     hash: 'c2bcf04d-048f-496f-9d78-fc4002608028',
     views: [
       {
@@ -527,7 +527,7 @@ export const widgetProfiles: Profile[] = [
     ],
   },
   {
-    name: 'Default boat profile',
+    name: 'Boat default',
     hash: 'adb7d856-f2e5-4980-aaeb-c39c1fa3562b',
     views: [
       {
