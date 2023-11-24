@@ -41,6 +41,7 @@ import ConfigurationAlertsView from '../views/ConfigurationAlertsView.vue'
 import ConfigurationDevelopmentView from '../views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from '../views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '../views/ConfigurationJoystickView.vue'
+import ConfigurationLogsView from '../views/ConfigurationLogsView.vue'
 
 const store = useMainVehicleStore()
 
@@ -57,6 +58,11 @@ const menus = [
     icon: 'mdi-controller',
     title: 'Joystick',
     component: ConfigurationJoystickView,
+  },
+  {
+    icon: 'mdi-script',
+    title: 'Logs',
+    component: ConfigurationLogsView,
   },
   {
     icon: 'mdi-bell-ring',
