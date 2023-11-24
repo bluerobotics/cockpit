@@ -155,6 +155,7 @@ import Dialog from './components/Dialog.vue'
 import EditMenu from './components/EditMenu.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import Alerter from './components/widgets/Alerter.vue'
+import { datalogger } from './libs/logging'
 import { useWidgetManagerStore } from './stores/widgetManager'
 
 const widgetStore = useWidgetManagerStore()
@@ -210,6 +211,9 @@ watch([() => widgetStore.currentView, () => widgetStore.currentView.showBottomBa
 const debouncedToggleBottomBar = useDebounceFn(() => (showBottomBarNow.value = !showBottomBarNow.value), 25)
 const bottomBarToggleCallbackId = registerActionCallback(CockpitAction.TOGGLE_BOTTOM_BAR, debouncedToggleBottomBar)
 onBeforeUnmount(() => unregisterActionCallback(bottomBarToggleCallbackId))
+
+// Start datalogging
+datalogger.startLogging()
 </script>
 
 <style>
