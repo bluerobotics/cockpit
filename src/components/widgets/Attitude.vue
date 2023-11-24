@@ -64,10 +64,13 @@ import { useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { datalogger, DatalogVariable } from '@/libs/logging'
 import { constrain, degrees, radians, resetCanvas, round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
+datalogger.registerUsage(DatalogVariable.roll)
+datalogger.registerUsage(DatalogVariable.pitch)
 const store = useMainVehicleStore()
 const props = defineProps<{
   /**

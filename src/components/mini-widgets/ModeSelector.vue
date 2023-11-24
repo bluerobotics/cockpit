@@ -7,10 +7,12 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { datalogger, DatalogVariable } from '@/libs/logging'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import Dropdown from '../Dropdown.vue'
 
+datalogger.registerUsage(DatalogVariable.mode)
 const vehicleStore = useMainVehicleStore()
 const currentMode = ref()
 
