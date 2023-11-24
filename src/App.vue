@@ -54,7 +54,14 @@
           <v-card class="pa-2">
             <v-card-title>Mission configuration</v-card-title>
             <v-card-text>
-              <v-text-field v-model="store.missionName" hide-details="auto" label="Mission name" />
+              <div class="flex">
+                <v-text-field
+                  v-model="store.missionName"
+                  label="Mission name"
+                  append-inner-icon="mdi-restore"
+                  @click:append-inner="store.missionName = store.lastMissionName"
+                />
+              </div>
             </v-card-text>
           </v-card>
         </v-dialog>
