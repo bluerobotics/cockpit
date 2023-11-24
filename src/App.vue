@@ -66,13 +66,17 @@
             <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
               <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
             </button>
-            <div class="flex items-center justify-center h-full ml-3 mr-1">
-              <p
-                class="overflow-hidden text-lg font-medium leading-none text-white cursor-pointer select-none max-h-9"
-                @click="showMissionOptionsDialog = true"
-              >
-                {{ store.missionName }}
-              </p>
+            <div
+              class="flex items-center justify-start h-full px-4 ml-3 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
+              @click="showMissionOptionsDialog = true"
+            >
+              <div class="flex items-center h-full overflow-hidden text-lg font-medium leading-none text-white">
+                <p v-if="store.missionName">{{ store.missionName }}</p>
+                <p v-else>
+                  {{ randomMissionName }}
+                  <FontAwesomeIcon icon="fa-pen-to-square" size="md" class="ml-2 text-slate-200/30" />
+                </p>
+              </div>
             </div>
             <div class="grow" />
             <Alerter class="max-w-sm min-w-fit" />
@@ -136,6 +140,7 @@ import {
 import { useRoute } from 'vue-router'
 
 import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
+import { coolMissionNames } from '@/libs/funny-name/words'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
 import { useMissionStore } from '@/stores/mission'
 
@@ -170,6 +175,7 @@ const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscree
 // Mission identification
 const store = useMissionStore()
 const showMissionOptionsDialog = ref(false)
+const randomMissionName = coolMissionNames.random()
 
 // Clock
 const timeNow = useTimestamp({ interval: 1000 })
