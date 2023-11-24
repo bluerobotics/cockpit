@@ -64,6 +64,7 @@ import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vu
 import adapter from 'webrtc-adapter'
 
 import { WebRTCManager } from '@/composables/webRTC'
+import { datalogger } from '@/libs/logging'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -194,6 +195,12 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
   timeRecordingStart.value = new Date()
   const fileName = `${missionName || 'Cockpit'} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`
   mediaRecorder.value = new MediaRecorder(mediaStream.value)
+  if (!datalogger.logging()) {
+    datalogger.startLogging()
+  }
+  const videoTrack = mediaStream.value.getVideoTracks()[0]
+  const vWidth = videoTrack.getSettings().width || 1920
+  const vHeight = videoTrack.getSettings().height || 1080
   mediaRecorder.value.start(1000)
   let chunks: Blob[] = []
   mediaRecorder.value.ondataavailable = async (e) => {
@@ -203,8 +210,12 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
 
   mediaRecorder.value.onstop = () => {
     const blob = new Blob(chunks, { type: 'video/webm' })
+    const videoTelemetryLog = datalogger.getSlice(datalogger.currentCockpitLog, timeRecordingStart.value, new Date())
+    const assLog = datalogger.toAssOverlay(videoTelemetryLog, vWidth, vHeight, timeRecordingStart.value.getTime())
+    var logBlob = new Blob([assLog], { type: 'text/plain' })
     fixWebmDuration(blob, Date.now() - timeRecordingStart.value.getTime()).then((fixedBlob) => {
-      saveAs(fixedBlob, fileName)
+      saveAs(fixedBlob, `${fileName}.webm`)
+      saveAs(logBlob, `${fileName}.ass`)
       cockpitVideoDB.removeItem(fileName)
     })
     chunks = []
