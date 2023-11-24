@@ -3,10 +3,10 @@ import { saveAs } from 'file-saver'
 import localforage from 'localforage'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
-import { reactive } from 'vue'
+import { ref } from 'vue'
 
 export const useVideoStore = defineStore('video', () => {
-  const availableIceIps = reactive<string[]>([])
+  const availableIceIps = ref<string[] | undefined>(undefined)
   const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips', [])
 
   // Offer download of backuped videos
