@@ -172,6 +172,77 @@ class DataLogger {
       .filter((logPoint) => logPoint.epoch > initialTime.getTime() && logPoint.epoch < finalTime.getTime())
       .map((logPoint) => ({ ...logPoint, ...{ seconds: differenceInSeconds(new Date(logPoint.epoch), initialTime) } }))
   }
+
+  /**
+   * Convert Cockpit standard log files to Advanced SubStation Alpha subtitle overlays
+   * @param {CockpitStandardLog} log
+   * @param {number} videoWidth
+   * @param {number} videoHeight
+   * @param {number} videoStartEpoch
+   * @returns {string} ASS file string for video overlaying
+   */
+  toAssOverlay(log: CockpitStandardLog, videoWidth: number, videoHeight: number, videoStartEpoch: number): string {
+    /* eslint-disable vue/max-len, prettier/prettier, max-len */
+      let assFile = `[Script Info]
+Title: Cockpit Subtitle Telemetry file
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+YCbCr Matrix: TV.601
+PlayResX: ${videoWidth}
+PlayResY: ${videoHeight}
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,48,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,1,10,10,10,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
+
+    // Try to show, in order, variables the user has decided to show, or variables being used in the application, or all variables.
+    const hasUserSelected = !this.selectedVariablesToShow.value.isEmpty()
+    const areThereVariablesBeingUsed = !this.variablesBeingUsed.isEmpty()
+    const allAvailableVariables = Object.values(DatalogVariable)
+    const variablesToShow = hasUserSelected ? this.selectedVariablesToShow.value : areThereVariablesBeingUsed ? this.variablesBeingUsed : allAvailableVariables
+
+    log.forEach((logPoint) => {
+      const data = Object.entries(logPoint.data)
+        .filter((vData) => variablesToShow.includes(vData[0] as DatalogVariable))
+        .map((v) => ({ name: v[0], value: v[1].value }))
+
+      const secondsStart = Math.round(differenceInMilliseconds(new Date(logPoint.epoch), new Date(videoStartEpoch))/1000)
+      const secondsFinish = secondsStart + 1
+
+      let subtitleDataString1 = ''
+      let subtitleDataString2 = ''
+      let subtitleDataString3 = ''
+      let binToUse = 1
+      data.forEach((d) => {
+        if (binToUse === 1) {
+          subtitleDataString1 = subtitleDataString1.concat(`${d.name}: ${d.value} \\N`)
+        } else if (binToUse === 2) {
+          subtitleDataString2 = subtitleDataString2.concat(`${d.name}: ${d.value} \\N`)
+        } else if (binToUse === 3) {
+          subtitleDataString3 = subtitleDataString3.concat(`${d.name}: ${d.value} \\N`)
+        }
+        binToUse +=1
+        if (binToUse > 3) {
+          binToUse = 1
+        }
+      })
+
+      console.log(videoWidth, videoHeight)
+      console.log(0.1*videoWidth, 0.05*videoHeight)
+
+      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.1*videoWidth},0,${0.05*videoHeight},,${subtitleDataString1}`)
+      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.4*videoWidth},0,${0.05*videoHeight},,${subtitleDataString2}`)
+      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.7*videoWidth},0,${0.05*videoHeight},,${subtitleDataString3}`)
+    })
+    /* eslint-enable vue/max-len, prettier/prettier, max-len */
+    assFile = assFile.concat('\n')
+
+    return assFile
+  }
 }
 
 export const datalogger = new DataLogger()
