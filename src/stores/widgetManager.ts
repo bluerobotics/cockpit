@@ -426,7 +426,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   if (savedProfiles.value.isEmpty()) {
     importProfilesFromVehicle()
     widgetProfiles.forEach((profile) => {
-      // @ts-ignore: structuredClone is a thing since a long time ago
       const userProfile = structuredClone(profile)
       userProfile.name = userProfile.name.replace('Default', 'User')
       userProfile.hash = uuid4()
