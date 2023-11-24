@@ -33,10 +33,12 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { datalogger, DatalogVariable } from '@/libs/logging'
 import { constrain, range, resetCanvas, round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
+datalogger.registerUsage(DatalogVariable.depth)
 const store = useMainVehicleStore()
 const props = defineProps<{
   /**

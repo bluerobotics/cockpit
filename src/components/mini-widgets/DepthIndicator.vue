@@ -17,9 +17,11 @@ import { useAverage } from '@vueuse/math'
 import { ref, watch } from 'vue'
 import { computed } from 'vue'
 
+import { datalogger, DatalogVariable } from '@/libs/logging'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const store = useMainVehicleStore()
+datalogger.registerUsage(DatalogVariable.depth)
 
 // Calculate depth time-average (50 values window)
 const depth = ref(0)

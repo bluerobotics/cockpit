@@ -14,9 +14,12 @@ import { useElementSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, ref } from 'vue'
 
+import { datalogger, DatalogVariable } from '@/libs/logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
+datalogger.registerUsage(DatalogVariable.roll)
+datalogger.registerUsage(DatalogVariable.pitch)
 const store = useMainVehicleStore()
 const virtualHorizonRoot = ref()
 const canvasRef = ref<HTMLCanvasElement | undefined>()

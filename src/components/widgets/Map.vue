@@ -116,6 +116,7 @@ import type { Map } from 'leaflet'
 import Swal from 'sweetalert2'
 import { type Ref, computed, nextTick, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
+import { datalogger, DatalogVariable } from '@/libs/logging'
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -123,6 +124,8 @@ import type { Widget } from '@/types/widgets'
 
 import VehicleIcon from './VehicleIcon.vue'
 
+datalogger.registerUsage(DatalogVariable.latitude)
+datalogger.registerUsage(DatalogVariable.longitude)
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 
