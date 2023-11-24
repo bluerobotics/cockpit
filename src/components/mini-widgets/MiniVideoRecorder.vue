@@ -185,7 +185,7 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
   timeRecordingStart.value = new Date()
   const fileName = `${missionName || 'Cockpit'} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`
   mediaRecorder.value = new MediaRecorder(mediaStream.value)
-  mediaRecorder.value.start()
+  mediaRecorder.value.start(1000)
   let chunks: Blob[] = []
   mediaRecorder.value.ondataavailable = (e) => chunks.push(e.data)
 
