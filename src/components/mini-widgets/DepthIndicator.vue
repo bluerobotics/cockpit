@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center w-fit min-w-[8rem] max-w-[9rem] h-12 p-1 text-white justify-center">
+  <div class="flex items-center w-[8.25rem] h-12 p-1 text-white justify-center">
     <img src="@/assets/depth-icon.svg" class="h-full" :draggable="false" />
     <div class="flex flex-col items-start justify-center ml-1 min-w-[4rem] max-w-[6rem] select-none">
       <div>
