@@ -1,7 +1,7 @@
 <template>
-  <div class="flex items-center justify-center h-12 py-1 text-white transition-all w-fit">
+  <div class="flex items-center justify-center h-12 py-1 text-white transition-all w-[7rem]">
     <span class="relative w-[2rem] mdi icon-symbol" :class="[miniWidget.options.iconName]"></span>
-    <div class="flex flex-col items-start justify-center mx-1 select-none w-fit min-w-[3rem]">
+    <div class="flex flex-col items-start justify-center ml-1 select-none w-[4.75rem]">
       <div>
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
         <span class="text-xl font-semibold leading-6 w-fit">
