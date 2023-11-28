@@ -108,6 +108,7 @@ const { availableStreams, availableICEIPs, mediaStream, signallerStatus, streamS
   selectedStream,
   allowedIceIps
 )
+watch(allowedIceIps, () => (selectedICEIPsField.value = allowedIceIps.value))
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
