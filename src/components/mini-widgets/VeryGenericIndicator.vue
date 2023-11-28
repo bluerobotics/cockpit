@@ -41,10 +41,6 @@
           </div>
         </div>
         <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Fractional digits</span>
-          <input v-model="miniWidget.options.fractionalDigits" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
-        </div>
-        <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Unit</span>
           <input v-model="miniWidget.options.variableUnit" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
@@ -140,7 +136,6 @@ onBeforeMount(() => {
     Object.assign(miniWidget.value.options, {
       displayName: '',
       variableName: '',
-      fractionalDigits: 1,
       iconName: 'mdi-help-box',
       variableUnit: '%',
       variableMultiplier: 1,
@@ -155,14 +150,17 @@ onBeforeMount(() => {
 const store = useMainVehicleStore()
 
 const currentState = ref<unknown>(0)
+
+const finalValue = computed(() => Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value))
 const parsedState = computed(() => {
-  if (currentState.value !== undefined) {
-    return round(
-      Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value),
-      miniWidget.value.options.fractionalDigits as number
-    ).toFixed(miniWidget.value.options.fractionalDigits as number)
+  if (currentState.value === undefined) {
+    return '--'
   }
-  return '--'
+  const value = finalValue.value
+  if (value < 1) return value.toFixed(2)
+  if (value >= 1 && value < 100) return value.toFixed(1)
+  if (value >= 10000) return `${(value / 10000).toFixed(0)}k`
+  return value.toFixed(0)
 })
 
 const updateVariableState = (): void => {
