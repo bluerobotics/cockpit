@@ -94,7 +94,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Pilot Gain',
                   variableName: 'PilotGain',
-                  fractionalDigits: 1,
                   iconName: 'mdi-account-hard-hat',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -107,7 +106,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Lights (1)',
                   variableName: 'Lights1',
-                  fractionalDigits: 1,
                   iconName: 'mdi-flashlight',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -120,7 +118,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Cam Tilt',
                   variableName: 'CamTilt',
-                  fractionalDigits: 1,
                   iconName: 'mdi-camera-retake',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -144,7 +141,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Water Temp',
                   variableName: 'SCALED_PRESSURE2.temperature',
-                  fractionalDigits: 1,
                   iconName: 'mdi-thermometer',
                   variableUnit: '°C',
                   variableMultiplier: '.01',
@@ -267,7 +263,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Pilot Gain',
                   variableName: 'PilotGain',
-                  fractionalDigits: 1,
                   iconName: 'mdi-account-hard-hat',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -280,7 +275,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Lights (1)',
                   variableName: 'Lights1',
-                  fractionalDigits: 1,
                   iconName: 'mdi-flashlight',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -293,7 +287,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Cam Tilt',
                   variableName: 'CamTilt',
-                  fractionalDigits: 1,
                   iconName: 'mdi-camera-retake',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -438,7 +431,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Pilot Gain',
                   variableName: 'PilotGain',
-                  fractionalDigits: 1,
                   iconName: 'mdi-account-hard-hat',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -451,7 +443,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Lights (1)',
                   variableName: 'Lights1',
-                  fractionalDigits: 1,
                   iconName: 'mdi-flashlight',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -464,7 +455,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Cam Tilt',
                   variableName: 'CamTilt',
-                  fractionalDigits: 1,
                   iconName: 'mdi-camera-retake',
                   variableUnit: '%',
                   variableMultiplier: 100,
@@ -488,7 +478,6 @@ export const widgetProfiles: Profile[] = [
                 options: {
                   displayName: 'Water Temp',
                   variableName: 'SCALED_PRESSURE2.temperature',
-                  fractionalDigits: 1,
                   iconName: 'mdi-thermometer',
                   variableUnit: '°C',
                   variableMultiplier: '.01',
