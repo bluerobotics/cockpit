@@ -58,13 +58,13 @@ export const useVideoStore = defineStore('video', () => {
     if (availableIceIps.value.length >= 1) {
       Swal.fire({
         html: `
-          <p>Cockpit detected more than one IP being used to route the video streaming. This situation often leads to
-          video stuterring, specially if one of the IPs is from a non-wired connection.</p>
+          <p>Cockpit detected more than one IP address being used to route the video streaming. This often 
+          leads to video stuttering, especially if one of the IPs is from a non-wired connection.</p>
           </br>
-          <p>To prevent issues and archieve an optimum streaming experience, please:</p>
+          <p>To prevent issues and achieve an optimal streaming experience, please:</p>
           <ol>
-            <li>1. Open the configuration of one of your video widgets.</li>
-            <li>2. Choose the IP that should be used for the video streaming.</li>
+            <li>1. Open the configuration of one of your video widgets (in Edit Mode).</li>
+            <li>2. Select the IP address that should be used for the video streaming.</li>
           </ol>
         `,
         icon: 'warning',
