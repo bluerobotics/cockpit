@@ -149,6 +149,11 @@ export class Parameter {
   name: string
 }
 
+export class CommandAck { 
+  command: number
+  result: number
+}
+
 /**
  * Velocity related data
  */

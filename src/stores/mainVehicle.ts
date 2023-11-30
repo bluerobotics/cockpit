@@ -121,6 +121,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const currentParameters = reactive({})
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean | undefined>(undefined)
+  const isReady = ref<boolean | undefined>(undefined)
   const icon = ref<string | undefined>(undefined)
   const configurationPages = ref<PageDescription[]>([])
   const timeNow = useTimestamp({ interval: 100 })
@@ -152,6 +153,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   function disarm(): void {
     mainVehicle.value?.disarm()
+  }
+  /** 
+   * Takeoff the vehicle
+   */
+  function takeoff(): void {
+    mainVehicle.value?.takeoff()
   }
 
   /**
@@ -454,6 +461,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   return {
     arm,
+    takeoff,
     disarm,
     modesAvailable,
     setFlightMode,
@@ -481,6 +489,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mode,
     modes,
     isArmed,
+    isReady,
     isVehicleOnline,
     icon,
     parametersTable,

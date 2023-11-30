@@ -18,7 +18,7 @@ import {
   MavState,
   MavType,
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavFrame, MavResult } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
@@ -35,6 +35,7 @@ import {
   Attitude,
   Battery,
   Coordinates,
+  CommandAck,
   FixTypeGPS,
   Parameter,
   PowerSupply,
@@ -58,6 +59,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0
+  _last_ack = { command: MavResult }
   _coordinates = new Coordinates({
     precision: 0,
     altitude: 0,
@@ -242,6 +244,13 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
 
     switch (mavlink_message.message.type) {
+      case MAVLinkType.COMMAND_ACK: {
+        const command_ack = mavlink_message.message as Message.CommandAck
+        this._last_ack.command = command_ack.command
+        this._last_ack.result = command_ack.result
+        console.log(command_ack)
+      }
+
       case MAVLinkType.AHRS2: {
         const ahrsMessage = mavlink_message.message as Message.Ahrs2
         this._altitude.msl = ahrsMessage.altitude
@@ -385,6 +394,49 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this._arm(true)
     return true
   }
+
+  /**
+   * Helper function for commanding takeoff
+   */
+  async _takeoff(altitude: number): Promise<void> {
+    this.sendCommandLong(MavCmd.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, altitude)
+
+    // check command is accepted
+    let timeoutReachedCount = false
+    const initTimeCount = new Date().getTime()
+    while (!timeoutReachedCount) {
+
+      const lastAckMessage = this._messages.get(MAVLinkType.COMMAND_ACK)
+      if (lastAckMessage !== undefined ) {
+        // && lastAckMessage.command == MavCmd.MAV_CMD_NAV_TAKEOFF
+        console.log(lastAckMessage.command)
+        console.log(lastAckMessage.result)
+        if (lastAckMessage.result == MavResult.MAV_RESULT_ACCEPTED) {
+          break
+        } else {
+          throw Error('MAV rejected command')
+        }
+      }
+
+      await new Promise((r) => setTimeout(r, 100))
+      timeoutReachedCount = new Date().getTime() - initTimeCount > 10000
+
+    }
+    if (timeoutReachedCount) {
+      throw Error('MAV did not acknowledge command ')
+    }
+  }
+
+  /**
+   * Takeoff
+   * @returns {boolean}
+   */
+  takeoff(): boolean {
+    this.arm()
+    this._takeoff(10)
+    return true
+  }
+
 
   /**
    * Return vehicle altitude-related data
