@@ -5,7 +5,7 @@ import { JoystickModel } from '@/libs/joystick/manager'
  * Each protocol is expected to have it's own way of doing thing, including mapping, limiting, communicating, etc.
  */
 export enum JoystickProtocol {
-  MAVLink = 'mavlink',
+  MAVLinkManualControl = 'mavlink-manual-control',
   CockpitAction = 'cockpit-action',
   Other = 'other',
 }

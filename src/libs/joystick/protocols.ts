@@ -45,7 +45,7 @@ export class MavlinkControllerState extends ProtocolControllerState {
   constructor(joystickState: JoystickState, mapping: ProtocolControllerMapping, target = 1) {
     super()
 
-    const isMavlinkInput = (input: ProtocolInput): boolean => input.protocol === JoystickProtocol.MAVLink
+    const isMavlinkInput = (input: ProtocolInput): boolean => input.protocol === JoystickProtocol.MAVLinkManualControl
 
     let buttons_int = 0
     for (let i = 0; i < MavlinkControllerState.BUTTONS_PER_BITFIELD; i++) {
@@ -157,7 +157,7 @@ export const mavlinkAvailableButtons = sequentialArray(16)
 const mavlinkAxesLimits = [-1000, 1000]
 export const protocolAxesLimits = (protocol: JoystickProtocol): number[] => {
   switch (protocol) {
-    case JoystickProtocol.MAVLink:
+    case JoystickProtocol.MAVLinkManualControl:
       return mavlinkAxesLimits
     default:
       // Mavlink is the current main protocol and will be used by default
@@ -167,7 +167,7 @@ export const protocolAxesLimits = (protocol: JoystickProtocol): number[] => {
 
 export const allAvailableAxes: InputWithPrettyName[] = []
 mavlinkAvailableAxes.forEach((axis) =>
-  allAvailableAxes.push({ input: { protocol: JoystickProtocol.MAVLink, value: axis }, prettyName: axis })
+  allAvailableAxes.push({ input: { protocol: JoystickProtocol.MAVLinkManualControl, value: axis }, prettyName: axis })
 )
 
 Object.values(OtherProtocol).forEach((fn) =>
@@ -176,7 +176,10 @@ Object.values(OtherProtocol).forEach((fn) =>
 
 export const allAvailableButtons: InputWithPrettyName[] = []
 mavlinkAvailableButtons.forEach((btn) =>
-  allAvailableButtons.push({ input: { protocol: JoystickProtocol.MAVLink, value: btn }, prettyName: btn.toString() })
+  allAvailableButtons.push({
+    input: { protocol: JoystickProtocol.MAVLinkManualControl, value: btn },
+    prettyName: btn.toString(),
+  })
 )
 Object.values(CockpitAction).forEach((action) =>
   allAvailableButtons.push({ input: { protocol: JoystickProtocol.CockpitAction, value: action }, prettyName: action })

@@ -437,14 +437,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         const functionName = buttonParameterTable.find((p) => p.value === param[1])?.title
         if (functionName === undefined) return
         newMavlinkButtonsNames.push({
-          input: { protocol: JoystickProtocol.MAVLink, value: buttonId },
+          input: { protocol: JoystickProtocol.MAVLinkManualControl, value: buttonId },
           prettyName: functionName,
         })
       })
     }
     if (newMavlinkButtonsNames.isEmpty()) return
     let newProtocolButtonsFunctions = controllerStore.availableProtocolButtonFunctions.filter((btn) => {
-      return btn.input.protocol !== JoystickProtocol.MAVLink
+      return btn.input.protocol !== JoystickProtocol.MAVLinkManualControl
     })
     newProtocolButtonsFunctions = newProtocolButtonsFunctions.concat(newMavlinkButtonsNames)
     controllerStore.availableProtocolButtonFunctions = newProtocolButtonsFunctions

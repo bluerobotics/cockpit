@@ -280,15 +280,15 @@ watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 const availableProtocolButtonFunctions = computed(() => {
   // eslint-disable-next-line jsdoc/require-jsdoc
   const organizedButtons: { [key in JoystickProtocol]: InputWithPrettyName[] } = {
-    [JoystickProtocol.MAVLink]: [],
+    [JoystickProtocol.MAVLinkManualControl]: [],
     [JoystickProtocol.CockpitAction]: [],
     [JoystickProtocol.Other]: [],
   }
   controllerStore.availableProtocolButtonFunctions.forEach((btn) => organizedButtons[btn.input.protocol].push(btn))
   vehicleStore.buttonParameterTable.forEach((btn) => {
-    if (organizedButtons[JoystickProtocol.MAVLink].map((b) => b.prettyName).includes(btn.title)) return
-    organizedButtons[JoystickProtocol.MAVLink].push({
-      input: { protocol: JoystickProtocol.MAVLink, value: btn.title },
+    if (organizedButtons[JoystickProtocol.MAVLinkManualControl].map((b) => b.prettyName).includes(btn.title)) return
+    organizedButtons[JoystickProtocol.MAVLinkManualControl].push({
+      input: { protocol: JoystickProtocol.MAVLinkManualControl, value: btn.title },
       prettyName: btn.title,
     })
   })
@@ -374,7 +374,7 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
     let newInput = newValue
 
     // When we use an unmapped MAVLink function, we use the same mapping but we have te new function to that button
-    if (newValue.protocol === JoystickProtocol.MAVLink && typeof newValue.value !== 'number') {
+    if (newValue.protocol === JoystickProtocol.MAVLinkManualControl && typeof newValue.value !== 'number') {
       const buttonParameterValue = vehicleStore.buttonParameterTable.find((btn) => btn.title === newValue.value)?.value
       if (buttonParameterValue === undefined) {
         Swal.fire({ text: `Could not find MAVLink parameter ${newValue.value}.`, icon: 'error', timer: 5000 })
@@ -382,13 +382,15 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
       }
 
       let mavlinkButton: undefined | number = undefined
-      const usedMavButtons = oldInputMapping.filter((i) => i.protocol === JoystickProtocol.MAVLink).map((i) => i.value)
+      const usedMavButtons = oldInputMapping
+        .filter((i) => i.protocol === JoystickProtocol.MAVLinkManualControl)
+        .map((i) => i.value)
       const availableMavButtons = mavlinkAvailableButtons.filter((b) => !usedMavButtons.includes(b))
       const oldButtonInput = oldInputMapping[index]
 
-      if (oldButtonInput.protocol !== JoystickProtocol.MAVLink && !availableMavButtons.isEmpty()) {
+      if (oldButtonInput.protocol !== JoystickProtocol.MAVLinkManualControl && !availableMavButtons.isEmpty()) {
         mavlinkButton = availableMavButtons[0]
-      } else if (oldButtonInput.protocol === JoystickProtocol.MAVLink) {
+      } else if (oldButtonInput.protocol === JoystickProtocol.MAVLinkManualControl) {
         // Check if there's more than one Cockpit button assigned to this same MAVLink button
         const doubleMapped = usedMavButtons.filter((b) => b === oldButtonInput.value).length > 1
         if (doubleMapped && !availableMavButtons.isEmpty()) {
@@ -408,7 +410,7 @@ const updateMapping = (index: number, newValue: ProtocolInput, inputType: InputT
         Swal.fire({ text: errorMessage, icon: 'error', timer: 5000 })
         return
       }
-      newInput = { protocol: JoystickProtocol.MAVLink, value: mavlinkButton }
+      newInput = { protocol: JoystickProtocol.MAVLinkManualControl, value: mavlinkButton }
       const configurationSettings: ArduPilotParameterSetData = {
         id: `BTN${mavlinkButton}_FUNCTION`,
         value: buttonParameterValue,
