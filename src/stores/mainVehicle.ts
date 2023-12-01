@@ -1,6 +1,6 @@
 import { useStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { capitalize, computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
@@ -428,7 +428,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       // @ts-ignore: This type is huge. Needs refactoring typing here.
       Object.entries(parametersTable['BTN0_FUNCTION']['Values']).forEach((param) => {
         const rawText = param[1] as string
-        const formatedText = (rawText.charAt(0).toUpperCase() + rawText.slice(1)).replace(new RegExp('_', 'g'), ' ')
+        const formatedText = capitalize(rawText).replace(new RegExp('_', 'g'), ' ')
         buttonParameterTable.push({ title: formatedText as string, value: Number(param[0]) })
       })
       Object.entries(currentParameters).forEach((param) => {
