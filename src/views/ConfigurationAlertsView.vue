@@ -6,11 +6,7 @@
       <span class="text-sm font-medium text-slate-500">Enable voice on specific alert levels:</span>
       <div class="flex items-center justify-start">
         <div v-for="enabledLevel in alertStore.enabledAlertLevels" :key="enabledLevel.level" class="mx-2">
-          <v-switch
-            v-model="enabledLevel.enabled"
-            :label="enabledLevel.level.charAt(0).toUpperCase() + enabledLevel.level.slice(1)"
-            class="text-slate-800"
-          />
+          <v-switch v-model="enabledLevel.enabled" :label="capitalize(enabledLevel.level)" class="text-slate-800" />
         </div>
       </div>
       <span class="text-sm font-medium text-slate-500">Alert voice:</span>
@@ -26,6 +22,8 @@
 </template>
 
 <script setup lang="ts">
+import { capitalize } from 'vue'
+
 import Dropdown from '@/components/Dropdown.vue'
 import { useAlertStore } from '@/stores/alert'
 
