@@ -3,7 +3,7 @@
     <VueDraggable
       v-model="container.widgets"
       :disabled="!allowEditing"
-      animation="150"
+      :animation="150"
       group="generalGroup"
       class="flex items-center w-full h-full gap-2 px-2"
       :class="[wrap ? 'flex-wrap' : '', widgetsAlignment]"
@@ -39,7 +39,7 @@
           />
           <VueDraggable
             v-model="trashList"
-            animation="150"
+            :animation="150"
             group="generalGroup"
             class="flex flex-wrap items-center justify-center w-full h-full gap-2"
             @add="trashList = []"
