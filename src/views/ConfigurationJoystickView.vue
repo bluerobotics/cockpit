@@ -107,79 +107,36 @@
     </template>
   </BaseConfigurationView>
   <teleport to="body">
-    <v-dialog v-if="currentJoystick" v-model="inputClickedDialog" width="80%" max-height="90%">
-      <v-card class="p-2">
-        <v-card-title class="flex justify-center w-full">Update mapping</v-card-title>
+    <v-dialog v-if="currentJoystick" v-model="inputClickedDialog" class="w-[80%] max-h-[90%]">
+      <v-card class="p-6">
+        <p class="flex items-center justify-center w-full p-2 text-2xl font-bold text-slate-600">Input mapping</p>
         <div class="flex flex-col items-center justify-between">
-          <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between ma-2">
-            <v-icon class="mr-3">
-              {{ [JoystickAxis.A0, JoystickAxis.A2].includes(input.id) ? 'mdi-pan-horizontal' : 'mdi-pan-vertical' }}
-            </v-icon>
-            <v-text-field
-              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
-              style="width: 10ch; margin: 5px"
-              label="Min"
-              type="number"
-              density="compact"
-              variant="solo"
-              hide-details
-            />
-            <v-select
-              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].action"
-              :items="controllerStore.availableAxesActions"
-              item-title="name"
-              hide-details
-              density="compact"
-              variant="solo"
-              class="w-40 m-3"
-              return-object
-            />
-            <v-text-field
-              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
-              style="width: 10ch; margin: 5px"
-              label="Max"
-              type="number"
-              density="compact"
-              variant="solo"
-              hide-details
-            />
-          </div>
+          <div class="w-[90%] h-[2px] my-5 bg-slate-900/20" />
+          <p class="flex items-center justify-center w-full text-xl font-bold text-slate-600">Button mapping</p>
           <div
             v-for="input in currentButtonInputs"
             :key="input.id"
-            class="flex flex-col justify-between p-6 align-center"
+            class="flex flex-col justify-between w-full p-3 align-center"
           >
-            <div class="flex flex-col items-center justify-between">
-              <span>Calibrate</span>
-              <p>
-                {{
-                  remappingInput
-                    ? 'Click the button you want to use for this input.'
-                    : justRemappedInput === undefined
-                    ? ''
-                    : justRemappedInput
-                    ? 'Input remapped.'
-                    : 'No input detected.'
-                }}
-              </p>
+            <div class="flex flex-col items-center justify-between my-2">
               <v-btn
-                class="w-40 mx-auto my-2"
+                class="mx-auto my-1 w-fit"
                 :disabled="remappingInput"
                 @click="remapInput(currentJoystick as Joystick, input)"
               >
-                {{ remappingInput ? 'Remapping' : 'Remap button' }}
+                {{ remappingInput ? 'Remapping' : 'Click to remap' }}
               </v-btn>
+              <p class="font-medium text-slate-400">{{ buttonRemappingText }}</p>
             </div>
-            <div class="flex flex-col items-center justify-between">
-              <span>Assign</span>
-              <div class="flex flex-col flex-wrap">
-                <div v-for="protocol in JoystickProtocol" :key="protocol" class="flex flex-col m-2">
-                  <span class="mb-2 text-xl font-bold">{{ protocol }}</span>
-                  <div class="overflow-y-auto max-h-40 protocol-button-container">
+            <div class="flex flex-col items-center justify-between w-full my-2">
+              <div class="flex w-[90%] justify-evenly">
+                <div v-for="protocol in JoystickProtocol" :key="protocol" class="flex flex-col items-center h-40 mx-4">
+                  <span class="mx-auto text-xl font-bold">{{ protocol }}</span>
+                  <div class="flex flex-col items-center px-2 py-1 overflow-y-auto">
                     <Button
                       v-for="action in controllerStore.availableButtonActions.filter((a) => a.protocol === protocol)"
                       :key="action.name"
-                      class="m-1 hover:bg-slate-700"
+                      class="w-full my-1 text-sm hover:bg-slate-700"
                       :class="{
                         'bg-slate-700':
                           currentButtonActions[input.id].action.protocol == action.protocol &&
@@ -193,6 +150,41 @@
                 </div>
               </div>
             </div>
+          </div>
+          <div class="w-[90%] h-[2px] my-5 bg-slate-900/20" />
+          <p class="flex items-center justify-center w-full text-xl font-bold text-slate-600">Axis mapping</p>
+          <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2">
+            <v-icon class="mr-3">
+              {{ [JoystickAxis.A0, JoystickAxis.A2].includes(input.id) ? 'mdi-pan-horizontal' : 'mdi-pan-vertical' }}
+            </v-icon>
+            <v-text-field
+              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
+              class="w-24"
+              label="Min"
+              type="number"
+              density="compact"
+              variant="solo"
+              hide-details
+            />
+            <v-select
+              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].action"
+              :items="controllerStore.availableAxesActions"
+              item-title="name"
+              hide-details
+              density="compact"
+              variant="solo"
+              class="w-40 mx-2"
+              return-object
+            />
+            <v-text-field
+              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
+              class="w-24"
+              label="Max"
+              type="number"
+              density="compact"
+              variant="solo"
+              hide-details
+            />
           </div>
         </div>
       </v-card>
@@ -330,5 +322,15 @@ watch(controllerStore.joysticks, () => {
     return
   }
   currentModifierKey.value = activeModKeys[0]
+})
+
+const buttonRemappingText = computed(() => {
+  return remappingInput.value
+    ? 'Click the button you want to use for this input.'
+    : justRemappedInput.value === undefined
+    ? ''
+    : justRemappedInput.value
+    ? 'Input remapped.'
+    : 'No input detected.'
 })
 </script>
