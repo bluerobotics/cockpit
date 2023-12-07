@@ -29,8 +29,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
   const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
 
-  const allProfiles = computed(() => [...widgetProfiles, ...savedProfiles.value])
-
   const currentView = computed<View>({
     get() {
       return currentProfile.value.views[currentViewIndex.value]
@@ -42,18 +40,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   const currentProfile = computed<Profile>({
     get() {
-      return allProfiles.value[currentProfileIndex.value]
+      return savedProfiles.value[currentProfileIndex.value]
     },
     set(newValue) {
-      const allProfileHashs = allProfiles.value.map((p) => p.hash)
+      const profilesHashes = savedProfiles.value.map((p) => p.hash)
 
-      if (!allProfileHashs.includes(newValue.hash)) {
+      if (!profilesHashes.includes(newValue.hash)) {
         Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
-        return
-      }
-
-      if (isDefaultProfile(newValue)) {
-        Swal.fire({ icon: 'error', text: 'Cannot edit a default profile. Please pick another one.', timer: 3000 })
         return
       }
 
@@ -125,7 +118,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Profile } profile - Profile to be loaded
    */
   function loadProfile(profile: Profile): void {
-    const profileIndex = allProfiles.value.findIndex((p) => p.hash === profile.hash)
+    const profileIndex = savedProfiles.value.findIndex((p) => p.hash === profile.hash)
     if (profileIndex === -1) {
       Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
       return
@@ -213,7 +206,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       name: `${Words.animalsOcean.random()} profile`,
       views: [],
     })
-    const profileIndex = allProfiles.value.findIndex((p) => p.hash === savedProfiles.value[0].hash)
+    const profileIndex = savedProfiles.value.findIndex((p) => p.hash === savedProfiles.value[0].hash)
     currentProfileIndex.value = profileIndex
     addView()
   }
@@ -246,7 +239,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentProfileIndex.value = 0
     savedProfiles.value.splice(savedProfileIndex, 1)
     if (currentProfileHash !== profile.hash) {
-      currentProfileIndex.value = allProfiles.value.findIndex((p) => p.hash === currentProfileHash)
+      currentProfileIndex.value = savedProfiles.value.findIndex((p) => p.hash === currentProfileHash)
     }
   }
 
@@ -490,7 +483,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     miniWidgetContainersInCurrentView,
     currentMiniWidgetsProfile,
     savedProfiles,
-    allProfiles,
     isDefaultProfile,
     loadProfile,
     saveProfile,
