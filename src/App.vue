@@ -148,7 +148,11 @@ import { useRoute } from 'vue-router'
 
 import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
 import { coolMissionNames } from '@/libs/funny-name/words'
-import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
+import {
+  availableCockpitActions,
+  registerActionCallback,
+  unregisterActionCallback,
+} from '@/libs/joystick/protocols/cockpit-actions'
 import { useMissionStore } from '@/stores/mission'
 
 import Dialog from './components/Dialog.vue'
@@ -175,7 +179,10 @@ const routerSection = ref()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 
 const debouncedToggleFullScreen = useDebounceFn(() => toggleFullscreen(), 10)
-const fullScreenCallbackId = registerActionCallback(CockpitAction.TOGGLE_FULL_SCREEN, debouncedToggleFullScreen)
+const fullScreenCallbackId = registerActionCallback(
+  availableCockpitActions.toggle_full_screen,
+  debouncedToggleFullScreen
+)
 onBeforeUnmount(() => unregisterActionCallback(fullScreenCallbackId))
 
 const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscreen-exit' : 'mdi-overscan'))
@@ -209,7 +216,10 @@ watch([() => widgetStore.currentView, () => widgetStore.currentView.showBottomBa
   showBottomBarNow.value = widgetStore.currentView.showBottomBarOnBoot
 })
 const debouncedToggleBottomBar = useDebounceFn(() => (showBottomBarNow.value = !showBottomBarNow.value), 25)
-const bottomBarToggleCallbackId = registerActionCallback(CockpitAction.TOGGLE_BOTTOM_BAR, debouncedToggleBottomBar)
+const bottomBarToggleCallbackId = registerActionCallback(
+  availableCockpitActions.toggle_bottom_bar,
+  debouncedToggleBottomBar
+)
 onBeforeUnmount(() => unregisterActionCallback(bottomBarToggleCallbackId))
 
 // Start datalogging

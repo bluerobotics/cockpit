@@ -1,6 +1,6 @@
 import { useStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { capitalize, computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
@@ -9,13 +9,12 @@ import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import {
-  type InputWithPrettyName,
-  CockpitAction,
-  MavlinkControllerState,
+  availableCockpitActions,
+  CockpitActionsManager,
   registerActionCallback,
-  sendCockpitActions,
   unregisterActionCallback,
-} from '@/libs/joystick/protocols'
+} from '@/libs/joystick/protocols/cockpit-actions'
+import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
@@ -32,12 +31,6 @@ import type {
 } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
-import {
-  type JoystickState,
-  type ProtocolControllerMapping,
-  JoystickProtocol,
-  ProtocolControllerState,
-} from '@/types/joystick'
 import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
 
 import { useControllerStore } from './controller'
@@ -152,14 +145,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     if (mainVehicle.value?.firmware() === Vehicle.Firmware.ArduPilot) {
       mainVehicle.value?.setParameter(settings as ArduPilotParameterSetData)
     }
-  }
-
-  /**
-   * Send manual control message
-   * @param {ProtocolControllerState} controllerState Current state of the controller
-   */
-  function sendManualControl(controllerState: ProtocolControllerState): void {
-    mainVehicle.value?.sendManualControl(controllerState)
   }
 
   /**
@@ -308,8 +293,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       },
       setFlightMode: setFlightMode,
     }
-    const mavlinkArmId = registerActionCallback(CockpitAction.MAVLINK_ARM, arm)
-    const mavlinkDisarmId = registerActionCallback(CockpitAction.MAVLINK_DISARM, disarm)
+    const mavlinkArmId = registerActionCallback(availableCockpitActions.mavlink_arm, arm)
+    const mavlinkDisarmId = registerActionCallback(availableCockpitActions.mavlink_disarm, disarm)
     onBeforeUnmount(() => {
       unregisterActionCallback(mavlinkArmId)
       unregisterActionCallback(mavlinkDisarmId)
@@ -317,29 +302,31 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   const controllerStore = useControllerStore()
-  const currentControllerState = ref<JoystickState>()
-  const currentProtocolMapping = ref<ProtocolControllerMapping>()
-  const updateCurrentControllerState = (newState: JoystickState, newMapping: ProtocolControllerMapping): void => {
-    currentControllerState.value = newState
-    currentProtocolMapping.value = newMapping
-  }
-  controllerStore.registerControllerUpdateCallback(updateCurrentControllerState)
+  const mavlinkManualControlManager = new MavlinkManualControlManager()
+  const cockpitActionsManager = new CockpitActionsManager()
+  controllerStore.registerControllerUpdateCallback(mavlinkManualControlManager.updateControllerData)
+  controllerStore.registerControllerUpdateCallback(cockpitActionsManager.updateControllerData)
 
   // Loop to send MAVLink Manual Control messages
   setInterval(() => {
-    if (!currentControllerState.value || !currentProtocolMapping.value || controllerStore.joysticks.size === 0) return
-    const newControllerState = new MavlinkControllerState(currentControllerState.value, currentProtocolMapping.value)
+    if (!mainVehicle.value) return
+
+    // Set the manager vehicle instance if yet undefined
+    if (mavlinkManualControlManager.vehicle === undefined) {
+      mavlinkManualControlManager.setVehicle(mainVehicle.value as ArduPilot)
+    }
+
+    // Send MAVLink Manual Control message
     if (controllerStore.enableForwarding) {
-      sendManualControl(newControllerState)
+      mavlinkManualControlManager.sendManualControl()
     }
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
 
   // Loop to send Cockpit Action messages
   setInterval(() => {
-    if (!currentControllerState.value || !currentProtocolMapping.value || controllerStore.joysticks.size === 0) return
     if (controllerStore.enableForwarding) {
-      sendCockpitActions(currentControllerState.value, currentProtocolMapping.value)
+      cockpitActionsManager.sendCockpitActions()
     }
   }, 10)
 
