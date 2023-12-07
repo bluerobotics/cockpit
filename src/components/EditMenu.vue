@@ -15,7 +15,7 @@
       <div class="w-full px-2 overflow-x-hidden overflow-y-auto">
         <TransitionGroup name="fade-and-suffle">
           <div
-            v-for="profile in store.allProfiles"
+            v-for="profile in store.savedProfiles"
             :key="profile.hash"
             class="flex items-center justify-between w-full my-1"
           >
@@ -27,10 +27,8 @@
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
               <div class="grow" />
               <div class="icon-btn mdi mdi-download" @click.stop="store.exportProfile(profile)" />
-              <template v-if="!store.isDefaultProfile(profile)">
-                <div class="icon-btn mdi mdi-cog" @click.stop="renameProfile(profile)" />
-                <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
-              </template>
+              <div class="icon-btn mdi mdi-cog" @click.stop="renameProfile(profile)" />
+              <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
             </Button>
           </div>
         </TransitionGroup>
