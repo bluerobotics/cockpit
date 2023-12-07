@@ -7,7 +7,16 @@ import { ref } from 'vue'
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
-import { type JoystickState, type ProtocolControllerMapping, Joystick } from '@/types/joystick'
+import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import {
+  type JoystickProtocolActionsMapping,
+  type JoystickState,
+  type ProtocolAction,
+  CockpitModifierKeyOption,
+  Joystick,
+  JoystickButton,
+  JoystickProtocol,
+} from '@/types/joystick'
 
 export type controllerUpdateCallback = (state: JoystickState, protocolMapping: ProtocolControllerMapping) => void
 

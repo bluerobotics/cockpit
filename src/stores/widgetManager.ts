@@ -11,7 +11,11 @@ import { widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import * as Words from '@/libs/funny-name/words'
-import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
+import {
+  availableCockpitActions,
+  registerActionCallback,
+  unregisterActionCallback,
+} from '@/libs/joystick/protocols/cockpit-actions'
 import { isEqual } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
@@ -476,7 +480,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     selectView(currentProfile.value.views[newIndex])
   }
   const debouncedSelectNextView = useDebounceFn(() => selectNextView(), 10)
-  const selectNextViewCallbackId = registerActionCallback(CockpitAction.GO_TO_NEXT_VIEW, debouncedSelectNextView)
+  const selectNextViewCallbackId = registerActionCallback(
+    availableCockpitActions.go_to_next_view,
+    debouncedSelectNextView
+  )
   onBeforeUnmount(() => unregisterActionCallback(selectNextViewCallbackId))
 
   const selectPreviousView = (): void => {
@@ -484,7 +491,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     selectView(currentProfile.value.views[newIndex])
   }
   const debouncedSelectPreviousView = useDebounceFn(() => selectPreviousView(), 10)
-  const selectPrevViewCBId = registerActionCallback(CockpitAction.GO_TO_PREVIOUS_VIEW, debouncedSelectPreviousView)
+  const selectPrevViewCBId = registerActionCallback(
+    availableCockpitActions.go_to_previous_view,
+    debouncedSelectPreviousView
+  )
   onBeforeUnmount(() => unregisterActionCallback(selectPrevViewCBId))
 
   // Profile migrations
