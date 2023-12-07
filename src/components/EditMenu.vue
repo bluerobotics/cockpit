@@ -52,6 +52,11 @@
           class="icon-btn mdi mdi-briefcase-download"
           @click="store.importProfilesFromVehicle"
         />
+        <div
+          v-tooltip="'Reset profiles to default configuration.'"
+          class="icon-btn mdi mdi-restore"
+          @click="resetSavedProfiles"
+        />
       </div>
     </div>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
@@ -254,6 +259,7 @@
 
 <script setup lang="ts">
 import { useConfirmDialog, useMousePressed } from '@vueuse/core'
+import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
@@ -343,6 +349,16 @@ const renameProfile = (profile: Profile): void => {
   profileBeingRenamed.value = profile
   newProfileName.value = profile.name
   profileRenameDialogRevealed.value = true
+}
+
+const resetSavedProfiles = async (): Promise<void> => {
+  const result = await Swal.fire({
+    text: 'Are you sure you want to reset your profiles to the default ones?',
+    showCancelButton: true,
+    confirmButtonText: 'Reset',
+    icon: 'warning',
+  })
+  if (result.isConfirmed) store.resetSavedProfiles()
 }
 
 const availableWidgetsContainer = ref()
