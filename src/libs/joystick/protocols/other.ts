@@ -1,4 +1,4 @@
-import { type ProtocolAction, JoystickProtocol } from '@/types/joystick'
+import { type ProtocolAction, CockpitModifierKeyOption, JoystickProtocol } from '@/types/joystick'
 
 /**
  * Possible other protocol functions
@@ -12,5 +12,18 @@ export const otherAvailableActions: { [key in OtherProtocol]: ProtocolAction } =
     protocol: JoystickProtocol.Other,
     id: OtherProtocol.no_function,
     name: 'No function',
+  },
+}
+
+export const modifierKeyActions: { [key in CockpitModifierKeyOption]: ProtocolAction } = {
+  [CockpitModifierKeyOption.regular]: {
+    protocol: JoystickProtocol.CockpitModifierKey,
+    id: CockpitModifierKeyOption.regular,
+    name: 'Regular',
+  },
+  [CockpitModifierKeyOption.shift]: {
+    protocol: JoystickProtocol.CockpitModifierKey,
+    id: CockpitModifierKeyOption.shift,
+    name: 'Shift',
   },
 }
