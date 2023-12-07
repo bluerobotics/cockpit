@@ -156,6 +156,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
         return
       }
+      maybeProfile.hash = uuid4()
       const newProfile = saveProfile(maybeProfile)
       loadProfile(newProfile)
     }
@@ -312,6 +313,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         Swal.fire({ icon: 'error', text: 'Invalid view file.', timer: 3000 })
         return
       }
+      maybeView.hash = uuid4()
       currentProfile.value.views.unshift(maybeView)
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
