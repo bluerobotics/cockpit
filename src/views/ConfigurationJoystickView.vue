@@ -75,8 +75,7 @@
             :b15="joystick.state.buttons[15]"
             :b16="joystick.state.buttons[16]"
             :b17="joystick.state.buttons[17]"
-            :protocol-mapping="controllerStore.protocolMapping"
-            :button-label-correspondency="controllerStore.availableProtocolButtonFunctions"
+            :buttons-actions-correspondency="currentButtonActions"
             @click="(e) => setCurrentInputs(joystick, e)"
           />
         </div>
@@ -130,8 +129,7 @@
             :b15="currentJoystick.state.buttons[15]"
             :b16="currentJoystick.state.buttons[16]"
             :b17="currentJoystick.state.buttons[17]"
-            :protocol-mapping="controllerStore.protocolMapping"
-            :button-label-correspondency="controllerStore.availableProtocolButtonFunctions"
+            :buttons-actions-correspondency="currentButtonActions"
           />
           <div>
             <div v-for="(input, i) in currentInputs" :key="i" class="flex flex-col items-center justify-between">
