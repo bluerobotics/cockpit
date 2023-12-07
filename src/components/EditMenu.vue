@@ -27,6 +27,7 @@
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
               <div class="grow" />
               <div class="icon-btn mdi mdi-download" @click.stop="store.exportProfile(profile)" />
+              <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateProfile(profile)" />
               <div class="icon-btn mdi mdi-cog" @click.stop="renameProfile(profile)" />
               <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
             </Button>
