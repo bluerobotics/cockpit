@@ -1,6 +1,7 @@
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType, MavModeFlag } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
+import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Copter-4.3/apm.pdef.json'
 
 import * as Vehicle from '../vehicle'
 import { ArduPilotVehicle } from './ardupilot'
@@ -71,6 +72,7 @@ export enum CustomMode {
  */
 export class ArduCopter extends ArduPilotVehicle<CustomMode> {
   _mode: CustomMode = CustomMode.PRE_FLIGHT
+  _metadata = arducopter_metadata
 
   /**
    * Create ArduCopter vehicle

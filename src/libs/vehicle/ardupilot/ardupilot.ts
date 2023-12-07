@@ -42,6 +42,7 @@ import {
   StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
+import type { MetadataFile } from '@/types/ardupilot-metadata'
 import { ProtocolControllerState } from '@/types/joystick'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
@@ -74,6 +75,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _statusText = new StatusText()
   _statusGPS = new StatusGPS()
   _vehicleSpecificErrors = [0, 0, 0, 0]
+  _metadata: MetadataFile
 
   _messages: MAVLinkMessageDictionary = new Map()
 
@@ -441,6 +443,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   isArmed(): boolean {
     return this._isArmed
+  }
+
+  /**
+   * Return metadata from the vehicle
+   * @returns {MetadataFile}
+   */
+  metadata(): MetadataFile {
+    return this._metadata
   }
 
   /**
