@@ -300,6 +300,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentViewIndex.value = index
   }
 
+  const duplicateView = (view: View): void => {
+    currentProfile.value.views.unshift({
+      hash: uuid4(),
+      name: view.name.concat('+'),
+      widgets: view.widgets,
+      miniWidgetContainers: view.miniWidgetContainers,
+      showBottomBarOnBoot: view.showBottomBarOnBoot,
+    })
+    currentViewIndex.value = 0
+  }
+
   const exportView = (view: View): void => {
     const blob = new Blob([JSON.stringify(view)], { type: 'text/plain;charset=utf-8' })
     saveAs(blob, `cockpit-widget-view.json`)
@@ -509,6 +520,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     deleteView,
     renameView,
     selectView,
+    duplicateView,
     exportView,
     importView,
     addWidget,
