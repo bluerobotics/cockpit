@@ -18,7 +18,11 @@ import {
   JoystickProtocol,
 } from '@/types/joystick'
 
-export type controllerUpdateCallback = (state: JoystickState, protocolMapping: ProtocolControllerMapping) => void
+export type controllerUpdateCallback = (
+  state: JoystickState,
+  protocolActionsMapping: JoystickProtocolActionsMapping,
+  activeButtonActions: ProtocolAction[]
+) => void
 
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
@@ -62,8 +66,37 @@ export const useControllerStore = defineStore('controller', () => {
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
 
     for (const callback of updateCallbacks.value) {
-      callback(joystick.state, protocolMapping.value)
+      callback(joystick.state, protocolMapping.value, activeButtonActions(joystick.state, protocolMapping.value))
     }
+  }
+
+  const activeButtonActions = (
+    joystickState: JoystickState,
+    mapping: JoystickProtocolActionsMapping
+  ): ProtocolAction[] => {
+    let modifierKeyId = modifierKeyActions.regular.id
+
+    Object.entries(mapping.buttonsCorrespondencies.regular).forEach((e) => {
+      const buttonActive = joystickState.buttons[Number(e[0])] ?? 0 > 0.5
+      const isModifier = Object.values(modifierKeyActions)
+        .map((a) => JSON.stringify(a))
+        .includes(JSON.stringify(e[1].action))
+      if (buttonActive && isModifier) {
+        modifierKeyId = e[1].action.id
+      }
+    })
+
+    const modKeyAction = modifierKeyActions[modifierKeyId as CockpitModifierKeyOption]
+
+    const activeActions = joystickState.buttons
+      .map((btnState, idx) => ({ id: idx, value: btnState }))
+      .filter((btn) => btn.value ?? 0 > 0.5)
+      .map(
+        (btn) =>
+          mapping.buttonsCorrespondencies[modifierKeyId as CockpitModifierKeyOption][btn.id as JoystickButton].action
+      )
+
+    return activeActions.concat(modKeyAction)
   }
 
   // If there's a mapping in our database that is not on the user storage, add it to the user
