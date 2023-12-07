@@ -131,7 +131,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * Reset saved profiles to original state
    */
   function resetSavedProfiles(): void {
-    savedProfiles.value.splice(0, savedProfiles.value.length)
+    savedProfiles.value = widgetProfiles
+    currentProfileIndex.value = 0
+    currentViewIndex.value = 0
   }
 
   const exportProfile = (profile: Profile): void => {
