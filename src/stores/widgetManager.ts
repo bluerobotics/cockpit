@@ -243,6 +243,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
   }
 
+  const duplicateProfile = (profile: Profile): void => {
+    savedProfiles.value.unshift({
+      hash: uuid4(),
+      name: profile.name.concat('+'),
+      views: profile.views,
+    })
+    currentProfileIndex.value = 0
+  }
+
   /**
    * Deletes a view from the store
    * @param { View } view - View
@@ -495,6 +504,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     importProfile,
     addProfile,
     deleteProfile,
+    duplicateProfile,
     addView,
     deleteView,
     renameView,
