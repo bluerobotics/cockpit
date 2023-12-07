@@ -79,7 +79,7 @@ export abstract class AbstractVehicle<Modes> {
   onMode = new Signal<Modes>()
   onPosition = new Signal<Coordinates>()
   onPowerSupply = new Signal<PowerSupply>()
-  onParameter = new Signal<Parameter>()
+  onParameter = new Signal<[Parameter, number | undefined]>()
   onStatusGPS = new Signal<StatusGPS>()
   onStatusText = new Signal<StatusText>()
   onVelocity = new Signal<Velocity>()
@@ -114,7 +114,7 @@ export abstract class AbstractVehicle<Modes> {
     this.onMode.register_caller(() => this.mode())
     this.onPosition.register_caller(() => this.position())
     this.onPowerSupply.register_caller(() => this.powerSupply())
-    this.onParameter.register_caller(() => this.lastParameter())
+    this.onParameter.register_caller(() => [this.lastParameter(), this.totalParametersCount()])
     this.onStatusText.register_caller(() => this.statusText())
     this.onStatusGPS.register_caller(() => this.statusGPS())
     this.onVelocity.register_caller(() => this.velocity())
@@ -180,6 +180,7 @@ export abstract class AbstractVehicle<Modes> {
   abstract position(): Coordinates
   abstract velocity(): Velocity
   abstract powerSupply(): PowerSupply
+  abstract totalParametersCount(): number | undefined
   abstract lastParameter(): Parameter
   abstract statusText(): StatusText
   abstract statusGPS(): StatusGPS
