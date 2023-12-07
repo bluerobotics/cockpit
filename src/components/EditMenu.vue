@@ -72,6 +72,7 @@
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
               <div class="grow" />
               <div class="icon-btn mdi mdi-download" @click.stop="store.exportView(view)" />
+              <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateView(view)" />
               <div class="icon-btn mdi mdi-cog" @click.stop="renameView(view)" />
               <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteView(view)" />
             </Button>
