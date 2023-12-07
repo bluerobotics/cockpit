@@ -430,6 +430,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     location.reload()
   }
 
+  // Make sure the interface is not booting with a profile or view that does not exist
+  if (currentProfileIndex.value >= savedProfiles.value.length) currentProfileIndex.value = 0
+  if (currentViewIndex.value >= currentProfile.value.views.length) currentViewIndex.value = 0
+
   const resetWidgetsEditingState = (forcedState?: boolean): void => {
     currentProfile.value.views.forEach((view) => {
       view.widgets.forEach((widget) => {
