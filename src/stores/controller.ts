@@ -99,6 +99,37 @@ export const useControllerStore = defineStore('controller', () => {
     return activeActions.concat(modKeyAction)
   }
 
+  setInterval(() => {
+    // eslint-disable-next-line jsdoc/require-jsdoc
+    const btnsToUnmap: { modKey: CockpitModifierKeyOption; button: JoystickButton }[] = []
+    Object.entries(protocolMapping.value.buttonsCorrespondencies.regular).forEach((v) => {
+      if (v[1].action.protocol == JoystickProtocol.CockpitModifierKey) {
+        btnsToUnmap.push({ modKey: v[1].action.id as CockpitModifierKeyOption, button: Number(v[0]) as JoystickButton })
+      }
+    })
+
+    Object.entries(protocolMapping.value.buttonsCorrespondencies).forEach(([modKey, mapping]) => {
+      Object.entries(mapping).forEach(([btn, action]) => {
+        const modKeyAction = modifierKeyActions[modKey as CockpitModifierKeyOption]
+        if (JSON.stringify(action.action) !== JSON.stringify(modKeyAction)) return
+        Swal.fire({ text: "Cannot map modifier key to it's own layout.", icon: 'warning' })
+        protocolMapping.value.buttonsCorrespondencies[modKey as CockpitModifierKeyOption][
+          Number(btn) as JoystickButton
+        ].action = otherAvailableActions.no_function
+      })
+    })
+
+    btnsToUnmap.forEach((v) => {
+      const actionToUnmap = protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action
+      if (JSON.stringify(actionToUnmap) === JSON.stringify(otherAvailableActions.no_function)) return
+      Swal.fire({
+        text: `Unmapping '${actionToUnmap.name} from ${v.modKey} layout. Cannot use same button as the modifier.`,
+        icon: 'warning',
+      })
+      protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action = otherAvailableActions.no_function
+    })
+  }, 1000)
+
   // If there's a mapping in our database that is not on the user storage, add it to the user
   // This will happen whenever a new joystick profile is added to Cockpit's database
   Object.entries(availableGamepadToCockpitMaps).forEach(([k, v]) => {
