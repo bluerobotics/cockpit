@@ -70,6 +70,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
   _lastParameter = new Parameter()
+  _totalParametersCount: number | undefined = undefined
   _currentCockpitMissionItemsOnPlanning: Waypoint[] = []
   _currentMavlinkMissionItemsOnVehicle: Message.MissionItemInt[] = []
   _statusText = new StatusText()
@@ -322,11 +323,12 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       case MAVLinkType.PARAM_VALUE: {
         const receivedMessage = mavlink_message.message as Message.ParamValue
         const param_name = receivedMessage.param_id.join('').replace(/\0/g, '')
-        const { param_value } = receivedMessage
+        const { param_value, param_count } = receivedMessage
         // We need this due to mismatches between js 64-bit floats and REAL32 in MAVLink
         const trimmed_value = Math.round(param_value * 10000) / 10000
 
         this._lastParameter = { name: param_name, value: trimmed_value }
+        this._totalParametersCount = Number(param_count)
         this.onParameter.emit()
         break
       }
@@ -479,6 +481,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   lastParameter(): Parameter {
     return this._lastParameter
+  }
+
+  /**
+   * Return total amount of parameters in the vehicle
+   * @returns {number}
+   */
+  totalParametersCount(): number | undefined {
+    return this._totalParametersCount
   }
 
   /**
