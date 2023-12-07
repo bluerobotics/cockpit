@@ -126,7 +126,12 @@
               >
                 {{ remappingInput ? 'Remapping' : 'Click to remap' }}
               </v-btn>
-              <p class="font-medium text-slate-400">{{ buttonRemappingText }}</p>
+              <Transition>
+                <p v-if="showButtonRemappingText" class="font-medium text-slate-400">{{ buttonRemappingText }}</p>
+              </Transition>
+              <Transition>
+                <v-progress-linear v-if="remappingInput" v-model="remapTimeProgress" />
+              </Transition>
             </div>
             <div class="flex flex-col items-center justify-between w-full my-2">
               <div class="flex w-[90%] justify-evenly">
@@ -151,6 +156,11 @@
               </div>
             </div>
           </div>
+          <Transition>
+            <p v-if="showButtonFunctionAssignmentFeedback" class="text-lg font-medium">
+              {{ buttonFunctionAssignmentFeedback }}
+            </p>
+          </Transition>
           <div class="w-[90%] h-[2px] my-5 bg-slate-900/20" />
           <p class="flex items-center justify-center w-full text-xl font-bold text-slate-600">Axis mapping</p>
           <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2">
@@ -233,6 +243,10 @@ const currentJoystick = ref<Joystick>()
 const currentButtonInputs = ref<JoystickButtonInput[]>([])
 const currentAxisInputs = ref<JoystickAxisInput[]>([])
 const remappingInput = ref(false)
+const remapTimeProgress = ref()
+const showButtonRemappingText = ref(false)
+const buttonFunctionAssignmentFeedback = ref('')
+const showButtonFunctionAssignmentFeedback = ref(false)
 const justRemappedInput = ref<boolean>()
 const inputClickedDialog = ref(false)
 const currentModifierKey = ref(modifierKeyActions.regular)
@@ -268,6 +282,8 @@ const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<voi
   let millisPassed = 0
   const waitingTime = 5000
   remappingInput.value = true
+  remapTimeProgress.value = 0
+  showButtonRemappingText.value = true
 
   // Wait for a button press or until the waiting time expires
   while ([undefined, -1].includes(pressedButtonIndex) && millisPassed < waitingTime) {
@@ -275,10 +291,13 @@ const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<voi
     pressedButtonIndex = joystick.gamepad.buttons.findIndex((button) => button.value === 1)
     await new Promise((r) => setTimeout(r, 100))
     millisPassed += 100
+    remapTimeProgress.value = 100 * (millisPassed / waitingTime)
   }
 
   // End the remapping process
   remappingInput.value = false
+
+  setTimeout(() => (showButtonRemappingText.value = false), 5000)
 
   // If a button was pressed, update the mapping of that joystick model in the controller store and return
   if (![undefined, -1].includes(pressedButtonIndex)) {
@@ -300,6 +319,9 @@ const updateButtonAction = (input: JoystickInput, action: ProtocolAction): void 
   ].action = action
   showJoystickLayout.value = false
   nextTick(() => (showJoystickLayout.value = true))
+  buttonFunctionAssignmentFeedback.value = `Button ${input.id} remapped to function '${action.name}'.`
+  showButtonFunctionAssignmentFeedback.value = true
+  setTimeout(() => (showButtonFunctionAssignmentFeedback.value = false), 5000)
 }
 
 // Automatically change between modifier key tabs/layouts when they are pressed
