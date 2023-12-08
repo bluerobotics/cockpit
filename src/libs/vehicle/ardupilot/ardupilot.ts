@@ -18,7 +18,7 @@ import {
   MavState,
   MavType,
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { MavFrame, MavResult } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { MavlinkControllerState } from '@/libs/joystick/protocols'
 import { SignalTyped } from '@/libs/signal'
@@ -58,7 +58,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0
-  _last_ack = { command: MavResult }
   _coordinates = new Coordinates({
     precision: 0,
     altitude: 0,
@@ -392,35 +391,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Helper function for commanding takeoff
-   * @param {number} altitude
+   * @param {number} altitude (in meters)
    */
   async _takeoff(altitude: number): Promise<void> {
     this.sendCommandLong(MavCmd.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, altitude)
-
-    // check command is accepted
-    let timeoutReachedCount = false
-    const initTimeCount = new Date().getTime()
-    while (!timeoutReachedCount) {
-      const lastAckMessage = this._messages.get(MAVLinkType.COMMAND_ACK)
-      if (lastAckMessage !== undefined) {
-        console.log(lastAckMessage.command)
-        console.log(lastAckMessage.result)
-        if (lastAckMessage.result == MavResult.MAV_RESULT_ACCEPTED) {
-          console.log('MAV accepted command takeoff')
-          // emit takeoff event
-          this.onTakeoff.emit()
-          return
-        } else {
-          throw Error('MAV rejected command')
-        }
-      }
-
-      await new Promise((r) => setTimeout(r, 100))
-      timeoutReachedCount = new Date().getTime() - initTimeCount > 10000
-    }
-    if (timeoutReachedCount) {
-      throw Error('MAV did not acknowledge command ')
-    }
   }
 
   /**
@@ -428,7 +402,12 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @returns {boolean}
    */
   takeoff(): boolean {
-    this.setMode(this.modesAvailable().get('GUIDED') as Modes)
+    const guidedMode = this.modesAvailable().get('GUIDED')
+    if (guidedMode === undefined) {
+      return false
+    }
+
+    this.setMode(guidedMode as Modes)
     this.arm()
     this._takeoff(10)
     this.onTakeoff.emit()
@@ -440,7 +419,11 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @returns {boolean}
    */
   land(): boolean {
-    this.setMode(this.modesAvailable().get('LAND') as Modes)
+    const landMode = this.modesAvailable().get('LAND')
+    if (landMode === undefined) {
+      return false
+    }
+    this.setMode(landMode as Modes)
     return true
   }
 
