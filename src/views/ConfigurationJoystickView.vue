@@ -102,6 +102,13 @@
             />
             Import joystick mapping
           </label>
+          <div class="grow" />
+          <button
+            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
+            @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
+          >
+            Export functions mapping
+          </button>
         </div>
       </div>
     </template>

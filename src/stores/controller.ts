@@ -158,6 +158,11 @@ export const useControllerStore = defineStore('controller', () => {
     reader.readAsText(e.target.files[0])
   }
 
+  const exportFunctionsMapping = (protocolActionsMapping: JoystickProtocolActionsMapping): void => {
+    const blob = new Blob([JSON.stringify(protocolActionsMapping)], { type: 'text/plain;charset=utf-8' })
+    saveAs(blob, `cockpit-std-profile-joystick-${protocolActionsMapping.name}.json`)
+  }
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -168,5 +173,6 @@ export const useControllerStore = defineStore('controller', () => {
     availableButtonActions,
     exportJoystickMapping,
     importJoystickMapping,
+    exportFunctionsMapping,
   }
 })
