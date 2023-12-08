@@ -392,38 +392,38 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * Helper function for commanding takeoff
    * @param {number} altitude (in meters)
    */
-  async _takeoff(altitude: number): Promise<void> {
+  _takeoff(altitude: number): void {
     this.sendCommandLong(MavCmd.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, altitude)
   }
 
   /**
    * Takeoff
-   * @returns {boolean}
+   * @returns {void}
    */
-  takeoff(): boolean {
+  takeoff(): void {
     const guidedMode = this.modesAvailable().get('GUIDED')
     if (guidedMode === undefined) {
-      return false
+      return
     }
 
     this.setMode(guidedMode as Modes)
     this.arm()
     this._takeoff(10)
     this.onTakeoff.emit()
-    return true
+    return
   }
 
   /**
    * Land
-   * @returns {boolean}
+   * @returns {void}
    */
-  land(): boolean {
+  land(): void {
     const landMode = this.modesAvailable().get('LAND')
     if (landMode === undefined) {
-      return false
+      return
     }
     this.setMode(landMode as Modes)
-    return true
+    return
   }
 
   /**
