@@ -17,7 +17,7 @@ To start, clone the repository and its submodules. The submodules are required c
 git clone --recurse-submodules git@github.com:bluerobotics/cockpit.git
 ```
 
-After that you should [install bun](https://bun.sh/docs/installation). We really recomend following their documented instructions, as it was already reported by some that installing `bun` from alternatives like Snap has not worked properly.
+Next, [install bun](https://bun.sh/docs/installation). Following their documented instructions is strongly recommended - we have received reports that installing `bun` from alternatives like Snap did not work properly.
 
 With `bun` installed, you can enter the repository folder and follow the steps below:
 
