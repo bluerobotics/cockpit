@@ -161,8 +161,10 @@
               {{ buttonFunctionAssignmentFeedback }}
             </p>
           </Transition>
-          <div class="w-[90%] h-[2px] my-5 bg-slate-900/20" />
-          <p class="flex items-center justify-center w-full text-xl font-bold text-slate-600">Axis mapping</p>
+          <template v-if="currentAxisInputs.length > 0">
+            <div class="w-[90%] h-[2px] my-5 bg-slate-900/20" />
+            <p class="flex items-center justify-center w-full text-xl font-bold text-slate-600">Axis mapping</p>
+          </template>
           <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2">
             <v-icon class="mr-3">
               {{ [JoystickAxis.A0, JoystickAxis.A2].includes(input.id) ? 'mdi-pan-horizontal' : 'mdi-pan-vertical' }}
