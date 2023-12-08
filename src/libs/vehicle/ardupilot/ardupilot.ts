@@ -484,10 +484,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
-   * Check if the UI should show the takeoff button
+   * Check if the vehicle is flying
    * @returns {boolean}
    */
-  showTakeoff(): boolean {
+  flying(): boolean {
     return !this._flying
   }
 
