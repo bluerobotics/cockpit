@@ -194,6 +194,22 @@ export const useControllerStore = defineStore('controller', () => {
     Swal.fire({ icon: 'success', text: 'Joystick functions mapping exported to vehicle.', timer: 3000 })
   }
 
+  const importFunctionsMappingFromVehicle = async (vehicleAddress: string): Promise<void> => {
+    const newMapping = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, protocolMappingKey)
+    if (
+      !newMapping ||
+      !newMapping['name'] ||
+      !newMapping['axesCorrespondencies'] ||
+      !newMapping['buttonsCorrespondencies']
+    ) {
+      Swal.fire({ icon: 'error', text: 'Could not import functions mapping from vehicle. Invalid data.', timer: 3000 })
+      return
+    }
+    // @ts-ignore: We check for the necessary fields in the if before
+    protocolMapping.value = newMapping
+    Swal.fire({ icon: 'success', text: 'Joystick functions mapping imported from vehicle.', timer: 3000 })
+  }
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -207,5 +223,6 @@ export const useControllerStore = defineStore('controller', () => {
     exportFunctionsMapping,
     importFunctionsMapping,
     exportFunctionsMappingToVehicle,
+    importFunctionsMappingFromVehicle,
   }
 })
