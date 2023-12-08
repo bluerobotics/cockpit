@@ -10,6 +10,7 @@ import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import {
+  type GamepadToCockpitStdMapping,
   type JoystickProtocolActionsMapping,
   type JoystickState,
   type ProtocolAction,
@@ -26,12 +27,13 @@ export type controllerUpdateCallback = (
 ) => void
 
 const protocolMappingKey = 'cockpit-protocol-mapping-v4'
+const cockpitStdMappingsKey = 'cockpit-standard-mappings'
 
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMapping = useStorage(protocolMappingKey, cockpitStandardToProtocols)
-  const cockpitStdMappings = useStorage('cockpit-standard-mappings', availableGamepadToCockpitMaps)
+  const cockpitStdMappings = useStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
   const availableAxesActions = allAvailableAxes
   const availableButtonActions = allAvailableButtons
   const enableForwarding = ref(true)
@@ -161,6 +163,14 @@ export const useControllerStore = defineStore('controller', () => {
     reader.readAsText(e.target.files[0])
   }
 
+  const exportJoysticksMappingsToVehicle = async (
+    vehicleAddress: string,
+    joystickMappings: { [key in JoystickModel]: GamepadToCockpitStdMapping }
+  ): Promise<void> => {
+    await setKeyDataOnCockpitVehicleStorage(vehicleAddress, cockpitStdMappingsKey, joystickMappings)
+    Swal.fire({ icon: 'success', text: 'Joystick mapping exported to vehicle.', timer: 3000 })
+  }
+
   const exportFunctionsMapping = (protocolActionsMapping: JoystickProtocolActionsMapping): void => {
     const blob = new Blob([JSON.stringify(protocolActionsMapping)], { type: 'text/plain;charset=utf-8' })
     saveAs(blob, `cockpit-std-profile-joystick-${protocolActionsMapping.name}.json`)
@@ -220,6 +230,7 @@ export const useControllerStore = defineStore('controller', () => {
     availableButtonActions,
     exportJoystickMapping,
     importJoystickMapping,
+    exportJoysticksMappingsToVehicle,
     exportFunctionsMapping,
     importFunctionsMapping,
     exportFunctionsMappingToVehicle,

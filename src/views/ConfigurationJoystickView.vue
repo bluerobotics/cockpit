@@ -102,6 +102,12 @@
             />
             Import joystick mapping
           </label>
+          <button
+            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
+            @click="controllerStore.exportJoysticksMappingsToVehicle(globalAddress, controllerStore.cockpitStdMappings)"
+          >
+            Export joystick mapping to vehicle
+          </button>
           <div class="grow" />
           <button
             class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
