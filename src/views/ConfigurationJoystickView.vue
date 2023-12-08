@@ -139,7 +139,7 @@
                   <span class="mx-auto text-xl font-bold">{{ protocol }}</span>
                   <div class="flex flex-col items-center px-2 py-1 overflow-y-auto">
                     <Button
-                      v-for="action in controllerStore.availableButtonActions.filter((a) => a.protocol === protocol)"
+                      v-for="action in buttonActionsToShow.filter((a) => a.protocol === protocol)"
                       :key="action.name"
                       class="w-full my-1 text-sm hover:bg-slate-700"
                       :class="{
@@ -353,4 +353,8 @@ const buttonRemappingText = computed(() => {
     ? 'Input remapped.'
     : 'No input detected.'
 })
+
+const buttonActionsToShow = computed(() =>
+  controllerStore.availableButtonActions.filter((a) => JSON.stringify(a) !== JSON.stringify(modifierKeyActions.regular))
+)
 </script>
