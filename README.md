@@ -11,7 +11,7 @@ An intuitive and customizable cross-platform ground control station for remote v
 ## Installing Cockpit
 Cockpit is typically installed as an Electron application or BlueOS Extension, but for development purposes it is valuable to run it locally.
 
-First of all, you need to clone the repository and it's submodules. Don't forget to clone the submodules as they are needed for Cockpit to run:
+To start, clone the repository and its submodules. The submodules are required components for Cockpit to be able to run:
 
 ```
 git clone --recurse-submodules git@github.com:bluerobotics/cockpit.git
