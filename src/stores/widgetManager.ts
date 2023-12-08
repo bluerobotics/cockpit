@@ -24,8 +24,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
-  const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v3', miniWidgetsProfile)
-  const savedProfiles = useStorage<Profile[]>('cockpit-saved-profiles-v7', [])
+  const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
+  const savedProfiles = useStorage<Profile[]>('cockpit-saved-profiles-v8', [])
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
   const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
 
@@ -426,7 +426,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   if (savedProfiles.value.isEmpty()) {
     importProfilesFromVehicle()
     widgetProfiles.forEach((profile) => {
-      // @ts-ignore: structuredClone is a thing since a long time ago
       const userProfile = structuredClone(profile)
       userProfile.name = userProfile.name.replace('Default', 'User')
       userProfile.hash = uuid4()

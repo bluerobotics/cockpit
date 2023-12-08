@@ -108,6 +108,7 @@ const { availableStreams, availableICEIPs, mediaStream, signallerStatus, streamS
   selectedStream,
   allowedIceIps
 )
+watch(allowedIceIps, () => (selectedICEIPsField.value = allowedIceIps.value))
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
@@ -150,7 +151,7 @@ watch(selectedICEIPsField, () => {
 })
 
 setInterval(() => {
-  const combinedIps = [...videoStore.availableIceIps, ...availableICEIPs.value]
+  const combinedIps = [...(videoStore.availableIceIps ?? []), ...availableICEIPs.value]
   const uniqueIps = combinedIps.filter((value, index, array) => array.indexOf(value) === index)
   videoStore.availableIceIps = uniqueIps
 }, 1000)

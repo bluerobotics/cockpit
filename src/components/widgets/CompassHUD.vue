@@ -41,10 +41,12 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { datalogger, DatalogVariable } from '@/libs/logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
+datalogger.registerUsage(DatalogVariable.heading)
 const store = useMainVehicleStore()
 const props = defineProps<{
   /**

@@ -26,10 +26,12 @@ import { computed, onBeforeMount, ref, toRefs } from 'vue'
 
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
+import { datalogger, DatalogVariable } from '@/libs/logging'
 import { degrees, radians, resetCanvas, sequentialArray } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'
 
+datalogger.registerUsage(DatalogVariable.heading)
 const store = useMainVehicleStore()
 const compassRoot = ref()
 const canvasRef = ref<HTMLCanvasElement | undefined>()

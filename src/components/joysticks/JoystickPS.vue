@@ -111,7 +111,7 @@ const findInputFromPath = (path: string): JoystickInput[] => {
   Object.entries(buttonPath).filter(([, v]) => v === path).forEach((button) => {
     inputs.push({ type: InputType.Button, value: button[0] as unknown as JoystickButton })
   })
-  Object.entries(axisPath).filter(([, v]) => v === path).forEach((axis) => {
+  Object.entries(axisPath.value).filter(([, v]) => v === path).forEach((axis) => {
     inputs.push({ type: InputType.Axis, value: axis[0] as unknown as JoystickAxis })
   })
   return inputs

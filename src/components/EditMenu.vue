@@ -101,7 +101,7 @@
       <VueDraggable
         v-model="store.currentView.widgets"
         class="flex flex-col items-center w-full px-2 overflow-x-hidden overflow-y-auto grow"
-        animation="150"
+        :animation="150"
         group="regularWidgetsGroup"
       >
         <TransitionGroup name="fade">

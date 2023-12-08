@@ -57,12 +57,14 @@ import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { format, intervalToDuration } from 'date-fns'
 import { saveAs } from 'file-saver'
 import fixWebmDuration from 'fix-webm-duration'
+import localforage from 'localforage'
 import { storeToRefs } from 'pinia'
 import Swal, { type SweetAlertResult } from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
 import { WebRTCManager } from '@/composables/webRTC'
+import { datalogger } from '@/libs/logging'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -99,6 +101,14 @@ const timeNow = useTimestamp({ interval: 100 })
 
 const isRecording = computed(() => {
   return mediaRecorder.value !== undefined && mediaRecorder.value.state === 'recording'
+})
+
+const cockpitVideoDB = localforage.createInstance({
+  driver: localforage.INDEXEDDB,
+  name: 'CockpitVideoDB',
+  storeName: 'cockpit-video-db',
+  version: 1.0,
+  description: 'Local backups of Cockpit video recordings to be retrieved in case of failure.',
 })
 
 onBeforeMount(async () => {
@@ -183,16 +193,30 @@ const startRecording = async (): Promise<SweetAlertResult | void> => {
   }
 
   timeRecordingStart.value = new Date()
+  const fileName = `${missionName || 'Cockpit'} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`
   mediaRecorder.value = new MediaRecorder(mediaStream.value)
-  mediaRecorder.value.start()
+  if (!datalogger.logging()) {
+    datalogger.startLogging()
+  }
+  const videoTrack = mediaStream.value.getVideoTracks()[0]
+  const vWidth = videoTrack.getSettings().width || 1920
+  const vHeight = videoTrack.getSettings().height || 1080
+  mediaRecorder.value.start(1000)
   let chunks: Blob[] = []
-  mediaRecorder.value.ondataavailable = (e) => chunks.push(e.data)
+  mediaRecorder.value.ondataavailable = async (e) => {
+    chunks.push(e.data)
+    await cockpitVideoDB.setItem(fileName, chunks)
+  }
 
   mediaRecorder.value.onstop = () => {
     const blob = new Blob(chunks, { type: 'video/webm' })
+    const videoTelemetryLog = datalogger.getSlice(datalogger.currentCockpitLog, timeRecordingStart.value, new Date())
+    const assLog = datalogger.toAssOverlay(videoTelemetryLog, vWidth, vHeight, timeRecordingStart.value.getTime())
+    var logBlob = new Blob([assLog], { type: 'text/plain' })
     fixWebmDuration(blob, Date.now() - timeRecordingStart.value.getTime()).then((fixedBlob) => {
-      const fileName = `${missionName || 'Cockpit'} (${format(timeRecordingStart.value, 'LLL dd, yyyy - HH꞉mm꞉ss O')})`
-      saveAs(fixedBlob, fileName)
+      saveAs(fixedBlob, `${fileName}.webm`)
+      saveAs(logBlob, `${fileName}.ass`)
+      cockpitVideoDB.removeItem(fileName)
     })
     chunks = []
     mediaRecorder.value = undefined

@@ -54,7 +54,14 @@
           <v-card class="pa-2">
             <v-card-title>Mission configuration</v-card-title>
             <v-card-text>
-              <v-text-field v-model="store.missionName" hide-details="auto" label="Mission name" />
+              <div class="flex">
+                <v-text-field
+                  v-model="store.missionName"
+                  label="Mission name"
+                  append-inner-icon="mdi-restore"
+                  @click:append-inner="store.missionName = store.lastMissionName"
+                />
+              </div>
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -66,16 +73,21 @@
             <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
               <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
             </button>
-            <div class="flex items-center justify-center h-full ml-3 mr-1">
-              <p
-                class="overflow-hidden text-lg font-medium leading-none text-white cursor-pointer select-none max-h-9"
-                @click="showMissionOptionsDialog = true"
-              >
-                {{ store.missionName }}
-              </p>
+            <div
+              class="flex items-center justify-start h-full px-4 ml-3 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
+              @click="showMissionOptionsDialog = true"
+            >
+              <div class="flex items-center h-full overflow-hidden text-lg font-medium leading-none text-white">
+                <p v-if="store.missionName">{{ store.missionName }}</p>
+                <p v-else>
+                  {{ randomMissionName }}
+                  <FontAwesomeIcon icon="fa-pen-to-square" size="md" class="ml-2 text-slate-200/30" />
+                </p>
+              </div>
             </div>
             <div class="grow" />
             <Alerter class="max-w-sm min-w-fit" />
+            <div class="grow" />
             <div class="flex-1">
               <MiniWidgetContainer
                 :container="widgetStore.currentMiniWidgetsProfile.containers[0]"
@@ -135,6 +147,7 @@ import {
 import { useRoute } from 'vue-router'
 
 import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
+import { coolMissionNames } from '@/libs/funny-name/words'
 import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
 import { useMissionStore } from '@/stores/mission'
 
@@ -142,6 +155,7 @@ import Dialog from './components/Dialog.vue'
 import EditMenu from './components/EditMenu.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import Alerter from './components/widgets/Alerter.vue'
+import { datalogger } from './libs/logging'
 import { useWidgetManagerStore } from './stores/widgetManager'
 
 const widgetStore = useWidgetManagerStore()
@@ -169,6 +183,7 @@ const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscree
 // Mission identification
 const store = useMissionStore()
 const showMissionOptionsDialog = ref(false)
+const randomMissionName = coolMissionNames.random()
 
 // Clock
 const timeNow = useTimestamp({ interval: 1000 })
@@ -196,6 +211,9 @@ watch([() => widgetStore.currentView, () => widgetStore.currentView.showBottomBa
 const debouncedToggleBottomBar = useDebounceFn(() => (showBottomBarNow.value = !showBottomBarNow.value), 25)
 const bottomBarToggleCallbackId = registerActionCallback(CockpitAction.TOGGLE_BOTTOM_BAR, debouncedToggleBottomBar)
 onBeforeUnmount(() => unregisterActionCallback(bottomBarToggleCallbackId))
+
+// Start datalogging
+datalogger.startLogging()
 </script>
 
 <style>

@@ -1,9 +1,7 @@
 <template>
-  <div
-    class="flex items-center justify-center h-12 py-1 text-white transition-all cursor-pointer w-fit hover:bg-slate-100/20"
-  >
+  <div class="flex items-center justify-center h-12 py-1 text-white transition-all w-[7rem]">
     <span class="relative w-[2rem] mdi icon-symbol" :class="[miniWidget.options.iconName]"></span>
-    <div class="flex flex-col items-start justify-center mx-1 select-none w-fit min-w-[3rem]">
+    <div class="flex flex-col items-start justify-center ml-1 select-none w-[4.75rem]">
       <div>
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
         <span class="text-xl font-semibold leading-6 w-fit">
@@ -41,10 +39,6 @@
           <div class="w-48">
             <Dropdown v-model="miniWidget.options.variableName" :options="Object.keys(store.genericVariables)" />
           </div>
-        </div>
-        <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Fractional digits</span>
-          <input v-model="miniWidget.options.fractionalDigits" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Unit</span>
@@ -142,7 +136,6 @@ onBeforeMount(() => {
     Object.assign(miniWidget.value.options, {
       displayName: '',
       variableName: '',
-      fractionalDigits: 1,
       iconName: 'mdi-help-box',
       variableUnit: '%',
       variableMultiplier: 1,
@@ -157,14 +150,17 @@ onBeforeMount(() => {
 const store = useMainVehicleStore()
 
 const currentState = ref<unknown>(0)
+
+const finalValue = computed(() => Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value))
 const parsedState = computed(() => {
-  if (currentState.value !== undefined) {
-    return round(
-      Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value),
-      miniWidget.value.options.fractionalDigits as number
-    ).toFixed(miniWidget.value.options.fractionalDigits as number)
+  if (currentState.value === undefined) {
+    return '--'
   }
-  return '--'
+  const value = finalValue.value
+  if (value < 1) return value.toFixed(2)
+  if (value >= 1 && value < 100) return value.toFixed(1)
+  if (value >= 10000) return `${(value / 10000).toFixed(0)}k`
+  return value.toFixed(0)
 })
 
 const updateVariableState = (): void => {
