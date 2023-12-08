@@ -203,7 +203,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
@@ -313,8 +313,10 @@ const updateButtonAction = (input: JoystickInput, action: ProtocolAction): void 
   controllerStore.protocolMapping.buttonsCorrespondencies[currentModifierKey.value.id as CockpitModifierKeyOption][
     input.id
   ].action = action
-  showJoystickLayout.value = false
-  setTimeout(() => (showJoystickLayout.value = true), 3000)
+  setTimeout(() => {
+    showJoystickLayout.value = false
+    nextTick(() => (showJoystickLayout.value = true))
+  }, 1000)
   buttonFunctionAssignmentFeedback.value = `Button ${input.id} remapped to function '${action.name}'.`
   showButtonFunctionAssignmentFeedback.value = true
   setTimeout(() => (showButtonFunctionAssignmentFeedback.value = false), 5000)
