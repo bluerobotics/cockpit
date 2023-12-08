@@ -11,7 +11,13 @@ An intuitive and customizable cross-platform ground control station for remote v
 ## Installing Cockpit
 Cockpit is typically installed as an Electron application or BlueOS Extension, but for development purposes it is valuable to run it locally.
 
-To do so, you should first [install bun](https://bun.sh/docs/installation). We really recomend following their documented instructions, as it was already reported by some that installing `bun` from alternatives like Snap has not worked properly.
+To start, clone the repository and its submodules. The submodules are required components for Cockpit to be able to run:
+
+```
+git clone --recurse-submodules git@github.com:bluerobotics/cockpit.git
+```
+
+Next, [install bun](https://bun.sh/docs/installation). Following their documented instructions is strongly recommended - we have received reports that installing `bun` from alternatives like Snap did not work properly.
 
 With `bun` installed, you can enter the repository folder and follow the steps below:
 
