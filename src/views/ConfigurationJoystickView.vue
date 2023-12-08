@@ -109,6 +109,15 @@
           >
             Export functions mapping
           </button>
+          <label class="w-auto p-3 m-2 font-medium rounded-md shadow-md cursor-pointer text-uppercase">
+            <input
+              type="file"
+              accept="application/json"
+              hidden
+              @change="(e) => controllerStore.importFunctionsMapping(e)"
+            />
+            Import functions mapping
+          </label>
         </div>
       </div>
     </template>

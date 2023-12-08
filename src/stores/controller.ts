@@ -163,6 +163,26 @@ export const useControllerStore = defineStore('controller', () => {
     saveAs(blob, `cockpit-std-profile-joystick-${protocolActionsMapping.name}.json`)
   }
 
+  const importFunctionsMapping = async (e: Event): Promise<void> => {
+    const reader = new FileReader()
+    reader.onload = (event: Event) => {
+      // @ts-ignore: We know the event type and need refactor of the event typing
+      const contents = event.target.result
+      const maybeFunctionsMapping = JSON.parse(contents)
+      if (
+        !maybeFunctionsMapping['name'] ||
+        !maybeFunctionsMapping['axesCorrespondencies'] ||
+        !maybeFunctionsMapping['buttonsCorrespondencies']
+      ) {
+        Swal.fire({ icon: 'error', text: 'Invalid functions mapping file.', timer: 3000 })
+        return
+      }
+      protocolMapping.value = maybeFunctionsMapping
+    }
+    // @ts-ignore: We know the event type and need refactor of the event typing
+    reader.readAsText(e.target.files[0])
+  }
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -174,5 +194,6 @@ export const useControllerStore = defineStore('controller', () => {
     exportJoystickMapping,
     importJoystickMapping,
     exportFunctionsMapping,
+    importFunctionsMapping,
   }
 })
