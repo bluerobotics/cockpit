@@ -23,13 +23,15 @@ import { type Profile, type View, type Widget, isProfile, isView, WidgetType } f
 
 import { useMainVehicleStore } from './mainVehicle'
 
+const savedProfilesKey = 'cockpit-saved-profiles-v8'
+
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const vehicleStore = useMainVehicleStore()
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
-  const savedProfiles = useStorage<Profile[]>('cockpit-saved-profiles-v8', [])
+  const savedProfiles = useStorage<Profile[]>(savedProfilesKey, [])
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
   const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
 
@@ -164,10 +166,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   const importProfilesFromVehicle = async (): Promise<void> => {
-    const newProfiles = await getKeyDataFromCockpitVehicleStorage(
-      vehicleStore.globalAddress,
-      'cockpit-saved-profiles-v7'
-    )
+    const newProfiles = await getKeyDataFromCockpitVehicleStorage(vehicleStore.globalAddress, savedProfilesKey)
     if (!Array.isArray(newProfiles) || !newProfiles.every((profile) => isProfile(profile))) {
       Swal.fire({ icon: 'error', text: 'Could not import profiles from vehicle. Invalid data.', timer: 3000 })
       return
@@ -177,11 +176,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   const exportProfilesToVehicle = async (): Promise<void> => {
-    await setKeyDataOnCockpitVehicleStorage(
-      vehicleStore.globalAddress,
-      'cockpit-saved-profiles-v7',
-      savedProfiles.value
-    )
+    await setKeyDataOnCockpitVehicleStorage(vehicleStore.globalAddress, savedProfilesKey, savedProfiles.value)
     Swal.fire({ icon: 'success', text: 'Cockpit profiles exported to vehicle.', timer: 3000 })
   }
 
