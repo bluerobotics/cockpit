@@ -137,19 +137,19 @@ export const useControllerStore = defineStore('controller', () => {
     cockpitStdMappings.value[k as JoystickModel] = v
   })
 
-  const downloadJoystickProfile = (joystick: Joystick): void => {
+  const exportJoystickMapping = (joystick: Joystick): void => {
     const blob = new Blob([JSON.stringify(joystick.gamepadToCockpitMap)], { type: 'text/plain;charset=utf-8' })
     saveAs(blob, `cockpit-std-profile-joystick-${joystick.model}.json`)
   }
 
-  const loadJoystickProfile = async (joystick: Joystick, e: Event): Promise<void> => {
+  const importJoystickMapping = async (joystick: Joystick, e: Event): Promise<void> => {
     const reader = new FileReader()
     reader.onload = (event: Event) => {
       // @ts-ignore: We know the event type and need refactor of the event typing
       const contents = event.target.result
       const maybeProfile = JSON.parse(contents)
       if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
-        Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
+        Swal.fire({ icon: 'error', text: 'Invalid joystick mapping file.', timer: 3000 })
         return
       }
       cockpitStdMappings.value[joystick.model] = maybeProfile
@@ -166,7 +166,7 @@ export const useControllerStore = defineStore('controller', () => {
     cockpitStdMappings,
     availableAxesActions,
     availableButtonActions,
-    downloadJoystickProfile,
-    loadJoystickProfile,
+    exportJoystickMapping,
+    importJoystickMapping,
   }
 })
