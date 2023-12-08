@@ -128,7 +128,7 @@ export const useControllerStore = defineStore('controller', () => {
       })
       protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action = otherAvailableActions.no_function
     })
-  }, 1000)
+  }, 500)
 
   // If there's a mapping in our database that is not on the user storage, add it to the user
   // This will happen whenever a new joystick profile is added to Cockpit's database
