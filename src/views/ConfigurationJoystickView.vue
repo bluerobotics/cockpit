@@ -124,6 +124,12 @@
           >
             Export functions mapping to vehicle
           </button>
+          <button
+            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
+            @click="controllerStore.importFunctionsMappingFromVehicle(globalAddress)"
+          >
+            Import functions mapping from vehicle
+          </button>
         </div>
       </div>
     </template>
