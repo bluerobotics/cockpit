@@ -86,62 +86,73 @@
             @click="(e) => setCurrentInputs(joystick, e)"
           />
         </div>
-        <div class="flex flex-wrap">
-          <button
-            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
-            @click="controllerStore.exportJoystickMapping(joystick)"
-          >
-            Export joystick mapping
-          </button>
-          <label class="w-auto p-3 m-2 font-medium rounded-md shadow-md cursor-pointer text-uppercase">
-            <input
-              type="file"
-              accept="application/json"
-              hidden
-              @change="(e) => controllerStore.importJoystickMapping(joystick, e)"
-            />
-            Import joystick mapping
-          </label>
-          <button
-            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
-            @click="controllerStore.exportJoysticksMappingsToVehicle(globalAddress, controllerStore.cockpitStdMappings)"
-          >
-            Export joystick mapping to vehicle
-          </button>
-          <button
-            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
-            @click="controllerStore.importJoysticksMappingsFromVehicle(globalAddress)"
-          >
-            Import joystick mapping from vehicle
-          </button>
-          <div class="grow" />
-          <button
-            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
-            @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
-          >
-            Export functions mapping
-          </button>
-          <label class="w-auto p-3 m-2 font-medium rounded-md shadow-md cursor-pointer text-uppercase">
-            <input
-              type="file"
-              accept="application/json"
-              hidden
-              @change="(e) => controllerStore.importFunctionsMapping(e)"
-            />
-            Import functions mapping
-          </label>
-          <button
-            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
-            @click="controllerStore.exportFunctionsMappingToVehicle(globalAddress, controllerStore.protocolMapping)"
-          >
-            Export functions mapping to vehicle
-          </button>
-          <button
-            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
-            @click="controllerStore.importFunctionsMappingFromVehicle(globalAddress)"
-          >
-            Import functions mapping from vehicle
-          </button>
+        <div class="flex items-center justify-evenly">
+          <div class="flex flex-col items-center max-w-[30%] mb-4">
+            <span class="mb-2 text-xl font-medium text-slate-500">Joystick mapping</span>
+            <div class="flex flex-wrap items-center justify-evenly">
+              <button
+                class="p-2 m-1 font-medium border rounded-md text-uppercase"
+                @click="controllerStore.exportJoystickMapping(joystick)"
+              >
+                Export to computer
+              </button>
+              <label class="p-2 m-1 font-medium border rounded-md cursor-pointer text-uppercase">
+                <input
+                  type="file"
+                  accept="application/json"
+                  hidden
+                  @change="(e) => controllerStore.importJoystickMapping(joystick, e)"
+                />
+                Import from computer
+              </label>
+              <button
+                class="p-2 m-1 font-medium border rounded-md text-uppercase"
+                @click="
+                  controllerStore.exportJoysticksMappingsToVehicle(globalAddress, controllerStore.cockpitStdMappings)
+                "
+              >
+                Export to vehicle
+              </button>
+              <button
+                class="p-2 m-1 font-medium border rounded-md text-uppercase"
+                @click="controllerStore.importJoysticksMappingsFromVehicle(globalAddress)"
+              >
+                Import from vehicle
+              </button>
+            </div>
+          </div>
+          <div class="flex flex-col items-center max-w-[30%] mb-4">
+            <span class="mb-2 text-xl font-medium text-slate-500">Functions mapping</span>
+            <div class="flex flex-wrap items-center justify-evenly">
+              <button
+                class="p-2 m-1 font-medium border rounded-md text-uppercase"
+                @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
+              >
+                Export to computer
+              </button>
+              <label class="p-2 m-1 font-medium border rounded-md cursor-pointer text-uppercase">
+                <input
+                  type="file"
+                  accept="application/json"
+                  hidden
+                  @change="(e) => controllerStore.importFunctionsMapping(e)"
+                />
+                Import from computer
+              </label>
+              <button
+                class="p-2 m-1 font-medium border rounded-md text-uppercase"
+                @click="controllerStore.exportFunctionsMappingToVehicle(globalAddress, controllerStore.protocolMapping)"
+              >
+                Export to vehicle
+              </button>
+              <button
+                class="p-2 m-1 font-medium border rounded-md text-uppercase"
+                @click="controllerStore.importFunctionsMappingFromVehicle(globalAddress)"
+              >
+                Import from vehicle
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </template>
