@@ -35,7 +35,6 @@ import {
   Attitude,
   Battery,
   Coordinates,
-  CommandAck,
   FixTypeGPS,
   Parameter,
   PowerSupply,
@@ -80,6 +79,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _messages: MAVLinkMessageDictionary = new Map()
 
   onMAVLinkMessage = new SignalTyped()
+  _flying = false
 
   /**
    * Function for subclass inheritance
@@ -244,13 +244,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
 
     switch (mavlink_message.message.type) {
-      case MAVLinkType.COMMAND_ACK: {
-        const command_ack = mavlink_message.message as Message.CommandAck
-        this._last_ack.command = command_ack.command
-        this._last_ack.result = command_ack.result
-        console.log(command_ack)
-      }
-
       case MAVLinkType.AHRS2: {
         const ahrsMessage = mavlink_message.message as Message.Ahrs2
         this._altitude.msl = ahrsMessage.altitude
@@ -307,6 +300,8 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
         this._isArmed = Boolean(heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_SAFETY_ARMED)
         this.onArm.emit()
+        this._flying = heartbeat.system_status.type === MavState.MAV_STATE_ACTIVE
+        this.onTakeoff.emit()
         break
       }
       case MAVLinkType.SYS_STATUS: {
@@ -397,6 +392,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Helper function for commanding takeoff
+   * @param {number} altitude
    */
   async _takeoff(altitude: number): Promise<void> {
     this.sendCommandLong(MavCmd.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, altitude)
@@ -405,14 +401,15 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     let timeoutReachedCount = false
     const initTimeCount = new Date().getTime()
     while (!timeoutReachedCount) {
-
       const lastAckMessage = this._messages.get(MAVLinkType.COMMAND_ACK)
-      if (lastAckMessage !== undefined ) {
-        // && lastAckMessage.command == MavCmd.MAV_CMD_NAV_TAKEOFF
+      if (lastAckMessage !== undefined) {
         console.log(lastAckMessage.command)
         console.log(lastAckMessage.result)
         if (lastAckMessage.result == MavResult.MAV_RESULT_ACCEPTED) {
-          break
+          console.log('MAV accepted command takeoff')
+          // emit takeoff event
+          this.onTakeoff.emit()
+          return
         } else {
           throw Error('MAV rejected command')
         }
@@ -420,7 +417,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
       await new Promise((r) => setTimeout(r, 100))
       timeoutReachedCount = new Date().getTime() - initTimeCount > 10000
-
     }
     if (timeoutReachedCount) {
       throw Error('MAV did not acknowledge command ')
@@ -432,11 +428,21 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @returns {boolean}
    */
   takeoff(): boolean {
+    this.setMode(this.modesAvailable().get('GUIDED') as Modes)
     this.arm()
     this._takeoff(10)
+    this.onTakeoff.emit()
     return true
   }
 
+  /**
+   * Land
+   * @returns {boolean}
+   */
+  land(): boolean {
+    this.setMode(this.modesAvailable().get('LAND') as Modes)
+    return true
+  }
 
   /**
    * Return vehicle altitude-related data
@@ -493,6 +499,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   isArmed(): boolean {
     return this._isArmed
+  }
+
+  /**
+   * Check if the UI should show the takeoff button
+   * @returns {boolean}
+   */
+  showTakeoff(): boolean {
+    return !this._flying
   }
 
   /**
