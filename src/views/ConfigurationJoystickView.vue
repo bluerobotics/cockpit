@@ -89,18 +89,18 @@
         <div class="flex">
           <button
             class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
-            @click="controllerStore.downloadJoystickProfile(joystick)"
+            @click="controllerStore.exportJoystickMapping(joystick)"
           >
-            Download profile
+            Export joystick mapping
           </button>
           <label class="w-auto p-3 m-2 font-medium rounded-md shadow-md cursor-pointer text-uppercase">
             <input
               type="file"
               accept="application/json"
               hidden
-              @change="(e) => controllerStore.loadJoystickProfile(joystick, e)"
+              @change="(e) => controllerStore.importJoystickMapping(joystick, e)"
             />
-            Load profile
+            Import joystick mapping
           </label>
         </div>
       </div>
