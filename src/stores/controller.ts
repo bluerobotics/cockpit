@@ -5,6 +5,7 @@ import Swal from 'sweetalert2'
 import { ref } from 'vue'
 
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
+import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
@@ -24,10 +25,12 @@ export type controllerUpdateCallback = (
   activeButtonActions: ProtocolAction[]
 ) => void
 
+const protocolMappingKey = 'cockpit-protocol-mapping-v4'
+
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMapping = useStorage('cockpit-protocol-mapping-v4', cockpitStandardToProtocols)
+  const protocolMapping = useStorage(protocolMappingKey, cockpitStandardToProtocols)
   const cockpitStdMappings = useStorage('cockpit-standard-mappings', availableGamepadToCockpitMaps)
   const availableAxesActions = allAvailableAxes
   const availableButtonActions = allAvailableButtons
@@ -183,6 +186,14 @@ export const useControllerStore = defineStore('controller', () => {
     reader.readAsText(e.target.files[0])
   }
 
+  const exportFunctionsMappingToVehicle = async (
+    vehicleAddress: string,
+    functionsMapping: JoystickProtocolActionsMapping
+  ): Promise<void> => {
+    await setKeyDataOnCockpitVehicleStorage(vehicleAddress, protocolMappingKey, functionsMapping)
+    Swal.fire({ icon: 'success', text: 'Joystick functions mapping exported to vehicle.', timer: 3000 })
+  }
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -195,5 +206,6 @@ export const useControllerStore = defineStore('controller', () => {
     importJoystickMapping,
     exportFunctionsMapping,
     importFunctionsMapping,
+    exportFunctionsMappingToVehicle,
   }
 })
