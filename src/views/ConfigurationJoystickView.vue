@@ -86,7 +86,7 @@
             @click="(e) => setCurrentInputs(joystick, e)"
           />
         </div>
-        <div class="flex">
+        <div class="flex flex-wrap">
           <button
             class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
             @click="controllerStore.exportJoystickMapping(joystick)"
@@ -118,6 +118,12 @@
             />
             Import functions mapping
           </label>
+          <button
+            class="w-auto p-3 m-2 font-medium rounded-md shadow-md text-uppercase"
+            @click="controllerStore.exportFunctionsMappingToVehicle(globalAddress, controllerStore.protocolMapping)"
+          >
+            Export functions mapping to vehicle
+          </button>
         </div>
       </div>
     </template>
@@ -227,6 +233,7 @@ import Button from '@/components/Button.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { useControllerStore } from '@/stores/controller'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import {
   type CockpitButton,
   type Joystick,
@@ -244,6 +251,7 @@ import {
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
+const { globalAddress } = useMainVehicleStore()
 
 onMounted(() => {
   controllerStore.enableForwarding = false
