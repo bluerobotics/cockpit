@@ -11,7 +11,11 @@ import { widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import * as Words from '@/libs/funny-name/words'
-import { CockpitAction, registerActionCallback, unregisterActionCallback } from '@/libs/joystick/protocols'
+import {
+  availableCockpitActions,
+  registerActionCallback,
+  unregisterActionCallback,
+} from '@/libs/joystick/protocols/cockpit-actions'
 import { isEqual } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
@@ -29,8 +33,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
   const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
 
-  const allProfiles = computed(() => [...widgetProfiles, ...savedProfiles.value])
-
   const currentView = computed<View>({
     get() {
       return currentProfile.value.views[currentViewIndex.value]
@@ -42,18 +44,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   const currentProfile = computed<Profile>({
     get() {
-      return allProfiles.value[currentProfileIndex.value]
+      return savedProfiles.value[currentProfileIndex.value]
     },
     set(newValue) {
-      const allProfileHashs = allProfiles.value.map((p) => p.hash)
+      const profilesHashes = savedProfiles.value.map((p) => p.hash)
 
-      if (!allProfileHashs.includes(newValue.hash)) {
+      if (!profilesHashes.includes(newValue.hash)) {
         Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
-        return
-      }
-
-      if (isDefaultProfile(newValue)) {
-        Swal.fire({ icon: 'error', text: 'Cannot edit a default profile. Please pick another one.', timer: 3000 })
         return
       }
 
@@ -125,7 +122,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Profile } profile - Profile to be loaded
    */
   function loadProfile(profile: Profile): void {
-    const profileIndex = allProfiles.value.findIndex((p) => p.hash === profile.hash)
+    const profileIndex = savedProfiles.value.findIndex((p) => p.hash === profile.hash)
     if (profileIndex === -1) {
       Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
       return
@@ -138,7 +135,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * Reset saved profiles to original state
    */
   function resetSavedProfiles(): void {
-    savedProfiles.value.splice(0, savedProfiles.value.length)
+    savedProfiles.value = widgetProfiles
+    currentProfileIndex.value = 0
+    currentViewIndex.value = 0
   }
 
   const exportProfile = (profile: Profile): void => {
@@ -156,6 +155,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
         return
       }
+      maybeProfile.hash = uuid4()
       const newProfile = saveProfile(maybeProfile)
       loadProfile(newProfile)
     }
@@ -212,7 +212,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       name: `${Words.animalsOcean.random()} profile`,
       views: [],
     })
-    const profileIndex = allProfiles.value.findIndex((p) => p.hash === savedProfiles.value[0].hash)
+    const profileIndex = savedProfiles.value.findIndex((p) => p.hash === savedProfiles.value[0].hash)
     currentProfileIndex.value = profileIndex
     addView()
   }
@@ -245,8 +245,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentProfileIndex.value = 0
     savedProfiles.value.splice(savedProfileIndex, 1)
     if (currentProfileHash !== profile.hash) {
-      currentProfileIndex.value = allProfiles.value.findIndex((p) => p.hash === currentProfileHash)
+      currentProfileIndex.value = savedProfiles.value.findIndex((p) => p.hash === currentProfileHash)
     }
+  }
+
+  const duplicateProfile = (profile: Profile): void => {
+    savedProfiles.value.unshift({
+      hash: uuid4(),
+      name: profile.name.concat('+'),
+      views: profile.views,
+    })
+    currentProfileIndex.value = 0
   }
 
   /**
@@ -297,6 +306,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentViewIndex.value = index
   }
 
+  const duplicateView = (view: View): void => {
+    currentProfile.value.views.unshift({
+      hash: uuid4(),
+      name: view.name.concat('+'),
+      widgets: view.widgets,
+      miniWidgetContainers: view.miniWidgetContainers,
+      showBottomBarOnBoot: view.showBottomBarOnBoot,
+    })
+    currentViewIndex.value = 0
+  }
+
   const exportView = (view: View): void => {
     const blob = new Blob([JSON.stringify(view)], { type: 'text/plain;charset=utf-8' })
     saveAs(blob, `cockpit-widget-view.json`)
@@ -312,6 +332,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         Swal.fire({ icon: 'error', text: 'Invalid view file.', timer: 3000 })
         return
       }
+      maybeView.hash = uuid4()
       currentProfile.value.views.unshift(maybeView)
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
@@ -435,6 +456,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     location.reload()
   }
 
+  // Make sure the interface is not booting with a profile or view that does not exist
+  if (currentProfileIndex.value >= savedProfiles.value.length) currentProfileIndex.value = 0
+  if (currentViewIndex.value >= currentProfile.value.views.length) currentViewIndex.value = 0
+
   const resetWidgetsEditingState = (forcedState?: boolean): void => {
     currentProfile.value.views.forEach((view) => {
       view.widgets.forEach((widget) => {
@@ -455,7 +480,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     selectView(currentProfile.value.views[newIndex])
   }
   const debouncedSelectNextView = useDebounceFn(() => selectNextView(), 10)
-  const selectNextViewCallbackId = registerActionCallback(CockpitAction.GO_TO_NEXT_VIEW, debouncedSelectNextView)
+  const selectNextViewCallbackId = registerActionCallback(
+    availableCockpitActions.go_to_next_view,
+    debouncedSelectNextView
+  )
   onBeforeUnmount(() => unregisterActionCallback(selectNextViewCallbackId))
 
   const selectPreviousView = (): void => {
@@ -463,7 +491,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     selectView(currentProfile.value.views[newIndex])
   }
   const debouncedSelectPreviousView = useDebounceFn(() => selectPreviousView(), 10)
-  const selectPrevViewCBId = registerActionCallback(CockpitAction.GO_TO_PREVIOUS_VIEW, debouncedSelectPreviousView)
+  const selectPrevViewCBId = registerActionCallback(
+    availableCockpitActions.go_to_previous_view,
+    debouncedSelectPreviousView
+  )
   onBeforeUnmount(() => unregisterActionCallback(selectPrevViewCBId))
 
   // Profile migrations
@@ -488,7 +519,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     miniWidgetContainersInCurrentView,
     currentMiniWidgetsProfile,
     savedProfiles,
-    allProfiles,
     isDefaultProfile,
     loadProfile,
     saveProfile,
@@ -497,10 +527,12 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     importProfile,
     addProfile,
     deleteProfile,
+    duplicateProfile,
     addView,
     deleteView,
     renameView,
     selectView,
+    duplicateView,
     exportView,
     importView,
     addWidget,

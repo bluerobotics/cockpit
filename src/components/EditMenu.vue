@@ -15,7 +15,7 @@
       <div class="w-full px-2 overflow-x-hidden overflow-y-auto">
         <TransitionGroup name="fade-and-suffle">
           <div
-            v-for="profile in store.allProfiles"
+            v-for="profile in store.savedProfiles"
             :key="profile.hash"
             class="flex items-center justify-between w-full my-1"
           >
@@ -27,10 +27,9 @@
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
               <div class="grow" />
               <div class="icon-btn mdi mdi-download" @click.stop="store.exportProfile(profile)" />
-              <template v-if="!store.isDefaultProfile(profile)">
-                <div class="icon-btn mdi mdi-cog" @click.stop="renameProfile(profile)" />
-                <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
-              </template>
+              <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateProfile(profile)" />
+              <div class="icon-btn mdi mdi-cog" @click.stop="renameProfile(profile)" />
+              <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteProfile(profile)" />
             </Button>
           </div>
         </TransitionGroup>
@@ -53,6 +52,11 @@
           class="icon-btn mdi mdi-briefcase-download"
           @click="store.importProfilesFromVehicle"
         />
+        <div
+          v-tooltip="'Reset profiles to default configuration.'"
+          class="icon-btn mdi mdi-restore"
+          @click="resetSavedProfiles"
+        />
       </div>
     </div>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
@@ -73,6 +77,7 @@
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
               <div class="grow" />
               <div class="icon-btn mdi mdi-download" @click.stop="store.exportView(view)" />
+              <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateView(view)" />
               <div class="icon-btn mdi mdi-cog" @click.stop="renameView(view)" />
               <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteView(view)" />
             </Button>
@@ -254,6 +259,7 @@
 
 <script setup lang="ts">
 import { useConfirmDialog, useMousePressed } from '@vueuse/core'
+import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
@@ -343,6 +349,16 @@ const renameProfile = (profile: Profile): void => {
   profileBeingRenamed.value = profile
   newProfileName.value = profile.name
   profileRenameDialogRevealed.value = true
+}
+
+const resetSavedProfiles = async (): Promise<void> => {
+  const result = await Swal.fire({
+    text: 'Are you sure you want to reset your profiles to the default ones?',
+    showCancelButton: true,
+    confirmButtonText: 'Reset',
+    icon: 'warning',
+  })
+  if (result.isConfirmed) store.resetSavedProfiles()
 }
 
 const availableWidgetsContainer = ref()

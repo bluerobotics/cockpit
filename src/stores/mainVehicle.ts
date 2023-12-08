@@ -9,18 +9,13 @@ import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import {
-  type InputWithPrettyName,
-  CockpitAction,
-  MavlinkControllerState,
+  availableCockpitActions,
+  CockpitActionsManager,
   registerActionCallback,
-  sendCockpitActions,
   unregisterActionCallback,
-} from '@/libs/joystick/protocols'
+} from '@/libs/joystick/protocols/cockpit-actions'
+import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
-import * as arducopter_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Copter-4.3/apm.pdef.json'
-import * as arduplane_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Plane-4.3/apm.pdef.json'
-import * as ardurover_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Rover-4.2/apm.pdef.json'
-import * as ardusub_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Sub-4.1/apm.pdef.json'
 import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
@@ -28,7 +23,6 @@ import type {
   Attitude,
   Coordinates,
   PageDescription,
-  Parameter,
   PowerSupply,
   StatusGPS,
   StatusText,
@@ -37,13 +31,6 @@ import type {
 } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
-import { type MetadataFile } from '@/types/ardupilot-metadata'
-import {
-  type JoystickState,
-  type ProtocolControllerMapping,
-  JoystickProtocol,
-  ProtocolControllerState,
-} from '@/types/joystick'
 import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
 
 import { useControllerStore } from './controller'
@@ -115,10 +102,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const coordinates: Coordinates = reactive({} as Coordinates)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const velocity: Velocity = reactive({} as Velocity)
-  const parametersTable = reactive({})
-  // eslint-disable-next-line jsdoc/require-jsdoc
-  const buttonParameterTable = reactive<{ title: string; value: number }[]>([])
-  const currentParameters = reactive({})
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean | undefined>(undefined)
   const showTakeoff = ref<boolean | undefined>(undefined)
@@ -179,25 +162,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
-   * Send manual control message
-   * @param {ProtocolControllerState} controllerState Current state of the controller
-   */
-  function sendManualControl(controllerState: ProtocolControllerState): void {
-    mainVehicle.value?.sendManualControl(controllerState)
-  }
-
-  /**
    * Send heartbeat from GCS
    */
   function sendGcsHeartbeat(): void {
     mainVehicle.value?.sendGcsHeartbeat()
-  }
-
-  /**
-   * Request current parameters from vehicle
-   */
-  function requestParametersList(): void {
-    mainVehicle.value?.requestParametersList()
   }
 
   /**
@@ -298,10 +266,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
     })
-    mainVehicle.value.onParameter.add((newParameter: Parameter) => {
-      const newCurrentParameters = { ...currentParameters, ...{ [newParameter.name]: newParameter.value } }
-      Object.assign(currentParameters, newCurrentParameters)
-    })
     mainVehicle.value.onStatusText.add((newStatusText: StatusText) => {
       Object.assign(statusText, newStatusText)
     })
@@ -346,75 +310,40 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       },
       setFlightMode: setFlightMode,
     }
-    const mavlinkArmId = registerActionCallback(CockpitAction.MAVLINK_ARM, arm)
-    const mavlinkDisarmId = registerActionCallback(CockpitAction.MAVLINK_DISARM, disarm)
+    const mavlinkArmId = registerActionCallback(availableCockpitActions.mavlink_arm, arm)
+    const mavlinkDisarmId = registerActionCallback(availableCockpitActions.mavlink_disarm, disarm)
     onBeforeUnmount(() => {
       unregisterActionCallback(mavlinkArmId)
       unregisterActionCallback(mavlinkDisarmId)
     })
   })
 
-  watch(vehicleType, (newType, oldType) => {
-    if (newType !== undefined && newType !== oldType) {
-      // Default to submarine metadata
-      let metadata: MetadataFile = ardusub_metadata
-      // This is to avoid importing a 40 lines enum from mavlink and adding a switch case with 40 cases
-      if (
-        vehicleType.value?.toString().toLowerCase().includes('vtol') ||
-        vehicleType.value?.toString().toLowerCase().includes('wing')
-      ) {
-        metadata = arduplane_metadata
-      } else if (
-        vehicleType.value?.toString().toLowerCase().includes('copter') ||
-        vehicleType.value?.toString().toLowerCase().includes('rotor')
-      ) {
-        metadata = arducopter_metadata
-      } else if (
-        vehicleType.value?.toString().toLowerCase().includes('rover') ||
-        vehicleType.value?.toString().toLowerCase().includes('boat')
-      ) {
-        metadata = ardurover_metadata
-      }
-
-      const updatedParameterTable = {}
-      for (const category of Object.values(metadata)) {
-        for (const [name, parameter] of Object.entries(category)) {
-          if (!isNaN(Number(parameter))) {
-            continue
-          }
-          const newParameterTable = { ...parametersTable, ...{ [name]: parameter } }
-          Object.assign(updatedParameterTable, newParameterTable)
-        }
-      }
-      Object.assign(parametersTable, updatedParameterTable)
-    }
-    requestParametersList()
-  })
-
   const controllerStore = useControllerStore()
-  const currentControllerState = ref<JoystickState>()
-  const currentProtocolMapping = ref<ProtocolControllerMapping>()
-  const updateCurrentControllerState = (newState: JoystickState, newMapping: ProtocolControllerMapping): void => {
-    currentControllerState.value = newState
-    currentProtocolMapping.value = newMapping
-  }
-  controllerStore.registerControllerUpdateCallback(updateCurrentControllerState)
+  const mavlinkManualControlManager = new MavlinkManualControlManager()
+  const cockpitActionsManager = new CockpitActionsManager()
+  controllerStore.registerControllerUpdateCallback(mavlinkManualControlManager.updateControllerData)
+  controllerStore.registerControllerUpdateCallback(cockpitActionsManager.updateControllerData)
 
   // Loop to send MAVLink Manual Control messages
   setInterval(() => {
-    if (!currentControllerState.value || !currentProtocolMapping.value || controllerStore.joysticks.size === 0) return
-    const newControllerState = new MavlinkControllerState(currentControllerState.value, currentProtocolMapping.value)
+    if (!mainVehicle.value) return
+
+    // Set the manager vehicle instance if yet undefined
+    if (mavlinkManualControlManager.vehicle === undefined) {
+      mavlinkManualControlManager.setVehicle(mainVehicle.value as ArduPilot)
+    }
+
+    // Send MAVLink Manual Control message
     if (controllerStore.enableForwarding) {
-      sendManualControl(newControllerState)
+      mavlinkManualControlManager.sendManualControl()
     }
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
 
   // Loop to send Cockpit Action messages
   setInterval(() => {
-    if (!currentControllerState.value || !currentProtocolMapping.value || controllerStore.joysticks.size === 0) return
     if (controllerStore.enableForwarding) {
-      sendCockpitActions(currentControllerState.value, currentProtocolMapping.value)
+      cockpitActionsManager.sendCockpitActions()
     }
   }, 10)
 
@@ -436,39 +365,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       } as RTCConfiguration)
   )
 
-  const updateMavlinkButtonsPrettyNames = (): void => {
-    if (!currentParameters || !parametersTable) return
-    const newMavlinkButtonsNames: InputWithPrettyName[] = []
-    buttonParameterTable.splice(0)
-    // @ts-ignore: This type is huge. Needs refactoring typing here.
-    if (parametersTable['BTN0_FUNCTION'] && parametersTable['BTN0_FUNCTION']['Values']) {
-      // @ts-ignore: This type is huge. Needs refactoring typing here.
-      Object.entries(parametersTable['BTN0_FUNCTION']['Values']).forEach((param) => {
-        const rawText = param[1] as string
-        const formatedText = (rawText.charAt(0).toUpperCase() + rawText.slice(1)).replace(new RegExp('_', 'g'), ' ')
-        buttonParameterTable.push({ title: formatedText as string, value: Number(param[0]) })
-      })
-      Object.entries(currentParameters).forEach((param) => {
-        if (!param[0].startsWith('BTN') || !param[0].endsWith('_FUNCTION')) return
-        const buttonId = Number(param[0].replace('BTN', '').replace('_FUNCTION', ''))
-        const functionName = buttonParameterTable.find((p) => p.value === param[1])?.title
-        if (functionName === undefined) return
-        newMavlinkButtonsNames.push({
-          input: { protocol: JoystickProtocol.MAVLink, value: buttonId },
-          prettyName: functionName,
-        })
-      })
-    }
-    if (newMavlinkButtonsNames.isEmpty()) return
-    let newProtocolButtonsFunctions = controllerStore.availableProtocolButtonFunctions.filter((btn) => {
-      return btn.input.protocol !== JoystickProtocol.MAVLink
-    })
-    newProtocolButtonsFunctions = newProtocolButtonsFunctions.concat(newMavlinkButtonsNames)
-    controllerStore.availableProtocolButtonFunctions = newProtocolButtonsFunctions
-  }
-
-  setInterval(() => updateMavlinkButtonsPrettyNames(), 1000)
-
   return {
     arm,
     takeoff,
@@ -477,7 +373,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     modesAvailable,
     setFlightMode,
     sendGcsHeartbeat,
-    requestParametersList,
     configure,
     fetchMission,
     uploadMission,
@@ -503,9 +398,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     showTakeoff,
     isVehicleOnline,
     icon,
-    parametersTable,
-    currentParameters,
-    buttonParameterTable,
     configurationPages,
     rtcConfiguration,
     genericVariables,

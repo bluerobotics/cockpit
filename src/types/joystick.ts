@@ -5,9 +5,18 @@ import { JoystickModel } from '@/libs/joystick/manager'
  * Each protocol is expected to have it's own way of doing thing, including mapping, limiting, communicating, etc.
  */
 export enum JoystickProtocol {
-  MAVLink = 'mavlink',
+  CockpitModifierKey = 'cockpit-modifier-key',
+  MAVLinkManualControl = 'mavlink-manual-control',
   CockpitAction = 'cockpit-action',
   Other = 'other',
+}
+
+/**
+ * Modifier keys
+ */
+export enum CockpitModifierKeyOption {
+  regular = 'regular',
+  shift = 'shift',
 }
 
 /**
@@ -23,11 +32,6 @@ export interface JoystickState {
    */
   axes: (number | undefined)[]
 }
-
-/**
- * Current state of the controller in the protocol POV
- */
-export class ProtocolControllerState {}
 
 /**
  * Joystick abstraction for widget
@@ -68,43 +72,82 @@ export class Joystick {
 /**
  *
  */
-export interface ProtocolInput {
+export interface ProtocolAction {
   /**
-   * Protocol which this input is used to
+   * Protocol that holds the action
    */
   protocol: JoystickProtocol
   /**
-   * Value for that input
+   * Action identification
    */
-  value: number | string
+  id: string
+  /**
+   * Human-readable name for the action
+   */
+  name: string
+}
+
+/**
+ * Correspondency between the hardware axis input and the protocol action that should be triggered by it
+ */
+export type JoystickAxisActionCorrespondency = {
+  /**
+   * The ID of the axis that holds the correspondent action
+   */
+  [key in JoystickAxis]: {
+    /**
+     * The protocol action that should be triggered
+     */
+    action: ProtocolAction
+    /**
+     * The
+     */
+    min: number
+    /**
+     * Maximum axis value
+     */
+    max: number
+  }
+}
+
+/**
+ * Correspondency between the hardware button input and the protocol action that should be triggered by it
+ */
+export type JoystickButtonActionCorrespondency = {
+  /**
+   * The ID of the button that holds the correspondent action
+   */
+  [key in JoystickButton]: {
+    /**
+     * The protocol action that should be triggered
+     */
+    action: ProtocolAction
+  }
 }
 
 /**
  * Interface that represents the necessary information for mapping a Gamepad API controller to a specific protocol.
  */
-export interface ProtocolControllerMapping {
+export interface JoystickProtocolActionsMapping {
   /**
    *  Name to help identification of a mapping profile
    */
   name: string
   /**
-   *  Values to which each Gamepad API axis state of -1 should be mapped to
-   */
-  axesMins: number[]
-  /**
-   *  Values to which each Gamepad API axis state of 1 should be mapped to
-   */
-  axesMaxs: number[]
-  /**
    * Correspondency from Gamepad API to protocol axis.
    * Corresponds to which Axis in the protocol should the Nth axis be mapped to.
    */
-  axesCorrespondencies: ProtocolInput[]
+  axesCorrespondencies: JoystickAxisActionCorrespondency
   /**
    * Correspondency from Gamepad API to protocol button.
    * Corresponds to which button in the protocol should the Nth button be mapped to.
    */
-  buttonsCorrespondencies: ProtocolInput[]
+  buttonsCorrespondencies: {
+    /**
+     * Defines the buttons correspondencies for each modifier key
+     */
+    [key in CockpitModifierKeyOption]: JoystickButtonActionCorrespondency
+  }
 }
 
 export type CockpitButton = null | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 // eslint-disable-line
@@ -202,7 +245,31 @@ export interface JoystickInput {
    */
   type: InputType.Axis | InputType.Button
   /**
-   * Input value
+   * Input identification
    */
-  value: JoystickAxis | JoystickButton
+  id: JoystickAxis | JoystickButton
+}
+
+/**
+ * Joystick button input
+ */
+export class JoystickButtonInput implements JoystickInput {
+  readonly type = InputType.Button
+  /**
+   * Create an axis input
+   * @param {JoystickAxis} id Axis identification
+   */
+  constructor(public id: JoystickButton) {}
+}
+
+/**
+ * Joystick axis input
+ */
+export class JoystickAxisInput implements JoystickInput {
+  readonly type = InputType.Axis
+  /**
+   * Create an axis input
+   * @param {JoystickAxis} id Axis identification
+   */
+  constructor(public id: JoystickAxis) {}
 }

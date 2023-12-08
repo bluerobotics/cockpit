@@ -20,7 +20,7 @@ import {
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import { MavlinkControllerState } from '@/libs/joystick/protocols'
+import { type MavlinkManualControlState } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { SignalTyped } from '@/libs/signal'
 import { round } from '@/libs/utils'
 import {
@@ -42,7 +42,7 @@ import {
   StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
-import { ProtocolControllerState } from '@/types/joystick'
+import type { MetadataFile } from '@/types/ardupilot-metadata'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import * as Vehicle from '../vehicle'
@@ -69,11 +69,13 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _isArmed = false // Defines if the vehicle is armed
   _powerSupply = new PowerSupply()
   _lastParameter = new Parameter()
+  _totalParametersCount: number | undefined = undefined
   _currentCockpitMissionItemsOnPlanning: Waypoint[] = []
   _currentMavlinkMissionItemsOnVehicle: Message.MissionItemInt[] = []
   _statusText = new StatusText()
   _statusGPS = new StatusGPS()
   _vehicleSpecificErrors = [0, 0, 0, 0]
+  _metadata: MetadataFile
 
   _messages: MAVLinkMessageDictionary = new Map()
 
@@ -171,11 +173,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     } catch (error) {
       const pattern = /Ok\((\d+)\)/
       const match = pattern.exec(text_message)
-      if (match) {
-        const number: string = match[1]
-        console.debug(`Ok result from mavlink2rest: ${number}`)
-        return
-      }
+      if (match) return
       console.error(`Failed to parse mavlink message: ${text_message}`)
       return
     }
@@ -327,11 +325,12 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       case MAVLinkType.PARAM_VALUE: {
         const receivedMessage = mavlink_message.message as Message.ParamValue
         const param_name = receivedMessage.param_id.join('').replace(/\0/g, '')
-        const { param_value } = receivedMessage
+        const { param_value, param_count } = receivedMessage
         // We need this due to mismatches between js 64-bit floats and REAL32 in MAVLink
         const trimmed_value = Math.round(param_value * 10000) / 10000
 
         this._lastParameter = { name: param_name, value: trimmed_value }
+        this._totalParametersCount = Number(param_count)
         this.onParameter.emit()
         break
       }
@@ -493,6 +492,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
+   * Return metadata from the vehicle
+   * @returns {MetadataFile}
+   */
+  metadata(): MetadataFile {
+    return this._metadata
+  }
+
+  /**
    * Return vehicle position information
    * @returns {Coordinates}
    */
@@ -525,6 +532,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
+   * Return total amount of parameters in the vehicle
+   * @returns {number}
+   */
+  totalParametersCount(): number | undefined {
+    return this._totalParametersCount
+  }
+
+  /**
    * Return status text information
    * @returns {StatusText}
    */
@@ -542,10 +557,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Send manual control
-   * @param {'ProtocolControllerState'} controllerState Current state of the controller
+   * @param {'MavlinkManualControlState'} controllerState Current state of the controller
    */
-  sendManualControl(controllerState: ProtocolControllerState): void {
-    const state = controllerState as MavlinkControllerState
+  sendManualControl(controllerState: MavlinkManualControlState): void {
+    const state = controllerState as MavlinkManualControlState
     const manualControlMessage: Message.ManualControl = {
       type: MAVLinkType.MANUAL_CONTROL,
       x: state.x,

@@ -1,38 +1,69 @@
 import { JoystickModel } from '@/libs/joystick/manager'
-import { CockpitAction, MAVLinkAxis } from '@/libs/joystick/protocols'
-import { type GamepadToCockpitStdMapping, type ProtocolControllerMapping, JoystickProtocol } from '@/types/joystick'
+import { availableCockpitActions } from '@/libs/joystick/protocols/cockpit-actions'
+import {
+  availableMavlinkManualControlButtonFunctions,
+  mavlinkManualControlAxes,
+} from '@/libs/joystick/protocols/mavlink-manual-control'
+import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import {
+  type GamepadToCockpitStdMapping,
+  type JoystickProtocolActionsMapping,
+  CockpitModifierKeyOption,
+  JoystickAxis,
+  JoystickButton,
+} from '@/types/joystick'
 
 // TODO: Adjust mapping for PS5 controller
-export const cockpitStandardToProtocols: ProtocolControllerMapping = {
+export const cockpitStandardToProtocols: JoystickProtocolActionsMapping = {
   name: 'Cockpit Standard Gamepad to Protocols',
-  axesCorrespondencies: [
-    { protocol: JoystickProtocol.MAVLink, value: MAVLinkAxis.Y },
-    { protocol: JoystickProtocol.MAVLink, value: MAVLinkAxis.X },
-    { protocol: JoystickProtocol.MAVLink, value: MAVLinkAxis.R },
-    { protocol: JoystickProtocol.MAVLink, value: MAVLinkAxis.Z },
-  ],
-  axesMins: [-1000, 1000, -1000, 1000],
-  axesMaxs: [1000, -1000, 1000, 0],
-  buttonsCorrespondencies: [
-    { protocol: JoystickProtocol.MAVLink, value: 0 },
-    { protocol: JoystickProtocol.MAVLink, value: 1 },
-    { protocol: JoystickProtocol.MAVLink, value: 2 },
-    { protocol: JoystickProtocol.MAVLink, value: 3 },
-    { protocol: JoystickProtocol.CockpitAction, value: CockpitAction.GO_TO_PREVIOUS_VIEW },
-    { protocol: JoystickProtocol.CockpitAction, value: CockpitAction.GO_TO_NEXT_VIEW },
-    { protocol: JoystickProtocol.MAVLink, value: 9 },
-    { protocol: JoystickProtocol.MAVLink, value: 10 },
-    { protocol: JoystickProtocol.MAVLink, value: 4 },
-    { protocol: JoystickProtocol.MAVLink, value: 6 },
-    { protocol: JoystickProtocol.MAVLink, value: 7 },
-    { protocol: JoystickProtocol.MAVLink, value: 8 },
-    { protocol: JoystickProtocol.MAVLink, value: 11 },
-    { protocol: JoystickProtocol.MAVLink, value: 12 },
-    { protocol: JoystickProtocol.MAVLink, value: 13 },
-    { protocol: JoystickProtocol.MAVLink, value: 14 },
-    { protocol: JoystickProtocol.MAVLink, value: 5 },
-    { protocol: JoystickProtocol.CockpitAction, value: CockpitAction.TOGGLE_FULL_SCREEN },
-  ],
+  axesCorrespondencies: {
+    [JoystickAxis.A0]: { action: mavlinkManualControlAxes.axis_y, min: -1000, max: +1000 },
+    [JoystickAxis.A1]: { action: mavlinkManualControlAxes.axis_x, min: +1000, max: -1000 },
+    [JoystickAxis.A2]: { action: mavlinkManualControlAxes.axis_r, min: -1000, max: +1000 },
+    [JoystickAxis.A3]: { action: mavlinkManualControlAxes.axis_z, min: +1000, max: 0 },
+  },
+  buttonsCorrespondencies: {
+    [CockpitModifierKeyOption.regular]: {
+      [JoystickButton.B0]: { action: availableMavlinkManualControlButtonFunctions['Arm'] },
+      [JoystickButton.B1]: { action: availableMavlinkManualControlButtonFunctions['Disarm'] },
+      [JoystickButton.B2]: { action: availableMavlinkManualControlButtonFunctions['Mount tilt up'] },
+      [JoystickButton.B3]: { action: availableMavlinkManualControlButtonFunctions['Mount tilt down'] },
+      [JoystickButton.B4]: { action: modifierKeyActions.shift },
+      [JoystickButton.B5]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B6]: { action: availableMavlinkManualControlButtonFunctions['Gain inc'] },
+      [JoystickButton.B7]: { action: availableMavlinkManualControlButtonFunctions['Gain dec'] },
+      [JoystickButton.B8]: { action: availableMavlinkManualControlButtonFunctions['Lights1 brighter'] },
+      [JoystickButton.B9]: { action: availableMavlinkManualControlButtonFunctions['Lights1 dimmer'] },
+      [JoystickButton.B10]: { action: availableCockpitActions.toggle_full_screen },
+      [JoystickButton.B11]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B12]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B13]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B14]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B15]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B16]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B17]: { action: otherAvailableActions.no_function },
+    },
+    [CockpitModifierKeyOption.shift]: {
+      [JoystickButton.B0]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B1]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B2]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B3]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B4]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B5]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B6]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B7]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B8]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B9]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B10]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B11]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B12]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B13]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B14]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B15]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B16]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B17]: { action: otherAvailableActions.no_function },
+    },
+  },
 }
 
 /**

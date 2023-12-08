@@ -7,9 +7,13 @@ import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { JoystickModel } from '@/libs/joystick/manager'
-import type { InputWithPrettyName } from '@/libs/joystick/protocols'
 import { scale } from '@/libs/utils'
-import { type JoystickInput, type ProtocolControllerMapping, JoystickAxis, JoystickButton } from '@/types/joystick'
+import {
+  type JoystickButtonActionCorrespondency,
+  type JoystickInput,
+  JoystickAxis,
+  JoystickButton,
+} from '@/types/joystick'
 import { InputType } from '@/types/joystick'
 
 const textColor = '#747474'
@@ -97,8 +101,7 @@ const props = defineProps<{
   leftAxisVert?: number // State of the vertical left axis as a floating point number, between -1 and +1
   rightAxisHoriz?: number // State of the horizontal right axis as a floating point number, between -1 and +1
   rightAxisVert?: number // State of the vertical right axis as a floating point number, between -1 and +1
-  protocolMapping: ProtocolControllerMapping // Mapping from the Cockpit standard to the protocol functions
-  buttonLabelCorrespondency: InputWithPrettyName[] // Mapping from the protocol functions to human readable names
+  buttonsActionsCorrespondency: JoystickButtonActionCorrespondency // Mapping from the Cockpit standard to the protocol functions
 }>()
 
 const emit = defineEmits<{
@@ -109,10 +112,10 @@ const emit = defineEmits<{
 const findInputFromPath = (path: string): JoystickInput[] => {
   const inputs: JoystickInput[] = []
   Object.entries(buttonPath).filter(([, v]) => v === path).forEach((button) => {
-    inputs.push({ type: InputType.Button, value: button[0] as unknown as JoystickButton })
+    inputs.push({ type: InputType.Button, id: button[0] as unknown as JoystickButton })
   })
   Object.entries(axisPath.value).filter(([, v]) => v === path).forEach((axis) => {
-    inputs.push({ type: InputType.Axis, value: axis[0] as unknown as JoystickAxis })
+    inputs.push({ type: InputType.Axis, id: axis[0] as unknown as JoystickAxis })
   })
   return inputs
 }
@@ -194,17 +197,15 @@ watch(
   () => updateButtonsState()
 )
 
-const buttonLabelCorrespondency = toRefs(props).buttonLabelCorrespondency
-const protocolMapping = toRefs(props).protocolMapping
 const joystickModel = toRefs(props).model
-watch([protocolMapping, buttonLabelCorrespondency], () => updateLabelsState())
+const buttonsActionsCorrespondency = toRefs(props).buttonsActionsCorrespondency
+watch(buttonsActionsCorrespondency, () => updateLabelsState())
 
 const updateLabelsState = (): void => {
   Object.values(JoystickButton).forEach((button) => {
     if (isNaN(Number(button))) return
-    const protocolButton = props.protocolMapping.buttonsCorrespondencies[button as JoystickButton] || undefined
-    const param = props.buttonLabelCorrespondency.find((btn) => btn.input.protocol === protocolButton.protocol && btn.input.value === protocolButton.value)
-    const functionName = param === undefined ? `${protocolButton.value} (${protocolButton.protocol})` : param.prettyName
+    const buttonActionCorrespondency = buttonsActionsCorrespondency.value[button as JoystickButton] || undefined
+    const functionName = buttonActionCorrespondency === undefined ? 'unassigned' : buttonActionCorrespondency.action.name
     if (!svg) return
     // @ts-ignore: we already check if button is a number and so if button is a valid index
     const labelId = buttonPath[button].replace('path', 'text')

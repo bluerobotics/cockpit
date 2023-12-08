@@ -7,17 +7,30 @@ import { ref } from 'vue'
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
-import { type JoystickState, type ProtocolControllerMapping, Joystick } from '@/types/joystick'
+import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import {
+  type JoystickProtocolActionsMapping,
+  type JoystickState,
+  type ProtocolAction,
+  CockpitModifierKeyOption,
+  Joystick,
+  JoystickButton,
+  JoystickProtocol,
+} from '@/types/joystick'
 
-export type controllerUpdateCallback = (state: JoystickState, protocolMapping: ProtocolControllerMapping) => void
+export type controllerUpdateCallback = (
+  state: JoystickState,
+  protocolActionsMapping: JoystickProtocolActionsMapping,
+  activeButtonActions: ProtocolAction[]
+) => void
 
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMapping = useStorage('cockpit-protocol-mapping-v3', cockpitStandardToProtocols)
+  const protocolMapping = useStorage('cockpit-protocol-mapping-v4', cockpitStandardToProtocols)
   const cockpitStdMappings = useStorage('cockpit-standard-mappings', availableGamepadToCockpitMaps)
-  const availableProtocolAxesFunctions = allAvailableAxes
-  const availableProtocolButtonFunctions = allAvailableButtons
+  const availableAxesActions = allAvailableAxes
+  const availableButtonActions = allAvailableButtons
   const enableForwarding = ref(true)
 
   const registerControllerUpdateCallback = (callback: controllerUpdateCallback): void => {
@@ -53,9 +66,69 @@ export const useControllerStore = defineStore('controller', () => {
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
 
     for (const callback of updateCallbacks.value) {
-      callback(joystick.state, protocolMapping.value)
+      callback(joystick.state, protocolMapping.value, activeButtonActions(joystick.state, protocolMapping.value))
     }
   }
+
+  const activeButtonActions = (
+    joystickState: JoystickState,
+    mapping: JoystickProtocolActionsMapping
+  ): ProtocolAction[] => {
+    let modifierKeyId = modifierKeyActions.regular.id
+
+    Object.entries(mapping.buttonsCorrespondencies.regular).forEach((e) => {
+      const buttonActive = joystickState.buttons[Number(e[0])] ?? 0 > 0.5
+      const isModifier = Object.values(modifierKeyActions)
+        .map((a) => JSON.stringify(a))
+        .includes(JSON.stringify(e[1].action))
+      if (buttonActive && isModifier) {
+        modifierKeyId = e[1].action.id
+      }
+    })
+
+    const modKeyAction = modifierKeyActions[modifierKeyId as CockpitModifierKeyOption]
+
+    const activeActions = joystickState.buttons
+      .map((btnState, idx) => ({ id: idx, value: btnState }))
+      .filter((btn) => btn.value ?? 0 > 0.5)
+      .map(
+        (btn) =>
+          mapping.buttonsCorrespondencies[modifierKeyId as CockpitModifierKeyOption][btn.id as JoystickButton].action
+      )
+
+    return activeActions.concat(modKeyAction)
+  }
+
+  setInterval(() => {
+    // eslint-disable-next-line jsdoc/require-jsdoc
+    const btnsToUnmap: { modKey: CockpitModifierKeyOption; button: JoystickButton }[] = []
+    Object.entries(protocolMapping.value.buttonsCorrespondencies.regular).forEach((v) => {
+      if (v[1].action.protocol == JoystickProtocol.CockpitModifierKey) {
+        btnsToUnmap.push({ modKey: v[1].action.id as CockpitModifierKeyOption, button: Number(v[0]) as JoystickButton })
+      }
+    })
+
+    Object.entries(protocolMapping.value.buttonsCorrespondencies).forEach(([modKey, mapping]) => {
+      Object.entries(mapping).forEach(([btn, action]) => {
+        const modKeyAction = modifierKeyActions[modKey as CockpitModifierKeyOption]
+        if (JSON.stringify(action.action) !== JSON.stringify(modKeyAction)) return
+        Swal.fire({ text: "Cannot map modifier key to it's own layout.", icon: 'warning' })
+        protocolMapping.value.buttonsCorrespondencies[modKey as CockpitModifierKeyOption][
+          Number(btn) as JoystickButton
+        ].action = otherAvailableActions.no_function
+      })
+    })
+
+    btnsToUnmap.forEach((v) => {
+      const actionToUnmap = protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action
+      if (JSON.stringify(actionToUnmap) === JSON.stringify(otherAvailableActions.no_function)) return
+      Swal.fire({
+        text: `Unmapping '${actionToUnmap.name} from ${v.modKey} layout. Cannot use same button as the modifier.`,
+        icon: 'warning',
+      })
+      protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action = otherAvailableActions.no_function
+    })
+  }, 1000)
 
   // If there's a mapping in our database that is not on the user storage, add it to the user
   // This will happen whenever a new joystick profile is added to Cockpit's database
@@ -91,8 +164,8 @@ export const useControllerStore = defineStore('controller', () => {
     joysticks,
     protocolMapping,
     cockpitStdMappings,
-    availableProtocolAxesFunctions,
-    availableProtocolButtonFunctions,
+    availableAxesActions,
+    availableButtonActions,
     downloadJoystickProfile,
     loadJoystickProfile,
   }
