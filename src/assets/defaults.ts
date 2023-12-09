@@ -16,7 +16,7 @@ const defaultMiniWidgetManagerVars = {
   configMenuOpen: false,
 }
 
-export const defaultGlobalAddress = process.env.NODE_ENV === 'development' ? 'blueos.local' : window.location.hostname
+export const defaultGlobalAddress = window.location.hostname
 export const widgetProfiles: Profile[] = [
   {
     name: 'ROV default',
