@@ -160,7 +160,7 @@ jobs:
 
     steps:
       - name: Login to Docker Hub
-        if: success() && github.event_name != 'pull_request'
+        if: success()
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -182,9 +182,12 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/}
           fi
           TAGS="--tag ${DOCKER_IMAGE}:${VERSION}"
+          echo $TAGS
           if [[ $VERSION =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
             TAGS="$TAGS --tag ${DOCKER_IMAGE}:latest"
+            echo $TAGS
           fi
+          echo $TAGS
           echo "docker_image=${DOCKER_IMAGE}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "buildx_args=${TAGS} --file Dockerfile ." >> $GITHUB_OUTPUT
@@ -207,7 +210,7 @@ jobs:
             ${{ steps.prepare.outputs.buildx_args }}
 
       - name: Docker Buildx (push)
-        if: success() && github.event_name != 'pull_request'
+        if: success()
         run: |
           docker buildx build \
             --output "type=image,push=true" \
@@ -215,7 +218,7 @@ jobs:
             ${{ steps.prepare.outputs.buildx_args }}
 
       - name: Inspect image
-        if: always() && github.event_name != 'pull_request'
+        if: always()
         run: |
           docker buildx imagetools \
             inspect ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}
