@@ -111,7 +111,7 @@ export const availableGamepadToCockpitMaps: { [key in JoystickModel]: GamepadToC
   [JoystickModel.XboxController_Bluetooth]: {
     name: 'Xbox Controller (bluetooth)',
     axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 16],
   },
   [JoystickModel.XboxController_Wired]: {
     name: 'Xbox Controller (wired)',
