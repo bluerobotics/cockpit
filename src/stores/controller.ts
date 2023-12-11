@@ -26,8 +26,8 @@ export type controllerUpdateCallback = (
   activeButtonActions: ProtocolAction[]
 ) => void
 
-const protocolMappingKey = 'cockpit-protocol-mapping-v4'
-const cockpitStdMappingsKey = 'cockpit-standard-mappings'
+const protocolMappingKey = 'cockpit-protocol-mapping-v5'
+const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
 
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
