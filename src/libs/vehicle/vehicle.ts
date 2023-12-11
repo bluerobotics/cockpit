@@ -82,6 +82,7 @@ export abstract class AbstractVehicle<Modes> {
   onParameter = new Signal<[Parameter, number | undefined]>()
   onStatusGPS = new Signal<StatusGPS>()
   onStatusText = new Signal<StatusText>()
+  onTakeoff = new Signal<boolean>()
   onVelocity = new Signal<Velocity>()
 
   /**
@@ -117,6 +118,7 @@ export abstract class AbstractVehicle<Modes> {
     this.onParameter.register_caller(() => [this.lastParameter(), this.totalParametersCount()])
     this.onStatusText.register_caller(() => this.statusText())
     this.onStatusGPS.register_caller(() => this.statusGPS())
+    this.onTakeoff.register_caller(() => this.flying())
     this.onVelocity.register_caller(() => this.velocity())
   }
 
@@ -185,4 +187,5 @@ export abstract class AbstractVehicle<Modes> {
   abstract statusText(): StatusText
   abstract statusGPS(): StatusGPS
   abstract setMode(mode: Modes): void
+  abstract flying(): boolean
 }

@@ -80,6 +80,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _messages: MAVLinkMessageDictionary = new Map()
 
   onMAVLinkMessage = new SignalTyped()
+  _flying = false
 
   /**
    * Function for subclass inheritance
@@ -296,6 +297,8 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
         this._isArmed = Boolean(heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_SAFETY_ARMED)
         this.onArm.emit()
+        this._flying = heartbeat.system_status.type === MavState.MAV_STATE_ACTIVE
+        this.onTakeoff.emit()
         break
       }
       case MAVLinkType.SYS_STATUS: {
@@ -386,6 +389,44 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
+   * Helper function for commanding takeoff
+   * @param {number} altitude (in meters)
+   */
+  _takeoff(altitude: number): void {
+    this.sendCommandLong(MavCmd.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, altitude)
+  }
+
+  /**
+   * Takeoff
+   * @returns {void}
+   */
+  takeoff(): void {
+    const guidedMode = this.modesAvailable().get('GUIDED')
+    if (guidedMode === undefined) {
+      return
+    }
+
+    this.setMode(guidedMode as Modes)
+    this.arm()
+    this._takeoff(10)
+    this.onTakeoff.emit()
+    return
+  }
+
+  /**
+   * Land
+   * @returns {void}
+   */
+  land(): void {
+    const landMode = this.modesAvailable().get('LAND')
+    if (landMode === undefined) {
+      return
+    }
+    this.setMode(landMode as Modes)
+    return
+  }
+
+  /**
    * Return vehicle altitude-related data
    * @returns {Altitude}
    */
@@ -440,6 +481,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   isArmed(): boolean {
     return this._isArmed
+  }
+
+  /**
+   * Check if the vehicle is flying
+   * @returns {boolean}
+   */
+  flying(): boolean {
+    return !this._flying
   }
 
   /**

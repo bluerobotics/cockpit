@@ -104,6 +104,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const velocity: Velocity = reactive({} as Velocity)
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean | undefined>(undefined)
+  const flying = ref<boolean | undefined>(undefined)
   const icon = ref<string | undefined>(undefined)
   const configurationPages = ref<PageDescription[]>([])
   const timeNow = useTimestamp({ interval: 100 })
@@ -135,6 +136,19 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   function disarm(): void {
     mainVehicle.value?.disarm()
+  }
+  /**
+   * Takeoff the vehicle
+   */
+  function takeoff(): void {
+    mainVehicle.value?.takeoff()
+  }
+
+  /**
+   * Land the vehicle
+   */
+  function land(): void {
+    mainVehicle.value?.land()
   }
 
   /**
@@ -236,6 +250,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     })
     mainVehicle.value.onArm.add((armed: boolean) => {
       isArmed.value = armed
+    })
+    mainVehicle.value.onTakeoff.add((inAir: boolean) => {
+      flying.value = inAir
     })
     mainVehicle.value.onCpuLoad.add((newCpuLoad: number) => {
       cpuLoad.value = newCpuLoad
@@ -350,6 +367,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   return {
     arm,
+    takeoff,
+    land,
     disarm,
     modesAvailable,
     setFlightMode,
@@ -376,6 +395,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mode,
     modes,
     isArmed,
+    flying,
     isVehicleOnline,
     icon,
     configurationPages,
