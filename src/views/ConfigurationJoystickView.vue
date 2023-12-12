@@ -44,7 +44,7 @@
             :key="key.id"
             class="m-2"
             :class="{ 'bg-slate-700': currentModifierKey.id === key.id }"
-            @click="currentModifierKey = key"
+            @click="changeModifierKeyTab(key.id as CockpitModifierKeyOption)"
           >
             {{ key.name }}
           </Button>
@@ -392,12 +392,25 @@ watch(controllerStore.joysticks, () => {
     .filter((v) => v.protocol === JoystickProtocol.CockpitModifierKey)
     .filter((v) => modifierKeysIds.includes(v.id))
     .filter((v) => v !== modifierKeyActions.regular)
-  if (activeModKeys.isEmpty() && currentModifierKey.value !== modifierKeyActions.regular) {
-    currentModifierKey.value = modifierKeyActions.regular
+
+  if (activeModKeys.isEmpty()) return
+  if (currentModifierKey.value.id === activeModKeys[0].id) {
+    changeModifierKeyTab(modifierKeyActions.regular.id as CockpitModifierKeyOption)
     return
   }
-  currentModifierKey.value = activeModKeys[0]
+  changeModifierKeyTab(activeModKeys[0].id as CockpitModifierKeyOption)
 })
+
+let lastModTabChange = new Date().getTime()
+const changeModifierKeyTab = (modKeyOption: CockpitModifierKeyOption): void => {
+  if (!Object.keys(modifierKeyActions).includes(modKeyOption)) return
+
+  // Buffer so we change tab once per button press
+  if (new Date().getTime() - lastModTabChange < 200) return
+  lastModTabChange = new Date().getTime()
+
+  currentModifierKey.value = modifierKeyActions[modKeyOption]
+}
 
 const buttonRemappingText = computed(() => {
   return remappingInput.value
