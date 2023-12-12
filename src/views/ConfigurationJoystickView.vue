@@ -256,7 +256,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
@@ -300,8 +300,8 @@ const buttonFunctionAssignmentFeedback = ref('')
 const showButtonFunctionAssignmentFeedback = ref(false)
 const justRemappedInput = ref<boolean>()
 const inputClickedDialog = ref(false)
-const currentModifierKey = ref(modifierKeyActions.regular)
-const availableModifierKeys = Object.values(modifierKeyActions)
+const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
+const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
 const showJoystickLayout = ref(true)
 watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
 
