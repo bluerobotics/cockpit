@@ -1,6 +1,6 @@
 import { useStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
@@ -12,7 +12,6 @@ import {
   availableCockpitActions,
   CockpitActionsManager,
   registerActionCallback,
-  unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
@@ -310,12 +309,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       },
       setFlightMode: setFlightMode,
     }
-    const mavlinkArmId = registerActionCallback(availableCockpitActions.mavlink_arm, arm)
-    const mavlinkDisarmId = registerActionCallback(availableCockpitActions.mavlink_disarm, disarm)
-    onBeforeUnmount(() => {
-      unregisterActionCallback(mavlinkArmId)
-      unregisterActionCallback(mavlinkDisarmId)
-    })
+    registerActionCallback(availableCockpitActions.mavlink_arm, arm)
+    registerActionCallback(availableCockpitActions.mavlink_disarm, disarm)
   })
 
   const controllerStore = useControllerStore()
