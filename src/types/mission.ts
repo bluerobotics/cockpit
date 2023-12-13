@@ -3,8 +3,6 @@
  */
 export enum WaypointType {
   PASS_BY = 'Pass by',
-  TAKEOFF = 'Takeoff',
-  LAND = 'Land',
 }
 
 /**

@@ -5,25 +5,11 @@
       <div class="flex flex-col w-full h-full p-2 overflow-y-scroll">
         <p class="text-sm text-slate-200">Waypoint type</p>
         <button
-          :class="{ 'bg-slate-50': currentWaypointType === WaypointType.TAKEOFF }"
-          class="h-6 m-2 font-medium rounded-sm bg-slate-300"
-          @click="currentWaypointType = WaypointType.TAKEOFF"
-        >
-          Takeoff
-        </button>
-        <button
           :class="{ 'bg-slate-50': currentWaypointType === WaypointType.PASS_BY }"
           class="h-6 m-2 font-medium rounded-sm bg-slate-300"
           @click="currentWaypointType = WaypointType.PASS_BY"
         >
           Pass-by
-        </button>
-        <button
-          :class="{ 'bg-slate-50': currentWaypointType === WaypointType.LAND }"
-          class="h-6 m-2 font-medium rounded-sm bg-slate-300"
-          @click="currentWaypointType = WaypointType.LAND"
-        >
-          Land
         </button>
         <div class="w-full h-px my-3 bg-gray-50" />
         <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
@@ -161,7 +147,7 @@ const planningMap: Ref<Map | undefined> = ref()
 const mapCenter = ref<WaypointCoordinates>([-27.5935, -48.55854])
 const home = ref(mapCenter.value)
 const zoom = ref(18)
-const currentWaypointType = ref<WaypointType>(WaypointType.TAKEOFF)
+const currentWaypointType = ref<WaypointType>(WaypointType.PASS_BY)
 const currentWaypointAltitude = ref(0)
 const defaultCruiseSpeed = ref(1)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
@@ -327,9 +313,6 @@ onMounted(() => {
       currentWaypointType.value,
       currentWaypointAltitudeRefType.value
     )
-    if (currentWaypointType.value === WaypointType.TAKEOFF) {
-      currentWaypointType.value = WaypointType.PASS_BY
-    }
   })
 
   const layerControl = L.control.layers(baseMaps)

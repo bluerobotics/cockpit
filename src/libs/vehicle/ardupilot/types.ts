@@ -66,7 +66,7 @@ export const convertMavlinkWaypointsToCockpit = (mavlinkWaypoints: Message.Missi
       altitude: mavlinkWaypoint.z,
       altitudeReferenceType:
         cockpitAltRefFromMavlinkFrame(mavlinkWaypoint.frame.type) || AltitudeReferenceType.RELATIVE_TO_HOME,
-      type: mavlinkWaypoint.command.type === MavCmd.MAV_CMD_NAV_WAYPOINT ? WaypointType.PASS_BY : WaypointType.TAKEOFF,
+      type: WaypointType.PASS_BY,
     }
   })
 }
