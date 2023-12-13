@@ -216,22 +216,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     return savedProfiles.value.map((p) => p.hash).includes(profile.hash)
   }
 
-  const isDefaultProfile = (profile: Profile): boolean => {
-    return widgetProfiles.map((p) => p.hash).includes(profile.hash)
-  }
-
   /**
    * Deletes a profile from the store
    * @param { Profile } profile - Profile
    */
   function deleteProfile(profile: Profile): void {
-    if (!isUserProfile(profile) && !isDefaultProfile(profile)) {
+    if (!isUserProfile(profile)) {
       Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
-      return
-    }
-
-    if (isDefaultProfile(profile)) {
-      Swal.fire({ icon: 'error', text: 'Cannot delete a default profile.', timer: 3000 })
       return
     }
 
@@ -514,7 +505,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     miniWidgetContainersInCurrentView,
     currentMiniWidgetsProfile,
     savedProfiles,
-    isDefaultProfile,
     loadProfile,
     saveProfile,
     resetSavedProfiles,
