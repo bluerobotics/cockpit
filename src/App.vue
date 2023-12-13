@@ -81,7 +81,7 @@
                 <p v-if="store.missionName" class="overflow-x-hidden text-ellipsis">{{ store.missionName }}</p>
                 <p v-else class="overflow-x-hidden text-ellipsis">
                   {{ randomMissionName }}
-                  <FontAwesomeIcon icon="fa-pen-to-square" size="md" class="ml-2 text-slate-200/30" />
+                  <FontAwesomeIcon icon="fa-pen-to-square" size="1x" class="ml-2 text-slate-200/30" />
                 </p>
               </div>
             </div>
