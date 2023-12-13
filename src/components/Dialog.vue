@@ -1,7 +1,11 @@
 <template>
   <teleport to="body">
     <dialog ref="dialogRef" class="modal">
-      <div ref="dialogContentRef" class="flex flex-col items-center justify-center w-full h-full p-5 backdrop-blur-sm">
+      <div
+        ref="dialogContentRef"
+        v-bind="$attrs"
+        class="flex flex-col items-center justify-center w-full h-full p-5 backdrop-blur-sm"
+      >
         <slot></slot>
       </div>
     </dialog>
