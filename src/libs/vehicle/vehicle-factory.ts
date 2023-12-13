@@ -98,6 +98,7 @@ function createVehicleFromMessage(message: Uint8Array): void {
   }
 
   const heartbeat = mavlink_message.message as Message.Heartbeat
+  if (heartbeat.autopilot.type === MavAutopilot.MAV_AUTOPILOT_INVALID) return
   if (heartbeat.autopilot.type !== MavAutopilot.MAV_AUTOPILOT_ARDUPILOTMEGA) {
     console.warn(`Vehicle not supported: ${system_id}/${component_id}: ${heartbeat.autopilot.type}`)
   }
