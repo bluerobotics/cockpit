@@ -74,7 +74,7 @@ global!.assert = function (result: boolean, message?: string) {
 }
 
 global!.unimplemented = function (message?: string) {
-  console.warn(new Error(message ?? 'Not implemented'))
+  console.debug(new Error(message ?? 'Not implemented'))
 }
 
 // eslint-disable-next-line
