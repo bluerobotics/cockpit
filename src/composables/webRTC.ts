@@ -227,12 +227,11 @@ export class WebRTCManager {
       track.contentHint = 'motion'
     })
 
-    console.groupCollapsed('[WebRTC] Track added')
+    console.debug('[WebRTC] Track added')
     console.debug('Event:', event)
     console.debug('Settings:', event.track.getSettings?.())
     console.debug('Constraints:', event.track.getConstraints?.())
     console.debug('Capabilities:', event.track.getCapabilities?.())
-    console.groupEnd()
   }
 
   /**
