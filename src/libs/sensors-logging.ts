@@ -106,17 +106,17 @@ class DataLogger {
 
       /* eslint-disable vue/max-len, prettier/prettier, max-len */
       const variablesData = {
-        [DatalogVariable.roll]: { value: `${degrees(vehicleStore.attitude.roll).toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.pitch]: { value: `${degrees(vehicleStore.attitude.pitch).toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.heading]: { value: `${degrees(vehicleStore.attitude.yaw).toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.depth]: { value: `${vehicleStore.altitude.msl.toPrecision(4)} m`, ...timeNowObj },
+        [DatalogVariable.roll]: { value: `${degrees(vehicleStore.attitude.roll)?.toFixed(1)} °`, ...timeNowObj },
+        [DatalogVariable.pitch]: { value: `${degrees(vehicleStore.attitude.pitch)?.toFixed(1)} °`, ...timeNowObj },
+        [DatalogVariable.heading]: { value: `${degrees(vehicleStore.attitude.yaw)?.toFixed(1)} °`, ...timeNowObj },
+        [DatalogVariable.depth]: { value: `${vehicleStore.altitude.msl?.toPrecision(4)} m`, ...timeNowObj },
         [DatalogVariable.mode]: { value: vehicleStore.mode || 'Unknown', ...timeNowObj },
         [DatalogVariable.batteryVoltage]: { value: `${vehicleStore.powerSupply.voltage?.toFixed(2)} V` || 'Unknown', ...timeNowObj },
         [DatalogVariable.batteryCurrent]: { value: `${vehicleStore.powerSupply.current?.toFixed(2)} A` || 'Unknown', ...timeNowObj },
-        [DatalogVariable.gpsVisibleSatellites]: { value: vehicleStore.statusGPS.visibleSatellites.toFixed(0) || 'Unknown', ...timeNowObj },
+        [DatalogVariable.gpsVisibleSatellites]: { value: vehicleStore.statusGPS.visibleSatellites?.toFixed(0) || 'Unknown', ...timeNowObj },
         [DatalogVariable.gpsFixType]: { value: vehicleStore.statusGPS.fixType, ...timeNowObj },
-        [DatalogVariable.latitude]: { value: `${vehicleStore.coordinates.latitude.toFixed(6)} °` || 'Unknown', ...timeNowObj },
-        [DatalogVariable.longitude]: { value: `${vehicleStore.coordinates.longitude.toFixed(6)} °` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.latitude]: { value: `${vehicleStore.coordinates.latitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.longitude]: { value: `${vehicleStore.coordinates.longitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
       }
       /* eslint-enable vue/max-len, prettier/prettier, max-len */
 
