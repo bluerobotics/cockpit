@@ -116,7 +116,7 @@ import type { Map } from 'leaflet'
 import Swal from 'sweetalert2'
 import { type Ref, computed, nextTick, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
-import { datalogger, DatalogVariable } from '@/libs/logging'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'

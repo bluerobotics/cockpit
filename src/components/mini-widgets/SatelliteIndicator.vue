@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { datalogger, DatalogVariable } from '@/libs/logging'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 datalogger.registerUsage(DatalogVariable.gpsFixType)

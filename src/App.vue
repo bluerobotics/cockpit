@@ -159,7 +159,7 @@ import Dialog from './components/Dialog.vue'
 import EditMenu from './components/EditMenu.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import Alerter from './components/widgets/Alerter.vue'
-import { datalogger } from './libs/logging'
+import { datalogger } from './libs/sensors-logging'
 import { useWidgetManagerStore } from './stores/widgetManager'
 
 const widgetStore = useWidgetManagerStore()

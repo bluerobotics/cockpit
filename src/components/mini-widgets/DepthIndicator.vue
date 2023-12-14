@@ -17,7 +17,7 @@ import { useAverage } from '@vueuse/math'
 import { ref, watch } from 'vue'
 import { computed } from 'vue'
 
-import { datalogger, DatalogVariable } from '@/libs/logging'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const store = useMainVehicleStore()

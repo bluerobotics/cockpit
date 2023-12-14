@@ -64,7 +64,7 @@ import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vu
 import adapter from 'webrtc-adapter'
 
 import { WebRTCManager } from '@/composables/webRTC'
-import { datalogger } from '@/libs/logging'
+import { datalogger } from '@/libs/sensors-logging'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'

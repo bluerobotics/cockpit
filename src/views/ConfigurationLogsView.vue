@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { datalogger, DatalogVariable } from '@/libs/logging'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 </script>
