@@ -10,15 +10,15 @@ export const useVideoStore = defineStore('video', () => {
   const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips', [])
 
   // Offer download of backuped videos
-  const cockpitVideoDB = localforage.createInstance({
+  const videoRecoveryDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
-    name: 'CockpitVideoDB',
-    storeName: 'cockpit-video-db',
+    name: 'Cockpit - Video Recovery',
+    storeName: 'cockpit-video-recovery-db',
     version: 1.0,
     description: 'Local backups of Cockpit video recordings to be retrieved in case of failure.',
   })
 
-  cockpitVideoDB.length().then((len) => {
+  videoRecoveryDB.length().then((len) => {
     if (len === 0) return
 
     Swal.fire({
@@ -37,13 +37,13 @@ export const useVideoStore = defineStore('video', () => {
     }).then((decision) => {
       if (decision.isDismissed) return
       if (decision.isDenied) {
-        cockpitVideoDB.iterate((_, videoName) => cockpitVideoDB.removeItem(videoName))
+        videoRecoveryDB.iterate((_, videoName) => videoRecoveryDB.removeItem(videoName))
       } else if (decision.isConfirmed) {
-        cockpitVideoDB.iterate((videoFile, videoName) => {
+        videoRecoveryDB.iterate((videoFile, videoName) => {
           const blob = (videoFile as Blob[]).reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
           saveAs(blob, videoName)
         })
-        cockpitVideoDB.iterate((_, videoName) => cockpitVideoDB.removeItem(videoName))
+        videoRecoveryDB.iterate((_, videoName) => videoRecoveryDB.removeItem(videoName))
       }
     })
   })
@@ -58,7 +58,7 @@ export const useVideoStore = defineStore('video', () => {
     if (availableIceIps.value.length >= 1) {
       Swal.fire({
         html: `
-          <p>Cockpit detected more than one IP address being used to route the video streaming. This often 
+          <p>Cockpit detected more than one IP address being used to route the video streaming. This often
           leads to video stuttering, especially if one of the IPs is from a non-wired connection.</p>
           </br>
           <p>To prevent issues and achieve an optimal streaming experience, please:</p>
