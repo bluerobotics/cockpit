@@ -76,5 +76,5 @@ export const useVideoStore = defineStore('video', () => {
     }
   }, 5000)
 
-  return { availableIceIps, allowedIceIps }
+  return { availableIceIps, allowedIceIps, videoRecoveryDB }
 })
