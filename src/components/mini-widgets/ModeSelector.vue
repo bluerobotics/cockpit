@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { datalogger, DatalogVariable } from '@/libs/logging'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import Dropdown from '../Dropdown.vue'

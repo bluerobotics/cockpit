@@ -33,7 +33,7 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
-import { datalogger, DatalogVariable } from '@/libs/logging'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { constrain, range, resetCanvas, round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'

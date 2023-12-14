@@ -26,7 +26,7 @@ import { computed, onBeforeMount, ref, toRefs } from 'vue'
 
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
-import { datalogger, DatalogVariable } from '@/libs/logging'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas, sequentialArray } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Widget } from '@/types/widgets'

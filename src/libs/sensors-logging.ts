@@ -88,10 +88,10 @@ class DataLogger {
     const vehicleStore = useMainVehicleStore()
     const cockpitLogsDB = localforage.createInstance({
       driver: localforage.INDEXEDDB,
-      name: 'cockpitLogsDB',
-      storeName: 'cockpit-logs-db',
+      name: 'Cockpit - Sensor Logs',
+      storeName: 'cockpit-sensor-logs-db',
       version: 1.0,
-      description: 'Local backups of Cockpit logs to be retrieved in case of failure.',
+      description: 'Local backups of Cockpit sensor logs, to be retrieved in case of failure.',
     })
 
     const initialTime = new Date()

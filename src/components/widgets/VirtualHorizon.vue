@@ -14,7 +14,7 @@ import { useElementSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, ref } from 'vue'
 
-import { datalogger, DatalogVariable } from '@/libs/logging'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
