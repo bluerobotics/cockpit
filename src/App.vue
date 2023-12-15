@@ -77,9 +77,9 @@
               class="flex items-center justify-start h-full px-4 ml-3 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
               @click="showMissionOptionsDialog = true"
             >
-              <div class="flex items-center h-full overflow-hidden text-lg font-medium leading-none text-white">
-                <p v-if="store.missionName">{{ store.missionName }}</p>
-                <p v-else>
+              <div class="flex items-center overflow-hidden text-lg font-medium text-white whitespace-nowrap">
+                <p v-if="store.missionName" class="overflow-x-hidden text-ellipsis">{{ store.missionName }}</p>
+                <p v-else class="overflow-x-hidden text-ellipsis">
                   {{ randomMissionName }}
                   <FontAwesomeIcon icon="fa-pen-to-square" size="md" class="ml-2 text-slate-200/30" />
                 </p>
