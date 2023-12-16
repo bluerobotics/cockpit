@@ -20,7 +20,6 @@ import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
   Altitude,
   Attitude,
-  Coordinates,
   PageDescription,
   PowerSupply,
   StatusGPS,
@@ -28,6 +27,7 @@ import type {
   VehicleConfigurationSettings,
   Velocity,
 } from '@/libs/vehicle/types'
+import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
@@ -148,6 +148,33 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   function land(): void {
     mainVehicle.value?.land()
+  }
+
+  /**
+   * Go to a given position
+   * @param { number } hold Time to hold position in seconds
+   * @param { number } acceptanceRadius Radius in meters to consider the waypoint reached
+   * @param { number } passRadius Radius in meters to pass the waypoint
+   * @param { number } yaw Yaw angle in degrees
+   * @param { number } latitude Latitude in degrees
+   * @param { number } longitude Longitude in degrees
+   * @param { number } alt Altitude in meters
+   */
+  function goTo(
+    hold: number,
+    acceptanceRadius: number,
+    passRadius: number,
+    yaw: number,
+    latitude: number,
+    longitude: number,
+    alt: number
+  ): void {
+    const waypoint = new Coordinates()
+    waypoint.latitude = latitude
+    waypoint.altitude = alt
+    waypoint.longitude = longitude
+
+    mainVehicle.value?.goTo(hold, acceptanceRadius, passRadius, yaw, waypoint)
   }
 
   /**
@@ -365,6 +392,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     takeoff,
     land,
     disarm,
+    goTo,
     modesAvailable,
     setFlightMode,
     sendGcsHeartbeat,
