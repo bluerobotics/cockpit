@@ -425,6 +425,35 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this.setMode(landMode as Modes)
     return
   }
+  /**
+   * Goto position
+   * @param {number} hold Hold time. (ignored by fixed wing, time to stay at waypoint for rotary wing)
+   * @param {number} acceptanceRadius Acceptance radius (if the sphere with this radius is hit, the waypoint counts as reached)
+   * @param {number} passRadius 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.
+   * @param {number} yaw Desired yaw angle at waypoint (rotary wing). NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
+   * @param {Coordinates} coordinates
+   */
+  goTo(hold: number, acceptanceRadius: number, passRadius: number, yaw: number, coordinates: Coordinates): void {
+    const gotoMessage: Message.CommandInt = {
+      type: MAVLinkType.COMMAND_INT,
+      target_system: 1,
+      target_component: 1,
+      seq: 0,
+      frame: { type: MavFrame.MAV_FRAME_GLOBAL },
+      command: { type: MavCmd.MAV_CMD_DO_REPOSITION },
+      current: 0,
+      autocontinue: 0,
+      param1: hold,
+      param2: acceptanceRadius,
+      param3: passRadius,
+      param4: yaw,
+      x: Math.round(coordinates.latitude * 1e7),
+      y: Math.round(coordinates.longitude * 1e7),
+      z: coordinates.altitude,
+    }
+
+    this.write(gotoMessage)
+  }
 
   /**
    * Return vehicle altitude-related data
