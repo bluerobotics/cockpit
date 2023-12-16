@@ -8,7 +8,14 @@
     :max-zoom="19"
     class="map"
     @ready="onLeafletReady"
+    @click="onMapClick"
   >
+    <!-- Marker bound to clickedLocation -->
+    <l-marker v-if="clickedLocation" :lat-lng="clickedLocation">
+      <l-tooltip>
+        <div>coordinates: {{ clickedLocation }}</div>
+      </l-tooltip>
+    </l-marker>
     <v-btn
       class="absolute left-0 m-3 bottom-12 bg-slate-50"
       elevation="2"
@@ -17,6 +24,12 @@
       size="x-small"
       @click="whoToFollow = WhoToFollow.HOME"
     />
+
+    <div v-if="showContextMenu" class="context-menu" :style="{ top: menuPosition.top, left: menuPosition.left }">
+      <ul @click.stop="">
+        <li @click="onMenuOptionSelect('goto')">GoTo</li>
+      </ul>
+    </div>
     <v-btn
       class="absolute m-3 bottom-12 left-10 bg-slate-50"
       elevation="2"
@@ -114,7 +127,18 @@ import { useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import type { Map } from 'leaflet'
 import Swal from 'sweetalert2'
-import { type Ref, computed, nextTick, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
+import {
+  type Ref,
+  computed,
+  nextTick,
+  onBeforeMount,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  toRefs,
+  watch,
+} from 'vue'
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
@@ -172,9 +196,19 @@ navigator?.geolocation?.watchPosition(
   }
 )
 
+let leafletMap: L.Map | null = null // eslint-disable-line no-undef
+
 const onLeafletReady = async (): Promise<void> => {
   await nextTick()
+  leafletMap = map.value?.leafletObject
+
+  if (!leafletMap) {
+    console.warn('Failed to get leaflet reference')
+    return
+  }
   leafletObject.value = map.value?.leafletObject
+
+  leafletMap.on('click', onMapClick)
 
   if (leafletObject.value == undefined) {
     console.warn('Failed to get leaflet reference')
@@ -183,10 +217,33 @@ const onLeafletReady = async (): Promise<void> => {
 
   leafletObject.value.zoomControl.setPosition('bottomright')
 
+  leafletMap.on('contextmenu', () => {
+    hideContextMenuAndMarker()
+  })
+
   // It was not possible to find a way to change the position
   // automatically besides waiting 2 seconds before changing it
   setTimeout(goHome, 2000)
 }
+
+const clickedLocation = ref<[number, number] | null>(null)
+
+// hide context menu and marker
+const hideContextMenuAndMarker = (): void => {
+  showContextMenu.value = false
+  clickedLocation.value = null
+}
+
+// Handle the Escape key press
+const onKeydown = (event: KeyboardEvent): void => {
+  if (event.key === 'Escape') {
+    hideContextMenuAndMarker()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+})
 
 const goHome = async (): Promise<void> => {
   if (home.value === null) {
@@ -265,7 +322,71 @@ onBeforeMount(() => {
 
 onBeforeUnmount(() => {
   clearInterval(followInterval)
+  if (leafletMap) {
+    leafletMap.off('click', onMapClick)
+  }
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  if (leafletMap) {
+    leafletMap.off('contextmenu')
+  }
+})
+
+const showContextMenu = ref(false)
+const menuPosition = reactive({ top: '0px', left: '0px' })
+
+// eslint-disable-next-line no-undef
+const onMapClick = (event: L.LeafletMouseEvent): void => {
+  console.log('Map click event:', event) // Log the event object
+
+  // Check if event.latlng is defined and has the required properties
+  if (event?.latlng?.lat != null && event?.latlng?.lng != null) {
+    clickedLocation.value = [event.latlng.lat, event.latlng.lng]
+    showContextMenu.value = true
+
+    // Calculate and update menu position
+    const mapElement = leafletObject.value?.getContainer()
+    if (mapElement) {
+      const { x, y } = mapElement.getBoundingClientRect()
+      menuPosition.left = `${event.originalEvent.clientX - x}px`
+      menuPosition.top = `${event.originalEvent.clientY - y}px`
+    }
+  } else {
+    console.error('Invalid event structure:', event)
+  }
+}
+
+const onMenuOptionSelect = (option: string): void => {
+  console.log(`Option selected: ${option}`)
+
+  switch (option) {
+    case 'goto':
+      if (clickedLocation.value) {
+        // Define default values
+        const hold = 0
+        const acceptanceRadius = 0
+        const passRadius = 0
+        const yaw = 0
+        const altitude = vehicleStore.coordinates.altitude ?? 0
+
+        const latitude = clickedLocation.value[0]
+        const longitude = clickedLocation.value[1]
+
+        vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
+      }
+      break
+
+    // Add more cases for other options if needed in the future
+
+    default:
+      console.warn('Unknown menu option selected:', option)
+  }
+
+  // hide the context menu after an option is selected
+  showContextMenu.value = false
+}
 </script>
 
 <style>
@@ -286,5 +407,31 @@ onBeforeUnmount(() => {
 }
 .leaflet-control-zoom {
   transform: translateY(-30px);
+}
+.context-menu {
+  position: absolute;
+  z-index: 1003;
+  background-color: rgba(255, 255, 255, 0.9);
+  /* White with slight transparency */
+  border: 1px solid #ccc;
+  /* Optional: adds a subtle border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* Optional: adds a slight shadow for depth */
+  border-radius: 4px;
+  /* Optional: rounds the corners */
+  top: 50px;
+  left: 50px;
+}
+.context-menu ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+.context-menu ul li {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.context-menu ul li:hover {
+  background-color: #ddd;
 }
 </style>
