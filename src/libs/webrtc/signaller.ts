@@ -42,7 +42,11 @@ export class Signaller {
     console.debug('[WebRTC] [Signaller] ' + status)
     this.onStatusChange?.(status)
 
-    this.ws = this.connect()
+    try {
+      this.ws = this.connect()
+    } catch (error) {
+      console.error(`Could not establish initial connection. ${error}`)
+    }
   }
 
   /**
@@ -609,7 +613,11 @@ export class Signaller {
     oldWs.onmessage = null
     oldWs.onerror = null
 
-    this.ws = this.connect()
+    try {
+      this.ws = this.connect()
+    } catch (error) {
+      console.error(`[WebRTC] [Signaller] Could not reconnect. ${error}`)
+    }
   }
 
   /**
