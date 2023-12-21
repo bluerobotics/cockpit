@@ -136,7 +136,7 @@ export const useVideoStore = defineStore('video', () => {
           </br>
           <p>To prevent issues and achieve an optimal streaming experience, please:</p>
           <ol>
-            <li>1. Open the configuration of one of your video widgets (in Edit Mode).</li>
+            <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
             <li>2. Select the IP address that should be used for the video streaming.</li>
           </ol>
         `,
