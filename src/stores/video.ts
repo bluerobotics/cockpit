@@ -3,11 +3,84 @@ import { saveAs } from 'file-saver'
 import localforage from 'localforage'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import adapter from 'webrtc-adapter'
+
+import { WebRTCManager } from '@/composables/webRTC'
+import { isEqual } from '@/libs/utils'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
+import type { StreamData } from '@/types/video'
 
 export const useVideoStore = defineStore('video', () => {
-  const availableIceIps = ref<string[] | undefined>(undefined)
+  const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
+  console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
+
   const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips', [])
+  const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
+  const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
+  const { availableStreams } = mainWebRTCManager.startStream(ref(undefined), allowedIceIps)
+  const availableIceIps = ref<string[]>([])
+
+  const namesAvailableStreams = computed(() => availableStreams.value.map((stream) => stream.name))
+
+  // If the allowed ICE IPs are updated, all the streams should be reconnected
+  watch(allowedIceIps, () => {
+    Object.keys(activeStreams.value).forEach((streamName) => (activeStreams.value[streamName] = undefined))
+  })
+
+  // Streams update routine. Responsible for starting and updating the streams.
+  setInterval(() => {
+    Object.keys(activeStreams.value).forEach((streamName) => {
+      if (activeStreams.value[streamName] === undefined) return
+      // Update the list of available remote ICE Ips with those available for each stream
+      // @ts-ignore: availableICEIPs is not reactive here, for some yet to know reason
+      const newIps = activeStreams.value[streamName].webRtcManager.availableICEIPs.filter(
+        (ip: string) => !availableIceIps.value.includes(ip)
+      )
+      availableIceIps.value = [...availableIceIps.value, ...newIps]
+
+      const updatedStream = availableStreams.value.find((s) => s.name === streamName)
+      if (isEqual(updatedStream, activeStreams.value[streamName]!.stream)) return
+
+      // Whenever the stream is to be updated we first reset it's variables (activateStream method), so
+      // consumers can be updated as well.
+      console.log(`New stream for '${streamName}':`)
+      console.log(JSON.stringify(updatedStream, null, 2))
+      activateStream(streamName)
+      // @ts-ignore
+      activeStreams.value[streamName].stream = updatedStream
+    })
+  }, 300)
+
+  /**
+   * Activates a stream by starting it and storing it's variables inside a common object.
+   * This way multiple consumers will always access the same resource, so we don't consume unnecessary
+   * bandwith or stress the stream provider more than we need to.
+   * @param {string} streamName - Unique name for the stream, common between the multiple consumers
+   */
+  const activateStream = (streamName: string): void => {
+    const stream = ref()
+    const webRtcManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
+    const { mediaStream } = webRtcManager.startStream(stream, allowedIceIps)
+    activeStreams.value[streamName] = {
+      stream: stream,
+      webRtcManager: webRtcManager,
+      mediaStream: mediaStream,
+    }
+  }
+
+  /**
+   * bandwith or stress the stream provider more than we need to.
+   * @param {string} streamName - Name of the stream
+   * @returns {MediaStream | undefined} MediaStream that is running, if available
+   */
+  const getMediaStream = (streamName: string): MediaStream | undefined => {
+    if (activeStreams.value[streamName] === undefined) {
+      activateStream(streamName)
+    }
+    // @ts-ignore
+    return activeStreams.value[streamName].mediaStream
+  }
 
   // Offer download of backuped videos
   const videoRecoveryDB = localforage.createInstance({
@@ -76,5 +149,11 @@ export const useVideoStore = defineStore('video', () => {
     }
   }, 5000)
 
-  return { availableIceIps, allowedIceIps, videoRecoveryDB }
+  return {
+    availableIceIps,
+    allowedIceIps,
+    namesAvailableStreams,
+    videoRecoveryDB,
+    getMediaStream,
+  }
 })
