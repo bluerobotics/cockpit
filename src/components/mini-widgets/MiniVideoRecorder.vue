@@ -20,9 +20,9 @@
       <p class="text-xl font-semibold">Choose a stream to record</p>
       <div class="w-auto h-px my-2 bg-grey-lighten-3" />
       <v-select
-        :model-value="selectedStream"
+        :model-value="nameSelectedStream"
         label="Stream name"
-        :items="availableStreams"
+        :items="namesAvailableStreams"
         item-title="name"
         density="compact"
         variant="outlined"
@@ -60,23 +60,15 @@ import fixWebmDuration from 'fix-webm-duration'
 import { storeToRefs } from 'pinia'
 import Swal, { type SweetAlertResult } from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
-import adapter from 'webrtc-adapter'
 
-import { WebRTCManager } from '@/composables/webRTC'
 import { datalogger } from '@/libs/sensors-logging'
-import type { Stream } from '@/libs/webrtc/signalling_protocol'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { isEqual } from '@/libs/utils'
 import { useMissionStore } from '@/stores/mission'
 import { useVideoStore } from '@/stores/video'
 import type { MiniWidget } from '@/types/miniWidgets'
 
 const videoStore = useVideoStore()
-const { allowedIceIps } = storeToRefs(videoStore)
-
-const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
 const { missionName } = useMissionStore()
-
-console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
 const props = defineProps<{
   /**
@@ -86,17 +78,16 @@ const props = defineProps<{
 }>()
 const miniWidget = toRefs(props).miniWidget
 
-const selectedStream = ref<Stream | undefined>()
-const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-const { availableStreams: externalStreams, mediaStream } = webRTCManager.startStream(selectedStream, allowedIceIps)
+const nameSelectedStream = ref<string | undefined>()
+const { namesAvailableStreams } = storeToRefs(videoStore)
 const mediaRecorder = ref<MediaRecorder>()
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
-const availableStreams = ref<Stream[]>([])
 const isStreamSelectDialogOpen = ref(false)
 const isLoadingStream = ref(false)
 const timeRecordingStart = ref(new Date())
 const timeNow = useTimestamp({ interval: 100 })
+const mediaStream = ref<MediaStream | undefined>()
 
 const isRecording = computed(() => {
   return mediaRecorder.value !== undefined && mediaRecorder.value.state === 'recording'
@@ -109,6 +100,12 @@ onBeforeMount(async () => {
       streamName: undefined as string | undefined,
     }
   }
+  nameSelectedStream.value = miniWidget.value.options.streamName
+})
+
+watch(nameSelectedStream, () => {
+  miniWidget.value.options.streamName = nameSelectedStream.value
+  mediaStream.value = undefined
 })
 
 const toggleRecording = async (): Promise<void> => {
@@ -119,17 +116,14 @@ const toggleRecording = async (): Promise<void> => {
   // Open dialog so user can choose the stream which will be recorded
   isStreamSelectDialogOpen.value = true
 }
-onBeforeUnmount(() => {
-  webRTCManager.close('WebRTC manager removed')
-})
 
 const startRecording = async (): Promise<SweetAlertResult | void> => {
-  if (availableStreams.value.isEmpty()) {
+  if (namesAvailableStreams.value.isEmpty()) {
     return Swal.fire({ text: 'No streams available.', icon: 'error' })
   }
-  if (selectedStream.value === undefined) {
-    if (availableStreams.value.length === 1) {
-      await updateCurrentStream(availableStreams.value[0])
+  if (nameSelectedStream.value === undefined) {
+    if (namesAvailableStreams.value.length === 1) {
+      await updateCurrentStream(namesAvailableStreams.value[0])
     } else {
       return Swal.fire({ text: 'No stream selected. Please choose one before continuing.', icon: 'error' })
     }
@@ -184,10 +178,10 @@ const timePassedString = computed(() => {
   return `${durationHours}:${durationMinutes}:${durationSeconds}`
 })
 
-const updateCurrentStream = async (stream: Stream | undefined): Promise<SweetAlertResult | void> => {
-  selectedStream.value = stream
+const updateCurrentStream = async (streamName: string | undefined): Promise<SweetAlertResult | void> => {
+  nameSelectedStream.value = streamName
   mediaStream.value = undefined
-  if (selectedStream.value !== undefined) {
+  if (nameSelectedStream.value !== undefined) {
     isLoadingStream.value = true
     let millisPassed = 0
     const timeStep = 100
@@ -202,27 +196,23 @@ const updateCurrentStream = async (stream: Stream | undefined): Promise<SweetAle
       return Swal.fire({ text: 'Could not load media stream.', icon: 'error' })
     }
   }
-  miniWidget.value.options.streamName = selectedStream.value?.name
+  miniWidget.value.options.streamName = nameSelectedStream.value
 }
 
-watch(externalStreams, () => {
-  const savedStreamName: string | undefined = miniWidget.value.options.streamName as string
-  availableStreams.value = externalStreams.value
-  if (!availableStreams.value.find((stream) => stream.id === 'screenStream')) {
-    addScreenStream()
-  }
-  if (availableStreams.value.isEmpty()) {
-    return
+const streamConnectionRoutine = setInterval(() => {
+  // If the video player widget is cold booted, assign the first stream to it
+  if (miniWidget.value.options.streamName === undefined && !namesAvailableStreams.value.isEmpty()) {
+    miniWidget.value.options.streamName = namesAvailableStreams.value[0]
+    nameSelectedStream.value = miniWidget.value.options.streamName
   }
 
-  // Retrieve stream from the saved stream name, otherwise choose the first available stream as a fallback
-  const savedStream = savedStreamName ? availableStreams.value.find((s) => s.name === savedStreamName) : undefined
-
-  if (savedStream !== undefined && savedStream.id !== selectedStream.value?.id && selectedStream.value === undefined) {
-    console.debug!('[WebRTC] trying to set stream...')
-    updateCurrentStream(savedStream)
+  const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.streamName)
+  // If the widget is not connected to the MediaStream, try to connect it
+  if (!isEqual(updatedMediaStream, mediaStream.value)) {
+    mediaStream.value = updatedMediaStream
   }
-})
+}, 1000)
+onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
 
 // Try to prevent user from closing Cockpit when a stream is being recorded
 watch(isRecording, () => {
