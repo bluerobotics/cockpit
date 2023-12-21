@@ -38,7 +38,7 @@ interface startStreamReturn {
  */
 export class WebRTCManager {
   private availableStreams: Ref<Array<Stream>> = ref(new Array<Stream>())
-  private availableICEIPs: Ref<Array<string>> = ref(new Array<string>())
+  public availableICEIPs: Ref<Array<string>> = ref(new Array<string>())
   private mediaStream: Ref<MediaStream | undefined> = ref()
   private signallerStatus: Ref<string> = ref('waiting...')
   private streamStatus: Ref<string> = ref('waiting...')
