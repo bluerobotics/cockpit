@@ -1,6 +1,6 @@
 <template>
   <div ref="videoWidget" class="video-widget">
-    <div v-if="selectedStream === undefined" class="no-video-alert">
+    <div v-if="nameSelectedStream === undefined" class="no-video-alert">
       <span>No video stream selected.</span>
     </div>
     <video ref="videoElement" muted autoplay playsinline disablePictureInPicture>
@@ -12,10 +12,10 @@
       <v-card-title>Video widget config</v-card-title>
       <v-card-text>
         <v-select
-          v-model="selectedStream"
+          v-model="nameSelectedStream"
           label="Stream name"
           class="my-3"
-          :items="availableStreams"
+          :items="namesAvailableStreams"
           item-title="name"
           density="compact"
           variant="outlined"
@@ -35,20 +35,7 @@
           hide-details
           return-object
         />
-        <v-combobox
-          v-model="selectedICEIPsField"
-          multiple
-          :items="videoStore.availableIceIps"
-          label="Allowed WebRTC remote IP Addresses"
-          class="w-full my-3 uri-input"
-          variant="outlined"
-          chips
-          clearable
-          hint="IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the tether/cabled interface. Blank means any route. E.g: 192.168.2.2"
-        />
         <v-banner-text>Saved stream name: "{{ widget.options.streamName }}"</v-banner-text>
-        <v-banner-text>Signaller Status: {{ signallerStatus }}</v-banner-text>
-        <v-banner-text>Stream Status: {{ streamStatus }}</v-banner-text>
         <v-switch
           v-model="widget.options.flipHorizontally"
           class="my-1"
@@ -70,26 +57,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
-import adapter from 'webrtc-adapter'
+import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
+import { onBeforeUnmount } from 'vue'
 
-import { WebRTCManager } from '@/composables/webRTC'
-import { isValidNetworkAddress } from '@/libs/utils'
-import type { Stream } from '@/libs/webrtc/signalling_protocol'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { isEqual } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import type { Widget } from '@/types/widgets'
 
 const videoStore = useVideoStore()
-const { allowedIceIps } = storeToRefs(videoStore)
-
-const isValidHostAddress = (value: string): boolean | string => {
-  return isValidNetworkAddress(value) ?? 'Invalid host address. Should be an IP address or a hostname'
-}
-
-const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
-
-console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
+const { namesAvailableStreams } = storeToRefs(videoStore)
 
 const props = defineProps<{
   /**
@@ -100,15 +76,9 @@ const props = defineProps<{
 
 const widget = toRefs(props).widget
 
-const selectedICEIPsField = ref<string[]>(allowedIceIps.value)
-const selectedStream = ref<Stream | undefined>()
+const nameSelectedStream = ref<string | undefined>()
 const videoElement = ref<HTMLVideoElement | undefined>()
-const webRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-const { availableStreams, availableICEIPs, mediaStream, signallerStatus, streamStatus } = webRTCManager.startStream(
-  selectedStream,
-  allowedIceIps
-)
-watch(allowedIceIps, () => (selectedICEIPsField.value = allowedIceIps.value))
+const mediaStream = ref<MediaStream | undefined>()
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
@@ -120,60 +90,39 @@ onBeforeMount(() => {
       streamName: undefined as string | undefined,
     }
   }
+  nameSelectedStream.value = widget.value.options.streamName
 })
 
-onBeforeUnmount(() => {
-  webRTCManager.close('WebRTC Widget was removed')
-})
-
-watch(mediaStream, async (newStream, oldStream) => {
-  console.debug(`[WebRTC] Stream changed. From: ${oldStream?.id} to ${newStream?.id}`)
-  if (videoElement.value === undefined || newStream === undefined) {
-    return
+const streamConnectionRoutine = setInterval(() => {
+  // If the video player widget is cold booted, assign the first stream to it
+  if (widget.value.options.streamName === undefined && !namesAvailableStreams.value.isEmpty()) {
+    widget.value.options.streamName = namesAvailableStreams.value[0]
+    nameSelectedStream.value = widget.value.options.streamName
   }
 
-  videoElement.value.srcObject = newStream
+  const updatedMediaStream = videoStore.getMediaStream(widget.value.options.streamName)
+  // If the widget is not connected to the MediaStream, try to connect it
+  if (!isEqual(updatedMediaStream, mediaStream.value)) {
+    mediaStream.value = updatedMediaStream
+  }
+}, 1000)
+onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
+
+watch(nameSelectedStream, () => {
+  widget.value.options.streamName = nameSelectedStream.value
+  mediaStream.value = undefined
+})
+
+watch(mediaStream, () => {
+  if (!videoElement.value || !mediaStream.value) return
+  videoElement.value.srcObject = mediaStream.value
   videoElement.value
     .play()
-    .then(() => {
-      console.log('[VideoPlayer] Stream is playing')
-    })
+    .then(() => console.log('[VideoPlayer] Stream is playing'))
     .catch((reason) => {
       const msg = `Failed to play stream. Reason: ${reason}`
-      console.log(`[VideoPlayer] ${msg}`)
-      streamStatus.value = msg
+      console.error(`[VideoPlayer] ${msg}`)
     })
-})
-
-watch(selectedICEIPsField, () => {
-  const validSelectedIPs = selectedICEIPsField.value.filter((address) => isValidHostAddress(address))
-  allowedIceIps.value = validSelectedIPs
-})
-
-setInterval(() => {
-  const combinedIps = [...(videoStore.availableIceIps ?? []), ...availableICEIPs.value]
-  const uniqueIps = combinedIps.filter((value, index, array) => array.indexOf(value) === index)
-  videoStore.availableIceIps = uniqueIps
-}, 1000)
-
-watch(selectedStream, () => (widget.value.options.streamName = selectedStream.value?.name))
-
-watch(availableStreams, () => {
-  const savedStreamName: string | undefined = widget.value.options.streamName
-  if (availableStreams.value.isEmpty()) {
-    return
-  }
-
-  // Retrieve stream from the savedStreamName, otherwise choose the first available stream as a fallback
-  const savedStream =
-    savedStreamName !== undefined
-      ? availableStreams.value.find((s) => s.name === savedStreamName)
-      : availableStreams.value.first()
-
-  if (savedStream !== undefined && savedStream.id !== selectedStream.value?.id) {
-    console.debug!('[WebRTC] trying to set stream...')
-    selectedStream.value = savedStream
-  }
 })
 
 const flipStyle = computed(() => {
