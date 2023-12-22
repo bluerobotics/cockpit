@@ -70,7 +70,7 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
-   * bandwith or stress the stream provider more than we need to.
+   * Get the MediaStream object related to a given stream, if available
    * @param {string} streamName - Name of the stream
    * @returns {MediaStream | undefined} MediaStream that is running, if available
    */
