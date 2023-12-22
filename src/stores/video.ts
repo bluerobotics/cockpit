@@ -1,5 +1,7 @@
 import { useStorage } from '@vueuse/core'
+import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
+import fixWebmDuration from 'fix-webm-duration'
 import localforage from 'localforage'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
@@ -7,11 +9,14 @@ import { computed, ref, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
 import { WebRTCManager } from '@/composables/webRTC'
+import { datalogger } from '@/libs/sensors-logging'
 import { isEqual } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 import type { StreamData } from '@/types/video'
 
 export const useVideoStore = defineStore('video', () => {
+  const { missionName } = useMissionStore()
   const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
@@ -67,7 +72,21 @@ export const useVideoStore = defineStore('video', () => {
       webRtcManager: webRtcManager,
       // @ts-ignore: This is actually not reactive
       mediaStream: mediaStream,
+      mediaRecorder: undefined,
+      timeRecordingStart: undefined,
     }
+  }
+
+  /**
+   * Get all data related to a given stream, if available
+   * @param {string} streamName - Name of the stream
+   * @returns {StreamData | undefined} The StreamData object, if available
+   */
+  const getStreamData = (streamName: string): StreamData | undefined => {
+    if (activeStreams.value[streamName] === undefined) {
+      activateStream(streamName)
+    }
+    return activeStreams.value[streamName]
   }
 
   /**
@@ -80,6 +99,95 @@ export const useVideoStore = defineStore('video', () => {
       activateStream(streamName)
     }
     return activeStreams.value[streamName]!.mediaStream
+  }
+
+  /**
+   * Wether or not the stream is currently being recorded
+   * @param {string} streamName - Name of the stream
+   * @returns {boolean}
+   */
+  const isRecording = (streamName: string): boolean => {
+    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
+
+    return (
+      activeStreams.value[streamName]!.mediaRecorder !== undefined &&
+      activeStreams.value[streamName]!.mediaRecorder!.state === 'recording'
+    )
+  }
+
+  /**
+   * Stop recording the stream
+   * @param {string} streamName - Name of the stream
+   */
+  const stopRecording = (streamName: string): void => {
+    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
+
+    activeStreams.value[streamName]!.mediaRecorder!.stop()
+  }
+
+  /**
+   * Start recording the stream
+   * @param {string} streamName - Name of the stream
+   */
+  const startRecording = (streamName: string): void => {
+    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
+
+    if (namesAvailableStreams.value.isEmpty()) {
+      Swal.fire({ text: 'No streams available.', icon: 'error' })
+      return
+    }
+
+    if (activeStreams.value[streamName]!.mediaStream === undefined) {
+      Swal.fire({ text: 'Media stream not defined.', icon: 'error' })
+      return
+    }
+    if (!activeStreams.value[streamName]!.mediaStream!.active) {
+      Swal.fire({ text: 'Media stream not yet active. Wait a second and try again.', icon: 'error' })
+      return
+    }
+
+    activeStreams.value[streamName]!.timeRecordingStart = new Date()
+    const streamData = activeStreams.value[streamName] as StreamData
+    const fileName = `${missionName || 'Cockpit'} (${format(
+      streamData.timeRecordingStart!,
+      'LLL dd, yyyy - HH꞉mm꞉ss O'
+    )})`
+    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
+    if (!datalogger.logging()) {
+      datalogger.startLogging()
+    }
+    const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
+    const vWidth = videoTrack.getSettings().width || 1920
+    const vHeight = videoTrack.getSettings().height || 1080
+    activeStreams.value[streamName]!.mediaRecorder!.start(1000)
+    let chunks: Blob[] = []
+    activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
+      chunks.push(e.data)
+      await videoRecoveryDB.setItem(fileName, chunks)
+    }
+
+    activeStreams.value[streamName]!.mediaRecorder!.onstop = () => {
+      const blob = new Blob(chunks, { type: 'video/webm' })
+      const videoTelemetryLog = datalogger.getSlice(
+        datalogger.currentCockpitLog,
+        streamData.timeRecordingStart!,
+        new Date()
+      )
+      const assLog = datalogger.toAssOverlay(
+        videoTelemetryLog,
+        vWidth,
+        vHeight,
+        streamData.timeRecordingStart!.getTime()
+      )
+      const logBlob = new Blob([assLog], { type: 'text/plain' })
+      fixWebmDuration(blob, Date.now() - streamData.timeRecordingStart!.getTime()).then((fixedBlob) => {
+        saveAs(fixedBlob, `${fileName}.webm`)
+        saveAs(logBlob, `${fileName}.ass`)
+        videoRecoveryDB.removeItem(fileName)
+      })
+      chunks = []
+      activeStreams.value[streamName]!.mediaRecorder = undefined
+    }
   }
 
   // Offer download of backuped videos
@@ -155,5 +263,9 @@ export const useVideoStore = defineStore('video', () => {
     namesAvailableStreams,
     videoRecoveryDB,
     getMediaStream,
+    getStreamData,
+    isRecording,
+    stopRecording,
+    startRecording,
   }
 })
