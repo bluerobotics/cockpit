@@ -47,8 +47,7 @@ export const useVideoStore = defineStore('video', () => {
       console.log(`New stream for '${streamName}':`)
       console.log(JSON.stringify(updatedStream, null, 2))
       activateStream(streamName)
-      // @ts-ignore
-      activeStreams.value[streamName].stream = updatedStream
+      activeStreams.value[streamName]!.stream = updatedStream
     })
   }, 300)
 
@@ -63,8 +62,10 @@ export const useVideoStore = defineStore('video', () => {
     const webRtcManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
     const { mediaStream } = webRtcManager.startStream(stream, allowedIceIps)
     activeStreams.value[streamName] = {
+      // @ts-ignore: This is actually not reactive
       stream: stream,
       webRtcManager: webRtcManager,
+      // @ts-ignore: This is actually not reactive
       mediaStream: mediaStream,
     }
   }
@@ -78,8 +79,7 @@ export const useVideoStore = defineStore('video', () => {
     if (activeStreams.value[streamName] === undefined) {
       activateStream(streamName)
     }
-    // @ts-ignore
-    return activeStreams.value[streamName].mediaStream
+    return activeStreams.value[streamName]!.mediaStream
   }
 
   // Offer download of backuped videos

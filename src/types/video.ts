@@ -1,5 +1,3 @@
-import type { Ref } from 'vue'
-
 import { WebRTCManager } from '@/composables/webRTC'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 
@@ -10,7 +8,7 @@ export interface StreamData {
   /**
    * The actual WebRTC stream
    */
-  stream: Ref<Stream | undefined>
+  stream: Stream | undefined
   /**
    * The responsible for its management
    */
@@ -18,5 +16,5 @@ export interface StreamData {
   /**
    * MediaStream object, if WebRTC stream is chosen
    */
-  mediaStream: Ref<MediaStream | undefined>
+  mediaStream: MediaStream | undefined
 }
