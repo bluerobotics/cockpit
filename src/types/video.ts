@@ -17,4 +17,12 @@ export interface StreamData {
    * MediaStream object, if WebRTC stream is chosen
    */
   mediaStream: MediaStream | undefined
+  /**
+   * MediaRecorder object for that stream
+   */
+  mediaRecorder: MediaRecorder | undefined
+  /**
+   * Date object with info on when a recording was started, if so
+   */
+  timeRecordingStart: Date | undefined
 }
