@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import gsap from 'gsap'
-import { computed, ref } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
@@ -24,12 +24,6 @@ const store = useMainVehicleStore()
 const virtualHorizonRoot = ref()
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
-
-// Object used to store current render state
-const renderVariables = {
-  pitchAngleDegrees: 0,
-  rollAngleDegrees: 0,
-}
 
 // Calculates the smallest between the widget dimensions, so we can keep the inner content always inside it, without overlays
 const { width, height } = useElementSize(virtualHorizonRoot)
@@ -194,14 +188,50 @@ const renderCanvas = (): void => {
   ctx.restore()
 }
 
-// Update canvas at 60fps
-setInterval(() => {
-  gsap.to(renderVariables, 0.1, {
-    pitchAngleDegrees: degrees(store.attitude.pitch ?? 0),
-    rollAngleDegrees: degrees(store.attitude.roll ?? 0),
-  })
-  renderCanvas()
-}, 1000 / 60)
+/**
+ * Deal with high frequency update and decrease cpu usage when drawing low degrees changes
+ */
+
+const rollAngleDeg = ref(0)
+const pitchAngleDeg = ref(0)
+
+let oldRoll: number | undefined = undefined
+let oldPitch: number | undefined = undefined
+watch(store.attitude, (attitude) => {
+  const rollDiff = Math.abs(degrees(attitude.roll - (oldRoll || 0)))
+  const pitchDiff = Math.abs(degrees(attitude.pitch - (oldPitch || 0)))
+
+  if (rollDiff > 0.1) {
+    oldRoll = attitude.roll
+    rollAngleDeg.value = degrees(store.attitude.roll)
+  }
+
+  if (pitchDiff > 0.1) {
+    oldPitch = attitude.pitch
+    pitchAngleDeg.value = degrees(store.attitude.pitch)
+  }
+})
+
+// eslint-disable-next-line jsdoc/require-jsdoc
+type RenderVariables = { rollAngleDegrees: number; pitchAngleDegrees: number }
+// Object used to store current render state
+const renderVariables = reactive<RenderVariables>({
+  pitchAngleDegrees: 0,
+  rollAngleDegrees: 0,
+})
+
+watch(pitchAngleDeg, () => {
+  gsap.to(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
+})
+
+watch(rollAngleDeg, () => {
+  gsap.to(renderVariables, 0.1, { rollAngleDegrees: rollAngleDeg.value })
+})
+
+// Update canvas whenever reference variables changes
+watch(renderVariables, () => {
+  nextTick(() => renderCanvas())
+})
 </script>
 
 <style scoped>
