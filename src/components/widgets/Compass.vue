@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import gsap from 'gsap'
-import { computed, onBeforeMount, ref, toRefs } from 'vue'
+import { computed, nextTick, onBeforeMount, reactive, ref, toRefs, watch } from 'vue'
 
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
@@ -36,11 +36,6 @@ const store = useMainVehicleStore()
 const compassRoot = ref()
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
-
-// Object used to store current render state
-const renderVariables = {
-  yawAngleDegrees: 0,
-}
 
 // Angles used for the main marks
 const mainAngles = {
@@ -181,9 +176,28 @@ const renderCanvas = (): void => {
   ctx.stroke()
 }
 
-// Update canvas at 60fps
-setInterval(() => {
-  const angleDegrees = degrees(store.attitude.yaw ?? 0)
+/**
+ * Deal with high frequency update and decrease cpu usage when drawing low degrees changes
+ */
+
+const yaw = ref(0)
+let oldYaw: number | undefined = undefined
+watch(store.attitude, (attitude) => {
+  const yawDiff = Math.abs(degrees(attitude.yaw - (oldYaw || 0)))
+  if (yawDiff > 0.1) {
+    oldYaw = attitude.yaw
+    yaw.value = degrees(store.attitude.yaw)
+  }
+})
+
+// eslint-disable-next-line jsdoc/require-jsdoc
+type RenderVariables = { yawAngleDegrees: number }
+// Object used to store current render state
+const renderVariables = reactive<RenderVariables>({ yawAngleDegrees: 0 })
+
+// Update the X position of each line in the render variables with GSAP to smooth the transition
+watch(yaw, () => {
+  const angleDegrees = yaw.value
   const fullRangeAngleDegrees = angleDegrees < 0 ? angleDegrees + 360 : angleDegrees
 
   const fromWestToEast = renderVariables.yawAngleDegrees > 270 && fullRangeAngleDegrees < 90
@@ -198,8 +212,12 @@ setInterval(() => {
   } else {
     gsap.to(renderVariables, 0.1, { yawAngleDegrees: fullRangeAngleDegrees })
   }
-  renderCanvas()
-}, 1000 / 60)
+})
+
+// Update canvas whenever reference variables changes
+watch(renderVariables, () => {
+  nextTick(() => renderCanvas())
+})
 </script>
 
 <style scoped>
