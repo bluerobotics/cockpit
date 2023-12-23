@@ -73,3 +73,23 @@ export const setKeyDataOnCockpitVehicleStorage = async (
 
   await setCockpitStorageOnVehicle(vehicleAddress, newVehicleStorage)
 }
+
+/* eslint-disable jsdoc/require-jsdoc */
+type RawIpInfo = { ip: string; service_type: string; interface_type: string }
+type IpInfo = { ipv4Address: string; interfaceType: string }
+/* eslint-enable jsdoc/require-jsdoc */
+
+export const getIpsInformationFromVehicle = async (vehicleAddress: string): Promise<IpInfo[]> => {
+  try {
+    const response = await fetch(`http://${vehicleAddress}/beacon/v1.0/services`)
+    if (!(await response.ok)) {
+      throw new Error(await response.text())
+    }
+    const rawIpsInfo: RawIpInfo[] = await response.json()
+    return rawIpsInfo
+      .filter((ipInfo) => ipInfo['service_type'] === '_http')
+      .map((ipInfo) => ({ ipv4Address: ipInfo.ip, interfaceType: ipInfo.interface_type }))
+  } catch (error) {
+    throw new Error(`Could not get information about IPs on BlueOS. ${error}`)
+  }
+}
