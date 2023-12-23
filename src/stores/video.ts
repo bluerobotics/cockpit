@@ -231,9 +231,15 @@ export const useVideoStore = defineStore('video', () => {
   })
 
   // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
-  const iceIpCheckInterval = setInterval(async () => {
-    // Pass if there are no available IPs yet or if the user has already set the allowed ones
-    if (availableIceIps.value === undefined || !allowedIceIps.value.isEmpty()) {
+  let warningTimeout: NodeJS.Timeout | undefined = undefined
+  const iceIpCheckInterval = setInterval(async (): Promise<void> => {
+    // Pass if there are no available IPs yet
+    if (availableIceIps.value === undefined) return
+
+    // Cancel the check if the user has already set the allowed ICE IPs
+    if (!allowedIceIps.value.isEmpty()) {
+      clearInterval(iceIpCheckInterval)
+      clearTimeout(warningTimeout)
       return
     }
 
@@ -249,28 +255,37 @@ export const useVideoStore = defineStore('video', () => {
           console.info(`Adding the wired address '${ipInfo.ipv4Address}' to the list of allowed ICE IPs.`)
           allowedIceIps.value.push(ipInfo.ipv4Address)
         })
-        if (!allowedIceIps.value.isEmpty()) return
+        if (!allowedIceIps.value.isEmpty()) {
+          clearInterval(iceIpCheckInterval)
+          clearTimeout(warningTimeout)
+          return
+        }
       } catch (error) {
         console.log(error)
       }
 
-      Swal.fire({
-        html: `
-          <p>Cockpit detected more than one IP address being used to route the video streaming. This often
-          leads to video stuttering, especially if one of the IPs is from a non-wired connection.</p>
-          </br>
-          <p>To prevent issues and achieve an optimal streaming experience, please:</p>
-          <ol>
-            <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
-            <li>2. Select the IP address that should be used for the video streaming.</li>
-          </ol>
-        `,
-        icon: 'warning',
-        customClass: {
-          htmlContainer: 'text-left',
-        },
-      })
-      clearInterval(iceIpCheckInterval)
+      if (warningTimeout) return
+      warningTimeout = setTimeout(() => {
+        console.info('No ICE IPs selected for the allowed list. Warning user.')
+        Swal.fire({
+          html: `
+            <p>Cockpit detected more than one IP address being used to route the video streaming. This often
+            leads to video stuttering, especially if one of the IPs is from a non-wired connection.</p>
+            </br>
+            <p>To prevent issues and achieve an optimal streaming experience, please:</p>
+            <ol>
+              <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
+              <li>2. Select the IP address that should be used for the video streaming.</li>
+            </ol>
+          `,
+          icon: 'warning',
+          customClass: {
+            htmlContainer: 'text-left',
+          },
+        })
+        clearInterval(iceIpCheckInterval)
+        return
+      }, 5000)
     }
   }, 5000)
 
