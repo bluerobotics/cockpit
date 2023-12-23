@@ -9,6 +9,7 @@ import { computed, ref, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
 import { WebRTCManager } from '@/composables/webRTC'
+import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import { datalogger } from '@/libs/sensors-logging'
 import { isEqual } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -17,7 +18,7 @@ import type { StreamData } from '@/types/video'
 
 export const useVideoStore = defineStore('video', () => {
   const { missionName } = useMissionStore()
-  const { rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
+  const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
   const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips', [])
@@ -230,13 +231,29 @@ export const useVideoStore = defineStore('video', () => {
   })
 
   // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
-  const iceIpCheckInterval = setInterval(() => {
+  const iceIpCheckInterval = setInterval(async () => {
     // Pass if there are no available IPs yet or if the user has already set the allowed ones
     if (availableIceIps.value === undefined || !allowedIceIps.value.isEmpty()) {
       return
     }
-    // If there's more than one IP candidate available, send a warning an clear the check routine
+
+    // If there's more than one IP candidate available, try getting information about them from BlueOS. If not
+    // available, send a warning an clear the check routine.
     if (availableIceIps.value.length >= 1) {
+      try {
+        const ipsInfo = await getIpsInformationFromVehicle(globalAddress)
+        ipsInfo.forEach((ipInfo) => {
+          const isIceIp = availableIceIps.value.includes(ipInfo.ipv4Address)
+          const alreadyAllowedIp = allowedIceIps.value.includes(ipInfo.ipv4Address)
+          if (ipInfo.interfaceType !== 'WIRED' || alreadyAllowedIp || !isIceIp) return
+          console.info(`Adding the wired address '${ipInfo.ipv4Address}' to the list of allowed ICE IPs.`)
+          allowedIceIps.value.push(ipInfo.ipv4Address)
+        })
+        if (!allowedIceIps.value.isEmpty()) return
+      } catch (error) {
+        console.log(error)
+      }
+
       Swal.fire({
         html: `
           <p>Cockpit detected more than one IP address being used to route the video streaming. This often
