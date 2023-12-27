@@ -2,7 +2,7 @@ import { useStorage } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
@@ -26,17 +26,41 @@ export type controllerUpdateCallback = (
   activeButtonActions: ProtocolAction[]
 ) => void
 
-const protocolMappingKey = 'cockpit-protocol-mapping-v5'
+const protocolMappingsKey = 'cockpit-protocol-mappings-v1'
+const protocolMappingIndexKey = 'cockpit-protocol-mapping-index-v1'
 const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
 
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMapping = useStorage(protocolMappingKey, cockpitStandardToProtocols)
+  const protocolMappings = useStorage(protocolMappingsKey, cockpitStandardToProtocols)
+  const protocolMappingIndex = useStorage(protocolMappingIndexKey, 0)
   const cockpitStdMappings = useStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
   const availableAxesActions = allAvailableAxes
   const availableButtonActions = allAvailableButtons
   const enableForwarding = ref(true)
+
+  const protocolMapping = computed<JoystickProtocolActionsMapping>({
+    get() {
+      return protocolMappings.value[protocolMappingIndex.value]
+    },
+    set(newValue) {
+      protocolMappings.value[protocolMappingIndex.value] = newValue
+    },
+  })
+
+  /**
+   * Change current protocol mapping for given one
+   * @param { JoystickProtocolActionsMapping } mapping - The functions mapping to be loaded
+   */
+  const loadProtocolMapping = (mapping: JoystickProtocolActionsMapping): void => {
+    const mappingIndex = protocolMappings.value.findIndex((p) => p.name === mapping.name)
+    if (mappingIndex === -1) {
+      Swal.fire({ icon: 'error', text: 'Could not find mapping.', timer: 3000 })
+      return
+    }
+    protocolMappingIndex.value = mappingIndex
+  }
 
   const registerControllerUpdateCallback = (callback: controllerUpdateCallback): void => {
     updateCallbacks.value.push(callback)
@@ -220,26 +244,27 @@ export const useControllerStore = defineStore('controller', () => {
 
   const exportFunctionsMappingToVehicle = async (
     vehicleAddress: string,
-    functionsMapping: JoystickProtocolActionsMapping
+    functionsMapping: JoystickProtocolActionsMapping[]
   ): Promise<void> => {
-    await setKeyDataOnCockpitVehicleStorage(vehicleAddress, protocolMappingKey, functionsMapping)
+    await setKeyDataOnCockpitVehicleStorage(vehicleAddress, protocolMappingsKey, functionsMapping)
     Swal.fire({ icon: 'success', text: 'Joystick functions mapping exported to vehicle.', timer: 3000 })
   }
 
   const importFunctionsMappingFromVehicle = async (vehicleAddress: string): Promise<void> => {
-    const newMapping = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, protocolMappingKey)
-    if (
-      !newMapping ||
-      !newMapping['name'] ||
-      !newMapping['axesCorrespondencies'] ||
-      !newMapping['buttonsCorrespondencies']
-    ) {
-      Swal.fire({ icon: 'error', text: 'Could not import functions mapping from vehicle. Invalid data.', timer: 3000 })
+    const newMappings = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, protocolMappingsKey)
+    if (!newMappings) {
+      Swal.fire({ icon: 'error', text: 'Could not import functions mapping from vehicle. No data available.' })
       return
     }
+    newMappings.forEach((mapping: JoystickProtocolActionsMapping) => {
+      if (!mapping || !mapping['name'] || !mapping['axesCorrespondencies'] || !mapping['buttonsCorrespondencies']) {
+        Swal.fire({ icon: 'error', text: 'Could not import joystick funtions from vehicle. Invalid data.' })
+        return
+      }
+    })
     // @ts-ignore: We check for the necessary fields in the if before
-    protocolMapping.value = newMapping
-    Swal.fire({ icon: 'success', text: 'Joystick functions mapping imported from vehicle.', timer: 3000 })
+    protocolMappings.value = newMappings
+    Swal.fire({ icon: 'success', text: 'Joystick functions mapping imported from vehicle.' })
   }
 
   return {
@@ -247,9 +272,11 @@ export const useControllerStore = defineStore('controller', () => {
     enableForwarding,
     joysticks,
     protocolMapping,
+    protocolMappings,
     cockpitStdMappings,
     availableAxesActions,
     availableButtonActions,
+    loadProtocolMapping,
     exportJoystickMapping,
     importJoystickMapping,
     exportJoysticksMappingsToVehicle,
