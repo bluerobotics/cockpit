@@ -231,7 +231,11 @@
           </template>
           <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2">
             <v-icon class="mr-3">
-              {{ [JoystickAxis.A0, JoystickAxis.A2].includes(input.id) ? 'mdi-pan-horizontal' : 'mdi-pan-vertical' }}
+              {{
+                [JoystickAxis.A0, JoystickAxis.A2].includes(Number(input.id))
+                  ? 'mdi-pan-horizontal'
+                  : 'mdi-pan-vertical'
+              }}
             </v-icon>
             <v-text-field
               v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
