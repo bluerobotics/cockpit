@@ -38,6 +38,17 @@
           <p>Could not stablish communication with the vehicle.</p>
           <p>Button functions will appear as numbers. If connection is restablished, function names will appear.</p>
         </div>
+        <div v-if="availableModifierKeys" class="flex items-center px-5 py-3 m-5 font-bold border rounded-md">
+          <Button
+            v-for="functionMapping in controllerStore.protocolMappings"
+            :key="functionMapping.name"
+            class="m-2"
+            :class="{ 'bg-slate-700': controllerStore.protocolMapping.name === functionMapping.name }"
+            @click="controllerStore.loadProtocolMapping(functionMapping)"
+          >
+            {{ functionMapping.name }}
+          </Button>
+        </div>
         <div class="flex items-center px-5 py-3 m-5 font-bold border rounded-md">
           <Button
             v-for="key in availableModifierKeys"
@@ -141,7 +152,9 @@
               </label>
               <button
                 class="p-2 m-1 font-medium border rounded-md text-uppercase"
-                @click="controllerStore.exportFunctionsMappingToVehicle(globalAddress, controllerStore.protocolMapping)"
+                @click="
+                  controllerStore.exportFunctionsMappingToVehicle(globalAddress, controllerStore.protocolMappings)
+                "
               >
                 Export to vehicle
               </button>
