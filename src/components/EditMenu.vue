@@ -157,7 +157,9 @@
               class="flex items-center justify-between w-full h-10 my-1"
             >
               <div class="flex items-center justify-start w-full overflow-auto">
-                <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">{{ widget.component }}</p>
+                <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">
+                  {{ widget.options.variableName ?? widget.component }}
+                </p>
               </div>
               <div class="icon-btn mdi mdi-cog" @click="widget.managerVars.configMenuOpen = true" />
               <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
