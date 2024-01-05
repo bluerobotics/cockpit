@@ -11,7 +11,10 @@
           : 'justify-start bg-slate-800/60 text-slate-400 left-[4%]'
       "
     >
-      <span class="inline-block font-extrabold align-middle">
+      <span
+        class="inline-block font-extrabold align-middle"
+        :class="vehicleStore.isArmed === undefined ? '' : vehicleStore.isArmed ? 'text-green-700' : 'text-red-700'"
+      >
         {{ vehicleStore.isArmed === undefined ? '...' : vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}
       </span>
     </div>
