@@ -13,7 +13,10 @@
           : 'bg-green-700 hover:bg-green-800 text-slate-400 justify-start left-[4%]'
       "
     >
-      <span class="inline-block font-extrabold align-middle">
+      <span
+        class="inline-block font-extrabold align-middle"
+        :class="vehicleStore.isArmed === undefined ? '' : vehicleStore.isArmed ? 'text-green-700' : 'text-red-700'"
+      >
         {{ vehicleStore.isArmed === undefined ? '...' : vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}
       </span>
     </div>
