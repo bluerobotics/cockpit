@@ -12,11 +12,23 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import gsap from 'gsap'
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, toRefs, watch } from 'vue'
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { Widget } from '@/types/widgets'
+
+const widgetStore = useWidgetManagerStore()
+
+const props = defineProps<{
+  /**
+   * Widget reference
+   */
+  widget: Widget
+}>()
+const widget = toRefs(props).widget
 
 datalogger.registerUsage(DatalogVariable.roll)
 datalogger.registerUsage(DatalogVariable.pitch)
@@ -230,6 +242,7 @@ watch(rollAngleDeg, () => {
 
 // Update canvas whenever reference variables changes
 watch(renderVariables, () => {
+  if (!widgetStore.isWidgetVisible(widget.value)) return
   nextTick(() => renderCanvas())
 })
 </script>

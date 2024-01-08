@@ -29,7 +29,10 @@ import Dropdown from '@/components/Dropdown.vue'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas, sequentialArray } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+
+const widgetStore = useWidgetManagerStore()
 
 datalogger.registerUsage(DatalogVariable.heading)
 const store = useMainVehicleStore()
@@ -216,6 +219,7 @@ watch(yaw, () => {
 
 // Update canvas whenever reference variables changes
 watch(renderVariables, () => {
+  if (!widgetStore.isWidgetVisible(widget.value)) return
   nextTick(() => renderCanvas())
 })
 </script>
