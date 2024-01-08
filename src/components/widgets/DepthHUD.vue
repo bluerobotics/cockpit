@@ -36,7 +36,10 @@ import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, wa
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { constrain, range, resetCanvas, round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+
+const widgetStore = useWidgetManagerStore()
 
 datalogger.registerUsage(DatalogVariable.depth)
 const store = useMainVehicleStore()
@@ -217,6 +220,7 @@ watch(depth, () => {
 
 // Update canvas whenever reference variables changes
 watch([renderVars, canvasSize, widget.value.options], () => {
+  if (!widgetStore.isWidgetVisible(widget.value)) return
   nextTick(() => renderCanvas())
 })
 </script>
