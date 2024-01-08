@@ -95,6 +95,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   /**
+   * Gets whether or not the widget is on the active view
+   * @returns { boolean }
+   * @param { Widget } widget - Widget
+   */
+  const isWidgetVisible = (widget: Widget): boolean => {
+    return viewFromWidget(widget).hash === currentView.value.hash
+  }
+
+  /**
    * Adds new profile to the store
    * @param { Profile } profile - The profile to be saved
    * @returns { Profile } The profile object just created
@@ -528,5 +537,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     isFullScreen,
     importProfilesFromVehicle,
     exportProfilesToVehicle,
+    isWidgetVisible,
   }
 })
