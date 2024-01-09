@@ -160,7 +160,7 @@
               </button>
               <button
                 class="p-2 m-1 font-medium border rounded-md text-uppercase"
-                @click="controllerStore.importFunctionsMappingFromVehicle(globalAddress)"
+                @click="importFunctionsMappingFromVehicle"
               >
                 Import from vehicle
               </button>
@@ -273,6 +273,7 @@
 </template>
 
 <script setup lang="ts">
+import Swal from 'sweetalert2'
 import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
@@ -333,6 +334,15 @@ const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => 
     .map((i) => new JoystickAxisInput(i.id as JoystickAxis))
 
   inputClickedDialog.value = true
+}
+
+const importFunctionsMappingFromVehicle = async (): Promise<void> => {
+  try {
+    await controllerStore.importFunctionsMappingFromVehicle(globalAddress)
+    Swal.fire({ icon: 'success', text: 'Joystick functions mappings imported from the vehicle.' })
+  } catch (error) {
+    Swal.fire({ icon: 'error', text: `${error}` })
+  }
 }
 
 /**
