@@ -37,6 +37,7 @@
     "gamepad.js": "^1.0.4",
     "gsap": "^3.11.3",
     "haversine-distance": "^1.2.1",
+    "ky": "^1.2.0",
     "leaflet": "1.9.3",
     "localforage": "^1.10.0",
     "pinia": "^2.0.13",
