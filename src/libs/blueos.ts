@@ -1,14 +1,12 @@
+import ky from 'ky'
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const getBagOfHoldingFromVehicle = async (
   vehicleAddress: string,
   bagName: string
 ): Promise<Record<string, any>> => {
   try {
-    const response = await fetch(`http://${vehicleAddress}/bag/v1.0/get/${bagName}`)
-    if (!(await response.ok)) {
-      throw new Error(await response.text())
-    }
-    return await response.json()
+    return await ky.get(`http://${vehicleAddress}/bag/v1.0/get/${bagName}`, { timeout: 5000 }).json()
   } catch (error) {
     throw new Error(`Could not get bag of holdings for ${bagName}. ${error}`)
   }
@@ -36,11 +34,7 @@ export const setBagOfHoldingOnVehicle = async (
   bagData: Record<string, any> | any
 ): Promise<void> => {
   try {
-    await fetch(`http://${vehicleAddress}/bag/v1.0/set/${bagName}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(bagData),
-    })
+    await ky.post(`http://${vehicleAddress}/bag/v1.0/set/${bagName}`, { json: bagData, timeout: 5000 })
   } catch (error) {
     throw new Error(`Could not set bag of holdings for ${bagName}. ${error}`)
   }
@@ -81,11 +75,8 @@ type IpInfo = { ipv4Address: string; interfaceType: string }
 
 export const getIpsInformationFromVehicle = async (vehicleAddress: string): Promise<IpInfo[]> => {
   try {
-    const response = await fetch(`http://${vehicleAddress}/beacon/v1.0/services`)
-    if (!(await response.ok)) {
-      throw new Error(await response.text())
-    }
-    const rawIpsInfo: RawIpInfo[] = await response.json()
+    const url = `http://${vehicleAddress}/beacon/v1.0/services`
+    const rawIpsInfo: RawIpInfo[] = await ky.get(url, { timeout: 5000 }).json()
     return rawIpsInfo
       .filter((ipInfo) => ipInfo['service_type'] === '_http')
       .map((ipInfo) => ({ ipv4Address: ipInfo.ip, interfaceType: ipInfo.interface_type }))
