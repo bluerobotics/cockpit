@@ -50,6 +50,10 @@
           :color="widget.options.flipVertically ? 'rgb(0, 20, 80)' : undefined"
           hide-details
         />
+        <div class="d-flex flex-wrap justify-center ga-5">
+          <v-btn prepend-icon="mdi-file-rotate-left" variant="outlined" @click="rotateVideo(-90)"> Rotate Left</v-btn>
+          <v-btn prepend-icon="mdi-file-rotate-right" variant="outlined" @click="rotateVideo(+90)"> Rotate Right</v-btn>
+        </div>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -57,8 +61,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
-import { onBeforeUnmount } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { isEqual } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
@@ -87,6 +90,7 @@ onBeforeMount(() => {
       videoFitStyle: 'cover',
       flipHorizontally: false,
       flipVertically: false,
+      rotationAngle: 0,
       streamName: undefined as string | undefined,
     }
   }
@@ -125,8 +129,20 @@ watch(mediaStream, () => {
     })
 })
 
+const rotateVideo = (angle: number): void => {
+  widget.value.options.rotationAngle += angle
+}
+
 const flipStyle = computed(() => {
   return `scale(${widget.value.options.flipHorizontally ? -1 : 1}, ${widget.value.options.flipVertically ? -1 : 1})`
+})
+
+const rotateStyle = computed(() => {
+  return `rotate(${widget.value.options.rotationAngle ?? 0}deg)`
+})
+
+const transformStyle = computed(() => {
+  return `${flipStyle.value} ${rotateStyle.value}`
 })
 </script>
 
@@ -146,7 +162,7 @@ video {
   top: 0;
   left: 0;
   object-fit: v-bind('widget.options.videoFitStyle');
-  transform: v-bind('flipStyle');
+  transform: v-bind('transformStyle');
 }
 .no-video-alert {
   width: 100%;
