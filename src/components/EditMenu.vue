@@ -106,7 +106,10 @@
       v-show="widgetMode === WidgetMode.RegularWidgets"
       class="flex flex-col items-center justify-between w-full overflow-y-clip h-[35%]"
     >
-      <p class="text-lg font-semibold select-none">Current widgets</p>
+      <p class="text-lg font-semibold select-none">
+        <span class="mr-1 text-slate-400 mdi mdi-swap-vertical" />
+        Current widgets
+      </p>
       <div class="grow" />
       <VueDraggable
         v-model="store.currentView.widgets"
@@ -123,7 +126,7 @@
             <Button
               class="flex items-center justify-center w-full h-8 pl-3 overflow-auto cursor-grab active:cursor-grabbing"
             >
-              <span class="mr-3 text-base text-slate-700 mdi mdi-dots-grid"></span>
+              <span class="mr-3 text-base text-slate-700">⠿</span>
               <p class="overflow-hidden text-sm text-ellipsis whitespace-nowrap">{{ widget.name }}</p>
               <div class="grow" />
               <div
