@@ -18,6 +18,8 @@ export enum MAVLinkAxisFunction {
   Y = 'axis_y',
   Z = 'axis_z',
   R = 'axis_r',
+  S = 'axis_s',
+  T = 'axis_t',
 }
 
 /**
@@ -182,6 +184,8 @@ export const mavlinkManualControlAxes: { [key in MAVLinkAxisFunction]: MAVLinkMa
   [MAVLinkAxisFunction.Y]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.Y, 'Axis Y'),
   [MAVLinkAxisFunction.Z]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.Z, 'Axis Z'),
   [MAVLinkAxisFunction.R]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.R, 'Axis R'),
+  [MAVLinkAxisFunction.S]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.S, 'Axis S'),
+  [MAVLinkAxisFunction.T]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.T, 'Axis T'),
 }
 
 // Available button actions
@@ -281,6 +285,8 @@ export class MavlinkManualControlState {
   y = 0
   z = 0
   r = 0
+  s = 0
+  t = 0
   buttons = 0
   target = 1
 }
@@ -386,12 +392,16 @@ export class MavlinkManualControlManager {
     const yCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_y.id)
     const zCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_z.id)
     const rCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_r.id)
+    const sCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_s.id)
+    const tCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_t.id)
 
     // Populate MAVLink Manual Control state of axes and buttons
     this.manualControlState.x = xCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[xCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, xCorrespondency[1].min, xCorrespondency[1].max), 0)
     this.manualControlState.y = yCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[yCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, yCorrespondency[1].min, yCorrespondency[1].max), 0)
     this.manualControlState.z = zCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[zCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, zCorrespondency[1].min, zCorrespondency[1].max), 0)
     this.manualControlState.r = rCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[rCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, rCorrespondency[1].min, rCorrespondency[1].max), 0)
+    this.manualControlState.s = sCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[sCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, sCorrespondency[1].min, sCorrespondency[1].max), 0)
+    this.manualControlState.t = tCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[tCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, tCorrespondency[1].min, tCorrespondency[1].max), 0)
     this.manualControlState.buttons = buttons_int
   }
 
