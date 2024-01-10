@@ -596,6 +596,8 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       y: state.y,
       z: state.z,
       r: state.r,
+      s: state.s,
+      t: state.t,
       buttons: state.buttons,
       target: 1,
     }
