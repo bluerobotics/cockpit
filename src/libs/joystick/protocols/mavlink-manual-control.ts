@@ -145,6 +145,38 @@ export enum MAVLinkManualControlButton {
   S14 = 'BTN14_SFUNCTION',
   R15 = 'BTN15_FUNCTION',
   S15 = 'BTN15_SFUNCTION',
+  R16 = 'BTN16_FUNCTION',
+  S16 = 'BTN16_SFUNCTION',
+  R17 = 'BTN17_FUNCTION',
+  S17 = 'BTN17_SFUNCTION',
+  R18 = 'BTN18_FUNCTION',
+  S18 = 'BTN18_SFUNCTION',
+  R19 = 'BTN19_FUNCTION',
+  S19 = 'BTN19_SFUNCTION',
+  R20 = 'BTN20_FUNCTION',
+  S20 = 'BTN20_SFUNCTION',
+  R21 = 'BTN21_FUNCTION',
+  S21 = 'BTN21_SFUNCTION',
+  R22 = 'BTN22_FUNCTION',
+  S22 = 'BTN22_SFUNCTION',
+  R23 = 'BTN23_FUNCTION',
+  S23 = 'BTN23_SFUNCTION',
+  R24 = 'BTN24_FUNCTION',
+  S24 = 'BTN24_SFUNCTION',
+  R25 = 'BTN25_FUNCTION',
+  S25 = 'BTN25_SFUNCTION',
+  R26 = 'BTN26_FUNCTION',
+  S26 = 'BTN26_SFUNCTION',
+  R27 = 'BTN27_FUNCTION',
+  S27 = 'BTN27_SFUNCTION',
+  R28 = 'BTN28_FUNCTION',
+  S28 = 'BTN28_SFUNCTION',
+  R29 = 'BTN29_FUNCTION',
+  S29 = 'BTN29_SFUNCTION',
+  R30 = 'BTN30_FUNCTION',
+  S30 = 'BTN30_SFUNCTION',
+  R31 = 'BTN31_FUNCTION',
+  S31 = 'BTN31_SFUNCTION',
 }
 
 const manualControlButtonFromParameterName = (name: string): MAVLinkManualControlButton | undefined => {
@@ -288,6 +320,7 @@ export class MavlinkManualControlState {
   s = 0
   t = 0
   buttons = 0
+  buttons2 = 0
   target = 1
 }
 
@@ -387,6 +420,17 @@ export class MavlinkManualControlManager {
       buttons_int += buttonState * 2 ** i
     }
 
+    // Calculate buttons2 value
+    let buttons2_int = 0
+    for (let i = 16; i < 2 * MavlinkManualControlState.BUTTONS_PER_BITFIELD; i++) {
+      let buttonState = 0
+      vehicleButtonsToActivate.forEach((btn) => {
+        if (btn !== undefined && Number(btn.replace('R', '').replace('S', '')) === i) {
+          buttonState = 1
+        }
+      })
+      buttons2_int += buttonState * 2 ** (i - 16)
+    }
     // Calculate axes values
     const xCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_x.id)
     const yCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_y.id)
@@ -403,6 +447,7 @@ export class MavlinkManualControlManager {
     this.manualControlState.s = sCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[sCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, sCorrespondency[1].min, sCorrespondency[1].max), 0)
     this.manualControlState.t = tCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[tCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, tCorrespondency[1].min, tCorrespondency[1].max), 0)
     this.manualControlState.buttons = buttons_int
+    this.manualControlState.buttons2 = buttons2_int
   }
 
   updateVehicleButtonsParameters = (): void => {
