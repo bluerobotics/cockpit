@@ -4,17 +4,16 @@
     @click="vehicleStore.isArmed ? vehicleStore.disarm() : vehicleStore.arm()"
   >
     <div
-      class="absolute top-auto flex items-center px-1 rounded-[4px] shadow hover:bg-slate-400/60 transition-all w-[70%] h-[80%]"
+      class="absolute top-auto flex items-center px-1 rounded-[4px] shadow transition-all w-[70%] h-[80%]"
       :class="
-        vehicleStore.isArmed
-          ? 'bg-slate-900/60 text-slate-50 justify-end left-[26%]'
-          : 'justify-start bg-slate-800/60 text-slate-400 left-[4%]'
+        vehicleStore.isArmed === undefined
+          ? 'justify-start bg-slate-800/60 text-slate-400 left-[4%]'
+          : vehicleStore.isArmed
+          ? 'bg-red-700 hover:bg-red-800 text-slate-50 justify-end left-[26%]'
+          : 'bg-green-700 hover:bg-green-800 text-slate-400 justify-start left-[4%]'
       "
     >
-      <span
-        class="inline-block font-extrabold align-middle"
-        :class="vehicleStore.isArmed === undefined ? '' : vehicleStore.isArmed ? 'text-green-700' : 'text-red-700'"
-      >
+      <span class="inline-block font-extrabold align-middle">
         {{ vehicleStore.isArmed === undefined ? '...' : vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}
       </span>
     </div>
