@@ -84,3 +84,19 @@ export const getIpsInformationFromVehicle = async (vehicleAddress: string): Prom
     throw new Error(`Could not get information about IPs on BlueOS. ${error}`)
   }
 }
+
+/* eslint-disable jsdoc/require-jsdoc */
+type RawM2rServiceInfo = { name: string; version: string; sha: string; build_date: string; authors: string }
+type RawM2rInfo = { version: number; service: RawM2rServiceInfo }
+/* eslint-enable jsdoc/require-jsdoc */
+
+export const getMavlink2RestVersion = async (vehicleAddress: string): Promise<string> => {
+  try {
+    const url = `http://${vehicleAddress}/mavlink2rest/info`
+    const m2rRawInfo: RawM2rInfo = await ky.get(url, { timeout: 5000 }).json()
+    return m2rRawInfo.service.version
+  } catch (error) {
+    throw new Error(`Could not get Mavlink2Rest version. ${error}`)
+  }
+}
+
