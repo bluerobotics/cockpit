@@ -32,6 +32,22 @@
           </p>
         </div>
         <div
+          v-if="!m2rSupportsExtendedManualControl || !ardupilotSupportsExtendedManualControl"
+          class="px-5 py-3 m-1 text-center border-yellow-300 bg-yellow-200/10 border-2 rounded-md max-w-[80%] text-slate-600"
+        >
+          <p class="font-semibold">System update is recommended</p>
+          <br />
+          <p class="font-medium">
+            It seems like you're running versions of Mavlink2Rest (BlueOS) and/or ArduPilot that do not support the
+            extended MAVLink MANUAL_CONTROL message. We strongly suggest upgrading both so you can have support for
+            additional buttons and axes on the joystick. This is especially important if you sometimes use other control
+            station software, like QGroundControl, as Cockpit can preferentially use the extended buttons to reduce
+            configuration clashes. We recommend using BlueOS &ge; 1.2.0, and &ge; version 4.1.2 for ArduPilot-based
+            autopilot firmware.
+          </p>
+          <p />
+        </div>
+        <div
           v-if="controllerStore.availableButtonActions.every((b) => b.protocol === JoystickProtocol.CockpitAction)"
           class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
         >
@@ -273,11 +289,13 @@
 </template>
 
 <script setup lang="ts">
+import semver from 'semver'
 import Swal from 'sweetalert2'
 import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
+import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -300,8 +318,14 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const controllerStore = useControllerStore()
 const { globalAddress } = useMainVehicleStore()
 
-onMounted(() => {
+const m2rSupportsExtendedManualControl = ref<boolean>()
+const ardupilotSupportsExtendedManualControl = ref<boolean>()
+onMounted(async () => {
   controllerStore.enableForwarding = false
+  const m2rVersion = await getMavlink2RestVersion(globalAddress)
+  m2rSupportsExtendedManualControl.value = semver.gte(m2rVersion, '0.11.19')
+  const ardupilotVersion = await getArdupilotVersion(globalAddress)
+  ardupilotSupportsExtendedManualControl.value = semver.gte(ardupilotVersion, '4.1.2')
 })
 
 onUnmounted(() => {
