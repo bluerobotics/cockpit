@@ -100,3 +100,16 @@ export const getMavlink2RestVersion = async (vehicleAddress: string): Promise<st
   }
 }
 
+/* eslint-disable jsdoc/require-jsdoc */
+type RawArdupilotFirmwareInfo = { version: string; type: string }
+/* eslint-enable jsdoc/require-jsdoc */
+
+export const getArdupilotVersion = async (vehicleAddress: string): Promise<string> => {
+  try {
+    const url = `http://${vehicleAddress}/ardupilot-manager/v1.0/firmware_info`
+    const ardupilotFirmwareRawInfo: RawArdupilotFirmwareInfo = await ky.get(url, { timeout: 5000 }).json()
+    return ardupilotFirmwareRawInfo.version
+  } catch (error) {
+    throw new Error(`Could not get Ardupilot firmware version. ${error}`)
+  }
+}
