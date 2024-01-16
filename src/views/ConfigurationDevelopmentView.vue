@@ -3,6 +3,13 @@
     <template #title>Development configuration</template>
     <template #content>
       <v-switch v-model="devStore.developmentMode" label="Development mode" class="ma-2" color="rgb(0, 20, 80)" />
+      <v-switch
+        v-model="devStore.enableSystemLogging"
+        label="Enable system logging"
+        class="m-2"
+        color="rgb(0, 20, 80)"
+        @update:model-value="reloadCockpit"
+      />
       <v-slider
         v-model="devStore.widgetDevInfoBlurLevel"
         label="Dev info blur level"
@@ -72,4 +79,6 @@ const downloadLog = async (logName: string): Promise<void> => {
   const logBlob = new Blob([logParts], { type: 'application/json' })
   saveAs(logBlob, logName)
 }
+
+const reloadCockpit = (): void => location.reload()
 </script>
