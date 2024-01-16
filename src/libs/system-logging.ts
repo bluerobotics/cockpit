@@ -55,6 +55,7 @@ if (enableSystemLogging === 'true') {
     // @ts-ignore
     window.console[level] = (...o: any[]) => {
       fn(...o)
+      let wholeMessage = ''
       o.forEach((m) => {
         let msg = m
         try {
@@ -63,9 +64,11 @@ if (enableSystemLogging === 'true') {
           msg = ''
         }
         if (msg !== '') {
-          saveLogEventInDB({ epoch: new Date().getTime(), level: level, msg: msg })
+          wholeMessage += ' '
+          wholeMessage += msg
         }
       })
+      saveLogEventInDB({ epoch: new Date().getTime(), level: level, msg: wholeMessage })
     }
   })
 }
