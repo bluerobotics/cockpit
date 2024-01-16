@@ -1,5 +1,9 @@
+/* eslint-disable no-empty */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { format } from 'date-fns'
 import localforage from 'localforage'
+
+import { systemLoggingEnablingKey } from '@/stores/development'
 
 export const cockpitSytemLogsDB = localforage.createInstance({
   driver: localforage.INDEXEDDB,
@@ -38,38 +42,41 @@ const saveLogEventInDB = (event: LogEvent): void => {
   cockpitSytemLogsDB.setItem(fileName, currentSystemLog)
 }
 
-const oldConsoleError = window.console.error
-window.console.error = (o) => {
-  oldConsoleError(o)
-  saveLogEventInDB({ epoch: new Date().getTime(), level: 'error', msg: o })
-}
+const enableSystemLogging = localStorage.getItem(systemLoggingEnablingKey)
+if (enableSystemLogging === 'true') {
+  const oldConsoleError = window.console.error
+  window.console.error = (o) => {
+    oldConsoleError(o)
+    saveLogEventInDB({ epoch: new Date().getTime(), level: 'error', msg: o })
+  }
 
-const oldConsoleWarn = window.console.warn
-window.console.warn = (o) => {
-  oldConsoleWarn(o)
-  saveLogEventInDB({ epoch: new Date().getTime(), level: 'warn', msg: o })
-}
+  const oldConsoleWarn = window.console.warn
+  window.console.warn = (o) => {
+    oldConsoleWarn(o)
+    saveLogEventInDB({ epoch: new Date().getTime(), level: 'warn', msg: o })
+  }
 
-const oldConsoleInfo = window.console.info
-window.console.info = (o) => {
-  oldConsoleInfo(o)
-  saveLogEventInDB({ epoch: new Date().getTime(), level: 'info', msg: o })
-}
+  const oldConsoleInfo = window.console.info
+  window.console.info = (o) => {
+    oldConsoleInfo(o)
+    saveLogEventInDB({ epoch: new Date().getTime(), level: 'info', msg: o })
+  }
 
-const oldConsoleDebug = window.console.debug
-window.console.debug = (o) => {
-  oldConsoleDebug(o)
-  saveLogEventInDB({ epoch: new Date().getTime(), level: 'debug', msg: o })
-}
+  const oldConsoleDebug = window.console.debug
+  window.console.debug = (o) => {
+    oldConsoleDebug(o)
+    saveLogEventInDB({ epoch: new Date().getTime(), level: 'debug', msg: o })
+  }
 
-const oldConsoleTrace = window.console.trace
-window.console.trace = (o) => {
-  oldConsoleTrace(o)
-  saveLogEventInDB({ epoch: new Date().getTime(), level: 'trace', msg: o })
-}
+  const oldConsoleTrace = window.console.trace
+  window.console.trace = (o) => {
+    oldConsoleTrace(o)
+    saveLogEventInDB({ epoch: new Date().getTime(), level: 'trace', msg: o })
+  }
 
-const oldConsoleLog = window.console.log
-window.console.log = (o) => {
-  oldConsoleLog(o)
-  saveLogEventInDB({ epoch: new Date().getTime(), level: 'Log', msg: o })
+  const oldConsoleLog = window.console.log
+  window.console.log = (o) => {
+    oldConsoleLog(o)
+    saveLogEventInDB({ epoch: new Date().getTime(), level: 'Log', msg: o })
+  }
 }
