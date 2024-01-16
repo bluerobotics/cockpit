@@ -1,4 +1,3 @@
-/* eslint-disable no-empty */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { format } from 'date-fns'
 import localforage from 'localforage'
@@ -44,99 +43,29 @@ const saveLogEventInDB = (event: LogEvent): void => {
 
 const enableSystemLogging = localStorage.getItem(systemLoggingEnablingKey)
 if (enableSystemLogging === 'true') {
-  const oldConsoleError = window.console.error
-  window.console.error = (...o: any[]) => {
-    oldConsoleError(...o)
-    o.forEach((m) => {
-      let msg = m
-      try {
-        msg = m.toString()
-      } catch {
-        msg = ''
-      }
-      if (msg !== '') {
-        saveLogEventInDB({ epoch: new Date().getTime(), level: 'error', msg: msg })
-      }
-    })
+  const oldConsoleFunction = {
+    error: console.error,
+    warn: console.warn,
+    info: console.info,
+    debug: console.debug,
+    trace: console.trace,
+    log: console.log,
   }
-
-  const oldConsoleWarn = window.console.warn
-  window.console.warn = (...o: any[]) => {
-    oldConsoleWarn(...o)
-    o.forEach((m) => {
-      let msg = m
-      try {
-        msg = m.toString()
-      } catch {
-        msg = ''
-      }
-      if (msg !== '') {
-        saveLogEventInDB({ epoch: new Date().getTime(), level: 'warn', msg: msg })
-      }
-    })
-  }
-
-  const oldConsoleInfo = window.console.info
-  window.console.info = (...o: any[]) => {
-    oldConsoleInfo(...o)
-    o.forEach((m) => {
-      let msg = m
-      try {
-        msg = m.toString()
-      } catch {
-        msg = ''
-      }
-      if (msg !== '') {
-        saveLogEventInDB({ epoch: new Date().getTime(), level: 'info', msg: msg })
-      }
-    })
-  }
-
-  const oldConsoleDebug = window.console.debug
-  window.console.debug = (...o: any[]) => {
-    oldConsoleDebug(...o)
-    o.forEach((m) => {
-      let msg = m
-      try {
-        msg = m.toString()
-      } catch {
-        msg = ''
-      }
-      if (msg !== '') {
-        saveLogEventInDB({ epoch: new Date().getTime(), level: 'debug', msg: msg })
-      }
-    })
-  }
-
-  const oldConsoleTrace = window.console.trace
-  window.console.trace = (...o: any[]) => {
-    oldConsoleTrace(...o)
-    o.forEach((m) => {
-      let msg = m
-      try {
-        msg = m.toString()
-      } catch {
-        msg = ''
-      }
-      if (msg !== '') {
-        saveLogEventInDB({ epoch: new Date().getTime(), level: 'trace', msg: msg })
-      }
-    })
-  }
-
-  const oldConsoleLog = window.console.log
-  window.console.log = (...o: any[]) => {
-    oldConsoleLog(...o)
-    o.forEach((m) => {
-      let msg = m
-      try {
-        msg = m.toString()
-      } catch {
-        msg = ''
-      }
-      if (msg !== '') {
-        saveLogEventInDB({ epoch: new Date().getTime(), level: 'Log', msg: msg })
-      }
-    })
-  }
+  Object.entries(oldConsoleFunction).forEach(([level, fn]) => {
+    // @ts-ignore
+    window.console[level] = (...o: any[]) => {
+      fn(...o)
+      o.forEach((m) => {
+        let msg = m
+        try {
+          msg = m.toString()
+        } catch {
+          msg = ''
+        }
+        if (msg !== '') {
+          saveLogEventInDB({ epoch: new Date().getTime(), level: level, msg: msg })
+        }
+      })
+    }
+  })
 }
