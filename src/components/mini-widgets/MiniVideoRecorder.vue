@@ -98,12 +98,10 @@ watch(nameSelectedStream, () => {
 })
 
 const toggleRecording = async (): Promise<void> => {
-  if (nameSelectedStream.value === undefined) {
-    Swal.fire({ text: 'No stream selected. Please choose one before continuing.', icon: 'error' })
-    return
-  }
   if (isRecording.value) {
-    videoStore.stopRecording(nameSelectedStream.value)
+    if (nameSelectedStream.value !== undefined) {
+      videoStore.stopRecording(nameSelectedStream.value)
+    }
     return
   }
   // Open dialog so user can choose the stream which will be recorded
