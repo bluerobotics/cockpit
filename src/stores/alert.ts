@@ -48,6 +48,22 @@ export const useAlertStore = defineStore('alert', () => {
     }
   }
 
+  const pushSuccessAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Success, message, time_created))
+  }
+  const pushErrorAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Error, message, time_created))
+  }
+  const pushInfoAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Info, message, time_created))
+  }
+  const pushWarningAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Warning, message, time_created))
+  }
+  const pushCriticalAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Critical, message, time_created))
+  }
+
   // Alert speech syntesis routine
   const synth = window.speechSynthesis
 
@@ -135,5 +151,10 @@ export const useAlertStore = defineStore('alert', () => {
     availableAlertSpeechVoiceNames,
     sortedAlerts,
     pushAlert,
+    pushSuccessAlert,
+    pushErrorAlert,
+    pushInfoAlert,
+    pushWarningAlert,
+    pushCriticalAlert,
   }
 })
