@@ -1,4 +1,4 @@
-import { useDocumentVisibility, useStorage } from '@vueuse/core'
+import { useDocumentVisibility } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
@@ -10,6 +10,7 @@ import {
   cockpitStandardToProtocols,
   defaultProtocolMappingVehicleCorrespondency,
 } from '@/assets/joystick-profiles'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
@@ -45,19 +46,19 @@ export const useControllerStore = defineStore('controller', () => {
   const alertStore = useAlertStore()
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMappings = useStorage<JoystickProtocolActionsMapping[]>(protocolMappingsKey, cockpitStandardToProtocols)
-  const protocolMappingIndex = useStorage(protocolMappingIndexKey, 0)
-  const cockpitStdMappings = useStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
+  const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
+  const protocolMappingIndex = useBlueOsStorage(protocolMappingIndexKey, 0)
+  const cockpitStdMappings = useBlueOsStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
   const availableAxesActions = allAvailableAxes
   const availableButtonActions = allAvailableButtons
   const enableForwarding = ref(false)
-  const holdLastInputWhenWindowHidden = useStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
-  const vehicleTypeProtocolMappingCorrespondency = useStorage<typeof defaultProtocolMappingVehicleCorrespondency>(
+  const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
+  const vehicleTypeProtocolMappingCorrespondency = useBlueOsStorage<typeof defaultProtocolMappingVehicleCorrespondency>(
     'cockpit-default-vehicle-type-protocol-mappings',
     defaultProtocolMappingVehicleCorrespondency
   )
   // Confirmation per joystick action required currently is only available for cockpit actions
-  const actionsJoystickConfirmRequired = useStorage(
+  const actionsJoystickConfirmRequired = useBlueOsStorage(
     'cockpit-actions-joystick-confirm-required',
     {} as Record<string, boolean>
   )

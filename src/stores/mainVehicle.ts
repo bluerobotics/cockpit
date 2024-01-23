@@ -1,8 +1,9 @@
-import { useStorage, useTimestamp, watchThrottled } from '@vueuse/core'
+import { useTimestamp, watchThrottled } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { altitude_setpoint } from '@/libs/altitude-slider'
 import { getCpuTempCelsius, getStatus } from '@/libs/blueos'
 import * as Connection from '@/libs/connection/connection'
@@ -63,19 +64,19 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const ws_protocol = location?.protocol === 'https:' ? 'wss' : 'ws'
 
   const cpuLoad = ref<number>()
-  const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
+  const globalAddress = useBlueOsStorage('cockpit-vehicle-address', defaultGlobalAddress)
 
   const defaultMainConnectionURI = ref<string>(`${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`)
   const defaultWebRTCSignallingURI = ref<string>(`${ws_protocol}://${globalAddress.value}:6021/`)
-  const customMainConnectionURI = useStorage('cockpit-vehicle-custom-main-connection-uri', {
+  const customMainConnectionURI = useBlueOsStorage('cockpit-vehicle-custom-main-connection-uri', {
     data: defaultMainConnectionURI.value,
     enabled: false,
   } as CustomParameter<string>)
-  const customWebRTCSignallingURI = useStorage('cockpit-vehicle-custom-webrtc-signalling-uri', {
+  const customWebRTCSignallingURI = useBlueOsStorage('cockpit-vehicle-custom-webrtc-signalling-uri', {
     data: defaultWebRTCSignallingURI.value,
     enabled: false,
   } as CustomParameter<string>)
-  const customWebRTCConfiguration = useStorage('cockpit-custom-rtc-config', {
+  const customWebRTCConfiguration = useBlueOsStorage('cockpit-custom-rtc-config', {
     data: defaultRtcConfiguration,
     enabled: false,
   })

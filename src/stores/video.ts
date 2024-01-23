@@ -1,4 +1,4 @@
-import { useDebounceFn, useStorage, useThrottleFn, useTimestamp } from '@vueuse/core'
+import { useDebounceFn, useThrottleFn, useTimestamp } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { differenceInSeconds, format } from 'date-fns'
 import { saveAs } from 'file-saver'
@@ -11,6 +11,7 @@ import fixWebmDuration from 'webm-duration-fix'
 import adapter from 'webrtc-adapter'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
@@ -40,13 +41,16 @@ export const useVideoStore = defineStore('video', () => {
   const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
-  const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips', [])
-  const allowedIceProtocols = useStorage<string[]>('cockpit-allowed-stream-protocols', [])
-  const jitterBufferTarget = useStorage<number | null>('cockpit-jitter-buffer-target', 0)
+  const allowedIceIps = useBlueOsStorage<string[]>('cockpit-allowed-stream-ips', [])
+  const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
+  const jitterBufferTarget = useBlueOsStorage<number | null>('cockpit-jitter-buffer-target', 0)
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
-  const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
+  const unprocessedVideos = useBlueOsStorage<{ [key in string]: UnprocessedVideoInfo }>(
+    'cockpit-unprocessed-video-info',
+    {}
+  )
   const timeNow = useTimestamp({ interval: 500 })
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))

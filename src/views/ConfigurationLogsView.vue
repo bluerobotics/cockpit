@@ -7,7 +7,7 @@
     <BaseConfigurationView>
       <template #content>
         <div v-show="selectedTab === 'telemetry'" id="draggable-container" class="w-full mb-3">
-          <div class="flex justify-start align-start w-full gap-x-5">
+          <div class="flex justify-start w-full align-start gap-x-5">
             <div id="leftColumn" class="flex flex-col justify-start align-start w-[220px] gap-y-1 ml-2 mt-[60px]">
               <v-expansion-panels v-model="optionsPanel">
                 <v-expansion-panel v-model="optionsPanel">
@@ -16,8 +16,8 @@
                   </v-expansion-panel-title>
                   <v-expansion-panel-text>
                     <div>
-                      <div class="flex flex-col flex-wrap justify-between align-start w-full gap-y-0 pt-2">
-                        <div class="flex flex-row justify-between align-center w-full gap-x-3">
+                      <div class="flex flex-col flex-wrap justify-between w-full pt-2 align-start gap-y-0">
+                        <div class="flex flex-row justify-between w-full align-center gap-x-3">
                           <span class="w-[85px] text-sm font-bold text-slate-600 text-start mb-5">Font size</span>
                           <v-text-field
                             v-model="datalogger.telemetryDisplayOptions.value.fontSize"
@@ -26,7 +26,7 @@
                             class="w-[75px]"
                           />
                         </div>
-                        <div class="flex flex-row justify-between align-center w-full gap-x-3 -mt-2">
+                        <div class="flex flex-row justify-between w-full -mt-2 align-center gap-x-3">
                           <span class="w-[85px] text-sm font-bold text-slate-600 text-start mb-5">Shadow size</span>
                           <v-select
                             v-model="datalogger.telemetryDisplayOptions.value.fontShadowSize"
@@ -187,12 +187,12 @@
                       </div>
                       <v-menu :key="customMessageElements.length" :close-on-content-click="false" offset-y>
                         <template #activator="{ props }">
-                          <v-btn size="sm" icon v-bind="props" class="mr-1 mt-3 mb-1" @click="props.click">
+                          <v-btn size="sm" icon v-bind="props" class="mt-3 mb-1 mr-1" @click="props.click">
                             <v-icon>mdi-plus</v-icon>
                           </v-btn>
                         </template>
-                        <v-card class="overflow-hidden px-4 pt-2" width="400px">
-                          <span class="text-sm font-bold text-slate-600 text-center w-full">Enter message</span>
+                        <v-card class="px-4 pt-2 overflow-hidden" width="400px">
+                          <span class="w-full text-sm font-bold text-center text-slate-600">Enter message</span>
                           <v-text-field
                             v-model="newMessage"
                             variant="outlined"
@@ -209,9 +209,9 @@
               </v-expansion-panels>
             </div>
             <div id="rightColumn" class="flex flex-col w-[80%] ml-2">
-              <div class="flex flex-row w-full justify-between align-center">
+              <div class="flex flex-row justify-between w-full align-center">
                 <div class="w-1"></div>
-                <h1 class="text-lg font-bold text-slate-600 text-center mb-4">On Screen Telemetry Data</h1>
+                <h1 class="mb-4 text-lg font-bold text-center text-slate-600">On Screen Telemetry Data</h1>
                 <div>
                   <v-icon color="slate-600" class="mb-1 mr-0.5" @click="showHelpTooltip = !showHelpTooltip"
                     >mdi-help-circle-outline</v-icon
@@ -247,7 +247,7 @@
                   <VueDraggable
                     v-model="datalogger.telemetryDisplayData.value[config.key]"
                     group="availableDataElements"
-                    class="flex flex-col h-full w-full"
+                    class="flex flex-col w-full h-full"
                     :class="getClassForConfig(config.key)"
                   >
                     <div v-for="variable in datalogger.telemetryDisplayData.value[config.key]" :key="variable">
@@ -293,11 +293,11 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
 import { FwbInput, FwbRange } from 'flowbite-vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
@@ -332,8 +332,8 @@ const variablesPanel = ref<number[]>([])
 const optionsPanel = ref<number[]>([])
 const customMessagePanel = ref<number[]>([])
 const showHelpTooltip = ref(false)
-const customMessageElements = useStorage<string[]>('custom-overlay-messages', [])
-const customMessagesBackup = useStorage<string[]>('custom-messages-backup', [])
+const customMessageElements = useBlueOsStorage<string[]>('custom-overlay-messages', [])
+const customMessagesBackup = useBlueOsStorage<string[]>('custom-messages-backup', [])
 const newMessage = ref('')
 const dragPosition = ref(0)
 

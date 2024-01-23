@@ -1,8 +1,8 @@
-import { useStorage } from '@vueuse/core'
 import { differenceInMilliseconds, differenceInSeconds, format, intervalToDuration } from 'date-fns'
 import localforage from 'localforage'
 import Swal from 'sweetalert2'
 
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
@@ -199,7 +199,7 @@ class DataLogger {
   currentCockpitLog: CockpitStandardLog = []
   variablesBeingUsed: DatalogVariable[] = []
   veryGenericIndicators: VeryGenericData[] = []
-  telemetryDisplayData = useStorage<OverlayGrid>('cockpit-datalogger-overlay-grid', {
+  telemetryDisplayData = useBlueOsStorage<OverlayGrid>('cockpit-datalogger-overlay-grid', {
     LeftTop: [],
     CenterTop: [],
     RightTop: [],
@@ -210,7 +210,7 @@ class DataLogger {
     CenterBottom: [],
     RightBottom: [],
   })
-  telemetryDisplayOptions = useStorage<OverlayOptions>('cockpit-datalogger-overlay-options', {
+  telemetryDisplayOptions = useBlueOsStorage<OverlayOptions>('cockpit-datalogger-overlay-options', {
     fontSize: 30,
     fontColor: '#FFFFFFFF',
     backgroundColor: '#000000FF',
@@ -223,7 +223,7 @@ class DataLogger {
     fontUnderline: false,
     fontStrikeout: false,
   })
-  logInterval = useStorage<number>('cockpit-datalogger-log-interval', 1000)
+  logInterval = useBlueOsStorage<number>('cockpit-datalogger-log-interval', 1000)
   cockpitLogsDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
     name: 'Cockpit - Sensor Logs',
@@ -476,7 +476,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
 
     return `&H${invertedAlpha}${blue}${green}${red}`
   }
-  
+
     log.forEach((logPoint, index) => {
       // Don't deal with the last log point, as it has no next point to compare to
       if (index === log.length - 1) return
@@ -521,7 +521,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
       const millisNextPoint = differenceInMilliseconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch))
       const remainingMillisNextPoint = millisNextPoint - roundedMillisNextPoint
       const remainingCentisNextPoint = Math.floor(remainingMillisNextPoint / 10).toString().padStart(2, '0')
-      
+
       const timeThis = `${durationHoursThisPoint}:${durationMinutesThisPoint}:${durationSecondsThisPoint}.${remainingCentisThisPoint}`
       const timeNext = `${durationHoursNextPoint}:${durationMinutesNextPoint}:${durationSecondsNextPoint}.${remainingCentisNextPoint}`
 
