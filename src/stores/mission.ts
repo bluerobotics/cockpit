@@ -1,13 +1,13 @@
-import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { reactive, ref, watch } from 'vue'
 
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
 export const useMissionStore = defineStore('mission', () => {
   const missionName = ref('')
-  const lastMissionName = useStorage('cockpit-last-mission-name', '')
-  const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
+  const lastMissionName = useBlueOsStorage('cockpit-last-mission-name', '')
+  const missionStartTime = useBlueOsStorage('cockpit-mission-start-time', new Date())
 
   watch(missionName, () => (lastMissionName.value = missionName.value))
 

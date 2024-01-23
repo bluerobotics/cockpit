@@ -1,16 +1,20 @@
-import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, watch } from 'vue'
+
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 
 import { Alert, AlertLevel } from '../types/alert'
 
 export const useAlertStore = defineStore('alert', () => {
   const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
-  const enableVoiceAlerts = useStorage('cockpit-enable-voice-alerts', true)
+  const enableVoiceAlerts = useBlueOsStorage('cockpit-enable-voice-alerts', true)
   // eslint-disable-next-line jsdoc/require-jsdoc
   const availableAlertSpeechVoices = reactive<SpeechSynthesisVoice[]>([])
-  const selectedAlertSpeechVoiceName = useStorage<string | undefined>('cockpit-selected-alert-speech-voice', undefined)
-  const enabledAlertLevels = useStorage('cockpit-enabled-alert-levels', [
+  const selectedAlertSpeechVoiceName = useBlueOsStorage<string | undefined>(
+    'cockpit-selected-alert-speech-voice',
+    undefined
+  )
+  const enabledAlertLevels = useBlueOsStorage('cockpit-enabled-alert-levels', [
     { level: AlertLevel.Success, enabled: true },
     { level: AlertLevel.Error, enabled: true },
     { level: AlertLevel.Info, enabled: false },

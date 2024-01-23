@@ -1,6 +1,6 @@
 import '@/libs/cosmos'
 
-import { useDebounceFn, useStorage } from '@vueuse/core'
+import { useDebounceFn } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
@@ -9,6 +9,7 @@ import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 
 import { widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import * as Words from '@/libs/funny-name/words'
 import {
@@ -30,10 +31,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
   const showGrid = ref(true)
   const gridInterval = ref(0.01)
-  const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
-  const savedProfiles = useStorage<Profile[]>(savedProfilesKey, [])
-  const currentViewIndex = useStorage('cockpit-current-view-index', 0)
-  const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
+  const currentMiniWidgetsProfile = useBlueOsStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
+  const savedProfiles = useBlueOsStorage<Profile[]>(savedProfilesKey, [])
+  const currentViewIndex = useBlueOsStorage('cockpit-current-view-index', 0)
+  const currentProfileIndex = useBlueOsStorage('cockpit-current-profile-index', 0)
 
   const currentView = computed<View>({
     get() {
