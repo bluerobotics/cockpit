@@ -1,4 +1,6 @@
-import ky from 'ky'
+import ky, { HTTPError } from 'ky'
+
+export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const getBagOfHoldingFromVehicle = async (
@@ -8,7 +10,15 @@ export const getBagOfHoldingFromVehicle = async (
   try {
     return await ky.get(`http://${vehicleAddress}/bag/v1.0/get/${bagPath}`, { timeout: 5000, retry: 0 }).json()
   } catch (error) {
-    throw new Error(`Could not get bag of holdings for ${bagName}. ${error}`)
+    const errorBody = await (error as HTTPError).response.json()
+    console.log(errorBody)
+    if (errorBody.detail === 'Invalid path') {
+      const noPathError = new Error(`No data available in BlueOS storage for path '${bagPath}'.`)
+      noPathError.name = NoPathInBlueOsErrorName
+      console.log(noPathError)
+      throw noPathError
+    }
+    throw new Error(`Could not get bag of holdings for ${bagPath}. ${error}`)
   }
 }
 
