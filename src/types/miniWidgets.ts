@@ -23,6 +23,10 @@ export type MiniWidget = {
    */
   hash: string
   /**
+   * Editable name for the widget
+   */
+  name: string
+  /**
    * Component type of the widget
    */
   component: MiniWidgetType
