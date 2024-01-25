@@ -9,7 +9,11 @@
       @click="toggleRecording()"
     />
     <template v-if="!isRecording">
-      <div v-if="nameSelectedStream" class="flex flex-col max-w-[50%] scroll-container">
+      <div
+        v-if="nameSelectedStream"
+        class="flex flex-col max-w-[50%] scroll-container transition-all border-blur cursor-pointer"
+        @click="isStreamSelectDialogOpen = true"
+      >
         <div class="text-xs text-white select-none scroll-text">{{ nameSelectedStream }}</div>
       </div>
       <FontAwesomeIcon v-else icon="fa-solid fa-video" class="h-6 text-slate-100" />
@@ -227,5 +231,10 @@ watch(isRecording, () => {
 
 .scroll-text:hover {
   transform: translateX(-100%);
+}
+
+.border-blur:hover {
+  background-color: #475569;
+  box-shadow: 0px 0px 3px 3px #475569;
 }
 </style>
