@@ -203,6 +203,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         { name: 'Bottom-right container', widgets: [] },
       ],
       showBottomBarOnBoot: true,
+      visible: true,
     })
     currentViewIndex.value = 0
   }
@@ -308,6 +309,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       widgets: view.widgets,
       miniWidgetContainers: view.miniWidgetContainers,
       showBottomBarOnBoot: view.showBottomBarOnBoot,
+      visible: view.visible,
     })
     currentViewIndex.value = 0
   }
@@ -497,9 +499,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   onBeforeMount(() => {
     savedProfiles.value.forEach((p) =>
       p.views.forEach((v) => {
-        if (v.showBottomBarOnBoot === undefined) {
-          v.showBottomBarOnBoot = true
-        }
+        v.showBottomBarOnBoot = v.showBottomBarOnBoot ?? true
+        v.visible = v.visible ?? true
       })
     )
   })

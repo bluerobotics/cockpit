@@ -26,6 +26,7 @@ export const widgetProfiles: Profile[] = [
         hash: 'eddd8e53-88c3-46a9-9e50-909227661f38',
         name: 'Video View',
         showBottomBarOnBoot: true,
+        visible: true,
         widgets: [
           {
             hash: '80e785e1-31e2-4bfe-85d4-99fee6ca3f76',
@@ -332,6 +333,7 @@ export const widgetProfiles: Profile[] = [
           },
         ],
         showBottomBarOnBoot: true,
+        visible: true,
       },
       {
         hash: '795c3c97-c3f6-4a2d-b38f-d4ac8219bac0',
@@ -512,6 +514,7 @@ export const widgetProfiles: Profile[] = [
           },
         ],
         showBottomBarOnBoot: true,
+        visible: true,
       },
     ],
   },
@@ -523,6 +526,7 @@ export const widgetProfiles: Profile[] = [
         hash: 'f8a76470-9122-44f7-97f7-4555a59ee9c4',
         name: 'Map view',
         showBottomBarOnBoot: true,
+        visible: true,
         widgets: [
           {
             hash: '6439e791-3031-4928-aff2-8bd9af713798',

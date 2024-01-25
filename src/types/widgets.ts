@@ -101,6 +101,10 @@ export type View = {
    * To show or not the bottom bar on boot.
    */
   showBottomBarOnBoot: boolean
+  /**
+   * To show or not the view.
+   */
+  visible: boolean
 }
 
 export type Profile = {
