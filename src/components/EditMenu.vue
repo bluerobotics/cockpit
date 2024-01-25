@@ -295,6 +295,7 @@ const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const availableMiniWidgetTypes = computed(() =>
   Object.values(MiniWidgetType).map((widgetType) => ({
     component: widgetType,
+    name: widgetType,
     options: {},
     hash: uuid(),
     managerVars: {

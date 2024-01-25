@@ -167,7 +167,10 @@ const updateVariableState = (): void => {
   currentState.value = store.genericVariables[miniWidget.value.options.variableName as string]
 }
 watch(store.genericVariables, updateVariableState)
-watch(miniWidget, updateVariableState)
+watch(miniWidget, () => {
+  updateVariableState()
+  miniWidget.value.
+})
 onMounted(() => updateVariableState())
 
 let iconsNames: string[] = []

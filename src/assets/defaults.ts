@@ -86,11 +86,13 @@ export const widgetProfiles: Profile[] = [
               {
                 hash: '59517f70-4221-491a-8f10-c877c05c22b5',
                 component: MiniWidgetType.ViewSelector,
+                name: 'ViewSelector',
                 managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Pilot Gain',
                   variableName: 'PilotGain',
@@ -103,6 +105,7 @@ export const widgetProfiles: Profile[] = [
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Lights (1)',
                   variableName: 'Lights1',
@@ -115,6 +118,7 @@ export const widgetProfiles: Profile[] = [
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Cam Tilt',
                   variableName: 'CamTilt',
@@ -133,11 +137,13 @@ export const widgetProfiles: Profile[] = [
               {
                 hash: '7e1dd699-b336-4026-ad7d-f214aee5e4b7',
                 component: MiniWidgetType.DepthIndicator,
+                name: 'DepthIndicator',
                 managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Water Temp',
                   variableName: 'SCALED_PRESSURE2.temperature',
@@ -156,18 +162,21 @@ export const widgetProfiles: Profile[] = [
               {
                 hash: '837a6722-1e54-4ace-9a92-d9c5af059d16',
                 component: MiniWidgetType.ArmerButton,
+                name: 'ArmerButton',
                 managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
               {
                 hash: 'c6301929-cdfc-48af-9fdd-c87ce65d7395',
                 component: MiniWidgetType.ModeSelector,
+                name: 'ModeSelector',
                 managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
               {
                 hash: 'a4d0d6ce-9978-40f2-89ab-958f91137177',
                 component: MiniWidgetType.MiniVideoRecorder,
+                name: 'MiniVideoRecorder',
                 managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
@@ -254,12 +263,14 @@ export const widgetProfiles: Profile[] = [
             widgets: [
               {
                 component: MiniWidgetType.ViewSelector,
+                name: 'ViewSelector',
                 options: {},
                 hash: '0759321f-edd0-4f12-bce1-6a4ff0469a7a',
                 managerVars: defaultMiniWidgetManagerVars,
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Pilot Gain',
                   variableName: 'PilotGain',
@@ -272,6 +283,7 @@ export const widgetProfiles: Profile[] = [
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Lights (1)',
                   variableName: 'Lights1',
@@ -284,6 +296,7 @@ export const widgetProfiles: Profile[] = [
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Cam Tilt',
                   variableName: 'CamTilt',
@@ -301,12 +314,14 @@ export const widgetProfiles: Profile[] = [
             widgets: [
               {
                 component: MiniWidgetType.DepthIndicator,
+                name: 'DepthIndicator',
                 options: {},
                 hash: 'afd47470-d7e8-41ba-ba7b-a00dab76f510',
                 managerVars: defaultMiniWidgetManagerVars,
               },
               {
                 component: MiniWidgetType.SatelliteIndicator,
+                name: 'SatelliteIndicator',
                 options: {},
                 hash: '11cfd5aa-f71c-4f65-a8dc-fa475bbce1ec',
                 managerVars: defaultMiniWidgetManagerVars,
@@ -318,12 +333,14 @@ export const widgetProfiles: Profile[] = [
             widgets: [
               {
                 component: MiniWidgetType.ArmerButton,
+                name: 'ArmerButton',
                 options: {},
                 hash: '30e66f52-04ab-45b7-afaf-c03ebc4be108',
                 managerVars: defaultMiniWidgetManagerVars,
               },
               {
                 component: MiniWidgetType.ModeSelector,
+                name: 'ModeSelector',
                 options: {},
                 hash: 'acee316f-dab1-44b0-aa1d-e7d75cdbecab',
                 managerVars: defaultMiniWidgetManagerVars,
@@ -422,12 +439,14 @@ export const widgetProfiles: Profile[] = [
             widgets: [
               {
                 component: MiniWidgetType.ViewSelector,
+                name: 'ViewSelector',
                 options: {},
                 hash: 'd180e07f-156c-4025-a823-697318c04906',
                 managerVars: defaultMiniWidgetManagerVars,
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Pilot Gain',
                   variableName: 'PilotGain',
@@ -440,6 +459,7 @@ export const widgetProfiles: Profile[] = [
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Lights (1)',
                   variableName: 'Lights1',
@@ -452,6 +472,7 @@ export const widgetProfiles: Profile[] = [
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Cam Tilt',
                   variableName: 'CamTilt',
@@ -469,12 +490,14 @@ export const widgetProfiles: Profile[] = [
             widgets: [
               {
                 component: MiniWidgetType.DepthIndicator,
+                name: 'DepthIndicator',
                 options: {},
                 hash: 'b3572cc4-f9a0-427a-90a1-1756e0694af5',
                 managerVars: defaultMiniWidgetManagerVars,
               },
               {
                 component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
                 options: {
                   displayName: 'Water Temp',
                   variableName: 'SCALED_PRESSURE2.temperature',
@@ -492,18 +515,21 @@ export const widgetProfiles: Profile[] = [
             widgets: [
               {
                 component: MiniWidgetType.ArmerButton,
+                name: 'ArmerButton',
                 options: {},
                 hash: '0a85fc48-d8b2-4e8c-bb24-c326ffc0d2ed',
                 managerVars: defaultMiniWidgetManagerVars,
               },
               {
                 component: MiniWidgetType.ModeSelector,
+                name: 'ModeSelector',
                 options: {},
                 hash: 'ec66aedd-6cce-4533-bfa9-8e3c36906688',
                 managerVars: defaultMiniWidgetManagerVars,
               },
               {
                 component: MiniWidgetType.MiniVideoRecorder,
+                name: 'MiniVideoRecorder',
                 options: {},
                 hash: '111563f5-78cf-45b4-bc98-a81d1defed66',
                 managerVars: defaultMiniWidgetManagerVars,
@@ -541,6 +567,7 @@ export const widgetProfiles: Profile[] = [
               {
                 hash: 'c6eb406b-8e3c-4ab9-a348-4ad5058352be',
                 component: MiniWidgetType.ViewSelector,
+                name: 'ViewSelector',
                 managerVars: defaultMiniWidgetManagerVars,
                 options: {},
               },
@@ -565,18 +592,21 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
           {
             hash: '5b21cf5b-5849-413a-8bee-f1c4b42522f8',
             component: MiniWidgetType.BaseCommIndicator,
+            name: 'BaseCommIndicator',
             managerVars: defaultMiniWidgetManagerVars,
             options: {},
           },
           {
             hash: '41354445-2057-4574-80f5-bdc6d394dfe7',
             component: MiniWidgetType.JoystickCommIndicator,
+            name: 'JoystickCommIndicator',
             managerVars: defaultMiniWidgetManagerVars,
             options: {},
           },
           {
             hash: '7b31c4c4-e273-4f75-b0b7-d56263c4177d',
             component: MiniWidgetType.BatteryIndicator,
+            name: 'BatteryIndicator',
             managerVars: defaultMiniWidgetManagerVars,
             options: {},
           },
