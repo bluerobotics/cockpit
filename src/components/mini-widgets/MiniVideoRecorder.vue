@@ -9,7 +9,10 @@
       @click="toggleRecording()"
     />
     <template v-if="!isRecording">
-      <FontAwesomeIcon icon="fa-solid fa-video" class="h-6 text-slate-100" />
+      <div v-if="nameSelectedStream" class="flex flex-col max-w-[50%] scroll-container">
+        <div class="text-xs text-white select-none scroll-text">{{ nameSelectedStream }}</div>
+      </div>
+      <FontAwesomeIcon v-else icon="fa-solid fa-video" class="h-6 text-slate-100" />
     </template>
     <div v-else class="w-16 text-justify text-slate-100">
       {{ timePassedString }}
@@ -209,5 +212,20 @@ watch(isRecording, () => {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(255, 82, 82, 0);
   }
+}
+
+.scroll-container {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scroll-text {
+  transform: translateX(0%);
+  transition: transform 1s linear;
+}
+
+.scroll-text:hover {
+  transform: translateX(-100%);
 }
 </style>
