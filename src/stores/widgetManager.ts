@@ -376,21 +376,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { MiniWidget } miniWidget - Mini-widget
    */
   function deleteMiniWidget(miniWidget: MiniWidget): void {
-    let widgetContainer: MiniWidgetContainer | undefined = undefined
-
-    currentProfile.value.views.forEach((view) => {
-      const possibleContainer = view.miniWidgetContainers.find((container) => container.widgets.includes(miniWidget))
-      if (possibleContainer !== undefined) widgetContainer = possibleContainer
+    const container: MiniWidgetContainer | undefined = miniWidgetContainersInCurrentView.value.find((cont) => {
+      return cont.widgets.includes(miniWidget)
     })
 
-    if (widgetContainer === undefined) {
-      Swal.fire({ icon: 'error', text: 'Mini-widget container not found.', timer: 3000 })
+    if (container === undefined) {
+      Swal.fire({ icon: 'error', text: 'Mini-widget container not found.' })
       return
     }
 
-    const realContainer = widgetContainer as MiniWidgetContainer
-    const index = realContainer.widgets.indexOf(miniWidget)
-    realContainer.widgets.splice(index, 1)
+    const index = container.widgets.indexOf(miniWidget)
+    container.widgets.splice(index, 1)
   }
 
   /**
