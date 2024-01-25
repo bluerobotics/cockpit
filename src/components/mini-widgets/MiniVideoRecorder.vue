@@ -104,6 +104,12 @@ const toggleRecording = async (): Promise<void> => {
     }
     return
   }
+  // If there's a stream selected already, try to use it without requiring further user interaction
+  if (nameSelectedStream.value !== undefined) {
+    updateCurrentStream(nameSelectedStream.value)
+    startRecording()
+    return
+  }
   // Open dialog so user can choose the stream which will be recorded
   isStreamSelectDialogOpen.value = true
 }
