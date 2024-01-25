@@ -166,12 +166,22 @@ const parsedState = computed(() => {
 const updateVariableState = (): void => {
   currentState.value = store.genericVariables[miniWidget.value.options.variableName as string]
 }
+const updateWidgetName = (): void => {
+  miniWidget.value.name = miniWidget.value.options.displayName || miniWidget.value.options.variableName
+}
 watch(store.genericVariables, updateVariableState)
-watch(miniWidget, () => {
+watch(
+  miniWidget,
+  () => {
+    updateVariableState()
+    updateWidgetName()
+  },
+  { deep: true }
+)
+onMounted(() => {
   updateVariableState()
-  miniWidget.value.
+  updateWidgetName()
 })
-onMounted(() => updateVariableState())
 
 let iconsNames: string[] = []
 
