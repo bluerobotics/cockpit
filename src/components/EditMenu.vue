@@ -76,6 +76,11 @@
             >
               <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
               <div class="grow" />
+              <div
+                class="icon-btn mdi mdi-eye"
+                :class="{ 'mdi-eye-closed': !view.visible }"
+                @click.stop="toggleViewVisibility(view)"
+              />
               <div class="icon-btn mdi mdi-download" @click.stop="store.exportView(view)" />
               <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateView(view)" />
               <div class="icon-btn mdi mdi-cog" @click.stop="renameView(view)" />
@@ -345,6 +350,14 @@ const renameView = (view: View): void => {
   viewBeingRenamed.value = view
   newViewName.value = view.name
   viewRenameDialogRevealed.value = true
+}
+
+const toggleViewVisibility = (view: View): void => {
+  if (view.visible && view === store.currentView) {
+    Swal.fire({ text: 'You cannot hide the current view.', icon: 'error' })
+    return
+  }
+  view.visible = !view.visible
 }
 
 const renameProfile = (profile: Profile): void => {

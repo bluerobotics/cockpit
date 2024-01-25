@@ -66,7 +66,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const viewsOnShowOrder = currentProfile.value.views.slice()
     viewsOnShowOrder.splice(currentViewIndex.value, 1)
     viewsOnShowOrder.push(currentProfile.value.views[currentViewIndex.value])
-    return viewsOnShowOrder
+    return viewsOnShowOrder.filter((v) => v.visible)
   })
 
   const miniWidgetContainersInCurrentView = computed(() => {
@@ -298,6 +298,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { View } view - View
    */
   const selectView = (view: View): void => {
+    if (!view.visible) {
+      Swal.fire({ icon: 'error', text: 'Cannot select a view that is not visible.', timer: 5000 })
+      return
+    }
     const index = currentProfile.value.views.indexOf(view)
     currentViewIndex.value = index
   }
