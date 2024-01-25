@@ -70,12 +70,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   })
 
   const miniWidgetContainersInCurrentView = computed(() => {
-    const barContainers = currentView.value.miniWidgetContainers
+    const fixedBarContainers = currentMiniWidgetsProfile.value.containers
+    const viewBarContainers = currentView.value.miniWidgetContainers
     const floatingWidgetContainers = currentView.value.widgets
       .filter((w) => w.component === WidgetType.MiniWidgetsBar)
       .filter((w) => w.options && w.options.miniWidgetsContainer)
       .map((w) => w.options.miniWidgetsContainer)
-    return [...barContainers, ...floatingWidgetContainers]
+    return [...fixedBarContainers, ...viewBarContainers, ...floatingWidgetContainers]
   })
 
   /**
