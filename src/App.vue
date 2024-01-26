@@ -102,27 +102,27 @@
             </div>
           </div>
           <Transition name="fade">
-            <div
-              v-if="showBottomBarNow"
-              class="z-[60] w-full h-12 bg-slate-600/50 absolute flex bottom-0 backdrop-blur-[2px] justify-between"
-            >
-              <MiniWidgetContainer
-                :container="widgetStore.currentView.miniWidgetContainers[0]"
-                :allow-editing="widgetStore.editingMode"
-                align="start"
-              />
-              <div />
-              <MiniWidgetContainer
-                :container="widgetStore.currentView.miniWidgetContainers[1]"
-                :allow-editing="widgetStore.editingMode"
-                align="center"
-              />
-              <div />
-              <MiniWidgetContainer
-                :container="widgetStore.currentView.miniWidgetContainers[2]"
-                :allow-editing="widgetStore.editingMode"
-                align="end"
-              />
+            <div v-if="showBottomBarNow" class="bottom-container">
+              <SlideToConfirm />
+              <div class="bottom-bar h-12">
+                <MiniWidgetContainer
+                  :container="widgetStore.currentView.miniWidgetContainers[0]"
+                  :allow-editing="widgetStore.editingMode"
+                  align="start"
+                />
+                <div />
+                <MiniWidgetContainer
+                  :container="widgetStore.currentView.miniWidgetContainers[1]"
+                  :allow-editing="widgetStore.editingMode"
+                  align="center"
+                />
+                <div />
+                <MiniWidgetContainer
+                  :container="widgetStore.currentView.miniWidgetContainers[2]"
+                  :allow-editing="widgetStore.editingMode"
+                  align="end"
+                />
+              </div>
             </div>
           </Transition>
           <router-view />
@@ -158,6 +158,7 @@ import { useMissionStore } from '@/stores/mission'
 import Dialog from './components/Dialog.vue'
 import EditMenu from './components/EditMenu.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
+import SlideToConfirm from './components/SlideToConfirm.vue'
 import Alerter from './components/widgets/Alerter.vue'
 import { datalogger } from './libs/sensors-logging'
 import { useWidgetManagerStore } from './stores/widgetManager'
@@ -265,5 +266,21 @@ body.hide-cursor {
 .fade-leave-to {
   opacity: 0;
   transform: translate(0, 100px);
+}
+.bottom-container {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 60; /* Adjust z-index as needed */
+}
+
+.bottom-bar {
+  width: 100%;
+  background: rgba(108, 117, 125, 0.5);
+  display: flex;
+  justify-content: space-between;
 }
 </style>
