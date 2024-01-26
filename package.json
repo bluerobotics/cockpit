@@ -33,7 +33,7 @@
     "date-fns": "^2.29.3",
     "file-saver": "^2.0.5",
     "fix-webm-duration": "^1.0.5",
-    "floating-vue": "^2.0.0-beta.20",
+    "floating-vue": "^5.0.3",
     "gamepad.js": "^1.0.4",
     "gsap": "^3.11.3",
     "haversine-distance": "^1.2.1",
