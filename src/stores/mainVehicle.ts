@@ -14,6 +14,7 @@ import {
   registerActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
+import { slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
@@ -125,29 +126,52 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   /**
    * Arm the vehicle
+   * @returns { void } A Promise that resolves when arming is successful or rejects if an error occurs or the action is cancelled.
    */
-  function arm(): void {
-    mainVehicle.value?.arm()
+  function arm(): Promise<void> {
+    return slideToConfirm(() => {
+      if (!mainVehicle.value) {
+        throw new Error('action rejected or failed')
+      }
+      mainVehicle.value.arm()
+    })
   }
 
   /**
    * Disarm the vehicle
+   * @returns { void } A Promise that resolves when disarming is successful or rejects if an error occurs or the action is cancelled.
    */
-  function disarm(): void {
-    mainVehicle.value?.disarm()
+  function disarm(): Promise<void> {
+    return slideToConfirm(() => {
+      if (!mainVehicle.value) {
+        throw new Error('action rejected or failed')
+      }
+      mainVehicle.value.disarm()
+    })
   }
   /**
-   * Takeoff the vehicle
+   * Initiates the takeoff process, requiring user confirmation.
+   * @returns { void } A Promise that resolves when the takeoff is successful or rejects if an error occurs or the action is cancelled.
    */
-  function takeoff(): void {
-    mainVehicle.value?.takeoff()
+  function takeoff(): Promise<void> {
+    return slideToConfirm(() => {
+      if (!mainVehicle.value) {
+        throw new Error('action rejected or failed')
+      }
+      mainVehicle.value.takeoff()
+    })
   }
-
   /**
    * Land the vehicle
+   * @returns { void } A Promise that resolves when landing is successful or rejects if an error occurs or the action is cancelled.
    */
-  function land(): void {
-    mainVehicle.value?.land()
+  function land(): Promise<void> {
+    return slideToConfirm(() => {
+      if (!mainVehicle.value) {
+        throw new Error('action rejected or failed')
+      }
+      mainVehicle.value.land()
+    })
   }
 
   /**
@@ -159,6 +183,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    * @param { number } latitude Latitude in degrees
    * @param { number } longitude Longitude in degrees
    * @param { number } alt Altitude in meters
+   * @returns { void } A Promise that resolves when the vehicle reaches the waypoint or rejects if an error occurs or the action is cancelled.
    */
   function goTo(
     hold: number,
@@ -168,13 +193,18 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     latitude: number,
     longitude: number,
     alt: number
-  ): void {
+  ): Promise<void> {
     const waypoint = new Coordinates()
     waypoint.latitude = latitude
     waypoint.altitude = alt
     waypoint.longitude = longitude
 
-    mainVehicle.value?.goTo(hold, acceptanceRadius, passRadius, yaw, waypoint)
+    return slideToConfirm(() => {
+      if (!mainVehicle.value) {
+        throw new Error('action rejected or failed')
+      }
+      mainVehicle.value.goTo(hold, acceptanceRadius, passRadius, yaw, waypoint)
+    })
   }
 
   /**
