@@ -54,13 +54,34 @@ export const useAlertStore = defineStore('alert', () => {
   // We need to cache these otherwise they get garbage collected...
   const utterance_cache: SpeechSynthesisUtterance[] = []
 
+  // By default we use the platform language over the default speech text,
+  // it appears that browsers like chrome fail to have it correctly based on the system.
+  // The default speech langauge _should_ be the same as platform language.
   synth.onvoiceschanged = () => {
+    let default_speech: undefined | string = undefined
+    let default_speech_by_language: undefined | string = undefined
     synth.getVoices().forEach((voice) => {
       availableAlertSpeechVoices.push(voice)
-      if (selectedAlertSpeechVoiceName.value === undefined && voice.default) {
-        selectedAlertSpeechVoiceName.value = voice.name
+
+      if (voice.default) {
+        default_speech = voice.name
+      }
+
+      if (voice.lang === navigator.language) {
+        default_speech_by_language = voice.name
       }
     })
+
+    if (selectedAlertSpeechVoiceName.value === undefined) {
+      if (default_speech_by_language !== undefined) {
+        selectedAlertSpeechVoiceName.value = default_speech_by_language
+        return
+      }
+
+      if (default_speech) {
+        selectedAlertSpeechVoiceName.value = default_speech
+      }
+    }
   }
 
   const availableAlertSpeechVoiceNames = computed(() =>
