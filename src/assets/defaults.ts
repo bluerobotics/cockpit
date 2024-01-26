@@ -52,8 +52,8 @@ export const widgetProfiles: Profile[] = [
               y: 0.054,
             },
             size: {
-              width: 0.0614,
-              height: 0.116,
+              width: 0.062,
+              height: 0.118,
             },
             options: {
               headingStyle: 'North Up',
@@ -213,8 +213,8 @@ export const widgetProfiles: Profile[] = [
               y: 0.054,
             },
             size: {
-              width: 0.0614,
-              height: 0.116,
+              width: 0.062,
+              height: 0.118,
             },
             options: {
               headingStyle: 'North Up',
