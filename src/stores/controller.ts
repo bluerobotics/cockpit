@@ -2,7 +2,7 @@ import { useStorage } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
 
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
@@ -16,6 +16,7 @@ import {
   type ProtocolAction,
   CockpitModifierKeyOption,
   Joystick,
+  JoystickAxis,
   JoystickButton,
   JoystickProtocol,
 } from '@/types/joystick'
@@ -127,6 +128,36 @@ export const useControllerStore = defineStore('controller', () => {
 
     return activeActions.concat(modKeyAction)
   }
+
+  let lastValidProtocolMapping = structuredClone(toRaw(protocolMapping.value))
+  watch(
+    protocolMappings,
+    () => {
+      // Check if there's any duplicated axis actions. If so, unmap (set to no_function) the axes that use to have the same action
+      const oldMapping = structuredClone(toRaw(lastValidProtocolMapping))
+      const newMapping = protocolMappings.value[protocolMappingIndex.value]
+      const mappedAxisActions = Object.values(newMapping.axesCorrespondencies).map((v) => v.action.id)
+      const duplicateAxisActions = mappedAxisActions
+        .filter((item, index) => mappedAxisActions.indexOf(item) !== index)
+        .filter((v) => v !== otherAvailableActions.no_function.id)
+      if (!duplicateAxisActions.isEmpty()) {
+        Object.entries(newMapping.axesCorrespondencies).forEach(([axis, mapping]) => {
+          const isDuplicated = duplicateAxisActions.includes(mapping.action.id)
+          const oldMappingId = oldMapping.axesCorrespondencies[axis as unknown as JoystickAxis].action.id
+          const wasMapped = oldMappingId === mapping.action.id
+          if (isDuplicated && wasMapped) {
+            const warningText = `Unmapping '${mapping.action.name}' from input ${axis} layout.
+              Cannot use same action on multiple axes.`
+            Swal.fire({ text: warningText, icon: 'warning' })
+            newMapping.axesCorrespondencies[axis as unknown as JoystickAxis].action = otherAvailableActions.no_function
+          }
+        })
+        protocolMappings.value[protocolMappingIndex.value] = newMapping
+      }
+      lastValidProtocolMapping = structuredClone(toRaw(protocolMappings.value[protocolMappingIndex.value]))
+    },
+    { deep: true }
+  )
 
   setInterval(() => {
     // eslint-disable-next-line jsdoc/require-jsdoc
