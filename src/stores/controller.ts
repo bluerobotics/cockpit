@@ -78,12 +78,15 @@ export const useControllerStore = defineStore('controller', () => {
       if (joysticks.value.has(index)) continue
       joystick.model = joystickManager.getModel(joystick.gamepad)
       joysticks.value.set(index, joystick)
+      console.info(`Joystick ${index} (${joystick.model}) connected.`)
     }
 
     // Remove joysticks that doesn't not exist anymore
     for (const key of joysticks.value.keys()) {
       if (event.has(key)) continue
+      const model = joysticks.value.get(key)?.model
       joysticks.value.delete(key)
+      console.info(`Joystick ${key} (${model ?? 'Unknown model'}) disconnected.`)
     }
   }
 
