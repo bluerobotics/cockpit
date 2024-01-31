@@ -1,4 +1,4 @@
-import { useStorage } from '@vueuse/core'
+import { useDocumentVisibility, useStorage } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
@@ -95,6 +95,18 @@ export const useControllerStore = defineStore('controller', () => {
       }
     }
   }
+
+  // Disable joystick forwarding if the window/tab is not visible (using VueUse)
+  const windowVisibility = useDocumentVisibility()
+  watch(windowVisibility, (value) => {
+    if (value === 'hidden') {
+      console.warn('Window/tab hidden. Disabling joystick forwarding.')
+      enableForwarding.value = false
+    } else {
+      console.info('Window/tab visible. Enabling joystick forwarding.')
+      enableForwarding.value = true
+    }
+  })
 
   const processJoystickStateEvent = (event: JoystickEvent): void => {
     const joystick = joysticks.value.get(event.detail.index)
