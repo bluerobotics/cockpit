@@ -337,6 +337,13 @@ onUnmounted(() => {
   controllerStore.enableForwarding = true
 })
 
+// Does not let the joystick forwarding to be enabled while the user is in this page
+// This could happen, for example, when the joystick is reconnected while in this page
+watch(
+  () => controllerStore.enableForwarding,
+  () => (controllerStore.enableForwarding = false)
+)
+
 const currentJoystick = ref<Joystick>()
 const currentButtonInputs = ref<JoystickButtonInput[]>([])
 const currentAxisInputs = ref<JoystickAxisInput[]>([])
