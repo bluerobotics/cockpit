@@ -183,6 +183,11 @@
             </div>
           </div>
         </div>
+        <v-switch
+          v-model="controllerStore.holdLastInputWhenWindowHidden"
+          label="Hold last joystick input when window is hidden (tab changed or window minimized)"
+          class="m-2 text-slate-800"
+        />
       </div>
     </template>
   </BaseConfigurationView>

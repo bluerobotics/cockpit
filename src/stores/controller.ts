@@ -40,6 +40,7 @@ export const useControllerStore = defineStore('controller', () => {
   const availableAxesActions = allAvailableAxes
   const availableButtonActions = allAvailableButtons
   const enableForwarding = ref(true)
+  const holdLastInputWhenWindowHidden = useStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
 
   const protocolMapping = computed<JoystickProtocolActionsMapping>({
     get() {
@@ -99,6 +100,10 @@ export const useControllerStore = defineStore('controller', () => {
   // Disable joystick forwarding if the window/tab is not visible (using VueUse)
   const windowVisibility = useDocumentVisibility()
   watch(windowVisibility, (value) => {
+    // Disable this failcheck if the user explicitly wants to hold the last input when the window is hidden
+    // This can be considered unsafe, as the user might not be aware of the joystick input being forwarded to the vehicle
+    if (holdLastInputWhenWindowHidden.value) return
+
     if (value === 'hidden') {
       console.warn('Window/tab hidden. Disabling joystick forwarding.')
       enableForwarding.value = false
@@ -320,6 +325,7 @@ export const useControllerStore = defineStore('controller', () => {
   return {
     registerControllerUpdateCallback,
     enableForwarding,
+    holdLastInputWhenWindowHidden,
     joysticks,
     protocolMapping,
     protocolMappings,
