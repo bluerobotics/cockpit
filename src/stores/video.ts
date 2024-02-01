@@ -26,6 +26,7 @@ export const useVideoStore = defineStore('video', () => {
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
   const { availableStreams } = mainWebRTCManager.startStream(ref(undefined), allowedIceIps)
   const availableIceIps = ref<string[]>([])
+  const videoRecoveryWarningAlreadyShown = useStorage('video-recovery-warning-already-shown', false)
 
   const namesAvailableStreams = computed(() => availableStreams.value.map((stream) => stream.name))
 
@@ -201,32 +202,19 @@ export const useVideoStore = defineStore('video', () => {
 
   videoRecoveryDB.length().then((len) => {
     if (len === 0) return
+    if (videoRecoveryWarningAlreadyShown.value) return
 
     Swal.fire({
-      title: 'Video recording recovery',
-      text: `Cockpit has pending backups for videos that you started recording but did not download.
-        Click 'Discard' to remove the backuped files.
-        Click 'Dismiss' to postpone this decision for the next boot.
-        Click 'Download' to download the files. If you decide to download them, they will be removed afterwards.
+      title: 'Download of video recordings',
+      text: `Cockpit has video recordings waiting on the disk storage.
+        To download or discard those, please go to the video page, in the configuration menu.
+        Remember that those recordings are only available on the device you used to record the videos, and that
+        they take disk space. If you don't need them anymore, you can discard them.
       `,
       icon: 'warning',
-      showDenyButton: true,
-      showCancelButton: true,
-      confirmButtonText: 'Download',
-      denyButtonText: 'Discard',
-      cancelButtonText: 'Dismiss',
-    }).then((decision) => {
-      if (decision.isDismissed) return
-      if (decision.isDenied) {
-        videoRecoveryDB.iterate((_, videoName) => videoRecoveryDB.removeItem(videoName))
-      } else if (decision.isConfirmed) {
-        videoRecoveryDB.iterate((videoFile, videoName) => {
-          const blob = (videoFile as Blob[]).reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
-          saveAs(blob, videoName)
-        })
-        videoRecoveryDB.iterate((_, videoName) => videoRecoveryDB.removeItem(videoName))
-      }
     })
+
+    videoRecoveryWarningAlreadyShown.value = true
   })
 
   // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
