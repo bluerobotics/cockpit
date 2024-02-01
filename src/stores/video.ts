@@ -184,7 +184,6 @@ export const useVideoStore = defineStore('video', () => {
       fixWebmDuration(blob, Date.now() - streamData.timeRecordingStart!.getTime()).then((fixedBlob) => {
         saveAs(fixedBlob, `${fileName}.webm`)
         saveAs(logBlob, `${fileName}.ass`)
-        videoRecoveryDB.removeItem(fileName)
       })
       chunks = []
       activeStreams.value[streamName]!.mediaRecorder = undefined
