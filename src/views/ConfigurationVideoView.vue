@@ -62,6 +62,14 @@
           </fwb-table-row>
         </fwb-table-body>
       </fwb-table>
+      <span
+        v-if="temporaryDbSize > 0"
+        v-tooltip.bottom="'Remove video files used during the recording. This will not affect already saved videos.'"
+        class="p-4 m-4 transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
+        @click="clearTemporaryVideoFiles()"
+      >
+        Clear temporary video storage
+      </span>
     </template>
   </BaseConfigurationView>
 </template>
@@ -81,9 +89,11 @@ const { allowedIceIps, availableIceIps } = storeToRefs(videoStore)
 
 // List available videos and telemetry logs to be downloaded
 const namesAvailableVideosAndLogs = ref<string[]>([])
+const temporaryDbSize = ref(0)
 
 onMounted(async () => {
   await fetchVideoAndLogsData()
+  await fetchTemporaryDbSize()
 })
 
 // Fetch available videos and telemetry logs from the storage
@@ -95,6 +105,12 @@ const fetchVideoAndLogsData = async (): Promise<void> => {
   namesAvailableVideosAndLogs.value = availableData
 }
 
+// Fetch temporary video data from the storage
+const fetchTemporaryDbSize = async (): Promise<void> => {
+  const size = await videoStore.tempVideoChunksDB.length()
+  temporaryDbSize.value = size
+}
+
 const discardAndUpdateDB = async (filename: string): Promise<void> => {
   await videoStore.discardFileFromVideoDB(filename)
   await fetchVideoAndLogsData()
@@ -103,5 +119,10 @@ const discardAndUpdateDB = async (filename: string): Promise<void> => {
 const downloadAndUpdateDB = async (filename: string): Promise<void> => {
   await videoStore.downloadFileFromVideoDB(filename)
   await fetchVideoAndLogsData()
+}
+
+const clearTemporaryVideoFiles = async (): Promise<void> => {
+  videoStore.clearTemporaryVideoDB()
+  await fetchTemporaryDbSize()
 }
 </script>

@@ -228,6 +228,13 @@ export const useVideoStore = defineStore('video', () => {
     saveAs(file as Blob, fileName)
   }
 
+  // Used to clear the temporary video database
+  const clearTemporaryVideoDB = async (): Promise<void> => {
+    await tempVideoChunksDB.iterate((_, chunkName) => {
+      tempVideoChunksDB.removeItem(chunkName)
+    })
+  }
+
   // Used to store chunks of an ongoing recording, that will be merged into a video file when the recording is stopped
   const tempVideoChunksDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
@@ -330,6 +337,7 @@ export const useVideoStore = defineStore('video', () => {
     tempVideoChunksDB,
     discardFileFromVideoDB,
     downloadFileFromVideoDB,
+    clearTemporaryVideoDB,
     getMediaStream,
     getStreamData,
     isRecording,
