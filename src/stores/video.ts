@@ -213,6 +213,21 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
+  // Used to discard a file from the video recovery database
+  const discardFileFromVideoDB = async (fileName: string): Promise<void> => {
+    await videoStoringDB.removeItem(fileName)
+  }
+
+  // Used to download a file from the video recovery database
+  const downloadFileFromVideoDB = async (fileName: string): Promise<void> => {
+    const file = await videoStoringDB.getItem(fileName)
+    if (!file) {
+      Swal.fire({ text: 'File not found.', icon: 'error' })
+      return
+    }
+    saveAs(file as Blob, fileName)
+  }
+
   // Used to store chunks of an ongoing recording, that will be merged into a video file when the recording is stopped
   const tempVideoChunksDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
@@ -313,6 +328,8 @@ export const useVideoStore = defineStore('video', () => {
     namesAvailableStreams,
     videoStoringDB,
     tempVideoChunksDB,
+    discardFileFromVideoDB,
+    downloadFileFromVideoDB,
     getMediaStream,
     getStreamData,
     isRecording,
