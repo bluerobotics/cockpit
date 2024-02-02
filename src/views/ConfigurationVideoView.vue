@@ -6,7 +6,8 @@
         class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-[40%]"
       >
         <p class="font-bold">
-          This is the video configuration page. Here you can configure the behavior of your video streams.
+          This is the video configuration page. Here you can configure the behavior of your video streams and download
+          or discard saved videos and subtitle logs.
         </p>
         <br />
         <p>
@@ -30,12 +31,46 @@
           hint="IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the tether/cabled interface. Blank means any route. E.g: 192.168.2.2"
         />
       </div>
+
+      <div v-if="namesAvailableVideosAndLogs.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
+        <p class="mb-4 text-2xl font-semibold text-center text-slate-500">No videos available.</p>
+        <p class="text-center text-slate-400">
+          Use the MiniVideoRecorder widget to record some videos and them come back here to download or discard those.
+        </p>
+      </div>
+      <fwb-table v-else hoverable>
+        <fwb-table-head>
+          <fwb-table-head-cell>Filename</fwb-table-head-cell>
+          <fwb-table-head-cell />
+          <fwb-table-head-cell />
+        </fwb-table-head>
+        <fwb-table-body>
+          <fwb-table-row v-for="filename in namesAvailableVideosAndLogs" :key="filename">
+            <fwb-table-cell>{{ filename }}</fwb-table-cell>
+            <fwb-table-cell>
+              <span
+                class="rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
+                @click="discardAndUpdateDB(filename)"
+              />
+            </fwb-table-cell>
+            <fwb-table-cell>
+              <span
+                class="rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-download"
+                @click="downloadAndUpdateDB(filename)"
+              />
+            </fwb-table-cell>
+          </fwb-table-row>
+        </fwb-table-body>
+      </fwb-table>
     </template>
   </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
+import { FwbTable, FwbTableBody, FwbTableCell, FwbTableHead, FwbTableHeadCell, FwbTableRow } from 'flowbite-vue'
 import { storeToRefs } from 'pinia'
+import { ref } from 'vue'
+import { onMounted } from 'vue'
 
 import { useVideoStore } from '@/stores/video'
 
@@ -43,4 +78,30 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const videoStore = useVideoStore()
 const { allowedIceIps, availableIceIps } = storeToRefs(videoStore)
+
+// List available videos and telemetry logs to be downloaded
+const namesAvailableVideosAndLogs = ref<string[]>([])
+
+onMounted(async () => {
+  await fetchVideoAndLogsData()
+})
+
+// Fetch available videos and telemetry logs from the storage
+const fetchVideoAndLogsData = async (): Promise<void> => {
+  const availableData: string[] = []
+  await videoStore.videoStoringDB.iterate((_, fileName) => {
+    availableData.push(fileName)
+  })
+  namesAvailableVideosAndLogs.value = availableData
+}
+
+const discardAndUpdateDB = async (filename: string): Promise<void> => {
+  await videoStore.discardFileFromVideoDB(filename)
+  await fetchVideoAndLogsData()
+}
+
+const downloadAndUpdateDB = async (filename: string): Promise<void> => {
+  await videoStore.downloadFileFromVideoDB(filename)
+  await fetchVideoAndLogsData()
+}
 </script>
