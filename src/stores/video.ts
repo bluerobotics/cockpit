@@ -192,6 +192,8 @@ export const useVideoStore = defineStore('video', () => {
         })
         .map((chunk) => chunk.blob)
       const mergedVideoBlob = (sortedChunks as Blob[]).reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
+      const durFixedBlob = await fixWebmDuration(mergedVideoBlob, Date.now() - streamData.timeRecordingStart!.getTime())
+      videoStoringDB.setItem(`${fileName}.webm`, durFixedBlob)
 
       const videoTelemetryLog = datalogger.getSlice(
         datalogger.currentCockpitLog,
@@ -205,10 +207,8 @@ export const useVideoStore = defineStore('video', () => {
         streamData.timeRecordingStart!.getTime()
       )
       const logBlob = new Blob([assLog], { type: 'text/plain' })
-      fixWebmDuration(mergedVideoBlob, Date.now() - streamData.timeRecordingStart!.getTime()).then((fixedBlob) => {
-        saveAs(fixedBlob, `${fileName}.webm`)
-        saveAs(logBlob, `${fileName}.ass`)
-      })
+      videoStoringDB.setItem(`${fileName}.ass`, logBlob)
+
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
   }
@@ -223,7 +223,7 @@ export const useVideoStore = defineStore('video', () => {
   })
 
   // Offer download of backuped videos
-  const videoRecoveryDB = localforage.createInstance({
+  const videoStoringDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
     name: 'Cockpit - Video Recovery',
     storeName: 'cockpit-video-recovery-db',
@@ -231,7 +231,7 @@ export const useVideoStore = defineStore('video', () => {
     description: 'Local backups of Cockpit video recordings to be retrieved in case of failure.',
   })
 
-  videoRecoveryDB.length().then((len) => {
+  videoStoringDB.length().then((len) => {
     if (len === 0) return
     if (videoRecoveryWarningAlreadyShown.value) return
 
@@ -311,7 +311,7 @@ export const useVideoStore = defineStore('video', () => {
     availableIceIps,
     allowedIceIps,
     namesAvailableStreams,
-    videoRecoveryDB,
+    videoStoringDB,
     tempVideoChunksDB,
     getMediaStream,
     getStreamData,
