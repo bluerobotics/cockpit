@@ -162,14 +162,37 @@ export const useVideoStore = defineStore('video', () => {
     const vWidth = videoTrack.getSettings().width || 1920
     const vHeight = videoTrack.getSettings().height || 1080
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
-    let chunks: Blob[] = []
+    let chunksCount = 0
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
-      chunks.push(e.data)
-      await videoRecoveryDB.setItem(fileName, chunks)
+      await tempVideoChunksDB.setItem(`${fileName}_${chunksCount}`, e.data)
+      chunksCount++
     }
 
-    activeStreams.value[streamName]!.mediaRecorder!.onstop = () => {
-      const blob = new Blob(chunks, { type: 'video/webm' })
+    activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
+      // eslint-disable-next-line jsdoc/require-jsdoc
+      const chunks: { blob: Blob; name: string }[] = []
+
+      await tempVideoChunksDB.iterate((videoChunk, chunkName) => {
+        if (chunkName.includes(fileName)) {
+          chunks.push({ blob: videoChunk as Blob, name: chunkName })
+        }
+      })
+
+      if (chunks.length === 0) {
+        Swal.fire({ text: 'No video recording data found.', icon: 'error' })
+        return
+      }
+
+      // Make sure the chunks are sorted in the order they were created, not the order they are stored
+      const sortedChunks = chunks
+        .sort((a, b) => {
+          const splitA = a.name.split('_')
+          const splitB = b.name.split('_')
+          return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
+        })
+        .map((chunk) => chunk.blob)
+      const mergedVideoBlob = (sortedChunks as Blob[]).reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
+
       const videoTelemetryLog = datalogger.getSlice(
         datalogger.currentCockpitLog,
         streamData.timeRecordingStart!,
@@ -182,14 +205,22 @@ export const useVideoStore = defineStore('video', () => {
         streamData.timeRecordingStart!.getTime()
       )
       const logBlob = new Blob([assLog], { type: 'text/plain' })
-      fixWebmDuration(blob, Date.now() - streamData.timeRecordingStart!.getTime()).then((fixedBlob) => {
+      fixWebmDuration(mergedVideoBlob, Date.now() - streamData.timeRecordingStart!.getTime()).then((fixedBlob) => {
         saveAs(fixedBlob, `${fileName}.webm`)
         saveAs(logBlob, `${fileName}.ass`)
       })
-      chunks = []
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
   }
+
+  // Used to store chunks of an ongoing recording, that will be merged into a video file when the recording is stopped
+  const tempVideoChunksDB = localforage.createInstance({
+    driver: localforage.INDEXEDDB,
+    name: 'Cockpit - Temporary Video',
+    storeName: 'cockpit-temp-video-db',
+    version: 1.0,
+    description: 'Database for storing the chunks of an ongoing recording, to be merged afterwards.',
+  })
 
   // Offer download of backuped videos
   const videoRecoveryDB = localforage.createInstance({
@@ -281,6 +312,7 @@ export const useVideoStore = defineStore('video', () => {
     allowedIceIps,
     namesAvailableStreams,
     videoRecoveryDB,
+    tempVideoChunksDB,
     getMediaStream,
     getStreamData,
     isRecording,
