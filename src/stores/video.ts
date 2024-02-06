@@ -17,7 +17,7 @@ import { useMissionStore } from '@/stores/mission'
 import type { StreamData } from '@/types/video'
 
 export const useVideoStore = defineStore('video', () => {
-  const { missionName } = useMissionStore()
+  const missionStore = useMissionStore()
   const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
@@ -150,7 +150,7 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.timeRecordingStart = new Date()
     const streamData = activeStreams.value[streamName] as StreamData
-    const fileName = `${missionName || 'Cockpit'} (${format(
+    const fileName = `${missionStore.missionName || 'Cockpit'} (${format(
       streamData.timeRecordingStart!,
       'LLL dd, yyyy - HH꞉mm꞉ss O'
     )})`
