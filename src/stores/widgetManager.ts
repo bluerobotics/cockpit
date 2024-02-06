@@ -16,7 +16,7 @@ import {
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
-import { isEqual } from '@/libs/utils'
+import { isEqual, sequentialArray } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
 import { type Profile, type View, type Widget, isProfile, isView, WidgetType } from '@/types/widgets'
@@ -473,10 +473,33 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     return isEqual(widget.position, fullScreenPosition) && isEqual(widget.size, fullScreenSize)
   }
 
-  const selectNextView = (): void => {
-    const newIndex = currentViewIndex.value === currentProfile.value.views.length - 1 ? 0 : currentViewIndex.value + 1
-    selectView(currentProfile.value.views[newIndex])
+  const selectNextView = (direction: 'forward' | 'backward' = 'forward'): void => {
+    const currentViews = currentProfile.value.views
+    const indexesOfVisibleViews = sequentialArray(currentViews.length).filter((i) => currentViews[i].visible)
+
+    const numberOfVisibleViews = indexesOfVisibleViews.length
+    if (numberOfVisibleViews === 1) {
+      Swal.fire({ icon: 'error', text: 'No visible views other the current one.', timer: 2500, timerProgressBar: true })
+      return
+    }
+
+    const increment = direction === 'forward' ? 1 : -1
+    let indexOfNewIndex = indexesOfVisibleViews.indexOf(currentViewIndex.value) + increment
+
+    // Rotate indexes if out of bounds
+    if (increment === 1 && indexOfNewIndex >= numberOfVisibleViews) {
+      indexOfNewIndex = 0
+    }
+    if (increment === -1 && indexOfNewIndex < 0) {
+      indexOfNewIndex = numberOfVisibleViews - 1
+    }
+
+    const realIndex = indexesOfVisibleViews[indexOfNewIndex]
+    selectView(currentProfile.value.views[realIndex])
   }
+
+  const selectPreviousView = (): void => selectNextView('backward')
+
   const debouncedSelectNextView = useDebounceFn(() => selectNextView(), 10)
   const selectNextViewCallbackId = registerActionCallback(
     availableCockpitActions.go_to_next_view,
@@ -484,10 +507,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   )
   onBeforeUnmount(() => unregisterActionCallback(selectNextViewCallbackId))
 
-  const selectPreviousView = (): void => {
-    const newIndex = currentViewIndex.value === 0 ? currentProfile.value.views.length - 1 : currentViewIndex.value - 1
-    selectView(currentProfile.value.views[newIndex])
-  }
   const debouncedSelectPreviousView = useDebounceFn(() => selectPreviousView(), 10)
   const selectPrevViewCBId = registerActionCallback(
     availableCockpitActions.go_to_previous_view,
