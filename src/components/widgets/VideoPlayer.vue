@@ -50,7 +50,7 @@
           :color="widget.options.flipVertically ? 'rgb(0, 20, 80)' : undefined"
           hide-details
         />
-        <div class="d-flex flex-wrap justify-center ga-5">
+        <div class="flex-wrap justify-center d-flex ga-5">
           <v-btn prepend-icon="mdi-file-rotate-left" variant="outlined" @click="rotateVideo(-90)"> Rotate Left</v-btn>
           <v-btn prepend-icon="mdi-file-rotate-right" variant="outlined" @click="rotateVideo(+90)"> Rotate Right</v-btn>
         </div>
