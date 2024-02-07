@@ -84,16 +84,15 @@ const videoElement = ref<HTMLVideoElement | undefined>()
 const mediaStream = ref<MediaStream | undefined>()
 
 onBeforeMount(() => {
-  // Set initial widget options if they don't exist
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      videoFitStyle: 'cover',
-      flipHorizontally: false,
-      flipVertically: false,
-      rotationAngle: 0,
-      streamName: undefined as string | undefined,
-    }
+  // Set the default initial values that are not present in the widget options
+  const defaultOptions = {
+    videoFitStyle: 'cover',
+    flipHorizontally: false,
+    flipVertically: false,
+    rotationAngle: 0,
+    streamName: undefined as string | undefined,
   }
+  widget.value.options = Object.assign({}, defaultOptions, widget.value.options)
   nameSelectedStream.value = widget.value.options.streamName
 })
 
