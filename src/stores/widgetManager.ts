@@ -521,6 +521,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       p.views.forEach((v) => {
         v.showBottomBarOnBoot = v.showBottomBarOnBoot ?? true
         v.visible = v.visible ?? true
+
+        // If there's any configuration menu open, close it
+        v.widgets.forEach((w) => (w.managerVars.configMenuOpen = false))
+        v.miniWidgetContainers.forEach((c) => c.widgets.forEach((w) => (w.managerVars.configMenuOpen = false)))
       })
     )
   })
