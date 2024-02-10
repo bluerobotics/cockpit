@@ -101,6 +101,7 @@
               {{ format(timeNow, 'E LLL do HH:mm') }}
             </div>
           </div>
+          <AltitudeSlider />
           <Transition name="fade">
             <div v-if="showBottomBarNow" class="bottom-container">
               <SlideToConfirm />
@@ -155,6 +156,7 @@ import {
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { useMissionStore } from '@/stores/mission'
 
+import AltitudeSlider from './components/AltitudeSlider.vue'
 import Dialog from './components/Dialog.vue'
 import EditMenu from './components/EditMenu.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
