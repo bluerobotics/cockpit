@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
+import { altitude_setpoint, showAltitudeSlider } from '@/libs/altitude-slider'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -168,7 +169,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     if (!mainVehicle.value) {
       throw new Error('No vehicle available for takeoff')
     }
+
+    showAltitudeSlider.value = true
+
     const confirmed = await slideToConfirm('Confirm Takeoff', 'Takeoff Command Confirmed')
+    showAltitudeSlider.value = false
+
     if (confirmed) {
       mainVehicle.value.takeoff(altitude_setpoint.value)
     } else {

@@ -398,9 +398,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Takeoff
+   * @param {number} altitude_septoint
    * @returns {void}
    */
-  takeoff(): void {
+  takeoff(altitude_septoint: number): void {
     const guidedMode = this.modesAvailable().get('GUIDED')
     if (guidedMode === undefined) {
       return
@@ -408,7 +409,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
     this.setMode(guidedMode as Modes)
     this.arm()
-    this._takeoff(10)
+    this._takeoff(altitude_septoint)
     this.onTakeoff.emit()
     return
   }
