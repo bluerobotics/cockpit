@@ -1,34 +1,31 @@
-import { ref, watch } from 'vue' // Adjust this import based on your Vue version
+import { ref, watch } from 'vue'
 
-// Reactive variables (if they are not provided from outside)
 export const showSlideToConfirm = ref(false)
+export const sliderText = ref('Slide to Confirm')
+export const confirmationSliderText = ref('Action Confirm')
 export const confirmed = ref(false)
 
 /**
- * Calls the provided action function if the user confirms through the slide-to-confirm component.
- * @param {() => void} actionFunc - A function representing the action to be confirmed.
- * @returns {Promise<void>} A Promise that resolves if the action is successfully executed or rejects in case of cancellation or errors.
+ * Waits for user confirmation through the slide-to-confirm component.
+ * @param {string} text - The custom text to display on the slider.
+ * @param {string} confirmationText - The custom text to display on the confirmation slider after the user slides to confirm.
+ * @returns {Promise<boolean>} - A promise that resolves with true when the action is confirmed and false when the user cancels the action.
  */
-export function slideToConfirm(actionFunc: () => void): Promise<void> {
-  console.log('slideToConfirm')
-  return new Promise((resolve, reject) => {
-    // Show slide to confirm component
+export function slideToConfirm(text: string, confirmationText: string): Promise<boolean> {
+  console.log('slideToConfirm with text:', text)
+  return new Promise((resolve) => {
+    sliderText.value = text
+    confirmationSliderText.value = confirmationText
     showSlideToConfirm.value = true
 
-    // Watch for changes on confirmed and showSlideToConfirm variables
     const stopWatching = watch([confirmed, showSlideToConfirm], ([newConfirmed, newShowSlideToConfirm]) => {
       if (newConfirmed) {
         stopWatching()
         confirmed.value = false
-        try {
-          actionFunc()
-          resolve()
-        } catch (error) {
-          reject(error)
-        }
+        resolve(true)
       } else if (!newShowSlideToConfirm) {
         stopWatching()
-        reject(new Error('User cancelled the action'))
+        resolve(false)
       }
     })
   })

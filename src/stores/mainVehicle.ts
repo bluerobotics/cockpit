@@ -125,67 +125,89 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   /**
-   * Arm the vehicle
-   * @returns { void } A Promise that resolves when arming is successful or rejects if an error occurs or the action is cancelled.
+   * Arm the vehicle.
+   * Awaits user confirmation before arming the vehicle. Resolves when arming is successful or rejects if the action is cancelled.
+   * @returns {Promise<void>}
    */
-  function arm(): Promise<void> {
-    return slideToConfirm(() => {
-      if (!mainVehicle.value) {
-        throw new Error('action rejected or failed')
-      }
+  async function arm(): Promise<void> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to arm.')
+    }
+
+    const confirmed = await slideToConfirm('Confirm Arm', 'Arm Command Confirmed')
+    if (confirmed) {
       mainVehicle.value.arm()
-    })
+    } else {
+      throw new Error('Arming cancelled by the user')
+    }
   }
 
   /**
-   * Disarm the vehicle
-   * @returns { void } A Promise that resolves when disarming is successful or rejects if an error occurs or the action is cancelled.
+   * Disarm the vehicle.
+   * Awaits user confirmation before disarming the vehicle. Resolves when disarming is successful or rejects if the action is cancelled.
+   * @returns {Promise<void>}
    */
-  function disarm(): Promise<void> {
-    return slideToConfirm(() => {
-      if (!mainVehicle.value) {
-        throw new Error('action rejected or failed')
-      }
+  async function disarm(): Promise<void> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to disarm.')
+    }
+
+    const confirmed = await slideToConfirm('Confirm Disarm', 'Disarm Command Confirmed')
+    if (confirmed) {
       mainVehicle.value.disarm()
-    })
+    } else {
+      throw new Error('Disarming cancelled by the user')
+    }
   }
+
   /**
    * Initiates the takeoff process, requiring user confirmation.
-   * @returns { void } A Promise that resolves when the takeoff is successful or rejects if an error occurs or the action is cancelled.
+   * @returns {Promise<void>} A Promise that resolves when the takeoff is successful or rejects if an error occurs or the action is cancelled.
    */
-  function takeoff(): Promise<void> {
-    return slideToConfirm(() => {
-      if (!mainVehicle.value) {
-        throw new Error('action rejected or failed')
-      }
-      mainVehicle.value.takeoff()
-    })
-  }
-  /**
-   * Land the vehicle
-   * @returns { void } A Promise that resolves when landing is successful or rejects if an error occurs or the action is cancelled.
-   */
-  function land(): Promise<void> {
-    return slideToConfirm(() => {
-      if (!mainVehicle.value) {
-        throw new Error('action rejected or failed')
-      }
-      mainVehicle.value.land()
-    })
+  async function takeoff(): Promise<void> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available for takeoff')
+    }
+    const confirmed = await slideToConfirm('Confirm Takeoff', 'Takeoff Command Confirmed')
+    if (confirmed) {
+      mainVehicle.value.takeoff(altitude_setpoint.value)
+    } else {
+      console.error('Takeoff cancelled by the user')
+      throw new Error('Takeoff cancelled by the user')
+    }
   }
 
   /**
-   * Go to a given position
-   * @param { number } hold Time to hold position in seconds
-   * @param { number } acceptanceRadius Radius in meters to consider the waypoint reached
-   * @param { number } passRadius Radius in meters to pass the waypoint
-   * @param { number } yaw Yaw angle in degrees
-   * @param { number } latitude Latitude in degrees
-   * @param { number } longitude Longitude in degrees
-   * @param { number } alt Altitude in meters
-   * @returns { void } A Promise that resolves when the vehicle reaches the waypoint or rejects if an error occurs or the action is cancelled.
+   * Land the vehicle.
+   * @returns {Promise<void>} A Promise that resolves when landing is successful or rejects if the action is cancelled.
    */
-  function goTo(
+  async function land(): Promise<void> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to land.')
+    }
+
+    const confirmed = await slideToConfirm('Confirm Landing', 'Landing Command Confirmed')
+    if (confirmed) {
+      mainVehicle.value.land()
+    } else {
+      console.error('Landing cancelled by the user')
+      throw new Error('Landing cancelled by the user')
+    }
+  }
+
+  /**
+   * Go to a given position.
+   * Awaits user confirmation before moving the vehicle to a specified waypoint. Resolves when the vehicle reaches the waypoint or rejects if the action is cancelled.
+   * @param {number} hold Time to hold position in seconds.
+   * @param {number} acceptanceRadius Radius in meters to consider the waypoint reached.
+   * @param {number} passRadius Radius in meters to pass the waypoint.
+   * @param {number} yaw Yaw angle in degrees.
+   * @param {number} latitude Latitude in degrees.
+   * @param {number} longitude Longitude in degrees.
+   * @param {number} alt Altitude in meters.
+   * @returns {Promise<void>}
+   */
+  async function goTo(
     hold: number,
     acceptanceRadius: number,
     passRadius: number,
@@ -194,17 +216,20 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     longitude: number,
     alt: number
   ): Promise<void> {
-    const waypoint = new Coordinates()
-    waypoint.latitude = latitude
-    waypoint.altitude = alt
-    waypoint.longitude = longitude
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to execute go to command.')
+    }
 
-    return slideToConfirm(() => {
-      if (!mainVehicle.value) {
-        throw new Error('action rejected or failed')
-      }
+    const confirmed = await slideToConfirm('Confirm Go To Position', 'Go To Position Command Confirmed')
+    if (confirmed) {
+      const waypoint = new Coordinates()
+      waypoint.latitude = latitude
+      waypoint.altitude = alt
+      waypoint.longitude = longitude
       mainVehicle.value.goTo(hold, acceptanceRadius, passRadius, yaw, waypoint)
-    })
+    } else {
+      throw new Error('Go to position cancelled by the user')
+    }
   }
 
   /**
