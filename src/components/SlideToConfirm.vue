@@ -9,8 +9,8 @@
         :noanimate="false"
         :width="400"
         :height="50"
-        text="slide to confirm"
-        success-text="action confirmed"
+        :text="sliderText"
+        :success-text="confirmationSliderText"
         name="slideunlock"
         class="slide-unlock"
         @completed="onSlideConfirmed()"
@@ -25,12 +25,16 @@
 <script setup lang="ts">
 import SlideUnlock from 'vue-slide-unlock'
 
-import { confirmed, showSlideToConfirm } from '@/libs/slide-to-confirm'
+import { confirmationSliderText, confirmed, showSlideToConfirm, sliderText } from '@/libs/slide-to-confirm'
 
 const onSlideConfirmed = (): void => {
-  showSlideToConfirm.value = false
   confirmed.value = true
-  console.log('Slide confirmed!')
+
+  // show success message for 1.5 second
+  setTimeout(() => {
+    showSlideToConfirm.value = false
+    console.log('Slide confirmed!')
+  }, 1500)
 }
 
 const cancelAction = (): void => {
