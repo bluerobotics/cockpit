@@ -69,7 +69,7 @@
           v-if="iconSearchString === ''"
           v-slot="{ item }"
           class="w-full h-40 mt-3"
-          :items="iconsNames.filter((name) => name.includes(iconSearchString))"
+          :items="iconsNames"
           :item-size="46"
           :grid-items="6"
         >
