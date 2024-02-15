@@ -82,7 +82,7 @@
         </RecycleScroller>
         <div v-else class="grid w-full h-40 grid-cols-6 mt-3 overflow-x-hidden overflow-y-scroll">
           <span
-            v-for="icon in iconsNames.filter((name) => name.includes(iconSearchString))"
+            v-for="icon in iconsToShow"
             :key="icon"
             class="m-1 text-white cursor-pointer mdi icon-symbol"
             :class="[icon]"
@@ -112,6 +112,8 @@
 
 <script setup lang="ts">
 import * as MdiExports from '@mdi/js/mdi'
+import { watchThrottled } from '@vueuse/core'
+import Fuse from 'fuse.js'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
 import Dropdown from '@/components/Dropdown.vue'
@@ -185,7 +187,19 @@ onMounted(() => {
 
 let iconsNames: string[] = []
 
+// Search for icon using fuzzy-finder
 const iconSearchString = ref('')
+const iconsToShow = ref<string[]>([])
+watchThrottled(
+  iconSearchString,
+  () => {
+    const iconFuse = new Fuse(iconsNames, { includeScore: true, ignoreLocation: true, threshold: 0.3 })
+    const filteredIconsResult = iconFuse.search(iconSearchString.value)
+    iconsToShow.value = filteredIconsResult.map((r) => r.item)
+  },
+  { throttle: 1000 }
+)
+
 const currentTab = ref('presets')
 
 const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void => {
