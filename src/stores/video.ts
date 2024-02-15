@@ -11,14 +11,20 @@ import adapter from 'webrtc-adapter'
 
 import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
+import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { datalogger } from '@/libs/sensors-logging'
 import { isEqual } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import { Alert, AlertLevel } from '@/types/alert'
 import type { StreamData } from '@/types/video'
+
+import { useAlertStore } from './alert'
 
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
+  const alertStore = useAlertStore()
+
   const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
@@ -349,6 +355,29 @@ export const useVideoStore = defineStore('video', () => {
       }, 5000)
     }
   }, 5000)
+
+  // Video recording actions
+  const startRecordingAllStreams = (): void => {
+    const streamsThatStarted: string[] = []
+
+    namesAvailableStreams.value.forEach((streamName) => {
+      if (!isRecording(streamName)) {
+        startRecording(streamName)
+        streamsThatStarted.push(streamName)
+      }
+    })
+
+    if (streamsThatStarted.isEmpty()) {
+      alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
+      return
+    }
+    alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording streams: ${streamsThatStarted.join(', ')}.`))
+  }
+
+  registerActionCallback(
+    availableCockpitActions.start_recording_all_streams,
+    useThrottleFn(startRecordingAllStreams, 3000)
+  )
 
   return {
     availableIceIps,
