@@ -37,6 +37,7 @@
     "floating-vue": "^5.0.3",
     "flowbite": "^2.2.1",
     "flowbite-vue": "^0.1.2",
+    "fuse.js": "^7.0.0",
     "gamepad.js": "^1.0.4",
     "gsap": "^3.11.3",
     "haversine-distance": "^1.2.1",
