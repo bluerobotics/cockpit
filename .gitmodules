@@ -3,4 +3,4 @@
 	url = https://github.com/patrickelectric/mavlink2rest-ts.git
 [submodule "src/libs/vehicle/ardupilot/ParameterRepository"]
 	path = src/libs/vehicle/ardupilot/ParameterRepository
-	url = https://github.com/ArduPilot/ParameterRepository.git
+	url = https://github.com/williangalvani/ParameterRepository.git
