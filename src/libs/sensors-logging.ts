@@ -1,5 +1,5 @@
 import { useStorage } from '@vueuse/core'
-import { differenceInMilliseconds, differenceInSeconds, format } from 'date-fns'
+import { differenceInSeconds, format } from 'date-fns'
 import localforage from 'localforage'
 import Swal from 'sweetalert2'
 
@@ -205,13 +205,35 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
     const allAvailableVariables = Object.values(DatalogVariable)
     const variablesToShow = hasUserSelected ? this.selectedVariablesToShow.value : areThereVariablesBeingUsed ? this.variablesBeingUsed : allAvailableVariables
 
-    log.forEach((logPoint) => {
+    const formatDuration = (date: Date): string => {
+      return date.toLocaleTimeString([], {
+        hourCycle: 'h23',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'UTC',
+      })
+    }
+
+    const formatCentiseconds = (date: Date): string => {
+      const millis = date.getMilliseconds()
+      return String(Math.floor(millis / 10)).padStart(2, '0')
+    }
+
+    log.forEach((logPoint, index) => {
+      // Don't deal with the last log point, as it has no next point to compare to
+      if (index === log.length - 1) return
+
       const data = Object.entries(logPoint.data)
         .filter((vData) => variablesToShow.includes(vData[0] as DatalogVariable))
         .map((v) => ({ name: v[0], value: v[1].value }))
 
-      const secondsStart = Math.round(differenceInMilliseconds(new Date(logPoint.epoch), new Date(videoStartEpoch))/1000)
-      const secondsFinish = secondsStart + 1
+      const durationThisPoint = formatDuration(new Date(logPoint.epoch - videoStartEpoch))
+      const durationNextPoint = formatDuration(new Date(log[index + 1].epoch - videoStartEpoch))
+      const remainingCentisThisPoint = formatCentiseconds(new Date(logPoint.epoch))
+      const remainingCentisNextPoint = formatCentiseconds(new Date(log[index + 1].epoch))
+      const timeThis = `${durationThisPoint}.${remainingCentisThisPoint}`
+      const timeNext = `${durationNextPoint}.${remainingCentisNextPoint}`
 
       let subtitleDataString1 = ''
       let subtitleDataString2 = ''
@@ -231,9 +253,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
         }
       })
 
-      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.1*videoWidth},0,${0.05*videoHeight},,${subtitleDataString1}`)
-      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.4*videoWidth},0,${0.05*videoHeight},,${subtitleDataString2}`)
-      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.7*videoWidth},0,${0.05*videoHeight},,${subtitleDataString3}`)
+      console.log(new Date(videoStartEpoch), new Date(logPoint.epoch), new Date(logPoint.epoch - videoStartEpoch), timeThis, timeNext)
+
+      const generateSubtitleLine = (offset: number, content: string): string => {
+        return `\nDialogue: 0,${timeThis},${timeNext},Default,,${videoWidth * offset},0,${videoHeight * 0.05},,${content}`
+      }
+
+      assFile = assFile.concat(generateSubtitleLine(0.1, subtitleDataString1))
+      assFile = assFile.concat(generateSubtitleLine(0.4, subtitleDataString2))
+      assFile = assFile.concat(generateSubtitleLine(0.7, subtitleDataString3))
     })
     /* eslint-enable vue/max-len, prettier/prettier, max-len */
     assFile = assFile.concat('\n')
