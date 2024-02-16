@@ -1,4 +1,4 @@
-import { useStorage } from '@vueuse/core'
+import { useStorage, useThrottleFn } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
@@ -374,9 +374,30 @@ export const useVideoStore = defineStore('video', () => {
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording streams: ${streamsThatStarted.join(', ')}.`))
   }
 
+  const stopRecordingAllStreams = (): void => {
+    const streamsThatStopped: string[] = []
+
+    namesAvailableStreams.value.forEach((streamName) => {
+      if (isRecording(streamName)) {
+        stopRecording(streamName)
+        streamsThatStopped.push(streamName)
+      }
+    })
+
+    if (streamsThatStopped.isEmpty()) {
+      alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams were being recorded.'))
+      return
+    }
+    alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording streams: ${streamsThatStopped.join(', ')}.`))
+  }
+
   registerActionCallback(
     availableCockpitActions.start_recording_all_streams,
     useThrottleFn(startRecordingAllStreams, 3000)
+  )
+  registerActionCallback(
+    availableCockpitActions.stop_recording_all_streams,
+    useThrottleFn(stopRecordingAllStreams, 3000)
   )
 
   return {

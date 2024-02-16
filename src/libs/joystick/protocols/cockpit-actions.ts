@@ -16,6 +16,7 @@ export enum CockpitActionsFunction {
   mavlink_disarm = 'mavlink_disarm',
   toggle_bottom_bar = 'toggle_bottom_bar',
   start_recording_all_streams = 'start_recording_all_streams',
+  stop_recording_all_streams = 'stop_recording_all_streams',
 }
 
 /**
@@ -42,6 +43,7 @@ export const availableCockpitActions: { [key in CockpitActionsFunction]: Cockpit
   [CockpitActionsFunction.mavlink_disarm]: new CockpitAction(CockpitActionsFunction.mavlink_disarm, 'Mavlink disarm'),
   [CockpitActionsFunction.toggle_bottom_bar]: new CockpitAction(CockpitActionsFunction.toggle_bottom_bar, 'Toggle bottom bar'),
   [CockpitActionsFunction.start_recording_all_streams]: new CockpitAction(CockpitActionsFunction.start_recording_all_streams, 'Start recording all streams'),
+  [CockpitActionsFunction.stop_recording_all_streams]: new CockpitAction(CockpitActionsFunction.stop_recording_all_streams, 'Stop recording all streams'),
 }
 
 export type CockpitActionCallback = () => void
