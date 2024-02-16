@@ -1,5 +1,5 @@
 import { useStorage } from '@vueuse/core'
-import { differenceInMilliseconds, differenceInSeconds, format } from 'date-fns'
+import { differenceInMilliseconds, differenceInSeconds, format, intervalToDuration } from 'date-fns'
 import localforage from 'localforage'
 import Swal from 'sweetalert2'
 
@@ -205,13 +205,39 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
     const allAvailableVariables = Object.values(DatalogVariable)
     const variablesToShow = hasUserSelected ? this.selectedVariablesToShow.value : areThereVariablesBeingUsed ? this.variablesBeingUsed : allAvailableVariables
 
-    log.forEach((logPoint) => {
+    log.forEach((logPoint, index) => {
+      // Don't deal with the last log point, as it has no next point to compare to
+      if (index === log.length - 1) return
+
       const data = Object.entries(logPoint.data)
         .filter((vData) => variablesToShow.includes(vData[0] as DatalogVariable))
         .map((v) => ({ name: v[0], value: v[1].value }))
 
-      const secondsStart = Math.round(differenceInMilliseconds(new Date(logPoint.epoch), new Date(videoStartEpoch))/1000)
-      const secondsFinish = secondsStart + 1
+      const durationThisPoint = intervalToDuration({
+        start: new Date(videoStartEpoch),
+        end: new Date(logPoint.epoch),
+      })
+      const durationHoursThisPoint = (durationThisPoint.hours?.toFixed(0) ?? '0').padStart(2, '0')
+      const durationMinutesThisPoint = (durationThisPoint.minutes?.toFixed(0) ?? '0').padStart(2, '0')
+      const durationSecondsThisPoint = (durationThisPoint.seconds?.toFixed(0) ?? '0').padStart(2, '0')
+
+      const durationNextPoint = intervalToDuration({
+        start: new Date(videoStartEpoch),
+        end: new Date(log[index + 1].epoch ?? 0),
+      })
+      const durationHoursNextPoint = (durationNextPoint.hours?.toFixed(0) ?? '0').padStart(2, '0')
+      const durationMinutesNextPoint = (durationNextPoint.minutes?.toFixed(0) ?? '0').padStart(2, '0')
+      const durationSecondsNextPoint = (durationNextPoint.seconds?.toFixed(0) ?? '0').padStart(2, '0')
+
+      const roundedMillisThisPoint = differenceInSeconds(new Date(logPoint.epoch), new Date(videoStartEpoch)) * 1000
+      const millisThisPoint = differenceInMilliseconds(new Date(logPoint.epoch), new Date(videoStartEpoch))
+      const remainingMillisThisPoint = millisThisPoint - roundedMillisThisPoint
+      const remainingCentisThisPoint = Math.floor(remainingMillisThisPoint / 10).toString().padStart(2, '0')
+
+      const roundedMillisNextPoint = differenceInSeconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch)) * 1000
+      const millisNextPoint = differenceInMilliseconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch))
+      const remainingMillisNextPoint = millisNextPoint - roundedMillisNextPoint
+      const remainingCentisNextPoint = Math.floor(remainingMillisNextPoint / 10).toString().padStart(2, '0')
 
       let subtitleDataString1 = ''
       let subtitleDataString2 = ''
@@ -231,9 +257,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
         }
       })
 
-      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.1*videoWidth},0,${0.05*videoHeight},,${subtitleDataString1}`)
-      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.4*videoWidth},0,${0.05*videoHeight},,${subtitleDataString2}`)
-      assFile = assFile.concat(`\nDialogue: 0,0:0:${secondsStart}.00,0:0:${secondsFinish}.00,Default,,${0.7*videoWidth},0,${0.05*videoHeight},,${subtitleDataString3}`)
+      const timeThis = `${durationHoursThisPoint}:${durationMinutesThisPoint}:${durationSecondsThisPoint}.${remainingCentisThisPoint}`
+      const timeNext = `${durationHoursNextPoint}:${durationMinutesNextPoint}:${durationSecondsNextPoint}.${remainingCentisNextPoint}`
+
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},Default,,${0.1*videoWidth},0,${0.05*videoHeight},,${subtitleDataString1}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},Default,,${0.4*videoWidth},0,${0.05*videoHeight},,${subtitleDataString2}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},Default,,${0.7*videoWidth},0,${0.05*videoHeight},,${subtitleDataString3}`)
     })
     /* eslint-enable vue/max-len, prettier/prettier, max-len */
     assFile = assFile.concat('\n')
