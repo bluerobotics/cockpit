@@ -12,7 +12,7 @@
     </div>
   </div>
   <Dialog v-model:show="miniWidget.managerVars.configMenuOpen" class="w-[24rem]">
-    <div class="w-full h-full">
+    <div class="w-full h-full px-2 py-4">
       <div class="flex items-center mb-3 justify-evenly">
         <div
           class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
