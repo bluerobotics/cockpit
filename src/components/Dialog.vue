@@ -66,7 +66,6 @@ watch(show, () => {
   margin-right: -50%;
   transform: translate(-50%, -50%);
   height: fit-content;
-  width: 300px;
   background-color: rgba(71, 85, 105, 0.3);
   backdrop-filter: blur(1px);
   box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.25);
