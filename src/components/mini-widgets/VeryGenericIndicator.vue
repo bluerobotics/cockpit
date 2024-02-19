@@ -36,8 +36,33 @@
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Variable</span>
-          <div class="w-48">
-            <Dropdown v-model="miniWidget.options.variableName" :options="Object.keys(store.genericVariables)" />
+          <div class="relative w-48">
+            <button
+              class="w-48 px-2 py-1 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              @click="showVariableChooseModal = true"
+            >
+              {{ miniWidget.options.variableName || 'Click to choose...' }}
+            </button>
+            <span
+              class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi mdi-swap-horizontal-bold"
+            />
+          </div>
+        </div>
+        <div v-if="showVariableChooseModal" class="flex flex-col justify-center mx-1 my-3 align-center">
+          <input
+            v-model="variableNameSearchString"
+            placeholder="Search variable..."
+            class="w-48 px-2 py-1 rounded-md bg-slate-200"
+          />
+          <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
+            <span
+              v-for="variable in variableNamesToShow"
+              :key="variable"
+              class="h-8 p-1 m-1 overflow-x-hidden text-white transition-all rounded-md cursor-pointer select-none bg-slate-700 hover:bg-slate-400/20"
+              @click="chooseVariable(variable)"
+            >
+              {{ variable }}
+            </span>
           </div>
         </div>
         <div class="flex items-center justify-between w-full my-1">
@@ -114,9 +139,9 @@
 import * as MdiExports from '@mdi/js/mdi'
 import { watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
+import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
-import Dropdown from '@/components/Dropdown.vue'
 import { round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { type VeryGenericIndicatorPreset, veryGenericIndicatorPresets } from '@/types/genericIndicator'
@@ -171,19 +196,29 @@ const updateVariableState = (): void => {
 const updateWidgetName = (): void => {
   miniWidget.value.name = miniWidget.value.options.displayName || miniWidget.value.options.variableName
 }
-watch(store.genericVariables, updateVariableState)
+const updateGenericVariablesNames = (): void => {
+  allVariablesNames.value = Object.keys(store.genericVariables)
+}
+watch(store.genericVariables, () => {
+  updateVariableState()
+  updateGenericVariablesNames()
+})
 watch(
   miniWidget,
   () => {
     updateVariableState()
     updateWidgetName()
+    updateGenericVariablesNames()
   },
   { deep: true }
 )
 onMounted(() => {
   updateVariableState()
   updateWidgetName()
+  updateGenericVariablesNames()
 })
+
+const fuseOptions = { includeScore: true, ignoreLocation: true, threshold: 0.3 }
 
 let iconsNames: string[] = []
 
@@ -193,12 +228,51 @@ const iconsToShow = ref<string[]>([])
 watchThrottled(
   iconSearchString,
   () => {
-    const iconFuse = new Fuse(iconsNames, { includeScore: true, ignoreLocation: true, threshold: 0.3 })
+    const iconFuse = new Fuse(iconsNames, fuseOptions)
     const filteredIconsResult = iconFuse.search(iconSearchString.value)
     iconsToShow.value = filteredIconsResult.map((r) => r.item)
   },
   { throttle: 1000 }
 )
+
+// Search for variable using fuzzy-finder
+const variableNameSearchString = ref('')
+const variableNamesToShow = ref<string[]>([])
+const allVariablesNames = ref<string[]>([])
+const showVariableChooseModal = ref(false)
+
+watchThrottled(
+  [variableNameSearchString, allVariablesNames],
+  () => {
+    if (variableNameSearchString.value === '') {
+      variableNamesToShow.value = allVariablesNames.value
+      return
+    }
+
+    const variableNameFuse = new Fuse(allVariablesNames.value, fuseOptions)
+    const filteredVariablesResult = variableNameFuse.search(variableNameSearchString.value)
+    variableNamesToShow.value = filteredVariablesResult.map((r) => r.item)
+  },
+  { throttle: 300 }
+)
+
+const chooseVariable = (variable: string): void => {
+  miniWidget.value.options.variableName = variable
+  variableNameSearchString.value = ''
+  showVariableChooseModal.value = false
+}
+
+watch(showVariableChooseModal, async (newValue) => {
+  if (newValue === true && variableNamesToShow.value.isEmpty()) {
+    miniWidget.value.managerVars.configMenuOpen = false
+    showVariableChooseModal.value = false
+    await Swal.fire({
+      text: 'No variables found to choose from. Please make sure your vehicle is connected.',
+      icon: 'error',
+    })
+    miniWidget.value.managerVars.configMenuOpen = true
+  }
+})
 
 const currentTab = ref('presets')
 
