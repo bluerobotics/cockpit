@@ -30,15 +30,15 @@
         </div>
       </div>
       <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
-        <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Display name</span>
-          <input v-model="miniWidget.options.displayName" class="w-56 px-2 py-1 rounded-md bg-slate-200" />
+        <div class="flex flex-col items-center justify-between w-full mt-3">
+          <span class="w-full mb-1 text-sm text-slate-100/50">Display name</span>
+          <input v-model="miniWidget.options.displayName" class="w-full px-2 py-1 rounded-md bg-slate-200" />
         </div>
-        <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Variable</span>
-          <div class="relative w-56">
+        <div class="flex flex-col items-center justify-between w-full mt-3">
+          <span class="w-full mb-1 text-sm text-slate-100/50">Variable</span>
+          <div class="relative w-full">
             <button
-              class="w-56 py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
               @click="showVariableChooseModal = true"
             >
               <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.variableName || 'Click to choose...' }}</p>
@@ -52,7 +52,7 @@
           <input
             v-model="variableNameSearchString"
             placeholder="Search variable..."
-            class="w-56 px-2 py-1 rounded-md bg-slate-200"
+            class="w-full px-2 py-1 rounded-md bg-slate-200"
           />
           <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
             <span
@@ -65,17 +65,19 @@
             </span>
           </div>
         </div>
-        <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Unit</span>
-          <input v-model="miniWidget.options.variableUnit" class="w-56 px-2 py-1 rounded-md bg-slate-200" />
+        <div class="flex items-center justify-between w-full mt-2">
+          <div class="flex flex-col items-center justify-between w-full mx-5">
+            <span class="w-full mb-1 text-sm text-slate-100/50">Unit</span>
+            <input v-model="miniWidget.options.variableUnit" class="w-full px-2 py-1 rounded-md bg-slate-200" />
+          </div>
+          <div class="flex flex-col items-center justify-between w-full mx-5">
+            <span class="w-full mb-1 text-sm text-slate-100/50">Multiplier</span>
+            <input v-model="miniWidget.options.variableMultiplier" class="w-full px-2 py-1 rounded-md bg-slate-200" />
+          </div>
         </div>
-        <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Multiplier</span>
-          <input v-model="miniWidget.options.variableMultiplier" class="w-56 px-2 py-1 rounded-md bg-slate-200" />
-        </div>
-        <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Icon</span>
-          <div class="relative w-56">
+        <div class="flex flex-col items-center justify-between w-full mt-3">
+          <span class="w-full mb-1 text-sm text-slate-100/50">Icon</span>
+          <div class="relative w-full">
             <input v-model="miniWidget.options.iconName" class="w-full py-1 pl-2 pr-8 rounded-md bg-slate-200" />
             <span
               class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi"
@@ -86,7 +88,7 @@
         <div class="flex items-center justify-center w-full mt-2">
           <input
             v-model="iconSearchString"
-            class="w-56 px-2 py-1 rounded-md bg-slate-200"
+            class="w-full px-2 py-1 rounded-md bg-slate-200"
             placeholder="Search icons..."
           />
         </div>
