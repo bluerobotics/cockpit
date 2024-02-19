@@ -38,10 +38,10 @@
           <span class="mr-1 text-slate-100">Variable</span>
           <div class="relative w-56">
             <button
-              class="w-56 px-2 py-1 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              class="w-56 py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
               @click="showVariableChooseModal = true"
             >
-              {{ miniWidget.options.variableName || 'Click to choose...' }}
+              <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.variableName || 'Click to choose...' }}</p>
             </button>
             <span
               class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi mdi-swap-horizontal-bold"
