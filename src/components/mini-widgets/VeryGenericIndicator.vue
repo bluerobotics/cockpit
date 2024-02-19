@@ -78,14 +78,20 @@
         <div class="flex flex-col items-center justify-between w-full mt-3">
           <span class="w-full mb-1 text-sm text-slate-100/50">Icon</span>
           <div class="relative w-full">
-            <input v-model="miniWidget.options.iconName" class="w-full py-1 pl-2 pr-8 rounded-md bg-slate-200" />
+            <button
+              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              @click="showIconChooseModal = !showIconChooseModal"
+            >
+              <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.iconName || 'Click to choose...' }}</p>
+            </button>
             <span
               class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi"
               :class="[miniWidget.options.iconName]"
             />
           </div>
         </div>
-        <div class="flex items-center justify-center w-full mt-2">
+
+        <div v-if="showIconChooseModal" class="flex items-center justify-center w-full mt-2">
           <input
             v-model="iconSearchString"
             class="w-full px-2 py-1 rounded-md bg-slate-200"
@@ -93,27 +99,25 @@
           />
         </div>
         <RecycleScroller
-          v-if="iconSearchString === ''"
+          v-if="iconSearchString === '' && showIconChooseModal"
           v-slot="{ item }"
           class="w-full h-40 mt-3"
           :items="iconsNames"
           :item-size="46"
           :grid-items="7"
         >
-          <span
-            class="m-1 text-white cursor-pointer mdi icon-symbol"
-            :class="[item]"
-            @click="miniWidget.options.iconName = item"
-          >
-          </span>
+          <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="chooseIcon(item)"> </span>
         </RecycleScroller>
-        <div v-else class="grid w-full h-40 grid-cols-7 mt-3 overflow-x-hidden overflow-y-scroll">
+        <div
+          v-else-if="showIconChooseModal"
+          class="grid w-full h-40 grid-cols-7 mt-3 overflow-x-hidden overflow-y-scroll"
+        >
           <span
             v-for="icon in iconsToShow"
             :key="icon"
             class="m-1 text-white cursor-pointer mdi icon-symbol"
             :class="[icon]"
-            @click="miniWidget.options.iconName = icon"
+            @click="chooseIcon(icon)"
           />
         </div>
       </div>
@@ -242,6 +246,7 @@ const variableNameSearchString = ref('')
 const variableNamesToShow = ref<string[]>([])
 const allVariablesNames = ref<string[]>([])
 const showVariableChooseModal = ref(false)
+const showIconChooseModal = ref(false)
 
 watchThrottled(
   [variableNameSearchString, allVariablesNames],
@@ -262,6 +267,12 @@ const chooseVariable = (variable: string): void => {
   miniWidget.value.options.variableName = variable
   variableNameSearchString.value = ''
   showVariableChooseModal.value = false
+}
+
+const chooseIcon = (iconName: string): void => {
+  miniWidget.value.options.iconName = iconName
+  iconSearchString.value = ''
+  showIconChooseModal.value = false
 }
 
 watch(showVariableChooseModal, async (newValue) => {
