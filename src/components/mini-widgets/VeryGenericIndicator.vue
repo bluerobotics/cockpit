@@ -39,7 +39,7 @@
           <div class="relative w-full">
             <button
               class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
-              @click="showVariableChooseModal = true"
+              @click="showVariableChooseModal = !showVariableChooseModal"
             >
               <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.variableName || 'Click to choose...' }}</p>
             </button>
