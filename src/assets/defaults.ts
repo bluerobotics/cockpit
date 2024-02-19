@@ -583,6 +583,150 @@ export const widgetProfiles: Profile[] = [
       },
     ],
   },
+  {
+    name: 'MAV default',
+    hash: 'adb7d856-f2e5-4980-aaeb-c39c1fa3762b',
+    views: [
+      {
+        hash: 'f8a76470-9122-44f7-97f7-4555a59ee9c4',
+        name: 'Map view',
+        showBottomBarOnBoot: true,
+        visible: true,
+        widgets: [
+          {
+            hash: '80e785e1-31e2-4bfe-85d4-99fee6ca3f76',
+            name: 'VirtualHorizon',
+            component: WidgetType.VirtualHorizon,
+            position: {
+              x: 0.933,
+              y: 0.054,
+            },
+            size: {
+              width: 0.062,
+              height: 0.118,
+            },
+            options: {},
+            managerVars: defaultWidgetManagerVars,
+          },
+          {
+            hash: '0a786865-0eff-408c-bc1d-a2b710222418',
+            name: 'Compass',
+            component: WidgetType.Compass,
+            position: {
+              x: 0.863,
+              y: 0.054,
+            },
+            size: {
+              width: 0.062,
+              height: 0.118,
+            },
+            options: {
+              headingStyle: 'North Up',
+            },
+            managerVars: defaultWidgetManagerVars,
+          },
+          {
+            hash: '61412ae7-efb2-4a23-ad1e-2b58bbf0e5fc',
+            name: 'Map',
+            component: WidgetType.Map,
+            position: {
+              x: 0.0033820348554362,
+              y: 0.05677382905701067,
+            },
+            size: {
+              width: 0.9932359302891276,
+              height: 0.8901723440673667,
+            },
+            options: {
+              showVehiclePath: true,
+            },
+            managerVars: {
+              timesMounted: 308,
+              configMenuOpen: false,
+              allowMoving: true,
+              lastNonMaximizedX: 0.4,
+              lastNonMaximizedY: 0.32,
+              lastNonMaximizedWidth: 0.2,
+              lastNonMaximizedHeight: 0.36,
+            },
+          },
+        ],
+        miniWidgetContainers: [
+          {
+            name: 'Bottom-left container',
+            widgets: [
+              {
+                name: 'Takeoff/Land Commander',
+                component: MiniWidgetType.TakeoffLandCommander,
+                options: {},
+                hash: '0fec5430-8e49-43f0-9d7f-f3bec5f2c17e',
+                managerVars: {
+                  timesMounted: 0,
+                  configMenuOpen: false,
+                },
+              },
+              {
+                name: 'VeryGenericIndicator',
+                component: MiniWidgetType.VeryGenericIndicator,
+                options: {
+                  displayName: '',
+                  variableName: '',
+                  iconName: 'mdi-help-box',
+                  variableUnit: '%',
+                  variableMultiplier: 1,
+                },
+                hash: '562e3d36-09da-4ec1-b288-c31a415afda3',
+                managerVars: {
+                  timesMounted: 0,
+                  configMenuOpen: false,
+                },
+              },
+            ],
+          },
+          {
+            name: 'Bottom-center container',
+            widgets: [
+              {
+                name: 'Relative Altitude Indicator',
+                component: MiniWidgetType.RelativeAltitudeIndicator,
+                options: {},
+                hash: '11952b31-5123-44cd-8730-735caab2ec57',
+                managerVars: {
+                  timesMounted: 0,
+                  configMenuOpen: false,
+                },
+              },
+            ],
+          },
+          {
+            name: 'Bottom-right container',
+            widgets: [
+              {
+                name: 'Mode Selector',
+                component: MiniWidgetType.ModeSelector,
+                options: {},
+                hash: 'd9dc79e3-dd8a-473c-ba60-dbb83e41412a',
+                managerVars: {
+                  timesMounted: 0,
+                  configMenuOpen: false,
+                },
+              },
+              {
+                name: 'Armer Button',
+                component: MiniWidgetType.ArmerButton,
+                options: {},
+                hash: 'fe8cd3c0-f542-4343-bfb2-b6369d1522fe',
+                managerVars: {
+                  timesMounted: 0,
+                  configMenuOpen: false,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ]
 export const widgetProfile = widgetProfiles[0]
 
