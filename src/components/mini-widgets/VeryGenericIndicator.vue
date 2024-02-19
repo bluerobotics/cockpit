@@ -11,7 +11,7 @@
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ miniWidget.options.displayName }}</span>
     </div>
   </div>
-  <Dialog v-model:show="miniWidget.managerVars.configMenuOpen" class="w-80">
+  <Dialog v-model:show="miniWidget.managerVars.configMenuOpen" class="w-[24rem]">
     <div class="w-full h-full">
       <div class="flex items-center mb-3 justify-evenly">
         <div
@@ -32,13 +32,13 @@
       <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Display name</span>
-          <input v-model="miniWidget.options.displayName" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="miniWidget.options.displayName" class="w-56 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Variable</span>
-          <div class="relative w-48">
+          <div class="relative w-56">
             <button
-              class="w-48 px-2 py-1 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              class="w-56 px-2 py-1 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
               @click="showVariableChooseModal = true"
             >
               {{ miniWidget.options.variableName || 'Click to choose...' }}
@@ -52,7 +52,7 @@
           <input
             v-model="variableNameSearchString"
             placeholder="Search variable..."
-            class="w-48 px-2 py-1 rounded-md bg-slate-200"
+            class="w-56 px-2 py-1 rounded-md bg-slate-200"
           />
           <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
             <span
@@ -67,15 +67,15 @@
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Unit</span>
-          <input v-model="miniWidget.options.variableUnit" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="miniWidget.options.variableUnit" class="w-56 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Multiplier</span>
-          <input v-model="miniWidget.options.variableMultiplier" class="w-48 px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="miniWidget.options.variableMultiplier" class="w-56 px-2 py-1 rounded-md bg-slate-200" />
         </div>
         <div class="flex items-center justify-between w-full my-1">
           <span class="mr-1 text-slate-100">Icon</span>
-          <div class="relative w-48">
+          <div class="relative w-56">
             <input v-model="miniWidget.options.iconName" class="w-full py-1 pl-2 pr-8 rounded-md bg-slate-200" />
             <span
               class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi"
@@ -86,7 +86,7 @@
         <div class="flex items-center justify-center w-full mt-2">
           <input
             v-model="iconSearchString"
-            class="w-48 px-2 py-1 rounded-md bg-slate-200"
+            class="w-56 px-2 py-1 rounded-md bg-slate-200"
             placeholder="Search icons..."
           />
         </div>
@@ -96,7 +96,7 @@
           class="w-full h-40 mt-3"
           :items="iconsNames"
           :item-size="46"
-          :grid-items="6"
+          :grid-items="7"
         >
           <span
             class="m-1 text-white cursor-pointer mdi icon-symbol"
@@ -105,7 +105,7 @@
           >
           </span>
         </RecycleScroller>
-        <div v-else class="grid w-full h-40 grid-cols-6 mt-3 overflow-x-hidden overflow-y-scroll">
+        <div v-else class="grid w-full h-40 grid-cols-7 mt-3 overflow-x-hidden overflow-y-scroll">
           <span
             v-for="icon in iconsToShow"
             :key="icon"
@@ -119,7 +119,7 @@
         <div
           v-for="(template, i) in veryGenericIndicatorPresets"
           :key="i"
-          class="flex items-center w-[6.25rem] h-12 py-1 pl-6 pr-1 rounded-md text-white justify-center cursor-pointer hover:bg-slate-100/20 transition-all"
+          class="flex items-center w-[6.25rem] h-12 m-2 rounded-md text-white justify-center cursor-pointer hover:bg-slate-100/20 transition-all"
           @click="setIndicatorFromTemplate(template)"
         >
           <span class="relative w-[2rem] mdi icon-symbol" :class="[template.iconName]"></span>
