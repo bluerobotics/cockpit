@@ -49,7 +49,13 @@
               @click="discardAndUpdateDB(selectedFilesNames)"
             />
           </fwb-table-head-cell>
-          <fwb-table-head-cell />
+          <fwb-table-head-cell>
+            <span
+              v-if="!selectedFilesNames.isEmpty()"
+              class="text-base rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-download"
+              @click="downloadAndUpdateDB(selectedFilesNames)"
+            />
+          </fwb-table-head-cell>
         </fwb-table-head>
         <fwb-table-body>
           <fwb-table-row v-for="filename in namesAvailableVideosAndLogs" :key="filename">
@@ -71,8 +77,9 @@
             </fwb-table-cell>
             <fwb-table-cell>
               <span
+                v-if="selectedFilesNames.isEmpty()"
                 class="rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-download"
-                @click="downloadAndUpdateDB(filename)"
+                @click="downloadAndUpdateDB([filename])"
               />
             </fwb-table-cell>
           </fwb-table-row>
@@ -134,9 +141,10 @@ const discardAndUpdateDB = async (filenames: string[]): Promise<void> => {
   selectedFilesNames.value = []
 }
 
-const downloadAndUpdateDB = async (filename: string): Promise<void> => {
-  await videoStore.downloadFileFromVideoDB(filename)
+const downloadAndUpdateDB = async (filenames: string[]): Promise<void> => {
+  await videoStore.downloadFilesFromVideoDB(filenames)
   await fetchVideoAndLogsData()
+  selectedFilesNames.value = []
 }
 
 const clearTemporaryVideoFiles = async (): Promise<void> => {
