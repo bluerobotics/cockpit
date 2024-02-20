@@ -85,14 +85,15 @@
           </fwb-table-row>
         </fwb-table-body>
       </fwb-table>
-      <span
+      <div
         v-if="temporaryDbSize > 0"
         v-tooltip.bottom="'Remove video files used during the recording. This will not affect already saved videos.'"
-        class="p-4 m-4 transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
+        class="flex flex-col items-center justify-center p-4 m-4 transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
         @click="clearTemporaryVideoFiles()"
       >
-        Clear temporary video storage
-      </span>
+        <span class="text-lg font-medium">Clear temporary video storage</span>
+        <span class="text-sm text-slate-300/90">Current size: {{ formatBytes(temporaryDbSize) }}</span>
+      </div>
     </template>
   </BaseConfigurationView>
 </template>
@@ -103,6 +104,7 @@ import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import { onMounted } from 'vue'
 
+import { formatBytes } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
@@ -131,7 +133,7 @@ const fetchVideoAndLogsData = async (): Promise<void> => {
 
 // Fetch temporary video data from the storage
 const fetchTemporaryDbSize = async (): Promise<void> => {
-  const size = await videoStore.tempVideoChunksDB.length()
+  const size = await videoStore.temporaryVideoDBSize()
   temporaryDbSize.value = size
 }
 
