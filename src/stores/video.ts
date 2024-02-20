@@ -1,4 +1,5 @@
 import { useStorage } from '@vueuse/core'
+import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import fixWebmDuration from 'fix-webm-duration'
@@ -222,13 +223,30 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   // Used to download a file from the video recovery database
-  const downloadFileFromVideoDB = async (fileName: string): Promise<void> => {
-    const file = await videoStoringDB.getItem(fileName)
-    if (!file) {
-      Swal.fire({ text: 'File not found.', icon: 'error' })
+  const downloadFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
+    console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
+    if (fileNames.length === 1) {
+      const file = await videoStoringDB.getItem(fileNames[0])
+      if (!file) {
+        Swal.fire({ text: 'File not found.', icon: 'error' })
+        return
+      }
+      saveAs(file as Blob, fileNames[0])
       return
     }
-    saveAs(file as Blob, fileName)
+    const zipWriter = new ZipWriter(new BlobWriter('application/zip'))
+    const filesPromises = fileNames
+      .filter(async (filename) => await videoStoringDB.getItem(filename))
+      .map(async (filename) => {
+        const file = await videoStoringDB.getItem(filename)
+        return { filename, file }
+      })
+    const files = await Promise.all(filesPromises)
+    for (const { filename, file } of files) {
+      await zipWriter.add(filename, new BlobReader(file as Blob))
+    }
+    const blob = await zipWriter.close()
+    saveAs(blob, 'Cockpit-Video-Recovery.zip')
   }
 
   // Used to clear the temporary video database
@@ -339,7 +357,7 @@ export const useVideoStore = defineStore('video', () => {
     videoStoringDB,
     tempVideoChunksDB,
     discardFilesFromVideoDB,
-    downloadFileFromVideoDB,
+    downloadFilesFromVideoDB,
     clearTemporaryVideoDB,
     getMediaStream,
     getStreamData,
