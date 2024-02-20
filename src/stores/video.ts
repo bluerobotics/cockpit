@@ -257,9 +257,13 @@ export const useVideoStore = defineStore('video', () => {
 
   // Used to clear the temporary video database
   const clearTemporaryVideoDB = async (): Promise<void> => {
-    await tempVideoChunksDB.iterate((_, chunkName) => {
-      tempVideoChunksDB.removeItem(chunkName)
+    const tempChunks: string[] = []
+    await videoStoringDB.iterate((_, name) => {
+      tempChunks.push(name)
     })
+    for (const chunk of tempChunks) {
+      await videoStoringDB.removeItem(chunk)
+    }
   }
 
   // Used to store chunks of an ongoing recording, that will be merged into a video file when the recording is stopped
