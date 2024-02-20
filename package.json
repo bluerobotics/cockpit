@@ -28,6 +28,7 @@
     "@vue-leaflet/vue-leaflet": "^0.6.1",
     "@vueuse/core": "9.8.1",
     "@vueuse/math": "^10.1.2",
+    "@zip.js/zip.js": "^2.7.34",
     "browser-or-node": "^2.0.0",
     "colord": "^2.9.3",
     "date-fns": "^2.29.3",
