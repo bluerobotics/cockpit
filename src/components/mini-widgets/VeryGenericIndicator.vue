@@ -48,23 +48,25 @@
             />
           </div>
         </div>
-        <div v-if="showVariableChooseModal" class="flex flex-col justify-center mx-1 my-3 align-center">
-          <input
-            v-model="variableNameSearchString"
-            placeholder="Search variable..."
-            class="w-full px-2 py-1 rounded-md bg-slate-200"
-          />
-          <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
-            <span
-              v-for="variable in variableNamesToShow"
-              :key="variable"
-              class="h-8 p-1 m-1 overflow-x-hidden text-white transition-all rounded-md cursor-pointer select-none bg-slate-700 hover:bg-slate-400/20"
-              @click="chooseVariable(variable)"
-            >
-              {{ variable }}
-            </span>
+        <Transition>
+          <div v-if="showVariableChooseModal" class="flex flex-col justify-center w-full mx-1 my-3 align-center">
+            <input
+              v-model="variableNameSearchString"
+              placeholder="Search variable..."
+              class="w-full px-2 py-1 rounded-md bg-slate-200"
+            />
+            <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
+              <span
+                v-for="variable in variableNamesToShow"
+                :key="variable"
+                class="h-8 p-1 m-1 overflow-x-hidden text-white transition-all rounded-md cursor-pointer select-none bg-slate-700 hover:bg-slate-400/20"
+                @click="chooseVariable(variable)"
+              >
+                {{ variable }}
+              </span>
+            </div>
           </div>
-        </div>
+        </Transition>
         <div class="flex items-center justify-between w-full mt-2">
           <div class="flex flex-col items-center justify-between w-full mx-5">
             <span class="w-full mb-1 text-sm text-slate-100/50">Unit</span>
@@ -90,36 +92,40 @@
             />
           </div>
         </div>
-
-        <div v-if="showIconChooseModal" class="flex items-center justify-center w-full mt-2">
-          <input
-            v-model="iconSearchString"
-            class="w-full px-2 py-1 rounded-md bg-slate-200"
-            placeholder="Search icons..."
-          />
-        </div>
-        <RecycleScroller
-          v-if="iconSearchString === '' && showIconChooseModal"
-          v-slot="{ item }"
-          class="w-full h-40 mt-3"
-          :items="iconsNames"
-          :item-size="46"
-          :grid-items="7"
-        >
-          <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="chooseIcon(item)"> </span>
-        </RecycleScroller>
-        <div
-          v-else-if="showIconChooseModal"
-          class="grid w-full h-40 grid-cols-7 mt-3 overflow-x-hidden overflow-y-scroll"
-        >
-          <span
-            v-for="icon in iconsToShow"
-            :key="icon"
-            class="m-1 text-white cursor-pointer mdi icon-symbol"
-            :class="[icon]"
-            @click="chooseIcon(icon)"
-          />
-        </div>
+        <Transition>
+          <div v-if="showIconChooseModal" class="flex flex-col items-center justify-center w-full mt-2">
+            <div>
+              <input
+                v-model="iconSearchString"
+                class="w-full px-2 py-1 rounded-md bg-slate-200"
+                placeholder="Search icons..."
+              />
+            </div>
+            <RecycleScroller
+              v-if="iconSearchString === '' && showIconChooseModal"
+              v-slot="{ item }"
+              class="w-full h-40 mt-3"
+              :items="iconsNames"
+              :item-size="46"
+              :grid-items="7"
+            >
+              <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="chooseIcon(item)">
+              </span>
+            </RecycleScroller>
+            <div
+              v-else-if="showIconChooseModal"
+              class="grid w-full h-40 grid-cols-7 mt-3 overflow-x-hidden overflow-y-scroll"
+            >
+              <span
+                v-for="icon in iconsToShow"
+                :key="icon"
+                class="m-1 text-white cursor-pointer mdi icon-symbol"
+                :class="[icon]"
+                @click="chooseIcon(icon)"
+              />
+            </div>
+          </div>
+        </Transition>
       </div>
       <div v-if="currentTab === 'presets'" class="flex flex-wrap items-center justify-around">
         <div
