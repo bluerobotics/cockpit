@@ -40,17 +40,33 @@
       </div>
       <fwb-table v-else hoverable>
         <fwb-table-head>
-          <fwb-table-head-cell>Filename</fwb-table-head-cell>
           <fwb-table-head-cell />
+          <fwb-table-head-cell>Filename</fwb-table-head-cell>
+          <fwb-table-head-cell>
+            <span
+              v-if="!selectedFilesNames.isEmpty()"
+              class="text-base rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
+              @click="discardAndUpdateDB(selectedFilesNames)"
+            />
+          </fwb-table-head-cell>
           <fwb-table-head-cell />
         </fwb-table-head>
         <fwb-table-body>
           <fwb-table-row v-for="filename in namesAvailableVideosAndLogs" :key="filename">
+            <fwb-table-cell>
+              <input
+                v-model="selectedFilesNames"
+                :value="filename"
+                type="checkbox"
+                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+            </fwb-table-cell>
             <fwb-table-cell>{{ filename }}</fwb-table-cell>
             <fwb-table-cell>
               <span
+                v-if="selectedFilesNames.isEmpty()"
                 class="rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
-                @click="discardAndUpdateDB(filename)"
+                @click="discardAndUpdateDB([filename])"
               />
             </fwb-table-cell>
             <fwb-table-cell>
@@ -90,6 +106,7 @@ const { allowedIceIps, availableIceIps } = storeToRefs(videoStore)
 // List available videos and telemetry logs to be downloaded
 const namesAvailableVideosAndLogs = ref<string[]>([])
 const temporaryDbSize = ref(0)
+const selectedFilesNames = ref<string[]>([])
 
 onMounted(async () => {
   await fetchVideoAndLogsData()
@@ -111,9 +128,10 @@ const fetchTemporaryDbSize = async (): Promise<void> => {
   temporaryDbSize.value = size
 }
 
-const discardAndUpdateDB = async (filename: string): Promise<void> => {
-  await videoStore.discardFileFromVideoDB(filename)
+const discardAndUpdateDB = async (filenames: string[]): Promise<void> => {
+  await videoStore.discardFilesFromVideoDB(filenames)
   await fetchVideoAndLogsData()
+  selectedFilesNames.value = []
 }
 
 const downloadAndUpdateDB = async (filename: string): Promise<void> => {

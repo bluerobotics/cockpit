@@ -214,8 +214,11 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   // Used to discard a file from the video recovery database
-  const discardFileFromVideoDB = async (fileName: string): Promise<void> => {
-    await videoStoringDB.removeItem(fileName)
+  const discardFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
+    console.debug(`Discarding files from the video recovery database: ${fileNames.join(', ')}`)
+    for (const filename of fileNames) {
+      await videoStoringDB.removeItem(filename)
+    }
   }
 
   // Used to download a file from the video recovery database
@@ -335,7 +338,7 @@ export const useVideoStore = defineStore('video', () => {
     namesAvailableStreams,
     videoStoringDB,
     tempVideoChunksDB,
-    discardFileFromVideoDB,
+    discardFilesFromVideoDB,
     downloadFileFromVideoDB,
     clearTemporaryVideoDB,
     getMediaStream,
