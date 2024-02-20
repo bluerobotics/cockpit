@@ -32,7 +32,7 @@
         />
       </div>
 
-      <div v-if="namesAvailableVideosAndLogs.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
+      <div v-if="availableVideosAndLogs.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
         <p class="mb-4 text-2xl font-semibold text-center text-slate-500">No videos available.</p>
         <p class="text-center text-slate-400">
           Use the MiniVideoRecorder widget to record some videos and them come back here to download or discard those.
@@ -42,6 +42,7 @@
         <fwb-table-head>
           <fwb-table-head-cell />
           <fwb-table-head-cell>Filename</fwb-table-head-cell>
+          <fwb-table-head-cell>Size</fwb-table-head-cell>
           <fwb-table-head-cell>
             <span
               v-if="!selectedFilesNames.isEmpty()"
@@ -58,28 +59,29 @@
           </fwb-table-head-cell>
         </fwb-table-head>
         <fwb-table-body>
-          <fwb-table-row v-for="filename in namesAvailableVideosAndLogs" :key="filename">
+          <fwb-table-row v-for="file in availableVideosAndLogs" :key="file.filename">
             <fwb-table-cell>
               <input
                 v-model="selectedFilesNames"
-                :value="filename"
+                :value="file.filename"
                 type="checkbox"
                 class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
             </fwb-table-cell>
-            <fwb-table-cell>{{ filename }}</fwb-table-cell>
+            <fwb-table-cell>{{ file.filename }}</fwb-table-cell>
+            <fwb-table-cell>{{ formatBytes(file.size) }}</fwb-table-cell>
             <fwb-table-cell>
               <span
                 v-if="selectedFilesNames.isEmpty()"
                 class="rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
-                @click="discardAndUpdateDB([filename])"
+                @click="discardAndUpdateDB([file.filename])"
               />
             </fwb-table-cell>
             <fwb-table-cell>
               <span
                 v-if="selectedFilesNames.isEmpty()"
                 class="rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-download"
-                @click="downloadAndUpdateDB([filename])"
+                @click="downloadAndUpdateDB([file.filename])"
               />
             </fwb-table-cell>
           </fwb-table-row>
@@ -113,7 +115,13 @@ const videoStore = useVideoStore()
 const { allowedIceIps, availableIceIps } = storeToRefs(videoStore)
 
 // List available videos and telemetry logs to be downloaded
-const namesAvailableVideosAndLogs = ref<string[]>([])
+/* eslint-disable jsdoc/require-jsdoc  */
+interface VideoStorageFile {
+  filename: string
+  size: number
+}
+/* eslint-enable jsdoc/require-jsdoc  */
+const availableVideosAndLogs = ref<VideoStorageFile[]>([])
 const temporaryDbSize = ref(0)
 const selectedFilesNames = ref<string[]>([])
 
@@ -124,11 +132,17 @@ onMounted(async () => {
 
 // Fetch available videos and telemetry logs from the storage
 const fetchVideoAndLogsData = async (): Promise<void> => {
-  const availableData: string[] = []
+  const availableData: VideoStorageFile[] = []
   await videoStore.videoStoringDB.iterate((_, fileName) => {
-    availableData.push(fileName)
+    availableData.push({
+      filename: fileName,
+      size: 0,
+    })
   })
-  namesAvailableVideosAndLogs.value = availableData
+  for (const file of availableData) {
+    file.size = (await videoStore.videoStorageFileSize(file.filename)) ?? 0
+  }
+  availableVideosAndLogs.value = availableData
 }
 
 // Fetch temporary video data from the storage
