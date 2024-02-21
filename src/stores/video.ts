@@ -171,7 +171,14 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
     let chunksCount = 0
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
-      await tempVideoChunksDB.setItem(`${recordingHash}_${chunksCount}`, e.data)
+      // Check first if this item is already in the database. If so, stop the recording and return.
+      const chunkName = `${recordingHash}_${chunksCount}`
+      const chunk = await tempVideoChunksDB.getItem(chunkName)
+      if (chunk) {
+        stopRecording(streamName)
+        return
+      }
+      await tempVideoChunksDB.setItem(chunkName, e.data)
       chunksCount++
     }
 
