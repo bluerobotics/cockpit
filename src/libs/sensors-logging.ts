@@ -74,12 +74,12 @@ class DataLogger {
   currentCockpitLog: CockpitStandardLog = []
   variablesBeingUsed: DatalogVariable[] = []
   selectedVariablesToShow = useStorage<DatalogVariable[]>('cockpit-datalogger-overlay-variables', [])
+  logInterval = useStorage<number>('cockpit-datalogger-log-interval', 1000)
 
   /**
    * Start an intervaled logging
-   * @param {number} interval - The time to wait between two logs
    */
-  startLogging(interval = 1000): void {
+  startLogging(): void {
     if (this.logging()) {
       Swal.fire({ title: 'Error', text: 'A log is already being generated.', icon: 'error', timer: 3000 })
       return
@@ -156,6 +156,32 @@ class DataLogger {
    */
   logging(): boolean {
     return this.shouldBeLogging
+  }
+
+  /**
+   * Set the interval between log points
+   * @param {number} interval The interval in milliseconds. Default is 1000 and minimum is 1
+   */
+  setInterval(interval: number): void {
+    if (interval < 1) {
+      Swal.fire({ text: 'Minimum log interval is 1 millisecond (1000 Hz).', icon: 'error' })
+      return
+    }
+
+    this.logInterval.value = interval
+  }
+
+  /**
+   * Set the frequency of log points
+   * @param {number} frequency The frequency in hertz. Default is 1 Hz, minimum is 0.1 Hz and maximum is 1000 Hz
+   */
+  setFrequency(frequency: number): void {
+    if (frequency > 1000 || frequency < 0.1) {
+      Swal.fire({ text: 'Log frequency should stay between 0.1 Hz and 1000 Hz.', icon: 'error' })
+      return
+    }
+
+    this.setInterval(1000 / frequency)
   }
 
   /**
