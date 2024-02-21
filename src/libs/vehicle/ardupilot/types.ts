@@ -31,10 +31,13 @@ const cockpitAltRefFromMavlinkFrame = (mavframe: MavFrame): AltitudeReferenceTyp
   return correspondency === undefined ? undefined : correspondency[1]
 }
 
-export const convertCockpitWaypointsToMavlink = (cockpitWaypoints: Waypoint[]): Message.MissionItemInt[] => {
+export const convertCockpitWaypointsToMavlink = (
+  cockpitWaypoints: Waypoint[],
+  system_id: number
+): Message.MissionItemInt[] => {
   return cockpitWaypoints.map((cockpitWaypoint, i) => {
     return {
-      target_system: 1,
+      target_system: system_id,
       target_component: 1,
       type: MAVLinkType.MISSION_ITEM_INT,
       seq: i,

@@ -82,6 +82,8 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   onMAVLinkMessage = new SignalTyped()
   _flying = false
 
+  protected currentSystemId = 1
+
   /**
    * Function for subclass inheritance
    * Helps to deal with specialized vehicles that has particular or custom behaviour
@@ -96,9 +98,11 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   /**
    * Construct a new generic ArduPilot type
    * @param {Vehicle.Type} type
+   * @param {number} system_id
    */
-  constructor(type: Vehicle.Type) {
+  constructor(type: Vehicle.Type, system_id: number) {
     super(Vehicle.Firmware.ArduPilot, type)
+    this.currentSystemId = system_id
   }
 
   /**
@@ -135,7 +139,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       command: {
         type: mav_command,
       },
-      target_system: 1,
+      target_system: this.currentSystemId,
       target_component: 1,
       confirmation: 0,
     }
@@ -180,7 +184,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
     const { system_id, component_id } = mavlink_message.header
 
-    if (system_id != 1 || component_id != 1) {
+    if (system_id !== this.currentSystemId || component_id !== 1) {
       return
     }
 
@@ -437,7 +441,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   goTo(hold: number, acceptanceRadius: number, passRadius: number, yaw: number, coordinates: Coordinates): void {
     const gotoMessage: Message.CommandInt = {
       type: MAVLinkType.COMMAND_INT,
-      target_system: 1,
+      target_system: this.currentSystemId,
       target_component: 1,
       seq: 0,
       frame: { type: MavFrame.MAV_FRAME_GLOBAL },
@@ -658,7 +662,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     }
     const paramSetMessage: Message.ParamSet = {
       type: MAVLinkType.PARAM_SET,
-      target_system: 0,
+      target_system: this.currentSystemId,
       target_component: 0,
       // @ts-ignore: The correct type is indeed a char array
       param_id: param_name,
@@ -677,7 +681,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   sendMissionCount(itemsCount: number, missionType: MavMissionType): void {
     const message: Message.MissionCount = {
       type: MAVLinkType.MISSION_COUNT,
-      target_system: 1,
+      target_system: this.currentSystemId,
       target_component: 1,
       count: itemsCount,
       mission_type: { type: missionType },
@@ -693,7 +697,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   requestMissionItemsList(missionType: MavMissionType): void {
     const message: Message.MissionRequestList = {
       type: MAVLinkType.MISSION_REQUEST_LIST,
-      target_system: 1,
+      target_system: this.currentSystemId,
       target_component: 1,
       mission_type: { type: missionType },
     }
@@ -768,7 +772,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   ): void {
     const message: Message.MissionItem = {
       type: MAVLinkType.MISSION_ITEM,
-      target_system: 1,
+      target_system: this.currentSystemId,
       target_component: 1,
       seq: waypointSeq,
       frame: { type: frame },
@@ -909,7 +913,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   ): Promise<void> {
     // Convert from Cockpit waypoints to MAVLink waypoints
     this._currentCockpitMissionItemsOnPlanning = items
-    const mavlinkWaypoints = convertCockpitWaypointsToMavlink(items)
+    const mavlinkWaypoints = convertCockpitWaypointsToMavlink(items, this.currentSystemId)
 
     // Only deal with regular mission items for now
     const missionType = MavMissionType.MAV_MISSION_TYPE_MISSION
