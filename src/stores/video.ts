@@ -6,6 +6,7 @@ import fixWebmDuration from 'fix-webm-duration'
 import localforage from 'localforage'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
+import { v4 as uuid } from 'uuid'
 import { computed, ref, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
@@ -159,10 +160,9 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.timeRecordingStart = new Date()
     const streamData = activeStreams.value[streamName] as StreamData
-    const fileName = `${missionStore.missionName || 'Cockpit'} (${format(
-      streamData.timeRecordingStart!,
-      'LLL dd, yyyy - HH꞉mm꞉ss O'
-    )})`
+    const recordingHash = uuid().slice(0, 6)
+    const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
+    const fileName = `${missionStore.missionName || 'Cockpit'} (${timeRecordingStartString}) #${recordingHash}`
     activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
     if (!datalogger.logging()) {
       datalogger.startLogging()
@@ -173,7 +173,7 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
     let chunksCount = 0
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
-      await tempVideoChunksDB.setItem(`${fileName}_${chunksCount}`, e.data)
+      await tempVideoChunksDB.setItem(`${recordingHash}_${chunksCount}`, e.data)
       chunksCount++
     }
 
@@ -182,7 +182,7 @@ export const useVideoStore = defineStore('video', () => {
       const chunks: { blob: Blob; name: string }[] = []
 
       await tempVideoChunksDB.iterate((videoChunk, chunkName) => {
-        if (chunkName.includes(fileName)) {
+        if (chunkName.includes(recordingHash)) {
           chunks.push({ blob: videoChunk as Blob, name: chunkName })
         }
       })
