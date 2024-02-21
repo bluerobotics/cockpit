@@ -278,7 +278,7 @@ export const useVideoStore = defineStore('video', () => {
 
   const temporaryVideoDBSize = async (): Promise<number> => {
     let totalSizeBytes = 0
-    await videoStoringDB.iterate((chunk) => {
+    await tempVideoChunksDB.iterate((chunk) => {
       totalSizeBytes += (chunk as Blob).size
     })
     return totalSizeBytes
