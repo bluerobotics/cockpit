@@ -84,6 +84,7 @@ export const useVideoStore = defineStore('video', () => {
       mediaRecorder: undefined,
       timeRecordingStart: undefined,
     }
+    console.debug(`Activated stream '${streamName}'.`)
   }
 
   /**
@@ -132,6 +133,7 @@ export const useVideoStore = defineStore('video', () => {
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
     activeStreams.value[streamName]!.mediaRecorder!.stop()
+    alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
 
   /**
@@ -218,6 +220,7 @@ export const useVideoStore = defineStore('video', () => {
 
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
+    alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
   }
 
   // Used to discard a file from the video recovery database
