@@ -363,7 +363,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       Object.assign(genericVariables, newGenericVariablesState)
     })
     mainVehicle.value.onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
-      if (pack.header.system_id != 1 || pack.header.component_id != 1) {
+      if (pack.header.component_id != 1) {
         return
       }
 

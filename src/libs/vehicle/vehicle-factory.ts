@@ -23,14 +23,19 @@ export class VehicleFactory {
    * Create vehicle based on the firmware and vehicle type
    * @param {Vehicle.Firmware} firmware
    * @param {Vehicle.Type} type
+   * @param {number} system_id - The system ID for the vehicle
    * @returns {Vehicle.Abstract | undefined}
    */
-  static createVehicle(firmware: Vehicle.Firmware, type: Vehicle.Type): Vehicle.Abstract | undefined {
+  static createVehicle(
+    firmware: Vehicle.Firmware,
+    type: Vehicle.Type,
+    system_id: number
+  ): Vehicle.Abstract | undefined {
     let vehicle: undefined | Vehicle.Abstract = undefined
 
     switch (firmware) {
       case Vehicle.Firmware.ArduPilot:
-        vehicle = VehicleFactory.createArduPilotVehicle(type)
+        vehicle = VehicleFactory.createArduPilotVehicle(type, system_id)
         break
     }
 
@@ -50,18 +55,19 @@ export class VehicleFactory {
   /**
    * Create ArduPilot vehicle based on the category
    * @param  {Vehicle.Type} type
+   * @param  {number} system_id
    * @returns {Vehicle.Abstract | undefined}
    */
-  static createArduPilotVehicle(type: Vehicle.Type): Vehicle.Abstract | undefined {
+  static createArduPilotVehicle(type: Vehicle.Type, system_id: number): Vehicle.Abstract | undefined {
     switch (type) {
       case Vehicle.Type.Copter:
-        return new ArduCopter()
+        return new ArduCopter(system_id)
       case Vehicle.Type.Plane:
-        return new ArduPlane()
+        return new ArduPlane(system_id)
       case Vehicle.Type.Rover:
-        return new ArduRover()
+        return new ArduRover(system_id)
       case Vehicle.Type.Sub:
-        return new ArduSub()
+        return new ArduSub(system_id)
       default:
         unimplemented('Firmware not supported')
     }
@@ -105,18 +111,18 @@ function createVehicleFromMessage(message: Uint8Array): void {
 
   switch (heartbeat.mavtype.type) {
     case MavType.MAV_TYPE_SUBMARINE:
-      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Sub)
+      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Sub, system_id)
       break
     case MavType.MAV_TYPE_GROUND_ROVER:
     case MavType.MAV_TYPE_SURFACE_BOAT:
-      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Rover)
+      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Rover, system_id)
       break
     case MavType.MAV_TYPE_FLAPPING_WING:
     case MavType.MAV_TYPE_VTOL_TILTROTOR:
     case MavType.MAV_TYPE_VTOL_QUADROTOR:
     case MavType.MAV_TYPE_VTOL_DUOROTOR:
     case MavType.MAV_TYPE_FIXED_WING:
-      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Plane)
+      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Plane, system_id)
       break
     case MavType.MAV_TYPE_TRICOPTER:
     case MavType.MAV_TYPE_COAXIAL:
@@ -125,7 +131,7 @@ function createVehicleFromMessage(message: Uint8Array): void {
     case MavType.MAV_TYPE_OCTOROTOR:
     case MavType.MAV_TYPE_DODECAROTOR:
     case MavType.MAV_TYPE_QUADROTOR:
-      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Copter)
+      VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Copter, system_id)
       break
     default:
       console.warn(`Vehicle type not supported: ${system_id}/${component_id}: ${heartbeat.mavtype.type}`)

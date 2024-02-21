@@ -43,9 +43,10 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
 
   /**
    * Create ArduSub vehicle
+   * @param {number} system_id
    */
-  constructor() {
-    super(Vehicle.Type.Sub)
+  constructor(system_id: number) {
+    super(Vehicle.Type.Sub, system_id)
   }
 
   /**
@@ -75,11 +76,6 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
    * @param {Package} mavlink
    */
   onMAVLinkPackage(mavlink: Package): void {
-    const { system_id, component_id } = mavlink.header
-    if (system_id != 1 || component_id !== 1) {
-      return
-    }
-
     switch (mavlink.message.type) {
       case MAVLinkType.HEARTBEAT: {
         const heartbeat = mavlink.message as Message.Heartbeat
