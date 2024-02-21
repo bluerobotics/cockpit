@@ -1,16 +1,20 @@
-import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, watch } from 'vue'
+
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 
 import { Alert, AlertLevel } from '../types/alert'
 
 export const useAlertStore = defineStore('alert', () => {
   const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
-  const enableVoiceAlerts = useStorage('cockpit-enable-voice-alerts', true)
+  const enableVoiceAlerts = useBlueOsStorage('cockpit-enable-voice-alerts', true)
   // eslint-disable-next-line jsdoc/require-jsdoc
   const availableAlertSpeechVoices = reactive<SpeechSynthesisVoice[]>([])
-  const selectedAlertSpeechVoiceName = useStorage<string | undefined>('cockpit-selected-alert-speech-voice', undefined)
-  const enabledAlertLevels = useStorage('cockpit-enabled-alert-levels', [
+  const selectedAlertSpeechVoiceName = useBlueOsStorage<string | undefined>(
+    'cockpit-selected-alert-speech-voice',
+    undefined
+  )
+  const enabledAlertLevels = useBlueOsStorage('cockpit-enabled-alert-levels', [
     { level: AlertLevel.Success, enabled: true },
     { level: AlertLevel.Error, enabled: true },
     { level: AlertLevel.Info, enabled: false },
@@ -46,6 +50,22 @@ export const useAlertStore = defineStore('alert', () => {
         this part of the code. Regardless of that, here's the alert message: ${alert.message}`)
         break
     }
+  }
+
+  const pushSuccessAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Success, message, time_created))
+  }
+  const pushErrorAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Error, message, time_created))
+  }
+  const pushInfoAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Info, message, time_created))
+  }
+  const pushWarningAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Warning, message, time_created))
+  }
+  const pushCriticalAlert = (message: string, time_created: Date = new Date()): void => {
+    pushAlert(new Alert(AlertLevel.Critical, message, time_created))
   }
 
   // Alert speech syntesis routine
@@ -129,5 +149,10 @@ export const useAlertStore = defineStore('alert', () => {
     availableAlertSpeechVoiceNames,
     sortedAlerts,
     pushAlert,
+    pushSuccessAlert,
+    pushErrorAlert,
+    pushInfoAlert,
+    pushWarningAlert,
+    pushCriticalAlert,
   }
 })

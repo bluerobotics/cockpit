@@ -1,16 +1,15 @@
-import { useDocumentVisibility, useStorage } from '@vueuse/core'
+import { useDocumentVisibility } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
 import { computed, ref, toRaw, watch } from 'vue'
 
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
-import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import {
-  type GamepadToCockpitStdMapping,
   type JoystickProtocolActionsMapping,
   type JoystickState,
   type ProtocolAction,
@@ -34,13 +33,13 @@ const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMappings = useStorage(protocolMappingsKey, cockpitStandardToProtocols)
-  const protocolMappingIndex = useStorage(protocolMappingIndexKey, 0)
-  const cockpitStdMappings = useStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
+  const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
+  const protocolMappingIndex = useBlueOsStorage(protocolMappingIndexKey, 0)
+  const cockpitStdMappings = useBlueOsStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
   const availableAxesActions = allAvailableAxes
   const availableButtonActions = allAvailableButtons
   const enableForwarding = ref(true)
-  const holdLastInputWhenWindowHidden = useStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
+  const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
 
   const protocolMapping = computed<JoystickProtocolActionsMapping>({
     get() {
@@ -244,36 +243,6 @@ export const useControllerStore = defineStore('controller', () => {
     reader.readAsText(e.target.files[0])
   }
 
-  const exportJoysticksMappingsToVehicle = async (
-    vehicleAddress: string,
-    joystickMappings: { [key in JoystickModel]: GamepadToCockpitStdMapping }
-  ): Promise<void> => {
-    await setKeyDataOnCockpitVehicleStorage(vehicleAddress, cockpitStdMappingsKey, joystickMappings)
-    Swal.fire({ icon: 'success', text: 'Joystick mapping exported to vehicle.', timer: 3000 })
-  }
-
-  const importJoysticksMappingsFromVehicle = async (vehicleAddress: string): Promise<void> => {
-    const newMapping = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, cockpitStdMappingsKey)
-    if (!newMapping) {
-      Swal.fire({ icon: 'error', text: 'No joystick mappings to import from vehicle.', timer: 3000 })
-      return
-    }
-    try {
-      Object.values(newMapping).forEach((mapping) => {
-        if (!mapping['name'] || !mapping['axes'] || !mapping['buttons']) {
-          throw Error('Invalid joystick mapping inside vehicle.')
-        }
-      })
-    } catch (error) {
-      Swal.fire({ icon: 'error', text: `Could not import joystick mapping from vehicle. ${error}`, timer: 3000 })
-      return
-    }
-
-    // @ts-ignore: We check for the necessary fields in the if before
-    cockpitStdMappings.value = newMapping
-    Swal.fire({ icon: 'success', text: 'Joystick mapping imported from vehicle.', timer: 3000 })
-  }
-
   const exportFunctionsMapping = (protocolActionsMapping: JoystickProtocolActionsMapping): void => {
     const blob = new Blob([JSON.stringify(protocolActionsMapping)], { type: 'text/plain;charset=utf-8' })
     saveAs(blob, `cockpit-std-profile-joystick-${protocolActionsMapping.name}.json`)
@@ -299,29 +268,6 @@ export const useControllerStore = defineStore('controller', () => {
     reader.readAsText(e.target.files[0])
   }
 
-  const exportFunctionsMappingToVehicle = async (
-    vehicleAddress: string,
-    functionsMapping: JoystickProtocolActionsMapping[]
-  ): Promise<void> => {
-    await setKeyDataOnCockpitVehicleStorage(vehicleAddress, protocolMappingsKey, functionsMapping)
-    Swal.fire({ icon: 'success', text: 'Joystick functions mapping exported to vehicle.', timer: 3000 })
-  }
-
-  const importFunctionsMappingFromVehicle = async (vehicleAddress: string): Promise<void> => {
-    const newMappings = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, protocolMappingsKey)
-    if (!newMappings) {
-      throw new Error('Could not import functions mapping from vehicle. No data available.')
-    }
-
-    newMappings.forEach((mapping: JoystickProtocolActionsMapping) => {
-      if (!mapping || !mapping['name'] || !mapping['axesCorrespondencies'] || !mapping['buttonsCorrespondencies']) {
-        throw new Error('Could not import joystick funtions from vehicle. Invalid data.')
-      }
-    })
-    // @ts-ignore: We check for the necessary fields in the if before
-    protocolMappings.value = newMappings
-  }
-
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -335,11 +281,7 @@ export const useControllerStore = defineStore('controller', () => {
     loadProtocolMapping,
     exportJoystickMapping,
     importJoystickMapping,
-    exportJoysticksMappingsToVehicle,
-    importJoysticksMappingsFromVehicle,
     exportFunctionsMapping,
     importFunctionsMapping,
-    exportFunctionsMappingToVehicle,
-    importFunctionsMappingFromVehicle,
   }
 })
