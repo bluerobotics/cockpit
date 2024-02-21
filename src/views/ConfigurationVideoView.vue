@@ -164,7 +164,7 @@ const downloadAndUpdateDB = async (filenames: string[]): Promise<void> => {
 }
 
 const clearTemporaryVideoFiles = async (): Promise<void> => {
-  videoStore.clearTemporaryVideoDB()
+  await videoStore.clearTemporaryVideoDB()
   await fetchTemporaryDbSize()
 }
 </script>
