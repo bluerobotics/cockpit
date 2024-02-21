@@ -70,7 +70,7 @@ export type CockpitStandardLog = CockpitStandardLogPoint[]
  * Manager logging vehicle data and others
  */
 class DataLogger {
-  currentLoggerInterval: ReturnType<typeof setInterval> | undefined = undefined
+  shouldBeLogging = false
   currentCockpitLog: CockpitStandardLog = []
   variablesBeingUsed: DatalogVariable[] = []
   selectedVariablesToShow = useStorage<DatalogVariable[]>('cockpit-datalogger-overlay-variables', [])
@@ -85,6 +85,8 @@ class DataLogger {
       return
     }
 
+    this.shouldBeLogging = true
+
     const vehicleStore = useMainVehicleStore()
     const cockpitLogsDB = localforage.createInstance({
       driver: localforage.INDEXEDDB,
@@ -98,7 +100,7 @@ class DataLogger {
     const fileName = `Cockpit (${format(initialTime, 'LLL dd, yyyy - HH꞉mm꞉ss O')}).clog`
     this.currentCockpitLog = []
 
-    this.currentLoggerInterval = setInterval(async () => {
+    const logRoutine = async (): Promise<void> => {
       const timeNow = new Date()
       const secondsNow = differenceInSeconds(timeNow, initialTime)
 
@@ -127,7 +129,13 @@ class DataLogger {
       })
 
       await cockpitLogsDB.setItem(fileName, this.currentCockpitLog)
-    }, interval)
+
+      if (this.shouldBeLogging) {
+        setTimeout(logRoutine, this.logInterval.value)
+      }
+    }
+
+    logRoutine()
   }
 
   /**
@@ -139,7 +147,7 @@ class DataLogger {
       return
     }
 
-    clearInterval(this.currentLoggerInterval)
+    this.shouldBeLogging = false
   }
 
   /**
@@ -147,7 +155,7 @@ class DataLogger {
    * @returns {boolean}
    */
   logging(): boolean {
-    return this.currentLoggerInterval !== undefined
+    return this.shouldBeLogging
   }
 
   /**
