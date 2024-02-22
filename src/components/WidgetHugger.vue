@@ -207,8 +207,8 @@ onMounted(async () => {
   widget.value.managerVars.timesMounted += 1
 
   if (widgetResizeHandles.value) {
-    for (var i = 0; i < widgetResizeHandles.value.length; i++) {
-      var handle = widgetResizeHandles.value[i]
+    for (let i = 0; i < widgetResizeHandles.value.length; i++) {
+      const handle = widgetResizeHandles.value[i]
       // @ts-ignore
       handle.addEventListener('mousedown', handleResizeStart)
     }
