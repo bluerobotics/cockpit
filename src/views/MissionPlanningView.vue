@@ -186,7 +186,7 @@ const addWaypoint = (
     // @ts-ignore: Event has the latlng property
     removeWaypoint(waypoint)
   })
-  var markerIcon = L.divIcon({
+  const markerIcon = L.divIcon({
     className: 'marker-icon',
     iconSize: [16, 16],
     iconAnchor: [8, 8],
@@ -233,7 +233,7 @@ const saveMissionToFile = async (): Promise<void> => {
 }
 
 const loadMissionFromFile = async (e: Event): Promise<void> => {
-  var reader = new FileReader()
+  const reader = new FileReader()
   reader.onload = (event: Event) => {
     // @ts-ignore: We know the event type and need refactor of the event typing
     const contents = event.target.result
@@ -339,7 +339,7 @@ watch(vehicleStore.coordinates, () => {
 
   if (vehicleMarker.value === undefined) {
     vehicleMarker.value = L.marker(vehiclePosition.value)
-    var vehicleMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
+    const vehicleMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
     vehicleMarker.value.setIcon(vehicleMarkerIcon)
     const vehicleMarkerTooltip = L.tooltip({
       content: 'V',
@@ -363,7 +363,7 @@ watch(home, () => {
 
   if (homeMarker.value === undefined) {
     homeMarker.value = L.marker(position as LatLngTuple)
-    var homeMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
+    const homeMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
     homeMarker.value.setIcon(homeMarkerIcon)
     const homeMarkerTooltip = L.tooltip({
       content: 'H',
