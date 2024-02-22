@@ -180,10 +180,10 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
   return true
 }
 
-const resetGlobalAddress = (): void => {
+const resetGlobalAddress = async (): Promise<void> => {
   newGlobalAddress.value = defaultGlobalAddress
 
-  setGlobalAddress()
+  await setGlobalAddress()
 }
 
 const resetVehicleConnection = async (): Promise<void> => {
