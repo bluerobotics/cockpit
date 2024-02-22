@@ -443,7 +443,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   // If the user does not have it's own profiles yet, try to fetch them from the vehicle, and if it fails, create default ones
   if (savedProfiles.value.isEmpty()) {
-    importProfilesFromVehicle()
+    // We use a self invoked await function to avoid moving the entire store to async
+    ;(async () => importProfilesFromVehicle())()
     widgetProfiles.forEach((profile) => {
       const userProfile = structuredClone(profile)
       userProfile.name = userProfile.name.replace('Default', 'User')
