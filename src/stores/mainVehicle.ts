@@ -182,6 +182,27 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('Takeoff cancelled by the user')
     }
   }
+  /**
+   * Change the altitude of the vehicle.
+   * @returns {Promise<void>} A Promise that resolves when the altitude is changed or rejects if the action is cancelled.
+   */
+  async function changeAlt(): Promise<void> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to change altitude.')
+    }
+
+    showAltitudeSlider.value = true
+
+    const confirmed = await slideToConfirm('Confirm Altitude Change', 'Alt Change Cmd Confirmed')
+    showAltitudeSlider.value = false
+
+    if (confirmed) {
+      mainVehicle.value.changeAltitude(altitude.rel - altitude_setpoint.value)
+    } else {
+      console.error('Altitude change cancelled by the user')
+      throw new Error('Altitude change cancelled by the user')
+    }
+  }
 
   /**
    * Land the vehicle.
@@ -463,6 +484,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   return {
     arm,
     takeoff,
+    changeAlt,
     land,
     disarm,
     goTo,

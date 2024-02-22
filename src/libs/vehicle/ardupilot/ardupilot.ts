@@ -393,6 +393,44 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
+   * Helper function for changing the altitude of the vehicle
+   * @param {number} altitude (in meters)
+   */
+  _changeAltitude(altitude: number): void {
+    const gotoMessage: Message.SetPositionTargetLocalNed = {
+      time_boot_ms: 0,
+      type: MAVLinkType.SET_POSITION_TARGET_LOCAL_NED,
+      target_system: 1,
+      target_component: 1,
+      coordinate_frame: { type: MavFrame.MAV_FRAME_LOCAL_OFFSET_NED },
+      type_mask: { bits: 0b0000111111111000 },
+      x: 0,
+      y: 0,
+      z: altitude,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      afx: 0,
+      afy: 0,
+      afz: 0,
+      yaw: 0,
+      yaw_rate: 0,
+    }
+
+    this.write(gotoMessage)
+  }
+
+  /**
+   * Change altitude
+   * @param {number} altitudeSetpoint
+   * @returns {void}
+   */
+  changeAltitude(altitudeSetpoint: number): void {
+    this._changeAltitude(altitudeSetpoint)
+    return
+  }
+
+  /**
    * Helper function for commanding takeoff
    * @param {number} altitude (in meters)
    */
@@ -402,10 +440,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Takeoff
-   * @param {number} altitude_septoint
+   * @param {number} altitudeSetpoint
    * @returns {void}
    */
-  takeoff(altitude_septoint: number): void {
+  takeoff(altitudeSetpoint: number): void {
     const guidedMode = this.modesAvailable().get('GUIDED')
     if (guidedMode === undefined) {
       return
@@ -413,7 +451,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
     this.setMode(guidedMode as Modes)
     this.arm()
-    this._takeoff(altitude_septoint)
+    this._takeoff(altitudeSetpoint)
     this.onTakeoff.emit()
     return
   }
