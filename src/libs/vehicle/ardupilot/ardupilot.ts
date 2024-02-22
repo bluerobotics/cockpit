@@ -857,7 +857,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * Clear mission that is on the vehicle
    */
   async clearMissions(): Promise<void> {
-    this.uploadMission([])
+    await this.uploadMission([])
   }
 
   /**
