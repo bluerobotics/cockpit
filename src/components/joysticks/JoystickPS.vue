@@ -25,12 +25,15 @@ enum SVGModel {
   PS4 = 'PS4',
   PS5 = 'PS5',
   LogitechExtreme3DPro = 'LogitechExtreme3DPro',
+  IPEGAPG9023 = 'Ipega9023',
 }
 
 const joystickSvgModel = computed(() => {
   switch (joystickModel.value) {
     case JoystickModel.LogitechExtreme3DPro:
       return SVGModel.LogitechExtreme3DPro
+    case JoystickModel.IpegaPG9023:
+      return SVGModel.IPEGAPG9023
     default:
       return SVGModel.PS4
   }
