@@ -518,7 +518,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @returns {boolean}
    */
   flying(): boolean {
-    return !this._flying
+    return this._flying
   }
 
   /**
