@@ -273,7 +273,7 @@ const followSomething = (): void => {
 }
 
 let followInterval: ReturnType<typeof setInterval> | undefined = undefined
-onMounted(() => {
+onMounted(async () => {
   const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap',
@@ -304,7 +304,7 @@ onMounted(() => {
     zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
   })
 
-  goHome()
+  await goHome()
 
   planningMap.value.on('click', (e) => {
     addWaypoint(
@@ -402,9 +402,9 @@ navigator?.geolocation?.watchPosition(
 
 // If home position is updated and map was not yet centered on it, center
 let mapNotYetCenteredInHome = true
-watch([home, planningMap], () => {
+watch([home, planningMap], async () => {
   if (home.value === mapCenter.value || !planningMap.value || !mapNotYetCenteredInHome) return
-  goHome()
+  await goHome()
   mapNotYetCenteredInHome = false
 })
 </script>
