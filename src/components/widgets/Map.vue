@@ -177,12 +177,12 @@ const leafletObject = ref<null | Map>(null)
 
 let first_position = true
 navigator?.geolocation?.watchPosition(
-  (position) => {
+  async (position) => {
     home.value = [position.coords.latitude, position.coords.longitude]
 
     // If it's the first time that position is being set, go home
     if (first_position) {
-      goHome()
+      await goHome()
       first_position = leafletObject.value !== null
     }
   },
