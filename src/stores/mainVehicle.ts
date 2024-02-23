@@ -15,7 +15,7 @@ import {
   registerActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
-import { slideToConfirm } from '@/libs/slide-to-confirm'
+import { EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
@@ -135,7 +135,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to arm.')
     }
 
-    const confirmed = await slideToConfirm('Confirm Arm', 'Arm Command Confirmed')
+    const confirmed = await slideToConfirm(EventCategory.ARM, 'Confirm Arm', 'Arm Command Confirmed')
     if (confirmed) {
       mainVehicle.value.arm()
     } else {
@@ -153,7 +153,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to disarm.')
     }
 
-    const confirmed = await slideToConfirm('Confirm Disarm', 'Disarm Command Confirmed')
+    const confirmed = await slideToConfirm(EventCategory.DISARM, 'Confirm Disarm', 'Disarm Command Confirmed')
     if (confirmed) {
       mainVehicle.value.disarm()
     } else {
@@ -172,7 +172,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     showAltitudeSlider.value = true
 
-    const confirmed = await slideToConfirm('Confirm Takeoff', 'Takeoff Command Confirmed')
+    const confirmed = await slideToConfirm(EventCategory.TAKEOFF, 'Confirm Takeoff', 'Takeoff Command Confirmed')
     showAltitudeSlider.value = false
 
     if (confirmed) {
@@ -193,7 +193,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     showAltitudeSlider.value = true
 
-    const confirmed = await slideToConfirm('Confirm Altitude Change', 'Alt Change Cmd Confirmed')
+    const confirmed = await slideToConfirm(
+      EventCategory.ALT_CHANGE,
+      'Confirm Altitude Change',
+      'Alt Change Cmd Confirmed'
+    )
     showAltitudeSlider.value = false
 
     if (confirmed) {
@@ -213,7 +217,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to land.')
     }
 
-    const confirmed = await slideToConfirm('Confirm Landing', 'Landing Command Confirmed')
+    const confirmed = await slideToConfirm(EventCategory.LAND, 'Confirm Landing', 'Landing Command Confirmed')
     if (confirmed) {
       mainVehicle.value.land()
     } else {
@@ -247,7 +251,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to execute go to command.')
     }
 
-    const confirmed = await slideToConfirm('Confirm Go To Position', 'Go To Position Command Confirmed')
+    const confirmed = await slideToConfirm(
+      EventCategory.GOTO,
+      'Confirm Go To Position',
+      'Go To Position Command Confirmed'
+    )
     if (confirmed) {
       const waypoint = new Coordinates()
       waypoint.latitude = latitude
