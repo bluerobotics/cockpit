@@ -9,8 +9,9 @@ export const useMissionStore = defineStore('mission', () => {
   const missionName = ref('')
   const lastMissionName = useStorage('cockpit-last-mission-name', '')
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
-  const slideEventCategoriesRequired = useStorage(
-    'cockpit-slide-event-categories-required',
+  const slideEventsEnabled = useStorage('cockpit-slide-events-enabled', true)
+  const slideEventsCategoriesRequired = useStorage(
+    'cockpit-slide-events-categories-required',
     eventCategoriesDefaultMapping,
     localStorage,
     { mergeDefaults: true }
@@ -36,7 +37,8 @@ export const useMissionStore = defineStore('mission', () => {
     lastMissionName,
     missionStartTime,
     currentPlanningWaypoints,
-    slideEventCategoriesRequired,
+    slideEventsEnabled,
+    slideEventsCategoriesRequired,
     moveWaypoint,
   }
 })
