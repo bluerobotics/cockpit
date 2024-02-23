@@ -171,17 +171,20 @@ export const useVideoStore = defineStore('video', () => {
     const vWidth = videoTrack.getSettings().width || 1920
     const vHeight = videoTrack.getSettings().height || 1080
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
-    let chunksCount = 0
+    let chunksCount = -1
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
-      // Check first if this item is already in the database. If so, stop the recording and return.
+      // Since this operation is async, we can have more than one chunk being recorded at the same time
+      // To prevent reusing the name of the previous chunk (because of the counter not having been updated yet), we
+      // update the chunk count/name before anything else.
+      chunksCount++
       const chunkName = `${recordingHash}_${chunksCount}`
+      // Check if this chunk is already in the database. If so, stop the recording and return.
       const chunk = await tempVideoChunksDB.getItem(chunkName)
       if (chunk) {
         stopRecording(streamName)
         return
       }
       await tempVideoChunksDB.setItem(chunkName, e.data)
-      chunksCount++
     }
 
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
