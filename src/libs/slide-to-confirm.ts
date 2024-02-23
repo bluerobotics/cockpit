@@ -12,12 +12,12 @@ export const confirmed = ref(false)
  * @enum {string}
  */
 export enum EventCategory {
-  ARM = 'arm',
-  DISARM = 'disarm',
-  TAKEOFF = 'takeoff',
-  ALT_CHANGE = 'alt_change',
-  LAND = 'land',
-  GOTO = 'goto',
+  ARM = 'Arm',
+  DISARM = 'Disarm',
+  TAKEOFF = 'Takeoff',
+  ALT_CHANGE = 'Altitude Change',
+  LAND = 'Land',
+  GOTO = 'Goto',
 }
 
 /**
