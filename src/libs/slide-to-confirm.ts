@@ -1,5 +1,7 @@
 import { ref, watch } from 'vue'
 
+import { useMissionStore } from '@/stores/mission'
+
 export const showSlideToConfirm = ref(false)
 export const sliderText = ref('Slide to Confirm')
 export const confirmationSliderText = ref('Action Confirm')
@@ -46,7 +48,13 @@ export const eventCategoriesDefaultMapping: Record<string, boolean> = Object.val
 export function slideToConfirm(category: EventCategory, text: string, confirmationText: string): Promise<boolean> {
   console.log(`slideToConfirm from category ${category} with text: ${text}`)
 
+  const missionStore = useMissionStore()
+
   return new Promise((resolve) => {
+    if (!missionStore.slideEventCategoriesRequired[category]) {
+      return resolve(true)
+    }
+
     sliderText.value = text
     confirmationSliderText.value = confirmationText
     showSlideToConfirm.value = true
