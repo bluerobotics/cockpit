@@ -51,7 +51,7 @@ export function slideToConfirm(category: EventCategory, text: string, confirmati
   const missionStore = useMissionStore()
 
   return new Promise((resolve) => {
-    if (!missionStore.slideEventCategoriesRequired[category]) {
+    if (!missionStore.slideEventsEnabled || !missionStore.slideEventsCategoriesRequired[category]) {
       return resolve(true)
     }
 
