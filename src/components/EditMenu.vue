@@ -275,6 +275,7 @@ import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
 
+import { isHorizontalScroll } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { MiniWidgetType } from '@/types/miniWidgets'
 import { type Profile, type View, type Widget, WidgetType } from '@/types/widgets'
@@ -394,10 +395,21 @@ useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidget
 onMounted(() => {
   const widgetContainers = [availableWidgetsContainer.value, availableMiniWidgetsContainer.value]
   widgetContainers.forEach((container) => {
-    container.addEventListener('wheel', function (e: WheelEvent) {
-      if (e.deltaY > 0) container.scrollLeft += 100
-      else container.scrollLeft -= 100
-    })
+    container.addEventListener(
+      'wheel',
+      function (e: WheelEvent) {
+        // In case of horizontal scroll skip the previous wheel event and let the horizontal scroll work
+        if (isHorizontalScroll(e)) return
+
+        const scrollBy = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX
+
+        container.scrollLeft += Math.sign(scrollBy) * Math.min(Math.abs(scrollBy), 100)
+
+        // Prevents this wheel to avoid a following scroll to happens and act simultaneously
+        e.preventDefault()
+      },
+      { passive: false }
+    )
   })
 })
 
