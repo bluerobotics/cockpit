@@ -90,3 +90,12 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
 
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
+
+/**
+ * Check if the wheel event is associated with a horizontal scroll
+ * @param {WheelEvent} e The wheel event
+ * @returns {boolean} Whether or not the wheel event is associated with a horizontal scroll
+ */
+export const isHorizontalScroll = (e: WheelEvent): boolean => {
+  return e.shiftKey
+}
