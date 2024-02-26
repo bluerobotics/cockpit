@@ -189,6 +189,19 @@ const updateCurrentStream = async (streamName: string | undefined): Promise<void
 }
 
 const streamConnectionRoutine = setInterval(() => {
+  // If the video recording widget is cold booted, assign the first stream to it
+  if (miniWidget.value.options.streamName === undefined && !namesAvailableStreams.value.isEmpty()) {
+    miniWidget.value.options.streamName = namesAvailableStreams.value[0]
+    nameSelectedStream.value = miniWidget.value.options.streamName
+
+    // If there are multiple streams available, warn user that we chose one automatically and they should change if wanted
+    if (namesAvailableStreams.value.length > 1) {
+      const text = `You have multiple streams available, so we chose one randomly to start with.
+        If you want to change it, please open the widget configuration.`
+      Swal.fire({ title: 'Multiple streams detected', text: text, icon: 'info', confirmButtonText: 'OK' })
+    }
+  }
+
   const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.streamName)
   // If the widget is not connected to the MediaStream, try to connect it
   if (!isEqual(updatedMediaStream, mediaStream.value)) {
