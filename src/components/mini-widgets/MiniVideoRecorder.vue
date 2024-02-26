@@ -63,7 +63,7 @@
 import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { intervalToDuration } from 'date-fns'
 import { storeToRefs } from 'pinia'
-import Swal, { type SweetAlertResult } from 'sweetalert2'
+import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { isEqual } from '@/libs/utils'
@@ -104,6 +104,24 @@ watch(nameSelectedStream, () => {
   mediaStream.value = undefined
 })
 
+// eslint-disable-next-line jsdoc/require-jsdoc
+function assertStreamIsSelectedAndAvailable(
+  selectedStream: undefined | string
+): asserts selectedStream is NonNullable<undefined | string> {
+  nameSelectedStream.value = selectedStream
+
+  if (nameSelectedStream.value === undefined) {
+    Swal.fire({ text: 'No stream selected.', icon: 'error' })
+    return
+  }
+
+  if (namesAvailableStreams.value.includes(nameSelectedStream.value)) return
+
+  const errorMsg = `The selected stream is not available. Please check its source or select another stream.`
+  Swal.fire({ text: errorMsg, icon: 'error' })
+  throw new Error(errorMsg)
+}
+
 const toggleRecording = async (): Promise<void> => {
   if (isRecording.value) {
     if (nameSelectedStream.value !== undefined) {
@@ -124,10 +142,7 @@ const toggleRecording = async (): Promise<void> => {
 }
 
 const startRecording = (): void => {
-  if (nameSelectedStream.value === undefined) {
-    Swal.fire({ text: 'No stream selected.', icon: 'error' })
-    return
-  }
+  assertStreamIsSelectedAndAvailable(nameSelectedStream.value)
   videoStore.startRecording(nameSelectedStream.value)
   isStreamSelectDialogOpen.value = false
 }
@@ -149,24 +164,27 @@ const timePassedString = computed(() => {
   return `${durationHours}:${durationMinutes}:${durationSeconds}`
 })
 
-const updateCurrentStream = async (streamName: string | undefined): Promise<SweetAlertResult | void> => {
-  nameSelectedStream.value = streamName
+const updateCurrentStream = async (streamName: string | undefined): Promise<void> => {
+  assertStreamIsSelectedAndAvailable(streamName)
+
   mediaStream.value = undefined
-  if (nameSelectedStream.value !== undefined) {
-    isLoadingStream.value = true
-    let millisPassed = 0
-    const timeStep = 100
-    const waitingTime = 3000
-    while (isLoadingStream.value && millisPassed < waitingTime) {
-      // @ts-ignore: The media stream can (and probably will) get defined as we selected a stream
-      isLoadingStream.value = mediaStream.value === undefined || !mediaStream.value.active
-      await new Promise((r) => setTimeout(r, timeStep))
-      millisPassed += timeStep
-    }
-    if (isLoadingStream.value) {
-      return Swal.fire({ text: 'Could not load media stream.', icon: 'error' })
-    }
+  isLoadingStream.value = true
+
+  let millisPassed = 0
+  const timeStep = 100
+  const waitingTime = 3000
+  while (isLoadingStream.value && millisPassed < waitingTime) {
+    // @ts-ignore: The media stream can (and probably will) get defined as we selected a stream
+    isLoadingStream.value = mediaStream.value === undefined || !mediaStream.value.active
+    await new Promise((r) => setTimeout(r, timeStep))
+    millisPassed += timeStep
   }
+
+  if (isLoadingStream.value) {
+    Swal.fire({ text: 'Could not load media stream.', icon: 'error' })
+    return
+  }
+
   miniWidget.value.options.streamName = streamName
 }
 
