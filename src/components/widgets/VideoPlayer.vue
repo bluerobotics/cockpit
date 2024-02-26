@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { isEqual } from '@/libs/utils'
@@ -101,6 +102,13 @@ const streamConnectionRoutine = setInterval(() => {
   if (widget.value.options.streamName === undefined && !namesAvailableStreams.value.isEmpty()) {
     widget.value.options.streamName = namesAvailableStreams.value[0]
     nameSelectedStream.value = widget.value.options.streamName
+
+    // If there are multiple streams available, warn user that we chose one automatically and he should change if wanted
+    if (namesAvailableStreams.value.length > 1) {
+      const text = `You have multiple streams available, so we chose one randomly to start with.
+        If you want to change it, please open the widget configuration on the edit-menu.`
+      Swal.fire({ title: 'Multiple streams detected', text: text, icon: 'info', confirmButtonText: 'OK' })
+    }
   }
 
   const updatedMediaStream = videoStore.getMediaStream(widget.value.options.streamName)
