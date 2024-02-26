@@ -3,6 +3,13 @@
     <div v-if="nameSelectedStream === undefined" class="no-video-alert">
       <span>No video stream selected.</span>
     </div>
+    <div v-else-if="!namesAvailableStreams.includes(nameSelectedStream)" class="no-video-alert">
+      <p>The selected stream is not available.</p>
+      <p>Please check its source or select another stream.</p>
+    </div>
+    <div v-else-if="mediaStream === undefined" class="no-video-alert">
+      <span>Loading stream...</span>
+    </div>
     <video ref="videoElement" muted autoplay playsinline disablePictureInPicture>
       Your browser does not support the video tag.
     </video>
@@ -116,6 +123,10 @@ const streamConnectionRoutine = setInterval(() => {
   if (!isEqual(updatedMediaStream, mediaStream.value)) {
     mediaStream.value = updatedMediaStream
   }
+
+  console.log('nameSelectedStream.value', nameSelectedStream.value)
+  console.log('mediaStream.value', mediaStream.value)
+  console.log('------------------')
 }, 1000)
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
 
