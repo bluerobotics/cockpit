@@ -2,7 +2,7 @@
   <SnappingGrid v-if="store.showGrid && store.editingMode" :grid-interval="store.gridInterval" class="snapping-grid" />
   <div class="widgets-view">
     <div v-for="view in store.viewsToShow" :key="view.hash" class="widget-view">
-      <template v-for="widget in view.widgets.slice().reverse()" :key="widget">
+      <template v-for="widget in view.widgets.slice().reverse()" :key="widget.hash">
         <WidgetHugger
           v-if="Object.values(WidgetType).includes(widget.component)"
           :widget="widget"
