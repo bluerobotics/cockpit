@@ -123,10 +123,6 @@ const streamConnectionRoutine = setInterval(() => {
   if (!isEqual(updatedMediaStream, mediaStream.value)) {
     mediaStream.value = updatedMediaStream
   }
-
-  console.log('nameSelectedStream.value', nameSelectedStream.value)
-  console.log('mediaStream.value', mediaStream.value)
-  console.log('------------------')
 }, 1000)
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
 
