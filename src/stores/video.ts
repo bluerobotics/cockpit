@@ -279,6 +279,28 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
+  // Used to download a file from the video recovery database
+  const downloadTempVideoDB = async (): Promise<void> => {
+    console.debug('Downloading video chunks from the temporary database.')
+    const zipWriter = new ZipWriter(new BlobWriter('application/zip'))
+
+    const fileNames = await tempVideoChunksDB.keys()
+    const maybeFiles = await Promise.all(
+      fileNames.map(async (filename) => ({
+        blob: await tempVideoChunksDB.getItem(filename),
+        filename,
+      }))
+    )
+    const files = maybeFiles.filter((file) => file.blob !== undefined)
+
+    for (const { filename, blob } of files) {
+      await zipWriter.add(filename, new BlobReader(blob as Blob))
+    }
+
+    const blob = await zipWriter.close()
+    saveAs(blob, 'Cockpit-Temp-Video-Chunks.zip')
+  }
+
   const temporaryVideoDBSize = async (): Promise<number> => {
     let totalSizeBytes = 0
     await tempVideoChunksDB.iterate((chunk) => {
@@ -439,6 +461,7 @@ export const useVideoStore = defineStore('video', () => {
     discardFilesFromVideoDB,
     downloadFilesFromVideoDB,
     clearTemporaryVideoDB,
+    downloadTempVideoDB,
     temporaryVideoDBSize,
     videoStorageFileSize,
     getMediaStream,
