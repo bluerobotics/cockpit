@@ -396,6 +396,22 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   /**
+   * States whether the given mini-widget is a real mini-widget
+   * Fake mini-widgets are those used as placeholders, in the edit-menu, for example
+   * @param { MiniWidget } miniWidget - Mini-widget
+   * @returns { boolean }
+   */
+  function isRealMiniWidget(miniWidget: MiniWidget): boolean {
+    return savedProfiles.value.some((profile) =>
+      profile.views.some((view) =>
+        view.miniWidgetContainers.some((container) =>
+          container.widgets.some((widget) => widget.hash === miniWidget.hash)
+        )
+      )
+    )
+  }
+
+  /**
    * Open widget configuration menu
    * @param { Widget } widget - Widget
    */
@@ -564,5 +580,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     importProfilesFromVehicle,
     exportProfilesToVehicle,
     isWidgetVisible,
+    isRealMiniWidget,
   }
 })
