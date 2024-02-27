@@ -9,7 +9,7 @@
     <TakeoffLandCommander :mini-widget="miniWidget" />
   </template>
   <template v-if="miniWidget.component === MiniWidgetType.ArmerButton">
-    <ArmerButton :options="miniWidget" />
+    <ArmerButton :mini-widget="miniWidget" />
   </template>
   <template v-if="miniWidget.component === MiniWidgetType.BaseCommIndicator">
     <BaseCommIndicator :mini-widget="miniWidget" />
@@ -30,13 +30,13 @@
     <MiniVideoRecorder :mini-widget="miniWidget" />
   </template>
   <template v-if="miniWidget.component === MiniWidgetType.ModeSelector">
-    <ModeSelector :options="miniWidget" />
+    <ModeSelector :mini-widget="miniWidget" />
   </template>
   <template v-if="miniWidget.component === MiniWidgetType.SatelliteIndicator">
     <SatelliteIndicator :mini-widget="miniWidget" />
   </template>
   <template v-if="miniWidget.component === MiniWidgetType.ViewSelector">
-    <ViewSelector :options="miniWidget" />
+    <ViewSelector :mini-widget="miniWidget" />
   </template>
 </template>
 
