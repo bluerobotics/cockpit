@@ -96,6 +96,13 @@
         <span class="text-lg font-medium">Clear temporary video storage</span>
         <span class="text-sm text-slate-300/90">Current size: {{ formatBytes(temporaryDbSize) }}</span>
       </div>
+      <div
+        v-if="temporaryDbSize > 0"
+        class="flex flex-col items-center justify-center p-4 m-4 transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
+        @click="videoStore.downloadTempVideoDB()"
+      >
+        <span class="text-lg font-medium">Download temporary video chunks</span>
+      </div>
     </template>
   </BaseConfigurationView>
 </template>
