@@ -16,35 +16,56 @@
         <div>coordinates: {{ clickedLocation }}</div>
       </l-tooltip>
     </l-marker>
-    <v-btn
-      class="absolute left-0 m-3 bottom-12 bg-slate-50"
-      elevation="2"
-      style="z-index: 1002; border-radius: 0px"
-      icon="mdi-home-map-marker"
-      size="x-small"
-      @click="whoToFollow = WhoToFollow.HOME"
-    />
-
+    <v-tooltip location="top center" text="Home position is currently undefined" :disabled="Boolean(home)">
+      <template #activator="{ props: tooltipProps }">
+        <v-btn
+          class="absolute left-0 m-3 bottom-12 bg-slate-50"
+          :class="!home ? 'active-events-on-disabled' : ''"
+          :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+          elevation="2"
+          style="z-index: 1002; border-radius: 0px"
+          icon="mdi-home-map-marker"
+          size="x-small"
+          v-bind="tooltipProps"
+          :disabled="!home"
+          @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+          @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+        />
+      </template>
+    </v-tooltip>
     <div v-if="showContextMenu" class="context-menu" :style="{ top: menuPosition.top, left: menuPosition.left }">
       <ul @click.stop="">
         <li @click="onMenuOptionSelect('goto')">GoTo</li>
       </ul>
     </div>
-    <v-btn
-      class="absolute m-3 bottom-12 left-10 bg-slate-50"
-      elevation="2"
-      style="z-index: 1002; border-radius: 0px"
-      icon="mdi-airplane-marker"
-      size="x-small"
-      @click="whoToFollow = WhoToFollow.VEHICLE"
-    />
+    <v-tooltip
+      location="top center"
+      text="Vehicle position is currently undefined"
+      :disabled="Boolean(vehiclePosition)"
+    >
+      <template #activator="{ props: tooltipProps }">
+        <v-btn
+          class="absolute m-3 bottom-12 left-10 bg-slate-50"
+          :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
+          :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+          elevation="2"
+          style="z-index: 1002; border-radius: 0px"
+          icon="mdi-airplane-marker"
+          size="x-small"
+          v-bind="tooltipProps"
+          :disabled="!vehiclePosition"
+          @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+          @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+        />
+      </template>
+    </v-tooltip>
     <v-btn
       class="absolute m-3 bottom-12 left-20 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-download"
       size="x-small"
-      @click="downloadMissionFromVehicle"
+      @click.stop="downloadMissionFromVehicle"
     />
     <v-btn
       class="absolute mb-3 ml-1 bottom-12 left-32 bg-slate-50"
@@ -52,7 +73,7 @@
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-play"
       size="x-small"
-      @click="executeMissionOnVehicle"
+      @click.stop="executeMissionOnVehicle"
     />
     <l-marker
       v-for="(waypoint, i) in missionStore.currentPlanningWaypoints"
@@ -142,8 +163,10 @@ import {
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
+import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import type { WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import VehicleIcon from './VehicleIcon.vue'
@@ -155,11 +178,13 @@ const missionStore = useMissionStore()
 
 const zoom = ref(18)
 const bounds = ref(null)
-const center = ref([-27.5935, -48.55854])
+const center = ref<WaypointCoordinates>([-27.5935, -48.55854])
 const home = ref(center.value)
+const followerTarget = ref<WhoToFollow | undefined>(undefined)
+
 const vehiclePosition = computed(() =>
   vehicleStore.coordinates.latitude
-    ? [vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude]
+    ? ([vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude] as WaypointCoordinates)
     : undefined
 )
 const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw) : 0))
@@ -172,17 +197,24 @@ const timeAgoSeenText = computed(() => {
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
 })
 
+const targetFollower = new TargetFollower(
+  (newTarget: WhoToFollow | undefined) => (followerTarget.value = newTarget),
+  (newCenter: WaypointCoordinates) => (center.value = newCenter)
+)
+targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
+targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
+
 const map: Ref<null | any> = ref(null) // eslint-disable-line @typescript-eslint/no-explicit-any
 const leafletObject = ref<null | Map>(null)
 
 let first_position = true
 navigator?.geolocation?.watchPosition(
-  async (position) => {
+  (position) => {
     home.value = [position.coords.latitude, position.coords.longitude]
 
     // If it's the first time that position is being set, go home
     if (first_position) {
-      await goHome()
+      targetFollower.goToTarget(WhoToFollow.HOME)
       first_position = leafletObject.value !== null
     }
   },
@@ -223,7 +255,7 @@ const onLeafletReady = async (): Promise<void> => {
 
   // It was not possible to find a way to change the position
   // automatically besides waiting 2 seconds before changing it
-  setTimeout(goHome, 2000)
+  setTimeout(() => targetFollower.goToTarget(WhoToFollow.HOME), 2000)
 }
 
 const clickedLocation = ref<[number, number] | null>(null)
@@ -244,13 +276,6 @@ const onKeydown = (event: KeyboardEvent): void => {
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
 })
-
-const goHome = async (): Promise<void> => {
-  if (home.value === null) {
-    return
-  }
-  center.value = home.value
-}
 
 const fetchingMission = ref(false)
 const missionFetchProgress = ref(0)
@@ -293,23 +318,6 @@ watch(props.widget, () => {
   leafletObject.value?.invalidateSize()
 })
 
-// eslint-disable-next-line jsdoc/require-jsdoc
-enum WhoToFollow {
-  HOME = 'Home',
-  VEHICLE = 'Vehicle',
-}
-
-const whoToFollow = ref(WhoToFollow.VEHICLE)
-
-const followSomething = (): void => {
-  if (whoToFollow.value === WhoToFollow.HOME && home.value) {
-    center.value = home.value
-  } else if (whoToFollow.value === WhoToFollow.VEHICLE && vehiclePosition.value) {
-    center.value = vehiclePosition.value
-  }
-}
-
-let followInterval: ReturnType<typeof setInterval> | undefined = undefined
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (Object.keys(widget.value.options).length === 0) {
@@ -317,11 +325,12 @@ onBeforeMount(() => {
       showVehiclePath: true,
     }
   }
-  followInterval = setInterval(followSomething, 500)
+  targetFollower.enableAutoUpdate()
 })
 
 onBeforeUnmount(() => {
-  clearInterval(followInterval)
+  targetFollower.disableAutoUpdate()
+
   if (leafletMap) {
     leafletMap.off('click', onMapClick)
   }
@@ -433,5 +442,8 @@ const onMenuOptionSelect = (option: string): void => {
 }
 .context-menu ul li:hover {
   background-color: #ddd;
+}
+.active-events-on-disabled {
+  pointer-events: all;
 }
 </style>
