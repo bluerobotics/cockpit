@@ -160,7 +160,7 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.timeRecordingStart = new Date()
     const streamData = activeStreams.value[streamName] as StreamData
-    const recordingHash = uuid().slice(0, 6)
+    const recordingHash = uuid().slice(0, 8)
     const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
     const fileName = `${missionStore.missionName || 'Cockpit'} (${timeRecordingStartString}) #${recordingHash}`
     activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
