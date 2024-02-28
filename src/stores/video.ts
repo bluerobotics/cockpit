@@ -173,7 +173,7 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
     let chunksCount = -1
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
-      // Since this operation is async, we can have more than one chunk being recorded at the same time
+      // Since this operation is async, at any given moment there might be more than one chunk processing promise started.
       // To prevent reusing the name of the previous chunk (because of the counter not having been updated yet), we
       // update the chunk count/name before anything else.
       chunksCount++
