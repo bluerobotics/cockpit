@@ -1,3 +1,7 @@
+import Swal from 'sweetalert2'
+
+import type { Type } from '@/libs/connection/m2r/messages/mavlink2rest'
+import { MavCmd, MavResult } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { AlertLevel } from '@/types/alert'
 
 /**
@@ -97,6 +101,66 @@ export class Coordinates {
     }
 
     return this
+  }
+}
+
+/**
+ * Command Acknowledgment
+ */
+export class CommandAck {
+  command: Type<MavCmd>
+  result: Type<MavResult>
+  progress: number
+  resultText: string
+  targetSystem: number
+  targetComponent: number
+
+  /**
+   * Creates an instance of CommandAck.
+   * @param {Partial<CommandAck>} [init]
+   */
+  constructor(init?: Partial<CommandAck>) {
+    Object.assign(this, init)
+  }
+
+  /**
+   * Alert message
+   */
+  public alertMessage(): void {
+    if (
+      this.result.type === MavResult.MAV_RESULT_TEMPORARILY_REJECTED ||
+      this.result.type === MavResult.MAV_RESULT_DENIED ||
+      this.result.type === MavResult.MAV_RESULT_UNSUPPORTED ||
+      this.result.type === MavResult.MAV_RESULT_FAILED
+    ) {
+      Swal.fire({
+        title: 'Command Failed',
+        text: 'Command: ' + this.command.type + ' failed with result: ' + this.result.type,
+        icon: 'error',
+        confirmButtonText: 'OK',
+      })
+    } else if (this.result.type === MavResult.MAV_RESULT_ACCEPTED) {
+      Swal.fire({
+        title: 'Command Accepted',
+        text: 'Command: ' + this.command.type + ' succeeded with: ' + this.result.type,
+        icon: 'success',
+        confirmButtonText: 'OK',
+      })
+    } else if (this.result.type === MavResult.MAV_RESULT_IN_PROGRESS) {
+      Swal.fire({
+        title: 'Command In Progress',
+        text: 'Command: ' + this.command.type + ' is in progress',
+        icon: 'info',
+        confirmButtonText: 'OK',
+      })
+    } else {
+      Swal.fire({
+        title: 'Result Unknown',
+        text: 'Command: ' + this.command.type + ' result is unknown',
+        icon: 'error',
+        confirmButtonText: 'OK',
+      })
+    }
   }
 }
 

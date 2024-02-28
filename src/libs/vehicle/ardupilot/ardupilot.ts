@@ -1,3 +1,5 @@
+import Swal from 'sweetalert2'
+
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type {
   MAVLinkMessageDictionary,
@@ -15,6 +17,7 @@ import {
   MavMissionType,
   MavModeFlag,
   MavParamType,
+  MavResult,
   MavState,
   MavType,
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -34,6 +37,7 @@ import {
   Altitude,
   Attitude,
   Battery,
+  CommandAck,
   Coordinates,
   FixTypeGPS,
   Parameter,
@@ -116,6 +120,9 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @param {number} param5
    * @param {number} param6
    * @param {number} param7
+   * @param {boolean} waitForAck If the command should wait for an acknowledgment
+   * @param {boolean} noAlert Controls if swal alerts should not be shown
+   * @returns {Promise<CommandAck>} A promise that resolves with the command acknowledgment.
    */
   sendCommandLong(
     mav_command: MavCmd,
@@ -125,26 +132,73 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     param4?: number,
     param5?: number,
     param6?: number,
-    param7?: number
-  ): void {
-    const command: Message.CommandLong = {
-      type: MAVLinkType.COMMAND_LONG,
-      param1: param1 ?? 0,
-      param2: param2 ?? 0,
-      param3: param3 ?? 0,
-      param4: param4 ?? 0,
-      param5: param5 ?? 0,
-      param6: param6 ?? 0,
-      param7: param7 ?? 0,
-      command: {
-        type: mav_command,
-      },
-      target_system: this.currentSystemId,
-      target_component: 1,
-      confirmation: 0,
-    }
+    param7?: number,
+    waitForAck = true,
+    noAlert = false
+  ): Promise<CommandAck> {
+    return new Promise((resolve, reject) => {
+      // Construct the command
+      const command: Message.CommandLong = {
+        type: MAVLinkType.COMMAND_LONG,
+        param1: param1 ?? 0,
+        param2: param2 ?? 0,
+        param3: param3 ?? 0,
+        param4: param4 ?? 0,
+        param5: param5 ?? 0,
+        param6: param6 ?? 0,
+        param7: param7 ?? 0,
+        command: {
+          type: mav_command,
+        },
+        target_system: this.currentSystemId,
+        target_component: 1,
+        confirmation: 0,
+      }
 
-    this.write(command)
+      this.write(command)
+      if (!waitForAck) {
+        resolve(new CommandAck())
+        return
+      }
+
+      let ackReceived = false
+      const ackHandler = (commandAck: CommandAck): void => {
+        console.log('Received command acknowledgment:', commandAck)
+        if (commandAck.command.type === mav_command) {
+          ackReceived = true
+          this.onCommandAck.remove(ackHandler)
+
+          if (![MavResult.MAV_RESULT_ACCEPTED, MavResult.MAV_RESULT_IN_PROGRESS].includes(commandAck.result.type)) {
+            if (!noAlert) {
+              commandAck.alertMessage()
+            }
+            reject(new Error(`Command failed with result: ${commandAck.result.type}`))
+          } else {
+            this.onCommandAck.remove(ackHandler)
+            resolve(commandAck)
+          }
+        }
+      }
+
+      this.onCommandAck.add(ackHandler)
+
+      // Setup a timeout for the ACK
+      const timeout = 5000
+      setTimeout(() => {
+        if (!ackReceived) {
+          if (!noAlert) {
+            Swal.fire({
+              title: 'Command timeout',
+              text: 'No acknowledgment was received for the command: ' + mav_command + ' in ' + timeout / 1000 + 's',
+              icon: 'error',
+              confirmButtonText: 'OK',
+            })
+          }
+          this.onCommandAck.remove(ackHandler)
+          reject(new Error('Timeout waiting for command acknowledgment'))
+        }
+      }, timeout)
+    })
   }
 
   /**
@@ -245,6 +299,23 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
 
     switch (mavlink_message.message.type) {
+      // command_ack
+      case MAVLinkType.COMMAND_ACK: {
+        const commandAck = mavlink_message.message as Message.CommandAck
+
+        const ack = new CommandAck({
+          command: commandAck.command,
+          result: commandAck.result,
+          progress: commandAck.progress,
+          resultText: commandAck.resultText,
+          targetSystem: commandAck.targetSystem,
+          targetComponent: commandAck.targetComponent,
+        })
+
+        // emit on command_ack
+        this.onCommandAck.emit_value(ack)
+        break
+      }
       case MAVLinkType.AHRS2: {
         const ahrsMessage = mavlink_message.message as Message.Ahrs2
         this._altitude.msl = ahrsMessage.altitude

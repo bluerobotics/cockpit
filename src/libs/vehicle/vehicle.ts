@@ -6,6 +6,7 @@ import type {
   Altitude,
   Attitude,
   Battery,
+  CommandAck,
   Coordinates,
   PageDescription,
   Parameter,
@@ -75,6 +76,7 @@ export abstract class AbstractVehicle<Modes> {
   onAltitude = new Signal<Altitude>()
   onBatteries = new Signal<Battery[]>()
   onCpuLoad = new Signal<number>()
+  onCommandAck = new Signal<CommandAck>()
   onGenericVariables = new Signal<Record<string, unknown>>()
   onMode = new Signal<Modes>()
   onPosition = new Signal<Coordinates>()
