@@ -244,6 +244,7 @@ export const useVideoStore = defineStore('video', () => {
   // Used to download a file from the video recovery database
   const downloadFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
     console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
+
     if (fileNames.length === 1) {
       const file = await videoStoringDB.getItem(fileNames[0])
       if (!file) {
@@ -253,17 +254,21 @@ export const useVideoStore = defineStore('video', () => {
       saveAs(file as Blob, fileNames[0])
       return
     }
+
     const zipWriter = new ZipWriter(new BlobWriter('application/zip'))
-    const filesPromises = fileNames
-      .filter(async (filename) => await videoStoringDB.getItem(filename))
-      .map(async (filename) => {
-        const file = await videoStoringDB.getItem(filename)
-        return { filename, file }
-      })
-    const files = await Promise.all(filesPromises)
-    for (const { filename, file } of files) {
-      await zipWriter.add(filename, new BlobReader(file as Blob))
+
+    const maybeFiles = await Promise.all(
+      fileNames.map(async (filename) => ({
+        blob: await videoStoringDB.getItem(filename),
+        filename,
+      }))
+    )
+    const files = maybeFiles.filter((file) => file.blob !== undefined)
+
+    for (const { filename, blob } of files) {
+      await zipWriter.add(filename, new BlobReader(blob as Blob))
     }
+
     const blob = await zipWriter.close()
     saveAs(blob, 'Cockpit-Video-Recovery.zip')
   }
