@@ -70,7 +70,7 @@
       <div ref="routerSection" class="router-view">
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
           <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex backdrop-blur-[2px]">
-            <button class="flex items-center justify-center h-full aspect-square" @click="showMainMenu = true">
+            <button class="flex items-center justify-center h-full aspect-square" @click="openMainMenu()">
               <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
             </button>
             <div
@@ -137,6 +137,7 @@
 <script setup lang="ts">
 import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp } from '@vueuse/core'
 import { format } from 'date-fns'
+import Swal from 'sweetalert2'
 import {
   // type AsyncComponentLoader,
   computed,
@@ -163,14 +164,50 @@ import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
 import Alerter from './components/widgets/Alerter.vue'
 import { datalogger } from './libs/sensors-logging'
+import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
 
 const widgetStore = useWidgetManagerStore()
+const vehicleStore = useMainVehicleStore()
 
 const showConfigurationMenu = ref(false)
 
 // Main menu
 const showMainMenu = ref(false)
+
+// When a isVehicleArmed change its value a watcher call Swal.close, this flag is
+// used to avoid closing others Swal instances instead of the one intended
+let requestDisarmConfirmationPopup = false
+const openMainMenu = (): void => {
+  if (!vehicleStore.isArmed) {
+    showMainMenu.value = true
+    return
+  }
+
+  requestDisarmConfirmationPopup = true
+  Swal.fire({
+    title: 'Be careful',
+    text: 'Vehicle is currently armed, its not recommended to open the main menu.',
+    icon: 'warning',
+    showCancelButton: true,
+    showConfirmButton: true,
+    cancelButtonText: 'Continue anyway',
+    confirmButtonText: 'Disarm vehicle',
+  }).then((result) => {
+    if (result.isConfirmed && vehicleStore.isArmed) {
+      vehicleStore.disarm()
+    }
+    requestDisarmConfirmationPopup = false
+    showMainMenu.value = true
+  })
+}
+
+const isVehicleArmed = computed(() => vehicleStore.isArmed)
+watch(isVehicleArmed, (isArmed) => {
+  if (requestDisarmConfirmationPopup && !isArmed) {
+    Swal.close()
+  }
+})
 
 const mainMenu = ref()
 onClickOutside(mainMenu, () => (showMainMenu.value = false))
