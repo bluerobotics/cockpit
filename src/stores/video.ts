@@ -141,7 +141,7 @@ export const useVideoStore = defineStore('video', () => {
    * Start recording the stream
    * @param {string} streamName - Name of the stream
    */
-  const startRecording = (streamName: string): void => {
+  const startRecording = async (streamName: string): Promise<void> => {
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {
@@ -160,7 +160,15 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.timeRecordingStart = new Date()
     const streamData = activeStreams.value[streamName] as StreamData
-    const recordingHash = uuid().slice(0, 8)
+
+    let recordingHash = ''
+    let refreshHash = true
+    const namesCurrentChunksOnDB = await tempVideoChunksDB.keys()
+    while (refreshHash) {
+      recordingHash = uuid().slice(0, 8)
+      refreshHash = namesCurrentChunksOnDB.some((chunkName) => chunkName.includes(recordingHash))
+    }
+
     const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
     const fileName = `${missionStore.missionName || 'Cockpit'} (${timeRecordingStartString}) #${recordingHash}`
     activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
@@ -178,12 +186,6 @@ export const useVideoStore = defineStore('video', () => {
       // update the chunk count/name before anything else.
       chunksCount++
       const chunkName = `${recordingHash}_${chunksCount}`
-      // Check if this chunk is already in the database. If so, stop the recording and return.
-      const chunk = await tempVideoChunksDB.getItem(chunkName)
-      if (chunk) {
-        stopRecording(streamName)
-        return
-      }
       await tempVideoChunksDB.setItem(chunkName, e.data)
     }
 
