@@ -205,14 +205,15 @@ export const useVideoStore = defineStore('video', () => {
       }
 
       // Make sure the chunks are sorted in the order they were created, not the order they are stored
-      const sortedChunks = chunks
-        .sort((a, b) => {
-          const splitA = a.name.split('_')
-          const splitB = b.name.split('_')
-          return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
-        })
-        .map((chunk) => chunk.blob)
-      const mergedVideoBlob = (sortedChunks as Blob[]).reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
+      chunks.sort((a, b) => {
+        const splitA = a.name.split('_')
+        const splitB = b.name.split('_')
+        return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
+      })
+
+      const chunkBlobs = chunks.map((chunk) => chunk.blob)
+
+      const mergedVideoBlob = chunkBlobs.reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
       const durFixedBlob = await fixWebmDuration(mergedVideoBlob, Date.now() - streamData.timeRecordingStart!.getTime())
       videoStoringDB.setItem(`${fileName}.webm`, durFixedBlob)
 
