@@ -74,18 +74,40 @@
         </div>
       </div>
     </div>
-    <v-btn
-      class="absolute m-3 rounded-sm shadow-sm left-44 bottom-14 bg-slate-50"
-      icon="mdi-home-map-marker"
-      size="x-small"
-      @click="whoToFollow = WhoToFollow.HOME"
-    />
-    <v-btn
-      class="absolute m-3 rounded-sm shadow-sm bottom-14 left-56 bg-slate-50"
-      icon="mdi-airplane-marker"
-      size="x-small"
-      @click="whoToFollow = WhoToFollow.VEHICLE"
-    />
+    <v-tooltip location="top center" text="Home position is currently undefined" :disabled="Boolean(home)">
+      <template #activator="{ props: tooltipProps }">
+        <v-btn
+          class="absolute m-3 rounded-sm shadow-sm left-44 bottom-14 bg-slate-50"
+          :class="!home ? 'active-events-on-disabled' : ''"
+          :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+          icon="mdi-home-map-marker"
+          size="x-small"
+          v-bind="tooltipProps"
+          :disabled="!home"
+          @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+          @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+        />
+      </template>
+    </v-tooltip>
+    <v-tooltip
+      location="top center"
+      text="Vehicle position is currently undefined"
+      :disabled="Boolean(vehiclePosition)"
+    >
+      <template #activator="{ props: tooltipProps }">
+        <v-btn
+          class="absolute m-3 rounded-sm shadow-sm bottom-14 left-56 bg-slate-50"
+          :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
+          :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+          icon="mdi-airplane-marker"
+          size="x-small"
+          v-bind="tooltipProps"
+          :disabled="!vehiclePosition"
+          @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+          @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+        />
+      </template>
+    </v-tooltip>
     <v-progress-linear
       v-if="uploadingMission"
       :model-value="missionUploadProgress"
@@ -107,6 +129,7 @@ import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import {
@@ -147,15 +170,24 @@ const planningMap: Ref<Map | undefined> = ref()
 const mapCenter = ref<WaypointCoordinates>([-27.5935, -48.55854])
 const home = ref(mapCenter.value)
 const zoom = ref(18)
+const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointType = ref<WaypointType>(WaypointType.PASS_BY)
 const currentWaypointAltitude = ref(0)
 const defaultCruiseSpeed = ref(1)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = ref<{ [id: string]: Marker }>({})
 
+const targetFollower = new TargetFollower(
+  (newTarget: WhoToFollow | undefined) => (followerTarget.value = newTarget),
+  (newCenter: WaypointCoordinates) => (mapCenter.value = newCenter)
+)
+targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
+targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
+
 const goHome = async (): Promise<void> => {
   if (!home.value || !planningMap.value) return
-  mapCenter.value = home.value
+
+  targetFollower.goToTarget(WhoToFollow.HOME)
 }
 
 watch(mapCenter, (newCenter, oldCenter) => {
@@ -256,23 +288,6 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
   reader.readAsText(e.target.files[0])
 }
 
-// eslint-disable-next-line jsdoc/require-jsdoc
-enum WhoToFollow {
-  HOME = 'Home',
-  VEHICLE = 'Vehicle',
-}
-
-const whoToFollow = ref(WhoToFollow.VEHICLE)
-
-const followSomething = (): void => {
-  if (whoToFollow.value === WhoToFollow.HOME && home.value) {
-    mapCenter.value = home.value
-  } else if (whoToFollow.value === WhoToFollow.VEHICLE && vehiclePosition.value) {
-    mapCenter.value = vehiclePosition.value
-  }
-}
-
-let followInterval: ReturnType<typeof setInterval> | undefined = undefined
 onMounted(async () => {
   const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -318,11 +333,11 @@ onMounted(async () => {
   const layerControl = L.control.layers(baseMaps)
   planningMap.value.addControl(layerControl)
 
-  followInterval = setInterval(followSomething, 500)
+  targetFollower.enableAutoUpdate()
 })
 
 onUnmounted(() => {
-  clearInterval(followInterval)
+  targetFollower.disableAutoUpdate()
 })
 
 const vehiclePosition = computed((): [number, number] | undefined =>
@@ -434,5 +449,8 @@ watch([home, planningMap], async () => {
 }
 .leaflet-top {
   margin-top: 50px;
+}
+.active-events-on-disabled {
+  pointer-events: all;
 }
 </style>
