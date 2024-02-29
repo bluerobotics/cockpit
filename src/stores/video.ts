@@ -398,6 +398,26 @@ export const useVideoStore = defineStore('video', () => {
     videoStoringDB.setItem(`${info.fileName}.ass`, logBlob)
   }
 
+  const unprocessedVideosKeys = computed(() => Object.keys(unprocessedVideos.value))
+
+  // Process videos that were being recorded when the app was closed
+  const processUnprocessedVideos = async (): Promise<void> => {
+    if (Object.keys(unprocessedVideos.value).isEmpty()) return
+    console.log(`Processing unprocessed videos: ${Object.keys(unprocessedVideos.value).join(', ')}`)
+
+    const chunks = await tempVideoChunksDB.keys()
+    if (chunks.length === 0) {
+      console.log('No video recording data found.')
+      return
+    }
+
+    for (const [recordingHash, info] of Object.entries(unprocessedVideos.value)) {
+      console.log(`Processing unprocessed video: ${info.fileName}`)
+      await processVideoChunksAndTelemetry(recordingHash, info)
+      delete unprocessedVideos.value[recordingHash]
+    }
+  }
+
   // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
   let warningTimeout: NodeJS.Timeout | undefined = undefined
   const iceIpCheckInterval = setInterval(async (): Promise<void> => {
@@ -511,6 +531,8 @@ export const useVideoStore = defineStore('video', () => {
     downloadFilesFromVideoDB,
     clearTemporaryVideoDB,
     downloadTempVideoDB,
+    unprocessedVideosKeys,
+    processUnprocessedVideos,
     temporaryVideoDBSize,
     videoStorageFileSize,
     getMediaStream,
