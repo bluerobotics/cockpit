@@ -39,6 +39,7 @@ export enum MAVLinkButtonFunction {
     mode_circle = 'Mode circle', // 10
     mode_guided = 'Mode guided', // 11
     mode_acro = 'Mode acro', // 12
+    mode_surftrak = 'Mode surftrak', // 13
     mount_center = 'Mount center', // 21
     mount_tilt_up = 'Mount tilt up', // 22
     mount_tilt_down = 'Mount tilt down', // 23
@@ -235,6 +236,7 @@ const mavlinkManualControlButtonFunctions: { [key in MAVLinkButtonFunction]: MAV
   [MAVLinkButtonFunction.mode_circle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.mode_circle, 'Mode circle'),
   [MAVLinkButtonFunction.mode_guided]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.mode_guided, 'Mode guided'),
   [MAVLinkButtonFunction.mode_acro]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.mode_acro, 'Mode acro'),
+  [MAVLinkButtonFunction.mode_surftrak]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.mode_surftrak, 'Mode surftrak'),
   [MAVLinkButtonFunction.mount_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.mount_center, 'Mount center'),
   [MAVLinkButtonFunction.mount_tilt_up]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.mount_tilt_up, 'Mount tilt up'),
   [MAVLinkButtonFunction.mount_tilt_down]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.mount_tilt_down, 'Mount tilt down'),
