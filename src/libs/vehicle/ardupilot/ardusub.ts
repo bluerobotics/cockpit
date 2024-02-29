@@ -32,6 +32,8 @@ export enum CustomMode {
   MANUAL = 19,
   // Automatically detect motors orientation
   MOTOR_DETECT = 20,
+  // Manual angle with automatic depth/throttle (from rangefinder altitude)
+  SURFTRAK = 21,
 }
 
 /**
