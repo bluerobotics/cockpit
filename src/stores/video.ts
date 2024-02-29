@@ -35,6 +35,7 @@ export const useVideoStore = defineStore('video', () => {
   const { availableStreams } = mainWebRTCManager.startStream(ref(undefined), allowedIceIps)
   const availableIceIps = ref<string[]>([])
   const videoRecoveryWarningAlreadyShown = useStorage('video-recovery-warning-already-shown', false)
+  const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
 
   const namesAvailableStreams = computed(() => availableStreams.value.map((stream) => stream.name))
 
@@ -189,6 +190,7 @@ export const useVideoStore = defineStore('video', () => {
       vWidth,
       vHeight,
     }
+    unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
     let chunksCount = -1
@@ -199,11 +201,15 @@ export const useVideoStore = defineStore('video', () => {
       chunksCount++
       const chunkName = `${recordingHash}_${chunksCount}`
       await tempVideoChunksDB.setItem(chunkName, e.data)
-      videoInfo.dateFinish = new Date()
+      const updatedInfo = unprocessedVideos.value[recordingHash]
+      updatedInfo.dateFinish = new Date()
+      unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
     }
 
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
-      await processVideoChunksAndTelemetry(recordingHash, videoInfo)
+      const info = unprocessedVideos.value[recordingHash]
+      await processVideoChunksAndTelemetry(recordingHash, info)
+      delete unprocessedVideos.value[recordingHash]
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
 
