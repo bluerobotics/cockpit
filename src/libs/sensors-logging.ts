@@ -75,6 +75,13 @@ class DataLogger {
   variablesBeingUsed: DatalogVariable[] = []
   selectedVariablesToShow = useStorage<DatalogVariable[]>('cockpit-datalogger-overlay-variables', [])
   logInterval = useStorage<number>('cockpit-datalogger-log-interval', 1000)
+  cockpitLogsDB = localforage.createInstance({
+    driver: localforage.INDEXEDDB,
+    name: 'Cockpit - Sensor Logs',
+    storeName: 'cockpit-sensor-logs-db',
+    version: 1.0,
+    description: 'Local backups of Cockpit sensor logs, to be retrieved in case of failure.',
+  })
 
   /**
    * Start an intervaled logging
@@ -88,13 +95,6 @@ class DataLogger {
     this.shouldBeLogging = true
 
     const vehicleStore = useMainVehicleStore()
-    const cockpitLogsDB = localforage.createInstance({
-      driver: localforage.INDEXEDDB,
-      name: 'Cockpit - Sensor Logs',
-      storeName: 'cockpit-sensor-logs-db',
-      version: 1.0,
-      description: 'Local backups of Cockpit sensor logs, to be retrieved in case of failure.',
-    })
 
     const initialTime = new Date()
     const fileName = `Cockpit (${format(initialTime, 'LLL dd, yyyy - HH꞉mm꞉ss O')}).clog`
@@ -128,7 +128,7 @@ class DataLogger {
         data: structuredClone(variablesData),
       })
 
-      await cockpitLogsDB.setItem(fileName, this.currentCockpitLog)
+      await this.cockpitLogsDB.setItem(fileName, this.currentCockpitLog)
 
       if (this.shouldBeLogging) {
         setTimeout(logRoutine, this.logInterval.value)
