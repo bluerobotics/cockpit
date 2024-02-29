@@ -158,6 +158,10 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
 
+    if (!datalogger.logging()) {
+      datalogger.startLogging()
+    }
+
     activeStreams.value[streamName]!.timeRecordingStart = new Date()
     const streamData = activeStreams.value[streamName] as StreamData
 
@@ -172,9 +176,7 @@ export const useVideoStore = defineStore('video', () => {
     const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
     const fileName = `${missionStore.missionName || 'Cockpit'} (${timeRecordingStartString}) #${recordingHash}`
     activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
-    if (!datalogger.logging()) {
-      datalogger.startLogging()
-    }
+
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
     const vHeight = videoTrack.getSettings().height || 1080
