@@ -32,6 +32,18 @@
         />
       </div>
 
+      <div
+        v-if="nUnprocVideos > 0"
+        class="flex flex-col items-center justify-center max-w-sm px-6 py-4 m-4 text-center transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
+        @click="processUnprocessedVideos()"
+      >
+        <span class="mb-3 text-lg font-medium">Unprocessed videos detected</span>
+        <span class="text-sm text-slate-300/90">
+          You have {{ nUnprocVideos }} {{ nUnprocVideos === 1 ? 'video that was' : 'videos that were' }} not processed.
+        </span>
+        <span class="text-sm text-slate-300/90">Click here to process {{ nUnprocVideos === 1 ? 'it' : 'them' }}.</span>
+      </div>
+
       <div v-if="availableVideosAndLogs.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
         <p class="mb-4 text-2xl font-semibold text-center text-slate-500">No videos available.</p>
         <p class="text-center text-slate-400">
@@ -110,8 +122,8 @@
 <script setup lang="ts">
 import { FwbTable, FwbTableBody, FwbTableCell, FwbTableHead, FwbTableHeadCell, FwbTableRow } from 'flowbite-vue'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
-import { onMounted } from 'vue'
+import Swal from 'sweetalert2'
+import { computed, onMounted, ref } from 'vue'
 
 import { formatBytes } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
@@ -174,4 +186,19 @@ const clearTemporaryVideoFiles = async (): Promise<void> => {
   await videoStore.clearTemporaryVideoDB()
   await fetchTemporaryDbSize()
 }
+
+const processUnprocessedVideos = async (): Promise<void> => {
+  await videoStore.processUnprocessedVideos()
+  await fetchVideoAndLogsData()
+  selectedFilesNames.value = []
+  Swal.fire({
+    icon: 'success',
+    title: 'Videos processed',
+    text: 'All unprocessed videos were successfully processed and are now available for download.',
+    showConfirmButton: false,
+    timer: 5000,
+  })
+}
+
+const nUnprocVideos = computed(() => videoStore.unprocessedVideosKeys.length)
 </script>
