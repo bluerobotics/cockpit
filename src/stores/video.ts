@@ -18,7 +18,7 @@ import { isEqual } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
-import type { StreamData } from '@/types/video'
+import type { StreamData, UnprocessedVideoInfo } from '@/types/video'
 
 import { useAlertStore } from './alert'
 
@@ -180,6 +180,16 @@ export const useVideoStore = defineStore('video', () => {
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
     const vHeight = videoTrack.getSettings().height || 1080
+
+    // Register the video as unprocessed so we can recover latter if needed
+    const videoInfo: UnprocessedVideoInfo = {
+      dateStart: streamData.timeRecordingStart!,
+      dateFinish: streamData.timeRecordingStart!,
+      fileName,
+      vWidth,
+      vHeight,
+    }
+
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
     let chunksCount = -1
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
@@ -189,52 +199,14 @@ export const useVideoStore = defineStore('video', () => {
       chunksCount++
       const chunkName = `${recordingHash}_${chunksCount}`
       await tempVideoChunksDB.setItem(chunkName, e.data)
+      videoInfo.dateFinish = new Date()
     }
 
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
-      // eslint-disable-next-line jsdoc/require-jsdoc
-      const chunks: { blob: Blob; name: string }[] = []
-
-      await tempVideoChunksDB.iterate((videoChunk, chunkName) => {
-        if (chunkName.includes(recordingHash)) {
-          chunks.push({ blob: videoChunk as Blob, name: chunkName })
-        }
-      })
-
-      if (chunks.length === 0) {
-        Swal.fire({ text: 'No video recording data found.', icon: 'error' })
-        return
-      }
-
-      // Make sure the chunks are sorted in the order they were created, not the order they are stored
-      chunks.sort((a, b) => {
-        const splitA = a.name.split('_')
-        const splitB = b.name.split('_')
-        return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
-      })
-
-      const chunkBlobs = chunks.map((chunk) => chunk.blob)
-
-      const mergedVideoBlob = chunkBlobs.reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
-      const durFixedBlob = await fixWebmDuration(mergedVideoBlob, Date.now() - streamData.timeRecordingStart!.getTime())
-      videoStoringDB.setItem(`${fileName}.webm`, durFixedBlob)
-
-      const videoTelemetryLog = datalogger.getSlice(
-        datalogger.currentCockpitLog,
-        streamData.timeRecordingStart!,
-        new Date()
-      )
-      const assLog = datalogger.toAssOverlay(
-        videoTelemetryLog,
-        vWidth,
-        vHeight,
-        streamData.timeRecordingStart!.getTime()
-      )
-      const logBlob = new Blob([assLog], { type: 'text/plain' })
-      videoStoringDB.setItem(`${fileName}.ass`, logBlob)
-
+      await processVideoChunksAndTelemetry(recordingHash, videoInfo)
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
+
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
   }
 
@@ -352,6 +324,49 @@ export const useVideoStore = defineStore('video', () => {
 
     videoRecoveryWarningAlreadyShown.value = true
   })
+
+  const processVideoChunksAndTelemetry = async (recordingHash: string, info: UnprocessedVideoInfo): Promise<void> => {
+    // eslint-disable-next-line jsdoc/require-jsdoc
+    const chunks: { blob: Blob; name: string }[] = []
+
+    const dateStart = new Date(info.dateStart)
+    const dateFinish = new Date(info.dateFinish)
+
+    await tempVideoChunksDB.iterate((videoChunk, chunkName) => {
+      if (chunkName.includes(recordingHash)) {
+        chunks.push({ blob: videoChunk as Blob, name: chunkName })
+      }
+    })
+
+    if (chunks.length === 0) {
+      Swal.fire({ text: 'No video recording data found.', icon: 'error' })
+      return
+    }
+
+    // Make sure the chunks are sorted in the order they were created, not the order they are stored
+    chunks.sort((a, b) => {
+      const splitA = a.name.split('_')
+      const splitB = b.name.split('_')
+      return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
+    })
+
+    const chunkBlobs = chunks.map((chunk) => chunk.blob)
+
+    const mergedVideoBlob = chunkBlobs.reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
+    const durFixedBlob = await fixWebmDuration(mergedVideoBlob, dateFinish.getTime() - dateStart.getTime())
+    videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob)
+
+    const telemetryLog = await datalogger.findLogByInitialTime(dateStart)
+    if (telemetryLog === null) {
+      console.error('No telemetry log found for the video recording.')
+      return
+    }
+
+    const videoTelemetryLog = datalogger.getSlice(telemetryLog, dateStart, dateFinish)
+    const assLog = datalogger.toAssOverlay(videoTelemetryLog, info.vWidth, info.vHeight, dateStart.getTime())
+    const logBlob = new Blob([assLog], { type: 'text/plain' })
+    videoStoringDB.setItem(`${info.fileName}.ass`, logBlob)
+  }
 
   // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
   let warningTimeout: NodeJS.Timeout | undefined = undefined
