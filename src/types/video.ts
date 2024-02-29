@@ -26,3 +26,27 @@ export interface StreamData {
    */
   timeRecordingStart: Date | undefined
 }
+
+export type UnprocessedVideoInfo = {
+  /**
+   * The date the recording started
+   */
+  dateStart: Date
+  /**
+   * The date the recording finished
+   * This is updated as the recording goes.
+   */
+  dateFinish: Date
+  /**
+   * The name of the file
+   */
+  fileName: string
+  /**
+   *  The width of the video
+   */
+  vWidth: number
+  /**
+   *  The height of the video
+   */
+  vHeight: number
+}
