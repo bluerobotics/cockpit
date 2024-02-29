@@ -195,6 +195,32 @@ class DataLogger {
   }
 
   /**
+   * Returns a log that encompasses the given time
+   * @param { Date } datetime - A timestamp that is between the initial and final time of the log
+   * @returns { CockpitStandardLog | null }
+   */
+  async findLogByInitialTime(datetime: Date): Promise<CockpitStandardLog | null> {
+    const availableLogsKeys = await this.cockpitLogsDB.keys()
+
+    for (const key of availableLogsKeys) {
+      const log = await this.cockpitLogsDB.getItem(key)
+
+      // Only consider logs that are actually logs (arrays with at least two elements with an epoch property)
+      if (!Array.isArray(log) || log.length < 2) continue
+      if (log[0].epoch === undefined || log[log.length - 1].epoch === undefined) continue
+
+      const logInitialTime = new Date(log[0].epoch)
+      const logFinalTime = new Date(log[log.length - 1].epoch)
+
+      if (datetime >= logInitialTime && datetime <= logFinalTime) {
+        return log
+      }
+    }
+
+    return null
+  }
+
+  /**
    * Get desired part of a log based on timestamp
    * @param {CockpitStandardLog} completeLog The log from which the slice should be taken from
    * @param {Date} initialTime The timestamp from which the log should be started from
