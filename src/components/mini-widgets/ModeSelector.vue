@@ -16,8 +16,13 @@ datalogger.registerUsage(DatalogVariable.mode)
 const vehicleStore = useMainVehicleStore()
 const currentMode = ref()
 
-watch(currentMode, () => {
+watch(currentMode, (newVal) => {
   if (currentMode.value === undefined) return
+  // Fetch the current mode directly from the store to ensure it's different
+  if (newVal === vehicleStore.mode) {
+    console.log('New mode is the same as the current one. No mode-change commands will be issued.')
+    return
+  }
   vehicleStore.setFlightMode(currentMode.value)
 })
 
