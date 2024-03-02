@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import gsap from 'gsap'
-import { computed, nextTick, reactive, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
@@ -237,13 +237,19 @@ watch(pitchAngleDeg, () => {
 })
 
 watch(rollAngleDeg, () => {
-  gsap.to(renderVariables, 0.1, { rollAngleDegrees: rollAngleDeg.value })
+  gsap.to(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })
 })
 
 // Update canvas whenever reference variables changes
 watch(renderVariables, () => {
   if (!widgetStore.isWidgetVisible(widget.value)) return
   nextTick(() => renderCanvas())
+})
+
+onMounted(() => {
+  if (canvasRef.value === undefined || canvasRef.value === null) return
+  if (canvasContext.value === undefined) canvasContext.value = canvasRef.value.getContext('2d')
+  renderCanvas()
 })
 </script>
 
