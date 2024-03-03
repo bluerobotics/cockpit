@@ -32,6 +32,7 @@ const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   ['054c:0ce6', JoystickModel.DualSense],
   ['054c:09cc', JoystickModel.DualShock4],
   ['045e:02e0', JoystickModel.XboxOneS_Bluetooth],
+  ['045e:02fd', JoystickModel.XboxOneS_Bluetooth],
   ['045e:0b13', JoystickModel.XboxController_Bluetooth],
   ['045e:0b12', JoystickModel.XboxController_Wired],
   ['28de:11ff', JoystickModel.XboxController_360],
@@ -272,10 +273,13 @@ class JoystickManager {
    */
   getModel(gamepad: Gamepad): JoystickModel {
     const { vendor_id, product_id } = this.getVidPid(gamepad)
+    console.log(vendor_id, product_id)
 
     if (vendor_id == undefined || product_id == undefined) {
       return JoystickModel.Unknown
     }
+    console.log('joystick pid')
+    console.log(JoystickMapVidPid.get(`${vendor_id}:${product_id}`))
     return JoystickMapVidPid.get(`${vendor_id}:${product_id}`) ?? JoystickModel.Unknown
   }
 
