@@ -56,3 +56,13 @@ If you're running a BlueOS instance, just put the IP address of it in "Global ve
 If you're serving `mavlink2rest` in the same machine as Cockpit, activate the checkmark for "Mavlink2Rest connection" and use `ws://127.0.0.1:6040/v1/ws/mavlink` there (if you're running a mavlink2rest version before 0.11.15, omit the `/v1` in the URL).
 
 If you're serving `mavlink-camera-manager` in the same machine as Cockpit, activate the checkmark for "WebRTC connection" and use `ws://127.0.0.1:6020` there.
+
+## Simulating a vehicle
+
+Cockpit provides a simulation environments in a docker compose file. There is an environment provided for ArduSub, ArduCopter, ArduRover and ArduPlane. The compose file uses docker compose profiles to allow you to choose which vehicle you want to simulate. The available profiles are `ardusub`, `arducopter`, `ardurover` and `arduplane`. You can run a simulation environment by running the following command:
+
+```
+docker-compose -f sim.yml --profile ardusub up
+```
+
+Assuming you have run the `bun run dev --host` command, you can access the simulation environment by opening the browser and accessing `localhost:5173`.
