@@ -215,16 +215,25 @@ const clearTemporaryVideoFiles = async (): Promise<void> => {
 }
 
 const processUnprocessedVideos = async (): Promise<void> => {
-  await videoStore.processUnprocessedVideos()
-  await fetchVideoAndLogsData()
-  selectedFilesNames.value = []
-  Swal.fire({
-    icon: 'success',
-    title: 'Videos processed',
-    text: 'All unprocessed videos were successfully processed and are now available for download.',
-    showConfirmButton: false,
-    timer: 5000,
-  })
+  try {
+    await videoStore.processUnprocessedVideos()
+    Swal.fire({
+      icon: 'success',
+      title: 'Videos processed',
+      text: 'All unprocessed videos were successfully processed and are now available for download.',
+      showConfirmButton: false,
+      timer: 5000,
+    })
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error processing videos',
+      text: `Some of the videos could not be processed. ${error}`,
+    })
+  } finally {
+    await fetchVideoAndLogsData()
+    selectedFilesNames.value = []
+  }
 }
 
 const discardFailedUnprocessedVideos = async (): Promise<void> => {

@@ -349,8 +349,7 @@ export const useVideoStore = defineStore('video', () => {
 
   const processVideoChunksAndTelemetry = async (recordingHash: string, info: UnprocessedVideoInfo): Promise<void> => {
     if (info.dateFinish === undefined) {
-      Swal.fire({ text: 'Trying to process video that was not finished. Aborting.', icon: 'error' })
-      return
+      throw new Error('Trying to process video that was not finished. Aborting.')
     }
 
     // eslint-disable-next-line jsdoc/require-jsdoc
@@ -369,8 +368,7 @@ export const useVideoStore = defineStore('video', () => {
     updateLastProcessingUpdate(recordingHash)
 
     if (chunks.length === 0) {
-      Swal.fire({ text: 'No video recording data found.', icon: 'error' })
-      return
+      throw new Error(`No video chunks found for video ${recordingHash}.`)
     }
 
     // Make sure the chunks are sorted in the order they were created, not the order they are stored
@@ -432,16 +430,24 @@ export const useVideoStore = defineStore('video', () => {
 
     const chunks = await tempVideoChunksDB.keys()
     if (chunks.length === 0) {
-      console.log('No video recording data found.')
-      return
+      discardUnprocessedVideos()
+      throw new Error('No video recording data found. Discarding leftover info.')
     }
 
+    const processingErrors: string[] = []
     for (const recordingHash of keysFailedUnprocessedVideos.value) {
       const info = unprocessedVideos.value[recordingHash]
       console.log(`Processing unprocessed video: ${info.fileName}`)
-      await processVideoChunksAndTelemetry(recordingHash, info)
+      try {
+        await processVideoChunksAndTelemetry(recordingHash, info)
+      } catch (error) {
+        processingErrors.push(`Could not process video ${recordingHash}. ${error} Discarding leftover info.`)
+      }
       delete unprocessedVideos.value[recordingHash]
     }
+
+    if (processingErrors.isEmpty()) return
+    throw new Error(processingErrors.join('\n'))
   }
 
   // Discard all data related to videos that were not processed
