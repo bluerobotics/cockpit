@@ -413,12 +413,12 @@ export const useVideoStore = defineStore('video', () => {
 
     return keysAllUnprocessedVideos.value.filter((recordingHash) => {
       const info = unprocessedVideos.value[recordingHash]
-      if (info === undefined || info.dateLastProcessignUpdate === undefined) return false
 
       const secondsSinceLastRecordingUpdate = differenceInSeconds(dateNow, new Date(info.dateLastRecordingUpdate))
       const recording = info.dateFinish === undefined && secondsSinceLastRecordingUpdate < 10
 
-      const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, new Date(info.dateLastProcessignUpdate))
+      const dateLastProcessingUpdate = new Date(info.dateLastProcessignUpdate ?? 0)
+      const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, dateLastProcessingUpdate)
       const processing = info.dateFinish !== undefined && secondsSinceLastProcessingUpdate < 10
 
       return !recording && !processing
