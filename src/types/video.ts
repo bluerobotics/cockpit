@@ -33,10 +33,22 @@ export type UnprocessedVideoInfo = {
    */
   dateStart: Date
   /**
-   * The date the recording finished
-   * This is updated as the recording goes.
+   * The last date in which the recording was updated.
+   * This is updated as the recording goes on. If there's no update for a long time, it's an indication that the recording finished or failed.
    */
-  dateFinish: Date
+  dateLastRecordingUpdate: Date
+  /**
+   * This date is explicitly set when the recording finishes.
+   * This is undefined while the recording is ongoing.
+   * If there's no update on the 'dateLastRecordingUpdate' for a long time, and this is undefined, it's an indication that the recording failed.
+   */
+  dateFinish: Date | undefined
+  /**
+   * The last date in which the processing was updated.
+   * This is updated as the processing goes on. If there's no update for a long time and the processing didn't finish, it's an indication that the processing failed.
+   * This is undefined when the processing didn't start yet.
+   */
+  dateLastProcessignUpdate: Date | undefined
   /**
    * The name of the file
    */
