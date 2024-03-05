@@ -49,7 +49,7 @@ If that's not your case and you want to install the necessary backends, follow t
 
 ## Connecting to your vehicle
 
-Follow the instructions provided [here](https://docs.bluerobotics.com/ardusub-zola/software/control-station/Cockpit-0.0/advanced-usage/#general) to connect Cockpit to your vehicle.
+Follow the instructions provided [here](https://docs.bluerobotics.com/ardusub-zola/software/control-station/Cockpit-1.0/advanced-usage/#general) to connect Cockpit to your vehicle.
 
 If you're running a BlueOS instance, just put the IP address of it in "Global vehicle address" and click the "apply" button.
 
