@@ -444,6 +444,22 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
+  // Discard all data related to videos that were not processed
+  const discardAllUnprocessedVideos = async (): Promise<void> => {
+    console.log('Discarding unprocessed videos.')
+
+    const keysUnprocessedVideos = keysAllUnprocessedVideos.value
+    const currentChunks = await tempVideoChunksDB.keys()
+    const chunksUnprocessedVideos = currentChunks.filter((chunkName) => {
+      return keysUnprocessedVideos.some((key) => chunkName.includes(key))
+    })
+
+    unprocessedVideos.value = {}
+    for (const chunk of chunksUnprocessedVideos) {
+      tempVideoChunksDB.removeItem(chunk)
+    }
+  }
+
   // Warn user about videos that were not processed but are available to be processed
   if (keysAllUnprocessedVideos.value.length > 0) {
     const nUnprocVideos = keysAllUnprocessedVideos.value.length
@@ -572,6 +588,7 @@ export const useVideoStore = defineStore('video', () => {
     keysAllUnprocessedVideos,
     keysFailedUnprocessedVideos,
     processUnprocessedVideos,
+    discardAllUnprocessedVideos,
     temporaryVideoDBSize,
     videoStorageFileSize,
     getMediaStream,

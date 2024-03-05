@@ -34,14 +34,20 @@
 
       <div
         v-if="nUnprocVideos > 0"
-        class="flex flex-col items-center justify-center max-w-sm px-6 py-4 m-4 text-center transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
-        @click="processUnprocessedVideos()"
+        class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-[40%]"
       >
-        <span class="mb-3 text-lg font-medium">Unprocessed videos detected</span>
-        <span class="text-sm text-slate-300/90">
+        <span class="m-2 text-lg font-bold">Unprocessed videos detected</span>
+        <span class="text-sm text-slate-500/90">
           You have {{ nUnprocVideos }} {{ nUnprocVideos === 1 ? 'video that was' : 'videos that were' }} not processed.
         </span>
-        <span class="text-sm text-slate-300/90">Click here to process {{ nUnprocVideos === 1 ? 'it' : 'them' }}.</span>
+        <div class="flex justify-center m-6 align-center">
+          <Button class="mx-2 w-fit" size="large" :disabled="nUnprocVideos === 0" @click="processUnprocessedVideos()">
+            Process
+          </Button>
+          <Button class="mx-2 w-fit" :disabled="nUnprocVideos === 0" @click="discardAllUnprocessedVideos()">
+            Discard
+          </Button>
+        </div>
       </div>
 
       <div v-if="availableVideosAndLogs.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
@@ -125,6 +131,7 @@ import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
 import { computed, onMounted, ref } from 'vue'
 
+import Button from '@/components/Button.vue'
 import { formatBytes } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 
@@ -215,6 +222,19 @@ const processUnprocessedVideos = async (): Promise<void> => {
     icon: 'success',
     title: 'Videos processed',
     text: 'All unprocessed videos were successfully processed and are now available for download.',
+    showConfirmButton: false,
+    timer: 5000,
+  })
+}
+
+const discardAllUnprocessedVideos = async (): Promise<void> => {
+  await videoStore.discardAllUnprocessedVideos()
+  await fetchVideoAndLogsData()
+  selectedFilesNames.value = []
+  Swal.fire({
+    icon: 'success',
+    title: 'Videos discarded',
+    text: 'All unprocessed videos were successfully discarded.',
     showConfirmButton: false,
     timer: 5000,
   })
