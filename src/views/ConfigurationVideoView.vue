@@ -56,55 +56,49 @@
           Use the MiniVideoRecorder widget to record some videos and them come back here to download or discard those.
         </p>
       </div>
-      <fwb-table v-else hoverable>
-        <fwb-table-head>
-          <fwb-table-head-cell />
-          <fwb-table-head-cell>Filename</fwb-table-head-cell>
-          <fwb-table-head-cell>Size</fwb-table-head-cell>
-          <fwb-table-head-cell>
-            <span
-              v-if="!selectedFilesNames.isEmpty()"
-              class="text-base rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
-              @click="discardAndUpdateDB(selectedFilesNames)"
-            />
-          </fwb-table-head-cell>
-          <fwb-table-head-cell>
-            <span
-              v-if="!selectedFilesNames.isEmpty()"
-              class="text-base rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-download"
-              @click="downloadAndUpdateDB(selectedFilesNames)"
-            />
-          </fwb-table-head-cell>
-        </fwb-table-head>
-        <fwb-table-body>
-          <fwb-table-row v-for="file in availableVideosAndLogs" :key="file.filename">
-            <fwb-table-cell>
-              <input
-                v-model="selectedFilesNames"
-                :value="file.filename"
-                type="checkbox"
-                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-            </fwb-table-cell>
-            <fwb-table-cell>{{ file.filename }}</fwb-table-cell>
-            <fwb-table-cell>{{ formatBytes(file.size) }}</fwb-table-cell>
-            <fwb-table-cell>
+
+      <!-- @vue-ignore -->
+      <v-data-table
+        v-else
+        v-model="selectedFilesNames"
+        :headers="headers"
+        :items="availableVideosAndLogs"
+        item-value="filename"
+        density="compact"
+        show-select
+        class="max-w-[90%] bg-slate-100/30 rounded-lg p-6 border"
+      >
+        <template #item.size="{ value }">
+          {{ formatBytes(value) }}
+        </template>
+        <template #item.actions="{ item }">
+          <span
+            v-if="selectedFilesNames.isEmpty()"
+            class="mx-1 transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
+            @click="discardAndUpdateDB([item.filename])"
+          />
+          <span
+            v-if="selectedFilesNames.isEmpty()"
+            class="mx-1 transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-download"
+            @click="downloadAndUpdateDB([item.filename])"
+          />
+        </template>
+        <template #footer.prepend>
+          <Transition name="horizontalFade">
+            <div v-if="!selectedFilesNames.isEmpty()" class="flex items-center justify-end w-full mr-4">
               <span
-                v-if="selectedFilesNames.isEmpty()"
-                class="rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
-                @click="discardAndUpdateDB([file.filename])"
+                class="mx-2 text-2xl transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
+                @click="discardAndUpdateDB(selectedFilesNames)"
               />
-            </fwb-table-cell>
-            <fwb-table-cell>
               <span
-                v-if="selectedFilesNames.isEmpty()"
-                class="rounded-md cursor-pointer hover:text-slate-500/50 mdi mdi-download"
-                @click="downloadAndUpdateDB([file.filename])"
+                class="mx-2 text-2xl transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-download"
+                @click="downloadAndUpdateDB(selectedFilesNames)"
               />
-            </fwb-table-cell>
-          </fwb-table-row>
-        </fwb-table-body>
-      </fwb-table>
+            </div>
+          </Transition>
+        </template>
+      </v-data-table>
+
       <div
         v-if="temporaryDbSize > 0"
         v-tooltip.bottom="'Remove video files used during the recording. This will not affect already saved videos.'"
@@ -126,10 +120,10 @@
 </template>
 
 <script setup lang="ts">
-import { FwbTable, FwbTableBody, FwbTableCell, FwbTableHead, FwbTableHeadCell, FwbTableRow } from 'flowbite-vue'
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
 import { computed, onMounted, ref } from 'vue'
+import type { VDataTable } from 'vuetify/components'
 
 import Button from '@/components/Button.vue'
 import { formatBytes } from '@/libs/utils'
@@ -250,4 +244,11 @@ const discardFailedUnprocessedVideos = async (): Promise<void> => {
 }
 
 const nUnprocVideos = computed(() => videoStore.keysFailedUnprocessedVideos.length)
+
+type ReadonlyHeaders = VDataTable['$props']['headers']
+const headers: ReadonlyHeaders = [
+  { title: 'Name', align: 'start', key: 'filename', sortable: true },
+  { title: 'Size', align: 'center', key: 'size', sortable: true },
+  { title: 'Actions', align: 'center', key: 'actions', sortable: false },
+]
 </script>
