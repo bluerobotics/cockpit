@@ -44,7 +44,7 @@
           <Button class="mx-2 w-fit" size="large" :disabled="nUnprocVideos === 0" @click="processUnprocessedVideos()">
             Process
           </Button>
-          <Button class="mx-2 w-fit" :disabled="nUnprocVideos === 0" @click="discardAllUnprocessedVideos()">
+          <Button class="mx-2 w-fit" :disabled="nUnprocVideos === 0" @click="discardFailedUnprocessedVideos()">
             Discard
           </Button>
         </div>
@@ -227,8 +227,8 @@ const processUnprocessedVideos = async (): Promise<void> => {
   })
 }
 
-const discardAllUnprocessedVideos = async (): Promise<void> => {
-  await videoStore.discardAllUnprocessedVideos()
+const discardFailedUnprocessedVideos = async (): Promise<void> => {
+  await videoStore.discardUnprocessedVideos()
   await fetchVideoAndLogsData()
   selectedFilesNames.value = []
   Swal.fire({
