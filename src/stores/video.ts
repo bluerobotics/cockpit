@@ -349,7 +349,7 @@ export const useVideoStore = defineStore('video', () => {
 
   const processVideoChunksAndTelemetry = async (recordingHash: string, info: UnprocessedVideoInfo): Promise<void> => {
     if (info.dateFinish === undefined) {
-      throw new Error('Trying to process video that was not finished. Aborting.')
+      info.dateFinish = info.dateLastRecordingUpdate
     }
 
     // eslint-disable-next-line jsdoc/require-jsdoc
