@@ -1,6 +1,6 @@
-import { useStorage, useThrottleFn } from '@vueuse/core'
+import { useStorage, useThrottleFn, useTimestamp } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
-import { format } from 'date-fns'
+import { differenceInSeconds, format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import fixWebmDuration from 'fix-webm-duration'
 import localforage from 'localforage'
@@ -36,6 +36,7 @@ export const useVideoStore = defineStore('video', () => {
   const availableIceIps = ref<string[]>([])
   const videoRecoveryWarningAlreadyShown = useStorage('video-recovery-warning-already-shown', false)
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
+  const timeNow = useTimestamp({ interval: 500 })
 
   const namesAvailableStreams = computed(() => availableStreams.value.map((stream) => stream.name))
 
@@ -185,7 +186,9 @@ export const useVideoStore = defineStore('video', () => {
     // Register the video as unprocessed so we can recover latter if needed
     const videoInfo: UnprocessedVideoInfo = {
       dateStart: streamData.timeRecordingStart!,
-      dateFinish: streamData.timeRecordingStart!,
+      dateLastRecordingUpdate: streamData.timeRecordingStart!,
+      dateFinish: undefined,
+      dateLastProcessignUpdate: undefined,
       fileName,
       vWidth,
       vHeight,
@@ -202,13 +205,20 @@ export const useVideoStore = defineStore('video', () => {
       const chunkName = `${recordingHash}_${chunksCount}`
       await tempVideoChunksDB.setItem(chunkName, e.data)
       const updatedInfo = unprocessedVideos.value[recordingHash]
-      updatedInfo.dateFinish = new Date()
+      updatedInfo.dateLastRecordingUpdate = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
     }
 
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
       const info = unprocessedVideos.value[recordingHash]
+
+      // Register that the recording finished and it's ready to be processed
+      info.dateFinish = new Date()
+      unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
+
       await processVideoChunksAndTelemetry(recordingHash, info)
+
+      // Once the video is processed, we can delete it from the unprocessed videos list
       delete unprocessedVideos.value[recordingHash]
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
@@ -331,7 +341,18 @@ export const useVideoStore = defineStore('video', () => {
     videoRecoveryWarningAlreadyShown.value = true
   })
 
+  const updateLastProcessingUpdate = (recordingHash: string): void => {
+    const info = unprocessedVideos.value[recordingHash]
+    info.dateLastProcessignUpdate = new Date()
+    unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
+  }
+
   const processVideoChunksAndTelemetry = async (recordingHash: string, info: UnprocessedVideoInfo): Promise<void> => {
+    if (info.dateFinish === undefined) {
+      Swal.fire({ text: 'Trying to process video that was not finished. Aborting.', icon: 'error' })
+      return
+    }
+
     // eslint-disable-next-line jsdoc/require-jsdoc
     const chunks: { blob: Blob; name: string }[] = []
 
@@ -343,6 +364,9 @@ export const useVideoStore = defineStore('video', () => {
         chunks.push({ blob: videoChunk as Blob, name: chunkName })
       }
     })
+
+    // As we advance through the processing, we update the last processing update date, so consumers know this is ongoing
+    updateLastProcessingUpdate(recordingHash)
 
     if (chunks.length === 0) {
       Swal.fire({ text: 'No video recording data found.', icon: 'error' })
@@ -356,11 +380,18 @@ export const useVideoStore = defineStore('video', () => {
       return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
     })
 
+    updateLastProcessingUpdate(recordingHash)
+
     const chunkBlobs = chunks.map((chunk) => chunk.blob)
 
     const mergedVideoBlob = chunkBlobs.reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
     const durFixedBlob = await fixWebmDuration(mergedVideoBlob, dateFinish.getTime() - dateStart.getTime())
+
+    updateLastProcessingUpdate(recordingHash)
+
     videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob)
+
+    updateLastProcessingUpdate(recordingHash)
 
     const telemetryLog = await datalogger.findLogByInitialTime(dateStart)
     if (telemetryLog === null) {
@@ -372,14 +403,32 @@ export const useVideoStore = defineStore('video', () => {
     const assLog = datalogger.toAssOverlay(videoTelemetryLog, info.vWidth, info.vHeight, dateStart.getTime())
     const logBlob = new Blob([assLog], { type: 'text/plain' })
     videoStoringDB.setItem(`${info.fileName}.ass`, logBlob)
+    updateLastProcessingUpdate(recordingHash)
   }
 
-  const unprocessedVideosKeys = computed(() => Object.keys(unprocessedVideos.value))
+  const keysAllUnprocessedVideos = computed(() => Object.keys(unprocessedVideos.value))
+
+  const keysFailedUnprocessedVideos = computed(() => {
+    const dateNow = new Date(timeNow.value)
+
+    return keysAllUnprocessedVideos.value.filter((recordingHash) => {
+      const info = unprocessedVideos.value[recordingHash]
+      if (info === undefined || info.dateLastProcessignUpdate === undefined) return false
+
+      const secondsSinceLastRecordingUpdate = differenceInSeconds(dateNow, new Date(info.dateLastRecordingUpdate))
+      const recording = info.dateFinish === undefined && secondsSinceLastRecordingUpdate < 10
+
+      const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, new Date(info.dateLastProcessignUpdate))
+      const processing = info.dateFinish !== undefined && secondsSinceLastProcessingUpdate < 10
+
+      return !recording && !processing
+    })
+  })
 
   // Process videos that were being recorded when the app was closed
   const processUnprocessedVideos = async (): Promise<void> => {
-    if (Object.keys(unprocessedVideos.value).isEmpty()) return
-    console.log(`Processing unprocessed videos: ${Object.keys(unprocessedVideos.value).join(', ')}`)
+    if (keysFailedUnprocessedVideos.value.isEmpty()) return
+    console.log(`Processing unprocessed videos: ${keysFailedUnprocessedVideos.value.join(', ')}`)
 
     const chunks = await tempVideoChunksDB.keys()
     if (chunks.length === 0) {
@@ -387,7 +436,8 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
 
-    for (const [recordingHash, info] of Object.entries(unprocessedVideos.value)) {
+    for (const recordingHash of keysFailedUnprocessedVideos.value) {
+      const info = unprocessedVideos.value[recordingHash]
       console.log(`Processing unprocessed video: ${info.fileName}`)
       await processVideoChunksAndTelemetry(recordingHash, info)
       delete unprocessedVideos.value[recordingHash]
@@ -395,8 +445,8 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   // Warn user about videos that were not processed but are available to be processed
-  if (unprocessedVideosKeys.value.length > 0) {
-    const nUnprocVideos = unprocessedVideosKeys.value.length
+  if (keysAllUnprocessedVideos.value.length > 0) {
+    const nUnprocVideos = keysAllUnprocessedVideos.value.length
     Swal.fire({
       title: 'Unprocessed videos detected',
       text: `You have ${nUnprocVideos} ${nUnprocVideos === 1 ? 'video that was' : 'videos that were'} not processed.
@@ -519,7 +569,8 @@ export const useVideoStore = defineStore('video', () => {
     downloadFilesFromVideoDB,
     clearTemporaryVideoDB,
     downloadTempVideoDB,
-    unprocessedVideosKeys,
+    keysAllUnprocessedVideos,
+    keysFailedUnprocessedVideos,
     processUnprocessedVideos,
     temporaryVideoDBSize,
     videoStorageFileSize,

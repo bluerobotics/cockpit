@@ -183,6 +183,26 @@ const downloadAndUpdateDB = async (filenames: string[]): Promise<void> => {
 }
 
 const clearTemporaryVideoFiles = async (): Promise<void> => {
+  const videosBeingRecorded = videoStore.keysAllUnprocessedVideos.length > videoStore.keysFailedUnprocessedVideos.length
+
+  if (videosBeingRecorded) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Video(s) being recorded',
+      text: 'You must stop all ongoing video recordings before clearing the temporary storage.',
+    })
+    return
+  }
+
+  if (videoStore.keysAllUnprocessedVideos.length > 0) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Unprocessed videos detected',
+      text: 'You must process or discard all unprocessed videos before clearing the temporary storage.',
+    })
+    return
+  }
+
   await videoStore.clearTemporaryVideoDB()
   await fetchTemporaryDbSize()
 }
@@ -200,5 +220,5 @@ const processUnprocessedVideos = async (): Promise<void> => {
   })
 }
 
-const nUnprocVideos = computed(() => videoStore.unprocessedVideosKeys.length)
+const nUnprocVideos = computed(() => videoStore.keysFailedUnprocessedVideos.length)
 </script>
