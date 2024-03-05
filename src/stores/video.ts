@@ -135,6 +135,8 @@ export const useVideoStore = defineStore('video', () => {
   const stopRecording = (streamName: string): void => {
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
+    activeStreams.value[streamName]!.timeRecordingStart = undefined
+
     activeStreams.value[streamName]!.mediaRecorder!.stop()
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
