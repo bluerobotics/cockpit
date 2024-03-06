@@ -60,7 +60,7 @@
         </p>
       </div>
 
-      <div v-if="availableVideosAndLogs.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
+      <div v-if="availableVideosAndLogs?.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
         <p class="mb-4 text-2xl font-semibold text-center text-slate-500">No videos available.</p>
         <p class="text-center text-slate-400">
           Use the MiniVideoRecorder widget to record some videos and them come back here to download or discard those.
@@ -76,6 +76,8 @@
         item-value="filename"
         density="compact"
         show-select
+        loading-text="Loading... Please wait"
+        :loading="availableVideosAndLogs === undefined"
         class="max-w-[90%] bg-slate-100/30 rounded-lg p-6 border"
       >
         <template #item.size="{ value }">
@@ -151,7 +153,7 @@ interface VideoStorageFile {
   size: number
 }
 /* eslint-enable jsdoc/require-jsdoc  */
-const availableVideosAndLogs = ref<VideoStorageFile[]>([])
+const availableVideosAndLogs = ref<VideoStorageFile[] | undefined>()
 const temporaryDbSize = ref(0)
 const selectedFilesNames = ref<string[]>([])
 
@@ -162,6 +164,7 @@ onMounted(async () => {
 
 // Fetch available videos and telemetry logs from the storage
 const fetchVideoAndLogsData = async (): Promise<void> => {
+  availableVideosAndLogs.value = undefined
   const availableData: VideoStorageFile[] = []
   await videoStore.videoStoringDB.iterate((_, fileName) => {
     availableData.push({
