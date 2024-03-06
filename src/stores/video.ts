@@ -425,6 +425,17 @@ export const useVideoStore = defineStore('video', () => {
     })
   })
 
+  const areThereVideosProcessing = computed(() => {
+    const dateNow = new Date(timeNow.value)
+
+    return keysAllUnprocessedVideos.value.some((recordingHash) => {
+      const info = unprocessedVideos.value[recordingHash]
+      const dateLastProcessingUpdate = new Date(info.dateLastProcessignUpdate ?? 0)
+      const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, dateLastProcessingUpdate)
+      return info.dateFinish !== undefined && secondsSinceLastProcessingUpdate < 10
+    })
+  })
+
   // Process videos that were being recorded when the app was closed
   const processUnprocessedVideos = async (): Promise<void> => {
     if (keysFailedUnprocessedVideos.value.isEmpty()) return
@@ -595,6 +606,7 @@ export const useVideoStore = defineStore('video', () => {
     downloadTempVideoDB,
     keysAllUnprocessedVideos,
     keysFailedUnprocessedVideos,
+    areThereVideosProcessing,
     processUnprocessedVideos,
     discardUnprocessedVideos,
     temporaryVideoDBSize,
