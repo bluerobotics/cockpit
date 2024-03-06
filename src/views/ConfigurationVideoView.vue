@@ -50,6 +50,16 @@
         </div>
       </div>
 
+      <div v-if="areThereVideosProcessing" class="max-w-[50%] bg-slate-100 rounded-md p-6 border mb-8">
+        <div class="flex justify-center w-full mb-4 text-2xl font-semibold text-center align-center text-slate-500">
+          <span>Processing videos</span>
+          <span class="ml-2 mdi mdi-loading animate-spin" />
+        </div>
+        <p class="text-center text-slate-400">
+          There are videos being processed in background. Please wait until they are finished to download or discard.
+        </p>
+      </div>
+
       <div v-if="availableVideosAndLogs.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
         <p class="mb-4 text-2xl font-semibold text-center text-slate-500">No videos available.</p>
         <p class="text-center text-slate-400">
@@ -122,7 +132,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import type { VDataTable } from 'vuetify/components'
 
 import Button from '@/components/Button.vue'
@@ -242,6 +252,14 @@ const discardFailedUnprocessedVideos = async (): Promise<void> => {
     timer: 5000,
   })
 }
+
+// After the videos are processed, fetch the data again to update the video table
+const { areThereVideosProcessing } = storeToRefs(videoStore)
+watch(areThereVideosProcessing, async () => {
+  // Sleep for a second before fetching to allow for the sensors logging update
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+  await fetchVideoAndLogsData()
+})
 
 const nUnprocVideos = computed(() => videoStore.keysFailedUnprocessedVideos.length)
 
