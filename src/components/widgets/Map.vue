@@ -114,7 +114,7 @@
       </l-icon>
     </l-marker>
     <l-polyline v-if="widget.options.showVehiclePath" :lat-lngs="vehicleLatLongHistory" />
-    <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <l-tile-layer url="/tiles/{z}/{x}/{y}.png" />
   </l-map>
   <v-dialog v-model="widget.managerVars.configMenuOpen" width="auto">
     <v-card class="pa-2">
