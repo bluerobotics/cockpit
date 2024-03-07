@@ -100,7 +100,7 @@ const initialWidgetPos = ref(props.widget.position)
 const initialWidgetSize = ref(props.widget.size)
 
 const handleDragStart = (event: MouseEvent): void => {
-  if (!allowMoving.value || isResizing.value || event.button !== 0 || !outerWidgetRef.value) return
+  if (!allowMoving.value || isResizing.value || !outerWidgetRef.value) return
   draggingWidget.value = true
   initialMousePos.value = { x: event.clientX, y: event.clientY }
   initialWidgetPos.value = widget.value.position
