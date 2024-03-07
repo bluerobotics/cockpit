@@ -234,6 +234,15 @@ onMounted(async () => {
   document.addEventListener('mouseup', handleEnd)
 })
 
+// Change cursor when moving is allowed or disallowed, preventing the cursor to be a grab on exit of edit-mode
+watch(allowMoving, (isAllowing, wasAllowing) => {
+  if (wasAllowing && !isAllowing) {
+    outerWidgetRef.value?.style.setProperty('cursor', 'default')
+  } else if (!wasAllowing && isAllowing) {
+    outerWidgetRef.value?.style.setProperty('cursor', 'grab')
+  }
+})
+
 const outerBounds = useElementBounding(outerWidgetRef)
 
 const makeWidgetRespectWalls = (): void => {
