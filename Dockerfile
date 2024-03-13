@@ -12,7 +12,7 @@ FROM alpine:3.14
 
 ARG TARGETARCH
 # Install simple http server
-RUN apk add --no-cache wget
+RUN apk add --no-cache wget bash
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
         wget https://github.com/TheWaWaR/simple-http-server/releases/download/v0.6.6/x86_64-unknown-linux-musl-simple-http-server -O /usr/bin/simple-http-server; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
@@ -69,4 +69,11 @@ LABEL links='{\
 
 # Copy frontend built on frontendBuild to this stage
 COPY --from=frontendBuilder /frontend/dist /cockpit
-ENTRYPOINT ["simple-http-server", "--index", "cockpit"]
+COPY ./entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENV BASE_URL=""
+ENV MAVLINK2REST_URI=""
+ENV WEBRTC_SIGNALING_URI=""
+# Set the entrypoint script
+ENTRYPOINT ["/bin/bash", "/entrypoint.sh", "simple-http-server", "--index", "/cockpit"]

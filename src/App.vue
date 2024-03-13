@@ -142,6 +142,7 @@ import {
   // type AsyncComponentLoader,
   computed,
   onBeforeUnmount,
+  onMounted,
   // defineAsyncComponent,
   ref,
   watch,
@@ -149,12 +150,14 @@ import {
 import { useRoute } from 'vue-router'
 
 import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
+import * as Connection from '@/libs/connection/connection'
 import { coolMissionNames } from '@/libs/funny-name/words'
 import {
   availableCockpitActions,
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
+import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useMissionStore } from '@/stores/mission'
 
 import AltitudeSlider from './components/AltitudeSlider.vue'
@@ -166,9 +169,29 @@ import Alerter from './components/widgets/Alerter.vue'
 import { datalogger } from './libs/sensors-logging'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
-
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
+
+onMounted(async () => {
+  const baseUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`
+  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
+
+  try {
+    const configUrl = new URL('config.json', normalizedBaseUrl)
+    const configResponse = await fetch(configUrl.toString())
+    if (!configResponse.ok) {
+      throw new Error(`Failed to fetch config.json: ${configResponse.status}`)
+    }
+    const config = await configResponse.json()
+    console.log(config)
+
+    useMainVehicleStore().mainConnectionURI.val = new Connection.URI(config.mainConnectionURI)
+    useMainVehicleStore().addConnection(new Connection.URI(config.mainConnectionURI), Protocol.Type.MAVLink)
+    console.log('config mainConnectionURI', config.mainConnectionURI)
+  } catch (error) {
+    console.error('Error constructing or fetching from the URL:', error)
+  }
+})
 
 const showConfigurationMenu = ref(false)
 

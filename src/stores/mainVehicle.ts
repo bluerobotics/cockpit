@@ -1,4 +1,4 @@
-import { useStorage, useTimestamp } from '@vueuse/core'
+import { useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
@@ -84,15 +84,31 @@ class CustomizableParameter<T> {
   }
 }
 
+/**
+ *
+ * @returns {string} The protocol to use for the WebSocket connection
+ */
+function determineWebSocketProtocol(): string {
+  // Check if the page is served over HTTPS
+  if (window.location.protocol === 'https:') {
+    return 'wss'
+  } else {
+    // Default to ws if the page is not served over HTTPS
+    return 'ws'
+  }
+}
+
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const cpuLoad = ref<number>()
-  const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
+  const globalAddress = ref(defaultGlobalAddress)
+  const webSocketProtocol = determineWebSocketProtocol()
   const _mainConnectionURI = new CustomizableParameter<Connection.URI>(() => {
-    return new Connection.URI(`ws://${globalAddress.value}:6040/ws/mavlink`)
+    return new Connection.URI(`${webSocketProtocol}://${globalAddress.value}:6040/ws/mavlink`)
   })
+  console.log(globalAddress.value)
   const mainConnectionURI = ref(_mainConnectionURI)
   const _webRTCSignallingURI = new CustomizableParameter<Connection.URI>(() => {
-    return new Connection.URI(`ws://${globalAddress.value}:6021`)
+    return new Connection.URI(`${webSocketProtocol}://${globalAddress.value}:6021`)
   })
   const webRTCSignallingURI = ref(_webRTCSignallingURI)
   const lastHeartbeat = ref<Date>()
@@ -504,6 +520,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     uploadMission,
     clearMissions,
     startMission,
+    addConnection: ConnectionManager.addConnection,
     globalAddress,
     mainConnectionURI,
     webRTCSignallingURI,
