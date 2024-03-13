@@ -88,11 +88,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const cpuLoad = ref<number>()
   const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
   const _mainConnectionURI = new CustomizableParameter<Connection.URI>(() => {
-    return new Connection.URI(`ws://${globalAddress.value}:6040/ws/mavlink`)
+    const queryMainConnectionURI = new URLSearchParams(window.location.search).get('mainConnectionURI')
+    return new Connection.URI(queryMainConnectionURI || `ws:///${globalAddress.value}/ws/mavlink`)
   })
   const mainConnectionURI = ref(_mainConnectionURI)
   const _webRTCSignallingURI = new CustomizableParameter<Connection.URI>(() => {
-    return new Connection.URI(`ws://${globalAddress.value}:6021`)
+    const queryWebRTCSignallingURI = new URLSearchParams(window.location.search).get('webRTCSignallingURI')
+    return new Connection.URI(queryWebRTCSignallingURI || `ws://${globalAddress.value}:6021`)
   })
   const webRTCSignallingURI = ref(_webRTCSignallingURI)
   const lastHeartbeat = ref<Date>()
