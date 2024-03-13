@@ -4,10 +4,17 @@
     class="flex justify-around px-2 py-1 text-center rounded-lg h-9 w-28 align-center bg-slate-800/60"
   >
     <div
-      :class="{ 'blob red w-5 opacity-100 rounded-sm': isRecording, 'opacity-30': isOutside && !isRecording }"
+      v-if="!isProcessingVideo"
+      :class="{
+        'blob red w-5 opacity-100 rounded-sm': isRecording,
+        'opacity-30 bg-red-400': isOutside && !isRecording,
+      }"
       class="w-6 transition-all duration-500 rounded-full aspect-square bg-red-lighten-1 hover:cursor-pointer opacity-70 hover:opacity-90"
       @click="toggleRecording()"
     />
+    <div v-else>
+      <v-icon class="w-6 h-6 animate-spin" color="white">mdi-loading</v-icon>
+    </div>
     <template v-if="!isRecording">
       <div
         v-if="nameSelectedStream"
@@ -18,8 +25,11 @@
       </div>
       <FontAwesomeIcon v-else icon="fa-solid fa-video" class="h-6 text-slate-100" />
     </template>
-    <div v-else class="w-16 text-justify text-slate-100">
+    <div v-if="isRecording && !isProcessingVideo" class="w-16 text-justify text-slate-100">
       {{ timePassedString }}
+    </div>
+    <div v-else-if="isProcessingVideo" class="w-16 text-justify text-slate-100">
+      <div class="text-center text-xs text-white select-none flex-nowrap">Processing video...</div>
     </div>
   </div>
   <v-dialog v-model="isStreamSelectDialogOpen" width="auto">
@@ -90,6 +100,7 @@ const isStreamSelectDialogOpen = ref(false)
 const isLoadingStream = ref(false)
 const timeNow = useTimestamp({ interval: 100 })
 const mediaStream = ref<MediaStream | undefined>()
+const isProcessingVideo = ref(false)
 
 onBeforeMount(async () => {
   // Set initial widget options if they don't exist
@@ -128,6 +139,7 @@ const toggleRecording = async (): Promise<void> => {
   if (isRecording.value) {
     if (nameSelectedStream.value !== undefined) {
       videoStore.stopRecording(nameSelectedStream.value)
+      isProcessingVideo.value = true
     }
     return
   }
@@ -214,6 +226,14 @@ if (widgetStore.isRealMiniWidget(miniWidget.value)) {
   }, 1000)
 }
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
+
+// Check if there are videos being processed
+watch(
+  () => videoStore.areThereVideosProcessing,
+  (newValue) => {
+    isProcessingVideo.value = newValue
+  }
+)
 
 // Try to prevent user from closing Cockpit when a stream is being recorded
 watch(isRecording, () => {
