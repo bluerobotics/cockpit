@@ -17,6 +17,7 @@ export enum CockpitActionsFunction {
   toggle_bottom_bar = 'toggle_bottom_bar',
   start_recording_all_streams = 'start_recording_all_streams',
   stop_recording_all_streams = 'stop_recording_all_streams',
+  hold_to_confirm = 'hold_to_confirm',
 }
 
 /**
@@ -44,6 +45,7 @@ export const availableCockpitActions: { [key in CockpitActionsFunction]: Cockpit
   [CockpitActionsFunction.toggle_bottom_bar]: new CockpitAction(CockpitActionsFunction.toggle_bottom_bar, 'Toggle bottom bar'),
   [CockpitActionsFunction.start_recording_all_streams]: new CockpitAction(CockpitActionsFunction.start_recording_all_streams, 'Start recording all streams'),
   [CockpitActionsFunction.stop_recording_all_streams]: new CockpitAction(CockpitActionsFunction.stop_recording_all_streams, 'Stop recording all streams'),
+  [CockpitActionsFunction.hold_to_confirm]: new CockpitAction(CockpitActionsFunction.hold_to_confirm, 'Hold to confirm'),
 }
 
 export type CockpitActionCallback = () => void
