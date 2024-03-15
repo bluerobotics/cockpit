@@ -128,37 +128,40 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   /**
    * Arm the vehicle.
    * Awaits user confirmation before arming the vehicle. Resolves when arming is successful or rejects if the action is cancelled.
+   * @param {boolean} disableSlideToConfirm Optional - default false. If true, the slide to confirm dialog will not be shown
    * @returns {Promise<void>}
    */
-  async function arm(): Promise<void> {
+  async function arm(disableSlideToConfirm = false): Promise<void> {
     if (!mainVehicle.value) {
       throw new Error('No vehicle available to arm.')
     }
-
-    const confirmed = await slideToConfirm(EventCategory.ARM, 'Confirm Arm', 'Arm Command Confirmed')
-    if (confirmed) {
-      mainVehicle.value.arm()
-    } else {
-      throw new Error('Arming cancelled by the user')
+    if (!disableSlideToConfirm) {
+      const confirmed = await slideToConfirm(EventCategory.ARM, 'Confirm Arm', 'Arm Command Confirmed')
+      if (!confirmed) {
+        throw new Error('Arming cancelled by the user')
+      }
     }
+    mainVehicle.value.arm()
   }
 
   /**
    * Disarm the vehicle.
    * Awaits user confirmation before disarming the vehicle. Resolves when disarming is successful or rejects if the action is cancelled.
+   * @param {boolean} disableSlideToConfirm Optional - default false. If true, the slide to confirm dialog will not be shown
    * @returns {Promise<void>}
    */
-  async function disarm(): Promise<void> {
+  async function disarm(disableSlideToConfirm = false): Promise<void> {
     if (!mainVehicle.value) {
       throw new Error('No vehicle available to disarm.')
     }
 
-    const confirmed = await slideToConfirm(EventCategory.DISARM, 'Confirm Disarm', 'Disarm Command Confirmed')
-    if (confirmed) {
-      mainVehicle.value.disarm()
-    } else {
-      throw new Error('Disarming cancelled by the user')
+    if (!disableSlideToConfirm) {
+      const confirmed = await slideToConfirm(EventCategory.DISARM, 'Confirm Disarm', 'Disarm Command Confirmed')
+      if (!confirmed) {
+        throw new Error('Disarming cancelled by the user')
+      }
     }
+    mainVehicle.value.disarm()
   }
 
   /**
@@ -419,15 +422,28 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     const win = window as any // eslint-disable-line @typescript-eslint/no-explicit-any
     win.vehicle = {
-      arm: arm,
-      disarm: disarm,
+      arm: () => arm(true),
+      disarm: () => disarm(true),
       modesAvailable: () => {
         console.log(modesAvailable())
       },
       setFlightMode: setFlightMode,
     }
-    registerActionCallback(availableCockpitActions.mavlink_arm, arm)
-    registerActionCallback(availableCockpitActions.mavlink_disarm, disarm)
+    registerActionCallback(availableCockpitActions.mavlink_arm, async () => {
+      try {
+        await arm(true)
+      } catch (error) {
+        console.error('Error arming the vehicle:', error)
+      }
+    })
+
+    registerActionCallback(availableCockpitActions.mavlink_disarm, async () => {
+      try {
+        await disarm(true)
+      } catch (error) {
+        console.error('Error disarming the vehicle:', error)
+      }
+    })
   })
 
   const controllerStore = useControllerStore()
