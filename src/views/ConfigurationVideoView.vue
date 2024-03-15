@@ -1,8 +1,9 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Video configuration</template>
+    <template #title>{{ isVideoLibraryOnly ? 'Video Storage' : 'Video configuration' }}</template>
     <template #content>
       <div
+        v-if="!isVideoLibraryOnly"
         class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-[40%]"
       >
         <p class="font-bold">
@@ -18,7 +19,7 @@
         </p>
       </div>
 
-      <div class="flex w-[30rem] flex-wrap">
+      <div v-if="!isVideoLibraryOnly" class="flex w-[30rem] flex-wrap">
         <v-combobox
           v-model="allowedIceIps"
           multiple
@@ -60,7 +61,11 @@
         </p>
       </div>
 
-      <div v-if="availableVideosAndLogs?.isEmpty()" class="max-w-[50%] bg-slate-100 rounded-md p-6 border">
+      <div
+        v-if="availableVideosAndLogs?.isEmpty()"
+        :class="{ 'mb-4': isVideoLibraryOnly, 'mb-0': !isVideoLibraryOnly }"
+        class="max-w-[50%] bg-slate-100 rounded-md p-6 border"
+      >
         <p class="mb-4 text-2xl font-semibold text-center text-slate-500">No videos available.</p>
         <p class="text-center text-slate-400">
           Use the MiniVideoRecorder widget to record some videos and them come back here to download or discard those.
@@ -78,7 +83,8 @@
         show-select
         loading-text="Loading... Please wait"
         :loading="availableVideosAndLogs === undefined"
-        class="max-w-[90%] bg-slate-100/30 rounded-lg p-6 border"
+        class="max-w-[90%] bg-slate-100/30 rounded-lg p-3 border"
+        :class="temporaryDbSize === 0 ? 'mb-10' : 'mb-0'"
       >
         <template #item.size="{ value }">
           {{ formatBytes(value) }}
@@ -110,22 +116,23 @@
           </Transition>
         </template>
       </v-data-table>
-
-      <div
-        v-if="temporaryDbSize > 0"
-        v-tooltip.bottom="'Remove video files used during the recording. This will not affect already saved videos.'"
-        class="flex flex-col items-center justify-center p-4 m-4 transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
-        @click="clearTemporaryVideoFiles()"
-      >
-        <span class="text-lg font-medium">Clear temporary video storage</span>
-        <span class="text-sm text-slate-300/90">Current size: {{ formatBytes(temporaryDbSize) }}</span>
-      </div>
-      <div
-        v-if="temporaryDbSize > 0"
-        class="flex flex-col items-center justify-center p-4 m-4 transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
-        @click="videoStore.downloadTempVideoDB()"
-      >
-        <span class="text-lg font-medium">Download temporary video chunks</span>
+      <div class="flex flex-row">
+        <div
+          v-if="temporaryDbSize > 0"
+          v-tooltip.bottom="'Remove video files used during the recording. This will not affect already saved videos.'"
+          class="flex flex-col items-center justify-center px-4 py-2 mx-4 mb-6 mt-8 transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
+          @click="clearTemporaryVideoFiles()"
+        >
+          <span class="text-md font-medium">Clear temporary video storage</span>
+          <span class="text-sm text-slate-300/90">Current size: {{ formatBytes(temporaryDbSize) }}</span>
+        </div>
+        <div
+          v-if="temporaryDbSize > 0"
+          class="flex flex-col items-center justify-center px-4 py-2 mx-4 mb-6 mt-8 transition-all rounded-md cursor-pointer bg-slate-600 text-slate-50 hover:bg-slate-500/80"
+          @click="videoStore.downloadTempVideoDB()"
+        >
+          <span class="text-md font-medium">Download temporary video chunks</span>
+        </div>
       </div>
     </template>
   </BaseConfigurationView>
@@ -134,7 +141,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import type { VDataTable } from 'vuetify/components'
 
 import Button from '@/components/Button.vue'
@@ -145,6 +152,20 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const videoStore = useVideoStore()
 const { allowedIceIps, availableIceIps } = storeToRefs(videoStore)
+
+// Define dialog as video library only
+const props = defineProps<{
+  /**
+   *
+   */
+  asVideoLibrary?: boolean
+}>()
+
+const isVideoLibraryOnly = ref(props.asVideoLibrary)
+
+watchEffect(() => {
+  isVideoLibraryOnly.value = props.asVideoLibrary ?? false
+})
 
 // List available videos and telemetry logs to be downloaded
 /* eslint-disable jsdoc/require-jsdoc  */

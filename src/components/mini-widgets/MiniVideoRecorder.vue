@@ -1,7 +1,8 @@
 <template>
   <div
     ref="recorderWidget"
-    class="flex justify-around px-2 py-1 text-center rounded-lg h-9 w-28 align-center bg-slate-800/60"
+    class="flex justify-around px-2 py-1 text-center rounded-lg h-9 align-center bg-slate-800/60"
+    :class="{ 'w-48': numberOfVideosOnDB > 0, 'w-32': numberOfVideosOnDB <= 0 }"
   >
     <div
       v-if="!isProcessingVideo"
@@ -30,6 +31,14 @@
     </div>
     <div v-else-if="isProcessingVideo" class="w-16 text-justify text-slate-100">
       <div class="text-center text-xs text-white select-none flex-nowrap">Processing video...</div>
+    </div>
+    <div v-if="numberOfVideosOnDB > 0" class="flex justify-center w-8">
+      <v-divider vertical class="h-6" />
+      <v-badge color="info" :content="numberOfVideosOnDB" :dot="isOutside || isVideoLibraryDialogOpen"
+        ><v-icon class="w-6 h-6 text-slate-100 ml-3" @click="isVideoLibraryDialogOpen = true">
+          mdi-video-box
+        </v-icon></v-badge
+      >
     </div>
   </div>
   <v-dialog v-model="isStreamSelectDialogOpen" width="auto">
@@ -67,6 +76,9 @@
       </div>
     </div>
   </v-dialog>
+  <v-dialog v-model="isVideoLibraryDialogOpen" width="auto">
+    <ConfigurationVideoView as-video-library />
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
@@ -74,12 +86,13 @@ import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { intervalToDuration } from 'date-fns'
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
-import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { isEqual } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/miniWidgets'
+import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
 
 const widgetStore = useWidgetManagerStore()
 const videoStore = useVideoStore()
@@ -97,10 +110,16 @@ const { namesAvailableStreams } = storeToRefs(videoStore)
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
 const isStreamSelectDialogOpen = ref(false)
+const isVideoLibraryDialogOpen = ref(false)
 const isLoadingStream = ref(false)
 const timeNow = useTimestamp({ interval: 100 })
 const mediaStream = ref<MediaStream | undefined>()
 const isProcessingVideo = ref(false)
+const numberOfVideosOnDB = ref(0)
+
+onMounted(async () => {
+  await fetchNumebrOfTempVideos()
+})
 
 onBeforeMount(async () => {
   // Set initial widget options if they don't exist
@@ -116,6 +135,12 @@ watch(nameSelectedStream, () => {
   miniWidget.value.options.streamName = nameSelectedStream.value
   mediaStream.value = undefined
 })
+
+// Fetch temporary video data from the storage
+const fetchNumebrOfTempVideos = async (): Promise<void> => {
+  const size = await videoStore.videoStoringDB.length()
+  numberOfVideosOnDB.value = size
+}
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 function assertStreamIsSelectedAndAvailable(
@@ -232,6 +257,16 @@ watch(
   () => videoStore.areThereVideosProcessing,
   (newValue) => {
     isProcessingVideo.value = newValue
+    fetchNumebrOfTempVideos()
+  }
+)
+
+watch(
+  () => isVideoLibraryDialogOpen.value,
+  async (newValue) => {
+    if (newValue === false) {
+      await fetchNumebrOfTempVideos()
+    }
   }
 )
 
@@ -294,5 +329,14 @@ watch(isRecording, () => {
 .border-blur:hover {
   background-color: #475569;
   box-shadow: 0px 0px 3px 3px #475569;
+}
+
+.close-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  cursor: pointer;
+  font-size: 20px;
+  color: #999;
 }
 </style>
