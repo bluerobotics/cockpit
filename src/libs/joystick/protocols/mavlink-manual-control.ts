@@ -379,13 +379,17 @@ export class MavlinkManualControlManager {
     if (!this.joystickState || !this.currentActionsMapping || !this.activeButtonsActions) return
 
     // Return if insuficient vehicle data (prevent dangerous manual control messages)
-    if (!this.currentVehicleParameters || !this.vehicleButtonParameterTable) return
+    if (!this.currentVehicleParameters || !this.vehicleButtonParameterTable) 
+    {
+      console.log("insufficient vehicle data")
+      return
+    }
 
     // Instantiate manual control state if not already done
     if (!this.manualControlState) {
       this.manualControlState = new MavlinkManualControlState()
     }
-
+    console.log("manual control update")
     const buttonParametersNamedObject: { [key in number]: string } = {}
     this.vehicleButtonParameterTable.forEach((entry) => (buttonParametersNamedObject[entry.value] = entry.title))
     const currentRegularButtonParameters = Object.entries(this.currentVehicleParameters)
@@ -395,6 +399,9 @@ export class MavlinkManualControlManager {
       .filter(([k]) => k.includes('BTN') && k.includes('S'))
       .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
 
+
+    console.log(currentRegularButtonParameters)
+
     const activeMavlinkManualControlActions = this.activeButtonsActions.filter((a) => a.protocol === JoystickProtocol.MAVLinkManualControl).map((action) => action.id)
     const regularVehicleButtonsToActivate = currentRegularButtonParameters
       .filter((entry) => activeMavlinkManualControlActions.includes(entry.actionId as MAVLinkButtonFunction))
@@ -402,6 +409,8 @@ export class MavlinkManualControlManager {
     const shiftVehicleButtonsToActivate = currentShiftButtonParameters
       .filter((entry) => activeMavlinkManualControlActions.includes(entry.actionId as MAVLinkButtonFunction))
       .map((entry) => manualControlButtonFromParameterName(entry.button))
+
+    console.log(regularVehicleButtonsToActivate)
 
     const useShift = this.activeButtonsActions.map((a) => a.id).includes(modifierKeyActions.shift.id)
     const shiftButton = currentRegularButtonParameters.find((v) => v.actionId === MAVLinkButtonFunction.shift)
@@ -502,16 +511,23 @@ export class MavlinkManualControlManager {
     // Re-use shift button if already mapped. Otherwise use R0 and S0.
     const regularShiftFunction = currentRegularButtonParameters.find((v) => v.actionId === MAVLinkButtonFunction.shift)
     const shiftActionValue = this.vehicleButtonParameterTable.find((e) => e.title === MAVLinkButtonFunction.shift)
-    if (regularShiftFunction === undefined) {
-      // Map shift to R0
-      this.vehicle.setParameter({ id: MAVLinkManualControlButton.R0, value: shiftActionValue!.value })
+    // use try catch to avoid undefined error
 
-      // Map shift to S0
-      this.vehicle.setParameter({ id: MAVLinkManualControlButton.S0, value: shiftActionValue!.value })
-    } else {
-      const sFunction = regularShiftFunction.button.replace('FUNCTION', 'SFUNCTION')
-      this.vehicle.setParameter({ id: sFunction, value: shiftActionValue!.value })
+    try {
+      if (regularShiftFunction === undefined) {
+        // Map shift to R0
+        this.vehicle.setParameter({ id: MAVLinkManualControlButton.R0, value: shiftActionValue!.value })
+
+        // Map shift to S0
+        this.vehicle.setParameter({ id: MAVLinkManualControlButton.S0, value: shiftActionValue!.value })
+      } else {
+        const sFunction = regularShiftFunction.button.replace('FUNCTION', 'SFUNCTION')
+        this.vehicle.setParameter({ id: sFunction, value: shiftActionValue!.value })
+      }
+    } catch (e) {
+      console.error(e)
     }
+   
 
     const currentMappedActionsInRegularButtons = currentRegularButtonParameters.map((v) => v.actionId)
     const currentMappedActionsInShiftButtons = currentShiftButtonParameters.map((v) => v.actionId)
