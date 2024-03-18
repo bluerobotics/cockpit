@@ -3,6 +3,7 @@
     <div class="flex items-center space-x-4 mb-3">
       <slide-unlock
         ref="vueslideunlock"
+        :position="sliderPercentage"
         :auto-width="false"
         :circle="true"
         :disabled="false"
@@ -28,7 +29,13 @@
 <script setup lang="ts">
 import SlideUnlock from '@j2only/slide-unlock'
 
-import { confirmationSliderText, confirmed, showSlideToConfirm, sliderText } from '@/libs/slide-to-confirm'
+import {
+  confirmationSliderText,
+  confirmed,
+  showSlideToConfirm,
+  sliderPercentage,
+  sliderText,
+} from '@/libs/slide-to-confirm'
 
 const onSlideConfirmed = (): void => {
   confirmed.value = true
