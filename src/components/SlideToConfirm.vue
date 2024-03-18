@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import SlideUnlock from 'vue-slide-unlock'
+import SlideUnlock from '@j2only/slide-unlock'
 
 import { confirmationSliderText, confirmed, showSlideToConfirm, sliderText } from '@/libs/slide-to-confirm'
 
