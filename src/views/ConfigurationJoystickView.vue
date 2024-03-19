@@ -250,6 +250,14 @@
             <div class="w-[90%] h-[2px] my-5 bg-slate-900/20" />
             <p class="flex items-center justify-center w-full text-xl font-bold text-slate-600">Axis mapping</p>
           </template>
+          <div class="flex flex-col items-center justify-between my-2">
+            <Transition>
+              <p v-if="showAxisRemappingText" class="font-medium text-slate-400">{{ axisRemappingText }}</p>
+            </Transition>
+            <Transition>
+              <v-progress-linear v-if="remappingAxisInput" v-model="remapAxisTimeProgress" />
+            </Transition>
+          </div>
           <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2">
             <v-icon class="mr-3">
               {{
@@ -286,6 +294,13 @@
               variant="solo"
               hide-details
             />
+            <v-btn
+              class="w-40 ml-2"
+              :disabled="remappingAxisInput !== false"
+              @click="remapAxisInput(currentJoystick as Joystick, input)"
+            >
+              {{ remappingAxisInput && remappingAxisInput === input.id ? 'Remapping' : 'Click to remap' }}
+            </v-btn>
           </div>
         </div>
       </v-card>
@@ -320,6 +335,17 @@ import {
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
+/**
+ * The time in milliseconds that the remapping process waits for a button press
+ * before considering it unsuccessful in milliseconds.
+ */
+const remappingTimeTotalMs = 5000
+
+/**
+ * The minimum value a certain axis must change to be considered a full range move.
+ */
+const joystickAxisFullRangeThreshold = 3.5
+
 const controllerStore = useControllerStore()
 const { globalAddress } = useMainVehicleStore()
 
@@ -348,16 +374,23 @@ const currentJoystick = ref<Joystick>()
 const currentButtonInputs = ref<JoystickButtonInput[]>([])
 const currentAxisInputs = ref<JoystickAxisInput[]>([])
 const remappingInput = ref(false)
+const remappingAxisInput = ref<false | JoystickAxis>(false)
 const remapTimeProgress = ref()
+const remapAxisTimeProgress = ref()
 const showButtonRemappingText = ref(false)
+const showAxisRemappingText = ref(false)
 const buttonFunctionAssignmentFeedback = ref('')
 const showButtonFunctionAssignmentFeedback = ref(false)
 const justRemappedInput = ref<boolean>()
+const justRemappedAxisInput = ref<boolean>()
 const inputClickedDialog = ref(false)
 const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
 const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
 const showJoystickLayout = ref(true)
-watch(inputClickedDialog, () => (justRemappedInput.value = undefined))
+watch(inputClickedDialog, () => {
+  justRemappedInput.value = undefined
+  justRemappedAxisInput.value = undefined
+})
 
 const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => {
   currentJoystick.value = joystick
@@ -394,18 +427,17 @@ const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<voi
   justRemappedInput.value = undefined
   let pressedButtonIndex = undefined
   let millisPassed = 0
-  const waitingTime = 5000
   remappingInput.value = true
   remapTimeProgress.value = 0
   showButtonRemappingText.value = true
 
   // Wait for a button press or until the waiting time expires
-  while ([undefined, -1].includes(pressedButtonIndex) && millisPassed < waitingTime) {
+  while ([undefined, -1].includes(pressedButtonIndex) && millisPassed < remappingTimeTotalMs) {
     // Check if any button on the joystick is pressed, and if so, get it's index
     pressedButtonIndex = joystick.gamepad.buttons.findIndex((button) => button.value === 1)
     await new Promise((r) => setTimeout(r, 100))
     millisPassed += 100
-    remapTimeProgress.value = 100 * (millisPassed / waitingTime)
+    remapTimeProgress.value = 100 * (millisPassed / remappingTimeTotalMs)
   }
 
   // End the remapping process
@@ -421,6 +453,64 @@ const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<voi
   }
   // If remapping was unsuccessful, indicate it, so we can warn the user
   justRemappedInput.value = false
+}
+
+/**
+ * Remaps the input of a given joystick axis. The function waits for a full range move of some axis and then
+ * updates the mapping to associate the joystick axis input with the moved axis. If no axis is moved
+ * within a specified waiting time, the remapping is considered unsuccessful.
+ * @param {Joystick} joystick - The joystick object that needs input remapping.
+ * @param {JoystickInput} input - The joystick input that is to be remapped.
+ * @returns {Promise<void>} A promise that resolves once the remapping process is complete.
+ */
+const remapAxisInput = async (joystick: Joystick, input: JoystickInput): Promise<void> => {
+  // Initialize the remapping state
+  justRemappedAxisInput.value = undefined
+  remappingAxisInput.value = input.id as JoystickAxis
+  remapAxisTimeProgress.value = 0
+  showAxisRemappingText.value = true
+
+  // Save the initial state of joystick axes values
+  const lastAxisValues = [...joystick.gamepad.axes]
+  const totalAxisDiff = new Array(lastAxisValues.length).fill(0)
+
+  // Time tracking could be simplified by calculating the end time first
+  const endTime = Date.now() + remappingTimeTotalMs
+
+  // Wait for a button press or until the waiting time expires
+  while (Date.now() < endTime) {
+    const currentAxisValues = joystick.gamepad.axes
+
+    totalAxisDiff.forEach((_, i) => {
+      totalAxisDiff[i] += Math.abs(currentAxisValues[i] - lastAxisValues[i])
+    })
+
+    if (totalAxisDiff.some((diff) => diff > joystickAxisFullRangeThreshold)) {
+      break
+    }
+
+    // Await a short period before the next check
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    const timePassed = Date.now() - endTime + remappingTimeTotalMs
+    remapAxisTimeProgress.value = (timePassed / remappingTimeTotalMs) * 100
+  }
+  setTimeout(() => {
+    if (remappingAxisInput.value === false) {
+      showAxisRemappingText.value = false
+    }
+  }, 5000)
+
+  // Determine success and update the mapping if successful
+  const remappedIndex = totalAxisDiff.findIndex((diff) => diff > joystickAxisFullRangeThreshold)
+  const success = remappedIndex !== -1
+
+  // End the remapping process
+  justRemappedAxisInput.value = success
+  remappingAxisInput.value = false
+
+  if (success) {
+    controllerStore.cockpitStdMappings[joystick.model].axes[input.id] = remappedIndex as JoystickAxis
+  }
 }
 
 const currentButtonActions = computed(
@@ -483,6 +573,16 @@ const buttonRemappingText = computed(() => {
     : justRemappedInput.value
     ? 'Input remapped.'
     : 'No input detected.'
+})
+
+const axisRemappingText = computed(() => {
+  return remappingAxisInput.value
+    ? 'Make a full range move on the axis you want to use for this input.'
+    : justRemappedAxisInput.value === undefined
+    ? ''
+    : justRemappedAxisInput.value
+    ? 'Axis input remapped.'
+    : 'No axis detected.'
 })
 
 const buttonActionsToShow = computed(() =>
