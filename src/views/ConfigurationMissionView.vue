@@ -2,12 +2,21 @@
   <BaseConfigurationView>
     <template #title>Mission configuration</template>
     <template #content>
-      <v-switch
-        v-model="missionStore.slideEventsEnabled"
-        label="Enable slide to confirm"
-        class="m-2 text-slate-800"
-        color="rgb(0, 20, 80)"
-      />
+      <div class="flex w-[40%] flex-wrap">
+        <v-switch
+          v-model="missionStore.slideEventsEnabled"
+          label="Enable slide to confirm"
+          class="m-2 text-slate-800"
+          color="rgb(0, 20, 80)"
+        />
+        <v-switch
+          v-model="missionStore.holdToConfirmEnabled"
+          label="Enable hold to confirm"
+          class="m-2 text-slate-800"
+          color="rgb(0, 20, 80)"
+          :disabled="!missionStore.slideEventsEnabled"
+        />
+      </div>
       <div class="flex w-[60%] flex-wrap">
         <v-checkbox
           v-for="variable in EventCategory"
