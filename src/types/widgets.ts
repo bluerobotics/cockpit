@@ -11,7 +11,7 @@ export enum WidgetType {
   DepthHUD = 'DepthHUD',
   CompassHUD = 'CompassHUD',
   IFrame = 'IFrame',
-  ImageViewer = 'ImageViewer',
+  ImageView = 'ImageView',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
   URLVideoPlayer = 'URLVideoPlayer',
