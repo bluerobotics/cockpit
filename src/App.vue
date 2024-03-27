@@ -187,18 +187,22 @@ const openMainMenu = (): void => {
   requestDisarmConfirmationPopup = true
   Swal.fire({
     title: 'Be careful',
-    text: 'Vehicle is currently armed, its not recommended to open the main menu.',
+    text: 'The vehicle is currently armed, it is not recommended to open the main menu.',
     icon: 'warning',
     showCancelButton: true,
     showConfirmButton: true,
     cancelButtonText: 'Continue anyway',
     confirmButtonText: 'Disarm vehicle',
   }).then((result) => {
+    // Opens the main menu only after disarming by the slider is confirmed
     if (result.isConfirmed && vehicleStore.isArmed) {
-      vehicleStore.disarm()
+      vehicleStore.disarm().then(() => {
+        showMainMenu.value = true
+      })
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      showMainMenu.value = true
     }
     requestDisarmConfirmationPopup = false
-    showMainMenu.value = true
   })
 }
 
