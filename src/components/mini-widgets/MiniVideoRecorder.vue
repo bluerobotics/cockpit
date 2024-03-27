@@ -34,8 +34,14 @@
     </div>
     <div v-if="numberOfVideosOnDB > 0" class="flex justify-center w-8">
       <v-divider vertical class="h-6" />
-      <v-badge color="info" :content="numberOfVideosOnDB" :dot="isOutside || isVideoLibraryDialogOpen"
-        ><v-icon class="w-6 h-6 text-slate-100 ml-3" @click="isVideoLibraryDialogOpen = true">
+      <v-badge
+        color="info"
+        :content="numberOfVideosOnDB"
+        :dot="isOutside || isVideoLibraryDialogOpen"
+        class="cursor-pointer"
+        @click="isVideoLibraryDialogOpen = true"
+      >
+        <v-icon class="w-6 h-6 text-slate-100 ml-3" @click="isVideoLibraryDialogOpen = true">
           mdi-video-box
         </v-icon></v-badge
       >
@@ -76,7 +82,7 @@
       </div>
     </div>
   </v-dialog>
-  <v-dialog v-model="isVideoLibraryDialogOpen" width="auto">
+  <v-dialog v-model="isVideoLibraryDialogOpen" width="900px">
     <ConfigurationVideoView as-video-library />
   </v-dialog>
 </template>
