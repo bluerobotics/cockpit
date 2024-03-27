@@ -86,20 +86,46 @@
         class="max-w-[90%] bg-slate-100/30 rounded-lg p-3 border"
         :class="temporaryDbSize === 0 ? 'mb-10' : 'mb-0'"
       >
+        <template #[`item.filename`]="{ item }">
+          <span
+            v-if="item.filename.endsWith('.webm')"
+            class="cursor-pointer hover:underline"
+            @click="playVideoOnModal([item.filename])"
+          >
+            {{ item.filename }}
+          </span>
+          <span v-else>
+            {{ item.filename }}
+          </span>
+        </template>
         <template #item.size="{ value }">
           {{ formatBytes(value) }}
         </template>
         <template #item.actions="{ item }">
           <span
             v-if="selectedFilesNames.isEmpty()"
-            class="mx-1 transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
+            class="mx-2 transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
+            style="font-size: 17px"
             @click="discardAndUpdateDB([item.filename])"
           />
           <span
             v-if="selectedFilesNames.isEmpty()"
-            class="mx-1 transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-download"
+            class="mx-0 transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-download"
+            style="font-size: 17px"
             @click="downloadAndUpdateDB([item.filename])"
           />
+          <span
+            v-if="selectedFilesNames.isEmpty()"
+            class="mx-1 ml-2 transition-all mdi mdi-play"
+            :class="{
+              'hover:text-slate-500/50': item.filename.endsWith('.webm'),
+              'cursor-pointer': item.filename.endsWith('.webm'),
+              'cursor-default': !item.filename.endsWith('.webm'),
+            }"
+            :style="{ fontSize: '20px', opacity: item.filename.endsWith('.webm') ? '1' : '0.1' }"
+            @click="item.filename.endsWith('.webm') && playVideoOnModal([item.filename])"
+          >
+          </span>
         </template>
         <template #footer.prepend>
           <Transition name="horizontalFade">
@@ -110,6 +136,10 @@
               />
               <span
                 class="mx-2 text-2xl transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-download"
+                @click="downloadAndUpdateDB(selectedFilesNames)"
+              />
+              <span
+                class="mx-2 text-2xl transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-play"
                 @click="downloadAndUpdateDB(selectedFilesNames)"
               />
             </div>
@@ -136,6 +166,7 @@
       </div>
     </template>
   </BaseConfigurationView>
+  <VideoPlayer :video-url="videoFile" :open-video-player-dialog="openVideoPlayerDialog" />
 </template>
 
 <script setup lang="ts">
@@ -145,6 +176,7 @@ import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import type { VDataTable } from 'vuetify/components'
 
 import Button from '@/components/Button.vue'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import { formatBytes } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 
@@ -161,7 +193,13 @@ const props = defineProps<{
   asVideoLibrary?: boolean
 }>()
 
+/* eslint-enable jsdoc/require-jsdoc  */
+const availableVideosAndLogs = ref<VideoStorageFile[] | undefined>()
 const isVideoLibraryOnly = ref(props.asVideoLibrary)
+const videoFile = ref()
+const openVideoPlayerDialog = ref<boolean>(false)
+const temporaryDbSize = ref(0)
+const selectedFilesNames = ref<string[]>([])
 
 watchEffect(() => {
   isVideoLibraryOnly.value = props.asVideoLibrary ?? false
@@ -173,10 +211,6 @@ interface VideoStorageFile {
   filename: string
   size: number
 }
-/* eslint-enable jsdoc/require-jsdoc  */
-const availableVideosAndLogs = ref<VideoStorageFile[] | undefined>()
-const temporaryDbSize = ref(0)
-const selectedFilesNames = ref<string[]>([])
 
 onMounted(async () => {
   await fetchVideoAndLogsData()
@@ -215,6 +249,17 @@ const downloadAndUpdateDB = async (filenames: string[]): Promise<void> => {
   await videoStore.downloadFilesFromVideoDB(filenames)
   await fetchVideoAndLogsData()
   selectedFilesNames.value = []
+}
+
+async function playVideoOnModal(videoFileName: string[]): Promise<void> {
+  const videoBlob = await videoStore.videoStoringDB.getItem(videoFileName[0])
+  if (!(videoBlob instanceof Blob)) {
+    console.error('Video data is not a Blob:', videoBlob)
+    return
+  }
+  const tempFileUrl = URL.createObjectURL(videoBlob)
+  videoFile.value = tempFileUrl
+  openVideoPlayerDialog.value = true
 }
 
 const clearTemporaryVideoFiles = async (): Promise<void> => {
