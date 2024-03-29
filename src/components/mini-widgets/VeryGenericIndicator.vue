@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center justify-center h-12 py-1 text-white transition-all w-[7rem]">
-    <span class="relative w-[2rem] mdi icon-symbol" :class="[miniWidget.options.iconName]"></span>
+  <div class="flex items-center justify-center h-12 py-1 mx-1 text-white transition-all w-[7rem]">
+    <span class="relative w-[2rem] mdi icon-symbol text-[32px]" :class="[miniWidget.options.iconName]"></span>
     <div class="flex flex-col items-start justify-center ml-1 select-none w-[4.75rem]">
       <div>
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
@@ -11,24 +11,32 @@
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ miniWidget.options.displayName }}</span>
     </div>
   </div>
-  <Dialog v-model:show="miniWidget.managerVars.configMenuOpen" class="w-[24rem]">
-    <div class="w-full h-full px-2 py-4">
-      <div class="flex items-center mb-3 justify-evenly">
-        <div
-          class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
-          :class="{ 'bg-slate-400': currentTab === 'presets' }"
-          @click="currentTab = 'presets'"
-        >
-          Presets
+  <v-dialog
+    v-model="miniWidget.managerVars.configMenuOpen"
+    persistent
+    class="w-[100vw] flex justify-center items-center"
+  >
+    <v-card class="configModal p-8">
+      <div class="close-icon mdi mdi-close" @click.stop="closeDialog"></div>
+      <v-card-title class="text-white">
+        <div class="flex items-center mb-3 mt-[-5px] justify-evenly">
+          <div
+            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
+            :class="{ 'bg-slate-400': currentTab === 'presets' }"
+            @click="currentTab = 'presets'"
+          >
+            Presets
+          </div>
+          <div
+            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
+            :class="{ 'bg-slate-400': currentTab === 'custom' }"
+            @click="currentTab = 'custom'"
+          >
+            Custom
+          </div>
         </div>
-        <div
-          class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
-          :class="{ 'bg-slate-400': currentTab === 'custom' }"
-          @click="currentTab = 'custom'"
-        >
-          Custom
-        </div>
-      </div>
+      </v-card-title>
+
       <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
         <div class="flex flex-col items-center justify-between w-full mt-3">
           <span class="w-full mb-1 text-sm text-slate-100/50">Display name</span>
@@ -41,7 +49,9 @@
               class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
               @click="showVariableChooseModal = !showVariableChooseModal"
             >
-              <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.variableName || 'Click to choose...' }}</p>
+              <p class="text-ellipsis overflow-x-clip">
+                {{ miniWidget.options.variableName || 'Click to choose...' }}
+              </p>
             </button>
             <span
               class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi mdi-swap-horizontal-bold"
@@ -104,7 +114,7 @@
             <RecycleScroller
               v-if="iconSearchString === '' && showIconChooseModal"
               v-slot="{ item }"
-              class="w-full h-40 mt-3"
+              class="w-full h-40 mt-3 text-[34px]"
               :items="iconsNames"
               :item-size="46"
               :grid-items="7"
@@ -131,11 +141,11 @@
         <div
           v-for="(template, i) in veryGenericIndicatorPresets"
           :key="i"
-          class="flex items-center w-[6.25rem] h-12 m-2 rounded-md text-white justify-center cursor-pointer hover:bg-slate-100/20 transition-all"
+          class="flex items-center m-2 rounded-md px-2 text-white justify-center cursor-pointer hover:bg-slate-100/20 transition-all"
           @click="setIndicatorFromTemplate(template)"
         >
-          <span class="relative w-[2rem] mdi icon-symbol" :class="[template.iconName]"></span>
-          <div class="flex flex-col items-start justify-center ml-1 min-w-[4rem] max-w-[6rem] select-none">
+          <span class="relative w-[2rem] mdi icon-symbol text-[34px] mx-2" :class="[template.iconName]"></span>
+          <div class="flex flex-col items-start justify-center min-w-[4rem] max-w-[6rem] select-none">
             <span class="text-xl font-semibold leading-6 w-fit">
               {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }} {{ template.variableUnit }}
             </span>
@@ -143,8 +153,8 @@
           </div>
         </div>
       </div>
-    </div>
-  </Dialog>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
@@ -152,14 +162,12 @@ import * as MdiExports from '@mdi/js/mdi'
 import { watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import Swal from 'sweetalert2'
-import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, ref, toRefs, watch, watchEffect } from 'vue'
 
 import { round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { type VeryGenericIndicatorPreset, veryGenericIndicatorPresets } from '@/types/genericIndicator'
 import type { MiniWidget } from '@/types/miniWidgets'
-
-import Dialog from '../Dialog.vue'
 
 const props = defineProps<{
   /**
@@ -201,6 +209,21 @@ const parsedState = computed(() => {
   if (value >= 10000) return `${(value / 10000).toFixed(0)}k`
   return value.toFixed(0)
 })
+
+// prevent closing the configuration menu if no variable is selected
+const closeDialog = async (): Promise<void> => {
+  const { variableName } = miniWidget.value.options
+  const { managerVars } = miniWidget.value
+  if (variableName === '') {
+    await Swal.fire({
+      text: 'Please select a variable before closing the configuration menu.',
+      icon: 'error',
+    })
+    return
+  }
+
+  managerVars.configMenuOpen = false
+}
 
 const updateVariableState = (): void => {
   currentState.value = store.genericVariables[miniWidget.value.options.variableName as string]
@@ -302,11 +325,35 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
   miniWidget.value.options.variableUnit = template.variableUnit
   miniWidget.value.options.variableMultiplier = template.variableMultiplier
 }
+
+// Pops open the config menu if the mini-widget is a non-configured VeryGenericIndicator
+watchEffect(() => {
+  if (miniWidget.value.component === 'VeryGenericIndicator' && miniWidget.value.options.displayName === '') {
+    miniWidget.value.managerVars.configMenuOpen = true
+  }
+})
 </script>
 
 <style>
-.icon-symbol {
-  font-size: 2rem;
-  line-height: 2rem;
+.close-icon {
+  position: fixed;
+  top: 0px;
+  right: 5px;
+  cursor: pointer;
+  color: white;
+  font-size: 24px;
+  border-radius: 8px;
+}
+.configModal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, -50%);
+  height: fit-content;
+  background-color: rgba(71, 85, 105, 0.4);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.25);
+  border-radius: 5px;
 }
 </style>
