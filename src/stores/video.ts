@@ -2,7 +2,6 @@ import { useStorage, useThrottleFn, useTimestamp } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { differenceInSeconds, format } from 'date-fns'
 import { saveAs } from 'file-saver'
-import fixWebmDuration from 'fix-webm-duration'
 import localforage from 'localforage'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
@@ -385,11 +384,10 @@ export const useVideoStore = defineStore('video', () => {
     const chunkBlobs = chunks.map((chunk) => chunk.blob)
 
     const mergedVideoBlob = chunkBlobs.reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
-    const durFixedBlob = await fixWebmDuration(mergedVideoBlob, dateFinish.getTime() - dateStart.getTime())
 
     updateLastProcessingUpdate(recordingHash)
 
-    videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob)
+    videoStoringDB.setItem(`${info.fileName}.webm`, mergedVideoBlob)
 
     updateLastProcessingUpdate(recordingHash)
 
