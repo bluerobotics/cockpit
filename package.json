@@ -33,7 +33,6 @@
     "colord": "^2.9.3",
     "date-fns": "^2.29.3",
     "file-saver": "^2.0.5",
-    "fix-webm-duration": "^1.0.5",
     "floating-vue": "^5.0.3",
     "flowbite": "^2.2.1",
     "flowbite-vue": "^0.1.2",
