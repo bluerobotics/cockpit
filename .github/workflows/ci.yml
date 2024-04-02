@@ -123,7 +123,7 @@ jobs:
 
       - name: Install flatpak
         run: |
-          sudo apt install -y flatpak flatpak-builder
+          sudo apt install -y --fix-missing flatpak flatpak-builder
           sudo flatpak remote-add --system flathub https://flathub.org/repo/flathub.flatpakrepo
           flatpak remote-add --user flathub https://flathub.org/repo/flathub.flatpakrepo || true
 
