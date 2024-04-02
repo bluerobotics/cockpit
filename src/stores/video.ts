@@ -7,6 +7,7 @@ import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import { computed, ref, watch } from 'vue'
+import fixWebmDuration from 'webm-duration-fix'
 import adapter from 'webrtc-adapter'
 
 import { WebRTCManager } from '@/composables/webRTC'
@@ -383,11 +384,11 @@ export const useVideoStore = defineStore('video', () => {
 
     const chunkBlobs = chunks.map((chunk) => chunk.blob)
 
-    const mergedVideoBlob = chunkBlobs.reduce((a, b) => new Blob([a, b], { type: 'video/webm' }))
+    const durFixedBlob = await fixWebmDuration(new Blob([...chunkBlobs], { type: 'video/webm;codecs=vp9' }))
 
     updateLastProcessingUpdate(recordingHash)
 
-    videoStoringDB.setItem(`${info.fileName}.webm`, mergedVideoBlob)
+    videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob)
 
     updateLastProcessingUpdate(recordingHash)
 
