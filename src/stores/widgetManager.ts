@@ -150,6 +150,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     savedProfiles.value = widgetProfiles
     currentProfileIndex.value = 0
     currentViewIndex.value = 0
+    location.reload()
   }
 
   const exportProfile = (profile: Profile): void => {
