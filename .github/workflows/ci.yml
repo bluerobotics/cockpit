@@ -73,6 +73,10 @@ jobs:
           suffix: linux
           extension: AppImage
 
+        - os: windows-latest
+          suffix: windows
+          extension: exe
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
