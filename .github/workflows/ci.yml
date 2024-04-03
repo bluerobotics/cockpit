@@ -127,6 +127,7 @@ jobs:
 
       - name: Install flatpak
         run: |
+          sudo apt update
           sudo apt install -y --fix-missing flatpak flatpak-builder
           sudo flatpak remote-add --system flathub https://flathub.org/repo/flathub.flatpakrepo
           flatpak remote-add --user flathub https://flathub.org/repo/flathub.flatpakrepo || true
