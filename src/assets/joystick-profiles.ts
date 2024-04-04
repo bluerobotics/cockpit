@@ -13,10 +13,15 @@ import {
   JoystickButton,
 } from '@/types/joystick'
 
+export const defaultRovMappingHash = '10b0075a-27a7-4800-ba95-f35fd722d1df'
+export const defaultBoatMappingHash = 'd3427f20-ba28-4cf7-ae24-ec740dd6dce0'
+export const defaultMavMappingHash = 'dd654387-18fc-4674-89a6-4dc4d0bc8240'
+
 // TODO: Adjust mapping for PS5 controller
 export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
   {
     name: 'ROV functions mapping',
+    hash: defaultRovMappingHash,
     axesCorrespondencies: {
       [JoystickAxis.A0]: { action: mavlinkManualControlAxes.axis_y, min: -1000, max: +1000 },
       [JoystickAxis.A1]: { action: mavlinkManualControlAxes.axis_x, min: +1000, max: -1000 },
@@ -68,6 +73,7 @@ export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
   },
   {
     name: 'Boat functions mapping',
+    hash: defaultBoatMappingHash,
     axesCorrespondencies: {
       [JoystickAxis.A0]: { action: mavlinkManualControlAxes.axis_y, min: -1000, max: +1000 },
       [JoystickAxis.A1]: { action: mavlinkManualControlAxes.axis_x, min: +1000, max: -1000 },
@@ -119,6 +125,7 @@ export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
   },
   {
     name: 'MAV functions mapping',
+    hash: defaultMavMappingHash,
     axesCorrespondencies: {
       [JoystickAxis.A0]: { action: mavlinkManualControlAxes.axis_r, min: -1000, max: +1000 },
       [JoystickAxis.A1]: { action: mavlinkManualControlAxes.axis_z, min: +1000, max: 0 },
