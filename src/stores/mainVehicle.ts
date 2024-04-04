@@ -85,6 +85,8 @@ class CustomizableParameter<T> {
 }
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
+  const controllerStore = useControllerStore()
+
   const cpuLoad = ref<number>()
   const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
   const _mainConnectionURI = new CustomizableParameter<Connection.URI>(() => {
@@ -398,8 +400,19 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
       const heartbeat = pack.message as Message.Heartbeat
       firmwareType.value = heartbeat.autopilot.type
+      const oldVehicleType = vehicleType.value
       vehicleType.value = heartbeat.mavtype.type
       lastHeartbeat.value = new Date()
+
+      if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
+        console.log('Vehicle type changed to', vehicleType.value)
+        try {
+          controllerStore.loadDefaultProtocolMappingForVehicle(vehicleType.value)
+          console.info(`Loaded default joystick protocol mapping for vehicle type ${vehicleType.value}.`)
+        } catch (error) {
+          console.error(`Could not load default protocol mapping for vehicle type ${vehicleType.value}: ${error}`)
+        }
+      }
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getAutoPilot(vehicles).onMode.add((vehicleMode: any) => {
@@ -430,7 +443,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     registerActionCallback(availableCockpitActions.mavlink_disarm, disarm)
   })
 
-  const controllerStore = useControllerStore()
   const mavlinkManualControlManager = new MavlinkManualControlManager()
   const cockpitActionsManager = new CockpitActionsManager()
   controllerStore.registerControllerUpdateCallback(mavlinkManualControlManager.updateControllerData)
