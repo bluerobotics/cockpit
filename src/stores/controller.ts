@@ -11,6 +11,7 @@ import {
   defaultProtocolMappingVehicleCorrespondency,
 } from '@/assets/joystick-profiles'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
@@ -340,6 +341,17 @@ export const useControllerStore = defineStore('controller', () => {
     mapping.hash = correspondentDefault?.hash ?? uuid4()
   })
 
+  const loadDefaultProtocolMappingForVehicle = (vehicleType: MavType): void => {
+    // @ts-ignore: We know that the value is a string
+    const defaultMappingHash = vehicleTypeProtocolMappingCorrespondency.value[vehicleType]
+    const defaultProtocolMapping = cockpitStandardToProtocols.find((mapping) => mapping.hash === defaultMappingHash)
+    if (!defaultProtocolMapping) {
+      throw new Error('Could not find default mapping for this vehicle.')
+    }
+
+    loadProtocolMapping(defaultProtocolMapping)
+  }
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -360,5 +372,6 @@ export const useControllerStore = defineStore('controller', () => {
     importFunctionsMapping,
     exportFunctionsMappingToVehicle,
     importFunctionsMappingFromVehicle,
+    loadDefaultProtocolMappingForVehicle,
   }
 })
