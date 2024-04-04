@@ -5,7 +5,11 @@ import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
 import { computed, ref, toRaw, watch } from 'vue'
 
-import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
+import {
+  availableGamepadToCockpitMaps,
+  cockpitStandardToProtocols,
+  defaultProtocolMappingVehicleCorrespondency,
+} from '@/assets/joystick-profiles'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
@@ -42,6 +46,10 @@ export const useControllerStore = defineStore('controller', () => {
   const availableButtonActions = allAvailableButtons
   const enableForwarding = ref(true)
   const holdLastInputWhenWindowHidden = useStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
+  const vehicleTypeProtocolMappingCorrespondency = useStorage<typeof defaultProtocolMappingVehicleCorrespondency>(
+    'cockpit-default-vehicle-type-protocol-mappings',
+    defaultProtocolMappingVehicleCorrespondency
+  )
 
   const protocolMapping = computed<JoystickProtocolActionsMapping>({
     get() {
@@ -342,6 +350,7 @@ export const useControllerStore = defineStore('controller', () => {
     cockpitStdMappings,
     availableAxesActions,
     availableButtonActions,
+    vehicleTypeProtocolMappingCorrespondency,
     loadProtocolMapping,
     exportJoystickMapping,
     importJoystickMapping,

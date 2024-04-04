@@ -1,3 +1,4 @@
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { availableCockpitActions } from '@/libs/joystick/protocols/cockpit-actions'
 import {
@@ -16,6 +17,12 @@ import {
 export const defaultRovMappingHash = '10b0075a-27a7-4800-ba95-f35fd722d1df'
 export const defaultBoatMappingHash = 'd3427f20-ba28-4cf7-ae24-ec740dd6dce0'
 export const defaultMavMappingHash = 'dd654387-18fc-4674-89a6-4dc4d0bc8240'
+
+export const defaultProtocolMappingVehicleCorrespondency = {
+  [MavType.MAV_TYPE_SUBMARINE]: defaultRovMappingHash,
+  [MavType.MAV_TYPE_SURFACE_BOAT]: defaultBoatMappingHash,
+  [MavType.MAV_TYPE_QUADROTOR]: defaultMavMappingHash,
+}
 
 // TODO: Adjust mapping for PS5 controller
 export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [

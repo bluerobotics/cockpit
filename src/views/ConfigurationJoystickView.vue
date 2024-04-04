@@ -54,16 +54,29 @@
           <p>Could not stablish communication with the vehicle.</p>
           <p>Button functions will appear as numbers. If connection is restablished, function names will appear.</p>
         </div>
-        <div v-if="availableModifierKeys" class="flex items-center px-5 py-3 m-5 font-bold border rounded-md">
-          <Button
-            v-for="functionMapping in controllerStore.protocolMappings"
-            :key="functionMapping.name"
-            class="m-2"
-            :class="{ 'bg-slate-700': controllerStore.protocolMapping.name === functionMapping.name }"
-            @click="controllerStore.loadProtocolMapping(functionMapping)"
-          >
-            {{ functionMapping.name }}
-          </Button>
+        <div v-if="availableModifierKeys" class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md">
+          <div class="flex">
+            <Button
+              v-for="functionMapping in controllerStore.protocolMappings"
+              :key="functionMapping.name"
+              class="m-2"
+              :class="{ 'bg-slate-700': controllerStore.protocolMapping.name === functionMapping.name }"
+              @click="controllerStore.loadProtocolMapping(functionMapping)"
+            >
+              {{ functionMapping.name }}
+            </Button>
+          </div>
+          <div class="flex flex-col items-center w-full my-2">
+            <v-combobox
+              v-model="vehicleTypesAssignedToCurrentProfile"
+              :items="availableVehicleTypes"
+              label="Vehicle types that use this profile by default:"
+              chips
+              multiple
+              variant="outlined"
+              class="w-10/12 m-4"
+            />
+          </div>
         </div>
         <div class="flex items-center px-5 py-3 m-5 font-bold border rounded-md">
           <Button
@@ -316,6 +329,7 @@ import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from
 import Button from '@/components/Button.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -588,4 +602,28 @@ const axisRemappingText = computed(() => {
 const buttonActionsToShow = computed(() =>
   controllerStore.availableButtonActions.filter((a) => JSON.stringify(a) !== JSON.stringify(modifierKeyActions.regular))
 )
+
+const availableVehicleTypes = computed(() => Object.keys(MavType))
+
+const vehicleTypesAssignedToCurrentProfile = computed({
+  get() {
+    return Object.keys(controllerStore.vehicleTypeProtocolMappingCorrespondency).filter((vType) => {
+      // @ts-ignore: Enums in TS such
+      return controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === controllerStore.protocolMapping.hash
+    })
+  },
+  set(selectedVehicleTypes: string[]) {
+    availableVehicleTypes.value.forEach((vType) => {
+      // @ts-ignore: Enums in TS such
+      if (controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === controllerStore.protocolMapping.hash) {
+        // @ts-ignore: Enums in TS such
+        controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] = undefined
+      }
+      if (selectedVehicleTypes.includes(vType)) {
+        // @ts-ignore: Enums in TS such
+        controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] = controllerStore.protocolMapping.hash
+      }
+    })
+  },
+})
 </script>
