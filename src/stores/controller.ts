@@ -2,6 +2,7 @@ import { useDocumentVisibility, useStorage } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
+import { v4 as uuid4 } from 'uuid'
 import { computed, ref, toRaw, watch } from 'vue'
 
 import { availableGamepadToCockpitMaps, cockpitStandardToProtocols } from '@/assets/joystick-profiles'
@@ -34,7 +35,7 @@ const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
 export const useControllerStore = defineStore('controller', () => {
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMappings = useStorage(protocolMappingsKey, cockpitStandardToProtocols)
+  const protocolMappings = useStorage<JoystickProtocolActionsMapping[]>(protocolMappingsKey, cockpitStandardToProtocols)
   const protocolMappingIndex = useStorage(protocolMappingIndexKey, 0)
   const cockpitStdMappings = useStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
   const availableAxesActions = allAvailableAxes
@@ -321,6 +322,15 @@ export const useControllerStore = defineStore('controller', () => {
     // @ts-ignore: We check for the necessary fields in the if before
     protocolMappings.value = newMappings
   }
+
+  // Add hash on mappings that don't have it - TODO: Remove for 1.0.0 release
+  Object.values(protocolMappings.value).forEach((mapping) => {
+    if (mapping.hash !== undefined) return
+
+    // If the mapping is a correspondent of a cockpit standard mapping, use the correspondent hash
+    const correspondentDefault = cockpitStandardToProtocols.find((defMapping) => defMapping.name === mapping.name)
+    mapping.hash = correspondentDefault?.hash ?? uuid4()
+  })
 
   return {
     registerControllerUpdateCallback,

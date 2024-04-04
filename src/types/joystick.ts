@@ -134,6 +134,10 @@ export interface JoystickProtocolActionsMapping {
    */
   name: string
   /**
+   * Unique identifier for the mapping
+   */
+  hash: string
+  /**
    * Correspondency from Gamepad API to protocol axis.
    * Corresponds to which Axis in the protocol should the Nth axis be mapped to.
    */
