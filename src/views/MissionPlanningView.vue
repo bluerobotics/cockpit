@@ -312,7 +312,10 @@ onMounted(async () => {
 
   planningMap.value.on('moveend', () => {
     if (planningMap.value === undefined) return
-    mapCenter.value = [planningMap.value?.getCenter().lat, planningMap.value?.getCenter().lng] ?? mapCenter.value
+    let { lat, lng } = planningMap.value.getCenter()
+    if (lat && lng) {
+      mapCenter.value = [lat, lng]
+    }
   })
   planningMap.value.on('zoomend', () => {
     if (planningMap.value === undefined) return
