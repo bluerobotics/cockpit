@@ -15,7 +15,10 @@
         class="slide-unlock"
         @completed="onSlideConfirmed()"
       />
-      <button class="w-12 h-12 flex items-center justify-center rounded-full bg-white text-gray" @click="cancelAction">
+      <button
+        class="flex items-center justify-center w-12 h-12 bg-white rounded-full select-none text-gray"
+        @click="cancelAction"
+      >
         X
       </button>
     </div>
