@@ -728,7 +728,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       custom_mode: 0,
       mavtype: { type: MavType.MAV_TYPE_GCS },
       autopilot: { type: MavAutopilot.MAV_AUTOPILOT_INVALID },
-      base_mode: { bits: 192 },
+      base_mode: { bits: MavModeFlag.MAV_MODE_FLAG_SAFETY_ARMED | MavModeFlag.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED },
       system_status: { type: MavState.MAV_STATE_ACTIVE },
       mavlink_version: 1,
     }
