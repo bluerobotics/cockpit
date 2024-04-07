@@ -176,6 +176,15 @@ jobs:
         with:
           submodules: recursive
 
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Build cockpit
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
       - name: Prepare
         id: prepare
         run: |
