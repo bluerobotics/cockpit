@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "main": "dist/electron/main.js",
+  "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
   "scripts": {
     "build": "vite build",
     "build:serve": "bun run build && bun run serve",
