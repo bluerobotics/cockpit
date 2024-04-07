@@ -16,7 +16,10 @@ test('Test mini-widgets exist', async () => {
  * @param {T} enum_type Enum type with values as filenames
  * @param {string} path_template Path template as string, where name should be used as filename
  */
-async function enum_to_files_checker<T>(enum_type: T, path_template: string): Promise<void> {
+async function enum_to_files_checker<T extends ArrayLike<unknown> | { [s: string]: unknown }>(
+  enum_type: T,
+  path_template: string
+): Promise<void> {
   const loader = await Promise.allSettled(
     /* eslint-disable @typescript-eslint/no-unused-vars */
     Object.values(enum_type).map((name) => import(eval('`' + path_template + '`'))) // Please, have marcy of my soul
