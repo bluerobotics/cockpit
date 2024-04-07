@@ -2,10 +2,7 @@ import { app, BrowserWindow, protocol, screen } from 'electron'
 import { join } from 'path'
 
 export const ROOT_PATH = {
-  // /dist
   dist: join(__dirname, '..'),
-  // /dist or /public
-  public: join(__dirname, app.isPackaged ? '../..' : '../../../public'),
 }
 
 let mainWindow: BrowserWindow | null
@@ -16,7 +13,7 @@ let mainWindow: BrowserWindow | null
 function createWindow(): void {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
   mainWindow = new BrowserWindow({
-    icon: join(ROOT_PATH.public, 'favicon.ico'),
+    icon: join(ROOT_PATH.dist, 'pwa-512x512.png'),
     webPreferences: {
       webSecurity: false,
       contextIsolation: false,
