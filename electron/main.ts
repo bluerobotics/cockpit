@@ -18,8 +18,10 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     icon: join(ROOT_PATH.public, 'favicon.ico'),
     webPreferences: {
+      webSecurity: false,
       contextIsolation: false,
-      nodeIntegration: false,
+      nodeIntegration: true,
+      allowRunningInsecureContent: true,
     },
     width,
     height,
