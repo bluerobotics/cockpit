@@ -16,7 +16,8 @@ const defaultMiniWidgetManagerVars = {
   configMenuOpen: false,
 }
 
-export const defaultGlobalAddress = window.location.hostname
+const hostname = window.location.hostname
+export const defaultGlobalAddress = hostname == '' || hostname == undefined ? 'blueos-avahi.local' : hostname
 export const widgetProfiles: Profile[] = [
   {
     name: 'ROV default',
