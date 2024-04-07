@@ -112,7 +112,7 @@
     ],
     "appId": "org.bluerobotics.cockpit",
     "mac": {
-      "category": "public.app-category.entertainment"
+      "category": "public.app-category.utilities"
     },
     "flatpak": {
       "base": "org.electronjs.Electron2.BaseApp",
