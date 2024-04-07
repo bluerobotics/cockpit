@@ -1,4 +1,4 @@
-import { app, BrowserWindow, screen } from 'electron'
+import { app, BrowserWindow, protocol, screen } from 'electron'
 import { join } from 'path'
 
 export const ROOT_PATH = {
@@ -38,5 +38,23 @@ app.on('window-all-closed', () => {
   mainWindow = null
   app.quit()
 })
+
+app.on('ready', () => {
+  protocol.registerFileProtocol('file', (i, o) => {
+    o({ path: i.url.substring('file://'.length) })
+  })
+})
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'file',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      allowServiceWorkers: true,
+    },
+  },
+])
 
 app.whenReady().then(createWindow)
