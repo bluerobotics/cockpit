@@ -7,6 +7,5 @@
     "lib": ["es2021"],
     "types": ["node", "jsdom", "vite/client"],
     "strictPropertyInitialization": false,
-    "importsNotUsedAsValues": "preserve",
   }
 }
