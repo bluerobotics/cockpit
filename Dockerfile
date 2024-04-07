@@ -1,13 +1,3 @@
-# Build frontend
-FROM --platform=$BUILDPLATFORM oven/bun:1.0.3-slim AS frontendBuilder
-
-ARG TARGETARCH
-
-RUN mkdir /frontend && ls /frontend
-COPY . /frontend
-RUN bun install --cwd /frontend
-RUN bun run --cwd /frontend build
-
 FROM alpine:3.19
 
 ARG TARGETARCH
@@ -67,6 +57,5 @@ LABEL links='{\
         "support": "https://discuss.bluerobotics.com/c/bluerobotics-software"\
     }'
 
-# Copy frontend built on frontendBuild to this stage
-COPY --from=frontendBuilder /frontend/dist /cockpit
+COPY ./dist /cockpit
 ENTRYPOINT ["simple-http-server", "--index", "cockpit"]
