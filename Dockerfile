@@ -8,7 +8,7 @@ COPY . /frontend
 RUN bun install --cwd /frontend
 RUN bun run --cwd /frontend build
 
-FROM alpine:3.14
+FROM alpine:3.19
 
 ARG TARGETARCH
 # Install simple http server
