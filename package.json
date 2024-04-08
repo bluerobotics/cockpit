@@ -111,6 +111,7 @@
       "dist"
     ],
     "appId": "org.bluerobotics.cockpit",
+    "productName": "Cockpit",
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "public/pwa-512x512.png"
