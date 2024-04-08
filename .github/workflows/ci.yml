@@ -97,7 +97,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: cockpit-${{ matrix.suffix }}
-          path: dist/cockpit*.${{ matrix.extension }}
+          path: dist/Cockpit*.${{ matrix.extension }}
           if-no-files-found: error
 
       - name: Upload Release
@@ -105,7 +105,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/cockpit*.${{ matrix.extension }}
+          file: dist/Cockpit*.${{ matrix.extension }}
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
@@ -142,7 +142,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: cockpit-flatpak
-          path: dist/cockpit*.flatpak
+          path: dist/Cockpit*.flatpak
           if-no-files-found: error
 
       - name: Upload Release
@@ -150,7 +150,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/cockpit*.flatpak
+          file: dist/Cockpit*.flatpak
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
