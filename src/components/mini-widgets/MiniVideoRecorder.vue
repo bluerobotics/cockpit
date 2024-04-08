@@ -82,9 +82,7 @@
       </div>
     </div>
   </v-dialog>
-  <v-dialog v-model="isVideoLibraryDialogOpen" width="900px">
-    <ConfigurationVideoView as-video-library />
-  </v-dialog>
+  <VideoLibrary :open-modal="isVideoLibraryDialogOpen" @update:open-modal="handleModalUpdate" />
 </template>
 
 <script setup lang="ts">
@@ -98,7 +96,8 @@ import { isEqual } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/miniWidgets'
-import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
+
+import VideoLibrary from '../VideoLibraryModal.vue'
 
 const widgetStore = useWidgetManagerStore()
 const videoStore = useVideoStore()
@@ -142,10 +141,17 @@ watch(nameSelectedStream, () => {
   mediaStream.value = undefined
 })
 
-// Fetch temporary video data from the storage
+const handleModalUpdate = (newVal: boolean): void => {
+  isVideoLibraryDialogOpen.value = newVal
+}
+
+// Fetch number of temporary videos on storage
 const fetchNumebrOfTempVideos = async (): Promise<void> => {
-  const size = await videoStore.videoStoringDB.length()
-  numberOfVideosOnDB.value = size
+  let numberOfVideos = 0
+  await videoStore.videoStoringDB.iterate((value, key) => {
+    key.endsWith('.webm') && numberOfVideos++
+  })
+  numberOfVideosOnDB.value = numberOfVideos
 }
 
 // eslint-disable-next-line jsdoc/require-jsdoc
