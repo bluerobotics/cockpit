@@ -665,22 +665,6 @@ export const widgetProfiles: Profile[] = [
                   configMenuOpen: false,
                 },
               },
-              {
-                name: 'VeryGenericIndicator',
-                component: MiniWidgetType.VeryGenericIndicator,
-                options: {
-                  displayName: '',
-                  variableName: '',
-                  iconName: 'mdi-help-box',
-                  variableUnit: '%',
-                  variableMultiplier: 1,
-                },
-                hash: '562e3d36-09da-4ec1-b288-c31a415afda3',
-                managerVars: {
-                  timesMounted: 0,
-                  configMenuOpen: false,
-                },
-              },
             ],
           },
           {
