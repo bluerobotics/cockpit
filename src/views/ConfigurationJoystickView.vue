@@ -231,21 +231,19 @@
                 <v-progress-linear v-if="remappingInput" v-model="remapTimeProgress" />
               </Transition>
             </div>
-            <v-tooltip
-              location="top center"
-              text="This is only available for cockpit actions."
-              :disabled="isConfirmRequiredAvailable(input)"
-            >
+            <v-tooltip location="top center" :text="confirmationRequiredTooltipText(input)">
               <template #activator="{ props: tooltipProps }">
-                <v-switch
-                  v-model="controllerStore.actionsJoystickConfirmRequired[getCurrentButtonAction(input).id]"
-                  style="pointer-events: all"
-                  label="Confirmation Required"
-                  class="m-2 text-slate-800"
-                  color="rgb(0, 20, 80)"
-                  :disabled="!isConfirmRequiredAvailable(input)"
-                  v-bind="tooltipProps"
-                />
+                <div class="flex justify-center items-center">
+                  <v-switch
+                    v-model="controllerStore.actionsJoystickConfirmRequired[getCurrentButtonAction(input).id]"
+                    style="pointer-events: all; height: 56px"
+                    class="m-2 text-slate-800"
+                    color="rgb(0, 20, 80)"
+                    :disabled="!isConfirmRequiredAvailable(input)"
+                    v-bind="tooltipProps"
+                  />
+                  <v-label style="height: 56px">Confirmation Required</v-label>
+                </div>
               </template>
             </v-tooltip>
             <div class="flex flex-col items-center justify-between w-full my-2">
@@ -555,11 +553,25 @@ const getCurrentButtonAction = (input: JoystickInput): ProtocolAction => {
   ][input.id].action
 }
 
+const isHoldToConfirm = (input: JoystickInput): boolean => {
+  return getCurrentButtonAction(input).id === CockpitActionsFunction.hold_to_confirm
+}
+
 const isConfirmRequiredAvailable = (input: JoystickInput): boolean => {
-  return (
-    getCurrentButtonAction(input).protocol === JoystickProtocol.CockpitAction &&
-    getCurrentButtonAction(input).id !== CockpitActionsFunction.hold_to_confirm
-  )
+  return getCurrentButtonAction(input).protocol === JoystickProtocol.CockpitAction && !isHoldToConfirm(input)
+}
+
+const confirmationRequiredTooltipText = (input: JoystickInput): string => {
+  if (isConfirmRequiredAvailable(input)) {
+    return (
+      'Enabling this setting requires a confirmation step for critical actions. ' +
+      'For ease of use, assign "Hold to confirm" to a controller button, avoiding the need for mouse interaction.'
+    )
+  } else if (isHoldToConfirm(input)) {
+    return 'Hold to confirm cannot require confirmation.'
+  } else {
+    return 'This confirmation setting is applicable only to cockpit actions.'
+  }
 }
 
 const updateButtonAction = (input: JoystickInput, action: ProtocolAction): void => {
