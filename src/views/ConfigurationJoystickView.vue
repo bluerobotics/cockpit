@@ -231,6 +231,23 @@
                 <v-progress-linear v-if="remappingInput" v-model="remapTimeProgress" />
               </Transition>
             </div>
+            <v-tooltip
+              location="top center"
+              text="This is only available for cockpit actions."
+              :disabled="isConfirmRequiredAvailable(input)"
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-switch
+                  v-model="controllerStore.actionsJoystickConfirmRequired[getCurrentButtonAction(input).id]"
+                  style="pointer-events: all"
+                  label="Confirmation Required"
+                  class="m-2 text-slate-800"
+                  color="rgb(0, 20, 80)"
+                  :disabled="!isConfirmRequiredAvailable(input)"
+                  v-bind="tooltipProps"
+                />
+              </template>
+            </v-tooltip>
             <div class="flex flex-col items-center justify-between w-full my-2">
               <div class="flex w-[90%] justify-evenly">
                 <div v-for="protocol in JoystickProtocol" :key="protocol" class="flex flex-col items-center h-40 mx-4">
@@ -330,6 +347,7 @@ import Button from '@/components/Button.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { CockpitActionsFunction } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -530,6 +548,19 @@ const remapAxisInput = async (joystick: Joystick, input: JoystickInput): Promise
 const currentButtonActions = computed(
   () => controllerStore.protocolMapping.buttonsCorrespondencies[currentModifierKey.value.id as CockpitModifierKeyOption]
 )
+
+const getCurrentButtonAction = (input: JoystickInput): ProtocolAction => {
+  return controllerStore.protocolMapping.buttonsCorrespondencies[
+    currentModifierKey.value.id as CockpitModifierKeyOption
+  ][input.id].action
+}
+
+const isConfirmRequiredAvailable = (input: JoystickInput): boolean => {
+  return (
+    getCurrentButtonAction(input).protocol === JoystickProtocol.CockpitAction &&
+    getCurrentButtonAction(input).id !== CockpitActionsFunction.hold_to_confirm
+  )
+}
 
 const updateButtonAction = (input: JoystickInput, action: ProtocolAction): void => {
   controllerStore.protocolMapping.buttonsCorrespondencies[currentModifierKey.value.id as CockpitModifierKeyOption][
