@@ -9,13 +9,6 @@
           class="m-2 text-slate-800"
           color="rgb(0, 20, 80)"
         />
-        <v-switch
-          v-model="missionStore.holdToConfirmEnabled"
-          label="Enable hold to confirm"
-          class="m-2 text-slate-800"
-          color="rgb(0, 20, 80)"
-          :disabled="!missionStore.slideEventsEnabled"
-        />
       </div>
       <div class="flex w-[60%] flex-wrap">
         <v-checkbox
