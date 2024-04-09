@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
-import { altitude_setpoint, showAltitudeSlider } from '@/libs/altitude-slider'
+import { altitude_setpoint } from '@/libs/altitude-slider'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -15,7 +15,6 @@ import {
   registerActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
-import { EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
@@ -137,12 +136,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to arm.')
     }
 
-    const confirmed = await slideToConfirm(EventCategory.ARM, 'Confirm Arm', 'Arm Command Confirmed')
-    if (confirmed) {
-      mainVehicle.value.arm()
-    } else {
-      throw new Error('Arming cancelled by the user')
-    }
+    mainVehicle.value.arm()
   }
 
   /**
@@ -155,12 +149,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to disarm.')
     }
 
-    const confirmed = await slideToConfirm(EventCategory.DISARM, 'Confirm Disarm', 'Disarm Command Confirmed')
-    if (confirmed) {
-      mainVehicle.value.disarm()
-    } else {
-      throw new Error('Disarming cancelled by the user')
-    }
+    mainVehicle.value.disarm()
   }
 
   /**
@@ -172,17 +161,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available for takeoff')
     }
 
-    showAltitudeSlider.value = true
-
-    const confirmed = await slideToConfirm(EventCategory.TAKEOFF, 'Confirm Takeoff', 'Takeoff Command Confirmed')
-    showAltitudeSlider.value = false
-
-    if (confirmed) {
-      mainVehicle.value.takeoff(altitude_setpoint.value)
-    } else {
-      console.error('Takeoff cancelled by the user')
-      throw new Error('Takeoff cancelled by the user')
-    }
+    mainVehicle.value.takeoff(altitude_setpoint.value)
   }
   /**
    * Change the altitude of the vehicle.
@@ -193,21 +172,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to change altitude.')
     }
 
-    showAltitudeSlider.value = true
-
-    const confirmed = await slideToConfirm(
-      EventCategory.ALT_CHANGE,
-      'Confirm Altitude Change',
-      'Alt Change Cmd Confirmed'
-    )
-    showAltitudeSlider.value = false
-
-    if (confirmed) {
-      mainVehicle.value.changeAltitude(altitude.rel - altitude_setpoint.value)
-    } else {
-      console.error('Altitude change cancelled by the user')
-      throw new Error('Altitude change cancelled by the user')
-    }
+    mainVehicle.value.changeAltitude(altitude.rel - altitude_setpoint.value)
   }
 
   /**
@@ -219,13 +184,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to land.')
     }
 
-    const confirmed = await slideToConfirm(EventCategory.LAND, 'Confirm Landing', 'Landing Command Confirmed')
-    if (confirmed) {
-      mainVehicle.value.land()
-    } else {
-      console.error('Landing cancelled by the user')
-      throw new Error('Landing cancelled by the user')
-    }
+    mainVehicle.value.land()
   }
 
   /**
@@ -253,20 +212,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to execute go to command.')
     }
 
-    const confirmed = await slideToConfirm(
-      EventCategory.GOTO,
-      'Confirm Go To Position',
-      'Go To Position Command Confirmed'
-    )
-    if (confirmed) {
-      const waypoint = new Coordinates()
-      waypoint.latitude = latitude
-      waypoint.altitude = alt
-      waypoint.longitude = longitude
-      mainVehicle.value.goTo(hold, acceptanceRadius, passRadius, yaw, waypoint)
-    } else {
-      throw new Error('Go to position cancelled by the user')
-    }
+    const waypoint = new Coordinates()
+    waypoint.latitude = latitude
+    waypoint.altitude = alt
+    waypoint.longitude = longitude
+    mainVehicle.value.goTo(hold, acceptanceRadius, passRadius, yaw, waypoint)
   }
 
   /**

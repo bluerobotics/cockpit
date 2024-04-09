@@ -162,6 +162,7 @@ import {
 } from 'vue'
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -383,7 +384,16 @@ const onMenuOptionSelect = (option: string): void => {
         const latitude = clickedLocation.value[0]
         const longitude = clickedLocation.value[1]
 
-        vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
+        slideToConfirm(
+          () => {
+            vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
+          },
+          {
+            text: 'Confirm GoTo',
+            confirmationText: 'GoTo command confirmed',
+          },
+          canByPassCategory(EventCategory.GOTO)
+        )
       }
       break
 
