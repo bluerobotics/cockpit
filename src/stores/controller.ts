@@ -30,7 +30,8 @@ import {
 export type controllerUpdateCallback = (
   state: JoystickState,
   protocolActionsMapping: JoystickProtocolActionsMapping,
-  activeButtonActions: ProtocolAction[]
+  activeButtonActions: ProtocolAction[],
+  actionsJoystickConfirmRequired: Record<string, boolean>
 ) => void
 
 const protocolMappingsKey = 'cockpit-protocol-mappings-v1'
@@ -50,6 +51,11 @@ export const useControllerStore = defineStore('controller', () => {
   const vehicleTypeProtocolMappingCorrespondency = useStorage<typeof defaultProtocolMappingVehicleCorrespondency>(
     'cockpit-default-vehicle-type-protocol-mappings',
     defaultProtocolMappingVehicleCorrespondency
+  )
+  // Confirmation per joystick action required currently is only available for cockpit actions
+  const actionsJoystickConfirmRequired = useStorage(
+    'cockpit-actions-joystick-confirm-required',
+    {} as Record<string, boolean>
   )
 
   const protocolMapping = computed<JoystickProtocolActionsMapping>({
@@ -132,7 +138,12 @@ export const useControllerStore = defineStore('controller', () => {
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
 
     for (const callback of updateCallbacks.value) {
-      callback(joystick.state, protocolMapping.value, activeButtonActions(joystick.state, protocolMapping.value))
+      callback(
+        joystick.state,
+        protocolMapping.value,
+        activeButtonActions(joystick.state, protocolMapping.value),
+        actionsJoystickConfirmRequired.value
+      )
     }
   }
 
@@ -363,6 +374,7 @@ export const useControllerStore = defineStore('controller', () => {
     availableAxesActions,
     availableButtonActions,
     vehicleTypeProtocolMappingCorrespondency,
+    actionsJoystickConfirmRequired,
     loadProtocolMapping,
     exportJoystickMapping,
     importJoystickMapping,

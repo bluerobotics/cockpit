@@ -3,6 +3,7 @@
 /* eslint-disable max-len */
 import { v4 as uuid4 } from 'uuid'
 
+import { slideToConfirm } from '@/libs/slide-to-confirm'
 import { type JoystickProtocolActionsMapping,type JoystickState, type ProtocolAction, JoystickProtocol } from '@/types/joystick'
 
 /**
@@ -83,11 +84,18 @@ export class CockpitActionsManager {
   joystickState: JoystickState
   currentActionsMapping: JoystickProtocolActionsMapping
   activeButtonsActions: ProtocolAction[]
+  actionsJoystickConfirmRequired: Record<string, boolean>
 
-  updateControllerData = (state: JoystickState, protocolActionsMapping: JoystickProtocolActionsMapping, activeButtonsActions: ProtocolAction[]): void => {
+  updateControllerData = (
+    state: JoystickState,
+    protocolActionsMapping: JoystickProtocolActionsMapping,
+    activeButtonsActions: ProtocolAction[],
+    actionsJoystickConfirmRequired: Record<string, boolean>
+  ): void => {
     this.joystickState = state
     this.currentActionsMapping = protocolActionsMapping
     this.activeButtonsActions = activeButtonsActions
+    this.actionsJoystickConfirmRequired = actionsJoystickConfirmRequired
   }
 
   sendCockpitActions = (): void => {
@@ -96,8 +104,15 @@ export class CockpitActionsManager {
     const actionsToCallback = this.activeButtonsActions.filter((a) => a.protocol === JoystickProtocol.CockpitAction)
     Object.values(actionsCallbacks).forEach((entry) => {
       if (actionsToCallback.map((a) => a.id).includes(entry.action.id)) {
-        console.log(entry.action.name)
-        entry.callback()
+        console.log('Sending action', entry.action.name, '/ Require confirm:', this.actionsJoystickConfirmRequired[entry.action.id])
+        slideToConfirm(
+          entry.callback,
+          {
+            text: `Confirm ${entry.action.name}`,
+            confirmationText: 'Confirmed',
+          },
+          !this.actionsJoystickConfirmRequired[entry.action.id]
+        )
       }
     })
   }
