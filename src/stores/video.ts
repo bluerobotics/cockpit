@@ -218,10 +218,6 @@ export const useVideoStore = defineStore('video', () => {
       info.dateFinish = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
 
-      await processVideoChunksAndTelemetry(recordingHash, info)
-
-      // Once the video is processed, we can delete it from the unprocessed videos list
-      delete unprocessedVideos.value[recordingHash]
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
 
