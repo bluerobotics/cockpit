@@ -9,6 +9,7 @@ const defaultWidgetManagerVars = {
   lastNonMaximizedY: 0.32,
   lastNonMaximizedWidth: 0.2,
   lastNonMaximizedHeight: 0.36,
+  highlighted: false,
 }
 
 const defaultMiniWidgetManagerVars = {
@@ -649,6 +650,7 @@ export const widgetProfiles: Profile[] = [
               lastNonMaximizedY: 0.32,
               lastNonMaximizedWidth: 0.2,
               lastNonMaximizedHeight: 0.36,
+              highlighted: false,
             },
           },
         ],

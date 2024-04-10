@@ -76,6 +76,10 @@ export type Widget = {
      * Last widget height when it wasn't maximized
      */
     lastNonMaximizedHeight: number
+    /**
+     * Wether thewidget should be highlited or not
+     */
+    highlighted: boolean
   }
 }
 

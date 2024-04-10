@@ -125,6 +125,9 @@
           >
             <Button
               class="flex items-center justify-center w-full h-8 pl-3 overflow-auto cursor-grab active:cursor-grabbing"
+              :class="{ '!bg-slate-400': widget.managerVars.highlighted }"
+              @mouseover="widget.managerVars.highlighted = true"
+              @mouseleave="widget.managerVars.highlighted = false"
             >
               <span class="mr-3 text-base text-slate-700">⠿</span>
               <p class="overflow-hidden text-sm text-ellipsis whitespace-nowrap">{{ widget.name }}</p>
