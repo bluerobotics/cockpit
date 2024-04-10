@@ -364,6 +364,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         lastNonMaximizedY: 0.32,
         lastNonMaximizedWidth: 0.2,
         lastNonMaximizedHeight: 0.36,
+        highlighted: false,
       },
     })
   }

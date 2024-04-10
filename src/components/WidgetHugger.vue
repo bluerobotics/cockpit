@@ -9,7 +9,11 @@
     <p>Scroll size: {{ innerWidgetRef?.scrollWidth }} x {{ innerWidgetRef?.scrollHeight }} px</p>
     <p v-for="[k, v] in Object.entries(widget?.options)" :key="k">{{ k }} (option): {{ v }}</p>
   </div>
-  <div ref="widgetOverlay" class="widgetOverlay" :class="{ allowMoving, draggingWidget, hoveringWidgetOrOverlay }" />
+  <div
+    ref="widgetOverlay"
+    class="widgetOverlay"
+    :class="{ allowMoving, draggingWidget, hoveringWidgetOrOverlay, highlighted }"
+  />
   <div ref="outerWidgetRef" class="outerWidget">
     <div ref="innerWidgetRef" class="innerWidget" :class="{ 'overflow-hidden': hideOverflow }">
       <slot></slot>
@@ -27,7 +31,7 @@
 
 <script setup lang="ts">
 import { useElementBounding, useElementHover, useWindowSize } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 import { constrain, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
@@ -78,6 +82,11 @@ const widgetOverlay = ref()
 const hoveringOverlay = useElementHover(widgetOverlay)
 const hoveringWidgetItself = useElementHover(outerWidgetRef)
 const hoveringWidgetOrOverlay = computed(() => hoveringOverlay.value || hoveringWidgetItself.value)
+
+// Put the widget into highlighted state when in edit-mode and hovering over it
+watch([hoveringWidgetOrOverlay, allowMoving], () => {
+  widget.value.managerVars.highlighted = hoveringWidgetOrOverlay.value && allowMoving.value
+})
 
 const draggingWidget = ref(false)
 const isResizing = ref(false)
@@ -269,6 +278,8 @@ const cursorStyle = computed(() => {
 })
 
 const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
+
+const highlighted = computed(() => widget.value.managerVars.highlighted)
 </script>
 
 <style>
@@ -298,6 +309,9 @@ const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
 }
 .widgetOverlay.allowMoving {
   background-color: rgba(0, 0, 0, 0.1);
+}
+.widgetOverlay.allowMoving.highlighted {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 .widgetOverlay.hoveringWidgetOrOverlay.allowMoving {
   box-shadow: 0 0 0 1px white;
