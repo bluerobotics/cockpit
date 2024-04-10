@@ -474,18 +474,6 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  // Warn user about videos that were not processed but are available to be processed
-  if (keysAllUnprocessedVideos.value.length > 0) {
-    const nUnprocVideos = keysAllUnprocessedVideos.value.length
-    Swal.fire({
-      title: 'Unprocessed videos detected',
-      text: `You have ${nUnprocVideos} ${nUnprocVideos === 1 ? 'video that was' : 'videos that were'} not processed.
-        This can happen if the app was closed while the video was being recorded, or if the app run out of memory
-        during the processing. Please go to the video page, in the configuration menu, to process or discard those.`,
-      icon: 'warning',
-    })
-  }
-
   // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
   let warningTimeout: NodeJS.Timeout | undefined = undefined
   const iceIpCheckInterval = setInterval(async (): Promise<void> => {
