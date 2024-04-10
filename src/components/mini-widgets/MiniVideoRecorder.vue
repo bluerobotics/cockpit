@@ -16,7 +16,7 @@
     <div v-else>
       <v-icon class="w-6 h-6 animate-spin" color="white">mdi-loading</v-icon>
     </div>
-    <template v-if="!isRecording">
+    <template v-if="!isRecording && !isProcessingVideo">
       <div
         v-if="nameSelectedStream"
         class="flex flex-col max-w-[50%] scroll-container transition-all border-blur cursor-pointer"
@@ -30,7 +30,7 @@
       {{ timePassedString }}
     </div>
     <div v-else-if="isProcessingVideo" class="w-16 text-justify text-slate-100">
-      <div class="text-center text-xs text-white select-none flex-nowrap">Processing video...</div>
+      <div class="text-xs text-center text-white select-none flex-nowrap">Processing video...</div>
     </div>
     <div v-if="numberOfVideosOnDB > 0" class="flex justify-center w-8">
       <v-divider vertical class="h-6" />
@@ -41,7 +41,7 @@
         class="cursor-pointer"
         @click="isVideoLibraryDialogOpen = true"
       >
-        <v-icon class="w-6 h-6 text-slate-100 ml-3" @click="isVideoLibraryDialogOpen = true">
+        <v-icon class="w-6 h-6 ml-3 text-slate-100" @click="isVideoLibraryDialogOpen = true">
           mdi-video-box
         </v-icon></v-badge
       >
@@ -151,6 +151,7 @@ const fetchNumebrOfTempVideos = async (): Promise<void> => {
   await videoStore.videoStoringDB.iterate((value, key) => {
     key.endsWith('.webm') && numberOfVideos++
   })
+  Object.values(videoStore.keysFailedUnprocessedVideos).forEach(() => numberOfVideos++)
   numberOfVideosOnDB.value = numberOfVideos
 }
 
@@ -176,7 +177,6 @@ const toggleRecording = async (): Promise<void> => {
   if (isRecording.value) {
     if (nameSelectedStream.value !== undefined) {
       videoStore.stopRecording(nameSelectedStream.value)
-      isProcessingVideo.value = true
     }
     return
   }
@@ -271,6 +271,11 @@ watch(
     isProcessingVideo.value = newValue
     fetchNumebrOfTempVideos()
   }
+)
+
+watch(
+  () => videoStore.keysFailedUnprocessedVideos,
+  () => fetchNumebrOfTempVideos()
 )
 
 watch(

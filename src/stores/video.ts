@@ -588,6 +588,7 @@ export const useVideoStore = defineStore('video', () => {
     downloadFilesFromVideoDB,
     clearTemporaryVideoDB,
     downloadTempVideoDB,
+    unprocessedVideos,
     keysAllUnprocessedVideos,
     keysFailedUnprocessedVideos,
     areThereVideosProcessing,
