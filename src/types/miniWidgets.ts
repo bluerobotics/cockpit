@@ -47,6 +47,10 @@ export type MiniWidget = {
      * If the configuration menu is open or not
      */
     configMenuOpen: boolean
+    /**
+     * Wether the mini-widget should be highlited or not
+     */
+    highlighted: boolean
   }
 }
 

@@ -15,6 +15,7 @@ const defaultWidgetManagerVars = {
 const defaultMiniWidgetManagerVars = {
   timesMounted: 0,
   configMenuOpen: false,
+  highlighted: false,
 }
 
 const hostname = window.location.hostname
