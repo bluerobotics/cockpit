@@ -17,7 +17,9 @@
         v-for="miniWidget in container.widgets"
         :key="miniWidget.hash"
         class="rounded-md"
-        :class="{ 'cursor-grab': allowEditing, 'hover:bg-slate-400': allowEditing && !mousePressed }"
+        :class="{ 'cursor-grab': allowEditing, 'bg-slate-400': miniWidget.managerVars.highlighted }"
+        @mouseover="miniWidget.managerVars.highlighted = true"
+        @mouseleave="miniWidget.managerVars.highlighted = false"
       >
         <div :class="{ 'select-none pointer-events-none': allowEditing }">
           <MiniWidgetInstantiator :mini-widget="miniWidget" />
@@ -57,7 +59,6 @@
 </template>
 
 <script setup lang="ts">
-import { useMousePressed } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { ref, toRefs } from 'vue'
 import { computed } from 'vue'
@@ -114,6 +115,4 @@ const refreshWidgetsHashs = (): void => {
 const showWidgetTrashArea = ref(false)
 
 const trashList = ref<MiniWidget[]>([])
-
-const { pressed: mousePressed } = useMousePressed()
 </script>

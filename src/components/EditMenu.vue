@@ -165,7 +165,10 @@
             <div
               v-for="widget in miniWidgetContainer.widgets"
               :key="widget.hash"
-              class="flex items-center justify-between w-full h-10 my-1"
+              class="flex items-center justify-between w-full h-10 px-2 py-1 my-1 rounded-md"
+              :class="{ 'bg-slate-400': widget.managerVars.highlighted }"
+              @mouseover="widget.managerVars.highlighted = true"
+              @mouseleave="widget.managerVars.highlighted = false"
             >
               <div class="flex items-center justify-start w-full overflow-auto">
                 <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">
@@ -313,6 +316,7 @@ const availableMiniWidgetTypes = computed(() =>
     managerVars: {
       timesMounted: 0,
       configMenuOpen: false,
+      highlighted: false,
     },
   }))
 )
