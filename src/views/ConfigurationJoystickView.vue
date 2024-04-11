@@ -231,7 +231,7 @@
                 <v-progress-linear v-if="remappingInput" v-model="remapTimeProgress" />
               </Transition>
             </div>
-            <v-tooltip location="top center" :text="confirmationRequiredTooltipText(input)">
+            <v-tooltip location="bottom" :text="confirmationRequiredTooltipText(input)">
               <template #activator="{ props: tooltipProps }">
                 <div class="flex justify-center items-center">
                   <v-switch
