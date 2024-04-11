@@ -1,7 +1,7 @@
 <template>
   <button
     class="relative flex items-center justify-center w-32 p-1 rounded-md shadow-inner h-9 bg-slate-800/60"
-    @click="vehicleStore.isArmed ? arm() : disarm()"
+    @click="vehicleStore.isArmed ? disarm() : arm()"
   >
     <div
       class="absolute top-auto flex items-center px-1 rounded-[4px] shadow transition-all w-[70%] h-[80%]"
@@ -30,8 +30,7 @@ const arm = (): void => {
   slideToConfirm(
     vehicleStore.arm,
     {
-      text: 'Confirm Arm',
-      confirmationText: 'Arm command confirmed',
+      command: 'Arm',
     },
     canByPassCategory(EventCategory.ARM)
   )
@@ -41,8 +40,7 @@ const disarm = (): void => {
   slideToConfirm(
     vehicleStore.disarm,
     {
-      text: 'Confirm Disarm',
-      confirmationText: 'Disarm command confirmed',
+      command: 'Disarm',
     },
     canByPassCategory(EventCategory.DISARM)
   )

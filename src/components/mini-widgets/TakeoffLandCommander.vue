@@ -25,8 +25,7 @@ const takeoff = (): void => {
       vehicleStore.takeoff()
     },
     {
-      text: 'Confirm Takeoff',
-      confirmationText: 'Takeoff command confirmed',
+      command: 'Takeoff',
     },
     canByPassCategory(EventCategory.TAKEOFF)
   )
@@ -36,8 +35,7 @@ const land = (): void => {
   slideToConfirm(
     vehicleStore.land,
     {
-      text: 'Confirm Land',
-      confirmationText: 'Land command confirmed',
+      command: 'Land',
     },
     canByPassCategory(EventCategory.LAND)
   )

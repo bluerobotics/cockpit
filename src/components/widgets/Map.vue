@@ -389,8 +389,7 @@ const onMenuOptionSelect = (option: string): void => {
             vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
           },
           {
-            text: 'Confirm GoTo',
-            confirmationText: 'GoTo command confirmed',
+            command: 'GoTo',
           },
           canByPassCategory(EventCategory.GOTO)
         )

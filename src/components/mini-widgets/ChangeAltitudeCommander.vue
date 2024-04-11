@@ -27,8 +27,7 @@ const changeAlt = (): void => {
       vehicleStore.changeAlt()
     },
     {
-      text: 'Confirm Altitude Change',
-      confirmationText: 'Alt Change Cmd Confirmed',
+      command: 'Altitude Change',
     },
     canByPassCategory(EventCategory.ALT_CHANGE)
   )
