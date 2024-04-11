@@ -95,7 +95,7 @@
     "typescript": "~5.4.4",
     "vite": "5.2.8",
     "vite-plugin-electron": "^0.9.3",
-    "vite-plugin-pwa": "^0.14.1",
+    "vite-plugin-pwa": "^0.19.8",
     "vite-plugin-vuetify": "^1.0.0-alpha.16",
     "vitest": "^0.20.3",
     "vue-cli-plugin-vuetify": "~2.4.8",
