@@ -57,29 +57,31 @@ export const useAlertStore = defineStore('alert', () => {
   // By default we use the platform language over the default speech text,
   // it appears that browsers like chrome fail to have it correctly based on the system.
   // The default speech langauge _should_ be the same as platform language.
-  synth.onvoiceschanged = () => {
-    let default_speech: undefined | string = undefined
-    let default_speech_by_language: undefined | string = undefined
-    synth.getVoices().forEach((voice) => {
-      availableAlertSpeechVoices.push(voice)
+  if (synth) {
+    synth.onvoiceschanged = () => {
+      let default_speech: undefined | string = undefined
+      let default_speech_by_language: undefined | string = undefined
+      synth.getVoices().forEach((voice) => {
+        availableAlertSpeechVoices.push(voice)
 
-      if (voice.default) {
-        default_speech = voice.name
-      }
+        if (voice.default) {
+          default_speech = voice.name
+        }
 
-      if (voice.lang === navigator.language) {
-        default_speech_by_language = voice.name
-      }
-    })
+        if (voice.lang === navigator.language) {
+          default_speech_by_language = voice.name
+        }
+      })
 
-    if (selectedAlertSpeechVoiceName.value === undefined) {
-      if (default_speech_by_language !== undefined) {
-        selectedAlertSpeechVoiceName.value = default_speech_by_language
-        return
-      }
+      if (selectedAlertSpeechVoiceName.value === undefined) {
+        if (default_speech_by_language !== undefined) {
+          selectedAlertSpeechVoiceName.value = default_speech_by_language
+          return
+        }
 
-      if (default_speech) {
-        selectedAlertSpeechVoiceName.value = default_speech
+        if (default_speech) {
+          selectedAlertSpeechVoiceName.value = default_speech
+        }
       }
     }
   }
@@ -93,6 +95,10 @@ export const useAlertStore = defineStore('alert', () => {
    * @param {string} text string
    */
   function speak(text: string): void {
+    if (!synth) {
+      console.warn('No speechSynthesis available')
+      return
+    }
     const utterance = new SpeechSynthesisUtterance(text)
     const voice = availableAlertSpeechVoices.find((v) => v.name === selectedAlertSpeechVoiceName.value)
     if (voice) {
