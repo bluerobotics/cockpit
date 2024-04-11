@@ -7,8 +7,8 @@
         class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-[40%]"
       >
         <p class="font-bold">
-          This is the video configuration page. Here you can configure the behavior of your video streams and download
-          or discard saved videos and subtitle logs.
+          This is the video configuration page. Here you can configure the behavior of your video streams, clear local
+          storage and download or discard unprocesses video chunks.
         </p>
         <br />
         <p>
@@ -60,92 +60,6 @@
           There are videos being processed in background. Please wait until they are finished to download or discard.
         </p>
       </div>
-
-      <div
-        v-if="availableVideosAndLogs?.isEmpty()"
-        :class="{ 'mb-4': isVideoLibraryOnly, 'mb-0': !isVideoLibraryOnly }"
-        class="max-w-[50%] bg-slate-100 rounded-md p-6 border"
-      >
-        <p class="mb-4 text-2xl font-semibold text-center text-slate-500">No videos available.</p>
-        <p class="text-center text-slate-400">
-          Use the MiniVideoRecorder widget to record some videos and them come back here to download or discard those.
-        </p>
-      </div>
-
-      <!-- @vue-ignore -->
-      <v-data-table
-        v-else
-        v-model="selectedFilesNames"
-        :headers="headers"
-        :items="availableVideosAndLogs"
-        item-value="filename"
-        density="compact"
-        show-select
-        loading-text="Loading... Please wait"
-        :loading="availableVideosAndLogs === undefined"
-        class="max-w-[90%] bg-slate-100/30 rounded-lg p-3 border"
-        :class="temporaryDbSize === 0 ? 'mb-10' : 'mb-0'"
-      >
-        <template #[`item.filename`]="{ item }">
-          <span
-            v-if="item.filename.endsWith('.webm')"
-            class="cursor-pointer hover:underline"
-            @click="playVideoOnModal([item.filename])"
-          >
-            {{ item.filename }}
-          </span>
-          <span v-else>
-            {{ item.filename }}
-          </span>
-        </template>
-        <template #item.size="{ value }">
-          {{ formatBytes(value) }}
-        </template>
-        <template #item.actions="{ item }">
-          <span
-            v-if="selectedFilesNames.isEmpty()"
-            class="mx-2 transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
-            style="font-size: 17px"
-            @click="discardAndUpdateDB([item.filename])"
-          />
-          <span
-            v-if="selectedFilesNames.isEmpty()"
-            class="mx-0 transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-download"
-            style="font-size: 17px"
-            @click="downloadAndUpdateDB([item.filename])"
-          />
-          <span
-            v-if="selectedFilesNames.isEmpty()"
-            class="mx-1 ml-2 transition-all mdi mdi-play"
-            :class="{
-              'hover:text-slate-500/50': item.filename.endsWith('.webm'),
-              'cursor-pointer': item.filename.endsWith('.webm'),
-              'cursor-default': !item.filename.endsWith('.webm'),
-            }"
-            :style="{ fontSize: '20px', opacity: item.filename.endsWith('.webm') ? '1' : '0.1' }"
-            @click="item.filename.endsWith('.webm') && playVideoOnModal([item.filename])"
-          >
-          </span>
-        </template>
-        <template #footer.prepend>
-          <Transition name="horizontalFade">
-            <div v-if="!selectedFilesNames.isEmpty()" class="flex items-center justify-end w-full mr-4">
-              <span
-                class="mx-2 text-2xl transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-trash-can"
-                @click="discardAndUpdateDB(selectedFilesNames)"
-              />
-              <span
-                class="mx-2 text-2xl transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-download"
-                @click="downloadAndUpdateDB(selectedFilesNames)"
-              />
-              <span
-                class="mx-2 text-2xl transition-all cursor-pointer hover:text-slate-500/50 mdi mdi-play"
-                @click="downloadAndUpdateDB(selectedFilesNames)"
-              />
-            </div>
-          </Transition>
-        </template>
-      </v-data-table>
       <div class="flex flex-row">
         <div
           v-if="temporaryDbSize > 0"
@@ -173,7 +87,6 @@
 import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
-import type { VDataTable } from 'vuetify/components'
 
 import Button from '@/components/Button.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
@@ -237,29 +150,6 @@ const fetchVideoAndLogsData = async (): Promise<void> => {
 const fetchTemporaryDbSize = async (): Promise<void> => {
   const size = await videoStore.temporaryVideoDBSize()
   temporaryDbSize.value = size
-}
-
-const discardAndUpdateDB = async (filenames: string[]): Promise<void> => {
-  await videoStore.discardFilesFromVideoDB(filenames)
-  await fetchVideoAndLogsData()
-  selectedFilesNames.value = []
-}
-
-const downloadAndUpdateDB = async (filenames: string[]): Promise<void> => {
-  await videoStore.downloadFilesFromVideoDB(filenames)
-  await fetchVideoAndLogsData()
-  selectedFilesNames.value = []
-}
-
-async function playVideoOnModal(videoFileName: string[]): Promise<void> {
-  const videoBlob = await videoStore.videoStoringDB.getItem(videoFileName[0])
-  if (!(videoBlob instanceof Blob)) {
-    console.error('Video data is not a Blob:', videoBlob)
-    return
-  }
-  const tempFileUrl = URL.createObjectURL(videoBlob)
-  videoFile.value = tempFileUrl
-  openVideoPlayerDialog.value = true
 }
 
 const clearTemporaryVideoFiles = async (): Promise<void> => {
@@ -331,11 +221,4 @@ watch(areThereVideosProcessing, async () => {
 })
 
 const nUnprocVideos = computed(() => videoStore.keysFailedUnprocessedVideos.length)
-
-type ReadonlyHeaders = VDataTable['$props']['headers']
-const headers: ReadonlyHeaders = [
-  { title: 'Name', align: 'start', key: 'filename', sortable: true },
-  { title: 'Size', align: 'center', key: 'size', sortable: true },
-  { title: 'Actions', align: 'center', key: 'actions', sortable: false },
-]
 </script>
