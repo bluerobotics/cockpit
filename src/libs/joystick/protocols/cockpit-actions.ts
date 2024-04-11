@@ -108,8 +108,7 @@ export class CockpitActionsManager {
         slideToConfirm(
           entry.callback,
           {
-            text: `Confirm ${entry.action.name}`,
-            confirmationText: 'Confirmed',
+            command: entry.action.name,
           },
           !this.actionsJoystickConfirmRequired[entry.action.id]
         )

@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import { useMissionStore } from '@/stores/mission'
 
@@ -8,18 +8,21 @@ import {
   unregisterActionCallback,
 } from './joystick/protocols/cockpit-actions'
 
-export const showSlideToConfirm = ref(false)
-export const sliderText = ref('Slide to Confirm')
-export const sliderPercentage = ref(0)
-export const confirmationSliderText = ref('Action Confirm')
-export const confirmed = ref(false)
-
 /**
  * Callback to confirm the action
  * @callback ConfirmCallback
  * @returns {void}
  */
 export type ConfirmCallback = () => void | Promise<void>
+
+/** Refs */
+export const showSlideToConfirm = ref(false)
+export const sliderText = ref('Slide to Confirm')
+export const confirmationSliderText = ref('Action Confirm')
+export const deniedText = ref('Action Denied')
+export const expiredText = ref('Action Expired')
+export const sliderPercentage = ref(0)
+export const onAction = ref<(confirmed: boolean) => void>()
 
 /**
  * Different categories of events that requires confirmation from the user.
@@ -43,13 +46,34 @@ export interface ConfirmContent {
    * The text to display in the slider
    * @type {string}
    */
-  text: string
+  command: string
 
   /**
-   * The text to display in the confirmation slider
+   * The text to display in the confirmation slider, if not provided, will be used
+   * `$Confirm {command}`
+   */
+  text?: string
+
+  /**
+   * The text to display if confirmed, if not provided, will be used
+   * `${command} confirmed`
    * @type {string}
    */
-  confirmationText: string
+  confirmedText?: string
+
+  /**
+   * The text to display if denied, if not provided, will be used
+   * `${command} denied`
+   * @type {string}
+   */
+  deniedText?: string
+
+  /**
+   * The text to display if the confirmation is expired, if not provided, will be used
+   * `${command} expired`
+   * @type {string}
+   */
+  expiredText?: string
 }
 
 /**
@@ -75,7 +99,7 @@ export const eventCategoriesDefaultMapping: Record<string, boolean> = Object.val
  * to be considered as a repeat action
  * @type {number}
  */
-const maxRepeatIntervalMs = 50
+const maxRepeatIntervalMs = 150
 
 /**
  * Time interval in ms needed to keep a repeat action pressed to be considered as a hold action
@@ -132,30 +156,34 @@ export function slideToConfirm(
   content: ConfirmContent,
   byPass = false
 ): void | Promise<void> {
-  console.log(`slideToConfirm with text: ${content.text}`)
-
   // Early return if the action is already confirmed or doesn't require confirmation
   if (byPass) {
     return callback()
   }
 
+  /** If there is already some confirmation step, deny the action */
+  if (showSlideToConfirm.value) {
+    return
+  }
+
+  console.log(`slideToConfirm with text: ${content.text}`)
+
   // Register the hold to confirm action for joystick listening
   const holdToConfirmCallbackId = registerHoldToConfirm()
 
-  sliderText.value = content.text
-  confirmationSliderText.value = content.confirmationText
-  showSlideToConfirm.value = true
-
-  const stopWatching = watch([confirmed, showSlideToConfirm], ([newConfirmed, newShowSlideToConfirm]) => {
+  // Register the callback to call the action
+  onAction.value = (confirmed: boolean) => {
+    // Call the callback
+    confirmed && callback()
     // Unregister the hold to confirm action callback
     unregisterActionCallback(holdToConfirmCallbackId)
+  }
 
-    if (newConfirmed) {
-      stopWatching()
-      confirmed.value = false
-      return callback()
-    } else if (!newShowSlideToConfirm) {
-      stopWatching()
-    }
-  })
+  sliderText.value = content.text ?? `Confirm ${content.command}`
+  confirmationSliderText.value = content.confirmedText ?? `${content.command} confirmed`
+  deniedText.value = content.deniedText ?? `${content.command} denied`
+  expiredText.value = content.expiredText ?? `${content.command} expired`
+
+  // Show the slide to confirm
+  showSlideToConfirm.value = true
 }
