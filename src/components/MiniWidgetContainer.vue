@@ -18,7 +18,7 @@
         :key="miniWidget.hash"
         class="rounded-md"
         :class="{ 'cursor-grab': allowEditing, 'bg-slate-400': miniWidget.managerVars.highlighted }"
-        @mouseover="miniWidget.managerVars.highlighted = true"
+        @mouseover="miniWidget.managerVars.highlighted = allowEditing"
         @mouseleave="miniWidget.managerVars.highlighted = false"
       >
         <div :class="{ 'select-none pointer-events-none': allowEditing }">
