@@ -393,13 +393,10 @@ export class Signaller {
     onStatusChanged?: OnStatusChangeCallback
   ): void {
     console.debug(
-      '[WebRTC] [Signaller] Registering parseEndSessionQuestion for ' +
+      '[WebRTC] [Signaller] Registering parseEndSessionQuestion callbacks for ' +
         `Consumer "${consumerId}", ` +
         `Producer "${producerId}", ` +
-        `Session "${sessionId}", ` +
-        'with callbacks:',
-      onSessionEnd,
-      onStatusChanged
+        `Session "${sessionId}", `
     )
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const signaller = this
@@ -458,14 +455,10 @@ export class Signaller {
     onStatusChanged?: OnStatusChangeCallback
   ): void {
     console.debug(
-      '[WebRTC] [Signaller] Registering parseNegotiation for ' +
+      '[WebRTC] [Signaller] Registering parseNegotiation callbacks for ' +
         `Consumer "${consumerId}", ` +
         `Producer "${producerId}", ` +
-        `Session "${sessionId}", ` +
-        'with callbacks:',
-      onIceNegotiation,
-      onMediaNegotiation,
-      onStatusChanged
+        `Session "${sessionId}", `
     )
     this.addEventListener('message', (ev: MessageEvent): void => {
       try {
@@ -516,11 +509,7 @@ export class Signaller {
     onAvailableStreams: OnAvailableStreamsCallback,
     onStatusChanged?: OnStatusChangeCallback
   ): void {
-    console.debug(
-      `[WebRTC] [Signaller] Registering parseAvailableStreamsAnswer with callbacks:`,
-      onAvailableStreams,
-      onStatusChanged
-    )
+    console.debug('[WebRTC] [Signaller] Registering callback for when list of available streams arrive.')
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const signaller = this
     this.addEventListener('message', function availableStreamListener(ev: MessageEvent): void {
