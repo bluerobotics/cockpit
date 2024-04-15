@@ -189,10 +189,6 @@ export class WebRTCManager {
 
     // Asks for available streams, which will trigger the consumer "onAvailableStreams" callback
     window.setTimeout(() => {
-      if (!this.waitingForAvailableStreamsAnswer) {
-        return
-      }
-
       // Register the parser to update the list of streams when the signaller receives the answer
       this.signaller.parseAvailableStreamsAnswer((availableStreams): void => {
         if (!this.waitingForAvailableStreamsAnswer) {
