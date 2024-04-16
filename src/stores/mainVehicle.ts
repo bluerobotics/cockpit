@@ -85,15 +85,16 @@ class CustomizableParameter<T> {
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const controllerStore = useControllerStore()
+  const ws_protocol = location?.protocol === 'https:' ? 'wss' : 'ws'
 
   const cpuLoad = ref<number>()
   const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
   const _mainConnectionURI = new CustomizableParameter<Connection.URI>(() => {
-    return new Connection.URI(`ws://${globalAddress.value}:6040/ws/mavlink`)
+    return new Connection.URI(`${ws_protocol}://${globalAddress.value}:6040/ws/mavlink`)
   })
   const mainConnectionURI = ref(_mainConnectionURI)
   const _webRTCSignallingURI = new CustomizableParameter<Connection.URI>(() => {
-    return new Connection.URI(`ws://${globalAddress.value}:6021`)
+    return new Connection.URI(`${ws_protocol}://${globalAddress.value}:6021`)
   })
   const webRTCSignallingURI = ref(_webRTCSignallingURI)
   const lastHeartbeat = ref<Date>()
