@@ -32,13 +32,12 @@ export const useVideoStore = defineStore('video', () => {
   const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips', [])
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-  const { availableStreams } = mainWebRTCManager.startStream(ref(undefined), allowedIceIps)
   const availableIceIps = ref<string[]>([])
   const videoRecoveryWarningAlreadyShown = useStorage('video-recovery-warning-already-shown', false)
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const timeNow = useTimestamp({ interval: 500 })
 
-  const namesAvailableStreams = computed(() => availableStreams.value.map((stream) => stream.name))
+  const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
   // If the allowed ICE IPs are updated, all the streams should be reconnected
   watch(allowedIceIps, () => {
@@ -56,7 +55,7 @@ export const useVideoStore = defineStore('video', () => {
       )
       availableIceIps.value = [...availableIceIps.value, ...newIps]
 
-      const updatedStream = availableStreams.value.find((s) => s.name === streamName)
+      const updatedStream = mainWebRTCManager.availableStreams.value.find((s) => s.name === streamName)
       if (isEqual(updatedStream, activeStreams.value[streamName]!.stream)) return
 
       // Whenever the stream is to be updated we first reset it's variables (activateStream method), so
