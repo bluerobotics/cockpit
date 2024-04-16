@@ -12,14 +12,6 @@ import type { Stream } from '@/libs/webrtc/signalling_protocol'
  */
 interface startStreamReturn {
   /**
-   * A list of Available WebRTC streams from Mavlink Camera Manager to be chosen from
-   */
-  availableStreams: Ref<Array<Stream>>
-  /**
-   * A list of IPs from WebRTC candidates that are available
-   */
-  availableICEIPs: Ref<Array<string>>
-  /**
    * MediaStream object, if WebRTC stream is chosen
    */
   mediaStream: Ref<MediaStream | undefined>
@@ -126,8 +118,6 @@ export class WebRTCManager {
     })
 
     return {
-      availableStreams: this.availableStreams,
-      availableICEIPs: this.availableICEIPs,
       mediaStream: this.mediaStream,
       signallerStatus: this.signallerStatus,
       streamStatus: this.streamStatus,
