@@ -3,7 +3,10 @@
     <div v-if="nameSelectedStream === undefined" class="no-video-alert">
       <span>No video stream selected.</span>
     </div>
-    <div v-else-if="!namesAvailableStreams.includes(nameSelectedStream)" class="no-video-alert">
+    <div
+      v-else-if="!namesAvailableStreams.isEmpty() && !namesAvailableStreams.includes(nameSelectedStream)"
+      class="no-video-alert"
+    >
       <p>The selected stream is not available.</p>
       <p>Please check its source or select another stream.</p>
     </div>
