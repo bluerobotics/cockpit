@@ -32,8 +32,8 @@ export class WebRTCManager {
   public availableStreams: Ref<Array<Stream>> = ref(new Array<Stream>())
   public availableICEIPs: Ref<Array<string>> = ref(new Array<string>())
   private mediaStream: Ref<MediaStream | undefined> = ref()
-  private signallerStatus: Ref<string> = ref('waiting...')
-  private streamStatus: Ref<string> = ref('waiting...')
+  public signallerStatus: Ref<string> = ref('waiting...')
+  public streamStatus: Ref<string> = ref('waiting...')
   private consumerId: string | undefined
   private streamName: string | undefined
   private session: Session | undefined
