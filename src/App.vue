@@ -70,7 +70,10 @@
       <div ref="routerSection" class="router-view">
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
           <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex backdrop-blur-[2px]">
-            <button class="flex items-center justify-center h-full aspect-square" @click="openMainMenu()">
+            <button
+              class="flex items-center justify-center h-full aspect-square top-bar-hamburger"
+              @click="openMainMenu()"
+            >
               <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
             </button>
             <div
@@ -325,5 +328,9 @@ body.hide-cursor {
   background: rgba(108, 117, 125, 0.5);
   display: flex;
   justify-content: space-between;
+}
+
+.top-bar-hamburger {
+  outline: none;
 }
 </style>
