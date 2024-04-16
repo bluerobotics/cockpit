@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, markRaw, ref } from 'vue'
 import { useDisplay } from 'vuetify'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -54,37 +54,37 @@ const menus = [
   {
     icon: 'mdi-book-open-blank-variant',
     title: 'General',
-    component: ConfigurationGeneralView,
+    component: markRaw(ConfigurationGeneralView),
   },
   {
     icon: 'mdi-controller',
     title: 'Joystick',
-    component: ConfigurationJoystickView,
+    component: markRaw(ConfigurationJoystickView),
   },
   {
     icon: 'mdi-video',
     title: 'Video',
-    component: ConfigurationVideoView,
+    component: markRaw(ConfigurationVideoView),
   },
   {
     icon: 'mdi-script',
     title: 'Logs',
-    component: ConfigurationLogsView,
+    component: markRaw(ConfigurationLogsView),
   },
   {
     icon: 'mdi-bell-ring',
     title: 'Alerts',
-    component: ConfigurationAlertsView,
+    component: markRaw(ConfigurationAlertsView),
   },
   {
     icon: 'mdi-dev-to',
     title: 'Development',
-    component: ConfigurationDevelopmentView,
+    component: markRaw(ConfigurationDevelopmentView),
   },
   {
     icon: 'mdi-rocket',
     title: 'Mission',
-    component: ConfigurationMissionView,
+    component: markRaw(ConfigurationMissionView),
   },
 ]
 
