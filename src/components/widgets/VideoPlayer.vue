@@ -8,7 +8,16 @@
       <p>Please check its source or select another stream.</p>
     </div>
     <div v-else-if="mediaStream === undefined" class="no-video-alert">
-      <span>Loading stream...</span>
+      <div class="no-video-alert">
+        <p>
+          <span class="text-xl font-bold">Server status: </span>
+          <span>{{ serverStatus }}</span>
+        </p>
+        <p>
+          <span class="text-xl font-bold">Stream status: </span>
+          <span>{{ streamStatus }}</span>
+        </p>
+      </div>
     </div>
     <video ref="videoElement" muted autoplay playsinline disablePictureInPicture>
       Your browser does not support the video tag.
@@ -157,6 +166,16 @@ const rotateStyle = computed(() => {
 
 const transformStyle = computed(() => {
   return `${flipStyle.value} ${rotateStyle.value}`
+})
+
+const serverStatus = computed(() => {
+  if (nameSelectedStream.value === undefined) return 'Unknown.'
+  return videoStore.getStreamData(nameSelectedStream.value)?.webRtcManager.signallerStatus ?? 'Unknown.'
+})
+
+const streamStatus = computed(() => {
+  if (nameSelectedStream.value === undefined) return 'Unknown.'
+  return videoStore.getStreamData(nameSelectedStream.value)?.webRtcManager.streamStatus ?? 'Unknown.'
 })
 </script>
 
