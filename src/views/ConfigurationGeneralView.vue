@@ -21,17 +21,15 @@
           />
 
           <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
-          <v-template>
-            <v-btn
-              v-tooltip.bottom="'Reset to default'"
-              :disabled="newGlobalAddress === defaultGlobalAddress"
-              icon="mdi-refresh"
-              class="mx-1 mb-5 pa-0"
-              rounded="lg"
-              flat
-              @click="resetGlobalAddress"
-            />
-          </v-template>
+          <v-btn
+            v-tooltip.bottom="'Reset to default'"
+            :disabled="newGlobalAddress === defaultGlobalAddress"
+            icon="mdi-refresh"
+            class="mx-1 mb-5 pa-0"
+            rounded="lg"
+            flat
+            @click="resetGlobalAddress"
+          />
         </v-form>
         <span>Current address: {{ mainVehicleStore.globalAddress }} </span><br />
       </v-card>
@@ -65,17 +63,15 @@
           />
 
           <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
-          <v-template>
-            <v-btn
-              v-tooltip.bottom="'Reset to default'"
-              :disabled="connectionURI.toString() === connectionURI.defaultValue.toString()"
-              icon="mdi-refresh"
-              class="mx-1 mb-5 pa-0"
-              rounded="lg"
-              flat
-              @click="resetVehicleConnection"
-            />
-          </v-template>
+          <v-btn
+            v-tooltip.bottom="'Reset to default'"
+            :disabled="connectionURI.toString() === connectionURI.defaultValue.toString()"
+            icon="mdi-refresh"
+            class="mx-1 mb-5 pa-0"
+            rounded="lg"
+            flat
+            @click="resetVehicleConnection"
+          />
         </v-form>
         <span>Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }} </span><br />
         <span
@@ -114,17 +110,15 @@
           />
 
           <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
-          <v-template>
-            <v-btn
-              v-tooltip.bottom="'Reset to default'"
-              :disabled="webRTCSignallingURI.val.toString() === webRTCSignallingURI.defaultValue.toString()"
-              icon="mdi-refresh"
-              class="mx-1 mb-5 pa-0"
-              rounded="lg"
-              flat
-              @click="resetWebRTCSignallingURI"
-            />
-          </v-template>
+          <v-btn
+            v-tooltip.bottom="'Reset to default'"
+            :disabled="webRTCSignallingURI.val.toString() === webRTCSignallingURI.defaultValue.toString()"
+            icon="mdi-refresh"
+            class="mx-1 mb-5 pa-0"
+            rounded="lg"
+            flat
+            @click="resetWebRTCSignallingURI"
+          />
         </v-form>
         <span>Current address: {{ mainVehicleStore.webRTCSignallingURI.val.toString() }} </span><br />
       </v-card>
