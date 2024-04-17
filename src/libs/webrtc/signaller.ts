@@ -359,25 +359,6 @@ export class Signaller {
   }
 
   /**
-   * Parses a given "sessionStart" Asnwer received by the signalling server
-   * @param {MessageEvent} ev - Message to be parsed. This should be a "startSession" message
-   * @returns {string | undefined} - The Session ID received from the signalling server
-   */
-  public parseSessionStartAnswer(ev: MessageEvent): string | undefined {
-    const message: Message = JSON.parse(ev.data)
-    if (message.type !== 'answer') {
-      return
-    }
-
-    const answer: Answer = message.content
-    if (answer.type !== 'startSession') {
-      return
-    }
-
-    return answer.content.session_id
-  }
-
-  /**
    * Parses a "endSession" Question received by the signalling server
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
