@@ -17,7 +17,7 @@
             type="input"
             hint="Address of the Vehicle. E.g: blueos.local"
             class="uri-input"
-            :rules="[isValidHostAddress]"
+            :rules="[isValidHostAddress, isValidConnectionURI]"
           />
 
           <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
@@ -168,6 +168,15 @@ const isValidHostAddress = (value: string): boolean | string => {
   return isValidNetworkAddress(value) ?? 'Invalid host address. Should be an IP address or a hostname'
 }
 
+const isValidConnectionURI = (value: string): boolean | string => {
+  try {
+    new Connection.URI(`ws://${value}:6040/`)
+  } catch (error) {
+    return `Invalid connection URI. ${error}.`
+  }
+  return true
+}
+
 const isValidSocketConnectionURI = (value: string): boolean | string => {
   try {
     const conn = new Connection.URI(value)
@@ -213,6 +222,13 @@ const addNewVehicleConnection = async (): Promise<void> => {
 
 const setGlobalAddress = async (): Promise<void> => {
   await globalAddressForm.value.validate()
+
+  const validation = isValidConnectionURI(newGlobalAddress.value)
+  if (validation !== true) {
+    alert(validation)
+    return
+  }
+
   mainVehicleStore.globalAddress = newGlobalAddress.value
 
   // Temporary solution to actually set the address and connect the vehicle, since this is non-reactive today.
