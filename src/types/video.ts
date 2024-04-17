@@ -66,4 +66,55 @@ export type UnprocessedVideoInfo = {
    *  The height of the video
    */
   vHeight: number
+  /**
+   *  Fist chunk of the video
+   */
+  thumbnail: string | undefined
+}
+
+/* eslint-disable jsdoc/require-jsdoc  */
+export type VideoLibraryFile = {
+  fileName: string
+  size?: number
+  url: string
+  dateStart?: Date
+  dateLastRecordingUpdate?: Date
+  dateFinish?: Date
+  vWidth?: number
+  vHeight?: number
+  hash?: string
+  thumbnail?: string
+  isProcessed: boolean
+}
+
+export type VideoLibraryLogFile = {
+  fileName: string
+  size?: number
+  url?: string
+  dateStart?: Date
+  dateLastRecordingUpdate?: Date
+  dateFinish?: Date
+  vWidth?: number
+  vHeight?: number
+  hash?: string
+  thumbnail?: string
+}
+
+export interface VideoProgress {
+  filename: string
+  progress: number
+  message: string
+}
+
+export interface VideoProcessingDetails {
+  [fileName: string]: VideoProgress
+}
+
+export interface FileDescriptor {
+  blob: Blob
+  filename: string
+}
+
+export interface StorageDB {
+  getItem: (key: string) => Promise<Blob | null | undefined>
 }

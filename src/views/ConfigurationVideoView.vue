@@ -179,7 +179,7 @@ const clearTemporaryVideoFiles = async (): Promise<void> => {
 
 const processUnprocessedVideos = async (): Promise<void> => {
   try {
-    await videoStore.processUnprocessedVideos()
+    await videoStore.processAllUnprocessedVideos()
     Swal.fire({
       icon: 'success',
       title: 'Videos processed',
