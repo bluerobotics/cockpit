@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import gsap from 'gsap'
-import { computed, nextTick, onBeforeMount, reactive, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
@@ -80,6 +80,12 @@ onBeforeMount(() => {
   }
 })
 
+onMounted(() => {
+  // Set initial value to 0.01 since 0.0 and 360 does not render anything
+  adjustLinesX()
+  renderCanvas()
+})
+
 // Calculates the smallest between the widget dimensions, so we can keep the inner content always inside it, without overlays
 const { width, height } = useElementSize(compassRoot)
 const smallestDimension = computed(() => (width.value < height.value ? width.value : height.value))
@@ -88,6 +94,7 @@ const smallestDimension = computed(() => (width.value < height.value ? width.val
 const renderCanvas = (): void => {
   if (canvasRef.value === undefined || canvasRef.value === null) return
   if (canvasContext.value === undefined) canvasContext.value = canvasRef.value.getContext('2d')
+
   const ctx = canvasContext.value
   resetCanvas(ctx)
 
@@ -183,10 +190,15 @@ const renderCanvas = (): void => {
  * Deal with high frequency update and decrease cpu usage when drawing low degrees changes
  */
 
-const yaw = ref(0)
+const yaw = ref(0.01)
 let oldYaw: number | undefined = undefined
 watch(store.attitude, (attitude) => {
-  const yawDiff = Math.abs(degrees(attitude.yaw - (oldYaw || 0)))
+  if (oldYaw === undefined) {
+    yaw.value = degrees(store.attitude.yaw)
+    oldYaw = attitude.yaw
+    return
+  }
+  const yawDiff = Math.abs(degrees(attitude.yaw - oldYaw))
   if (yawDiff > 0.1) {
     oldYaw = attitude.yaw
     yaw.value = degrees(store.attitude.yaw)
@@ -199,8 +211,9 @@ type RenderVariables = { yawAngleDegrees: number }
 const renderVariables = reactive<RenderVariables>({ yawAngleDegrees: 0 })
 
 // Update the X position of each line in the render variables with GSAP to smooth the transition
-watch(yaw, () => {
+const adjustLinesX = (): void => {
   const angleDegrees = yaw.value
+
   const fullRangeAngleDegrees = angleDegrees < 0 ? angleDegrees + 360 : angleDegrees
 
   const fromWestToEast = renderVariables.yawAngleDegrees > 270 && fullRangeAngleDegrees < 90
@@ -215,7 +228,10 @@ watch(yaw, () => {
   } else {
     gsap.to(renderVariables, 0.1, { yawAngleDegrees: fullRangeAngleDegrees })
   }
-})
+}
+
+// When the yaw changes, adjust the lines X position
+watch(yaw, () => adjustLinesX())
 
 // Update canvas whenever reference variables changes
 watch(renderVariables, () => {
