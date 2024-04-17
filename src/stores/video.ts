@@ -1,4 +1,4 @@
-import { useStorage, useThrottleFn, useTimestamp } from '@vueuse/core'
+import { useDebounceFn, useStorage, useThrottleFn, useTimestamp } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { differenceInSeconds, format } from 'date-fns'
 import { saveAs } from 'file-saver'
@@ -18,7 +18,7 @@ import { isEqual } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
-import type { StreamData, UnprocessedVideoInfo } from '@/types/video'
+import type { FileDescriptor, StorageDB, StreamData, UnprocessedVideoInfo, VideoProcessingDetails } from '@/types/video'
 
 import { useAlertStore } from './alert'
 
@@ -143,8 +143,8 @@ export const useVideoStore = defineStore('video', () => {
 
   /**
    * Extracts a thumbnail from the first frame of a video.
-   * @param videoUrl The URL of the video from which to extract the thumbnail.
-   * @returns A promise that resolves with the base64-encoded image data of the thumbnail.
+   * @param {string} videoUrl - The URL of the video from which to extract the thumbnail.
+   * @returns {Promise<string>} A promise that resolves with the base64-encoded image data of the thumbnail.
    */
   const extractThumbnailFromVideo = async (videoUrl: string): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
@@ -292,70 +292,68 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   // Used to discard a file from the video recovery database
-  const discardFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
+  const discardProcessedFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
     console.debug(`Discarding files from the video recovery database: ${fileNames.join(', ')}`)
     for (const filename of fileNames) {
       await videoStoringDB.removeItem(filename)
     }
   }
 
-  // Used to download a file from the video recovery database
-  const downloadFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
-    console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
+  const discardUnprocessedFilesFromVideoDB = async (hashes: string[]): Promise<void> => {
+    for (const hash of hashes) {
+      await tempVideoChunksDB.removeItem(hash)
+      delete unprocessedVideos.value[hash]
+    }
+  }
 
-    if (fileNames.length === 1) {
-      const file = await videoStoringDB.getItem(fileNames[0])
-      if (!file) {
-        Swal.fire({ text: 'File not found.', icon: 'error' })
-        return
-      }
-      saveAs(file as Blob, fileNames[0])
+  const createZipAndDownload = async (files: FileDescriptor[], zipFilename: string): Promise<void> => {
+    const zipWriter = new ZipWriter(new BlobWriter('application/zip'))
+    for (const { filename, blob } of files) {
+      await zipWriter.add(filename, new BlobReader(blob))
+    }
+    const blob = await zipWriter.close()
+    saveAs(blob, zipFilename)
+  }
+
+  const downloadFiles = async (db: StorageDB, keys: string[], zipFilenamePrefix: string): Promise<void> => {
+    const maybeFiles = await Promise.all(
+      keys.map(async (key) => ({
+        blob: await db.getItem(key),
+        filename: key,
+      }))
+    )
+    /* eslint-disable jsdoc/require-jsdoc  */
+    const files = maybeFiles.filter((file): file is { blob: Blob; filename: string } => file.blob !== undefined)
+
+    if (files.length === 0) {
+      Swal.fire({ text: 'No files found.', icon: 'error' })
       return
     }
 
-    const zipWriter = new ZipWriter(new BlobWriter('application/zip'))
-
-    const maybeFiles = await Promise.all(
-      fileNames.map(async (filename) => ({
-        blob: await videoStoringDB.getItem(filename),
-        filename,
-      }))
-    )
-    const files = maybeFiles.filter((file) => file.blob !== undefined)
-
-    for (const { filename, blob } of files) {
-      await zipWriter.add(filename, new BlobReader(blob as Blob))
+    if (files.length === 1) {
+      saveAs(files[0].blob, files[0].filename)
+    } else {
+      await createZipAndDownload(files, `${zipFilenamePrefix}.zip`)
     }
+  }
 
-    const blob = await zipWriter.close()
-    saveAs(blob, 'Cockpit-Video-Recovery.zip')
+  const downloadFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
+    console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
+    await downloadFiles(videoStoringDB, fileNames, 'Cockpit-Video-Recovery')
+  }
+
+  const downloadTempVideo = async (hashes: string[]): Promise<void> => {
+    console.debug(`Downloading ${hashes.length} video chunks from the temporary database.`)
+
+    for (const hash of hashes) {
+      const fileNames = (await tempVideoChunksDB.keys()).filter((filename) => filename.includes(hash))
+      await downloadFiles(tempVideoChunksDB, fileNames, `Cockpit-Temp-Video-Chunks-${hash}`)
+    }
   }
 
   // Used to clear the temporary video database
   const clearTemporaryVideoDB = async (): Promise<void> => {
     await tempVideoChunksDB.clear()
-  }
-
-  // Used to download a file from the video recovery database
-  const downloadTempVideoDB = async (): Promise<void> => {
-    console.debug('Downloading video chunks from the temporary database.')
-    const zipWriter = new ZipWriter(new BlobWriter('application/zip'))
-
-    const fileNames = await tempVideoChunksDB.keys()
-    const maybeFiles = await Promise.all(
-      fileNames.map(async (filename) => ({
-        blob: await tempVideoChunksDB.getItem(filename),
-        filename,
-      }))
-    )
-    const files = maybeFiles.filter((file) => file.blob !== undefined)
-
-    for (const { filename, blob } of files) {
-      await zipWriter.add(filename, new BlobReader(blob as Blob))
-    }
-
-    const blob = await zipWriter.close()
-    saveAs(blob, 'Cockpit-Temp-Video-Chunks.zip')
   }
 
   const temporaryVideoDBSize = async (): Promise<number> => {
@@ -412,73 +410,125 @@ export const useVideoStore = defineStore('video', () => {
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
   }
 
-  const processVideoChunksAndTelemetry = async (recordingHash: string, info: UnprocessedVideoInfo): Promise<void> => {
-    if (info.dateFinish === undefined) {
-      info.dateFinish = info.dateLastRecordingUpdate
-    }
+  // Progress tracking for video processing
+  const videoProcessingDetails = ref<VideoProcessingDetails>({})
+  const totalFilesToProcess = ref(0)
 
-    // eslint-disable-next-line jsdoc/require-jsdoc
-    const chunks: { blob: Blob; name: string }[] = []
+  const updateFileProgress = (filename: string, progress: number, message: string): void => {
+    videoProcessingDetails.value[filename] = { filename, progress, message }
+  }
 
-    const dateStart = new Date(info.dateStart)
-    const dateFinish = new Date(info.dateFinish)
+  const currentFileProgress = computed(() => {
+    return Object.values(videoProcessingDetails.value).map((detail) => ({
+      fileName: detail.filename,
+      progress: detail.progress,
+      message: detail.message,
+    }))
+  })
 
-    await tempVideoChunksDB.iterate((videoChunk, chunkName) => {
-      if (chunkName.includes(recordingHash)) {
-        chunks.push({ blob: videoChunk as Blob, name: chunkName })
+  const overallProgress = computed(() => {
+    const entries = Object.values(videoProcessingDetails.value)
+    const totalProgress = entries.reduce((acc, curr) => acc + curr.progress, 0)
+    return (totalProgress / (totalFilesToProcess.value * 100)) * 100
+  })
+
+  const debouncedUpdateFileProgress = useDebounceFn((filename: string, progress: number, message: string) => {
+    updateFileProgress(filename, progress, message)
+  }, 100)
+
+  const processVideoChunksAndTelemetry = async (hashes: string[]): Promise<void> => {
+    totalFilesToProcess.value = hashes.length
+    videoProcessingDetails.value = {}
+
+    const tasks = hashes.map(async (hash) => {
+      const info = unprocessedVideos.value[hash]
+      if (!info) return
+
+      /* eslint-disable jsdoc/require-jsdoc  */
+      const chunks: { blob: Blob; name: string }[] = []
+      if (info.dateFinish === undefined) {
+        info.dateFinish = info.dateLastRecordingUpdate
       }
+      debouncedUpdateFileProgress(info.fileName, 1, 'Processing video.')
+
+      const dateStart = new Date(info.dateStart)
+      const dateFinish = new Date(info.dateFinish)
+
+      debouncedUpdateFileProgress(info.fileName, 30, 'Grouping video chunks.')
+      await tempVideoChunksDB.iterate((videoChunk, chunkName) => {
+        if (chunkName.includes(hash)) {
+          chunks.push({ blob: videoChunk as Blob, name: chunkName })
+        }
+      })
+
+      // As we advance through the processing, we update the last processing update date, so consumers know this is ongoing
+      updateLastProcessingUpdate(hash)
+
+      if (chunks.length === 0) {
+        throw new Error(`No video chunks found for video ${hash}.`)
+      }
+
+      debouncedUpdateFileProgress(info.fileName, 30, 'Sorting video chunks.')
+      // Make sure the chunks are sorted in the order they were created, not the order they are stored
+      chunks.sort((a, b) => {
+        const splitA = a.name.split('_')
+        const splitB = b.name.split('_')
+        return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
+      })
+
+      updateLastProcessingUpdate(hash)
+
+      const chunkBlobs = chunks.map((chunk) => chunk.blob)
+      debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
+      const durFixedBlob = await fixWebmDuration(new Blob([...chunkBlobs], { type: 'video/webm;codecs=vp9' }))
+
+      updateLastProcessingUpdate(hash)
+
+      debouncedUpdateFileProgress(info.fileName, 75, `Saving video file.`)
+      await videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob)
+
+      updateLastProcessingUpdate(hash)
+
+      debouncedUpdateFileProgress(info.fileName, 80, `Generating telemetry file.`)
+      const telemetryLog = await datalogger.findLogByInitialTime(dateStart)
+      if (!telemetryLog) {
+        throw new Error(`No telemetry log found for the video ${info.fileName}:`)
+      }
+
+      debouncedUpdateFileProgress(info.fileName, 95, `Saving telemetry file.`)
+      const videoTelemetryLog = datalogger.getSlice(telemetryLog, dateStart, dateFinish)
+      const assLog = datalogger.toAssOverlay(videoTelemetryLog, info.vWidth, info.vHeight, dateStart.getTime())
+      const logBlob = new Blob([assLog], { type: 'text/plain' })
+      videoStoringDB.setItem(`${info.fileName}.ass`, logBlob)
+
+      updateLastProcessingUpdate(hash)
+
+      debouncedUpdateFileProgress(info.fileName, 100, 'Processing completed')
+      updateFileProgress(info.fileName, 100, 'Processing completed')
+      await cleanupProcessedData(hash)
     })
+    await Promise.all(tasks)
+  }
 
-    // As we advance through the processing, we update the last processing update date, so consumers know this is ongoing
-    updateLastProcessingUpdate(recordingHash)
-
-    if (chunks.length === 0) {
-      throw new Error(`No video chunks found for video ${recordingHash}.`)
-    }
-
-    // Make sure the chunks are sorted in the order they were created, not the order they are stored
-    chunks.sort((a, b) => {
-      const splitA = a.name.split('_')
-      const splitB = b.name.split('_')
-      return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
-    })
-
-    updateLastProcessingUpdate(recordingHash)
-
-    const chunkBlobs = chunks.map((chunk) => chunk.blob)
-
-    const durFixedBlob = await fixWebmDuration(new Blob([...chunkBlobs], { type: 'video/webm;codecs=vp9' }))
-
-    updateLastProcessingUpdate(recordingHash)
-
-    videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob)
-
-    updateLastProcessingUpdate(recordingHash)
-
-    const telemetryLog = await datalogger.findLogByInitialTime(dateStart)
-    if (telemetryLog === null) {
-      console.error('No telemetry log found for the video recording.')
-      return
-    }
-
-    const videoTelemetryLog = datalogger.getSlice(telemetryLog, dateStart, dateFinish)
-    const assLog = datalogger.toAssOverlay(videoTelemetryLog, info.vWidth, info.vHeight, dateStart.getTime())
-    const logBlob = new Blob([assLog], { type: 'text/plain' })
-    videoStoringDB.setItem(`${info.fileName}.ass`, logBlob)
-    updateLastProcessingUpdate(recordingHash)
+  // Remove temp chunks and video metadata from the database
+  const cleanupProcessedData = async (recordingHash: string): Promise<void> => {
+    await tempVideoChunksDB.removeItem(recordingHash)
+    delete unprocessedVideos.value[recordingHash]
   }
 
   const keysAllUnprocessedVideos = computed(() => Object.keys(unprocessedVideos.value))
 
   const keysFailedUnprocessedVideos = computed(() => {
+    const dateNow = new Date(timeNow.value)
+
     return keysAllUnprocessedVideos.value.filter((recordingHash) => {
       const info = unprocessedVideos.value[recordingHash]
 
-      const secondsSinceLastRecordingUpdate = differenceInSeconds(timeNow.value, new Date(info.dateLastRecordingUpdate))
+      const secondsSinceLastRecordingUpdate = differenceInSeconds(dateNow, new Date(info.dateLastRecordingUpdate))
       const recording = info.dateFinish === undefined && secondsSinceLastRecordingUpdate < 10
 
       const dateLastProcessingUpdate = new Date(info.dateLastProcessignUpdate ?? 0)
-      const secondsSinceLastProcessingUpdate = differenceInSeconds(timeNow.value, dateLastProcessingUpdate)
+      const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, dateLastProcessingUpdate)
       const processing = info.dateFinish !== undefined && secondsSinceLastProcessingUpdate < 10
 
       return !recording && !processing
@@ -497,7 +547,7 @@ export const useVideoStore = defineStore('video', () => {
   })
 
   // Process videos that were being recorded when the app was closed
-  const processUnprocessedVideos = async (): Promise<void> => {
+  const processAllUnprocessedVideos = async (): Promise<void> => {
     if (keysFailedUnprocessedVideos.value.isEmpty()) return
     console.log(`Processing unprocessed videos: ${keysFailedUnprocessedVideos.value.join(', ')}`)
 
@@ -512,7 +562,7 @@ export const useVideoStore = defineStore('video', () => {
       const info = unprocessedVideos.value[recordingHash]
       console.log(`Processing unprocessed video: ${info.fileName}`)
       try {
-        await processVideoChunksAndTelemetry(recordingHash, info)
+        await processVideoChunksAndTelemetry([recordingHash])
       } catch (error) {
         processingErrors.push(`Could not process video ${recordingHash}. ${error} Discarding leftover info.`)
       }
@@ -648,15 +698,14 @@ export const useVideoStore = defineStore('video', () => {
     namesAvailableStreams,
     videoStoringDB,
     tempVideoChunksDB,
-    discardFilesFromVideoDB,
+    discardProcessedFilesFromVideoDB,
+    discardUnprocessedFilesFromVideoDB,
     downloadFilesFromVideoDB,
     clearTemporaryVideoDB,
-    downloadTempVideoDB,
-    unprocessedVideos,
     keysAllUnprocessedVideos,
     keysFailedUnprocessedVideos,
     areThereVideosProcessing,
-    processUnprocessedVideos,
+    processAllUnprocessedVideos,
     discardUnprocessedVideos,
     temporaryVideoDBSize,
     videoStorageFileSize,
@@ -665,5 +714,10 @@ export const useVideoStore = defineStore('video', () => {
     isRecording,
     stopRecording,
     startRecording,
+    unprocessedVideos,
+    downloadTempVideo,
+    currentFileProgress,
+    overallProgress,
+    processVideoChunksAndTelemetry,
   }
 })
