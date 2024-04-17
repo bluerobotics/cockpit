@@ -151,12 +151,9 @@ export class WebRTCManager {
     this.hasEnded = false
     // Requests a new consumer ID
     if (this.consumerId === undefined) {
-      this.signaller.requestConsumerId(
-        (newConsumerId: string): void => {
-          this.consumerId = newConsumerId
-        },
-        (newStatus: string): void => this.updateStreamStatus(newStatus)
-      )
+      this.signaller.requestConsumerId((newConsumerId: string): void => {
+        this.consumerId = newConsumerId
+      })
     }
 
     this.availableStreams.value = []
@@ -229,14 +226,9 @@ export class WebRTCManager {
     console.debug(`[WebRTC] Requesting stream:`, stream)
 
     // Requests a new Session ID
-    this.signaller.requestSessionId(
-      consumerId,
-      stream.id,
-      (receivedSessionId: string): void => {
-        this.onSessionIdReceived(stream, stream.id, receivedSessionId)
-      },
-      (newStatus: string): void => this.updateStreamStatus(newStatus)
-    )
+    this.signaller.requestSessionId(consumerId, stream.id, (receivedSessionId: string): void => {
+      this.onSessionIdReceived(stream, stream.id, receivedSessionId)
+    })
 
     this.hasEnded = false
   }
@@ -322,17 +314,11 @@ export class WebRTCManager {
     )
 
     // Registers Session callback for the Signaller endSession parser
-    this.signaller.parseEndSessionQuestion(
-      this.consumerId!,
-      producerId,
-      this.session.id,
-      (sessionId, reason) => {
-        console.debug(`[WebRTC] Session ${sessionId} ended. Reason: ${reason}`)
-        this.session = undefined
-        this.hasEnded = true
-      },
-      (newStatus: string): void => this.updateSignallerStatus(newStatus)
-    )
+    this.signaller.parseEndSessionQuestion(this.consumerId!, producerId, this.session.id, (sessionId, reason) => {
+      console.debug(`[WebRTC] Session ${sessionId} ended. Reason: ${reason}`)
+      this.session = undefined
+      this.hasEnded = true
+    })
 
     // Registers Session callbacks for the Signaller Negotiation parser
     this.signaller.parseNegotiation(
@@ -340,8 +326,7 @@ export class WebRTCManager {
       producerId,
       this.session.id,
       this.session.onIncomingICE.bind(this.session),
-      this.session.onIncomingSDP.bind(this.session),
-      (newStatus: string): void => this.updateSignallerStatus(newStatus)
+      this.session.onIncomingSDP.bind(this.session)
     )
 
     const msg = `Session ${this.session.id} successfully started`

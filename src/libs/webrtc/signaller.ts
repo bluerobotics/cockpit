@@ -123,12 +123,8 @@ export class Signaller {
   /**
    * Requests the signalling server for a new consumer ID
    * @param {OnConsumerIdReceivedCallback} onConsumerIdReceived - A callback for when the requested consumer id is received
-   * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
-  public requestConsumerId(
-    onConsumerIdReceived: OnConsumerIdReceivedCallback,
-    onStatusChanged?: OnStatusChangeCallback
-  ): void {
+  public requestConsumerId(onConsumerIdReceived: OnConsumerIdReceivedCallback): void {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const signaller = this
     this.addEventListener('message', function consumerIdListener(ev: MessageEvent): void {
@@ -148,12 +144,12 @@ export class Signaller {
         signaller.removeEventListener('message', consumerIdListener)
 
         const consumerId: string = answer.content.id
-        onStatusChanged?.(`Consumer Id arrived: ${consumerId}`)
+        signaller.onStatusChange?.(`Consumer Id arrived: ${consumerId}`)
         onConsumerIdReceived(consumerId)
       } catch (error) {
         const errorMsg = `Failed receiving PeerId Answer Message. Error: ${error}. Data: ${ev.data}`
         console.error('[WebRTC] [Signaller] ' + errorMsg)
-        onStatusChanged?.(errorMsg)
+        signaller.onStatusChange?.(errorMsg)
       }
     })
 
@@ -167,11 +163,11 @@ export class Signaller {
     try {
       this.ws.send(JSON.stringify(message))
       console.debug('[WebRTC] [Signaller] Message sent:', message)
-      onStatusChanged?.('Consumer Id requested, waiting answer...')
+      signaller.onStatusChange?.('Consumer Id requested, waiting answer...')
     } catch (reason) {
       const error = `Failed requesting peer id. Reason: ${reason}`
       console.error('[WebRTC] [Signaller] ' + error)
-      onStatusChanged?.(error)
+      signaller.onStatusChange?.(error)
     }
   }
 
@@ -185,9 +181,8 @@ export class Signaller {
 
   /**
    * Requests the signalling server for the list of the streams available
-   * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
-  public requestStreams(onStatusChanged?: OnStatusChangeCallback): void {
+  public requestStreams(): void {
     const message: Message = {
       type: 'question',
       content: {
@@ -201,11 +196,11 @@ export class Signaller {
       }
       this.ws.send(JSON.stringify(message))
       console.debug('[WebRTC] [Signaller] Message sent:', message)
-      onStatusChanged?.('StreamsAvailable requested')
+      this.onStatusChange?.('StreamsAvailable requested')
     } catch (error) {
       const errorMsg = `Failed requesting available streams. Reason: ${error}`
       console.error('[WebRTC] [Signaller] ' + errorMsg)
-      onStatusChanged?.(errorMsg)
+      this.onStatusChange?.(errorMsg)
     }
   }
 
@@ -214,13 +209,11 @@ export class Signaller {
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
    * @param {OnSessionIdReceivedCallback} onSessionIdReceived - A callback for when the requested session id is received
-   * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
   public requestSessionId(
     consumerId: string,
     producerId: string,
-    onSessionIdReceived: OnSessionIdReceivedCallback,
-    onStatusChanged?: OnStatusChangeCallback
+    onSessionIdReceived: OnSessionIdReceivedCallback
   ): void {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const signaller = this
@@ -246,12 +239,12 @@ export class Signaller {
         // Only remove after getting the right message
         signaller.removeEventListener('message', sessionStartListener)
 
-        onStatusChanged?.(`Session Id arrived: ${sessionId}`)
+        signaller.onStatusChange?.(`Session Id arrived: ${sessionId}`)
         onSessionIdReceived(sessionId)
       } catch (error) {
         const errorMsg = `Failed receiving StartSession Answer Message. Error: ${error}. Data: ${ev.data}`
         console.error('[WebRTC] [Signaller] ' + errorMsg)
-        onStatusChanged?.(errorMsg)
+        signaller.onStatusChange?.(errorMsg)
         return
       }
     })
@@ -270,11 +263,11 @@ export class Signaller {
     try {
       this.ws.send(JSON.stringify(message))
       console.debug('[WebRTC] [Signaller] Message sent:', message)
-      onStatusChanged?.('Session Id requested, waiting answer...')
+      signaller.onStatusChange?.('Session Id requested, waiting answer...')
     } catch (reason) {
       const error = `Failed requesting Session Id. Reason: ${reason}`
       console.error('[WebRTC] [Signaller] ' + error)
-      onStatusChanged?.(error)
+      signaller.onStatusChange?.(error)
     }
   }
 
@@ -284,15 +277,8 @@ export class Signaller {
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
    * @param {RTCIceCandidate} ice - The ICE candidate to be sent to the signalling server, given by the consumer/client side
-   * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
-  public sendIceNegotiation(
-    sessionId: string,
-    consumerId: string,
-    producerId: string,
-    ice: RTCIceCandidate,
-    onStatusChanged?: OnStatusChangeCallback
-  ): void {
+  public sendIceNegotiation(sessionId: string, consumerId: string, producerId: string, ice: RTCIceCandidate): void {
     const message: Message = {
       type: 'negotiation',
       content: {
@@ -311,11 +297,11 @@ export class Signaller {
     try {
       this.ws.send(JSON.stringify(message))
       console.debug('[WebRTC] [Signaller] Message sent:', message)
-      onStatusChanged?.('ICE Candidate sent')
+      this.onStatusChange?.('ICE Candidate sent')
     } catch (error) {
       const errorMsg = `Failed sending ICE Candidate. Reason: ${error}`
       console.error('[WebRTC] [Signaller] ' + errorMsg)
-      onStatusChanged?.(errorMsg)
+      this.onStatusChange?.(errorMsg)
     }
   }
 
@@ -325,14 +311,12 @@ export class Signaller {
    * @param {string} consumerId - Unique ID of the consumer, given by the signalling server
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
    * @param {RTCSessionDescription} sdp - The SDP to be sent to the signalling server, given by the consumer/client side
-   * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
   public sendMediaNegotiation(
     sessionId: string,
     consumerId: string,
     producerId: string,
-    sdp: RTCSessionDescription,
-    onStatusChanged?: OnStatusChangeCallback
+    sdp: RTCSessionDescription
   ): void {
     const message: Message = {
       type: 'negotiation',
@@ -350,11 +334,11 @@ export class Signaller {
     try {
       this.ws.send(JSON.stringify(message))
       console.debug('[WebRTC] [Signaller] Message sent:', message)
-      onStatusChanged?.('ICE Candidate sent')
+      this.onStatusChange?.('ICE Candidate sent')
     } catch (error) {
       const errorMsg = `Failed sending SDP. Reason: ${error}`
       console.error('[WebRTC] [Signaller] ' + errorMsg)
-      onStatusChanged?.(errorMsg)
+      this.onStatusChange?.(errorMsg)
     }
   }
 
@@ -364,14 +348,12 @@ export class Signaller {
    * @param {string} producerId - Unique ID of the producer, given by the signalling server
    * @param {string} sessionId - Unique ID of the session, given by the signalling server
    * @param {OnSessionEndCallback} onSessionEnd - A callback for when an "endSession" message is received
-   * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
   public parseEndSessionQuestion(
     consumerId: string,
     producerId: string,
     sessionId: string,
-    onSessionEnd: OnSessionEndCallback,
-    onStatusChanged?: OnStatusChangeCallback
+    onSessionEnd: OnSessionEndCallback
   ): void {
     console.debug(
       '[WebRTC] [Signaller] Registering parseEndSessionQuestion callbacks for ' +
@@ -407,12 +389,12 @@ export class Signaller {
         signaller.removeEventListener('message', endSessionListener)
 
         const reason = endSessionQuestion.reason
-        onStatusChanged?.('EndSession arrived')
+        signaller.onStatusChange?.('EndSession arrived')
         onSessionEnd?.(sessionId, reason)
       } catch (error) {
         const errorMsg = `Failed parsing received Message. Error: ${error}. Data: ${ev.data}`
         console.error('[WebRTC] [Signaller] ' + errorMsg)
-        onStatusChanged?.(errorMsg)
+        signaller.onStatusChange?.(errorMsg)
         return
       }
     })
@@ -425,15 +407,13 @@ export class Signaller {
    * @param {string} sessionId - Unique ID of the session, given by the signalling server
    * @param {OnIceNegotiationCallback} onIceNegotiation - An optional callback for when a "iceNegotiation" Negotiation is received
    * @param {OnMediaNegotiationCallback} onMediaNegotiation - An optional callback for when a "mediaNegotiation" Negotiation is received
-   * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
   public parseNegotiation(
     consumerId: string,
     producerId: string,
     sessionId: string,
     onIceNegotiation?: OnIceNegotiationCallback,
-    onMediaNegotiation?: OnMediaNegotiationCallback,
-    onStatusChanged?: OnStatusChangeCallback
+    onMediaNegotiation?: OnMediaNegotiationCallback
   ): void {
     console.debug(
       '[WebRTC] [Signaller] Registering parseNegotiation callbacks for ' +
@@ -463,19 +443,19 @@ export class Signaller {
 
         switch (negotiation.type) {
           case 'iceNegotiation':
-            onStatusChanged?.('iceNegotiation arrived')
+            this.onStatusChange?.('iceNegotiation arrived')
             onIceNegotiation?.(negotiation.content.ice)
             break
 
           case 'mediaNegotiation':
-            onStatusChanged?.('mediaNegotiation arrived')
+            this.onStatusChange?.('mediaNegotiation arrived')
             onMediaNegotiation?.(negotiation.content.sdp)
             break
         }
       } catch (error) {
         const errorMsg = `Failed parsing received Message. Error: ${error}. Data: ${ev.data}`
         console.error('[WebRTC] [Signaller] ' + errorMsg)
-        onStatusChanged?.(errorMsg)
+        this.onStatusChange?.(errorMsg)
         return
       }
     })
@@ -484,12 +464,8 @@ export class Signaller {
   /**
    * Parses "availableStreams" Answer received from the signalling server
    * @param {OnAvailableStreamsCallback} onAvailableStreams - A callback for when an "availableStreams" Answer is received
-   * @param {OnStatusChangeCallback} onStatusChanged - An optional callback for when the status of this function has changed
    */
-  public parseAvailableStreamsAnswer(
-    onAvailableStreams: OnAvailableStreamsCallback,
-    onStatusChanged?: OnStatusChangeCallback
-  ): void {
+  public parseAvailableStreamsAnswer(onAvailableStreams: OnAvailableStreamsCallback): void {
     console.debug('[WebRTC] [Signaller] Registering callback for when list of available streams arrive.')
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const signaller = this
@@ -510,12 +486,12 @@ export class Signaller {
         signaller.removeEventListener('message', availableStreamListener)
 
         const streams: Array<Stream> = answer.content
-        onStatusChanged?.('Available Streams arrived')
+        signaller.onStatusChange?.('Available Streams arrived')
         onAvailableStreams?.(streams)
       } catch (error) {
         const errorMsg = `Failed parsing received Message. Error: ${error}. Data: ${ev.data}`
         console.error('[WebRTC] [Signaller] ' + errorMsg)
-        onStatusChanged?.(errorMsg)
+        signaller.onStatusChange?.(errorMsg)
         return
       }
     })
