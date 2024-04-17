@@ -10,7 +10,7 @@
     <div v-else-if="mediaStream === undefined" class="no-video-alert">
       <span>Loading stream...</span>
     </div>
-    <video ref="videoElement" muted autoplay playsinline disablePictureInPicture>
+    <video id="mainDisplayStream" ref="videoElement" muted autoplay playsinline disablePictureInPicture>
       Your browser does not support the video tag.
     </video>
   </div>
