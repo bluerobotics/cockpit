@@ -169,6 +169,11 @@ const isValidHostAddress = (value: string): boolean | string => {
 }
 
 const isValidConnectionURI = (value: string): boolean | string => {
+  const forbiddenStartStrings = ['http://', 'https://', 'ws://', 'wss://']
+  if (forbiddenStartStrings.some((protocol) => value.startsWith(protocol))) {
+    return 'Address should not include protocol (e.g.: "http://", "wss://").'
+  }
+
   try {
     new Connection.URI(`ws://${value}:6040/`)
   } catch (error) {
