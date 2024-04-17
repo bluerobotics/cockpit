@@ -10,7 +10,7 @@
     :style="{ marginBottom: 40 }"
   >
     {{ textMessage }}
-    <template #actions>
+    <template v-if="closeButton" #actions>
       <v-btn color="white" variant="text" @click="closeSnackbar"> <v-icon>mdi-close</v-icon> </v-btn></template
     >
   </v-snackbar>
@@ -21,6 +21,7 @@ import { ref, watch } from 'vue'
 
 const props = defineProps({
   openSnackbar: Boolean,
+  closeButton: Boolean,
   message: {
     type: String,
     default: '',
