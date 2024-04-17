@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isVisible" persistent class="dialog">
+  <v-dialog v-model="isVisible" class="dialog">
     <div class="video-modal">
       <div class="modal-content">
         <!-- Left Vertical Menu -->
@@ -19,7 +19,7 @@
                 class="rounded-full mb-1 text-2xl"
                 :class="[
                   button.enable ? 'frosted-button' : 'frosted-button-disabled',
-                  currentTab === button.name.toLowerCase() ? 'w-[60px] h-[60px]' : 'w-[40px] h-[40px]',
+                  currentTab === button.name.toLowerCase() ? 'w-[58px] h-[58px]' : 'w-[40px] h-[40px]',
                 ]"
               >
                 <v-icon
@@ -34,7 +34,7 @@
             </button>
           </div>
           <div>
-            <div class="flex flex-col justify-center py-2 mb-[10px] ml-1 align-center">
+            <div class="flex flex-col justify-center py-2 mb-[10px] align-center">
               <button
                 class="frosted-button text-[#ffffffaa] flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-[4px]"
                 @click="showHelpTooltip = !showHelpTooltip"
@@ -46,7 +46,7 @@
                   activator="parent"
                   location="top"
                   arrow
-                  content-class="border-[#ffffff55] border-2 backdrop-blur-md"
+                  content-class="border-[#ffffff55] border-2"
                   @click:outside="showHelpTooltip = false"
                   ><div class="flex flex-col p-2 gap-y-2">
                     <div>
@@ -54,14 +54,22 @@
                     </div>
 
                     <div><strong>Mobile:</strong> Long press to select multiple videos.</div>
+                    <div class="flex flex-row gap-x-10 mt-4">
+                      <div class="ml-[-8px]">
+                        <v-icon size="10" class="text-green-500 ml-2 mb-[2px] mr-1">mdi-circle</v-icon> Processed video
+                      </div>
+                      <div>
+                        <v-icon size="10" class="text-red-500 mb-[2px] mr-1">mdi-circle</v-icon> Unprocessed video
+                      </div>
+                    </div>
                   </div>
                 </v-tooltip>
               </button>
             </div>
-            <v-divider class="opacity-[0.1]"></v-divider>
+            <v-divider class="opacity-[0.1] ml-[-5px] w-[120%]"></v-divider>
             <button class="flex flex-col justify-center py-2 mt-4 align-center" @click="closeModal">
               <div class="frosted-button flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-1">
-                <v-icon class="text-[18px]">mdi-close</v-icon>
+                <v-icon class="text-[18px] ml-[1px]">mdi-close</v-icon>
               </div>
               <div class="text-sm">Close</div>
             </button>
@@ -73,71 +81,188 @@
           <!-- Available Videos -->
           <div
             v-if="availableVideos.length > 0"
-            class="flex flex-col justify-between align-center py-8 px-2 w-[300px] h-[500px]"
+            class="flex flex-col justify-between align-center pt-8 px-2 w-[300px] h-[480px]"
           >
             <div class="flex flex-col align-center h-full w-full overflow-auto px-4">
-              <div v-for="video in availableVideos" :key="video.filename" class="video-container mb-4">
+              <div v-for="video in availableVideos" :key="video.fileName" class="video-container mb-4">
                 <div class="relative video-wrapper">
                   <video
-                    v-if="video.filename.endsWith('.webm')"
-                    :id="`video-library-${video.filename}`"
+                    :id="`video-library-${video.fileName}`"
                     class="border-4 border-white rounded-md cursor-pointer border-opacity-[0.1] hover:border-opacity-[0.4] transition duration-75 hover:ease-in"
                     :class="
-                      selectedVideos.find((v) => v.filename === video.filename)
+                      selectedVideos.find((v) => v.fileName === video.fileName)
                         ? ['border-opacity-[0.4]', 'w-[220px]']
                         : ['border-opacity-[0.1]', 'w-[190px]']
                     "
                     preload="auto"
+                    :poster="!video.isProcessed ? video.thumbnail : undefined"
                   >
                     <source :src="video.url" type="video/webm" />
                   </video>
                   <div
-                    v-if="selectedVideos.find((v) => v.filename === video.filename) && !isMultipleSelectionMode"
+                    v-if="selectedVideos.find((v) => v.fileName === video.fileName) && !isMultipleSelectionMode"
                     class="play-button"
-                    @click="playVideo"
+                    @click="video.isProcessed ? playVideo() : processSingleVideo()"
                   >
-                    <v-icon size="40" class="text-white">mdi-play-circle-outline</v-icon>
+                    <v-icon size="40" class="text-white">{{
+                      video.isProcessed ? 'mdi-play-circle-outline' : 'mdi-progress-alert'
+                    }}</v-icon>
                   </div>
                   <div
-                    v-if="selectedVideos.find((v) => v.filename === video.filename) && isMultipleSelectionMode"
+                    v-if="isMultipleSelectionMode"
                     class="checkmark-button"
+                    :class="selectedVideos.find((v) => v.fileName === video.fileName) ? 'bg-green' : 'bg-white'"
+                    @click.stop="toggleVideoIntoSelectionArray(video)"
                   >
-                    <v-icon size="15" class="text-white">mdi-check-circle-outline</v-icon>
+                    <v-icon size="15" class="text-white">
+                      {{
+                        selectedVideos.find((v) => v.fileName === video.fileName)
+                          ? 'mdi-check-circle-outline'
+                          : 'mdi-radiobox-blank'
+                      }}
+                    </v-icon>
                   </div>
                 </div>
-                <div v-if="video.filename.endsWith('.webm')" class="flex justify-center w-full text-xs overflow-hidden">
+                <div class="flex flex-row justify-center w-full text-xs overflow-hidden ml-1">
                   <v-tooltip open-delay="500" activator="parent" location="top">{{
-                    video.filename ?? 'Cockpit webm'
+                    video.isProcessed ? 'Processed video' : 'Unprocessed video'
                   }}</v-tooltip>
-                  {{ parseDateFromTitle(video.filename) ?? 'Cockpit webm' }}
+                  {{ parseDateFromTitle(video.fileName) ?? 'Cockpit webm' }}
+                  <v-icon size="10" class="ml-1 mt-[3px]" :class="video.isProcessed ? 'text-green-500' : 'text-red-500'"
+                    >mdi-circle</v-icon
+                  >
                 </div>
               </div>
             </div>
+            <div
+              v-if="availableVideos.length > 1"
+              class="flex flex-row justify-between align-center h-[45px] w-full mb-[-15px]"
+            >
+              <div>
+                <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
+                  <v-tooltip open-delay="500" activator="parent" location="bottom"
+                    >Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files</v-tooltip
+                  >
+                  {{ isMultipleSelectionMode ? 'Single' : 'Multi' }}</v-btn
+                >
+              </div>
+              <div>
+                <v-btn
+                  variant="text"
+                  size="small"
+                  class="mt-[5px]"
+                  @click="selectedVideos.length === availableVideos.length ? deselectAllVideos() : selectAllVideos()"
+                >
+                  <v-tooltip open-delay="500" activator="parent" location="bottom"
+                    >Select {{ selectedVideos.length === availableVideos.length ? 'none' : 'all files' }}</v-tooltip
+                  >
+                  {{ selectedVideos.length === availableVideos.length ? 'None' : 'All' }}</v-btn
+                >
+              </div>
+              <div>
+                <v-btn
+                  variant="text"
+                  size="small"
+                  class="mt-[5px]"
+                  @click="
+                    selectedVideos.every((el) => !el.isProcessed) ? selectProcessedVideos() : selectUnprocessedVideos()
+                  "
+                >
+                  <v-tooltip open-delay="500" activator="parent" location="bottom">
+                    {{
+                      selectedVideos.every((el) => !el.isProcessed)
+                        ? 'Select all processed videos'
+                        : 'Select all unprocessed videos'
+                    }}
+                  </v-tooltip>
+                  {{ selectedVideos.every((el) => !el.isProcessed) ? 'Select Process.' : 'select Unproc.' }}</v-btn
+                >
+              </div>
+            </div>
           </div>
+
           <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
           <!-- Video Player -->
-          <div class="flex flex-col justify-between mt-5 align-center w-[720px]">
-            <video
-              v-if="availableVideos.length > 0 && selectedVideos.length === 1 && !isMultipleSelectionMode"
-              id="video-player"
-              ref="videoPlayerRef"
-              width="660px"
-              controls
-              preload="auto"
-              class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px]"
-            >
-              <source :src="selectedVideos[0] && selectedVideos[0].url" type="video/webm" />
-            </video>
+          <div v-if="availableVideos.length > 0" class="flex flex-col justify-between mt-5 align-center w-[720px]">
+            <div>
+              <video
+                v-if="
+                  !isMultipleSelectionMode && selectedVideos.length === 1 && !isMultipleSelectionMode && !loadingData
+                "
+                id="video-player"
+                ref="videoPlayerRef"
+                width="660px"
+                :controls="selectedVideos[0].isProcessed ? true : false"
+                :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
+                :poster="selectedVideos[0]?.thumbnail || undefined"
+                class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px]"
+              >
+                <source :src="selectedVideos[0]?.url || undefined" type="video/webm" />
+              </video>
+              <v-btn
+                v-if="
+                  !loadingData &&
+                  selectedVideos.length === 1 &&
+                  !selectedVideos[0].isProcessed &&
+                  !isMultipleSelectionMode &&
+                  !errorProcessingVideos
+                "
+                :variant="showOnScreenProgress ? 'text' : 'outlined'"
+                color="white"
+                size="large"
+                :disabled="showOnScreenProgress"
+                class="process-button"
+                @click="processSingleVideo"
+                >{{ showOnScreenProgress ? 'Processing...' : 'Process video' }}</v-btn
+              >
+              <div class="processing-bar">
+                <v-progress-linear
+                  v-if="showOnScreenProgress && !showProgressInteractionDialog"
+                  :model-value="errorProcessingVideos ? 100 : overallProcessingProgress"
+                  :color="errorProcessingVideos ? 'red' : 'green'"
+                  height="8"
+                  striped
+                ></v-progress-linear>
+                <div class="w-0">
+                  <button
+                    v-if="!loadingData && selectedVideos.length === 1 && showOnScreenProgress && errorProcessingVideos"
+                    class="bg-red text-[#ffffffaa] flex flex-col justify-center align-center w-[20px] h-[20px] rounded-full mt-[40px] ml-[-25px]"
+                    @click="showErrorTooltip = !showErrorTooltip"
+                  >
+                    <v-icon class="text-[18px]">mdi-alert-circle-outline</v-icon>
+                    <v-tooltip
+                      v-model="showErrorTooltip"
+                      :open-on-hover="false"
+                      activator="parent"
+                      location="bottom"
+                      arrow
+                      content-class="border-[#ffffff55] border-2"
+                      @click:outside="showErrorTooltip = false"
+                      ><div class="flex flex-col p-2 gap-y-2">
+                        <div>{{ snackbarMessage }}</div>
+                      </div>
+                    </v-tooltip>
+                  </button>
+                </div>
+              </div>
+            </div>
             <!-- Selected Videos Card Grid (Only on multiple files selected) -->
             <div
               v-if="availableVideos.length > 0 && selectedVideos.length >= 1 && isMultipleSelectionMode"
               class="flex flex-col justify-start w-full p-2 pt-3"
             >
               <div class="card-grid">
-                <v-card v-for="selectedFile in selectedVideos" :key="selectedFile.filename" class="video-card">
-                  <v-card-text>
-                    {{ parseDateFromTitle(selectedFile.filename) }}
-                  </v-card-text>
+                <v-card v-for="selectedFile in selectedVideos" :key="selectedFile.fileName" class="video-card">
+                  <div>
+                    <v-card-text>
+                      <div class="text-sm">{{ parseDateFromTitle(selectedFile.fileName) }}</div>
+                    </v-card-text>
+                    <div class="video-card-dot">
+                      <v-icon size="10" :class="selectedFile.isProcessed ? 'text-green-500' : 'text-red-500'"
+                        >mdi-circle</v-icon
+                      >
+                    </div>
+                  </div>
                 </v-card>
               </div>
               <v-divider class="mb-[-10px] opacity-[0.1] mx-3"></v-divider>
@@ -152,21 +277,18 @@
                   {{
                     isMultipleSelectionMode
                       ? `Files selected: ${selectedVideos.length}`
-                      : parseDateFromTitle(selectedVideos[0]?.filename)
+                      : parseMissionAndDateFromTitle(selectedVideos[0]?.fileName)
                   }}
                 </div>
-                <div v-if="isMultipleSelectionMode" class="flex flex-row justify-between align-center w-[80px] ml-1">
-                  <div class="frosted-button w-[32px] h-[32px] button rounded-full p-2">
-                    <button @click="selectAllVideos">
-                      <v-tooltip open-delay="500" activator="parent" location="bottom">Select all</v-tooltip>
-                      <v-icon size="20" class="mt-[-3px]">mdi-select-group</v-icon>
-                    </button>
-                  </div>
-                  <div class="frosted-button w-[32px] h-[32px] button rounded-full p-2">
-                    <button @click="deselectAllVideos">
-                      <v-tooltip open-delay="500" activator="parent" location="bottom">Select none</v-tooltip>
-                      <v-icon size="20" class="mt-[-3px]">mdi-select-off</v-icon>
-                    </button>
+                <div
+                  v-if="isMultipleSelectionMode"
+                  class="flex flex-row w-[320px] justify-center gap-x-4 align-center ml-1"
+                >
+                  <div
+                    v-if="selectedVideos.every((video) => !video.isProcessed)"
+                    class="text-sm text-white border-2 rounded-md mt-[3px] border-[#ffffff44] bg-[#fafafa33] ml-4 px-1"
+                  >
+                    <button @click="showProcessVideosWarningDialog">Process selected videos</button>
                   </div>
                 </div>
               </div>
@@ -179,14 +301,31 @@
                   @click="!button.confirmAction && button.action()"
                 >
                   <div
-                    :class="[button.enable ? 'frosted-button' : 'frosted-button-disabled']"
-                    class="frosted-button flex flex-col justify-center align-center button rounded-full mb-1 p-2"
+                    :class="[
+                      button.enable ? 'frosted-button' : 'frosted-button-disabled',
+                      !button.confirmAction && 'p-2',
+                    ]"
+                    class="frosted-button flex flex-col justify-center align-center button rounded-full mb-1"
                   >
-                    <v-tooltip open-delay="500" activator="parent" location="bottom">{{ button.name }}</v-tooltip>
+                    <v-tooltip v-if="button.tooltip" open-delay="500" activator="parent" location="bottom">
+                      {{ button.tooltip }}
+                    </v-tooltip>
                     <v-menu v-if="button.confirmAction" location="top" opacity="0">
-                      <template #activator="{ props: activatorProps }">
-                        <v-icon v-bind="activatorProps" :size="button.size">{{ button.icon }}</v-icon> </template
-                      ><v-list class="bg-transparent" elevation="0">
+                      <template #activator="{ props: buttonProps, isActive }">
+                        <div
+                          class="flex justify-center items-center w-full h-full"
+                          v-bind="buttonProps"
+                          v-on="isActive"
+                        >
+                          <v-icon
+                            :size="button.size"
+                            class="rounded-full border-[transparent]"
+                            :style="{ borderWidth: `${button.size - 4}px` }"
+                            >{{ button.icon }}</v-icon
+                          >
+                        </div>
+                      </template>
+                      <v-list class="bg-transparent" elevation="0">
                         <v-list-item>
                           <template #append>
                             <v-btn
@@ -194,18 +333,19 @@
                               size="medium"
                               class="wobble-effect border-2 border-[#fafafadd] rounded-full"
                               @click="button.action"
-                              ><div
+                            >
+                              <div
                                 class="bg-[#32c925] p-1 backdrop-filter backdrop-blur-lg flex flex-col justify-center align-center rounded-full"
                               >
                                 <v-icon size="20px" color="white">mdi-check</v-icon>
-                              </div></v-btn
-                            >
+                              </div>
+                            </v-btn>
                           </template>
                         </v-list-item>
                       </v-list>
                     </v-menu>
                     <div v-else>
-                      <v-icon v-bind="props" :size="button.size">{{ button.icon }}</v-icon>
+                      <v-icon :size="button.size">{{ button.icon }}</v-icon>
                     </div>
                   </div>
                 </button>
@@ -214,7 +354,7 @@
           </div>
           <div
             v-if="availableVideos.length === 0"
-            class="flex flex-row justify-start align-center text-xl w-full h-full"
+            class="flex flex-row justify-center text-center align-center text-xl w-full h-full"
           >
             {{ loadingData ? 'Loading' : 'No videos on storage' }}
           </div>
@@ -226,17 +366,89 @@
     :open-snackbar="openSnackbar"
     :message="snackbarMessage"
     :duration="3000"
+    :close-button="false"
     @update:open-snackbar="openSnackbar = $event"
   />
+  <InteractionDialog
+    :show-dialog="showProcessingInteractionDialog"
+    :title="interactionDialogTitle"
+    :actions="interactionDialogActions"
+    :max-width="600"
+    ><template #content>
+      <div class="flex flex-col text-center align-end mb-2">
+        Processing multiple videos may take a while, depending on the number of videos and their sizes. Cockpit will be
+        usable during the process, but the performance may be affected and recording of new videos is disabled.
+      </div>
+    </template></InteractionDialog
+  >
+  <InteractionDialog
+    :show-dialog="showProgressInteractionDialog"
+    :title="progressInteractionDialogTitle"
+    :actions="progressInteractionDialogActions"
+    :max-width="600"
+  >
+    <template #content>
+      <div v-if="!errorProcessingVideos" class="flex flex-col text-center align-center -mt-2">
+        <div class="flex flex-col justify-between h-[140px] w-full pb-3">
+          <div v-if="currentVideoProcessingProgress.length > 0" class="flex flex-col justify-start">
+            <div class="text-sm text-center mb-3">
+              File {{ currentVideoProcessingProgress.length }} of {{ numberOfFilesToProcess }}:
+              {{ currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].message }}
+            </div>
+            <div class="flex flex-row justify-between align-center w-full mb-2">
+              <div class="text-sm font-bold w-[450px] text-nowrap text-start text-ellipsis overflow-x-hidden">
+                {{ currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].fileName }}
+              </div>
+              <div class="text-sm text-end">
+                <v-progress-circular width="1" size="10" indeterminate class="mr-1 mb-[2px]"></v-progress-circular>
+                {{ `${currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].progress}%` }}
+              </div>
+            </div>
+            <v-progress-linear
+              :model-value="currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].progress"
+              color="white"
+              height="6"
+              rounded
+              striped
+            ></v-progress-linear>
+          </div>
+          <div>
+            <div class="flex flex-row justify-between w-full mb-2">
+              <div class="text-sm font-bold text-start">Overall Progress</div>
+              <div class="text-sm font-bold text-end">{{ `${Math.ceil(overallProcessingProgress)}%` }}</div>
+            </div>
+            <v-progress-linear
+              :model-value="Math.ceil(overallProcessingProgress)"
+              color="blue"
+              height="6"
+              rounded
+              striped
+            ></v-progress-linear>
+          </div>
+        </div>
+      </div>
+      <div v-if="errorProcessingVideos">
+        <div class="flex flex-col justify-center w-full pb-3 text-md text-center">
+          {{
+            `Error processing video file: ${
+              currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].fileName
+            }`
+          }}
+        </div>
+      </div>
+    </template>
+  </InteractionDialog>
 </template>
 
 <script setup lang="ts">
 import * as Hammer from 'hammerjs'
-import { nextTick, onBeforeUnmount, onMounted, onUnmounted } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { ref, watch } from 'vue'
 
 import { useVideoStore } from '@/stores/video'
+import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
 
+import InteractionDialog from './InteractionDialog.vue'
 import Snackbar from './Snackbar.vue'
 
 const videoStore = useVideoStore()
@@ -249,14 +461,7 @@ const emits = defineEmits(['update:openModal'])
 // Track the blob URLs to revoke them when the modal is closed
 const blobURLs = ref<string[]>([])
 
-// List available videos and telemetry logs to be downloaded
 /* eslint-disable jsdoc/require-jsdoc  */
-interface VideoStorageFile {
-  filename: string
-  size: number
-  url: string
-}
-
 interface CustomHammerInstance {
   destroy(): void
 }
@@ -266,10 +471,10 @@ interface HammerInstances {
 }
 
 /* eslint-enable jsdoc/require-jsdoc  */
-const availableVideos = ref<VideoStorageFile[]>([])
-const availableLogFiles = ref<VideoStorageFile[]>([])
+const availableVideos = ref<VideoLibraryFile[]>([])
+const availableLogFiles = ref<VideoLibraryLogFile[]>([])
 const isVisible = ref(props.openModal)
-const selectedVideos = ref<VideoStorageFile[]>([])
+const selectedVideos = ref<VideoLibraryFile[]>([])
 const videoPlayerRef = ref<HTMLVideoElement | null>(null)
 const currentTab = ref('videos')
 const openSnackbar = ref(false)
@@ -279,7 +484,21 @@ const longPressSelected = ref(false)
 const recentlyLongPressed = ref(false)
 const hammerInstances = ref<HammerInstances>({})
 const showHelpTooltip = ref(false)
+const showErrorTooltip = ref(false)
 const loadingData = ref(true)
+const showProcessingInteractionDialog = ref(false)
+const interactionDialogTitle = ref('')
+const interactionDialogActions = ref<object[]>([])
+const showProgressInteractionDialog = ref(false)
+const progressInteractionDialogTitle = ref('')
+const progressInteractionDialogActions = ref<object[]>([])
+const isProcessingVideos = ref(false)
+const overallProcessingProgress = ref(0)
+const currentVideoProcessingProgress = ref([{ fileName: '', progress: 0, message: '' }])
+const numberOfFilesToProcess = ref(0)
+const showOnScreenProgress = ref(true)
+const lastSelectedVideo = ref<VideoLibraryFile | null>(null)
+const errorProcessingVideos = ref(false)
 
 const menuButtons = [
   { name: 'Videos', icon: 'mdi-video-outline', selected: true, enable: true, tooltip: '' },
@@ -291,17 +510,19 @@ const fileActionButtons = [
     name: 'Delete',
     icon: 'mdi-delete-outline',
     size: 22,
+    tooltip: '',
     confirmAction: true,
     enable: true,
-    action: () => discardAndUpdateDB(selectedVideos.value.map((video: VideoStorageFile) => video.filename)),
+    action: () => discardVideosAndUpdateDB(),
   },
   {
     name: 'Download',
     icon: 'mdi-tray-arrow-down',
     size: 28,
+    tooltip: 'Download selected videos with logs',
     confirmAction: false,
     enable: true,
-    action: () => downloadAndUpdateDB(selectedVideos.value.map((video: VideoStorageFile) => video.filename)),
+    action: () => downloadVideoAndTelemetryFiles(),
   },
 ]
 
@@ -312,6 +533,8 @@ const closeModal = (): void => {
   blobURLs.value.forEach((url) => URL.revokeObjectURL(url))
   blobURLs.value = []
   deselectAllVideos()
+  lastSelectedVideo.value = null
+  isMultipleSelectionMode.value = false
 }
 
 // Extracts a date or any string enclosed within parentheses from a given title string
@@ -321,10 +544,11 @@ const parseDateFromTitle = (title: string): string => {
   return dateMatch ? dateMatch[1] : ''
 }
 
-const handleKeyDown = (event: KeyboardEvent): void => {
-  if (event.key === 'Escape') {
-    deselectAllVideos()
-  }
+// Extracts a date or any string enclosed within parentheses from a given title string
+const parseMissionAndDateFromTitle = (title: string): string => {
+  const titleAndDateRegex = /.*\(([^)]+)\)/
+  const titleAndDateMatch = title.match(titleAndDateRegex)
+  return titleAndDateMatch ? titleAndDateMatch[0] : ''
 }
 
 const playVideo = (): void => {
@@ -334,6 +558,105 @@ const playVideo = (): void => {
       videoPlayer.play().catch((e: Error) => console.error('Error auto-playing video:', e))
     }
   }
+}
+
+// Switches between single and multiple file selection modes
+const toggleSelectionMode = (): void => {
+  isMultipleSelectionMode.value = !isMultipleSelectionMode.value
+  if (!isMultipleSelectionMode.value) {
+    deselectAllVideos()
+  }
+}
+
+const toggleVideoIntoSelectionArray = (video: VideoLibraryFile): void => {
+  const index = selectedVideos.value.findIndex((v) => v.fileName === video.fileName)
+  if (index !== -1) {
+    if (selectedVideos.value.length > 1) {
+      selectedVideos.value.splice(index, 1)
+    }
+  } else {
+    selectedVideos.value.push(video)
+    isMultipleSelectionMode.value = true
+  }
+}
+
+const resetProgressBars = (): void => {
+  errorProcessingVideos.value = false
+  overallProcessingProgress.value = 0
+  currentVideoProcessingProgress.value = [{ fileName: '', progress: 0, message: '' }]
+  showOnScreenProgress.value = false
+}
+
+const processVideos = async (): Promise<void> => {
+  try {
+    await videoStore.processVideoChunksAndTelemetry(selectedVideos.value.map((video) => video.hash!))
+    isMultipleSelectionMode.value = false
+    await fetchVideosAndLogData()
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error('Video processing failed:', error.message)
+    } else {
+      console.error('Processing failed with non-Error type:', error)
+    }
+    openSnackbar.value = true
+    errorProcessingVideos.value = true
+  }
+}
+
+const closeProcessingDialog = (): void => {
+  if (errorProcessingVideos.value) {
+    fetchVideosAndLogData()
+  }
+  showProgressInteractionDialog.value = false
+  resetProgressBars()
+}
+
+const processSingleVideo = async (): Promise<void> => {
+  if (selectedVideos.value.length === 1 && !selectedVideos.value[0].isProcessed) {
+    showOnScreenProgress.value = true
+  }
+  processVideos()
+}
+
+// Process multiple videos with progress bars dialog
+const processMultipleVideosDialog = (): void => {
+  numberOfFilesToProcess.value = selectedVideos.value.length
+  progressInteractionDialogTitle.value = 'Processing Videos'
+  progressInteractionDialogActions.value = [
+    {
+      text: overallProcessingProgress.value === 100 ? 'Close' : 'Hide',
+      size: 'small',
+      class: 'font-light',
+      action: closeProcessingDialog,
+    },
+  ]
+  showProcessingInteractionDialog.value = false
+  showProgressInteractionDialog.value = true
+  processVideos()
+}
+
+const showProcessVideosWarningDialog = (): void => {
+  interactionDialogTitle.value = 'Process Multiple Videos'
+  interactionDialogActions.value = [
+    {
+      text: 'Cancel',
+      size: 'small',
+      class: 'font-light',
+      action: () => {
+        showProcessingInteractionDialog.value = false
+      },
+    },
+    {
+      text: 'Process videos',
+      size: 'small',
+      class: 'font-bold',
+      action: async () => {
+        showProcessingInteractionDialog.value = false
+        processMultipleVideosDialog()
+      },
+    },
+  ]
+  showProcessingInteractionDialog.value = true
 }
 
 const selectAllVideos = (): void => {
@@ -351,92 +674,187 @@ const deselectAllVideos = (): void => {
   }
 }
 
+const selectUnprocessedVideos = (): void => {
+  if (availableVideos.value.some((video) => !video.isProcessed)) {
+    selectedVideos.value = availableVideos.value.filter((video) => !video.isProcessed)
+    isMultipleSelectionMode.value = true
+  } else {
+    snackbarMessage.value = 'No unprocessed videos found'
+    openSnackbar.value = true
+  }
+}
+
+const selectProcessedVideos = (): void => {
+  if (availableVideos.value.some((video) => video.isProcessed)) {
+    selectedVideos.value = availableVideos.value.filter((video) => video.isProcessed)
+    isMultipleSelectionMode.value = true
+  } else {
+    snackbarMessage.value = 'No processed videos found'
+    openSnackbar.value = true
+  }
+}
+
 // Add the log files to the list of files to be downloaded/discarded
-const addSubtitlesToFileList = (filenames: string[]): string[] => {
-  const filesWithSubtitles = filenames.flatMap((filename) => {
-    const subtitleFilename = filename.replace('.webm', '.ass')
-    // Check if the .ass file exists in availableVideos
-    const subtitleExists = availableLogFiles.value.some((video) => video.filename === subtitleFilename)
-    return subtitleExists ? [filename, subtitleFilename] : [filename]
+const addLogDataToFileList = (fileNames: string[]): string[] => {
+  const filesWithLogData = fileNames.flatMap((fileName) => {
+    const subtitlefileName = fileName.replace('.webm', '.ass')
+    const subtitleExists = availableLogFiles.value.some((video) => video.fileName === subtitlefileName)
+    return subtitleExists ? [fileName, subtitlefileName] : [fileName]
   })
-  return filesWithSubtitles
+  return filesWithLogData
 }
 
-const downloadAndUpdateDB = async (filenames: string[]): Promise<void> => {
-  snackbarMessage.value = 'Preparing download...'
+const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
+  snackbarMessage.value = 'Getting your download ready...'
+  let tempProcessedVideos: string[] = []
+  let tempUnprocessedVideos: string[] = []
 
-  await videoStore.downloadFilesFromVideoDB(addSubtitlesToFileList(filenames))
+  selectedVideos.value.forEach((video) => {
+    if (video.isProcessed) tempProcessedVideos.push(video.fileName)
+    if (!video.isProcessed && video.hash) tempUnprocessedVideos.push(video.hash)
+  })
   openSnackbar.value = true
+  if (tempProcessedVideos.length > 0) {
+    const dataLogFilesAdded = addLogDataToFileList(tempProcessedVideos)
+
+    await videoStore.downloadFilesFromVideoDB(dataLogFilesAdded)
+  }
+  if (tempUnprocessedVideos.length > 0) {
+    await videoStore.downloadTempVideo(tempUnprocessedVideos)
+  }
 }
 
-const discardAndUpdateDB = async (filenames: string[]): Promise<void> => {
+const discardVideosAndUpdateDB = async (): Promise<void> => {
   let selectedVideoArraySize = selectedVideos.value.length
-  snackbarMessage.value = `${selectedVideoArraySize} video(s) discarded.`
+  let processedVideosToDiscard: string[] = []
+  let unprocessedVideosToDiscard: string[] = []
 
-  await videoStore.discardFilesFromVideoDB(addSubtitlesToFileList(filenames))
+  await selectedVideos.value.forEach((video: VideoLibraryFile) => {
+    if (video.isProcessed) processedVideosToDiscard.push(video.fileName)
+    if (!video.isProcessed && video.hash) unprocessedVideosToDiscard.push(video.hash)
+  })
+
+  if (processedVideosToDiscard.length > 0) {
+    const dataLogFilesAdded = addLogDataToFileList(processedVideosToDiscard)
+
+    await videoStore.discardProcessedFilesFromVideoDB(dataLogFilesAdded)
+  }
+
+  if (unprocessedVideosToDiscard.length > 0) {
+    await videoStore.discardUnprocessedFilesFromVideoDB(unprocessedVideosToDiscard)
+  }
+
+  snackbarMessage.value = `${selectedVideoArraySize} video(s) discarded.`
   openSnackbar.value = true
-  await fetchVideoAndLogsData()
+  await fetchVideosAndLogData()
   availableVideos.value.length > 0 ? (selectedVideos.value = [availableVideos.value[0]]) : (selectedVideos.value = [])
+  if (availableVideos.value.length === 1) isMultipleSelectionMode.value = false
 }
 
-const fetchVideoAndLogsData = async (): Promise<void> => {
+const fetchVideosAndLogData = async (): Promise<void> => {
   loadingData.value = true
   availableVideos.value = []
-  const videoFilesOperations: Promise<VideoStorageFile>[] = []
-  const logFileOperations: Promise<VideoStorageFile>[] = []
+  const videoFilesOperations: Promise<VideoLibraryFile>[] = []
+  const logFileOperations: Promise<VideoLibraryLogFile>[] = []
 
+  // Fetch processed videos and logs
   await videoStore.videoStoringDB.iterate((value, key) => {
     if (key.endsWith('.webm')) {
       videoFilesOperations.push(
         (async () => {
-          const videoBlob = await videoStore.videoStoringDB.getItem(key)
+          const videoBlob = await videoStore.videoStoringDB.getItem<Blob>(key)
           let url = ''
-
+          let isProcessed = true
           if (videoBlob instanceof Blob) {
             url = URL.createObjectURL(videoBlob)
             blobURLs.value.push(url)
           } else {
             console.error('Video data is not a Blob:', videoBlob)
           }
-
           const size = (await videoStore.videoStorageFileSize(key)) ?? 0
-          return { filename: key, size, url }
+          return { fileName: key, size, url, isProcessed }
         })()
       )
     }
     if (key.endsWith('.ass')) {
       logFileOperations.push(
         (async () => {
-          const videoBlob = await videoStore.videoStoringDB.getItem(key)
+          const videoBlob = await videoStore.videoStoringDB.getItem<Blob>(key)
           let url = ''
-
           if (videoBlob instanceof Blob) {
             url = URL.createObjectURL(videoBlob)
             blobURLs.value.push(url)
           } else {
             console.error('Video data is not a Blob:', videoBlob)
           }
-
           const size = (await videoStore.videoStorageFileSize(key)) ?? 0
-          return { filename: key, size, url }
+          return { fileName: key, url, size }
         })()
       )
     }
   })
 
+  // Fetch unprocessed videos
+  const unprocessedVideos = await videoStore.unprocessedVideos
+  const unprocessedVideoOperations = Object.entries(unprocessedVideos).map(async ([hash, videoInfo]) => {
+    return {
+      dateStart: videoInfo.dateStart,
+      dateLastRecordingUpdate: videoInfo.dateLastRecordingUpdate,
+      dateFinish: videoInfo.dateFinish,
+      fileName: videoInfo.fileName,
+      vWidth: videoInfo.vWidth,
+      vHeight: videoInfo.vHeight,
+      hash: hash,
+      thumbnail: videoInfo.thumbnail,
+      url: '',
+      isProcessed: false,
+    }
+  })
+
   const videos = await Promise.all(videoFilesOperations)
   const logFiles = await Promise.all(logFileOperations)
-  availableVideos.value = videos
+  const unprocessedVideosData = await Promise.all(unprocessedVideoOperations)
+
+  availableVideos.value = [...videos, ...unprocessedVideosData]
   availableLogFiles.value = logFiles
 
-  if (availableVideos.value.length > 0) {
-    selectedVideos.value = [availableVideos.value[0]]
-  }
   loadingData.value = false
 }
 
+watch(
+  () => videoStore.currentFileProgress,
+  (newCurrentProgress) => {
+    currentVideoProcessingProgress.value = newCurrentProgress
+  },
+  { deep: true }
+)
+
+watch(
+  () => videoStore.overallProgress,
+  (newOverallProgress) => {
+    overallProcessingProgress.value = newOverallProgress
+    if (newOverallProgress > 0 && newOverallProgress < 100) {
+      isProcessingVideos.value = true
+      showOnScreenProgress.value = true
+    }
+    if (newOverallProgress === 100) {
+      isProcessingVideos.value = false
+      showOnScreenProgress.value = false
+      setTimeout(() => {
+        showProgressInteractionDialog.value = false
+      }, 1000)
+    }
+  }
+)
+
 watch(isVisible, (newValue) => {
   emits('update:openModal', newValue)
+  if (!newValue) {
+    resetProgressBars()
+    isMultipleSelectionMode.value = false
+    lastSelectedVideo.value = null
+    showOnScreenProgress.value = false
+  }
 })
 
 watch(
@@ -444,7 +862,8 @@ watch(
   async (newVal) => {
     isVisible.value = newVal
     if (newVal === true) {
-      await fetchVideoAndLogsData()
+      await fetchVideosAndLogData()
+      showOnScreenProgress.value = false
     }
   }
 )
@@ -453,7 +872,10 @@ watch(
   selectedVideos,
   (newVal) => {
     if (newVal.length === 1) {
-      isMultipleSelectionMode.value = false
+      if (errorProcessingVideos.value) {
+        resetProgressBars()
+      }
+      lastSelectedVideo.value = newVal[0]
       const videoSrc = newVal[0].url
       const videoPlayer = videoPlayerRef.value
       if (videoPlayer) {
@@ -465,28 +887,51 @@ watch(
   { immediate: true, deep: true }
 )
 
+// Keep last processed video selected after refresh
+watch(
+  availableVideos,
+  () => {
+    if (lastSelectedVideo.value) {
+      const matchedVideo = availableVideos.value.find(
+        (v) => parseDateFromTitle(v.fileName) === parseDateFromTitle(lastSelectedVideo.value!.fileName)
+      )
+      if (matchedVideo) {
+        selectedVideos.value = [matchedVideo]
+      }
+    } else {
+      selectedVideos.value = availableVideos.value.length > 0 ? [availableVideos.value[0]] : []
+    }
+  },
+  { deep: true }
+)
+
+watch(isVisible, () => {
+  if (isVisible.value) return
+  lastSelectedVideo.value = null
+})
+
 // Gestures library (hammer.js) for video selection
 watch(
   availableVideos,
   async () => {
     await nextTick()
     availableVideos.value.forEach((video) => {
-      const videoElement = document.getElementById(`video-library-${video.filename}`)
+      const videoElement = document.getElementById(`video-library-${video.fileName}`)
       if (videoElement) {
-        hammerInstances.value[video.filename]?.destroy()
+        hammerInstances.value[video.fileName]?.destroy()
 
         const hammerManager = new Hammer.Manager(videoElement)
         hammerManager.add(new Hammer.Tap())
         hammerManager.add(new Hammer.Press({ time: 500 }))
 
         hammerManager.on('tap', (ev) => {
-          const isAlreadySelected = selectedVideos.value.some((v) => v.filename === video.filename)
+          const isAlreadySelected = selectedVideos.value.some((v) => v.fileName === video.fileName)
           const shouldToggleSelection = isMultipleSelectionMode.value || ev.srcEvent.ctrlKey || ev.srcEvent.metaKey
 
           if (shouldToggleSelection) {
             isMultipleSelectionMode.value = true
 
-            const index = selectedVideos.value.findIndex((v) => v.filename === video.filename)
+            const index = selectedVideos.value.findIndex((v) => v.fileName === video.fileName)
             if (index > -1) {
               if (selectedVideos.value.length > 1) {
                 selectedVideos.value.splice(index, 1)
@@ -509,29 +954,21 @@ watch(
 
         hammerManager.on('press', () => {
           isMultipleSelectionMode.value = true
-          if (!selectedVideos.value.some((v) => v.filename === video.filename)) {
+          if (!selectedVideos.value.some((v) => v.fileName === video.fileName)) {
             selectedVideos.value.push(video)
           }
         })
 
-        hammerInstances.value[video.filename] = hammerManager
+        hammerInstances.value[video.fileName] = hammerManager
       }
     })
   },
   { immediate: true, deep: true }
 )
 
-onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown)
-})
-
 onMounted(async () => {
   loadingData.value = true
-  await fetchVideoAndLogsData()
+  await fetchVideosAndLogData()
 })
 
 onBeforeUnmount(() => {
@@ -570,7 +1007,7 @@ onBeforeUnmount(() => {
   border: 1px solid #cbcbcb33;
   border-radius: 12px;
   background-color: #4f4f4f33;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(15px);
   box-shadow: 0px 4px 4px 0px #0000004c, 0px 8px 12px 6px #00000026;
   z-index: 100;
 }
@@ -601,7 +1038,7 @@ onBeforeUnmount(() => {
 .video-card {
   border: 1px solid #cbcbcb44;
   color: white;
-  background: rgba(203, 203, 203, 0.2);
+  background-color: #80808085;
   width: 190px;
   height: 80px;
   display: flex;
@@ -609,10 +1046,17 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
+.video-card-dot {
+  position: absolute;
+  bottom: 0;
+  right: 5px;
+}
+
 .frosted-button {
   display: flex;
   justify-content: center;
   align-items: center;
+  /* background-color: #4f4f4f88; */
   background: rgba(203, 203, 203, 0.3);
   box-shadow: -1px -1px 1px rgba(255, 255, 255, 0.3), 1px 1px 2px rgba(0, 0, 0, 0.15);
   transition: background-color 0.2s ease;
@@ -657,6 +1101,32 @@ onBeforeUnmount(() => {
   transition-duration: 0.4s;
 }
 
+.process-button {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #4f4f4fee;
+  top: 40%;
+  left: 60%;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.processing-bar {
+  position: relative;
+  height: 0px;
+  width: 632px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  bottom: 365px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.9;
+}
+
 .checkmark-button {
   position: absolute;
   display: flex;
@@ -668,8 +1138,7 @@ onBeforeUnmount(() => {
   top: 15px;
   left: 15px;
   transform: translate(-50%, -50%);
-  background: green;
-  border: none;
+  border: 1px solid black;
   cursor: pointer;
   opacity: 1;
 }
