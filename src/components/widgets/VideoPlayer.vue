@@ -25,7 +25,7 @@
     <div v-else class="no-video-alert">
       <p>Loading stream...</p>
     </div>
-    <video ref="videoElement" muted autoplay playsinline disablePictureInPicture>
+    <video id="mainDisplayStream" ref="videoElement" muted autoplay playsinline disablePictureInPicture>
       Your browser does not support the video tag.
     </video>
   </div>

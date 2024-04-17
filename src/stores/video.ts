@@ -143,6 +143,59 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Extracts a thumbnail from the first frame of a video.
+   * @param videoUrl The URL of the video from which to extract the thumbnail.
+   * @returns A promise that resolves with the base64-encoded image data of the thumbnail.
+   */
+  const extractThumbnailFromVideo = async (videoUrl: string): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
+      fetch(videoUrl)
+        .then((response) => response.blob())
+        .then((videoBlob) => {
+          const videoObjectUrl = URL.createObjectURL(videoBlob)
+          const video = document.createElement('video')
+
+          let seekResolve: (() => void) | null = null
+          video.addEventListener('seeked', function () {
+            if (seekResolve) seekResolve()
+          })
+
+          video.addEventListener('error', () => {
+            URL.revokeObjectURL(videoObjectUrl)
+            reject('Error loading video')
+          })
+
+          video.src = videoObjectUrl
+
+          video.addEventListener('loadedmetadata', () => {
+            const canvas = document.createElement('canvas')
+            const context = canvas.getContext('2d')
+            if (!context) {
+              URL.revokeObjectURL(videoObjectUrl)
+              reject('2D context not available.')
+              return
+            }
+
+            const [width, height] = [660, 370]
+            canvas.width = width
+            canvas.height = height
+
+            video.currentTime = 0
+            seekResolve = () => {
+              context.drawImage(video, 0, 0, width, height)
+              const base64ImageData = canvas.toDataURL('image/jpeg', 0.6)
+              resolve(base64ImageData)
+              URL.revokeObjectURL(videoObjectUrl)
+            }
+          })
+        })
+        .catch((error) => {
+          reject('Failed to fetch video: ' + error)
+        })
+    })
+  }
+
+  /**
    * Start recording the stream
    * @param {string} streamName - Name of the stream
    */
@@ -195,6 +248,7 @@ export const useVideoStore = defineStore('video', () => {
       fileName,
       vWidth,
       vHeight,
+      thumbnail: '',
     }
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
@@ -210,6 +264,19 @@ export const useVideoStore = defineStore('video', () => {
       const updatedInfo = unprocessedVideos.value[recordingHash]
       updatedInfo.dateLastRecordingUpdate = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
+
+      // Gets the thumbnail from the first chunk
+      if (chunksCount === 0) {
+        const videoChunk = await tempVideoChunksDB.getItem(chunkName)
+        if (videoChunk) {
+          const blob = videoChunk as Blob
+          const thumbnailBlob = new Blob([blob], { type: 'video/webm;codecs=vp9' })
+          const thumbnailUrl = URL.createObjectURL(thumbnailBlob)
+          const thumbnail = await extractThumbnailFromVideo(thumbnailUrl)
+          updatedInfo.thumbnail = thumbnail
+          unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
+        }
+      }
     }
 
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
