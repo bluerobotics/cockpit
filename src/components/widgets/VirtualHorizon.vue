@@ -204,14 +204,22 @@ const renderCanvas = (): void => {
  * Deal with high frequency update and decrease cpu usage when drawing low degrees changes
  */
 
-const rollAngleDeg = ref(0)
-const pitchAngleDeg = ref(0)
+const rollAngleDeg = ref(0.01)
+const pitchAngleDeg = ref(0.01)
 
 let oldRoll: number | undefined = undefined
 let oldPitch: number | undefined = undefined
 watch(store.attitude, (attitude) => {
-  const rollDiff = Math.abs(degrees(attitude.roll - (oldRoll || 0)))
-  const pitchDiff = Math.abs(degrees(attitude.pitch - (oldPitch || 0)))
+  if (oldRoll === undefined || oldPitch === undefined) {
+    rollAngleDeg.value = degrees(store.attitude.roll)
+    pitchAngleDeg.value = degrees(store.attitude.pitch)
+    oldRoll = attitude.roll
+    oldPitch = attitude.pitch
+    return
+  }
+
+  const rollDiff = Math.abs(degrees(attitude.roll - oldRoll))
+  const pitchDiff = Math.abs(degrees(attitude.pitch - oldPitch))
 
   if (rollDiff > 0.1) {
     oldRoll = attitude.roll
@@ -249,6 +257,11 @@ watch(renderVariables, () => {
 onMounted(() => {
   if (canvasRef.value === undefined || canvasRef.value === null) return
   if (canvasContext.value === undefined) canvasContext.value = canvasRef.value.getContext('2d')
+
+  // Set initial values, since 0 or 360 degrees does not render
+  gsap.to(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
+  gsap.to(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })
+
   renderCanvas()
 })
 </script>
