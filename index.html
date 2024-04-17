@@ -23,6 +23,10 @@
             <button id="proceed-browser-overlay">Proceed Anyway</button>
         </div>
     </div>
+    <div id="underlying-fallback">
+        <p>It looks like something went wrong while loading Cockpit. Resetting the settings can solve the problem.</p>
+        <button id="clear-settings-btn">Reset Cockpit settings</button>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
     <link rel="stylesheet" href="/src/styles/global.css">
@@ -32,6 +36,8 @@
             const overlay = document.getElementById('browser-overlay')
             const content = document.getElementById('app')
             const proceedButton = document.getElementById('proceed-browser-overlay');
+            const underlyingFallback = document.getElementById('underlying-fallback');
+            const clearSettingsButton = document.getElementById('clear-settings-btn');
 
             const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
             const isEdge = /Edg/.test(navigator.userAgent)
@@ -45,6 +51,15 @@
                 overlay.style.display = 'none';
                 content.style.display = 'block';
             });
+
+            clearSettingsButton.addEventListener('click', function() {
+                localStorage.clear();
+                location.reload();
+            });
+
+            setTimeout(() => {
+                underlyingFallback.style.display = 'flex';
+            }, 1500);
         })
     </script>
 
@@ -79,6 +94,30 @@
             margin: 4px 2px;
             transition-duration: 0.4s;
             cursor: pointer;
+        }
+        #underlying-fallback {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #clear-settings-btn {
+            background-color: #0486aa;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 2rem;
+            cursor: pointer;
+            border-radius: 5px;
         }
     </style>
 </body>
