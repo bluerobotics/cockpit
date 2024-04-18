@@ -16,6 +16,10 @@ interface startStreamReturn {
    */
   mediaStream: Ref<MediaStream | undefined>
   /**
+   * Connection state
+   */
+  connected: Ref<boolean>
+  /**
    * Current status of the signalling
    */
   signallerStatus: Ref<string>
@@ -34,6 +38,7 @@ export class WebRTCManager {
   private mediaStream: Ref<MediaStream | undefined> = ref()
   public signallerStatus: Ref<string> = ref('waiting...')
   public streamStatus: Ref<string> = ref('waiting...')
+  private connected = ref(false)
   private consumerId: string | undefined
   private streamName: string | undefined
   private session: Session | undefined
@@ -119,6 +124,7 @@ export class WebRTCManager {
 
     return {
       mediaStream: this.mediaStream,
+      connected: this.connected,
       signallerStatus: this.signallerStatus,
       streamStatus: this.streamStatus,
     }
@@ -218,6 +224,13 @@ export class WebRTCManager {
   }
 
   /**
+   * Called when a peer is connected
+   */
+  private onPeerConnected(): void {
+    this.connected.value = true
+  }
+
+  /**
    *
    * @param {Stream} stream
    * @param {string} consumerId
@@ -309,6 +322,7 @@ export class WebRTCManager {
       this.rtcConfiguration,
       this.selectedICEIPs,
       (event: RTCTrackEvent): void => this.onTrackAdded(event),
+      (): void => this.onPeerConnected(),
       (availableICEIPs: string[]) => (this.availableICEIPs.value = availableICEIPs),
       (_sessionId, reason) => this.onSessionClosed(reason),
       (status: string): void => this.updateStreamStatus(status)

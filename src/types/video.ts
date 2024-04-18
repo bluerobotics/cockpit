@@ -18,6 +18,11 @@ export interface StreamData {
    */
   mediaStream: MediaStream | undefined
   /**
+   * Connection state of the stream
+   * Used to identify when to use the stream or not
+   */
+  connected: boolean
+  /**
    * MediaRecorder object for that stream
    */
   mediaRecorder: MediaRecorder | undefined

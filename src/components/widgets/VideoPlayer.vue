@@ -10,7 +10,7 @@
       <p>The selected stream is not available.</p>
       <p>Please check its source or select another stream.</p>
     </div>
-    <div v-else-if="mediaStream === undefined" class="no-video-alert">
+    <div v-else-if="!streamConnected" class="no-video-alert">
       <div class="no-video-alert">
         <p>
           <span class="text-xl font-bold">Server status: </span>
@@ -105,6 +105,7 @@ const widget = toRefs(props).widget
 const nameSelectedStream = ref<string | undefined>()
 const videoElement = ref<HTMLVideoElement | undefined>()
 const mediaStream = ref<MediaStream | undefined>()
+const streamConnected = ref(false)
 
 onBeforeMount(() => {
   // Set the default initial values that are not present in the widget options
@@ -137,6 +138,11 @@ const streamConnectionRoutine = setInterval(() => {
   // If the widget is not connected to the MediaStream, try to connect it
   if (!isEqual(updatedMediaStream, mediaStream.value)) {
     mediaStream.value = updatedMediaStream
+  }
+
+  const updatedStreamState = videoStore.getStreamData(widget.value.options.streamName)?.connected ?? false
+  if (updatedStreamState !== streamConnected.value) {
+    streamConnected.value = updatedStreamState
   }
 }, 1000)
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))

@@ -76,13 +76,15 @@ export const useVideoStore = defineStore('video', () => {
   const activateStream = (streamName: string): void => {
     const stream = ref()
     const webRtcManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
-    const { mediaStream } = webRtcManager.startStream(stream, allowedIceIps)
+    const { mediaStream, connected } = webRtcManager.startStream(stream, allowedIceIps)
     activeStreams.value[streamName] = {
       // @ts-ignore: This is actually not reactive
       stream: stream,
       webRtcManager: webRtcManager,
       // @ts-ignore: This is actually not reactive
       mediaStream: mediaStream,
+      // @ts-ignore: This is actually not reactive
+      connected: connected,
       mediaRecorder: undefined,
       timeRecordingStart: undefined,
     }

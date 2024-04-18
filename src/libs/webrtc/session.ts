@@ -6,6 +6,7 @@ type OnCloseCallback = (sessionId: string, reason: string) => void
 type OnTrackAddedCallback = (event: RTCTrackEvent) => void
 type onNewIceRemoteAddressCallback = (availableICEIPs: string[]) => void
 type OnStatusChangeCallback = (status: string) => void
+type OnPeerConnectedCallback = () => void
 
 /**
  * An abstraction for the Mavlink Camera Manager WebRTC Session
@@ -22,6 +23,7 @@ export class Session {
   private selectedICEIPs: string[]
   public rtcConfiguration: RTCConfiguration
   public onTrackAdded?: OnTrackAddedCallback
+  public onPeerConnected?: OnPeerConnectedCallback
   public onNewIceRemoteAddress?: onNewIceRemoteAddressCallback
   public onClose?: OnCloseCallback
   public onStatusChange?: OnStatusChangeCallback
@@ -35,7 +37,7 @@ export class Session {
    * @param {RTCConfiguration} rtcConfiguration - Configuration for the RTC connection, such as Turn and Stun servers
    * @param {string[]} selectedICEIPs - A whitelist for ICE IP addresses, ignored if empty
    * @param {OnTrackAddedCallback} onTrackAdded - An optional callback for when a track is added to this session
-   * @param {onNewIceRemoteAddressCallback} onNewIceRemoteAddress - An optional callback for when a new ICE candidate IP addres is available
+   * @param {OnPeerConnectedCallback} onPeerConnected - An optional callback for when the peer is connected
    * @param {onNewIceRemoteAddressCallback} onNewIceRemoteAddress - An optional callback for when a new ICE candidate IP addres is available
    * @param {OnCloseCallback} onClose - An optional callback for when this session closes
    * @param {OnStatusChangeCallback} onStatusChange - An optional callback for internal status change
@@ -48,6 +50,7 @@ export class Session {
     rtcConfiguration: RTCConfiguration,
     selectedICEIPs: string[] = [],
     onTrackAdded?: OnTrackAddedCallback,
+    onPeerConnected?: OnPeerConnectedCallback,
     onNewIceRemoteAddress?: onNewIceRemoteAddressCallback,
     onClose?: OnCloseCallback,
     onStatusChange?: OnStatusChangeCallback
@@ -56,6 +59,7 @@ export class Session {
     this.consumerId = consumerId
     this.stream = stream
     this.onTrackAdded = onTrackAdded
+    this.onPeerConnected = onPeerConnected
     this.onNewIceRemoteAddress = onNewIceRemoteAddress
     this.onClose = onClose
     this.onStatusChange = onStatusChange
@@ -281,6 +285,10 @@ export class Session {
     const msg = `RTCPeerConnection state changed to "${this.peerConnection.connectionState}"`
     console.debug('[WebRTC] [Session] ' + msg)
     this.onStatusChange?.(msg)
+
+    if (this.peerConnection.connectionState === 'connected') {
+      this.onPeerConnected?.()
+    }
 
     if (this.peerConnection.connectionState === 'failed') {
       this.onClose?.(this.id, 'PeerConnection failed')
