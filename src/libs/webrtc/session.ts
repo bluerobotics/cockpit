@@ -5,6 +5,7 @@ import type { Stream } from '@/libs/webrtc/signalling_protocol'
 type OnCloseCallback = (sessionId: string, reason: string) => void
 type OnTrackAddedCallback = (event: RTCTrackEvent) => void
 type onNewIceRemoteAddressCallback = (availableICEIPs: string[]) => void
+type OnStatusChangeCallback = (status: string) => void
 
 /**
  * An abstraction for the Mavlink Camera Manager WebRTC Session
@@ -23,6 +24,7 @@ export class Session {
   public onTrackAdded?: OnTrackAddedCallback
   public onNewIceRemoteAddress?: onNewIceRemoteAddressCallback
   public onClose?: OnCloseCallback
+  public onStatusChange?: OnStatusChangeCallback
 
   /**
    * Creates a new Session instance, connecting with a given Stream
@@ -34,7 +36,9 @@ export class Session {
    * @param {string[]} selectedICEIPs - A whitelist for ICE IP addresses, ignored if empty
    * @param {OnTrackAddedCallback} onTrackAdded - An optional callback for when a track is added to this session
    * @param {onNewIceRemoteAddressCallback} onNewIceRemoteAddress - An optional callback for when a new ICE candidate IP addres is available
+   * @param {onNewIceRemoteAddressCallback} onNewIceRemoteAddress - An optional callback for when a new ICE candidate IP addres is available
    * @param {OnCloseCallback} onClose - An optional callback for when this session closes
+   * @param {OnStatusChangeCallback} onStatusChange - An optional callback for internal status change
    */
   constructor(
     sessionId: string,
@@ -45,7 +49,8 @@ export class Session {
     selectedICEIPs: string[] = [],
     onTrackAdded?: OnTrackAddedCallback,
     onNewIceRemoteAddress?: onNewIceRemoteAddressCallback,
-    onClose?: OnCloseCallback
+    onClose?: OnCloseCallback,
+    onStatusChange?: OnStatusChangeCallback
   ) {
     this.id = sessionId
     this.consumerId = consumerId
@@ -53,6 +58,7 @@ export class Session {
     this.onTrackAdded = onTrackAdded
     this.onNewIceRemoteAddress = onNewIceRemoteAddress
     this.onClose = onClose
+    this.onStatusChange = onStatusChange
     this.status = ''
     this.signaller = signaller
     this.rtcConfiguration = rtcConfiguration
