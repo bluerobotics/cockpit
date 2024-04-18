@@ -310,7 +310,8 @@ export class WebRTCManager {
       this.selectedICEIPs,
       (event: RTCTrackEvent): void => this.onTrackAdded(event),
       (availableICEIPs: string[]) => (this.availableICEIPs.value = availableICEIPs),
-      (_sessionId, reason) => this.onSessionClosed(reason)
+      (_sessionId, reason) => this.onSessionClosed(reason),
+      (status: string): void => this.updateStreamStatus(status)
     )
 
     // Registers Session callback for the Signaller endSession parser
