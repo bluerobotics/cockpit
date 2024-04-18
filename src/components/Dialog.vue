@@ -35,13 +35,15 @@ onMounted(() => {
     // Close the dialog if the dialog (backdrop) or any element with the class 'action-button' was clicked
     show.value = false
   })
-  dialogRef.value.addEventListener(
-    'cancel',
-    (e: Event) => {
-      // In case ESC is pressed, prevents default HTML dialog behavior
-      show.value = false
-      e.preventDefault()
-      e.stopImmediatePropagation()
+  document.addEventListener(
+    'keydown',
+    (e: KeyboardEvent) => {
+      // In case ESC key was pressed blocks the event propagation to avoid default dialog 'cancel' event
+      if (show.value && e.key === 'Escape') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        show.value = false
+      }
     },
     { passive: false }
   )
