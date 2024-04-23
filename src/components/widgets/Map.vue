@@ -18,7 +18,7 @@
     </l-marker>
     <v-btn
       v-tooltip="Boolean(home) ? undefined : 'Home position is currently undefined'"
-      class="absolute left-0 m-3 bottom-12 bg-slate-50"
+      class="absolute left-0 m-3 bottom-button bg-slate-50"
       :class="!home ? 'active-events-on-disabled' : ''"
       :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
       elevation="2"
@@ -36,7 +36,7 @@
     </div>
     <v-btn
       v-tooltip="Boolean(vehiclePosition) ? undefined : 'Vehicle position is currently undefined'"
-      class="absolute m-3 bottom-12 left-10 bg-slate-50"
+      class="absolute m-3 bottom-button left-10 bg-slate-50"
       :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
       :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
       elevation="2"
@@ -48,7 +48,7 @@
       @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
     />
     <v-btn
-      class="absolute m-3 bottom-12 left-20 bg-slate-50"
+      class="absolute m-3 bottom-button left-20 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-download"
@@ -56,7 +56,7 @@
       @click.stop="downloadMissionFromVehicle"
     />
     <v-btn
-      class="absolute mb-3 ml-1 bottom-12 left-32 bg-slate-50"
+      class="absolute mb-3 ml-1 bottom-button left-32 bg-slate-50"
       elevation="2"
       style="z-index: 1002; border-radius: 0px"
       icon="mdi-play"
@@ -155,6 +155,7 @@ import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
@@ -393,6 +394,10 @@ const onMenuOptionSelect = (option: string): void => {
   // hide the context menu after an option is selected
   showContextMenu.value = false
 }
+
+// Dynamic styles
+const widgetStore = useWidgetManagerStore()
+const bottomButtonsDisplacement = computed(() => `${widgetStore.widgetBottomClearanceForVisibleArea(widget.value)}px`)
 </script>
 
 <style>
@@ -412,7 +417,7 @@ const onMenuOptionSelect = (option: string): void => {
   justify-content: center;
 }
 .leaflet-control-zoom {
-  transform: translateY(-30px);
+  bottom: v-bind('bottomButtonsDisplacement');
 }
 .context-menu {
   position: absolute;
@@ -442,5 +447,8 @@ const onMenuOptionSelect = (option: string): void => {
 }
 .active-events-on-disabled {
   pointer-events: all;
+}
+.bottom-button {
+  bottom: v-bind('bottomButtonsDisplacement');
 }
 </style>
