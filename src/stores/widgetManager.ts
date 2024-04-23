@@ -1,6 +1,6 @@
 import '@/libs/cosmos'
 
-import { useDebounceFn, useStorage } from '@vueuse/core'
+import { useDebounceFn, useStorage, useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
@@ -112,6 +112,18 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   const isWidgetVisible = (widget: Widget): boolean => {
     return document.visibilityState === 'visible' && viewFromWidget(widget).hash === currentView.value.hash
+  }
+
+  /**
+   * Gets whether or not the widget is on the active view
+   * @returns { number } The bottom clearance, in pixels, a widget should add on it's content to ensure they are not under the bottom bar
+   * @param { Widget } widget - Widget
+   */
+  const widgetBottomClearanceForVisibleArea = (widget: Widget): number => {
+    const { height: windowHeight } = useWindowSize()
+    const bottomEdgeHeightPixels = windowHeight.value * (1 - widget.position.y - widget.size.height)
+    if (bottomEdgeHeightPixels > currentBottomBarHeightPixels.value) return 0
+    return currentBottomBarHeightPixels.value - bottomEdgeHeightPixels
   }
 
   /**
@@ -613,6 +625,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     importProfilesFromVehicle,
     exportProfilesToVehicle,
     isWidgetVisible,
+    widgetBottomClearanceForVisibleArea,
     isRealMiniWidget,
     desiredTopBarHeightPixels,
     desiredBottomBarHeightPixels,
