@@ -105,28 +105,28 @@
             </div>
           </div>
           <AltitudeSlider />
+          <div class="bottom-container">
+            <SlideToConfirm />
+          </div>
           <Transition name="fade">
-            <div v-if="showBottomBarNow" class="bottom-container">
-              <SlideToConfirm />
-              <div class="bottom-bar">
-                <MiniWidgetContainer
-                  :container="widgetStore.currentView.miniWidgetContainers[0]"
-                  :allow-editing="widgetStore.editingMode"
-                  align="start"
-                />
-                <div />
-                <MiniWidgetContainer
-                  :container="widgetStore.currentView.miniWidgetContainers[1]"
-                  :allow-editing="widgetStore.editingMode"
-                  align="center"
-                />
-                <div />
-                <MiniWidgetContainer
-                  :container="widgetStore.currentView.miniWidgetContainers[2]"
-                  :allow-editing="widgetStore.editingMode"
-                  align="end"
-                />
-              </div>
+            <div v-if="showBottomBarNow" class="bottom-container bottom-bar">
+              <MiniWidgetContainer
+                :container="widgetStore.currentView.miniWidgetContainers[0]"
+                :allow-editing="widgetStore.editingMode"
+                align="start"
+              />
+              <div />
+              <MiniWidgetContainer
+                :container="widgetStore.currentView.miniWidgetContainers[1]"
+                :allow-editing="widgetStore.editingMode"
+                align="center"
+              />
+              <div />
+              <MiniWidgetContainer
+                :container="widgetStore.currentView.miniWidgetContainers[2]"
+                :allow-editing="widgetStore.editingMode"
+                align="end"
+              />
             </div>
           </Transition>
           <router-view />
@@ -320,7 +320,7 @@ body.hide-cursor {
 }
 .bottom-container {
   position: absolute;
-  bottom: 0;
+  bottom: v-bind('currentBottomBarHeightPixels');
   width: 100%;
   display: flex;
   flex-direction: column;
