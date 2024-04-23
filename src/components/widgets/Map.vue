@@ -16,49 +16,37 @@
         <div>coordinates: {{ clickedLocation }}</div>
       </l-tooltip>
     </l-marker>
-    <v-tooltip location="top center" text="Home position is currently undefined" :disabled="Boolean(home)">
-      <template #activator="{ props: tooltipProps }">
-        <v-btn
-          class="absolute left-0 m-3 bottom-12 bg-slate-50"
-          :class="!home ? 'active-events-on-disabled' : ''"
-          :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-          elevation="2"
-          style="z-index: 1002; border-radius: 0px"
-          icon="mdi-home-map-marker"
-          size="x-small"
-          v-bind="tooltipProps"
-          :disabled="!home"
-          @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-          @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-        />
-      </template>
-    </v-tooltip>
+    <v-btn
+      v-tooltip="Boolean(home) ? undefined : 'Home position is currently undefined'"
+      class="absolute left-0 m-3 bottom-12 bg-slate-50"
+      :class="!home ? 'active-events-on-disabled' : ''"
+      :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+      elevation="2"
+      style="z-index: 1002; border-radius: 0px"
+      icon="mdi-home-map-marker"
+      size="x-small"
+      :disabled="!home"
+      @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+      @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+    />
     <div v-if="showContextMenu" class="context-menu" :style="{ top: menuPosition.top, left: menuPosition.left }">
       <ul @click.stop="">
         <li @click="onMenuOptionSelect('goto')">GoTo</li>
       </ul>
     </div>
-    <v-tooltip
-      location="top center"
-      text="Vehicle position is currently undefined"
-      :disabled="Boolean(vehiclePosition)"
-    >
-      <template #activator="{ props: tooltipProps }">
-        <v-btn
-          class="absolute m-3 bottom-12 left-10 bg-slate-50"
-          :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
-          :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-          elevation="2"
-          style="z-index: 1002; border-radius: 0px"
-          icon="mdi-airplane-marker"
-          size="x-small"
-          v-bind="tooltipProps"
-          :disabled="!vehiclePosition"
-          @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-          @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-        />
-      </template>
-    </v-tooltip>
+    <v-btn
+      v-tooltip="Boolean(vehiclePosition) ? undefined : 'Vehicle position is currently undefined'"
+      class="absolute m-3 bottom-12 left-10 bg-slate-50"
+      :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
+      :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+      elevation="2"
+      style="z-index: 1002; border-radius: 0px"
+      icon="mdi-airplane-marker"
+      size="x-small"
+      :disabled="!vehiclePosition"
+      @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+      @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+    />
     <v-btn
       class="absolute m-3 bottom-12 left-20 bg-slate-50"
       elevation="2"
