@@ -34,6 +34,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const savedProfiles = useStorage<Profile[]>(savedProfilesKey, [])
   const currentViewIndex = useStorage('cockpit-current-view-index', 0)
   const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
+  const desiredTopBarHeightPixels = ref(48)
+  const desiredBottomBarHeightPixels = ref(48)
+
+  const currentTopBarHeightPixels = computed(() => {
+    return desiredTopBarHeightPixels.value
+  })
+
+  const currentBottomBarHeightPixels = computed(() => {
+    return currentView.value.showBottomBarOnBoot ? desiredBottomBarHeightPixels.value : 0
+  })
 
   const currentView = computed<View>({
     get() {
@@ -604,5 +614,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     exportProfilesToVehicle,
     isWidgetVisible,
     isRealMiniWidget,
+    desiredTopBarHeightPixels,
+    desiredBottomBarHeightPixels,
+    currentTopBarHeightPixels,
+    currentBottomBarHeightPixels,
   }
 })

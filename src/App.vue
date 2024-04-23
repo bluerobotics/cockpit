@@ -69,7 +69,7 @@
 
       <div ref="routerSection" class="router-view">
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
-          <div id="mainTopBar" class="z-[60] w-full h-12 bg-slate-600/50 absolute flex backdrop-blur-[2px]">
+          <div id="mainTopBar" class="z-[60] w-full bg-slate-600/50 absolute flex backdrop-blur-[2px] top-bar">
             <button
               class="flex items-center justify-center h-full aspect-square top-bar-hamburger"
               @click="openMainMenu()"
@@ -108,7 +108,7 @@
           <Transition name="fade">
             <div v-if="showBottomBarNow" class="bottom-container">
               <SlideToConfirm />
-              <div class="bottom-bar h-12">
+              <div class="bottom-bar">
                 <MiniWidgetContainer
                   :container="widgetStore.currentView.miniWidgetContainers[0]"
                   :allow-editing="widgetStore.editingMode"
@@ -271,6 +271,11 @@ onBeforeUnmount(() => unregisterActionCallback(bottomBarToggleCallbackId))
 
 // Start datalogging
 datalogger.startLogging()
+
+// Dynamic styles
+
+const currentTopBarHeightPixels = computed(() => `${widgetStore.currentTopBarHeightPixels}px`)
+const currentBottomBarHeightPixels = computed(() => `${widgetStore.currentBottomBarHeightPixels}px`)
 </script>
 
 <style>
@@ -328,6 +333,11 @@ body.hide-cursor {
   background: rgba(108, 117, 125, 0.5);
   display: flex;
   justify-content: space-between;
+  height: v-bind('currentBottomBarHeightPixels');
+}
+
+.top-bar {
+  height: v-bind('currentTopBarHeightPixels');
 }
 
 .top-bar-hamburger {
