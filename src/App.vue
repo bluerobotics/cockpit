@@ -69,7 +69,7 @@
 
       <div ref="routerSection" class="router-view">
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
-          <div id="mainTopBar" class="z-[60] w-full bg-slate-600/50 absolute flex backdrop-blur-[2px] top-bar">
+          <div id="mainTopBar" class="bar top-bar">
             <button
               class="flex items-center justify-center h-full aspect-square top-bar-hamburger"
               @click="openMainMenu()"
@@ -109,7 +109,7 @@
             <SlideToConfirm />
           </div>
           <Transition name="fade">
-            <div v-if="showBottomBarNow" class="bottom-container bottom-bar">
+            <div v-if="showBottomBarNow" class="bar bottom-bar">
               <MiniWidgetContainer
                 :container="widgetStore.currentView.miniWidgetContainers[0]"
                 :allow-editing="widgetStore.editingMode"
@@ -328,15 +328,23 @@ body.hide-cursor {
   z-index: 60; /* Adjust z-index as needed */
 }
 
-.bottom-bar {
+.bar {
   width: 100%;
   background: rgba(108, 117, 125, 0.5);
   display: flex;
   justify-content: space-between;
+  z-index: 60;
+  position: absolute;
+  @apply backdrop-blur-[2px];
+}
+
+.bottom-bar {
+  bottom: 0;
   height: v-bind('currentBottomBarHeightPixels');
 }
 
 .top-bar {
+  top: 0;
   height: v-bind('currentTopBarHeightPixels');
 }
 
