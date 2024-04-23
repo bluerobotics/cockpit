@@ -338,7 +338,7 @@ const menuPosition = reactive({ top: '0px', left: '0px' })
 
 // eslint-disable-next-line no-undef
 const onMapClick = (event: L.LeafletMouseEvent): void => {
-  console.log('Map click event:', event) // Log the event object
+  console.debug('Map click event:', event) // Log the event object
 
   // Check if event.latlng is defined and has the required properties
   if (event?.latlng?.lat != null && event?.latlng?.lng != null) {
@@ -358,7 +358,7 @@ const onMapClick = (event: L.LeafletMouseEvent): void => {
 }
 
 const onMenuOptionSelect = (option: string): void => {
-  console.log(`Option selected: ${option}`)
+  console.debug(`Map context menu option selected: ${option}.`)
 
   switch (option) {
     case 'goto':
