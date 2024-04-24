@@ -38,6 +38,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
   const desiredTopBarHeightPixels = ref(48)
   const desiredBottomBarHeightPixels = ref(48)
+  const visibleAreaMinClearancePixels = ref(20)
   const vehicleTypeProfileCorrespondency = useStorage<typeof defaultProfileVehicleCorrespondency>(
     'cockpit-default-vehicle-type-profiles',
     defaultProfileVehicleCorrespondency
@@ -665,6 +666,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     isRealMiniWidget,
     desiredTopBarHeightPixels,
     desiredBottomBarHeightPixels,
+    visibleAreaMinClearancePixels,
     currentTopBarHeightPixels,
     currentBottomBarHeightPixels,
   }
