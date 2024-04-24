@@ -164,8 +164,10 @@ import Fuse from 'fuse.js'
 import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch, watchEffect } from 'vue'
 
+import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 import { round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { type VeryGenericIndicatorPreset, veryGenericIndicatorPresets } from '@/types/genericIndicator'
 import type { MiniWidget } from '@/types/miniWidgets'
 
@@ -195,6 +197,7 @@ onBeforeMount(() => {
 })
 
 const store = useMainVehicleStore()
+const widgetStore = useWidgetManagerStore()
 
 const currentState = ref<unknown>(0)
 
@@ -210,18 +213,37 @@ const parsedState = computed(() => {
   return value.toFixed(0)
 })
 
-// prevent closing the configuration menu if no variable is selected
+const loggedMiniWidgets = ref(Array.from(CurrentlyLoggedVariables.getAllVariables()))
+const lastWidgetName = ref('')
+
+const updateLoggedMiniWidgets = (): void => {
+  loggedMiniWidgets.value = Array.from(CurrentlyLoggedVariables.getAllVariables())
+}
+
+// prevent closing the configuration menu if no variable and name are selected
 const closeDialog = async (): Promise<void> => {
-  const { variableName } = miniWidget.value.options
+  const { variableName, displayName } = miniWidget.value.options
   const { managerVars } = miniWidget.value
-  if (variableName === '') {
+  const normalize = (name: string): string => name.toLowerCase().trim()
+
+  if (variableName === '' || displayName === '') {
     await Swal.fire({
-      text: 'Please select a variable before closing the configuration menu.',
+      text: 'Please select a variable and name it before closing the configuration menu.',
       icon: 'error',
     })
     return
   }
-
+  if (loggedMiniWidgets.value.some((name) => normalize(name) === normalize(displayName))) {
+    await Swal.fire({
+      text: `This variable name is already being logged. Please rename it on The 'Custom' tab.`,
+      icon: 'info',
+    })
+    return
+  }
+  CurrentlyLoggedVariables.removeVariable(lastWidgetName.value)
+  CurrentlyLoggedVariables.addVariable(miniWidget.value.options.displayName)
+  lastWidgetName.value = miniWidget.value.options.displayName
+  updateLoggedMiniWidgets()
   managerVars.configMenuOpen = false
 }
 
@@ -234,6 +256,28 @@ const updateWidgetName = (): void => {
 const updateGenericVariablesNames = (): void => {
   allVariablesNames.value = Object.keys(store.genericVariables)
 }
+
+const logData = computed(() => ({
+  displayName: props.miniWidget.options.displayName,
+  variableValue: `${parsedState.value} ${props.miniWidget.options.variableUnit}`,
+  lastChanged: 0,
+  currentView: widgetStore.currentView.name,
+}))
+
+const logCurrentState = (): void => {
+  if (miniWidget.value.options.variableName) {
+    datalogger.registerVeryGenericData(logData.value)
+  }
+}
+
+watch(
+  finalValue,
+  () => {
+    logCurrentState()
+  },
+  { immediate: true }
+)
+
 watch(store.genericVariables, () => {
   updateVariableState()
   updateGenericVariablesNames()
@@ -251,6 +295,10 @@ onMounted(() => {
   updateVariableState()
   updateWidgetName()
   updateGenericVariablesNames()
+  if (miniWidget.value.options.displayName) {
+    CurrentlyLoggedVariables.addVariable(miniWidget.value.options.displayName)
+  }
+  lastWidgetName.value = miniWidget.value.options.displayName
 })
 
 const fuseOptions = { includeScore: true, ignoreLocation: true, threshold: 0.3 }
@@ -344,6 +392,7 @@ watchEffect(() => {
   font-size: 24px;
   border-radius: 8px;
 }
+
 .configModal {
   position: absolute;
   top: 50%;
