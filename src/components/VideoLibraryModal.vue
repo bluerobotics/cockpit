@@ -12,9 +12,9 @@
               class="flex flex-col justify-center align-center"
               @click="currentTab = button.name.toLowerCase()"
             >
-              <v-tooltip v-if="button.tooltip !== ''" open-delay="600" activator="parent" location="top">{{
-                button.tooltip
-              }}</v-tooltip>
+              <v-tooltip v-if="button.tooltip !== ''" open-delay="600" activator="parent" location="top">
+                {{ button.tooltip }}
+              </v-tooltip>
               <div
                 class="rounded-full mb-1 text-2xl"
                 :class="[
@@ -25,8 +25,9 @@
                 <v-icon
                   :size="currentTab === button.name.toLowerCase() ? 40 : 24"
                   :class="{ 'ml-1': button.name.toLowerCase() === 'videos' }"
-                  >{{ button.icon }}</v-icon
                 >
+                  {{ button.icon }}
+                </v-icon>
               </div>
               <div class="text-sm" :class="{ 'text-white/30': !button.enable }">
                 {{ button.name }}
@@ -48,7 +49,8 @@
                   arrow
                   content-class="border-[#ffffff55] border-2"
                   @click:outside="showHelpTooltip = false"
-                  ><div class="flex flex-col p-2 gap-y-2">
+                >
+                  <div class="flex flex-col p-2 gap-y-2">
                     <div>
                       <strong>Computer:</strong> Command+click, Ctrl+click or Long click to select multiple videos.
                     </div>
@@ -104,9 +106,9 @@
                     class="play-button"
                     @click="video.isProcessed ? playVideo() : processSingleVideo()"
                   >
-                    <v-icon size="40" class="text-white">{{
-                      video.isProcessed ? 'mdi-play-circle-outline' : 'mdi-progress-alert'
-                    }}</v-icon>
+                    <v-icon size="40" class="text-white">
+                      {{ video.isProcessed ? 'mdi-play-circle-outline' : 'mdi-progress-alert' }}
+                    </v-icon>
                   </div>
                   <div
                     v-if="isMultipleSelectionMode"
@@ -128,9 +130,13 @@
                     video.isProcessed ? 'Processed video' : 'Unprocessed video'
                   }}</v-tooltip>
                   {{ parseDateFromTitle(video.fileName) ?? 'Cockpit webm' }}
-                  <v-icon size="10" class="ml-1 mt-[3px]" :class="video.isProcessed ? 'text-green-500' : 'text-red-500'"
-                    >mdi-circle</v-icon
+                  <v-icon
+                    size="10"
+                    class="ml-1 mt-[3px]"
+                    :class="video.isProcessed ? 'text-green-500' : 'text-red-500'"
                   >
+                    mdi-circle
+                  </v-icon>
                 </div>
               </div>
             </div>
@@ -140,11 +146,11 @@
             >
               <div>
                 <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
-                  <v-tooltip open-delay="500" activator="parent" location="bottom"
-                    >Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files</v-tooltip
-                  >
-                  {{ isMultipleSelectionMode ? 'Single' : 'Multi' }}</v-btn
-                >
+                  <v-tooltip open-delay="500" activator="parent" location="bottom">
+                    Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
+                  </v-tooltip>
+                  {{ isMultipleSelectionMode ? 'Single' : 'Multi' }}
+                </v-btn>
               </div>
               <div>
                 <v-btn
@@ -153,11 +159,11 @@
                   class="mt-[5px]"
                   @click="selectedVideos.length === availableVideos.length ? deselectAllVideos() : selectAllVideos()"
                 >
-                  <v-tooltip open-delay="500" activator="parent" location="bottom"
-                    >Select {{ selectedVideos.length === availableVideos.length ? 'none' : 'all files' }}</v-tooltip
-                  >
-                  {{ selectedVideos.length === availableVideos.length ? 'None' : 'All' }}</v-btn
-                >
+                  <v-tooltip open-delay="500" activator="parent" location="bottom">
+                    Select {{ selectedVideos.length === availableVideos.length ? 'none' : 'all files' }}
+                  </v-tooltip>
+                  {{ selectedVideos.length === availableVideos.length ? 'None' : 'All' }}
+                </v-btn>
               </div>
               <div>
                 <v-btn
@@ -175,8 +181,8 @@
                         : 'Select all unprocessed videos'
                     }}
                   </v-tooltip>
-                  {{ selectedVideos.every((el) => !el.isProcessed) ? 'Select Process.' : 'select Unproc.' }}</v-btn
-                >
+                  {{ selectedVideos.every((el) => !el.isProcessed) ? 'Select Process.' : 'select Unproc.' }}
+                </v-btn>
               </div>
             </div>
           </div>
@@ -213,8 +219,9 @@
                 :disabled="showOnScreenProgress"
                 class="process-button"
                 @click="processSingleVideo"
-                >{{ showOnScreenProgress ? 'Processing...' : 'Process video' }}</v-btn
               >
+                {{ showOnScreenProgress ? 'Processing...' : 'Process video' }}
+              </v-btn>
               <div class="processing-bar">
                 <v-progress-linear
                   v-if="showOnScreenProgress && !showProgressInteractionDialog"
@@ -222,7 +229,7 @@
                   :color="errorProcessingVideos ? 'red' : 'green'"
                   height="8"
                   striped
-                ></v-progress-linear>
+                />
                 <div class="w-0">
                   <button
                     v-if="!loadingData && selectedVideos.length === 1 && showOnScreenProgress && errorProcessingVideos"
@@ -238,7 +245,8 @@
                       arrow
                       content-class="border-[#ffffff55] border-2"
                       @click:outside="showErrorTooltip = false"
-                      ><div class="flex flex-col p-2 gap-y-2">
+                    >
+                      <div class="flex flex-col p-2 gap-y-2">
                         <div>{{ snackbarMessage }}</div>
                       </div>
                     </v-tooltip>
@@ -258,9 +266,9 @@
                       <div class="text-sm">{{ parseDateFromTitle(selectedFile.fileName) }}</div>
                     </v-card-text>
                     <div class="video-card-dot">
-                      <v-icon size="10" :class="selectedFile.isProcessed ? 'text-green-500' : 'text-red-500'"
-                        >mdi-circle</v-icon
-                      >
+                      <v-icon size="10" :class="selectedFile.isProcessed ? 'text-green-500' : 'text-red-500'">
+                        mdi-circle
+                      </v-icon>
                     </div>
                   </div>
                 </v-card>
@@ -321,8 +329,9 @@
                             :size="button.size"
                             class="rounded-full border-[transparent]"
                             :style="{ borderWidth: `${button.size - 4}px` }"
-                            >{{ button.icon }}</v-icon
                           >
+                            {{ button.icon }}
+                          </v-icon>
                         </div>
                       </template>
                       <v-list class="bg-transparent" elevation="0">
@@ -374,13 +383,14 @@
     :title="interactionDialogTitle"
     :actions="interactionDialogActions"
     :max-width="600"
-    ><template #content>
-      <div class="flex flex-col text-center align-end mb-2">
+  >
+    <template #content>
+      <div class="flex flex-col mb-2 text-center align-end">
         Processing multiple videos may take a while, depending on the number of videos and their sizes. Cockpit will be
         usable during the process, but the performance may be affected and recording of new videos is disabled.
       </div>
-    </template></InteractionDialog
-  >
+    </template>
+  </InteractionDialog>
   <InteractionDialog
     :show-dialog="showProgressInteractionDialog"
     :title="progressInteractionDialogTitle"
