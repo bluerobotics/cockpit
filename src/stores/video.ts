@@ -243,7 +243,7 @@ export const useVideoStore = defineStore('video', () => {
       dateStart: streamData.timeRecordingStart!,
       dateLastRecordingUpdate: streamData.timeRecordingStart!,
       dateFinish: undefined,
-      dateLastProcessignUpdate: undefined,
+      dateLastProcessingUpdate: undefined,
       fileName,
       vWidth,
       vHeight,
@@ -406,7 +406,7 @@ export const useVideoStore = defineStore('video', () => {
 
   const updateLastProcessingUpdate = (recordingHash: string): void => {
     const info = unprocessedVideos.value[recordingHash]
-    info.dateLastProcessignUpdate = new Date()
+    info.dateLastProcessingUpdate = new Date()
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
   }
 
@@ -451,8 +451,8 @@ export const useVideoStore = defineStore('video', () => {
       }
       debouncedUpdateFileProgress(info.fileName, 1, 'Processing video.')
 
-      const dateStart = new Date(info.dateStart)
-      const dateFinish = new Date(info.dateFinish)
+      const dateStart = new Date(info.dateStart!)
+      const dateFinish = new Date(info.dateFinish!)
 
       debouncedUpdateFileProgress(info.fileName, 30, 'Grouping video chunks.')
       await tempVideoChunksDB.iterate((videoChunk, chunkName) => {
@@ -497,7 +497,7 @@ export const useVideoStore = defineStore('video', () => {
 
       debouncedUpdateFileProgress(info.fileName, 95, `Saving telemetry file.`)
       const videoTelemetryLog = datalogger.getSlice(telemetryLog, dateStart, dateFinish)
-      const assLog = datalogger.toAssOverlay(videoTelemetryLog, info.vWidth, info.vHeight, dateStart.getTime())
+      const assLog = datalogger.toAssOverlay(videoTelemetryLog, info.vWidth!, info.vHeight!, dateStart.getTime())
       const logBlob = new Blob([assLog], { type: 'text/plain' })
       videoStoringDB.setItem(`${info.fileName}.ass`, logBlob)
 
@@ -524,10 +524,10 @@ export const useVideoStore = defineStore('video', () => {
     return keysAllUnprocessedVideos.value.filter((recordingHash) => {
       const info = unprocessedVideos.value[recordingHash]
 
-      const secondsSinceLastRecordingUpdate = differenceInSeconds(dateNow, new Date(info.dateLastRecordingUpdate))
+      const secondsSinceLastRecordingUpdate = differenceInSeconds(dateNow, new Date(info.dateLastRecordingUpdate!))
       const recording = info.dateFinish === undefined && secondsSinceLastRecordingUpdate < 10
 
-      const dateLastProcessingUpdate = new Date(info.dateLastProcessignUpdate ?? 0)
+      const dateLastProcessingUpdate = new Date(info.dateLastProcessingUpdate ?? 0)
       const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, dateLastProcessingUpdate)
       const processing = info.dateFinish !== undefined && secondsSinceLastProcessingUpdate < 10
 
@@ -540,7 +540,7 @@ export const useVideoStore = defineStore('video', () => {
 
     return keysAllUnprocessedVideos.value.some((recordingHash) => {
       const info = unprocessedVideos.value[recordingHash]
-      const dateLastProcessingUpdate = new Date(info.dateLastProcessignUpdate ?? 0)
+      const dateLastProcessingUpdate = new Date(info.dateLastProcessingUpdate ?? 0)
       const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, dateLastProcessingUpdate)
       return info.dateFinish !== undefined && secondsSinceLastProcessingUpdate < 10
     })

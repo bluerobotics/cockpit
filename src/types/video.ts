@@ -27,72 +27,65 @@ export interface StreamData {
   timeRecordingStart: Date | undefined
 }
 
-export type UnprocessedVideoInfo = {
+/**
+ *
+ */
+export interface CommonVideoInfo {
+  /**
+   * The name of the file
+   */
+  fileName: string
   /**
    * The date the recording started
    */
-  dateStart: Date
+  dateStart?: Date
   /**
    * The last date in which the recording was updated.
    * This is updated as the recording goes on. If there's no update for a long time, it's an indication that the recording finished or failed.
    */
-  dateLastRecordingUpdate: Date
+  dateLastRecordingUpdate?: Date
   /**
    * This date is explicitly set when the recording finishes.
    * This is undefined while the recording is ongoing.
    * If there's no update on the 'dateLastRecordingUpdate' for a long time, and this is undefined, it's an indication that the recording failed.
    */
+  dateFinish?: Date
+  /**
+   *  The width of the video
+   */
+  vWidth?: number
+  /**
+   *  The height of the video
+   */
+  vHeight?: number
+  /**
+   *  Screen capture from first chunk of the video
+   */
+  thumbnail?: string
+}
+
+/* eslint-disable jsdoc/require-jsdoc  */
+export interface UnprocessedVideoInfo extends CommonVideoInfo {
   dateFinish: Date | undefined
   /**
    * The last date in which the processing was updated.
    * This is updated as the processing goes on. If there's no update for a long time and the processing didn't finish, it's an indication that the processing failed.
    * This is undefined when the processing didn't start yet.
    */
-  dateLastProcessignUpdate: Date | undefined
-  /**
-   * The name of the file
-   */
-  fileName: string
-  /**
-   *  The width of the video
-   */
-  vWidth: number
-  /**
-   *  The height of the video
-   */
-  vHeight: number
-  /**
-   *  Fist chunk of the video
-   */
-  thumbnail: string | undefined
+  dateLastProcessingUpdate: Date | undefined
 }
 
-/* eslint-disable jsdoc/require-jsdoc  */
-export type VideoLibraryFile = {
-  fileName: string
+export interface VideoLibraryFile extends CommonVideoInfo {
   size?: number
   url: string
-  dateStart?: Date
-  dateLastRecordingUpdate?: Date
-  dateFinish?: Date
-  vWidth?: number
-  vHeight?: number
   hash?: string
-  thumbnail?: string
   isProcessed: boolean
 }
 
-export type VideoLibraryLogFile = {
-  fileName: string
+export interface VideoLibraryLogFile extends CommonVideoInfo {
   size?: number
   url?: string
-  dateStart?: Date
-  dateLastRecordingUpdate?: Date
-  dateFinish?: Date
-  vWidth?: number
-  vHeight?: number
   hash?: string
-  thumbnail?: string
 }
 
 export interface VideoProgress {
