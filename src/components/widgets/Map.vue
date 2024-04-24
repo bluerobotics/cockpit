@@ -503,7 +503,9 @@ const executeMissionOnVehicle = (): void => {
 
 // Set dynamic styles for correct displacement of the bottom buttons when the widget is below the bottom bar
 const widgetStore = useWidgetManagerStore()
-const bottomButtonsDisplacement = computed(() => `${widgetStore.widgetBottomClearanceForVisibleArea(widget.value)}px`)
+const bottomButtonsDisplacement = computed(() => {
+  return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).bottom, 0)}px`
+})
 </script>
 
 <style>
