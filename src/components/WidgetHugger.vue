@@ -35,6 +35,7 @@ import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 import { constrain, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D } from '@/types/general'
 import type { Widget } from '@/types/widgets'
 
@@ -66,6 +67,7 @@ const props = withDefaults(defineProps<Props>(), {
   hideOverflow: false,
 })
 
+const widget = toRefs(props).widget
 const { size, position, managerVars } = toRefs(props.widget)
 const allowMoving = toRefs(props).allowMoving
 const allowResizing = toRefs(props).allowResizing
@@ -242,14 +244,35 @@ watch(allowMoving, (isAllowing, wasAllowing) => {
   }
 })
 
+const widgetStore = useWidgetManagerStore()
+const temporaryPosition = computed(() => {
+  let tempPos = { x: position.value.x, y: position.value.y }
+  const clearanceOffset = widgetStore.visibleAreaMinClearancePixels
+
+  const barClearances = widgetStore.widgetClearanceForVisibleArea(widget.value)
+
+  // If the widget is under both bars, dont touch it, as it could be full screened by purpose, and if we apply the rules below, it will keep jumping
+  if (barClearances.top < clearanceOffset && barClearances.bottom < clearanceOffset) return tempPos
+
+  // If the widget is partially under the top or bottom bar, move it so that it gets fully visible
+  if (barClearances.top < clearanceOffset) {
+    tempPos.y = (widgetStore.currentTopBarHeightPixels + clearanceOffset) / windowHeight.value
+  } else if (barClearances.bottom < clearanceOffset) {
+    const maxBottomEdgePosition = (widgetStore.currentBottomBarHeightPixels + clearanceOffset) / windowHeight.value
+    tempPos.y = 1 - maxBottomEdgePosition - size.value.height
+  }
+
+  return tempPos
+})
+
 const sizeStyle = computed(() => ({
   width: `${100 * size.value.width}%`,
   height: `${100 * size.value.height}%`,
 }))
 
 const positionStyle = computed(() => ({
-  left: `${100 * position.value.x}%`,
-  top: `${100 * position.value.y}%`,
+  left: `${100 * temporaryPosition.value.x}%`,
+  top: `${100 * temporaryPosition.value.y}%`,
 }))
 
 const overlayDisplayStyle = computed(() => {
