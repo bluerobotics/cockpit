@@ -1,11 +1,14 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Logs configuration</template>
+    <template #title>Logs configuration for {{ currentView }}</template>
     <template #content>
       <h1 class="text-lg font-bold text-slate-600">Variables to be show in the overlay subtitles log:</h1>
+      <span class="text-sm text-slate-400 w-[50%] text-center">
+        Available variables are independant for each view.
+      </span>
       <div class="flex w-[60%] flex-wrap">
         <v-checkbox
-          v-for="variable in DatalogVariable"
+          v-for="variable in loggedVariables.sort()"
           :key="variable"
           v-model="datalogger.selectedVariablesToShow.value"
           :label="variable"
@@ -33,11 +36,24 @@
 
 <script setup lang="ts">
 import { FwbInput, FwbRange } from 'flowbite-vue'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
-import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
+
+const widgetStore = useWidgetManagerStore()
+
+const loggedVariables = ref<string[]>([])
+
+const currentView = ref(widgetStore.currentView.name)
+
+const updateVariables = (): void => {
+  loggedVariables.value = Array.from(CurrentlyLoggedVariables.getAllVariables())
+}
+
+onMounted(updateVariables)
 
 const newFrequency = ref(1000 / datalogger.logInterval.value)
 
