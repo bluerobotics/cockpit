@@ -7,7 +7,7 @@ import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 
-import { widgetProfiles } from '@/assets/defaults'
+import { defaultWidgetManagerVars, widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import * as Words from '@/libs/funny-name/words'
@@ -378,16 +378,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       position: { x: 0.4, y: 0.32 },
       size: { width: 0.2, height: 0.36 },
       options: {},
-      managerVars: {
-        timesMounted: 0,
-        configMenuOpen: false,
-        allowMoving: true,
-        lastNonMaximizedX: 0.4,
-        lastNonMaximizedY: 0.32,
-        lastNonMaximizedWidth: 0.2,
-        lastNonMaximizedHeight: 0.36,
-        highlighted: false,
-      },
+      managerVars: { ...defaultWidgetManagerVars, ...{ allowMoving: true } },
     })
   }
 

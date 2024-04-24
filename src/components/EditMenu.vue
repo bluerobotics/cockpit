@@ -281,6 +281,7 @@ import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
 
+import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
 import { isHorizontalScroll } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { MiniWidgetType } from '@/types/miniWidgets'
@@ -313,11 +314,7 @@ const availableMiniWidgetTypes = computed(() =>
     name: widgetType,
     options: {},
     hash: uuid(),
-    managerVars: {
-      timesMounted: 0,
-      configMenuOpen: false,
-      highlighted: false,
-    },
+    managerVars: defaultMiniWidgetManagerVars,
   }))
 )
 

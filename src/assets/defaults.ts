@@ -1,7 +1,7 @@
 import { type MiniWidgetProfile, MiniWidgetType } from '@/types/miniWidgets'
 import { type Profile, WidgetType } from '@/types/widgets'
 
-const defaultWidgetManagerVars = {
+export const defaultWidgetManagerVars = {
   timesMounted: 0,
   configMenuOpen: false,
   allowMoving: false,
@@ -12,7 +12,7 @@ const defaultWidgetManagerVars = {
   highlighted: false,
 }
 
-const defaultMiniWidgetManagerVars = {
+export const defaultMiniWidgetManagerVars = {
   timesMounted: 0,
   configMenuOpen: false,
   highlighted: false,
