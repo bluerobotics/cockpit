@@ -122,14 +122,24 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Gets whether or not the widget is on the active view
-   * @returns { number } The bottom clearance, in pixels, a widget should add on it's content to ensure they are not under the bottom bar
+   * @returns { { top: number, bottom: number } } The top and bottom clearances, in pixels, a widget should add on it's content to ensure they are not under the top/bottom bar.
+   * Positive clearances mean the widget is already under the bar, while negative clearances mean the widget is that amount away from the bar.
    * @param { Widget } widget - Widget
    */
-  const widgetBottomClearanceForVisibleArea = (widget: Widget): number => {
+  // eslint-disable-next-line jsdoc/require-jsdoc
+  const widgetClearanceForVisibleArea = (widget: Widget): { top: number; bottom: number } => {
+    const clearances = { top: 0, bottom: 0 }
     const { height: windowHeight } = useWindowSize()
-    const bottomEdgeHeightPixels = windowHeight.value * (1 - widget.position.y - widget.size.height)
-    if (bottomEdgeHeightPixels > currentBottomBarHeightPixels.value) return 0
-    return currentBottomBarHeightPixels.value - bottomEdgeHeightPixels
+
+    const widgetTopEdgePixels = windowHeight.value * widget.position.y
+    const topBarStartPixels = currentTopBarHeightPixels.value
+    clearances.top = widgetTopEdgePixels - topBarStartPixels
+
+    const widgetBottomEdgePixels = windowHeight.value * (widget.position.y + widget.size.height)
+    const bottomBarStartPixels = windowHeight.value - currentBottomBarHeightPixels.value
+    clearances.bottom = bottomBarStartPixels - widgetBottomEdgePixels
+
+    return clearances
   }
 
   /**
@@ -651,7 +661,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     exportProfilesToVehicle,
     loadDefaultProfileForVehicle,
     isWidgetVisible,
-    widgetBottomClearanceForVisibleArea,
+    widgetClearanceForVisibleArea,
     isRealMiniWidget,
     desiredTopBarHeightPixels,
     desiredBottomBarHeightPixels,
