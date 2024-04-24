@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementBounding, useElementHover, useWindowSize } from '@vueuse/core'
+import { useElementHover, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 
 import { constrain, round } from '@/libs/utils'
@@ -212,7 +212,6 @@ onMounted(async () => {
   if (managerVars.value.timesMounted === 0) {
     resizeWidgetToMinimalSize()
   }
-  makeWidgetRespectWalls()
   managerVars.value.timesMounted += 1
 
   if (widgetResizeHandles.value) {
@@ -242,21 +241,6 @@ watch(allowMoving, (isAllowing, wasAllowing) => {
     outerWidgetRef.value?.style.setProperty('cursor', 'grab')
   }
 })
-
-const outerBounds = useElementBounding(outerWidgetRef)
-
-const makeWidgetRespectWalls = (): void => {
-  for (const bound of [outerBounds.left.value, outerBounds.right.value]) {
-    if (bound < 0 || bound > windowWidth.value) {
-      position.value.x = 1 - size.value.width
-    }
-  }
-  for (const bound of [outerBounds.top.value, outerBounds.bottom.value]) {
-    if (bound < 0 || bound > windowHeight.value) {
-      position.value.y = 1 - size.value.height
-    }
-  }
-}
 
 const sizeStyle = computed(() => ({
   width: `${100 * size.value.width}%`,
