@@ -45,21 +45,20 @@
             if (!isChrome && !isEdge) {
                 overlay.style.display = 'flex'
                 content.style.display = 'none'
+            } else {
+                underlyingFallback.style.display = 'flex';
             }
 
             proceedButton.addEventListener('click', function() {
                 overlay.style.display = 'none';
                 content.style.display = 'block';
+                underlyingFallback.style.display = 'flex';
             });
 
             clearSettingsButton.addEventListener('click', function() {
                 localStorage.clear();
                 location.reload();
             });
-
-            setTimeout(() => {
-                underlyingFallback.style.display = 'flex';
-            }, 1500);
         })
     </script>
 
