@@ -27,6 +27,43 @@ export enum DatalogVariable {
 const logDateFormat = 'LLL dd, yyyy'
 
 /**
+ * Data for VeryGenericIndicator variables
+ */
+type VeryGenericData = {
+  /**
+   * Display name of the variable
+   */
+  displayName: string
+  /**
+   * Value of the variable
+   */
+  variableValue: string
+  /**
+   * Linux epoch stating when this value was last changed
+   */
+  lastChanged?: number
+  /**
+   * Current view of the variable
+   */
+  currentView?: string
+}
+
+/**
+ * Extended data to also accept VeryGenericIndicator variables
+ */
+/* eslint-disable jsdoc/require-jsdoc  */
+export type ExtendedVariablesData = {
+  /**
+   * Display name of the VeryGenericVariable
+   */
+  [key: string]: {
+    value: string
+    lastChanged: number
+    currentView?: string
+  }
+}
+
+/**
  * State of a variable that can be displayed
  */
 export type VariablesData = {
@@ -60,7 +97,7 @@ export interface CockpitStandardLogPoint {
   /**
    * The actual vehicle data
    */
-  data: VariablesData
+  data: ExtendedVariablesData
 }
 
 /**
@@ -69,12 +106,70 @@ export interface CockpitStandardLogPoint {
 export type CockpitStandardLog = CockpitStandardLogPoint[]
 
 /**
+ * Class to manage the variables that are currently being logged
+ */
+export class CurrentlyLoggedVariables {
+  private static variables: Set<{ name: string; instances: number }> = new Set()
+  private static readonly defaultVariables = new Set<string>(Object.values(DatalogVariable))
+
+  static {
+    this.defaultVariables.forEach((variable) => this.variables.add({ name: variable, instances: 1 }))
+  }
+
+  /**
+   * Adds a new variable to the set if it's not already included, or increments its VGI instances count if it is.
+   * @param {string} name The name of the variable to add or update.
+   */
+  public static addVariable(name: string): void {
+    const existingVariable = Array.from(this.variables).find((variable) => variable.name === name)
+
+    if (existingVariable) {
+      this.variables.delete(existingVariable)
+      this.variables.add({ name: existingVariable.name, instances: existingVariable.instances + 1 })
+    } else {
+      this.variables.add({ name, instances: 1 })
+    }
+  }
+
+  /**
+   * Removes a variable from the set or decrements its VGI instances count if it has more than one.
+   * @param {string} name The name of the variable to remove.
+   */
+  public static removeVariable(name: string): void {
+    if (name) name = name.trim()
+    if (!this.defaultVariables.has(name)) {
+      const existingVariable = Array.from(this.variables).find((variable) => variable.name === name)
+
+      if (existingVariable) {
+        if (existingVariable.instances > 1) {
+          this.variables.delete(existingVariable) // Remove the old entry from the Set.
+          this.variables.add({ name: existingVariable.name, instances: existingVariable.instances - 1 })
+        } else {
+          this.variables.delete(existingVariable)
+        }
+      }
+    } else {
+      console.log(`Attempted to remove default variable: ${name}. Operation not allowed.`)
+    }
+  }
+
+  /**
+   * Retrieves all currently logged variables.
+   * @returns {Set<string>} A set of all variables.
+   */
+  public static getAllVariables(): string[] {
+    return Array.from(this.variables).map((variable) => variable.name)
+  }
+}
+
+/**
  * Manager logging vehicle data and others
  */
 class DataLogger {
   shouldBeLogging = false
   currentCockpitLog: CockpitStandardLog = []
   variablesBeingUsed: DatalogVariable[] = []
+  veryGenericIndicators: VeryGenericData[] = []
   selectedVariablesToShow = useStorage<DatalogVariable[]>('cockpit-datalogger-overlay-variables', [])
   logInterval = useStorage<number>('cockpit-datalogger-log-interval', 1000)
   cockpitLogsDB = localforage.createInstance({
@@ -109,7 +204,7 @@ class DataLogger {
       const timeNowObj = { lastChanged: timeNow.getTime() }
 
       /* eslint-disable vue/max-len, prettier/prettier, max-len */
-      const variablesData = {
+      let variablesData: ExtendedVariablesData = {
         [DatalogVariable.roll]: { value: `${degrees(vehicleStore.attitude.roll)?.toFixed(1)} °`, ...timeNowObj },
         [DatalogVariable.pitch]: { value: `${degrees(vehicleStore.attitude.pitch)?.toFixed(1)} °`, ...timeNowObj },
         [DatalogVariable.heading]: { value: `${degrees(vehicleStore.attitude.yaw)?.toFixed(1)} °`, ...timeNowObj },
@@ -123,12 +218,17 @@ class DataLogger {
         [DatalogVariable.longitude]: { value: `${vehicleStore.coordinates.longitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
       }
       /* eslint-enable vue/max-len, prettier/prettier, max-len */
+      const veryGenericData = this.collectVeryGenericData(timeNowObj)
+      variablesData = { ...variablesData, ...veryGenericData }
 
-      this.currentCockpitLog.push({
+      const logPoint: CockpitStandardLogPoint = {
         epoch: timeNow.getTime(),
         seconds: secondsNow,
         data: structuredClone(variablesData),
-      })
+      }
+
+      /* eslint-enable vue/max-len, prettier/prettier, max-len */
+      this.currentCockpitLog.push(logPoint)
 
       await this.cockpitLogsDB.setItem(fileName, this.currentCockpitLog)
 
@@ -138,6 +238,23 @@ class DataLogger {
     }
 
     logRoutine()
+  }
+
+  /**
+   * Collects data from VeryGenericIndicator miniWidgets
+   * @param {VeryGenericData} data
+   * @param {number} data.lastChanged
+   * @returns {ExtendedVariablesData}
+   */
+  collectVeryGenericData(data: { lastChanged: number }): ExtendedVariablesData {
+    const result: ExtendedVariablesData = {}
+    this.veryGenericIndicators.forEach((indicator) => {
+      result[indicator.displayName] = {
+        value: indicator.variableValue,
+        lastChanged: data.lastChanged,
+      }
+    })
+    return result
   }
 
   /**
@@ -194,6 +311,21 @@ class DataLogger {
   registerUsage(variable: DatalogVariable): void {
     if (this.variablesBeingUsed.includes(variable)) return
     this.variablesBeingUsed.push(variable)
+  }
+
+  /**
+   * Register or update a new VeryGenericIndicator
+   * @param {VeryGenericVariableData} data - Data from the VeryGenericIndicator
+   * @returns {void}
+   */
+  registerVeryGenericData(data: VeryGenericData): void {
+    const existingIndicator = this.veryGenericIndicators.find((ind) => ind.displayName === data.displayName)
+
+    if (existingIndicator) {
+      existingIndicator.variableValue = data.variableValue
+    } else {
+      this.veryGenericIndicators.push(data)
+    }
   }
 
   /**
