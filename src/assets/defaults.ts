@@ -633,12 +633,12 @@ export const widgetProfiles: Profile[] = [
             name: 'Map',
             component: WidgetType.Map,
             position: {
-              x: 0.0033820348554362,
-              y: 0.05677382905701067,
+              x: 0,
+              y: 0,
             },
             size: {
-              width: 0.9932359302891276,
-              height: 0.8901723440673667,
+              width: 1,
+              height: 1,
             },
             options: {
               showVehiclePath: true,
