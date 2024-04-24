@@ -66,7 +66,7 @@ const props = withDefaults(defineProps<Props>(), {
   hideOverflow: false,
 })
 
-const widget = toRefs(props).widget
+const { size, position, managerVars } = toRefs(props.widget)
 const allowMoving = toRefs(props).allowMoving
 const allowResizing = toRefs(props).allowResizing
 const outerWidgetRef = ref<HTMLElement | undefined>()
@@ -85,7 +85,7 @@ const hoveringWidgetOrOverlay = computed(() => hoveringOverlay.value || hovering
 
 // Put the widget into highlighted state when in edit-mode and hovering over it
 watch([hoveringWidgetOrOverlay, allowMoving], () => {
-  widget.value.managerVars.highlighted = hoveringWidgetOrOverlay.value && allowMoving.value
+  managerVars.value.highlighted = hoveringWidgetOrOverlay.value && allowMoving.value
 })
 
 const draggingWidget = ref(false)
@@ -103,7 +103,7 @@ const handleDragStart = (event: MouseEvent): void => {
   if (!allowMoving.value || isResizing.value || !outerWidgetRef.value) return
   draggingWidget.value = true
   initialMousePos.value = { x: event.clientX, y: event.clientY }
-  initialWidgetPos.value = widget.value.position
+  initialWidgetPos.value = position.value
   outerWidgetRef.value.style.cursor = 'grabbing'
   event.stopPropagation()
   event.preventDefault()
@@ -114,8 +114,8 @@ const handleResizeStart = (event: MouseEvent): void => {
   isResizing.value = true
   resizeHandle.value = event.target
   initialMousePos.value = { x: event.clientX, y: event.clientY }
-  initialWidgetPos.value = widget.value.position
-  initialWidgetSize.value = widget.value.size
+  initialWidgetPos.value = position.value
+  initialWidgetSize.value = size.value
   event.stopPropagation()
   event.preventDefault()
 }
@@ -126,9 +126,9 @@ const handleDrag = (event: MouseEvent): void => {
   const dx = (event.clientX - initialMousePos.value.x) / viewSize.value.width
   const dy = (event.clientY - initialMousePos.value.y) / viewSize.value.height
 
-  widget.value.position = {
-    x: constrain(initialWidgetPos.value.x + dx, 0, 1 - widget.value.size.width),
-    y: constrain(initialWidgetPos.value.y + dy, 0, 1 - widget.value.size.height),
+  position.value = {
+    x: constrain(initialWidgetPos.value.x + dx, 0, 1 - size.value.width),
+    y: constrain(initialWidgetPos.value.y + dy, 0, 1 - size.value.height),
   }
 }
 
@@ -171,11 +171,11 @@ const handleResize = (event: MouseEvent): void => {
     newHeight += dy
   }
 
-  widget.value.position = {
-    x: constrain(newLeft, 0, 1 - widget.value.size.width),
-    y: constrain(newTop, 0, 1 - widget.value.size.height),
+  position.value = {
+    x: constrain(newLeft, 0, 1 - size.value.width),
+    y: constrain(newTop, 0, 1 - size.value.height),
   }
-  widget.value.size = {
+  size.value = {
     width: constrain(newWidth, 0.01, 1),
     height: constrain(newHeight, 0.01, 1),
   }
@@ -197,11 +197,11 @@ const resizeWidgetToMinimalSize = (): void => {
   if (innerWidgetRef.value === undefined) return
   const { clientHeight, clientWidth, scrollWidth, scrollHeight } = innerWidgetRef.value
   if (scrollWidth > 1.05 * clientWidth) {
-    widget.value.size.width = (1.1 * scrollWidth) / windowWidth.value
+    size.value.width = (1.1 * scrollWidth) / windowWidth.value
     stillAutoResizing = true
   }
   if (scrollHeight > 1.05 * clientHeight) {
-    widget.value.size.height = (1.1 * scrollHeight) / windowHeight.value
+    size.value.height = (1.1 * scrollHeight) / windowHeight.value
     stillAutoResizing = true
   }
 
@@ -209,11 +209,11 @@ const resizeWidgetToMinimalSize = (): void => {
 }
 
 onMounted(async () => {
-  if (widget.value.managerVars.timesMounted === 0) {
+  if (managerVars.value.timesMounted === 0) {
     resizeWidgetToMinimalSize()
   }
   makeWidgetRespectWalls()
-  widget.value.managerVars.timesMounted += 1
+  managerVars.value.timesMounted += 1
 
   if (widgetResizeHandles.value) {
     for (let i = 0; i < widgetResizeHandles.value.length; i++) {
@@ -248,24 +248,24 @@ const outerBounds = useElementBounding(outerWidgetRef)
 const makeWidgetRespectWalls = (): void => {
   for (const bound of [outerBounds.left.value, outerBounds.right.value]) {
     if (bound < 0 || bound > windowWidth.value) {
-      widget.value.position.x = 1 - widget.value.size.width
+      position.value.x = 1 - size.value.width
     }
   }
   for (const bound of [outerBounds.top.value, outerBounds.bottom.value]) {
     if (bound < 0 || bound > windowHeight.value) {
-      widget.value.position.y = 1 - widget.value.size.height
+      position.value.y = 1 - size.value.height
     }
   }
 }
 
 const sizeStyle = computed(() => ({
-  width: `${100 * widget.value.size.width}%`,
-  height: `${100 * widget.value.size.height}%`,
+  width: `${100 * size.value.width}%`,
+  height: `${100 * size.value.height}%`,
 }))
 
 const positionStyle = computed(() => ({
-  left: `${100 * widget.value.position.x}%`,
-  top: `${100 * widget.value.position.y}%`,
+  left: `${100 * position.value.x}%`,
+  top: `${100 * position.value.y}%`,
 }))
 
 const overlayDisplayStyle = computed(() => {
@@ -288,7 +288,7 @@ const cursorStyle = computed(() => {
 
 const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
 
-const highlighted = computed(() => widget.value.managerVars.highlighted)
+const highlighted = computed(() => managerVars.value.highlighted)
 </script>
 
 <style>
