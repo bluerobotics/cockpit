@@ -3,8 +3,8 @@
     <div class="video-modal">
       <div class="modal-content">
         <!-- Left Vertical Menu -->
-        <div class="flex flex-col justify-between align-center py-3 px-5 h-full">
-          <div class="flex flex-col justify-between align-center gap-y-8 pt-2">
+        <div class="flex flex-col justify-between h-full px-5 py-3 align-center">
+          <div class="flex flex-col justify-between pt-2 align-center gap-y-8">
             <button
               v-for="button in menuButtons"
               :key="button.name"
@@ -16,7 +16,7 @@
                 {{ button.tooltip }}
               </v-tooltip>
               <div
-                class="rounded-full mb-1 text-2xl"
+                class="mb-1 text-2xl rounded-full"
                 :class="[
                   button.enable ? 'frosted-button' : 'frosted-button-disabled',
                   currentTab === button.name.toLowerCase() ? 'w-[58px] h-[58px]' : 'w-[40px] h-[40px]',
@@ -56,7 +56,7 @@
                     </div>
 
                     <div><strong>Mobile:</strong> Long press to select multiple videos.</div>
-                    <div class="flex flex-row gap-x-10 mt-4">
+                    <div class="flex flex-row mt-4 gap-x-10">
                       <div class="ml-[-8px]">
                         <v-icon size="10" class="text-green-500 ml-2 mb-[2px] mr-1">mdi-circle</v-icon> Processed video
                       </div>
@@ -85,8 +85,8 @@
             v-if="availableVideos.length > 0"
             class="flex flex-col justify-between align-center pt-8 px-2 w-[300px] h-[480px]"
           >
-            <div class="flex flex-col align-center h-full w-full overflow-auto px-4">
-              <div v-for="video in availableVideos" :key="video.fileName" class="video-container mb-4">
+            <div class="flex flex-col w-full h-full px-4 overflow-auto align-center">
+              <div v-for="video in availableVideos" :key="video.fileName" class="mb-4 video-container">
                 <div class="relative video-wrapper">
                   <video
                     :id="`video-library-${video.fileName}`"
@@ -125,7 +125,7 @@
                     </v-icon>
                   </div>
                 </div>
-                <div class="flex flex-row justify-center w-full text-xs overflow-hidden ml-1">
+                <div class="flex flex-row justify-center w-full ml-1 overflow-hidden text-xs">
                   <v-tooltip open-delay="500" activator="parent" location="top">{{
                     video.isProcessed ? 'Processed video' : 'Unprocessed video'
                   }}</v-tooltip>
@@ -278,10 +278,10 @@
             <!-- Video Action Buttons -->
             <div
               v-if="availableVideos.length > 0"
-              class="flex flex-row justify-between align-center w-full h-full px-8 overflow-hidden"
+              class="flex flex-row justify-between w-full h-full px-8 overflow-hidden align-center"
             >
-              <div class="flex flex-row justify-between align-center pl-2 gap-x-6">
-                <div class="cursor-default flex flex-row text-md">
+              <div class="flex flex-row justify-between pl-2 align-center gap-x-6">
+                <div class="flex flex-row cursor-default text-md">
                   {{
                     isMultipleSelectionMode
                       ? `Files selected: ${selectedVideos.length}`
@@ -304,7 +304,7 @@
                 <button
                   v-for="button in fileActionButtons"
                   :key="button.name"
-                  class="flex flex-col justify-center align-center ml-6"
+                  class="flex flex-col justify-center ml-6 align-center"
                   :disabled="!button.enable"
                   @click="!button.confirmAction && button.action()"
                 >
@@ -313,7 +313,7 @@
                       button.enable ? 'frosted-button' : 'frosted-button-disabled',
                       !button.confirmAction && 'p-2',
                     ]"
-                    class="frosted-button flex flex-col justify-center align-center button rounded-full mb-1"
+                    class="flex flex-col justify-center mb-1 rounded-full frosted-button align-center button"
                   >
                     <v-tooltip v-if="button.tooltip" open-delay="500" activator="parent" location="bottom">
                       {{ button.tooltip }}
@@ -321,7 +321,7 @@
                     <v-menu v-if="button.confirmAction" location="top" opacity="0">
                       <template #activator="{ props: buttonProps, isActive }">
                         <div
-                          class="flex justify-center items-center w-full h-full"
+                          class="flex items-center justify-center w-full h-full"
                           v-bind="buttonProps"
                           v-on="isActive"
                         >
@@ -363,7 +363,7 @@
           </div>
           <div
             v-if="availableVideos.length === 0"
-            class="flex flex-row justify-center text-center align-center text-xl w-full h-full"
+            class="flex flex-row justify-center w-full h-full text-xl text-center align-center"
           >
             {{ loadingData ? 'Loading' : 'No videos on storage' }}
           </div>
@@ -398,14 +398,14 @@
     :max-width="600"
   >
     <template #content>
-      <div v-if="!errorProcessingVideos" class="flex flex-col text-center align-center -mt-2">
+      <div v-if="!errorProcessingVideos" class="flex flex-col -mt-2 text-center align-center">
         <div class="flex flex-col justify-between h-[140px] w-full pb-3">
           <div v-if="currentVideoProcessingProgress.length > 0" class="flex flex-col justify-start">
-            <div class="text-sm text-center mb-3">
+            <div class="mb-3 text-sm text-center">
               File {{ currentVideoProcessingProgress.length }} of {{ numberOfFilesToProcess }}:
               {{ currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].message }}
             </div>
-            <div class="flex flex-row justify-between align-center w-full mb-2">
+            <div class="flex flex-row justify-between w-full mb-2 align-center">
               <div class="text-sm font-bold w-[450px] text-nowrap text-start text-ellipsis overflow-x-hidden">
                 {{ currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].fileName }}
               </div>
@@ -438,7 +438,7 @@
         </div>
       </div>
       <div v-if="errorProcessingVideos">
-        <div class="flex flex-col justify-center w-full pb-3 text-md text-center">
+        <div class="flex flex-col justify-center w-full pb-3 text-center text-md">
           {{
             `Error processing video file: ${
               currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].fileName
