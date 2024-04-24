@@ -17,15 +17,15 @@
 </head>
 
 <body>
-    <div id="browser-overlay">
-        <div id="browser-overlay-message">
+    <div id="non-app-main">
+        <div id="browser-overlay">
             <p>Please use Google Chrome or Microsoft Edge for the best experience on our website.</p>
             <button id="proceed-browser-overlay">Proceed Anyway</button>
         </div>
-    </div>
-    <div id="underlying-fallback">
-        <p>It looks like something went wrong while loading Cockpit. Resetting the settings can solve the problem.</p>
-        <button id="clear-settings-btn">Reset Cockpit settings</button>
+        <div id="underlying-fallback">
+            <p>It looks like something went wrong while loading Cockpit. Resetting the settings can solve the problem.</p>
+            <button id="clear-settings-btn">Reset Cockpit settings</button>
+        </div>
     </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
@@ -64,39 +64,11 @@
     </script>
 
     <style>
-        #browser-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-        }
-
-        #browser-overlay-message {
+        #non-app-main {
             color: #fff;
-            font-size: 20px;
-            text-align: center;
-        }
-
-        #browser-overlay-message button {
-            background-color: #525252;
-            border: none;
-            color: white;
-            padding: 5px 8px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            transition-duration: 0.4s;
-            cursor: pointer;
-        }
-        #underlying-fallback {
-            display: none;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
             position: absolute;
             top: 0;
             left: 0;
@@ -105,8 +77,32 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            font-size: 20px;
+            text-align: center;
         }
-        #clear-settings-btn {
+
+        #browser-overlay {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            border: #fff solid 1px;
+            border-radius: 5px;
+            margin: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        #underlying-fallback {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            border: #fff solid 1px;
+            border-radius: 5px;
+            margin: 1.5rem;
+            padding: 1.5rem;
+        }
+        #non-app-main button {
             background-color: #0486aa;
             border: none;
             color: white;
@@ -115,7 +111,7 @@
             text-decoration: none;
             display: inline-block;
             font-size: 16px;
-            margin: 2rem;
+            margin-top: 1.5rem;
             cursor: pointer;
             border-radius: 5px;
         }
