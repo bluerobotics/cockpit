@@ -16,6 +16,7 @@ import {
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
+import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
 import { isEqual, sequentialArray } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
@@ -409,7 +410,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const container: MiniWidgetContainer | undefined = miniWidgetContainersInCurrentView.value.find((cont) => {
       return cont.widgets.includes(miniWidget)
     })
-
     if (container === undefined) {
       Swal.fire({ icon: 'error', text: 'Mini-widget container not found.' })
       return
@@ -417,6 +417,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
     const index = container.widgets.indexOf(miniWidget)
     container.widgets.splice(index, 1)
+
+    // Remove miniWidget variable from the list of currently logged variables
+    CurrentlyLoggedVariables.removeVariable(miniWidget.options.displayName)
   }
 
   /**
