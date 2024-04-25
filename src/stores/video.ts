@@ -144,54 +144,47 @@ export const useVideoStore = defineStore('video', () => {
 
   /**
    * Extracts a thumbnail from the first frame of a video.
-   * @param {string} videoUrl - The URL of the video from which to extract the thumbnail.
+   * @param {Blob} firstChunkBlob
    * @returns {Promise<string>} A promise that resolves with the base64-encoded image data of the thumbnail.
    */
-  const extractThumbnailFromVideo = async (videoUrl: string): Promise<string> => {
+  const extractThumbnailFromVideo = async (firstChunkBlob: Blob): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
-      fetch(videoUrl)
-        .then((response) => response.blob())
-        .then((videoBlob) => {
-          const videoObjectUrl = URL.createObjectURL(videoBlob)
-          const video = document.createElement('video')
+      const videoObjectUrl = URL.createObjectURL(firstChunkBlob)
+      const video = document.createElement('video')
 
-          let seekResolve: (() => void) | null = null
-          video.addEventListener('seeked', function () {
-            if (seekResolve) seekResolve()
-          })
+      let seekResolve: (() => void) | null = null
+      video.addEventListener('seeked', function () {
+        if (seekResolve) seekResolve()
+      })
 
-          video.addEventListener('error', () => {
-            URL.revokeObjectURL(videoObjectUrl)
-            reject('Error loading video')
-          })
+      video.addEventListener('error', () => {
+        URL.revokeObjectURL(videoObjectUrl)
+        reject('Error loading video')
+      })
 
-          video.src = videoObjectUrl
+      video.src = videoObjectUrl
 
-          video.addEventListener('loadedmetadata', () => {
-            const canvas = document.createElement('canvas')
-            const context = canvas.getContext('2d')
-            if (!context) {
-              URL.revokeObjectURL(videoObjectUrl)
-              reject('2D context not available.')
-              return
-            }
+      video.addEventListener('loadedmetadata', () => {
+        const canvas = document.createElement('canvas')
+        const context = canvas.getContext('2d')
+        if (!context) {
+          URL.revokeObjectURL(videoObjectUrl)
+          reject('2D context not available.')
+          return
+        }
 
-            const [width, height] = [660, 370]
-            canvas.width = width
-            canvas.height = height
+        const [width, height] = [660, 370]
+        canvas.width = width
+        canvas.height = height
 
-            video.currentTime = 0
-            seekResolve = () => {
-              context.drawImage(video, 0, 0, width, height)
-              const base64ImageData = canvas.toDataURL('image/jpeg', 0.6)
-              resolve(base64ImageData)
-              URL.revokeObjectURL(videoObjectUrl)
-            }
-          })
-        })
-        .catch((error) => {
-          reject('Failed to fetch video: ' + error)
-        })
+        video.currentTime = 0
+        seekResolve = () => {
+          context.drawImage(video, 0, 0, width, height)
+          const base64ImageData = canvas.toDataURL('image/jpeg', 0.6)
+          resolve(base64ImageData)
+          URL.revokeObjectURL(videoObjectUrl)
+        }
+      })
     })
   }
 
@@ -267,14 +260,16 @@ export const useVideoStore = defineStore('video', () => {
 
       // Gets the thumbnail from the first chunk
       if (chunksCount === 0) {
-        const videoChunk = await tempVideoChunksDB.getItem(chunkName)
-        if (videoChunk) {
-          const blob = videoChunk as Blob
-          const thumbnailBlob = new Blob([blob], { type: 'video/webm;codecs=vp9' })
-          const thumbnailUrl = URL.createObjectURL(thumbnailBlob)
-          const thumbnail = await extractThumbnailFromVideo(thumbnailUrl)
-          updatedInfo.thumbnail = thumbnail
-          unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
+        try {
+          const videoChunk = await tempVideoChunksDB.getItem(chunkName)
+          if (videoChunk) {
+            const firstChunkBlob = new Blob([videoChunk as Blob], { type: 'video/webm;codecs=vp9' })
+            const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
+            updatedInfo.thumbnail = thumbnail
+            unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
+          }
+        } catch (error) {
+          console.error('Failed to extract thumbnail:', error)
         }
       }
     }
