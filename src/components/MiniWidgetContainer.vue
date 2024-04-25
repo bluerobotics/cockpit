@@ -16,6 +16,7 @@
       <div
         v-for="miniWidget in container.widgets"
         :key="miniWidget.hash"
+        :data-widget-hash="miniWidget.hash"
         class="rounded-md"
         :class="{ 'cursor-grab': allowEditing, 'bg-slate-400': miniWidget.managerVars.highlighted }"
         @mouseover="miniWidget.managerVars.highlighted = allowEditing"
@@ -44,7 +45,7 @@
             :animation="150"
             group="generalGroup"
             class="flex flex-wrap items-center justify-center w-full h-full gap-2"
-            @add="trashList = []"
+            @add="handleDeleteWidget"
           >
             <div v-for="miniWidget in trashList" :key="miniWidget.hash">
               <div class="pointer-events-none select-none">
@@ -64,7 +65,8 @@ import { ref, toRefs } from 'vue'
 import { computed } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
-import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
+import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
+import type { DraggableEvent, MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
 
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
 
@@ -115,4 +117,13 @@ const refreshWidgetsHashs = (): void => {
 const showWidgetTrashArea = ref(false)
 
 const trashList = ref<MiniWidget[]>([])
+
+const handleDeleteWidget = (event: DraggableEvent): void => {
+  const widgetData = container.value.widgets.find((w) => w.hash === event.item.dataset.widgetHash)
+  if (widgetData) {
+    // Remove miniWidget variableName from Logged variables list
+    CurrentlyLoggedVariables.removeVariable(widgetData.options.displayName)
+  }
+  trashList.value = []
+}
 </script>
