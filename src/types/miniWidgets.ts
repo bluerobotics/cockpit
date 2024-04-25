@@ -75,3 +75,10 @@ export type MiniWidgetProfile = {
    */
   name: string
 }
+
+export type DraggableEvent = {
+  /**
+   * The HTML item that is being dragged
+   */
+  item: HTMLElement
+}
