@@ -30,6 +30,7 @@ export const useVideoStore = defineStore('video', () => {
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
   const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips', [])
+  const allowedIceProtocols = useStorage<string[]>('cockpit-allowed-stream-protocols', [])
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
@@ -691,6 +692,7 @@ export const useVideoStore = defineStore('video', () => {
   return {
     availableIceIps,
     allowedIceIps,
+    allowedIceProtocols,
     namesAvailableStreams,
     videoStoringDB,
     tempVideoChunksDB,
