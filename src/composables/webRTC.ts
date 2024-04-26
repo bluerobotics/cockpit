@@ -44,6 +44,7 @@ export class WebRTCManager {
   private session: Session | undefined
   private rtcConfiguration: RTCConfiguration
   private selectedICEIPs: string[] = []
+  private selectedICEProtocols: string[] = []
 
   private hasEnded = false
   private signaller: Signaller
@@ -81,11 +82,17 @@ export class WebRTCManager {
   /**
    *
    * @param { Ref<Stream | undefined> } selectedStream - Stream to receive stream from
-   * @param { Ref<string[]> } selectedICEIPs
+   * @param { Ref<string[]> } selectedICEIPs - ICE IPs allowed to be used in the connection
+   * @param { Ref<string[]> } selectedICEProtocols - ICE protocols allowed to be used in the connection
    * @returns { startStreamReturn }
    */
-  public startStream(selectedStream: Ref<Stream | undefined>, selectedICEIPs: Ref<string[]>): startStreamReturn {
+  public startStream(
+    selectedStream: Ref<Stream | undefined>,
+    selectedICEIPs: Ref<string[]>,
+    selectedICEProtocols: Ref<string[]>
+  ): startStreamReturn {
     this.selectedICEIPs = selectedICEIPs.value
+    this.selectedICEProtocols = selectedICEProtocols.value
 
     watch(selectedStream, (newStream, oldStream) => {
       if (newStream?.id === oldStream?.id) {
@@ -112,6 +119,25 @@ export class WebRTCManager {
       console.debug('[WebRTC] ' + msg)
 
       this.selectedICEIPs = newIps
+
+      if (this.streamName !== undefined) {
+        this.stopSession(msg)
+      }
+
+      if (this.streamName !== undefined) {
+        this.startSession()
+      }
+    })
+
+    watch(selectedICEProtocols, (newProtocols, oldProtocols) => {
+      if (newProtocols === oldProtocols) {
+        return
+      }
+
+      const msg = `Selected Protocols changed from "${oldProtocols}" to "${newProtocols}".`
+      console.debug('[WebRTC] ' + msg)
+
+      this.selectedICEProtocols = newProtocols
 
       if (this.streamName !== undefined) {
         this.stopSession(msg)
@@ -321,6 +347,7 @@ export class WebRTCManager {
       this.signaller,
       this.rtcConfiguration,
       this.selectedICEIPs,
+      this.selectedICEProtocols,
       (event: RTCTrackEvent): void => this.onTrackAdded(event),
       (): void => this.onPeerConnected(),
       (availableICEIPs: string[]) => (this.availableICEIPs.value = availableICEIPs),
