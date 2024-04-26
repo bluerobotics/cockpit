@@ -21,6 +21,7 @@ export class Session {
   private peerConnection: RTCPeerConnection
   private availableICEIPs: string[]
   private selectedICEIPs: string[]
+  private selectedICEProtocols: string[]
   public rtcConfiguration: RTCConfiguration
   public onTrackAdded?: OnTrackAddedCallback
   public onPeerConnected?: OnPeerConnectedCallback
@@ -36,6 +37,7 @@ export class Session {
    * @param {Signaller} signaller - The Signaller instance for this Session to use
    * @param {RTCConfiguration} rtcConfiguration - Configuration for the RTC connection, such as Turn and Stun servers
    * @param {string[]} selectedICEIPs - A whitelist for ICE IP addresses, ignored if empty
+   * @param {string[]} selectedICEProtocols - A whitelist for protocols allowed, ignored if empty
    * @param {OnTrackAddedCallback} onTrackAdded - An optional callback for when a track is added to this session
    * @param {OnPeerConnectedCallback} onPeerConnected - An optional callback for when the peer is connected
    * @param {onNewIceRemoteAddressCallback} onNewIceRemoteAddress - An optional callback for when a new ICE candidate IP addres is available
@@ -49,6 +51,7 @@ export class Session {
     signaller: Signaller,
     rtcConfiguration: RTCConfiguration,
     selectedICEIPs: string[] = [],
+    selectedICEProtocols: string[] = [],
     onTrackAdded?: OnTrackAddedCallback,
     onPeerConnected?: OnPeerConnectedCallback,
     onNewIceRemoteAddress?: onNewIceRemoteAddressCallback,
@@ -69,6 +72,7 @@ export class Session {
     this.ended = false
     this.availableICEIPs = []
     this.selectedICEIPs = selectedICEIPs
+    this.selectedICEProtocols = selectedICEProtocols
 
     this.peerConnection = this.createRTCPeerConnection(rtcConfiguration)
 
@@ -205,8 +209,21 @@ export class Session {
       !this.selectedICEIPs.isEmpty() &&
       !this.selectedICEIPs.some((address) => candidate.candidate!.includes(address))
     ) {
-      this.onStatusChange?.(`Ignoring ICE candidate ${candidate.candidate}`)
-      console.debug(`[WebRTC] [Session] ICE candidate ignored: ${JSON.stringify(candidate, null, 4)}`)
+      this.onStatusChange?.(`Ignoring ICE candidate ${candidate.candidate} by IP filter`)
+      console.debug(`[WebRTC] [Session] ICE candidate ignored by IP filter: ${JSON.stringify(candidate, null, 4)}`)
+      return
+    }
+
+    if (
+      candidate.candidate &&
+      Array.isArray(this.selectedICEIPs) &&
+      !this.selectedICEProtocols.isEmpty() &&
+      !this.selectedICEProtocols.some((protocol) => candidate.candidate!.toLowerCase().includes(protocol))
+    ) {
+      this.onStatusChange?.(`Ignoring ICE candidate ${candidate.candidate} by Protocol filter`)
+      console.debug(
+        `[WebRTC] [Session] ICE candidate ignored by Protocol filter: ${JSON.stringify(candidate, null, 4)}`
+      )
       return
     }
 
