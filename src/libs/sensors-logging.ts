@@ -24,6 +24,8 @@ export enum DatalogVariable {
   longitude = 'Longitude',
 }
 
+const logDateFormat = 'LLL dd, yyyy'
+
 /**
  * State of a variable that can be displayed
  */
@@ -97,7 +99,7 @@ class DataLogger {
     const vehicleStore = useMainVehicleStore()
 
     const initialTime = new Date()
-    const fileName = `Cockpit (${format(initialTime, 'LLL dd, yyyy - HH꞉mm꞉ss O')}).clog`
+    const fileName = `Cockpit (${format(initialTime, `${logDateFormat} - HH꞉mm꞉ss O`)}).clog`
     this.currentCockpitLog = []
 
     const logRoutine = async (): Promise<void> => {
@@ -201,8 +203,12 @@ class DataLogger {
    */
   async findLogByInitialTime(datetime: Date): Promise<CockpitStandardLog | null> {
     const availableLogsKeys = await this.cockpitLogsDB.keys()
+    const logKeysFromLastDay = availableLogsKeys.filter((key) => {
+      const yesterday = new Date().setDate(new Date().getDate() - 1)
+      return key.includes(format(datetime, logDateFormat)) || key.includes(format(yesterday, logDateFormat))
+    })
 
-    for (const key of availableLogsKeys) {
+    for (const key of [...logKeysFromLastDay, ...availableLogsKeys]) {
       const log = await this.cockpitLogsDB.getItem(key)
 
       // Only consider logs that are actually logs (arrays with at least two elements with an epoch property)
