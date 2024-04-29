@@ -568,85 +568,95 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
+  const issueSelectedIpNotAvailableWarning = (): void => {
+    Swal.fire({
+      html: `
+        <p>Cockpit detected that you selected an IP on the video configuration page that is not available
+        on the video server. This will lead to no video being streamed. This can happen if you changed your
+        network or the IP of your vehicle.</p>
+        </br>
+        <p>To solve this problem, please:</p>
+        <ol>
+          <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
+          <li>2. Clear the selected IPs and select an available one from the list.</li>
+        </ol>
+      `,
+      icon: 'warning',
+      customClass: {
+        htmlContainer: 'text-left',
+      },
+    })
+  }
+
+  const issueNoIpSelectedWarning = (): void => {
+    Swal.fire({
+      html: `
+        <p>Cockpit detected more than one IP address being used to route the video streaming. This often
+        leads to video stuttering, especially if one of the IPs is from a non-wired connection.</p>
+        </br>
+        <p>To prevent issues and achieve an optimal streaming experience, please:</p>
+        <ol>
+          <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
+          <li>2. Select the IP address that should be used for the video streaming.</li>
+        </ol>
+      `,
+      icon: 'warning',
+      customClass: {
+        htmlContainer: 'text-left',
+      },
+    })
+  }
+
   // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
-  let noIpSelectedWarningTimeout: NodeJS.Timeout | undefined = undefined
-  let selectedIpNotAvailableWarningTimeout: NodeJS.Timeout | undefined = undefined
+  let noIpSelectedWarningIssued = false
+  let selectedIpNotAvailableWarningIssued = false
   const iceIpCheckInterval = setInterval(async (): Promise<void> => {
     // Pass if there are no available IPs yet
-    if (availableIceIps.value === undefined) return
+    if (availableIceIps.value.isEmpty()) return
 
-    // If the user has selected IPs, but none of them are available, warn about it, since no video will be streamed.
-    const availableSelectedIps = availableIceIps.value.filter((ip) => allowedIceIps.value.includes(ip))
-    if (!allowedIceIps.value.isEmpty() && availableSelectedIps.isEmpty()) {
-      // Only throw warning once
-      if (selectedIpNotAvailableWarningTimeout !== undefined) return
-
-      selectedIpNotAvailableWarningTimeout = setTimeout(() => {
+    if (!allowedIceIps.value.isEmpty()) {
+      // If the user has selected IPs, but none of them are available, warn about it, since no video will be streamed.
+      // Otherwise, if IPs are selected and available, clear the check routine.
+      const availableSelectedIps = availableIceIps.value.filter((ip) => allowedIceIps.value.includes(ip))
+      if (availableSelectedIps.isEmpty() && !selectedIpNotAvailableWarningIssued) {
         console.warn('Selected ICE IPs are not available. Warning user.')
-        Swal.fire({
-          html: `
-            <p>Cockpit detected that you selected an IP on the video configuration page that is not available
-            on the video server. This will lead to no video being streamed. This can happen if you changed your
-            network or the IP for your vehicle changed.</p>
-            </br>
-            <p>To solve this problem, please:</p>
-            <ol>
-              <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
-              <li>2. Clear the selected IPs and select an available one from the list.</li>
-            </ol>
-          `,
-          icon: 'warning',
-          customClass: {
-            htmlContainer: 'text-left',
-          },
-        })
-        return
-      }, 5000)
+        issueSelectedIpNotAvailableWarning()
+        selectedIpNotAvailableWarningIssued = true
+      }
+      clearInterval(iceIpCheckInterval)
     }
 
-    // If there's more than one IP candidate available, try getting information about them from BlueOS. If not
-    // available, send a warning an clear the check routine.
-    if (availableIceIps.value.length >= 1 && allowedIceIps.value.isEmpty()) {
+    // If the user has not selected any IPs and there's more than one IP candidate available, try getting information
+    // about them from BlueOS. If that fails, send a warning an clear the check routine.
+    if (allowedIceIps.value.isEmpty() && availableIceIps.value.length >= 1) {
+      // Try to select the IP automatically if it's a wired connection (based on BlueOS data).
       try {
         const ipsInfo = await getIpsInformationFromVehicle(globalAddress)
+        const newAllowedIps: string[] = []
         ipsInfo.forEach((ipInfo) => {
           const isIceIp = availableIceIps.value.includes(ipInfo.ipv4Address)
-          const alreadyAllowedIp = allowedIceIps.value.includes(ipInfo.ipv4Address)
+          const alreadyAllowedIp = [...allowedIceIps.value, ...newAllowedIps].includes(ipInfo.ipv4Address)
           if (ipInfo.interfaceType !== 'WIRED' || alreadyAllowedIp || !isIceIp) return
           console.info(`Adding the wired address '${ipInfo.ipv4Address}' to the list of allowed ICE IPs.`)
-          allowedIceIps.value.push(ipInfo.ipv4Address)
+          newAllowedIps.push(ipInfo.ipv4Address)
         })
+        allowedIceIps.value = newAllowedIps
+        if (!allowedIceIps.value.isEmpty()) {
+          Swal.fire({ text: 'Preferred video stream routes fetched from BlueOS.', icon: 'success', timer: 5000 })
+        }
       } catch (error) {
-        console.log(error)
+        console.error('Failed to get IP information from the vehicle:', error)
       }
 
-      // Only throw warning once
-      if (noIpSelectedWarningTimeout !== undefined) return
-      noIpSelectedWarningTimeout = setTimeout(() => {
-        // Check first if the user or the system has populated the allowed IPs list before sending the warn.
-        if (!allowedIceIps.value.isEmpty()) return
-
+      // If the system was still not able to populate the allowed IPs list yet, warn the user.
+      // Otherwise, clear the check routine.
+      if (allowedIceIps.value.isEmpty() && !noIpSelectedWarningIssued) {
         console.info('No ICE IPs selected for the allowed list. Warning user.')
-        Swal.fire({
-          html: `
-            <p>Cockpit detected more than one IP address being used to route the video streaming. This often
-            leads to video stuttering, especially if one of the IPs is from a non-wired connection.</p>
-            </br>
-            <p>To prevent issues and achieve an optimal streaming experience, please:</p>
-            <ol>
-              <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
-              <li>2. Select the IP address that should be used for the video streaming.</li>
-            </ol>
-          `,
-          icon: 'warning',
-          customClass: {
-            htmlContainer: 'text-left',
-          },
-        })
-        return
-      }, 5000)
+        issueNoIpSelectedWarning()
+        noIpSelectedWarningIssued = true
+      }
+      clearInterval(iceIpCheckInterval)
     }
-    clearInterval(iceIpCheckInterval)
   }, 5000)
 
   // Video recording actions
