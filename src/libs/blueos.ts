@@ -1,12 +1,14 @@
 import ky from 'ky'
 
+const defaultTimeout = 10000
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const getBagOfHoldingFromVehicle = async (
   vehicleAddress: string,
   bagName: string
 ): Promise<Record<string, any>> => {
   try {
-    return await ky.get(`http://${vehicleAddress}/bag/v1.0/get/${bagName}`, { timeout: 5000 }).json()
+    return await ky.get(`http://${vehicleAddress}/bag/v1.0/get/${bagName}`, { timeout: defaultTimeout }).json()
   } catch (error) {
     throw new Error(`Could not get bag of holdings for ${bagName}. ${error}`)
   }
@@ -34,7 +36,7 @@ export const setBagOfHoldingOnVehicle = async (
   bagData: Record<string, any> | any
 ): Promise<void> => {
   try {
-    await ky.post(`http://${vehicleAddress}/bag/v1.0/set/${bagName}`, { json: bagData, timeout: 5000 })
+    await ky.post(`http://${vehicleAddress}/bag/v1.0/set/${bagName}`, { json: bagData, timeout: defaultTimeout })
   } catch (error) {
     throw new Error(`Could not set bag of holdings for ${bagName}. ${error}`)
   }
@@ -76,7 +78,7 @@ type IpInfo = { ipv4Address: string; interfaceType: string }
 export const getIpsInformationFromVehicle = async (vehicleAddress: string): Promise<IpInfo[]> => {
   try {
     const url = `http://${vehicleAddress}/beacon/v1.0/services`
-    const rawIpsInfo: RawIpInfo[] = await ky.get(url, { timeout: 5000 }).json()
+    const rawIpsInfo: RawIpInfo[] = await ky.get(url, { timeout: defaultTimeout }).json()
     return rawIpsInfo
       .filter((ipInfo) => ipInfo['service_type'] === '_http')
       .map((ipInfo) => ({ ipv4Address: ipInfo.ip, interfaceType: ipInfo.interface_type }))
@@ -93,7 +95,7 @@ type RawM2rInfo = { version: number; service: RawM2rServiceInfo }
 export const getMavlink2RestVersion = async (vehicleAddress: string): Promise<string> => {
   try {
     const url = `http://${vehicleAddress}/mavlink2rest/info`
-    const m2rRawInfo: RawM2rInfo = await ky.get(url, { timeout: 5000 }).json()
+    const m2rRawInfo: RawM2rInfo = await ky.get(url, { timeout: defaultTimeout }).json()
     return m2rRawInfo.service.version
   } catch (error) {
     throw new Error(`Could not get Mavlink2Rest version. ${error}`)
@@ -107,7 +109,7 @@ type RawArdupilotFirmwareInfo = { version: string; type: string }
 export const getArdupilotVersion = async (vehicleAddress: string): Promise<string> => {
   try {
     const url = `http://${vehicleAddress}/ardupilot-manager/v1.0/firmware_info`
-    const ardupilotFirmwareRawInfo: RawArdupilotFirmwareInfo = await ky.get(url, { timeout: 5000 }).json()
+    const ardupilotFirmwareRawInfo: RawArdupilotFirmwareInfo = await ky.get(url, { timeout: defaultTimeout }).json()
     return ardupilotFirmwareRawInfo.version
   } catch (error) {
     throw new Error(`Could not get Ardupilot firmware version. ${error}`)
