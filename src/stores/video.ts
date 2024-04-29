@@ -569,21 +569,44 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   // Routine to make sure the user has chosen the allowed ICE candidate IPs, so the stream works as expected
-  let warningTimeout: NodeJS.Timeout | undefined = undefined
+  let noIpSelectedWarningTimeout: NodeJS.Timeout | undefined = undefined
+  let selectedIpNotAvailableWarningTimeout: NodeJS.Timeout | undefined = undefined
   const iceIpCheckInterval = setInterval(async (): Promise<void> => {
     // Pass if there are no available IPs yet
     if (availableIceIps.value === undefined) return
 
-    // Cancel the check if the user has already set the allowed ICE IPs
-    if (!allowedIceIps.value.isEmpty()) {
-      clearInterval(iceIpCheckInterval)
-      clearTimeout(warningTimeout)
-      return
+    // If the user has selected IPs, but none of them are available, warn about it, since no video will be streamed.
+    const availableSelectedIps = availableIceIps.value.filter((ip) => allowedIceIps.value.includes(ip))
+    if (!allowedIceIps.value.isEmpty() && availableSelectedIps.isEmpty()) {
+      // Only throw warning once
+      if (selectedIpNotAvailableWarningTimeout !== undefined) return
+
+      selectedIpNotAvailableWarningTimeout = setTimeout(() => {
+        console.warn('Selected ICE IPs are not available. Warning user.')
+        Swal.fire({
+          html: `
+            <p>Cockpit detected that you selected an IP on the video configuration page that is not available
+            on the video server. This will lead to no video being streamed. This can happen if you changed your
+            network or the IP for your vehicle changed.</p>
+            </br>
+            <p>To solve this problem, please:</p>
+            <ol>
+              <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
+              <li>2. Clear the selected IPs and select an available one from the list.</li>
+            </ol>
+          `,
+          icon: 'warning',
+          customClass: {
+            htmlContainer: 'text-left',
+          },
+        })
+        return
+      }, 5000)
     }
 
     // If there's more than one IP candidate available, try getting information about them from BlueOS. If not
     // available, send a warning an clear the check routine.
-    if (availableIceIps.value.length >= 1) {
+    if (availableIceIps.value.length >= 1 && allowedIceIps.value.isEmpty()) {
       try {
         const ipsInfo = await getIpsInformationFromVehicle(globalAddress)
         ipsInfo.forEach((ipInfo) => {
@@ -593,17 +616,16 @@ export const useVideoStore = defineStore('video', () => {
           console.info(`Adding the wired address '${ipInfo.ipv4Address}' to the list of allowed ICE IPs.`)
           allowedIceIps.value.push(ipInfo.ipv4Address)
         })
-        if (!allowedIceIps.value.isEmpty()) {
-          clearInterval(iceIpCheckInterval)
-          clearTimeout(warningTimeout)
-          return
-        }
       } catch (error) {
         console.log(error)
       }
 
-      if (warningTimeout) return
-      warningTimeout = setTimeout(() => {
+      // Only throw warning once
+      if (noIpSelectedWarningTimeout !== undefined) return
+      noIpSelectedWarningTimeout = setTimeout(() => {
+        // Check first if the user or the system has populated the allowed IPs list before sending the warn.
+        if (!allowedIceIps.value.isEmpty()) return
+
         console.info('No ICE IPs selected for the allowed list. Warning user.')
         Swal.fire({
           html: `
@@ -621,10 +643,10 @@ export const useVideoStore = defineStore('video', () => {
             htmlContainer: 'text-left',
           },
         })
-        clearInterval(iceIpCheckInterval)
         return
       }, 5000)
     }
+    clearInterval(iceIpCheckInterval)
   }, 5000)
 
   // Video recording actions
