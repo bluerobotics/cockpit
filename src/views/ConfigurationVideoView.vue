@@ -37,19 +37,19 @@
         />
       </div>
 
-      <div class="flex w-[30rem] flex-wrap">
-        <v-combobox
-          v-model="allowedIceProtocols"
-          multiple
-          :items="availableICEProtocols"
-          label="Allowed WebRTC protocols"
-          class="w-full my-3 uri-input"
-          variant="outlined"
-          chips
-          clearable
-          hint="Specific protocols allowed to be used for the WebRTC. Blank means any protocol will be supported."
-          persistent-hint
-        />
+      <p class="text-sm font-bold text-grey-darken-1 bg-grey-lighten-5">Allowed WebRTC protocols:</p>
+      <div class="flex items-center justify-start">
+        <div v-for="protocol in availableICEProtocols" :key="protocol" class="mx-2">
+          <v-checkbox
+            v-model="allowedIceProtocols"
+            :label="protocol.toUpperCase()"
+            :value="protocol"
+            :disabled="
+              allowedIceProtocols.length === 1 && allowedIceProtocols[0].toLowerCase() === protocol.toLowerCase()
+            "
+            class="text-sm"
+          />
+        </div>
       </div>
     </template>
   </BaseConfigurationView>
@@ -57,6 +57,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
 
 import { useVideoStore } from '@/stores/video'
 
@@ -69,5 +70,12 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const availableICEProtocols = ['udp', 'tcp']
 
 const videoStore = useVideoStore()
+
+onMounted(() => {
+  if (allowedIceProtocols.value.length === 0) {
+    allowedIceProtocols.value = availableICEProtocols
+  }
+})
+
 const { allowedIceIps, allowedIceProtocols, availableIceIps } = storeToRefs(videoStore)
 </script>
