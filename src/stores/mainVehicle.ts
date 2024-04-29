@@ -422,20 +422,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   }, 10)
 
-  const rtcConfiguration = computed(
-    () =>
-      ({
-        bundlePolicy: 'max-bundle',
-        iceServers: [
-          {
-            urls: `turn:${globalAddress.value}:3478`,
-            username: 'user',
-            credential: 'pwd',
-          },
-        ],
-        // eslint-disable-next-line no-undef
-      } as RTCConfiguration)
-  )
+  const rtcConfiguration = {
+    bundlePolicy: 'max-bundle',
+    iceServers: [],
+  } as RTCConfiguration
 
   return {
     arm,
