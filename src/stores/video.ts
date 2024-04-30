@@ -34,7 +34,6 @@ export const useVideoStore = defineStore('video', () => {
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
-  const videoRecoveryWarningAlreadyShown = useStorage('video-recovery-warning-already-shown', false)
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const timeNow = useTimestamp({ interval: 500 })
 
@@ -382,23 +381,6 @@ export const useVideoStore = defineStore('video', () => {
     storeName: 'cockpit-video-recovery-db',
     version: 1.0,
     description: 'Local backups of Cockpit video recordings to be retrieved in case of failure.',
-  })
-
-  videoStoringDB.length().then((len) => {
-    if (len === 0) return
-    if (videoRecoveryWarningAlreadyShown.value) return
-
-    Swal.fire({
-      title: 'Download of video recordings',
-      text: `Cockpit has video recordings waiting on the disk storage.
-        To download or discard those, please go to the video page, in the configuration menu.
-        Remember that those recordings are only available on the device you used to record the videos, and that
-        they take disk space. If you don't need them anymore, you can discard them.
-      `,
-      icon: 'warning',
-    })
-
-    videoRecoveryWarningAlreadyShown.value = true
   })
 
   const updateLastProcessingUpdate = (recordingHash: string): void => {
