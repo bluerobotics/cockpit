@@ -358,7 +358,7 @@ export const useControllerStore = defineStore('controller', () => {
   const loadDefaultProtocolMappingForVehicle = (vehicleType: MavType): void => {
     // @ts-ignore: We know that the value is a string
     const defaultMappingHash = vehicleTypeProtocolMappingCorrespondency.value[vehicleType]
-    const defaultProtocolMapping = cockpitStandardToProtocols.find((mapping) => mapping.hash === defaultMappingHash)
+    const defaultProtocolMapping = protocolMappings.value.find((mapping) => mapping.hash === defaultMappingHash)
     if (!defaultProtocolMapping) {
       throw new Error('Could not find default mapping for this vehicle.')
     }
