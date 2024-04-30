@@ -355,6 +355,14 @@ export const useControllerStore = defineStore('controller', () => {
     mapping.hash = correspondentDefault?.hash ?? uuid4()
   })
 
+  // Add default mappings that the user does not have
+  const updatedMappings = protocolMappings.value
+  cockpitStandardToProtocols.forEach((defMapping) => {
+    if (protocolMappings.value.find((mapping) => mapping.hash === defMapping.hash)) return
+    updatedMappings.push(defMapping)
+  })
+  protocolMappings.value = updatedMappings
+
   const loadDefaultProtocolMappingForVehicle = (vehicleType: MavType): void => {
     // @ts-ignore: We know that the value is a string
     const defaultMappingHash = vehicleTypeProtocolMappingCorrespondency.value[vehicleType]
