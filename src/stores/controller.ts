@@ -15,6 +15,7 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import { Alert, AlertLevel } from '@/types/alert'
 import {
   type GamepadToCockpitStdMapping,
   type JoystickProtocolActionsMapping,
@@ -26,6 +27,8 @@ import {
   JoystickButton,
   JoystickProtocol,
 } from '@/types/joystick'
+
+import { useAlertStore } from './alert'
 
 export type controllerUpdateCallback = (
   state: JoystickState,
@@ -39,6 +42,7 @@ const protocolMappingIndexKey = 'cockpit-protocol-mapping-index-v1'
 const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
 
 export const useControllerStore = defineStore('controller', () => {
+  const alertStore = useAlertStore()
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMappings = useStorage<JoystickProtocolActionsMapping[]>(protocolMappingsKey, cockpitStandardToProtocols)
@@ -74,8 +78,7 @@ export const useControllerStore = defineStore('controller', () => {
   const loadProtocolMapping = (mapping: JoystickProtocolActionsMapping): void => {
     const mappingIndex = protocolMappings.value.findIndex((p) => p.name === mapping.name)
     if (mappingIndex === -1) {
-      Swal.fire({ icon: 'error', text: 'Could not find mapping.', timer: 3000 })
-      return
+      throw new Error('Could not find mapping.')
     }
     protocolMappingIndex.value = mappingIndex
   }
@@ -360,7 +363,11 @@ export const useControllerStore = defineStore('controller', () => {
       throw new Error('Could not find default mapping for this vehicle.')
     }
 
-    loadProtocolMapping(defaultProtocolMapping)
+    try {
+      loadProtocolMapping(defaultProtocolMapping)
+    } catch (error) {
+      alertStore.pushAlert(new Alert(AlertLevel.Warning, 'Could not load default mapping for vehicle type.'))
+    }
   }
 
   return {
