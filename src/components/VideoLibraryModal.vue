@@ -201,7 +201,7 @@
                 :controls="selectedVideos[0].isProcessed ? true : false"
                 :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
                 :poster="selectedVideos[0]?.thumbnail || undefined"
-                class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px]"
+                class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
               >
                 <source :src="selectedVideos[0]?.url || undefined" type="video/webm" />
               </video>
