@@ -108,27 +108,30 @@
           <div class="bottom-container">
             <SlideToConfirm />
           </div>
-          <Transition name="fade">
-            <div v-if="showBottomBarNow" class="bar bottom-bar">
-              <MiniWidgetContainer
-                :container="widgetStore.currentView.miniWidgetContainers[0]"
-                :allow-editing="widgetStore.editingMode"
-                align="start"
-              />
-              <div />
-              <MiniWidgetContainer
-                :container="widgetStore.currentView.miniWidgetContainers[1]"
-                :allow-editing="widgetStore.editingMode"
-                align="center"
-              />
-              <div />
-              <MiniWidgetContainer
-                :container="widgetStore.currentView.miniWidgetContainers[2]"
-                :allow-editing="widgetStore.editingMode"
-                align="end"
-              />
-            </div>
-          </Transition>
+          <div v-for="(view, index) in widgetStore.viewsToShow" :key="view.name">
+            <Transition name="fade">
+              <!-- #TODO Fix viewsToSHow object reordering on view change. For now, this comparisson works fine, but it's a workaround to be fixed on issue #933 -->
+              <div v-show="index === 2" class="bar bottom-bar">
+                <MiniWidgetContainer
+                  :container="view.miniWidgetContainers[0]"
+                  :allow-editing="widgetStore.editingMode"
+                  align="start"
+                />
+                <div />
+                <MiniWidgetContainer
+                  :container="view.miniWidgetContainers[1]"
+                  :allow-editing="widgetStore.editingMode"
+                  align="center"
+                />
+                <div />
+                <MiniWidgetContainer
+                  :container="view.miniWidgetContainers[2]"
+                  :allow-editing="widgetStore.editingMode"
+                  align="end"
+                />
+              </div>
+            </Transition>
+          </div>
           <router-view />
         </div>
         <EditMenu v-model:edit-mode="widgetStore.editingMode" />
