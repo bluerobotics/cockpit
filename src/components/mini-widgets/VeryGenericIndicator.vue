@@ -224,19 +224,11 @@ const updateLoggedMiniWidgets = (): void => {
 const closeDialog = async (): Promise<void> => {
   const { variableName, displayName } = miniWidget.value.options
   const { managerVars } = miniWidget.value
-  const normalize = (name: string): string => name.toLowerCase().trim()
 
   if (variableName === '' || displayName === '') {
     await Swal.fire({
       text: 'Please select a variable and name it before closing the configuration menu.',
       icon: 'error',
-    })
-    return
-  }
-  if (loggedMiniWidgets.value.some((name) => normalize(name) === normalize(displayName))) {
-    await Swal.fire({
-      text: `This variable name is already being logged. Please rename it on The 'Custom' tab.`,
-      icon: 'info',
     })
     return
   }
@@ -273,7 +265,9 @@ const logCurrentState = (): void => {
 watch(
   finalValue,
   () => {
-    logCurrentState()
+    if (miniWidget.value.managerVars.configMenuOpen === false) {
+      logCurrentState()
+    }
   },
   { immediate: true }
 )
@@ -295,7 +289,8 @@ onMounted(() => {
   updateVariableState()
   updateWidgetName()
   updateGenericVariablesNames()
-  if (miniWidget.value.options.displayName) {
+
+  if (miniWidget.value.options.displayName && widgetStore.editingMode === false) {
     CurrentlyLoggedVariables.addVariable(miniWidget.value.options.displayName)
   }
   lastWidgetName.value = miniWidget.value.options.displayName
