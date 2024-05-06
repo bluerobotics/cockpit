@@ -34,6 +34,7 @@ import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
 
 import { useControllerStore } from './controller'
+import { useWidgetManagerStore } from './widgetManager'
 
 /**
  * This is an abstraction that holds a customizable parameter that can fallback to a default value
@@ -85,6 +86,7 @@ class CustomizableParameter<T> {
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const controllerStore = useControllerStore()
+  const widgetStore = useWidgetManagerStore()
   const ws_protocol = location?.protocol === 'https:' ? 'wss' : 'ws'
 
   const cpuLoad = ref<number>()
@@ -361,11 +363,19 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
       if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
         console.log('Vehicle type changed to', vehicleType.value)
+
         try {
           controllerStore.loadDefaultProtocolMappingForVehicle(vehicleType.value)
           console.info(`Loaded default joystick protocol mapping for vehicle type ${vehicleType.value}.`)
         } catch (error) {
           console.error(`Could not load default protocol mapping for vehicle type ${vehicleType.value}: ${error}`)
+        }
+
+        try {
+          widgetStore.loadDefaultProfileForVehicle(vehicleType.value)
+          console.info(`Loaded default profile for vehicle type ${vehicleType.value}.`)
+        } catch (error) {
+          console.error(`Could not load default profile for vehicle type ${vehicleType.value}: ${error}`)
         }
       }
     })
