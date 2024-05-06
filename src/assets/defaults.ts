@@ -4,7 +4,7 @@ import { type Profile, WidgetType } from '@/types/widgets'
 
 export const defaultRovProfileHash = 'c2bcf04d-048f-496f-9d78-fc4002608028'
 export const defaultBoatProfileHash = 'adb7d856-f2e5-4980-aaeb-c39c1fa3562b'
-export const defaultMavProfileHash = 'adb7d856-f2e5-4980-aaeb-c39c1fa3762b'
+export const defaultMavProfileHash = '2309ffda-896a-449d-a171-7b7fdf80bc95'
 
 export const defaultProfileVehicleCorrespondency = {
   [MavType.MAV_TYPE_SUBMARINE]: defaultRovProfileHash,
