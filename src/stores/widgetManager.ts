@@ -568,7 +568,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   // Profile migrations
   // TODO: remove on first stable release
   onBeforeMount(() => {
-    savedProfiles.value.forEach((p) =>
+    const alreadyUsedProfileHashes: string[] = []
+    savedProfiles.value.forEach((p) => {
+      if (alreadyUsedProfileHashes.includes(p.hash)) {
+        const newHash = uuid4()
+        p.hash = newHash
+      }
+      alreadyUsedProfileHashes.push(p.hash)
+
       p.views.forEach((v) => {
         v.showBottomBarOnBoot = v.showBottomBarOnBoot ?? true
         v.visible = v.visible ?? true
@@ -577,7 +584,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         v.widgets.forEach((w) => (w.managerVars.configMenuOpen = false))
         v.miniWidgetContainers.forEach((c) => c.widgets.forEach((w) => (w.managerVars.configMenuOpen = false)))
       })
-    )
+    })
   })
 
   onBeforeMount(() => {
