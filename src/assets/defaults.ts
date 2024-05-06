@@ -1,5 +1,16 @@
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type MiniWidgetProfile, MiniWidgetType } from '@/types/miniWidgets'
 import { type Profile, WidgetType } from '@/types/widgets'
+
+export const defaultRovProfileHash = 'c2bcf04d-048f-496f-9d78-fc4002608028'
+export const defaultBoatProfileHash = 'adb7d856-f2e5-4980-aaeb-c39c1fa3562b'
+export const defaultMavProfileHash = 'adb7d856-f2e5-4980-aaeb-c39c1fa3762b'
+
+export const defaultProfileVehicleCorrespondency = {
+  [MavType.MAV_TYPE_SUBMARINE]: defaultRovProfileHash,
+  [MavType.MAV_TYPE_SURFACE_BOAT]: defaultBoatProfileHash,
+  [MavType.MAV_TYPE_QUADROTOR]: defaultMavProfileHash,
+}
 
 export const defaultWidgetManagerVars = {
   timesMounted: 0,
@@ -23,7 +34,7 @@ export const defaultGlobalAddress = hostname == '' || hostname == undefined ? 'b
 export const widgetProfiles: Profile[] = [
   {
     name: 'ROV default',
-    hash: 'c2bcf04d-048f-496f-9d78-fc4002608028',
+    hash: defaultRovProfileHash,
     views: [
       {
         hash: 'eddd8e53-88c3-46a9-9e50-909227661f38',
@@ -549,7 +560,7 @@ export const widgetProfiles: Profile[] = [
   },
   {
     name: 'Boat default',
-    hash: 'adb7d856-f2e5-4980-aaeb-c39c1fa3562b',
+    hash: defaultBoatProfileHash,
     views: [
       {
         hash: 'f8a76470-9122-44f7-97f7-4555a59ee9c4',
@@ -588,7 +599,7 @@ export const widgetProfiles: Profile[] = [
   },
   {
     name: 'MAV default',
-    hash: 'adb7d856-f2e5-4980-aaeb-c39c1fa3762b',
+    hash: defaultMavProfileHash,
     views: [
       {
         hash: 'f8a76470-9122-44f7-97f7-4555a59ee9c4',
