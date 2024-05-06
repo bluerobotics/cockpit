@@ -584,6 +584,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     })
   })
 
+  // Reassign hashes to profiles using old ones - TODO: Remove for 1.0.0 release
+  Object.values(savedProfiles.value).forEach((profile) => {
+    // If the profile is a correspondent of a cockpit default one, use the correspondent hash
+    const corrDefault = widgetProfiles.find((defProfile) => defProfile.name === profile.name)
+    profile.hash = corrDefault?.hash ?? profile.hash
+  })
+
   onBeforeMount(() => {
     const filteredProfiles = filterUnconfiguredMiniWidgetsFromProfiles(savedProfiles.value)
     savedProfiles.value = filteredProfiles
