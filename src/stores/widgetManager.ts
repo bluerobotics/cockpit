@@ -7,9 +7,10 @@ import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 
-import { defaultWidgetManagerVars, widgetProfiles } from '@/assets/defaults'
+import { defaultProfileVehicleCorrespondency, defaultWidgetManagerVars, widgetProfiles } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import * as Words from '@/libs/funny-name/words'
 import {
   availableCockpitActions,
@@ -36,6 +37,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
   const desiredTopBarHeightPixels = ref(48)
   const desiredBottomBarHeightPixels = ref(48)
+  const vehicleTypeProfileCorrespondency = useStorage<typeof defaultProfileVehicleCorrespondency>(
+    'cockpit-default-vehicle-type-profiles',
+    defaultProfileVehicleCorrespondency
+  )
 
   const currentTopBarHeightPixels = computed(() => {
     return desiredTopBarHeightPixels.value
@@ -532,6 +537,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   const selectPreviousView = (): void => selectNextView('backward')
 
+  const loadDefaultProfileForVehicle = (vehicleType: MavType): void => {
+    // @ts-ignore: We know that the value is a string
+    const defaultProfileHash = vehicleTypeProfileCorrespondency.value[vehicleType]
+    const defaultProfile = savedProfiles.value.find((profile) => profile.hash === defaultProfileHash)
+    if (!defaultProfile) {
+      throw new Error('Could not find default mapping for this vehicle.')
+    }
+
+    loadProfile(defaultProfile)
+  }
+
   const debouncedSelectNextView = useDebounceFn(() => selectNextView(), 10)
   const selectNextViewCallbackId = registerActionCallback(
     availableCockpitActions.go_to_next_view,
@@ -592,6 +608,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     miniWidgetContainersInCurrentView,
     currentMiniWidgetsProfile,
     savedProfiles,
+    vehicleTypeProfileCorrespondency,
     loadProfile,
     saveProfile,
     resetSavedProfiles,
@@ -615,6 +632,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     isFullScreen,
     importProfilesFromVehicle,
     exportProfilesToVehicle,
+    loadDefaultProfileForVehicle,
     isWidgetVisible,
     widgetBottomClearanceForVisibleArea,
     isRealMiniWidget,
