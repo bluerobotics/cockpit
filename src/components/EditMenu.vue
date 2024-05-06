@@ -259,14 +259,25 @@
     </v-dialog>
   </teleport>
   <teleport to="body">
-    <v-dialog v-model="profileRenameDialogRevealed" width="20rem">
+    <v-dialog v-model="profileConfigDialogRevealed" width="36rem">
       <v-card class="pa-2">
         <v-card-text>
           <v-text-field v-model="newProfileName" counter="25" label="New profile name" />
+          <div class="flex flex-col items-center w-full my-2">
+            <v-combobox
+              v-model="vehicleTypesAssignedToCurrentProfile"
+              :items="availableVehicleTypes"
+              label="Vehicle types that use this profile by default:"
+              chips
+              multiple
+              variant="outlined"
+              class="w-10/12 m-4"
+            />
+          </div>
         </v-card-text>
         <v-card-actions class="flex justify-end">
-          <v-btn @click="profileRenameDialog.confirm">Save</v-btn>
-          <v-btn @click="profileRenameDialog.cancel">Cancel</v-btn>
+          <v-btn @click="profileConfigDialog.confirm">Save</v-btn>
+          <v-btn @click="profileConfigDialog.cancel">Cancel</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -282,6 +293,7 @@ import { nextTick } from 'vue'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
 
 import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { MiniWidgetType } from '@/types/miniWidgets'
@@ -336,12 +348,12 @@ viewRenameDialog.onConfirm(() => {
   newViewName.value = ''
 })
 
-const profileBeingRenamed = ref(store.currentProfile)
+const profileBeingConfigured = ref(store.currentProfile)
 const newProfileName = ref('')
-const profileRenameDialogRevealed = ref(false)
-const profileRenameDialog = useConfirmDialog(profileRenameDialogRevealed)
-profileRenameDialog.onConfirm(() => {
-  profileBeingRenamed.value.name = newProfileName.value
+const profileConfigDialogRevealed = ref(false)
+const profileConfigDialog = useConfirmDialog(profileConfigDialogRevealed)
+profileConfigDialog.onConfirm(() => {
+  profileBeingConfigured.value.name = newProfileName.value
   newProfileName.value = ''
 })
 
@@ -370,9 +382,9 @@ const toggleViewVisibility = (view: View): void => {
 }
 
 const renameProfile = (profile: Profile): void => {
-  profileBeingRenamed.value = profile
+  profileBeingConfigured.value = profile
   newProfileName.value = profile.name
-  profileRenameDialogRevealed.value = true
+  profileConfigDialogRevealed.value = true
 }
 
 const resetSavedProfiles = async (): Promise<void> => {
@@ -426,6 +438,30 @@ enum WidgetMode {
 const widgetMode = ref(WidgetMode.RegularWidgets)
 
 const { pressed: mousePressed } = useMousePressed()
+
+const availableVehicleTypes = computed(() => Object.keys(MavType))
+
+const vehicleTypesAssignedToCurrentProfile = computed({
+  get() {
+    return Object.keys(store.vehicleTypeProfileCorrespondency).filter((vType) => {
+      // @ts-ignore: Enums in TS such
+      return store.vehicleTypeProfileCorrespondency[vType] === profileBeingConfigured.value.hash
+    })
+  },
+  set(selectedVehicleTypes: string[]) {
+    availableVehicleTypes.value.forEach((vType) => {
+      // @ts-ignore: Enums in TS such
+      if (store.vehicleTypeProfileCorrespondency[vType] === profileBeingConfigured.value.hash) {
+        // @ts-ignore: Enums in TS such
+        store.vehicleTypeProfileCorrespondency[vType] = undefined
+      }
+      if (selectedVehicleTypes.includes(vType)) {
+        // @ts-ignore: Enums in TS such
+        store.vehicleTypeProfileCorrespondency[vType] = profileBeingConfigured.value.hash
+      }
+    })
+  },
+})
 </script>
 
 <style scoped>
