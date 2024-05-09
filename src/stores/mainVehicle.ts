@@ -460,10 +460,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   // Loop to send MAVLink Manual Control messages
   setInterval(() => {
-    if (!mainVehicle.value) return
-
     // Set the manager vehicle instance if yet undefined
-    if (mavlinkManualControlManager.vehicle === undefined) {
+    if (mainVehicle.value && mavlinkManualControlManager.vehicle === undefined) {
       mavlinkManualControlManager.setVehicle(mainVehicle.value as ArduPilot)
     }
 
