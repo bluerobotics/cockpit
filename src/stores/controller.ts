@@ -50,7 +50,7 @@ export const useControllerStore = defineStore('controller', () => {
   const cockpitStdMappings = useStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
   const availableAxesActions = allAvailableAxes
   const availableButtonActions = allAvailableButtons
-  const enableForwarding = ref(true)
+  const enableForwarding = ref(false)
   const holdLastInputWhenWindowHidden = useStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
   const vehicleTypeProtocolMappingCorrespondency = useStorage<typeof defaultProtocolMappingVehicleCorrespondency>(
     'cockpit-default-vehicle-type-protocol-mappings',
