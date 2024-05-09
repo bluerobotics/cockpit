@@ -130,6 +130,47 @@ export class Session {
   }
 
   /**
+   * Sets jitterBufferTarget (milliseconds)
+   * @param {number | null} jitterBufferTarget - Target RTP receiver jitter buffer time in milliseconds
+   */
+  public setJitterBufferTarget(jitterBufferTarget: number | null): void {
+    this.peerConnection.getReceivers().forEach((receiver: RTCRtpReceiver) => {
+      if (receiver.track.kind !== 'video') {
+        return
+      }
+
+      let playoutDelayHint = null
+      if (jitterBufferTarget) {
+        if (jitterBufferTarget > 4000) {
+          jitterBufferTarget = 4000
+        } else if (jitterBufferTarget < 0) {
+          jitterBufferTarget = 0
+        }
+
+        playoutDelayHint = jitterBufferTarget / 1000 // in seconds, legacy Chrome API
+      }
+
+      console.debug(
+        `RTCRtpReceiver jitterBufferTarget attribute set from ${
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (receiver as any).jitterBufferTarget
+        } to ${jitterBufferTarget}`
+      )
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(receiver as any).jitterBufferTarget = jitterBufferTarget // in milliseconds (DOMHighResTimeStamp)
+
+      console.debug(
+        `RTCRtpReceiver playoutDelayHint attribute set from ${
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (receiver as any).playoutDelayHint
+        } to ${playoutDelayHint}`
+      )
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(receiver as any).playoutDelayHint = playoutDelayHint
+    })
+  }
+
+  /**
    * Defines the behavior for when a remote SDP is received from the signalling server
    * @param {RTCSessionDescription} description - The SDP received from the signalling server
    */

@@ -45,6 +45,7 @@ export class WebRTCManager {
   private rtcConfiguration: RTCConfiguration
   private selectedICEIPs: string[] = []
   private selectedICEProtocols: string[] = []
+  private JitterBufferTarget: number | null
 
   private hasEnded = false
   private signaller: Signaller
@@ -84,15 +85,18 @@ export class WebRTCManager {
    * @param { Ref<Stream | undefined> } selectedStream - Stream to receive stream from
    * @param { Ref<string[]> } selectedICEIPs - ICE IPs allowed to be used in the connection
    * @param { Ref<string[]> } selectedICEProtocols - ICE protocols allowed to be used in the connection
+   * @param { Ref<number | null> } jitterBufferTarget - RTP receiver jitter buffer target in milliseconds
    * @returns { startStreamReturn }
    */
   public startStream(
     selectedStream: Ref<Stream | undefined>,
     selectedICEIPs: Ref<string[]>,
-    selectedICEProtocols: Ref<string[]>
+    selectedICEProtocols: Ref<string[]>,
+    jitterBufferTarget: Ref<number | null>
   ): startStreamReturn {
     this.selectedICEIPs = selectedICEIPs.value
     this.selectedICEProtocols = selectedICEProtocols.value
+    this.JitterBufferTarget = jitterBufferTarget.value
 
     watch(selectedStream, (newStream, oldStream) => {
       if (newStream?.id === oldStream?.id) {
@@ -230,6 +234,8 @@ export class WebRTCManager {
   private onTrackAdded(event: RTCTrackEvent): void {
     const [remoteStream] = event.streams
     this.mediaStream.value = remoteStream
+
+    this.session?.setJitterBufferTarget(this.JitterBufferTarget)
 
     // Assign 'motion' contentHint to media stream video tracks, so it performs better on low bandwith situations
     // More on that here: https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrack/contentHint
