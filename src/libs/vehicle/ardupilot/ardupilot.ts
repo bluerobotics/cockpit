@@ -1,18 +1,12 @@
 import { differenceInMilliseconds } from 'date-fns'
 import Swal from 'sweetalert2'
 
-import { ConnectionManager } from '@/libs/connection/connection-manager'
-import type {
-  MAVLinkMessageDictionary,
-  Message as MavMessage,
-  Package,
-  Type,
-} from '@/libs/connection/m2r/messages/mavlink2rest'
+import { sendMavlinkMessage } from '@/libs/communication/mavlink'
+import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
   GpsFixType,
   MavAutopilot,
   MavCmd,
-  MavComponent,
   MAVLinkType,
   MavMissionResult,
   MavMissionType,
@@ -51,6 +45,7 @@ import type { MetadataFile } from '@/types/ardupilot-metadata'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import * as Vehicle from '../vehicle'
+import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ArduPilot = ArduPilotVehicle<any>
@@ -167,7 +162,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         confirmation: 0,
       }
 
-      this.write(command)
+      sendMavlinkMessage(command)
       if (!waitForAck) {
         resolve(new CommandAck())
         return
@@ -211,23 +206,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         }
       }, timeout)
     })
-  }
-
-  /**
-   * Send a mavlink message
-   * @param {MavMessage} message
-   */
-  write(message: MavMessage): void {
-    const pack: Package = {
-      header: {
-        system_id: 255, // GCS system ID
-        component_id: Number(MavComponent.MAV_COMP_ID_UDP_BRIDGE), // Used by historical reasons (Check QGC)
-        sequence: 0,
-      },
-      message: message,
-    }
-    const textEncoder = new TextEncoder()
-    ConnectionManager.write(textEncoder.encode(JSON.stringify(pack)))
   }
 
   registerUsageOfMessageType = (messagePath: string): void => {
@@ -547,7 +525,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       yaw_rate: 0,
     }
 
-    this.write(gotoMessage)
+    sendMavlinkMessage(gotoMessage)
   }
 
   /**
@@ -625,7 +603,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       z: coordinates.altitude,
     }
 
-    this.write(gotoMessage)
+    sendMavlinkMessage(gotoMessage)
   }
 
   /**
@@ -775,7 +753,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       buttons2: state.buttons2,
       target: this.currentSystemId,
     }
-    this.write(manualControlMessage)
+    sendMavlinkMessage(manualControlMessage)
   }
 
   /**
@@ -792,7 +770,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       mavlink_version: 1,
     }
 
-    this.write(heartbeatMessage)
+    sendMavlinkMessage(heartbeatMessage)
   }
 
   /**
@@ -816,7 +794,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       target_system: 0,
       target_component: 0,
     }
-    this.write(paramRequestMessage)
+    sendMavlinkMessage(paramRequestMessage)
   }
 
   /**
@@ -838,7 +816,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       // @ts-ignore: The correct type is indeed a Type<MavParamType>
       param_type: settings.type ?? { type: MavParamType.MAV_PARAM_TYPE_UINT8 },
     }
-    this.write(paramSetMessage)
+    sendMavlinkMessage(paramSetMessage)
   }
 
   /**
@@ -855,7 +833,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       mission_type: { type: missionType },
     }
 
-    this.write(message)
+    sendMavlinkMessage(message)
   }
 
   /**
@@ -870,7 +848,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       mission_type: { type: missionType },
     }
 
-    this.write(message)
+    sendMavlinkMessage(message)
   }
 
   /**
@@ -887,7 +865,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       mission_type: { type: missionType },
     }
 
-    this.write(message)
+    sendMavlinkMessage(message)
   }
 
   /**
@@ -904,7 +882,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       mission_type: { type: missionType },
     }
 
-    this.write(message)
+    sendMavlinkMessage(message)
   }
 
   /**
@@ -957,7 +935,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       mission_type: { type: missionType },
     }
 
-    this.write(message)
+    sendMavlinkMessage(message)
   }
 
   /**
@@ -1105,7 +1083,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       const requestAlreadyAnswered = epochLastRequestAnswered === lastMissionItemRequestMessage.epoch
       const lastItemRequested = lastSeqRequested === mavlinkWaypoints.length - 1
       if ((requestFromOtherUpload || requestAlreadyAnswered) && !lastItemRequested) continue
-      this.write(mavlinkWaypoints[lastMissionItemRequestMessage.seq])
+      sendMavlinkMessage(mavlinkWaypoints[lastMissionItemRequestMessage.seq])
       epochLastRequestAnswered = lastMissionItemRequestMessage.epoch
       lastSeqRequested = lastMissionItemRequestMessage.seq
 
