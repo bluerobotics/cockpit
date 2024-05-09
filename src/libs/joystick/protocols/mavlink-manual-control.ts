@@ -379,61 +379,63 @@ export class MavlinkManualControlManager {
     // Return if insuficient joystick data
     if (!this.joystickState || !this.currentActionsMapping || !this.activeButtonsActions) return
 
-    // Return if insuficient vehicle data (prevent dangerous manual control messages)
-    if (!this.currentVehicleParameters || !this.vehicleButtonParameterTable) return
-
     // Instantiate manual control state if not already done
     if (!this.manualControlState) {
       this.manualControlState = new MavlinkManualControlState()
     }
 
-    const buttonParametersNamedObject: { [key in number]: string } = {}
-    this.vehicleButtonParameterTable.forEach((entry) => (buttonParametersNamedObject[entry.value] = entry.title))
-    const currentRegularButtonParameters = Object.entries(this.currentVehicleParameters)
-      .filter(([k]) => k.includes('BTN') && !k.includes('S'))
-      .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
-    const currentShiftButtonParameters = Object.entries(this.currentVehicleParameters)
-      .filter(([k]) => k.includes('BTN') && k.includes('S'))
-      .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
-
-    const activeMavlinkManualControlActions = this.activeButtonsActions.filter((a) => a.protocol === JoystickProtocol.MAVLinkManualControl).map((action) => action.id)
-    const regularVehicleButtonsToActivate = currentRegularButtonParameters
-      .filter((entry) => activeMavlinkManualControlActions.includes(entry.actionId as MAVLinkButtonFunction))
-      .map((entry) => manualControlButtonFromParameterName(entry.button))
-    const shiftVehicleButtonsToActivate = currentShiftButtonParameters
-      .filter((entry) => activeMavlinkManualControlActions.includes(entry.actionId as MAVLinkButtonFunction))
-      .map((entry) => manualControlButtonFromParameterName(entry.button))
-
-    const useShift = this.activeButtonsActions.map((a) => a.id).includes(modifierKeyActions.shift.id)
-    const shiftButton = currentRegularButtonParameters.find((v) => v.actionId === MAVLinkButtonFunction.shift)
-
-    if (useShift && shiftButton === undefined) return
-
-    const vehicleButtonsToActivate = useShift ? shiftVehicleButtonsToActivate.concat([manualControlButtonFromParameterName(shiftButton!.button)]) : regularVehicleButtonsToActivate
-
-    // Calculate buttons value
     let buttons_int = 0
-    for (let i = 0; i < MavlinkManualControlState.BUTTONS_PER_BITFIELD; i++) {
-      let buttonState = 0
-      vehicleButtonsToActivate.forEach((btn) => {
-        if (btn !== undefined && Number(btn.replace('R', '').replace('S', '')) === i) {
-          buttonState = 1
-        }
-      })
-      buttons_int += buttonState * 2 ** i
+    let buttons2_int = 0
+
+    // If insuficient vehicle data, do not send buttons values (preventing dangerous manual control messages)
+    if (this.currentVehicleParameters && this.vehicleButtonParameterTable) {
+      const buttonParametersNamedObject: { [key in number]: string } = {}
+      this.vehicleButtonParameterTable.forEach((entry) => (buttonParametersNamedObject[entry.value] = entry.title))
+      const currentRegularButtonParameters = Object.entries(this.currentVehicleParameters)
+        .filter(([k]) => k.includes('BTN') && !k.includes('S'))
+        .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
+      const currentShiftButtonParameters = Object.entries(this.currentVehicleParameters)
+        .filter(([k]) => k.includes('BTN') && k.includes('S'))
+        .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
+
+      const activeMavlinkManualControlActions = this.activeButtonsActions.filter((a) => a.protocol === JoystickProtocol.MAVLinkManualControl).map((action) => action.id)
+      const regularVehicleButtonsToActivate = currentRegularButtonParameters
+        .filter((entry) => activeMavlinkManualControlActions.includes(entry.actionId as MAVLinkButtonFunction))
+        .map((entry) => manualControlButtonFromParameterName(entry.button))
+      const shiftVehicleButtonsToActivate = currentShiftButtonParameters
+        .filter((entry) => activeMavlinkManualControlActions.includes(entry.actionId as MAVLinkButtonFunction))
+        .map((entry) => manualControlButtonFromParameterName(entry.button))
+
+      const useShift = this.activeButtonsActions.map((a) => a.id).includes(modifierKeyActions.shift.id)
+      const shiftButton = currentRegularButtonParameters.find((v) => v.actionId === MAVLinkButtonFunction.shift)
+
+      if (useShift && shiftButton === undefined) return
+
+      const vehicleButtonsToActivate = useShift ? shiftVehicleButtonsToActivate.concat([manualControlButtonFromParameterName(shiftButton!.button)]) : regularVehicleButtonsToActivate
+
+      // Calculate buttons value
+      for (let i = 0; i < MavlinkManualControlState.BUTTONS_PER_BITFIELD; i++) {
+        let buttonState = 0
+        vehicleButtonsToActivate.forEach((btn) => {
+          if (btn !== undefined && Number(btn.replace('R', '').replace('S', '')) === i) {
+            buttonState = 1
+          }
+        })
+        buttons_int += buttonState * 2 ** i
+      }
+
+      // Calculate buttons2 value
+      for (let i = 16; i < 2 * MavlinkManualControlState.BUTTONS_PER_BITFIELD; i++) {
+        let buttonState = 0
+        vehicleButtonsToActivate.forEach((btn) => {
+          if (btn !== undefined && Number(btn.replace('R', '').replace('S', '')) === i) {
+            buttonState = 1
+          }
+        })
+        buttons2_int += buttonState * 2 ** (i - 16)
+      }
     }
 
-    // Calculate buttons2 value
-    let buttons2_int = 0
-    for (let i = 16; i < 2 * MavlinkManualControlState.BUTTONS_PER_BITFIELD; i++) {
-      let buttonState = 0
-      vehicleButtonsToActivate.forEach((btn) => {
-        if (btn !== undefined && Number(btn.replace('R', '').replace('S', '')) === i) {
-          buttonState = 1
-        }
-      })
-      buttons2_int += buttonState * 2 ** (i - 16)
-    }
     // Calculate axes values
     const xCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_x.id)
     const yCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_y.id)
