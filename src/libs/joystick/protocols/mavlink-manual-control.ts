@@ -5,6 +5,7 @@
 import Swal from 'sweetalert2'
 import { capitalize } from 'vue'
 
+import { sendManualControl } from '@/libs/communication/mavlink'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { round, scale } from '@/libs/utils'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
@@ -360,8 +361,8 @@ export class MavlinkManualControlManager {
   }
 
   sendManualControl(): void {
-    if (!this.vehicle || !this.manualControlState) return
-    this.vehicle.sendManualControl(this.manualControlState)
+    if (!this.manualControlState) return
+    sendManualControl(this.manualControlState, this.vehicle?.systemId ?? 1)
   }
 
   updateControllerData = (state: JoystickState, protocolActionsMapping: JoystickProtocolActionsMapping, activeButtonsActions: ProtocolAction[]): void => {
