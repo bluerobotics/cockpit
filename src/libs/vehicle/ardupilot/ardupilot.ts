@@ -93,6 +93,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   protected currentSystemId = 1
 
   /**
+   * Returns the current system ID
+   * @returns {number}
+   */
+  get systemId(): number {
+    return this.currentSystemId
+  }
+
+  /**
    * Function for subclass inheritance
    * Helps to deal with specialized vehicles that has particular or custom behaviour
    * @param {Package} mavlink message
