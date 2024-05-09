@@ -18,7 +18,6 @@ import {
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import { type MavlinkManualControlState } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { SignalTyped } from '@/libs/signal'
 import { round } from '@/libs/utils'
 import {
@@ -45,7 +44,6 @@ import type { MetadataFile } from '@/types/ardupilot-metadata'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import * as Vehicle from '../vehicle'
-import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ArduPilot = ArduPilotVehicle<any>
@@ -733,27 +731,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    */
   statusGPS(): StatusGPS {
     return this._statusGPS
-  }
-
-  /**
-   * Send manual control
-   * @param {'MavlinkManualControlState'} controllerState Current state of the controller
-   */
-  sendManualControl(controllerState: MavlinkManualControlState): void {
-    const state = controllerState as MavlinkManualControlState
-    const manualControlMessage: Message.ManualControl = {
-      type: MAVLinkType.MANUAL_CONTROL,
-      x: state.x,
-      y: state.y,
-      z: state.z,
-      r: state.r,
-      s: state.s,
-      t: state.t,
-      buttons: state.buttons,
-      buttons2: state.buttons2,
-      target: this.currentSystemId,
-    }
-    sendMavlinkMessage(manualControlMessage)
   }
 
   /**
