@@ -51,6 +51,29 @@
           />
         </div>
       </div>
+
+      <p class="text-sm font-bold text-grey-darken-1 bg-grey-lighten-5">RTP Jitter Buffer (Target) duration:</p>
+      <div
+        class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-[40%]"
+      >
+        <p>Increasing this will result in increased video latency, but it can help compensate the network jitter.</p>
+        <br />
+        <p>Cockpit's default is zero milliseconds, but you can leave it empty to use the browser's default.</p>
+      </div>
+      <div class="flex items-center justify-start">
+        <v-text-field
+          v-model.number="jitterBufferTarget"
+          placeholder="auto"
+          type="number"
+          style="width: 100px"
+          class="text-sm"
+          max="4000"
+          min="0"
+          :rules="jitterBufferTargetRules"
+          @input="handleJitterBufferTargetInput"
+        />
+        <a class="pl-1">ms</a>
+      </div>
     </template>
   </BaseConfigurationView>
 </template>
@@ -77,5 +100,20 @@ onMounted(() => {
   }
 })
 
-const { allowedIceIps, allowedIceProtocols, availableIceIps } = storeToRefs(videoStore)
+/**
+ * Handles the input for setting the jitter buffer target
+ * @param {string} input - The input value to be processed
+ */
+function handleJitterBufferTargetInput(input: InputEvent): void {
+  if (input.data === null) {
+    jitterBufferTarget.value = null
+  }
+}
+
+const jitterBufferTargetRules = [
+  (value: number | '') => value === '' || value >= 0 || 'Must be >= 0',
+  (value: number | '') => value === '' || value <= 4000 || 'Must be <= 4000',
+]
+
+const { allowedIceIps, allowedIceProtocols, availableIceIps, jitterBufferTarget } = storeToRefs(videoStore)
 </script>
