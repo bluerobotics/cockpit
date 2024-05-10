@@ -110,10 +110,10 @@ export interface CockpitStandardLogPoint {
 export type CockpitStandardLog = CockpitStandardLogPoint[]
 
 /**
- * Display telemetry data by quadrant on the overlay
+ * Position for telemetry data on the video overlay
  */
-export interface OverlayQuadrant {
-  [quadrant: string]: string[]
+export interface OverlayGrid {
+  [gridPosition: string]: string[]
 }
 
 /**
@@ -199,17 +199,16 @@ class DataLogger {
   currentCockpitLog: CockpitStandardLog = []
   variablesBeingUsed: DatalogVariable[] = []
   veryGenericIndicators: VeryGenericData[] = []
-  selectedVariablesToShow = useStorage<DatalogVariable[]>('cockpit-datalogger-overlay-variables', [])
-  telemetryDisplayData = useStorage<OverlayQuadrant>('cockpit-datalogger-overlay-config', {
-    topLeft: [],
-    topCenter: [],
-    topRight: [],
-    centerLeft: [],
-    centerCenter: [],
-    centerRight: [],
-    bottomLeft: [],
-    bottomCenter: [],
-    bottomRight: [],
+  telemetryDisplayData = useStorage<OverlayGrid>('cockpit-datalogger-overlay-grid', {
+    LeftTop: [],
+    CenterTop: [],
+    RightTop: [],
+    LeftMid: [],
+    CenterMid: [],
+    RightMid: [],
+    LeftBottom: [],
+    CenterBottom: [],
+    RightBottom: [],
   })
   telemetryDisplayOptions = useStorage<OverlayOptions>('cockpit-datalogger-overlay-options', {
     fontSize: 30,
@@ -218,7 +217,7 @@ class DataLogger {
     fontOutlineColor: '#000000FF',
     fontOutlineSize: 2,
     fontShadowColor: '#000000FF',
-    fontShadowSize: 2,
+    fontShadowSize: 1,
     fontBold: false,
     fontItalic: false,
     fontUnderline: false,
@@ -232,17 +231,6 @@ class DataLogger {
     version: 1.0,
     description: 'Local backups of Cockpit sensor logs, to be retrieved in case of failure.',
   })
-  dataToDisplayOnSubtitle: OverlayQuadrant = {
-    topLeft: [],
-    topCenter: [],
-    topRight: [],
-    centerLeft: [],
-    centerCenter: [],
-    centerRight: [],
-    bottomLeft: [],
-    bottomCenter: [],
-    bottomRight: [],
-  }
 
   /**
    * Start an intervaled logging
@@ -281,7 +269,7 @@ class DataLogger {
         [DatalogVariable.gpsFixType]: { value: vehicleStore.statusGPS.fixType, ...timeNowObj },
         [DatalogVariable.latitude]: { value: `${vehicleStore.coordinates.latitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
         [DatalogVariable.longitude]: { value: `${vehicleStore.coordinates.longitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
-        [DatalogVariable.missionName]: { value: missionStore.missionName, hideLabel: true, ...timeNowObj },
+        [DatalogVariable.missionName]: { value: missionStore.missionName || 'Cockpit', hideLabel: true, ...timeNowObj },
         [DatalogVariable.time]: { value: format(timeNow, 'HH:mm:ss O'), hideLabel: true, ...timeNowObj },
         [DatalogVariable.date]: { value: format(timeNow, 'LLL dd, yyyy'), hideLabel: true, ...timeNowObj },
       }
@@ -448,37 +436,71 @@ class DataLogger {
    * @param {number} videoStartEpoch
    * @returns {string} ASS file string for video overlaying
    */
+  /* eslint-disable vue/max-len, prettier/prettier, max-len */
   toAssOverlay(log: CockpitStandardLog, videoWidth: number, videoHeight: number, videoStartEpoch: number): string {
-    /* eslint-disable vue/max-len, prettier/prettier, max-len */
-      let assFile = `[Script Info]
-Title: Cockpit Subtitle Telemetry file
-ScriptType: v4.00+
-WrapStyle: 0
-ScaledBorderAndShadow: yes
-YCbCr Matrix: TV.601
-PlayResX: ${videoWidth}
-PlayResY: ${videoHeight}
+    const { fontSize, fontColor, fontOutlineColor, fontBold, fontItalic, fontUnderline, fontStrikeout, fontShadowSize } = this.telemetryDisplayOptions.value
+    let assFile = `[Script Info]
+  Title: Cockpit Subtitle Telemetry file
+  ScriptType: v4.00+
+  WrapStyle: 0
+  ScaledBorderAndShadow: yes
+  YCbCr Matrix: TV.601
+  PlayResX: ${videoWidth}
+  PlayResY: ${videoHeight}
+  
+  [V4+ Styles]
+  Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+  `
 
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,48,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,1,10,10,10,1
+    const styles = [
+      'LeftBottom', 'CenterBottom', 'RightBottom',
+      'LeftMid', 'CenterMid', 'RightMid',
+      'LeftTop', 'CenterTop', 'RightTop'
+    ].map((name, index) => (
+      `Style: ${name},Arial,${fontSize},${convertRGBToBGRColor(fontColor)},&H000000FF,${convertRGBToBGRColor(fontOutlineColor)},&H00000000,${fontBold ? '-1' : '0'},${fontItalic ? '-1' : '0'},${fontUnderline ? '-1' : '0'},${fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${fontShadowSize},${index + 1},10,10,10,1`
+    )).join('\n')
 
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
+    assFile += styles
 
-    // Try to show, in order, variables the user has decided to show, or variables being used in the application, or all variables.
-    const hasUserSelected = !this.selectedVariablesToShow.value.isEmpty()
-    const areThereVariablesBeingUsed = !this.variablesBeingUsed.isEmpty()
-    const allAvailableVariables = Object.values(DatalogVariable)
-    const variablesToShow = hasUserSelected ? this.selectedVariablesToShow.value : areThereVariablesBeingUsed ? this.variablesBeingUsed : allAvailableVariables
+    /**
+     * Converts a hex color in the format #AARRGGBB to the .ass subtitle format &HAABBGGRR.
+     * @param {string} hexColor The hex color string in #AARRGGBB format.
+     * @returns {string} The color string in &HAABBGGRR format for .ass files.
+     */
+    function convertRGBToBGRColor(hexColor: string): string {
+      const red = hexColor.substring(1, 3)
+      const green = hexColor.substring(3, 5)
+      const blue = hexColor.substring(5, 7)
+      const alpha = hexColor.substring(7, 9) || 'FF'
+      const invertedAlpha = (255 - parseInt(alpha, 16)).toString(16).padStart(2, '0').toUpperCase()
+
+      return `&H${invertedAlpha}${blue}${green}${red}`
+    }
 
     log.forEach((logPoint, index) => {
       // Don't deal with the last log point, as it has no next point to compare to
       if (index === log.length - 1) return
 
-      const data = Object.entries(logPoint.data)
-        .filter((vData) => variablesToShow.includes(vData[0] as DatalogVariable))
-        .map((v) => ({ name: v[0], value: v[1].value }))
+      // Structured data object based on the user's telemetry display configuration
+      const data = Object.keys(this.telemetryDisplayData.value).reduce<Record<string, string>>((acc, gridPosition) => {
+        acc[gridPosition] = this.telemetryDisplayData.value[gridPosition]
+          .map((variable) => {
+            const variableData = logPoint.data[variable]
+            if (variableData) {
+              return `${variableData.hideLabel ? '' : `${variable}:`} ${variableData.value}`
+            } else {
+              return `${variable}`
+            }
+          })
+          .join('\\N')
+        return acc
+      }, {})
+
+      const positionData = {
+        'LeftBottom': data.LeftBottom, 'CenterBottom': data.CenterBottom, 'RightBottom': data.RightBottom,
+        'LeftMid': data.LeftMid, 'CenterMid': data.CenterMid, 'RightMid': data.RightMid,
+        'LeftTop': data.LeftTop, 'CenterTop': data.CenterTop, 'RightTop': data.RightTop
+      }
 
       const durationThisPoint = intervalToDuration({
         start: new Date(videoStartEpoch),
@@ -504,35 +526,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
       const roundedMillisNextPoint = differenceInSeconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch)) * 1000
       const millisNextPoint = differenceInMilliseconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch))
       const remainingMillisNextPoint = millisNextPoint - roundedMillisNextPoint
-      const remainingCentisNextPoint = Math.floor(remainingMillisNextPoint / 10).toString().padStart(2, '0')
-
-      let subtitleDataString1 = ''
-      let subtitleDataString2 = ''
-      let subtitleDataString3 = ''
-      let binToUse = 1
-      data.forEach((d) => {
-        if (binToUse === 1) {
-          subtitleDataString1 = subtitleDataString1.concat(`${d.name}: ${d.value} \\N`)
-        } else if (binToUse === 2) {
-          subtitleDataString2 = subtitleDataString2.concat(`${d.name}: ${d.value} \\N`)
-        } else if (binToUse === 3) {
-          subtitleDataString3 = subtitleDataString3.concat(`${d.name}: ${d.value} \\N`)
-        }
-        binToUse +=1
-        if (binToUse > 3) {
-          binToUse = 1
-        }
-      })
+      const remainingCentisNextPoint = Math.floor(remainingMillisNextPoint / 10)
+        .toString()
+        .padStart(2, '0')
 
       const timeThis = `${durationHoursThisPoint}:${durationMinutesThisPoint}:${durationSecondsThisPoint}.${remainingCentisThisPoint}`
       const timeNext = `${durationHoursNextPoint}:${durationMinutesNextPoint}:${durationSecondsNextPoint}.${remainingCentisNextPoint}`
-
-      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},Default,,${0.1*videoWidth},0,${0.05*videoHeight},,${subtitleDataString1}`)
-      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},Default,,${0.4*videoWidth},0,${0.05*videoHeight},,${subtitleDataString2}`)
-      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},Default,,${0.7*videoWidth},0,${0.05*videoHeight},,${subtitleDataString3}`)
+  
+      Object.entries(positionData).forEach(([position, text]) => { assFile += `\nDialogue: 0,${timeThis},${timeNext},${position},,0,0,0,,${text}` })
     })
-    /* eslint-enable vue/max-len, prettier/prettier, max-len */
     assFile = assFile.concat('\n')
+
+    assFile += '\n'
 
     return assFile
   }
