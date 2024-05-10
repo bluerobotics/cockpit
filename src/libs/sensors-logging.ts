@@ -110,6 +110,31 @@ export interface CockpitStandardLogPoint {
 export type CockpitStandardLog = CockpitStandardLogPoint[]
 
 /**
+ * Display telemetry data by quadrant on the overlay
+ */
+export interface OverlayQuadrant {
+  [quadrant: string]: string[]
+}
+
+/**
+ * Telemetry overlay options
+ */
+/* eslint-disable jsdoc/require-jsdoc  */
+export interface OverlayOptions {
+  fontSize: number
+  fontColor: string
+  backgroundColor: string
+  fontOutlineColor: string
+  fontOutlineSize: number
+  fontShadowColor: string
+  fontShadowSize: number
+  fontBold: boolean
+  fontItalic: boolean
+  fontUnderline: boolean
+  fontStrikeout: boolean
+}
+
+/**
  * Class to manage the variables that are currently being logged
  */
 export class CurrentlyLoggedVariables {
@@ -175,6 +200,30 @@ class DataLogger {
   variablesBeingUsed: DatalogVariable[] = []
   veryGenericIndicators: VeryGenericData[] = []
   selectedVariablesToShow = useStorage<DatalogVariable[]>('cockpit-datalogger-overlay-variables', [])
+  telemetryDisplayData = useStorage<OverlayQuadrant>('cockpit-datalogger-overlay-config', {
+    topLeft: [],
+    topCenter: [],
+    topRight: [],
+    centerLeft: [],
+    centerCenter: [],
+    centerRight: [],
+    bottomLeft: [],
+    bottomCenter: [],
+    bottomRight: [],
+  })
+  telemetryDisplayOptions = useStorage<OverlayOptions>('cockpit-datalogger-overlay-options', {
+    fontSize: 30,
+    fontColor: '#FFFFFFFF',
+    backgroundColor: '#000000FF',
+    fontOutlineColor: '#000000FF',
+    fontOutlineSize: 2,
+    fontShadowColor: '#000000FF',
+    fontShadowSize: 2,
+    fontBold: false,
+    fontItalic: false,
+    fontUnderline: false,
+    fontStrikeout: false,
+  })
   logInterval = useStorage<number>('cockpit-datalogger-log-interval', 1000)
   cockpitLogsDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
@@ -183,6 +232,17 @@ class DataLogger {
     version: 1.0,
     description: 'Local backups of Cockpit sensor logs, to be retrieved in case of failure.',
   })
+  dataToDisplayOnSubtitle: OverlayQuadrant = {
+    topLeft: [],
+    topCenter: [],
+    topRight: [],
+    centerLeft: [],
+    centerCenter: [],
+    centerRight: [],
+    bottomLeft: [],
+    bottomCenter: [],
+    bottomRight: [],
+  }
 
   /**
    * Start an intervaled logging
