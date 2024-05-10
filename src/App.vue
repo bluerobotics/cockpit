@@ -108,10 +108,9 @@
           <div class="bottom-container">
             <SlideToConfirm />
           </div>
-          <div v-for="(view, index) in widgetStore.viewsToShow" :key="view.name">
+          <div v-for="view in widgetStore.viewsToShow" :key="view.name">
             <Transition name="fade">
-              <!-- #TODO Fix viewsToSHow object reordering on view change. For now, this comparisson works fine, but it's a workaround to be fixed on issue #933 -->
-              <div v-show="index === 2" class="bar bottom-bar">
+              <div v-show="view.name === currentSelectedViewName" class="bar bottom-bar">
                 <MiniWidgetContainer
                   :container="view.miniWidgetContainers[0]"
                   :allow-editing="widgetStore.editingMode"
@@ -241,6 +240,7 @@ const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscree
 const store = useMissionStore()
 const showMissionOptionsDialog = ref(false)
 const randomMissionName = coolMissionNames.random()
+const currentSelectedViewName = computed(() => widgetStore.currentView.name)
 
 // Clock
 const timeNow = useTimestamp({ interval: 1000 })
