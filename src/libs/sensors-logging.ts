@@ -4,6 +4,7 @@ import localforage from 'localforage'
 import Swal from 'sweetalert2'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 
 import { degrees } from './utils'
 
@@ -22,6 +23,9 @@ export enum DatalogVariable {
   gpsFixType = 'GPS status',
   latitude = 'Latitude',
   longitude = 'Longitude',
+  missionName = 'Mission name',
+  time = 'Time',
+  date = 'Date',
 }
 
 const logDateFormat = 'LLL dd, yyyy'
@@ -45,7 +49,7 @@ type VeryGenericData = {
   /**
    * Current view of the variable
    */
-  currentView?: string
+  hideLabel?: boolean
 }
 
 /**
@@ -59,7 +63,7 @@ export type ExtendedVariablesData = {
   [key: string]: {
     value: string
     lastChanged: number
-    currentView?: string
+    hideLabel?: boolean
   }
 }
 
@@ -192,6 +196,7 @@ class DataLogger {
     this.shouldBeLogging = true
 
     const vehicleStore = useMainVehicleStore()
+    const missionStore = useMissionStore()
 
     const initialTime = new Date()
     const fileName = `Cockpit (${format(initialTime, `${logDateFormat} - HH꞉mm꞉ss O`)}).clog`
@@ -216,7 +221,11 @@ class DataLogger {
         [DatalogVariable.gpsFixType]: { value: vehicleStore.statusGPS.fixType, ...timeNowObj },
         [DatalogVariable.latitude]: { value: `${vehicleStore.coordinates.latitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
         [DatalogVariable.longitude]: { value: `${vehicleStore.coordinates.longitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.missionName]: { value: missionStore.missionName, hideLabel: true, ...timeNowObj },
+        [DatalogVariable.time]: { value: format(timeNow, 'HH:mm:ss O'), hideLabel: true, ...timeNowObj },
+        [DatalogVariable.date]: { value: format(timeNow, 'LLL dd, yyyy'), hideLabel: true, ...timeNowObj },
       }
+
       /* eslint-enable vue/max-len, prettier/prettier, max-len */
       const veryGenericData = this.collectVeryGenericData(timeNowObj)
       variablesData = { ...variablesData, ...veryGenericData }
