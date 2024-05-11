@@ -192,6 +192,10 @@ const toggleRecording = async (): Promise<void> => {
 }
 
 const startRecording = (): void => {
+  if (nameSelectedStream.value && !videoStore.getStreamData(nameSelectedStream.value)?.connected) {
+    Swal.fire({ title: 'Cannot start recording.', text: 'Stream is not connected.', icon: 'error' })
+    return
+  }
   assertStreamIsSelectedAndAvailable(nameSelectedStream.value)
   videoStore.startRecording(nameSelectedStream.value)
   isStreamSelectDialogOpen.value = false
