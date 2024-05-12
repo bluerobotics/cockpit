@@ -138,9 +138,19 @@ const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap',
 })
 
+const esri = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 19, attribution: '© Esri World Imagery' }
+)
+
+const baseMaps = {
+  'OpenStreetMap': osm,
+  'Esri World Imagery': esri,
+}
+
 onMounted(async () => {
   // Bind leaflet instance to map element
-  map.value = L.map(mapId.value, { layers: [osm] }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+  map.value = L.map(mapId.value, { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Add zoom control to the map
   map.value.zoomControl.setPosition('bottomright')
@@ -170,6 +180,10 @@ onMounted(async () => {
   map.value.on('contextmenu', () => {
     hideContextMenuAndMarker()
   })
+
+  // Add tile layers to the map
+  const layerControl = L.control.layers(baseMaps)
+  map.value.addControl(layerControl)
 
   // Enable auto update for target follower
   targetFollower.enableAutoUpdate()
