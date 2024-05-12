@@ -28,7 +28,6 @@
     "@mdi/font": "^7.0.96",
     "@mdi/js": "^7.2.96",
     "@types/hammerjs": "^2.0.45",
-    "@vue-leaflet/vue-leaflet": "^0.6.1",
     "@vueuse/core": "9.8.1",
     "@vueuse/math": "^10.1.2",
     "@zip.js/zip.js": "^2.7.34",
