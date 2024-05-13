@@ -1,4 +1,4 @@
-import { useStorage, useTimestamp } from '@vueuse/core'
+import { useStorage, useTimestamp, watchThrottled } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
@@ -120,6 +120,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const statusText: StatusText = reactive({} as StatusText)
   const statusGPS: StatusGPS = reactive({} as StatusGPS)
   const genericVariables: Record<string, unknown> = reactive({})
+  const availableGenericVariables = ref<string[]>([])
+  const usedGenericVariables = ref<string[]>([])
 
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -297,6 +299,23 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   }
 
+  const registerUsageOfGenericVariable = (variable: string): void => {
+    if (usedGenericVariables.value.includes(variable)) return
+    usedGenericVariables.value.push(variable)
+  }
+
+  watchThrottled(usedGenericVariables, () => registerGenericVariablesUsageOnVehicle(), { throttle: 1000 })
+
+  const registerGenericVariablesUsageOnVehicle = (): void => {
+    if (!mainVehicle.value) return
+
+    usedGenericVariables.value.forEach((variable) => {
+      mainVehicle.value?.registerUsageOfMessageType(variable)
+    })
+
+    console.log('List of tracked generic variables udpated: ', usedGenericVariables.value)
+  }
+
   ConnectionManager.onMainConnection.add(() => {
     const newMainConnection = ConnectionManager.mainConnection()
     if (newMainConnection !== undefined) {
@@ -316,6 +335,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     modes.value = mainVehicle.value.modesAvailable()
     icon.value = mainVehicle.value.icon()
     configurationPages.value = mainVehicle.value.configurationPages()
+    registerGenericVariablesUsageOnVehicle()
 
     mainVehicle.value.onAltitude.add((newAltitude: Altitude) => {
       Object.assign(altitude, newAltitude)
@@ -349,6 +369,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     })
     mainVehicle.value.onGenericVariables.add((newGenericVariablesState: Record<string, unknown>) => {
       Object.assign(genericVariables, newGenericVariablesState)
+      availableGenericVariables.value = mainVehicle.value?._availableGenericVariablesdMessagePaths ?? []
     })
     mainVehicle.value.onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.component_id != 1) {
@@ -479,5 +500,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     configurationPages,
     rtcConfiguration,
     genericVariables,
+    availableGenericVariables,
+    registerUsageOfGenericVariable,
   }
 })

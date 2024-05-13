@@ -1,3 +1,4 @@
+import { differenceInMilliseconds } from 'date-fns'
 import Swal from 'sweetalert2'
 
 import { ConnectionManager } from '@/libs/connection/connection-manager'
@@ -80,6 +81,9 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _statusGPS = new StatusGPS()
   _vehicleSpecificErrors = [0, 0, 0, 0]
   _metadata: MetadataFile
+  _dateLastUpdateAvailableGenericVariables = new Date()
+  _availableGenericVariablesdMessagePaths: string[] = []
+  _usedGenericVariablesdMessagePaths: { [key in string]: string[] } = {}
 
   _messages: MAVLinkMessageDictionary = new Map()
 
@@ -218,6 +222,22 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     ConnectionManager.write(textEncoder.encode(JSON.stringify(pack)))
   }
 
+  registerUsageOfMessageType = (messagePath: string): void => {
+    const pathKeys = messagePath.split('.')
+
+    if (!this._usedGenericVariablesdMessagePaths[pathKeys[0]]) {
+      this._usedGenericVariablesdMessagePaths[pathKeys[0]] = []
+    }
+
+    if (Object.values(this._usedGenericVariablesdMessagePaths[pathKeys[0]]).includes(messagePath)) return
+
+    console.log(`Registering usage of message type '${pathKeys[0]}' for path '${messagePath}'.`)
+    this._usedGenericVariablesdMessagePaths[pathKeys[0]] = [
+      ...this._usedGenericVariablesdMessagePaths[pathKeys[0]],
+      messagePath,
+    ]
+  }
+
   /**
    *  Decode incoming message
    * @param {Uint8Array} message
@@ -268,7 +288,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
      * @param { Record<string, unknown> } acc The destination object for the variables found
      * @param { string } baseKey A string to be added in front of the actual object keys. Used for deep nested key-value pairs
      */
-    const getDeepVariables = (obj: Record<string, unknown>, acc: Record<string, unknown>, baseKey?: string): void => {
+    const getDeepVariables = (obj: Record<string, unknown>, acc: string[], baseKey?: string): void => {
       Object.entries(obj).forEach(([k, v]) => {
         if (v instanceof Object) {
           let identifier: string | undefined = undefined
@@ -284,19 +304,35 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
           }
         } else {
           if (baseKey === undefined) {
-            acc[k] = v
+            acc.push(k)
           } else {
-            acc[`${baseKey}.${k}`] = v
+            acc.push(`${baseKey}.${k}`)
           }
         }
       })
     }
 
-    getDeepVariables(Object.fromEntries(this._messages), this._genericVariables)
+    if (differenceInMilliseconds(new Date(), this._dateLastUpdateAvailableGenericVariables) > 3000) {
+      this._dateLastUpdateAvailableGenericVariables = new Date()
+      getDeepVariables(Object.fromEntries(this._messages), this._availableGenericVariablesdMessagePaths)
+    }
 
     // TODO: Maybe create a signal class to deal with MAVLink only
     // Where add will use the template argument type to define the lambda argument type
     this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
+
+    if (Object.keys(this._usedGenericVariablesdMessagePaths).includes(mavlink_message.message.type)) {
+      this._usedGenericVariablesdMessagePaths[mavlink_message.message.type].forEach((path) => {
+        const pathKeys = path.split('.')
+
+        let parentValue = mavlink_message.message
+        for (let i = 1; i < pathKeys.length; i++) {
+          parentValue = parentValue[pathKeys[i]]
+        }
+        this._genericVariables[path] = parentValue
+      })
+      this.onGenericVariables.emit()
+    }
 
     switch (mavlink_message.message.type) {
       // command_ack
