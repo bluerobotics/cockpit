@@ -246,7 +246,7 @@ const updateWidgetName = (): void => {
   miniWidget.value.name = miniWidget.value.options.displayName || miniWidget.value.options.variableName
 }
 const updateGenericVariablesNames = (): void => {
-  allVariablesNames.value = Object.keys(store.genericVariables)
+  allVariablesNames.value = store.availableGenericVariables
 }
 
 const logData = computed(() => ({
@@ -272,10 +272,8 @@ watch(
   { immediate: true }
 )
 
-watch(store.genericVariables, () => {
-  updateVariableState()
-  updateGenericVariablesNames()
-})
+watch(store.genericVariables, () => updateVariableState())
+watch(store.availableGenericVariables, () => updateGenericVariablesNames())
 watch(
   miniWidget,
   () => {
@@ -293,6 +291,11 @@ onMounted(() => {
   if (miniWidget.value.options.displayName && widgetStore.editingMode === false) {
     CurrentlyLoggedVariables.addVariable(miniWidget.value.options.displayName)
   }
+
+  if (miniWidget.value.options.variableName) {
+    store.registerUsageOfGenericVariable(miniWidget.value.options.variableName)
+  }
+
   lastWidgetName.value = miniWidget.value.options.displayName
 })
 
@@ -339,6 +342,7 @@ const chooseVariable = (variable: string): void => {
   miniWidget.value.options.variableName = variable
   variableNameSearchString.value = ''
   showVariableChooseModal.value = false
+  store.registerUsageOfGenericVariable(variable)
 }
 
 const chooseIcon = (iconName: string): void => {
