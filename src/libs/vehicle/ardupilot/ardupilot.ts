@@ -223,7 +223,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   registerUsageOfMessageType = (messagePath: string): void => {
-    const pathKeys = messagePath.split('.')
+    const pathKeys = messagePath.split('/')
 
     if (!this._usedGenericVariablesdMessagePaths[pathKeys[0]]) {
       this._usedGenericVariablesdMessagePaths[pathKeys[0]] = []
@@ -300,13 +300,13 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
           if (identifier === undefined) {
             getDeepVariables(v as Record<string, unknown>, acc, k)
           } else {
-            getDeepVariables(v as Record<string, unknown>, acc, `${k}.ID${v[identifier]}`)
+            getDeepVariables(v as Record<string, unknown>, acc, `${k}/ID${v[identifier]}`)
           }
         } else {
           if (baseKey === undefined) {
             acc.push(k)
           } else {
-            acc.push(`${baseKey}.${k}`)
+            acc.push(`${baseKey}/${k}`)
           }
         }
       })
@@ -323,7 +323,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
     if (Object.keys(this._usedGenericVariablesdMessagePaths).includes(mavlink_message.message.type)) {
       this._usedGenericVariablesdMessagePaths[mavlink_message.message.type].forEach((path) => {
-        const pathKeys = path.split('.')
+        const pathKeys = path.split('/')
 
         let parentValue = mavlink_message.message
         for (let i = 1; i < pathKeys.length; i++) {
