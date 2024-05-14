@@ -10,14 +10,30 @@
         </div>
       </v-card-title>
       <v-card-text class="pb-6">
+        <div class="flex justify-center align-center w-full mb-3">
+          <v-icon v-if="variant" size="38" color="white" class="mr-8">{{
+            variant === 'info'
+              ? 'mdi-information'
+              : variant === 'warning'
+              ? 'mdi-alert'
+              : variant === 'error'
+              ? 'mdi-alert-circle'
+              : 'mdi-check-circle'
+          }}</v-icon>
+          <div class="text-lg">{{ message }}</div>
+        </div>
         <slot name="content"></slot>
         <template v-if="contentComponent"> <component :is="contentComponent"></component></template>
       </v-card-text>
       <div class="flex justify-center w-full px-10">
         <v-divider class="opacity-10 border-[#fafafa]"></v-divider>
       </div>
-      <v-card-actions v-if="actions!.length > 0">
-        <div class="flex w-full px-1 py-2" :class="actions!.length === 1 ? 'justify-end' : 'justify-between'">
+      <v-card-actions>
+        <div
+          v-if="actions && actions!.length > 0"
+          class="flex w-full px-1 py-2"
+          :class="actions!.length === 1 ? 'justify-end' : 'justify-between'"
+        >
           <v-btn
             v-for="(button, index) in actions"
             :key="index"
@@ -30,6 +46,9 @@
             {{ button.text }}
           </v-btn>
         </div>
+        <div v-else class="flex w-full px-1 py-2 justify-end">
+          <v-btn size="small" variant="text" @click="show = false">Close</v-btn>
+        </div>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -38,6 +57,8 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
 
+type DialogVariants = 'info' | 'warning' | 'error' | 'success'
+
 /* eslint-disable vue/require-default-prop */
 const props = defineProps({
   showDialog: Boolean,
@@ -45,6 +66,8 @@ const props = defineProps({
   contentComponent: String,
   maxWidth: Number,
   actions: Object,
+  variant: String,
+  message: String,
 })
 
 const show = ref(props.showDialog)
@@ -52,11 +75,16 @@ const title = ref(props.title)
 const contentComponent = ref(props.contentComponent)
 const maxWidth = ref(props.maxWidth)
 const actions = ref(props.actions)
+const variant = ref(props.variant)
+const message = ref(props.message)
 
 watchEffect(() => {
   show.value = props.showDialog
   title.value = props.title
   actions.value = props.actions
+  contentComponent.value = props.contentComponent
+  variant.value = props.variant as DialogVariants
+  message.value = props.message
 })
 </script>
 <style scoped>
