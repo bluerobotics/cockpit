@@ -824,8 +824,10 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   const videos = await Promise.all(videoFilesOperations)
   const logFiles = await Promise.all(logFileOperations)
   const unprocessedVideosData = await Promise.all(unprocessedVideoOperations)
+  // Filter videos that are currently being recorded
+  const validUnprocessedVideos = unprocessedVideosData.filter((video) => video.dateFinish)
 
-  availableVideos.value = [...videos, ...unprocessedVideosData]
+  availableVideos.value = [...videos, ...validUnprocessedVideos]
   availableLogFiles.value = logFiles
 
   loadingData.value = false
