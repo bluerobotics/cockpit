@@ -318,7 +318,12 @@
                     <v-tooltip v-if="button.tooltip" open-delay="500" activator="parent" location="bottom">
                       {{ button.tooltip }}
                     </v-tooltip>
-                    <v-menu v-if="button.confirmAction" location="top" opacity="0">
+                    <v-menu
+                      v-if="button.confirmAction"
+                      location="left center"
+                      opacity="0"
+                      transition="slide-x-reverse-transition"
+                    >
                       <template #activator="{ props: buttonProps, isActive }">
                         <div
                           class="flex items-center justify-center w-full h-full"
@@ -327,28 +332,44 @@
                         >
                           <v-icon
                             :size="button.size"
+                            :class="{ 'rotate-[-45deg]': isActive, 'outline outline-6 outline-[#ffffff55]': isActive }"
                             class="rounded-full border-[transparent]"
                             :style="{ borderWidth: `${button.size - 4}px` }"
                           >
-                            {{ button.icon }}
+                            {{ isActive ? 'mdi-arrow-up' : button.icon }}
                           </v-icon>
                         </div>
                       </template>
                       <v-list class="bg-transparent" elevation="0">
                         <v-list-item>
                           <template #append>
-                            <v-btn
-                              variant="text"
-                              size="medium"
-                              class="wobble-effect border-2 border-[#fafafadd] rounded-full"
-                              @click="button.action"
-                            >
-                              <div
-                                class="bg-[#32c925] p-1 backdrop-filter backdrop-blur-lg flex flex-col justify-center align-center rounded-full"
+                            <div class="mb-10 slide-right-to-left">
+                              <v-btn
+                                fab
+                                small
+                                width="28"
+                                height="28"
+                                color="red"
+                                icon="mdi-close"
+                                class="text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
+                                ><v-tooltip open-delay="600" activator="parent" location="bottom"> Cancel </v-tooltip
+                                ><v-icon>mdi-close</v-icon></v-btn
                               >
-                                <v-icon size="20px" color="white">mdi-check</v-icon>
-                              </div>
-                            </v-btn>
+                              <div class="fixed top-[11px] left-[31px] h-[6px] w-[10px] bg-[#ffffff22]"></div>
+                              <v-btn
+                                fab
+                                small
+                                width="28"
+                                height="28"
+                                color="green"
+                                icon="mdi-check"
+                                class="ml-4 text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
+                                :loading="deleteButtonLoading"
+                                @click="button.action()"
+                                ><v-tooltip open-delay="600" activator="parent" location="bottom"> Confirm </v-tooltip
+                                ><v-icon>mdi-check</v-icon></v-btn
+                              >
+                            </div>
                           </template>
                         </v-list-item>
                       </v-list>
@@ -509,6 +530,7 @@ const numberOfFilesToProcess = ref(0)
 const showOnScreenProgress = ref(true)
 const lastSelectedVideo = ref<VideoLibraryFile | null>(null)
 const errorProcessingVideos = ref(false)
+const deleteButtonLoading = ref(false)
 
 const menuButtons = [
   { name: 'Videos', icon: 'mdi-video-outline', selected: true, enable: true, tooltip: '' },
@@ -735,6 +757,7 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
 }
 
 const discardVideosAndUpdateDB = async (): Promise<void> => {
+  deleteButtonLoading.value = true
   let selectedVideoArraySize = selectedVideos.value.length
   let processedVideosToDiscard: string[] = []
   let unprocessedVideosToDiscard: string[] = []
@@ -759,6 +782,7 @@ const discardVideosAndUpdateDB = async (): Promise<void> => {
   await fetchVideosAndLogData()
   availableVideos.value.length > 0 ? (selectedVideos.value = [availableVideos.value[0]]) : (selectedVideos.value = [])
   if (availableVideos.value.length === 1) isMultipleSelectionMode.value = false
+  deleteButtonLoading.value = false
 }
 
 const fetchVideosAndLogData = async (): Promise<void> => {
@@ -1155,54 +1179,19 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-@keyframes flash {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes wobble {
+@keyframes slideInRightToLeft {
   0% {
-    transform: scale(0);
-  }
-  10% {
-    transform: scale(0.4);
-  }
-  20% {
-    transform: scale(0.8);
-  }
-  30% {
-    transform: scale(1.2);
-  }
-  40% {
-    transform: scale(0.95);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-  60% {
-    transform: scale(0.98);
-  }
-  70% {
-    transform: scale(1.1);
-  }
-  80% {
-    transform: scale(0.99);
-  }
-  90% {
-    transform: scale(1.1);
+    transform: scaleX(0);
+    transform-origin: right;
   }
   100% {
-    transform: scale(1);
+    transform: scaleX(1);
+    transform-origin: right;
   }
 }
 
-.wobble-effect {
-  animation: wobble 1s 1;
+.slide-right-to-left {
+  animation: slideInRightToLeft 200ms ease-out forwards;
 }
 
 @media (max-width: 640px) {
