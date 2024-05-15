@@ -300,7 +300,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
           if (identifier === undefined) {
             getDeepVariables(v as Record<string, unknown>, acc, k)
           } else {
-            getDeepVariables(v as Record<string, unknown>, acc, `${k}/ID${v[identifier]}`)
+            getDeepVariables(v as Record<string, unknown>, acc, `${k}/${identifier}=${v[identifier]}`)
           }
         } else {
           if (baseKey === undefined) {
@@ -326,8 +326,23 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         const pathKeys = path.split('/')
 
         let parentValue = mavlink_message.message
-        for (let i = 1; i < pathKeys.length; i++) {
-          parentValue = parentValue[pathKeys[i]]
+        try {
+          for (let i = 1; i < pathKeys.length; i++) {
+            // If pathkeys[i] is an identifier, from the mavlinkIdentificationKeys, check if the message ID matches the identifier
+            if (!pathKeys[i].includes('=')) {
+              parentValue = parentValue[pathKeys[i]]
+            } else {
+              const [identifier, id] = pathKeys[i].split('=')
+              if (parentValue[identifier] == id) {
+                continue
+              } else {
+                break
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to update generic variable for path '${path}'.`)
+          console.error(error)
         }
         this._genericVariables[path] = parentValue
       })
