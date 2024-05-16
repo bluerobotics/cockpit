@@ -41,7 +41,7 @@ export const useVideoStore = defineStore('video', () => {
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
   // If the allowed ICE IPs are updated, all the streams should be reconnected
-  watch(allowedIceIps, () => {
+  watch([allowedIceIps, allowedIceProtocols], () => {
     Object.keys(activeStreams.value).forEach((streamName) => (activeStreams.value[streamName] = undefined))
   })
 
