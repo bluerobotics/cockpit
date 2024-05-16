@@ -115,3 +115,26 @@ export const getArdupilotVersion = async (vehicleAddress: string): Promise<strin
     throw new Error(`Could not get Ardupilot firmware version. ${error}`)
   }
 }
+
+export const getStatus = async (vehicleAddress: string): Promise<boolean> => {
+  try {
+    const url = `http://${vehicleAddress}/status`
+    const result = await ky.get(url, { timeout: defaultTimeout })
+    return result.ok
+  } catch (error) {
+    throw new Error(`Could not get BlueOS status. ${error}`)
+  }
+}
+
+// eslint-disable-next-line jsdoc/require-jsdoc
+type RawCpuTempInfo = { name: string; temperature: number; maximum_temperature: number; critical_temperature: number }
+
+export const getCpuTempCelsius = async (vehicleAddress: string): Promise<number> => {
+  try {
+    const url = `http://${vehicleAddress}/system-information/system/temperature`
+    const cpuTempRawInfo: RawCpuTempInfo[] = await ky.get(url, { timeout: defaultTimeout }).json()
+    return cpuTempRawInfo[0].temperature
+  } catch (error) {
+    throw new Error(`Could not get temperature of the BlueOS CPU. ${error}`)
+  }
+}

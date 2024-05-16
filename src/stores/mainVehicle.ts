@@ -4,6 +4,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import { altitude_setpoint } from '@/libs/altitude-slider'
+import { getCpuTempCelsius, getStatus } from '@/libs/blueos'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -371,6 +372,29 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       Object.assign(genericVariables, newGenericVariablesState)
       availableGenericVariables.value = mainVehicle.value?._availableGenericVariablesdMessagePaths ?? []
     })
+
+    setInterval(async () => {
+      const blueosStatus = await getStatus(globalAddress.value)
+      // If blueos is not available, do not try to get data from it
+      if (!blueosStatus) return
+
+      const blueosVariablesAddresses = {
+        cpuTemp: 'blueos/cpu/tempC',
+      }
+
+      Object.values(blueosVariablesAddresses).forEach((address) => {
+        if (!availableGenericVariables.value.includes(address)) {
+          availableGenericVariables.value.push(address)
+        }
+      })
+
+      if (usedGenericVariables.value.includes(blueosVariablesAddresses.cpuTemp)) {
+        getCpuTempCelsius(globalAddress.value).then((temp) => {
+          Object.assign(genericVariables, { ...genericVariables, ...{ [blueosVariablesAddresses.cpuTemp]: temp } })
+        })
+      }
+    }, 1000)
+
     mainVehicle.value.onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.component_id != 1) {
         return
