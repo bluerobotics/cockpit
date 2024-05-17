@@ -249,7 +249,7 @@ watch(rollAngleDeg, () => {
 })
 
 // Update canvas whenever reference variables changes
-watch(renderVariables, () => {
+watch([renderVariables, width, height], () => {
   if (!widgetStore.isWidgetVisible(widget.value)) return
   nextTick(() => renderCanvas())
 })
