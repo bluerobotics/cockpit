@@ -472,8 +472,8 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @param {boolean} arm
    * @param {boolean} force
    */
-  _arm(arm: boolean, force?: boolean): void {
-    this.sendCommandLong(
+  async _arm(arm: boolean, force?: boolean): Promise<void> {
+    await this.sendCommandLong(
       MavCmd.MAV_CMD_COMPONENT_ARM_DISARM,
       arm ? 1 : 0, // 0: Disarm, 1: ARM
       force ? 21196 : 0 // 21196: force arming/disarming (e.g. override preflight checks and disarming in flight)
@@ -482,11 +482,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Arm vehicle
-   * @returns {boolean}
+   * @returns {Promise<void>}
    */
-  arm(): boolean {
-    this._arm(true)
-    return true
+  async arm(): Promise<void> {
+    await this._arm(true)
   }
 
   /**
@@ -530,39 +529,40 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   /**
    * Helper function for commanding takeoff
    * @param {number} altitude (in meters)
+   * @returns {Promise<void>} A promise that resolves if the takeoff command is accepted.
    */
-  _takeoff(altitude: number): void {
-    this.sendCommandLong(MavCmd.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, altitude)
+  async _takeoff(altitude: number): Promise<void> {
+    return await this.sendCommandLong(MavCmd.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, altitude)
   }
 
   /**
    * Takeoff
    * @param {number} altitudeSetpoint
-   * @returns {void}
+   * @returns {Promise<void>}
    */
-  takeoff(altitudeSetpoint: number): void {
+  async takeoff(altitudeSetpoint: number): Promise<void> {
     const guidedMode = this.modesAvailable().get('GUIDED')
     if (guidedMode === undefined) {
-      return
+      throw new Error("Vehicle doesn't support GUIDED mode.")
     }
 
-    this.setMode(guidedMode as Modes)
-    this.arm()
-    this._takeoff(altitudeSetpoint)
+    await this.setMode(guidedMode as Modes)
+    await this.arm()
+    await this._takeoff(altitudeSetpoint)
     this.onTakeoff.emit()
     return
   }
 
   /**
    * Land
-   * @returns {void}
+   * @returns {Promise<void>}
    */
-  land(): void {
+  async land(): Promise<void> {
     const landMode = this.modesAvailable().get('LAND')
     if (landMode === undefined) {
-      return
+      throw new Error("Vehicle doesn't support LAND mode.")
     }
-    this.setMode(landMode as Modes)
+    await this.setMode(landMode as Modes)
     return
   }
   /**
@@ -637,11 +637,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   /**
    * Disarm vehicle
-   * @returns {boolean}
+   * @returns {Promise<void>}
    */
-  disarm(): boolean {
-    this._arm(false)
-    return true
+  async disarm(): Promise<void> {
+    await this._arm(false)
   }
 
   /**
@@ -745,8 +744,8 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * Set vehicle flight mode
    * @param {'Modes'} mode Custom vehicle mode
    */
-  setMode(mode: Modes): void {
-    this.sendCommandLong(
+  async setMode(mode: Modes): Promise<void> {
+    await this.sendCommandLong(
       MavCmd.MAV_CMD_DO_SET_MODE,
       MavModeFlag.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
       Number(mode) // Custom mode, please refer to the individual autopilot specifications for details
@@ -991,12 +990,12 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         Please put the vehicle in ${resetModeName} mode manually so a new mission can be started.`
       )
     }
-    this.setMode(resetMode as Modes)
+    await this.setMode(resetMode as Modes)
 
     // Check if the vehicle got off of the AUTO mode
     const initialTimeResetModeCheck = new Date().getTime()
     while (this.mode() !== resetMode && new Date().getTime() - initialTimeResetModeCheck < 10000) {
-      this.setMode(resetMode as Modes)
+      await this.setMode(resetMode as Modes)
       await sleep(100)
     }
     if (this.mode() !== resetMode) {
@@ -1006,14 +1005,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     // Arming the vehicle is necessary to successfully start a mission
     const initialTimeArmCheck = new Date().getTime()
     while (!this.isArmed() && new Date().getTime() - initialTimeArmCheck < 5000) {
-      this.arm()
+      await this.arm()
       await sleep(100)
     }
     if (!this.isArmed) {
       throw Error('Could not arm the vehicle. Please arm it manually.')
     }
 
-    this.sendCommandLong(MavCmd.MAV_CMD_MISSION_START, 0, 0)
+    await this.sendCommandLong(MavCmd.MAV_CMD_MISSION_START, 0, 0)
   }
 
   /**

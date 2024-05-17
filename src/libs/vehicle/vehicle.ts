@@ -171,13 +171,13 @@ export abstract class AbstractVehicle<Modes> {
 
   abstract onMessage(message: Uint8Array): void
 
-  abstract arm(): boolean
+  abstract arm(): Promise<void>
   abstract altitude(): Altitude
   abstract attitude(): Attitude
   abstract batteries(): Battery[]
   abstract configurationPages(): PageDescription[]
   abstract cpuLoad(): number // Percentage
-  abstract disarm(): boolean
+  abstract disarm(): Promise<void>
   abstract isArmed(): boolean
   abstract mode(): Modes
   abstract modesAvailable(): Map<string, Modes>
@@ -188,6 +188,6 @@ export abstract class AbstractVehicle<Modes> {
   abstract lastParameter(): Parameter
   abstract statusText(): StatusText
   abstract statusGPS(): StatusGPS
-  abstract setMode(mode: Modes): void
+  abstract setMode(mode: Modes): Promise<void>
   abstract flying(): boolean
 }
