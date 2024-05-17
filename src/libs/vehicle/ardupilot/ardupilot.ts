@@ -1,5 +1,4 @@
 import { differenceInMilliseconds } from 'date-fns'
-import Swal from 'sweetalert2'
 
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -125,85 +124,74 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @param {number} param5
    * @param {number} param6
    * @param {number} param7
-   * @param {boolean} waitForAck If the command should wait for an acknowledgment
-   * @param {boolean} noAlert Controls if swal alerts should not be shown
    * @returns {Promise<CommandAck>} A promise that resolves with the command acknowledgment.
    */
-  sendCommandLong(
+  async sendCommandLong(
     mav_command: MavCmd,
-    param1?: number,
-    param2?: number,
-    param3?: number,
-    param4?: number,
-    param5?: number,
-    param6?: number,
-    param7?: number,
-    waitForAck = true,
-    noAlert = false
-  ): Promise<CommandAck> {
-    return new Promise((resolve, reject) => {
-      // Construct the command
-      const command: Message.CommandLong = {
-        type: MAVLinkType.COMMAND_LONG,
-        param1: param1 ?? 0,
-        param2: param2 ?? 0,
-        param3: param3 ?? 0,
-        param4: param4 ?? 0,
-        param5: param5 ?? 0,
-        param6: param6 ?? 0,
-        param7: param7 ?? 0,
-        command: {
-          type: mav_command,
-        },
-        target_system: this.currentSystemId,
-        target_component: 1,
-        confirmation: 0,
-      }
+    param1 = 0,
+    param2 = 0,
+    param3 = 0,
+    param4 = 0,
+    param5 = 0,
+    param6 = 0,
+    param7 = 0
+  ): Promise<void> {
+    const command: Message.CommandLong = {
+      type: MAVLinkType.COMMAND_LONG,
+      param1: param1,
+      param2: param2,
+      param3: param3,
+      param4: param4,
+      param5: param5,
+      param6: param6,
+      param7: param7,
+      command: {
+        type: mav_command,
+      },
+      target_system: this.currentSystemId,
+      target_component: 1,
+      confirmation: 0,
+    }
 
-      sendMavlinkMessage(command)
-      if (!waitForAck) {
-        resolve(new CommandAck())
-        return
-      }
+    sendMavlinkMessage(command)
 
-      let ackReceived = false
-      const ackHandler = (commandAck: CommandAck): void => {
-        console.log('Received command acknowledgment:', commandAck)
-        if (commandAck.command.type === mav_command) {
-          ackReceived = true
-          this.onCommandAck.remove(ackHandler)
+    // Monitor the acknowledgment of the command and throw an error if it fails or reaches a timeout
+    let incomingAckCommand: CommandAck | undefined = undefined
+    let receivedCommandAck = false
+    let timeoutReached = false
+    const timeout = 5000
 
-          if (![MavResult.MAV_RESULT_ACCEPTED, MavResult.MAV_RESULT_IN_PROGRESS].includes(commandAck.result.type)) {
-            if (!noAlert) {
-              commandAck.alertMessage()
-            }
-            reject(new Error(`Command failed with result: ${commandAck.result.type}`))
-          } else {
-            this.onCommandAck.remove(ackHandler)
-            resolve(commandAck)
-          }
-        }
-      }
+    const ackHandler = (commandAck: CommandAck): void => {
+      incomingAckCommand = commandAck
+    }
 
-      this.onCommandAck.add(ackHandler)
+    const dateCommand = new Date()
+    this.onCommandAck.add(ackHandler)
 
-      // Setup a timeout for the ACK
-      const timeout = 5000
-      setTimeout(() => {
-        if (!ackReceived) {
-          if (!noAlert) {
-            Swal.fire({
-              title: 'Command timeout',
-              text: 'No acknowledgment was received for the command: ' + mav_command + ' in ' + timeout / 1000 + 's',
-              icon: 'error',
-              confirmButtonText: 'OK',
-            })
-          }
-          this.onCommandAck.remove(ackHandler)
-          reject(new Error('Timeout waiting for command acknowledgment'))
-        }
-      }, timeout)
-    })
+    // Wait for the acknowledgment to be received
+    while (!timeoutReached && !receivedCommandAck) {
+      await sleep(100)
+      receivedCommandAck = (incomingAckCommand as unknown as CommandAck)?.command.type === mav_command
+      timeoutReached = differenceInMilliseconds(new Date(), dateCommand) > timeout
+    }
+
+    this.onCommandAck.remove(ackHandler)
+
+    if (!receivedCommandAck) {
+      throw Error(`No acknowledgment received for command '${mav_command}' before timeout (${timeout / 1000}s).`)
+    }
+
+    // We already tested the ack and know that it is of the correct type
+    const commandAck = incomingAckCommand as unknown as CommandAck
+
+    console.log('Received command acknowledgment:', commandAck)
+
+    const confirmationResults = [MavResult.MAV_RESULT_ACCEPTED, MavResult.MAV_RESULT_IN_PROGRESS]
+    if (confirmationResults.includes(commandAck.result.type)) {
+      return
+    }
+
+    throw new Error(`Command failed with result: ${commandAck.result.type}`)
   }
 
   registerUsageOfMessageType = (messagePath: string): void => {
