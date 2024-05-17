@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import Swal from 'sweetalert2'
+
 export const constrain = (value: number, min: number, max: number): number => {
   return Math.max(Math.min(value, max), min)
 }
@@ -107,4 +109,17 @@ export const isHorizontalScroll = (e: WheelEvent): boolean => {
  */
 export const sleep = (delay: number): Promise<void> => {
   return new Promise((r) => setTimeout(r, delay))
+}
+
+/**
+ * Try to run the given function and alert the user if an error occurs
+ * @param {() => Promise<void>} tryFunction The time to sleep in milliseconds
+ * @returns {Promise<void>} A promise that resolves after the specified delay
+ */
+export const tryOrAlert = async (tryFunction: () => Promise<void>): Promise<void> => {
+  try {
+    await tryFunction()
+  } catch (error) {
+    Swal.fire({ text: error as string, icon: 'error' })
+  }
 }
