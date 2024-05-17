@@ -19,7 +19,7 @@ import {
 import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
-import { round } from '@/libs/utils'
+import { round, sleep } from '@/libs/utils'
 import {
   type ArduPilotParameterSetData,
   alertLevelFromMavSeverity,
@@ -938,7 +938,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         itemsCount = lastMissionCountMessage.count
         break
       }
-      await new Promise((r) => setTimeout(r, 100))
+      await sleep(100)
       timeoutReachedCount = new Date().getTime() - initTimeCount > 10000
     }
     if (itemsCount === undefined) {
@@ -952,7 +952,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const initTimeDown = new Date().getTime()
     let timeoutReachedDownload = false
     while (!allItemsDownloaded && !timeoutReachedDownload) {
-      await new Promise((r) => setTimeout(r, 100))
+      await sleep(100)
       timeoutReachedDownload = new Date().getTime() - initTimeDown > 10000
       loadingCallback((100 * itemToDownload) / itemsCount)
 
@@ -1009,7 +1009,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const initialTimeResetModeCheck = new Date().getTime()
     while (this.mode() !== resetMode && new Date().getTime() - initialTimeResetModeCheck < 10000) {
       this.setMode(resetMode as Modes)
-      await new Promise((r) => setTimeout(r, 100))
+      await sleep(100)
     }
     if (this.mode() !== resetMode) {
       throw Error(`Could not put vehicle in ${resetModeName} mode. Please do it manually.`)
@@ -1019,7 +1019,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const initialTimeArmCheck = new Date().getTime()
     while (!this.isArmed() && new Date().getTime() - initialTimeArmCheck < 5000) {
       this.arm()
-      await new Promise((r) => setTimeout(r, 100))
+      await sleep(100)
     }
     if (!this.isArmed) {
       throw Error('Could not arm the vehicle. Please arm it manually.')
@@ -1054,7 +1054,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     let epochLastRequestAnswered = -1
     let lastSeqRequested = -1
     while (missionAck === undefined && !timeoutReachedUpload) {
-      await new Promise((r) => setTimeout(r, 10))
+      await sleep(10)
       timeoutReachedUpload = new Date().getTime() - initTimeUpload > 10000
       const lastMissionItemRequestMessage =
         this._messages.get(MAVLinkType.MISSION_REQUEST) || this._messages.get(MAVLinkType.MISSION_REQUEST_INT)
