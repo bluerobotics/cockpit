@@ -347,6 +347,7 @@ import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { CockpitActionsFunction } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
+import { sleep } from '@/libs/utils'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import {
@@ -465,7 +466,7 @@ const remapInput = async (joystick: Joystick, input: JoystickInput): Promise<voi
   while ([undefined, -1].includes(pressedButtonIndex) && millisPassed < remappingTimeTotalMs) {
     // Check if any button on the joystick is pressed, and if so, get it's index
     pressedButtonIndex = joystick.gamepad.buttons.findIndex((button) => button.value === 1)
-    await new Promise((r) => setTimeout(r, 100))
+    await sleep(100)
     millisPassed += 100
     remapTimeProgress.value = 100 * (millisPassed / remappingTimeTotalMs)
   }
@@ -520,7 +521,7 @@ const remapAxisInput = async (joystick: Joystick, input: JoystickInput): Promise
     }
 
     // Await a short period before the next check
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await sleep(100)
     const timePassed = Date.now() - endTime + remappingTimeTotalMs
     remapAxisTimeProgress.value = (timePassed / remappingTimeTotalMs) * 100
   }

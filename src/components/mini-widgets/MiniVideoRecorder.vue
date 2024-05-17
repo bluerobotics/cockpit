@@ -92,7 +92,7 @@ import { storeToRefs } from 'pinia'
 import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
-import { isEqual } from '@/libs/utils'
+import { isEqual, sleep } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/miniWidgets'
@@ -227,7 +227,7 @@ const updateCurrentStream = async (streamName: string | undefined): Promise<void
   while (isLoadingStream.value && millisPassed < waitingTime) {
     // @ts-ignore: The media stream can (and probably will) get defined as we selected a stream
     isLoadingStream.value = mediaStream.value === undefined || !mediaStream.value.active
-    await new Promise((r) => setTimeout(r, timeStep))
+    await sleep(timeStep)
     millisPassed += timeStep
   }
 

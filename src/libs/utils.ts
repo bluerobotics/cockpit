@@ -99,3 +99,12 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
 export const isHorizontalScroll = (e: WheelEvent): boolean => {
   return e.shiftKey
 }
+
+/**
+ * Wait for a specified amount of time assincronously
+ * @param {number} delay The time to sleep in milliseconds
+ * @returns {Promise<void>} A promise that resolves after the specified delay
+ */
+export const sleep = (delay: number): Promise<void> => {
+  return new Promise((r) => setTimeout(r, delay))
+}
