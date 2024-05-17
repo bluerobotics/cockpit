@@ -436,71 +436,65 @@ class DataLogger {
    * @param {number} videoStartEpoch
    * @returns {string} ASS file string for video overlaying
    */
-  /* eslint-disable vue/max-len, prettier/prettier, max-len */
   toAssOverlay(log: CockpitStandardLog, videoWidth: number, videoHeight: number, videoStartEpoch: number): string {
-    const { fontSize, fontColor, fontOutlineColor, fontBold, fontItalic, fontUnderline, fontStrikeout, fontShadowSize } = this.telemetryDisplayOptions.value
-    let assFile = `[Script Info]
-  Title: Cockpit Subtitle Telemetry file
-  ScriptType: v4.00+
-  WrapStyle: 0
-  ScaledBorderAndShadow: yes
-  YCbCr Matrix: TV.601
-  PlayResX: ${videoWidth}
-  PlayResY: ${videoHeight}
-  
-  [V4+ Styles]
-  Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-  `
+    /* eslint-disable vue/max-len, prettier/prettier, max-len */
+      let assFile = `[Script Info]
+Title: Cockpit Subtitle Telemetry file
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+YCbCr Matrix: TV.601
+PlayResX: ${videoWidth}
+PlayResY: ${videoHeight}
 
-    const styles = [
-      'LeftBottom', 'CenterBottom', 'RightBottom',
-      'LeftMid', 'CenterMid', 'RightMid',
-      'LeftTop', 'CenterTop', 'RightTop'
-    ].map((name, index) => (
-      `Style: ${name},Arial,${fontSize},${convertRGBToBGRColor(fontColor)},&H000000FF,${convertRGBToBGRColor(fontOutlineColor)},&H00000000,${fontBold ? '-1' : '0'},${fontItalic ? '-1' : '0'},${fontUnderline ? '-1' : '0'},${fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${fontShadowSize},${index + 1},10,10,10,1`
-    )).join('\n')
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: LeftBottom,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},1,10,10,10,1
+Style: CenterBotom,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},2,10,10,10,1
+Style: RightBottom,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},3,10,10,10,1
+Style: LeftMid,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},4,10,10,10,1
+Style: CenterMid,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},5,10,10,10,1
+Style: RightMid,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},6,10,10,10,1
+Style: LeftTop,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},7,10,10,10,1
+Style: CenterTop,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},8,10,10,10,1
+Style: RightTop,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},9,10,10,10,1
 
-    assFile += styles
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
 
     /**
      * Converts a hex color in the format #AARRGGBB to the .ass subtitle format &HAABBGGRR.
      * @param {string} hexColor The hex color string in #AARRGGBB format.
      * @returns {string} The color string in &HAABBGGRR format for .ass files.
      */
-    function convertRGBToBGRColor(hexColor: string): string {
-      const red = hexColor.substring(1, 3)
-      const green = hexColor.substring(3, 5)
-      const blue = hexColor.substring(5, 7)
-      const alpha = hexColor.substring(7, 9) || 'FF'
-      const invertedAlpha = (255 - parseInt(alpha, 16)).toString(16).padStart(2, '0').toUpperCase()
+   function convertRGBToBGRColor(hexColor: string): string {
+    const red = hexColor.substring(1, 3)
+    const green = hexColor.substring(3, 5)
+    const blue = hexColor.substring(5, 7)
+    const alpha = hexColor.substring(7, 9) || 'FF'
+    const invertedAlpha = (255 - parseInt(alpha, 16)).toString(16).padStart(2, '0').toUpperCase()
 
-      return `&H${invertedAlpha}${blue}${green}${red}`
-    }
-
+    return `&H${invertedAlpha}${blue}${green}${red}`
+  }
+  
     log.forEach((logPoint, index) => {
       // Don't deal with the last log point, as it has no next point to compare to
       if (index === log.length - 1) return
 
-      // Structured data object based on the user's telemetry display configuration
-      const data = Object.keys(this.telemetryDisplayData.value).reduce<Record<string, string>>((acc, gridPosition) => {
-        acc[gridPosition] = this.telemetryDisplayData.value[gridPosition]
-          .map((variable) => {
-            const variableData = logPoint.data[variable]
-            if (variableData) {
-              return `${variableData.hideLabel ? '' : `${variable}:`} ${variableData.value}`
-            } else {
-              return `${variable}`
-            }
-          })
-          .join('\\N')
-        return acc
-      }, {})
-
-      const positionData = {
-        'LeftBottom': data.LeftBottom, 'CenterBottom': data.CenterBottom, 'RightBottom': data.RightBottom,
-        'LeftMid': data.LeftMid, 'CenterMid': data.CenterMid, 'RightMid': data.RightMid,
-        'LeftTop': data.LeftTop, 'CenterTop': data.CenterTop, 'RightTop': data.RightTop
-      }
+     // Structured data object based on the user's telemetry display configuration
+     const data = Object.keys(this.telemetryDisplayData.value).reduce<Record<string, string>>((acc, gridPosition) => {
+      acc[gridPosition] = this.telemetryDisplayData.value[gridPosition]
+        .map((variable) => {
+          const variableData = logPoint.data[variable]
+          if (variableData) {
+            return `${variableData.hideLabel ? '' : `${variable}:`} ${variableData.value}`
+          } else {
+            return `${variable}`
+          }
+        })
+        .join('\\N')
+      return acc
+     }, {})
 
       const durationThisPoint = intervalToDuration({
         start: new Date(videoStartEpoch),
@@ -526,18 +520,23 @@ class DataLogger {
       const roundedMillisNextPoint = differenceInSeconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch)) * 1000
       const millisNextPoint = differenceInMilliseconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch))
       const remainingMillisNextPoint = millisNextPoint - roundedMillisNextPoint
-      const remainingCentisNextPoint = Math.floor(remainingMillisNextPoint / 10)
-        .toString()
-        .padStart(2, '0')
-
+      const remainingCentisNextPoint = Math.floor(remainingMillisNextPoint / 10).toString().padStart(2, '0')
+      
       const timeThis = `${durationHoursThisPoint}:${durationMinutesThisPoint}:${durationSecondsThisPoint}.${remainingCentisThisPoint}`
       const timeNext = `${durationHoursNextPoint}:${durationMinutesNextPoint}:${durationSecondsNextPoint}.${remainingCentisNextPoint}`
-  
-      Object.entries(positionData).forEach(([position, text]) => { assFile += `\nDialogue: 0,${timeThis},${timeNext},${position},,0,0,0,,${text}` })
-    })
-    assFile = assFile.concat('\n')
 
-    assFile += '\n'
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},LeftBottom,,0,0,0,,${data.LeftBottom}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},CenterBotom,,0,0,0,,${data.CenterBottom}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},RightBottom,,0,0,0,,${data.RightBottom}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},LeftMid,,0,0,0,,${data.LeftMid}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},CenterMid,,0,0,0,,${data.CenterMid}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},RightMid,,0,0,0,,${data.RightMid}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},LeftTop,,0,0,0,,${data.LeftTop}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},CenterTop,,0,0,0,,${data.CenterTop}`)
+      assFile = assFile.concat(`\nDialogue: 0,${timeThis},${timeNext},RightTop,,0,0,0,,${data.RightTop}`)
+    })
+    /* eslint-enable vue/max-len, prettier/prettier, max-len */
+    assFile = assFile.concat('\n')
 
     return assFile
   }
