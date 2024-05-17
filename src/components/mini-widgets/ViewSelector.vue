@@ -3,7 +3,7 @@
     <Dropdown
       name-key="name"
       :model-value="widgetStore.currentView"
-      :options="widgetStore.viewsToShow"
+      :options="widgetStore.currentProfile.views"
       class="min-w-[128px]"
       @update:model-value="widgetStore.selectView"
     />
