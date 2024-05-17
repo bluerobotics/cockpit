@@ -146,7 +146,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to arm.')
     }
 
-    mainVehicle.value.arm()
+    await mainVehicle.value.arm()
   }
 
   /**
@@ -159,7 +159,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to disarm.')
     }
 
-    mainVehicle.value.disarm()
+    await mainVehicle.value.disarm()
   }
 
   /**
@@ -171,7 +171,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available for takeoff')
     }
 
-    mainVehicle.value.takeoff(altitude_setpoint.value)
+    await mainVehicle.value.takeoff(altitude_setpoint.value)
   }
   /**
    * Change the altitude of the vehicle.
@@ -194,7 +194,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to land.')
     }
 
-    mainVehicle.value.land()
+    await mainVehicle.value.land()
   }
 
   /**
@@ -293,10 +293,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    * Set vehicle flight mode
    * @param {string} modeName
    */
-  function setFlightMode(modeName: string): void {
+  async function setFlightMode(modeName: string): Promise<void> {
     const enumMode = modes.value?.get(modeName)
     if (enumMode !== undefined) {
-      mainVehicle.value?.setMode(enumMode)
+      await mainVehicle.value?.setMode(enumMode)
     }
   }
 

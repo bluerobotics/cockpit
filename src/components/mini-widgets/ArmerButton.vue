@@ -21,28 +21,34 @@
 </template>
 
 <script setup lang="ts">
+import Swal from 'sweetalert2'
+
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const vehicleStore = useMainVehicleStore()
 
 const arm = (): void => {
-  slideToConfirm(
-    vehicleStore.arm,
-    {
-      command: 'Arm',
-    },
-    canByPassCategory(EventCategory.ARM)
-  )
+  const tryToArm = async (): Promise<void> => {
+    try {
+      await vehicleStore.arm()
+    } catch (error) {
+      Swal.fire({ text: error as string, icon: 'error' })
+    }
+  }
+
+  slideToConfirm(tryToArm, { command: 'Arm' }, canByPassCategory(EventCategory.ARM))
 }
 
 const disarm = (): void => {
-  slideToConfirm(
-    vehicleStore.disarm,
-    {
-      command: 'Disarm',
-    },
-    canByPassCategory(EventCategory.DISARM)
-  )
+  const tryToDisarm = async (): Promise<void> => {
+    try {
+      await vehicleStore.disarm()
+    } catch (error) {
+      Swal.fire({ text: error as string, icon: 'error' })
+    }
+  }
+
+  slideToConfirm(tryToDisarm, { command: 'Disarm' }, canByPassCategory(EventCategory.DISARM))
 }
 </script>
