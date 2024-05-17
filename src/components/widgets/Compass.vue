@@ -234,7 +234,7 @@ const adjustLinesX = (): void => {
 watch(yaw, () => adjustLinesX())
 
 // Update canvas whenever reference variables changes
-watch(renderVariables, () => {
+watch([renderVariables, width, height], () => {
   if (!widgetStore.isWidgetVisible(widget.value)) return
   nextTick(() => renderCanvas())
 })
