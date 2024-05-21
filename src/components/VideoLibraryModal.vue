@@ -8,7 +8,7 @@
             <button
               v-for="button in menuButtons"
               :key="button.name"
-              :disabled="!button.enable"
+              :disabled="button.disabled"
               class="flex flex-col justify-center align-center"
               @click="currentTab = button.name.toLowerCase()"
             >
@@ -18,7 +18,7 @@
               <div
                 class="mb-1 text-2xl rounded-full"
                 :class="[
-                  button.enable ? 'frosted-button' : 'frosted-button-disabled',
+                  button.disabled ? 'frosted-button-disabled' : 'frosted-button',
                   currentTab === button.name.toLowerCase() ? 'w-[58px] h-[58px]' : 'w-[40px] h-[40px]',
                 ]"
               >
@@ -29,7 +29,7 @@
                   {{ button.icon }}
                 </v-icon>
               </div>
-              <div class="text-sm" :class="{ 'text-white/30': !button.enable }">
+              <div class="text-sm" :class="{ 'text-white/30': !button.disabled }">
                 {{ button.name }}
               </div>
             </button>
@@ -71,7 +71,7 @@
             <v-divider class="opacity-[0.1] ml-[-5px] w-[120%]"></v-divider>
             <button class="flex flex-col justify-center py-2 mt-4 align-center" @click="closeModal">
               <div class="frosted-button flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-1">
-                <v-icon class="text-[18px] ml-[1px]">mdi-close</v-icon>
+                <v-icon class="text-[18px]">mdi-close</v-icon>
               </div>
               <div class="text-sm">Close</div>
             </button>
@@ -305,12 +305,12 @@
                   v-for="button in fileActionButtons"
                   :key="button.name"
                   class="flex flex-col justify-center ml-6 align-center"
-                  :disabled="!button.enable"
+                  :disabled="button.disabled || false"
                   @click="!button.confirmAction && button.action()"
                 >
                   <div
                     :class="[
-                      button.enable ? 'frosted-button' : 'frosted-button-disabled',
+                      button.disabled ? 'frosted-button-disabled' : 'frosted-button',
                       !button.confirmAction && 'p-2',
                     ]"
                     class="flex flex-col justify-center mb-1 rounded-full frosted-button align-center button"
@@ -355,7 +355,6 @@
                                 ><v-tooltip open-delay="600" activator="parent" location="bottom"> Cancel </v-tooltip
                                 ><v-icon>mdi-close</v-icon></v-btn
                               >
-                              <div class="fixed top-[11px] left-[31px] h-[6px] w-[10px] bg-[#ffffff22]"></div>
                               <v-btn
                                 fab
                                 small
@@ -473,10 +472,12 @@
 
 <script setup lang="ts">
 import * as Hammer from 'hammerjs'
-import { nextTick, onBeforeUnmount, onMounted } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { ref, watch } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useVideoStore } from '@/stores/video'
+import { DialogActions } from '@/types/general'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
 
 import InteractionDialog from './InteractionDialog.vue'
@@ -488,6 +489,8 @@ const props = defineProps({
   openModal: Boolean,
 })
 const emits = defineEmits(['update:openModal'])
+
+const { showDialog } = useInteractionDialog()
 
 // Track the blob URLs to revoke them when the modal is closed
 const blobURLs = ref<string[]>([])
@@ -519,32 +522,33 @@ const showErrorTooltip = ref(false)
 const loadingData = ref(true)
 const showProcessingInteractionDialog = ref(false)
 const interactionDialogTitle = ref('')
-const interactionDialogActions = ref<object[]>([])
+const interactionDialogActions = ref<DialogActions[]>([])
 const showProgressInteractionDialog = ref(false)
 const progressInteractionDialogTitle = ref('')
-const progressInteractionDialogActions = ref<object[]>([])
+const progressInteractionDialogActions = ref<DialogActions[]>([])
 const isProcessingVideos = ref(false)
 const overallProcessingProgress = ref(0)
 const currentVideoProcessingProgress = ref([{ fileName: '', progress: 0, message: '' }])
 const numberOfFilesToProcess = ref(0)
-const showOnScreenProgress = ref(true)
+const showOnScreenProgress = ref(false)
 const lastSelectedVideo = ref<VideoLibraryFile | null>(null)
 const errorProcessingVideos = ref(false)
 const deleteButtonLoading = ref(false)
 
 const menuButtons = [
-  { name: 'Videos', icon: 'mdi-video-outline', selected: true, enable: true, tooltip: '' },
-  { name: 'Pictures', icon: 'mdi-image-outline', selected: false, enable: false, tooltip: 'Coming soon' },
+  { name: 'Videos', icon: 'mdi-video-outline', selected: true, disabled: false, tooltip: '' },
+  { name: 'Pictures', icon: 'mdi-image-outline', selected: false, disabled: true, tooltip: 'Coming soon' },
 ]
 
-const fileActionButtons = [
+const fileActionButtons = computed(() => [
   {
     name: 'Delete',
     icon: 'mdi-delete-outline',
     size: 22,
     tooltip: '',
     confirmAction: true,
-    enable: true,
+    show: true,
+    disabled: showOnScreenProgress.value === true,
     action: () => discardVideosAndUpdateDB(),
   },
   {
@@ -553,10 +557,11 @@ const fileActionButtons = [
     size: 28,
     tooltip: 'Download selected videos with logs',
     confirmAction: false,
-    enable: true,
+    show: true,
+    disabled: showOnScreenProgress.value === true,
     action: () => downloadVideoAndTelemetryFiles(),
   },
-]
+])
 
 const closeModal = (): void => {
   isVisible.value = false
@@ -752,8 +757,25 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
     await videoStore.downloadFilesFromVideoDB(dataLogFilesAdded)
   }
   if (tempUnprocessedVideos.length > 0) {
+    openDownloadInfoDialog()
     await videoStore.downloadTempVideo(tempUnprocessedVideos)
   }
+}
+
+const openDownloadInfoDialog = (): void => {
+  const hasProcessedVideos = selectedVideos.value.some((video) => video.isProcessed)
+
+  showDialog({
+    maxWidth: hasProcessedVideos ? 800 : 600,
+    title: hasProcessedVideos
+      ? 'You are downaloading both processed and unprocessed videos'
+      : 'You are downloading unprocessed video chunks',
+    message: hasProcessedVideos
+      ? `One of the .zip files contains unprocessed video chunks, which are not playable. 
+      For a playable video, you need to process it first.`
+      : 'For a playable video, you need to process it first.',
+    variant: 'info',
+  })
 }
 
 const discardVideosAndUpdateDB = async (): Promise<void> => {
@@ -1179,19 +1201,54 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-@keyframes slideInRightToLeft {
-  0% {
-    transform: scaleX(0);
-    transform-origin: right;
-  }
+@keyframes flash {
+  0%,
   100% {
-    transform: scaleX(1);
-    transform-origin: right;
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
-.slide-right-to-left {
-  animation: slideInRightToLeft 200ms ease-out forwards;
+@keyframes wobble {
+  0% {
+    transform: scale(0);
+  }
+  10% {
+    transform: scale(0.4);
+  }
+  20% {
+    transform: scale(0.8);
+  }
+  30% {
+    transform: scale(1.2);
+  }
+  40% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  80% {
+    transform: scale(0.99);
+  }
+  90% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.wobble-effect {
+  animation: wobble 1s 1;
 }
 
 @media (max-width: 640px) {
