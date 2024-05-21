@@ -19,3 +19,13 @@ export type SizeRect2D = {
    */
   height: number
 }
+
+/* eslint-disable jsdoc/require-jsdoc */
+export interface DialogActions {
+  text: string
+  action: () => void
+  color?: string
+  size?: string
+  class?: string
+  disabled?: boolean
+}
