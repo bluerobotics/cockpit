@@ -341,7 +341,11 @@ export const useVideoStore = defineStore('video', () => {
 
   const downloadFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
     console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
-    await downloadFiles(videoStoringDB, fileNames, 'Cockpit-Video-Recovery')
+    await downloadFiles(
+      videoStoringDB,
+      fileNames,
+      fileNames.length > 1 ? 'Cockpit-Video-Recordings' : 'Cockpit-Video-Recording'
+    )
   }
 
   const downloadTempVideo = async (hashes: string[]): Promise<void> => {
@@ -349,7 +353,7 @@ export const useVideoStore = defineStore('video', () => {
 
     for (const hash of hashes) {
       const fileNames = (await tempVideoChunksDB.keys()).filter((filename) => filename.includes(hash))
-      await downloadFiles(tempVideoChunksDB, fileNames, `Cockpit-Temp-Video-Chunks-${hash}`)
+      await downloadFiles(tempVideoChunksDB, fileNames, `Cockpit-Unprocessed-Video-Chunks-${hash}`)
     }
   }
 
