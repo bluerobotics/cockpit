@@ -768,7 +768,7 @@ const openDownloadInfoDialog = (): void => {
   showDialog({
     maxWidth: hasProcessedVideos ? 800 : 600,
     title: hasProcessedVideos
-      ? 'You are downaloading both processed and unprocessed videos'
+      ? 'You are downloading both processed and unprocessed videos'
       : 'You are downloading unprocessed video chunks',
     message: hasProcessedVideos
       ? `One of the .zip files contains unprocessed video chunks, which are not playable. 
