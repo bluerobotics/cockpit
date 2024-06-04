@@ -89,6 +89,9 @@ import L, { type LatLngTuple, Map } from 'leaflet'
 import Swal from 'sweetalert2'
 import { type Ref, computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import blueboatMarkerImage from '@/assets/blueboat-marker.png'
+import brov2MarkerImage from '@/assets/brov2-marker.png'
+import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
@@ -287,11 +290,11 @@ watch(vehicleStore.coordinates, () => {
   if (vehicleMarker.value === undefined) {
     vehicleMarker.value = L.marker(vehiclePosition.value)
 
-    let vehicleIconUrl = '/src/assets/generic-vehicle-marker.png'
+    let vehicleIconUrl = genericVehicleMarkerImage
     if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) {
-      vehicleIconUrl = '/src/assets/blueboat-marker.png'
+      vehicleIconUrl = blueboatMarkerImage
     } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
-      vehicleIconUrl = '/src/assets/brov2-marker.png'
+      vehicleIconUrl = brov2MarkerImage
     }
 
     const vehicleMarkerIcon = new L.Icon({
