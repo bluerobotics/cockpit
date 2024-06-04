@@ -324,25 +324,19 @@ watchThrottled(
 
 // Search for variable using fuzzy-finder
 const variableNameSearchString = ref('')
-const variableNamesToShow = ref<string[]>([])
 const allVariablesNames = ref<string[]>([])
 const showVariableChooseModal = ref(false)
 const showIconChooseModal = ref(false)
 
-watchThrottled(
-  [variableNameSearchString, allVariablesNames],
-  () => {
-    if (variableNameSearchString.value === '') {
-      variableNamesToShow.value = allVariablesNames.value
-      return
-    }
+const variableNamesToShow = computed(() => {
+  if (variableNameSearchString.value === '') {
+    return allVariablesNames.value
+  }
 
-    const variableNameFuse = new Fuse(allVariablesNames.value, fuseOptions)
-    const filteredVariablesResult = variableNameFuse.search(variableNameSearchString.value)
-    variableNamesToShow.value = filteredVariablesResult.map((r) => r.item)
-  },
-  { throttle: 300 }
-)
+  const variableNameFuse = new Fuse(allVariablesNames.value, fuseOptions)
+  const filteredVariablesResult = variableNameFuse.search(variableNameSearchString.value)
+  return filteredVariablesResult.map((r) => r.item)
+})
 
 const chooseVariable = (variable: string): void => {
   miniWidget.value.options.variableName = variable
