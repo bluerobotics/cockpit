@@ -67,8 +67,8 @@
             />
             <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
               <span
-                v-for="variable in variableNamesToShow"
-                :key="variable"
+                v-for="(variable, i) in variableNamesToShow"
+                :key="i"
                 class="h-8 p-1 m-1 overflow-x-hidden text-white transition-all rounded-md cursor-pointer select-none bg-slate-700 hover:bg-slate-400/20"
                 @click="chooseVariable(variable)"
               >
