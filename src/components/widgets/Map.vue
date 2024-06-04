@@ -304,7 +304,11 @@ watch(vehicleStore.coordinates, () => {
     })
 
     vehicleMarker.value.setIcon(vehicleMarkerIcon)
-    const vehicleMarkerTooltip = L.tooltip({ content: 'No data available', className: 'waypoint-tooltip' })
+    const vehicleMarkerTooltip = L.tooltip({
+      content: 'No data available',
+      className: 'waypoint-tooltip',
+      offset: [64, -12],
+    })
     vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
     map.value.addLayer(vehicleMarker.value)
   }
