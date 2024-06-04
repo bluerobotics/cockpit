@@ -456,6 +456,9 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       case MAVLinkType.NAMED_VALUE_FLOAT: {
         const namedValueFloatMessage = mavlink_message.message as Message.NamedValueFloat
         const messageName = namedValueFloatMessage.name.join('').replaceAll('\x00', '')
+        if (!this._availableGenericVariablesdMessagePaths.includes(messageName)) {
+          this._availableGenericVariablesdMessagePaths.push(messageName)
+        }
         this._genericVariables[messageName] = namedValueFloatMessage.value
         this.onGenericVariables.emit()
         break
