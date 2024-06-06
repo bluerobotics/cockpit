@@ -30,7 +30,7 @@ const savedProfilesKey = 'cockpit-saved-profiles-v8'
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const vehicleStore = useMainVehicleStore()
   const editingMode = ref(false)
-  const showGrid = ref(true)
+  const snapToGrid = ref(true)
   const gridInterval = ref(0.01)
   const currentMiniWidgetsProfile = useStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
   const savedProfiles = useStorage<Profile[]>(savedProfilesKey, [])
@@ -628,7 +628,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   return {
     editingMode,
-    showGrid,
+    snapToGrid,
     gridInterval,
     currentProfile,
     currentView,

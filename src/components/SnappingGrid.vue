@@ -20,6 +20,7 @@ const gridIntervalStyleY = computed(() => `${windowHeight.value * props.gridInte
 
 <style scoped>
 .grid {
+  --grid-color: #b0b0b089;
   position: absolute;
   height: 100%;
   width: 100%;
@@ -27,15 +28,15 @@ const gridIntervalStyleY = computed(() => `${windowHeight.value * props.gridInte
       0deg,
       transparent,
       transparent calc(v-bind('gridIntervalStyleY') - 1px),
-      #88f calc(v-bind('gridIntervalStyleY') - 1px),
-      #88f v-bind('gridIntervalStyleY')
+      var(--grid-color) calc(v-bind('gridIntervalStyleY') - 1px),
+      var(--grid-color) v-bind('gridIntervalStyleY')
     ),
     repeating-linear-gradient(
       -90deg,
       transparent,
       transparent calc(v-bind('gridIntervalStyleX') - 1px),
-      #88f calc(v-bind('gridIntervalStyleX') - 1px),
-      #88f v-bind('gridIntervalStyleX')
+      var(--grid-color) calc(v-bind('gridIntervalStyleX') - 1px),
+      var(--grid-color) v-bind('gridIntervalStyleX')
     );
   background-size: v-bind('gridIntervalStyleX') v-bind('gridIntervalStyleY');
   background-repeat: repeat;

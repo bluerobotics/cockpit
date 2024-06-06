@@ -8,7 +8,13 @@
       class="absolute text-2xl transition-all cursor-pointer text-slate-500 aspect-square mdi mdi-close hover:text-slate-300 left-2 top-2"
       @click="emit('update:editMode', false)"
     />
-    <p class="flex items-center justify-center mt-10 text-xl font-semibold select-none">Edit interface</p>
+    <div class="flex items-center justify-center mt-10 text-xl font-semibold select-none">
+      <p>Edit interface</p>
+      <div
+        class="absolute !bg-slate-600 right-2 icon-btn mdi mdi-dots-vertical"
+        @click.stop="editMenuDialogRevealed = true"
+      />
+    </div>
     <div class="w-full h-px my-2 sm bg-slate-800/40" />
     <div class="flex flex-col items-center justify-center w-full px-2 shrink overflow-y-clip h-[35%]">
       <p class="mb-3 text-lg font-semibold select-none">Profiles</p>
@@ -282,6 +288,15 @@
       </v-card>
     </v-dialog>
   </teleport>
+  <teleport to="body">
+    <v-dialog v-model="editMenuDialogRevealed" width="20rem">
+      <v-card class="pa-2">
+        <v-card-text>
+          <v-switch v-model="store.snapToGrid" label="Snap to grid" class="m-2 text-slate-800" />
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -338,6 +353,9 @@ const widgetAddMenuGroupOptions = {
 }
 
 const editMode = toRefs(props).editMode
+
+const editMenuDialogRevealed = ref(false)
+useConfirmDialog(editMenuDialogRevealed)
 
 const viewBeingRenamed = ref(store.currentView)
 const newViewName = ref('')

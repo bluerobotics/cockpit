@@ -262,6 +262,12 @@ const temporaryPosition = computed(() => {
     tempPos.y = 1 - maxBottomEdgePosition - size.value.height
   }
 
+  // Use grid to snap to grid
+  if (widgetStore.snapToGrid) {
+    tempPos.x = Math.round(tempPos.x / widgetStore.gridInterval) * widgetStore.gridInterval
+    tempPos.y = Math.round(tempPos.y / widgetStore.gridInterval) * widgetStore.gridInterval
+  }
+
   return tempPos
 })
 
