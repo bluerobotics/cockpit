@@ -1,7 +1,8 @@
 <template>
-  <SnappingGrid v-if="store.showGrid && store.editingMode" :grid-interval="store.gridInterval" class="snapping-grid" />
   <div class="widgets-view">
     <div v-for="view in store.viewsToShow" :key="view.hash" class="widget-view">
+      <div class="w-full h-full bg-slate-500" />
+      <SnappingGrid v-if="store.snapToGrid && store.editingMode" :grid-interval="store.gridInterval" />
       <template v-for="widget in view.widgets.slice().reverse()" :key="widget.hash">
         <WidgetHugger
           v-if="Object.values(WidgetType).includes(widget.component)"
@@ -12,7 +13,6 @@
           <component :is="componentFromType(widget.component)" :widget="widget" />
         </WidgetHugger>
       </template>
-      <div class="w-full h-full bg-slate-500" />
     </div>
   </div>
 </template>
@@ -49,9 +49,6 @@ const componentFromType = (componentType: WidgetType): AsyncComponentLoader => {
   justify-content: center;
   position: relative;
 }
-.snapping-grid {
-  z-index: 40;
-}
 .widget-view {
   position: absolute;
   width: 100%;
@@ -61,6 +58,5 @@ const componentFromType = (componentType: WidgetType): AsyncComponentLoader => {
   align-items: center;
   justify-content: center;
   background-color: rgb(122, 25, 25);
-  z-index: 50;
 }
 </style>
