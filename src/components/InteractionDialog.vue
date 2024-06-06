@@ -3,7 +3,7 @@
     <v-card :max-width="maxWidth || 600" class="main-dialog px-2 rounded-lg">
       <v-card-title>
         <div
-          class="flex justify-center test-center pt-2 mb-2 text-[20px] font-bold text-nowrap text-ellipsis overflow-x-hidden"
+          class="flex justify-center test-center pt-2 mb-1 text-[20px] font-bold text-nowrap text-ellipsis overflow-x-hidden"
           :class="`w-[${maxWidth}px]`"
         >
           {{ title }}
@@ -11,11 +11,11 @@
       </v-card-title>
       <v-card-text class="pb-5">
         <div class="flex justify-center align-center w-full mb-3">
-          <v-icon v-if="variant" size="38" color="white" class="mr-8">{{
+          <v-icon v-if="variant" size="46" :color="variant === 'success' ? 'green' : 'yellow'" class="mr-8 ml-2">{{
             variant === 'info'
               ? 'mdi-information'
               : variant === 'warning'
-              ? 'mdi-alert'
+              ? 'mdi-alert-rhombus'
               : variant === 'error'
               ? 'mdi-alert-circle'
               : 'mdi-check-circle'
@@ -43,13 +43,13 @@
             :color="button.color || undefined"
             :class="button.class || undefined"
             :disabled="button.disabled || false"
-            @click="button.action"
+            @click="handleAction(button.action)"
           >
             {{ button.text }}
           </v-btn>
         </div>
         <div v-else class="flex w-full px-1 py-2 justify-end">
-          <v-btn size="small" variant="text" @click="internalShowDialog = false">Close</v-btn>
+          <v-btn size="small" variant="text" @click="handleAction(() => (internalShowDialog = false))">Close</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -63,24 +63,65 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 
 const { closeDialog } = useInteractionDialog()
 
-/* eslint-disable jsdoc/require-jsdoc */
+/**
+ *
+ */
 interface Action {
+  /**
+   *
+   */
   text: string
+  /**
+   *
+   */
   size?: string
+  /**
+   *
+   */
   color?: string
+  /**
+   *
+   */
   class?: string
+  /**
+   *
+   */
   disabled?: boolean
+  /**
+   *
+   */
   action: () => void
 }
 
 const props = withDefaults(
   defineProps<{
+    /**
+     *
+     */
     showDialog: boolean
+    /**
+     *
+     */
     title: string
+    /**
+     *
+     */
     contentComponent: string
+    /**
+     *
+     */
     maxWidth: number
+    /**
+     *
+     */
     actions: Action[]
+    /**
+     *
+     */
     variant: string
+    /**
+     *
+     */
     message: string
   }>(),
   {
@@ -94,7 +135,7 @@ const props = withDefaults(
   }
 )
 
-const emit = defineEmits(['update:showDialog'])
+const emit = defineEmits(['update:showDialog', 'confirmed', 'dismissed'])
 
 const internalShowDialog = ref(props.showDialog)
 
@@ -109,15 +150,21 @@ watch(internalShowDialog, (newVal) => {
   if (!newVal) {
     closeDialog()
     emit('update:showDialog', newVal)
+    emit('dismissed')
   }
 })
+
+const handleAction = (action: () => void): void => {
+  action()
+  emit('confirmed')
+}
 </script>
 
 <style scoped>
 .main-dialog {
   color: white;
-  border: 1px solid #fafafa44;
-  background-color: #aaaaaa99;
+  border: 1px solid #fafafa33;
+  background-color: #aaaaaa44;
   backdrop-filter: blur(30px);
   box-shadow: 0px 4px 4px 0px #0000004c, 0px 8px 12px 6px #00000026;
 }

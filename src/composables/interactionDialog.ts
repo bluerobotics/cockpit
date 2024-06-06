@@ -5,14 +5,54 @@ import InteractionDialogComponent from '@/components/InteractionDialog.vue'
 import vuetify from '@/plugins/vuetify'
 import { DialogActions } from '@/types/general'
 
-/* eslint-disable jsdoc/require-jsdoc */
+/**
+ * Options to configure the interaction dialog.
+ */
 interface DialogOptions {
+  /**
+   * The message to display in the dialog.
+   * @type {string}
+   */
   message: string
+
+  /**
+   * The variant type of the dialog (e.g., 'info', 'warning', 'error', 'success').
+   * @type {string}
+   */
   variant: string
+
+  /**
+   * The title of the dialog.
+   * @type {string}
+   */
   title?: string
+
+  /**
+   * The actions to display in the dialog.
+   * Each action should be an object containing text, size, color, class, disabled, and action properties.
+   * @type {DialogActions[]}
+   */
   actions?: DialogActions[]
+
+  /**
+   * The maximum width of the dialog in pixels.
+   * @type {number}
+   */
   maxWidth?: number
 }
+
+/**
+ *
+ */
+interface DialogResult {
+  /**
+   *
+   */
+  isConfirmed: boolean
+}
+
+let resolveFn: (value: DialogResult | PromiseLike<DialogResult>) => void
+let rejectFn: (reason?: DialogResult) => void
 
 /**
  * Provides methods to control the interaction dialog.
@@ -20,11 +60,14 @@ interface DialogOptions {
  */
 export function useInteractionDialog(): {
   /**
-   *
+   * Shows the dialog with the provided options.
+   * @param {DialogOptions} options - Options to configure the dialog.
+   * @returns {Promise<{ isConfirmed: boolean }>} - A promise that resolves or rejects based on user action.
    */
-  showDialog: (options: DialogOptions) => void
+  showDialog: (options: DialogOptions) => Promise<DialogResult>
   /**
-   *
+   * Closes the dialog.
+   * @returns {void}
    */
   closeDialog: () => void
 } {
@@ -47,34 +90,37 @@ export function useInteractionDialog(): {
 
   let dialogApp: App<Element> | null = null
 
-  /**
-   * Mounts the dialog component to the DOM.
-   * @returns {void}
-   */
   const mountDialog = (): void => {
     const mountPoint = document.createElement('div')
     document.body.appendChild(mountPoint)
-    dialogApp = createApp(InteractionDialogComponent, dialogProps)
+    dialogApp = createApp(InteractionDialogComponent, {
+      ...dialogProps,
+      onConfirmed: () => {
+        if (resolveFn) resolveFn({ isConfirmed: true })
+      },
+      onDismissed: () => {
+        if (rejectFn) rejectFn({ isConfirmed: false })
+      },
+    })
     dialogApp.use(vuetify)
     dialogApp.mount(mountPoint)
   }
 
-  /**
-   * Shows the dialog with the provided options.
-   * @param {DialogOptions} options - Options to configure the dialog.
-   * @returns {void}
-   */
-  const showDialog = (options: DialogOptions): void => {
-    Object.assign(dialogProps, options, { showDialog: true })
-    mountDialog()
+  const showDialog = (options: DialogOptions): Promise<DialogResult> => {
+    return new Promise((resolve, reject) => {
+      Object.assign(dialogProps, options, { showDialog: true })
+      resolveFn = resolve
+      rejectFn = reject
+      mountDialog()
+    })
   }
 
-  /**
-   * Closes the dialog.
-   * @returns {void}
-   */
   const closeDialog = (): void => {
     dialogProps.showDialog = false
+    if (dialogApp) {
+      dialogApp.unmount()
+      dialogApp = null
+    }
   }
 
   onUnmounted(() => {
