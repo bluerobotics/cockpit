@@ -10,6 +10,7 @@ import { computed, ref, watch } from 'vue'
 import fixWebmDuration from 'webm-duration-fix'
 import adapter from 'webrtc-adapter'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
@@ -25,6 +26,7 @@ import { useAlertStore } from './alert'
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
   const alertStore = useAlertStore()
+  const { showDialog } = useInteractionDialog()
 
   const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
@@ -252,6 +254,21 @@ export const useVideoStore = defineStore('video', () => {
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
+
+    let losingChunksWarningIssued = false
+
+    const warnAboutChunkLoss = (): void => {
+      const chunkLossWarningMsg = `A part of your video recording could not be saved.
+        This usually happens when the device's storage is full or the performance is low.
+        We recommend stopping the recording and trying again, as the video may be incomplete or corrupted
+        on several parts.`
+
+      console.error(chunkLossWarningMsg)
+      showDialog({ title: 'Video Recording Issue', message: chunkLossWarningMsg, variant: 'error' })
+
+      losingChunksWarningIssued = true
+    }
+
     let chunksCount = -1
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
       // Since this operation is async, at any given moment there might be more than one chunk processing promise started.
@@ -259,7 +276,14 @@ export const useVideoStore = defineStore('video', () => {
       // update the chunk count/name before anything else.
       chunksCount++
       const chunkName = `${recordingHash}_${chunksCount}`
-      await tempVideoChunksDB.setItem(chunkName, e.data)
+
+      try {
+        await tempVideoChunksDB.setItem(chunkName, e.data)
+      } catch {
+        if (!losingChunksWarningIssued) warnAboutChunkLoss()
+        return
+      }
+
       const updatedInfo = unprocessedVideos.value[recordingHash]
       updatedInfo.dateLastRecordingUpdate = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
