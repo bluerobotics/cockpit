@@ -73,26 +73,25 @@ interface Action {
   action: () => void
 }
 
-const props = withDefaults(
-  defineProps<{
-    showDialog: boolean
-    title: string
-    contentComponent: string
-    maxWidth: number
-    actions: Action[]
-    variant: string
-    message: string
-  }>(),
-  {
-    showDialog: false,
-    title: '',
-    contentComponent: '',
-    maxWidth: 600,
-    actions: () => [],
-    variant: '',
-    message: '',
-  }
-)
+interface Props {
+  showDialog?: boolean
+  title?: string
+  contentComponent?: string
+  maxWidth?: number
+  actions?: Action[]
+  variant?: string
+  message?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  showDialog: false,
+  title: '',
+  contentComponent: '',
+  maxWidth: 600,
+  actions: () => [],
+  variant: '',
+  message: '',
+})
 
 const emit = defineEmits(['update:showDialog'])
 
