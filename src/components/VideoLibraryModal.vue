@@ -325,11 +325,7 @@
                       transition="slide-x-reverse-transition"
                     >
                       <template #activator="{ props: buttonProps, isActive }">
-                        <div
-                          class="flex items-center justify-center w-full h-full"
-                          v-bind="buttonProps"
-                          v-on="isActive"
-                        >
+                        <div class="flex items-center justify-center w-full h-full" v-bind="buttonProps">
                           <v-icon
                             :size="button.size"
                             :class="{ 'rotate-[-45deg]': isActive, 'outline outline-6 outline-[#ffffff55]': isActive }"
