@@ -19,14 +19,10 @@
           {{ tooltip }}
         </v-tooltip>
       </template>
-      <v-icon v-if="isRound || isUncontained" :size="iconSize" :class="iconClass" class="ml-[4%] mt-[4%]">
-        {{ icon }}
-      </v-icon>
-      <div v-else class="flex items-center justify-center w-full h-full">
-        <v-icon :size="iconSize" class="mr-2" :class="iconClass">
-          {{ icon }}
-        </v-icon>
-        <div class="text-white ml-2" :class="labelClass">
+      <Icon v-if="isRound || isUncontained" :icon="icon || ''" :width="iconSize" :class="iconClass" class="-mr-[1px]" />
+      <div v-else class="flex items-center align-center justify-center w-full h-full">
+        <Icon :icon="icon || ''" :width="iconSize" :class="iconClass" />
+        <div class="text-white" :class="labelClass">
           {{ label }}
         </div>
       </div>
@@ -42,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+import { Icon, IconifyIcon } from '@iconify/vue'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -56,7 +53,7 @@ const props = defineProps<{
   /**
    * The icon to display in the button (prepend on rectangular, centered on round).
    */
-  icon?: string
+  icon?: string | IconifyIcon
   /**
    * Additional Tailwind classes for the icon.
    */
@@ -102,7 +99,8 @@ const tooltip = computed(() => props.tooltip)
 const selected = computed(() => props.selected)
 const isRound = computed(() => props.variant === 'round')
 const isUncontained = computed(() => props.variant === 'uncontained')
-const iconSize = computed(() => (isRound.value ? (props.width || 26) * 0.6 : props.iconSize))
+const iconSize = computed(() => (isRound.value ? (props.width || 26) * 0.666 : props.iconSize))
+const iconClass = computed(() => props.iconClass)
 
 const buttonStyle = computed(() => ({
   width: props.width || 40,
