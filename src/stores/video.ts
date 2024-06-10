@@ -256,6 +256,7 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
 
     let losingChunksWarningIssued = false
+    const unsavedChunkAlerts: { [key in string]: ReturnType<typeof setTimeout> } = {}
 
     const warnAboutChunkLoss = (): void => {
       const chunkLossWarningMsg = `A part of your video recording could not be saved.
@@ -267,6 +268,10 @@ export const useVideoStore = defineStore('video', () => {
       showDialog({ title: 'Video Recording Issue', message: chunkLossWarningMsg, variant: 'error' })
 
       losingChunksWarningIssued = true
+      Object.keys(unsavedChunkAlerts).forEach((key) => {
+        clearTimeout(unsavedChunkAlerts[key])
+        delete unsavedChunkAlerts[key]
+      })
     }
 
     let chunksCount = -1
@@ -276,6 +281,9 @@ export const useVideoStore = defineStore('video', () => {
       // update the chunk count/name before anything else.
       chunksCount++
       const chunkName = `${recordingHash}_${chunksCount}`
+      if (!losingChunksWarningIssued) {
+        unsavedChunkAlerts[chunkName] = setTimeout(() => warnAboutChunkLoss(), 5000)
+      }
 
       try {
         await tempVideoChunksDB.setItem(chunkName, e.data)
@@ -302,6 +310,10 @@ export const useVideoStore = defineStore('video', () => {
           console.error('Failed to extract thumbnail:', error)
         }
       }
+
+      // If the chunk was saved, remove it from the unsaved list
+      clearTimeout(unsavedChunkAlerts[chunkName])
+      delete unsavedChunkAlerts[chunkName]
     }
 
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
