@@ -630,11 +630,9 @@ const processVideos = async (): Promise<void> => {
     isMultipleSelectionMode.value = false
     await fetchVideosAndLogData()
   } catch (error) {
-    if (error instanceof Error) {
-      console.error('Video processing failed:', error.message)
-    } else {
-      console.error('Processing failed with non-Error type:', error)
-    }
+    const errorMsg = `Video processing failed: ${(error as Error).message ?? error!.toString()}`
+    console.error(errorMsg)
+    snackbarMessage.value = errorMsg
     openSnackbar.value = true
     errorProcessingVideos.value = true
   }
@@ -771,7 +769,7 @@ const openDownloadInfoDialog = (): void => {
       ? 'You are downloading both processed and unprocessed videos'
       : 'You are downloading unprocessed video chunks',
     message: hasProcessedVideos
-      ? `One of the .zip files contains unprocessed video chunks, which are not playable. 
+      ? `One of the .zip files contains unprocessed video chunks, which are not playable.
       For a playable video, you need to process it first.`
       : 'For a playable video, you need to process it first.',
     variant: 'info',
