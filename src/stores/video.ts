@@ -469,12 +469,21 @@ export const useVideoStore = defineStore('video', () => {
 
       const chunkBlobs = chunks.map((chunk) => chunk.blob)
       debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
-      const durFixedBlob = await fixWebmDuration(new Blob([...chunkBlobs], { type: 'video/webm;codecs=vp9' }))
+
+      const mergedBlob = new Blob([...chunkBlobs], { type: 'video/webm;codecs=vp9' })
+
+      let durFixedBlob: Blob | undefined = undefined
+      try {
+        durFixedBlob = await fixWebmDuration(mergedBlob)
+      } catch {
+        const errorMsg = 'Failed to fix video duration. The processed video may present issues or be unplayable.'
+        showDialog({ title: 'Video Processing Issue', message: errorMsg, variant: 'error' })
+      }
 
       updateLastProcessingUpdate(hash)
 
       debouncedUpdateFileProgress(info.fileName, 75, `Saving video file.`)
-      await videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob)
+      await videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob ?? mergedBlob)
 
       updateLastProcessingUpdate(hash)
 
