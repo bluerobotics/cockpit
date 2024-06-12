@@ -147,12 +147,9 @@ const handleModalUpdate = (newVal: boolean): void => {
 
 // Fetch number of temporary videos on storage
 const fetchNumebrOfTempVideos = async (): Promise<void> => {
-  let numberOfVideos = 0
-  await videoStore.videoStoringDB.iterate((value, key) => {
-    key.endsWith('.webm') && numberOfVideos++
-  })
-  Object.values(videoStore.keysFailedUnprocessedVideos).forEach(() => numberOfVideos++)
-  numberOfVideosOnDB.value = numberOfVideos
+  const nProcessedVideos = (await videoStore.videoStoringDB.keys()).filter((k) => k.endsWith('.webm')).length
+  const nFailedUnprocessedVideos = Object.keys(videoStore.keysFailedUnprocessedVideos).length
+  numberOfVideosOnDB.value = nProcessedVideos + nFailedUnprocessedVideos
 }
 
 // eslint-disable-next-line jsdoc/require-jsdoc
