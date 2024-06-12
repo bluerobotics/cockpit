@@ -796,7 +796,7 @@ const discardVideosAndUpdateDB = async (): Promise<void> => {
   snackbarMessage.value = `${selectedVideoArraySize} video(s) discarded.`
   openSnackbar.value = true
   await fetchVideosAndLogData()
-  availableVideos.value.length > 0 ? (selectedVideos.value = [availableVideos.value[0]]) : (selectedVideos.value = [])
+  selectedVideos.value = availableVideos.value.length > 0 ? [availableVideos.value[0]] : []
   if (availableVideos.value.length === 1) isMultipleSelectionMode.value = false
   deleteButtonLoading.value = false
 }
@@ -847,18 +847,7 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   // Fetch unprocessed videos
   const unprocessedVideos = await videoStore.unprocessedVideos
   const unprocessedVideoOperations = Object.entries(unprocessedVideos).map(async ([hash, videoInfo]) => {
-    return {
-      dateStart: videoInfo.dateStart,
-      dateLastRecordingUpdate: videoInfo.dateLastRecordingUpdate,
-      dateFinish: videoInfo.dateFinish,
-      fileName: videoInfo.fileName,
-      vWidth: videoInfo.vWidth,
-      vHeight: videoInfo.vHeight,
-      hash: hash,
-      thumbnail: videoInfo.thumbnail,
-      url: '',
-      isProcessed: false,
-    }
+    return { ...videoInfo, ...{ hash: hash, url: '', isProcessed: false } }
   })
 
   const videos = await Promise.all(videoFilesOperations)
