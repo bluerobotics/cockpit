@@ -111,3 +111,5 @@ export interface FileDescriptor {
 export interface StorageDB {
   getItem: (key: string) => Promise<Blob | null | undefined>
 }
+
+export type DownloadProgressCallback = (progress: number, total: number) => Promise<void>
