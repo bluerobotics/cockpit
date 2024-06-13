@@ -736,7 +736,18 @@ const addLogDataToFileList = (fileNames: string[]): string[] => {
 }
 
 const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
+  let initialMessageShown = false
+
+  const fillProgressData = async (progress: number, total: number): Promise<void> => {
+    const progressPercentage = ((100 * progress) / total).toFixed(1)
+    if (!initialMessageShown) return
+    snackbarMessage.value = `Preparing download: ${progressPercentage}%.`
+    openSnackbar.value = true
+  }
+
   snackbarMessage.value = 'Getting your download ready...'
+  setTimeout(() => (initialMessageShown = true), 1500)
+
   let tempProcessedVideos: string[] = []
   let tempUnprocessedVideos: string[] = []
 
@@ -748,11 +759,11 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
   if (tempProcessedVideos.length > 0) {
     const dataLogFilesAdded = addLogDataToFileList(tempProcessedVideos)
 
-    await videoStore.downloadFilesFromVideoDB(dataLogFilesAdded)
+    await videoStore.downloadFilesFromVideoDB(dataLogFilesAdded, fillProgressData)
   }
   if (tempUnprocessedVideos.length > 0) {
     openDownloadInfoDialog()
-    await videoStore.downloadTempVideo(tempUnprocessedVideos)
+    await videoStore.downloadTempVideo(tempUnprocessedVideos, fillProgressData)
   }
 }
 

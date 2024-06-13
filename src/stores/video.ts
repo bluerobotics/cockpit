@@ -19,7 +19,14 @@ import { isEqual } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
-import type { FileDescriptor, StorageDB, StreamData, UnprocessedVideoInfo, VideoProcessingDetails } from '@/types/video'
+import type {
+  DownloadProgressCallback,
+  FileDescriptor,
+  StorageDB,
+  StreamData,
+  UnprocessedVideoInfo,
+  VideoProcessingDetails,
+} from '@/types/video'
 
 import { useAlertStore } from './alert'
 
@@ -344,15 +351,26 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  const createZipAndDownload = async (files: FileDescriptor[], zipFilename: string): Promise<void> => {
+  const createZipAndDownload = async (
+    files: FileDescriptor[],
+    zipFilename: string,
+    progressCallback?: DownloadProgressCallback
+  ): Promise<void> => {
     const zipWriter = new ZipWriter(new BlobWriter('application/zip'), { level: 0 })
-    const zipAddingPromises = files.map(({ filename, blob }) => zipWriter.add(filename, new BlobReader(blob)))
+    const zipAddingPromises = files.map(({ filename, blob }) => {
+      zipWriter.add(filename, new BlobReader(blob), { onprogress: progressCallback })
+    })
     Promise.all(zipAddingPromises)
     const blob = await zipWriter.close()
     saveAs(blob, zipFilename)
   }
 
-  const downloadFiles = async (db: StorageDB, keys: string[], zipFilenamePrefix: string): Promise<void> => {
+  const downloadFiles = async (
+    db: StorageDB,
+    keys: string[],
+    zipFilenamePrefix: string,
+    progressCallback?: DownloadProgressCallback
+  ): Promise<void> => {
     const maybeFiles = await Promise.all(
       keys.map(async (key) => ({
         blob: await db.getItem(key),
@@ -370,25 +388,29 @@ export const useVideoStore = defineStore('video', () => {
     if (files.length === 1) {
       saveAs(files[0].blob, files[0].filename)
     } else {
-      await createZipAndDownload(files, `${zipFilenamePrefix}.zip`)
+      await createZipAndDownload(files, `${zipFilenamePrefix}.zip`, progressCallback)
     }
   }
 
-  const downloadFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
+  const downloadFilesFromVideoDB = async (
+    fileNames: string[],
+    progressCallback?: DownloadProgressCallback
+  ): Promise<void> => {
     console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
     await downloadFiles(
       videoStoringDB,
       fileNames,
-      fileNames.length > 1 ? 'Cockpit-Video-Recordings' : 'Cockpit-Video-Recording'
+      fileNames.length > 1 ? 'Cockpit-Video-Recordings' : 'Cockpit-Video-Recording',
+      progressCallback
     )
   }
 
-  const downloadTempVideo = async (hashes: string[]): Promise<void> => {
+  const downloadTempVideo = async (hashes: string[], progressCallback?: DownloadProgressCallback): Promise<void> => {
     console.debug(`Downloading ${hashes.length} video chunks from the temporary database.`)
 
     for (const hash of hashes) {
       const fileNames = (await tempVideoChunksDB.keys()).filter((filename) => filename.includes(hash))
-      await downloadFiles(tempVideoChunksDB, fileNames, `Cockpit-Unprocessed-Video-Chunks-${hash}`)
+      await downloadFiles(tempVideoChunksDB, fileNames, `Cockpit-Unprocessed-Video-Chunks-${hash}`, progressCallback)
     }
   }
 
