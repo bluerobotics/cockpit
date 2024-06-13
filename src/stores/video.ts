@@ -346,9 +346,8 @@ export const useVideoStore = defineStore('video', () => {
 
   const createZipAndDownload = async (files: FileDescriptor[], zipFilename: string): Promise<void> => {
     const zipWriter = new ZipWriter(new BlobWriter('application/zip'))
-    for (const { filename, blob } of files) {
-      await zipWriter.add(filename, new BlobReader(blob))
-    }
+    const zipAddingPromises = files.map(({ filename, blob }) => zipWriter.add(filename, new BlobReader(blob)))
+    Promise.all(zipAddingPromises)
     const blob = await zipWriter.close()
     saveAs(blob, zipFilename)
   }
