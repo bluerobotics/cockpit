@@ -113,3 +113,9 @@ export interface StorageDB {
 }
 
 export type DownloadProgressCallback = (progress: number, total: number) => Promise<void>
+
+export enum VideoContentType {
+  MP4_H264 = 'video/mp4',
+  WEBM_VP8 = 'video/webm;codecs=vp8',
+  WEBM_VP9 = 'video/webm;codecs=vp9',
+}

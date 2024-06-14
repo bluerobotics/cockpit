@@ -19,12 +19,13 @@ import { isEqual } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
-import type {
+import {
   DownloadProgressCallback,
   FileDescriptor,
   StorageDB,
   StreamData,
   UnprocessedVideoInfo,
+  VideoContentType,
   VideoProcessingDetails,
 } from '@/types/video'
 
@@ -46,6 +47,7 @@ export const useVideoStore = defineStore('video', () => {
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const timeNow = useTimestamp({ interval: 500 })
+  const videoContentType = useStorage<VideoContentType>('cockpit-video-content-type', VideoContentType.MP4_H264)
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
@@ -308,7 +310,7 @@ export const useVideoStore = defineStore('video', () => {
         try {
           const videoChunk = await tempVideoChunksDB.getItem(chunkName)
           if (videoChunk) {
-            const firstChunkBlob = new Blob([videoChunk as Blob], { type: 'video/mp4' })
+            const firstChunkBlob = new Blob([videoChunk as Blob], { type: videoContentType.value })
             const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
             updatedInfo.thumbnail = thumbnail
             unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
@@ -785,6 +787,7 @@ export const useVideoStore = defineStore('video', () => {
     allowedIceProtocols,
     jitterBufferTarget,
     namesAvailableStreams,
+    videoContentType,
     videoStoringDB,
     tempVideoChunksDB,
     discardProcessedFilesFromVideoDB,

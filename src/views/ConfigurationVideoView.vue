@@ -21,6 +21,11 @@
           selection allows you to choose protocols that could perform better in your network infrastructure, enhancing
           the quality of your video streams.
         </p>
+        <br />
+        <p>
+          You can also select the container and codec user for your videos. With different options you can find a
+          balance between performance and image quality.
+        </p>
       </div>
 
       <div class="flex w-[30rem] flex-wrap">
@@ -74,6 +79,18 @@
         />
         <a class="pl-1">ms</a>
       </div>
+      <p class="text-sm font-bold text-grey-darken-1 bg-grey-lighten-5">Video content type (container and codec):</p>
+      <div class="flex flex-col items-center justify-start">
+        <v-radio-group v-model="videoContentType">
+          <v-radio
+            v-for="contentType in videoContentTypes"
+            :key="contentType"
+            :label="contentType"
+            :value="contentType"
+            class="text-sm"
+          />
+        </v-radio-group>
+      </div>
     </template>
   </BaseConfigurationView>
 </template>
@@ -83,6 +100,7 @@ import { storeToRefs } from 'pinia'
 import { onMounted } from 'vue'
 
 import { useVideoStore } from '@/stores/video'
+import { VideoContentType } from '@/types/video'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
@@ -115,5 +133,8 @@ const jitterBufferTargetRules = [
   (value: number | '') => value === '' || value <= 4000 || 'Must be <= 4000',
 ]
 
-const { allowedIceIps, allowedIceProtocols, availableIceIps, jitterBufferTarget } = storeToRefs(videoStore)
+const { allowedIceIps, allowedIceProtocols, availableIceIps, jitterBufferTarget, videoContentType } =
+  storeToRefs(videoStore)
+
+const videoContentTypes = Object.values(VideoContentType)
 </script>
