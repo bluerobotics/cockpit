@@ -308,7 +308,7 @@ export const useVideoStore = defineStore('video', () => {
         try {
           const videoChunk = await tempVideoChunksDB.getItem(chunkName)
           if (videoChunk) {
-            const firstChunkBlob = new Blob([videoChunk as Blob], { type: 'video/webm;codecs=vp9' })
+            const firstChunkBlob = new Blob([videoChunk as Blob], { type: 'video/mp4' })
             const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
             updatedInfo.thumbnail = thumbnail
             unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
