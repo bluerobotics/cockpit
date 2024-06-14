@@ -19,13 +19,15 @@ import { isEqual } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
-import type {
-  DownloadProgressCallback,
-  FileDescriptor,
-  StorageDB,
-  StreamData,
-  UnprocessedVideoInfo,
-  VideoProcessingDetails,
+import {
+  type DownloadProgressCallback,
+  type FileDescriptor,
+  type StorageDB,
+  type StreamData,
+  type UnprocessedVideoInfo,
+  type VideoProcessingDetails,
+  getBlobExtensionContainer,
+  VideoExtensionContainer,
 } from '@/types/video'
 
 import { useAlertStore } from './alert'
@@ -525,6 +527,7 @@ export const useVideoStore = defineStore('video', () => {
       updateLastProcessingUpdate(hash)
 
       const chunkBlobs = chunks.map((chunk) => chunk.blob)
+      const extensionContainer = getBlobExtensionContainer(chunkBlobs[0])
       debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
 
       const mergedBlob = new Blob([...chunkBlobs])
@@ -540,7 +543,7 @@ export const useVideoStore = defineStore('video', () => {
       updateLastProcessingUpdate(hash)
 
       debouncedUpdateFileProgress(info.fileName, 75, `Saving video file.`)
-      await videoStoringDB.setItem(`${info.fileName}.webm`, durFixedBlob ?? mergedBlob)
+      await videoStoringDB.setItem(`${info.fileName}.${extensionContainer || '.webm'}`, durFixedBlob ?? mergedBlob)
 
       updateLastProcessingUpdate(hash)
 
@@ -642,6 +645,13 @@ export const useVideoStore = defineStore('video', () => {
     for (const chunk of chunksUnprocessedVideos) {
       tempVideoChunksDB.removeItem(chunk)
     }
+  }
+
+  const isVideoFilename = (filename: string): boolean => {
+    for (const ext of Object.values(VideoExtensionContainer)) {
+      if (filename.endsWith(ext)) return true
+    }
+    return false
   }
 
   const issueSelectedIpNotAvailableWarning = (): void => {
@@ -808,5 +818,6 @@ export const useVideoStore = defineStore('video', () => {
     currentFileProgress,
     overallProgress,
     processVideoChunksAndTelemetry,
+    isVideoFilename,
   }
 })

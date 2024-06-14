@@ -5,7 +5,7 @@
     </div>
     <div class="modal-content">
       <video id="video-player" class="w-[100%]" controls autoplay preload="auto">
-        <source :src="videoFileUrl" type="video/webm" />
+        <source :src="videoFileUrl" />
       </video>
     </div>
   </div>

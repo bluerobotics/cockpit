@@ -99,7 +99,7 @@
                     preload="auto"
                     :poster="!video.isProcessed ? video.thumbnail : undefined"
                   >
-                    <source :src="video.url" type="video/webm" />
+                    <source :src="video.url" />
                   </video>
                   <div
                     v-if="selectedVideos.find((v) => v.fileName === video.fileName) && !isMultipleSelectionMode"
@@ -129,7 +129,7 @@
                   <v-tooltip open-delay="500" activator="parent" location="top">{{
                     video.isProcessed ? 'Processed video' : 'Unprocessed video'
                   }}</v-tooltip>
-                  {{ parseDateFromTitle(video.fileName) ?? 'Cockpit webm' }}
+                  {{ parseDateFromTitle(video.fileName) ?? 'Cockpit video' }}
                   <v-icon
                     size="10"
                     class="ml-1 mt-[3px]"
@@ -203,7 +203,7 @@
                 :poster="selectedVideos[0]?.thumbnail || undefined"
                 class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
               >
-                <source :src="selectedVideos[0]?.url || undefined" type="video/webm" />
+                <source :src="selectedVideos[0]?.url || undefined" />
               </video>
               <v-btn
                 v-if="
@@ -728,7 +728,8 @@ const selectProcessedVideos = (): void => {
 // Add the log files to the list of files to be downloaded/discarded
 const addLogDataToFileList = (fileNames: string[]): string[] => {
   const filesWithLogData = fileNames.flatMap((fileName) => {
-    const subtitlefileName = fileName.replace('.webm', '.ass')
+    const filenameWithoutExtension = fileName.split('.').slice(0, -1).join('.')
+    const subtitlefileName = `${filenameWithoutExtension}.ass`
     const subtitleExists = availableLogFiles.value.some((video) => video.fileName === subtitlefileName)
     return subtitleExists ? [fileName, subtitlefileName] : [fileName]
   })
@@ -820,7 +821,7 @@ const fetchVideosAndLogData = async (): Promise<void> => {
 
   // Fetch processed videos and logs
   await videoStore.videoStoringDB.iterate((value, key) => {
-    if (key.endsWith('.webm')) {
+    if (videoStore.isVideoFilename(key)) {
       videoFilesOperations.push(
         (async () => {
           const videoBlob = await videoStore.videoStoringDB.getItem<Blob>(key)
