@@ -2,175 +2,234 @@
   <BaseConfigurationView>
     <template #title>General configuration</template>
     <template #content>
-      <v-card class="pb-2 pa-5 ma-4" max-width="600px">
-        <v-icon :icon="'mdi-earth'" class="mr-3" />
-        <span class="text-h6">Global vehicle address</span>
-        <v-form
-          ref="globalAddressForm"
-          v-model="globalAddressFormValid"
-          class="justify-center d-flex align-center"
-          @submit.prevent="setGlobalAddress"
-        >
-          <v-text-field
-            v-model="newGlobalAddress"
-            variant="underlined"
-            type="input"
-            hint="Address of the Vehicle. E.g: blueos.local"
-            class="uri-input"
-            :rules="[isValidHostAddress, isValidConnectionURI]"
-          />
+      <div class="flex-col h-full mx-[1vw] w-[540px]">
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #title>Global vehicle address</template>
+          <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
+          <template #info
+            ><strong>Global Vehicle Address:</strong> Sets the network address for device communication. Change and
+            apply new settings as needed.</template
+          >
+          <template #content>
+            <v-form
+              ref="globalAddressForm"
+              v-model="globalAddressFormValid"
+              class="flex w-full mt-2"
+              @submit.prevent="setGlobalAddress"
+            >
+              <div class="flex justify-center align-center">
+                <v-text-field
+                  v-model="newGlobalAddress"
+                  variant="filled"
+                  type="input"
+                  :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                  hint="Address of the Vehicle. E.g: blueos.local"
+                  class="uri-input"
+                  :rules="[isValidHostAddress, isValidConnectionURI]"
+                  @click:append-inner="resetGlobalAddress"
+                >
+                  <template #append-inner>
+                    <v-icon v-tooltip.bottom="'Reset global address'" color="white" @click="resetGlobalAddress">
+                      mdi-refresh
+                    </v-icon>
+                  </template>
+                </v-text-field>
+                <v-btn
+                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                  class="bg-transparent -mt-5"
+                  :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
+                  variant="text"
+                  type="submit"
+                >
+                  Apply
+                </v-btn>
+              </div>
+            </v-form>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #info>
+            <strong>Mavlink2Rest Connection:</strong> Configures MAVLink over HTTP/WS. Toggle to enable/disable and
+            apply settings to take effect.
+          </template>
+          <template #title>Mavlink2Rest connection</template>
+          <template #subtitle>
+            Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
+            Status:
+            {{
+              vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
+            }}
+          </template>
+          <template #content>
+            <v-progress-circular v-if="vehicleConnected === undefined" indeterminate size="24" class="mr-3" />
+            <v-form
+              ref="mainConnectionForm"
+              v-model="mainConnectionFormValid"
+              class="flex w-full mt-2"
+              @submit.prevent="setMainVehicleConnectionURI"
+            >
+              <div class="flex flex-row w-full justify-between align-center">
+                <div class="w-[350px]">
+                  <v-text-field
+                    v-model="mainConnectionURI"
+                    :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
+                    variant="filled"
+                    type="input"
+                    :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                    hint="URI of a Mavlink2Rest web-socket"
+                    :rules="[isValidSocketConnectionURI]"
+                  >
+                    <template #append-inner>
+                      <v-icon
+                        v-tooltip.bottom="'Reset to default'"
+                        color="white"
+                        :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
+                        @click="resetMainVehicleConnectionURI"
+                      >
+                        mdi-refresh
+                      </v-icon>
+                    </template>
+                  </v-text-field>
+                </div>
 
-          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
-          <v-btn
-            v-tooltip.bottom="'Reset to default'"
-            :disabled="newGlobalAddress === defaultGlobalAddress"
-            icon="mdi-refresh"
-            class="mx-1 mb-5 pa-0"
-            rounded="lg"
-            flat
-            @click="resetGlobalAddress"
-          />
-        </v-form>
-        <span>Current address: {{ mainVehicleStore.globalAddress }} </span><br />
-      </v-card>
-      <v-card class="pb-2 pa-5 ma-4" max-width="600px">
-        <v-progress-circular v-if="vehicleConnected === undefined" indeterminate size="24" class="mr-3" />
-        <v-icon v-else :icon="vehicleConnected ? 'mdi-lan-connect' : 'mdi-lan-disconnect'" class="mr-3" />
-        <span class="text-h6">Mavlink2Rest connection</span>
-        <v-form
-          ref="mainConnectionForm"
-          v-model="mainConnectionFormValid"
-          class="justify-center d-flex align-center"
-          @submit.prevent="setMainVehicleConnectionURI"
-        >
-          <v-checkbox
-            v-model="mainVehicleStore.customMainConnectionURI.enabled"
-            v-tooltip.bottom="'Enable custom'"
-            class="mx-1 mb-5 pa-0"
-            rounded="lg"
-            hide-details
-          />
-
-          <v-text-field
-            v-model="mainConnectionURI"
-            :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
-            label="Mavlink2Rest URI"
-            variant="underlined"
-            type="input"
-            hint="URI of a Mavlink2Rest web-socket"
-            class="uri-input"
-            :rules="[isValidSocketConnectionURI]"
-          />
-
-          <v-btn
-            v-tooltip.bottom="'Set'"
-            :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
-            icon="mdi-check"
-            class="mx-1 mb-5 pa-0"
-            rounded="lg"
-            flat
-            type="submit"
-          />
-          <v-btn
-            v-tooltip.bottom="'Reset to default'"
-            :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
-            icon="mdi-refresh"
-            class="mx-1 mb-5 pa-0"
-            rounded="lg"
-            flat
-            @click="resetMainVehicleConnectionURI"
-          />
-        </v-form>
-        <span>Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }} </span><br />
-        <span
-          >Status:
-          {{
-            vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
-          }}</span
-        >
-      </v-card>
-      <v-card class="pb-2 pa-5 ma-4" max-width="600px">
-        <v-icon :icon="'mdi-lan-pending'" class="mr-3" />
-        <span class="text-h6">WebRTC connection</span>
-        <v-form
-          ref="webRTCSignallingForm"
-          v-model="webRTCSignallingFormValid"
-          class="justify-center d-flex align-center"
-          @submit.prevent="setWebRTCSignallingURI"
-        >
-          <v-checkbox
-            v-model="mainVehicleStore.customWebRTCSignallingURI.enabled"
-            v-tooltip.bottom="'Enable custom'"
-            class="mx-1 mb-5 pa-0"
-            rounded="lg"
-            hide-details
-          />
-
-          <v-text-field
-            v-model="webRTCSignallingURI"
-            :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
-            label="WebRTC Signalling Server URI"
-            variant="underlined"
-            type="input"
-            hint="URI of a WebRTC Signalling Server URI"
-            class="uri-input"
-            :rules="[isValidSocketConnectionURI]"
-          />
-
-          <v-btn
-            v-tooltip.bottom="'Set'"
-            :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
-            icon="mdi-check"
-            class="mx-1 mb-5 pa-0"
-            rounded="lg"
-            flat
-            type="submit"
-          />
-          <v-btn
-            v-tooltip.bottom="'Reset to default'"
-            :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
-            icon="mdi-refresh"
-            class="mx-1 mb-5 pa-0"
-            rounded="lg"
-            flat
-            @click="resetWebRTCSignallingURI"
-          />
-        </v-form>
-        <span>Current address: {{ mainVehicleStore.webRTCSignallingURI.toString() }} </span><br />
-        <div class="my-4">
-          <span class="text-lg">Custom RTC configuration:</span>
-          <div class="mt-2">
-            <div class="flex">
-              <v-checkbox
-                v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
-                v-tooltip.bottom="'Enable custom'"
-                class="mx-1 mb-5 pa-0"
-                rounded="lg"
-                hide-details
-              />
+                <v-btn
+                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                  class="bg-transparent -mt-5 -ml-6"
+                  :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
+                  variant="text"
+                  type="submit"
+                >
+                  Apply
+                </v-btn>
+                <div
+                  class="flex flex-col align-end text-[10px]"
+                  :class="interfaceStore.isOnSmallScreen ? '-mt-3' : '-mt-5'"
+                >
+                  <v-switch
+                    v-model="mainVehicleStore.customMainConnectionURI.enabled"
+                    v-tooltip.bottom="'Enable custom'"
+                    class="-mt-5 bg-transparent"
+                    :class="interfaceStore.isOnSmallScreen ? 'mr-1' : undefined"
+                    :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                    hide-details
+                  />
+                  <div class="-mt-[4px]">
+                    {{ mainVehicleStore.customMainConnectionURI.enabled ? 'Enabled' : 'Disabled' }}
+                  </div>
+                </div>
+              </div>
+            </v-form>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #info>
+            <strong>WebRTC connection:</strong> Establishes real-time communication over the web. Set the signaling
+            server URI and toggle to activate.
+          </template>
+          <template #title>WebRTC connection</template>
+          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI.toString() }}</template>
+          <template #content>
+            <v-form
+              ref="webRTCSignallingForm"
+              v-model="webRTCSignallingFormValid"
+              class="justify-center d-flex align-center mt-2"
+              @submit.prevent="setWebRTCSignallingURI"
+            >
+              <div class="flex justify-between align-center w-full">
+                <div class="w-[350px]">
+                  <v-text-field
+                    v-model="webRTCSignallingURI"
+                    :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
+                    variant="filled"
+                    type="input"
+                    :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                    hint="URI of a WebRTC Signalling Server URI"
+                    class="uri-input"
+                    :rules="[isValidSocketConnectionURI]"
+                  >
+                    <template #append-inner>
+                      <v-icon
+                        v-tooltip.bottom="'Reset to default'"
+                        color="white"
+                        :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
+                        @click="resetWebRTCSignallingURI"
+                      >
+                        mdi-refresh
+                      </v-icon>
+                    </template>
+                  </v-text-field>
+                </div>
+                <v-btn
+                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                  :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
+                  class="bg-transparent -mt-5 -ml-6"
+                  variant="text"
+                  type="submit"
+                >
+                  Apply
+                </v-btn>
+                <div
+                  class="flex flex-col align-end text-[10px]"
+                  :class="interfaceStore.isOnSmallScreen ? '-mt-3' : '-mt-5'"
+                >
+                  <v-switch
+                    v-model="mainVehicleStore.customWebRTCSignallingURI.enabled"
+                    v-tooltip.bottom="'Enable custom'"
+                    class="-mt-5 bg-transparent"
+                    :class="interfaceStore.isOnSmallScreen ? 'mr-1' : undefined"
+                    :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                    hide-details
+                  />
+                  <div class="-mt-[4px]">
+                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? 'Enabled' : 'Disabled' }}
+                  </div>
+                </div>
+              </div>
+            </v-form>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #title>Custom RTC Configuration</template>
+          <template #content>
+            <div class="flex justify-between mt-2 w-full">
               <v-textarea
                 id="rtcConfigTextInput"
                 v-model="customRtcConfiguration"
                 :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
-                variant="underlined"
+                variant="outlined"
                 label="Custom WebRTC Configuration"
-                clearable
-                :rows="8"
+                :rows="6"
                 hint="e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
-                class="uri-input"
+                class="w-full"
               />
-              <v-btn
-                v-tooltip.bottom="'Save'"
-                icon="mdi-check"
-                class="mx-1 mb-5 pa-0"
-                rounded="lg"
-                flat
-                @click="updateWebRtcConfiguration"
-              />
+              <div class="flex flex-col justify-around align-center w-[100px] -mr-6">
+                <GlassButton
+                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                  variant="uncontained"
+                  label="APPLY"
+                  :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
+                  label-class="font-thin text-[15px] opacity-[0.95] -ml-1"
+                  no-effects
+                  class="-mt-8"
+                  @click="handleCustomRtcConfiguration"
+                />
+                <div class="flex flex-col align-end text-[10px] -mt-8">
+                  <v-switch
+                    v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
+                    v-tooltip.bottom="'Enable custom'"
+                    class="-mt-5 bg-transparent"
+                    rounded="lg"
+                    hide-details
+                  />
+                  <div class="-mt-[4px]">
+                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? 'Enabled' : 'Disabled' }}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </v-card>
+          </template>
+        </ExpansiblePanel>
+      </div>
     </template>
   </BaseConfigurationView>
 </template>
@@ -179,15 +238,19 @@
 import { onMounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import GlassButton from '@/components/GlassButton.vue'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import { isValidNetworkAddress } from '@/libs/utils'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const mainVehicleStore = useMainVehicleStore()
+const interfaceStore = useAppInterfaceStore()
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
@@ -213,6 +276,12 @@ const resetGlobalAddress = async (): Promise<void> => {
   newGlobalAddress.value = defaultGlobalAddress
 
   await setGlobalAddress()
+}
+
+const handleCustomRtcConfiguration = (): void => {
+  if (mainVehicleStore.customWebRTCConfiguration.enabled) {
+    updateWebRtcConfiguration()
+  }
 }
 
 /** Main vehicle connection */
@@ -389,6 +458,6 @@ onMounted(() => {
 
 <style scoped>
 .uri-input {
-  min-width: 350px;
+  width: 350px;
 }
 </style>
