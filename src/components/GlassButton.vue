@@ -1,45 +1,57 @@
 <template>
   <div
-    class="flex flex-col items-center 2xl:gap-y-1 xl: gap-y-1 cursor-pointer"
-    :class="isUncontained ? 'mark-on-hover py-2 ' : undefined"
+    class="flex flex-col items-center 2xl:gap-y-1 xl: gap-y-1 py-2"
+    :class="[
+      isUncontained && !isSelected ? (isNoEffects ? '' : 'mark-on-hover') : '',
+      isSelected === true ? 'frosted-button-selected' : '',
+      isDisabled ? 'opacity-[0.4] cursor-default' : 'opacity-100 cursor-pointer',
+    ]"
   >
     <button
-      :disabled="disabled"
+      :disabled="isDisabled"
       class="flex items-center justify-center"
       :class="[
         isUncontained ? 'no-glass' : 'frosted-button',
-        selected ? 'frosted-button-selected' : '',
-        { 'frosted-button-disabled': disabled, 'rounded-full': isRound },
+        { 'frosted-button-disabled': isDisabled, 'rounded-full': isRound },
         buttonClass,
       ]"
-      :style="{ width: buttonStyle.width!.toString() + 'px', height: buttonStyle.height!.toString() + 'px' }"
+      :style="{ width: buttonStyle.width.toString() + 'px', height: buttonStyle.height.toString() + 'px' }"
     >
       <template v-if="tooltip">
         <v-tooltip open-delay="600" activator="parent" location="top">
           {{ tooltip }}
         </v-tooltip>
       </template>
-      <Icon v-if="isRound || isUncontained" :icon="icon || ''" :width="iconSize" :class="iconClass" class="-mr-[1px]" />
+      <Icon
+        v-if="isRound || isUncontained"
+        :icon="icon || ''"
+        :width="props.iconSize || calculatedIconSize"
+        :class="[iconClass, interfaceStore.isOnSmallScreen ? '-mr-[2px] -mb-[1px]' : '-mr-[1px]']"
+        class="lg:-mr-[2px]"
+      />
       <div v-else class="flex items-center align-center justify-center w-full h-full">
-        <Icon :icon="icon || ''" :width="iconSize" :class="iconClass" />
-        <div class="text-white" :class="labelClass">
+        <Icon :icon="icon || ''" :width="props.iconSize || calculatedIconSize" :class="iconClass" />
+        <div class="text-white select-none" :class="labelClass">
           {{ label }}
         </div>
       </div>
     </button>
     <div
       v-if="isRound || isUncontained"
-      class="flex justify-center align-center text-center text-white px-4 font-semibold 2xl:mt-2 xl:mt-1 lg:mt-0 md:mt-0 sm:-mt-1 mt-1"
+      class="flex justify-center align-center text-center select-none text-white px-4 font-semibold 2xl:mt-2 xl:mt-1 lg:mt-0 md:mt-0 sm:-mt-1 mt-1"
       :class="labelClass"
     >
       {{ label }}
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
 import { Icon, IconifyIcon } from '@iconify/vue'
 import { computed } from 'vue'
+
+import { useAppInterfaceStore } from '@/stores/appInterface'
+
+const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps<{
   /**
@@ -90,21 +102,26 @@ const props = defineProps<{
    * The height of the button.
    */
   height?: number
+  /**
+   * No effects on hover.
+   */
+  noEffects?: boolean
 }>()
 
 const label = computed(() => props.label)
 const icon = computed(() => props.icon)
-const disabled = computed(() => props.disabled)
+const isDisabled = computed(() => props.disabled)
 const tooltip = computed(() => props.tooltip)
-const selected = computed(() => props.selected)
+const isSelected = computed(() => props.selected)
 const isRound = computed(() => props.variant === 'round')
 const isUncontained = computed(() => props.variant === 'uncontained')
-const iconSize = computed(() => (isRound.value ? (props.width || 26) * 0.666 : props.iconSize))
+const calculatedIconSize = computed(() => (isRound.value ? (props.width || 26) * 0.666 : props.iconSize))
 const iconClass = computed(() => props.iconClass)
+const isNoEffects = computed(() => props.noEffects)
 
 const buttonStyle = computed(() => ({
-  width: props.width || 40,
-  height: isRound.value ? props.width : props.height || 40,
+  width: props.width || (props.iconSize || 24) * 1.1,
+  height: (isRound.value ? props.width : props.height) || (props.iconSize || 24) * 1.1,
 }))
 </script>
 
@@ -120,9 +137,7 @@ const buttonStyle = computed(() => ({
   background-color: rgba(255, 255, 255, 0.35);
 }
 .frosted-button-selected {
-  background-color: rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 .frosted-button-disabled {
   background-color: rgba(255, 255, 255, 0.3);
@@ -137,7 +152,7 @@ const buttonStyle = computed(() => ({
   color: white;
 }
 .mark-on-hover:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 .icon-container {
   display: flex;
