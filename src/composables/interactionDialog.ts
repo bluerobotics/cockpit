@@ -10,7 +10,7 @@ import { DialogActions } from '@/types/general'
  */
 interface DialogOptions {
   /**
-   * The message to display in the dialog.
+   * Message to display in the dialog. If an array, elements will be displayed as an item list.
    * @type {string}
    */
   message: string | string[]
@@ -36,7 +36,7 @@ interface DialogOptions {
 
   /**
    * The maximum width of the dialog in pixels.
-   * @type {number}
+   * @type {string | number}
    */
   maxWidth?: string | number
 }
