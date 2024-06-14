@@ -1,26 +1,29 @@
 <template>
-  <v-dialog v-model="internalShowDialog" persistent :max-width="maxWidth || 600">
-    <v-card :max-width="maxWidth || 600" class="main-dialog px-2 rounded-lg">
+  <v-dialog v-model="internalShowDialog" persistent :max-width="maxWidth || '600px'">
+    <v-card :max-width="maxWidth || '600px'" class="main-dialog px-2 rounded-lg">
       <v-card-title>
         <div
-          class="flex justify-center test-center pt-2 mb-1 text-[20px] font-bold text-nowrap text-ellipsis overflow-x-hidden"
-          :class="`w-[${maxWidth}px]`"
+          class="flex justify-center align-center text-center pt-2 mb-1 font-bold text-nowrap text-ellipsis overflow-x-hidden"
+          :class="interfaceStore.isOnPhoneScreen ? 'text-[18px]' : 'text-[20px]'"
         >
           {{ title }}
         </div>
       </v-card-title>
-      <v-card-text class="pb-5">
+      <v-card-text class="pb-2">
         <div class="flex justify-center align-center w-full mb-3">
-          <v-icon v-if="variant" size="46" :color="variant === 'success' ? 'green' : 'yellow'" class="mr-8 ml-2">{{
-            variant === 'info'
-              ? 'mdi-information'
-              : variant === 'warning'
-              ? 'mdi-alert-rhombus'
-              : variant === 'error'
-              ? 'mdi-alert-circle'
-              : 'mdi-check-circle'
-          }}</v-icon>
-          <div class="text-lg">{{ message }}</div>
+          <v-icon v-if="variant !== 'text-only'" size="46" :color="iconColor" class="mr-8 ml-2">{{ iconType }}</v-icon>
+          <div
+            v-if="isArrayMessage"
+            class="flex flex-col mb-3 gap-y-2 w-[90%] text-start"
+            :class="interfaceStore.isOnPhoneScreen ? 'text-[13px] px-2' : 'text-lg px-5'"
+          >
+            <li v-for="messageUnit in message" :key="messageUnit">
+              {{ messageUnit }}
+            </li>
+          </div>
+          <div v-else class="text-center" :class="interfaceStore.isOnPhoneScreen ? 'text-xs' : 'text-lg'">
+            {{ message }}
+          </div>
         </div>
         <slot name="content"></slot>
         <template v-if="contentComponent">
@@ -33,8 +36,11 @@
       <v-card-actions>
         <div
           v-if="actions && actions.length > 0"
-          class="flex w-full px-1 py-2"
-          :class="actions.length === 1 ? 'justify-end' : 'justify-between'"
+          class="flex w-full"
+          :class="[
+            actions.length === 1 ? 'justify-end' : 'justify-between',
+            interfaceStore.isOnPhoneScreen ? 'px-0 py-1' : 'px-1 py-2',
+          ]"
         >
           <v-btn
             v-for="(button, index) in actions"
@@ -57,11 +63,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const { closeDialog } = useInteractionDialog()
+const interfaceStore = useAppInterfaceStore()
 
 /**
  * Interface to an array of buttons for the Interaction Dialog's footer
@@ -140,6 +148,25 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits(['update:showDialog', 'confirmed', 'dismissed'])
 
 const internalShowDialog = ref(props.showDialog)
+
+const isArrayMessage = computed(() => Array.isArray(props.message))
+
+const iconType = computed(() => {
+  switch (props.variant) {
+    case 'info':
+      return 'mdi-information'
+    case 'warning':
+      return 'mdi-alert-rhombus'
+    case 'error':
+      return 'mdi-alert-circle'
+    default:
+      return 'mdi-check-circle'
+  }
+})
+
+const iconColor = computed(() => {
+  return props.variant === 'success' ? 'green' : 'yellow'
+})
 
 watch(
   () => props.showDialog,
