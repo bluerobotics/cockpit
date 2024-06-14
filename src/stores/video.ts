@@ -527,7 +527,7 @@ export const useVideoStore = defineStore('video', () => {
       const chunkBlobs = chunks.map((chunk) => chunk.blob)
       debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
 
-      const mergedBlob = new Blob([...chunkBlobs], { type: 'video/webm;codecs=vp9' })
+      const mergedBlob = new Blob([...chunkBlobs])
 
       let durFixedBlob: Blob | undefined = undefined
       try {
