@@ -2,178 +2,115 @@
   <v-app>
     <v-main>
       <transition name="slide-in-left">
-        <div v-if="showMainMenu" ref="mainMenu" class="left-menu slide-in">
+        <div
+          v-if="showMainMenu"
+          ref="mainMenu"
+          class="left-menu slide-in elevation-10"
+          :style="simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth"
+        >
           <v-window v-model="mainMenuStep" class="h-full w-full">
-            <v-window-item :value="1" class="h-full">
-              <div class="flex flex-col pt-5 pb-6 h-full justify-between align-center gap-y-10">
-                <GlassButton
-                  v-if="route.name === 'widgets-view'"
-                  label="Edit Mode"
-                  :selected="widgetStore.editingMode"
-                  :label-class="menuLabelSize"
-                  variant="round"
-                  :width="buttonSize"
-                  icon="mdi-pencil"
-                  :disabled="false"
-                  @click="
-                    () => {
-                      widgetStore.editingMode = !widgetStore.editingMode
-                      closeMainMenu()
-                    }
-                  "
-                />
-                <GlassButton
-                  v-if="route.name !== 'widgets-view'"
-                  label="Flight"
-                  :label-class="menuLabelSize"
-                  variant="round"
-                  :width="buttonSize"
-                  icon="mdi-send"
-                  :disabled="false"
-                  :selected="$route.name === 'Flight'"
-                  @click="
-                    () => {
-                      $router.push('/')
-                      closeMainMenu()
-                    }
-                  "
-                />
-                <GlassButton
-                  v-if="route.name !== 'Mission planning'"
-                  label="Mission Planning"
-                  :label-class="menuLabelSize"
-                  variant="round"
-                  icon="mdi-map-marker-radius"
-                  :width="buttonSize"
-                  :disabled="false"
-                  :selected="$route.name === 'Mission planning'"
-                  @click="
-                    () => {
-                      $router.push('/mission-planning')
-                      closeMainMenu()
-                    }
-                  "
-                />
-                <GlassButton
-                  label="Configuration"
-                  :label-class="menuLabelSize"
-                  icon="mdi-cog"
-                  variant="round"
-                  button-class="-mt-1"
-                  :width="buttonSize"
-                  :disabled="false"
-                  :selected="showConfigurationMenu"
-                  @click="mainMenuStep = 2"
-                />
-                <GlassButton
-                  :label="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
-                  :label-class="menuLabelSize"
-                  :icon="fullScreenToggleIcon"
-                  variant="round"
-                  :width="buttonSize"
-                  :disabled="false"
-                  :selected="false"
-                  @click="
-                    () => {
-                      toggleFullscreen()
-                      closeMainMenu()
-                    }
-                  "
-                />
-              </div>
-            </v-window-item>
-            <v-window-item :value="2" class="h-full w-full">
-              <div class="flex flex-col pt-1 pb-2 w-full h-full justify-between gap-y-1">
-                <GlassButton
-                  label="General"
-                  :label-class="menuLabelSize"
-                  icon="mdi-view-dashboard-variant"
-                  variant="uncontained"
-                  no-glass
-                  :height="buttonSize * 0.5"
-                  :icon-size="buttonSize * 0.6"
-                  :disabled="false"
-                />
-                <GlassButton
-                  label="Joystick"
-                  :label-class="menuLabelSize"
-                  icon="mdi-controller"
-                  variant="uncontained"
-                  no-glass
-                  :height="buttonSize * 0.5"
-                  :icon-size="buttonSize * 0.6"
-                  :disabled="false"
-                />
-                <GlassButton
-                  label="Video"
-                  :label-class="menuLabelSize"
-                  icon="mdi-video"
-                  variant="uncontained"
-                  no-glass
-                  :height="buttonSize * 0.5"
-                  :icon-size="buttonSize * 0.6"
-                  :disabled="false"
-                />
-                <GlassButton
-                  label="Telemetry"
-                  :label-class="menuLabelSize"
-                  icon="mdi-subtitles-outline"
-                  variant="uncontained"
-                  no-glass
-                  :height="buttonSize * 0.5"
-                  :icon-size="buttonSize * 0.6"
-                  :disabled="false"
-                />
-                <GlassButton
-                  label="Alerts"
-                  :label-class="menuLabelSize"
-                  icon="mdi-alert-rhombus-outline"
-                  variant="uncontained"
-                  no-glass
-                  :height="buttonSize * 0.5"
-                  :icon-size="buttonSize * 0.6"
-                  :disabled="false"
-                />
-                <GlassButton
-                  label="Dev"
-                  :label-class="menuLabelSize"
-                  icon="mdi-dev-to"
-                  variant="uncontained"
-                  no-glass
-                  :height="buttonSize * 0.5"
-                  :icon-size="buttonSize * 0.6"
-                  :disabled="false"
-                />
-                <GlassButton
-                  label="Mission"
-                  :label-class="menuLabelSize"
-                  icon="mdi-map-marker-path"
-                  variant="uncontained"
-                  no-glass
-                  :height="buttonSize * 0.5"
-                  :icon-size="buttonSize * 0.6"
-                  :disabled="false"
-                />
-                <div class="flex flex-col justify-center align-center">
-                  <v-divider width="70%" class="mb-4" />
-                  <GlassButton
-                    :label-class="menuLabelSize"
-                    icon="mdi-arrow-left"
-                    variant="round"
-                    :width="buttonSize / 2.4"
-                    :disabled="false"
-                    :selected="false"
-                    @click="mainMenuStep = 1"
-                  />
-                </div>
-              </div>
-            </v-window-item>
+            <div
+              class="flex flex-col h-full justify-between align-center items-center"
+              :class="
+                interfaceStore.isOnSmallScreen
+                  ? 'gap-y-2 pt-2 pb-3 sm:gap-y-1 sm:py-0 sm:-ml-[3px] xs:gap-y-1 xs:py-0 xs:-ml-[3px]'
+                  : 'lg:gap-y-4 xl:gap-y-5 gap-y-6 py-6'
+              "
+            >
+              <GlassButton
+                v-if="route.name === 'widgets-view'"
+                :label="simplifiedMainMenu ? '' : 'Edit Mode'"
+                :selected="widgetStore.editingMode"
+                :label-class="menuLabelSize"
+                :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
+                :width="buttonSize"
+                icon="mdi-pencil"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                :disabled="false"
+                @click="
+                  () => {
+                    widgetStore.editingMode = !widgetStore.editingMode
+                    closeMainMenu()
+                  }
+                "
+              />
+              <GlassButton
+                v-if="route.name !== 'widgets-view'"
+                :label="simplifiedMainMenu ? '' : 'Flight'"
+                :label-class="menuLabelSize"
+                :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
+                :width="buttonSize"
+                icon="mdi-send"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                :disabled="false"
+                :selected="$route.name === 'Flight'"
+                @click="
+                  () => {
+                    $router.push('/')
+                    closeMainMenu()
+                  }
+                "
+              />
+              <GlassButton
+                v-if="route.name !== 'Mission planning'"
+                :label="simplifiedMainMenu ? '' : 'Mission Planning'"
+                :label-class="menuLabelSize"
+                :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
+                icon="mdi-map-marker-radius-outline"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                :width="buttonSize"
+                :disabled="false"
+                :selected="$route.name === 'Mission planning'"
+                @click="
+                  () => {
+                    $router.push('/mission-planning')
+                    closeMainMenu()
+                  }
+                "
+              />
+              <GlassButton
+                :label="simplifiedMainMenu ? '' : 'Settings'"
+                :label-class="menuLabelSize"
+                icon="mdi-cog-outline"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
+                :button-class="!simplifiedMainMenu ? '-mt-1' : undefined"
+                :width="buttonSize"
+                :disabled="false"
+                :selected="showConfigurationMenu"
+                @click="showConfigurationMenu = true"
+              />
+              <GlassButton
+                :label="simplifiedMainMenu ? '' : isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+                :label-class="menuLabelSize"
+                :icon="fullScreenToggleIcon"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
+                :button-class="simplifiedMainMenu ? '-mb-2' : ''"
+                :width="buttonSize"
+                :disabled="false"
+                :selected="false"
+                @click="
+                  () => {
+                    toggleFullscreen()
+                    closeMainMenu()
+                  }
+                "
+              />
+            </div>
           </v-window>
         </div>
       </transition>
 
       <teleport to="body">
-        <GlassModal :is-visible="showConfigurationMenu"><ConfigurationGeneralView /></GlassModal>
+        <v-dialog v-model="showConfigurationMenu" transition="dialog-bottom-transition" width="100%" height="100%">
+          <ConfigurationMenu />
+        </v-dialog>
       </teleport>
 
       <teleport to="body">
@@ -270,9 +207,10 @@
 import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp } from '@vueuse/core'
 import { format } from 'date-fns'
 import Swal from 'sweetalert2'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, DefineComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import ConfigurationMenu from '@/components/ConfigurationMenu.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { coolMissionNames } from '@/libs/funny-name/words'
 import {
@@ -292,19 +230,52 @@ import { datalogger } from './libs/sensors-logging'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
+
 const { showDialog, closeDialog } = useInteractionDialog()
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
-const responsiveStore = useAppInterfaceStore()
+const interfaceStore = useAppInterfaceStore()
 
 const showConfigurationMenu = ref(false)
+type ConfigComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | null
+const currentConfigMenuComponent = ref<ConfigComponent>(null)
 
 // Main menu
 const showMainMenu = ref(false)
 const isMenuOpen = ref(false)
 const isSlidingOut = ref(false)
 const mainMenuStep = ref(1)
+const simplifiedMainMenu = ref(false)
+const windowHeight = ref(window.innerHeight)
+
+watch(
+  () => windowHeight.value < 450,
+  (isSmall: boolean) => {
+    simplifiedMainMenu.value = isSmall
+  }
+)
+
+const updateWindowHeight = (): void => {
+  windowHeight.value = window.innerHeight
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowHeight)
+  if (windowHeight.value < 450) {
+    simplifiedMainMenu.value = true
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateWindowHeight)
+})
+
+const mainMenuWidth = computed(() => {
+  const width =
+    interfaceStore.isOnSmallScreen && mainMenuStep.value === 2 ? '60px' : `${interfaceStore.mainMenuWidth}px`
+  return { width }
+})
 
 let requestDisarmConfirmationPopup = false
 
@@ -322,7 +293,7 @@ const openMainMenu = (): void => {
   if (vehicleStore.isArmed) {
     showDialog({
       title: 'Be careful',
-      maxWidth: 650,
+      maxWidth: '650px',
       message: 'The vehicle is currently armed and it is not recommended to open the main menu.',
       actions: [
         {
@@ -367,6 +338,7 @@ const closeMainMenu = (): void => {
     isSlidingOut.value = false
     isMenuOpen.value = false
     mainMenuStep.value = 1
+    currentConfigMenuComponent.value = null
   }, 20)
 }
 
@@ -392,20 +364,23 @@ onBeforeUnmount(() => {
 })
 
 const buttonSize = computed(() => {
-  if (responsiveStore.is2xl) return 60
-  if (responsiveStore.isXl) return 55
-  if (responsiveStore.isLg) return 50
-  if (responsiveStore.isMd) return 45
-  if (responsiveStore.isSm) return 30
-  return 25
+  if (interfaceStore.is2xl) return 60
+  if (interfaceStore.isXl) return 55
+  if (interfaceStore.isLg) return 50
+  if (interfaceStore.isMd) return 45
+  if (interfaceStore.isSm && windowHeight.value > 700) return 50
+  if (interfaceStore.isSm && windowHeight.value < 700) return 40
+  if (interfaceStore.isXs && windowHeight.value >= 700) return 50
+  return 40
 })
 
 const menuLabelSize = computed(() => {
-  if (responsiveStore.is2xl) return 'text-[16px]'
-  if (responsiveStore.isXl) return 'text-[15px]'
-  if (responsiveStore.isLg) return 'text-[13px]'
-  if (responsiveStore.isMd) return 'text-[12px]'
-  if (responsiveStore.isSm) return 'text-[10px]'
+  if (interfaceStore.is2xl) return 'text-[15px]'
+  if (interfaceStore.isXl) return 'text-[14px]'
+  if (interfaceStore.isLg) return 'text-[13px]'
+  if (interfaceStore.isMd) return 'text-[12px]'
+  if (interfaceStore.isSm) return 'text-[10px]'
+  if (interfaceStore.isXs && windowHeight.value >= 700) return 'text-[12px]'
   return 'text-[10px]'
 })
 
@@ -418,7 +393,9 @@ watch(isVehicleArmed, (isArmed) => {
 
 const mainMenu = ref()
 onClickOutside(mainMenu, () => {
-  closeMainMenu()
+  if (mainMenuStep.value === 1) {
+    closeMainMenu()
+  }
 })
 
 const route = useRoute()
@@ -496,8 +473,6 @@ body.hide-cursor {
   display: flex;
   flex-direction: column;
   align-items: center;
-  @apply 2xl:w-[130px] 2xl:h-auto xl:w-[121px] xl:h-auto lg:w-[102px] lg:h-auto md:w-[95px] md:h-auto sm:w-[78px] sm:h-auto;
-  padding-top: 5px;
   border-radius: 0 20px 20px 0;
   border: 1px #cbcbcb33 solid;
   border-left: none;
@@ -506,7 +481,7 @@ body.hide-cursor {
   transform: translateY(-50%);
   background-color: #4f4f4f33;
   backdrop-filter: blur(15px);
-  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.3);
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.3), 0px 8px 12px 6px rgba(0, 0, 0, 0.15);
   z-index: 1000;
 }
 
