@@ -308,7 +308,7 @@ export const useVideoStore = defineStore('video', () => {
         try {
           const videoChunk = await tempVideoChunksDB.getItem(chunkName)
           if (videoChunk) {
-            const firstChunkBlob = new Blob([videoChunk as Blob], { type: 'video/webm;codecs=vp9' })
+            const firstChunkBlob = new Blob([videoChunk as Blob])
             const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
             updatedInfo.thumbnail = thumbnail
             unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
@@ -527,7 +527,7 @@ export const useVideoStore = defineStore('video', () => {
       const chunkBlobs = chunks.map((chunk) => chunk.blob)
       debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
 
-      const mergedBlob = new Blob([...chunkBlobs], { type: 'video/webm;codecs=vp9' })
+      const mergedBlob = new Blob([...chunkBlobs])
 
       let durFixedBlob: Blob | undefined = undefined
       try {
