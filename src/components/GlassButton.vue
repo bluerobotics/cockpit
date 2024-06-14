@@ -19,7 +19,7 @@
           {{ tooltip }}
         </v-tooltip>
       </template>
-      <v-icon v-if="isRound || isUncontained" :size="iconSize" :class="iconClass" class="ml-[4%] mt-[2%]">
+      <v-icon v-if="isRound || isUncontained" :size="iconSize" :class="iconClass" class="ml-[4%] mt-[4%]">
         {{ icon }}
       </v-icon>
       <div v-else class="flex items-center justify-center w-full h-full">
