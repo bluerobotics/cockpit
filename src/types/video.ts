@@ -113,3 +113,20 @@ export interface StorageDB {
 }
 
 export type DownloadProgressCallback = (progress: number, total: number) => Promise<void>
+
+export enum VideoExtensionContainer {
+  MKV = 'mkv',
+  MP4 = 'mp4',
+  WEBM = 'webm',
+}
+
+export const getBlobExtensionContainer = (blob: Blob): VideoExtensionContainer | undefined => {
+  if (blob.type.includes('matroska')) {
+    return VideoExtensionContainer.MKV
+  } else if (blob.type.includes('mp4')) {
+    return VideoExtensionContainer.MP4
+  } else if (blob.type.includes('webm')) {
+    return VideoExtensionContainer.WEBM
+  }
+  return undefined
+}
