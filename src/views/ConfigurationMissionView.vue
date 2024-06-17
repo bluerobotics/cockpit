@@ -2,39 +2,38 @@
   <BaseConfigurationView>
     <template #title>Mission configuration</template>
     <template #content>
-      <v-tooltip location="bottom" color="transparent">
-        <template #activator="{ props }">
-          <div class="flex justify-center items-center">
-            <v-switch
-              v-model="missionStore.slideEventsEnabled"
-              class="m-2 text-slate-800"
-              style="height: 56px"
-              color="rgb(0, 20, 80)"
-              v-bind="props"
-            />
-            <v-label style="height: 56px"> Enable slide to confirm </v-label>
-          </div>
-        </template>
-        <span>
-          Enabling this setting requires a confirmation step for UI elements that can trigger actions linked to
-          specified event categories bellow.
-        </span>
-      </v-tooltip>
-      <span class="text-sm font-medium text-slate-500">Enable confirmation on specific categories:</span>
-      <div class="flex items-center justify-start">
-        <div v-for="category in EventCategory" :key="category" class="mx-2">
-          <v-checkbox
-            v-model="missionStore.slideEventsCategoriesRequired[category]"
-            :disabled="!missionStore.slideEventsEnabled"
-            :label="category"
-          ></v-checkbox>
-        </div>
+      <div class="flex flex-col justify-between items-start ml-[1vw] w-[680px]">
+        <v-switch
+          v-model="missionStore.slideEventsEnabled"
+          label="Enable slide to confirm"
+          color="white"
+          class="mt-2 -mb-2 ml-3"
+        />
+
+        <ExpansiblePanel no-bottom-divider is-expanded>
+          <template #title>Enable confirmation on specific categories:</template>
+          <template #info>
+            Add an extra confirmation step for UI elements that can trigger mission critical actions.
+          </template>
+          <template #content>
+            <div class="flex items-center justify-start">
+              <div v-for="category in EventCategory" :key="category" class="mx-2">
+                <v-checkbox
+                  v-model="missionStore.slideEventsCategoriesRequired[category]"
+                  :disabled="!missionStore.slideEventsEnabled"
+                  :label="category"
+                ></v-checkbox>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { EventCategory } from '@/libs/slide-to-confirm'
 import { useMissionStore } from '@/stores/mission'
 
