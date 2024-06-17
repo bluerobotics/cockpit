@@ -2,31 +2,36 @@
   <BaseConfigurationView>
     <template #title>Alerts configuration</template>
     <template #content>
-      <v-switch
-        v-model="alertStore.enableVoiceAlerts"
-        label="Enable voice alerts"
-        class="m-2 text-slate-800"
-        color="rgb(0, 20, 80)"
-      />
-      <span class="text-sm font-medium text-slate-500">Enable voice on specific alert levels:</span>
-      <div class="flex items-center justify-start">
-        <div v-for="enabledLevel in alertStore.enabledAlertLevels" :key="enabledLevel.level" class="mx-2">
-          <v-switch
-            v-model="enabledLevel.enabled"
-            :label="capitalize(enabledLevel.level)"
-            class="text-slate-800"
-            color="rgb(0, 20, 80)"
-          />
-        </div>
+      <div class="flex flex-col justify-around align-start ml-5">
+        <v-switch
+          v-model="alertStore.enableVoiceAlerts"
+          label="Enable voice alerts"
+          color="white"
+          class="mt-2 -mb-2 ml-3"
+        />
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title> Enable voice on specific alert levels:</template>
+          <template #info
+            >Enable voice alerts to receive audible notifications about system and vehicle activities. <br />
+            Select specific alert levels to customize which types of notifications you receive.</template
+          >
+          <template #content>
+            <div class="flex items-center justify-start">
+              <div v-for="enabledLevel in alertStore.enabledAlertLevels" :key="enabledLevel.level" class="mx-2">
+                <v-checkbox v-model="enabledLevel.enabled" :label="capitalize(enabledLevel.level)" color="white" />
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
+        <span class="text-sm font-medium mt-4">Alert voice:</span>
+        <Dropdown
+          v-model="alertStore.selectedAlertSpeechVoiceName"
+          :options="alertStore.availableAlertSpeechVoiceNames"
+          name-key="name"
+          value-key="value"
+          class="max-w-[350px] my-2 ml-2"
+        />
       </div>
-      <span class="text-sm font-medium text-slate-500">Alert voice:</span>
-      <Dropdown
-        v-model="alertStore.selectedAlertSpeechVoiceName"
-        :options="alertStore.availableAlertSpeechVoiceNames"
-        name-key="name"
-        value-key="value"
-        class="max-w-[200px] my-2"
-      />
     </template>
   </BaseConfigurationView>
 </template>
@@ -35,9 +40,12 @@
 import { capitalize } from 'vue'
 
 import Dropdown from '@/components/Dropdown.vue'
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAlertStore } from '@/stores/alert'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
+const interfaceStore = useAppInterfaceStore()
 const alertStore = useAlertStore()
 </script>
