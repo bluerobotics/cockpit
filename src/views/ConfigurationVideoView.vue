@@ -1,78 +1,80 @@
 <template>
   <BaseConfigurationView>
+    <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div
-        class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-[40%]"
-      >
-        <p class="font-bold">
-          This is the video configuration page. Here you can configure the behavior of your video streams.
-        </p>
-        <br />
-        <p>
-          First of all, it's important that you select the IP (or IPs) that should be allowed to route video streams.
-          Those will usually be the ones for your wired connections. This configuration allows Cockpit to block other
-          available IPs, like those from WiFi and Hotspot connections, preventing lag and stuttering in your video
-          streams.
-        </p>
-        <br />
-        <p>
-          Additionally, you can choose specific protocols that will be permitted for use in your video streams. This
-          selection allows you to choose protocols that could perform better in your network infrastructure, enhancing
-          the quality of your video streams.
-        </p>
-      </div>
-
-      <div class="flex w-[30rem] flex-wrap">
-        <v-combobox
-          v-model="allowedIceIps"
-          multiple
-          :items="availableIceIps"
-          label="Allowed WebRTC remote IP Addresses"
-          class="w-full my-3 uri-input"
-          variant="outlined"
-          chips
-          clearable
-          hint="IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the tether/cabled interface. Blank means any route. E.g: 192.168.2.2"
-        />
-      </div>
-
-      <p class="text-sm font-bold text-grey-darken-1 bg-grey-lighten-5">Allowed WebRTC protocols:</p>
-      <div class="flex items-center justify-start">
-        <div v-for="protocol in availableICEProtocols" :key="protocol" class="mx-2">
-          <v-checkbox
-            v-model="allowedIceProtocols"
-            :label="protocol.toUpperCase()"
-            :value="protocol"
-            :disabled="
-              allowedIceProtocols.length === 1 && allowedIceProtocols[0].toLowerCase() === protocol.toLowerCase()
-            "
-            class="text-sm"
-          />
-        </div>
-      </div>
-
-      <p class="text-sm font-bold text-grey-darken-1 bg-grey-lighten-5">RTP Jitter Buffer (Target) duration:</p>
-      <div
-        class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-[40%]"
-      >
-        <p>Increasing this will result in increased video latency, but it can help compensate the network jitter.</p>
-        <br />
-        <p>Cockpit's default is zero milliseconds, but you can leave it empty to use the browser's default.</p>
-      </div>
-      <div class="flex items-center justify-start">
-        <v-text-field
-          v-model.number="jitterBufferTarget"
-          placeholder="auto"
-          type="number"
-          style="width: 100px"
-          class="text-sm"
-          max="4000"
-          min="0"
-          :rules="jitterBufferTargetRules"
-          @input="handleJitterBufferTargetInput"
-        />
-        <a class="pl-1">ms</a>
+      <div class="flex-col h-full ml-[1vw] w-[540px]">
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Allowed WebRTC remote IP Addresses</template>
+          <template #info
+            >IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the
+            tether/cabled interface. Blank means any route. E.g: 192.168.2.2</template
+          >
+          <template #content>
+            <div class="flex justify-center align-center ml-2">
+              <v-combobox
+                v-model="allowedIceIps"
+                multiple
+                :items="availableIceIps"
+                label="Allowed WebRTC remote IP Addresses"
+                class="uri-input"
+                variant="outlined"
+                chips
+                theme="dark"
+                density="compact"
+                clearable
+              />
+            </div>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Allowed WebRTC protocols:</template>
+          <template #info>
+            Specific protocols can perform better in some network infrastructures, enhancing video stream quality.
+          </template>
+          <template #content>
+            <div class="flex items-center justify-start">
+              <v-checkbox
+                v-for="protocol in availableICEProtocols"
+                :key="protocol"
+                v-model="allowedIceProtocols"
+                :label="protocol.toUpperCase()"
+                :value="protocol"
+                :disabled="
+                  allowedIceProtocols.length === 1 && allowedIceProtocols[0].toLowerCase() === protocol.toLowerCase()
+                "
+                class="text-sm mx-2"
+              />
+            </div>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>RTP Jitter Buffer (Target) duration:</template>
+          <template #info>
+            Increasing this value will result in increased video latency, but it can help to compensate the network
+            jitter.
+            <br />
+            Cockpit's default is zero milliseconds, but you can leave it empty to use the browser's default.
+          </template>
+          <template #content>
+            <div class="flex items-center justify-start w-[50%] ml-2">
+              <v-text-field
+                v-model.number="jitterBufferTarget"
+                variant="filled"
+                placeholder="auto"
+                type="number"
+                class="uri-input mt-4"
+                theme="dark"
+                density="compact"
+                max="4000"
+                min="0"
+                :rules="jitterBufferTargetRules"
+                @input="handleJitterBufferTargetInput"
+              />
+              <a class="ml-3">ms</a>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -82,6 +84,8 @@
 import { storeToRefs } from 'pinia'
 import { onMounted } from 'vue'
 
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
@@ -93,6 +97,7 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const availableICEProtocols = ['udp', 'tcp']
 
 const videoStore = useVideoStore()
+const interfaceStore = useAppInterfaceStore()
 
 onMounted(() => {
   if (allowedIceProtocols.value.length === 0) {
@@ -117,3 +122,9 @@ const jitterBufferTargetRules = [
 
 const { allowedIceIps, allowedIceProtocols, availableIceIps, jitterBufferTarget } = storeToRefs(videoStore)
 </script>
+<style scoped>
+.uri-input {
+  width: 95%;
+  margin-block: 10px;
+}
+</style>
