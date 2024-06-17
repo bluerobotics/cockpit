@@ -39,6 +39,10 @@ interface DialogOptions {
    * @type {string | number}
    */
   maxWidth?: string | number
+  /**
+   * Persistent dialogs can't be closed with 'esc' or backdrop click.
+   */
+  persistent?: boolean
 }
 
 /**
@@ -86,6 +90,7 @@ export function useInteractionDialog(): {
     actions: [],
     maxWidth: '600px',
     showDialog: false,
+    persistent: true,
   })
 
   let dialogApp: App<Element> | null = null
