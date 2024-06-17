@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="internalShowDialog" persistent :max-width="maxWidth || '600px'">
+  <v-dialog v-model="internalShowDialog" :persistent="persistent" :max-width="maxWidth || '600px'">
     <v-card :max-width="maxWidth || '600px'" class="main-dialog px-2 rounded-lg">
       <v-card-title>
         <div
@@ -128,11 +128,15 @@ interface Props {
   /**
    * The variant of the dialog, determining the icon and color.
    */
-  variant?: string
+  variant: 'info' | 'success' | 'error' | 'warning' | 'text-only'
   /**
-   * The text message to be displayed in the dialog if there is no content on the slot.
+   * Message to display in the dialog. If an array, elements will be displayed as an item list.
    */
-  message?: string
+  message: string | string[]
+  /**
+   * Persistent dialogs can't be closed with 'esc' or a backdrop click.
+   */
+  persistent?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -141,8 +145,9 @@ const props = withDefaults(defineProps<Props>(), {
   contentComponent: '',
   maxWidth: 600,
   actions: () => [],
-  variant: '',
+  variant: 'info',
   message: '',
+  persistent: false,
 })
 
 const emit = defineEmits(['update:showDialog', 'confirmed', 'dismissed'])
