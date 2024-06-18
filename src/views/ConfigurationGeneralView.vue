@@ -137,13 +137,21 @@
           />
         </v-form>
         <span>Current address: {{ mainVehicleStore.webRTCSignallingURI.toString() }} </span><br />
-        <div class="my-4 ml-2">
+        <div class="my-4">
           <span class="text-lg">Custom RTC configuration:</span>
-          <div class="mx-2">
+          <div class="mt-2">
             <div class="flex">
+              <v-checkbox
+                v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
+                v-tooltip.bottom="'Enable custom'"
+                class="mx-1 mb-5 pa-0"
+                rounded="lg"
+                hide-details
+              />
               <v-textarea
                 id="rtcConfigTextInput"
                 v-model="customRtcConfiguration"
+                :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
                 variant="underlined"
                 label="Custom WebRTC Configuration"
                 clearable
@@ -348,11 +356,11 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
   return true
 }
 
-const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.customWebRTCConfiguration, null, 4))
+const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.customWebRTCConfiguration.data, null, 4))
 const updateWebRtcConfiguration = (): void => {
   try {
     const newConfig = JSON.parse(customRtcConfiguration.value)
-    mainVehicleStore.customWebRTCConfiguration = newConfig
+    mainVehicleStore.customWebRTCConfiguration.data = newConfig
     location.reload()
   } catch (error) {
     alert(`Could not update WebRTC configuration. ${error}.`)

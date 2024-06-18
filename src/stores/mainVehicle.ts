@@ -75,7 +75,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     data: defaultWebRTCSignallingURI.value,
     enabled: false,
   } as CustomParameter<string>)
-  const customWebRTCConfiguration = useStorage('cockpit-rtc-config', defaultRtcConfiguration)
+  const customWebRTCConfiguration = useStorage('cockpit-custom-rtc-config', {
+    data: defaultRtcConfiguration,
+    enabled: false,
+  })
 
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
@@ -133,7 +136,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       }
     }
     console.log('Using WebRTC configuration from storage.')
-    return customWebRTCConfiguration.value
+    return customWebRTCConfiguration.value.enabled ? customWebRTCConfiguration.value.data : defaultRtcConfiguration
   })
 
   /**
