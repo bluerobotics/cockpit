@@ -101,21 +101,17 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const modes = ref<Map<string, any>>()
 
-  const mainConnectionURI = computed(
-    () =>
-      new Connection.URI(
-        customMainConnectionURI.value.enabled ? customMainConnectionURI.value.data : defaultMainConnectionURI.value
-      )
-  )
+  const mainConnectionURI = computed(() => {
+    const queryURI = new URLSearchParams(window.location.search).get('mainConnectionURI')
+    const customURI = customMainConnectionURI.value.enabled ? customMainConnectionURI.value.data : undefined
+    return new Connection.URI(queryURI ?? customURI ?? defaultMainConnectionURI.value)
+  })
 
-  const webRTCSignallingURI = computed(
-    () =>
-      new Connection.URI(
-        customWebRTCSignallingURI.value.enabled
-          ? customWebRTCSignallingURI.value.data
-          : defaultWebRTCSignallingURI.value
-      )
-  )
+  const webRTCSignallingURI = computed(() => {
+    const queryWebRTCSignallingURI = new URLSearchParams(window.location.search).get('webRTCSignallingURI')
+    const customURI = customWebRTCSignallingURI.value.enabled ? customWebRTCSignallingURI.value.data : undefined
+    return new Connection.URI(queryWebRTCSignallingURI ?? customURI ?? defaultWebRTCSignallingURI.value)
+  })
 
   /**
    * Check if vehicle is online (no more than 5 seconds passed since last heartbeat)
