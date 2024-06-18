@@ -65,7 +65,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const cpuLoad = ref<number>()
   const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
 
-  const defaultMainConnectionURI = ref<string>(`${ws_protocol}://${globalAddress.value}:6040/ws/mavlink`)
+  const defaultMainConnectionURI = ref<string>(`${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`)
   const defaultWebRTCSignallingURI = ref<string>(`${ws_protocol}://${globalAddress.value}:6021/`)
   const customMainConnectionURI = useStorage('cockpit-vehicle-custom-main-connection-uri', {
     data: defaultMainConnectionURI.value,
@@ -319,6 +319,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   ConnectionManager.onMainConnection.add(() => {
     const newMainConnection = ConnectionManager.mainConnection()
+    console.log('Main connection changed:', newMainConnection?.uri().toString())
     if (newMainConnection !== undefined) {
       customMainConnectionURI.value.data = newMainConnection.uri().toString()
     }
