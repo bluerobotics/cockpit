@@ -52,6 +52,11 @@ interface CustomParameter<T> {
   enabled: boolean
 }
 
+const defaultRtcConfiguration = {
+  bundlePolicy: 'max-bundle',
+  iceServers: [],
+} as RTCConfiguration
+
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const controllerStore = useControllerStore()
   const widgetStore = useWidgetManagerStore()
@@ -70,6 +75,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     data: defaultWebRTCSignallingURI.value,
     enabled: false,
   } as CustomParameter<string>)
+  const rtcConfiguration = useStorage('cockpit-rtc-config', defaultRtcConfiguration)
 
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
@@ -461,11 +467,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       cockpitActionsManager.sendCockpitActions()
     }
   }, 10)
-
-  const rtcConfiguration = {
-    bundlePolicy: 'max-bundle',
-    iceServers: [],
-  } as RTCConfiguration
 
   return {
     arm,
