@@ -348,11 +348,11 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
   return true
 }
 
-const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.rtcConfiguration, null, 4))
+const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.customWebRTCConfiguration, null, 4))
 const updateWebRtcConfiguration = (): void => {
   try {
     const newConfig = JSON.parse(customRtcConfiguration.value)
-    mainVehicleStore.rtcConfiguration = newConfig
+    mainVehicleStore.customWebRTCConfiguration = newConfig
     location.reload()
   } catch (error) {
     alert(`Could not update WebRTC configuration. ${error}.`)

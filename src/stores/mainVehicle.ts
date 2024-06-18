@@ -75,7 +75,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     data: defaultWebRTCSignallingURI.value,
     enabled: false,
   } as CustomParameter<string>)
-  const rtcConfiguration = useStorage('cockpit-rtc-config', defaultRtcConfiguration)
+  const customWebRTCConfiguration = useStorage('cockpit-rtc-config', defaultRtcConfiguration)
 
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
@@ -123,6 +123,21 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   const isVehicleOnline = computed(() => {
     return lastHeartbeat.value !== undefined && new Date(timeNow.value).getTime() - lastHeartbeat.value.getTime() < 5000
+  })
+
+  const rtcConfiguration = computed(() => {
+    const queryWebRtcConfiguration = new URLSearchParams(window.location.search).get('webRTCConfiguration')
+    if (queryWebRtcConfiguration) {
+      console.log('Using WebRTC configuration from query parameter')
+      console.log(queryWebRtcConfiguration)
+      try {
+        return JSON.parse(queryWebRtcConfiguration)
+      } catch (error) {
+        console.error('Failed to parse WebRTC configuration from query parameter.', error)
+      }
+    }
+    console.log('Using WebRTC configuration from storage.')
+    return customWebRTCConfiguration.value
   })
 
   /**
@@ -509,6 +524,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     icon,
     configurationPages,
     rtcConfiguration,
+    customWebRTCConfiguration,
     genericVariables,
     availableGenericVariables,
     registerUsageOfGenericVariable,
