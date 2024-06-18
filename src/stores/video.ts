@@ -44,7 +44,7 @@ export const useVideoStore = defineStore('video', () => {
   const allowedIceProtocols = useStorage<string[]>('cockpit-allowed-stream-protocols', [])
   const jitterBufferTarget = useStorage<number | null>('cockpit-jitter-buffer-target', 0)
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
-  const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
+  const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const timeNow = useTimestamp({ interval: 500 })
@@ -87,7 +87,7 @@ export const useVideoStore = defineStore('video', () => {
    */
   const activateStream = (streamName: string): void => {
     const stream = ref()
-    const webRtcManager = new WebRTCManager(webRTCSignallingURI.val, rtcConfiguration)
+    const webRtcManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
     const { mediaStream, connected } = webRtcManager.startStream(
       stream,
       allowedIceIps,

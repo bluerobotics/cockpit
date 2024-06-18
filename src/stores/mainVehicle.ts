@@ -38,51 +38,18 @@ import { useControllerStore } from './controller'
 import { useWidgetManagerStore } from './widgetManager'
 
 /**
- * This is an abstraction that holds a customizable parameter that can fallback to a default value
- * @template T The customizable parameter type
+ * Custom parameter data description interface
  */
-class CustomizableParameter<T> {
-  private _customValue: T
-  private _defaultValue: () => T
-  isCustom = false
+interface CustomParameter<T> {
+  /**
+   * Real data associated with the parameter
+   */
+  data: T
 
   /**
-   * @param {Ref<T>} defaultVal The default parameter value
+   * Indicates if the custom parameter data is enabled
    */
-  constructor(defaultVal: () => T) {
-    this._defaultValue = defaultVal
-    this._customValue = this.defaultValue
-  }
-
-  /**
-   * Sets the URI to a given custom one
-   * @param {T} val
-   */
-  set val(val: T) {
-    this._customValue = val
-  }
-
-  /**
-   * @returns {T} The current configured parameter, whether default or custom
-   */
-  get val(): T {
-    return this.isCustom ? this._customValue : this.defaultValue
-  }
-
-  /**
-   * @returns {T} The current configured parameter, whether default or custom
-   */
-  get defaultValue(): T {
-    return this._defaultValue()
-  }
-
-  /**
-   * Resets custom to the default value and disables custom
-   */
-  public reset(): void {
-    this.isCustom = false
-    this._customValue = this.defaultValue
-  }
+  enabled: boolean
 }
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
@@ -92,18 +59,18 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   const cpuLoad = ref<number>()
   const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
-  const _mainConnectionURI = new CustomizableParameter<Connection.URI>(() => {
-    const queryMainConnectionURI = new URLSearchParams(window.location.search).get('mainConnectionURI')
-    return new Connection.URI(
-      queryMainConnectionURI || `${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`
-    )
-  })
-  const mainConnectionURI = ref(_mainConnectionURI)
-  const _webRTCSignallingURI = new CustomizableParameter<Connection.URI>(() => {
-    const queryWebRTCSignallingURI = new URLSearchParams(window.location.search).get('webRTCSignallingURI')
-    return new Connection.URI(queryWebRTCSignallingURI || `${ws_protocol}://${globalAddress.value}:6021`)
-  })
-  const webRTCSignallingURI = ref(_webRTCSignallingURI)
+
+  const defaultMainConnectionURI = ref<string>(`${ws_protocol}://${globalAddress.value}:6040/ws/mavlink`)
+  const defaultWebRTCSignallingURI = ref<string>(`${ws_protocol}://${globalAddress.value}:6021/`)
+  const customMainConnectionURI = useStorage('cockpit-vehicle-custom-main-connection-uri', {
+    data: defaultMainConnectionURI.value,
+    enabled: false,
+  } as CustomParameter<string>)
+  const customWebRTCSignallingURI = useStorage('cockpit-vehicle-custom-webrtc-signalling-uri', {
+    data: defaultWebRTCSignallingURI.value,
+    enabled: false,
+  } as CustomParameter<string>)
+
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
@@ -127,6 +94,22 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const modes = ref<Map<string, any>>()
+
+  const mainConnectionURI = computed(
+    () =>
+      new Connection.URI(
+        customMainConnectionURI.value.enabled ? customMainConnectionURI.value.data : defaultMainConnectionURI.value
+      )
+  )
+
+  const webRTCSignallingURI = computed(
+    () =>
+      new Connection.URI(
+        customWebRTCSignallingURI.value.enabled
+          ? customWebRTCSignallingURI.value.data
+          : defaultWebRTCSignallingURI.value
+      )
+  )
 
   /**
    * Check if vehicle is online (no more than 5 seconds passed since last heartbeat)
@@ -320,11 +303,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   ConnectionManager.onMainConnection.add(() => {
     const newMainConnection = ConnectionManager.mainConnection()
     if (newMainConnection !== undefined) {
-      mainConnectionURI.value.val = newMainConnection.uri()
+      customMainConnectionURI.value.data = newMainConnection.uri().toString()
     }
   })
 
-  ConnectionManager.addConnection(mainConnectionURI.value.val, Protocol.Type.MAVLink)
+  ConnectionManager.addConnection(mainConnectionURI.value, Protocol.Type.MAVLink)
 
   const getAutoPilot = (vehicles: WeakRef<Vehicle.Abstract>[]): ArduPilot => {
     const vehicle = vehicles?.last()?.deref()
@@ -501,7 +484,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     startMission,
     globalAddress,
     mainConnectionURI,
+    customMainConnectionURI,
+    defaultMainConnectionURI,
     webRTCSignallingURI,
+    customWebRTCSignallingURI,
+    defaultWebRTCSignallingURI,
     cpuLoad,
     lastHeartbeat,
     firmwareType,
