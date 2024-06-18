@@ -137,13 +137,38 @@
           />
         </v-form>
         <span>Current address: {{ mainVehicleStore.webRTCSignallingURI.toString() }} </span><br />
+        <div class="my-4 ml-2">
+          <span class="text-lg">Custom RTC configuration:</span>
+          <div class="mx-2">
+            <div class="flex">
+              <v-textarea
+                id="rtcConfigTextInput"
+                v-model="customRtcConfiguration"
+                variant="underlined"
+                label="Custom WebRTC Configuration"
+                clearable
+                :rows="8"
+                hint="e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
+                class="uri-input"
+              />
+              <v-btn
+                v-tooltip.bottom="'Save'"
+                icon="mdi-check"
+                class="mx-1 mb-5 pa-0"
+                rounded="lg"
+                flat
+                @click="updateWebRtcConfiguration"
+              />
+            </div>
+          </div>
+        </div>
       </v-card>
     </template>
   </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import * as Connection from '@/libs/connection/connection'
@@ -322,6 +347,36 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
   }
   return true
 }
+
+const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.rtcConfiguration, null, 4))
+const updateWebRtcConfiguration = (): void => {
+  try {
+    const newConfig = JSON.parse(customRtcConfiguration.value)
+    mainVehicleStore.rtcConfiguration = newConfig
+    location.reload()
+  } catch (error) {
+    alert(`Could not update WebRTC configuration. ${error}.`)
+  }
+}
+
+const tryToPrettifyRtcConfig = (): void => {
+  try {
+    const ugly = customRtcConfiguration.value
+    const obj = JSON.parse(ugly)
+    const pretty = JSON.stringify(obj, null, 4)
+    if (ugly !== pretty) {
+      customRtcConfiguration.value = pretty
+    }
+  } catch (error) {
+    // Do nothing if the JSON is invalid
+  }
+}
+
+watch(customRtcConfiguration, () => tryToPrettifyRtcConfig())
+
+onMounted(() => {
+  tryToPrettifyRtcConfig()
+})
 </script>
 
 <style scoped>
