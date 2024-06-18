@@ -38,13 +38,13 @@
         <v-icon v-else :icon="vehicleConnected ? 'mdi-lan-connect' : 'mdi-lan-disconnect'" class="mr-3" />
         <span class="text-h6">Mavlink2Rest connection</span>
         <v-form
-          ref="connectionForm"
-          v-model="connectionFormValid"
+          ref="mainConnectionForm"
+          v-model="mainConnectionFormValid"
           class="justify-center d-flex align-center"
-          @submit.prevent="addNewVehicleConnection"
+          @submit.prevent="setMainVehicleConnectionURI"
         >
           <v-checkbox
-            v-model="connectionURI.isCustom"
+            v-model="mainVehicleStore.customMainConnectionURI.enabled"
             v-tooltip.bottom="'Enable custom'"
             class="mx-1 mb-5 pa-0"
             rounded="lg"
@@ -52,8 +52,8 @@
           />
 
           <v-text-field
-            v-model="connectionURI.val"
-            :disabled="!connectionURI.isCustom"
+            v-model="mainConnectionURI"
+            :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
             label="Mavlink2Rest URI"
             variant="underlined"
             type="input"
@@ -62,15 +62,23 @@
             :rules="[isValidSocketConnectionURI]"
           />
 
-          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
+          <v-btn
+            v-tooltip.bottom="'Set'"
+            :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
+            icon="mdi-check"
+            class="mx-1 mb-5 pa-0"
+            rounded="lg"
+            flat
+            type="submit"
+          />
           <v-btn
             v-tooltip.bottom="'Reset to default'"
-            :disabled="connectionURI.toString() === connectionURI.defaultValue.toString()"
+            :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
             icon="mdi-refresh"
             class="mx-1 mb-5 pa-0"
             rounded="lg"
             flat
-            @click="resetVehicleConnection"
+            @click="resetMainVehicleConnectionURI"
           />
         </v-form>
         <span>Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }} </span><br />
@@ -91,7 +99,7 @@
           @submit.prevent="setWebRTCSignallingURI"
         >
           <v-checkbox
-            v-model="webRTCSignallingURI.isCustom"
+            v-model="mainVehicleStore.customWebRTCSignallingURI.enabled"
             v-tooltip.bottom="'Enable custom'"
             class="mx-1 mb-5 pa-0"
             rounded="lg"
@@ -99,8 +107,8 @@
           />
 
           <v-text-field
-            v-model="webRTCSignallingURI.val"
-            :disabled="!webRTCSignallingURI.isCustom"
+            v-model="webRTCSignallingURI"
+            :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
             label="WebRTC Signalling Server URI"
             variant="underlined"
             type="input"
@@ -109,10 +117,18 @@
             :rules="[isValidSocketConnectionURI]"
           />
 
-          <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5 pa-0" rounded="lg" flat type="submit" />
+          <v-btn
+            v-tooltip.bottom="'Set'"
+            :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
+            icon="mdi-check"
+            class="mx-1 mb-5 pa-0"
+            rounded="lg"
+            flat
+            type="submit"
+          />
           <v-btn
             v-tooltip.bottom="'Reset to default'"
-            :disabled="webRTCSignallingURI.val.toString() === webRTCSignallingURI.defaultValue.toString()"
+            :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
             icon="mdi-refresh"
             class="mx-1 mb-5 pa-0"
             rounded="lg"
@@ -120,7 +136,7 @@
             @click="resetWebRTCSignallingURI"
           />
         </v-form>
-        <span>Current address: {{ mainVehicleStore.webRTCSignallingURI.val.toString() }} </span><br />
+        <span>Current address: {{ mainVehicleStore.webRTCSignallingURI.toString() }} </span><br />
       </v-card>
     </template>
   </BaseConfigurationView>
@@ -144,19 +160,138 @@ const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
 const newGlobalAddress = ref(mainVehicleStore.globalAddress)
 
-const webRTCSignallingForm = ref()
-const webRTCSignallingFormValid = ref(false)
-const webRTCSignallingURI = ref(mainVehicleStore.webRTCSignallingURI)
+const setGlobalAddress = async (): Promise<void> => {
+  await globalAddressForm.value.validate()
 
-const connectionForm = ref()
-const connectionFormValid = ref(false)
-const connectionURI = ref(mainVehicleStore.mainConnectionURI)
+  const validation = isValidConnectionURI(newGlobalAddress.value)
+  if (validation !== true) {
+    alert(validation)
+    return
+  }
+
+  mainVehicleStore.globalAddress = newGlobalAddress.value
+
+  // Temporary solution to actually set the address and connect the vehicle, since this is non-reactive today.
+  // TODO: Modify the store variables to be reactive.
+  location.reload()
+}
+
+const resetGlobalAddress = async (): Promise<void> => {
+  newGlobalAddress.value = defaultGlobalAddress
+
+  await setGlobalAddress()
+}
+
+/** Main vehicle connection */
 
 const vehicleConnected = ref<boolean | undefined>(mainVehicleStore.isVehicleOnline)
 watch(
   () => mainVehicleStore.isVehicleOnline,
   () => (vehicleConnected.value = mainVehicleStore.isVehicleOnline)
 )
+
+const mainConnectionForm = ref()
+const mainConnectionFormValid = ref(false)
+const mainConnectionURI = ref(mainVehicleStore.mainConnectionURI)
+
+const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
+  mainConnectionURI.value = conn
+  vehicleConnected.value = undefined
+  setTimeout(() => (vehicleConnected.value ??= false), 5000)
+  try {
+    ConnectionManager.addConnection(new Connection.URI(conn), Protocol.Type.MAVLink)
+  } catch (error) {
+    console.error(error)
+    alert(`Could not update main connection. ${error}.`)
+    return
+  }
+  console.debug(`New connection successfully configured to ${conn.toString()}.`)
+}
+
+watch(
+  () => mainVehicleStore.mainConnectionURI,
+  (val: Connection.URI) => {
+    if (val.toString() === mainConnectionURI.value.toString()) {
+      return
+    }
+
+    addNewVehicleConnection(val)
+  }
+)
+
+const setMainVehicleConnectionURI = async (): Promise<void> => {
+  const res = await mainConnectionForm.value.validate()
+
+  if (!res.valid) {
+    return
+  }
+
+  mainVehicleStore.customMainConnectionURI = {
+    data: mainConnectionURI.value.toString(),
+    enabled: true,
+  }
+
+  addNewVehicleConnection(mainConnectionURI.value)
+}
+
+const resetMainVehicleConnectionURI = async (): Promise<void> => {
+  mainVehicleStore.customMainConnectionURI = {
+    enabled: false,
+    data: mainVehicleStore.defaultMainConnectionURI.toString(),
+  }
+}
+
+const webRTCSignallingForm = ref()
+const webRTCSignallingFormValid = ref(false)
+const webRTCSignallingURI = ref(mainVehicleStore.webRTCSignallingURI)
+
+const addWebRTCConnection = async (conn: Connection.URI): Promise<void> => {
+  webRTCSignallingURI.value = conn
+
+  // This works as a reset for the custom URI, and its not needed in mainConnectionURI since on Add from
+  // ConnectionManager it will be set.
+  if (!mainVehicleStore.customWebRTCSignallingURI.enabled) {
+    mainVehicleStore.customWebRTCSignallingURI.data = conn.toString()
+  }
+
+  // Temporary solution to actually set WebRTC URI, since right now we cannot just make reactive because streams will
+  // be kept open.
+  // TODO: handle video stream re connection
+  location.reload()
+}
+
+watch(
+  () => mainVehicleStore.webRTCSignallingURI,
+  (val: Connection.URI) => {
+    if (val.toString() === webRTCSignallingURI.value.toString()) {
+      return
+    }
+
+    addWebRTCConnection(val)
+  }
+)
+
+const setWebRTCSignallingURI = async (): Promise<void> => {
+  const res = await webRTCSignallingForm.value.validate()
+
+  if (!res.valid) {
+    return
+  }
+
+  mainVehicleStore.customWebRTCSignallingURI = {
+    data: webRTCSignallingURI.value.toString(),
+    enabled: true,
+  }
+
+  addWebRTCConnection(webRTCSignallingURI.value)
+}
+
+const resetWebRTCSignallingURI = (): void => {
+  mainVehicleStore.customWebRTCSignallingURI = {
+    enabled: false,
+    data: mainVehicleStore.defaultWebRTCSignallingURI.toString(),
+  }
+}
 
 const isValidHostAddress = (value: string): boolean | string => {
   return isValidNetworkAddress(value) ?? 'Invalid host address. Should be an IP address or a hostname'
@@ -186,58 +321,6 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
     return `Invalid connection URI. ${error}.`
   }
   return true
-}
-
-const resetGlobalAddress = async (): Promise<void> => {
-  newGlobalAddress.value = defaultGlobalAddress
-
-  await setGlobalAddress()
-}
-
-const resetVehicleConnection = async (): Promise<void> => {
-  connectionURI.value.reset()
-
-  await addNewVehicleConnection()
-}
-
-const resetWebRTCSignallingURI = (): void => {
-  webRTCSignallingURI.value.reset()
-}
-
-// Adds a new connection, which right now is the same as changing the main one
-const addNewVehicleConnection = async (): Promise<void> => {
-  await connectionForm.value.validate()
-  vehicleConnected.value = undefined
-  setTimeout(() => (vehicleConnected.value ??= false), 5000)
-  try {
-    ConnectionManager.addConnection(new Connection.URI(connectionURI.value.val), Protocol.Type.MAVLink)
-  } catch (error) {
-    console.error(error)
-    alert(`Could not update main connection. ${error}.`)
-    return
-  }
-  console.debug(`New connection successfully configured to ${connectionURI.value.val}.`)
-}
-
-const setGlobalAddress = async (): Promise<void> => {
-  await globalAddressForm.value.validate()
-
-  const validation = isValidConnectionURI(newGlobalAddress.value)
-  if (validation !== true) {
-    alert(validation)
-    return
-  }
-
-  mainVehicleStore.globalAddress = newGlobalAddress.value
-
-  // Temporary solution to actually set the address and connect the vehicle, since this is non-reactive today.
-  // TODO: Modify the store variables to be reactive.
-  location.reload()
-}
-
-const setWebRTCSignallingURI = async (): Promise<void> => {
-  await webRTCSignallingForm.value.validate()
-  mainVehicleStore.webRTCSignallingURI.val = webRTCSignallingURI.value.val
 }
 </script>
 
