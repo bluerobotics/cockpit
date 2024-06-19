@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import { computed, defineProps, onBeforeMount, ref, toRefs } from 'vue'
 
+import { isValidURL } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
@@ -56,6 +57,10 @@ const transparency = ref(0)
 const inputURL = ref(widget.value.options.source)
 
 const updateURL = (): void => {
+  if (!isValidURL(inputURL.value)) {
+    alert('Invalid URL')
+    return
+  }
   widget.value.options.source = inputURL.value
 }
 
