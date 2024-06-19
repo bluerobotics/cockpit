@@ -486,7 +486,7 @@ const props = defineProps({
 })
 const emits = defineEmits(['update:openModal'])
 
-const { showDialog } = useInteractionDialog()
+const { showDialog, closeDialog } = useInteractionDialog()
 
 // Track the blob URLs to revoke them when the modal is closed
 const blobURLs = ref<string[]>([])
@@ -757,31 +757,44 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
     if (!video.isProcessed && video.hash) tempUnprocessedVideos.push(video.hash)
   })
   openSnackbar.value = true
+
+  if (tempUnprocessedVideos.length > 0) {
+    const confirm = await confirmDownloadOfUnprocessedVideos()
+    if (!confirm) return
+  }
+
   if (tempProcessedVideos.length > 0) {
     const dataLogFilesAdded = addLogDataToFileList(tempProcessedVideos)
 
     await videoStore.downloadFilesFromVideoDB(dataLogFilesAdded, fillProgressData)
   }
   if (tempUnprocessedVideos.length > 0) {
-    openDownloadInfoDialog()
     await videoStore.downloadTempVideo(tempUnprocessedVideos, fillProgressData)
   }
 }
 
-const openDownloadInfoDialog = (): void => {
-  const hasProcessedVideos = selectedVideos.value.some((video) => video.isProcessed)
-
-  showDialog({
-    maxWidth: hasProcessedVideos ? 800 : 600,
-    title: hasProcessedVideos
-      ? 'You are downloading both processed and unprocessed videos'
-      : 'You are downloading unprocessed video chunks',
-    message: hasProcessedVideos
-      ? `One of the .zip files contains unprocessed video chunks, which are not playable.
-      For a playable video, you need to process it first.`
-      : 'For a playable video, you need to process it first.',
+const confirmDownloadOfUnprocessedVideos = async (): Promise<boolean> => {
+  let confirmDownload = false
+  const goBack = (): void => {
+    confirmDownload = false
+  }
+  const downloadAnyway = (): void => {
+    confirmDownload = true
+  }
+  await showDialog({
+    maxWidth: 600,
+    title: 'You are downloading unprocessed videos',
+    message: `One or more videos that you are downloading contains unprocessed chunks, which are not playable. To be
+      able to play the downloaded videos, you need to go back and process those videos first.`,
     variant: 'info',
+    actions: [
+      { text: 'Go back', action: goBack },
+      { text: 'Download anyway', action: downloadAnyway },
+    ],
   })
+
+  closeDialog()
+  return confirmDownload
 }
 
 const discardVideosAndUpdateDB = async (): Promise<void> => {
