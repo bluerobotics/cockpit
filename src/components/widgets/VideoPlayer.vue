@@ -7,8 +7,18 @@
       v-else-if="!namesAvailableStreams.isEmpty() && !namesAvailableStreams.includes(nameSelectedStream)"
       class="no-video-alert"
     >
-      <p>The selected stream is not available.</p>
-      <p>Please check its source or select another stream.</p>
+      <p>The selected stream "{{ nameSelectedStream }}" is not available.</p>
+      <p>Available ones are: {{ namesAvailableStreams.map((name) => `"${name}"`).join(', ') }}.</p>
+      <br />
+      <p>
+        This can happen if you changed vehicles and the stream name in the new one is different from the former, or if
+        the source is not available at all.
+      </p>
+      <br />
+      <p>
+        Please open this video player configuration and select a new stream from the ones available, or check your
+        source for issues.
+      </p>
     </div>
     <div v-else-if="!streamConnected" class="no-video-alert">
       <div class="no-video-alert">
@@ -218,7 +228,7 @@ video {
   background-color: rgb(0, 20, 60);
   text-align: center;
   vertical-align: middle;
-  padding: 10px;
+  padding: 3rem;
   color: white;
   border: 2px solid rgb(0, 20, 80);
 }
