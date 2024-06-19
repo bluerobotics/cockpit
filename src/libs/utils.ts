@@ -81,6 +81,19 @@ export const isValidNetworkAddress = (maybeAddress: string): boolean => {
   return false
 }
 
+export const isValidURL = (maybeURL: string): boolean => {
+  if (!maybeURL) {
+    return false
+  }
+
+  // Regex from https://stackoverflow.com/a/3809435
+  // eslint-disable-next-line max-len
+  const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi
+  const urlRegex = new RegExp(expression)
+
+  return urlRegex.test(maybeURL)
+}
+
 export const formatBytes = (bytes: number, decimals = 2): string => {
   if (!bytes) return '0 Bytes'
 
