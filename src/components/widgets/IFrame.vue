@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full relative">
+  <div class="relative w-full h-full">
     <iframe
       v-show="iframe_loaded"
       :src="widget.options.source"
@@ -13,14 +13,16 @@
       <v-card class="pa-2">
         <v-card-title>Settings</v-card-title>
         <v-card-text>
-          <v-text-field
-            label="Iframe Source"
-            variant="underlined"
-            :model-value="widget.options.source"
-            outlined
-            @change="widget.options.source = $event.srcElement.value"
-            @keydown.enter="widget.options.source = $event.srcElement.value"
-          />
+          <div class="flex items-center justify-between">
+            <v-text-field
+              v-model="inputURL"
+              label="Iframe Source"
+              variant="underlined"
+              outlined
+              @keydown.enter="updateURL"
+            />
+            <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5" rounded="lg" flat @click="updateURL" />
+          </div>
         </v-card-text>
         <v-card-text>
           <v-slider v-model="transparency" label="Transparency" :min="0" :max="90" />
@@ -51,6 +53,11 @@ const widget = toRefs(props).widget
 
 const iframe_loaded = ref(false)
 const transparency = ref(0)
+const inputURL = ref(widget.value.options.source)
+
+const updateURL = (): void => {
+  widget.value.options.source = inputURL.value
+}
 
 onBeforeMount(() => {
   if (Object.keys(widget.value.options).length !== 0) {
