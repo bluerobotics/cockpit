@@ -1,14 +1,14 @@
 <template>
-  <div class="w-full h-full relative">
-    <iframe
-      v-show="iframe_loaded"
-      :src="widget.options.source"
-      :style="iframeStyle"
-      frameborder="0"
-      height="100%"
-      width="100%"
-      @load="loadFinished"
-    />
+  <div class="w-full h-full">
+    <teleport to=".widgets-view">
+      <iframe
+        v-show="iframe_loaded"
+        :src="widget.options.source"
+        :style="iframeStyle"
+        frameborder="0"
+        @load="loadFinished"
+      />
+    </teleport>
     <v-dialog v-model="widget.managerVars.configMenuOpen" min-width="400" max-width="35%">
       <v-card class="pa-2">
         <v-card-title>Settings</v-card-title>
@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from '@vueuse/core'
 import { computed, defineProps, onBeforeMount, ref, toRefs } from 'vue'
 
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -62,11 +63,26 @@ onBeforeMount(() => {
   }
 })
 
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+
 const iframeStyle = computed<string>(() => {
+  let newStyle = ''
+
+  newStyle = newStyle.concat(' ', 'position: absolute;')
+  newStyle = newStyle.concat(' ', `left: ${widget.value.position.x * windowWidth.value}px;`)
+  newStyle = newStyle.concat(' ', `top: ${widget.value.position.y * windowHeight.value}px;`)
+  newStyle = newStyle.concat(' ', `width: ${widget.value.size.width * windowWidth.value}px;`)
+  newStyle = newStyle.concat(' ', `height: ${widget.value.size.height * windowHeight.value}px;`)
+
   if (widgetManagerStore.editingMode) {
-    return 'pointer-events:none; border:0;'
+    newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
   }
-  return ''
+
+  if (!widgetManagerStore.isWidgetVisible(widget.value)) {
+    newStyle = newStyle.concat(' ', 'display: none;')
+  }
+
+  return newStyle
 })
 
 const iframeOpacity = computed<number>(() => {
