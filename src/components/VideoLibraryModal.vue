@@ -305,7 +305,7 @@
                   v-for="button in fileActionButtons"
                   :key="button.name"
                   class="flex flex-col justify-center ml-6 align-center"
-                  :disabled="button.disabled || false"
+                  :disabled="button.disabled"
                   @click="!button.confirmAction && button.action()"
                 >
                   <div
@@ -323,6 +323,7 @@
                       location="left center"
                       opacity="0"
                       transition="slide-x-reverse-transition"
+                      :disabled="button.disabled"
                     >
                       <template #activator="{ props: buttonProps, isActive }">
                         <div class="flex items-center justify-center w-full h-full" v-bind="buttonProps">
@@ -523,6 +524,7 @@ const showProgressInteractionDialog = ref(false)
 const progressInteractionDialogTitle = ref('')
 const progressInteractionDialogActions = ref<DialogActions[]>([])
 const isProcessingVideos = ref(false)
+const isPreparingDownload = ref(false)
 const overallProcessingProgress = ref(0)
 const currentVideoProcessingProgress = ref([{ fileName: '', progress: 0, message: '' }])
 const numberOfFilesToProcess = ref(0)
@@ -544,7 +546,7 @@ const fileActionButtons = computed(() => [
     tooltip: '',
     confirmAction: true,
     show: true,
-    disabled: showOnScreenProgress.value === true,
+    disabled: showOnScreenProgress.value === true || isPreparingDownload.value === true,
     action: () => discardVideosAndUpdateDB(),
   },
   {
@@ -554,7 +556,7 @@ const fileActionButtons = computed(() => [
     tooltip: 'Download selected videos with logs',
     confirmAction: false,
     show: true,
-    disabled: showOnScreenProgress.value === true,
+    disabled: showOnScreenProgress.value === true || isPreparingDownload.value === true,
     action: () => downloadVideoAndTelemetryFiles(),
   },
 ])
@@ -763,6 +765,7 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
     if (!confirm) return
   }
 
+  isPreparingDownload.value = true
   if (tempProcessedVideos.length > 0) {
     const dataLogFilesAdded = addLogDataToFileList(tempProcessedVideos)
 
@@ -771,6 +774,7 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
   if (tempUnprocessedVideos.length > 0) {
     await videoStore.downloadTempVideo(tempUnprocessedVideos, fillProgressData)
   }
+  isPreparingDownload.value = false
 }
 
 const confirmDownloadOfUnprocessedVideos = async (): Promise<boolean> => {
