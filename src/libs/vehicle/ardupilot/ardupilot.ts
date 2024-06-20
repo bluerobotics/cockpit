@@ -3,6 +3,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
+  getMAVLinkMessageId,
   GpsFixType,
   MavAutopilot,
   MavCmd,
@@ -43,6 +44,7 @@ import type { MetadataFile } from '@/types/ardupilot-metadata'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import * as Vehicle from '../vehicle'
+import { defaultMessageFrequency } from './defaults'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ArduPilot = ArduPilotVehicle<any>
@@ -111,6 +113,9 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   constructor(type: Vehicle.Type, system_id: number) {
     super(Vehicle.Firmware.ArduPilot, type)
     this.currentSystemId = system_id
+
+    // Request vehicle to stream a pre-defined list of messages so the GCS can receive them
+    this.requestDefaultMessages()
   }
 
   /**
@@ -784,6 +789,34 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       param_type: settings.type ?? { type: MavParamType.MAV_PARAM_TYPE_UINT8 },
     }
     sendMavlinkMessage(paramSetMessage)
+  }
+
+  /**
+   * Request the vehicle to send a pre-defined list of messages, on it's data stream
+   * Those are messages usually used by any Ardupilot vehicle
+   */
+  async requestDefaultMessages(): Promise<void> {
+    const frequencyHzToIntervalUs = (frequencyHz: number): number => {
+      return 1000000 / frequencyHz
+    }
+
+    const messagesWithIntervals = Object.entries(defaultMessageFrequency).map(([messageType, frequencyHz]) => {
+      return { id: getMAVLinkMessageId(messageType as MAVLinkType), intervalUs: frequencyHzToIntervalUs(frequencyHz) }
+    })
+
+    const commandPromises = messagesWithIntervals.map((message) => {
+      return this.sendCommandLong(MavCmd.MAV_CMD_SET_MESSAGE_INTERVAL, message.id, message.intervalUs)
+    })
+
+    const results = await Promise.allSettled(commandPromises)
+
+    const rejectedCommands = results.filter((result) => result.status !== 'fulfilled')
+    if (rejectedCommands.length === 0) {
+      console.log('Successfully requested all default messages from vehicle.')
+      return
+    }
+    console.error('Failed to request one or more default messages from the vehicle.')
+    rejectedCommands.forEach((result) => console.error((result as PromiseRejectedResult).reason))
   }
 
   /**
