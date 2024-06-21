@@ -141,12 +141,16 @@ export const useControllerStore = defineStore('controller', () => {
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
 
     for (const callback of updateCallbacks.value) {
-      callback(
-        joystick.state,
-        protocolMapping.value,
-        activeButtonActions(joystick.state, protocolMapping.value),
-        actionsJoystickConfirmRequired.value
-      )
+      try {
+        callback(
+          joystick.state,
+          protocolMapping.value,
+          activeButtonActions(joystick.state, protocolMapping.value),
+          actionsJoystickConfirmRequired.value
+        )
+      } catch (error) {
+        console.error('Error while processing joystick state event:', error)
+      }
     }
   }
 
