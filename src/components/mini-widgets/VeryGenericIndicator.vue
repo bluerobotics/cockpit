@@ -335,7 +335,7 @@ const variableNamesToShow = computed(() => {
 
   const variableNameFuse = new Fuse(allVariablesNames.value, fuseOptions)
   const filteredVariablesResult = variableNameFuse.search(variableNameSearchString.value)
-  return filteredVariablesResult.map((r) => r.item)
+  return filteredVariablesResult.map((r) => r.item).filter((value, index, self) => self.indexOf(value) === index)
 })
 
 const chooseVariable = (variable: string): void => {
