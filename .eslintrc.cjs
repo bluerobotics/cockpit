@@ -103,6 +103,13 @@ module.exports = {
         ignoreUrls: true,
       },
     ],
+    'vue/html-indent': [
+      'error',
+      2,
+      {
+        alignAttributesVertically: true,
+      },
+    ],
   },
   settings: {
     jsdoc: {
