@@ -1,6 +1,6 @@
 <template>
   <v-dialog v-model="internalShowDialog" persistent :max-width="maxWidth || 600">
-    <v-card :max-width="maxWidth || 600" class="main-dialog px-2 rounded-lg">
+    <v-card :max-width="maxWidth || 600" class="px-2 rounded-lg main-dialog">
       <v-card-title>
         <div
           class="flex justify-center test-center pt-2 mb-1 text-[20px] font-bold text-nowrap text-ellipsis overflow-x-hidden"
@@ -10,16 +10,10 @@
         </div>
       </v-card-title>
       <v-card-text class="pb-5">
-        <div class="flex justify-center align-center w-full mb-3">
-          <v-icon v-if="variant" size="46" :color="variant === 'success' ? 'green' : 'yellow'" class="mr-8 ml-2">{{
-            variant === 'info'
-              ? 'mdi-information'
-              : variant === 'warning'
-              ? 'mdi-alert-rhombus'
-              : variant === 'error'
-              ? 'mdi-alert-circle'
-              : 'mdi-check-circle'
-          }}</v-icon>
+        <div class="flex justify-center w-full mb-3 align-center">
+          <v-icon v-if="variant" size="46" :color="variant === 'success' ? 'green' : 'yellow'" class="ml-2 mr-8">
+            {{ variantIcon }}
+          </v-icon>
           <div class="text-lg">{{ message }}</div>
         </div>
         <slot name="content"></slot>
@@ -48,7 +42,7 @@
             {{ button.text }}
           </v-btn>
         </div>
-        <div v-else class="flex w-full px-1 py-2 justify-end">
+        <div v-else class="flex justify-end w-full px-1 py-2">
           <v-btn size="small" variant="text" @click="handleAction(() => (internalShowDialog = false))">Close</v-btn>
         </div>
       </v-card-actions>
@@ -57,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 
@@ -160,6 +154,19 @@ const handleAction = (action: () => void): void => {
   action()
   emit('confirmed')
 }
+
+const variantIcon = computed(() => {
+  switch (props.variant) {
+    case 'info':
+      return 'mdi-information'
+    case 'warning':
+      return 'mdi-alert-rhombus'
+    case 'error':
+      return 'mdi-alert-circle'
+    default:
+      return 'mdi-check-circle'
+  }
+})
 </script>
 
 <style scoped>
