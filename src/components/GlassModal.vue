@@ -2,7 +2,7 @@
   <div
     v-if="isVisible"
     class="glass-modal"
-    :class="interfaceStore.isOnPhoneScreen ? 'rounded-[10px]' : 'rounded-[20px]'"
+    :class="[interfaceStore.isOnSmallScreen ? 'rounded-[10px]' : 'rounded-[20px]', selectedOverflow]"
     :style="modalPositionStyle"
   >
     <slot></slot>
@@ -20,17 +20,24 @@ type ModalPosition = 'left' | 'center' | 'menuitem'
 
 const props = defineProps<{
   /**
-   *
+   * Whether the modal is visible or not.
    */
   isVisible: boolean
   /**
-   *
+   * When set to menuitem, the modal will be positioned about 30px to the right of the main menu.
+   * Center is the regular modal positioning, and also th default value.
+   * Left can be used as popover to display information and help content.
    */
   position?: ModalPosition
+  /**
+   * The overflow property of the modal.
+   */
+  overflow?: 'auto' | 'hidden' | 'scroll' | 'visible' | 'inherit' | 'initial' | 'unset'
 }>()
 
 const isVisible = ref(props.isVisible)
 const modalPosition = ref(props.position || 'center')
+const selectedOverflow = ref(props.overflow || 'auto')
 
 const modalPositionStyle = computed(() => {
   switch (modalPosition.value) {
@@ -44,7 +51,7 @@ const modalPositionStyle = computed(() => {
       return {
         top: '50%',
         left: interfaceStore.isOnSmallScreen
-          ? `${interfaceStore.mainMenuWidth - 6}px`
+          ? `${interfaceStore.mainMenuWidth - 20}px`
           : `${interfaceStore.mainMenuWidth + 30}px`,
         transform: 'translateY(-50%)',
       }
@@ -70,8 +77,7 @@ watch(
 .glass-modal {
   position: absolute;
   width: auto;
-  max-height: 85vh;
-  overflow: auto;
+  max-height: 100vh;
   border: 1px solid #cbcbcb33;
   background-color: #4f4f4f33;
   backdrop-filter: blur(15px);
