@@ -5,7 +5,7 @@
     </div>
     <div
       class="font-semibold flex-centered mt-3"
-      :style="{ fontSize: interfaceStore.isOnSmallScreen ? '16px' : '20px' }"
+      :style="{ fontSize: interfaceStore.isOnSmallScreen ? '14px' : '20px' }"
     >
       <slot name="title"></slot>
     </div>
