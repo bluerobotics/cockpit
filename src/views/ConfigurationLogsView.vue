@@ -1,277 +1,345 @@
 <template>
   <div class="draggable-container" @dragover.prevent="handleDragOver">
-    <v-tabs v-model="selectedTab" fixed-tabs align-tabs="center">
-      <v-tab value="telemetry" class="text-slate-600">Telemetry Overlay Configuration</v-tab>
-      <v-tab value="logs" class="text-slate-600">Logging Options</v-tab>
-    </v-tabs>
     <BaseConfigurationView>
+      <template #help-icon>
+        <GlassButton
+          icon="mdi-help-circle-outline"
+          :icon-size="interfaceStore.isOnSmallScreen ? 14 : 20"
+          :icon-class="interfaceStore.isOnSmallScreen ? '-ml-[1px]' : 'mt-2'"
+          variant="uncontained"
+          no-effects
+          @click="openHelpDialog"
+        />
+      </template>
+      <template #title
+        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">On Screen Telemetry Data</div></template
+      >
       <template #content>
-        <div v-show="selectedTab === 'telemetry'" id="draggable-container" class="w-full mb-3">
-          <div class="flex justify-start w-full align-start gap-x-5">
-            <div id="leftColumn" class="flex flex-col justify-start align-start w-[220px] gap-y-1 ml-2 mt-[60px]">
-              <v-expansion-panels v-model="optionsPanel">
-                <v-expansion-panel v-model="optionsPanel">
-                  <v-expansion-panel-title>
-                    <span class="text-md font-bold text-slate-600 text-center w-[200px]">Overlay Options</span>
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <div>
-                      <div class="flex flex-col flex-wrap justify-between w-full pt-2 align-start gap-y-0">
-                        <div class="flex flex-row justify-between w-full align-center gap-x-3">
-                          <span class="w-[85px] text-sm font-bold text-slate-600 text-start mb-5">Font size</span>
-                          <v-text-field
-                            v-model="datalogger.telemetryDisplayOptions.value.fontSize"
-                            type="number"
-                            density="compact"
-                            class="w-[75px]"
-                          />
-                        </div>
-                        <div class="flex flex-row justify-between w-full -mt-2 align-center gap-x-3">
-                          <span class="w-[85px] text-sm font-bold text-slate-600 text-start mb-5">Shadow size</span>
-                          <v-select
-                            v-model="datalogger.telemetryDisplayOptions.value.fontShadowSize"
-                            density="compact"
-                            :items="[0, 1, 2, 3, 4, 5]"
-                            class="w-[75px]"
-                          />
-                        </div>
-                        <div class="flex flex-row justify-between w-[90%] align-center gap-x-3">
-                          <v-menu
-                            :close-on-content-click="false"
-                            location="top start"
-                            origin="top start"
-                            transition="scale-transition"
-                          >
-                            <template #activator="{ props }">
-                              <span class="text-sm font-bold text-slate-600 text-start">Font color</span>
-                              <div
-                                v-bind="props"
-                                class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
-                                :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontColor }"
-                              ></div>
-                            </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
-                                v-model="datalogger.telemetryDisplayOptions.value.fontColor"
-                                width="400px"
-                            /></v-card>
-                          </v-menu>
-                        </div>
-                        <div class="flex flex-row justify-between w-[90%] align-center gap-x-3 mt-7">
-                          <v-menu
-                            :close-on-content-click="false"
-                            location="top start"
-                            origin="top start"
-                            transition="scale-transition"
-                            class="overflow-hidden"
-                          >
-                            <template #activator="{ props }">
-                              <span class="text-sm font-bold text-slate-600 text-start">Outline color</span>
-                              <div
-                                v-bind="props"
-                                class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
-                                :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontOutlineColor }"
-                              ></div>
-                            </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
-                                v-model="datalogger.telemetryDisplayOptions.value.fontOutlineColor"
-                                width="400px"
-                            /></v-card>
-                          </v-menu>
-                        </div>
-                        <div class="flex flex-row justify-between w-[90%] align-center gap-x-3 mt-7">
-                          <v-menu
-                            :close-on-content-click="false"
-                            location="top start"
-                            origin="top start"
-                            transition="scale-transition"
-                          >
-                            <template #activator="{ props }">
-                              <span class="text-sm font-bold text-slate-600 text-start">Shadow color</span>
-                              <div
-                                v-bind="props"
-                                class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
-                                :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontShadowColor }"
-                              ></div>
-                            </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
-                                v-model="datalogger.telemetryDisplayOptions.value.fontShadowColor"
-                                width="400px"
-                            /></v-card>
-                          </v-menu>
-                        </div>
-                        <div class="flex flex-row justify-start h-[50px] align-center mt-7 -ml-2">
-                          <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontBold" />
-                          <span class="text-sm font-bold text-slate-600 -mt-[20px] text-start">Bold</span>
-                        </div>
-                        <div class="flex flex-row justify-start h-[50px] align-center -ml-2">
-                          <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontItalic" />
-                          <span class="text-sm font-bold text-slate-600 -mt-[20px] text-start">Italic</span>
-                        </div>
-                        <div class="flex flex-row justify-start h-[50px] align-center -ml-2">
-                          <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontUnderline" />
-                          <span class="text-sm font-bold text-slate-600 -mt-[20px] text-start">Underline</span>
-                        </div>
-                        <div class="flex flex-row justify-start h-[50px] align-center -ml-2">
-                          <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontStrikeout" />
-                          <span class="text-sm font-bold text-slate-600 -mt-[20px] text-start">Strikethrough</span>
-                        </div>
-                      </div>
-                    </div>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-              <v-expansion-panels v-model="variablesPanel">
-                <v-expansion-panel v-model="variablesPanel">
-                  <v-expansion-panel-title>
-                    <span class="text-md font-bold text-slate-600 text-center w-[200px]">Vehicle Variables</span>
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <VueDraggable
-                      v-model="loggedVariables"
-                      tag="div"
-                      :sort="true"
-                      class="flex flex-col items-start w-full min-h-[50px] overflow-x-hidden overflow-y-auto grow"
-                      :animation="150"
-                      :group="{ name: 'availableDataElements', put: false }"
-                    >
-                      <div v-for="variable in loggedVariables.sort()" :key="variable" class="">
-                        <v-chip label class="m-1 cursor-grab">{{ variable }}</v-chip>
-                      </div>
-                    </VueDraggable>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-              <v-expansion-panels>
-                <v-expansion-panel>
-                  <v-expansion-panel-title>
-                    <span class="text-md font-bold text-slate-600 text-center w-[200px]">Mission Variables</span>
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <VueDraggable
-                      v-model="otherLoggingElements"
-                      tag="div"
-                      :sort="true"
-                      class="flex flex-col items-start w-full min-h-[50px] overflow-x-hidden overflow-y-auto grow"
-                      :animation="150"
-                      :group="{ name: 'availableDataElements', put: false }"
-                    >
-                      <div v-for="element in otherLoggingElements.sort()" :key="element">
-                        <v-chip label class="m-1 cursor-grab">{{ element }}</v-chip>
-                      </div>
-                    </VueDraggable>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-              <v-expansion-panels v-model="customMessagePanel">
-                <v-expansion-panel>
-                  <v-expansion-panel-title>
-                    <span class="text-md font-bold text-slate-600 text-center w-[200px]">Custom Messages</span>
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <VueDraggable
-                      v-model="customMessageElements"
-                      tag="div"
-                      :sort="true"
-                      class="flex flex-col items-start w-full min-h-[50px] overflow-x-hidden overflow-y-auto grow"
-                      :animation="150"
-                      :group="{ name: 'availableDataElements', put: false }"
-                    >
-                      <div v-for="(element, index) in customMessageElements" :key="element">
-                        <v-chip close label class="m-1 cursor-grab max-w-[180px]">
-                          <span class="wrapclass">{{ element }}</span>
-                          <v-icon right class="ml-2" @click.stop="removeCustomMessageElement(index)">mdi-close</v-icon>
-                        </v-chip>
-                      </div>
-                      <v-menu :key="customMessageElements.length" :close-on-content-click="false" offset-y>
-                        <template #activator="{ props }">
-                          <v-btn size="sm" icon v-bind="props" class="mt-3 mb-1 mr-1" @click="props.click">
-                            <v-icon>mdi-plus</v-icon>
-                          </v-btn>
-                        </template>
-                        <v-card class="px-4 pt-2 overflow-hidden" width="400px">
-                          <span class="w-full text-sm font-bold text-center text-slate-600">Enter message</span>
-                          <v-text-field
-                            v-model="newMessage"
-                            variant="outlined"
-                            autofocus
-                            width="400px"
-                            class="mt-2"
-                            @keyup.enter="addCustomMessageElement()"
-                          />
-                        </v-card>
-                      </v-menu>
-                    </VueDraggable>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </div>
-            <div id="rightColumn" class="flex flex-col w-[80%] ml-2">
-              <div class="flex flex-row justify-between w-full align-center">
-                <div class="w-1"></div>
-                <h1 class="mb-4 text-lg font-bold text-center text-slate-600">On Screen Telemetry Data</h1>
+        <div
+          class="flex justify-start align-start mb-2"
+          :class="interfaceStore.isOnSmallScreen ? 'h-[80vh] w-[88vw] gap-x-0 mt-2' : 'h-[50vh] w-[60vw] gap-x-1 mt-4'"
+        >
+          <div
+            id="leftColumn"
+            class="flex flex-col justify-start align-start mt-[2vh] h-full overflow-y-auto overflow-x-hidden"
+            :class="interfaceStore.isOnSmallScreen ? 'w-[160px] pr-1 ml-0' : 'w-[220px]  pr-4 ml-2'"
+          >
+            <ExpansiblePanel compact mark-expanded darken-content hover-effect>
+              <template #title>Overlay Options</template>
+              <template #content>
                 <div>
-                  <v-icon color="slate-600" class="mb-1 mr-0.5" @click="showHelpTooltip = !showHelpTooltip"
-                    >mdi-help-circle-outline</v-icon
-                  >
-                  <v-tooltip
-                    v-model="showHelpTooltip"
-                    :open-on-hover="false"
-                    activator="parent"
-                    location="bottom"
-                    arrow
-                    content-class="border-[#ffffff55] border-2"
-                    @click:outside="showHelpTooltip = false"
-                  >
-                    <div class="flex flex-col p-2 gap-y-2">
-                      Drag and drop variables from the left panel to the desired position on the Telemetry Data Display.
+                  <div class="flex flex-col flex-wrap justify-between align-start w-full gap-y-0 pt-3">
+                    <div class="flex flex-row justify-between align-center w-full gap-x-3">
+                      <span
+                        class="font-bold text-white text-start mb-5"
+                        :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
+                        >Font size</span
+                      >
+                      <v-text-field
+                        v-model="datalogger.telemetryDisplayOptions.value.fontSize"
+                        type="number"
+                        density="compact"
+                        :class="interfaceStore.isOnSmallScreen ? 'w-[50px]' : 'w-[75px]'"
+                      />
                     </div>
-                  </v-tooltip>
-                </div>
-              </div>
-              <div
-                class="flex flex-row flex-wrap justify-start align-start w-full h-[70vh] border rounded-2xl elevation-1 bg-[#fdfdfd]"
-              >
-                <div
-                  v-for="config in gridConfig"
-                  :key="config.key"
-                  class="flex flex-col w-[33.3%] h-[33.3%] border-dashed p-2"
-                  :class="{
-                    'border-r': !['RightTop', 'RightMid', 'RightBottom'].includes(config.key),
-                    'border-b': !['LeftBottom', 'CenterBottom', 'RightBottom'].includes(config.key),
-                    'justify-start align-start': ['LeftTop', 'CenterTop', 'LeftBottom'].includes(config.key),
-                  }"
-                >
-                  <VueDraggable
-                    v-model="datalogger.telemetryDisplayData.value[config.key]"
-                    group="availableDataElements"
-                    class="flex flex-col w-full h-full"
-                    :class="getClassForConfig(config.key)"
-                  >
-                    <div v-for="variable in datalogger.telemetryDisplayData.value[config.key]" :key="variable">
-                      <v-chip close label class="m-1 cursor-grab"
-                        >{{ variable }}
-                        <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)"
-                          >mdi-close</v-icon
+                    <div class="flex flex-row justify-between align-center w-full gap-x-3 -mt-2">
+                      <span
+                        class="font-bold text-white text-start mb-5"
+                        :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
+                        >Shadow size</span
+                      >
+                      <v-text-field
+                        v-model="datalogger.telemetryDisplayOptions.value.fontShadowSize"
+                        density="compact"
+                        type="number"
+                        min="1"
+                        max="5"
+                        :class="interfaceStore.isOnSmallScreen ? 'w-[50px]' : 'w-[75px]'"
+                      />
+                    </div>
+                    <div
+                      class="flex flex-col justify-between"
+                      :class="interfaceStore.isOnSmallScreen ? 'gap-y-3' : 'gap-y-5 mt-2'"
+                    >
+                      <div class="flex flex-row justify-between w-[90%] align-center gap-x-3">
+                        <v-menu
+                          :close-on-content-click="false"
+                          location="top start"
+                          origin="top start"
+                          transition="scale-transition"
                         >
-                      </v-chip>
+                          <template #activator="{ props }">
+                            <span
+                              :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
+                              class="text-sm font-bold text-white text-start"
+                              >Font color</span
+                            >
+                            <div
+                              v-bind="props"
+                              class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
+                              :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontColor }"
+                            ></div>
+                          </template>
+                          <v-card class="overflow-hidden"
+                            ><v-color-picker v-model="datalogger.telemetryDisplayOptions.value.fontColor" width="400px"
+                          /></v-card>
+                        </v-menu>
+                      </div>
+                      <div class="flex flex-row justify-between items-center w-[90%] gap-x-3 mt-1">
+                        <v-menu
+                          :close-on-content-click="false"
+                          location="top start"
+                          origin="top start"
+                          transition="scale-transition"
+                          class="overflow-hidden"
+                        >
+                          <template #activator="{ props }">
+                            <span
+                              :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
+                              class="text-sm font-bold text-white text-start"
+                              >Outline color</span
+                            >
+                            <div
+                              v-bind="props"
+                              class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
+                              :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontOutlineColor }"
+                            ></div>
+                          </template>
+                          <v-card class="overflow-hidden"
+                            ><v-color-picker
+                              v-model="datalogger.telemetryDisplayOptions.value.fontOutlineColor"
+                              width="400px"
+                          /></v-card>
+                        </v-menu>
+                      </div>
+                      <div class="flex flex-row justify-between items-center w-[90%] gap-x-3">
+                        <v-menu
+                          :close-on-content-click="false"
+                          location="top start"
+                          origin="top start"
+                          transition="scale-transition"
+                        >
+                          <template #activator="{ props }">
+                            <span
+                              :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
+                              class="text-sm font-bold text-white text-start"
+                              >Shadow color</span
+                            >
+                            <div
+                              v-bind="props"
+                              class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
+                              :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontShadowColor }"
+                            ></div>
+                          </template>
+                          <v-card class="overflow-hidden"
+                            ><v-color-picker
+                              v-model="datalogger.telemetryDisplayOptions.value.fontShadowColor"
+                              width="400px"
+                          /></v-card>
+                        </v-menu>
+                      </div>
                     </div>
-                  </VueDraggable>
+                    <div>
+                      <div
+                        class="flex flex-row justify-start align-center -ml-2"
+                        :class="interfaceStore.isOnSmallScreen ? 'h-[30px] mt-[20px]' : 'h-[50px] mt-[30px]'"
+                      >
+                        <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontBold" />
+                        <span
+                          class="text-sm font-bold text-white -mt-[20px] text-start"
+                          :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
+                          >Bold</span
+                        >
+                      </div>
+                      <div
+                        class="flex flex-row justify-start align-center -ml-2"
+                        :class="interfaceStore.isOnSmallScreen ? 'h-[30px]' : 'h-[50px]'"
+                      >
+                        <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontItalic" />
+                        <span
+                          class="text-sm font-bold text-white -mt-[20px] text-start"
+                          :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
+                          >Italic</span
+                        >
+                      </div>
+                      <div
+                        class="flex flex-row justify-start align-center -ml-2"
+                        :class="interfaceStore.isOnSmallScreen ? 'h-[30px]' : 'h-[50px]'"
+                      >
+                        <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontUnderline" />
+                        <span
+                          class="text-sm font-bold text-white -mt-[20px] text-start"
+                          :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
+                          >Underline</span
+                        >
+                      </div>
+                      <div
+                        class="flex flex-row justify-start align-center -ml-2"
+                        :class="interfaceStore.isOnSmallScreen ? 'h-[30px]' : 'h-[50px]'"
+                      >
+                        <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontStrikeout" />
+                        <span
+                          class="text-sm font-bold text-white -mt-[20px] text-start"
+                          :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
+                          >Strikethrough</span
+                        >
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex w-[97%] justify-end mt-[10px]">
-                  <v-btn size="sm" variant="text" @click="resetAllChips">
-                    <v-icon size="18" class="mr-2">mdi-refresh</v-icon>
-                    <span>Reset Positions</span>
-                  </v-btn>
-                </div>
+              </template>
+            </ExpansiblePanel>
+            <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <template #title>Vehicle Variables</template>
+              <template #content>
+                <VueDraggable
+                  v-model="loggedVariables"
+                  tag="div"
+                  :sort="true"
+                  class="flex flex-col items-start w-full min-h-[50px] overflow-x-hidden py-2 overflow-y-auto"
+                  :animation="150"
+                  :group="{ name: 'availableDataElements', put: false }"
+                >
+                  <div v-for="variable in loggedVariables.sort()" :key="variable">
+                    <v-chip
+                      :size="interfaceStore.isOnSmallScreen ? 'x-small' : 'small'"
+                      :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
+                      label
+                      class="cursor-grab elevation-1"
+                      >{{ variable }}</v-chip
+                    >
+                  </div>
+                </VueDraggable>
+              </template>
+            </ExpansiblePanel>
+            <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <template #title>Mission Variables</template>
+              <template #content>
+                <VueDraggable
+                  v-model="otherLoggingElements"
+                  tag="div"
+                  :sort="true"
+                  class="flex flex-col items-start w-full min-h-[50px] overflow-x-hidden py-2 overflow-y-auto grow"
+                  :animation="150"
+                  :group="{ name: 'availableDataElements', put: false }"
+                >
+                  <div v-for="element in otherLoggingElements.sort()" :key="element">
+                    <v-chip
+                      :size="interfaceStore.isOnSmallScreen ? 'x-small' : 'small'"
+                      :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
+                      label
+                      class="cursor-grab elevation-1"
+                      >{{ element }}</v-chip
+                    >
+                  </div>
+                </VueDraggable>
+              </template>
+            </ExpansiblePanel>
+            <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <template #title>Custom Messages</template>
+              <template #content>
+                <VueDraggable
+                  v-model="customMessageElements"
+                  tag="div"
+                  :sort="true"
+                  class="flex flex-col items-start w-full min-h-[50px] overflow-x-hidden py-2 overflow-y-auto grow"
+                  :animation="150"
+                  :group="{ name: 'availableDataElements', put: false }"
+                >
+                  <div v-for="(element, index) in customMessageElements" :key="element" class="min-h-[50px]">
+                    <v-chip
+                      :size="interfaceStore.isOnSmallScreen ? 'x-small' : 'small'"
+                      :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
+                      close
+                      label
+                      class="cursor-grab max-w-[180px] elevation-1"
+                    >
+                      <span class="wrapclass">{{ element }}</span>
+                      <v-icon right class="ml-2" @click.stop="removeCustomMessageElement(index)">mdi-close</v-icon>
+                    </v-chip>
+                  </div>
+                  <v-menu :key="customMessageElements.length" :close-on-content-click="false" offset-y>
+                    <template #activator="{ props }">
+                      <GlassButton
+                        v-bind="props"
+                        icon="mdi-plus-circle-outline"
+                        :icon-size="interfaceStore.isOnSmallScreen ? 16 : 20"
+                        variant="uncontained"
+                        no-effects
+                        @click="props.click"
+                      />
+                    </template>
+                    <div
+                      class="frosted-button backdrop-blur-md rounded-lg overflow-hidden w-[400px] px-4 pt-2 elevation-2"
+                    >
+                      <span class="text-sm font-bold text-white text-center w-full">Enter message</span>
+                      <v-text-field
+                        v-model="newMessage"
+                        variant="outlined"
+                        autofocus
+                        width="400px"
+                        class="mt-2"
+                        @keyup.enter="addCustomMessageElement()"
+                      />
+                    </div>
+                  </v-menu>
+                </VueDraggable>
+              </template>
+            </ExpansiblePanel>
+            <div class="flex justify-end w-full mt-2">
+              <v-btn size="small" variant="text" class="group" @click="resetAllChips">
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-800"> Reset Positions </span>
+                <v-icon size="18" class="ml-2">mdi-refresh</v-icon>
+              </v-btn>
+            </div>
+          </div>
+          <div id="rightColumn" class="flex flex-col justify-center items-center relative w-[80%] h-full ml-2">
+            <div
+              id="mocked-screen"
+              class="frosted-button flex flex-row flex-wrap justify-start align-start elevation-1 w-full h-full"
+              :class="interfaceStore.isOnSmallScreen ? 'rounded-lg' : 'rounded-2xl'"
+            >
+              <div
+                v-for="config in gridConfig"
+                :key="config.key"
+                class="flex flex-col w-[33.3%] h-[33.3%] border-[0px] border-[#ffffff22] border-dashed p-2"
+                :class="{
+                  'border-r-[1px]': !['RightTop', 'RightMid', 'RightBottom'].includes(config.key),
+                  'border-b-[0px]': !['LeftBottom', 'CenterBottom', 'RightBottom'].includes(config.key),
+                  'border-t-[1px]': !['LeftTop', 'CenterTop', 'RightTop'].includes(config.key),
+                  'justify-start align-start': ['LeftTop', 'CenterTop', 'LeftBottom'].includes(config.key),
+                  'rounded-tr-lg': ['RightTop'].includes(config.key),
+                  'rounded-tl-lg': ['LeftTop'].includes(config.key),
+                  'rounded-br-lg': ['RightBottom'].includes(config.key),
+                  'rounded-bl-lg': ['LeftBottom'].includes(config.key),
+                }"
+              >
+                <VueDraggable
+                  v-model="datalogger.telemetryDisplayData.value[config.key]"
+                  group="availableDataElements"
+                  class="flex flex-col items-start h-full w-full"
+                  :class="getClassForConfig(config.key)"
+                >
+                  <div v-for="variable in datalogger.telemetryDisplayData.value[config.key]" :key="variable">
+                    <v-chip
+                      close
+                      label
+                      :size="interfaceStore.isOnSmallScreen ? 'x-small' : 'small'"
+                      class="cursor-grab elevation-1"
+                      :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
+                      >{{ variable }}
+                      <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)">
+                        mdi-close
+                      </v-icon>
+                    </v-chip>
+                  </div>
+                </VueDraggable>
               </div>
             </div>
           </div>
         </div>
         <div v-show="selectedTab === 'logs'" class="flex flex-col justify-center align-center">
-          <h1 class="text-lg font-bold text-slate-600">Frequency of the telemetry log</h1>
+          <h1 class="text-lg font-bold text-white">Frequency of the telemetry log</h1>
           <span class="text-sm text-slate-400 w-[50%] text-center">
             Common values (1 - 100Hz) can be set with the slider.
           </span>
@@ -297,9 +365,17 @@ import { FwbInput, FwbRange } from 'flowbite-vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import GlassButton from '@/components/GlassButton.vue'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
+
+const { showDialog } = useInteractionDialog()
+
+const interfaceStore = useAppInterfaceStore()
 
 const updateVariables = (): void => {
   loggedVariables.value = Array.from(CurrentlyLoggedVariables.getAllVariables()).filter(
@@ -329,11 +405,8 @@ const otherLoggingElements = ref(otherAvailableLoggingElements)
 const originalOtherLoggingElements = ref(otherAvailableLoggingElements)
 const newFrequency = ref(1000 / datalogger.logInterval.value)
 const selectedTab = ref('telemetry')
-const variablesPanel = ref<number[]>([])
-const optionsPanel = ref<number[]>([])
-const customMessagePanel = ref<number[]>([])
-const showHelpTooltip = ref(false)
-const customMessageElements = ref<string[]>([])
+const customMessageElements = useStorage<string[]>('custom-overlay-messages', [])
+const customMessagesBackup = useStorage<string[]>('custom-messages-backup', [])
 const newMessage = ref('')
 const dragPosition = ref(0)
 
@@ -381,6 +454,21 @@ const getClassForConfig = computed(() => {
 
   return (key: GridKey) => alignments[key] || ''
 })
+
+const openHelpDialog = (): void => {
+  showDialog({
+    title: 'Video Configuration Help',
+    message: [
+      // eslint-disable-next-line vue/max-len
+      'On this screen, you can configure the telemetry data that will be displayed on the subtitle file for recorded videos. You can change the font size, color, and style, as well as the position of each variable on the screen. You can also add custom messages that will be displayed on the video player screen.',
+      'Drag and drop variables from the left panel to the desired position on the Telemetry Data Display.',
+      'Additional Help: For more detailed settings, refer to documentation or contact us.',
+    ],
+    variant: 'text-only',
+    maxWidth: interfaceStore.isOnSmallScreen ? '80vw' : '60vw',
+    persistent: false,
+  })
+}
 
 function handleDragOver(event: DragEvent): void {
   const thresholdTop = window.innerHeight * 0.5
@@ -460,5 +548,20 @@ const newFrequencyString = computed({
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.frosted-button {
+  background-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: white;
+  transition: all 0.3s;
+}
+.right-column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.mock-screen {
+  position: absolute;
 }
 </style>
