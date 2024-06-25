@@ -1,178 +1,244 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Joystick configuration</template>
+    <template v-if="controllerStore.joysticks && controllerStore.joysticks.size" #title
+      >Joystick configuration</template
+    >
     <template #content>
-      <div
-        v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
-        class="p-12 m-8 shadow-md rounded-2xl flex-centered flex-column position-relative"
-      >
-        <p class="text-2xl font-semibold">No joystick detected.</p>
-        <br />
-        <p class="text-base text-center">Make sure that a joystick is connected.</p>
-        <p class="text-base text-center">You can hit any key to test the joystick connection.</p>
-      </div>
-      <div v-else class="flex flex-col items-center">
+      <div :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw]' : 'max-w-[60vw]'">
         <div
-          class="flex flex-col items-center px-5 py-3 m-5 font-medium text-center border rounded-md text-grey-darken-1 bg-grey-lighten-5 w-fit"
+          v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
+          class="px-6 pb-2 flex-centered flex-column position-relative"
+          :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
-          <p class="font-bold">
-            This is the joystick configuration page. Here you can calibrate your joystick and map its buttons to
-            functions in your drone.
-          </p>
+          <p class="text-xl font-semibold">No joystick detected.</p>
           <br />
-          <p>
-            Click the buttons in your physical controller and see them being activated here. If any button does not
-            light up in this virtual joystick or is switched with another, click in it here and follow the instructions
-            to remap it.
-          </p>
-          <br />
-          <p>
-            By clicking the virtual buttons and axis you are also able to choose the function in your drone that this
-            button controls, as whel as set axis limits.
-          </p>
+          <p class="text-base text-center font-bold">Connect a joystick and press any key.</p>
         </div>
-        <div
-          v-if="!m2rSupportsExtendedManualControl || !ardupilotSupportsExtendedManualControl"
-          class="px-5 py-3 m-1 text-center border-yellow-300 bg-yellow-200/10 border-2 rounded-md max-w-[80%] text-slate-600"
-        >
-          <p class="font-semibold">System update is recommended</p>
-          <br />
-          <p class="font-medium">
-            It seems like you're running versions of Mavlink2Rest (BlueOS) and/or ArduPilot that do not support the
-            extended MAVLink MANUAL_CONTROL message. We strongly suggest upgrading both so you can have support for
-            additional buttons and axes on the joystick. This is especially important if you sometimes use other control
-            station software, like QGroundControl, as Cockpit can preferentially use the extended buttons to reduce
-            configuration clashes. We recommend using BlueOS &ge; 1.2.0, and &ge; version 4.1.2 for ArduPilot-based
-            autopilot firmware.
-          </p>
-          <p />
-        </div>
-        <div
-          v-if="controllerStore.availableButtonActions.every((b) => b.protocol === JoystickProtocol.CockpitAction)"
-          class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
-        >
-          <p>Could not stablish communication with the vehicle.</p>
-          <p>Button functions will appear as numbers. If connection is restablished, function names will appear.</p>
-        </div>
-        <div v-if="availableModifierKeys" class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md">
-          <div class="flex">
-            <Button
-              v-for="functionMapping in controllerStore.protocolMappings"
-              :key="functionMapping.name"
-              class="m-2"
-              :class="{ 'bg-slate-700': controllerStore.protocolMapping.name === functionMapping.name }"
-              @click="controllerStore.loadProtocolMapping(functionMapping)"
-            >
-              {{ functionMapping.name }}
-            </Button>
-          </div>
-          <div class="flex flex-col items-center w-full my-2">
-            <v-combobox
-              v-model="vehicleTypesAssignedToCurrentProfile"
-              :items="availableVehicleTypes"
-              label="Vehicle types that use this profile by default:"
-              chips
-              multiple
-              variant="outlined"
-              class="w-10/12 m-4"
-            />
-          </div>
-        </div>
-        <div class="flex items-center px-5 py-3 m-5 font-bold border rounded-md">
-          <Button
-            v-for="key in availableModifierKeys"
-            :key="key.id"
-            class="m-2"
-            :class="{ 'bg-slate-700': currentModifierKey.id === key.id }"
-            @click="changeModifierKeyTab(key.id as CockpitModifierKeyOption)"
-          >
-            {{ key.name }}
-          </Button>
-        </div>
-      </div>
-      <div
-        v-for="[key, joystick] in controllerStore.joysticks"
-        :key="key"
-        class="w-[95%] p-4 shadow-md rounded-2xl flex-centered flex-column position-relative"
-      >
-        <p class="text-xl font-semibold text-grey-darken-3">{{ joystick.model }} controller</p>
-        <div v-if="showJoystickLayout" class="flex flex-col items-center justify-center w-full">
-          <JoystickPS
-            class="w-[70%]"
-            :model="joystick.model"
-            :left-axis-horiz="joystick.state.axes[0]"
-            :left-axis-vert="joystick.state.axes[1]"
-            :right-axis-horiz="joystick.state.axes[2]"
-            :right-axis-vert="joystick.state.axes[3]"
-            :b0="joystick.state.buttons[0]"
-            :b1="joystick.state.buttons[1]"
-            :b2="joystick.state.buttons[2]"
-            :b3="joystick.state.buttons[3]"
-            :b4="joystick.state.buttons[4]"
-            :b5="joystick.state.buttons[5]"
-            :b6="joystick.state.buttons[6]"
-            :b7="joystick.state.buttons[7]"
-            :b8="joystick.state.buttons[8]"
-            :b9="joystick.state.buttons[9]"
-            :b10="joystick.state.buttons[10]"
-            :b11="joystick.state.buttons[11]"
-            :b12="joystick.state.buttons[12]"
-            :b13="joystick.state.buttons[13]"
-            :b14="joystick.state.buttons[14]"
-            :b15="joystick.state.buttons[15]"
-            :b16="joystick.state.buttons[16]"
-            :b17="joystick.state.buttons[17]"
-            :buttons-actions-correspondency="currentButtonActions"
-            @click="(e) => setCurrentInputs(joystick, e)"
-          />
-        </div>
-        <div class="flex items-center justify-evenly">
-          <div class="flex flex-col items-center max-w-[30%] mb-4">
-            <span class="mb-2 text-xl font-medium text-slate-500">Joystick mapping</span>
-            <div class="flex flex-wrap items-center justify-evenly">
-              <button
-                class="p-2 m-1 font-medium border rounded-md text-uppercase"
-                @click="controllerStore.exportJoystickMapping(joystick)"
-              >
-                Export to computer
-              </button>
-              <label class="p-2 m-1 font-medium border rounded-md cursor-pointer text-uppercase">
-                <input
-                  type="file"
-                  accept="application/json"
-                  hidden
-                  @change="(e) => controllerStore.importJoystickMapping(joystick, e)"
-                />
-                Import from computer
-              </label>
+        <ExpansiblePanel v-else class="mt-3" :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Joystick configuration</template>
+          <template #info>
+            <div class="flex flex-col items-center px-5 font-medium">
+              Click the buttons in your physical controller and see them being activated here. If any button does not
+              light up in this virtual joystick or is switched with another, click in it here and follow the
+              instructions to remap it.
+              <br />
+              <br />
+              By clicking the virtual buttons and axis you are also able to choose the function in your vehicle that
+              this button controls, as whel as set axis limits.
             </div>
-          </div>
-          <div class="flex flex-col items-center max-w-[30%] mb-4">
-            <span class="mb-2 text-xl font-medium text-slate-500">Functions mapping</span>
-            <div class="flex flex-wrap items-center justify-evenly">
-              <button
-                class="p-2 m-1 font-medium border rounded-md text-uppercase"
-                @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
-              >
-                Export to computer
-              </button>
-              <label class="p-2 m-1 font-medium border rounded-md cursor-pointer text-uppercase">
-                <input
-                  type="file"
-                  accept="application/json"
-                  hidden
-                  @change="(e) => controllerStore.importFunctionsMapping(e)"
-                />
-                Import from computer
-              </label>
+          </template>
+          <template v-if="!m2rSupportsExtendedManualControl || !ardupilotSupportsExtendedManualControl" #warning>
+            <div class="text-center text-yellow-200">
+              <p class="font-semibold">System update is recommended</p>
+              <br />
+              <p class="font-medium">
+                It seems like you're running versions of Mavlink2Rest (BlueOS) and/or ArduPilot that do not support the
+                extended MAVLink MANUAL_CONTROL message. We strongly suggest upgrading both so you can have support for
+                additional buttons and axes on the joystick. This is especially important if you sometimes use other
+                control station software, like QGroundControl, as Cockpit can preferentially use the extended buttons to
+                reduce configuration clashes. We recommend using BlueOS &ge; 1.2.0, and &ge; version 4.1.2 for
+                ArduPilot-based autopilot firmware.
+              </p>
+              <p />
             </div>
-          </div>
-        </div>
-        <v-switch
-          v-model="controllerStore.holdLastInputWhenWindowHidden"
-          label="Hold last joystick input when window is hidden (tab changed or window minimized)"
-          class="m-2 text-slate-800"
-        />
+          </template>
+          <template #content>
+            <div class="flex flex-col items-center max-h-[75vh] overflow-auto">
+              <div class="flex flex-col items-center">
+                <div
+                  v-if="
+                    controllerStore.availableButtonActions.every((b) => b.protocol === JoystickProtocol.CockpitAction)
+                  "
+                  class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
+                >
+                  <p>Could not stablish communication with the vehicle.</p>
+                  <p>
+                    Button functions will appear as numbers. If connection is restablished, function names will appear.
+                  </p>
+                </div>
+                <div v-if="availableModifierKeys" class="flex flex-col items-center mt-2">
+                  <div class="flex">
+                    <Button
+                      v-for="functionMapping in controllerStore.protocolMappings"
+                      :key="functionMapping.name"
+                      class="m-2"
+                      :class="{
+                        'bg-[#FFFFFF33]': controllerStore.protocolMapping.name === functionMapping.name,
+                        'text-sm': interfaceStore.isOnSmallScreen,
+                      }"
+                      @click="controllerStore.loadProtocolMapping(functionMapping)"
+                    >
+                      {{ functionMapping.name }}
+                    </Button>
+                  </div>
+                  <div class="flex flex-col items-center w-full my-2">
+                    <v-combobox
+                      v-model="vehicleTypesAssignedToCurrentProfile"
+                      :items="availableVehicleTypes"
+                      label="Vehicle types that use this profile by default:"
+                      chips
+                      multiple
+                      density="compact"
+                      variant="outlined"
+                      class="w-10/12 mt-4"
+                      theme="dark"
+                    />
+                  </div>
+                </div>
+                <div class="flex items-center">
+                  <Button
+                    v-for="key in availableModifierKeys"
+                    :key="key.id"
+                    class="m-2"
+                    :class="{
+                      'bg-[#FFFFFF33]': currentModifierKey.id === key.id,
+                      'text-sm': interfaceStore.isOnSmallScreen,
+                    }"
+                    @click="changeModifierKeyTab(key.id as CockpitModifierKeyOption)"
+                  >
+                    {{ key.name }}
+                  </Button>
+                </div>
+              </div>
+              <div
+                v-for="[key, joystick] in controllerStore.joysticks"
+                :key="key"
+                class="w-[95%] p-4 mt-4 flex-centered flex-column position-relative"
+              >
+                <p class="text-xl font-semibold">{{ joystick.model }} controller</p>
+                <div v-if="showJoystickLayout" class="flex flex-col items-center justify-center w-full">
+                  <JoystickPS
+                    class="w-[100%]"
+                    :model="joystick.model"
+                    :left-axis-horiz="joystick.state.axes[0]"
+                    :left-axis-vert="joystick.state.axes[1]"
+                    :right-axis-horiz="joystick.state.axes[2]"
+                    :right-axis-vert="joystick.state.axes[3]"
+                    :b0="joystick.state.buttons[0]"
+                    :b1="joystick.state.buttons[1]"
+                    :b2="joystick.state.buttons[2]"
+                    :b3="joystick.state.buttons[3]"
+                    :b4="joystick.state.buttons[4]"
+                    :b5="joystick.state.buttons[5]"
+                    :b6="joystick.state.buttons[6]"
+                    :b7="joystick.state.buttons[7]"
+                    :b8="joystick.state.buttons[8]"
+                    :b9="joystick.state.buttons[9]"
+                    :b10="joystick.state.buttons[10]"
+                    :b11="joystick.state.buttons[11]"
+                    :b12="joystick.state.buttons[12]"
+                    :b13="joystick.state.buttons[13]"
+                    :b14="joystick.state.buttons[14]"
+                    :b15="joystick.state.buttons[15]"
+                    :b16="joystick.state.buttons[16]"
+                    :b17="joystick.state.buttons[17]"
+                    :buttons-actions-correspondency="currentButtonActions"
+                    @click="(e) => setCurrentInputs(joystick, e)"
+                  />
+                </div>
+                <div class="flex items-center justify-evenly">
+                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
+                    <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'"
+                      >Joystick Mapping</span
+                    >
+                    <v-divider class="w-full opacity-95" />
+                    <div class="flex flex-wrap items-center justify-evenly">
+                      <button
+                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
+                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
+                        @click="controllerStore.exportJoystickMapping(joystick)"
+                      >
+                        Export to computer
+                      </button>
+                      <label
+                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
+                        class="w-full p-[10px] border-b text-center text-uppercase bg-[#00000011]"
+                      >
+                        <input
+                          type="file"
+                          accept="application/json"
+                          hidden
+                          @change="(e) => controllerStore.importJoystickMapping(joystick, e)"
+                        />
+                        Import from computer
+                      </label>
+                      <button
+                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
+                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
+                        @click="
+                          controllerStore.exportJoysticksMappingsToVehicle(
+                            globalAddress,
+                            controllerStore.cockpitStdMappings
+                          )
+                        "
+                      >
+                        Export to vehicle
+                      </button>
+                      <button
+                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
+                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
+                        @click="controllerStore.importJoysticksMappingsFromVehicle(globalAddress)"
+                      >
+                        Import from vehicle
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
+                    <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'"
+                      >Functions Mapping</span
+                    >
+                    <v-divider class="w-full opacity-95" />
+                    <div class="flex flex-wrap items-center justify-evenly">
+                      <button
+                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
+                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
+                        @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
+                      >
+                        Export to computer
+                      </button>
+                      <label
+                        class="w-full p-[10px] border-b text-center text-uppercase bg-[#00000011]"
+                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
+                      >
+                        <input
+                          type="file"
+                          accept="application/json"
+                          hidden
+                          @change="(e) => controllerStore.importFunctionsMapping(e)"
+                        />
+                        Import from computer
+                      </label>
+                      <button
+                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
+                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
+                        @click="
+                          controllerStore.exportFunctionsMappingToVehicle(
+                            globalAddress,
+                            controllerStore.protocolMappings
+                          )
+                        "
+                      >
+                        Export to vehicle
+                      </button>
+                      <button
+                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
+                        class="w-full p-[10px] text-uppercase bg-[#00000011]"
+                        @click="importFunctionsMappingFromVehicle"
+                      >
+                        Import from vehicle
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <v-switch
+                  v-model="controllerStore.holdLastInputWhenWindowHidden"
+                  label="Hold last joystick input when window is hidden (tab changed or window minimized)"
+                  class="m-2"
+                />
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -313,12 +379,14 @@ import semver from 'semver'
 import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { CockpitActionsFunction } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { sleep } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import {
@@ -350,6 +418,7 @@ const joystickAxisFullRangeThreshold = 3.5
 
 const controllerStore = useControllerStore()
 const { globalAddress } = useMainVehicleStore()
+const interfaceStore = useAppInterfaceStore()
 
 const m2rSupportsExtendedManualControl = ref<boolean>()
 const ardupilotSupportsExtendedManualControl = ref<boolean>()
