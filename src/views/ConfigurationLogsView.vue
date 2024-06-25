@@ -393,8 +393,6 @@ const removeChipFromGrid = (quadrantKey: string, chip: string): void => {
   const index = datalogger.telemetryDisplayData.value[quadrantKey].indexOf(chip)
   if (index !== -1) {
     datalogger.telemetryDisplayData.value[quadrantKey].splice(index, 1)
-    console.log('🚀 ~ originalLoggedVariables.value:', originalLoggedVariables.value)
-    console.log('🚀 ~ chip:', chip)
 
     if (originalLoggedVariables.value.includes(chip)) {
       loggedVariables.value.push(chip)
