@@ -2,36 +2,48 @@
   <BaseConfigurationView>
     <template #title>Development configuration</template>
     <template #content>
-      <v-switch v-model="devStore.developmentMode" label="Development mode" class="ma-2" color="rgb(0, 20, 80)" />
-      <v-switch
-        v-model="devStore.enableBlueOsSettingsSync"
-        label="BlueOS settings sync"
-        class="m-2"
-        color="rgb(0, 20, 80)"
-        @update:model-value="reloadCockpit"
-      />
-      <v-switch
-        v-model="devStore.enableSystemLogging"
-        label="Enable system logging"
-        class="m-2"
-        color="rgb(0, 20, 80)"
-        @update:model-value="reloadCockpit"
-      />
-      <v-slider
-        v-model="devStore.widgetDevInfoBlurLevel"
-        label="Dev info blur level"
-        min="0"
-        max="10"
-        class="ma-2 w-25"
-        color="rgb(0, 20, 80)"
-        step="1"
-        thumb-label="always"
-      />
-      <v-data-table :items="systemLogsData" :headers="headers" class="max-w-[80%] max-h-[60%]">
-        <template #item.actions="{ item }">
-          <div class="text-center cursor-pointer icon-btn mdi mdi-download" @click="downloadLog(item.name)" />
-        </template>
-      </v-data-table>
+      <div class="max-w-[87vw] max-h-[80vh] overflow-y-auto">
+        <div
+          class="flex flex-col justify-between items-center w-full"
+          :class="interfaceStore.isOnPhoneScreen ? 'scale-[80%] mt-0 -mb-3' : 'scale-100 mt-4'"
+        >
+          <div class="flex flex-row gap-x-[50px]">
+            <v-switch v-model="devStore.developmentMode" label="Development mode" color="white" />
+            <v-switch
+              v-model="devStore.enableSystemLogging"
+              label="Enable system logging"
+              color="white"
+              @update:model-value="reloadCockpit"
+            />
+          </div>
+          <v-slider
+            v-model="devStore.widgetDevInfoBlurLevel"
+            label="Dev info blur level"
+            min="0"
+            max="10"
+            class="w-[350px]"
+            color="white"
+            step="1"
+            thumb-label="hover"
+          />
+        </div>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>System logs</template>
+          <template #content>
+            <v-data-table
+              :items="systemLogsData"
+              density="compact"
+              theme="dark"
+              :headers="headers"
+              class="w-full max-h-[60%] rounded-md bg-[#FFFFFF11]"
+            >
+              <template #item.actions="{ item }">
+                <div class="text-center cursor-pointer icon-btn mdi mdi-download" @click="downloadLog(item.name)" />
+              </template>
+            </v-data-table>
+          </template>
+        </ExpansiblePanel>
+      </div>
     </template>
   </BaseConfigurationView>
 </template>
@@ -44,11 +56,14 @@ import { saveAs } from 'file-saver'
 import { onBeforeMount } from 'vue'
 import { ref } from 'vue'
 
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { type SystemLog, cockpitSytemLogsDB } from '@/libs/system-logging'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 const devStore = useDevelopmentStore()
+const interfaceStore = useAppInterfaceStore()
 
 /* eslint-disable jsdoc/require-jsdoc */
 interface SystemLogsData {
@@ -65,7 +80,7 @@ const headers = [
   { title: 'Name', value: 'name' },
   { title: 'Time (initial)', value: 'initialTime' },
   { title: 'Date (initial)', value: 'initialDate' },
-  { title: 'N. events', value: 'nEvents' },
+  { title: 'events', value: 'nEvents' },
   { title: 'Download', value: 'actions' },
 ]
 
@@ -89,3 +104,9 @@ const downloadLog = async (logName: string): Promise<void> => {
 
 const reloadCockpit = (): void => location.reload()
 </script>
+<style scoped>
+.custom-header {
+  background-color: #333 !important;
+  color: #fff;
+}
+</style>
