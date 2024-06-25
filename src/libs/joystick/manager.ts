@@ -25,7 +25,7 @@ export enum JoystickModel {
   XboxController_360 = 'Xbox 360 controller',
   LogitechExtreme3DPro = 'Logitech Extreme 3D Pro',
   IpegaPG9023 = 'Ipega PG-9023',
-  Unknown = 'Unknown Joystick Model',
+  Unknown = 'Unknown',
 }
 
 const JoystickMapVidPid: Map<string, JoystickModel> = new Map([

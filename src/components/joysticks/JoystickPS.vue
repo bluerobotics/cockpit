@@ -16,7 +16,7 @@ import {
 } from '@/types/joystick'
 import { InputType } from '@/types/joystick'
 
-const textColor = '#747474'
+const textColor = 'white'
 
 /**
  * Joystick SVG models
@@ -114,12 +114,16 @@ const emit = defineEmits<{
 
 const findInputFromPath = (path: string): JoystickInput[] => {
   const inputs: JoystickInput[] = []
-  Object.entries(buttonPath).filter(([, v]) => v === path).forEach((button) => {
-    inputs.push({ type: InputType.Button, id: button[0] as unknown as JoystickButton })
-  })
-  Object.entries(axisPath.value).filter(([, v]) => v === path).forEach((axis) => {
-    inputs.push({ type: InputType.Axis, id: axis[0] as unknown as JoystickAxis })
-  })
+  Object.entries(buttonPath)
+    .filter(([, v]) => v === path)
+    .forEach((button) => {
+      inputs.push({ type: InputType.Button, id: button[0] as unknown as JoystickButton })
+    })
+  Object.entries(axisPath.value)
+    .filter(([, v]) => v === path)
+    .forEach((axis) => {
+      inputs.push({ type: InputType.Axis, id: axis[0] as unknown as JoystickAxis })
+    })
   return inputs
 }
 
@@ -140,7 +144,7 @@ waitTimer = setInterval(() => {
   svg?.addEventListener('mouseover', (e) => {
     const button = e.target as Element
     if (!isButtonPath(button)) return
-    button.setAttribute('fill', '#2699D0')
+    button.setAttribute('fill', '#A6DAEF')
   })
   svg?.addEventListener('mouseout', (e) => {
     const button = e.target as Element
@@ -167,8 +171,8 @@ onBeforeUnmount(async () => {
 watch(
   () => [props.leftAxisHoriz, props.leftAxisVert, props.rightAxisHoriz, props.rightAxisVert],
   () => {
-    setAxes([JoystickAxis.A0, JoystickAxis.A1], [props.leftAxisHoriz ?? 0, props.leftAxisVert ?? 0] )
-    setAxes([JoystickAxis.A2, JoystickAxis.A3], [props.rightAxisHoriz ?? 0, props.rightAxisVert ?? 0] )
+    setAxes([JoystickAxis.A0, JoystickAxis.A1], [props.leftAxisHoriz ?? 0, props.leftAxisVert ?? 0])
+    setAxes([JoystickAxis.A2, JoystickAxis.A3], [props.rightAxisHoriz ?? 0, props.rightAxisVert ?? 0])
   }
 )
 
@@ -208,7 +212,8 @@ const updateLabelsState = (): void => {
   Object.values(JoystickButton).forEach((button) => {
     if (isNaN(Number(button))) return
     const buttonActionCorrespondency = buttonsActionsCorrespondency.value[button as JoystickButton] || undefined
-    const functionName = buttonActionCorrespondency === undefined ? 'unassigned' : buttonActionCorrespondency.action.name
+    const functionName =
+      buttonActionCorrespondency === undefined ? 'unassigned' : buttonActionCorrespondency.action.name
     if (!svg) return
     // @ts-ignore: we already check if button is a number and so if button is a valid index
     const labelId = buttonPath[button].replace('path', 'text')
@@ -263,12 +268,18 @@ function toggleButton(button: JoystickButton, state: boolean): void {
  * @param {[number, number]} horizontalValue Horizontal and vertical axes values between [-1, 1]
  * @returns {void}
  */
-function setAxes(axes: [JoystickAxis.A0, JoystickAxis.A1] | [JoystickAxis.A2, JoystickAxis.A3], values: [number, number]): void {
+function setAxes(
+  axes: [JoystickAxis.A0, JoystickAxis.A1] | [JoystickAxis.A2, JoystickAxis.A3],
+  values: [number, number]
+): void {
   let xValue
   let yValue
   switch (joystickModel.value) {
     case SVGModel.PS5: {
-      xValue = axes[0] == JoystickAxis.A0 ? scale(values[0], -1, 1, -3920.9, -3882.1) : scale(values[0], -1, 1, -4144.8, -4106.1)
+      xValue =
+        axes[0] == JoystickAxis.A0
+          ? scale(values[0], -1, 1, -3920.9, -3882.1)
+          : scale(values[0], -1, 1, -4144.8, -4106.1)
       yValue = scale(values[1], -1, 1, -2192.7, -2153.9)
       break
     }
