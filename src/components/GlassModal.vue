@@ -51,7 +51,7 @@ const modalPositionStyle = computed(() => {
       return {
         top: '50%',
         left: interfaceStore.isOnSmallScreen
-          ? `${interfaceStore.mainMenuWidth - 20}px`
+          ? `${interfaceStore.mainMenuWidth - 30}px`
           : `${interfaceStore.mainMenuWidth + 30}px`,
         transform: 'translateY(-50%)',
       }
