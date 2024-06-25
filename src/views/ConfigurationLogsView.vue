@@ -297,7 +297,6 @@ import { FwbInput, FwbRange } from 'flowbite-vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
-import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
@@ -332,8 +331,7 @@ const variablesPanel = ref<number[]>([])
 const optionsPanel = ref<number[]>([])
 const customMessagePanel = ref<number[]>([])
 const showHelpTooltip = ref(false)
-const customMessageElements = useBlueOsStorage<string[]>('custom-overlay-messages', [])
-const customMessagesBackup = useBlueOsStorage<string[]>('custom-messages-backup', [])
+const customMessageElements = ref<string[]>([])
 const newMessage = ref('')
 const dragPosition = ref(0)
 
@@ -402,7 +400,7 @@ const removeChipFromGrid = (quadrantKey: string, chip: string): void => {
       loggedVariables.value.push(chip)
     } else if (originalOtherLoggingElements.value.includes(chip)) {
       otherLoggingElements.value.push(chip)
-    } else if (customMessagesBackup.value.includes(chip)) {
+    } else if (!CurrentlyLoggedVariables.getAllVariables().includes(chip)) {
       customMessageElements.value.push(chip)
     }
   }
@@ -411,20 +409,26 @@ const removeChipFromGrid = (quadrantKey: string, chip: string): void => {
 const addCustomMessageElement = (): void => {
   if (newMessage.value.trim() !== '') {
     customMessageElements.value.push(newMessage.value)
-    customMessagesBackup.value.push(newMessage.value)
     newMessage.value = ''
   }
 }
 
 const removeCustomMessageElement = (index: number): void => {
   customMessageElements.value.splice(index, 1)
-  customMessagesBackup.value.splice(index, 1)
 }
 
 const resetAllChips = (): void => {
   loggedVariables.value = []
   otherLoggingElements.value = []
-  customMessageElements.value = []
+
+  const customMessageElementsBackup: string[] = []
+  Object.values(datalogger.telemetryDisplayData.value).forEach((displayGridArray) => {
+    displayGridArray.forEach((variable) => {
+      if (CurrentlyLoggedVariables.getAllVariables().includes(variable)) return
+      customMessageElementsBackup.push(variable)
+    })
+  })
+
   datalogger.telemetryDisplayData.value = {
     LeftTop: [],
     CenterTop: [],
@@ -438,7 +442,7 @@ const resetAllChips = (): void => {
   }
 
   otherLoggingElements.value = ['Mission name', 'Time', 'Date']
-  customMessageElements.value = [...customMessagesBackup.value]
+  customMessageElements.value = [...customMessageElementsBackup, ...customMessageElements.value]
   updateVariables()
 }
 
