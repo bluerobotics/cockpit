@@ -321,10 +321,12 @@ const updateVariables = (): void => {
 
 onMounted(updateVariables)
 
+const otherAvailableLoggingElements = ['Mission name', 'Time', 'Date']
+
 const loggedVariables = ref<string[]>([])
 const originalLoggedVariables = ref<string[]>([])
-const otherLoggingElements = ref<string[]>(['Mission name', 'Time', 'Date'])
-const originalOtherLoggingElements = ref<string[]>(['Mission name', 'Time', 'Date'])
+const otherLoggingElements = ref(otherAvailableLoggingElements)
+const originalOtherLoggingElements = ref(otherAvailableLoggingElements)
 const newFrequency = ref(1000 / datalogger.logInterval.value)
 const selectedTab = ref('telemetry')
 const variablesPanel = ref<number[]>([])
@@ -439,7 +441,7 @@ const resetAllChips = (): void => {
     RightBottom: [],
   }
 
-  otherLoggingElements.value = ['Mission name', 'Time', 'Date']
+  otherLoggingElements.value = otherAvailableLoggingElements
   customMessageElements.value = [...customMessageElementsBackup, ...customMessageElements.value]
   updateVariables()
 }
