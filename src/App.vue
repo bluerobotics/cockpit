@@ -15,7 +15,7 @@
                 :class="
                   interfaceStore.isOnSmallScreen
                     ? 'gap-y-2 pt-2 pb-3 sm:gap-y-1 sm:py-0 sm:-ml-[3px] xs:gap-y-1 xs:py-0 xs:-ml-[3px]'
-                    : 'lg:gap-y-4 xl:gap-y-5 gap-y-6 py-6'
+                    : 'lg:gap-y-3 xl:gap-y-4 gap-y-5 py-5'
                 "
               >
                 <GlassButton
