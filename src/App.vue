@@ -152,9 +152,13 @@
       </transition>
 
       <teleport to="body">
-        <GlassModal :is-visible="currentConfigMenuComponent !== null && mainMenuStep !== 1" position="menuitem"
-          ><component :is="currentConfigMenuComponent"></component
-        ></GlassModal>
+        <GlassModal
+          :is-visible="currentConfigMenuComponent !== null && mainMenuStep !== 1"
+          position="menuitem"
+          @close-modal="currentConfigMenuComponent = null"
+        >
+          <component :is="currentConfigMenuComponent"></component>
+        </GlassModal>
       </teleport>
 
       <teleport to="body">
@@ -341,14 +345,25 @@ const configMenu = [
 const toggleConfigComponent = (component: ConfigComponent): void => {
   if (currentConfigMenuComponent.value === null) {
     currentConfigMenuComponent.value = component
+    interfaceStore.setConfigModalVisibility(true)
     return
   }
   if (currentConfigMenuComponent.value === component) {
     currentConfigMenuComponent.value = null
+    interfaceStore.setConfigModalVisibility(false)
     return
   }
   currentConfigMenuComponent.value = component
+  interfaceStore.setConfigModalVisibility(true)
 }
+
+const isConfigModalVisible = computed(() => interfaceStore.isConfigModalVisible)
+
+watch(isConfigModalVisible, (newVal) => {
+  if (newVal === false) {
+    currentConfigMenuComponent.value = null
+  }
+})
 
 watch(
   () => windowHeight.value < 450,
