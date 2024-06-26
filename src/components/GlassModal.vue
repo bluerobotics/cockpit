@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="isVisible"
+    ref="modal"
     class="glass-modal"
     :class="[interfaceStore.isOnSmallScreen ? 'rounded-[10px]' : 'rounded-[20px]', selectedOverflow]"
     :style="modalPositionStyle"
@@ -10,6 +11,7 @@
 </template>
 
 <script setup lang="ts">
+import { onClickOutside } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -30,14 +32,22 @@ const props = defineProps<{
    */
   position?: ModalPosition
   /**
+   *
+   */
+  isPersistent?: boolean
+  /**
    * The overflow property of the modal.
    */
   overflow?: 'auto' | 'hidden' | 'scroll' | 'visible' | 'inherit' | 'initial' | 'unset'
 }>()
 
+const emit = defineEmits(['outside-click'])
+
 const isVisible = ref(props.isVisible)
 const modalPosition = ref(props.position || 'center')
 const selectedOverflow = ref(props.overflow || 'auto')
+const isPersistent = ref(props.isPersistent || false)
+const modal = ref<HTMLElement | null>(null)
 
 const modalPositionStyle = computed(() => {
   switch (modalPosition.value) {
@@ -51,7 +61,7 @@ const modalPositionStyle = computed(() => {
       return {
         top: '50%',
         left: interfaceStore.isOnSmallScreen
-          ? `${interfaceStore.mainMenuWidth - 30}px`
+          ? `${interfaceStore.mainMenuWidth - 20}px`
           : `${interfaceStore.mainMenuWidth + 30}px`,
         transform: 'translateY(-50%)',
       }
@@ -62,6 +72,16 @@ const modalPositionStyle = computed(() => {
         left: '50%',
         transform: 'translate(-50%, -50%)',
       }
+  }
+})
+
+const closeModal = (): void => {
+  emit('outside-click')
+}
+
+onClickOutside(modal, () => {
+  if (!isPersistent.value) {
+    closeModal()
   }
 })
 
