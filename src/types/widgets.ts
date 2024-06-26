@@ -51,7 +51,7 @@ export type Widget = {
     /**
      * Number of times the widget was mounted
      */
-    timesMounted: number
+    everMounted: boolean
     /**
      * If the configuration menu is open or not
      */
@@ -128,7 +128,7 @@ export type Profile = {
 
 export const isWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   const widgetProps = ['hash', 'component', 'position', 'size', 'name', 'options', 'managerVars']
-  const managetVarsProps = ['timesMounted']
+  const managetVarsProps = ['everMounted']
   let realWidget = true
   widgetProps.forEach((p) => {
     // @ts-ignore

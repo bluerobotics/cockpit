@@ -13,7 +13,7 @@ export const defaultProfileVehicleCorrespondency = {
 }
 
 export const defaultWidgetManagerVars = {
-  timesMounted: 0,
+  everMounted: false,
   configMenuOpen: false,
   allowMoving: false,
   lastNonMaximizedX: 0.4,
@@ -24,7 +24,7 @@ export const defaultWidgetManagerVars = {
 }
 
 export const defaultMiniWidgetManagerVars = {
-  timesMounted: 0,
+  everMounted: false,
   configMenuOpen: false,
   highlighted: false,
 }

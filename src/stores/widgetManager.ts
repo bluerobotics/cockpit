@@ -593,9 +593,29 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         v.visible = v.visible ?? true
 
         // If there's any configuration menu open, close it
-        v.widgets.forEach((w) => (w.managerVars.configMenuOpen = false))
-        v.miniWidgetContainers.forEach((c) => c.widgets.forEach((w) => (w.managerVars.configMenuOpen = false)))
+        v.widgets.forEach((w) => {
+          w.managerVars.configMenuOpen = false
+          w.managerVars.everMounted = true
+          // @ts-ignore: This is an old value that we are removing on those that still hold it
+          w.managerVars.timesMounted = undefined
+        })
+        v.miniWidgetContainers.forEach((c) =>
+          c.widgets.forEach((w) => {
+            w.managerVars.configMenuOpen = false
+            w.managerVars.everMounted = true
+            // @ts-ignore: This is an old value that we are removing on those that still hold it
+            w.managerVars.timesMounted = undefined
+          })
+        )
       })
+
+      currentMiniWidgetsProfile.value.containers.forEach((c) =>
+        c.widgets.forEach((w) => {
+          w.managerVars.everMounted = true
+          // @ts-ignore: This is an old value that we are removing on those that still hold it
+          w.managerVars.timesMounted = undefined
+        })
+      )
     })
   })
 
