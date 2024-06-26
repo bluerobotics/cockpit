@@ -18,13 +18,7 @@
               <v-icon
                 :size="isCompact ? 20 : 24"
                 :icon="isPanelExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                :class="
-                  interfaceStore.isOnSmallScreen
-                    ? isCompact
-                      ? '-mt-[2px] mr-[3px]'
-                      : '-mt-[3px] mr-[3px]'
-                    : 'mt-[2px] mr-[2px]'
-                "
+                :class="interfaceStore.isOnSmallScreen ? '-mt-[2px] mr-[3px]' : 'mt-[2px] mr-[2px]'"
               />
               <div class="flex flex-col">
                 <div
@@ -43,13 +37,13 @@
             </div>
           </div>
         </div>
-        <div class="flex w-full justify-between">
+        <div class="flex w-full justify-between ml-4">
           <div v-if="hasInfoSlot" class="flex items-center w-[10%]">
             <v-btn class="ml-auto rounded-full" size="small" color="transparent" elevation="0" @click.stop="toggleInfo">
-              <v-icon size="20" color="white" icon="mdi-information-outline" />
+              <v-icon :size="interfaceStore.isOnSmallScreen ? 15 : 18" color="white" icon="mdi-information-outline" />
             </v-btn>
           </div>
-          <div v-if="hasWarningSlot" class="flex justify-end items-center relative">
+          <div v-if="hasWarningSlot" class="flex justify-end items-center w-[10%] relative">
             <v-btn
               class="ml-auto w-[10px] rounded-full"
               size="small"
@@ -57,7 +51,7 @@
               elevation="0"
               @click.stop="toggleWarning"
             >
-              <v-icon size="20" color="yellow-400" icon="mdi-alert" />
+              <v-icon :size="interfaceStore.isOnSmallScreen ? 15 : 18" color="yellow-400" icon="mdi-alert" />
               <div v-if="animateWarning" class="ripple"></div>
             </v-btn>
           </div>
@@ -78,7 +72,7 @@
         </div>
       </div>
     </div>
-    <div class="warning-container">
+    <div class="info-container">
       <div
         ref="warningContent"
         :class="[
@@ -94,18 +88,18 @@
         </div>
       </div>
     </div>
-    <div
-      ref="content"
-      :class="[
-        'content-expand-collapse',
-        { expanding: isPanelExpanded, collapsing: !isPanelExpanded },
-        isDarkenContent ? 'bg-[#00000015]' : 'bg-transparent',
-        interfaceStore.isOnPhoneScreen ? 'px-1' : 'px-2',
-      ]"
-    >
-      <slot name="content"></slot>
-      <v-divider v-if="!noBottomDivider" centered class="opacity-10 border-[#fafafa] w-full" />
-    </div>
+  </div>
+  <div
+    ref="content"
+    :class="[
+      'content-expand-collapse',
+      { expanding: isPanelExpanded, collapsing: !isPanelExpanded },
+      isDarkenContent ? 'bg-[#00000015]' : 'bg-transparent',
+      interfaceStore.isOnPhoneScreen ? 'px-1' : 'px-2',
+    ]"
+  >
+    <slot name="content"></slot>
+    <v-divider v-if="!noBottomDivider" centered class="opacity-10 border-[#fafafa] w-full" />
   </div>
 </template>
 
@@ -256,6 +250,7 @@ const hasWarningSlot = computed(() => !!slots.warning?.())
   cursor: pointer;
 }
 .content-expand-collapse {
+  width: 100%;
   overflow: hidden;
   transition: max-height 0.3s ease;
 }
