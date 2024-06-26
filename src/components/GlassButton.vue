@@ -9,7 +9,7 @@
   >
     <button
       :disabled="isDisabled"
-      class="flex items-center justify-center"
+      class="flex flex-col items-center justify-center"
       :class="[
         isUncontained ? 'no-glass' : 'frosted-button',
         { 'frosted-button-disabled': isDisabled, 'rounded-full': isRound },
@@ -26,8 +26,8 @@
         v-if="isRound || isUncontained"
         :icon="icon || ''"
         :width="props.iconSize || calculatedIconSize"
-        :class="[iconClass, interfaceStore.isOnSmallScreen ? '-mr-[2px] -mb-[1px]' : '-mr-[1px]']"
-        class="lg:-mr-[2px]"
+        :class="iconClass"
+        class="opacity-90"
       />
       <div v-else class="flex items-center align-center justify-center w-full h-full">
         <Icon :icon="icon || ''" :width="props.iconSize || calculatedIconSize" :class="iconClass" />
@@ -57,7 +57,7 @@ const props = defineProps<{
   /**
    * Additional Tailwind classes for the label.
    */
-  labelClass?: string
+  labelClass?: string | string[]
   /**
    * The icon to display in the button (prepend on rectangular, centered on round).
    */
@@ -65,7 +65,7 @@ const props = defineProps<{
   /**
    * Additional Tailwind classes for the icon.
    */
-  iconClass?: string
+  iconClass?: string | string[]
   /**
    * The size of the icon.
    */
@@ -73,7 +73,7 @@ const props = defineProps<{
   /**
    * Additional Tailwind classes for the button.
    */
-  buttonClass?: string
+  buttonClass?: string | string[]
   /**
    * Whether the button is disabled.
    */
@@ -111,7 +111,7 @@ const tooltip = computed(() => props.tooltip)
 const isSelected = computed(() => props.selected)
 const isRound = computed(() => props.variant === 'round')
 const isUncontained = computed(() => props.variant === 'uncontained')
-const calculatedIconSize = computed(() => (isRound.value ? (props.width || 26) * 0.666 : props.iconSize))
+const calculatedIconSize = computed(() => (isRound.value ? (props.width || 26) * 0.7 : props.iconSize))
 const iconClass = computed(() => props.iconClass)
 const isNoEffects = computed(() => props.noEffects)
 
@@ -124,8 +124,8 @@ const buttonStyle = computed(() => ({
 <style scoped>
 .frosted-button {
   background-color: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 1px 1px 1px rgba(255, 255, 255, 0.3), -1px -1px 2px rgba(0, 0, 0, 0.15);
   color: white;
   transition: all 0.3s;
 }
