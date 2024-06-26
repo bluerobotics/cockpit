@@ -22,13 +22,13 @@
                   v-if="route.name === 'widgets-view'"
                   :label="simplifiedMainMenu ? '' : 'Edit Mode'"
                   :selected="widgetStore.editingMode"
-                  :label-class="menuLabelSize"
+                  :label-class="[menuLabelSize, '-mb-0.5']"
+                  icon="mdi-pencil"
+                  :icon-class="interfaceStore.isOnSmallScreen ? 'scale-[90%] -mr-[2px]' : 'scale-[90%] -mr-[3px]'"
+                  :icon-size="simplifiedMainMenu ? 25 : undefined"
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
                   :width="buttonSize"
-                  icon="mdi-pencil"
-                  :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :disabled="false"
                   @click="
                     () => {
                       widgetStore.editingMode = !widgetStore.editingMode
@@ -40,12 +40,14 @@
                   v-if="route.name !== 'widgets-view'"
                   :label="simplifiedMainMenu ? '' : 'Flight'"
                   :label-class="menuLabelSize"
+                  icon="mdi-send"
+                  :icon-class="
+                    interfaceStore.isOnSmallScreen ? '-mb-[1px] -mr-[3px] scale-90' : '-mb-[1px] -mr-[5px] scale-90'
+                  "
+                  :icon-size="simplifiedMainMenu ? 25 : undefined"
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
                   :width="buttonSize"
-                  icon="mdi-send"
-                  :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :disabled="false"
                   :selected="$route.name === 'Flight'"
                   @click="
                     () => {
@@ -58,12 +60,16 @@
                   v-if="route.name !== 'Mission planning'"
                   :label="simplifiedMainMenu ? '' : 'Mission Planning'"
                   :label-class="menuLabelSize"
+                  icon="mdi-map-marker-radius-outline"
+                  :icon-class="
+                    interfaceStore.isOnSmallScreen
+                      ? 'scale-[95%] -mr-[2px] -mb-[1px]'
+                      : 'scale-[95%] lg:-mr-[2px] -mr-[3px]'
+                  "
+                  :icon-size="simplifiedMainMenu ? 25 : undefined"
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
-                  icon="mdi-map-marker-radius-outline"
-                  :icon-size="simplifiedMainMenu ? 25 : undefined"
                   :width="buttonSize"
-                  :disabled="false"
                   :selected="$route.name === 'Mission planning'"
                   @click="
                     () => {
@@ -74,14 +80,18 @@
                 />
                 <GlassButton
                   :label="simplifiedMainMenu ? '' : 'Settings'"
-                  :label-class="menuLabelSize"
-                  icon="mdi-cog-outline"
+                  :label-class="[menuLabelSize, '-mb-1']"
+                  icon="mdi-cog"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
+                  :icon-class="
+                    interfaceStore.isOnSmallScreen
+                      ? 'scale-[100%] -mb-[1px] md:ml-[2px]'
+                      : 'scale-[95%] -mb-[1px] lg:-mr-[1px] -mr-[2px] xl:-mb-[2px]'
+                  "
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
                   :button-class="!simplifiedMainMenu ? '-mt-1' : undefined"
                   :width="buttonSize"
-                  :disabled="false"
                   :selected="showConfigurationMenu"
                   @click="mainMenuStep = 2"
                 />
@@ -90,11 +100,15 @@
                   :label-class="menuLabelSize"
                   :icon="fullScreenToggleIcon"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
+                  :icon-class="
+                    interfaceStore.isOnSmallScreen
+                      ? '-mb-[1px] scale-90 -mr-[2px] md:ml-[1px] md:-mb-[2px]'
+                      : '2xl:-mb-[2px] xl:-mb-[2px] -mb-[1px] scale-90 -mr-[2px]'
+                  "
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
                   :button-class="simplifiedMainMenu ? '-mb-2' : ''"
                   :width="buttonSize"
-                  :disabled="false"
                   :selected="false"
                   @click="
                     () => {
@@ -121,7 +135,6 @@
                   variant="uncontained"
                   :height="buttonSize * 0.5"
                   :icon-size="buttonSize * 0.6"
-                  :disabled="false"
                   @click="toggleConfigComponent(menuitem.component)"
                   ><template #content
                     ><div v-if="currentConfigMenuComponent === menuitem.component" class="arrow-left"></div></template
@@ -131,11 +144,10 @@
                   <GlassButton
                     :label-class="menuLabelSize"
                     icon="mdi-arrow-left"
-                    icon-class="lg:-ml-[1px] md:-mt-[1px] -ml-[2px]"
+                    :icon-class="interfaceStore.isOnSmallScreen ? '' : '-mb-[1px]'"
                     :button-class="interfaceStore.isOnSmallScreen ? (simplifiedMainMenu ? '-mt-1' : 'mt-1') : undefined"
                     variant="round"
                     :width="buttonSize / 2.4"
-                    :disabled="false"
                     :selected="false"
                     @click="
                       () => {
@@ -590,7 +602,7 @@ body.hide-cursor {
   flex-direction: column;
   align-items: center;
   border-radius: 0 20px 20px 0;
-  border: 1px #cbcbcb33 solid;
+  border: 1px #cbcbcb22 solid;
   border-left: none;
   top: 50%;
   left: 0;
