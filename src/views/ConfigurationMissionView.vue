@@ -2,7 +2,7 @@
   <BaseConfigurationView>
     <template #title>Mission configuration</template>
     <template #content>
-      <div class="flex flex-col justify-between items-start ml-[1vw] w-[680px]">
+      <div class="flex flex-col justify-between items-start ml-[1vw] max-w-[700px]">
         <v-switch
           v-model="missionStore.slideEventsEnabled"
           label="Enable slide to confirm"
@@ -17,7 +17,11 @@
           </template>
           <template #content>
             <div class="flex items-center justify-start">
-              <div v-for="category in EventCategory" :key="category" class="mx-2">
+              <div
+                v-for="category in EventCategory"
+                :key="category"
+                :class="interfaceStore.isOnPhoneScreen ? 'mx-0' : 'mx-1'"
+              >
                 <v-checkbox
                   v-model="missionStore.slideEventsCategoriesRequired[category]"
                   :disabled="!missionStore.slideEventsEnabled"
@@ -35,9 +39,11 @@
 <script setup lang="ts">
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { EventCategory } from '@/libs/slide-to-confirm'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const missionStore = useMissionStore()
+const interfaceStore = useAppInterfaceStore()
 </script>
