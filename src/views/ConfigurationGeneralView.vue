@@ -2,13 +2,13 @@
   <BaseConfigurationView>
     <template #title>General configuration</template>
     <template #content>
-      <div class="flex-col h-full mx-[1vw] w-[540px]">
+      <div class="flex-col h-full w-[540px] max-h-[90vh] overflow-y-auto ml-[10px] pr-3 -mr-[10px]">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
           <template #title>Global vehicle address</template>
           <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
           <template #info
-            ><strong>Global Vehicle Address:</strong> Sets the network address for device communication. Change and
-            apply new settings as needed.</template
+            ><strong>Global Vehicle Address:</strong> Sets the network address for device communication. E.g:
+            blueos.local</template
           >
           <template #content>
             <v-form
