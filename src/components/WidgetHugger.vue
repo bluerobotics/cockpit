@@ -211,10 +211,10 @@ const resizeWidgetToMinimalSize = (): void => {
 }
 
 onMounted(async () => {
-  if (managerVars.value.timesMounted === 0) {
+  if (managerVars.value.everMounted === false) {
     resizeWidgetToMinimalSize()
   }
-  managerVars.value.timesMounted += 1
+  managerVars.value.everMounted = true
 
   if (widgetResizeHandles.value) {
     for (let i = 0; i < widgetResizeHandles.value.length; i++) {

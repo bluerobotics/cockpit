@@ -42,7 +42,7 @@ export type MiniWidget = {
     /**
      * Number of times the mini-widget was mounted
      */
-    timesMounted: number
+    everMounted: boolean
     /**
      * If the configuration menu is open or not
      */
