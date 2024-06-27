@@ -103,56 +103,56 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     tryToUpdateBlueOsValue()
   }
 
-  onMounted(async () => {
+  const tryToDoInitialSync = async (): Promise<void> => {
     const vehicleAddress = await getVehicleAddress()
 
-    console.debug(`Started syncing '${key}' with BlueOS.`)
+    // Clear initial sync routine if there's one left, as we are going to start a new one
+    clearTimeout(initialSyncTimeout)
 
-    const tryToDoInitialSync = async (): Promise<void> => {
-      // Clear initial sync routine if there's one left, as we are going to start a new one
-      clearTimeout(initialSyncTimeout)
+    try {
+      const valueOnBlueOS = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, key)
+      console.debug(`Success getting value of '${key}' from BlueOS:`, valueOnBlueOS)
 
-      try {
-        const valueOnBlueOS = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, key)
-        console.debug(`Success getting value of '${key}' from BlueOS:`, valueOnBlueOS)
-
-        // If the value on BlueOS is the same as the one we have locally, we don't need to bother the user
-        if (isEqual(currentValue.value, valueOnBlueOS)) {
-          console.debug(`Value for '${key}' on BlueOS is the same as the local one. No need to update.`)
-          finishedInitialFetch.value = true
-          return
-        }
-
-        // If Cockpit has a different value than BlueOS, ask the user if they want to use the value from BlueOS or
-        // if they want to update BlueOS with the value from Cockpit.
-
-        const useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
-
-        if (useBlueOsValue) {
-          currentValue.value = valueOnBlueOS as T
-        } else {
-          updateValueOnBlueOS(currentValue.value)
-        }
-
-        console.info(`Success syncing '${key}' with BlueOS.`)
-
+      // If the value on BlueOS is the same as the one we have locally, we don't need to bother the user
+      if (isEqual(currentValue.value, valueOnBlueOS)) {
+        console.debug(`Value for '${key}' on BlueOS is the same as the local one. No need to update.`)
         finishedInitialFetch.value = true
-      } catch (initialSyncError) {
-        // If the initial sync fails because there's no value for the key on BlueOS, we can just use the current value
-        if ((initialSyncError as Error).name === NoPathInBlueOsErrorName) {
-          console.debug(`No value for '${key}' on BlueOS. Using current value.`)
-          updateValueOnBlueOS(currentValue.value)
-          finishedInitialFetch.value = true
-          return
-        }
-
-        // If the initial sync fails because we can't connect to BlueOS, try again in 10 seconds
-        initialSyncTimeout = setTimeout(tryToDoInitialSync, 10000)
-
-        console.error(`Failed syncing '${key}' with BlueOS. Will keep trying.`)
-        console.error(`Not able to get current value of '${key}' on BlueOS. ${initialSyncError}`)
+        return
       }
+
+      // If Cockpit has a different value than BlueOS, ask the user if they want to use the value from BlueOS or
+      // if they want to update BlueOS with the value from Cockpit.
+
+      const useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
+
+      if (useBlueOsValue) {
+        currentValue.value = valueOnBlueOS as T
+      } else {
+        updateValueOnBlueOS(currentValue.value)
+      }
+
+      console.info(`Success syncing '${key}' with BlueOS.`)
+
+      finishedInitialFetch.value = true
+    } catch (initialSyncError) {
+      // If the initial sync fails because there's no value for the key on BlueOS, we can just use the current value
+      if ((initialSyncError as Error).name === NoPathInBlueOsErrorName) {
+        console.debug(`No value for '${key}' on BlueOS. Using current value.`)
+        updateValueOnBlueOS(currentValue.value)
+        finishedInitialFetch.value = true
+        return
+      }
+
+      // If the initial sync fails because we can't connect to BlueOS, try again in 10 seconds
+      initialSyncTimeout = setTimeout(tryToDoInitialSync, 10000)
+
+      console.error(`Failed syncing '${key}' with BlueOS. Will keep trying.`)
+      console.error(`Not able to get current value of '${key}' on BlueOS. ${initialSyncError}`)
     }
+  }
+
+  onMounted(async () => {
+    console.debug(`Started syncing '${key}' with BlueOS.`)
 
     // Start initial sync routine
     tryToDoInitialSync()
