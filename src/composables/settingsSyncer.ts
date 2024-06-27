@@ -7,7 +7,6 @@ import {
   setKeyDataOnCockpitVehicleStorage,
 } from '@/libs/blueos'
 import { isEqual } from '@/libs/utils'
-import { useAlertStore } from '@/stores/alert'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import { useInteractionDialog } from './interactionDialog'
@@ -81,26 +80,18 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
   const updateValueOnBlueOS = async (newValue: T): Promise<void> => {
     const vehicleAddress = await getVehicleAddress()
-    const alertStore = useAlertStore()
 
-    alertStore.pushInfoAlert(`Updating '${key}' on BlueOS.`)
+    console.debug(`Updating '${key}' on BlueOS.`)
 
-    let timesTriedBlueOsUpdate = 0
     const tryToUpdateBlueOsValue = async (): Promise<void> => {
       // Clear update routine if there's one left, as we are going to start a new one
       clearTimeout(blueOsUpdateTimeout)
 
-      timesTriedBlueOsUpdate++
       try {
         await setKeyDataOnCockpitVehicleStorage(vehicleAddress, key, newValue)
-        alertStore.pushSuccessAlert(`Success updating '${key}' on BlueOS.`)
+        console.info(`Success updating '${key}' on BlueOS.`)
       } catch (fetchError) {
-        const errorMessage = `Failed updating '${key}' on BlueOS. Will keep trying.`
-        if (timesTriedBlueOsUpdate > 1) {
-          alertStore.pushErrorAlert(errorMessage)
-        } else {
-          console.error(errorMessage)
-        }
+        console.error(`Failed updating '${key}' on BlueOS. Will keep trying.`)
         console.error(fetchError)
 
         // If we can't update the value on BlueOS, try again in 10 seconds
@@ -114,20 +105,16 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
   onMounted(async () => {
     const vehicleAddress = await getVehicleAddress()
-    const alertStore = useAlertStore()
 
-    alertStore.pushInfoAlert(`Started syncing '${key}' with BlueOS.`)
+    console.debug(`Started syncing '${key}' with BlueOS.`)
 
-    let timesTriedInitialSync = 0
     const tryToDoInitialSync = async (): Promise<void> => {
       // Clear initial sync routine if there's one left, as we are going to start a new one
       clearTimeout(initialSyncTimeout)
 
-      timesTriedInitialSync++
-
       try {
         const valueOnBlueOS = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, key)
-        console.log(`Success getting value of '${key}' from BlueOS:`, valueOnBlueOS)
+        console.debug(`Success getting value of '${key}' from BlueOS:`, valueOnBlueOS)
 
         // If the value on BlueOS is the same as the one we have locally, we don't need to bother the user
         if (isEqual(currentValue.value, valueOnBlueOS)) {
@@ -147,7 +134,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
           updateValueOnBlueOS(currentValue.value)
         }
 
-        alertStore.pushSuccessAlert(`Success syncing '${key}' with BlueOS.`)
+        console.info(`Success syncing '${key}' with BlueOS.`)
 
         finishedInitialFetch.value = true
       } catch (initialSyncError) {
@@ -162,12 +149,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         // If the initial sync fails because we can't connect to BlueOS, try again in 10 seconds
         initialSyncTimeout = setTimeout(tryToDoInitialSync, 10000)
 
-        const errorMessage = `Failed syncing '${key}' with BlueOS. Will keep trying.`
-        if (timesTriedInitialSync > 1) {
-          alertStore.pushErrorAlert(errorMessage)
-        } else {
-          console.error(errorMessage)
-        }
+        console.error(`Failed syncing '${key}' with BlueOS. Will keep trying.`)
         console.error(`Not able to get current value of '${key}' on BlueOS. ${initialSyncError}`)
       }
     }
