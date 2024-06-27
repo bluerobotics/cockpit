@@ -4,6 +4,13 @@
     <template #content>
       <v-switch v-model="devStore.developmentMode" label="Development mode" class="ma-2" color="rgb(0, 20, 80)" />
       <v-switch
+        v-model="devStore.enableBlueOsSettingsSync"
+        label="BlueOS settings sync"
+        class="m-2"
+        color="rgb(0, 20, 80)"
+        @update:model-value="reloadCockpit"
+      />
+      <v-switch
         v-model="devStore.enableSystemLogging"
         label="Enable system logging"
         class="m-2"

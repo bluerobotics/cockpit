@@ -7,6 +7,7 @@ import {
   setKeyDataOnCockpitVehicleStorage,
 } from '@/libs/blueos'
 import { isEqual } from '@/libs/utils'
+import { useDevelopmentStore } from '@/stores/development'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import { useInteractionDialog } from './interactionDialog'
@@ -152,6 +153,9 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   }
 
   onMounted(async () => {
+    const devStore = useDevelopmentStore()
+    if (!devStore.enableBlueOsSettingsSync) return
+
     console.debug(`Started syncing '${key}' with BlueOS.`)
 
     // Start initial sync routine
@@ -163,6 +167,9 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   watchThrottled(
     currentValue,
     async (newValue) => {
+      const devStore = useDevelopmentStore()
+      if (!devStore.enableBlueOsSettingsSync) return
+
       // Don't update the value on BlueOS if we haven't finished the initial fetch, so we don't overwrite the value there without user consent
       if (!finishedInitialFetch.value) return
 
