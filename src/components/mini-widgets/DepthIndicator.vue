@@ -12,10 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRefHistory } from '@vueuse/core'
-import { useAverage } from '@vueuse/math'
-import { ref, watch } from 'vue'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -23,12 +20,9 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 const store = useMainVehicleStore()
 datalogger.registerUsage(DatalogVariable.depth)
 
-// Calculate depth time-average (50 values window)
 const depth = ref(0)
 watch(store.altitude, () => (depth.value = -store.altitude.msl))
-const { history: depthHistory } = useRefHistory(depth, { capacity: 50 })
-const averageDepth = useAverage(() => depthHistory.value.map((depthHistoryValue) => depthHistoryValue.snapshot))
-const finalDepth = computed(() => (averageDepth.value < 0.01 ? 0 : averageDepth.value))
+const finalDepth = computed(() => (depth.value < 0.01 ? 0 : depth.value))
 const precision = computed(() => {
   const fDepth = finalDepth.value
   if (fDepth < 0.1) return 1
