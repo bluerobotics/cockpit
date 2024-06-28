@@ -95,7 +95,7 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch
 import { isEqual, sleep } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type { MiniWidget } from '@/types/miniWidgets'
+import type { MiniWidget } from '@/types/widgets'
 
 import VideoLibrary from '../VideoLibraryModal.vue'
 
