@@ -82,8 +82,8 @@
           />
         </v-form>
         <span>Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }} </span><br />
-        <span
-          >Status:
+        <span>
+          Status:
           {{
             vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
           }}</span

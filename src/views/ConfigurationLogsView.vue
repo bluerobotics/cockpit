@@ -50,11 +50,12 @@
                                 :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontColor }"
                               ></div>
                             </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
+                            <v-card class="overflow-hidden">
+                              <v-color-picker
                                 v-model="datalogger.telemetryDisplayOptions.value.fontColor"
                                 width="400px"
-                            /></v-card>
+                              />
+                            </v-card>
                           </v-menu>
                         </div>
                         <div class="flex flex-row justify-between w-[90%] align-center gap-x-3 mt-7">
@@ -73,11 +74,12 @@
                                 :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontOutlineColor }"
                               ></div>
                             </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
+                            <v-card class="overflow-hidden">
+                              <v-color-picker
                                 v-model="datalogger.telemetryDisplayOptions.value.fontOutlineColor"
                                 width="400px"
-                            /></v-card>
+                              />
+                            </v-card>
                           </v-menu>
                         </div>
                         <div class="flex flex-row justify-between w-[90%] align-center gap-x-3 mt-7">
@@ -95,11 +97,12 @@
                                 :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontShadowColor }"
                               ></div>
                             </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
+                            <v-card class="overflow-hidden">
+                              <v-color-picker
                                 v-model="datalogger.telemetryDisplayOptions.value.fontShadowColor"
                                 width="400px"
-                            /></v-card>
+                              />
+                            </v-card>
                           </v-menu>
                         </div>
                         <div class="flex flex-row justify-start h-[50px] align-center mt-7 -ml-2">
@@ -213,8 +216,8 @@
                 <div class="w-1"></div>
                 <h1 class="mb-4 text-lg font-bold text-center text-slate-600">On Screen Telemetry Data</h1>
                 <div>
-                  <v-icon color="slate-600" class="mb-1 mr-0.5" @click="showHelpTooltip = !showHelpTooltip"
-                    >mdi-help-circle-outline</v-icon
+                  <v-icon color="slate-600" class="mb-1 mr-0.5" @click="showHelpTooltip = !showHelpTooltip">
+                    mdi-help-circle-outline</v-icon
                   >
                   <v-tooltip
                     v-model="showHelpTooltip"
@@ -251,10 +254,10 @@
                     :class="getClassForConfig(config.key)"
                   >
                     <div v-for="variable in datalogger.telemetryDisplayData.value[config.key]" :key="variable">
-                      <v-chip close label class="m-1 cursor-grab"
-                        >{{ variable }}
-                        <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)"
-                          >mdi-close</v-icon
+                      <v-chip close label class="m-1 cursor-grab">
+                        {{ variable }}
+                        <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)">
+                          mdi-close</v-icon
                         >
                       </v-chip>
                     </div>
