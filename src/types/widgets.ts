@@ -244,6 +244,55 @@ export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   return true
 }
 
+export const validateMiniWidget = (maybeMiniWidget: MiniWidget): maybeMiniWidget is MiniWidget => {
+  if (maybeMiniWidget.hash === undefined) throw new Error('Mini widget validation failed: property hash is missing.')
+
+  const miniWidgetProps = ['component', 'name', 'options', 'managerVars']
+  const managetVarsProps = ['configMenuOpen', 'highlighted']
+  const checkFails: string[] = []
+
+  miniWidgetProps.forEach((p) => {
+    // @ts-ignore
+    if (maybeMiniWidget[p] !== undefined) return
+    checkFails.push(`Property ${p} is missing.`)
+  })
+
+  managetVarsProps.forEach((p) => {
+    // @ts-ignore
+    if (maybeMiniWidget['managerVars'] !== undefined && maybeMiniWidget['managerVars'][p] !== undefined) return
+    checkFails.push(`Property ${p} of the managerVars is missing.`)
+  })
+
+  if (checkFails.length !== 0) {
+    throw new Error(`Mini widget ${maybeMiniWidget.hash} validation failed: ${checkFails.join(' ')}`)
+  }
+
+  return true
+}
+
+export const validateContainer = (maybeContainer: MiniWidgetContainer): maybeContainer is MiniWidgetContainer => {
+  if (maybeContainer.name === undefined) throw new Error('View validation failed: property "name" is missing.')
+  const checkFails: string[] = []
+
+  if (Array.isArray(maybeContainer.widgets)) {
+    maybeContainer.widgets.forEach((w) => {
+      try {
+        validateMiniWidget(w)
+      } catch (error) {
+        checkFails.push((error as Error).message)
+      }
+    })
+  } else {
+    checkFails.push('Property "widgets" is missing or is not an array.')
+  }
+
+  if (checkFails.length !== 0) {
+    throw new Error(`Mini widget container ${maybeContainer.name} validation failed: ${checkFails.join(' ')}`)
+  }
+
+  return true
+}
+
 export const validateView = (maybeView: View): maybeView is View => {
   if (maybeView.hash === undefined) throw new Error('View validation failed: property "hash" is missing.')
 
@@ -266,6 +315,18 @@ export const validateView = (maybeView: View): maybeView is View => {
     })
   } else {
     checkFails.push('Property "widgets" is missing or is not an array.')
+  }
+
+  if (Array.isArray(maybeView.miniWidgetContainers)) {
+    maybeView.miniWidgetContainers.forEach((c) => {
+      try {
+        validateContainer(c)
+      } catch (error) {
+        checkFails.push((error as Error).message)
+      }
+    })
+  } else {
+    checkFails.push('Property "miniWidgetContainers" is missing or is not an array.')
   }
 
   if (checkFails.length !== 0) {
