@@ -130,7 +130,15 @@ export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   if (maybeWidget.hash === undefined) throw new Error('Widget validation failed: property hash is missing.')
 
   const widgetProps = ['component', 'position', 'size', 'name', 'options', 'managerVars']
-  const managetVarsProps: string[] = []
+  const managetVarsProps = [
+    'configMenuOpen',
+    'allowMoving',
+    'lastNonMaximizedX',
+    'lastNonMaximizedY',
+    'lastNonMaximizedWidth',
+    'lastNonMaximizedHeight',
+    'highlighted',
+  ]
   const checkFails: string[] = []
 
   widgetProps.forEach((p) => {
@@ -155,7 +163,7 @@ export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
 export const validateView = (maybeView: View): maybeView is View => {
   if (maybeView.hash === undefined) throw new Error('View validation failed: property "hash" is missing.')
 
-  const viewProps = ['name']
+  const viewProps = ['name', 'showBottomBarOnBoot', 'visible']
   const checkFails: string[] = []
 
   viewProps.forEach((p) => {
