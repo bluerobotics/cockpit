@@ -169,7 +169,7 @@ import { round } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { type VeryGenericIndicatorPreset, veryGenericIndicatorPresets } from '@/types/genericIndicator'
-import type { MiniWidget } from '@/types/miniWidgets'
+import type { MiniWidget } from '@/types/widgets'
 
 const props = defineProps<{
   /**

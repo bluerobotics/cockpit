@@ -1,5 +1,4 @@
 import type { Point2D, SizeRect2D } from './general'
-import type { MiniWidgetContainer } from './miniWidgets'
 
 /**
  * Available components to be used in the Widget system
@@ -17,6 +16,26 @@ export enum WidgetType {
   URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',
   VirtualHorizon = 'VirtualHorizon',
+}
+
+/**
+ * Available components to be used in the Mini Widget system
+ * The enum value is equal to the component's filename, without the '.vue' extension
+ */
+export enum MiniWidgetType {
+  ArmerButton = 'ArmerButton',
+  BaseCommIndicator = 'BaseCommIndicator',
+  BatteryIndicator = 'BatteryIndicator',
+  ChangeAltitudeCommander = 'ChangeAltitudeCommander',
+  DepthIndicator = 'DepthIndicator',
+  RelativeAltitudeIndicator = 'RelativeAltitudeIndicator',
+  TakeoffLandCommander = 'TakeoffLandCommander',
+  VeryGenericIndicator = 'VeryGenericIndicator',
+  JoystickCommIndicator = 'JoystickCommIndicator',
+  MiniVideoRecorder = 'MiniVideoRecorder',
+  ModeSelector = 'ModeSelector',
+  SatelliteIndicator = 'SatelliteIndicator',
+  ViewSelector = 'ViewSelector',
 }
 
 export type Widget = {
@@ -83,6 +102,71 @@ export type Widget = {
   }
 }
 
+export type MiniWidget = {
+  /**
+   * Unique identifier for the widget
+   */
+  hash: string
+  /**
+   * Editable name for the widget
+   */
+  name: string
+  /**
+   * Component type of the widget
+   */
+  component: MiniWidgetType
+  /**
+   * Internal options of the widget
+   */
+  options: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  /**
+   * External variables used by the widget manager
+   */
+  managerVars: {
+    /**
+     * Number of times the mini-widget was mounted
+     */
+    everMounted: boolean
+    /**
+     * If the configuration menu is open or not
+     */
+    configMenuOpen: boolean
+    /**
+     * Wether the mini-widget should be highlited or not
+     */
+    highlighted: boolean
+  }
+}
+
+export type MiniWidgetContainer = {
+  /**
+   * Array of widgets that are stored in the container
+   */
+  widgets: MiniWidget[]
+  /**
+   * Editable name for the container
+   */
+  name: string
+}
+
+export type MiniWidgetProfile = {
+  /**
+   * Array of views that are stored in the profile
+   */
+  containers: MiniWidgetContainer[]
+  /**
+   * Editable name for the profile
+   */
+  name: string
+}
+
+export type DraggableEvent = {
+  /**
+   * The HTML item that is being dragged
+   */
+  item: HTMLElement
+}
+
 export type View = {
   /**
    * Unique identifier for the view
@@ -126,46 +210,154 @@ export type Profile = {
   name: string
 }
 
-export const isWidget = (maybeWidget: Widget): maybeWidget is Widget => {
-  const widgetProps = ['hash', 'component', 'position', 'size', 'name', 'options', 'managerVars']
-  const managetVarsProps = ['everMounted']
-  let realWidget = true
+export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
+  if (maybeWidget.hash === undefined) throw new Error('Widget validation failed: property hash is missing.')
+
+  const widgetProps = ['component', 'position', 'size', 'name', 'options', 'managerVars']
+  const managetVarsProps = [
+    'configMenuOpen',
+    'allowMoving',
+    'lastNonMaximizedX',
+    'lastNonMaximizedY',
+    'lastNonMaximizedWidth',
+    'lastNonMaximizedHeight',
+    'highlighted',
+  ]
+  const checkFails: string[] = []
+
   widgetProps.forEach((p) => {
     // @ts-ignore
     if (maybeWidget[p] !== undefined) return
-    realWidget = false
+    checkFails.push(`Property ${p} is missing.`)
   })
-  if (maybeWidget['managerVars'] === undefined) {
-    return false
-  }
+
   managetVarsProps.forEach((p) => {
     // @ts-ignore
-    if (maybeWidget['managerVars'][p] !== undefined) return
-    realWidget = false
+    if (maybeWidget['managerVars'] !== undefined && maybeWidget['managerVars'][p] !== undefined) return
+    checkFails.push(`Property ${p} of the managerVars is missing.`)
   })
-  return realWidget
+
+  if (checkFails.length !== 0) {
+    throw new Error(`Widget ${maybeWidget.hash} validation failed: ${checkFails.join(' ')}`)
+  }
+
+  return true
 }
 
-export const isView = (maybeView: View): maybeView is View => {
-  let widgetsAreReal = true
-  if (!Array.isArray(maybeView.widgets)) {
-    return false
-  }
-  maybeView.widgets.forEach((w) => {
-    if (isWidget(w)) return
-    widgetsAreReal = false
+export const validateMiniWidget = (maybeMiniWidget: MiniWidget): maybeMiniWidget is MiniWidget => {
+  if (maybeMiniWidget.hash === undefined) throw new Error('Mini widget validation failed: property hash is missing.')
+
+  const miniWidgetProps = ['component', 'name', 'options', 'managerVars']
+  const managetVarsProps = ['configMenuOpen', 'highlighted']
+  const checkFails: string[] = []
+
+  miniWidgetProps.forEach((p) => {
+    // @ts-ignore
+    if (maybeMiniWidget[p] !== undefined) return
+    checkFails.push(`Property ${p} is missing.`)
   })
-  return maybeView.name !== undefined && maybeView.hash !== undefined && widgetsAreReal
+
+  managetVarsProps.forEach((p) => {
+    // @ts-ignore
+    if (maybeMiniWidget['managerVars'] !== undefined && maybeMiniWidget['managerVars'][p] !== undefined) return
+    checkFails.push(`Property ${p} of the managerVars is missing.`)
+  })
+
+  if (checkFails.length !== 0) {
+    throw new Error(`Mini widget ${maybeMiniWidget.hash} validation failed: ${checkFails.join(' ')}`)
+  }
+
+  return true
 }
 
-export const isProfile = (maybeProfile: Profile): maybeProfile is Profile => {
-  let viewsAreReal = true
-  if (!Array.isArray(maybeProfile.views)) {
-    return false
+export const validateContainer = (maybeContainer: MiniWidgetContainer): maybeContainer is MiniWidgetContainer => {
+  if (maybeContainer.name === undefined) throw new Error('View validation failed: property "name" is missing.')
+  const checkFails: string[] = []
+
+  if (Array.isArray(maybeContainer.widgets)) {
+    maybeContainer.widgets.forEach((w) => {
+      try {
+        validateMiniWidget(w)
+      } catch (error) {
+        checkFails.push((error as Error).message)
+      }
+    })
+  } else {
+    checkFails.push('Property "widgets" is missing or is not an array.')
   }
-  maybeProfile.views.forEach((l) => {
-    if (isView(l)) return
-    viewsAreReal = false
+
+  if (checkFails.length !== 0) {
+    throw new Error(`Mini widget container ${maybeContainer.name} validation failed: ${checkFails.join(' ')}`)
+  }
+
+  return true
+}
+
+export const validateView = (maybeView: View): maybeView is View => {
+  if (maybeView.hash === undefined) throw new Error('View validation failed: property "hash" is missing.')
+
+  const viewProps = ['name', 'showBottomBarOnBoot', 'visible']
+  const checkFails: string[] = []
+
+  viewProps.forEach((p) => {
+    // @ts-ignore
+    if (maybeView[p] !== undefined) return
+    checkFails.push(`Property "${p}" is missing.`)
   })
-  return maybeProfile.name !== undefined && viewsAreReal
+
+  if (Array.isArray(maybeView.widgets)) {
+    maybeView.widgets.forEach((w) => {
+      try {
+        validateWidget(w)
+      } catch (error) {
+        checkFails.push((error as Error).message)
+      }
+    })
+  } else {
+    checkFails.push('Property "widgets" is missing or is not an array.')
+  }
+
+  if (Array.isArray(maybeView.miniWidgetContainers)) {
+    maybeView.miniWidgetContainers.forEach((c) => {
+      try {
+        validateContainer(c)
+      } catch (error) {
+        checkFails.push((error as Error).message)
+      }
+    })
+  } else {
+    checkFails.push('Property "miniWidgetContainers" is missing or is not an array.')
+  }
+
+  if (checkFails.length !== 0) {
+    throw new Error(`View ${maybeView.hash} validation failed: ${checkFails.join(' ')}`)
+  }
+
+  return true
+}
+
+export const validateProfile = (maybeProfile: Profile): maybeProfile is Profile => {
+  if (maybeProfile.hash === undefined) throw new Error('Provile validation failed: property "hash" is missing.')
+
+  const checkFails: string[] = []
+
+  if (Array.isArray(maybeProfile.views)) {
+    maybeProfile.views.forEach((v) => {
+      try {
+        validateView(v)
+      } catch (error) {
+        checkFails.push((error as Error).message)
+      }
+    })
+  } else {
+    checkFails.push('Property "views" is missing or is not an array.')
+  }
+
+  if (maybeProfile.name === undefined) checkFails.push('Property "name" is missing.')
+
+  if (checkFails.length !== 0) {
+    throw new Error(`Profile ${maybeProfile.hash} validation failed: ${checkFails.join(' ')}`)
+  }
+
+  return true
 }
