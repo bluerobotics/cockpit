@@ -1,7 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { MiniWidgetType } from '@/types/miniWidgets'
-import { WidgetType } from '@/types/widgets'
+import { MiniWidgetType, WidgetType } from '@/types/widgets'
 
 test('Test widgets exist', async () => {
   await enum_to_files_checker(WidgetType, '@/components/widgets/${name}.vue')

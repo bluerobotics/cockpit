@@ -1,7 +1,6 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { OverlayGrid } from '@/libs/sensors-logging'
-import { type MiniWidgetProfile, MiniWidgetType } from '@/types/miniWidgets'
-import { type Profile, WidgetType } from '@/types/widgets'
+import { type MiniWidgetProfile, type Profile, MiniWidgetType, WidgetType } from '@/types/widgets'
 
 export const defaultRovProfileHash = 'c2bcf04d-048f-496f-9d78-fc4002608028'
 export const defaultBoatProfileHash = 'adb7d856-f2e5-4980-aaeb-c39c1fa3562b'

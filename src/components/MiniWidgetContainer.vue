@@ -66,7 +66,7 @@ import { computed } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
 import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
-import type { DraggableEvent, MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
+import type { DraggableEvent, MiniWidget, MiniWidgetContainer } from '@/types/widgets'
 
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
 

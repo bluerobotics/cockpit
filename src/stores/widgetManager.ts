@@ -21,8 +21,16 @@ import {
 import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
 import { isEqual, sequentialArray } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
-import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
-import { type Profile, type View, type Widget, validateProfile, validateView, WidgetType } from '@/types/widgets'
+import {
+  type MiniWidget,
+  type MiniWidgetContainer,
+  type Profile,
+  type View,
+  type Widget,
+  validateProfile,
+  validateView,
+  WidgetType,
+} from '@/types/widgets'
 
 import { useMainVehicleStore } from './mainVehicle'
 

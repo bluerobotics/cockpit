@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { type AsyncComponentLoader, defineAsyncComponent, toRefs } from 'vue'
 
-import type { MiniWidget, MiniWidgetType } from '@/types/miniWidgets'
+import type { MiniWidget, MiniWidgetType } from '@/types/widgets'
 
 const props = defineProps<{
   /**
