@@ -22,7 +22,7 @@ import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
 import { isEqual, sequentialArray } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import type { MiniWidget, MiniWidgetContainer } from '@/types/miniWidgets'
-import { type Profile, type View, type Widget, isProfile, isView, WidgetType } from '@/types/widgets'
+import { type Profile, type View, type Widget, validateProfile, validateView, WidgetType } from '@/types/widgets'
 
 import { useMainVehicleStore } from './mainVehicle'
 
@@ -204,8 +204,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       // @ts-ignore: We know the event type and need refactor of the event typing
       const contents = event.target.result
       const maybeProfile = JSON.parse(contents)
-      if (!isProfile(maybeProfile)) {
-        Swal.fire({ icon: 'error', text: 'Invalid profile file.', timer: 3000 })
+      try {
+        validateProfile(maybeProfile)
+      } catch (error) {
+        Swal.fire({ icon: 'error', text: `Invalid profile file. ${error}` })
         return
       }
       maybeProfile.hash = uuid4()
@@ -218,10 +220,20 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   const importProfilesFromVehicle = async (): Promise<void> => {
     const newProfiles = await getKeyDataFromCockpitVehicleStorage(vehicleStore.globalAddress, savedProfilesKey)
-    if (!Array.isArray(newProfiles) || !newProfiles.every((profile) => isProfile(profile))) {
-      Swal.fire({ icon: 'error', text: 'Could not import profiles from vehicle. Invalid data.', timer: 3000 })
+    if (!Array.isArray(newProfiles)) {
+      Swal.fire({ icon: 'error', text: 'Could not import profiles from vehicle. Profiles do not form an array.' })
       return
     }
+
+    newProfiles.every((profile) => {
+      try {
+        validateProfile(profile)
+      } catch (error) {
+        Swal.fire({ icon: 'error', text: `Invalid profile file. ${error}` })
+        return
+      }
+    })
+
     savedProfiles.value = newProfiles
     Swal.fire({ icon: 'success', text: 'Cockpit profiles imported from vehicle.', timer: 3000 })
   }
@@ -371,8 +383,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       // @ts-ignore: We know the event type and need refactor of the event typing
       const contents = event.target.result
       const maybeView = JSON.parse(contents)
-      if (!isView(maybeView)) {
-        Swal.fire({ icon: 'error', text: 'Invalid view file.', timer: 3000 })
+      try {
+        validateView(maybeView)
+      } catch (error) {
+        Swal.fire({ icon: 'error', text: `Invalid view file. ${error}` })
         return
       }
       maybeView.hash = uuid4()
