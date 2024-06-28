@@ -130,7 +130,7 @@ export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   if (maybeWidget.hash === undefined) throw new Error('Widget validation failed: property hash is missing.')
 
   const widgetProps = ['component', 'position', 'size', 'name', 'options', 'managerVars']
-  const managetVarsProps = ['everMounted']
+  const managetVarsProps: string[] = []
   const checkFails: string[] = []
 
   widgetProps.forEach((p) => {
