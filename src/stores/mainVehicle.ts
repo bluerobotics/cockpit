@@ -309,7 +309,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     usedGenericVariables.value.push(variable)
   }
 
-  watchThrottled(usedGenericVariables, () => registerGenericVariablesUsageOnVehicle(), { throttle: 1000 })
+  watchThrottled(usedGenericVariables, () => registerGenericVariablesUsageOnVehicle(), { throttle: 1000, deep: true })
 
   const registerGenericVariablesUsageOnVehicle = (): void => {
     if (!mainVehicle.value) return
