@@ -266,13 +266,13 @@
                   : 'mdi-pan-vertical'
               }}
             </v-icon>
-            <v-text-field
-              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
-              class="w-24"
+            <v-number-input
+              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
+              class="w-28"
               label="Min"
-              type="number"
+              control-variant="stacked"
               density="compact"
-              variant="solo"
+              variant="outlined"
               hide-details
             />
             <v-select
@@ -281,17 +281,17 @@
               item-title="name"
               hide-details
               density="compact"
-              variant="solo"
+              variant="outlined"
               class="w-40 mx-2"
               return-object
             />
-            <v-text-field
-              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
-              class="w-24"
+            <v-number-input
+              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
+              class="w-28"
               label="Max"
-              type="number"
+              control-variant="stacked"
               density="compact"
-              variant="solo"
+              variant="outlined"
               hide-details
             />
             <v-btn
