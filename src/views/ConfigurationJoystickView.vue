@@ -272,7 +272,7 @@
               label="Min"
               type="number"
               density="compact"
-              variant="solo"
+              variant="outlined"
               hide-details
             />
             <v-select
@@ -281,7 +281,7 @@
               item-title="name"
               hide-details
               density="compact"
-              variant="solo"
+              variant="outlined"
               class="w-40 mx-2"
               return-object
             />
@@ -291,7 +291,7 @@
               label="Max"
               type="number"
               density="compact"
-              variant="solo"
+              variant="outlined"
               hide-details
             />
             <v-btn
