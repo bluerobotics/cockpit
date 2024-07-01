@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 
 export const systemLoggingEnablingKey = 'cockpit-enable-system-logging'
-export const blueOsSettingsSyncEnablingKey = 'cockpit-enable-system-logging'
+export const blueOsSettingsSyncEnablingKey = 'cockpit-enable-blueos-settings-sync'
 
 export const useDevelopmentStore = defineStore('development', () => {
   const developmentMode = ref(false)
