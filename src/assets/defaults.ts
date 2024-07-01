@@ -1,4 +1,5 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { OverlayGrid } from '@/libs/sensors-logging'
 import { type MiniWidgetProfile, MiniWidgetType } from '@/types/miniWidgets'
 import { type Profile, WidgetType } from '@/types/widgets'
 
@@ -742,3 +743,15 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
   },
 ]
 export const miniWidgetsProfile = miniWidgetsProfiles[0]
+
+export const defaultSensorDataloggerProfile: OverlayGrid = {
+  LeftTop: ['Date', 'Time'],
+  CenterTop: [],
+  RightTop: [],
+  LeftMid: [],
+  CenterMid: [],
+  RightMid: [],
+  LeftBottom: ['Pitch', 'Roll', 'Heading'],
+  CenterBottom: ['Mode', 'Depth'],
+  RightBottom: ['Battery voltage', 'Battery current'],
+}
