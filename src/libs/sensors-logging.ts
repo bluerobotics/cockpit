@@ -2,6 +2,7 @@ import { differenceInMilliseconds, differenceInSeconds, format, intervalToDurati
 import localforage from 'localforage'
 import Swal from 'sweetalert2'
 
+import { defaultSensorDataloggerProfile } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -199,17 +200,10 @@ class DataLogger {
   currentCockpitLog: CockpitStandardLog = []
   variablesBeingUsed: DatalogVariable[] = []
   veryGenericIndicators: VeryGenericData[] = []
-  telemetryDisplayData = useBlueOsStorage<OverlayGrid>('cockpit-datalogger-overlay-grid', {
-    LeftTop: [],
-    CenterTop: [],
-    RightTop: [],
-    LeftMid: [],
-    CenterMid: [],
-    RightMid: [],
-    LeftBottom: [],
-    CenterBottom: [],
-    RightBottom: [],
-  })
+  telemetryDisplayData = useBlueOsStorage<OverlayGrid>(
+    'cockpit-datalogger-overlay-grid',
+    defaultSensorDataloggerProfile
+  )
   telemetryDisplayOptions = useBlueOsStorage<OverlayOptions>('cockpit-datalogger-overlay-options', {
     fontSize: 30,
     fontColor: '#FFFFFFFF',
