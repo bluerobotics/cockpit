@@ -14,7 +14,7 @@
           <br />
           <p class="text-base text-center font-bold">Connect a joystick and press any key.</p>
         </div>
-        <ExpansiblePanel v-else class="mt-3" :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel v-else class="mt-3" no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Joystick configuration</template>
           <template #info>
             <div class="flex flex-col items-center px-5 font-medium">
@@ -162,25 +162,6 @@
                         />
                         Import from computer
                       </label>
-                      <button
-                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
-                        @click="
-                          controllerStore.exportJoysticksMappingsToVehicle(
-                            globalAddress,
-                            controllerStore.cockpitStdMappings
-                          )
-                        "
-                      >
-                        Export to vehicle
-                      </button>
-                      <button
-                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
-                        @click="controllerStore.importJoysticksMappingsFromVehicle(globalAddress)"
-                      >
-                        Import from vehicle
-                      </button>
                     </div>
                   </div>
                   <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
@@ -208,25 +189,6 @@
                         />
                         Import from computer
                       </label>
-                      <button
-                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
-                        @click="
-                          controllerStore.exportFunctionsMappingToVehicle(
-                            globalAddress,
-                            controllerStore.protocolMappings
-                          )
-                        "
-                      >
-                        Export to vehicle
-                      </button>
-                      <button
-                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] text-uppercase bg-[#00000011]"
-                        @click="importFunctionsMappingFromVehicle"
-                      >
-                        Import from vehicle
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -243,134 +205,146 @@
     </template>
   </BaseConfigurationView>
   <teleport to="body">
-    <v-dialog v-if="currentJoystick" v-model="inputClickedDialog" class="w-[80%] max-h-[90%]">
-      <v-card class="p-6">
-        <p class="flex items-center justify-center w-full p-2 text-2xl font-bold text-slate-600">Input mapping</p>
-        <div class="flex flex-col items-center justify-between">
-          <div class="w-[90%] h-[2px] my-5 bg-slate-900/20" />
-          <p class="flex items-center justify-center w-full text-xl font-bold text-slate-600">Button mapping</p>
-          <div
-            v-for="input in currentButtonInputs"
-            :key="input.id"
-            class="flex flex-col justify-between w-full p-3 align-center"
-          >
-            <div class="flex flex-col items-center justify-between my-2">
-              <v-btn
-                class="mx-auto my-1 w-fit"
-                :disabled="remappingInput"
-                @click="remapInput(currentJoystick as Joystick, input)"
-              >
-                {{ remappingInput ? 'Remapping' : 'Click to remap' }}
-              </v-btn>
-              <Transition>
-                <p v-if="showButtonRemappingText" class="font-medium text-slate-400">{{ buttonRemappingText }}</p>
-              </Transition>
-              <Transition>
-                <v-progress-linear v-if="remappingInput" v-model="remapTimeProgress" />
-              </Transition>
-            </div>
+    <InteractionDialog
+      v-if="currentJoystick"
+      :show-dialog="inputClickedDialog"
+      max-width="auto"
+      variant="text-only"
+      persistent
+    >
+      <template #title>
+        <div class="flex justify-center w-full font-bold mt-1">Input mapping</div>
+      </template>
+      <template #content>
+        <div
+          v-for="input in currentButtonInputs"
+          :key="input.id"
+          class="flex flex-row justify-between w-full align-center gap-x-16"
+        >
+          <div class="flex flex-col items-center justify-between my-2">
+            <p class="flex items-center justify-center w-full text-lg font-semibold mb-4">Button mapping</p>
+            <v-btn
+              class="bg-[#FFFFFF22] mx-auto my-1 w-fit"
+              :disabled="remappingInput"
+              @click="remapInput(currentJoystick as Joystick, input)"
+            >
+              {{ remappingInput ? 'Remapping' : 'Click to remap' }}
+            </v-btn>
+            <Transition>
+              <p v-if="showButtonRemappingText" class="font-medium text-slate-400">{{ buttonRemappingText }}</p>
+            </Transition>
+            <Transition>
+              <v-progress-linear v-if="remappingInput" v-model="remapTimeProgress" />
+            </Transition>
             <v-tooltip location="bottom" :text="confirmationRequiredTooltipText(input)">
               <template #activator="{ props: tooltipProps }">
-                <div class="flex justify-center items-center">
+                <div class="flex justify-center items-center mt-4">
                   <v-switch
                     v-model="controllerStore.actionsJoystickConfirmRequired[getCurrentButtonAction(input).id]"
                     style="pointer-events: all; height: 56px"
-                    class="m-2 text-slate-800"
-                    color="rgb(0, 20, 80)"
                     :disabled="!isConfirmRequiredAvailable(input)"
                     v-bind="tooltipProps"
                   />
-                  <v-label style="height: 56px">Confirmation Required</v-label>
+                  <v-label class="ml-2">Confirmation <br />Required</v-label>
                 </div>
               </template>
             </v-tooltip>
-            <div class="flex flex-col items-center justify-between w-full my-2">
-              <div class="flex w-[90%] justify-evenly">
-                <div v-for="protocol in JoystickProtocol" :key="protocol" class="flex flex-col items-center h-40 mx-4">
-                  <span class="mx-auto text-xl font-bold">{{ protocol }}</span>
-                  <div class="flex flex-col items-center px-2 py-1 overflow-y-auto">
-                    <Button
-                      v-for="action in buttonActionsToShow.filter((a) => a.protocol === protocol)"
-                      :key="action.name"
-                      class="w-full my-1 text-sm hover:bg-slate-700"
-                      :class="{
-                        'bg-slate-700':
-                          currentButtonActions[input.id].action.protocol == action.protocol &&
-                          currentButtonActions[input.id].action.id == action.id,
-                      }"
-                      @click="updateButtonAction(input, action)"
-                    >
-                      {{ action.name }}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
-          <Transition>
-            <p v-if="showButtonFunctionAssignmentFeedback" class="text-lg font-medium">
-              {{ buttonFunctionAssignmentFeedback }}
-            </p>
-          </Transition>
-          <template v-if="currentAxisInputs.length > 0">
-            <div class="w-[90%] h-[2px] my-5 bg-slate-900/20" />
-            <p class="flex items-center justify-center w-full text-xl font-bold text-slate-600">Axis mapping</p>
-          </template>
-          <div class="flex flex-col items-center justify-between my-2">
-            <Transition>
-              <p v-if="showAxisRemappingText" class="font-medium text-slate-400">{{ axisRemappingText }}</p>
-            </Transition>
-            <Transition>
-              <v-progress-linear v-if="remappingAxisInput" v-model="remapAxisTimeProgress" />
-            </Transition>
-          </div>
-          <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2">
-            <v-icon class="mr-3">
-              {{
-                [JoystickAxis.A0, JoystickAxis.A2].includes(Number(input.id))
-                  ? 'mdi-pan-horizontal'
-                  : 'mdi-pan-vertical'
-              }}
-            </v-icon>
-            <v-number-input
-              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
-              class="w-28"
-              label="Min"
-              control-variant="stacked"
-              density="compact"
-              variant="outlined"
-              hide-details
-            />
-            <v-select
-              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].action"
-              :items="controllerStore.availableAxesActions"
-              item-title="name"
-              hide-details
-              density="compact"
-              variant="outlined"
-              class="w-40 mx-2"
-              return-object
-            />
-            <v-number-input
-              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
-              class="w-28"
-              label="Max"
-              control-variant="stacked"
-              density="compact"
-              variant="outlined"
-              hide-details
-            />
-            <v-btn
-              class="w-40 ml-2"
-              :disabled="remappingAxisInput !== false"
-              @click="remapAxisInput(currentJoystick as Joystick, input)"
+          <div class="flex flex-col w-[300px] justify-evenly">
+            <ExpansiblePanel
+              v-for="protocol in JoystickProtocol"
+              :key="protocol"
+              mark-expanded
+              darken-content
+              hover-effect
             >
-              {{ remappingAxisInput && remappingAxisInput === input.id ? 'Remapping' : 'Click to remap' }}
-            </v-btn>
+              <template #title>{{ protocol }}</template>
+              <template #content>
+                <div class="max-h-[30vh] p-1 overflow-y-auto">
+                  <Button
+                    v-for="action in buttonActionsToShow.filter((a) => a.protocol === protocol)"
+                    :key="action.name"
+                    class="w-full my-1 text-sm hover:bg-slate-700"
+                    :class="{
+                      'bg-slate-700':
+                        currentButtonActions[input.id].action.protocol == action.protocol &&
+                        currentButtonActions[input.id].action.id == action.id,
+                    }"
+                    @click="updateButtonAction(input, action)"
+                  >
+                    {{ action.name }}
+                  </Button>
+                </div>
+              </template>
+            </ExpansiblePanel>
           </div>
         </div>
-      </v-card>
-    </v-dialog>
+        <Transition>
+          <p v-if="showButtonFunctionAssignmentFeedback" class="text-lg font-medium">
+            {{ buttonFunctionAssignmentFeedback }}
+          </p>
+        </Transition>
+        <template v-if="currentAxisInputs.length > 0">
+          <p class="flex items-center justify-center w-full text-lg font-semibold mt-8">Axis mapping</p>
+        </template>
+        <div class="flex flex-col items-center justify-between my-2">
+          <Transition>
+            <p v-if="showAxisRemappingText" class="font-medium">{{ axisRemappingText }}</p>
+          </Transition>
+          <Transition>
+            <v-progress-linear v-if="remappingAxisInput" v-model="remapAxisTimeProgress" />
+          </Transition>
+        </div>
+        <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2 mb-1">
+          <v-icon class="mr-3">
+            {{
+              [JoystickAxis.A0, JoystickAxis.A2].includes(Number(input.id)) ? 'mdi-pan-horizontal' : 'mdi-pan-vertical'
+            }}
+          </v-icon>
+          <v-text-field
+            v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
+            class="bg-transparent w-[110px]"
+            label="Min"
+            type="number"
+            density="compact"
+            variant="outlined"
+            hide-details
+          />
+          <v-select
+            v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].action"
+            :items="controllerStore.availableAxesActions"
+            item-title="name"
+            hide-details
+            density="compact"
+            variant="outlined"
+            class="bg-transparent w-[120px] mx-2"
+            theme="dark"
+            return-object
+          />
+          <v-text-field
+            v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
+            class="bg-transparent w-[110px]"
+            label="Max"
+            type="number"
+            density="compact"
+            variant="outlined"
+            hide-details
+          />
+          <v-btn
+            class="bg-[#FFFFFF22] w-40 ml-2"
+            :disabled="remappingAxisInput !== false"
+            @click="remapAxisInput(currentJoystick as Joystick, input)"
+          >
+            {{ remappingAxisInput && remappingAxisInput === input.id ? 'Remapping' : 'Click to remap' }}
+          </v-btn>
+        </div>
+      </template>
+      <template #actions>
+        <div class="flex justify-end w-full">
+          <v-btn variant="text" class="m-1" @click="inputClickedDialog = false"> Close </v-btn>
+        </div>
+      </template>
+    </InteractionDialog>
   </teleport>
 </template>
 
@@ -380,6 +354,7 @@ import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from
 
 import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import InteractionDialog from '@/components/InteractionDialog.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -458,6 +433,7 @@ const inputClickedDialog = ref(false)
 const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
 const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
 const showJoystickLayout = ref(true)
+
 watch(inputClickedDialog, () => {
   justRemappedInput.value = undefined
   justRemappedAxisInput.value = undefined
