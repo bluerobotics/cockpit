@@ -3,10 +3,14 @@ import { defineStore } from 'pinia'
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({
     width: window.innerWidth,
+    configModalVisibility: false,
   }),
   actions: {
     updateWidth() {
       this.width = window.innerWidth
+    },
+    setConfigModalVisibility(value: boolean) {
+      this.configModalVisibility = value
     },
   },
   getters: {
@@ -35,5 +39,6 @@ export const useAppInterfaceStore = defineStore('responsive', {
       if (state.width >= 1600 && state.width < 1920) return 121
       return 130
     },
+    isConfigModalVisible: (state) => state.configModalVisibility,
   },
 })
