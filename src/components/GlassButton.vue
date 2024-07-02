@@ -49,10 +49,6 @@
 import { Icon, IconifyIcon } from '@iconify/vue'
 import { computed } from 'vue'
 
-import { useAppInterfaceStore } from '@/stores/appInterface'
-
-const interfaceStore = useAppInterfaceStore()
-
 const props = defineProps<{
   /**
    * The text label displayed on the button (rectangular variant) or under the button (round).
