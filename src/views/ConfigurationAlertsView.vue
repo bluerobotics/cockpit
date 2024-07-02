@@ -1,5 +1,5 @@
 <template>
-  <BaseConfigurationView>
+  <BaseConfigurationView close-icon>
     <template #title>Alerts configuration</template>
     <template #content>
       <div class="flex flex-col justify-around align-start ml-5">
