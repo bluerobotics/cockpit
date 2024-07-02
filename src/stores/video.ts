@@ -726,7 +726,8 @@ export const useVideoStore = defineStore('video', () => {
         ipsInfo.forEach((ipInfo) => {
           const isIceIp = availableIceIps.value.includes(ipInfo.ipv4Address)
           const alreadyAllowedIp = [...allowedIceIps.value, ...newAllowedIps].includes(ipInfo.ipv4Address)
-          if (ipInfo.interfaceType !== 'WIRED' || alreadyAllowedIp || !isIceIp) return
+          const theteredInterfaceTypes = ['WIRED', 'USB']
+          if (!theteredInterfaceTypes.includes(ipInfo.interfaceType) || alreadyAllowedIp || !isIceIp) return
           console.info(`Adding the wired address '${ipInfo.ipv4Address}' to the list of allowed ICE IPs.`)
           newAllowedIps.push(ipInfo.ipv4Address)
         })
