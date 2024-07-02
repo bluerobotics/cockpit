@@ -1,5 +1,5 @@
 <template>
-  <BaseConfigurationView>
+  <BaseConfigurationView close-icon>
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
