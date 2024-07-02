@@ -1,13 +1,15 @@
 <template>
-  <v-dialog v-model="internalShowDialog" :persistent="persistent" :max-width="maxWidth || '600px'">
-    <v-card :max-width="maxWidth || '600px'" class="main-dialog px-2 rounded-lg">
+  <v-dialog v-model="internalShowDialog" :persistent="persistent" :width="maxWidth || '600px'">
+    <v-card :width="maxWidth || '600px'" class="main-dialog px-2 rounded-lg">
       <v-card-title>
         <div
+          v-if="title"
           class="flex justify-center align-center text-center pt-2 mb-1 font-bold text-nowrap text-ellipsis overflow-x-hidden"
           :class="interfaceStore.isOnPhoneScreen ? 'text-[18px]' : 'text-[20px]'"
         >
           {{ title }}
         </div>
+        <slot name="title"></slot>
       </v-card-title>
       <v-card-text class="pb-2">
         <div class="flex justify-center align-center w-full mb-3">
@@ -34,42 +36,47 @@
         <v-divider class="opacity-10 border-[#fafafa]"></v-divider>
       </div>
       <v-card-actions>
-        <div
-          v-if="actions && actions.length > 0"
-          class="flex w-full"
-          :class="[
-            actions.length === 1 ? 'justify-end' : 'justify-between',
-            interfaceStore.isOnPhoneScreen ? 'px-0 py-1' : 'px-1 py-2',
-          ]"
-        >
-          <v-btn
-            v-for="(button, index) in actions"
-            :key="index"
-            :size="button.size || 'default'"
-            :color="button.color || undefined"
-            :class="button.class || undefined"
-            :disabled="button.disabled || false"
-            @click="handleAction(button.action)"
+        <slot v-if="hasActionsSlot" name="actions"></slot>
+        <template v-else>
+          <div
+            v-if="actions && actions.length > 0"
+            class="flex w-full"
+            :class="[
+              actions.length === 1 ? 'justify-end' : 'justify-between',
+              interfaceStore.isOnPhoneScreen ? 'px-0 py-1' : 'px-1 py-2',
+            ]"
           >
-            {{ button.text }}
-          </v-btn>
-        </div>
-        <div v-else class="flex w-full px-1 py-2 justify-end">
-          <v-btn size="small" variant="text" @click="handleAction(() => (internalShowDialog = false))">Close</v-btn>
-        </div>
+            <v-btn
+              v-for="(button, index) in actions"
+              :key="index"
+              :size="button.size || 'default'"
+              :color="button.color || undefined"
+              :class="button.class || undefined"
+              :disabled="button.disabled || false"
+              @click="handleAction(button.action)"
+            >
+              {{ button.text }}
+            </v-btn>
+          </div>
+          <div v-else class="flex w-full px-1 py-2 justify-end">
+            <v-btn size="small" variant="text" @click="handleAction(() => (internalShowDialog = false))">Close</v-btn>
+          </div>
+        </template>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useSlots, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const { closeDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
+
+const slots = useSlots()
 
 /**
  * Interface to an array of buttons for the Interaction Dialog's footer
@@ -120,7 +127,7 @@ interface Props {
   /**
    * The maximum width of the dialog.
    */
-  maxWidth?: number
+  maxWidth?: string | number
   /**
    * The actions to be displayed in the dialog's footer.
    */
@@ -172,6 +179,9 @@ const iconType = computed(() => {
 const iconColor = computed(() => {
   return props.variant === 'success' ? 'green' : 'yellow'
 })
+
+// Check if the actions slot has been provided
+const hasActionsSlot = computed(() => !!slots.actions)
 
 watch(
   () => props.showDialog,
