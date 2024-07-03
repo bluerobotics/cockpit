@@ -65,7 +65,7 @@ jobs:
     strategy:
       matrix:
         include:
-        - os: macos-latest
+        - os: macos-13
           suffix: macos
           extension: dmg
 
