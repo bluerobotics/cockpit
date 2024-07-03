@@ -173,7 +173,7 @@ watch(
 )
 
 const joystick_svg_path = computed(() => {
-  return `/images/${joystickSvgModel.value}.svg`
+  return `./images/${joystickSvgModel.value}.svg`
 })
 
 watch(
