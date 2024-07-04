@@ -280,10 +280,9 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
             getDeepVariables(v as Record<string, unknown>, acc, `${k}/${identifier}=${v[identifier]}`)
           }
         } else {
-          if (baseKey === undefined) {
-            acc.push(k)
-          } else {
-            acc.push(`${baseKey}/${k}`)
+          const path = baseKey === undefined ? k : `${baseKey}/${k}`
+          if (!acc.includes(path)) {
+            acc.push(path)
           }
         }
       })
