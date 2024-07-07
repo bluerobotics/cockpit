@@ -57,6 +57,11 @@
 
             clearSettingsButton.addEventListener('click', function() {
                 localStorage.clear();
+                // We are also going to clear the cache to ensure a fresh access to all files as well
+                if (caches) {
+                    const keys = await caches.keys();
+                    await Promise.allSettled(keys.map((key) => caches.delete(key)));
+                }
                 location.reload();
             });
         })
