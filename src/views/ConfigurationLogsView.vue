@@ -148,7 +148,7 @@
                       <div>
                         <div
                           class="flex flex-row justify-start align-center -ml-2"
-                          :class="interfaceStore.isOnSmallScreen ? 'h-[30px] mt-[20px]' : 'h-[50px] mt-[30px]'"
+                          :class="interfaceStore.isOnSmallScreen ? 'h-[40px] mt-[20px]' : 'h-[50px] mt-[30px]'"
                         >
                           <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontBold" />
                           <span
@@ -159,7 +159,7 @@
                         </div>
                         <div
                           class="flex flex-row justify-start align-center -ml-2"
-                          :class="interfaceStore.isOnSmallScreen ? 'h-[30px]' : 'h-[50px]'"
+                          :class="interfaceStore.isOnSmallScreen ? 'h-[40px]' : 'h-[50px]'"
                         >
                           <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontItalic" />
                           <span
@@ -170,7 +170,7 @@
                         </div>
                         <div
                           class="flex flex-row justify-start align-center -ml-2"
-                          :class="interfaceStore.isOnSmallScreen ? 'h-[30px]' : 'h-[50px]'"
+                          :class="interfaceStore.isOnSmallScreen ? 'h-[40px]' : 'h-[50px]'"
                         >
                           <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontUnderline" />
                           <span
