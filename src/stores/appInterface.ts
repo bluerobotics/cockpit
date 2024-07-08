@@ -1,13 +1,17 @@
+import { useWindowSize } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { watch } from 'vue'
+
+const { width: windowWidth } = useWindowSize()
 
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({
-    width: window.innerWidth,
+    width: windowWidth.value,
     configModalVisibility: false,
   }),
   actions: {
     updateWidth() {
-      this.width = window.innerWidth
+      this.width = windowWidth.value
     },
     setConfigModalVisibility(value: boolean) {
       this.configModalVisibility = value
@@ -41,4 +45,9 @@ export const useAppInterfaceStore = defineStore('responsive', {
     },
     isConfigModalVisible: (state) => state.configModalVisibility,
   },
+})
+
+watch(windowWidth, (newWidth) => {
+  const store = useAppInterfaceStore()
+  store.width = newWidth
 })
