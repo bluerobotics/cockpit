@@ -81,6 +81,19 @@ export const isValidNetworkAddress = (maybeAddress: string): boolean => {
   return false
 }
 
+export const isValidURL = (maybeURL: string): boolean => {
+  if (!maybeURL) {
+    return false
+  }
+
+  try {
+    new URL(maybeURL)
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
 export const formatBytes = (bytes: number, decimals = 2): string => {
   if (!bytes) return '0 Bytes'
 
