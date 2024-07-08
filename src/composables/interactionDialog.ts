@@ -55,9 +55,6 @@ interface DialogResult {
   isConfirmed: boolean
 }
 
-let resolveFn: (value: DialogResult | PromiseLike<DialogResult>) => void
-let rejectFn: (reason?: DialogResult) => void
-
 /**
  * Provides methods to control the interaction dialog.
  * @returns {object} - An object containing the showDialog and closeDialog methods.
@@ -94,6 +91,8 @@ export function useInteractionDialog(): {
   })
 
   let dialogApp: App<Element> | null = null
+  let resolveFn: (value: DialogResult | PromiseLike<DialogResult>) => void
+  let rejectFn: (reason?: DialogResult) => void
 
   const mountDialog = (): void => {
     const mountPoint = document.createElement('div')
