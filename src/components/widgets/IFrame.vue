@@ -19,6 +19,7 @@
               label="Iframe Source"
               variant="underlined"
               outlined
+              :rules="[validateURL]"
               @keydown.enter="updateURL"
             />
             <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5" rounded="lg" flat @click="updateURL" />
@@ -33,12 +34,21 @@
       </v-card>
     </v-dialog>
   </div>
+  <Snackbar
+    :open-snackbar="openSnackbar"
+    :message="snackbarMessage"
+    :duration="3000"
+    :close-button="false"
+    @update:open-snackbar="openSnackbar = $event"
+  />
 </template>
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
 import { computed, defineProps, onBeforeMount, ref, toRefs } from 'vue'
 
+import Snackbar from '@/components/Snackbar.vue'
+import { isValidURL } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
@@ -55,9 +65,23 @@ const widget = toRefs(props).widget
 const iframe_loaded = ref(false)
 const transparency = ref(0)
 const inputURL = ref(widget.value.options.source)
+const openSnackbar = ref(false)
+const snackbarMessage = ref('')
+
+const validateURL = (url: string): true | string => {
+  return isValidURL(url) ? true : 'URL is not valid.'
+}
 
 const updateURL = (): void => {
+  const urlValidationResult = validateURL(inputURL.value)
+  if (urlValidationResult !== true) {
+    snackbarMessage.value = `${urlValidationResult} Please enter a valid URL.`
+    openSnackbar.value = true
+    return
+  }
   widget.value.options.source = inputURL.value
+  snackbarMessage.value = `IFrame URL sucessfully updated to '${inputURL.value}'.`
+  openSnackbar.value = true
 }
 
 onBeforeMount(() => {
