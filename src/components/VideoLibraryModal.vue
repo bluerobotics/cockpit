@@ -1,390 +1,402 @@
 <template>
   <v-dialog v-model="isVisible" class="dialog">
-    <div class="video-modal">
-      <div class="modal-content">
-        <!-- Left Vertical Menu -->
-        <div class="flex flex-col justify-between h-full px-5 py-3 align-center">
-          <div class="flex flex-col justify-between pt-2 align-center gap-y-8">
-            <button
-              v-for="button in menuButtons"
-              :key="button.name"
-              :disabled="button.disabled"
-              class="flex flex-col justify-center align-center"
-              @click="currentTab = button.name.toLowerCase()"
-            >
-              <v-tooltip v-if="button.tooltip !== ''" open-delay="600" activator="parent" location="top">
-                {{ button.tooltip }}
-              </v-tooltip>
-              <div
-                class="mb-1 text-2xl rounded-full"
-                :class="[
-                  button.disabled ? 'frosted-button-disabled' : 'frosted-button',
-                  currentTab === button.name.toLowerCase() ? 'w-[58px] h-[58px]' : 'w-[40px] h-[40px]',
-                ]"
-              >
-                <v-icon
-                  :size="currentTab === button.name.toLowerCase() ? 40 : 24"
-                  :class="{ 'ml-1': button.name.toLowerCase() === 'videos' }"
-                >
-                  {{ button.icon }}
-                </v-icon>
-              </div>
-              <div class="text-sm" :class="{ 'text-white/30': !button.disabled }">
-                {{ button.name }}
-              </div>
-            </button>
-          </div>
-          <div>
-            <div class="flex flex-col justify-center py-2 mb-[10px] align-center">
+    <div class="dialog-frame" :style="dialogStyle">
+      <div class="video-modal">
+        <div class="modal-content">
+          <!-- Left Vertical Menu -->
+          <div class="flex flex-col justify-between h-full px-5 py-3 align-center">
+            <div class="flex flex-col justify-between pt-2 align-center gap-y-8">
               <button
-                class="frosted-button text-[#ffffffaa] flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-[4px]"
-                @click="showHelpTooltip = !showHelpTooltip"
+                v-for="button in menuButtons"
+                :key="button.name"
+                :disabled="button.disabled"
+                class="flex flex-col justify-center align-center"
+                @click="currentTab = button.name.toLowerCase()"
               >
-                <v-icon class="text-[24px]">mdi-help-circle-outline</v-icon>
-                <v-tooltip
-                  v-model="showHelpTooltip"
-                  :open-on-hover="false"
-                  activator="parent"
-                  location="top"
-                  arrow
-                  content-class="border-[#ffffff55] border-2"
-                  @click:outside="showHelpTooltip = false"
-                >
-                  <div class="flex flex-col p-2 gap-y-2">
-                    <div>
-                      <strong>Computer:</strong> Command+click, Ctrl+click or Long click to select multiple videos.
-                    </div>
-
-                    <div><strong>Mobile:</strong> Long press to select multiple videos.</div>
-                    <div class="flex flex-row mt-4 gap-x-10">
-                      <div class="ml-[-8px]">
-                        <v-icon size="10" class="text-green-500 ml-2 mb-[2px] mr-1">mdi-circle</v-icon> Processed video
-                      </div>
-                      <div>
-                        <v-icon size="10" class="text-red-500 mb-[2px] mr-1">mdi-circle</v-icon> Unprocessed video
-                      </div>
-                    </div>
-                  </div>
+                <v-tooltip v-if="button.tooltip !== ''" open-delay="600" activator="parent" location="top">
+                  {{ button.tooltip }}
                 </v-tooltip>
+                <div
+                  class="mb-1 text-2xl rounded-full"
+                  :class="[
+                    button.disabled ? 'frosted-button-disabled' : 'frosted-button',
+                    currentTab === button.name.toLowerCase() ? 'w-[58px] h-[58px]' : 'w-[40px] h-[40px]',
+                  ]"
+                >
+                  <v-icon
+                    :size="currentTab === button.name.toLowerCase() ? 40 : 24"
+                    :class="{ 'ml-1': button.name.toLowerCase() === 'videos' }"
+                  >
+                    {{ button.icon }}
+                  </v-icon>
+                </div>
+                <div class="text-sm" :class="{ 'text-white/30': !button.disabled }">
+                  {{ button.name }}
+                </div>
               </button>
             </div>
-            <v-divider class="opacity-[0.1] ml-[-5px] w-[120%]"></v-divider>
-            <button class="flex flex-col justify-center py-2 mt-4 align-center" @click="closeModal">
-              <div class="frosted-button flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-1">
-                <v-icon class="text-[18px]">mdi-close</v-icon>
+            <div>
+              <div class="flex flex-col justify-center py-2 mb-[10px] align-center">
+                <button
+                  class="frosted-button text-[#ffffffaa] flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-[4px]"
+                  @click="showHelpTooltip = !showHelpTooltip"
+                >
+                  <v-icon class="text-[24px]">mdi-help-circle-outline</v-icon>
+                  <v-tooltip
+                    v-model="showHelpTooltip"
+                    :open-on-hover="false"
+                    activator="parent"
+                    location="top"
+                    arrow
+                    content-class="border-[#ffffff55] border-2"
+                    @click:outside="showHelpTooltip = false"
+                  >
+                    <div class="flex flex-col p-2 gap-y-2">
+                      <div>
+                        <strong>Computer:</strong> Command+click, Ctrl+click or Long click to select multiple videos.
+                      </div>
+
+                      <div><strong>Mobile:</strong> Long press to select multiple videos.</div>
+                      <div class="flex flex-row mt-4 gap-x-10">
+                        <div class="ml-[-8px]">
+                          <v-icon size="10" class="text-green-500 ml-2 mb-[2px] mr-1">mdi-circle</v-icon> Processed
+                          video
+                        </div>
+                        <div>
+                          <v-icon size="10" class="text-red-500 mb-[2px] mr-1">mdi-circle</v-icon> Unprocessed video
+                        </div>
+                      </div>
+                    </div>
+                  </v-tooltip>
+                </button>
               </div>
-              <div class="text-sm">Close</div>
-            </button>
+              <v-divider class="opacity-[0.1] ml-[-5px] w-[120%]"></v-divider>
+              <button class="flex flex-col justify-center py-2 mt-4 align-center" @click="closeModal">
+                <div
+                  class="frosted-button flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-1"
+                >
+                  <v-icon class="text-[18px]">mdi-close</v-icon>
+                </div>
+                <div class="text-sm">Close</div>
+              </button>
+            </div>
           </div>
-        </div>
-        <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
-        <!-- Right Content -->
-        <template v-if="currentTab === 'videos'">
-          <!-- Available Videos -->
-          <div
-            v-if="availableVideos.length > 0"
-            class="flex flex-col justify-between align-center pt-8 px-2 w-[300px] h-[480px]"
-          >
-            <div class="flex flex-col w-full h-full px-4 overflow-auto align-center">
-              <div v-for="video in availableVideos" :key="video.fileName" class="mb-4 video-container">
-                <div class="relative video-wrapper">
-                  <video
-                    :id="`video-library-${video.fileName}`"
-                    class="border-4 border-white rounded-md cursor-pointer border-opacity-[0.1] hover:border-opacity-[0.4] transition duration-75 hover:ease-in"
-                    :class="
-                      selectedVideos.find((v) => v.fileName === video.fileName)
-                        ? ['border-opacity-[0.4]', 'w-[220px]']
-                        : ['border-opacity-[0.1]', 'w-[190px]']
-                    "
-                    preload="auto"
-                    :poster="!video.isProcessed ? video.thumbnail : undefined"
-                  >
-                    <source :src="video.url" />
-                  </video>
-                  <div
-                    v-if="selectedVideos.find((v) => v.fileName === video.fileName) && !isMultipleSelectionMode"
-                    class="play-button"
-                    @click="video.isProcessed ? playVideo() : processSingleVideo()"
-                  >
-                    <v-icon size="40" class="text-white">
-                      {{ video.isProcessed ? 'mdi-play-circle-outline' : 'mdi-progress-alert' }}
+          <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
+          <!-- Right Content -->
+          <template v-if="currentTab === 'videos'">
+            <!-- Available Videos -->
+            <div
+              v-if="availableVideos.length > 0"
+              class="flex flex-col justify-between align-center pt-8 px-2 w-[300px] h-[480px]"
+            >
+              <div class="flex flex-col w-full h-full px-4 overflow-auto align-center">
+                <div v-for="video in availableVideos" :key="video.fileName" class="mb-4 video-container">
+                  <div class="relative video-wrapper">
+                    <video
+                      :id="`video-library-${video.fileName}`"
+                      class="border-4 border-white rounded-md cursor-pointer border-opacity-[0.1] hover:border-opacity-[0.4] transition duration-75 hover:ease-in"
+                      :class="
+                        selectedVideos.find((v) => v.fileName === video.fileName)
+                          ? ['border-opacity-[0.4]', 'w-[220px]']
+                          : ['border-opacity-[0.1]', 'w-[190px]']
+                      "
+                      preload="auto"
+                      :poster="!video.isProcessed ? video.thumbnail : undefined"
+                    >
+                      <source :src="video.url" />
+                    </video>
+                    <div
+                      v-if="selectedVideos.find((v) => v.fileName === video.fileName) && !isMultipleSelectionMode"
+                      class="play-button"
+                      @click="video.isProcessed ? playVideo() : processSingleVideo()"
+                    >
+                      <v-icon size="40" class="text-white">
+                        {{ video.isProcessed ? 'mdi-play-circle-outline' : 'mdi-progress-alert' }}
+                      </v-icon>
+                    </div>
+                    <div
+                      v-if="isMultipleSelectionMode"
+                      class="checkmark-button"
+                      :class="selectedVideos.find((v) => v.fileName === video.fileName) ? 'bg-green' : 'bg-white'"
+                      @click.stop="toggleVideoIntoSelectionArray(video)"
+                    >
+                      <v-icon size="15" class="text-white">
+                        {{
+                          selectedVideos.find((v) => v.fileName === video.fileName)
+                            ? 'mdi-check-circle-outline'
+                            : 'mdi-radiobox-blank'
+                        }}
+                      </v-icon>
+                    </div>
+                  </div>
+                  <div class="flex flex-row justify-center w-full ml-1 overflow-hidden text-xs">
+                    <v-tooltip open-delay="500" activator="parent" location="top">{{
+                      video.isProcessed ? 'Processed video' : 'Unprocessed video'
+                    }}</v-tooltip>
+                    {{ parseDateFromTitle(video.fileName) ?? 'Cockpit video' }}
+                    <v-icon
+                      size="10"
+                      class="ml-1 mt-[3px]"
+                      :class="video.isProcessed ? 'text-green-500' : 'text-red-500'"
+                    >
+                      mdi-circle
                     </v-icon>
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="availableVideos.length > 1"
+                class="flex flex-row justify-between align-center h-[45px] w-full mb-[-15px]"
+              >
+                <div>
+                  <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
+                    <v-tooltip open-delay="500" activator="parent" location="bottom">
+                      Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
+                    </v-tooltip>
+                    {{ isMultipleSelectionMode ? 'Single' : 'Multi' }}
+                  </v-btn>
+                </div>
+                <div>
+                  <v-btn
+                    variant="text"
+                    size="small"
+                    class="mt-[5px]"
+                    @click="selectedVideos.length === availableVideos.length ? deselectAllVideos() : selectAllVideos()"
+                  >
+                    <v-tooltip open-delay="500" activator="parent" location="bottom">
+                      Select {{ selectedVideos.length === availableVideos.length ? 'none' : 'all files' }}
+                    </v-tooltip>
+                    {{ selectedVideos.length === availableVideos.length ? 'None' : 'All' }}
+                  </v-btn>
+                </div>
+                <div>
+                  <v-btn
+                    variant="text"
+                    size="small"
+                    class="mt-[5px]"
+                    @click="
+                      selectedVideos.every((el) => !el.isProcessed)
+                        ? selectProcessedVideos()
+                        : selectUnprocessedVideos()
+                    "
+                  >
+                    <v-tooltip open-delay="500" activator="parent" location="bottom">
+                      {{
+                        selectedVideos.every((el) => !el.isProcessed)
+                          ? 'Select all processed videos'
+                          : 'Select all unprocessed videos'
+                      }}
+                    </v-tooltip>
+                    {{ selectedVideos.every((el) => !el.isProcessed) ? 'Select Process.' : 'select Unproc.' }}
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+
+            <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
+            <!-- Video Player -->
+            <div v-if="availableVideos.length > 0" class="flex flex-col justify-between mt-5 align-center w-[720px]">
+              <div>
+                <video
+                  v-if="
+                    !isMultipleSelectionMode && selectedVideos.length === 1 && !isMultipleSelectionMode && !loadingData
+                  "
+                  id="video-player"
+                  ref="videoPlayerRef"
+                  width="660px"
+                  :controls="selectedVideos[0].isProcessed ? true : false"
+                  :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
+                  :poster="selectedVideos[0]?.thumbnail || undefined"
+                  class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
+                >
+                  <source :src="selectedVideos[0]?.url || undefined" />
+                </video>
+                <v-btn
+                  v-if="
+                    !loadingData &&
+                    selectedVideos.length === 1 &&
+                    !selectedVideos[0].isProcessed &&
+                    !isMultipleSelectionMode &&
+                    !errorProcessingVideos
+                  "
+                  :variant="showOnScreenProgress ? 'text' : 'outlined'"
+                  color="white"
+                  size="large"
+                  :disabled="showOnScreenProgress"
+                  class="process-button"
+                  @click="processSingleVideo"
+                >
+                  {{ showOnScreenProgress ? 'Processing...' : 'Process video' }}
+                </v-btn>
+                <div class="processing-bar">
+                  <v-progress-linear
+                    v-if="showOnScreenProgress && !showProgressInteractionDialog"
+                    :model-value="errorProcessingVideos ? 100 : overallProcessingProgress"
+                    :color="errorProcessingVideos ? 'red' : 'green'"
+                    height="8"
+                    striped
+                  />
+                  <div class="w-0">
+                    <button
+                      v-if="
+                        !loadingData && selectedVideos.length === 1 && showOnScreenProgress && errorProcessingVideos
+                      "
+                      class="bg-red text-[#ffffffaa] flex flex-col justify-center align-center w-[20px] h-[20px] rounded-full mt-[40px] ml-[-25px]"
+                      @click="showErrorTooltip = !showErrorTooltip"
+                    >
+                      <v-icon class="text-[18px]">mdi-alert-circle-outline</v-icon>
+                      <v-tooltip
+                        v-model="showErrorTooltip"
+                        :open-on-hover="false"
+                        activator="parent"
+                        location="bottom"
+                        arrow
+                        content-class="border-[#ffffff55] border-2"
+                        @click:outside="showErrorTooltip = false"
+                      >
+                        <div class="flex flex-col p-2 gap-y-2">
+                          <div>{{ snackbarMessage }}</div>
+                        </div>
+                      </v-tooltip>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <!-- Selected Videos Card Grid (Only on multiple files selected) -->
+              <div
+                v-if="availableVideos.length > 0 && selectedVideos.length >= 1 && isMultipleSelectionMode"
+                class="flex flex-col justify-start w-full p-2 pt-3"
+              >
+                <div class="card-grid">
+                  <v-card v-for="selectedFile in selectedVideos" :key="selectedFile.fileName" class="video-card">
+                    <div>
+                      <v-card-text>
+                        <div class="text-sm">{{ parseDateFromTitle(selectedFile.fileName) }}</div>
+                      </v-card-text>
+                      <div class="video-card-dot">
+                        <v-icon size="10" :class="selectedFile.isProcessed ? 'text-green-500' : 'text-red-500'">
+                          mdi-circle
+                        </v-icon>
+                      </div>
+                    </div>
+                  </v-card>
+                </div>
+                <v-divider class="mb-[-10px] opacity-[0.1] mx-3"></v-divider>
+              </div>
+              <!-- Video Action Buttons -->
+              <div
+                v-if="availableVideos.length > 0"
+                class="flex flex-row justify-between w-full h-full px-8 overflow-hidden align-center"
+              >
+                <div class="flex flex-row justify-between pl-2 align-center gap-x-6">
+                  <div class="flex flex-row cursor-default text-md">
+                    {{
+                      isMultipleSelectionMode
+                        ? `Files selected: ${selectedVideos.length}`
+                        : parseMissionAndDateFromTitle(selectedVideos[0]?.fileName)
+                    }}
                   </div>
                   <div
                     v-if="isMultipleSelectionMode"
-                    class="checkmark-button"
-                    :class="selectedVideos.find((v) => v.fileName === video.fileName) ? 'bg-green' : 'bg-white'"
-                    @click.stop="toggleVideoIntoSelectionArray(video)"
+                    class="flex flex-row w-[320px] justify-center gap-x-4 align-center ml-1"
                   >
-                    <v-icon size="15" class="text-white">
-                      {{
-                        selectedVideos.find((v) => v.fileName === video.fileName)
-                          ? 'mdi-check-circle-outline'
-                          : 'mdi-radiobox-blank'
-                      }}
-                    </v-icon>
+                    <div
+                      v-if="selectedVideos.every((video) => !video.isProcessed)"
+                      class="text-sm text-white border-2 rounded-md mt-[3px] border-[#ffffff44] bg-[#fafafa33] ml-4 px-1"
+                    >
+                      <button @click="showProcessVideosWarningDialog">Process selected videos</button>
+                    </div>
                   </div>
                 </div>
-                <div class="flex flex-row justify-center w-full ml-1 overflow-hidden text-xs">
-                  <v-tooltip open-delay="500" activator="parent" location="top">{{
-                    video.isProcessed ? 'Processed video' : 'Unprocessed video'
-                  }}</v-tooltip>
-                  {{ parseDateFromTitle(video.fileName) ?? 'Cockpit video' }}
-                  <v-icon
-                    size="10"
-                    class="ml-1 mt-[3px]"
-                    :class="video.isProcessed ? 'text-green-500' : 'text-red-500'"
-                  >
-                    mdi-circle
-                  </v-icon>
-                </div>
-              </div>
-            </div>
-            <div
-              v-if="availableVideos.length > 1"
-              class="flex flex-row justify-between align-center h-[45px] w-full mb-[-15px]"
-            >
-              <div>
-                <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
-                  <v-tooltip open-delay="500" activator="parent" location="bottom">
-                    Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
-                  </v-tooltip>
-                  {{ isMultipleSelectionMode ? 'Single' : 'Multi' }}
-                </v-btn>
-              </div>
-              <div>
-                <v-btn
-                  variant="text"
-                  size="small"
-                  class="mt-[5px]"
-                  @click="selectedVideos.length === availableVideos.length ? deselectAllVideos() : selectAllVideos()"
-                >
-                  <v-tooltip open-delay="500" activator="parent" location="bottom">
-                    Select {{ selectedVideos.length === availableVideos.length ? 'none' : 'all files' }}
-                  </v-tooltip>
-                  {{ selectedVideos.length === availableVideos.length ? 'None' : 'All' }}
-                </v-btn>
-              </div>
-              <div>
-                <v-btn
-                  variant="text"
-                  size="small"
-                  class="mt-[5px]"
-                  @click="
-                    selectedVideos.every((el) => !el.isProcessed) ? selectProcessedVideos() : selectUnprocessedVideos()
-                  "
-                >
-                  <v-tooltip open-delay="500" activator="parent" location="bottom">
-                    {{
-                      selectedVideos.every((el) => !el.isProcessed)
-                        ? 'Select all processed videos'
-                        : 'Select all unprocessed videos'
-                    }}
-                  </v-tooltip>
-                  {{ selectedVideos.every((el) => !el.isProcessed) ? 'Select Process.' : 'select Unproc.' }}
-                </v-btn>
-              </div>
-            </div>
-          </div>
-
-          <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
-          <!-- Video Player -->
-          <div v-if="availableVideos.length > 0" class="flex flex-col justify-between mt-5 align-center w-[720px]">
-            <div>
-              <video
-                v-if="
-                  !isMultipleSelectionMode && selectedVideos.length === 1 && !isMultipleSelectionMode && !loadingData
-                "
-                id="video-player"
-                ref="videoPlayerRef"
-                width="660px"
-                :controls="selectedVideos[0].isProcessed ? true : false"
-                :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
-                :poster="selectedVideos[0]?.thumbnail || undefined"
-                class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
-              >
-                <source :src="selectedVideos[0]?.url || undefined" />
-              </video>
-              <v-btn
-                v-if="
-                  !loadingData &&
-                  selectedVideos.length === 1 &&
-                  !selectedVideos[0].isProcessed &&
-                  !isMultipleSelectionMode &&
-                  !errorProcessingVideos
-                "
-                :variant="showOnScreenProgress ? 'text' : 'outlined'"
-                color="white"
-                size="large"
-                :disabled="showOnScreenProgress"
-                class="process-button"
-                @click="processSingleVideo"
-              >
-                {{ showOnScreenProgress ? 'Processing...' : 'Process video' }}
-              </v-btn>
-              <div class="processing-bar">
-                <v-progress-linear
-                  v-if="showOnScreenProgress && !showProgressInteractionDialog"
-                  :model-value="errorProcessingVideos ? 100 : overallProcessingProgress"
-                  :color="errorProcessingVideos ? 'red' : 'green'"
-                  height="8"
-                  striped
-                />
-                <div class="w-0">
+                <div class="flex flex-row mt-2">
                   <button
-                    v-if="!loadingData && selectedVideos.length === 1 && showOnScreenProgress && errorProcessingVideos"
-                    class="bg-red text-[#ffffffaa] flex flex-col justify-center align-center w-[20px] h-[20px] rounded-full mt-[40px] ml-[-25px]"
-                    @click="showErrorTooltip = !showErrorTooltip"
+                    v-for="button in fileActionButtons"
+                    :key="button.name"
+                    class="flex flex-col justify-center ml-6 align-center"
+                    :disabled="button.disabled"
+                    @click="!button.confirmAction && button.action()"
                   >
-                    <v-icon class="text-[18px]">mdi-alert-circle-outline</v-icon>
-                    <v-tooltip
-                      v-model="showErrorTooltip"
-                      :open-on-hover="false"
-                      activator="parent"
-                      location="bottom"
-                      arrow
-                      content-class="border-[#ffffff55] border-2"
-                      @click:outside="showErrorTooltip = false"
+                    <div
+                      :class="[
+                        button.disabled ? 'frosted-button-disabled' : 'frosted-button',
+                        !button.confirmAction && 'p-2',
+                      ]"
+                      class="flex flex-col justify-center mb-1 rounded-full frosted-button align-center button"
                     >
-                      <div class="flex flex-col p-2 gap-y-2">
-                        <div>{{ snackbarMessage }}</div>
+                      <v-tooltip v-if="button.tooltip" open-delay="500" activator="parent" location="bottom">
+                        {{ button.tooltip }}
+                      </v-tooltip>
+                      <v-menu
+                        v-if="button.confirmAction"
+                        location="left center"
+                        opacity="0"
+                        transition="slide-x-reverse-transition"
+                        :disabled="button.disabled"
+                      >
+                        <template #activator="{ props: buttonProps, isActive }">
+                          <div class="flex items-center justify-center w-full h-full" v-bind="buttonProps">
+                            <v-icon
+                              :size="button.size"
+                              :class="{
+                                'rotate-[-45deg]': isActive,
+                                'outline outline-6 outline-[#ffffff55]': isActive,
+                              }"
+                              class="rounded-full border-[transparent]"
+                              :style="{ borderWidth: `${button.size - 4}px` }"
+                            >
+                              {{ isActive ? 'mdi-arrow-up' : button.icon }}
+                            </v-icon>
+                          </div>
+                        </template>
+                        <v-list class="bg-transparent" elevation="0">
+                          <v-list-item>
+                            <template #append>
+                              <div class="mb-10 slide-right-to-left">
+                                <v-btn
+                                  fab
+                                  small
+                                  width="28"
+                                  height="28"
+                                  color="red"
+                                  icon="mdi-close"
+                                  class="text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
+                                  ><v-tooltip open-delay="600" activator="parent" location="bottom"> Cancel </v-tooltip
+                                  ><v-icon>mdi-close</v-icon></v-btn
+                                >
+                                <v-btn
+                                  fab
+                                  small
+                                  width="28"
+                                  height="28"
+                                  color="green"
+                                  icon="mdi-check"
+                                  class="ml-4 text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
+                                  :loading="deleteButtonLoading"
+                                  @click="button.action()"
+                                  ><v-tooltip open-delay="600" activator="parent" location="bottom"> Confirm </v-tooltip
+                                  ><v-icon>mdi-check</v-icon></v-btn
+                                >
+                              </div>
+                            </template>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
+                      <div v-else>
+                        <v-icon :size="button.size">{{ button.icon }}</v-icon>
                       </div>
-                    </v-tooltip>
+                    </div>
                   </button>
                 </div>
               </div>
             </div>
-            <!-- Selected Videos Card Grid (Only on multiple files selected) -->
             <div
-              v-if="availableVideos.length > 0 && selectedVideos.length >= 1 && isMultipleSelectionMode"
-              class="flex flex-col justify-start w-full p-2 pt-3"
+              v-if="availableVideos.length === 0"
+              class="flex flex-row justify-center w-full h-full text-xl text-center align-center"
             >
-              <div class="card-grid">
-                <v-card v-for="selectedFile in selectedVideos" :key="selectedFile.fileName" class="video-card">
-                  <div>
-                    <v-card-text>
-                      <div class="text-sm">{{ parseDateFromTitle(selectedFile.fileName) }}</div>
-                    </v-card-text>
-                    <div class="video-card-dot">
-                      <v-icon size="10" :class="selectedFile.isProcessed ? 'text-green-500' : 'text-red-500'">
-                        mdi-circle
-                      </v-icon>
-                    </div>
-                  </div>
-                </v-card>
-              </div>
-              <v-divider class="mb-[-10px] opacity-[0.1] mx-3"></v-divider>
+              {{ loadingData ? 'Loading' : 'No videos on storage' }}
             </div>
-            <!-- Video Action Buttons -->
-            <div
-              v-if="availableVideos.length > 0"
-              class="flex flex-row justify-between w-full h-full px-8 overflow-hidden align-center"
-            >
-              <div class="flex flex-row justify-between pl-2 align-center gap-x-6">
-                <div class="flex flex-row cursor-default text-md">
-                  {{
-                    isMultipleSelectionMode
-                      ? `Files selected: ${selectedVideos.length}`
-                      : parseMissionAndDateFromTitle(selectedVideos[0]?.fileName)
-                  }}
-                </div>
-                <div
-                  v-if="isMultipleSelectionMode"
-                  class="flex flex-row w-[320px] justify-center gap-x-4 align-center ml-1"
-                >
-                  <div
-                    v-if="selectedVideos.every((video) => !video.isProcessed)"
-                    class="text-sm text-white border-2 rounded-md mt-[3px] border-[#ffffff44] bg-[#fafafa33] ml-4 px-1"
-                  >
-                    <button @click="showProcessVideosWarningDialog">Process selected videos</button>
-                  </div>
-                </div>
-              </div>
-              <div class="flex flex-row mt-2">
-                <button
-                  v-for="button in fileActionButtons"
-                  :key="button.name"
-                  class="flex flex-col justify-center ml-6 align-center"
-                  :disabled="button.disabled"
-                  @click="!button.confirmAction && button.action()"
-                >
-                  <div
-                    :class="[
-                      button.disabled ? 'frosted-button-disabled' : 'frosted-button',
-                      !button.confirmAction && 'p-2',
-                    ]"
-                    class="flex flex-col justify-center mb-1 rounded-full frosted-button align-center button"
-                  >
-                    <v-tooltip v-if="button.tooltip" open-delay="500" activator="parent" location="bottom">
-                      {{ button.tooltip }}
-                    </v-tooltip>
-                    <v-menu
-                      v-if="button.confirmAction"
-                      location="left center"
-                      opacity="0"
-                      transition="slide-x-reverse-transition"
-                      :disabled="button.disabled"
-                    >
-                      <template #activator="{ props: buttonProps, isActive }">
-                        <div class="flex items-center justify-center w-full h-full" v-bind="buttonProps">
-                          <v-icon
-                            :size="button.size"
-                            :class="{ 'rotate-[-45deg]': isActive, 'outline outline-6 outline-[#ffffff55]': isActive }"
-                            class="rounded-full border-[transparent]"
-                            :style="{ borderWidth: `${button.size - 4}px` }"
-                          >
-                            {{ isActive ? 'mdi-arrow-up' : button.icon }}
-                          </v-icon>
-                        </div>
-                      </template>
-                      <v-list class="bg-transparent" elevation="0">
-                        <v-list-item>
-                          <template #append>
-                            <div class="mb-10 slide-right-to-left">
-                              <v-btn
-                                fab
-                                small
-                                width="28"
-                                height="28"
-                                color="red"
-                                icon="mdi-close"
-                                class="text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
-                                ><v-tooltip open-delay="600" activator="parent" location="bottom"> Cancel </v-tooltip
-                                ><v-icon>mdi-close</v-icon></v-btn
-                              >
-                              <v-btn
-                                fab
-                                small
-                                width="28"
-                                height="28"
-                                color="green"
-                                icon="mdi-check"
-                                class="ml-4 text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
-                                :loading="deleteButtonLoading"
-                                @click="button.action()"
-                                ><v-tooltip open-delay="600" activator="parent" location="bottom"> Confirm </v-tooltip
-                                ><v-icon>mdi-check</v-icon></v-btn
-                              >
-                            </div>
-                          </template>
-                        </v-list-item>
-                      </v-list>
-                    </v-menu>
-                    <div v-else>
-                      <v-icon :size="button.size">{{ button.icon }}</v-icon>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div
-            v-if="availableVideos.length === 0"
-            class="flex flex-row justify-center w-full h-full text-xl text-center align-center"
-          >
-            {{ loadingData ? 'Loading' : 'No videos on storage' }}
-          </div>
-        </template>
+          </template>
+        </div>
       </div>
     </div>
   </v-dialog>
@@ -468,11 +480,13 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from '@vueuse/core'
 import * as Hammer from 'hammerjs'
 import { computed, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { DialogActions } from '@/types/general'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
@@ -481,6 +495,7 @@ import InteractionDialog from './InteractionDialog.vue'
 import Snackbar from './Snackbar.vue'
 
 const videoStore = useVideoStore()
+const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps({
   openModal: Boolean,
@@ -488,6 +503,7 @@ const props = defineProps({
 const emits = defineEmits(['update:openModal'])
 
 const { showDialog, closeDialog } = useInteractionDialog()
+const { width: windowWidth } = useWindowSize()
 
 // Track the blob URLs to revoke them when the modal is closed
 const blobURLs = ref<string[]>([])
@@ -532,6 +548,14 @@ const showOnScreenProgress = ref(false)
 const lastSelectedVideo = ref<VideoLibraryFile | null>(null)
 const errorProcessingVideos = ref(false)
 const deleteButtonLoading = ref(false)
+
+const dialogStyle = computed(() => {
+  const scale = interfaceStore.isOnSmallScreen ? windowWidth.value / 1100 : 1
+  return {
+    transform: `scale(${scale * 0.98}) translate(0, 0)`,
+    transformOrigin: 'center',
+  }
+})
 
 const menuButtons = [
   { name: 'Videos', icon: 'mdi-video-outline', selected: true, disabled: false, tooltip: '' },
@@ -1068,6 +1092,10 @@ onBeforeUnmount(() => {
   align-items: center;
   --v-overlay-opacity: 0.1;
   z-index: 100;
+}
+
+.dialog-frame {
+  display: flex;
 }
 
 .video-modal {
