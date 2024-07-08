@@ -213,7 +213,7 @@
               </div>
             </div>
             <div class="grow" />
-            <Alerter class="max-w-sm min-w-fit" />
+            <Alerter class="min-w-[30%] max-w-[30%]" />
             <div class="grow" />
             <div class="flex-1">
               <MiniWidgetContainer
