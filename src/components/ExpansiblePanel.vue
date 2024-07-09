@@ -175,6 +175,13 @@ const toggleWarning = (): void => {
   isWarningOpen.value = !isWarningOpen.value
 }
 
+watch(
+  () => props.isExpanded,
+  (newValue) => {
+    isPanelExpanded.value = newValue ?? false
+  }
+)
+
 watch(isPanelExpanded, (newValue) => {
   if (content.value) {
     if (newValue) {
