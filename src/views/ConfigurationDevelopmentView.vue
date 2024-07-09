@@ -2,10 +2,10 @@
   <BaseConfigurationView>
     <template #title>Development configuration</template>
     <template #content>
-      <div class="max-w-[87vw] max-h-[80vh] overflow-y-auto -mr-4">
+      <div class="-mr-4 max-h-[80vh] max-w-[87vw] overflow-y-auto">
         <div
-          class="flex flex-col justify-between items-center w-full"
-          :class="interfaceStore.isOnPhoneScreen ? 'scale-[80%] mt-0 -mb-3' : 'scale-100 mt-4'"
+          class="flex w-full flex-col items-center justify-between"
+          :class="interfaceStore.isOnPhoneScreen ? '-mb-3 mt-0 scale-[80%]' : 'mt-4 scale-100'"
         >
           <div class="flex flex-row gap-x-[50px]">
             <v-switch v-model="devStore.developmentMode" label="Development mode" color="white" />
@@ -41,10 +41,10 @@
               density="compact"
               theme="dark"
               :headers="headers"
-              class="w-full max-h-[60%] rounded-md bg-[#FFFFFF11]"
+              class="max-h-[60%] w-full rounded-md bg-[#FFFFFF11]"
             >
               <template #item.actions="{ item }">
-                <div class="text-center cursor-pointer icon-btn mdi mdi-download" @click="downloadLog(item.name)" />
+                <div class="icon-btn mdi mdi-download cursor-pointer text-center" @click="downloadLog(item.name)" />
               </template>
             </v-data-table>
           </template>

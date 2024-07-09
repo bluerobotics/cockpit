@@ -8,9 +8,9 @@
     ></canvas>
   </div>
   <Dialog v-model:show="widget.managerVars.configMenuOpen" class="w-72">
-    <div class="w-full h-full">
+    <div class="h-full w-full">
       <div class="flex flex-col items-center justify-around">
-        <div class="flex items-center justify-between w-full my-1">
+        <div class="my-1 flex w-full items-center justify-between">
           <span class="mr-1 text-slate-100">Heading style</span>
           <div class="w-40"><Dropdown v-model="widget.options.headingStyle" :options="headingOptions" /></div>
         </div>

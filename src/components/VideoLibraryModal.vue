@@ -4,23 +4,23 @@
       <div class="video-modal">
         <div class="modal-content">
           <!-- Left Vertical Menu -->
-          <div class="flex flex-col justify-between h-full px-5 py-3 align-center">
-            <div class="flex flex-col justify-between pt-2 align-center gap-y-8">
+          <div class="align-center flex h-full flex-col justify-between px-5 py-3">
+            <div class="align-center flex flex-col justify-between gap-y-8 pt-2">
               <button
                 v-for="button in menuButtons"
                 :key="button.name"
                 :disabled="button.disabled"
-                class="flex flex-col justify-center align-center"
+                class="align-center flex flex-col justify-center"
                 @click="currentTab = button.name.toLowerCase()"
               >
                 <v-tooltip v-if="button.tooltip !== ''" open-delay="600" activator="parent" location="top">
                   {{ button.tooltip }}
                 </v-tooltip>
                 <div
-                  class="mb-1 text-2xl rounded-full"
+                  class="mb-1 rounded-full text-2xl"
                   :class="[
                     button.disabled ? 'frosted-button-disabled' : 'frosted-button',
-                    currentTab === button.name.toLowerCase() ? 'w-[58px] h-[58px]' : 'w-[40px] h-[40px]',
+                    currentTab === button.name.toLowerCase() ? 'h-[58px] w-[58px]' : 'h-[40px] w-[40px]',
                   ]"
                 >
                   <v-icon
@@ -36,9 +36,9 @@
               </button>
             </div>
             <div>
-              <div class="flex flex-col justify-center py-2 mb-[10px] align-center">
+              <div class="align-center mb-[10px] flex flex-col justify-center py-2">
                 <button
-                  class="frosted-button text-[#ffffffaa] flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-[4px]"
+                  class="frosted-button align-center mb-[4px] flex h-[28px] w-[28px] flex-col justify-center rounded-full text-[#ffffffaa]"
                   @click="showHelpTooltip = !showHelpTooltip"
                 >
                   <v-icon class="text-[24px]">mdi-help-circle-outline</v-icon>
@@ -51,29 +51,29 @@
                     content-class="border-[#ffffff55] border-2"
                     @click:outside="showHelpTooltip = false"
                   >
-                    <div class="flex flex-col p-2 gap-y-2">
+                    <div class="flex flex-col gap-y-2 p-2">
                       <div>
                         <strong>Computer:</strong> Command+click, Ctrl+click or Long click to select multiple videos.
                       </div>
 
                       <div><strong>Mobile:</strong> Long press to select multiple videos.</div>
-                      <div class="flex flex-row mt-4 gap-x-10">
+                      <div class="mt-4 flex flex-row gap-x-10">
                         <div class="ml-[-8px]">
-                          <v-icon size="10" class="text-green-500 ml-2 mb-[2px] mr-1">mdi-circle</v-icon> Processed
+                          <v-icon size="10" class="mb-[2px] ml-2 mr-1 text-green-500">mdi-circle</v-icon> Processed
                           video
                         </div>
                         <div>
-                          <v-icon size="10" class="text-red-500 mb-[2px] mr-1">mdi-circle</v-icon> Unprocessed video
+                          <v-icon size="10" class="mb-[2px] mr-1 text-red-500">mdi-circle</v-icon> Unprocessed video
                         </div>
                       </div>
                     </div>
                   </v-tooltip>
                 </button>
               </div>
-              <v-divider class="opacity-[0.1] ml-[-5px] w-[120%]"></v-divider>
-              <button class="flex flex-col justify-center py-2 mt-4 align-center" @click="closeModal">
+              <v-divider class="ml-[-5px] w-[120%] opacity-[0.1]"></v-divider>
+              <button class="align-center mt-4 flex flex-col justify-center py-2" @click="closeModal">
                 <div
-                  class="frosted-button flex flex-col justify-center align-center w-[28px] h-[28px] rounded-full mb-1"
+                  class="frosted-button align-center mb-1 flex h-[28px] w-[28px] flex-col justify-center rounded-full"
                 >
                   <v-icon class="text-[18px]">mdi-close</v-icon>
                 </div>
@@ -81,20 +81,20 @@
               </button>
             </div>
           </div>
-          <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
+          <v-divider vertical class="mt-4 h-[92%] opacity-[0.1]"></v-divider>
           <!-- Right Content -->
           <template v-if="currentTab === 'videos'">
             <!-- Available Videos -->
             <div
               v-if="availableVideos.length > 0"
-              class="flex flex-col justify-between align-center pt-8 px-2 w-[300px] h-[480px]"
+              class="align-center flex h-[480px] w-[300px] flex-col justify-between px-2 pt-8"
             >
-              <div class="flex flex-col w-full h-full px-4 overflow-auto align-center">
-                <div v-for="video in availableVideos" :key="video.fileName" class="mb-4 video-container">
-                  <div class="relative video-wrapper">
+              <div class="align-center flex h-full w-full flex-col overflow-auto px-4">
+                <div v-for="video in availableVideos" :key="video.fileName" class="video-container mb-4">
+                  <div class="video-wrapper relative">
                     <video
                       :id="`video-library-${video.fileName}`"
-                      class="border-4 border-white rounded-md cursor-pointer border-opacity-[0.1] hover:border-opacity-[0.4] transition duration-75 hover:ease-in"
+                      class="cursor-pointer rounded-md border-4 border-white border-opacity-[0.1] transition duration-75 hover:border-opacity-[0.4] hover:ease-in"
                       :class="
                         selectedVideos.find((v) => v.fileName === video.fileName)
                           ? ['border-opacity-[0.4]', 'w-[220px]']
@@ -129,7 +129,7 @@
                       </v-icon>
                     </div>
                   </div>
-                  <div class="flex flex-row justify-center w-full ml-1 overflow-hidden text-xs">
+                  <div class="ml-1 flex w-full flex-row justify-center overflow-hidden text-xs">
                     <v-tooltip open-delay="500" activator="parent" location="top">{{
                       video.isProcessed ? 'Processed video' : 'Unprocessed video'
                     }}</v-tooltip>
@@ -146,7 +146,7 @@
               </div>
               <div
                 v-if="availableVideos.length > 1"
-                class="flex flex-row justify-between align-center h-[45px] w-full mb-[-15px]"
+                class="align-center mb-[-15px] flex h-[45px] w-full flex-row justify-between"
               >
                 <div>
                   <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
@@ -193,9 +193,9 @@
               </div>
             </div>
 
-            <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
+            <v-divider vertical class="mt-4 h-[92%] opacity-[0.1]"></v-divider>
             <!-- Video Player -->
-            <div v-if="availableVideos.length > 0" class="flex flex-col justify-between mt-5 align-center w-[720px]">
+            <div v-if="availableVideos.length > 0" class="align-center mt-5 flex w-[720px] flex-col justify-between">
               <div>
                 <video
                   v-if="
@@ -207,7 +207,7 @@
                   :controls="selectedVideos[0].isProcessed ? true : false"
                   :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
                   :poster="selectedVideos[0]?.thumbnail || undefined"
-                  class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
+                  class="aspect-video min-h-[382px] rounded-lg border-[14px] border-white border-opacity-10"
                 >
                   <source :src="selectedVideos[0]?.url || undefined" />
                 </video>
@@ -235,7 +235,7 @@
                       v-if="
                         !loadingData && selectedVideos.length === 1 && showOnScreenProgress && errorProcessingVideos
                       "
-                      class="bg-red text-[#ffffffaa] flex flex-col justify-center align-center w-[20px] h-[20px] rounded-full mt-[40px] ml-[-25px]"
+                      class="bg-red align-center ml-[-25px] mt-[40px] flex h-[20px] w-[20px] flex-col justify-center rounded-full text-[#ffffffaa]"
                       @click="showErrorTooltip = !showErrorTooltip"
                     >
                       <v-icon class="text-[18px]">mdi-alert-circle-outline</v-icon>
@@ -248,7 +248,7 @@
                         content-class="border-[#ffffff55] border-2"
                         @click:outside="showErrorTooltip = false"
                       >
-                        <div class="flex flex-col p-2 gap-y-2">
+                        <div class="flex flex-col gap-y-2 p-2">
                           <div>{{ snackbarMessage }}</div>
                         </div>
                       </v-tooltip>
@@ -259,7 +259,7 @@
               <!-- Selected Videos Card Grid (Only on multiple files selected) -->
               <div
                 v-if="availableVideos.length > 0 && selectedVideos.length >= 1 && isMultipleSelectionMode"
-                class="flex flex-col justify-start w-full p-2 pt-3"
+                class="flex w-full flex-col justify-start p-2 pt-3"
               >
                 <div class="card-grid">
                   <v-card v-for="selectedFile in selectedVideos" :key="selectedFile.fileName" class="video-card">
@@ -275,15 +275,15 @@
                     </div>
                   </v-card>
                 </div>
-                <v-divider class="mb-[-10px] opacity-[0.1] mx-3"></v-divider>
+                <v-divider class="mx-3 mb-[-10px] opacity-[0.1]"></v-divider>
               </div>
               <!-- Video Action Buttons -->
               <div
                 v-if="availableVideos.length > 0"
-                class="flex flex-row justify-between w-full h-full px-8 overflow-hidden align-center"
+                class="align-center flex h-full w-full flex-row justify-between overflow-hidden px-8"
               >
-                <div class="flex flex-row justify-between pl-2 align-center gap-x-6">
-                  <div class="flex flex-row cursor-default text-md">
+                <div class="align-center flex flex-row justify-between gap-x-6 pl-2">
+                  <div class="text-md flex cursor-default flex-row">
                     {{
                       isMultipleSelectionMode
                         ? `Files selected: ${selectedVideos.length}`
@@ -292,21 +292,21 @@
                   </div>
                   <div
                     v-if="isMultipleSelectionMode"
-                    class="flex flex-row w-[320px] justify-center gap-x-4 align-center ml-1"
+                    class="align-center ml-1 flex w-[320px] flex-row justify-center gap-x-4"
                   >
                     <div
                       v-if="selectedVideos.every((video) => !video.isProcessed)"
-                      class="text-sm text-white border-2 rounded-md mt-[3px] border-[#ffffff44] bg-[#fafafa33] ml-4 px-1"
+                      class="ml-4 mt-[3px] rounded-md border-2 border-[#ffffff44] bg-[#fafafa33] px-1 text-sm text-white"
                     >
                       <button @click="showProcessVideosWarningDialog">Process selected videos</button>
                     </div>
                   </div>
                 </div>
-                <div class="flex flex-row mt-2">
+                <div class="mt-2 flex flex-row">
                   <button
                     v-for="button in fileActionButtons"
                     :key="button.name"
-                    class="flex flex-col justify-center ml-6 align-center"
+                    class="align-center ml-6 flex flex-col justify-center"
                     :disabled="button.disabled"
                     @click="!button.confirmAction && button.action()"
                   >
@@ -315,7 +315,7 @@
                         button.disabled ? 'frosted-button-disabled' : 'frosted-button',
                         !button.confirmAction && 'p-2',
                       ]"
-                      class="flex flex-col justify-center mb-1 rounded-full frosted-button align-center button"
+                      class="frosted-button align-center button mb-1 flex flex-col justify-center rounded-full"
                     >
                       <v-tooltip v-if="button.tooltip" open-delay="500" activator="parent" location="bottom">
                         {{ button.tooltip }}
@@ -328,12 +328,12 @@
                         :disabled="button.disabled"
                       >
                         <template #activator="{ props: buttonProps, isActive }">
-                          <div class="flex items-center justify-center w-full h-full" v-bind="buttonProps">
+                          <div class="flex h-full w-full items-center justify-center" v-bind="buttonProps">
                             <v-icon
                               :size="button.size"
                               :class="{
                                 'rotate-[-45deg]': isActive,
-                                'outline outline-6 outline-[#ffffff55]': isActive,
+                                'outline-6 outline outline-[#ffffff55]': isActive,
                               }"
                               class="rounded-full border-[transparent]"
                               :style="{ borderWidth: `${button.size - 4}px` }"
@@ -345,7 +345,7 @@
                         <v-list class="bg-transparent" elevation="0">
                           <v-list-item>
                             <template #append>
-                              <div class="mb-10 slide-right-to-left">
+                              <div class="slide-right-to-left mb-10">
                                 <v-btn
                                   fab
                                   small
@@ -353,7 +353,7 @@
                                   height="28"
                                   color="red"
                                   icon="mdi-close"
-                                  class="text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
+                                  class="outline-3 text-sm outline outline-[#ffffff44] hover:outline-[#ffffff77]"
                                 >
                                   <v-tooltip open-delay="600" activator="parent" location="bottom">Cancel</v-tooltip>
                                   <v-icon>mdi-close</v-icon>
@@ -365,7 +365,7 @@
                                   height="28"
                                   color="green"
                                   icon="mdi-check"
-                                  class="ml-4 text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
+                                  class="outline-3 ml-4 text-sm outline outline-[#ffffff44] hover:outline-[#ffffff77]"
                                   :loading="deleteButtonLoading"
                                   @click="button.action()"
                                 >
@@ -387,7 +387,7 @@
             </div>
             <div
               v-if="availableVideos.length === 0"
-              class="flex flex-row justify-center w-full h-full text-xl text-center align-center"
+              class="align-center flex h-full w-full flex-row justify-center text-center text-xl"
             >
               {{ loadingData ? 'Loading' : 'No videos on storage' }}
             </div>
@@ -410,7 +410,7 @@
     :max-width="600"
   >
     <template #content>
-      <div class="flex flex-col mb-2 text-center align-end">
+      <div class="align-end mb-2 flex flex-col text-center">
         Processing multiple videos may take a while, depending on the number of videos and their sizes. Cockpit will be
         usable during the process, but the performance may be affected and recording of new videos is disabled.
       </div>
@@ -423,19 +423,19 @@
     :max-width="600"
   >
     <template #content>
-      <div v-if="!errorProcessingVideos" class="flex flex-col -mt-2 text-center align-center">
-        <div class="flex flex-col justify-between h-[140px] w-full pb-3">
+      <div v-if="!errorProcessingVideos" class="align-center -mt-2 flex flex-col text-center">
+        <div class="flex h-[140px] w-full flex-col justify-between pb-3">
           <div v-if="currentVideoProcessingProgress.length > 0" class="flex flex-col justify-start">
-            <div class="mb-3 text-sm text-center">
+            <div class="mb-3 text-center text-sm">
               File {{ currentVideoProcessingProgress.length }} of {{ numberOfFilesToProcess }}:
               {{ currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].message }}
             </div>
-            <div class="flex flex-row justify-between w-full mb-2 align-center">
-              <div class="text-sm font-bold w-[450px] text-nowrap text-start text-ellipsis overflow-x-hidden">
+            <div class="align-center mb-2 flex w-full flex-row justify-between">
+              <div class="w-[450px] overflow-x-hidden text-ellipsis text-nowrap text-start text-sm font-bold">
                 {{ currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].fileName }}
               </div>
-              <div class="text-sm text-end">
-                <v-progress-circular width="1" size="10" indeterminate class="mr-1 mb-[2px]"></v-progress-circular>
+              <div class="text-end text-sm">
+                <v-progress-circular width="1" size="10" indeterminate class="mb-[2px] mr-1"></v-progress-circular>
                 {{ `${currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].progress}%` }}
               </div>
             </div>
@@ -448,9 +448,9 @@
             ></v-progress-linear>
           </div>
           <div>
-            <div class="flex flex-row justify-between w-full mb-2">
-              <div class="text-sm font-bold text-start">Overall Progress</div>
-              <div class="text-sm font-bold text-end">{{ `${Math.ceil(overallProcessingProgress)}%` }}</div>
+            <div class="mb-2 flex w-full flex-row justify-between">
+              <div class="text-start text-sm font-bold">Overall Progress</div>
+              <div class="text-end text-sm font-bold">{{ `${Math.ceil(overallProcessingProgress)}%` }}</div>
             </div>
             <v-progress-linear
               :model-value="Math.ceil(overallProcessingProgress)"
@@ -463,7 +463,7 @@
         </div>
       </div>
       <div v-if="errorProcessingVideos">
-        <div class="flex flex-col justify-center w-full pb-3 text-center text-md">
+        <div class="text-md flex w-full flex-col justify-center pb-3 text-center">
           {{
             `Error processing video file: ${
               currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].fileName

@@ -1,7 +1,7 @@
 <template>
   <div class="widgets-view">
     <div v-for="view in store.viewsToShow" :key="view.hash" class="widget-view">
-      <div class="w-full h-full bg-slate-500" />
+      <div class="h-full w-full bg-slate-500" />
       <SnappingGrid v-if="store.snapToGrid && store.editingMode" :grid-interval="store.gridInterval" />
       <template v-for="widget in view.widgets.slice().reverse()" :key="widget.hash">
         <WidgetHugger

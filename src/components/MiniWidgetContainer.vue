@@ -1,11 +1,11 @@
 <template>
-  <div ref="miniWidgetContainer" class="relative flex items-center justify-center w-full h-full">
+  <div ref="miniWidgetContainer" class="relative flex h-full w-full items-center justify-center">
     <VueDraggable
       v-model="container.widgets"
       :disabled="!allowEditing"
       :animation="150"
       group="generalGroup"
-      class="flex items-center w-full h-full gap-2 px-2"
+      class="flex h-full w-full items-center gap-2 px-2"
       :class="[wrap ? 'flex-wrap' : '', widgetsAlignment]"
       @start="showWidgetTrashArea = true"
       @end="showWidgetTrashArea = false"
@@ -22,7 +22,7 @@
         @mouseover="miniWidget.managerVars.highlighted = allowEditing"
         @mouseleave="miniWidget.managerVars.highlighted = false"
       >
-        <div :class="{ 'select-none pointer-events-none': allowEditing }">
+        <div :class="{ 'pointer-events-none select-none': allowEditing }">
           <MiniWidgetInstantiator :mini-widget="miniWidget" />
         </div>
       </div>
@@ -33,18 +33,18 @@
       <div
         v-if="showWidgetTrashArea"
         ref="widgetTrashArea"
-        class="absolute w-64 h-64 -translate-x-32 -translate-y-32 top-1/2 left-1/2 bg-slate-500/50 z-[65] rounded-3xl flex items-center justify-center hover:bg-slate-200/50 transition-all"
+        class="absolute left-1/2 top-1/2 z-[65] flex h-64 w-64 -translate-x-32 -translate-y-32 items-center justify-center rounded-3xl bg-slate-500/50 transition-all hover:bg-slate-200/50"
       >
-        <div class="relative w-full h-full">
+        <div class="relative h-full w-full">
           <FontAwesomeIcon
             icon="fa-solid fa-trash"
-            class="absolute h-24 transition-all -translate-x-12 -translate-y-12 top-1/2 left-1/2 text-slate-50/30"
+            class="absolute left-1/2 top-1/2 h-24 -translate-x-12 -translate-y-12 text-slate-50/30 transition-all"
           />
           <VueDraggable
             v-model="trashList"
             :animation="150"
             group="generalGroup"
-            class="flex flex-wrap items-center justify-center w-full h-full gap-2"
+            class="flex h-full w-full flex-wrap items-center justify-center gap-2"
             @add="handleDeleteWidget"
           >
             <div v-for="miniWidget in trashList" :key="miniWidget.hash">

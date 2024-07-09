@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full">
+  <div class="h-full w-full">
     <teleport to=".widgets-view">
       <iframe
         v-show="iframe_loaded"

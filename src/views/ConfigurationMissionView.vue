@@ -2,12 +2,12 @@
   <BaseConfigurationView>
     <template #title>Mission configuration</template>
     <template #content>
-      <div class="flex flex-col justify-between items-start ml-[1vw] max-w-[700px]">
+      <div class="ml-[1vw] flex max-w-[700px] flex-col items-start justify-between">
         <v-switch
           v-model="missionStore.slideEventsEnabled"
           label="Enable slide to confirm"
           color="white"
-          class="mt-2 -mb-2 ml-3"
+          class="-mb-2 ml-3 mt-2"
         />
 
         <ExpansiblePanel no-bottom-divider is-expanded>

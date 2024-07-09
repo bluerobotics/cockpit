@@ -1,13 +1,13 @@
 <template>
   <button
     :class="[
-      'relative flex items-center justify-center w-32 p-1 rounded-md shadow-inner h-9',
-      vehicleStore.flying ? 'bg-slate-800/60 hover:bg-slate-400/60' : 'bg-slate-400/60 cursor-not-allowed',
+      'relative flex h-9 w-32 items-center justify-center rounded-md p-1 shadow-inner',
+      vehicleStore.flying ? 'bg-slate-800/60 hover:bg-slate-400/60' : 'cursor-not-allowed bg-slate-400/60',
     ]"
     :disabled="!vehicleStore.flying"
     @click="changeAlt()"
   >
-    <span class="inline-block font-extrabold align-middle text-white"> Change Alt </span>
+    <span class="inline-block align-middle font-extrabold text-white"> Change Alt </span>
   </button>
 </template>
 

@@ -1,6 +1,6 @@
 <template>
   <div v-if="showSlideToConfirm">
-    <div class="flex items-center space-x-4 mb-3">
+    <div class="mb-3 flex items-center space-x-4">
       <slide-unlock
         ref="vueslideunlock"
         :position="sliderPercentage"
@@ -17,7 +17,7 @@
         @completed="onSlideConfirmed()"
       />
       <button
-        class="flex items-center justify-center w-12 h-12 bg-white rounded-full select-none text-gray"
+        class="text-gray flex h-12 w-12 select-none items-center justify-center rounded-full bg-white"
         @click="cancelAction"
       >
         X

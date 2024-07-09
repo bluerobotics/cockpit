@@ -2,7 +2,7 @@
   <div class="custom-select">
     <select
       v-model="modelValue"
-      class="flex items-center justify-center w-full py-1 pl-2 pr-8 text-base font-bold transition-all border-0 rounded-md shadow-inner cursor-pointer h-9 bg-slate-800/60 text-slate-100 hover:bg-slate-600/60"
+      class="flex h-9 w-full cursor-pointer items-center justify-center rounded-md border-0 bg-slate-800/60 py-1 pl-2 pr-8 text-base font-bold text-slate-100 shadow-inner transition-all hover:bg-slate-600/60"
       :class="{ 'pointer-events-none': disabled }"
       @update:model-value="(newChosenOption: unknown) => emit('update:modelValue', newChosenOption)"
     >

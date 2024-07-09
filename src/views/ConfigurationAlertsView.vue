@@ -2,12 +2,12 @@
   <BaseConfigurationView>
     <template #title>Alerts configuration</template>
     <template #content>
-      <div class="flex flex-col justify-around ml-5 align-start">
+      <div class="align-start ml-5 flex flex-col justify-around">
         <v-switch
           v-model="alertStore.enableVoiceAlerts"
           label="Enable voice alerts"
           color="white"
-          class="mt-2 ml-3 -mb-2"
+          class="-mb-2 ml-3 mt-2"
         />
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title> Enable voice on specific alert levels:</template>
@@ -29,7 +29,7 @@
           :options="alertStore.availableAlertSpeechVoiceNames"
           name-key="name"
           value-key="value"
-          class="max-w-[350px] my-2 ml-2"
+          class="my-2 ml-2 max-w-[350px]"
         />
       </div>
     </template>
