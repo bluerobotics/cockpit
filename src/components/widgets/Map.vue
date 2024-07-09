@@ -3,7 +3,7 @@
     <div :id="mapId" ref="map" class="map">
       <v-btn
         v-tooltip="Boolean(home) ? undefined : 'Home position is currently undefined'"
-        class="absolute left-0 m-3 bottom-button bg-slate-50"
+        class="bottom-button absolute left-0 m-3 bg-slate-50"
         :class="!home ? 'active-events-on-disabled' : ''"
         :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
         elevation="2"
@@ -17,7 +17,7 @@
 
       <v-btn
         v-tooltip="Boolean(vehiclePosition) ? undefined : 'Vehicle position is currently undefined'"
-        class="absolute m-3 bottom-button left-10 bg-slate-50"
+        class="bottom-button absolute left-10 m-3 bg-slate-50"
         :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
         :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
         elevation="2"
@@ -30,7 +30,7 @@
       />
 
       <v-btn
-        class="absolute m-3 bottom-button left-20 bg-slate-50"
+        class="bottom-button absolute left-20 m-3 bg-slate-50"
         elevation="2"
         style="z-index: 1002; border-radius: 0px"
         icon="mdi-download"
@@ -39,7 +39,7 @@
       />
 
       <v-btn
-        class="absolute mb-3 ml-1 bottom-button left-32 bg-slate-50"
+        class="bottom-button absolute left-32 mb-3 ml-1 bg-slate-50"
         elevation="2"
         style="z-index: 1002; border-radius: 0px"
         icon="mdi-play"
@@ -161,7 +161,7 @@ onMounted(async () => {
   // Update center value after panning
   map.value.on('moveend', () => {
     if (map.value === undefined) return
-    let { lat, lng } = map.value.getCenter()
+    const { lat, lng } = map.value.getCenter()
     if (lat && lng) {
       mapCenter.value = [lat, lng]
     }

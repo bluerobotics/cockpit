@@ -1,10 +1,10 @@
 <template>
   <div
-    class="flex flex-col items-center 2xl:gap-y-1 xl: gap-y-1 py-2"
+    class="xl: flex flex-col items-center gap-y-1 py-2 2xl:gap-y-1"
     :class="[
       isUncontained && !isSelected ? (isNoEffects ? '' : 'mark-on-hover') : '',
       isSelected === true ? 'frosted-button-selected' : '',
-      isDisabled ? 'opacity-[0.4] cursor-default' : 'opacity-100 cursor-pointer',
+      isDisabled ? 'cursor-default opacity-[0.4]' : 'cursor-pointer opacity-100',
     ]"
   >
     <button
@@ -29,16 +29,16 @@
         :class="iconClass"
         class="opacity-90"
       />
-      <div v-else class="flex items-center align-center justify-center w-full h-full">
+      <div v-else class="align-center flex h-full w-full items-center justify-center">
         <Icon :icon="icon || ''" :width="props.iconSize || calculatedIconSize" :class="iconClass" />
-        <div class="text-white select-none" :class="labelClass">
+        <div class="select-none text-white" :class="labelClass">
           {{ label }}
         </div>
       </div>
     </button>
     <div
       v-if="isRound || isUncontained"
-      class="flex justify-center align-center text-center select-none text-white px-4 font-semibold 2xl:mt-2 xl:mt-1 lg:mt-0 md:mt-0 sm:-mt-1 mt-1"
+      class="align-center mt-1 flex select-none justify-center px-4 text-center font-semibold text-white sm:-mt-1 md:mt-0 lg:mt-0 xl:mt-1 2xl:mt-2"
       :class="labelClass"
     >
       {{ label }}

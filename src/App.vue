@@ -11,11 +11,11 @@
           <v-window v-model="mainMenuStep" class="h-full w-full">
             <v-window-item :value="1" class="h-full">
               <div
-                class="flex flex-col h-full justify-between align-center items-center select-none"
+                class="align-center flex h-full select-none flex-col items-center justify-between"
                 :class="
                   interfaceStore.isOnSmallScreen
-                    ? 'gap-y-2 pt-2 pb-3 sm:gap-y-1 sm:py-0 sm:-ml-[3px] xs:gap-y-1 xs:py-0 xs:-ml-[3px]'
-                    : 'lg:gap-y-3 xl:gap-y-4 gap-y-5 py-5'
+                    ? 'gap-y-2 pb-3 pt-2 sm:-ml-[3px] sm:gap-y-1 sm:py-0 xs:-ml-[3px] xs:gap-y-1 xs:py-0'
+                    : 'gap-y-5 py-5 lg:gap-y-3 xl:gap-y-4'
                 "
               >
                 <GlassButton
@@ -121,8 +121,8 @@
             </v-window-item>
             <v-window-item :value="2" class="h-full w-full">
               <div
-                class="flex flex-col w-full h-full justify-between"
-                :class="simplifiedMainMenu ? 'py-0 gap-y-0' : 'py-2 gap-y-1'"
+                class="flex h-full w-full flex-col justify-between"
+                :class="simplifiedMainMenu ? 'gap-y-0 py-0' : 'gap-y-1 py-2'"
               >
                 <GlassButton
                   v-for="menuitem in configMenu"
@@ -136,10 +136,12 @@
                   :height="buttonSize * 0.5"
                   :icon-size="buttonSize * 0.6"
                   @click="toggleConfigComponent(menuitem.component)"
-                  ><template #content
-                    ><div v-if="currentConfigMenuComponent === menuitem.component" class="arrow-left"></div></template
-                ></GlassButton>
-                <div class="flex flex-col justify-center align-center">
+                >
+                  <template #content>
+                    <div v-if="currentConfigMenuComponent === menuitem.component" class="arrow-left"></div>
+                  </template>
+                </GlassButton>
+                <div class="align-center flex flex-col justify-center">
                   <v-divider width="70%" class="mb-3" />
                   <GlassButton
                     :label-class="menuLabelSize"
@@ -195,16 +197,16 @@
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
           <div id="mainTopBar" class="bar top-bar">
             <button
-              class="flex items-center justify-center h-full aspect-square top-bar-hamburger"
+              class="top-bar-hamburger flex aspect-square h-full items-center justify-center"
               @click="toggleMainMenu"
             >
-              <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
+              <span class="mdi mdi-menu text-3xl text-slate-300 transition-all hover:text-slate-50" />
             </button>
             <div
-              class="flex items-center justify-start h-full px-4 ml-3 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
+              class="ml-3 mr-1 flex h-full min-w-[20%] cursor-pointer select-none items-center justify-start px-4 transition-all hover:bg-slate-200/30"
               @click="showMissionOptionsDialog = true"
             >
-              <div class="flex items-center overflow-hidden text-lg font-medium text-white whitespace-nowrap">
+              <div class="flex items-center overflow-hidden whitespace-nowrap text-lg font-medium text-white">
                 <p v-if="store.missionName" class="overflow-x-hidden text-ellipsis">{{ store.missionName }}</p>
                 <p v-else class="overflow-x-hidden text-ellipsis">
                   {{ randomMissionName }}
@@ -213,7 +215,7 @@
               </div>
             </div>
             <div class="grow" />
-            <Alerter class="max-w-sm min-w-fit" />
+            <Alerter class="min-w-fit max-w-sm" />
             <div class="grow" />
             <div class="flex-1">
               <MiniWidgetContainer
@@ -223,7 +225,7 @@
               />
             </div>
             <div
-              class="flex items-center justify-center m-2 text-sm font-bold text-center text-white select-none min-w-[80px]"
+              class="m-2 flex min-w-[80px] select-none items-center justify-center text-center text-sm font-bold text-white"
             >
               {{ format(timeNow, 'E LLL do HH:mm') }}
             </div>

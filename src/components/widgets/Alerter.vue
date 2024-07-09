@@ -1,31 +1,31 @@
 <template>
-  <div class="relative flex-grow mx-1 my-1.5 max-w-[25%]">
+  <div class="relative mx-1 my-1.5 max-w-[25%] flex-grow">
     <div
       ref="currentAlertBar"
-      class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap bg-slate-800/75"
+      class="flex cursor-pointer select-none items-center justify-between overflow-hidden whitespace-nowrap rounded bg-slate-800/75 p-1"
     >
       <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100">{{ currentAlert.message }}</p>
-      <div class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100">
+      <div class="mx-1 flex flex-col justify-center text-right font-mono text-xs font-semibold leading-3 text-gray-100">
         <p>{{ formattedDate(currentAlert.time_created || new Date()) }}</p>
         <p>{{ currentAlert.level.toUpperCase() }}</p>
       </div>
     </div>
     <div
       ref="expandedAlertsBar"
-      class="expanded-alerts-bar absolute w-full p-2 transition-all rounded top-12 max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
-      :class="{ 'opacity-0 invisible': !isShowingExpandedAlerts }"
+      class="expanded-alerts-bar absolute top-12 flex max-h-[30vh] w-full select-none flex-col overflow-y-auto rounded bg-slate-800/75 p-2 text-slate-50 transition-all scrollbar-hide"
+      :class="{ 'invisible opacity-0': !isShowingExpandedAlerts }"
     >
       <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
         <div v-tooltip.right="alert.message" class="flex items-center justify-between whitespace-nowrap">
-          <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
+          <p class="mx-1 overflow-hidden text-ellipsis text-lg font-medium leading-none">{{ alert.message }}</p>
           <div
-            class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
+            class="mx-1 flex flex-col justify-center text-right font-mono text-xs font-semibold leading-3 text-gray-100"
           >
             <p>{{ formattedDate(alert.time_created || new Date()) }}</p>
             <p>{{ alert.level.toUpperCase() }}</p>
           </div>
         </div>
-        <div v-if="i !== alertStore.alerts.length - 1" class="h-px mx-1 mb-2 bg-slate-50/30" />
+        <div v-if="i !== alertStore.alerts.length - 1" class="mx-1 mb-2 h-px bg-slate-50/30" />
       </div>
     </div>
   </div>

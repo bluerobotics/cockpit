@@ -2,19 +2,19 @@
   <BaseConfigurationView>
     <template #title>Alerts configuration</template>
     <template #content>
-      <div class="flex flex-col justify-around align-start ml-5">
+      <div class="align-start ml-5 flex flex-col justify-around">
         <v-switch
           v-model="alertStore.enableVoiceAlerts"
           label="Enable voice alerts"
           color="white"
-          class="mt-2 -mb-2 ml-3"
+          class="-mb-2 ml-3 mt-2"
         />
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title> Enable voice on specific alert levels:</template>
-          <template #info
-            >Enable voice alerts to receive audible notifications about system and vehicle activities. <br />
-            Select specific alert levels to customize which types of notifications you receive.</template
-          >
+          <template #info>
+            Enable voice alerts to receive audible notifications about system and vehicle activities. <br />
+            Select specific alert levels to customize which types of notifications you receive.
+          </template>
           <template #content>
             <div class="flex items-center justify-start">
               <div v-for="enabledLevel in alertStore.enabledAlertLevels" :key="enabledLevel.level" class="mx-2">
@@ -23,13 +23,13 @@
             </div>
           </template>
         </ExpansiblePanel>
-        <span class="text-sm font-medium mt-4">Alert voice:</span>
+        <span class="mt-4 text-sm font-medium">Alert voice:</span>
         <Dropdown
           v-model="alertStore.selectedAlertSpeechVoiceName"
           :options="alertStore.availableAlertSpeechVoiceNames"
           name-key="name"
           value-key="value"
-          class="max-w-[350px] my-2 ml-2"
+          class="my-2 ml-2 max-w-[350px]"
         />
       </div>
     </template>

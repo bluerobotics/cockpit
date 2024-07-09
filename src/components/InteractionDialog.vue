@@ -1,10 +1,10 @@
 <template>
   <v-dialog v-model="internalShowDialog" :persistent="persistent" :width="maxWidth || '600px'">
-    <v-card :width="maxWidth || '600px'" class="main-dialog px-2 rounded-lg">
+    <v-card :width="maxWidth || '600px'" class="main-dialog rounded-lg px-2">
       <v-card-title>
         <div
           v-if="title"
-          class="flex justify-center align-center text-center pt-2 mb-1 font-bold text-nowrap text-ellipsis overflow-x-hidden"
+          class="align-center mb-1 flex justify-center overflow-x-hidden text-ellipsis text-nowrap pt-2 text-center font-bold"
           :class="interfaceStore.isOnPhoneScreen ? 'text-[18px]' : 'text-[20px]'"
         >
           {{ title }}
@@ -12,12 +12,12 @@
         <slot name="title"></slot>
       </v-card-title>
       <v-card-text class="pb-2">
-        <div class="flex justify-center align-center w-full mb-3">
-          <v-icon v-if="variant !== 'text-only'" size="46" :color="iconColor" class="mr-8 ml-2">{{ iconType }}</v-icon>
+        <div class="align-center mb-3 flex w-full justify-center">
+          <v-icon v-if="variant !== 'text-only'" size="46" :color="iconColor" class="ml-2 mr-8">{{ iconType }}</v-icon>
           <div
             v-if="isArrayMessage"
-            class="flex flex-col mb-3 gap-y-2 w-[90%] text-start"
-            :class="interfaceStore.isOnPhoneScreen ? 'text-[13px] px-2' : 'text-lg px-5'"
+            class="mb-3 flex w-[90%] flex-col gap-y-2 text-start"
+            :class="interfaceStore.isOnPhoneScreen ? 'px-2 text-[13px]' : 'px-5 text-lg'"
           >
             <li v-for="messageUnit in message" :key="messageUnit">
               {{ messageUnit }}
@@ -32,8 +32,8 @@
           <component :is="contentComponent"></component>
         </template>
       </v-card-text>
-      <div class="flex justify-center w-full px-10">
-        <v-divider class="opacity-10 border-[#fafafa]"></v-divider>
+      <div class="flex w-full justify-center px-10">
+        <v-divider class="border-[#fafafa] opacity-10"></v-divider>
       </div>
       <v-card-actions>
         <slot v-if="hasActionsSlot" name="actions"></slot>
@@ -58,7 +58,7 @@
               {{ button.text }}
             </v-btn>
           </div>
-          <div v-else class="flex w-full px-1 py-2 justify-end">
+          <div v-else class="flex w-full justify-end px-1 py-2">
             <v-btn size="small" variant="text" @click="handleAction(() => (internalShowDialog = false))">Close</v-btn>
           </div>
         </template>

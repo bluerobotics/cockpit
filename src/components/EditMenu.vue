@@ -1,36 +1,36 @@
 <template>
-  <div class="w-full h-full bg-slate-600 z-[60]"></div>
+  <div class="z-[60] h-full w-full bg-slate-600"></div>
   <div
-    class="relative flex flex-col justify-between px-1 text-white edit-panel left-panel"
+    class="edit-panel left-panel relative flex flex-col justify-between px-1 text-white"
     :class="{ active: editMode }"
   >
     <div
-      class="absolute text-2xl transition-all cursor-pointer text-slate-500 aspect-square mdi mdi-close hover:text-slate-300 left-2 top-2"
+      class="mdi mdi-close absolute left-2 top-2 aspect-square cursor-pointer text-2xl text-slate-500 transition-all hover:text-slate-300"
       @click="emit('update:editMode', false)"
     />
-    <div class="flex items-center justify-center mt-10 text-xl font-semibold select-none">
+    <div class="mt-10 flex select-none items-center justify-center text-xl font-semibold">
       <p>Edit interface</p>
       <div
-        class="absolute !bg-slate-600 right-2 icon-btn mdi mdi-dots-vertical"
+        class="icon-btn mdi mdi-dots-vertical absolute right-2 !bg-slate-600"
         @click.stop="editMenuDialogRevealed = true"
       />
     </div>
-    <div class="w-full h-px my-2 sm bg-slate-800/40" />
-    <div class="flex flex-col items-center justify-center w-full px-2 shrink overflow-y-clip h-[35%]">
-      <p class="mb-3 text-lg font-semibold select-none">Profiles</p>
-      <div class="w-full px-2 overflow-x-hidden overflow-y-auto">
+    <div class="sm my-2 h-px w-full bg-slate-800/40" />
+    <div class="flex h-[35%] w-full shrink flex-col items-center justify-center overflow-y-clip px-2">
+      <p class="mb-3 select-none text-lg font-semibold">Profiles</p>
+      <div class="w-full overflow-y-auto overflow-x-hidden px-2">
         <TransitionGroup name="fade-and-suffle">
           <div
             v-for="profile in store.savedProfiles"
             :key="profile.hash"
-            class="flex items-center justify-between w-full my-1"
+            class="my-1 flex w-full items-center justify-between"
           >
             <Button
-              class="flex items-center justify-center w-full h-8 overflow-auto"
+              class="flex h-8 w-full items-center justify-center overflow-auto"
               :class="{ 'selected-view': profile.hash === store.currentProfile.hash }"
               @click="store.loadProfile(profile)"
             >
-              <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ profile.name }}</p>
+              <p class="ml-7 overflow-hidden text-ellipsis whitespace-nowrap text-sm">{{ profile.name }}</p>
               <div class="grow" />
               <div class="icon-btn mdi mdi-download" @click.stop="store.exportProfile(profile)" />
               <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateProfile(profile)" />
@@ -40,10 +40,10 @@
           </div>
         </TransitionGroup>
       </div>
-      <div class="flex mt-2">
+      <div class="mt-2 flex">
         <div class="icon-btn mdi mdi-plus" @click="addNewProfile" />
         <div class="icon-btn">
-          <label class="flex items-center justify-center w-full h-full cursor-pointer">
+          <label class="flex h-full w-full cursor-pointer items-center justify-center">
             <input type="file" accept="application/json" hidden @change="(e: Event) => store.importProfile(e)" />
             <span class="mdi mdi-upload" />
           </label>
@@ -65,22 +65,22 @@
         />
       </div>
     </div>
-    <div class="w-full h-px my-2 sm bg-slate-800/40" />
-    <div ref="viewsContainer" class="flex flex-col items-center justify-between w-full shrink overflow-y-clip h-[30%]">
-      <p class="mb-3 text-lg font-semibold select-none">Views</p>
-      <div class="w-full px-2 overflow-x-hidden overflow-y-auto">
+    <div class="sm my-2 h-px w-full bg-slate-800/40" />
+    <div ref="viewsContainer" class="flex h-[30%] w-full shrink flex-col items-center justify-between overflow-y-clip">
+      <p class="mb-3 select-none text-lg font-semibold">Views</p>
+      <div class="w-full overflow-y-auto overflow-x-hidden px-2">
         <TransitionGroup name="fade-and-suffle">
           <div
             v-for="view in store.currentProfile.views"
             :key="view.hash"
-            class="flex items-center justify-between w-full my-1"
+            class="my-1 flex w-full items-center justify-between"
           >
             <Button
-              class="flex items-center justify-center w-full h-8 overflow-auto"
+              class="flex h-8 w-full items-center justify-center overflow-auto"
               :class="{ 'selected-view': view === store.currentView }"
               @click="store.selectView(view)"
             >
-              <p class="overflow-hidden text-sm text-ellipsis ml-7 whitespace-nowrap">{{ view.name }}</p>
+              <p class="ml-7 overflow-hidden text-ellipsis whitespace-nowrap text-sm">{{ view.name }}</p>
               <div class="grow" />
               <div
                 class="icon-btn mdi mdi-eye"
@@ -97,29 +97,29 @@
       </div>
       <div class="grow" />
     </div>
-    <div ref="managementContainer" class="flex items-center justify-center w-full px-2 mt-2">
+    <div ref="managementContainer" class="mt-2 flex w-full items-center justify-center px-2">
       <div class="icon-btn mdi mdi-plus" @click="addNewView" />
       <div class="icon-btn">
-        <label class="flex items-center justify-center w-full h-full cursor-pointer">
+        <label class="flex h-full w-full cursor-pointer items-center justify-center">
           <input type="file" accept="application/json" hidden @change="(e: Event) => store.importView(e)" />
           <span class="mdi mdi-upload" />
         </label>
       </div>
       <div />
     </div>
-    <div class="w-full h-px my-2 sm bg-slate-800/40" />
+    <div class="sm my-2 h-px w-full bg-slate-800/40" />
     <div
       v-show="widgetMode === WidgetMode.RegularWidgets"
-      class="flex flex-col items-center justify-between w-full overflow-y-clip h-[35%]"
+      class="flex h-[35%] w-full flex-col items-center justify-between overflow-y-clip"
     >
-      <p class="text-lg font-semibold select-none">
-        <span class="mr-1 text-slate-400 mdi mdi-swap-vertical" />
+      <p class="select-none text-lg font-semibold">
+        <span class="mdi mdi-swap-vertical mr-1 text-slate-400" />
         Current widgets
       </p>
       <div class="grow" />
       <VueDraggable
         v-model="store.currentView.widgets"
-        class="flex flex-col items-center w-full px-2 overflow-x-hidden overflow-y-auto grow"
+        class="flex w-full grow flex-col items-center overflow-y-auto overflow-x-hidden px-2"
         :animation="150"
         group="regularWidgetsGroup"
       >
@@ -127,16 +127,16 @@
           <div
             v-for="widget in store.currentView.widgets"
             :key="widget.hash"
-            class="flex items-center justify-between w-full my-1"
+            class="my-1 flex w-full items-center justify-between"
           >
             <Button
-              class="flex items-center justify-center w-full h-8 pl-3 overflow-auto cursor-grab active:cursor-grabbing"
+              class="flex h-8 w-full cursor-grab items-center justify-center overflow-auto pl-3 active:cursor-grabbing"
               :class="{ '!bg-slate-400': widget.managerVars.highlighted }"
               @mouseover="widget.managerVars.highlighted = true"
               @mouseleave="widget.managerVars.highlighted = false"
             >
               <span class="mr-3 text-base text-slate-700">⠿</span>
-              <p class="overflow-hidden text-sm text-ellipsis whitespace-nowrap">{{ widget.name }}</p>
+              <p class="overflow-hidden text-ellipsis whitespace-nowrap text-sm">{{ widget.name }}</p>
               <div class="grow" />
               <div
                 class="icon-btn mdi mdi-fullscreen"
@@ -153,31 +153,31 @@
     </div>
     <div
       v-show="widgetMode === WidgetMode.MiniWidgets"
-      class="flex flex-col items-center justify-between w-full overflow-y-auto h-[35%]"
+      class="flex h-[35%] w-full flex-col items-center justify-between overflow-y-auto"
     >
-      <p class="text-lg font-semibold select-none">Current mini-widgets</p>
+      <p class="select-none text-lg font-semibold">Current mini-widgets</p>
       <div class="grow" />
       <div
         v-for="miniWidgetContainer in store.miniWidgetContainersInCurrentView"
         :key="miniWidgetContainer.name"
         class="w-full"
       >
-        <span class="w-full px-1 text-sm text-left select-none text-slate-400">{{ miniWidgetContainer.name }}</span>
-        <div class="flex flex-col items-center w-full px-3 overflow-x-hidden grow">
+        <span class="w-full select-none px-1 text-left text-sm text-slate-400">{{ miniWidgetContainer.name }}</span>
+        <div class="flex w-full grow flex-col items-center overflow-x-hidden px-3">
           <TransitionGroup name="fade">
-            <div v-if="miniWidgetContainer.widgets.isEmpty()" class="flex items-center justify-between w-full my-1">
+            <div v-if="miniWidgetContainer.widgets.isEmpty()" class="my-1 flex w-full items-center justify-between">
               ---
             </div>
             <div
               v-for="widget in miniWidgetContainer.widgets"
               :key="widget.hash"
-              class="flex items-center justify-between w-full h-10 px-2 py-1 my-1 rounded-md"
+              class="my-1 flex h-10 w-full items-center justify-between rounded-md px-2 py-1"
               :class="{ 'bg-slate-400': widget.managerVars.highlighted }"
               @mouseover="widget.managerVars.highlighted = true"
               @mouseleave="widget.managerVars.highlighted = false"
             >
-              <div class="flex items-center justify-start w-full overflow-auto">
-                <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">
+              <div class="flex w-full items-center justify-start overflow-auto">
+                <p class="select-none overflow-hidden text-ellipsis whitespace-nowrap">
                   {{ widget.name || widget.component }}
                 </p>
               </div>
@@ -189,41 +189,41 @@
       </div>
       <div class="grow" />
     </div>
-    <div class="w-full h-px mt-4 bg-slate-800/40" />
+    <div class="mt-4 h-px w-full bg-slate-800/40" />
   </div>
   <div
-    class="flex flex-col items-center justify-center px-3 text-white edit-panel middle-panel"
+    class="edit-panel middle-panel flex flex-col items-center justify-center px-3 text-white"
     :class="{ active: editMode }"
   >
     <Button
-      class="flex items-center justify-center w-full h-8 my-1 hover:bg-slate-500"
+      class="my-1 flex h-8 w-full items-center justify-center hover:bg-slate-500"
       :class="{ 'bg-slate-700': widgetMode !== WidgetMode.RegularWidgets }"
       @click="widgetMode = WidgetMode.RegularWidgets"
     >
       <p class="overflow-hidden text-ellipsis whitespace-nowrap">Regular widgets</p>
     </Button>
     <Button
-      class="flex items-center justify-center w-full h-8 my-1 hover:bg-slate-500"
+      class="my-1 flex h-8 w-full items-center justify-center hover:bg-slate-500"
       :class="{ 'bg-slate-700': widgetMode !== WidgetMode.MiniWidgets }"
       @click="widgetMode = WidgetMode.MiniWidgets"
     >
       <p class="overflow-hidden text-ellipsis whitespace-nowrap">Mini widgets</p>
     </Button>
   </div>
-  <div class="flex items-center justify-between py-2 edit-panel bottom-panel" :class="{ active: editMode }">
-    <div class="w-px h-full mr-2 bg-slate-800/40" />
+  <div class="edit-panel bottom-panel flex items-center justify-between py-2" :class="{ active: editMode }">
+    <div class="mr-2 h-full w-px bg-slate-800/40" />
     <div
       v-show="widgetMode === WidgetMode.RegularWidgets"
       ref="availableWidgetsContainer"
-      class="flex items-center justify-between w-full h-full overflow-x-auto text-white aspect-square"
+      class="flex aspect-square h-full w-full items-center justify-between overflow-x-auto text-white"
     >
       <div
         v-for="widgetType in availableWidgetTypes"
         :key="widgetType"
-        class="flex flex-col items-center justify-center p-2 mx-3 rounded-md bg-slate-500 h-5/6 aspect-square"
+        class="mx-3 flex aspect-square h-5/6 flex-col items-center justify-center rounded-md bg-slate-500 p-2"
       >
         <div
-          class="flex items-center justify-center w-8 m-2 transition-all rounded-md cursor-pointer bg-slate-700 aspect-square mdi mdi-plus hover:bg-slate-400"
+          class="mdi mdi-plus m-2 flex aspect-square w-8 cursor-pointer items-center justify-center rounded-md bg-slate-700 transition-all hover:bg-slate-400"
           @click="store.addWidget(widgetType, store.currentView)"
         />
         {{ widgetType }}
@@ -232,15 +232,15 @@
     <div
       v-show="widgetMode === WidgetMode.MiniWidgets"
       ref="availableMiniWidgetsContainer"
-      class="flex items-center w-full h-full gap-2 overflow-auto"
+      class="flex h-full w-full items-center gap-2 overflow-auto"
     >
       <div
         v-for="miniWidget in availableMiniWidgetTypes"
         :key="miniWidget.hash"
-        class="flex flex-col items-center justify-center p-2 mx-3 transition-all rounded-md h-5/6 w-fit text-slate-100 cursor-grab"
+        class="mx-3 flex h-5/6 w-fit cursor-grab flex-col items-center justify-center rounded-md p-2 text-slate-100 transition-all"
         :class="{ 'hover:bg-slate-400': !mousePressed }"
       >
-        <div class="m-2 pointer-events-none select-none">
+        <div class="pointer-events-none m-2 select-none">
           <MiniWidgetInstantiator :mini-widget="miniWidget" />
         </div>
       </div>
@@ -269,7 +269,7 @@
       <v-card class="pa-2">
         <v-card-text>
           <v-text-field v-model="newProfileName" counter="25" label="New profile name" />
-          <div class="flex flex-col items-center w-full my-2">
+          <div class="my-2 flex w-full flex-col items-center">
             <v-combobox
               v-model="vehicleTypesAssignedToCurrentProfile"
               :items="availableVehicleTypes"
@@ -277,7 +277,7 @@
               chips
               multiple
               variant="outlined"
-              class="w-10/12 m-4"
+              class="m-4 w-10/12"
             />
           </div>
         </v-card-text>

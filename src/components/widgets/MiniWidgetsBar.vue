@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center justify-center w-full h-full p-2 rounded-md bg-slate-600/50">
+  <div class="flex h-full w-full flex-col items-center justify-center rounded-md bg-slate-600/50 p-2">
     <MiniWidgetContainer
       :container="widget.options.miniWidgetsContainer"
       :wrap="true"

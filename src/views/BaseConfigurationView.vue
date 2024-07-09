@@ -1,6 +1,6 @@
 <template>
-  <div class="bg-transparent text-white px-[1vw] pb-[2vh]">
-    <div class="flex gap-x-2 absolute top-0 right-0 py-2 pr-3">
+  <div class="bg-transparent px-[1vw] pb-[2vh] text-white">
+    <div class="absolute right-0 top-0 flex gap-x-2 py-2 pr-3">
       <slot name="help-icon"></slot>
       <v-btn
         v-if="!hasNoCloseIcon"
@@ -8,18 +8,19 @@
         :width="38"
         :height="34"
         variant="text"
-        class="bg-transparent mt-0.5 -mr-1"
+        class="-mr-1 mt-0.5 bg-transparent"
         @click="closeModal"
       >
         <v-icon
           :size="interfaceStore.isOnSmallScreen ? 22 : 26"
           :class="interfaceStore.isOnSmallScreen ? '-mr-[10px] -mt-[10px]' : '-mr-[2px]'"
-          >mdi-close</v-icon
         >
+          mdi-close
+        </v-icon>
       </v-btn>
     </div>
     <div
-      class="font-semibold flex-centered mt-3"
+      class="flex-centered mt-3 font-semibold"
       :style="{ fontSize: interfaceStore.isOnSmallScreen ? '14px' : '20px' }"
     >
       <slot name="title"></slot>

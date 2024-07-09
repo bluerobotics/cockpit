@@ -2,22 +2,22 @@
   <BaseConfigurationView>
     <template #title>General configuration</template>
     <template #content>
-      <div class="flex-col h-full w-[540px] max-h-[90vh] overflow-y-auto ml-[10px] pr-3 -mr-[10px]">
+      <div class="-mr-[10px] ml-[10px] h-full max-h-[90vh] w-[540px] flex-col overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
           <template #title>Global vehicle address</template>
           <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
-          <template #info
-            ><strong>Global Vehicle Address:</strong> Sets the network address for device communication. E.g:
-            blueos.local</template
-          >
+          <template #info>
+            <strong>Global Vehicle Address:</strong> Sets the network address for device communication. E.g:
+            blueos.local
+          </template>
           <template #content>
             <v-form
               ref="globalAddressForm"
               v-model="globalAddressFormValid"
-              class="flex w-full mt-2"
+              class="mt-2 flex w-full"
               @submit.prevent="setGlobalAddress"
             >
-              <div class="flex justify-center align-center">
+              <div class="align-center flex justify-center">
                 <v-text-field
                   v-model="newGlobalAddress"
                   variant="filled"
@@ -36,7 +36,7 @@
                 </v-text-field>
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  class="bg-transparent -mt-5"
+                  class="-mt-5 bg-transparent"
                   :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
                   variant="text"
                   type="submit"
@@ -65,10 +65,10 @@
             <v-form
               ref="mainConnectionForm"
               v-model="mainConnectionFormValid"
-              class="flex w-full mt-2"
+              class="mt-2 flex w-full"
               @submit.prevent="setMainVehicleConnectionURI"
             >
-              <div class="flex flex-row w-full justify-between align-center">
+              <div class="align-center flex w-full flex-row justify-between">
                 <div class="w-[350px]">
                   <v-text-field
                     v-model="mainConnectionURI"
@@ -94,7 +94,7 @@
 
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  class="bg-transparent -mt-5 -ml-6"
+                  class="-ml-6 -mt-5 bg-transparent"
                   :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
                   variant="text"
                   type="submit"
@@ -102,7 +102,7 @@
                   Apply
                 </v-btn>
                 <div
-                  class="flex flex-col align-end text-[10px]"
+                  class="align-end flex flex-col text-[10px]"
                   :class="interfaceStore.isOnSmallScreen ? '-mt-3' : '-mt-5'"
                 >
                   <v-switch
@@ -132,10 +132,10 @@
             <v-form
               ref="webRTCSignallingForm"
               v-model="webRTCSignallingFormValid"
-              class="justify-center d-flex align-center mt-2"
+              class="d-flex align-center mt-2 justify-center"
               @submit.prevent="setWebRTCSignallingURI"
             >
-              <div class="flex justify-between align-center w-full">
+              <div class="align-center flex w-full justify-between">
                 <div class="w-[350px]">
                   <v-text-field
                     v-model="webRTCSignallingURI"
@@ -162,14 +162,14 @@
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
                   :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
-                  class="bg-transparent -mt-5 -ml-6"
+                  class="-ml-6 -mt-5 bg-transparent"
                   variant="text"
                   type="submit"
                 >
                   Apply
                 </v-btn>
                 <div
-                  class="flex flex-col align-end text-[10px]"
+                  class="align-end flex flex-col text-[10px]"
                   :class="interfaceStore.isOnSmallScreen ? '-mt-3' : '-mt-5'"
                 >
                   <v-switch
@@ -191,7 +191,7 @@
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnSmallScreen">
           <template #title>Custom RTC Configuration</template>
           <template #content>
-            <div class="flex justify-between mt-2 w-full">
+            <div class="mt-2 flex w-full justify-between">
               <v-textarea
                 id="rtcConfigTextInput"
                 v-model="customRtcConfiguration"
@@ -202,7 +202,7 @@
                 hint="e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
                 class="w-full"
               />
-              <div class="flex flex-col justify-around align-center w-[100px] -mr-6">
+              <div class="align-center -mr-6 flex w-[100px] flex-col justify-around">
                 <GlassButton
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
                   variant="uncontained"
@@ -213,7 +213,7 @@
                   class="-mt-8"
                   @click="handleCustomRtcConfiguration"
                 />
-                <div class="flex flex-col align-end text-[10px] -mt-8">
+                <div class="align-end -mt-8 flex flex-col text-[10px]">
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
                     v-tooltip.bottom="'Enable custom'"

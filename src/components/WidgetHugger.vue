@@ -246,7 +246,7 @@ watch(allowMoving, (isAllowing, wasAllowing) => {
 
 const widgetStore = useWidgetManagerStore()
 const temporaryPosition = computed(() => {
-  let tempPos = { x: position.value.x, y: position.value.y }
+  const tempPos = { x: position.value.x, y: position.value.y }
   const clearanceOffset = widgetStore.visibleAreaMinClearancePixels
 
   const barClearances = widgetStore.widgetClearanceForVisibleArea(widget.value)

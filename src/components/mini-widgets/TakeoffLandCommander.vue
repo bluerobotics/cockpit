@@ -1,9 +1,9 @@
 <template>
   <button
-    class="relative flex items-center justify-center w-32 p-1 rounded-md shadow-inner h-9 bg-slate-800/60 hover:bg-slate-400/60"
+    class="relative flex h-9 w-32 items-center justify-center rounded-md bg-slate-800/60 p-1 shadow-inner hover:bg-slate-400/60"
     @click="vehicleStore.flying ? land() : takeoff()"
   >
-    <span class="inline-block font-extrabold text-white align-middle">
+    <span class="inline-block align-middle font-extrabold text-white">
       {{ vehicleStore.flying === undefined ? '...' : vehicleStore.flying ? 'Land' : 'Takeoff' }}
     </span>
   </button>

@@ -1,34 +1,34 @@
 <template>
-  <div class="flex items-center justify-center h-12 py-1 mx-1 text-white transition-all w-[7rem]">
-    <span class="relative w-[2rem] mdi icon-symbol text-[32px]" :class="[miniWidget.options.iconName]"></span>
-    <div class="flex flex-col items-start justify-center ml-1 select-none w-[4.75rem]">
+  <div class="mx-1 flex h-12 w-[7rem] items-center justify-center py-1 text-white transition-all">
+    <span class="mdi icon-symbol relative w-[2rem] text-[32px]" :class="[miniWidget.options.iconName]"></span>
+    <div class="ml-1 flex w-[4.75rem] select-none flex-col items-start justify-center">
       <div>
-        <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
-        <span class="text-xl font-semibold leading-6 w-fit">
+        <span class="w-fit font-mono text-xl font-semibold leading-6">{{ parsedState }}</span>
+        <span class="w-fit text-xl font-semibold leading-6">
           {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }}
         </span>
       </div>
-      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ miniWidget.options.displayName }}</span>
+      <span class="w-full whitespace-nowrap text-sm font-semibold leading-4">{{ miniWidget.options.displayName }}</span>
     </div>
   </div>
   <v-dialog
     v-model="miniWidget.managerVars.configMenuOpen"
     persistent
-    class="w-[100vw] flex justify-center items-center"
+    class="flex w-[100vw] items-center justify-center"
   >
-    <v-card class="p-8 configModal">
+    <v-card class="configModal p-8">
       <div class="close-icon mdi mdi-close" @click.stop="closeDialog"></div>
       <v-card-title class="text-white">
-        <div class="flex items-center mb-3 mt-[-5px] justify-evenly">
+        <div class="mb-3 mt-[-5px] flex items-center justify-evenly">
           <div
-            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
+            class="cursor-pointer select-none rounded-md px-3 py-1 text-slate-100 transition-all hover:bg-slate-400"
             :class="{ 'bg-slate-400': currentTab === 'presets' }"
             @click="currentTab = 'presets'"
           >
             Presets
           </div>
           <div
-            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
+            class="cursor-pointer select-none rounded-md px-3 py-1 text-slate-100 transition-all hover:bg-slate-400"
             :class="{ 'bg-slate-400': currentTab === 'custom' }"
             @click="currentTab = 'custom'"
           >
@@ -38,38 +38,38 @@
       </v-card-title>
 
       <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
-        <div class="flex flex-col items-center justify-between w-full mt-3">
-          <span class="w-full mb-1 text-sm text-slate-100/50">Display name</span>
-          <input v-model="miniWidget.options.displayName" class="w-full px-2 py-1 rounded-md bg-slate-200" />
+        <div class="mt-3 flex w-full flex-col items-center justify-between">
+          <span class="mb-1 w-full text-sm text-slate-100/50">Display name</span>
+          <input v-model="miniWidget.options.displayName" class="w-full rounded-md bg-slate-200 px-2 py-1" />
         </div>
-        <div class="flex flex-col items-center justify-between w-full mt-3">
-          <span class="w-full mb-1 text-sm text-slate-100/50">Variable</span>
+        <div class="mt-3 flex w-full flex-col items-center justify-between">
+          <span class="mb-1 w-full text-sm text-slate-100/50">Variable</span>
           <div class="relative w-full">
             <button
-              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              class="w-full rounded-md bg-slate-200 py-1 pl-2 pr-8 text-left transition-all hover:bg-slate-400"
               @click="showVariableChooseModal = !showVariableChooseModal"
             >
-              <p class="text-ellipsis overflow-x-clip">
+              <p class="overflow-x-clip text-ellipsis">
                 {{ miniWidget.options.variableName || 'Click to choose...' }}
               </p>
             </button>
             <span
-              class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi mdi-swap-horizontal-bold"
+              class="mdi mdi-swap-horizontal-bold absolute right-0.5 m-1 -translate-y-1 cursor-pointer text-2xl text-slate-500"
             />
           </div>
         </div>
         <Transition>
-          <div v-if="showVariableChooseModal" class="flex flex-col justify-center w-full mx-1 my-3 align-center">
+          <div v-if="showVariableChooseModal" class="align-center mx-1 my-3 flex w-full flex-col justify-center">
             <input
               v-model="variableNameSearchString"
               placeholder="Search variable..."
-              class="w-full px-2 py-1 rounded-md bg-slate-200"
+              class="w-full rounded-md bg-slate-200 px-2 py-1"
             />
-            <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
+            <div class="my-2 grid h-32 w-full grid-cols-1 overflow-x-hidden overflow-y-scroll">
               <span
                 v-for="(variable, i) in variableNamesToShow"
                 :key="i"
-                class="h-8 p-1 m-1 overflow-x-hidden text-white transition-all rounded-md cursor-pointer select-none bg-slate-700 hover:bg-slate-400/20"
+                class="m-1 h-8 cursor-pointer select-none overflow-x-hidden rounded-md bg-slate-700 p-1 text-white transition-all hover:bg-slate-400/20"
                 @click="chooseVariable(variable)"
               >
                 {{ variable }}
@@ -77,59 +77,59 @@
             </div>
           </div>
         </Transition>
-        <div class="flex items-center justify-between w-full mt-2">
-          <div class="flex flex-col items-center justify-between w-full mx-5">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Unit</span>
-            <input v-model="miniWidget.options.variableUnit" class="w-full px-2 py-1 rounded-md bg-slate-200" />
+        <div class="mt-2 flex w-full items-center justify-between">
+          <div class="mx-5 flex w-full flex-col items-center justify-between">
+            <span class="mb-1 w-full text-sm text-slate-100/50">Unit</span>
+            <input v-model="miniWidget.options.variableUnit" class="w-full rounded-md bg-slate-200 px-2 py-1" />
           </div>
-          <div class="flex flex-col items-center justify-between w-full mx-5">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Multiplier</span>
-            <input v-model="miniWidget.options.variableMultiplier" class="w-full px-2 py-1 rounded-md bg-slate-200" />
+          <div class="mx-5 flex w-full flex-col items-center justify-between">
+            <span class="mb-1 w-full text-sm text-slate-100/50">Multiplier</span>
+            <input v-model="miniWidget.options.variableMultiplier" class="w-full rounded-md bg-slate-200 px-2 py-1" />
           </div>
         </div>
-        <div class="flex flex-col items-center justify-between w-full mt-3">
-          <span class="w-full mb-1 text-sm text-slate-100/50">Icon</span>
+        <div class="mt-3 flex w-full flex-col items-center justify-between">
+          <span class="mb-1 w-full text-sm text-slate-100/50">Icon</span>
           <div class="relative w-full">
             <button
-              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              class="w-full rounded-md bg-slate-200 py-1 pl-2 pr-8 text-left transition-all hover:bg-slate-400"
               @click="showIconChooseModal = !showIconChooseModal"
             >
-              <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.iconName || 'Click to choose...' }}</p>
+              <p class="overflow-x-clip text-ellipsis">{{ miniWidget.options.iconName || 'Click to choose...' }}</p>
             </button>
             <span
-              class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi"
+              class="mdi absolute right-0.5 m-1 -translate-y-1 cursor-pointer text-2xl text-slate-500"
               :class="[miniWidget.options.iconName]"
             />
           </div>
         </div>
         <Transition>
-          <div v-if="showIconChooseModal" class="flex flex-col items-center justify-center w-full mt-2">
+          <div v-if="showIconChooseModal" class="mt-2 flex w-full flex-col items-center justify-center">
             <div>
               <input
                 v-model="iconSearchString"
-                class="w-full px-2 py-1 rounded-md bg-slate-200"
+                class="w-full rounded-md bg-slate-200 px-2 py-1"
                 placeholder="Search icons..."
               />
             </div>
             <RecycleScroller
               v-if="iconSearchString === '' && showIconChooseModal"
               v-slot="{ item }"
-              class="w-full h-40 mt-3 text-[34px]"
+              class="mt-3 h-40 w-full text-[34px]"
               :items="iconsNames"
               :item-size="46"
               :grid-items="7"
             >
-              <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="chooseIcon(item)">
+              <span class="mdi icon-symbol m-1 cursor-pointer text-white" :class="[item]" @click="chooseIcon(item)">
               </span>
             </RecycleScroller>
             <div
               v-else-if="showIconChooseModal"
-              class="grid w-full h-40 grid-cols-7 mt-3 overflow-x-hidden overflow-y-scroll"
+              class="mt-3 grid h-40 w-full grid-cols-7 overflow-x-hidden overflow-y-scroll"
             >
               <span
                 v-for="icon in iconsToShow"
                 :key="icon"
-                class="m-1 text-white cursor-pointer mdi icon-symbol"
+                class="mdi icon-symbol m-1 cursor-pointer text-white"
                 :class="[icon]"
                 @click="chooseIcon(icon)"
               />
@@ -141,15 +141,15 @@
         <div
           v-for="(template, i) in veryGenericIndicatorPresets"
           :key="i"
-          class="flex items-center justify-center px-2 m-2 text-white transition-all rounded-md cursor-pointer hover:bg-slate-100/20"
+          class="m-2 flex cursor-pointer items-center justify-center rounded-md px-2 text-white transition-all hover:bg-slate-100/20"
           @click="setIndicatorFromTemplate(template)"
         >
-          <span class="relative w-[2rem] mdi icon-symbol text-[34px] mx-2" :class="[template.iconName]"></span>
-          <div class="flex flex-col items-start justify-center min-w-[4rem] max-w-[6rem] select-none">
-            <span class="text-xl font-semibold leading-6 w-fit">
+          <span class="mdi icon-symbol relative mx-2 w-[2rem] text-[34px]" :class="[template.iconName]"></span>
+          <div class="flex min-w-[4rem] max-w-[6rem] select-none flex-col items-start justify-center">
+            <span class="w-fit text-xl font-semibold leading-6">
               {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }} {{ template.variableUnit }}
             </span>
-            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ template.displayName }}</span>
+            <span class="w-full whitespace-nowrap text-sm font-semibold leading-4">{{ template.displayName }}</span>
           </div>
         </div>
       </div>

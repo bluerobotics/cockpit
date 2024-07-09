@@ -4,7 +4,7 @@
       <div
         ref="dialogContentRef"
         v-bind="$attrs"
-        class="flex flex-col items-center justify-center w-full h-full p-5 backdrop-blur-sm"
+        class="flex h-full w-full flex-col items-center justify-center p-5 backdrop-blur-sm"
       >
         <slot></slot>
       </div>
@@ -21,7 +21,7 @@ const props = defineProps({
 const emit = defineEmits(['update:show'])
 
 const showProp = toRefs(props).show
-const show = ref(showProp.value)
+const internalShow = ref(showProp.value)
 const dialogRef = ref()
 const dialogContentRef = ref()
 
@@ -33,25 +33,25 @@ onMounted(() => {
     )
       return
     // Close the dialog if the dialog (backdrop) or any element with the class 'action-button' was clicked
-    show.value = false
+    internalShow.value = false
   })
   document.addEventListener(
     'keydown',
     (e: KeyboardEvent) => {
       // In case ESC key was pressed blocks the event propagation to avoid default dialog 'cancel' event
-      if (show.value && e.key === 'Escape') {
+      if (internalShow.value && e.key === 'Escape') {
         e.preventDefault()
         e.stopImmediatePropagation()
-        show.value = false
+        internalShow.value = false
       }
     },
     { passive: false }
   )
 })
 
-watch(showProp, () => (show.value = showProp.value))
-watch(show, () => {
-  if (show.value) {
+watch(showProp, () => (internalShow.value = showProp.value))
+watch(internalShow, () => {
+  if (internalShow.value) {
     dialogRef.value.showModal()
   } else {
     dialogRef.value.setAttribute('closing', '')
@@ -64,7 +64,7 @@ watch(show, () => {
       { once: true }
     )
   }
-  emit('update:show', show.value)
+  emit('update:show', internalShow.value)
 })
 </script>
 

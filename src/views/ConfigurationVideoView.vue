@@ -3,15 +3,15 @@
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div class="flex-col h-full ml-[1vw] w-[540px]">
+      <div class="ml-[1vw] h-full w-[540px] flex-col">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC remote IP Addresses</template>
-          <template #info
-            >IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the
-            tether/cabled interface. Blank means any route. E.g: 192.168.2.2</template
-          >
+          <template #info>
+            IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the
+            tether/cabled interface. Blank means any route. E.g: 192.168.2.2
+          </template>
           <template #content>
-            <div class="flex justify-center align-center ml-2">
+            <div class="align-center ml-2 flex justify-center">
               <v-combobox
                 v-model="allowedIceIps"
                 multiple
@@ -43,7 +43,7 @@
                 :disabled="
                   allowedIceProtocols.length === 1 && allowedIceProtocols[0].toLowerCase() === protocol.toLowerCase()
                 "
-                class="text-sm mx-2"
+                class="mx-2 text-sm"
               />
             </div>
           </template>
@@ -57,7 +57,7 @@
             Cockpit's default is zero milliseconds, but you can leave it empty to use the browser's default.
           </template>
           <template #content>
-            <div class="flex items-center justify-start w-[50%] ml-2">
+            <div class="ml-2 flex w-[50%] items-center justify-start">
               <v-text-field
                 v-model.number="jitterBufferTarget"
                 variant="filled"
