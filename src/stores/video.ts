@@ -1,4 +1,4 @@
-import { useDebounceFn, useThrottleFn, useTimestamp } from '@vueuse/core'
+import { useDebounceFn, useStorage, useThrottleFn, useTimestamp } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { differenceInSeconds, format } from 'date-fns'
 import { saveAs } from 'file-saver'
@@ -47,10 +47,7 @@ export const useVideoStore = defineStore('video', () => {
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
-  const unprocessedVideos = useBlueOsStorage<{ [key in string]: UnprocessedVideoInfo }>(
-    'cockpit-unprocessed-video-info',
-    {}
-  )
+  const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const timeNow = useTimestamp({ interval: 500 })
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))

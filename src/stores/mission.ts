@@ -1,3 +1,4 @@
+import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { reactive, ref, watch } from 'vue'
 
@@ -12,8 +13,8 @@ export const useMissionStore = defineStore('mission', () => {
     'cockpit-slide-events-categories-required',
     eventCategoriesDefaultMapping
   )
-  const lastMissionName = useBlueOsStorage('cockpit-last-mission-name', '')
-  const missionStartTime = useBlueOsStorage('cockpit-mission-start-time', new Date())
+  const lastMissionName = useStorage('cockpit-last-mission-name', '')
+  const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
 
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
