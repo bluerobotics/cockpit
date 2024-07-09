@@ -55,7 +55,7 @@
                 underlyingFallback.style.display = 'flex';
             });
 
-            clearSettingsButton.addEventListener('click', function() {
+            clearSettingsButton.addEventListener('click', async function() {
                 localStorage.clear();
                 // We are also going to clear the cache to ensure a fresh access to all files as well
                 if (caches) {
