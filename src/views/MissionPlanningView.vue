@@ -312,7 +312,7 @@ onMounted(async () => {
 
   planningMap.value.on('moveend', () => {
     if (planningMap.value === undefined) return
-    let { lat, lng } = planningMap.value.getCenter()
+    const { lat, lng } = planningMap.value.getCenter()
     if (lat && lng) {
       mapCenter.value = [lat, lng]
     }

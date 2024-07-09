@@ -771,8 +771,8 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
   snackbarMessage.value = 'Getting your download ready...'
   setTimeout(() => (initialMessageShown = true), 1500)
 
-  let tempProcessedVideos: string[] = []
-  let tempUnprocessedVideos: string[] = []
+  const tempProcessedVideos: string[] = []
+  const tempUnprocessedVideos: string[] = []
 
   selectedVideos.value.forEach((video) => {
     if (video.isProcessed) tempProcessedVideos.push(video.fileName)
@@ -823,9 +823,9 @@ const confirmDownloadOfUnprocessedVideos = async (): Promise<boolean> => {
 
 const discardVideosAndUpdateDB = async (): Promise<void> => {
   deleteButtonLoading.value = true
-  let selectedVideoArraySize = selectedVideos.value.length
-  let processedVideosToDiscard: string[] = []
-  let unprocessedVideosToDiscard: string[] = []
+  const selectedVideoArraySize = selectedVideos.value.length
+  const processedVideosToDiscard: string[] = []
+  const unprocessedVideosToDiscard: string[] = []
 
   await selectedVideos.value.forEach((video: VideoLibraryFile) => {
     if (video.isProcessed) processedVideosToDiscard.push(video.fileName)
@@ -863,7 +863,7 @@ const fetchVideosAndLogData = async (): Promise<void> => {
         (async () => {
           const videoBlob = await videoStore.videoStoringDB.getItem<Blob>(key)
           let url = ''
-          let isProcessed = true
+          const isProcessed = true
           if (videoBlob instanceof Blob) {
             url = URL.createObjectURL(videoBlob)
             blobURLs.value.push(url)
