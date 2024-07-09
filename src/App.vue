@@ -264,7 +264,7 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp } from '@vueuse/core'
+import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp, useWindowSize } from '@vueuse/core'
 import { format } from 'date-fns'
 import Swal from 'sweetalert2'
 import { computed, DefineComponent, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -299,6 +299,7 @@ import ConfigurationMissionView from './views/ConfigurationMissionView.vue'
 import ConfigurationVideoView from './views/ConfigurationVideoView.vue'
 
 const { showDialog, closeDialog } = useInteractionDialog()
+const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
@@ -314,7 +315,6 @@ const isMenuOpen = ref(false)
 const isSlidingOut = ref(false)
 const mainMenuStep = ref(1)
 const simplifiedMainMenu = ref(false)
-const windowHeight = ref(window.innerHeight)
 
 const configMenu = [
   {
@@ -378,30 +378,32 @@ watch(isConfigModalVisible, (newVal) => {
 })
 
 watch(
-  () => windowHeight.value < 450,
+  () => windowWidth.value < 450,
   (isSmall: boolean) => {
     simplifiedMainMenu.value = isSmall
   }
 )
 
-const updateWindowHeight = (): void => {
-  windowHeight.value = window.innerHeight
+const updateWindowWidth = (): void => {
+  windowWidth.value = window.innerWidth
 }
 
 onMounted(() => {
-  window.addEventListener('resize', updateWindowHeight)
-  if (windowHeight.value < 450) {
+  window.addEventListener('resize', updateWindowWidth)
+  if (windowWidth.value < 450) {
     simplifiedMainMenu.value = true
   }
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateWindowHeight)
+  window.removeEventListener('resize', updateWindowWidth)
 })
 
 const mainMenuWidth = computed(() => {
   const width =
-    interfaceStore.isOnSmallScreen && mainMenuStep.value === 2 ? '60px' : `${interfaceStore.mainMenuWidth}px`
+    interfaceStore.isOnSmallScreen && mainMenuStep.value === 2 && !simplifiedMainMenu.value
+      ? '60px'
+      : `${interfaceStore.mainMenuWidth}px`
   return { width }
 })
 
