@@ -3,7 +3,7 @@
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div class="flex-col h-full ml-[1vw] w-[540px]">
+      <div class="flex-col h-full ml-[1vw] max-w-[85vw]">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC remote IP Addresses</template>
           <template #info

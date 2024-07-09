@@ -17,7 +17,9 @@
       <template #content>
         <div
           class="flex justify-start align-start mb-2"
-          :class="interfaceStore.isOnSmallScreen ? 'h-[80vh] w-[88vw] gap-x-0 mt-2' : 'h-[50vh] w-[60vw] gap-x-1 mt-4'"
+          :class="
+            interfaceStore.isOnSmallScreen ? 'h-[80vh] max-w-[85vw] gap-x-0 mt-2' : 'h-[50vh] max-w-[60vw] gap-x-1 mt-4'
+          "
         >
           <div
             class="overflow-y-auto overflow-x-hidden"

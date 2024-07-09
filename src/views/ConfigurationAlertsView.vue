@@ -2,7 +2,7 @@
   <BaseConfigurationView>
     <template #title>Alerts configuration</template>
     <template #content>
-      <div class="flex flex-col justify-around align-start ml-5">
+      <div class="flex flex-col justify-around align-start ml-5 max-w-[85vw]">
         <v-switch
           v-model="alertStore.enableVoiceAlerts"
           label="Enable voice alerts"

@@ -2,7 +2,7 @@
   <BaseConfigurationView>
     <template #title>Development configuration</template>
     <template #content>
-      <div class="max-w-[87vw] max-h-[80vh] overflow-y-auto -mr-4">
+      <div class="max-w-[85vw] max-h-[80vh] overflow-y-auto -mr-4">
         <div
           class="flex flex-col justify-between items-center w-full"
           :class="interfaceStore.isOnPhoneScreen ? 'scale-[80%] mt-0 -mb-3' : 'scale-100 mt-4'"
@@ -33,7 +33,7 @@
             thumb-label="hover"
           />
         </div>
-        <ExpansiblePanel :is-expanded="!interfaceStore.isOnSmallScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>System logs</template>
           <template #content>
             <v-data-table

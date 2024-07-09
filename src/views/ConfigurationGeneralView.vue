@@ -2,8 +2,8 @@
   <BaseConfigurationView>
     <template #title>General configuration</template>
     <template #content>
-      <div class="flex-col h-full w-[540px] max-h-[90vh] overflow-y-auto ml-[10px] pr-3 -mr-[10px]">
-        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+      <div class="flex-col h-full max-w-[85vw] max-h-[90vh] overflow-y-auto ml-[10px] pr-3 -mr-[10px]">
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Global vehicle address</template>
           <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
           <template #info
@@ -47,7 +47,7 @@
             </v-form>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #info>
             <strong>Mavlink2Rest Connection:</strong> Configures MAVLink over HTTP/WS. Toggle to enable/disable and
             apply settings to take effect.
@@ -121,7 +121,7 @@
             </v-form>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+        <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #info>
             <strong>WebRTC connection:</strong> Establishes real-time communication over the web. Set the signaling
             server URI and toggle to activate.
@@ -188,7 +188,7 @@
             </v-form>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Custom RTC Configuration</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
