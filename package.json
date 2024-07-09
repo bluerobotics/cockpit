@@ -49,6 +49,7 @@
     "leaflet": "1.9.3",
     "localforage": "^1.10.0",
     "pinia": "^2.0.13",
+    "prettier-plugin-tailwindcss": "0.4.1",
     "roboto-fontface": "*",
     "semver": "^7.5.4",
     "sweetalert2": "^11.7.1",
@@ -107,7 +108,8 @@
     "semi": false,
     "singleQuote": true,
     "quoteProps": "consistent",
-    "printWidth": 120
+    "printWidth": 120,
+    "plugins": ["prettier-plugin-tailwindcss"]
   },
   "build": {
     "files": [
