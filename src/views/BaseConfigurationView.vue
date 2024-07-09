@@ -1,6 +1,6 @@
 <template>
   <div class="bg-transparent text-white px-[1vw] pb-[2vh]">
-    <div class="flex gap-x-2 absolute top-0 right-0 py-2 pr-3">
+    <div class="absolute top-0 right-0 flex py-2 pr-3 gap-x-2">
       <slot name="help-icon"></slot>
       <v-btn
         v-if="!hasNoCloseIcon"
@@ -14,12 +14,13 @@
         <v-icon
           :size="interfaceStore.isOnSmallScreen ? 22 : 26"
           :class="interfaceStore.isOnSmallScreen ? '-mr-[10px] -mt-[10px]' : '-mr-[2px]'"
-          >mdi-close</v-icon
         >
+          mdi-close
+        </v-icon>
       </v-btn>
     </div>
     <div
-      class="font-semibold flex-centered mt-3"
+      class="mt-3 font-semibold flex-centered"
       :style="{ fontSize: interfaceStore.isOnSmallScreen ? '14px' : '20px' }"
     >
       <slot name="title"></slot>

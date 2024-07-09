@@ -6,10 +6,10 @@
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
           <template #title>Global vehicle address</template>
           <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
-          <template #info
-            ><strong>Global Vehicle Address:</strong> Sets the network address for device communication. E.g:
-            blueos.local</template
-          >
+          <template #info>
+            <strong>Global Vehicle Address:</strong> Sets the network address for device communication. E.g:
+            blueos.local
+          </template>
           <template #content>
             <v-form
               ref="globalAddressForm"
@@ -36,7 +36,7 @@
                 </v-text-field>
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  class="bg-transparent -mt-5"
+                  class="-mt-5 bg-transparent"
                   :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
                   variant="text"
                   type="submit"
@@ -68,7 +68,7 @@
               class="flex w-full mt-2"
               @submit.prevent="setMainVehicleConnectionURI"
             >
-              <div class="flex flex-row w-full justify-between align-center">
+              <div class="flex flex-row justify-between w-full align-center">
                 <div class="w-[350px]">
                   <v-text-field
                     v-model="mainConnectionURI"
@@ -94,7 +94,7 @@
 
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  class="bg-transparent -mt-5 -ml-6"
+                  class="-mt-5 -ml-6 bg-transparent"
                   :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
                   variant="text"
                   type="submit"
@@ -132,10 +132,10 @@
             <v-form
               ref="webRTCSignallingForm"
               v-model="webRTCSignallingFormValid"
-              class="justify-center d-flex align-center mt-2"
+              class="justify-center mt-2 d-flex align-center"
               @submit.prevent="setWebRTCSignallingURI"
             >
-              <div class="flex justify-between align-center w-full">
+              <div class="flex justify-between w-full align-center">
                 <div class="w-[350px]">
                   <v-text-field
                     v-model="webRTCSignallingURI"
@@ -162,7 +162,7 @@
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
                   :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
-                  class="bg-transparent -mt-5 -ml-6"
+                  class="-mt-5 -ml-6 bg-transparent"
                   variant="text"
                   type="submit"
                 >
@@ -191,7 +191,7 @@
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnSmallScreen">
           <template #title>Custom RTC Configuration</template>
           <template #content>
-            <div class="flex justify-between mt-2 w-full">
+            <div class="flex justify-between w-full mt-2">
               <v-textarea
                 id="rtcConfigTextInput"
                 v-model="customRtcConfiguration"

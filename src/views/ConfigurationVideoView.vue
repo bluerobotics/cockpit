@@ -6,12 +6,12 @@
       <div class="flex-col h-full ml-[1vw] w-[540px]">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC remote IP Addresses</template>
-          <template #info
-            >IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the
-            tether/cabled interface. Blank means any route. E.g: 192.168.2.2</template
-          >
+          <template #info>
+            IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the
+            tether/cabled interface. Blank means any route. E.g: 192.168.2.2
+          </template>
           <template #content>
-            <div class="flex justify-center align-center ml-2">
+            <div class="flex justify-center ml-2 align-center">
               <v-combobox
                 v-model="allowedIceIps"
                 multiple
@@ -43,7 +43,7 @@
                 :disabled="
                   allowedIceProtocols.length === 1 && allowedIceProtocols[0].toLowerCase() === protocol.toLowerCase()
                 "
-                class="text-sm mx-2"
+                class="mx-2 text-sm"
               />
             </div>
           </template>
@@ -63,7 +63,7 @@
                 variant="filled"
                 placeholder="auto"
                 type="number"
-                class="uri-input mt-4"
+                class="mt-4 uri-input"
                 theme="dark"
                 density="compact"
                 max="4000"

@@ -8,10 +8,10 @@
           class="left-menu slide-in elevation-10"
           :style="simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth"
         >
-          <v-window v-model="mainMenuStep" class="h-full w-full">
+          <v-window v-model="mainMenuStep" class="w-full h-full">
             <v-window-item :value="1" class="h-full">
               <div
-                class="flex flex-col h-full justify-between align-center items-center select-none"
+                class="flex flex-col items-center justify-between h-full select-none align-center"
                 :class="
                   interfaceStore.isOnSmallScreen
                     ? 'gap-y-2 pt-2 pb-3 sm:gap-y-1 sm:py-0 sm:-ml-[3px] xs:gap-y-1 xs:py-0 xs:-ml-[3px]'
@@ -119,9 +119,9 @@
                 />
               </div>
             </v-window-item>
-            <v-window-item :value="2" class="h-full w-full">
+            <v-window-item :value="2" class="w-full h-full">
               <div
-                class="flex flex-col w-full h-full justify-between"
+                class="flex flex-col justify-between w-full h-full"
                 :class="simplifiedMainMenu ? 'py-0 gap-y-0' : 'py-2 gap-y-1'"
               >
                 <GlassButton
@@ -136,9 +136,11 @@
                   :height="buttonSize * 0.5"
                   :icon-size="buttonSize * 0.6"
                   @click="toggleConfigComponent(menuitem.component)"
-                  ><template #content
-                    ><div v-if="currentConfigMenuComponent === menuitem.component" class="arrow-left"></div></template
-                ></GlassButton>
+                >
+                  <template #content>
+                    <div v-if="currentConfigMenuComponent === menuitem.component" class="arrow-left"></div>
+                  </template>
+                </GlassButton>
                 <div class="flex flex-col justify-center align-center">
                   <v-divider width="70%" class="mb-3" />
                   <GlassButton

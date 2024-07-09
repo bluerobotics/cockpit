@@ -1,10 +1,10 @@
 <template>
   <v-dialog v-model="internalShowDialog" :persistent="persistent" :width="maxWidth || '600px'">
-    <v-card :width="maxWidth || '600px'" class="main-dialog px-2 rounded-lg">
+    <v-card :width="maxWidth || '600px'" class="px-2 rounded-lg main-dialog">
       <v-card-title>
         <div
           v-if="title"
-          class="flex justify-center align-center text-center pt-2 mb-1 font-bold text-nowrap text-ellipsis overflow-x-hidden"
+          class="flex justify-center pt-2 mb-1 overflow-x-hidden font-bold text-center align-center text-nowrap text-ellipsis"
           :class="interfaceStore.isOnPhoneScreen ? 'text-[18px]' : 'text-[20px]'"
         >
           {{ title }}
@@ -12,8 +12,8 @@
         <slot name="title"></slot>
       </v-card-title>
       <v-card-text class="pb-2">
-        <div class="flex justify-center align-center w-full mb-3">
-          <v-icon v-if="variant !== 'text-only'" size="46" :color="iconColor" class="mr-8 ml-2">{{ iconType }}</v-icon>
+        <div class="flex justify-center w-full mb-3 align-center">
+          <v-icon v-if="variant !== 'text-only'" size="46" :color="iconColor" class="ml-2 mr-8">{{ iconType }}</v-icon>
           <div
             v-if="isArrayMessage"
             class="flex flex-col mb-3 gap-y-2 w-[90%] text-start"
@@ -58,7 +58,7 @@
               {{ button.text }}
             </v-btn>
           </div>
-          <div v-else class="flex w-full px-1 py-2 justify-end">
+          <div v-else class="flex justify-end w-full px-1 py-2">
             <v-btn size="small" variant="text" @click="handleAction(() => (internalShowDialog = false))">Close</v-btn>
           </div>
         </template>

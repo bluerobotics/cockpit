@@ -212,13 +212,7 @@
                   <source :src="selectedVideos[0]?.url || undefined" />
                 </video>
                 <v-btn
-                  v-if="
-                    !loadingData &&
-                    selectedVideos.length === 1 &&
-                    !selectedVideos[0].isProcessed &&
-                    !isMultipleSelectionMode &&
-                    !errorProcessingVideos
-                  "
+                  v-if="showSingleVideoProcessButton"
                   :variant="showOnScreenProgress ? 'text' : 'outlined'"
                   color="white"
                   size="large"
@@ -360,9 +354,10 @@
                                   color="red"
                                   icon="mdi-close"
                                   class="text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
-                                  ><v-tooltip open-delay="600" activator="parent" location="bottom"> Cancel </v-tooltip
-                                  ><v-icon>mdi-close</v-icon></v-btn
                                 >
+                                  <v-tooltip open-delay="600" activator="parent" location="bottom">Cancel</v-tooltip>
+                                  <v-icon>mdi-close</v-icon>
+                                </v-btn>
                                 <v-btn
                                   fab
                                   small
@@ -373,9 +368,10 @@
                                   class="ml-4 text-sm outline outline-3 outline-[#ffffff44] hover:outline-[#ffffff77]"
                                   :loading="deleteButtonLoading"
                                   @click="button.action()"
-                                  ><v-tooltip open-delay="600" activator="parent" location="bottom"> Confirm </v-tooltip
-                                  ><v-icon>mdi-check</v-icon></v-btn
                                 >
+                                  <v-tooltip open-delay="600" activator="parent" location="bottom"> Confirm </v-tooltip>
+                                  <v-icon>mdi-check</v-icon>
+                                </v-btn>
                               </div>
                             </template>
                           </v-list-item>
@@ -1077,6 +1073,16 @@ onBeforeUnmount(() => {
   Object.values(hammerInstances.value).forEach((instance) => {
     instance.destroy()
   })
+})
+
+const showSingleVideoProcessButton = computed(() => {
+  return (
+    !loadingData.value &&
+    selectedVideos.value.length === 1 &&
+    !selectedVideos.value[0].isProcessed &&
+    !isMultipleSelectionMode.value &&
+    !errorProcessingVideos.value
+  )
 })
 </script>
 
