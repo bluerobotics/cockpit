@@ -2,11 +2,12 @@ import { useWindowSize } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { watch } from 'vue'
 
-const { width: windowWidth } = useWindowSize()
+const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({
     width: windowWidth.value,
+    height: windowHeight.value,
     configModalVisibility: false,
   }),
   actions: {
@@ -32,7 +33,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
       if (state.width >= 1600 && state.width < 1920) return 'xl'
       if (state.width >= 1920) return '2xl'
     },
-    currentWindowSize: (state) => `${state.width} x ${window.innerHeight}`,
+    currentWindowSize: (state) => `${state.width} x ${state.height}`,
     isOnSmallScreen: (state) => state.width < 1280,
     isOnPhoneScreen: (state) => state.width < 600,
     mainMenuWidth: (state) => {
@@ -47,7 +48,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
   },
 })
 
-watch(windowWidth, (newWidth) => {
+watch(windowWidth, () => {
   const store = useAppInterfaceStore()
-  store.width = newWidth
+  store.updateWidth()
 })
