@@ -161,7 +161,7 @@ onMounted(async () => {
   // Update center value after panning
   map.value.on('moveend', () => {
     if (map.value === undefined) return
-    let { lat, lng } = map.value.getCenter()
+    const { lat, lng } = map.value.getCenter()
     if (lat && lng) {
       mapCenter.value = [lat, lng]
     }
