@@ -1,12 +1,12 @@
 <template>
   <div
     v-tooltip="'Your vehicle does not provide state-of-charge. Displaying voltage and current instead.'"
-    class="flex items-center w-[5.5rem] h-12 text-white justify-center"
+    class="flex h-12 w-[5.5rem] items-center justify-center text-white"
   >
-    <span class="relative w-[1.5rem] mdi battery-icon" :class="[batteryIconClass]">
-      <span class="absolute text-sm text-yellow-400 -bottom-[2px] -right-[7px] mdi mdi-alert-circle"></span>
+    <span class="mdi battery-icon relative w-[1.5rem]" :class="[batteryIconClass]">
+      <span class="mdi mdi-alert-circle absolute -bottom-[2px] -right-[7px] text-sm text-yellow-400"></span>
     </span>
-    <div class="flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end">
+    <div class="flex w-[4rem] select-none flex-col text-end text-sm font-semibold leading-4">
       <div class="w-full">
         <span class="font-mono">{{ voltageDisplayValue }}</span>
         <span> V</span>

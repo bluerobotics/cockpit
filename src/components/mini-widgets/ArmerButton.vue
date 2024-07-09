@@ -1,13 +1,13 @@
 <template>
   <button
-    class="relative flex items-center justify-center w-32 p-1 rounded-md shadow-inner h-9 bg-slate-800/60"
+    class="relative flex h-9 w-32 items-center justify-center rounded-md bg-slate-800/60 p-1 shadow-inner"
     @click="vehicleStore.isArmed ? disarm() : arm()"
   >
     <div
-      class="absolute top-auto flex items-center px-1 rounded-[4px] shadow transition-all w-[70%] h-[80%]"
+      class="absolute top-auto flex h-[80%] w-[70%] items-center rounded-[4px] px-1 shadow transition-all"
       :class="dynamicClasses"
     >
-      <span class="inline-block font-extrabold align-middle">
+      <span class="inline-block align-middle font-extrabold">
         {{ vehicleStore.isArmed === undefined ? '...' : vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}
       </span>
     </div>

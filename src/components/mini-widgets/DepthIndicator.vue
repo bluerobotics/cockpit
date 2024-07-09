@@ -1,12 +1,12 @@
 <template>
-  <div class="flex items-center w-[8.25rem] h-12 p-1 text-white justify-center">
+  <div class="flex h-12 w-[8.25rem] items-center justify-center p-1 text-white">
     <img src="@/assets/depth-icon.svg" class="h-full" :draggable="false" />
-    <div class="flex flex-col items-start justify-center ml-1 min-w-[4rem] max-w-[6rem] select-none">
+    <div class="ml-1 flex min-w-[4rem] max-w-[6rem] select-none flex-col items-start justify-center">
       <div>
-        <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ finalDepth.toPrecision(precision) }}</span>
-        <span class="text-xl font-semibold leading-6 w-fit"> m</span>
+        <span class="w-fit font-mono text-xl font-semibold leading-6">{{ finalDepth.toPrecision(precision) }}</span>
+        <span class="w-fit text-xl font-semibold leading-6"> m</span>
       </div>
-      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">Depth</span>
+      <span class="w-full whitespace-nowrap text-sm font-semibold leading-4">Depth</span>
     </div>
   </div>
 </template>

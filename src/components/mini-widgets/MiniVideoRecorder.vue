@@ -1,28 +1,28 @@
 <template>
   <div
     ref="recorderWidget"
-    class="flex justify-around px-2 py-1 text-center rounded-lg h-9 align-center bg-slate-800/60"
+    class="align-center flex h-9 justify-around rounded-lg bg-slate-800/60 px-2 py-1 text-center"
     :class="{ 'w-48': numberOfVideosOnDB > 0, 'w-32': numberOfVideosOnDB <= 0 }"
   >
     <div
       v-if="!isProcessingVideo"
       :class="{
-        'blob red w-5 opacity-100 rounded-sm': isRecording,
-        'opacity-30 bg-red-400': isOutside && !isRecording,
+        'blob red w-5 rounded-sm opacity-100': isRecording,
+        'bg-red-400 opacity-30': isOutside && !isRecording,
       }"
-      class="w-6 transition-all duration-500 rounded-full aspect-square bg-red-lighten-1 hover:cursor-pointer opacity-70 hover:opacity-90"
+      class="bg-red-lighten-1 aspect-square w-6 rounded-full opacity-70 transition-all duration-500 hover:cursor-pointer hover:opacity-90"
       @click="toggleRecording()"
     />
     <div v-else>
-      <v-icon class="w-6 h-6 animate-spin" color="white">mdi-loading</v-icon>
+      <v-icon class="h-6 w-6 animate-spin" color="white">mdi-loading</v-icon>
     </div>
     <template v-if="!isRecording && !isProcessingVideo">
       <div
         v-if="nameSelectedStream"
-        class="flex flex-col max-w-[50%] scroll-container transition-all border-blur cursor-pointer"
+        class="scroll-container border-blur flex max-w-[50%] cursor-pointer flex-col transition-all"
         @click="isStreamSelectDialogOpen = true"
       >
-        <div class="text-xs text-white select-none scroll-text">{{ nameSelectedStream }}</div>
+        <div class="scroll-text select-none text-xs text-white">{{ nameSelectedStream }}</div>
       </div>
       <FontAwesomeIcon v-else icon="fa-solid fa-video" class="h-6 text-slate-100" />
     </template>
@@ -30,9 +30,9 @@
       {{ timePassedString }}
     </div>
     <div v-else-if="isProcessingVideo" class="w-16 text-justify text-slate-100">
-      <div class="text-xs text-center text-white select-none flex-nowrap">Processing video...</div>
+      <div class="select-none flex-nowrap text-center text-xs text-white">Processing video...</div>
     </div>
-    <div v-if="numberOfVideosOnDB > 0" class="flex justify-center w-8">
+    <div v-if="numberOfVideosOnDB > 0" class="flex w-8 justify-center">
       <v-divider vertical class="h-6" />
       <v-badge
         color="info"
@@ -41,16 +41,16 @@
         class="cursor-pointer"
         @click="isVideoLibraryDialogOpen = true"
       >
-        <v-icon class="w-6 h-6 ml-3 text-slate-100" @click="isVideoLibraryDialogOpen = true">
+        <v-icon class="ml-3 h-6 w-6 text-slate-100" @click="isVideoLibraryDialogOpen = true">
           mdi-video-box
         </v-icon></v-badge
       >
     </div>
   </div>
   <v-dialog v-model="isStreamSelectDialogOpen" width="auto">
-    <div class="p-6 m-5 bg-white rounded-md">
+    <div class="m-5 rounded-md bg-white p-6">
       <p class="text-xl font-semibold">Choose a stream to record</p>
-      <div class="w-auto h-px my-2 bg-grey-lighten-3" />
+      <div class="bg-grey-lighten-3 my-2 h-px w-auto" />
       <v-select
         :model-value="nameSelectedStream"
         label="Stream name"
@@ -65,19 +65,19 @@
       />
       <div class="flex items-center">
         <button
-          class="w-auto p-3 m-2 font-medium transition-all rounded-md shadow-md text-uppercase hover:bg-slate-100"
+          class="text-uppercase m-2 w-auto rounded-md p-3 font-medium shadow-md transition-all hover:bg-slate-100"
           @click="isStreamSelectDialogOpen = false"
         >
           Cancel
         </button>
         <button
-          class="flex items-center p-3 mx-2 font-medium transition-all rounded-md shadow-md w-fit text-uppercase hover:bg-slate-100"
-          :class="{ 'bg-slate-200 opacity-30 pointer-events-none': isLoadingStream }"
+          class="text-uppercase mx-2 flex w-fit items-center rounded-md p-3 font-medium shadow-md transition-all hover:bg-slate-100"
+          :class="{ 'pointer-events-none bg-slate-200 opacity-30': isLoadingStream }"
           @click="startRecording"
         >
           <span>Record</span>
           <v-icon v-if="isLoadingStream" class="m-2 animate-spin">mdi-loading</v-icon>
-          <div v-else class="w-5 h-5 ml-2 rounded-full bg-red" />
+          <div v-else class="bg-red ml-2 h-5 w-5 rounded-full" />
         </button>
       </div>
     </div>

@@ -4,7 +4,7 @@
       <div
         ref="dialogContentRef"
         v-bind="$attrs"
-        class="flex flex-col items-center justify-center w-full h-full p-5 backdrop-blur-sm"
+        class="flex h-full w-full flex-col items-center justify-center p-5 backdrop-blur-sm"
       >
         <slot></slot>
       </div>

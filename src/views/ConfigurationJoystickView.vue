@@ -7,12 +7,12 @@
       <div :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw]' : 'max-w-[60vw]'">
         <div
           v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
-          class="px-6 pb-2 flex-centered flex-column position-relative"
+          class="flex-centered flex-column position-relative px-6 pb-2"
           :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
           <p class="text-xl font-semibold">No joystick detected.</p>
           <br />
-          <p class="text-base font-bold text-center">Connect a joystick and press any key.</p>
+          <p class="text-center text-base font-bold">Connect a joystick and press any key.</p>
         </div>
         <ExpansiblePanel v-else class="mt-3" no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Joystick configuration</template>
@@ -43,20 +43,20 @@
             </div>
           </template>
           <template #content>
-            <div class="flex flex-col items-center max-h-[75vh] overflow-auto">
+            <div class="flex max-h-[75vh] flex-col items-center overflow-auto">
               <div class="flex flex-col items-center">
                 <div
                   v-if="
                     controllerStore.availableButtonActions.every((b) => b.protocol === JoystickProtocol.CockpitAction)
                   "
-                  class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
+                  class="text-blue-grey-darken-1 bg-blue-lighten-5 m-5 flex w-fit flex-col items-center rounded-md border px-5 py-3 font-bold"
                 >
                   <p>Could not stablish communication with the vehicle.</p>
                   <p>
                     Button functions will appear as numbers. If connection is restablished, function names will appear.
                   </p>
                 </div>
-                <div v-if="availableModifierKeys" class="flex flex-col items-center mt-2">
+                <div v-if="availableModifierKeys" class="mt-2 flex flex-col items-center">
                   <div class="flex">
                     <Button
                       v-for="functionMapping in controllerStore.protocolMappings"
@@ -71,7 +71,7 @@
                       {{ functionMapping.name }}
                     </Button>
                   </div>
-                  <div class="flex flex-col items-center w-full my-2">
+                  <div class="my-2 flex w-full flex-col items-center">
                     <v-combobox
                       v-model="vehicleTypesAssignedToCurrentProfile"
                       :items="availableVehicleTypes"
@@ -80,7 +80,7 @@
                       multiple
                       density="compact"
                       variant="outlined"
-                      class="w-10/12 mt-4"
+                      class="mt-4 w-10/12"
                       theme="dark"
                     />
                   </div>
@@ -103,10 +103,10 @@
               <div
                 v-for="[key, joystick] in controllerStore.joysticks"
                 :key="key"
-                class="w-[95%] p-4 mt-4 flex-centered flex-column position-relative"
+                class="flex-centered flex-column position-relative mt-4 w-[95%] p-4"
               >
                 <p class="text-xl font-semibold">{{ joystick.model }} controller</p>
-                <div v-if="showJoystickLayout" class="flex flex-col items-center justify-center w-full">
+                <div v-if="showJoystickLayout" class="flex w-full flex-col items-center justify-center">
                   <JoystickPS
                     class="w-[100%]"
                     :model="joystick.model"
@@ -137,7 +137,7 @@
                   />
                 </div>
                 <div class="flex items-center justify-evenly">
-                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
+                  <div class="mb-4 flex max-w-[40%] flex-col items-center rounded-lg border-[1px] pt-2">
                     <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'">
                       Joystick Mapping
                     </span>
@@ -145,14 +145,14 @@
                     <div class="flex flex-wrap items-center justify-evenly">
                       <button
                         :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
+                        class="text-uppercase w-full border-b bg-[#00000011] p-[10px]"
                         @click="controllerStore.exportJoystickMapping(joystick)"
                       >
                         Export to computer
                       </button>
                       <label
                         :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-center text-uppercase bg-[#00000011]"
+                        class="text-uppercase w-full border-b bg-[#00000011] p-[10px] text-center"
                       >
                         <input
                           type="file"
@@ -164,7 +164,7 @@
                       </label>
                     </div>
                   </div>
-                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
+                  <div class="mb-4 flex max-w-[40%] flex-col items-center rounded-lg border-[1px] pt-2">
                     <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'">
                       Functions Mapping
                     </span>
@@ -172,13 +172,13 @@
                     <div class="flex flex-wrap items-center justify-evenly">
                       <button
                         :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
+                        class="text-uppercase w-full border-b bg-[#00000011] p-[10px]"
                         @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
                       >
                         Export to computer
                       </button>
                       <label
-                        class="w-full p-[10px] border-b text-center text-uppercase bg-[#00000011]"
+                        class="text-uppercase w-full border-b bg-[#00000011] p-[10px] text-center"
                         :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
                       >
                         <input
@@ -213,18 +213,18 @@
       persistent
     >
       <template #title>
-        <div class="flex justify-center w-full mt-1 font-bold">Input mapping</div>
+        <div class="mt-1 flex w-full justify-center font-bold">Input mapping</div>
       </template>
       <template #content>
         <div
           v-for="input in currentButtonInputs"
           :key="input.id"
-          class="flex flex-row justify-between w-full align-center gap-x-16"
+          class="align-center flex w-full flex-row justify-between gap-x-16"
         >
-          <div class="flex flex-col items-center justify-between my-2">
-            <p class="flex items-center justify-center w-full mb-4 text-lg font-semibold">Button mapping</p>
+          <div class="my-2 flex flex-col items-center justify-between">
+            <p class="mb-4 flex w-full items-center justify-center text-lg font-semibold">Button mapping</p>
             <v-btn
-              class="bg-[#FFFFFF22] mx-auto my-1 w-fit"
+              class="mx-auto my-1 w-fit bg-[#FFFFFF22]"
               :disabled="remappingInput"
               @click="remapInput(currentJoystick as Joystick, input)"
             >
@@ -238,7 +238,7 @@
             </Transition>
             <v-tooltip location="bottom" :text="confirmationRequiredTooltipText(input)">
               <template #activator="{ props: tooltipProps }">
-                <div class="flex items-center justify-center mt-4">
+                <div class="mt-4 flex items-center justify-center">
                   <v-switch
                     v-model="controllerStore.actionsJoystickConfirmRequired[getCurrentButtonAction(input).id]"
                     style="pointer-events: all; height: 56px"
@@ -250,7 +250,7 @@
               </template>
             </v-tooltip>
           </div>
-          <div class="flex flex-col w-[300px] justify-evenly">
+          <div class="flex w-[300px] flex-col justify-evenly">
             <ExpansiblePanel
               v-for="protocol in JoystickProtocol"
               :key="protocol"
@@ -260,11 +260,11 @@
             >
               <template #title>{{ protocol }}</template>
               <template #content>
-                <div class="max-h-[30vh] p-1 overflow-y-auto">
+                <div class="max-h-[30vh] overflow-y-auto p-1">
                   <Button
                     v-for="action in buttonActionsToShow.filter((a) => a.protocol === protocol)"
                     :key="action.name"
-                    class="w-full my-1 text-sm hover:bg-slate-700"
+                    class="my-1 w-full text-sm hover:bg-slate-700"
                     :class="{
                       'bg-slate-700':
                         currentButtonActions[input.id].action.protocol == action.protocol &&
@@ -285,9 +285,9 @@
           </p>
         </Transition>
         <template v-if="currentAxisInputs.length > 0">
-          <p class="flex items-center justify-center w-full mt-8 text-lg font-semibold">Axis mapping</p>
+          <p class="mt-8 flex w-full items-center justify-center text-lg font-semibold">Axis mapping</p>
         </template>
-        <div class="flex flex-col items-center justify-between my-2">
+        <div class="my-2 flex flex-col items-center justify-between">
           <Transition>
             <p v-if="showAxisRemappingText" class="font-medium">{{ axisRemappingText }}</p>
           </Transition>
@@ -295,7 +295,7 @@
             <v-progress-linear v-if="remappingAxisInput" v-model="remapAxisTimeProgress" />
           </Transition>
         </div>
-        <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2 mb-1">
+        <div v-for="input in currentAxisInputs" :key="input.id" class="mb-1 flex items-center justify-between p-2">
           <v-icon class="mr-3">
             {{
               [JoystickAxis.A0, JoystickAxis.A2].includes(Number(input.id)) ? 'mdi-pan-horizontal' : 'mdi-pan-vertical'
@@ -303,7 +303,7 @@
           </v-icon>
           <v-text-field
             v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
-            class="bg-transparent w-[110px]"
+            class="w-[110px] bg-transparent"
             label="Min"
             type="number"
             density="compact"
@@ -317,13 +317,13 @@
             hide-details
             density="compact"
             variant="outlined"
-            class="bg-transparent w-[120px] mx-2"
+            class="mx-2 w-[120px] bg-transparent"
             theme="dark"
             return-object
           />
           <v-text-field
             v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
-            class="bg-transparent w-[110px]"
+            class="w-[110px] bg-transparent"
             label="Max"
             type="number"
             density="compact"
@@ -331,7 +331,7 @@
             hide-details
           />
           <v-btn
-            class="bg-[#FFFFFF22] w-40 ml-2"
+            class="ml-2 w-40 bg-[#FFFFFF22]"
             :disabled="remappingAxisInput !== false"
             @click="remapAxisInput(currentJoystick as Joystick, input)"
           >
@@ -340,7 +340,7 @@
         </div>
       </template>
       <template #actions>
-        <div class="flex justify-end w-full">
+        <div class="flex w-full justify-end">
           <v-btn variant="text" class="m-1" @click="inputClickedDialog = false"> Close </v-btn>
         </div>
       </template>

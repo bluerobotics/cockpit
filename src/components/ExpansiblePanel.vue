@@ -1,7 +1,7 @@
 <template>
-  <div class="text-white w-full">
-    <div class="flex flex-col align-start">
-      <v-divider v-if="!noTopDivider" centered class="opacity-10 border-[#fafafa] w-full" />
+  <div class="w-full text-white">
+    <div class="align-start flex flex-col">
+      <v-divider v-if="!noTopDivider" centered class="w-full border-[#fafafa] opacity-10" />
       <div
         :class="[
           isPanelExpanded && isMarkExpanded ? 'panel-header-expanded elevation-1' : 'panel-header elevation-0',
@@ -10,7 +10,7 @@
         @click="togglePanel"
       >
         <div
-          class="flex flex-row align-center"
+          class="align-center flex flex-row"
           :class="isCompact ? 'gap-x-[1vw] py-[0.8vh]' : 'gap-x-[3vw] py-[1.5vh]'"
         >
           <div>
@@ -18,7 +18,7 @@
               <v-icon
                 :size="isCompact ? 20 : 24"
                 :icon="isPanelExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                :class="interfaceStore.isOnSmallScreen ? '-mt-[2px] mr-[3px]' : 'mt-[2px] mr-[2px]'"
+                :class="interfaceStore.isOnSmallScreen ? '-mt-[2px] mr-[3px]' : 'mr-[2px] mt-[2px]'"
               />
               <div class="flex flex-col">
                 <div
@@ -37,13 +37,13 @@
             </div>
           </div>
         </div>
-        <div class="flex w-full justify-between ml-4">
-          <div v-if="hasInfoSlot" class="flex items-center w-[10%]">
+        <div class="ml-4 flex w-full justify-between">
+          <div v-if="hasInfoSlot" class="flex w-[10%] items-center">
             <v-btn class="ml-auto rounded-full" size="small" color="transparent" elevation="0" @click.stop="toggleInfo">
               <v-icon :size="interfaceStore.isOnSmallScreen ? 15 : 18" color="white" icon="mdi-information-outline" />
             </v-btn>
           </div>
-          <div v-if="hasWarningSlot" class="flex justify-end items-center w-[10%] relative">
+          <div v-if="hasWarningSlot" class="relative flex w-[10%] items-center justify-end">
             <v-btn
               class="ml-auto w-[10px] rounded-full"
               size="small"
@@ -57,7 +57,7 @@
           </div>
         </div>
       </div>
-      <v-divider v-if="!isPanelExpanded && !noBottomDivider" class="opacity-10 border-[#fafafa] w-full" />
+      <v-divider v-if="!isPanelExpanded && !noBottomDivider" class="w-full border-[#fafafa] opacity-10" />
     </div>
     <div class="info-container">
       <div
@@ -65,7 +65,7 @@
         :class="['info-content-expand-collapse', { 'info-expanding': isInfoOpen, 'info-collapsing': !isInfoOpen }]"
       >
         <div
-          class="bg-[#00000033] py-3 px-5 rounded-[6px] text-white elevation-1 mb-2 mt-1"
+          class="elevation-1 mb-2 mt-1 rounded-[6px] bg-[#00000033] px-5 py-3 text-white"
           :class="interfaceStore.isOnSmallScreen ? 'text-[12px]' : 'text-[14px]'"
         >
           <slot name="info"></slot>
@@ -81,7 +81,7 @@
         ]"
       >
         <div
-          class="bg-[#00000033] py-3 px-5 rounded-[6px] text-white elevation-1 mb-2 mt-1"
+          class="elevation-1 mb-2 mt-1 rounded-[6px] bg-[#00000033] px-5 py-3 text-white"
           :class="interfaceStore.isOnSmallScreen ? 'text-[12px]' : 'text-[14px]'"
         >
           <slot name="warning"></slot>
@@ -99,7 +99,7 @@
     ]"
   >
     <slot name="content"></slot>
-    <v-divider v-if="!noBottomDivider" centered class="opacity-10 border-[#fafafa] w-full" />
+    <v-divider v-if="!noBottomDivider" centered class="w-full border-[#fafafa] opacity-10" />
   </div>
 </template>
 

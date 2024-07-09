@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full">
+  <div class="h-full w-full">
     <!-- Some browsers only do autoplay if video is muted -->
     <video
       ref="videoPlayer"
