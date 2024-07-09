@@ -56,6 +56,8 @@ LABEL tags='[\
 LABEL links='{\
         "support": "https://discuss.bluerobotics.com/c/bluerobotics-software"\
     }'
+LABEL readme="https://raw.githubusercontent.com/bluerobotics/cockpit/master/README.md"
+
 
 COPY ./dist /cockpit
 ENTRYPOINT ["simple-http-server", "--index", "cockpit"]
