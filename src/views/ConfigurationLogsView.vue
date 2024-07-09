@@ -11,16 +11,16 @@
           @click="openHelpDialog"
         />
       </template>
-      <template #title
-        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">On screen telemetry data</div></template
-      >
+      <template #title>
+        <div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">On screen telemetry data</div>
+      </template>
       <template #content>
         <div
-          class="flex justify-start align-start mb-2"
+          class="flex justify-start mb-2 align-start"
           :class="interfaceStore.isOnSmallScreen ? 'h-[80vh] w-[88vw] gap-x-0 mt-2' : 'h-[50vh] w-[60vw] gap-x-1 mt-4'"
         >
           <div
-            class="overflow-y-auto overflow-x-hidden"
+            class="overflow-x-hidden overflow-y-auto"
             :class="interfaceStore.isOnSmallScreen ? 'h-[80vh]' : 'h-[50vh]'"
           >
             <div
@@ -32,13 +32,14 @@
                 <template #title>Overlay Options</template>
                 <template #content>
                   <div>
-                    <div class="flex flex-col flex-wrap justify-between align-start w-full gap-y-0 pt-3">
-                      <div class="flex flex-row justify-between align-center w-full gap-x-3">
+                    <div class="flex flex-col flex-wrap justify-between w-full pt-3 align-start gap-y-0">
+                      <div class="flex flex-row justify-between w-full align-center gap-x-3">
                         <span
-                          class="font-bold text-white text-start mb-5"
+                          class="mb-5 font-bold text-white text-start"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Font size</span
                         >
+                          Font size
+                        </span>
                         <v-text-field
                           v-model="datalogger.telemetryDisplayOptions.value.fontSize"
                           type="number"
@@ -46,12 +47,13 @@
                           :class="interfaceStore.isOnSmallScreen ? 'w-[50px]' : 'w-[75px]'"
                         />
                       </div>
-                      <div class="flex flex-row justify-between align-center w-full gap-x-3 -mt-2">
+                      <div class="flex flex-row justify-between w-full -mt-2 align-center gap-x-3">
                         <span
-                          class="font-bold text-white text-start mb-5"
+                          class="mb-5 font-bold text-white text-start"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Shadow size</span
                         >
+                          Shadow size
+                        </span>
                         <v-text-field
                           v-model="datalogger.telemetryDisplayOptions.value.fontShadowSize"
                           density="compact"
@@ -76,19 +78,21 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Font color</span
                               >
+                                Font color
+                              </span>
                               <div
                                 v-bind="props"
                                 class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
                                 :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontColor }"
                               ></div>
                             </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
+                            <v-card class="overflow-hidden">
+                              <v-color-picker
                                 v-model="datalogger.telemetryDisplayOptions.value.fontColor"
                                 width="400px"
-                            /></v-card>
+                              />
+                            </v-card>
                           </v-menu>
                         </div>
                         <div class="flex flex-row justify-between items-center w-[90%] gap-x-3 mt-1">
@@ -103,19 +107,21 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Outline color</span
                               >
+                                Outline color
+                              </span>
                               <div
                                 v-bind="props"
                                 class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
                                 :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontOutlineColor }"
                               ></div>
                             </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
+                            <v-card class="overflow-hidden">
+                              <v-color-picker
                                 v-model="datalogger.telemetryDisplayOptions.value.fontOutlineColor"
                                 width="400px"
-                            /></v-card>
+                              />
+                            </v-card>
                           </v-menu>
                         </div>
                         <div class="flex flex-row justify-between items-center w-[90%] gap-x-3">
@@ -129,66 +135,72 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Shadow color</span
                               >
+                                Shadow color
+                              </span>
                               <div
                                 v-bind="props"
                                 class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full"
                                 :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontShadowColor }"
                               ></div>
                             </template>
-                            <v-card class="overflow-hidden"
-                              ><v-color-picker
+                            <v-card class="overflow-hidden">
+                              <v-color-picker
                                 v-model="datalogger.telemetryDisplayOptions.value.fontShadowColor"
                                 width="400px"
-                            /></v-card>
+                              />
+                            </v-card>
                           </v-menu>
                         </div>
                       </div>
                       <div>
                         <div
-                          class="flex flex-row justify-start align-center -ml-2"
+                          class="flex flex-row justify-start -ml-2 align-center"
                           :class="interfaceStore.isOnSmallScreen ? 'h-[40px] mt-[20px]' : 'h-[50px] mt-[30px]'"
                         >
                           <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontBold" />
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Bold</span
                           >
+                            Bold
+                          </span>
                         </div>
                         <div
-                          class="flex flex-row justify-start align-center -ml-2"
+                          class="flex flex-row justify-start -ml-2 align-center"
                           :class="interfaceStore.isOnSmallScreen ? 'h-[40px]' : 'h-[50px]'"
                         >
                           <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontItalic" />
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Italic</span
                           >
+                            Italic
+                          </span>
                         </div>
                         <div
-                          class="flex flex-row justify-start align-center -ml-2"
+                          class="flex flex-row justify-start -ml-2 align-center"
                           :class="interfaceStore.isOnSmallScreen ? 'h-[40px]' : 'h-[50px]'"
                         >
                           <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontUnderline" />
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Underline</span
                           >
+                            Underline
+                          </span>
                         </div>
                         <div
-                          class="flex flex-row justify-start align-center -ml-2"
+                          class="flex flex-row justify-start -ml-2 align-center"
                           :class="interfaceStore.isOnSmallScreen ? 'h-[30px]' : 'h-[50px]'"
                         >
                           <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontStrikeout" />
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Strikethrough</span
                           >
+                            Strikethrough
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -212,8 +224,9 @@
                         :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
                         label
                         class="cursor-grab elevation-1"
-                        >{{ variable }}</v-chip
                       >
+                        {{ variable }}
+                      </v-chip>
                     </div>
                   </VueDraggable>
                 </template>
@@ -235,8 +248,9 @@
                         :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
                         label
                         class="cursor-grab elevation-1"
-                        >{{ element }}</v-chip
                       >
+                        {{ element }}
+                      </v-chip>
                     </div>
                   </VueDraggable>
                 </template>
@@ -278,7 +292,7 @@
                       <div
                         class="frosted-button backdrop-blur-md rounded-lg overflow-hidden w-[400px] px-4 pt-2 elevation-2"
                       >
-                        <span class="text-sm font-bold text-white text-center w-full">Enter message</span>
+                        <span class="w-full text-sm font-bold text-center text-white">Enter message</span>
                         <v-text-field
                           v-model="newMessage"
                           variant="outlined"
@@ -303,7 +317,7 @@
           <div id="rightColumn" class="flex flex-col justify-center items-center relative w-[80%] h-full ml-2">
             <div
               id="mocked-screen"
-              class="frosted-button flex flex-row flex-wrap justify-start align-start elevation-1 w-full h-full"
+              class="flex flex-row flex-wrap justify-start w-full h-full frosted-button align-start elevation-1"
               :class="interfaceStore.isOnSmallScreen ? 'rounded-lg' : 'rounded-2xl'"
             >
               <div
@@ -324,7 +338,7 @@
                 <VueDraggable
                   v-model="datalogger.telemetryDisplayData.value[config.key]"
                   group="availableDataElements"
-                  class="flex flex-col items-start h-full w-full"
+                  class="flex flex-col items-start w-full h-full"
                   :class="getClassForConfig(config.key)"
                 >
                   <div v-for="variable in datalogger.telemetryDisplayData.value[config.key]" :key="variable">
@@ -334,7 +348,8 @@
                       :size="interfaceStore.isOnSmallScreen ? 'x-small' : 'small'"
                       class="cursor-grab elevation-1"
                       :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
-                      >{{ variable }}
+                    >
+                      {{ variable }}
                       <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)">
                         mdi-close
                       </v-icon>

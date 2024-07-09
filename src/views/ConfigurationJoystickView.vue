@@ -1,8 +1,8 @@
 <template>
   <BaseConfigurationView>
-    <template v-if="controllerStore.joysticks && controllerStore.joysticks.size" #title
-      >Joystick configuration</template
-    >
+    <template v-if="controllerStore.joysticks && controllerStore.joysticks.size" #title>
+      Joystick configuration
+    </template>
     <template #content>
       <div :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw]' : 'max-w-[60vw]'">
         <div
@@ -12,7 +12,7 @@
         >
           <p class="text-xl font-semibold">No joystick detected.</p>
           <br />
-          <p class="text-base text-center font-bold">Connect a joystick and press any key.</p>
+          <p class="text-base font-bold text-center">Connect a joystick and press any key.</p>
         </div>
         <ExpansiblePanel v-else class="mt-3" no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Joystick configuration</template>
@@ -138,9 +138,9 @@
                 </div>
                 <div class="flex items-center justify-evenly">
                   <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
-                    <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'"
-                      >Joystick Mapping</span
-                    >
+                    <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'">
+                      Joystick Mapping
+                    </span>
                     <v-divider class="w-full opacity-95" />
                     <div class="flex flex-wrap items-center justify-evenly">
                       <button
@@ -165,9 +165,9 @@
                     </div>
                   </div>
                   <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
-                    <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'"
-                      >Functions Mapping</span
-                    >
+                    <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'">
+                      Functions Mapping
+                    </span>
                     <v-divider class="w-full opacity-95" />
                     <div class="flex flex-wrap items-center justify-evenly">
                       <button
@@ -213,7 +213,7 @@
       persistent
     >
       <template #title>
-        <div class="flex justify-center w-full font-bold mt-1">Input mapping</div>
+        <div class="flex justify-center w-full mt-1 font-bold">Input mapping</div>
       </template>
       <template #content>
         <div
@@ -222,7 +222,7 @@
           class="flex flex-row justify-between w-full align-center gap-x-16"
         >
           <div class="flex flex-col items-center justify-between my-2">
-            <p class="flex items-center justify-center w-full text-lg font-semibold mb-4">Button mapping</p>
+            <p class="flex items-center justify-center w-full mb-4 text-lg font-semibold">Button mapping</p>
             <v-btn
               class="bg-[#FFFFFF22] mx-auto my-1 w-fit"
               :disabled="remappingInput"
@@ -238,7 +238,7 @@
             </Transition>
             <v-tooltip location="bottom" :text="confirmationRequiredTooltipText(input)">
               <template #activator="{ props: tooltipProps }">
-                <div class="flex justify-center items-center mt-4">
+                <div class="flex items-center justify-center mt-4">
                   <v-switch
                     v-model="controllerStore.actionsJoystickConfirmRequired[getCurrentButtonAction(input).id]"
                     style="pointer-events: all; height: 56px"
@@ -285,7 +285,7 @@
           </p>
         </Transition>
         <template v-if="currentAxisInputs.length > 0">
-          <p class="flex items-center justify-center w-full text-lg font-semibold mt-8">Axis mapping</p>
+          <p class="flex items-center justify-center w-full mt-8 text-lg font-semibold">Axis mapping</p>
         </template>
         <div class="flex flex-col items-center justify-between my-2">
           <Transition>
