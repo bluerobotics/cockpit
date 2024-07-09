@@ -11,7 +11,7 @@ export const useDevelopmentStore = defineStore('development', () => {
   const developmentMode = ref(false)
   const widgetDevInfoBlurLevel = ref(3)
   const enableSystemLogging = useBlueOsStorage(systemLoggingEnablingKey, true)
-  const enableBlueOsSettingsSync = useStorage(blueOsSettingsSyncEnablingKey, false)
+  const enableBlueOsSettingsSync = useStorage(blueOsSettingsSyncEnablingKey, true)
 
   return { developmentMode, widgetDevInfoBlurLevel, enableSystemLogging, enableBlueOsSettingsSync }
 })
