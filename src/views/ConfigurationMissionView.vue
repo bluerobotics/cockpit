@@ -13,7 +13,7 @@
           class="mt-2 -mb-2 ml-3"
         />
 
-        <ExpansiblePanel no-bottom-divider is-expanded>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Enable confirmation on specific categories:</template>
           <template #info>
             Add an extra confirmation step for UI elements that can trigger mission critical actions.
