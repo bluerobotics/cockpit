@@ -8,6 +8,10 @@ on:
   # Run every 6 days to help us stay on our toes
   - cron: '0 0 */6 * *'
 
+permissions:
+  id-token: write
+  pages: write
+
 jobs:
   test:
     name: Test
@@ -35,6 +39,9 @@ jobs:
           xvfb-run --auto-servernum bun test:ci
 
   deploy-page:
+    environment:
+      name: 'Pages Preview'
+      url: ${{ steps.deployment.outputs.page_url }}
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -51,6 +58,8 @@ jobs:
         run: |
           bun install --frozen-lockfile
           bun run build
+          # This will be used by the deployment PR action
+          cp -r dist ./_site
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.5
@@ -58,6 +67,17 @@ jobs:
         with:
           branch: gh-pages
           folder: dist
+
+      - name: Upload artifact for preview
+        if: success() && github.event_name == 'pull_request'
+        # Automatically uploads an artifact from the './_site' directory by default
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+
+      - name: Deploy PR preview 🚀
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+        if: success() && github.event_name == 'pull_request'
+        with:
+          preview: 'true'
 
   deploy-electron:
     needs: test
