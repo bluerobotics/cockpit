@@ -20,7 +20,7 @@
       <div
         v-if="nameSelectedStream"
         class="flex flex-col max-w-[50%] scroll-container transition-all border-blur cursor-pointer"
-        @click="isStreamSelectDialogOpen = true"
+        @click="miniWidget.managerVars.configMenuOpen = true"
       >
         <div class="text-xs text-white select-none scroll-text">{{ nameSelectedStream }}</div>
       </div>
@@ -47,7 +47,7 @@
       >
     </div>
   </div>
-  <v-dialog v-model="isStreamSelectDialogOpen" width="auto">
+  <v-dialog v-model="miniWidget.managerVars.configMenuOpen" width="auto">
     <div class="p-6 m-5 bg-white rounded-md">
       <p class="text-xl font-semibold">Choose a stream to record</p>
       <div class="w-auto h-px my-2 bg-grey-lighten-3" />
@@ -66,7 +66,7 @@
       <div class="flex items-center">
         <button
           class="w-auto p-3 m-2 font-medium transition-all rounded-md shadow-md text-uppercase hover:bg-slate-100"
-          @click="isStreamSelectDialogOpen = false"
+          @click="miniWidget.managerVars.configMenuOpen = false"
         >
           Cancel
         </button>
@@ -114,7 +114,6 @@ const nameSelectedStream = ref<string | undefined>()
 const { namesAvailableStreams } = storeToRefs(videoStore)
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
-const isStreamSelectDialogOpen = ref(false)
 const isVideoLibraryDialogOpen = ref(false)
 const isLoadingStream = ref(false)
 const timeNow = useTimestamp({ interval: 100 })
@@ -180,7 +179,7 @@ const toggleRecording = async (): Promise<void> => {
 
   // If there's no stream selected, open the configuration dialog so user can choose the stream which will be recorded
   if (nameSelectedStream.value === undefined) {
-    isStreamSelectDialogOpen.value = true
+    miniWidget.value.managerVars.configMenuOpen = true
     return
   }
 
@@ -195,7 +194,7 @@ const startRecording = (): void => {
   }
   assertStreamIsSelectedAndAvailable(nameSelectedStream.value)
   videoStore.startRecording(nameSelectedStream.value)
-  isStreamSelectDialogOpen.value = false
+  miniWidget.value.managerVars.configMenuOpen = false
 }
 
 const isRecording = computed(() => {
