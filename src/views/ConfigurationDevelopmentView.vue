@@ -46,7 +46,7 @@
             thumb-label="hover"
           />
         </div>
-        <ExpansiblePanel :is-expanded="!interfaceStore.isOnSmallScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>System logs</template>
           <template #content>
             <v-data-table
