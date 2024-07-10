@@ -23,6 +23,10 @@ LABEL authors='[\
     {\
         "name": "Patrick José Pereira",\
         "email": "patrick@bluerobotics.com"\
+    },\
+    {\
+        "name": "Arturo Manzoli",\
+        "email": "arturo@bluerobotics.com"\
     }\
 ]'
 LABEL company='{\
