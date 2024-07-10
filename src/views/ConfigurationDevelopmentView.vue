@@ -2,23 +2,36 @@
   <BaseConfigurationView>
     <template #title>Development configuration</template>
     <template #content>
-      <div class="max-w-[87vw] max-h-[80vh] overflow-y-auto -mr-4">
+      <div
+        class="max-h-[80vh] overflow-y-auto -mr-4"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[50vw]'"
+      >
         <div
           class="flex flex-col justify-between items-center w-full"
-          :class="interfaceStore.isOnPhoneScreen ? 'scale-[80%] mt-0 -mb-3' : 'scale-100 mt-4'"
+          :class="interfaceStore.isOnSmallScreen ? 'scale-[80%] mt-0 -mb-3' : 'scale-95 mt-4'"
         >
-          <div class="flex flex-row gap-x-[50px]">
-            <v-switch v-model="devStore.developmentMode" label="Development mode" color="white" />
+          <div class="flex flex-row gap-x-[40px]">
+            <v-switch
+              v-model="devStore.developmentMode"
+              label="Development mode"
+              color="white"
+              hide-details
+              class="min-w-[155px]"
+            />
             <v-switch
               v-model="devStore.enableBlueOsSettingsSync"
               label="BlueOS settings sync"
               color="white"
+              hide-details
+              class="min-w-[155px]"
               @update:model-value="reloadCockpit"
             />
             <v-switch
               v-model="devStore.enableSystemLogging"
               label="Enable system logging"
               color="white"
+              hide-details
+              class="min-w-[155px]"
               @update:model-value="reloadCockpit"
             />
           </div>

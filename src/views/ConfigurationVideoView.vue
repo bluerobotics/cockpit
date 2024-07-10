@@ -3,7 +3,7 @@
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div class="flex-col h-full ml-[1vw] w-[540px]">
+      <div class="flex-col h-full ml-[1vw] max-w-[500px]">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC remote IP Addresses</template>
           <template #info
@@ -11,7 +11,7 @@
             tether/cabled interface. Blank means any route. E.g: 192.168.2.2</template
           >
           <template #content>
-            <div class="flex justify-center align-center ml-2">
+            <div class="flex justify-center align-center w-[90%] ml-2">
               <v-combobox
                 v-model="allowedIceIps"
                 multiple

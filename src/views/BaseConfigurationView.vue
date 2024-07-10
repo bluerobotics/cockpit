@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-transparent text-white px-[1vw] pb-[2vh]">
+  <div class="bg-transparent text-white px-4 pb-3">
     <div class="flex gap-x-2 absolute top-0 right-0 py-2 pr-3">
       <slot name="help-icon"></slot>
       <v-btn
@@ -24,7 +24,7 @@
     >
       <slot name="title"></slot>
     </div>
-    <div class="flex-center flex-column pr-[0.8vw]">
+    <div class="flex-center flex-column">
       <slot name="content"></slot>
     </div>
   </div>

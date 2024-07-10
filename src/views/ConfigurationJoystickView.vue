@@ -4,7 +4,7 @@
       >Joystick configuration</template
     >
     <template #content>
-      <div :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw]' : 'max-w-[60vw]'">
+      <div :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'">
         <div
           v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
           class="px-6 pb-2 flex-centered flex-column position-relative"
@@ -71,7 +71,7 @@
                       {{ functionMapping.name }}
                     </Button>
                   </div>
-                  <div class="flex flex-col items-center w-full my-2">
+                  <div class="flex flex-row justify-around items-center w-full mt-2">
                     <v-combobox
                       v-model="vehicleTypesAssignedToCurrentProfile"
                       :items="availableVehicleTypes"
@@ -80,33 +80,36 @@
                       multiple
                       density="compact"
                       variant="outlined"
-                      class="w-10/12 mt-4"
+                      class="w-10/12 mt-4 scale-90"
                       theme="dark"
                     />
+                    <div class="flex items-center gap-x-8">
+                      <Button
+                        v-for="key in availableModifierKeys"
+                        :key="key.id"
+                        :class="{
+                          'bg-[#FFFFFF33]': currentModifierKey.id === key.id,
+                          'text-sm': interfaceStore.isOnSmallScreen,
+                        }"
+                        @click="changeModifierKeyTab(key.id as CockpitModifierKeyOption)"
+                      >
+                        {{ key.name }}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div class="flex items-center">
-                  <Button
-                    v-for="key in availableModifierKeys"
-                    :key="key.id"
-                    class="m-2"
-                    :class="{
-                      'bg-[#FFFFFF33]': currentModifierKey.id === key.id,
-                      'text-sm': interfaceStore.isOnSmallScreen,
-                    }"
-                    @click="changeModifierKeyTab(key.id as CockpitModifierKeyOption)"
-                  >
-                    {{ key.name }}
-                  </Button>
                 </div>
               </div>
               <div
                 v-for="[key, joystick] in controllerStore.joysticks"
                 :key="key"
-                class="w-[95%] p-4 mt-4 flex-centered flex-column position-relative"
+                class="w-[95%] flex-centered flex-column position-relative"
               >
-                <p class="text-xl font-semibold">{{ joystick.model }} controller</p>
-                <div v-if="showJoystickLayout" class="flex flex-col items-center justify-center w-full">
+                <p class="text-md font-semibold">{{ joystick.model }} controller</p>
+                <div
+                  v-if="showJoystickLayout"
+                  class="flex flex-col items-center justify-center"
+                  :class="interfaceStore.isOnSmallScreen ? 'w-[90%]' : 'w-[80%]'"
+                >
                   <JoystickPS
                     class="w-[100%]"
                     :model="joystick.model"
@@ -137,7 +140,7 @@
                   />
                 </div>
                 <div class="flex items-center justify-evenly">
-                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
+                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg scale-90">
                     <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'"
                       >Joystick Mapping</span
                     >
@@ -164,7 +167,7 @@
                       </label>
                     </div>
                   </div>
-                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg">
+                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg scale-90">
                     <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'"
                       >Functions Mapping</span
                     >
