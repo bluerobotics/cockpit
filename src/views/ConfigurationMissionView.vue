@@ -2,7 +2,10 @@
   <BaseConfigurationView>
     <template #title>Mission configuration</template>
     <template #content>
-      <div class="flex flex-col justify-between items-start ml-[1vw] max-w-[700px]">
+      <div
+        class="flex flex-col justify-between items-start ml-[1vw]"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
+      >
         <v-switch
           v-model="missionStore.slideEventsEnabled"
           label="Enable slide to confirm"
@@ -16,16 +19,18 @@
             Add an extra confirmation step for UI elements that can trigger mission critical actions.
           </template>
           <template #content>
-            <div class="flex items-center justify-start">
+            <div class="flex flex-wrap items-center justify-start">
               <div
                 v-for="category in EventCategory"
                 :key="category"
+                class="min-w-[100px]"
                 :class="interfaceStore.isOnPhoneScreen ? 'mx-0' : 'mx-1'"
               >
                 <v-checkbox
                   v-model="missionStore.slideEventsCategoriesRequired[category]"
                   :disabled="!missionStore.slideEventsEnabled"
                   :label="category"
+                  hide-details
                 ></v-checkbox>
               </div>
             </div>

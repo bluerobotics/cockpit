@@ -2,7 +2,10 @@
   <BaseConfigurationView>
     <template #title>Alerts configuration</template>
     <template #content>
-      <div class="flex flex-col justify-around align-start ml-5">
+      <div
+        class="flex flex-col justify-around align-start ml-5"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
+      >
         <v-switch
           v-model="alertStore.enableVoiceAlerts"
           label="Enable voice alerts"
@@ -16,9 +19,18 @@
             Select specific alert levels to customize which types of notifications you receive.</template
           >
           <template #content>
-            <div class="flex items-center justify-start">
-              <div v-for="enabledLevel in alertStore.enabledAlertLevels" :key="enabledLevel.level" class="mx-2">
-                <v-checkbox v-model="enabledLevel.enabled" :label="capitalize(enabledLevel.level)" color="white" />
+            <div class="flex flex-wrap items-center justify-start">
+              <div
+                v-for="enabledLevel in alertStore.enabledAlertLevels"
+                :key="enabledLevel.level"
+                class="mx-2 min-w-[100px]"
+              >
+                <v-checkbox
+                  v-model="enabledLevel.enabled"
+                  :label="capitalize(enabledLevel.level)"
+                  hide-details
+                  color="white"
+                />
               </div>
             </div>
           </template>

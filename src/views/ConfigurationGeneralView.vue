@@ -2,8 +2,11 @@
   <BaseConfigurationView>
     <template #title>General configuration</template>
     <template #content>
-      <div class="flex-col h-full w-[540px] max-h-[90vh] overflow-y-auto ml-[10px] pr-3 -mr-[10px]">
-        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+      <div
+        class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[70vh]'"
+      >
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Global vehicle address</template>
           <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
           <template #info
@@ -17,14 +20,17 @@
               class="flex w-full mt-2"
               @submit.prevent="setGlobalAddress"
             >
-              <div class="flex justify-center align-center">
+              <div
+                class="flex justify-start items-center w-[86%]"
+                :class="interfaceStore.isOnSmallScreen ? 'scale-80' : 'scale-100'"
+              >
                 <v-text-field
                   v-model="newGlobalAddress"
                   variant="filled"
                   type="input"
                   :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
                   hint="Address of the Vehicle. E.g: blueos.local"
-                  class="uri-input"
+                  class="w-[80%]"
                   :rules="[isValidHostAddress, isValidConnectionURI]"
                   @click:append-inner="resetGlobalAddress"
                 >
@@ -47,7 +53,7 @@
             </v-form>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #info>
             <strong>Mavlink2Rest Connection:</strong> Configures MAVLink over HTTP/WS. Toggle to enable/disable and
             apply settings to take effect.
@@ -68,8 +74,11 @@
               class="flex w-full mt-2"
               @submit.prevent="setMainVehicleConnectionURI"
             >
-              <div class="flex flex-row w-full justify-between align-center">
-                <div class="w-[350px]">
+              <div class="flex flex-row w-full justify-start gap-x-8 align-center">
+                <div
+                  class="flex justify-start items-center"
+                  :class="interfaceStore.isOnSmallScreen ? 'scale-80 w-[80%]' : 'scale-100 w-[76%]'"
+                >
                   <v-text-field
                     v-model="mainConnectionURI"
                     :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
@@ -91,7 +100,6 @@
                     </template>
                   </v-text-field>
                 </div>
-
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
                   class="bg-transparent -mt-5 -ml-6"
@@ -101,6 +109,8 @@
                 >
                   Apply
                 </v-btn>
+              </div>
+              <div class="flex justify-end mt-6">
                 <div
                   class="flex flex-col align-end text-[10px]"
                   :class="interfaceStore.isOnSmallScreen ? '-mt-3' : '-mt-5'"
@@ -121,7 +131,7 @@
             </v-form>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+        <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #info>
             <strong>WebRTC connection:</strong> Establishes real-time communication over the web. Set the signaling
             server URI and toggle to activate.
@@ -135,8 +145,11 @@
               class="justify-center d-flex align-center mt-2"
               @submit.prevent="setWebRTCSignallingURI"
             >
-              <div class="flex justify-between align-center w-full">
-                <div class="w-[350px]">
+              <div class="flex flex-row w-full justify-start gap-x-8 align-center">
+                <div
+                  class="flex justify-start items-center"
+                  :class="interfaceStore.isOnSmallScreen ? 'scale-80 w-[80%]' : 'scale-100 w-[76%]'"
+                >
                   <v-text-field
                     v-model="webRTCSignallingURI"
                     :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
@@ -144,7 +157,6 @@
                     type="input"
                     :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
                     hint="URI of a WebRTC Signalling Server URI"
-                    class="uri-input"
                     :rules="[isValidSocketConnectionURI]"
                   >
                     <template #append-inner>
@@ -168,6 +180,8 @@
                 >
                   Apply
                 </v-btn>
+              </div>
+              <div>
                 <div
                   class="flex flex-col align-end text-[10px]"
                   :class="interfaceStore.isOnSmallScreen ? '-mt-3' : '-mt-5'"
@@ -188,7 +202,7 @@
             </v-form>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnSmallScreen">
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Custom RTC Configuration</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
@@ -455,9 +469,8 @@ onMounted(() => {
   tryToPrettifyRtcConfig()
 })
 </script>
-
 <style scoped>
 .uri-input {
-  width: 350px;
+  width: 100% !important;
 }
 </style>
