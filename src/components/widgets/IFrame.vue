@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import { computed, defineProps, onBeforeMount, ref, toRefs } from 'vue'
+import { computed, defineProps, onBeforeMount, ref, toRefs, watch } from 'vue'
 
 import Snackbar from '@/components/Snackbar.vue'
 import { isValidURL } from '@/libs/utils'
@@ -127,6 +127,18 @@ function loadFinished(): void {
   console.log('Finished loading')
   iframe_loaded.value = true
 }
+
+watch(
+  widget,
+  () => {
+    if (widget.value.managerVars.configMenuOpen === false) {
+      if (validateURL(inputURL.value) !== true) {
+        inputURL.value = widget.value.options.source
+      }
+    }
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
