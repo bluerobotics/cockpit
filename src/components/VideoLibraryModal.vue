@@ -793,7 +793,7 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
   if (tempProcessedVideos.length > 0) {
     const dataLogFilesAdded = addLogDataToFileList(tempProcessedVideos)
 
-    await videoStore.downloadFilesFromVideoDB(dataLogFilesAdded, fillProgressData)
+    await videoStore.downloadFilesFromVideoDB(dataLogFilesAdded)
   }
   if (tempUnprocessedVideos.length > 0) {
     await videoStore.downloadTempVideo(tempUnprocessedVideos, fillProgressData)
