@@ -41,7 +41,7 @@ jobs:
   deploy-page:
     environment:
       name: 'Pages Preview'
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.preview_deployment.outputs.page_url }}
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -74,6 +74,7 @@ jobs:
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
 
       - name: Deploy PR preview 🚀
+        id: preview_deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
         if: success() && github.event_name == 'pull_request'
         with:
