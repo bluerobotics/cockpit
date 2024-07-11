@@ -48,7 +48,7 @@
             </div>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>RTP Jitter Buffer (Target) duration:</template>
           <template #info>
             Increasing this value will result in increased video latency, but it can help to compensate the network
@@ -72,6 +72,20 @@
                 @input="handleJitterBufferTargetInput"
               />
               <a class="ml-3">ms</a>
+            </div>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>File download options:</template>
+          <template #info>
+            Specifies wether Cockpit should create a zip file when downloading multiple videos or subtitle files.
+            <br />
+            Keep in mind that, specially for long videos, this will add a delay on the download, since the files need to
+            be zipped first. This can take just a couple seconds or even minutes, depending on the files sizes.
+          </template>
+          <template #content>
+            <div class="flex items-center justify-start w-[50%] ml-2">
+              <v-checkbox v-model="videoStore.zipMultipleFiles" label="Zip multiple files" class="text-sm mx-2" />
             </div>
           </template>
         </ExpansiblePanel>
