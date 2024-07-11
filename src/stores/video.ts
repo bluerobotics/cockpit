@@ -44,6 +44,7 @@ export const useVideoStore = defineStore('video', () => {
   const allowedIceIps = useBlueOsStorage<string[]>('cockpit-allowed-stream-ips', [])
   const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
   const jitterBufferTarget = useBlueOsStorage<number | null>('cockpit-jitter-buffer-target', 0)
+  const zipMultipleFiles = useBlueOsStorage('cockpit-zip-multiple-video-files', false)
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
@@ -396,9 +397,17 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  const downloadFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
+  const downloadFilesFromVideoDB = async (
+    fileNames: string[],
+    progressCallback?: DownloadProgressCallback
+  ): Promise<void> => {
     console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
-    await downloadFiles(videoStoringDB, fileNames)
+    if (zipMultipleFiles.value) {
+      const ZipFilename = fileNames.length > 1 ? 'Cockpit-Video-Recordings' : 'Cockpit-Video-Recording'
+      await downloadFiles(videoStoringDB, fileNames, true, ZipFilename, progressCallback)
+    } else {
+      await downloadFiles(videoStoringDB, fileNames)
+    }
   }
 
   const downloadTempVideo = async (hashes: string[], progressCallback?: DownloadProgressCallback): Promise<void> => {
@@ -790,6 +799,7 @@ export const useVideoStore = defineStore('video', () => {
     allowedIceIps,
     allowedIceProtocols,
     jitterBufferTarget,
+    zipMultipleFiles,
     namesAvailableStreams,
     videoStoringDB,
     tempVideoChunksDB,
