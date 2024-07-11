@@ -371,7 +371,8 @@ export const useVideoStore = defineStore('video', () => {
   const downloadFiles = async (
     db: StorageDB,
     keys: string[],
-    zipFilenamePrefix: string,
+    shouldZip = false,
+    zipFilenamePrefix = 'Cockpit-Video-Files',
     progressCallback?: DownloadProgressCallback
   ): Promise<void> => {
     const maybeFiles = await Promise.all(
@@ -388,24 +389,16 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
 
-    if (files.length === 1) {
-      saveAs(files[0].blob, files[0].filename)
-    } else {
+    if (shouldZip) {
       await createZipAndDownload(files, `${zipFilenamePrefix}.zip`, progressCallback)
+    } else {
+      files.forEach(({ blob, filename }) => saveAs(blob, filename))
     }
   }
 
-  const downloadFilesFromVideoDB = async (
-    fileNames: string[],
-    progressCallback?: DownloadProgressCallback
-  ): Promise<void> => {
+  const downloadFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
     console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
-    await downloadFiles(
-      videoStoringDB,
-      fileNames,
-      fileNames.length > 1 ? 'Cockpit-Video-Recordings' : 'Cockpit-Video-Recording',
-      progressCallback
-    )
+    await downloadFiles(videoStoringDB, fileNames)
   }
 
   const downloadTempVideo = async (hashes: string[], progressCallback?: DownloadProgressCallback): Promise<void> => {
@@ -413,7 +406,8 @@ export const useVideoStore = defineStore('video', () => {
 
     for (const hash of hashes) {
       const fileNames = (await tempVideoChunksDB.keys()).filter((filename) => filename.includes(hash))
-      await downloadFiles(tempVideoChunksDB, fileNames, `Cockpit-Unprocessed-Video-Chunks-${hash}`, progressCallback)
+      const zipFilenamePrefix = `Cockpit-Unprocessed-Video-Chunks-${hash}`
+      await downloadFiles(tempVideoChunksDB, fileNames, true, zipFilenamePrefix, progressCallback)
     }
   }
 
