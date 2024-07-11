@@ -68,6 +68,10 @@ jobs:
           branch: gh-pages
           folder: dist
 
+      - name: Setup Pages
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+
       - name: Upload artifact for preview
         if: success() && github.event_name == 'pull_request'
         # Automatically uploads an artifact from the './_site' directory by default
