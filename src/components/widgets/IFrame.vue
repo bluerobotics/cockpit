@@ -93,6 +93,7 @@ onBeforeMount(() => {
   widget.value.options = {
     source: defaultBlueOsAddress,
   }
+  inputURL.value = defaultBlueOsAddress
 })
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
