@@ -27,7 +27,7 @@
               this button controls, as whel as set axis limits.
             </div>
           </template>
-          <template v-if="!m2rSupportsExtendedManualControl || !ardupilotSupportsExtendedManualControl" #warning>
+          <template v-if="showJoystickWarningMessage" #warning>
             <div class="text-center text-yellow-200">
               <p class="font-semibold">System update is recommended</p>
               <br />
@@ -397,12 +397,18 @@ const interfaceStore = useAppInterfaceStore()
 
 const m2rSupportsExtendedManualControl = ref<boolean>()
 const ardupilotSupportsExtendedManualControl = ref<boolean>()
+const showJoystickWarningMessage = ref(false)
+
 onMounted(async () => {
   controllerStore.enableForwarding = false
   const m2rVersion = await getMavlink2RestVersion(globalAddress)
   m2rSupportsExtendedManualControl.value = semver.gte(m2rVersion, '0.11.19')
   const ardupilotVersion = await getArdupilotVersion(globalAddress)
   ardupilotSupportsExtendedManualControl.value = semver.gte(ardupilotVersion, '4.1.2')
+
+  if (m2rSupportsExtendedManualControl.value || ardupilotSupportsExtendedManualControl.value) {
+    showJoystickWarningMessage.value = true
+  }
 })
 
 onUnmounted(() => {
