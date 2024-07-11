@@ -47,6 +47,7 @@
 import { useWindowSize } from '@vueuse/core'
 import { computed, defineProps, onBeforeMount, ref, toRefs, watch } from 'vue'
 
+import { defaultBlueOsAddress } from '@/assets/defaults'
 import Snackbar from '@/components/Snackbar.vue'
 import { isValidURL } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -90,7 +91,7 @@ onBeforeMount(() => {
   }
 
   widget.value.options = {
-    source: 'http://blueos.local',
+    source: defaultBlueOsAddress,
   }
 })
 
