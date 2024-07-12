@@ -6,7 +6,10 @@
           v-if="showMainMenu"
           ref="mainMenu"
           class="left-menu slide-in elevation-10"
-          :style="simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth"
+          :style="[
+            glassMenuStyles,
+            simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth,
+          ]"
         >
           <v-window v-model="mainMenuStep" class="h-full w-full">
             <v-window-item :value="1" class="h-full">
@@ -524,7 +527,16 @@ onClickOutside(mainMenu, () => {
   if (mainMenuStep.value === 1) {
     closeMainMenu()
   }
+  if (mainMenuStep.value === 2 && currentConfigMenuComponent.value === null) {
+    closeMainMenu()
+  }
 })
+
+const glassMenuStyles = computed(() => ({
+  backgroundColor: interfaceStore.UIGlassEffect.bgColor,
+  color: interfaceStore.UIGlassEffect.fontColor,
+  backdropFilter: `blur(${interfaceStore.UIGlassEffect.blur}px)`,
+}))
 
 const route = useRoute()
 const routerSection = ref()
@@ -607,8 +619,6 @@ body.hide-cursor {
   top: 50%;
   left: 0;
   transform: translateY(-50%);
-  background-color: #4f4f4f33;
-  backdrop-filter: blur(15px);
   box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.3), 0px 8px 12px 6px rgba(0, 0, 0, 0.15);
   z-index: 1000;
 }
