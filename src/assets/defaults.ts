@@ -406,7 +406,6 @@ export const widgetProfiles: Profile[] = [
               showPitchLines: true,
               showRollPitchValues: false,
               desiredAimRadius: 150,
-              pitchHeightFactor: 300,
               hudColor: '#FFFFFF',
             },
           },

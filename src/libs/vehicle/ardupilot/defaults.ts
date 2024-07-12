@@ -37,7 +37,7 @@ export const defaultMessageFrequency = {
   [MAVLinkType.DISTANCE_SENSOR]: 3,
   [MAVLinkType.TERRAIN_DATA]: 3,
   [MAVLinkType.BATTERY_STATUS]: 3,
-  [MAVLinkType.GIMBAL_DEVICE_ATTITUDE_STATUS]: 3,
+  [MAVLinkType.GIMBAL_DEVICE_ATTITUDE_STATUS]: 16,
   [MAVLinkType.OPTICAL_FLOW]: 3,
   [MAVLinkType.MAG_CAL_REPORT]: 3,
   [MAVLinkType.MAG_CAL_PROGRESS]: 3,

@@ -19,7 +19,7 @@ import {
 import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
-import { round, sleep } from '@/libs/utils'
+import { degrees, round, sleep } from '@/libs/utils'
 import {
   type ArduPilotParameterSetData,
   alertLevelFromMavSeverity,
@@ -355,6 +355,28 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         this._attitude.pitch = attitude.pitch
         this._attitude.yaw = attitude.yaw
         this.onAttitude.emit()
+        break
+      }
+      case MAVLinkType.GIMBAL_DEVICE_ATTITUDE_STATUS: {
+        const attitude = mavlink_message.message as Message.GimbalDeviceAttitudeStatus
+
+        const x = attitude.q[0]
+        const y = attitude.q[1]
+        const z = attitude.q[2]
+        const w = attitude.q[3]
+
+        const sinp = 2 * (w * y - z * x)
+        let pitch
+        if (Math.abs(sinp) >= 1) {
+          pitch = (Math.PI / 2) * Math.sign(sinp) // use 90 degrees if out of range
+        } else {
+          pitch = Math.asin(sinp)
+        }
+        if (!this._availableGenericVariablesdMessagePaths.includes('cameraTiltDeg')) {
+          this._availableGenericVariablesdMessagePaths.push('cameraTiltDeg')
+        }
+        this._genericVariables['cameraTiltDeg'] = degrees(pitch)
+        this.onGenericVariables.emit()
         break
       }
       case MAVLinkType.GLOBAL_POSITION_INT: {
