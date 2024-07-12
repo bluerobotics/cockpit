@@ -2,6 +2,8 @@ import { useWindowSize } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { watch } from 'vue'
 
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
+
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 export const useAppInterfaceStore = defineStore('responsive', {
@@ -9,12 +11,12 @@ export const useAppInterfaceStore = defineStore('responsive', {
     width: windowWidth.value,
     height: windowHeight.value,
     configModalVisibility: false,
-    UIGlassEffect: {
+    UIGlassEffect: useBlueOsStorage('cockpit-ui-glass-effect', {
       opacity: 0.8,
       bgColor: '#4F4F4F1A',
       fontColor: '#FFFFFF',
       blur: 25,
-    },
+    }),
   }),
   actions: {
     updateWidth() {
