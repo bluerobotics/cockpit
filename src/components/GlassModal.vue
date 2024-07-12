@@ -4,7 +4,7 @@
     ref="modal"
     class="glass-modal"
     :class="[interfaceStore.isOnSmallScreen ? 'rounded-[10px]' : 'rounded-[20px]', selectedOverflow]"
-    :style="modalPositionStyle"
+    :style="[modalPositionStyle, glassModalStyles]"
   >
     <slot></slot>
   </div>
@@ -49,6 +49,12 @@ const selectedOverflow = ref(props.overflow || 'auto')
 const isPersistent = ref(props.isPersistent || false)
 const modal = ref<HTMLElement | null>(null)
 
+const glassModalStyles = computed(() => ({
+  backgroundColor: interfaceStore.UIGlassEffect.bgColor,
+  color: interfaceStore.UIGlassEffect.fontColor,
+  backdropFilter: `blur(${interfaceStore.UIGlassEffect.blur}px)`,
+}))
+
 const modalPositionStyle = computed(() => {
   switch (modalPosition.value) {
     case 'left':
@@ -92,15 +98,12 @@ watch(
   }
 )
 </script>
-
 <style scoped>
 .glass-modal {
   position: absolute;
   width: auto;
   max-height: 100vh;
   border: 1px solid #cbcbcb33;
-  background-color: #4f4f4f33;
-  backdrop-filter: blur(15px);
   box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.3), 0px 8px 12px 6px rgba(0, 0, 0, 0.15);
   z-index: 100;
 }
