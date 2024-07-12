@@ -9,6 +9,12 @@ export const useAppInterfaceStore = defineStore('responsive', {
     width: windowWidth.value,
     height: windowHeight.value,
     configModalVisibility: false,
+    UIGlassEffect: {
+      opacity: 0.8,
+      bgColor: '#4F4F4F1A',
+      fontColor: '#FFFFFF',
+      blur: 25,
+    },
   }),
   actions: {
     updateWidth() {
@@ -16,6 +22,20 @@ export const useAppInterfaceStore = defineStore('responsive', {
     },
     setConfigModalVisibility(value: boolean) {
       this.configModalVisibility = value
+    },
+    setUIGlassEffect(opacity: number, bgColor: string, fontColor: string, blur: number) {
+      this.UIGlassEffect.opacity = opacity
+      this.UIGlassEffect.bgColor = bgColor
+      this.UIGlassEffect.fontColor = fontColor
+      this.UIGlassEffect.blur = blur
+    },
+    setBgOpacity(opacity: number) {
+      this.UIGlassEffect.opacity = opacity
+      const hex = this.UIGlassEffect.bgColor.replace(/^#/, '').substring(0, 6)
+      const alphaHex = Math.round(opacity * 255)
+        .toString(16)
+        .padStart(2, '0')
+      this.UIGlassEffect.bgColor = `#${hex}${alphaHex}`
     },
   },
   getters: {
@@ -46,6 +66,9 @@ export const useAppInterfaceStore = defineStore('responsive', {
       return 130
     },
     isConfigModalVisible: (state) => state.configModalVisibility,
+    getUIGlassEffect: (state) => {
+      state.UIGlassEffect
+    },
   },
 })
 
