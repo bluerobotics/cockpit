@@ -132,11 +132,11 @@
                   :key="menuitem.title"
                   :label="interfaceStore.isOnSmallScreen ? undefined : menuitem.title"
                   :label-class="menuLabelSize"
-                  :button-class="interfaceStore.isOnSmallScreen ? 'mt-1 -ml-[3px]' : undefined"
+                  :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
                   :icon="menuitem.icon"
                   :selected="currentConfigMenuComponent === menuitem.component"
                   variant="uncontained"
-                  :height="buttonSize * 0.5"
+                  :height="buttonSize * 0.45"
                   :icon-size="buttonSize * 0.6"
                   @click="toggleConfigComponent(menuitem.component)"
                   ><template #content
@@ -299,6 +299,7 @@ import ConfigurationGeneralView from './views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from './views/ConfigurationJoystickView.vue'
 import ConfigurationTelemetryView from './views/ConfigurationLogsView.vue'
 import ConfigurationMissionView from './views/ConfigurationMissionView.vue'
+import ConfigurationUIView from './views/ConfigurationUIView.vue'
 import ConfigurationVideoView from './views/ConfigurationVideoView.vue'
 
 const { showDialog, closeDialog } = useInteractionDialog()
@@ -324,6 +325,11 @@ const configMenu = [
     icon: 'mdi-view-dashboard-variant',
     title: 'General',
     component: markRaw(ConfigurationGeneralView) as ConfigComponent,
+  },
+  {
+    icon: 'mdi-monitor-cellphone',
+    title: 'Interface',
+    component: markRaw(ConfigurationUIView) as ConfigComponent,
   },
   {
     icon: 'mdi-controller',
