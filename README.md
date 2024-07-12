@@ -1,10 +1,14 @@
 <div align="center">
-  <img src="./public/images/cockpit-banner.png"><br>
+  <img style="width: 40%" src="./public/images/cockpit-banner.png"><br>
 </div>
+<br>
+<br>
+<div align="center">
+  <img style="width: 55%" src="./public/images/screen.png"><br>
+</div>
+<br>
 
-------------------------
-
-An intuitive and customizable cross-platform ground control station for remote vehicles of all types.
+<b>An intuitive and customizable cross-platform ground control station for remote vehicles of all types. [Check it here](https://docs.bluerobotics.com/cockpit)</b>
 
 # Development
 
