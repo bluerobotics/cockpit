@@ -135,11 +135,11 @@ interface Props {
   /**
    * The variant of the dialog, determining the icon and color.
    */
-  variant: 'info' | 'success' | 'error' | 'warning' | 'text-only'
+  variant?: 'info' | 'success' | 'error' | 'warning' | 'text-only'
   /**
    * Message to display in the dialog. If an array, elements will be displayed as an item list.
    */
-  message: string | string[]
+  message?: string | string[]
   /**
    * Persistent dialogs can't be closed with 'esc' or a backdrop click.
    */
