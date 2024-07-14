@@ -18,9 +18,12 @@
         :key="miniWidget.hash"
         :data-widget-hash="miniWidget.hash"
         class="rounded-md"
-        :class="{ 'cursor-grab': allowEditing, 'bg-slate-400': miniWidget.managerVars.highlighted }"
-        @mouseover="miniWidget.managerVars.highlighted = allowEditing"
-        @mouseleave="miniWidget.managerVars.highlighted = false"
+        :class="{
+          'cursor-grab': allowEditing,
+          'bg-slate-400': widgetStore.miniWidgetManagerVars(miniWidget.hash).highlighted,
+        }"
+        @mouseover="widgetStore.miniWidgetManagerVars(miniWidget.hash).highlighted = allowEditing"
+        @mouseleave="widgetStore.miniWidgetManagerVars(miniWidget.hash).highlighted = false"
       >
         <div :class="{ 'select-none pointer-events-none': allowEditing }">
           <MiniWidgetInstantiator :mini-widget="miniWidget" />
@@ -66,9 +69,12 @@ import { computed } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
 import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { DraggableEvent, MiniWidget, MiniWidgetContainer } from '@/types/widgets'
 
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
+
+const widgetStore = useWidgetManagerStore()
 
 const emit = defineEmits<{
   (e: 'chooseMiniWidget', value: unknown): void

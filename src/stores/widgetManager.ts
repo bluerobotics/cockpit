@@ -5,9 +5,14 @@ import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
-import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, Ref, ref, watch } from 'vue'
 
-import { defaultProfileVehicleCorrespondency, defaultWidgetManagerVars, widgetProfiles } from '@/assets/defaults'
+import {
+  defaultMiniWidgetManagerVars,
+  defaultProfileVehicleCorrespondency,
+  defaultWidgetManagerVars,
+  widgetProfiles,
+} from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
@@ -27,8 +32,10 @@ import {
   type Profile,
   type View,
   type Widget,
+  MiniWidgetManagerVars,
   validateProfile,
   validateView,
+  WidgetManagerVars,
   WidgetType,
 } from '@/types/widgets'
 
@@ -52,6 +59,22 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     'cockpit-default-vehicle-type-profiles',
     defaultProfileVehicleCorrespondency
   )
+  const _widgetManagerVars: Ref<Record<string, WidgetManagerVars>> = ref({})
+  const _miniWidgetManagerVars: Ref<Record<string, MiniWidgetManagerVars>> = ref({})
+
+  const widgetManagerVars = (widgetHash: string): WidgetManagerVars => {
+    if (!_widgetManagerVars.value[widgetHash]) {
+      _widgetManagerVars.value[widgetHash] = { ...defaultWidgetManagerVars }
+    }
+    return _widgetManagerVars.value[widgetHash]
+  }
+
+  const miniWidgetManagerVars = (miniWidgetHash: string): MiniWidgetManagerVars => {
+    if (!_miniWidgetManagerVars.value[miniWidgetHash]) {
+      _miniWidgetManagerVars.value[miniWidgetHash] = { ...defaultMiniWidgetManagerVars }
+    }
+    return _miniWidgetManagerVars.value[miniWidgetHash]
+  }
 
   const currentTopBarHeightPixels = computed(() => {
     return desiredTopBarHeightPixels.value
@@ -411,15 +434,18 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   function addWidget(widgetType: WidgetType, view: View): void {
     const widgetHash = uuid4()
-    view.widgets.unshift({
+
+    const widget = {
       hash: widgetHash,
       name: widgetType,
       component: widgetType,
       position: { x: 0.4, y: 0.32 },
       size: { width: 0.2, height: 0.36 },
       options: {},
-      managerVars: { ...defaultWidgetManagerVars, ...{ allowMoving: true } },
-    })
+    }
+
+    view.widgets.unshift(widget)
+    Object.assign(widgetManagerVars(widget.hash), { ...defaultWidgetManagerVars, ...{ allowMoving: true } })
   }
 
   /**
@@ -468,14 +494,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     )
   }
 
-  /**
-   * Open widget configuration menu
-   * @param { Widget } widget - Widget
-   */
-  const openWidgetConfigMenu = (widget: Widget): void => {
-    widget.managerVars.configMenuOpen = true
-  }
-
   const fullScreenPosition = { x: 0, y: 0 }
   const fullScreenSize = { width: 1, height: 1 }
   const defaultRestoredPosition: Point2D = { x: 0.15, y: 0.15 }
@@ -483,34 +501,34 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   const toggleFullScreen = (widget: Widget): void => {
     if (!isFullScreen(widget)) {
-      widget.managerVars.lastNonMaximizedX = widget.position.x
-      widget.managerVars.lastNonMaximizedY = widget.position.y
-      widget.managerVars.lastNonMaximizedWidth = widget.size.width
-      widget.managerVars.lastNonMaximizedHeight = widget.size.height
+      widgetManagerVars(widget.hash).lastNonMaximizedX = widget.position.x
+      widgetManagerVars(widget.hash).lastNonMaximizedY = widget.position.y
+      widgetManagerVars(widget.hash).lastNonMaximizedWidth = widget.size.width
+      widgetManagerVars(widget.hash).lastNonMaximizedHeight = widget.size.height
       widget.position = fullScreenPosition
       widget.size = fullScreenSize
       return
     }
 
-    if (widget.managerVars.lastNonMaximizedX === 0) {
-      widget.managerVars.lastNonMaximizedX = defaultRestoredPosition.x
+    if (widgetManagerVars(widget.hash).lastNonMaximizedX === 0) {
+      widgetManagerVars(widget.hash).lastNonMaximizedX = defaultRestoredPosition.x
     }
-    if (widget.managerVars.lastNonMaximizedY === fullScreenPosition.y) {
-      widget.managerVars.lastNonMaximizedY = defaultRestoredPosition.y
+    if (widgetManagerVars(widget.hash).lastNonMaximizedY === fullScreenPosition.y) {
+      widgetManagerVars(widget.hash).lastNonMaximizedY = defaultRestoredPosition.y
     }
-    if (widget.managerVars.lastNonMaximizedWidth === fullScreenSize.width) {
-      widget.managerVars.lastNonMaximizedWidth = defaultRestoredSize.width
+    if (widgetManagerVars(widget.hash).lastNonMaximizedWidth === fullScreenSize.width) {
+      widgetManagerVars(widget.hash).lastNonMaximizedWidth = defaultRestoredSize.width
     }
-    if (widget.managerVars.lastNonMaximizedHeight === fullScreenSize.height) {
-      widget.managerVars.lastNonMaximizedHeight = defaultRestoredSize.height
+    if (widgetManagerVars(widget.hash).lastNonMaximizedHeight === fullScreenSize.height) {
+      widgetManagerVars(widget.hash).lastNonMaximizedHeight = defaultRestoredSize.height
     }
     widget.position = {
-      x: widget.managerVars.lastNonMaximizedX,
-      y: widget.managerVars.lastNonMaximizedY,
+      x: widgetManagerVars(widget.hash).lastNonMaximizedX,
+      y: widgetManagerVars(widget.hash).lastNonMaximizedY,
     }
     widget.size = {
-      width: widget.managerVars.lastNonMaximizedWidth,
-      height: widget.managerVars.lastNonMaximizedHeight,
+      width: widgetManagerVars(widget.hash).lastNonMaximizedWidth,
+      height: widgetManagerVars(widget.hash).lastNonMaximizedHeight,
     }
   }
 
@@ -535,13 +553,12 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const resetWidgetsEditingState = (forcedState?: boolean): void => {
     currentProfile.value.views.forEach((view) => {
       view.widgets.forEach((widget) => {
-        widget.managerVars.allowMoving = forcedState === undefined ? editingMode.value : forcedState
+        widgetManagerVars(widget.hash).allowMoving = forcedState === undefined ? editingMode.value : forcedState
       })
     })
   }
 
   watch(editingMode, () => resetWidgetsEditingState())
-  resetWidgetsEditingState(false)
 
   const isFullScreen = (widget: Widget): boolean => {
     return isEqual(widget.position, fullScreenPosition) && isEqual(widget.size, fullScreenSize)
@@ -603,6 +620,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   // TODO: remove on first stable release
   onBeforeMount(() => {
     const alreadyUsedProfileHashes: string[] = []
+    const alreadyUsedViewHashes: string[] = []
+    const alreadyUsedWidgetHashes: string[] = []
+    const alreadyUsedMiniWidgetHashes: string[] = []
     savedProfiles.value.forEach((p) => {
       if (alreadyUsedProfileHashes.includes(p.hash)) {
         const newHash = uuid4()
@@ -614,30 +634,40 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         v.showBottomBarOnBoot = v.showBottomBarOnBoot ?? true
         v.visible = v.visible ?? true
 
-        // If there's any configuration menu open, close it
-        v.widgets.forEach((w) => {
-          w.managerVars.configMenuOpen = false
-          w.managerVars.everMounted = true
-          // @ts-ignore: This is an old value that we are removing on those that still hold it
-          w.managerVars.timesMounted = undefined
-        })
-        v.miniWidgetContainers.forEach((c) =>
-          c.widgets.forEach((w) => {
-            w.managerVars.configMenuOpen = false
-            w.managerVars.everMounted = true
-            // @ts-ignore: This is an old value that we are removing on those that still hold it
-            w.managerVars.timesMounted = undefined
-          })
-        )
-      })
+        if (alreadyUsedViewHashes.includes(v.hash)) {
+          const newHash = uuid4()
+          v.hash = newHash
+        }
+        alreadyUsedViewHashes.push(v.hash)
 
-      currentMiniWidgetsProfile.value.containers.forEach((c) =>
-        c.widgets.forEach((w) => {
-          w.managerVars.everMounted = true
-          // @ts-ignore: This is an old value that we are removing on those that still hold it
-          w.managerVars.timesMounted = undefined
+        v.widgets.forEach((w) => {
+          if (alreadyUsedWidgetHashes.includes(w.hash)) {
+            const newHash = uuid4()
+            w.hash = newHash
+          }
+          alreadyUsedWidgetHashes.push(w.hash)
         })
-      )
+
+        v.miniWidgetContainers.forEach((c) => {
+          c.widgets.forEach((w) => {
+            if (alreadyUsedMiniWidgetHashes.includes(w.hash)) {
+              const newHash = uuid4()
+              w.hash = newHash
+            }
+            alreadyUsedMiniWidgetHashes.push(w.hash)
+          })
+        })
+      })
+    })
+
+    currentMiniWidgetsProfile.value.containers.forEach((c) => {
+      c.widgets.forEach((w) => {
+        if (alreadyUsedMiniWidgetHashes.includes(w.hash)) {
+          const newHash = uuid4()
+          w.hash = newHash
+        }
+        alreadyUsedMiniWidgetHashes.push(w.hash)
+      })
     })
   })
 
@@ -698,7 +728,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     addWidget,
     deleteWidget,
     deleteMiniWidget,
-    openWidgetConfigMenu,
     toggleFullScreen,
     isFullScreen,
     importProfilesFromVehicle,
@@ -707,6 +736,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     isWidgetVisible,
     widgetClearanceForVisibleArea,
     isRealMiniWidget,
+    widgetManagerVars,
+    miniWidgetManagerVars,
     desiredTopBarHeightPixels,
     desiredBottomBarHeightPixels,
     visibleAreaMinClearancePixels,

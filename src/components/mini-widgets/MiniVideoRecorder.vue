@@ -20,7 +20,7 @@
       <div
         v-if="nameSelectedStream"
         class="flex flex-col max-w-[50%] scroll-container transition-all border-blur cursor-pointer"
-        @click="miniWidget.managerVars.configMenuOpen = true"
+        @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = true"
       >
         <div class="text-xs text-white select-none scroll-text">{{ nameSelectedStream }}</div>
       </div>
@@ -47,7 +47,7 @@
       >
     </div>
   </div>
-  <v-dialog v-model="miniWidget.managerVars.configMenuOpen" width="auto">
+  <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <div class="p-6 m-5 bg-white rounded-md">
       <p class="text-xl font-semibold">Choose a stream to record</p>
       <div class="w-auto h-px my-2 bg-grey-lighten-3" />
@@ -66,7 +66,7 @@
       <div class="flex items-center">
         <button
           class="w-auto p-3 m-2 font-medium transition-all rounded-md shadow-md text-uppercase hover:bg-slate-100"
-          @click="miniWidget.managerVars.configMenuOpen = false"
+          @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
           Cancel
         </button>
@@ -179,7 +179,7 @@ const toggleRecording = async (): Promise<void> => {
 
   // If there's no stream selected, open the configuration dialog so user can choose the stream which will be recorded
   if (nameSelectedStream.value === undefined) {
-    miniWidget.value.managerVars.configMenuOpen = true
+    widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = true
     return
   }
 
@@ -194,7 +194,7 @@ const startRecording = (): void => {
   }
   assertStreamIsSelectedAndAvailable(nameSelectedStream.value)
   videoStore.startRecording(nameSelectedStream.value)
-  miniWidget.value.managerVars.configMenuOpen = false
+  widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = false
 }
 
 const isRecording = computed(() => {

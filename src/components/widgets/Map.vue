@@ -55,7 +55,7 @@
     </ul>
   </div>
 
-  <v-dialog v-model="widget.managerVars.configMenuOpen" width="auto">
+  <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2">
       <v-card-title>Map widget settings</v-card-title>
       <v-card-text>

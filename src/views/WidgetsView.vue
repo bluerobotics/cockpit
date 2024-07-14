@@ -7,7 +7,7 @@
         <WidgetHugger
           v-if="Object.values(WidgetType).includes(widget.component)"
           :widget="widget"
-          :allow-moving="widget.managerVars.allowMoving"
+          :allow-moving="store.widgetManagerVars(widget.hash).allowMoving"
           :allow-resizing="store.editingMode"
         >
           <component :is="componentFromType(widget.component)" :widget="widget" />

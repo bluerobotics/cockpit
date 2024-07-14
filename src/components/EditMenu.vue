@@ -131,9 +131,9 @@
           >
             <Button
               class="flex items-center justify-center w-full h-8 pl-3 overflow-auto cursor-grab active:cursor-grabbing"
-              :class="{ '!bg-slate-400': widget.managerVars.highlighted }"
-              @mouseover="widget.managerVars.highlighted = true"
-              @mouseleave="widget.managerVars.highlighted = false"
+              :class="{ '!bg-slate-400': store.widgetManagerVars(widget.hash).highlighted }"
+              @mouseover="store.widgetManagerVars(widget.hash).highlighted = true"
+              @mouseleave="store.widgetManagerVars(widget.hash).highlighted = false"
             >
               <span class="mr-3 text-base text-slate-700">⠿</span>
               <p class="overflow-hidden text-sm text-ellipsis whitespace-nowrap">{{ widget.name }}</p>
@@ -143,7 +143,7 @@
                 :class="{ 'mdi-fullscreen-exit': store.isFullScreen(widget) }"
                 @click="store.toggleFullScreen(widget)"
               />
-              <div class="icon-btn mdi mdi-cog" @click="store.openWidgetConfigMenu(widget)" />
+              <div class="icon-btn mdi mdi-cog" @click="store.widgetManagerVars(widget.hash).configMenuOpen = true" />
               <div class="icon-btn mdi mdi-trash-can" @click="store.deleteWidget(widget)" />
             </Button>
           </div>
@@ -172,16 +172,19 @@
               v-for="widget in miniWidgetContainer.widgets"
               :key="widget.hash"
               class="flex items-center justify-between w-full h-10 px-2 py-1 my-1 rounded-md"
-              :class="{ 'bg-slate-400': widget.managerVars.highlighted }"
-              @mouseover="widget.managerVars.highlighted = true"
-              @mouseleave="widget.managerVars.highlighted = false"
+              :class="{ 'bg-slate-400': store.miniWidgetManagerVars(widget.hash).highlighted }"
+              @mouseover="store.miniWidgetManagerVars(widget.hash).highlighted = true"
+              @mouseleave="store.miniWidgetManagerVars(widget.hash).highlighted = false"
             >
               <div class="flex items-center justify-start w-full overflow-auto">
                 <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap">
                   {{ widget.name || widget.component }}
                 </p>
               </div>
-              <div class="icon-btn mdi mdi-cog" @click="widget.managerVars.configMenuOpen = true" />
+              <div
+                class="icon-btn mdi mdi-cog"
+                @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
+              />
               <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
             </div>
           </TransitionGroup>

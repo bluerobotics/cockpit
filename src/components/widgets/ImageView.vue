@@ -1,7 +1,7 @@
 <template>
   <div class="w-full h-full">
     <img :src="src" draggable="false" />
-    <v-dialog v-model="widget.managerVars.configMenuOpen" min-width="400" max-width="35%">
+    <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
       <v-card class="pa-2">
         <v-card-title>Image URL</v-card-title>
         <v-card-text>
@@ -17,7 +17,9 @@
           </div>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="primary" @click="widget.managerVars.configMenuOpen = false">Close</v-btn>
+          <v-btn color="primary" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
+            Close
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -27,9 +29,12 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, toRefs } from 'vue'
 
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 import Dropdown from '../Dropdown.vue'
+
+const widgetStore = useWidgetManagerStore()
 
 const props = defineProps<{
   /**

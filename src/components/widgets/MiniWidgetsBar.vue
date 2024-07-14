@@ -4,8 +4,8 @@
       :container="widget.options.miniWidgetsContainer"
       :wrap="true"
       :allow-editing="widgetStore.editingMode"
-      @choose-mini-widget="widget.managerVars.allowMoving = false"
-      @unchoose-mini-widget="widget.managerVars.allowMoving = true"
+      @choose-mini-widget="widgetStore.widgetManagerVars(widget.hash).allowMoving = false"
+      @unchoose-mini-widget="widgetStore.widgetManagerVars(widget.hash).allowMoving = true"
     />
   </div>
 </template>

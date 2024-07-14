@@ -12,7 +12,7 @@
     </div>
   </div>
   <v-dialog
-    v-model="miniWidget.managerVars.configMenuOpen"
+    v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
     persistent
     class="w-[100vw] flex justify-center items-center"
   >
@@ -223,7 +223,7 @@ const updateLoggedMiniWidgets = (): void => {
 // prevent closing the configuration menu if no variable and name are selected
 const closeDialog = async (): Promise<void> => {
   const { variableName, displayName } = miniWidget.value.options
-  const { managerVars } = miniWidget.value
+  const managerVars = widgetStore.miniWidgetManagerVars(miniWidget.value.hash)
 
   if (variableName === '' || displayName === '') {
     await Swal.fire({
@@ -265,7 +265,7 @@ const logCurrentState = (): void => {
 watch(
   finalValue,
   () => {
-    if (miniWidget.value.managerVars.configMenuOpen === false) {
+    if (widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen === false) {
       logCurrentState()
     }
   },
@@ -353,13 +353,13 @@ const chooseIcon = (iconName: string): void => {
 
 watch(showVariableChooseModal, async (newValue) => {
   if (newValue === true && variableNamesToShow.value.isEmpty()) {
-    miniWidget.value.managerVars.configMenuOpen = false
+    widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = false
     showVariableChooseModal.value = false
     await Swal.fire({
       text: 'No variables found to choose from. Please make sure your vehicle is connected.',
       icon: 'error',
     })
-    miniWidget.value.managerVars.configMenuOpen = true
+    widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = true
   }
 })
 
@@ -376,7 +376,7 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
 // Pops open the config menu if the mini-widget is a non-configured VeryGenericIndicator
 watchEffect(() => {
   if (miniWidget.value.component === 'VeryGenericIndicator' && miniWidget.value.options.displayName === '') {
-    miniWidget.value.managerVars.configMenuOpen = true
+    widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = true
   }
 })
 </script>

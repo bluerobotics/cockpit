@@ -68,7 +68,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const widget = toRefs(props).widget
-const { size, position, managerVars } = toRefs(props.widget)
+const { size, position } = toRefs(props.widget)
 const allowMoving = toRefs(props).allowMoving
 const allowResizing = toRefs(props).allowResizing
 const outerWidgetRef = ref<HTMLElement | undefined>()
@@ -87,7 +87,7 @@ const hoveringWidgetOrOverlay = computed(() => hoveringOverlay.value || hovering
 
 // Put the widget into highlighted state when in edit-mode and hovering over it
 watch([hoveringWidgetOrOverlay, allowMoving], () => {
-  managerVars.value.highlighted = hoveringWidgetOrOverlay.value && allowMoving.value
+  widgetStore.widgetManagerVars(widget.value.hash).highlighted = hoveringWidgetOrOverlay.value && allowMoving.value
 })
 
 const draggingWidget = ref(false)
@@ -211,10 +211,10 @@ const resizeWidgetToMinimalSize = (): void => {
 }
 
 onMounted(async () => {
-  if (managerVars.value.everMounted === false) {
+  if (widgetStore.miniWidgetManagerVars(widget.value.hash).everMounted === false) {
     resizeWidgetToMinimalSize()
   }
-  managerVars.value.everMounted = true
+  widgetStore.miniWidgetManagerVars(widget.value.hash).everMounted = true
 
   if (widgetResizeHandles.value) {
     for (let i = 0; i < widgetResizeHandles.value.length; i++) {
@@ -301,7 +301,7 @@ const cursorStyle = computed(() => {
 
 const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
 
-const highlighted = computed(() => managerVars.value.highlighted)
+const highlighted = computed(() => widgetStore.miniWidgetManagerVars(widget.value.hash).highlighted)
 </script>
 
 <style>
