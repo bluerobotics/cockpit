@@ -9,7 +9,7 @@
         @load="loadFinished"
       />
     </teleport>
-    <v-dialog v-model="widget.managerVars.configMenuOpen" min-width="400" max-width="35%">
+    <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
       <v-card class="pa-2">
         <v-card-title>Settings</v-card-title>
         <v-card-text>
@@ -29,7 +29,9 @@
           <v-slider v-model="transparency" label="Transparency" :min="0" :max="90" />
         </v-card-text>
         <v-card-actions>
-          <v-btn color="primary" @click="widget.managerVars.configMenuOpen = false">Close</v-btn>
+          <v-btn color="primary" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
+            Close
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -53,7 +55,7 @@ import { isValidURL } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
-const widgetManagerStore = useWidgetManagerStore()
+const widgetStore = useWidgetManagerStore()
 
 const props = defineProps<{
   /**
@@ -107,11 +109,11 @@ const iframeStyle = computed<string>(() => {
   newStyle = newStyle.concat(' ', `width: ${widget.value.size.width * windowWidth.value}px;`)
   newStyle = newStyle.concat(' ', `height: ${widget.value.size.height * windowHeight.value}px;`)
 
-  if (widgetManagerStore.editingMode) {
+  if (widgetStore.editingMode) {
     newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
   }
 
-  if (!widgetManagerStore.isWidgetVisible(widget.value)) {
+  if (!widgetStore.isWidgetVisible(widget.value)) {
     newStyle = newStyle.concat(' ', 'display: none;')
   }
 
@@ -133,7 +135,7 @@ function loadFinished(): void {
 watch(
   widget,
   () => {
-    if (widget.value.managerVars.configMenuOpen === false) {
+    if (widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen === false) {
       if (validateURL(inputURL.value) !== true) {
         inputURL.value = widget.value.options.source
       }

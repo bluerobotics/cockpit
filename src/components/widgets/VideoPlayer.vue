@@ -39,7 +39,7 @@
       Your browser does not support the video tag.
     </video>
   </div>
-  <v-dialog v-model="widget.managerVars.configMenuOpen" width="auto">
+  <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2">
       <v-card-title>Video widget config</v-card-title>
       <v-card-text>
@@ -98,9 +98,12 @@ import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vu
 
 import { isEqual } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 const videoStore = useVideoStore()
+const widgetStore = useWidgetManagerStore()
+
 const { namesAvailableStreams } = storeToRefs(videoStore)
 
 const props = defineProps<{

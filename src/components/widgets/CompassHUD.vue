@@ -2,7 +2,7 @@
   <div class="main">
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
   </div>
-  <v-dialog v-model="widget.managerVars.configMenuOpen" min-width="400" max-width="35%">
+  <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
     <v-card class="pa-2">
       <v-card-title>HUD Compass widget config</v-card-title>
       <v-card-text>

@@ -38,6 +38,62 @@ export enum MiniWidgetType {
   ViewSelector = 'ViewSelector',
 }
 
+/**
+ * External variables used by the widget manager
+ */
+export type WidgetManagerVars = {
+  /**
+   * Number of times the widget was mounted
+   */
+  everMounted: boolean
+  /**
+   * If the configuration menu is open or not
+   */
+  configMenuOpen: boolean
+  /**
+   * If the widget should be allowed to move
+   */
+  allowMoving: boolean
+  /**
+   * Last widget X position when it wasn't maximized
+   */
+  lastNonMaximizedX: number
+  /**
+   * Last widget Y position when it wasn't maximized
+   */
+  lastNonMaximizedY: number
+  /**
+   * Last widget width when it wasn't maximized
+   */
+  lastNonMaximizedWidth: number
+  /**
+   * Last widget height when it wasn't maximized
+   */
+  lastNonMaximizedHeight: number
+  /**
+   * Wether thewidget should be highlited or not
+   */
+  highlighted: boolean
+}
+
+/**
+ * External variables used by the widget manager
+ */
+export type MiniWidgetManagerVars = {
+  /**
+   * Number of times the mini-widget was mounted
+   */
+  everMounted: boolean
+  /**
+   * If the configuration menu is open or not
+   */
+  configMenuOpen: boolean
+  /**
+   * Wether the mini-widget should be highlited or not
+   */
+  highlighted: boolean
+}
+
 export type Widget = {
   /**
    * Unique identifier for the widget
@@ -63,43 +119,6 @@ export type Widget = {
    * Internal options of the widget
    */
   options: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
-  /**
-   * External variables used by the widget manager
-   */
-  managerVars: {
-    /**
-     * Number of times the widget was mounted
-     */
-    everMounted: boolean
-    /**
-     * If the configuration menu is open or not
-     */
-    configMenuOpen: boolean
-    /**
-     * If the widget should be allowed to move
-     */
-    allowMoving: boolean
-    /**
-     * Last widget X position when it wasn't maximized
-     */
-    lastNonMaximizedX: number
-    /**
-     * Last widget Y position when it wasn't maximized
-     */
-    lastNonMaximizedY: number
-    /**
-     * Last widget width when it wasn't maximized
-     */
-    lastNonMaximizedWidth: number
-    /**
-     * Last widget height when it wasn't maximized
-     */
-    lastNonMaximizedHeight: number
-    /**
-     * Wether thewidget should be highlited or not
-     */
-    highlighted: boolean
-  }
 }
 
 export type MiniWidget = {
@@ -119,23 +138,6 @@ export type MiniWidget = {
    * Internal options of the widget
    */
   options: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
-  /**
-   * External variables used by the widget manager
-   */
-  managerVars: {
-    /**
-     * Number of times the mini-widget was mounted
-     */
-    everMounted: boolean
-    /**
-     * If the configuration menu is open or not
-     */
-    configMenuOpen: boolean
-    /**
-     * Wether the mini-widget should be highlited or not
-     */
-    highlighted: boolean
-  }
 }
 
 export type MiniWidgetContainer = {
