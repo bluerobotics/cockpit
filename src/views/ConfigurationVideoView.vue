@@ -6,12 +6,16 @@
       <div class="flex-col h-full ml-[1vw] max-w-[500px]">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC remote IP Addresses</template>
-          <template #info
-            >IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the
-            tether/cabled interface. Blank means any route. E.g: 192.168.2.2</template
-          >
+          <template #info>
+            IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the
+            tether/cabled interface. Blank means any route. E.g: 192.168.2.2.
+            <br />
+            <br />
+            If you enable the auto-retrieval, Cockpit will try to fetch from BlueOS information about the available IP
+            addresses, and auto-choose those associated with wired interfaces.
+          </template>
           <template #content>
-            <div class="flex justify-center align-center w-[90%] ml-2">
+            <div class="flex justify-center flex-col w-[90%] ml-2">
               <v-combobox
                 v-model="allowedIceIps"
                 multiple
@@ -23,6 +27,13 @@
                 theme="dark"
                 density="compact"
                 clearable
+                hide-details
+              />
+              <v-checkbox
+                v-model="videoStore.enableAutoIceIpFetch"
+                label="Enable auto-retrieval of allowed IP addresses"
+                hide-details
+                class="mb-2"
               />
             </div>
           </template>
