@@ -1,6 +1,6 @@
 import '@/libs/cosmos'
 
-import { useDebounceFn, useWindowSize } from '@vueuse/core'
+import { useDebounceFn, useStorage, useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import Swal from 'sweetalert2'
@@ -50,8 +50,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const gridInterval = ref(0.01)
   const currentMiniWidgetsProfile = useBlueOsStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
   const savedProfiles = useBlueOsStorage<Profile[]>(savedProfilesKey, [])
-  const currentViewIndex = useBlueOsStorage('cockpit-current-view-index', 0)
-  const currentProfileIndex = useBlueOsStorage('cockpit-current-profile-index', 0)
+  const currentViewIndex = useStorage('cockpit-current-view-index', 0)
+  const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
   const desiredTopBarHeightPixels = ref(48)
   const desiredBottomBarHeightPixels = ref(48)
   const visibleAreaMinClearancePixels = ref(20)

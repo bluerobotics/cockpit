@@ -1,4 +1,4 @@
-import { useTimestamp, watchThrottled } from '@vueuse/core'
+import { useStorage, useTimestamp, watchThrottled } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
@@ -64,7 +64,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const ws_protocol = location?.protocol === 'https:' ? 'wss' : 'ws'
 
   const cpuLoad = ref<number>()
-  const globalAddress = useBlueOsStorage('cockpit-vehicle-address', defaultGlobalAddress)
+  const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
 
   const defaultMainConnectionURI = ref<string>(`${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`)
   const defaultWebRTCSignallingURI = ref<string>(`${ws_protocol}://${globalAddress.value}:6021/`)
