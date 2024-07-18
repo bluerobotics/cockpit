@@ -136,3 +136,14 @@ export const tryOrAlert = async (tryFunction: () => Promise<void>): Promise<void
     Swal.fire({ text: error as string, icon: 'error' })
   }
 }
+
+/**
+ * Wait till the next tick to reload Cockpit
+ * @param {number} timeout The time to wait before reloading, in milliseconds. Default value is 500 ms.
+ */
+export const reloadCockpit = (timeout = 500): void => {
+  const restartMessage = `Restarting Cockpit in ${timeout / 1000} seconds...`
+  console.log(restartMessage)
+  Swal.fire({ text: restartMessage, icon: 'info', timerProgressBar: true, timer: timeout })
+  setTimeout(() => location.reload(), timeout)
+}

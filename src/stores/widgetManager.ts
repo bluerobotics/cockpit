@@ -24,7 +24,7 @@ import {
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
-import { isEqual, sequentialArray } from '@/libs/utils'
+import { isEqual, reloadCockpit, sequentialArray } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import {
   type MiniWidget,
@@ -221,7 +221,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     savedProfiles.value = widgetProfiles
     currentProfileIndex.value = 0
     currentViewIndex.value = 0
-    location.reload()
+    reloadCockpit()
   }
 
   const exportProfile = (profile: Profile): void => {
@@ -543,7 +543,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       savedProfiles.value.push(userProfile)
     })
     loadProfile(savedProfiles.value[0])
-    location.reload()
+    reloadCockpit()
   }
 
   // Make sure the interface is not booting with a profile or view that does not exist

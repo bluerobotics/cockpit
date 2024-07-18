@@ -77,6 +77,7 @@ import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { type SystemLog, cockpitSytemLogsDB } from '@/libs/system-logging'
+import { reloadCockpit } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
 
@@ -120,8 +121,6 @@ const downloadLog = async (logName: string): Promise<void> => {
   const logBlob = new Blob([logParts], { type: 'application/json' })
   saveAs(logBlob, logName)
 }
-
-const reloadCockpit = (): void => location.reload()
 </script>
 <style scoped>
 .custom-header {
