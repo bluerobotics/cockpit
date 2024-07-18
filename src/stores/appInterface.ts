@@ -71,6 +71,13 @@ export const useAppInterfaceStore = defineStore('responsive', {
     getUIGlassEffect: (state) => {
       state.UIGlassEffect
     },
+    globalGlassMenuStyles: (state) => ({
+      backgroundColor: state.UIGlassEffect.bgColor,
+      color: state.UIGlassEffect.fontColor,
+      backdropFilter: `blur(${state.UIGlassEffect.blur}px)`,
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      boxShadow: '0px 4px 4px 0px #0000004c, 0px 8px 12px 6px #00000026',
+    }),
   },
 })
 

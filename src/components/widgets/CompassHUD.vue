@@ -3,13 +3,13 @@
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
-    <v-card class="pa-2">
-      <v-card-title>HUD Compass widget config</v-card-title>
+    <v-card class="px-8 pb-6 pt-2" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="text-center">HUD Compass widget config</v-card-title>
       <v-card-text>
         <v-switch
           class="ma-1"
           label="Show yaw value"
-          :color="widget.options.showYawValue ? 'rgb(0, 20, 80)' : undefined"
+          :color="widget.options.showYawValue ? 'white' : undefined"
           :model-value="widget.options.showYawValue"
           hide-details
           @change="widget.options.showYawValue = !widget.options.showYawValue"
@@ -17,16 +17,23 @@
         <v-switch
           class="ma-1"
           label="Use -180/+180 range"
-          :color="widget.options.useNegativeRange ? 'rgb(0, 20, 80)' : undefined"
+          :color="widget.options.useNegativeRange ? 'white' : undefined"
           :model-value="widget.options.useNegativeRange"
           hide-details
           @change="widget.options.useNegativeRange = !widget.options.useNegativeRange"
         />
         <v-expansion-panels>
-          <v-expansion-panel>
+          <v-expansion-panel class="bg-[#FFFFFF11] text-white mt-2">
             <v-expansion-panel-title>Color</v-expansion-panel-title>
             <v-expansion-panel-text>
-              <v-color-picker v-model="widget.options.hudColor" class="ma-2" :swatches="colorSwatches" show-swatches />
+              <v-color-picker
+                v-model="widget.options.hudColor"
+                theme="dark"
+                class="ma-1 bg-[#FFFFFF11] text-white"
+                :swatches="colorSwatches"
+                width="100%"
+                show-swatches
+              />
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -43,11 +50,13 @@ import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, wa
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
+const interfaceStore = useAppInterfaceStore()
 
 datalogger.registerUsage(DatalogVariable.heading)
 const store = useMainVehicleStore()

@@ -1,7 +1,7 @@
 <template>
   <v-dialog v-model="isVisible" class="dialog">
     <div class="dialog-frame" :style="dialogStyle">
-      <div class="video-modal" :style="glassModalStyles">
+      <div class="video-modal" :style="interfaceStore.globalGlassMenuStyles">
         <div class="modal-content">
           <!-- Left Vertical Menu -->
           <div class="flex flex-col justify-between h-full px-5 py-3 align-center">
@@ -556,12 +556,6 @@ const dialogStyle = computed(() => {
     transformOrigin: 'center',
   }
 })
-
-const glassModalStyles = computed(() => ({
-  backgroundColor: interfaceStore.UIGlassEffect.bgColor,
-  color: interfaceStore.UIGlassEffect.fontColor,
-  backdropFilter: `blur(${interfaceStore.UIGlassEffect.blur}px)`,
-}))
 
 const menuButtons = [
   { name: 'Videos', icon: 'mdi-video-outline', selected: true, disabled: false, tooltip: '' },

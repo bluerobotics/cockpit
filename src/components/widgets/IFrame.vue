@@ -10,26 +10,33 @@
       />
     </teleport>
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
-      <v-card class="pa-2">
-        <v-card-title>Settings</v-card-title>
+      <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
+        <v-card-title class="text-center">Settings</v-card-title>
         <v-card-text>
+          <p>Iframe Source</p>
           <div class="flex items-center justify-between">
             <v-text-field
               v-model="inputURL"
-              label="Iframe Source"
-              variant="underlined"
+              variant="filled"
               outlined
               :rules="[validateURL]"
               @keydown.enter="updateURL"
             />
-            <v-btn v-tooltip.bottom="'Set'" icon="mdi-check" class="mx-1 mb-5" rounded="lg" flat @click="updateURL" />
+            <v-btn
+              v-tooltip.bottom="'Set'"
+              icon="mdi-check"
+              class="mx-1 mb-5 bg-[#FFFFFF22]"
+              rounded="lg"
+              flat
+              @click="updateURL"
+            />
           </div>
         </v-card-text>
         <v-card-text>
-          <v-slider v-model="transparency" label="Transparency" :min="0" :max="90" />
+          <v-slider v-model="transparency" label="Transparency" color="white" :min="0" :max="90" />
         </v-card-text>
-        <v-card-actions>
-          <v-btn color="primary" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
+        <v-card-actions class="flex justify-end">
+          <v-btn color="white" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
             Close
           </v-btn>
         </v-card-actions>
@@ -52,8 +59,10 @@ import { computed, defineProps, onBeforeMount, ref, toRefs, watch } from 'vue'
 import { defaultBlueOsAddress } from '@/assets/defaults'
 import Snackbar from '@/components/Snackbar.vue'
 import { isValidURL } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()
 

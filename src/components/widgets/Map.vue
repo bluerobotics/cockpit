@@ -56,14 +56,14 @@
   </div>
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
-    <v-card class="pa-2">
-      <v-card-title>Map widget settings</v-card-title>
+    <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="text-center">Map widget settings</v-card-title>
       <v-card-text>
         <v-switch
           v-model="widget.options.showVehiclePath"
           class="my-1"
           label="Show vehicle path"
-          :color="widget.options.showVehiclePath ? 'rgb(0, 20, 80)' : undefined"
+          :color="widget.options.showVehiclePath ? 'white' : undefined"
           hide-details
         />
       </v-card-text>
@@ -76,7 +76,7 @@
     height="10"
     absolute
     bottom
-    color="#358AC3"
+    color="white"
   />
 </template>
 
@@ -97,6 +97,7 @@ import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -107,6 +108,7 @@ import type { Widget } from '@/types/widgets'
 // eslint-disable-next-line jsdoc/require-jsdoc
 const props = defineProps<{ widget: Widget }>()
 const widget = toRefs(props).widget
+const interfaceStore = useAppInterfaceStore()
 
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()

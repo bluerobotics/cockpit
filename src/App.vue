@@ -89,11 +89,11 @@
                   :icon-class="
                     interfaceStore.isOnSmallScreen
                       ? 'scale-[100%] -mb-[1px] md:ml-[2px]'
-                      : 'scale-[95%] -mb-[1px] lg:-mr-[1px] -mr-[2px] xl:-mb-[2px]'
+                      : 'scale-[95%] -mb-[2px] lg:-mr-[1px] -mr-[2px] xl:-mb-[2px]'
                   "
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
-                  :button-class="!simplifiedMainMenu ? '-mt-1' : undefined"
+                  :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
                   :width="buttonSize"
                   :selected="showConfigurationMenu"
                   @click="mainMenuStep = 2"
@@ -178,14 +178,32 @@
 
       <teleport to="body">
         <v-dialog v-model="showMissionOptionsDialog" width="50%">
-          <v-card class="pa-2">
-            <v-card-title>Mission configuration</v-card-title>
+          <v-card class="pa-2 bg-[#20202022] backdrop-blur-2xl text-white rounded-lg">
+            <v-card-title class="flex justify-between">
+              <div />
+              <div>Mission configuration</div>
+              <v-btn
+                icon
+                :width="38"
+                :height="34"
+                variant="text"
+                class="bg-transparent -mt-1 -mr-3"
+                @click="showMissionOptionsDialog = false"
+              >
+                <v-icon
+                  :size="interfaceStore.isOnSmallScreen ? 22 : 26"
+                  :class="interfaceStore.isOnSmallScreen ? '-mr-[10px] -mt-[10px]' : '-mr-[2px]'"
+                  >mdi-close</v-icon
+                >
+              </v-btn>
+            </v-card-title>
             <v-card-text>
-              <div class="flex">
+              <div class="flex flex-col">
+                <p>Misison Name</p>
                 <v-text-field
                   v-model="store.missionName"
-                  label="Mission name"
                   append-inner-icon="mdi-restore"
+                  class="mt-1"
                   @click:append-inner="store.missionName = store.lastMissionName"
                 />
               </div>
@@ -199,12 +217,14 @@
           <div id="mainTopBar" class="bar top-bar">
             <button
               class="flex items-center justify-center h-full aspect-square top-bar-hamburger"
+              :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
               @click="toggleMainMenu"
             >
               <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
             </button>
             <div
               class="flex items-center justify-start h-full px-4 ml-3 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
+              :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
               @click="showMissionOptionsDialog = true"
             >
               <div class="flex items-center overflow-hidden text-lg font-medium text-white whitespace-nowrap">
@@ -671,9 +691,9 @@ body.hide-cursor {
 }
 
 .main-view.edit-mode {
-  transform: scale(0.8);
-  right: -10%;
-  top: -10%;
+  transform: scale(0.78);
+  right: -11%;
+  top: -11%;
 }
 
 .swal2-container {

@@ -1,6 +1,10 @@
 <template>
   <v-dialog v-model="internalShowDialog" :persistent="persistent" :width="maxWidth || '600px'">
-    <v-card :width="maxWidth || '600px'" class="main-dialog px-2 rounded-lg">
+    <v-card
+      :width="maxWidth || '600px'"
+      class="main-dialog px-2 rounded-lg"
+      :style="interfaceStore.globalGlassMenuStyles"
+    >
       <v-card-title>
         <div
           v-if="title"
@@ -206,10 +210,6 @@ const handleAction = (action: () => void): void => {
 
 <style scoped>
 .main-dialog {
-  color: white;
-  border: 1px solid #fafafa33;
-  background-color: #aaaaaa44;
-  backdrop-filter: blur(30px);
   box-shadow: 0px 4px 4px 0px #0000004c, 0px 8px 12px 6px #00000026;
 }
 </style>
