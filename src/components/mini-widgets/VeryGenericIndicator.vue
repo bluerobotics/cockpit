@@ -1,14 +1,14 @@
 <template>
-  <div class="flex items-center justify-center h-12 py-1 mx-1 text-white transition-all w-[7rem]">
-    <span class="relative w-[2rem] mdi icon-symbol text-[32px]" :class="[miniWidget.options.iconName]"></span>
-    <div class="flex flex-col items-start justify-center ml-1 select-none w-[4.75rem]">
+  <div class="h-12 p-1 text-white transition-all w-[8.5rem] relative">
+    <span class="h-full left-[0.5rem] bottom-[5%] absolute mdi text-[2.25rem]" :class="[miniWidget.options.iconName]" />
+    <div class="absolute left-[3rem] h-full select-none font-semibold">
       <div>
-        <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
-        <span class="text-xl font-semibold leading-6 w-fit">
-          {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }}
-        </span>
+        <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
+        <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
       </div>
-      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ miniWidget.options.displayName }}</span>
+      <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap">
+        {{ miniWidget.options.displayName }}
+      </span>
     </div>
   </div>
   <v-dialog
