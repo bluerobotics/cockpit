@@ -137,7 +137,7 @@
           </div>
         </Transition>
       </div>
-      <div v-if="currentTab === 'presets'" class="flex flex-wrap items-center justify-around">
+      <div v-if="currentTab === 'presets'" class="flex flex-wrap items-center justify-around max-w-[24rem]">
         <div
           v-for="(template, i) in veryGenericIndicatorPresets"
           :key="i"
