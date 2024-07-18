@@ -66,8 +66,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const cpuLoad = ref<number>()
   const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
 
-  const defaultMainConnectionURI = ref<string>(`${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`)
-  const defaultWebRTCSignallingURI = ref<string>(`${ws_protocol}://${globalAddress.value}:6021/`)
+  const defaultMainConnectionURI = computed(() => `${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`)
+  const defaultWebRTCSignallingURI = computed(() => `${ws_protocol}://${globalAddress.value}:6021/`)
   const customMainConnectionURI = useBlueOsStorage('cockpit-vehicle-custom-main-connection-uri', {
     data: defaultMainConnectionURI.value,
     enabled: false,
