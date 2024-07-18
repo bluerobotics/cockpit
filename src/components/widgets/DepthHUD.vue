@@ -3,22 +3,28 @@
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
-    <v-card class="pa-2">
+    <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title>Depth HUD config</v-card-title>
       <v-card-text>
         <v-switch
           class="ma-1"
           label="Show height value"
           :model-value="widget.options.showDepthValue"
-          :color="widget.options.showDepthValue ? 'rgb(0, 20, 80)' : undefined"
+          :color="widget.options.showDepthValue ? 'white' : undefined"
           hide-details
           @change="widget.options.showDepthValue = !widget.options.showDepthValue"
         />
         <v-expansion-panels>
-          <v-expansion-panel>
+          <v-expansion-panel class="bg-[#FFFFFF22] text-white">
             <v-expansion-panel-title>Color</v-expansion-panel-title>
             <v-expansion-panel-text>
-              <v-color-picker v-model="widget.options.hudColor" class="ma-2" :swatches="colorSwatches" show-swatches />
+              <v-color-picker
+                v-model="widget.options.hudColor"
+                class="ma-2 text-white bg-[#FFFFFF22]"
+                :swatches="colorSwatches"
+                width="100%"
+                show-swatches
+              />
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -35,9 +41,11 @@ import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, wa
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { constrain, range, resetCanvas, round } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()
 

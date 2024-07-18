@@ -2,55 +2,65 @@
   <div class="main">
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
   </div>
-  <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
-    <v-card class="pa-2">
-      <v-card-title>Attitude widget config</v-card-title>
+  <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="45%">
+    <v-card class="pa-4" :style="interfaceStore.globalGlassMenuStyles" style="border-radius: 15px">
+      <v-card-title class="text-center">Attitude widget config</v-card-title>
       <v-card-text>
-        <v-switch
-          class="ma-1"
-          label="Show roll/pitch values"
-          :model-value="widget.options.showRollPitchValues"
-          :color="widget.options.showRollPitchValues ? 'rgb(0, 20, 80)' : undefined"
-          hide-details
-          @change="widget.options.showRollPitchValues = !widget.options.showRollPitchValues"
-        />
-        <v-switch
-          class="ma-1"
-          label="Show center aim"
-          :model-value="widget.options.showCenterAim"
-          :color="widget.options.showCenterAim ? 'rgb(0, 20, 80)' : undefined"
-          hide-details
-          @change="widget.options.showCenterAim = !widget.options.showCenterAim"
-        />
-        <v-switch
-          class="ma-1"
-          label="Show pitch lines"
-          :model-value="widget.options.showPitchLines"
-          :color="widget.options.showPitchLines ? 'rgb(0, 20, 80)' : undefined"
-          hide-details
-          @change="widget.options.showPitchLines = !widget.options.showPitchLines"
-        />
-        <span>Distance between pitch lines</span>
+        <div class="flex justify-center gap-x-8 mb-4">
+          <v-switch
+            class="ma-1"
+            label="Show roll/pitch values"
+            :model-value="widget.options.showRollPitchValues"
+            :color="widget.options.showRollPitchValues ? 'white' : undefined"
+            hide-details
+            @change="widget.options.showRollPitchValues = !widget.options.showRollPitchValues"
+          />
+          <v-switch
+            class="ma-1"
+            label="Show center aim"
+            :model-value="widget.options.showCenterAim"
+            :color="widget.options.showCenterAim ? 'white' : undefined"
+            hide-details
+            @change="widget.options.showCenterAim = !widget.options.showCenterAim"
+          />
+          <v-switch
+            class="ma-1"
+            label="Show pitch lines"
+            :model-value="widget.options.showPitchLines"
+            :color="widget.options.showPitchLines ? 'white' : undefined"
+            hide-details
+            @change="widget.options.showPitchLines = !widget.options.showPitchLines"
+          />
+        </div>
+        <span class="ml-2">Distance between pitch lines</span>
         <v-slider
           v-model="widget.options.pitchHeightFactor"
           label="Pitch lines gain factor"
+          color="white"
           :min="1"
           :max="2500"
           thumb-label
+          class="mt-3"
         />
-        <span>Center circle radius</span>
         <v-slider
           v-model="widget.options.desiredAimRadius"
           label="Center circle radius"
+          color="white"
           :min="10"
           :max="300"
           thumb-label
         />
-        <v-expansion-panels>
-          <v-expansion-panel>
+        <v-expansion-panels theme="dark">
+          <v-expansion-panel class="bg-[#FFFFFF22]">
             <v-expansion-panel-title>Color</v-expansion-panel-title>
             <v-expansion-panel-text class="pa-2">
-              <v-color-picker v-model="widget.options.hudColor" :swatches="colorSwatches" show-swatches />
+              <v-color-picker
+                v-model="widget.options.hudColor"
+                class="ma-1 bg-[#FFFFFF11] text-white"
+                :swatches="colorSwatches"
+                show-swatches
+                width="100%"
+              />
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -66,11 +76,13 @@ import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, wa
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { constrain, degrees, radians, resetCanvas, round } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
+const interfaceStore = useAppInterfaceStore()
 
 datalogger.registerUsage(DatalogVariable.roll)
 datalogger.registerUsage(DatalogVariable.pitch)

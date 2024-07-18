@@ -2,22 +2,27 @@
   <div class="w-full h-full">
     <img :src="src" draggable="false" />
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
-      <v-card class="pa-2">
-        <v-card-title>Image URL</v-card-title>
+      <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
+        <v-card-title class="text-center">Image URL</v-card-title>
         <v-card-text>
+          <a>Image URL</a>
           <v-text-field
-            label="Image URL"
             :model-value="widget.options.src"
             outlined
             @change="widget.options.src = $event.srcElement.value"
           ></v-text-field>
           <div>
             <span class="text-xs font-semibold leading-3 text-slate-600">Fit style</span>
-            <Dropdown v-model="widget.options.fitStyle" :options="['cover', 'fill', 'contain']" class="max-w-[144px]" />
+            <Dropdown
+              v-model="widget.options.fitStyle"
+              :options="['cover', 'fill', 'contain']"
+              class="max-w-[144px]"
+              theme="dark"
+            />
           </div>
         </v-card-text>
-        <v-card-actions>
-          <v-btn color="primary" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
+        <v-card-actions class="flex justify-end">
+          <v-btn color="white" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
             Close
           </v-btn>
         </v-card-actions>
@@ -29,8 +34,10 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, toRefs } from 'vue'
 
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+const interfaceStore = useAppInterfaceStore()
 
 import Dropdown from '../Dropdown.vue'
 

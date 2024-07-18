@@ -40,9 +40,9 @@
     </video>
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
-    <v-card class="pa-2">
-      <v-card-title>Video widget config</v-card-title>
-      <v-card-text>
+    <v-card class="pa-4 text-white" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="text-center">Video widget config</v-card-title>
+      <v-card-text class="flex flex-col gap-y-4">
         <v-select
           v-model="nameSelectedStream"
           label="Stream name"
@@ -72,14 +72,14 @@
           v-model="widget.options.flipHorizontally"
           class="my-1"
           label="Flip horizontally"
-          :color="widget.options.flipHorizontally ? 'rgb(0, 20, 80)' : undefined"
+          :color="widget.options.flipHorizontally ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.flipVertically"
           class="my-1"
           label="Flip vertically"
-          :color="widget.options.flipVertically ? 'rgb(0, 20, 80)' : undefined"
+          :color="widget.options.flipVertically ? 'white' : undefined"
           hide-details
         />
         <div class="flex-wrap justify-center d-flex ga-5">
@@ -97,9 +97,11 @@ import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { isEqual } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+const interfaceStore = useAppInterfaceStore()
 
 const videoStore = useVideoStore()
 const widgetStore = useWidgetManagerStore()

@@ -1,6 +1,6 @@
 <template>
   <div class="text-white w-full">
-    <div class="flex flex-col align-start">
+    <div class="flex flex-col align-start" :class="isElevationEffect && showElevationEffect ? 'elevation-5' : ''">
       <v-divider v-if="!noTopDivider" centered class="opacity-10 border-[#fafafa] w-full" />
       <div
         :class="[
@@ -10,17 +10,21 @@
         @click="togglePanel"
       >
         <div
-          class="flex flex-row align-center"
+          class="flex flex-row w-full align-center"
           :class="isCompact ? 'gap-x-[1vw] py-[0.8vh]' : 'gap-x-[3vw] py-[1.5vh]'"
         >
-          <div>
-            <div class="flex flex-row whitespace-nowrap">
+          <div class="flex flex-col w-full">
+            <div
+              class="flex flex-row whitespace-nowrap"
+              :class="isChevronInverted ? 'justify-between w-full' : 'justify-start'"
+            >
               <v-icon
+                v-if="!isChevronInverted"
                 :size="isCompact ? 20 : 24"
                 :icon="isPanelExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
                 :class="interfaceStore.isOnSmallScreen ? '-mt-[2px] mr-[3px]' : 'mt-[2px] mr-[2px]'"
               />
-              <div class="flex flex-col">
+              <div class="flex w-full flex-col">
                 <div
                   class="font-semibold"
                   :class="interfaceStore.isOnSmallScreen ? `text-[${textSize - 4}px]` : `text-[${textSize}px]`"
@@ -28,6 +32,12 @@
                   <slot name="title" />
                 </div>
               </div>
+              <v-icon
+                v-if="isChevronInverted"
+                :size="isCompact ? 20 : 24"
+                :icon="isPanelExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                :class="interfaceStore.isOnSmallScreen ? '-mt-[2px] mr-[3px]' : 'mt-[2px] mr-[2px]'"
+              />
             </div>
             <div
               class="font-normal"
@@ -37,7 +47,7 @@
             </div>
           </div>
         </div>
-        <div class="flex w-full justify-between ml-4">
+        <div class="flex justify-between ml-4">
           <div v-if="hasInfoSlot" class="flex items-center w-[10%]">
             <v-btn class="ml-auto rounded-full" size="small" color="transparent" elevation="0" @click.stop="toggleInfo">
               <v-icon :size="interfaceStore.isOnSmallScreen ? 15 : 18" color="white" icon="mdi-information-outline" />
@@ -112,15 +122,15 @@ const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps<{
   /**
-   *
+   * Removes the top divider.
    */
   noTopDivider?: boolean
   /**
-   *
+   * Removes the bottom divider.
    */
   noBottomDivider?: boolean
   /**
-   *
+   * Whether the panel is expanded.
    */
   isExpanded?: boolean
   /**
@@ -139,6 +149,14 @@ const props = defineProps<{
    * Disable hover effect on the panel header.
    */
   hoverEffect?: boolean
+  /**
+   * Invert horizontal position of the chevron icon.
+   */
+  invertChevron?: boolean
+  /**
+   * Elevation effect on the panel header.
+   */
+  elevationEffect?: boolean
 }>()
 
 const slots = useSlots()
@@ -152,14 +170,25 @@ const isMarkExpanded = ref(props.markExpanded ?? false)
 const isCompact = ref(props.compact ?? false)
 const isDarkenContent = ref(props.darkenContent ?? false)
 const isHoverEffect = ref(props.hoverEffect ?? false)
+const isChevronInverted = ref(props.invertChevron ?? false)
+const isElevationEffect = ref(props.elevationEffect ?? false)
 
 const content = ref<HTMLElement | null>(null)
 const infoContent = ref<HTMLElement | null>(null)
 const warningContent = ref<HTMLElement | null>(null)
 const animateWarning = ref(true)
+const showElevationEffect = ref(isPanelExpanded.value || false)
 
 const togglePanel = (): void => {
-  isPanelExpanded.value = !isPanelExpanded.value
+  if (isPanelExpanded.value) {
+    isPanelExpanded.value = false
+    setTimeout(() => {
+      showElevationEffect.value = false
+    }, 300)
+  } else {
+    showElevationEffect.value = true
+    isPanelExpanded.value = true
+  }
 }
 
 const textSize = computed(() => {

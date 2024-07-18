@@ -7,14 +7,13 @@
       class="rounded-[15%] bg-slate-950/70"
     ></canvas>
   </div>
-  <Dialog v-model:show="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" class="w-72">
-    <div class="w-full h-full">
-      <div class="flex flex-col items-center justify-around">
-        <div class="flex items-center justify-between w-full my-1">
-          <span class="mr-1 text-slate-100">Heading style</span>
-          <div class="w-40"><Dropdown v-model="widget.options.headingStyle" :options="headingOptions" /></div>
-        </div>
-      </div>
+  <Dialog
+    v-model:show="widgetStore.widgetManagerVars(widget.hash).configMenuOpen"
+    class="flex pa-4 bg-[#ffffff10] text-white backdrop-blur-2xl border-[1px] border-[#FAFAFA12]"
+  >
+    <div class="flex items-center">
+      <span class="mr-3 text-slate-100">Heading style</span>
+      <div class="w-40"><Dropdown v-model="widget.options.headingStyle" :options="headingOptions" /></div>
     </div>
   </Dialog>
 </template>
