@@ -256,7 +256,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlassButton from '@/components/GlassButton.vue'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
-import { isValidNetworkAddress } from '@/libs/utils'
+import { isValidNetworkAddress, reloadCockpit } from '@/libs/utils'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -283,7 +283,7 @@ const setGlobalAddress = async (): Promise<void> => {
 
   // Temporary solution to actually set the address and connect the vehicle, since this is non-reactive today.
   // TODO: Modify the store variables to be reactive.
-  location.reload()
+  reloadCockpit(3000)
 }
 
 const resetGlobalAddress = async (): Promise<void> => {
@@ -373,7 +373,7 @@ const addWebRTCConnection = async (conn: Connection.URI): Promise<void> => {
   // Temporary solution to actually set WebRTC URI, since right now we cannot just make reactive because streams will
   // be kept open.
   // TODO: handle video stream re connection
-  location.reload()
+  reloadCockpit(3000)
 }
 
 watch(
@@ -444,7 +444,7 @@ const updateWebRtcConfiguration = (): void => {
   try {
     const newConfig = JSON.parse(customRtcConfiguration.value)
     mainVehicleStore.customWebRTCConfiguration.data = newConfig
-    location.reload()
+    reloadCockpit(3000)
   } catch (error) {
     alert(`Could not update WebRTC configuration. ${error}.`)
   }
