@@ -220,12 +220,15 @@ const updateLoggedMiniWidgets = (): void => {
   loggedMiniWidgets.value = Array.from(CurrentlyLoggedVariables.getAllVariables())
 }
 
+const widgetIsConfigured = computed(() => {
+  return miniWidget.value.options.displayName !== '' && miniWidget.value.options.variableName !== ''
+})
+
 // prevent closing the configuration menu if no variable and name are selected
 const closeDialog = async (): Promise<void> => {
-  const { variableName, displayName } = miniWidget.value.options
   const managerVars = widgetStore.miniWidgetManagerVars(miniWidget.value.hash)
 
-  if (variableName === '' || displayName === '') {
+  if (!widgetIsConfigured.value) {
     await Swal.fire({
       text: 'Please select a variable and name it before closing the configuration menu.',
       icon: 'error',
@@ -363,7 +366,7 @@ watch(showVariableChooseModal, async (newValue) => {
   }
 })
 
-const currentTab = ref('presets')
+const currentTab = ref(widgetIsConfigured.value ? 'custom' : 'presets')
 
 const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void => {
   miniWidget.value.options.displayName = template.displayName
