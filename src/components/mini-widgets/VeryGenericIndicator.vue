@@ -6,7 +6,7 @@
         <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
         <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
       </div>
-      <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap">
+      <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden">
         {{ miniWidget.options.displayName }}
       </span>
     </div>
