@@ -126,12 +126,13 @@ const widgetAdded = (e: SortableEvent.SortableEvent): void => {
   // Open the configuration menu of widgets that were just added from the edit-mode list
   const newHashes = container.value.widgets.map((w) => w.hash)
   const hashNewWidget = newHashes.find((h) => !lastKnownHashes.value.includes(h))
-  if (hashNewWidget && e.pullMode === 'clone') {
-    widgetStore.miniWidgetManagerVars(hashNewWidget).configMenuOpen = true
+  const newWidget = container.value.widgets.find((w) => w.hash === hashNewWidget)
+
+  if (newWidget && e.pullMode === 'clone') {
+    newWidget.hash = uuid()
+    widgetStore.miniWidgetManagerVars(newWidget.hash).configMenuOpen = true
   }
 
-  // Reset the hashes
-  container.value.widgets = container.value.widgets.map((w) => ({ ...w, ...{ hash: uuid() } }))
   lastKnownHashes.value = container.value.widgets.map((w) => w.hash)
 }
 
