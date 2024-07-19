@@ -1,8 +1,8 @@
 <template>
-  <div class="h-12 p-1 text-white transition-all w-[8.5rem] relative">
+  <div class="h-12 p-1 text-white transition-all w-[8.5rem] relative scroll-container">
     <span class="h-full left-[0.5rem] bottom-[5%] absolute mdi text-[2.25rem]" :class="[miniWidget.options.iconName]" />
-    <div class="absolute left-[3rem] h-full select-none font-semibold">
-      <div>
+    <div class="absolute left-[3rem] h-full select-none font-semibold scroll-container">
+      <div class="max-w-full" :class="{ 'scroll-text': valueIsOverflowing }">
         <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
         <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
       </div>
@@ -212,17 +212,20 @@ const parsedState = computed(() => {
   if (value <= -10 && value > -100) return value.toFixed(1)
   if (value <= -100 && value > -1000) return value.toFixed(0)
   if (value <= -1000 && value > -10000) return `${(value / 1000).toFixed(1)}k`
-  if (value <= -10000 && value > -100000) return `${(value / 1000).toFixed(0)}k`
-  if (value <= -100000) return '-∞'
+  if (value <= -10000) return `${(value / 1000).toFixed(0)}k`
 
   if (value < 1) return value.toFixed(3)
   if (value >= 1 && value < 100) return value.toFixed(2)
   if (value >= 100 && value < 1000) return value.toFixed(1)
   if (value >= 1000 && value < 10000) return value.toFixed(0)
   if (value >= 10000 && value < 100000) return `${(value / 1000).toFixed(1)}k`
-  if (value >= 100000 && value < 1000000) return `${(value / 1000).toFixed(0)}k`
-  if (value >= 1000000) return '+∞'
+  if (value >= 100000) return `${(value / 1000).toFixed(0)}k`
+
   return value.toFixed(0)
+})
+
+const valueIsOverflowing = computed(() => {
+  return finalValue.value <= -100000 || finalValue.value >= 1000000
 })
 
 const loggedMiniWidgets = ref(Array.from(CurrentlyLoggedVariables.getAllVariables()))
@@ -396,7 +399,7 @@ watchEffect(() => {
 })
 </script>
 
-<style>
+<style scoped>
 .close-icon {
   position: fixed;
   top: 0px;
@@ -418,5 +421,26 @@ watchEffect(() => {
   backdrop-filter: blur(10px);
   box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.25);
   border-radius: 5px;
+}
+
+.scroll-container {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scroll-text {
+  animation: 3s linear 1s infinite alternate slidein;
+}
+
+@keyframes slidein {
+  25%,
+  50% {
+    transform: translateX(0%);
+  }
+  90%,
+  100% {
+    transform: translateX(-50%);
+  }
 }
 </style>
