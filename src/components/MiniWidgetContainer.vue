@@ -9,7 +9,7 @@
       :class="[wrap ? 'flex-wrap' : '', widgetsAlignment]"
       @start="showWidgetTrashArea = true"
       @end="showWidgetTrashArea = false"
-      @add="refreshWidgetsHashs"
+      @add="(e) => widgetAdded(e)"
       @choose="(event) => emit('chooseMiniWidget', event)"
       @unchoose="(event) => emit('unchooseMiniWidget', event)"
     >
@@ -63,8 +63,9 @@
 </template>
 
 <script setup lang="ts">
+import type SortableEvent from 'sortablejs'
 import { v4 as uuid } from 'uuid'
-import { ref, toRefs } from 'vue'
+import { onBeforeMount, ref, toRefs } from 'vue'
 import { computed } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
@@ -111,13 +112,27 @@ const container = toRefs(props).container
 const allowEditing = toRefs(props).allowEditing
 const wrap = toRefs(props).wrap
 const align = toRefs(props).align
+const lastKnownHashes = ref<string[]>([])
+
+onBeforeMount(() => {
+  lastKnownHashes.value = container.value.widgets.map((w) => w.hash)
+})
 
 const miniWidgetContainer = ref<HTMLElement>()
 
 const widgetsAlignment = computed(() => `justify-${align.value}`)
 
-const refreshWidgetsHashs = (): void => {
+const widgetAdded = (e: SortableEvent.SortableEvent): void => {
+  // Open the configuration menu of widgets that were just added from the edit-mode list
+  const newHashes = container.value.widgets.map((w) => w.hash)
+  const hashNewWidget = newHashes.find((h) => !lastKnownHashes.value.includes(h))
+  if (hashNewWidget && e.pullMode === 'clone') {
+    widgetStore.miniWidgetManagerVars(hashNewWidget).configMenuOpen = true
+  }
+
+  // Reset the hashes
   container.value.widgets = container.value.widgets.map((w) => ({ ...w, ...{ hash: uuid() } }))
+  lastKnownHashes.value = container.value.widgets.map((w) => w.hash)
 }
 
 const showWidgetTrashArea = ref(false)
