@@ -13,8 +13,8 @@
   </div>
   <v-dialog
     v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
-    persistent
     class="w-[100vw] flex justify-center items-center"
+    @after-leave="closeDialog"
   >
     <v-card class="p-8 configModal">
       <div class="close-icon mdi mdi-close" @click.stop="closeDialog"></div>
@@ -162,7 +162,7 @@ import * as MdiExports from '@mdi/js/mdi'
 import { watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import Swal from 'sweetalert2'
-import { computed, onBeforeMount, onMounted, ref, toRefs, watch, watchEffect } from 'vue'
+import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 import { round } from '@/libs/utils'
@@ -243,17 +243,13 @@ const widgetIsConfigured = computed(() => {
 const closeDialog = async (): Promise<void> => {
   const managerVars = widgetStore.miniWidgetManagerVars(miniWidget.value.hash)
 
-  if (!widgetIsConfigured.value) {
-    await Swal.fire({
-      text: 'Please select a variable and name it before closing the configuration menu.',
-      icon: 'error',
-    })
-    return
+  if (widgetIsConfigured.value) {
+    CurrentlyLoggedVariables.removeVariable(lastWidgetName.value)
+    CurrentlyLoggedVariables.addVariable(miniWidget.value.options.displayName)
+    lastWidgetName.value = miniWidget.value.options.displayName
+    updateLoggedMiniWidgets()
   }
-  CurrentlyLoggedVariables.removeVariable(lastWidgetName.value)
-  CurrentlyLoggedVariables.addVariable(miniWidget.value.options.displayName)
-  lastWidgetName.value = miniWidget.value.options.displayName
-  updateLoggedMiniWidgets()
+
   managerVars.configMenuOpen = false
 }
 
@@ -390,13 +386,6 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
   miniWidget.value.options.variableUnit = template.variableUnit
   miniWidget.value.options.variableMultiplier = template.variableMultiplier
 }
-
-// Pops open the config menu if the mini-widget is a non-configured VeryGenericIndicator
-watchEffect(() => {
-  if (miniWidget.value.component === 'VeryGenericIndicator' && miniWidget.value.options.displayName === '') {
-    widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = true
-  }
-})
 </script>
 
 <style scoped>

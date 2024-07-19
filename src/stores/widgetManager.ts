@@ -678,27 +678,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     profile.hash = corrDefault?.hash ?? profile.hash
   })
 
-  onBeforeMount(() => {
-    const filteredProfiles = filterUnconfiguredMiniWidgetsFromProfiles(savedProfiles.value)
-    savedProfiles.value = filteredProfiles
-  })
-
-  const filterUnconfiguredMiniWidgetsFromProfiles = (profiles: Profile[]): Profile[] => {
-    return profiles.map((profile) => ({
-      ...profile,
-      views: profile.views.map((view) => ({
-        ...view,
-        miniWidgetContainers: view.miniWidgetContainers.map((container) => ({
-          ...container,
-          widgets: container.widgets.filter(
-            (widget) =>
-              widget.component !== 'VeryGenericIndicator' || (widget.options && widget.options.variableName !== '')
-          ),
-        })),
-      })),
-    }))
-  }
-
   return {
     editingMode,
     snapToGrid,
