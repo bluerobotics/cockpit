@@ -1,8 +1,8 @@
 <template>
   <div class="h-12 p-1 text-white transition-all w-[8.5rem] relative scroll-container">
     <span class="h-full left-[0.5rem] bottom-[5%] absolute mdi text-[2.25rem]" :class="[miniWidget.options.iconName]" />
-    <div class="absolute left-[3rem] h-full select-none font-semibold scroll-container">
-      <div class="max-w-full" :class="{ 'scroll-text': valueIsOverflowing }">
+    <div class="absolute left-[3rem] h-full select-none font-semibold scroll-container w-[5.5rem]">
+      <div class="w-full" :class="{ 'scroll-text': valueIsOverflowing }">
         <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
         <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
       </div>
