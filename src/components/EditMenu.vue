@@ -483,7 +483,7 @@
             <div />
             <img
               v-bind="tooltipProps"
-              :src="`../src/assets/widgets/${widgetType}.png`"
+              :src="widgetImages[widgetType]"
               alt="widget-icon"
               class="p-4 max-h-[75%] max-w-[95%]"
             />
@@ -589,6 +589,17 @@ import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
 import BoatThumb from '@/assets/vehicles/BlueBoat_thumb.png'
 import BlueRoboticsLogo from '@/assets/vehicles/BlueRoboticsLogo.png'
 import RovThumb from '@/assets/vehicles/BlueROV_thumb.png'
+import AttitudeImg from '@/assets/widgets/Attitude.png'
+import CompassImg from '@/assets/widgets/Compass.png'
+import CompassHUDImg from '@/assets/widgets/CompassHUD.png'
+import DepthHUDImg from '@/assets/widgets/DepthHUD.png'
+import IFrameImg from '@/assets/widgets/IFrame.png'
+import ImageViewImg from '@/assets/widgets/ImageView.png'
+import MapImg from '@/assets/widgets/Map.png'
+import MiniWidgetsBarImg from '@/assets/widgets/MiniWidgetsBar.png'
+import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
+import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
+import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
@@ -646,6 +657,20 @@ const availableMiniWidgetTypes = computed(() =>
     managerVars: defaultMiniWidgetManagerVars,
   }))
 )
+
+const widgetImages = {
+  Attitude: AttitudeImg,
+  Compass: CompassImg,
+  DepthHUD: DepthHUDImg,
+  CompassHUD: CompassHUDImg,
+  IFrame: IFrameImg,
+  ImageView: ImageViewImg,
+  Map: MapImg,
+  MiniWidgetsBar: MiniWidgetsBarImg,
+  URLVideoPlayer: URLVideoPlayerImg,
+  VideoPlayer: VideoPlayerImg,
+  VirtualHorizon: VirtualHorizonImg,
+}
 
 const confirmDelete = async (): Promise<void> => {
   showDialog({
