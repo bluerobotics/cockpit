@@ -243,9 +243,13 @@ export class Session {
       this.onNewIceRemoteAddress(this.availableICEIPs)
     }
 
+    if (!candidate.candidate) {
+      console.debug(`[WebRTC] [Session] Ignoring empty ICE candidate.`)
+      return
+    }
+
     // Ignores unwanted routes, useful, for example, to prevent WebRTC to chose the wrong route, like when the OS default is WiFi but you want to receive the video via tether because of reliability
     if (
-      candidate.candidate &&
       Array.isArray(this.selectedICEIPs) &&
       !this.selectedICEIPs.isEmpty() &&
       !this.selectedICEIPs.some((address) => candidate.candidate!.includes(address))
@@ -256,7 +260,6 @@ export class Session {
     }
 
     if (
-      candidate.candidate &&
       Array.isArray(this.selectedICEIPs) &&
       !this.selectedICEProtocols.isEmpty() &&
       !this.selectedICEProtocols.some((protocol) => candidate.candidate!.toLowerCase().includes(protocol))
