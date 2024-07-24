@@ -37,10 +37,12 @@
 import { useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
 import gsap from 'gsap'
+import { unit } from 'mathjs'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { constrain, range, resetCanvas, round } from '@/libs/utils'
+import { unitAbbreviation } from '@/libs/units'
+import { range, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -84,6 +86,7 @@ const maxRecentDepth = computed(() => Math.max(...recentDepths.value))
 const maxGraphDepth = computed(() => (1.3 * maxRecentDepth.value > 10 ? 1.3 * maxRecentDepth.value : 10))
 const depthGraphDistances = computed(() => range(0, maxGraphDepth.value + 1))
 const maxDepth = computed(() => Math.max(...depthGraphDistances.value))
+const currentUnit = computed(() => unitAbbreviation[interfaceStore.displayUnitPreferences.distance])
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
@@ -108,16 +111,16 @@ const canvasSize = computed(() => ({
 
 // The implementation below makes sure we don't update the Depth value in the widget whenever
 // the system Depth (from vehicle) updates, preventing unnecessary performance bottlenecks.
-watch(
-  () => store.altitude.msl,
-  (newMslAltitude) => {
-    const newDepth = -1 * constrain(newMslAltitude, newMslAltitude, 0)
-    const depthDiff = Math.abs(newDepth - (depth.value || 0))
-    if (depthDiff > 0.1) {
-      passedDepths.value.push(newDepth)
-    }
-  }
-)
+watch(store.altitude, () => {
+  const altitude = store.altitude.msl
+  const newDepth = unit(-altitude.value, altitude.toJSON().unit)
+
+  const depthDiff = Math.abs(newDepth.value - (depth.value || 0))
+  if (depthDiff < 0.1) return
+
+  const depthConverted = newDepth.to(interfaceStore.displayUnitPreferences.distance)
+  passedDepths.value.push(depthConverted.toJSON().value)
+})
 
 // Returns the projected Y position of the depth line for a given distance
 const distanceY = (altitude: number): number => {
@@ -173,7 +176,7 @@ const renderCanvas = (): void => {
       ctx.lineWidth = '2'
       ctx.moveTo(canvasWidth - stdPad - 3.3 * linesFontSize, y + initialPaddingY)
       ctx.lineTo(stdPad + 3.9 * refFontSize + refTriangleSize, y + initialPaddingY)
-      ctx.fillText(`${distance} m`, canvasWidth - stdPad - 3 * linesFontSize, y + initialPaddingY)
+      ctx.fillText(`${distance} ${currentUnit.value}`, canvasWidth - stdPad - 3 * linesFontSize, y + initialPaddingY)
     }
     ctx.stroke()
   }
@@ -188,7 +191,7 @@ const renderCanvas = (): void => {
     ctx.textAlign = 'right'
     ctx.font = `bold ${refFontSize}px Arial`
     ctx.fillText(
-      `${depth.value.toFixed(1)} m`,
+      `${depth.value.toFixed(1)} ${currentUnit.value}`,
       stdPad + 4.3 * refFontSize - refTriangleSize - stdPad,
       indicatorY + initialPaddingY
     )
