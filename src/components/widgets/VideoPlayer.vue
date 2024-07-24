@@ -202,6 +202,12 @@ const serverStatus = computed(() => {
 
 const streamStatus = computed(() => {
   if (nameSelectedStream.value === undefined) return 'Unknown.'
+
+  const availableSources = videoStore.availableIceIps
+  if (!availableSources.isEmpty() && !availableSources.find((ip) => videoStore.allowedIceIps.includes(ip))) {
+    return `Stream is coming from IPs [${availableSources.join(', ')}], which are not in the list of allowed sources
+    [${videoStore.allowedIceIps.join(', ')}]. Please check your configuration.`
+  }
   return videoStore.getStreamData(nameSelectedStream.value)?.webRtcManager.streamStatus ?? 'Unknown.'
 })
 </script>
