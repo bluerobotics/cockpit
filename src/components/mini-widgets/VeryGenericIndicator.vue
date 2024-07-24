@@ -287,7 +287,11 @@ watch(
 )
 
 watch(store.genericVariables, () => updateVariableState())
-watch(store.availableGenericVariables, () => updateGenericVariablesNames())
+watch(
+  () => store.availableGenericVariables,
+  () => updateGenericVariablesNames(),
+  { deep: true }
+)
 watch(
   miniWidget,
   () => {
