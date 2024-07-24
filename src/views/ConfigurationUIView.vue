@@ -91,12 +91,35 @@
           </div>
         </template>
       </ExpansiblePanel>
+      <ExpansiblePanel no-bottom-divider no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <template #title>Display units</template>
+        <template #content>
+          <div class="flex w-full">
+            <div class="flex flex-col w-full px-4 pt-5">
+              <div class="flex flex-row justify-start items-center w-full mb-[35px]">
+                <div class="flex w-[33%]">Distance</div>
+                <div class="flex w-[66%]">
+                  <v-radio-group v-model="interfaceStore.displayUnitPreferences.distance" inline hide-details>
+                    <v-radio :label="unitPrettyName[DistanceDisplayUnit.Meters]" :value="DistanceDisplayUnit.Meters" />
+                    <v-radio
+                      :label="unitPrettyName[DistanceDisplayUnit.Feet]"
+                      :value="DistanceDisplayUnit.Feet"
+                      class="ml-6"
+                    />
+                  </v-radio-group>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </ExpansiblePanel>
     </template>
   </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { DistanceDisplayUnit, unitPrettyName } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'

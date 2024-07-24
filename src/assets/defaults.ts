@@ -1,5 +1,6 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { OverlayGrid } from '@/libs/sensors-logging'
+import { DistanceDisplayUnit } from '@/libs/units'
 import {
   type MiniWidgetProfile,
   type Profile,
@@ -711,4 +712,8 @@ export const defaultSensorDataloggerProfile: OverlayGrid = {
   LeftBottom: ['Pitch', 'Roll', 'Heading'],
   CenterBottom: ['Mode', 'Depth'],
   RightBottom: ['Battery voltage', 'Battery current'],
+}
+
+export const defaultDisplayUnitPreferences = {
+  distance: DistanceDisplayUnit.Meters,
 }
