@@ -2,6 +2,7 @@ import { useWindowSize } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { watch } from 'vue'
 
+import { defaultDisplayUnitPreferences } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
@@ -17,6 +18,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
       fontColor: '#FFFFFF',
       blur: 25,
     }),
+    displayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', defaultDisplayUnitPreferences),
   }),
   actions: {
     updateWidth() {
