@@ -204,7 +204,7 @@ const renderCanvas = (): void => {
   const pitchLinesStartRadius = 2.0 * aimRadius.value
 
   ctx.translate(halfCanvasWidth, halfCanvasHeight)
-  ctx.rotate(radians(renderVars.rollDegrees))
+  ctx.rotate(-radians(renderVars.rollDegrees))
 
   // Draw line for each angle
   for (const [angle, height] of Object.entries(renderVars.pitchLinesHeights)) {
