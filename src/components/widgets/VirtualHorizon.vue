@@ -82,7 +82,7 @@ const renderCanvas = (): void => {
 
   ctx.save()
 
-  ctx.rotate(radians(-1 * renderVariables.rollAngleDegrees))
+  ctx.rotate(radians(renderVariables.rollAngleDegrees))
 
   // Draw circular clipping mask
   ctx.beginPath()
@@ -144,7 +144,7 @@ const renderCanvas = (): void => {
   // Draw current horizon fixed reference lines
   ctx.save()
   ctx.lineWidth = 0.8 * baseLineWidth
-  ctx.rotate(radians(-1 * renderVariables.rollAngleDegrees))
+  ctx.rotate(radians(renderVariables.rollAngleDegrees))
   ctx.beginPath()
   ctx.moveTo(-1 * outerCircleRadius, 0)
   ctx.lineTo(-0.85 * outerCircleRadius, 0)
@@ -188,7 +188,7 @@ const renderCanvas = (): void => {
   ctx.save()
   ctx.beginPath()
   ctx.rotate(radians(90))
-  ctx.rotate(radians(-1 * renderVariables.rollAngleDegrees))
+  ctx.rotate(radians(renderVariables.rollAngleDegrees))
   ctx.lineWidth = 0.01 * baseLineWidth
   ctx.fillStyle = 'rgb(221, 43, 43)'
   ctx.moveTo(-1 * outerCircleRadius, 0)

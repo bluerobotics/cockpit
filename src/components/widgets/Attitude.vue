@@ -237,7 +237,7 @@ const renderCanvas = (): void => {
   const pitchLinesStartRadius = 2.0 * aimRadius.value
 
   ctx.translate(halfCanvasWidth, halfCanvasHeight)
-  ctx.rotate(-radians(renderVars.rollDegrees))
+  ctx.rotate(radians(renderVars.rollDegrees))
 
   const centerPos = -angleY(renderVars.cameraTiltDeg + renderVars.pitchDegrees)
   // Draw line for each angle
