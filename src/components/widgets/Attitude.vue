@@ -119,7 +119,7 @@ type RenderVariables = {
 
 const rollAngleDeg = ref(0)
 const pitchAngleDeg = ref(0)
-const cameraTiltDeg = ref(0)
+const cameraTiltDeg = ref(undefined as number | undefined)
 
 // Pitch angles for which horizontal indication lines are rendered.
 const pitchAngles = [-90, -70, -45, -30, -10, 0, 10, 30, 45, 70, 90]
@@ -191,7 +191,7 @@ watch(store.attitude, (attitude) => {
 
 watch(store.genericVariables, (message: Record<string, unknown>) => {
   const new_tilt = message.cameraTiltDeg as number
-  if (Math.abs(new_tilt - cameraTiltDeg.value) > 0.1) {
+  if (cameraTiltDeg.value === undefined || Math.abs(new_tilt - cameraTiltDeg.value) > 0.1) {
     cameraTiltDeg.value = new_tilt
   }
 })
@@ -239,7 +239,11 @@ const renderCanvas = (): void => {
   ctx.translate(halfCanvasWidth, halfCanvasHeight)
   ctx.rotate(-radians(renderVars.rollDegrees))
 
-  const centerPos = -angleY(renderVars.cameraTiltDeg + renderVars.pitchDegrees)
+  let centerPos = 0
+  if (cameraTiltDeg.value !== undefined) {
+    centerPos = -angleY(renderVars.cameraTiltDeg + renderVars.pitchDegrees)
+  }
+
   // Draw line for each angle
   for (const [angle, height] of Object.entries(renderVars.pitchLinesHeights)) {
     ctx.beginPath()
