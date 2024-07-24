@@ -4,9 +4,11 @@ import Swal from 'sweetalert2'
 
 import { defaultSensorDataloggerProfile } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
+import { unitAbbreviation } from './units'
 import { degrees } from './utils'
 
 /**
@@ -239,6 +241,7 @@ class DataLogger {
 
     const vehicleStore = useMainVehicleStore()
     const missionStore = useMissionStore()
+    const interfaceStore = useAppInterfaceStore()
 
     const initialTime = new Date()
     const fileName = `Cockpit (${format(initialTime, `${logDateFormat} - HH꞉mm꞉ss O`)}).clog`
@@ -250,12 +253,17 @@ class DataLogger {
 
       const timeNowObj = { lastChanged: timeNow.getTime() }
 
+      const unitPrefs = interfaceStore.displayUnitPreferences
+
+      const depthValue = (-vehicleStore.altitude.msl?.to(unitPrefs.distance).toJSON().value).toPrecision(4)
+      const depthUnit = unitAbbreviation[unitPrefs.distance]
+
       /* eslint-disable vue/max-len, prettier/prettier, max-len */
       let variablesData: ExtendedVariablesData = {
         [DatalogVariable.roll]: { value: `${degrees(vehicleStore.attitude.roll)?.toFixed(1)} °`, ...timeNowObj },
         [DatalogVariable.pitch]: { value: `${degrees(vehicleStore.attitude.pitch)?.toFixed(1)} °`, ...timeNowObj },
         [DatalogVariable.heading]: { value: `${degrees(vehicleStore.attitude.yaw)?.toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.depth]: { value: `${vehicleStore.altitude.msl?.toPrecision(4)} m`, ...timeNowObj },
+        [DatalogVariable.depth]: { value: `${depthValue} ${depthUnit}`, ...timeNowObj },
         [DatalogVariable.mode]: { value: vehicleStore.mode || 'Unknown', ...timeNowObj },
         [DatalogVariable.batteryVoltage]: { value: `${vehicleStore.powerSupply.voltage?.toFixed(2)} V` || 'Unknown', ...timeNowObj },
         [DatalogVariable.batteryCurrent]: { value: `${vehicleStore.powerSupply.current?.toFixed(2)} A` || 'Unknown', ...timeNowObj },

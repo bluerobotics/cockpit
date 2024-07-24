@@ -1,4 +1,5 @@
 import { differenceInMilliseconds } from 'date-fns'
+import { unit } from 'mathjs'
 
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -53,7 +54,7 @@ export type ArduPilot = ArduPilotVehicle<any>
  * Generic ArduPilot vehicle
  */
 export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
-  _altitude = new Altitude({ msl: 0, rel: 0 })
+  _altitude = new Altitude({ msl: unit(0, 'm'), rel: 0 })
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
   _communicationErrors = 0
@@ -345,7 +346,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       }
       case MAVLinkType.AHRS2: {
         const ahrsMessage = mavlink_message.message as Message.Ahrs2
-        this._altitude.msl = ahrsMessage.altitude
+        this._altitude.msl = unit(ahrsMessage.altitude, 'm')
         this.onAltitude.emit()
         break
       }
