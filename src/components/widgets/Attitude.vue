@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core'
+import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
@@ -207,6 +207,11 @@ const angleY = (angle: number): number => {
   const ret = scaled_angle * angle_factor * canvasSize.value.height
   return ret
 }
+
+const canvasVisible = useElementVisibility(canvasRef)
+watch(canvasVisible, (isVisible, wasVisible) => {
+  if (isVisible && !wasVisible) renderCanvas()
+})
 
 const renderCanvas = (): void => {
   if (canvasRef.value === undefined || canvasRef.value === null) return
