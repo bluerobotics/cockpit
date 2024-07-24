@@ -48,6 +48,7 @@
     "ky": "^1.2.0",
     "leaflet": "1.9.3",
     "localforage": "^1.10.0",
+    "mathjs": "^13.0.3",
     "pinia": "^2.0.13",
     "roboto-fontface": "*",
     "semver": "^7.5.4",
