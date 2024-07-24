@@ -267,7 +267,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
      */
     const getDeepVariables = (obj: Record<string, unknown>, acc: string[], baseKey?: string): void => {
       Object.entries(obj).forEach(([k, v]) => {
-        if (v instanceof Object) {
+        if (v instanceof Object && !Array.isArray(v)) {
           let identifier: string | undefined = undefined
           Object.keys(v).forEach((subKey) => {
             if (mavlinkIdentificationKeys.includes(subKey)) {
