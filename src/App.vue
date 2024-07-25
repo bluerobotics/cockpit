@@ -214,7 +214,14 @@
 
       <div ref="routerSection" class="router-view">
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
-          <div id="mainTopBar" class="bar top-bar">
+          <div
+            id="mainTopBar"
+            class="bar top-bar"
+            :style="[
+              interfaceStore.globalGlassMenuStyles,
+              interfaceStore.isOnSmallScreen && interfaceStore.isOnSmallScreen ? topBarScaleStyle : undefined,
+            ]"
+          >
             <button
               class="flex items-center justify-center h-full aspect-square top-bar-hamburger"
               :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
@@ -257,7 +264,14 @@
           </div>
           <div v-for="view in widgetStore.viewsToShow" :key="view.name">
             <Transition name="fade">
-              <div v-show="view.name === currentSelectedViewName" class="bar bottom-bar">
+              <div
+                v-show="view.name === currentSelectedViewName"
+                class="bar bottom-bar"
+                :style="[
+                  interfaceStore.globalGlassMenuStyles,
+                  interfaceStore.isOnSmallScreen ? bottomBarScaleStyle : undefined,
+                ]"
+              >
                 <MiniWidgetContainer
                   :container="view.miniWidgetContainers[0]"
                   :allow-editing="widgetStore.editingMode"
@@ -287,7 +301,7 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp } from '@vueuse/core'
+import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp, useWindowSize } from '@vueuse/core'
 import { format } from 'date-fns'
 import Swal from 'sweetalert2'
 import { computed, DefineComponent, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -588,6 +602,28 @@ const currentSelectedViewName = computed(() => widgetStore.currentView.name)
 // Clock
 const timeNow = useTimestamp({ interval: 1000 })
 
+const { width: windowWidth } = useWindowSize()
+
+const originalBarWidth = 1800
+
+const topBarScaleStyle = computed(() => {
+  const scale = windowWidth.value / originalBarWidth
+  return {
+    transform: `scale(${scale})`,
+    transformOrigin: 'top left',
+    width: `${originalBarWidth}px`,
+  }
+})
+
+const bottomBarScaleStyle = computed(() => {
+  const scale = windowWidth.value / originalBarWidth
+  return {
+    transform: `scale(${scale})`,
+    transformOrigin: 'bottom left',
+    width: `${originalBarWidth}px`,
+  }
+})
+
 // Control showing mouse
 let hideMouseTimeoutId: ReturnType<typeof setInterval>
 
@@ -723,12 +759,10 @@ body.hide-cursor {
 
 .bar {
   width: 100%;
-  background: rgba(108, 117, 125, 0.5);
   display: flex;
   justify-content: space-between;
   z-index: 60;
   position: absolute;
-  @apply backdrop-blur-[2px];
 }
 
 .bottom-bar {
