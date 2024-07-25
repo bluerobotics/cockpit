@@ -24,11 +24,17 @@
       <div class="no-video-alert">
         <p>
           <span class="text-xl font-bold">Server status: </span>
-          <span>{{ serverStatus }}</span>
+          <span v-for="(statusParagraph, i) in serverStatus.toString().split('\\n')" :key="i">
+            {{ statusParagraph }}
+            <br />
+          </span>
         </p>
         <p>
           <span class="text-xl font-bold">Stream status: </span>
-          <span>{{ streamStatus }}</span>
+          <span v-for="(statusParagraph, i) in streamStatus.toString().split('\\n')" :key="i">
+            {{ statusParagraph }}
+            <br />
+          </span>
         </p>
       </div>
     </div>
@@ -206,7 +212,7 @@ const streamStatus = computed(() => {
   const availableSources = videoStore.availableIceIps
   if (!availableSources.isEmpty() && !availableSources.find((ip) => videoStore.allowedIceIps.includes(ip))) {
     return `Stream is coming from IPs [${availableSources.join(', ')}], which are not in the list of allowed sources
-    [${videoStore.allowedIceIps.join(', ')}]. Please check your configuration.`
+      [${videoStore.allowedIceIps.join(', ')}].\\n Please check your configuration.`
   }
   return videoStore.getStreamData(nameSelectedStream.value)?.webRtcManager.streamStatus ?? 'Unknown.'
 })
