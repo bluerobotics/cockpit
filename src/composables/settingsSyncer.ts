@@ -62,6 +62,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     }
 
     await showDialog({
+      maxWidth: 600,
       title: 'Conflict with BlueOS',
       message: `
         The value for '${key}' that is currently used in Cockpit differs from the one stored in BlueOS. What do you

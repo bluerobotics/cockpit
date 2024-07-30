@@ -86,12 +86,12 @@ import '@/libs/map/LeafletRotatedMarker.js'
 import { useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, Map } from 'leaflet'
-import Swal from 'sweetalert2'
 import { type Ref, computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
@@ -109,6 +109,7 @@ import type { Widget } from '@/types/widgets'
 const props = defineProps<{ widget: Widget }>()
 const widget = toRefs(props).widget
 const interfaceStore = useAppInterfaceStore()
+const { showDialog } = useInteractionDialog()
 
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
@@ -489,10 +490,10 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
     missionItemsInVehicle.forEach((w) => {
       missionStore.currentPlanningWaypoints.push(w)
-      Swal.fire({ icon: 'success', title: 'Mission download succeed!', timer: 2000 })
+      showDialog({ variant: 'success', message: 'Mission download succeed!', timer: 2000 })
     })
   } catch (error) {
-    Swal.fire({ icon: 'error', title: 'Mission download failed', text: error as string, timer: 5000 })
+    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
   } finally {
     fetchingMission.value = false
   }

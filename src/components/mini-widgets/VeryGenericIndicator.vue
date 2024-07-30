@@ -14,22 +14,22 @@
   <v-dialog
     v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
     class="w-[100vw] flex justify-center items-center"
-    @after-leave="closeDialog"
+    @after-leave="closeVgiDialog"
   >
-    <v-card class="p-8 configModal">
-      <div class="close-icon mdi mdi-close" @click.stop="closeDialog"></div>
+    <v-card class="config-modal p-8" :style="interfaceStore.globalGlassMenuStyles">
+      <div class="close-icon mdi mdi-close" @click.stop="closeVgiDialog"></div>
       <v-card-title class="text-white">
         <div class="flex items-center mb-3 mt-[-5px] justify-evenly">
           <div
-            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
-            :class="{ 'bg-slate-400': currentTab === 'presets' }"
+            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-[#FFFFFF33]"
+            :class="{ 'bg-[#FFFFFF22]': currentTab === 'presets' }"
             @click="currentTab = 'presets'"
           >
             Presets
           </div>
           <div
-            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-slate-400"
-            :class="{ 'bg-slate-400': currentTab === 'custom' }"
+            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-[#FFFFFF33]"
+            :class="{ 'bg-[#FFFFFF22]': currentTab === 'custom' }"
             @click="currentTab = 'custom'"
           >
             Custom
@@ -40,13 +40,13 @@
       <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
         <div class="flex flex-col items-center justify-between w-full mt-3">
           <span class="w-full mb-1 text-sm text-slate-100/50">Display name</span>
-          <input v-model="miniWidget.options.displayName" class="w-full px-2 py-1 rounded-md bg-slate-200" />
+          <input v-model="miniWidget.options.displayName" class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]" />
         </div>
         <div class="flex flex-col items-center justify-between w-full mt-3">
           <span class="w-full mb-1 text-sm text-slate-100/50">Variable</span>
           <div class="relative w-full">
             <button
-              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-[#FFFFFF12] hover:bg-slate-400"
               @click="showVariableChooseModal = !showVariableChooseModal"
             >
               <p class="text-ellipsis overflow-x-clip">
@@ -63,7 +63,7 @@
             <input
               v-model="variableNameSearchString"
               placeholder="Search variable..."
-              class="w-full px-2 py-1 rounded-md bg-slate-200"
+              class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
             />
             <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
               <span
@@ -80,18 +80,18 @@
         <div class="flex items-center justify-between w-full mt-2">
           <div class="flex flex-col items-center justify-between w-full mx-5">
             <span class="w-full mb-1 text-sm text-slate-100/50">Unit</span>
-            <input v-model="miniWidget.options.variableUnit" class="w-full px-2 py-1 rounded-md bg-slate-200" />
+            <input v-model="miniWidget.options.variableUnit" class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]" />
           </div>
           <div class="flex flex-col items-center justify-between w-full mx-5">
             <span class="w-full mb-1 text-sm text-slate-100/50">Multiplier</span>
-            <input v-model="miniWidget.options.variableMultiplier" class="w-full px-2 py-1 rounded-md bg-slate-200" />
+            <input v-model="miniWidget.options.variableMultiplier" class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]" />
           </div>
         </div>
         <div class="flex flex-col items-center justify-between w-full mt-3">
           <span class="w-full mb-1 text-sm text-slate-100/50">Icon</span>
           <div class="relative w-full">
             <button
-              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-slate-200 hover:bg-slate-400"
+              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-[#FFFFFF12] hover:bg-slate-400"
               @click="showIconChooseModal = !showIconChooseModal"
             >
               <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.iconName || 'Click to choose...' }}</p>
@@ -107,7 +107,7 @@
             <div>
               <input
                 v-model="iconSearchString"
-                class="w-full px-2 py-1 rounded-md bg-slate-200"
+                class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
                 placeholder="Search icons..."
               />
             </div>
@@ -161,15 +161,19 @@
 import * as MdiExports from '@mdi/js/mdi'
 import { watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
-import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 import { round } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { type VeryGenericIndicatorPreset, veryGenericIndicatorPresets } from '@/types/genericIndicator'
 import type { MiniWidget } from '@/types/widgets'
+
+const { showDialog } = useInteractionDialog()
+const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps<{
   /**
@@ -240,7 +244,7 @@ const widgetIsConfigured = computed(() => {
 })
 
 // prevent closing the configuration menu if no variable and name are selected
-const closeDialog = async (): Promise<void> => {
+const closeVgiDialog = async (): Promise<void> => {
   const managerVars = widgetStore.miniWidgetManagerVars(miniWidget.value.hash)
 
   if (widgetIsConfigured.value) {
@@ -373,9 +377,9 @@ watch(showVariableChooseModal, async (newValue) => {
   if (newValue === true && variableNamesToShow.value.isEmpty()) {
     widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = false
     showVariableChooseModal.value = false
-    await Swal.fire({
-      text: 'No variables found to choose from. Please make sure your vehicle is connected.',
-      icon: 'error',
+    await showDialog({
+      message: 'No variables found to choose from. Please make sure your vehicle is connected.',
+      variant: 'error',
     })
     widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = true
   }
@@ -395,24 +399,21 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
 <style scoped>
 .close-icon {
   position: fixed;
-  top: 0px;
-  right: 5px;
+  top: 5px;
+  right: 10px;
   cursor: pointer;
   color: white;
-  font-size: 24px;
+  font-size: 26px;
   border-radius: 8px;
 }
 
-.configModal {
+.config-modal {
   position: absolute;
   top: 50%;
   left: 50%;
   margin-right: -50%;
   transform: translate(-50%, -50%);
   height: fit-content;
-  background-color: rgba(71, 85, 105, 0.4);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.25);
   border-radius: 5px;
 }
 

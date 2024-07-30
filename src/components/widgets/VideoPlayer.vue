@@ -99,9 +99,9 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { isEqual } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
@@ -109,6 +109,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 const interfaceStore = useAppInterfaceStore()
 
+const { showDialog } = useInteractionDialog()
 const videoStore = useVideoStore()
 const widgetStore = useWidgetManagerStore()
 
@@ -151,7 +152,7 @@ const streamConnectionRoutine = setInterval(() => {
     if (namesAvailableStreams.value.length > 1) {
       const text = `You have multiple streams available, so we chose one randomly to start with.
         If you want to change it, please open the widget configuration on the edit-menu.`
-      Swal.fire({ title: 'Multiple streams detected', text: text, icon: 'info', confirmButtonText: 'OK' })
+      showDialog({ maxWidth: 600, title: 'Multiple streams detected', message: text, variant: 'info' })
     }
   }
 

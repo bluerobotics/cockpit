@@ -303,7 +303,6 @@
 <script setup lang="ts">
 import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp, useWindowSize } from '@vueuse/core'
 import { format } from 'date-fns'
-import Swal from 'sweetalert2'
 import { computed, DefineComponent, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -448,8 +447,6 @@ const mainMenuWidth = computed(() => {
   return { width }
 })
 
-let requestDisarmConfirmationPopup = false
-
 const toggleMainMenu = (): void => {
   if (isMenuOpen.value === true) {
     closeMainMenu()
@@ -458,8 +455,6 @@ const toggleMainMenu = (): void => {
   }
 }
 
-// When a isVehicleArmed change its value a watcher call Swal.close, this flag is
-// used to avoid closing others Swal instances instead of the one intended
 const openMainMenu = (): void => {
   if (vehicleStore.isArmed) {
     showDialog({
@@ -493,7 +488,6 @@ const openMainMenu = (): void => {
         showMainMenu.value = true
         isMenuOpen.value = true
       }
-      requestDisarmConfirmationPopup = false
     })
   } else {
     showMainMenu.value = true
@@ -553,13 +547,6 @@ const menuLabelSize = computed(() => {
   if (interfaceStore.isSm) return 'text-[10px]'
   if (interfaceStore.isXs && windowHeight.value >= 700) return 'text-[12px]'
   return 'text-[10px]'
-})
-
-const isVehicleArmed = computed(() => vehicleStore.isArmed)
-watch(isVehicleArmed, (isArmed) => {
-  if (requestDisarmConfirmationPopup && !isArmed) {
-    Swal.close()
-  }
 })
 
 const mainMenu = ref()
@@ -730,10 +717,6 @@ body.hide-cursor {
   transform: scale(0.78);
   right: -11%;
   top: -11%;
-}
-
-.swal2-container {
-  z-index: 10000;
 }
 
 .fade-enter-active,

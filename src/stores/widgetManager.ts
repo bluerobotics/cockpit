@@ -3,7 +3,6 @@ import '@/libs/cosmos'
 import { useDebounceFn, useStorage, useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
-import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeMount, onBeforeUnmount, Ref, ref, watch } from 'vue'
 
@@ -14,6 +13,7 @@ import {
   widgetProfiles,
 } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -40,6 +40,7 @@ import {
 } from '@/types/widgets'
 
 import { useMainVehicleStore } from './mainVehicle'
+const { showDialog } = useInteractionDialog()
 
 const savedProfilesKey = 'cockpit-saved-profiles-v8'
 
@@ -101,7 +102,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       const profilesHashes = savedProfiles.value.map((p) => p.hash)
 
       if (!profilesHashes.includes(newValue.hash)) {
-        Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
+        showDialog({ variant: 'error', message: 'Could not find profile.', timer: 3000 })
         return
       }
 
@@ -207,7 +208,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   function loadProfile(profile: Profile): void {
     const profileIndex = savedProfiles.value.findIndex((p) => p.hash === profile.hash)
     if (profileIndex === -1) {
-      Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
+      showDialog({ message: 'Could not find profile.', variant: 'error', timer: 3000 })
       return
     }
     currentProfileIndex.value = profileIndex
@@ -238,7 +239,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       try {
         validateProfile(maybeProfile)
       } catch (error) {
-        Swal.fire({ icon: 'error', text: `Invalid profile file. ${error}` })
+        showDialog({ variant: 'error', message: `Invalid profile file. ${error}` })
         return
       }
       maybeProfile.hash = uuid4()
@@ -252,7 +253,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const importProfilesFromVehicle = async (): Promise<void> => {
     const newProfiles = await getKeyDataFromCockpitVehicleStorage(vehicleStore.globalAddress, savedProfilesKey)
     if (!Array.isArray(newProfiles)) {
-      Swal.fire({ icon: 'error', text: 'Could not import profiles from vehicle. Profiles do not form an array.' })
+      showDialog({
+        variant: 'error',
+        message: 'Could not import profiles from vehicle. Profiles do not form an array.',
+      })
       return
     }
 
@@ -260,18 +264,18 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       try {
         validateProfile(profile)
       } catch (error) {
-        Swal.fire({ icon: 'error', text: `Invalid profile file. ${error}` })
+        showDialog({ variant: 'error', message: `Invalid profile file. ${error}` })
         return
       }
     })
 
     savedProfiles.value = newProfiles
-    Swal.fire({ icon: 'success', text: 'Cockpit profiles imported from vehicle.', timer: 3000 })
+    showDialog({ variant: 'success', message: 'Cockpit profiles imported from vehicle.', timer: 3000 })
   }
 
   const exportProfilesToVehicle = async (): Promise<void> => {
     await setKeyDataOnCockpitVehicleStorage(vehicleStore.globalAddress, savedProfilesKey, savedProfiles.value)
-    Swal.fire({ icon: 'success', text: 'Cockpit profiles exported to vehicle.', timer: 3000 })
+    showDialog({ variant: 'success', message: 'Cockpit profiles exported to vehicle.', timer: 3000 })
   }
 
   /**
@@ -317,7 +321,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   function deleteProfile(profile: Profile): void {
     if (!isUserProfile(profile)) {
-      Swal.fire({ icon: 'error', text: 'Could not find profile.', timer: 3000 })
+      showDialog({ variant: 'error', message: 'Could not find profile.', timer: 3000 })
       return
     }
 
@@ -345,9 +349,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   function deleteView(view: View): void {
     if (currentProfile.value.views.length === 1) {
-      Swal.fire({
-        icon: 'error',
-        text: 'Cannot remove last view. Please create another before deleting this one.',
+      showDialog({
+        variant: 'error',
+        message: 'Cannot remove last view. Please create another before deleting this one.',
         timer: 4000,
       })
       return
@@ -372,7 +376,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   function renameView(view: View, name: string): void {
     const index = currentProfile.value.views.indexOf(view)
     if (name.length === 0) {
-      Swal.fire({ icon: 'error', text: 'View name cannot be blank.', timer: 2000 })
+      showDialog({ variant: 'error', message: 'View name cannot be blank.', timer: 2000 })
       return
     }
     currentProfile.value.views[index].name = name
@@ -384,7 +388,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   const selectView = (view: View): void => {
     if (!view.visible) {
-      Swal.fire({ icon: 'error', text: 'Cannot select a view that is not visible.', timer: 5000 })
+      showDialog({ variant: 'error', message: 'Cannot select a view that is not visible.', timer: 5000 })
       return
     }
     const index = currentProfile.value.views.indexOf(view)
@@ -417,7 +421,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       try {
         validateView(maybeView)
       } catch (error) {
-        Swal.fire({ icon: 'error', text: `Invalid view file. ${error}` })
+        showDialog({ variant: 'error', message: `Invalid view file. ${error}` })
         return
       }
       maybeView.hash = uuid4()
@@ -467,7 +471,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return cont.widgets.includes(miniWidget)
     })
     if (container === undefined) {
-      Swal.fire({ icon: 'error', text: 'Mini-widget container not found.' })
+      showDialog({ variant: 'error', message: 'Mini-widget container not found.' })
       return
     }
 
@@ -570,7 +574,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
     const numberOfVisibleViews = indexesOfVisibleViews.length
     if (numberOfVisibleViews === 1) {
-      Swal.fire({ icon: 'error', text: 'No visible views other the current one.', timer: 2500, timerProgressBar: true })
+      showDialog({
+        variant: 'error',
+        message: 'No visible views other the current one.',
+        timer: 2500,
+      })
       return
     }
 

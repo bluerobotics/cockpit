@@ -4,7 +4,6 @@ import { differenceInSeconds, format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import localforage from 'localforage'
 import { defineStore } from 'pinia'
-import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import { computed, ref, watch } from 'vue'
 import fixWebmDuration from 'webm-duration-fix'
@@ -216,16 +215,16 @@ export const useVideoStore = defineStore('video', () => {
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {
-      Swal.fire({ text: 'No streams available.', icon: 'error' })
+      showDialog({ message: 'No streams available.', variant: 'error' })
       return
     }
 
     if (activeStreams.value[streamName]!.mediaStream === undefined) {
-      Swal.fire({ text: 'Media stream not defined.', icon: 'error' })
+      showDialog({ message: 'Media stream not defined.', variant: 'error' })
       return
     }
     if (!activeStreams.value[streamName]!.mediaStream!.active) {
-      Swal.fire({ text: 'Media stream not yet active. Wait a second and try again.', icon: 'error' })
+      showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
       return
     }
 
@@ -387,7 +386,7 @@ export const useVideoStore = defineStore('video', () => {
     const files = maybeFiles.filter((file): file is { blob: Blob; filename: string } => file.blob !== undefined)
 
     if (files.length === 0) {
-      Swal.fire({ text: 'No files found.', icon: 'error' })
+      showDialog({ message: 'No files found.', variant: 'error' })
       return
     }
 
@@ -660,41 +659,31 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const issueSelectedIpNotAvailableWarning = (): void => {
-    Swal.fire({
-      html: `
-        <p>Cockpit detected that you selected an IP on the video configuration page that is not available
+    showDialog({
+      maxWidth: 600,
+      title: `Cockpit detected that you selected an IP on the video configuration page that is not available
         on the video server. This will lead to no video being streamed. This can happen if you changed your
-        network or the IP of your vehicle.</p>
-        </br>
-        <p>To solve this problem, please:</p>
-        <ol>
-          <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
-          <li>2. Clear the selected IPs and select an available one from the list.</li>
-        </ol>
-      `,
-      icon: 'warning',
-      customClass: {
-        htmlContainer: 'text-left',
-      },
+        network or the IP of your vehicle.`,
+      message: [
+        'To solve this problem, please',
+        '1. Open the video configuration page (Main-menu > Configuration > Video).',
+        '2. Clear the selected IPs and select an available one from the list.',
+      ],
+      variant: 'warning',
     })
   }
 
   const issueNoIpSelectedWarning = (): void => {
-    Swal.fire({
-      html: `
-        <p>Cockpit detected more than one IP address being used to route the video streaming. This often
-        leads to video stuttering, especially if one of the IPs is from a non-wired connection.</p>
-        </br>
-        <p>To prevent issues and achieve an optimal streaming experience, please:</p>
-        <ol>
-          <li>1. Open the video configuration page (Main-menu > Configuration > Video).</li>
-          <li>2. Select the IP address that should be used for the video streaming.</li>
-        </ol>
-      `,
-      icon: 'warning',
-      customClass: {
-        htmlContainer: 'text-left',
-      },
+    showDialog({
+      maxWidth: 600,
+      title: `Cockpit detected more than one IP address being used to route the video streaming. 
+        This often leads to video stuttering, especially if one of the IPs is from a non-wired connection.`,
+      message: [
+        'To prevent issues and achieve an optimal streaming experience, please:',
+        '1. Open the video configuration page (Main-menu > Configuration > Video).',
+        '2. Select the IP address that should be used for the video streaming.',
+      ],
+      variant: 'warning',
     })
   }
 
@@ -735,7 +724,11 @@ export const useVideoStore = defineStore('video', () => {
           })
           allowedIceIps.value = newAllowedIps
           if (!allowedIceIps.value.isEmpty()) {
-            Swal.fire({ text: 'Preferred video stream routes fetched from BlueOS.', icon: 'success', timer: 5000 })
+            showDialog({
+              message: 'Preferred video stream routes fetched from BlueOS.',
+              variant: 'success',
+              timer: 5000,
+            })
           }
         } catch (error) {
           console.error('Failed to get IP information from the vehicle:', error)

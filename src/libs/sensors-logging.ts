@@ -1,8 +1,8 @@
 import { differenceInMilliseconds, differenceInSeconds, format, intervalToDuration } from 'date-fns'
 import localforage from 'localforage'
-import Swal from 'sweetalert2'
 
 import { defaultSensorDataloggerProfile } from '@/assets/defaults'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -32,6 +32,7 @@ export enum DatalogVariable {
 }
 
 const logDateFormat = 'LLL dd, yyyy'
+const { showDialog } = useInteractionDialog()
 
 /**
  * Data for VeryGenericIndicator variables
@@ -233,7 +234,7 @@ class DataLogger {
    */
   startLogging(): void {
     if (this.logging()) {
-      Swal.fire({ title: 'Error', text: 'A log is already being generated.', icon: 'error', timer: 3000 })
+      showDialog({ title: 'Error', message: 'A log is already being generated.', variant: 'error', timer: 3000 })
       return
     }
 
@@ -321,7 +322,7 @@ class DataLogger {
    */
   stopLogging(): void {
     if (!this.logging()) {
-      Swal.fire({ title: 'Error', text: 'No log is being generated.', icon: 'error', timer: 3000 })
+      showDialog({ title: 'Error', message: 'No log is being generated.', variant: 'error', timer: 3000 })
       return
     }
 
@@ -342,7 +343,7 @@ class DataLogger {
    */
   setInterval(interval: number): void {
     if (interval < 1) {
-      Swal.fire({ text: 'Minimum log interval is 1 millisecond (1000 Hz).', icon: 'error' })
+      showDialog({ message: 'Minimum log interval is 1 millisecond (1000 Hz).', variant: 'error' })
       return
     }
 
@@ -355,7 +356,7 @@ class DataLogger {
    */
   setFrequency(frequency: number): void {
     if (frequency > 1000 || frequency < 0.1) {
-      Swal.fire({ text: 'Log frequency should stay between 0.1 Hz and 1000 Hz.', icon: 'error' })
+      showDialog({ message: 'Log frequency should stay between 0.1 Hz and 1000 Hz.', variant: 'error' })
       return
     }
 

@@ -48,9 +48,11 @@
     </div>
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
-    <div class="p-6 m-5 bg-white rounded-md">
-      <p class="text-xl font-semibold">Choose a stream to record</p>
-      <div class="w-auto h-px my-2 bg-grey-lighten-3" />
+    <div
+      class="flex flex-col items-center p-2 pt-1 m-5 rounded-md gap-y-4"
+      :style="interfaceStore.globalGlassMenuStyles"
+    >
+      <p class="text-xl font-semibold m-4">Choose a stream to record</p>
       <v-select
         :model-value="nameSelectedStream"
         label="Stream name"
@@ -61,24 +63,28 @@
         no-data-text="No streams available."
         hide-details
         return-object
+        theme="dark"
+        class="w-[90%]"
         @update:model-value="updateCurrentStream"
       />
-      <div class="flex items-center">
-        <button
-          class="w-auto p-3 m-2 font-medium transition-all rounded-md shadow-md text-uppercase hover:bg-slate-100"
+      <div class="flex w-full justify-between items-center mt-4">
+        <v-btn
+          class="w-auto text-uppercase"
+          variant="text"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
           Cancel
-        </button>
-        <button
-          class="flex items-center p-3 mx-2 font-medium transition-all rounded-md shadow-md w-fit text-uppercase hover:bg-slate-100"
-          :class="{ 'bg-slate-200 opacity-30 pointer-events-none': isLoadingStream }"
+        </v-btn>
+        <v-btn
+          class="bg-[#FFFFFF11] hover:bg-[#FFFFFF33]"
+          size="large"
+          :class="{ 'opacity-30 pointer-events-none': isLoadingStream }"
           @click="startRecording"
         >
           <span>Record</span>
           <v-icon v-if="isLoadingStream" class="m-2 animate-spin">mdi-loading</v-icon>
           <div v-else class="w-5 h-5 ml-2 rounded-full bg-red" />
-        </button>
+        </v-btn>
       </div>
     </div>
   </v-dialog>
@@ -89,16 +95,19 @@
 import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { intervalToDuration } from 'date-fns'
 import { storeToRefs } from 'pinia'
-import Swal from 'sweetalert2'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { isEqual, sleep } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
 
 import VideoLibrary from '../VideoLibraryModal.vue'
 
+const { showDialog, closeDialog } = useInteractionDialog()
+const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const videoStore = useVideoStore()
 
@@ -158,14 +167,14 @@ function assertStreamIsSelectedAndAvailable(
   nameSelectedStream.value = selectedStream
 
   if (nameSelectedStream.value === undefined) {
-    Swal.fire({ text: 'No stream selected.', icon: 'error' })
+    showDialog({ message: 'No stream selected.', variant: 'error' })
     return
   }
 
   if (namesAvailableStreams.value.includes(nameSelectedStream.value)) return
 
   const errorMsg = `The selected stream is not available. Please check its source or select another stream.`
-  Swal.fire({ text: errorMsg, icon: 'error' })
+  showDialog({ message: errorMsg, variant: 'error' })
   throw new Error(errorMsg)
 }
 
@@ -189,7 +198,7 @@ const toggleRecording = async (): Promise<void> => {
 
 const startRecording = (): void => {
   if (nameSelectedStream.value && !videoStore.getStreamData(nameSelectedStream.value)?.connected) {
-    Swal.fire({ title: 'Cannot start recording.', text: 'Stream is not connected.', icon: 'error' })
+    showDialog({ title: 'Cannot start recording.', message: 'Stream is not connected.', variant: 'error' })
     return
   }
   assertStreamIsSelectedAndAvailable(nameSelectedStream.value)
@@ -231,7 +240,7 @@ const updateCurrentStream = async (streamName: string | undefined): Promise<void
   }
 
   if (isLoadingStream.value) {
-    Swal.fire({ text: 'Could not load media stream.', icon: 'error' })
+    showDialog({ message: 'Could not load media stream.', variant: 'error' })
     return
   }
 
@@ -251,14 +260,27 @@ if (widgetStore.isRealMiniWidget(miniWidget.value)) {
       if (namesAvailableStreams.value.length > 1) {
         const text = `You have multiple streams available, so we chose one randomly to start with.
           If you want to change it, please open the widget configuration.`
-        Swal.fire({ title: 'Multiple streams detected', text: text, icon: 'info', confirmButtonText: 'OK' })
+        showDialog({
+          maxWidth: 600,
+          title: 'Multiple streams detected',
+          message: text,
+          variant: 'info',
+          actions: [
+            {
+              text: 'Ok',
+              action: () => {
+                closeDialog()
+              },
+            },
+          ],
+        })
       }
-    }
 
-    const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.streamName)
-    // If the widget is not connected to the MediaStream, try to connect it
-    if (!isEqual(updatedMediaStream, mediaStream.value)) {
-      mediaStream.value = updatedMediaStream
+      const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.streamName)
+      // If the widget is not connected to the MediaStream, try to connect it
+      if (!isEqual(updatedMediaStream, mediaStream.value)) {
+        mediaStream.value = updatedMediaStream
+      }
     }
   }, 1000)
 }
@@ -298,7 +320,7 @@ watch(isRecording, () => {
       You have a video recording ongoing.
       Remember to stop it before closing Cockpit, or the record will be lost.
     `
-    Swal.fire({ text: alertMsg, icon: 'warning' })
+    showDialog({ message: alertMsg, variant: 'warning' })
     return 'I hope the user does not click on the leave button.'
   }
 })
