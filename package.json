@@ -29,6 +29,7 @@
     "@j2only/slide-unlock": "^0.5.5",
     "@mdi/font": "^7.0.96",
     "@mdi/js": "^7.2.96",
+    "@sentry/vue": "^8.20.0",
     "@types/hammerjs": "^2.0.45",
     "@vueuse/core": "9.8.1",
     "@vueuse/math": "^10.1.2",
