@@ -43,6 +43,10 @@ interface DialogOptions {
    * Persistent dialogs can't be closed with 'esc' or backdrop click.
    */
   persistent?: boolean
+  /**
+   * The time in milliseconds to automatically close the dialog.
+   */
+  timer?: number
 }
 
 /**
@@ -85,9 +89,10 @@ export function useInteractionDialog(): {
     variant: '',
     title: '',
     actions: [],
-    maxWidth: '600px',
+    maxWidth: 'auto',
     showDialog: false,
     persistent: true,
+    timer: 0,
   })
 
   let dialogApp: App<Element> | null = null
