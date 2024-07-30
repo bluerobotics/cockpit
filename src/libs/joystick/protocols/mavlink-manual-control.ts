@@ -48,146 +48,146 @@ export enum MAVLinkButtonFunction {
   camera_source_toggle = 'Camera source toggle', // 25
   mount_pan_right = 'Mount pan right', // 26
   mount_pan_left = 'Mount pan left', // 27
-    lights1_cycle = 'Lights1 cycle', // 31
-    lights1_brighter = 'Lights1 brighter', // 32
-    lights1_dimmer = 'Lights1 dimmer', // 33
-    lights2_cycle = 'Lights2 cycle', // 34
-    lights2_brighter = 'Lights2 brighter', // 35
-    lights2_dimmer = 'Lights2 dimmer', // 36
-    gain_toggle = 'Gain toggle', // 41
-    gain_inc = 'Gain inc', // 42
-    gain_dec = 'Gain dec', // 43
-    trim_roll_inc = 'Trim roll inc', // 44
-    trim_roll_dec = 'Trim roll dec', // 45
-    trim_pitch_inc = 'Trim pitch inc', // 46
-    trim_pitch_dec = 'Trim pitch dec', // 47
-    input_hold_set = 'Input hold set', // 48
-    roll_pitch_toggle = 'Roll pitch toggle', // 49
-    relay1_on = 'Relay 1 on', // 51
-    relay1_off = 'Relay 1 off', // 52
-    relay1_toggle = 'Relay 1 toggle', // 53
-    relay2_on = 'Relay 2 on', // 54
-    relay2_off = 'Relay 2 off', // 55
-    relay2_toggle = 'Relay 2 toggle', // 56
-    relay3_on = 'Relay 3 on', // 57
-    relay3_off = 'Relay 3 off', // 58
-    relay3_toggle = 'Relay 3 toggle', // 59
-    servo1_inc = 'Servo 1 inc', // 61
-    servo1_dec = 'Servo 1 dec', // 62
-    servo1_min = 'Servo 1 min', // 63
-    servo1_max = 'Servo 1 max', // 64
-    servo1_center = 'Servo 1 center', // 65
-    servo2_inc = 'Servo 2 inc', // 66
-    servo2_dec = 'Servo 2 dec', // 67
-    servo2_min = 'Servo 2 min', // 68
-    servo2_max = 'Servo 2 max', // 69
-    servo2_center = 'Servo 2 center', // 70
-    servo3_inc = 'Servo 3 inc', // 71
-    servo3_dec = 'Servo 3 dec', // 72
-    servo3_min = 'Servo 3 min', // 73
-    servo3_max = 'Servo 3 max', // 74
-    servo3_center = 'Servo 3 center', // 75
-    servo1_min_momentary = 'Servo 1 min momentary', // 76
-    servo1_max_momentary = 'Servo 1 max momentary', // 77
-    servo1_min_toggle = 'Servo 1 min toggle', // 78
-    servo1_max_toggle = 'Servo 1 max toggle', // 79
-    servo2_min_momentary = 'Servo 2 min momentary', // 80
-    servo2_max_momentary = 'Servo 2 max momentary', // 81
-    servo2_min_toggle = 'Servo 2 min toggle', // 82
-    servo2_max_toggle = 'Servo 2 max toggle', // 83
-    servo3_min_momentary = 'Servo 3 min momentary', // 84
-    servo3_max_momentary = 'Servo 3 max momentary', // 85
-    servo3_min_toggle = 'Servo 3 min toggle', // 86
-    servo3_max_toggle = 'Servo 3 max toggle', // 87
-    custom1 = 'Custom 1', // 91
-    custom2 = 'Custom 2', // 92
-    custom3 = 'Custom 3', // 93
-    custom4 = 'Custom 4', // 94
-    custom5 = 'Custom 5', // 95
-    custom6 = 'Custom 6', // 96
-    relay4_on = 'Relay 4 on', // 101
-    relay4_off = 'Relay 4 off', // 102
-    relay4_toggle = 'Relay 4 toggle', // 103
-    relay1_momentary = 'Relay 1 momentary', // 104
-    relay2_momentary = 'Relay 2 momentary', // 105
-    relay3_momentary = 'Relay 3 momentary', // 106
-    relay4_momentary = 'Relay 4 momentary', // 107
-  }
-  
-  export enum MAVLinkManualControlButton {
-    R0 = 'BTN0_FUNCTION',
-    S0 = 'BTN0_SFUNCTION',
-    R1 = 'BTN1_FUNCTION',
-    S1 = 'BTN1_SFUNCTION',
-    R2 = 'BTN2_FUNCTION',
-    S2 = 'BTN2_SFUNCTION',
-    R3 = 'BTN3_FUNCTION',
-    S3 = 'BTN3_SFUNCTION',
-    R4 = 'BTN4_FUNCTION',
-    S4 = 'BTN4_SFUNCTION',
-    R5 = 'BTN5_FUNCTION',
-    S5 = 'BTN5_SFUNCTION',
-    R6 = 'BTN6_FUNCTION',
-    S6 = 'BTN6_SFUNCTION',
-    R7 = 'BTN7_FUNCTION',
-    S7 = 'BTN7_SFUNCTION',
-    R8 = 'BTN8_FUNCTION',
-    S8 = 'BTN8_SFUNCTION',
-    R9 = 'BTN9_FUNCTION',
-    S9 = 'BTN9_SFUNCTION',
-    R10 = 'BTN10_FUNCTION',
-    S10 = 'BTN10_SFUNCTION',
-    R11 = 'BTN11_FUNCTION',
-    S11 = 'BTN11_SFUNCTION',
-    R12 = 'BTN12_FUNCTION',
-    S12 = 'BTN12_SFUNCTION',
-    R13 = 'BTN13_FUNCTION',
-    S13 = 'BTN13_SFUNCTION',
-    R14 = 'BTN14_FUNCTION',
-    S14 = 'BTN14_SFUNCTION',
-    R15 = 'BTN15_FUNCTION',
-    S15 = 'BTN15_SFUNCTION',
-    R16 = 'BTN16_FUNCTION',
-    S16 = 'BTN16_SFUNCTION',
-    R17 = 'BTN17_FUNCTION',
-    S17 = 'BTN17_SFUNCTION',
-    R18 = 'BTN18_FUNCTION',
-    S18 = 'BTN18_SFUNCTION',
-    R19 = 'BTN19_FUNCTION',
-    S19 = 'BTN19_SFUNCTION',
-    R20 = 'BTN20_FUNCTION',
-    S20 = 'BTN20_SFUNCTION',
-    R21 = 'BTN21_FUNCTION',
-    S21 = 'BTN21_SFUNCTION',
-    R22 = 'BTN22_FUNCTION',
-    S22 = 'BTN22_SFUNCTION',
-    R23 = 'BTN23_FUNCTION',
-    S23 = 'BTN23_SFUNCTION',
-    R24 = 'BTN24_FUNCTION',
-    S24 = 'BTN24_SFUNCTION',
-    R25 = 'BTN25_FUNCTION',
-    S25 = 'BTN25_SFUNCTION',
-    R26 = 'BTN26_FUNCTION',
-    S26 = 'BTN26_SFUNCTION',
-    R27 = 'BTN27_FUNCTION',
-    S27 = 'BTN27_SFUNCTION',
-    R28 = 'BTN28_FUNCTION',
-    S28 = 'BTN28_SFUNCTION',
-    R29 = 'BTN29_FUNCTION',
-    S29 = 'BTN29_SFUNCTION',
-    R30 = 'BTN30_FUNCTION',
-    S30 = 'BTN30_SFUNCTION',
-    R31 = 'BTN31_FUNCTION',
-    S31 = 'BTN31_SFUNCTION',
-  }
-  
-  const { showDialog } = useInteractionDialog()
+  lights1_cycle = 'Lights1 cycle', // 31
+  lights1_brighter = 'Lights1 brighter', // 32
+  lights1_dimmer = 'Lights1 dimmer', // 33
+  lights2_cycle = 'Lights2 cycle', // 34
+  lights2_brighter = 'Lights2 brighter', // 35
+  lights2_dimmer = 'Lights2 dimmer', // 36
+  gain_toggle = 'Gain toggle', // 41
+  gain_inc = 'Gain inc', // 42
+  gain_dec = 'Gain dec', // 43
+  trim_roll_inc = 'Trim roll inc', // 44
+  trim_roll_dec = 'Trim roll dec', // 45
+  trim_pitch_inc = 'Trim pitch inc', // 46
+  trim_pitch_dec = 'Trim pitch dec', // 47
+  input_hold_set = 'Input hold set', // 48
+  roll_pitch_toggle = 'Roll pitch toggle', // 49
+  relay1_on = 'Relay 1 on', // 51
+  relay1_off = 'Relay 1 off', // 52
+  relay1_toggle = 'Relay 1 toggle', // 53
+  relay2_on = 'Relay 2 on', // 54
+  relay2_off = 'Relay 2 off', // 55
+  relay2_toggle = 'Relay 2 toggle', // 56
+  relay3_on = 'Relay 3 on', // 57
+  relay3_off = 'Relay 3 off', // 58
+  relay3_toggle = 'Relay 3 toggle', // 59
+  servo1_inc = 'Servo 1 inc', // 61
+  servo1_dec = 'Servo 1 dec', // 62
+  servo1_min = 'Servo 1 min', // 63
+  servo1_max = 'Servo 1 max', // 64
+  servo1_center = 'Servo 1 center', // 65
+  servo2_inc = 'Servo 2 inc', // 66
+  servo2_dec = 'Servo 2 dec', // 67
+  servo2_min = 'Servo 2 min', // 68
+  servo2_max = 'Servo 2 max', // 69
+  servo2_center = 'Servo 2 center', // 70
+  servo3_inc = 'Servo 3 inc', // 71
+  servo3_dec = 'Servo 3 dec', // 72
+  servo3_min = 'Servo 3 min', // 73
+  servo3_max = 'Servo 3 max', // 74
+  servo3_center = 'Servo 3 center', // 75
+  servo1_min_momentary = 'Servo 1 min momentary', // 76
+  servo1_max_momentary = 'Servo 1 max momentary', // 77
+  servo1_min_toggle = 'Servo 1 min toggle', // 78
+  servo1_max_toggle = 'Servo 1 max toggle', // 79
+  servo2_min_momentary = 'Servo 2 min momentary', // 80
+  servo2_max_momentary = 'Servo 2 max momentary', // 81
+  servo2_min_toggle = 'Servo 2 min toggle', // 82
+  servo2_max_toggle = 'Servo 2 max toggle', // 83
+  servo3_min_momentary = 'Servo 3 min momentary', // 84
+  servo3_max_momentary = 'Servo 3 max momentary', // 85
+  servo3_min_toggle = 'Servo 3 min toggle', // 86
+  servo3_max_toggle = 'Servo 3 max toggle', // 87
+  custom1 = 'Custom 1', // 91
+  custom2 = 'Custom 2', // 92
+  custom3 = 'Custom 3', // 93
+  custom4 = 'Custom 4', // 94
+  custom5 = 'Custom 5', // 95
+  custom6 = 'Custom 6', // 96
+  relay4_on = 'Relay 4 on', // 101
+  relay4_off = 'Relay 4 off', // 102
+  relay4_toggle = 'Relay 4 toggle', // 103
+  relay1_momentary = 'Relay 1 momentary', // 104
+  relay2_momentary = 'Relay 2 momentary', // 105
+  relay3_momentary = 'Relay 3 momentary', // 106
+  relay4_momentary = 'Relay 4 momentary', // 107
+}
 
-  const manualControlButtonFromParameterName = (name: string): MAVLinkManualControlButton | undefined => {
-    const button = Object.entries(MAVLinkManualControlButton).find((entry) => entry[1] === name)?.[0]
-    return button === undefined ? button : button as MAVLinkManualControlButton
-  }
-  
+export enum MAVLinkManualControlButton {
+  R0 = 'BTN0_FUNCTION',
+  S0 = 'BTN0_SFUNCTION',
+  R1 = 'BTN1_FUNCTION',
+  S1 = 'BTN1_SFUNCTION',
+  R2 = 'BTN2_FUNCTION',
+  S2 = 'BTN2_SFUNCTION',
+  R3 = 'BTN3_FUNCTION',
+  S3 = 'BTN3_SFUNCTION',
+  R4 = 'BTN4_FUNCTION',
+  S4 = 'BTN4_SFUNCTION',
+  R5 = 'BTN5_FUNCTION',
+  S5 = 'BTN5_SFUNCTION',
+  R6 = 'BTN6_FUNCTION',
+  S6 = 'BTN6_SFUNCTION',
+  R7 = 'BTN7_FUNCTION',
+  S7 = 'BTN7_SFUNCTION',
+  R8 = 'BTN8_FUNCTION',
+  S8 = 'BTN8_SFUNCTION',
+  R9 = 'BTN9_FUNCTION',
+  S9 = 'BTN9_SFUNCTION',
+  R10 = 'BTN10_FUNCTION',
+  S10 = 'BTN10_SFUNCTION',
+  R11 = 'BTN11_FUNCTION',
+  S11 = 'BTN11_SFUNCTION',
+  R12 = 'BTN12_FUNCTION',
+  S12 = 'BTN12_SFUNCTION',
+  R13 = 'BTN13_FUNCTION',
+  S13 = 'BTN13_SFUNCTION',
+  R14 = 'BTN14_FUNCTION',
+  S14 = 'BTN14_SFUNCTION',
+  R15 = 'BTN15_FUNCTION',
+  S15 = 'BTN15_SFUNCTION',
+  R16 = 'BTN16_FUNCTION',
+  S16 = 'BTN16_SFUNCTION',
+  R17 = 'BTN17_FUNCTION',
+  S17 = 'BTN17_SFUNCTION',
+  R18 = 'BTN18_FUNCTION',
+  S18 = 'BTN18_SFUNCTION',
+  R19 = 'BTN19_FUNCTION',
+  S19 = 'BTN19_SFUNCTION',
+  R20 = 'BTN20_FUNCTION',
+  S20 = 'BTN20_SFUNCTION',
+  R21 = 'BTN21_FUNCTION',
+  S21 = 'BTN21_SFUNCTION',
+  R22 = 'BTN22_FUNCTION',
+  S22 = 'BTN22_SFUNCTION',
+  R23 = 'BTN23_FUNCTION',
+  S23 = 'BTN23_SFUNCTION',
+  R24 = 'BTN24_FUNCTION',
+  S24 = 'BTN24_SFUNCTION',
+  R25 = 'BTN25_FUNCTION',
+  S25 = 'BTN25_SFUNCTION',
+  R26 = 'BTN26_FUNCTION',
+  S26 = 'BTN26_SFUNCTION',
+  R27 = 'BTN27_FUNCTION',
+  S27 = 'BTN27_SFUNCTION',
+  R28 = 'BTN28_FUNCTION',
+  S28 = 'BTN28_SFUNCTION',
+  R29 = 'BTN29_FUNCTION',
+  S29 = 'BTN29_SFUNCTION',
+  R30 = 'BTN30_FUNCTION',
+  S30 = 'BTN30_SFUNCTION',
+  R31 = 'BTN31_FUNCTION',
+  S31 = 'BTN31_SFUNCTION',
+}
+
+const { showDialog } = useInteractionDialog()
+
+const manualControlButtonFromParameterName = (name: string): MAVLinkManualControlButton | undefined => {
+  const button = Object.entries(MAVLinkManualControlButton).find((entry) => entry[1] === name)?.[0]
+  return button === undefined ? button : button as MAVLinkManualControlButton
+}
+
 /**
  * An axis action meant to be used with MAVLink's `MANUAL_CONTROL` message
  */
@@ -198,7 +198,7 @@ export class MAVLinkManualControlAxisAction implements ProtocolAction {
    * @param {MAVLinkAxisFunction} id Axis identification
    * @param {string} name Axis human-readable name
    */
-  constructor(public id: MAVLinkAxisFunction, public name: string) {}
+  constructor(public id: MAVLinkAxisFunction, public name: string) { }
 }
 
 /**
@@ -211,7 +211,7 @@ export class MAVLinkManualControlButtonAction implements ProtocolAction {
    * @param {MAVLinkButtonFunction} id Button identification
    * @param {string} name Button human-readable name
    */
-  constructor(public id: MAVLinkButtonFunction, public name: string) {}
+  constructor(public id: MAVLinkButtonFunction, public name: string) { }
 }
 
 // Available axis actions
