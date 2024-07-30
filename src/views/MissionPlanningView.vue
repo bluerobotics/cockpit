@@ -124,11 +124,11 @@ import 'leaflet/dist/leaflet.css'
 
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, Map, Marker } from 'leaflet'
-import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -143,6 +143,7 @@ import {
 
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
+const { showDialog } = useInteractionDialog()
 
 const clearMissionOnVehicle = (): void => {
   vehicleStore.clearMissions()
@@ -158,9 +159,9 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   }
   try {
     await vehicleStore.uploadMission(missionStore.currentPlanningWaypoints, loadingCallback)
-    Swal.fire({ icon: 'success', title: 'Mission upload succeed!', timer: 2000 })
+    showDialog({ variant: 'success', message: 'Mission upload succeed!', timer: 2000 })
   } catch (error) {
-    Swal.fire({ icon: 'error', title: 'Mission upload failed', text: error as string, timer: 5000 })
+    showDialog({ variant: 'error', title: 'Mission upload failed', message: error as string, timer: 5000 })
   } finally {
     uploadingMission.value = false
   }
@@ -271,7 +272,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     const contents = event.target.result
     const maybeMission = JSON.parse(contents)
     if (!instanceOfCockpitMission(maybeMission)) {
-      Swal.fire({ icon: 'error', text: 'Invalid mission file.', timer: 3000 })
+      showDialog({ variant: 'error', message: 'Invalid mission file.', timer: 3000 })
       return
     }
     mapCenter.value = maybeMission['settings']['mapCenter']

@@ -579,7 +579,6 @@
 
 <script setup lang="ts">
 import { useConfirmDialog } from '@vueuse/core'
-import Swal from 'sweetalert2'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
@@ -789,7 +788,11 @@ const renameView = (view: View): void => {
 
 const toggleViewVisibility = (view: View): void => {
   if (view.visible && view === store.currentView) {
-    Swal.fire({ text: 'You cannot hide the current view.', icon: 'error' })
+    showDialog({
+      message: 'You cannot hide the current view.',
+      variant: 'error',
+      maxWidth: 400,
+    })
     return
   }
   view.visible = !view.visible
@@ -801,14 +804,25 @@ const renameProfile = (profile: Profile): void => {
   profileConfigDialogRevealed.value = true
 }
 
-const resetSavedProfiles = async (): Promise<void> => {
-  const result = await Swal.fire({
-    text: 'Are you sure you want to reset your profiles to the default ones?',
-    showCancelButton: true,
-    confirmButtonText: 'Reset',
-    icon: 'warning',
+const resetSavedProfiles = (): void => {
+  showDialog({
+    message: 'Are you sure you want to reset your profiles to the default ones?',
+    actions: [
+      {
+        text: 'cancel',
+        action: () => {
+          closeDialog()
+        },
+      },
+      {
+        text: 'reset profiles',
+        action: () => {
+          store.resetSavedProfiles()
+        },
+      },
+    ],
+    variant: 'warning',
   })
-  if (result.isConfirmed) store.resetSavedProfiles()
 }
 
 const availableWidgetsContainer = ref()

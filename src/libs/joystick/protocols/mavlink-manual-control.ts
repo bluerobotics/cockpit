@@ -2,9 +2,9 @@
 /* eslint-disable vue/max-len */
 /* eslint-disable max-len */
 /* eslint-disable jsdoc/require-jsdoc */
-import Swal from 'sweetalert2'
 import { capitalize } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { sendManualControl } from '@/libs/communication/mavlink'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { round, scale } from '@/libs/utils'
@@ -27,27 +27,27 @@ export enum MAVLinkAxisFunction {
  * Possible functions in the MAVLink `MANUAL_CONTROL` message protocol
  */
 export enum MAVLinkButtonFunction {
-    disabled = 'Disabled', // 0
-    shift = 'Shift', // 1
-    arm_toggle = 'Arm toggle', // 2
-    arm = 'Arm', // 3
-    disarm = 'Disarm', // 4
-    mode_manual = 'Mode manual', // 5
-    mode_stabilize = 'Mode stabilize', // 6
-    mode_depth_hold = 'Mode depth hold', // 7
-    mode_poshold = 'Mode poshold', // 8
-    mode_auto = 'Mode auto', // 9
-    mode_circle = 'Mode circle', // 10
-    mode_guided = 'Mode guided', // 11
-    mode_acro = 'Mode acro', // 12
-    mode_surftrak = 'Mode surftrak', // 13
-    mount_center = 'Mount center', // 21
-    mount_tilt_up = 'Mount tilt up', // 22
-    mount_tilt_down = 'Mount tilt down', // 23
-    camera_trigger = 'Camera trigger', // 24
-    camera_source_toggle = 'Camera source toggle', // 25
-    mount_pan_right = 'Mount pan right', // 26
-    mount_pan_left = 'Mount pan left', // 27
+  disabled = 'Disabled', // 0
+  shift = 'Shift', // 1
+  arm_toggle = 'Arm toggle', // 2
+  arm = 'Arm', // 3
+  disarm = 'Disarm', // 4
+  mode_manual = 'Mode manual', // 5
+  mode_stabilize = 'Mode stabilize', // 6
+  mode_depth_hold = 'Mode depth hold', // 7
+  mode_poshold = 'Mode poshold', // 8
+  mode_auto = 'Mode auto', // 9
+  mode_circle = 'Mode circle', // 10
+  mode_guided = 'Mode guided', // 11
+  mode_acro = 'Mode acro', // 12
+  mode_surftrak = 'Mode surftrak', // 13
+  mount_center = 'Mount center', // 21
+  mount_tilt_up = 'Mount tilt up', // 22
+  mount_tilt_down = 'Mount tilt down', // 23
+  camera_trigger = 'Camera trigger', // 24
+  camera_source_toggle = 'Camera source toggle', // 25
+  mount_pan_right = 'Mount pan right', // 26
+  mount_pan_left = 'Mount pan left', // 27
     lights1_cycle = 'Lights1 cycle', // 31
     lights1_brighter = 'Lights1 brighter', // 32
     lights1_dimmer = 'Lights1 dimmer', // 33
@@ -112,80 +112,82 @@ export enum MAVLinkButtonFunction {
     relay2_momentary = 'Relay 2 momentary', // 105
     relay3_momentary = 'Relay 3 momentary', // 106
     relay4_momentary = 'Relay 4 momentary', // 107
-}
+  }
+  
+  export enum MAVLinkManualControlButton {
+    R0 = 'BTN0_FUNCTION',
+    S0 = 'BTN0_SFUNCTION',
+    R1 = 'BTN1_FUNCTION',
+    S1 = 'BTN1_SFUNCTION',
+    R2 = 'BTN2_FUNCTION',
+    S2 = 'BTN2_SFUNCTION',
+    R3 = 'BTN3_FUNCTION',
+    S3 = 'BTN3_SFUNCTION',
+    R4 = 'BTN4_FUNCTION',
+    S4 = 'BTN4_SFUNCTION',
+    R5 = 'BTN5_FUNCTION',
+    S5 = 'BTN5_SFUNCTION',
+    R6 = 'BTN6_FUNCTION',
+    S6 = 'BTN6_SFUNCTION',
+    R7 = 'BTN7_FUNCTION',
+    S7 = 'BTN7_SFUNCTION',
+    R8 = 'BTN8_FUNCTION',
+    S8 = 'BTN8_SFUNCTION',
+    R9 = 'BTN9_FUNCTION',
+    S9 = 'BTN9_SFUNCTION',
+    R10 = 'BTN10_FUNCTION',
+    S10 = 'BTN10_SFUNCTION',
+    R11 = 'BTN11_FUNCTION',
+    S11 = 'BTN11_SFUNCTION',
+    R12 = 'BTN12_FUNCTION',
+    S12 = 'BTN12_SFUNCTION',
+    R13 = 'BTN13_FUNCTION',
+    S13 = 'BTN13_SFUNCTION',
+    R14 = 'BTN14_FUNCTION',
+    S14 = 'BTN14_SFUNCTION',
+    R15 = 'BTN15_FUNCTION',
+    S15 = 'BTN15_SFUNCTION',
+    R16 = 'BTN16_FUNCTION',
+    S16 = 'BTN16_SFUNCTION',
+    R17 = 'BTN17_FUNCTION',
+    S17 = 'BTN17_SFUNCTION',
+    R18 = 'BTN18_FUNCTION',
+    S18 = 'BTN18_SFUNCTION',
+    R19 = 'BTN19_FUNCTION',
+    S19 = 'BTN19_SFUNCTION',
+    R20 = 'BTN20_FUNCTION',
+    S20 = 'BTN20_SFUNCTION',
+    R21 = 'BTN21_FUNCTION',
+    S21 = 'BTN21_SFUNCTION',
+    R22 = 'BTN22_FUNCTION',
+    S22 = 'BTN22_SFUNCTION',
+    R23 = 'BTN23_FUNCTION',
+    S23 = 'BTN23_SFUNCTION',
+    R24 = 'BTN24_FUNCTION',
+    S24 = 'BTN24_SFUNCTION',
+    R25 = 'BTN25_FUNCTION',
+    S25 = 'BTN25_SFUNCTION',
+    R26 = 'BTN26_FUNCTION',
+    S26 = 'BTN26_SFUNCTION',
+    R27 = 'BTN27_FUNCTION',
+    S27 = 'BTN27_SFUNCTION',
+    R28 = 'BTN28_FUNCTION',
+    S28 = 'BTN28_SFUNCTION',
+    R29 = 'BTN29_FUNCTION',
+    S29 = 'BTN29_SFUNCTION',
+    R30 = 'BTN30_FUNCTION',
+    S30 = 'BTN30_SFUNCTION',
+    R31 = 'BTN31_FUNCTION',
+    S31 = 'BTN31_SFUNCTION',
+  }
+  
+  const { showDialog } = useInteractionDialog()
 
-export enum MAVLinkManualControlButton {
-  R0 = 'BTN0_FUNCTION',
-  S0 = 'BTN0_SFUNCTION',
-  R1 = 'BTN1_FUNCTION',
-  S1 = 'BTN1_SFUNCTION',
-  R2 = 'BTN2_FUNCTION',
-  S2 = 'BTN2_SFUNCTION',
-  R3 = 'BTN3_FUNCTION',
-  S3 = 'BTN3_SFUNCTION',
-  R4 = 'BTN4_FUNCTION',
-  S4 = 'BTN4_SFUNCTION',
-  R5 = 'BTN5_FUNCTION',
-  S5 = 'BTN5_SFUNCTION',
-  R6 = 'BTN6_FUNCTION',
-  S6 = 'BTN6_SFUNCTION',
-  R7 = 'BTN7_FUNCTION',
-  S7 = 'BTN7_SFUNCTION',
-  R8 = 'BTN8_FUNCTION',
-  S8 = 'BTN8_SFUNCTION',
-  R9 = 'BTN9_FUNCTION',
-  S9 = 'BTN9_SFUNCTION',
-  R10 = 'BTN10_FUNCTION',
-  S10 = 'BTN10_SFUNCTION',
-  R11 = 'BTN11_FUNCTION',
-  S11 = 'BTN11_SFUNCTION',
-  R12 = 'BTN12_FUNCTION',
-  S12 = 'BTN12_SFUNCTION',
-  R13 = 'BTN13_FUNCTION',
-  S13 = 'BTN13_SFUNCTION',
-  R14 = 'BTN14_FUNCTION',
-  S14 = 'BTN14_SFUNCTION',
-  R15 = 'BTN15_FUNCTION',
-  S15 = 'BTN15_SFUNCTION',
-  R16 = 'BTN16_FUNCTION',
-  S16 = 'BTN16_SFUNCTION',
-  R17 = 'BTN17_FUNCTION',
-  S17 = 'BTN17_SFUNCTION',
-  R18 = 'BTN18_FUNCTION',
-  S18 = 'BTN18_SFUNCTION',
-  R19 = 'BTN19_FUNCTION',
-  S19 = 'BTN19_SFUNCTION',
-  R20 = 'BTN20_FUNCTION',
-  S20 = 'BTN20_SFUNCTION',
-  R21 = 'BTN21_FUNCTION',
-  S21 = 'BTN21_SFUNCTION',
-  R22 = 'BTN22_FUNCTION',
-  S22 = 'BTN22_SFUNCTION',
-  R23 = 'BTN23_FUNCTION',
-  S23 = 'BTN23_SFUNCTION',
-  R24 = 'BTN24_FUNCTION',
-  S24 = 'BTN24_SFUNCTION',
-  R25 = 'BTN25_FUNCTION',
-  S25 = 'BTN25_SFUNCTION',
-  R26 = 'BTN26_FUNCTION',
-  S26 = 'BTN26_SFUNCTION',
-  R27 = 'BTN27_FUNCTION',
-  S27 = 'BTN27_SFUNCTION',
-  R28 = 'BTN28_FUNCTION',
-  S28 = 'BTN28_SFUNCTION',
-  R29 = 'BTN29_FUNCTION',
-  S29 = 'BTN29_SFUNCTION',
-  R30 = 'BTN30_FUNCTION',
-  S30 = 'BTN30_SFUNCTION',
-  R31 = 'BTN31_FUNCTION',
-  S31 = 'BTN31_SFUNCTION',
-}
-
-const manualControlButtonFromParameterName = (name: string): MAVLinkManualControlButton | undefined => {
-  const button = Object.entries(MAVLinkManualControlButton).find((entry) => entry[1] === name)?.[0]
-  return button === undefined ? button : button as MAVLinkManualControlButton
-}
-
+  const manualControlButtonFromParameterName = (name: string): MAVLinkManualControlButton | undefined => {
+    const button = Object.entries(MAVLinkManualControlButton).find((entry) => entry[1] === name)?.[0]
+    return button === undefined ? button : button as MAVLinkManualControlButton
+  }
+  
 /**
  * An axis action meant to be used with MAVLink's `MANUAL_CONTROL` message
  */
@@ -592,10 +594,11 @@ export class MavlinkManualControlManager {
     finallyRemainedUnmappedRegularMavlinkActions.forEach((actionId) => {
       const buttonAction = Object.entries(this.currentActionsMapping.buttonsCorrespondencies.regular).find((v) => v[1].action.id === actionId)
       if (buttonAction === undefined) return
-      Swal.fire({
-        text: `There are no spots left in the vehicle for the MAVLink Manual Control function ${actionId}.
+      showDialog({
+        maxWidth: 600,
+        message: `There are no spots left in the vehicle for the MAVLink Manual Control function ${actionId}.
         Consider mapping this function to a shift button.`,
-        icon: 'error',
+        variant: 'error',
         timer: 6000,
       })
       this.currentActionsMapping.buttonsCorrespondencies.regular[Number(buttonAction[0]) as JoystickButton].action = otherAvailableActions.no_function
@@ -604,10 +607,11 @@ export class MavlinkManualControlManager {
     finallyRemainedUnmappedShiftMavlinkActions.forEach((actionId) => {
       const buttonAction = Object.entries(this.currentActionsMapping.buttonsCorrespondencies.shift).find((v) => v[1].action.id === actionId)
       if (buttonAction === undefined) return
-      Swal.fire({
-        text: `There are no spots left in the vehicle for the MAVLink Manual Control function ${actionId}.
+      showDialog({
+        maxWidth: 600,
+        message: `There are no spots left in the vehicle for the MAVLink Manual Control function ${actionId}.
         Consider mapping this function to a shift button.`,
-        icon: 'error',
+        variant: 'error',
         timer: 6000,
       })
       this.currentActionsMapping.buttonsCorrespondencies.shift[Number(buttonAction[0]) as JoystickButton].action = otherAvailableActions.no_function

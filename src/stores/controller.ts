@@ -1,7 +1,6 @@
 import { useDocumentVisibility } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
-import Swal from 'sweetalert2'
 import { v4 as uuid4 } from 'uuid'
 import { computed, ref, toRaw, watch } from 'vue'
 
@@ -10,6 +9,7 @@ import {
   cockpitStandardToProtocols,
   defaultProtocolMappingVehicleCorrespondency,
 } from '@/assets/joystick-profiles'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -132,6 +132,8 @@ export const useControllerStore = defineStore('controller', () => {
     }
   })
 
+  const { showDialog } = useInteractionDialog()
+
   const processJoystickStateEvent = (event: JoystickEvent): void => {
     const joystick = joysticks.value.get(event.detail.index)
     if (joystick === undefined || (event.type !== EventType.Axis && event.type !== EventType.Button)) return
@@ -202,7 +204,7 @@ export const useControllerStore = defineStore('controller', () => {
           if (isDuplicated && wasMapped) {
             const warningText = `Unmapping '${mapping.action.name}' from input ${axis} layout.
               Cannot use same action on multiple axes.`
-            Swal.fire({ text: warningText, icon: 'warning' })
+            showDialog({ message: warningText, variant: 'warning' })
             newMapping.axesCorrespondencies[axis as unknown as JoystickAxis].action = otherAvailableActions.no_function
           }
         })
@@ -226,7 +228,7 @@ export const useControllerStore = defineStore('controller', () => {
       Object.entries(mapping).forEach(([btn, action]) => {
         const modKeyAction = modifierKeyActions[modKey as CockpitModifierKeyOption]
         if (JSON.stringify(action.action) !== JSON.stringify(modKeyAction)) return
-        Swal.fire({ text: "Cannot map modifier key to it's own layout.", icon: 'warning' })
+        showDialog({ message: "Cannot map modifier key to it's own layout.", variant: 'warning' })
         protocolMapping.value.buttonsCorrespondencies[modKey as CockpitModifierKeyOption][
           Number(btn) as JoystickButton
         ].action = otherAvailableActions.no_function
@@ -236,9 +238,9 @@ export const useControllerStore = defineStore('controller', () => {
     btnsToUnmap.forEach((v) => {
       const actionToUnmap = protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action
       if (JSON.stringify(actionToUnmap) === JSON.stringify(otherAvailableActions.no_function)) return
-      Swal.fire({
-        text: `Unmapping '${actionToUnmap.name} from ${v.modKey} layout. Cannot use same button as the modifier.`,
-        icon: 'warning',
+      showDialog({
+        message: `Unmapping '${actionToUnmap.name} from ${v.modKey} layout. Cannot use same button as the modifier.`,
+        variant: 'warning',
       })
       protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action = otherAvailableActions.no_function
     })
@@ -263,7 +265,7 @@ export const useControllerStore = defineStore('controller', () => {
       const contents = event.target.result
       const maybeProfile = JSON.parse(contents)
       if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
-        Swal.fire({ icon: 'error', text: 'Invalid joystick mapping file.', timer: 3000 })
+        showDialog({ variant: 'error', message: 'Invalid joystick mapping file.', timer: 3000 })
         return
       }
       cockpitStdMappings.value[joystick.model] = maybeProfile
@@ -288,7 +290,7 @@ export const useControllerStore = defineStore('controller', () => {
         !maybeFunctionsMapping['axesCorrespondencies'] ||
         !maybeFunctionsMapping['buttonsCorrespondencies']
       ) {
-        Swal.fire({ icon: 'error', text: 'Invalid functions mapping file.', timer: 3000 })
+        showDialog({ message: 'Invalid functions mapping file.', variant: 'error', timer: 3000 })
         return
       }
       protocolMapping.value = maybeFunctionsMapping
@@ -302,7 +304,7 @@ export const useControllerStore = defineStore('controller', () => {
     functionsMapping: JoystickProtocolActionsMapping[]
   ): Promise<void> => {
     await setKeyDataOnCockpitVehicleStorage(vehicleAddress, protocolMappingsKey, functionsMapping)
-    Swal.fire({ icon: 'success', text: 'Joystick functions mapping exported to vehicle.', timer: 3000 })
+    showDialog({ message: 'Joystick functions mapping exported to vehicle.', variant: 'success', timer: 3000 })
   }
 
   const importFunctionsMappingFromVehicle = async (vehicleAddress: string): Promise<void> => {

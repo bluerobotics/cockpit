@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import Swal from 'sweetalert2'
+import { useInteractionDialog } from '@/composables/interactionDialog'
+
+const { showDialog } = useInteractionDialog()
 
 export const constrain = (value: number, min: number, max: number): number => {
   return Math.max(Math.min(value, max), min)
@@ -133,7 +135,7 @@ export const tryOrAlert = async (tryFunction: () => Promise<void>): Promise<void
   try {
     await tryFunction()
   } catch (error) {
-    Swal.fire({ text: error as string, icon: 'error' })
+    showDialog({ message: error as string, variant: 'error' })
   }
 }
 
@@ -144,6 +146,6 @@ export const tryOrAlert = async (tryFunction: () => Promise<void>): Promise<void
 export const reloadCockpit = (timeout = 500): void => {
   const restartMessage = `Restarting Cockpit in ${timeout / 1000} seconds...`
   console.log(restartMessage)
-  Swal.fire({ text: restartMessage, icon: 'info', timerProgressBar: true, timer: timeout })
+  showDialog({ message: restartMessage, variant: 'info', timer: timeout })
   setTimeout(() => location.reload(), timeout)
 }
