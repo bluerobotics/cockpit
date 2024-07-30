@@ -4,7 +4,7 @@
     <template #content>
       <div
         class="max-h-[80vh] overflow-y-auto -mr-4"
-        :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[50vw]'"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[60vw]'"
       >
         <div
           class="flex flex-col justify-between items-center w-full"
@@ -21,6 +21,14 @@
             <v-switch
               v-model="devStore.enableBlueOsSettingsSync"
               label="BlueOS settings sync"
+              color="white"
+              hide-details
+              class="min-w-[155px]"
+              @update:model-value="reloadCockpit"
+            />
+            <v-switch
+              v-model="devStore.enableUsageStatisticsTelemetry"
+              label="Usage statistics telemetry"
               color="white"
               hide-details
               class="min-w-[155px]"
