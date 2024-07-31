@@ -39,4 +39,44 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       })
     })
   }, 250)
+
+  // Routine to log the framerate of the application rendering
+  const appFrameRateHistory = ref<number[]>([])
+  const appAverageFrameRateSampleDelay = 100
+  const appAverageFrameRateLogDelay = 1000
+  let lastAppAverageFpsLog = new Date()
+  const fpsMeter = (): void => {
+    let prevTime = performance.now()
+    let frames = 0
+
+    requestAnimationFrame(function loop() {
+      const time = performance.now()
+      frames++
+      if (time > prevTime + appAverageFrameRateSampleDelay) {
+        const currentFPS = Math.round((frames * 1000) / (time - prevTime))
+        prevTime = time
+        frames = 0
+
+        appFrameRateHistory.value.push(currentFPS)
+        appFrameRateHistory.value.splice(0, appFrameRateHistory.value.length - 10)
+
+        const average = appFrameRateHistory.value.reduce((a, b) => a + b, 0) / appFrameRateHistory.value.length
+        const minThreshold = 0.9 * average
+
+        // Warn about drops in the framerate of the application rendering
+        if (currentFPS < minThreshold) {
+          console.warn(`Drop in the framerate detected for the application rendering: ${currentFPS.toFixed(2)} fps.`)
+        }
+
+        // Log the average framerate of the application rendering recursively
+        if (new Date().getTime() - lastAppAverageFpsLog.getTime() > appAverageFrameRateLogDelay) {
+          console.debug(`Average framerate for the application rendering: ${currentFPS.toFixed(2)} fps.`)
+          lastAppAverageFpsLog = new Date()
+        }
+      }
+
+      requestAnimationFrame(loop)
+    })
+  }
+  fpsMeter()
 })
