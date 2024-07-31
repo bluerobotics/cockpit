@@ -19,6 +19,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
       blur: 25,
     }),
     displayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', defaultDisplayUnitPreferences),
+    mainMenuStyleTrigger: useBlueOsStorage('main-menu-style', 'center-left'),
   }),
   actions: {
     updateWidth() {
@@ -77,8 +78,8 @@ export const useAppInterfaceStore = defineStore('responsive', {
       backgroundColor: state.UIGlassEffect.bgColor,
       color: state.UIGlassEffect.fontColor,
       backdropFilter: `blur(${state.UIGlassEffect.blur}px)`,
-      border: '1px solid rgba(255, 255, 255, 0.06)',
-      boxShadow: '0px 4px 4px 0px #0000004c, 0px 8px 12px 6px #00000026',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      boxShadow: '0px 4px 4px 0px #00000033, 0px 8px 12px 6px #00000016',
     }),
   },
 })

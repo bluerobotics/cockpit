@@ -1,11 +1,21 @@
 <template>
   <v-app>
     <v-main>
+      <div v-if="!showMainMenu && interfaceStore.mainMenuStyleTrigger === 'center-left'">
+        <div
+          id="menu-trigger"
+          class="menu-trigger flex items-center justify-center w-[30px] px-0 py-2 cursor-pointer overflow-hidden rounded-r-lg rounded-br-lg -ml-[1px]"
+          :style="interfaceStore.globalGlassMenuStyles"
+          @click="toggleMainMenu"
+        >
+          <v-icon class="text-white text-[46px] opacity-80">mdi-menu-right</v-icon>
+        </div>
+      </div>
       <transition name="slide-in-left">
         <div
           v-if="showMainMenu"
           ref="mainMenu"
-          class="left-menu slide-in elevation-10"
+          class="left-menu slide-in"
           :style="[
             glassMenuStyles,
             simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth,
@@ -14,16 +24,28 @@
           <v-window v-model="mainMenuStep" class="h-full w-full">
             <v-window-item :value="1" class="h-full">
               <div
-                class="flex flex-col h-full justify-between align-center items-center select-none"
+                class="relative flex flex-col h-full justify-between align-center items-center select-none"
                 :class="
                   interfaceStore.isOnSmallScreen
                     ? 'gap-y-2 pt-2 pb-3 sm:gap-y-1 sm:py-0 sm:-ml-[3px] xs:gap-y-1 xs:py-0 xs:-ml-[3px]'
                     : 'lg:gap-y-3 xl:gap-y-4 gap-y-5 py-5'
                 "
               >
+                <div
+                  v-if="interfaceStore.mainMenuStyleTrigger === 'center-left'"
+                  id="menu-trigger"
+                  class="absolute right-0 top-[50%] -translate-y-[50%] flex items-center justify-center w-[30px] px-0 py-2 cursor-pointer overflow-hidden rounded-r-lg rounded-br-lg -ml-[1px]"
+                  @click="toggleMainMenu"
+                >
+                  <v-icon
+                    class="text-white opacity-70"
+                    :class="simplifiedMainMenu ? 'text-[30px] -mr-[14px]' : 'text-[40px] -mr-[8px]'"
+                    >mdi-menu-left</v-icon
+                  >
+                </div>
                 <GlassButton
                   v-if="route.name === 'widgets-view'"
-                  :label="simplifiedMainMenu ? '' : 'Edit Mode'"
+                  :label="simplifiedMainMenu ? '' : 'Edit Interface'"
                   :selected="widgetStore.editingMode"
                   :label-class="[menuLabelSize, '-mb-0.5']"
                   icon="mdi-pencil"
@@ -223,14 +245,14 @@
             ]"
           >
             <button
-              class="flex items-center justify-center h-full aspect-square top-bar-hamburger"
-              :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
+              v-if="interfaceStore.mainMenuStyleTrigger === 'burger'"
+              class="flex items-center justify-center h-full mr-2 aspect-square top-bar-hamburger"
               @click="toggleMainMenu"
             >
               <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
             </button>
             <div
-              class="flex items-center justify-start h-full px-4 ml-3 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
+              class="flex items-center justify-start h-full px-4 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
               :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
               @click="showMissionOptionsDialog = true"
             >
@@ -746,6 +768,14 @@ body.hide-cursor {
   justify-content: space-between;
   z-index: 60;
   position: absolute;
+}
+
+.menu-trigger {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1050;
 }
 
 .bottom-bar {
