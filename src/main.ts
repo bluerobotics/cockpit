@@ -16,6 +16,7 @@ import App from './App.vue'
 import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
 import router from './router'
+import { useOmniscientLoggerStore } from './stores/omniscientLogger'
 
 library.add(fas, far)
 loadFonts()
@@ -39,3 +40,6 @@ if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry')) {
 app.component('FontAwesomeIcon', FontAwesomeIcon)
 app.use(router).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
 app.mount('#app')
+
+// Initialize the logger store
+useOmniscientLoggerStore()
