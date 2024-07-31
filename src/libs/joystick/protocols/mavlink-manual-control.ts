@@ -498,11 +498,14 @@ export class MavlinkManualControlManager {
     const buttonParametersNamedObject: { [key in number]: string } = {}
     this.vehicleButtonParameterTable.forEach((entry) => (buttonParametersNamedObject[entry.value] = entry.title))
     const currentRegularButtonParameters = Object.entries(this.currentVehicleParameters)
-      .filter(([k]) => k.includes('BTN') && !k.includes('S'))
+      .filter(([k]) => k.includes('BTN') && k.includes('FUNCTION') && !k.includes('S'))
       .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
     const currentShiftButtonParameters = Object.entries(this.currentVehicleParameters)
-      .filter(([k]) => k.includes('BTN') && k.includes('S'))
+      .filter(([k]) => k.includes('BTN') && k.includes('FUNCTION') && k.includes('S'))
       .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
+
+    // Do not use buttons system if the vehicle has no button parameters
+    if (currentRegularButtonParameters.length === 0) return
 
     // Re-use shift button if already mapped. Otherwise use R0 and S0.
     const regularShiftFunction = currentRegularButtonParameters.find((v) => v.actionId === MAVLinkButtonFunction.shift)
