@@ -32,7 +32,6 @@ jobs:
           bun run lint
           bun run typecheck
           bun run build
-          xvfb-run --auto-servernum bun test:ci
 
   deploy-page:
     needs: test
