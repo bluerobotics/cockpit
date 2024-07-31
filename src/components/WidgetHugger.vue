@@ -211,10 +211,10 @@ const resizeWidgetToMinimalSize = (): void => {
 }
 
 onMounted(async () => {
-  if (widgetStore.miniWidgetManagerVars(widget.value.hash).everMounted === false) {
+  if (widgetStore.widgetManagerVars(widget.value.hash).everMounted === false) {
     resizeWidgetToMinimalSize()
   }
-  widgetStore.miniWidgetManagerVars(widget.value.hash).everMounted = true
+  widgetStore.widgetManagerVars(widget.value.hash).everMounted = true
 
   if (widgetResizeHandles.value) {
     for (let i = 0; i < widgetResizeHandles.value.length; i++) {
@@ -301,7 +301,7 @@ const cursorStyle = computed(() => {
 
 const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
 
-const highlighted = computed(() => widgetStore.miniWidgetManagerVars(widget.value.hash).highlighted)
+const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.hash).highlighted)
 </script>
 
 <style>
