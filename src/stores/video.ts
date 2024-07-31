@@ -676,7 +676,7 @@ export const useVideoStore = defineStore('video', () => {
   const issueNoIpSelectedWarning = (): void => {
     showDialog({
       maxWidth: 600,
-      title: `Cockpit detected more than one IP address being used to route the video streaming. 
+      title: `Cockpit detected more than one IP address being used to route the video streaming.
         This often leads to video stuttering, especially if one of the IPs is from a non-wired connection.`,
       message: [
         'To prevent issues and achieve an optimal streaming experience, please:',
@@ -822,5 +822,6 @@ export const useVideoStore = defineStore('video', () => {
     overallProgress,
     processVideoChunksAndTelemetry,
     isVideoFilename,
+    activeStreams,
   }
 })
