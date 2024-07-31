@@ -1,21 +1,17 @@
 <template>
   <BaseConfigurationView>
-    <template v-if="controllerStore.joysticks && controllerStore.joysticks.size" #title
-      >Joystick configuration</template
-    >
+    <template #title>Joystick configuration</template>
     <template #content>
-      <div :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'">
+      <div :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[85vh]'">
         <div
           v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
           class="px-6 pb-2 flex-centered flex-column position-relative"
           :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
-          <p class="text-xl font-semibold">No joystick detected.</p>
-          <br />
-          <p class="text-base text-center font-bold">Connect a joystick and press any key.</p>
+          <p class="text-base text-center font-bold mt-6 mb-4">Connect a joystick and press any key.</p>
         </div>
         <ExpansiblePanel v-else class="mt-3" no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Joystick configuration</template>
+          <template #title>Funcitons mapping</template>
           <template #info>
             <div class="flex flex-col items-center px-5 font-medium">
               Click the buttons in your physical controller and see them being activated here. If any button does not

@@ -16,7 +16,7 @@
       >
       <template #content>
         <div
-          class="flex justify-start align-start mb-2"
+          class="flex justify-start align-start mb-2 overflow-y-auto"
           :class="
             interfaceStore.isOnSmallScreen
               ? 'h-[80vh] w-[80vw] gap-x-0 mt-2'
