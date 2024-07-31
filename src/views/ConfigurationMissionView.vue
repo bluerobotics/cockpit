@@ -3,7 +3,7 @@
     <template #title>Mission configuration</template>
     <template #content>
       <div
-        class="flex flex-col justify-between items-start ml-[1vw]"
+        class="flex flex-col justify-between items-start ml-[1vw] max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
         <v-switch

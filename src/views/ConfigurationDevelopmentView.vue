@@ -3,8 +3,8 @@
     <template #title>Development configuration</template>
     <template #content>
       <div
-        class="max-h-[80vh] overflow-y-auto -mr-4"
-        :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[60vw]'"
+        class="max-h-[85vh] overflow-y-auto -mr-4"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[50vw]'"
       >
         <div
           class="flex flex-col justify-between items-center w-full"

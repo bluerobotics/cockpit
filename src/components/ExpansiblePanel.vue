@@ -40,7 +40,7 @@
               />
             </div>
             <div
-              class="font-normal"
+              class="font-normal opacity-80"
               :class="interfaceStore.isOnSmallScreen ? `text-[${textSize - 8}px]` : `text-[${textSize - 4}px]`"
             >
               <slot name="subtitle" />

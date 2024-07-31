@@ -15,9 +15,9 @@ export const useAlertStore = defineStore('alert', () => {
     undefined
   )
   const enabledAlertLevels = useBlueOsStorage('cockpit-enabled-alert-levels', [
+    { level: AlertLevel.Info, enabled: false },
     { level: AlertLevel.Success, enabled: true },
     { level: AlertLevel.Error, enabled: true },
-    { level: AlertLevel.Info, enabled: false },
     { level: AlertLevel.Warning, enabled: true },
     { level: AlertLevel.Critical, enabled: true },
   ])

@@ -3,16 +3,13 @@
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div class="flex-col h-full ml-[1vw] max-w-[500px]">
+      <div class="flex-col h-full ml-[1vw] max-w-[500px] max-h-[85vh] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC remote IP Addresses</template>
           <template #info>
-            IP Addresses of the Vehicle allowed to be used for the WebRTC ICE Routing. Usually, the IP of the
-            tether/cabled interface. Blank means any route. E.g: 192.168.2.2.
-            <br />
-            <br />
-            If you enable the auto-retrieval, Cockpit will try to fetch from BlueOS information about the available IP
-            addresses, and auto-choose those associated with wired interfaces.
+            Select the IP addresses to allow connecting to for WebRTC video streaming. For best performance it is
+            recommended to only use the most reliable interfaces - e.g. avoid wireless interfaces if there is a
+            tethered/wired interface available. If no value is specified, all available routes are allowed.
           </template>
           <template #content>
             <div class="flex justify-center flex-col w-[90%] ml-2">
@@ -41,7 +38,14 @@
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC protocols:</template>
           <template #info>
-            Specific protocols can perform better in some network infrastructures, enhancing video stream quality.
+            <li>
+              Video stream quality may be enhanced by enforcing a protocol that is well-suited to the available network
+              infrastructure.
+            </li>
+            <li>
+              UDP can be lower latency but may drop frames, while TCP enforces frame ordering at the cost of some
+              increased latency and jitter.
+            </li>
           </template>
           <template #content>
             <div class="flex items-center justify-start">
@@ -62,10 +66,14 @@
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>RTP Jitter Buffer (Target) duration:</template>
           <template #info>
-            Increasing this value will result in increased video latency, but it can help to compensate the network
-            jitter.
-            <br />
-            Cockpit's default is zero milliseconds, but you can leave it empty to use the browser's default.
+            <li>
+              Increasing the buffer duration causes additional video latency, but can help to compensate for network
+              jitter and provide more consistent frame timing in the display.
+            </li>
+            <li>
+              Cockpit's default is zero milliseconds, but you can set a custom value, or leave the field empty to use
+              your browser's default.
+            </li>
           </template>
           <template #content>
             <div class="flex items-center justify-start w-[50%] ml-2">
@@ -89,10 +97,14 @@
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>File download options:</template>
           <template #info>
-            Specifies wether Cockpit should create a zip file when downloading multiple videos or subtitle files.
-            <br />
-            Keep in mind that, specially for long videos, this will add a delay on the download, since the files need to
-            be zipped first. This can take just a couple seconds or even minutes, depending on the files sizes.
+            <li>
+              Select whether video and subtitle files should be bundled together in a ZIP archive, or downloaded
+              individually.
+            </li>
+            <li>
+              Zipping allows a single download of a group of files, but requires waiting for the files to get zipped
+              together. Depending on file sizes, the zipping process may complete within seconds or could take minutes.
+            </li>
           </template>
           <template #content>
             <div class="flex items-center justify-start w-[50%] ml-2">

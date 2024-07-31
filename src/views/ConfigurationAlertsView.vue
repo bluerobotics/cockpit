@@ -3,7 +3,7 @@
     <template #title>Alerts configuration</template>
     <template #content>
       <div
-        class="flex flex-col justify-around align-start ml-5"
+        class="flex flex-col justify-around align-start ml-5 max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
         <v-switch

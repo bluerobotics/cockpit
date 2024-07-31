@@ -4,15 +4,12 @@
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
-        :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[70vh]'"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Global vehicle address</template>
+          <template #title>Vehicle network connection (global address)</template>
           <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
-          <template #info
-            ><strong>Global Vehicle Address:</strong> Sets the network address for device communication. E.g:
-            blueos.local</template
-          >
+          <template #info>Sets the network address for device communication. E.g: blueos.local</template>
           <template #content>
             <v-form
               ref="globalAddressForm"
@@ -28,7 +25,7 @@
                   v-model="newGlobalAddress"
                   variant="filled"
                   type="input"
-                  :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                  density="compact"
                   hint="Address of the Vehicle. E.g: blueos.local"
                   class="w-[80%]"
                   :rules="[isValidHostAddress, isValidConnectionURI]"
@@ -54,11 +51,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #info>
-            <strong>Mavlink2Rest Connection:</strong> Configures MAVLink over HTTP/WS. Toggle to enable/disable and
-            apply settings to take effect.
-          </template>
-          <template #title>Mavlink2Rest connection</template>
+          <template #title>Autopilot telemetry connection (MAVLink2REST)</template>
           <template #subtitle>
             Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
             Status:
@@ -84,7 +77,7 @@
                     :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
                     variant="filled"
                     type="input"
-                    :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                    density="compact"
                     hint="URI of a Mavlink2Rest web-socket"
                     :rules="[isValidSocketConnectionURI]"
                   >
@@ -118,9 +111,8 @@
                   <v-switch
                     v-model="mainVehicleStore.customMainConnectionURI.enabled"
                     v-tooltip.bottom="'Enable custom'"
-                    class="-mt-5 bg-transparent"
-                    :class="interfaceStore.isOnSmallScreen ? 'mr-1' : undefined"
-                    :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                    class="-mt-5 bg-transparent mr-1 mb-[7px]"
+                    density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
@@ -132,11 +124,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #info>
-            <strong>WebRTC connection:</strong> Establishes real-time communication over the web. Set the signaling
-            server URI and toggle to activate.
-          </template>
-          <template #title>WebRTC connection</template>
+          <template #title>Video connection (WebRTC)</template>
           <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI.toString() }}</template>
           <template #content>
             <v-form
@@ -155,7 +143,7 @@
                     :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
                     variant="filled"
                     type="input"
-                    :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                    density="compact"
                     hint="URI of a WebRTC Signalling Server URI"
                     :rules="[isValidSocketConnectionURI]"
                   >
@@ -189,9 +177,8 @@
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCSignallingURI.enabled"
                     v-tooltip.bottom="'Enable custom'"
-                    class="-mt-5 bg-transparent"
-                    :class="interfaceStore.isOnSmallScreen ? 'mr-1' : undefined"
-                    :density="interfaceStore.isOnSmallScreen ? 'compact' : 'default'"
+                    class="-mt-5 bg-transparent mr-1 mb-[7px]"
+                    density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
@@ -203,7 +190,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Custom RTC Configuration</template>
+          <template #title>Custom WebRTC configuration</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
               <v-textarea
@@ -217,16 +204,17 @@
                 class="w-full"
               />
               <div class="flex flex-col justify-around align-center w-[100px] -mr-6">
-                <GlassButton
+                <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  variant="uncontained"
-                  label="APPLY"
-                  :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
-                  label-class="font-thin text-[15px] opacity-[0.95] -ml-1"
-                  no-effects
-                  class="-mt-8"
+                  :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
+                  class="bg-transparent -mb-5"
+                  variant="text"
+                  type="submit"
                   @click="handleCustomRtcConfiguration"
-                />
+                >
+                  Apply
+                </v-btn>
+
                 <div class="flex flex-col align-end text-[10px] -mt-8">
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
@@ -253,7 +241,6 @@ import { onMounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import GlassButton from '@/components/GlassButton.vue'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import { isValidNetworkAddress, reloadCockpit } from '@/libs/utils'
