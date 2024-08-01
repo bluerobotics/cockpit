@@ -18,7 +18,7 @@ export class Session {
   public status: string
   private ended: boolean
   private signaller: Signaller
-  private peerConnection: RTCPeerConnection
+  public peerConnection: RTCPeerConnection
   private availableICEIPs: string[]
   private selectedICEIPs: string[]
   private selectedICEProtocols: string[]

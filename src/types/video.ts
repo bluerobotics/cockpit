@@ -130,3 +130,64 @@ export const getBlobExtensionContainer = (blob: Blob): VideoExtensionContainer |
   }
   return undefined
 }
+
+export type WebRTCVideoStats = {
+  id: string
+  timestamp: number
+  type: string
+  codecId: string
+  kind: string
+  mediaType: string
+  ssrc: number
+  transportId: string
+  jitter: number
+  packetsLost: number
+  packetsReceived: number
+  bytesReceived: number
+  firCount: number
+  frameHeight: number
+  frameWidth: number
+  framesAssembledFromMultiplePackets: number
+  framesDecoded: number
+  framesDropped: number
+  framesPerSecond: number
+  framesReceived: number
+  freezeCount: number
+  headerBytesReceived: number
+  jitterBufferDelay: number
+  jitterBufferEmittedCount: number
+  jitterBufferMinimumDelay: number
+  jitterBufferTargetDelay: number
+  keyFramesDecoded: number
+  lastPacketReceivedTimestamp: number
+  mid: string
+  nackCount: number
+  pauseCount: number
+  pliCount: number
+  remoteId: string
+  totalAssemblyTime: number
+  totalDecodeTime: number
+  totalFreezesDuration: number
+  totalInterFrameDelay: number
+  totalPausesDuration: number
+  totalProcessingDelay: number
+  totalSquaredInterFrameDelay: number
+  trackIdentifier: string
+  clockRate: number
+  mimeType: string
+  payloadType: number
+  bitrate: number
+  packetRate: number
+}
+export type WebRTCVideoStat = keyof WebRTCVideoStats
+
+export type WebRTCStatsEvent = {
+  peerId: string
+  data: {
+    video: {
+      inbound: {
+        [index: number]: WebRTCVideoStats
+      }
+    }
+  }
+}
