@@ -15,7 +15,6 @@ import {
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
-import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import * as Words from '@/libs/funny-name/words'
 import {
@@ -39,13 +38,11 @@ import {
   WidgetType,
 } from '@/types/widgets'
 
-import { useMainVehicleStore } from './mainVehicle'
 const { showDialog } = useInteractionDialog()
 
 const savedProfilesKey = 'cockpit-saved-profiles-v8'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
-  const vehicleStore = useMainVehicleStore()
   const editingMode = ref(false)
   const snapToGrid = ref(true)
   const gridInterval = ref(0.01)
@@ -248,34 +245,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
     reader.readAsText(e.target.files[0])
-  }
-
-  const importProfilesFromVehicle = async (): Promise<void> => {
-    const newProfiles = await getKeyDataFromCockpitVehicleStorage(vehicleStore.globalAddress, savedProfilesKey)
-    if (!Array.isArray(newProfiles)) {
-      showDialog({
-        variant: 'error',
-        message: 'Could not import profiles from vehicle. Profiles do not form an array.',
-      })
-      return
-    }
-
-    newProfiles.every((profile) => {
-      try {
-        validateProfile(profile)
-      } catch (error) {
-        showDialog({ variant: 'error', message: `Invalid profile file. ${error}` })
-        return
-      }
-    })
-
-    savedProfiles.value = newProfiles
-    showDialog({ variant: 'success', message: 'Cockpit profiles imported from vehicle.', timer: 3000 })
-  }
-
-  const exportProfilesToVehicle = async (): Promise<void> => {
-    await setKeyDataOnCockpitVehicleStorage(vehicleStore.globalAddress, savedProfilesKey, savedProfiles.value)
-    showDialog({ variant: 'success', message: 'Cockpit profiles exported to vehicle.', timer: 3000 })
   }
 
   /**
@@ -536,10 +505,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
   }
 
-  // If the user does not have it's own profiles yet, try to fetch them from the vehicle, and if it fails, create default ones
+  // If the user does not have it's own profiles yet, create default ones
   if (savedProfiles.value.isEmpty()) {
-    // We use a self invoked await function to avoid moving the entire store to async
-    ;(async () => importProfilesFromVehicle())()
     widgetProfiles.forEach((profile) => {
       const userProfile = structuredClone(profile)
       userProfile.name = userProfile.name.replace('Default', 'User')
@@ -731,8 +698,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     deleteMiniWidget,
     toggleFullScreen,
     isFullScreen,
-    importProfilesFromVehicle,
-    exportProfilesToVehicle,
     loadDefaultProfileForVehicle,
     isWidgetVisible,
     widgetClearanceForVisibleArea,
