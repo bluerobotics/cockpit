@@ -11,7 +11,6 @@ import {
 } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
-import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
@@ -299,29 +298,6 @@ export const useControllerStore = defineStore('controller', () => {
     reader.readAsText(e.target.files[0])
   }
 
-  const exportFunctionsMappingToVehicle = async (
-    vehicleAddress: string,
-    functionsMapping: JoystickProtocolActionsMapping[]
-  ): Promise<void> => {
-    await setKeyDataOnCockpitVehicleStorage(vehicleAddress, protocolMappingsKey, functionsMapping)
-    showDialog({ message: 'Joystick functions mapping exported to vehicle.', variant: 'success', timer: 3000 })
-  }
-
-  const importFunctionsMappingFromVehicle = async (vehicleAddress: string): Promise<void> => {
-    const newMappings = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, protocolMappingsKey)
-    if (!newMappings) {
-      throw new Error('Could not import functions mapping from vehicle. No data available.')
-    }
-
-    newMappings.forEach((mapping: JoystickProtocolActionsMapping) => {
-      if (!mapping || !mapping['name'] || !mapping['axesCorrespondencies'] || !mapping['buttonsCorrespondencies']) {
-        throw new Error('Could not import joystick funtions from vehicle. Invalid data.')
-      }
-    })
-    // @ts-ignore: We check for the necessary fields in the if before
-    protocolMappings.value = newMappings
-  }
-
   // Add hash on mappings that don't have it - TODO: Remove for 1.0.0 release
   Object.values(protocolMappings.value).forEach((mapping) => {
     if (mapping.hash !== undefined) return
@@ -371,8 +347,6 @@ export const useControllerStore = defineStore('controller', () => {
     importJoystickMapping,
     exportFunctionsMapping,
     importFunctionsMapping,
-    exportFunctionsMappingToVehicle,
-    importFunctionsMappingFromVehicle,
     loadDefaultProtocolMappingForVehicle,
   }
 })
