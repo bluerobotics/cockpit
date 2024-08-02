@@ -63,6 +63,23 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     return missionStore.username
   }
 
+  const getCurrentVehicleId = async (): Promise<string> => {
+    const vehicleStore = useMainVehicleStore()
+
+    // Wait until we have a vehicle ID
+    while (!vehicleStore.currentlyConnectedVehicleId) {
+      console.debug('Waiting for vehicle ID on BlueOS sync routine.')
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+
+    return vehicleStore.currentlyConnectedVehicleId
+  }
+
+  const getLastConnectedVehicleId = async (): Promise<string | undefined> => {
+    const vehicleStore = useMainVehicleStore()
+    return vehicleStore.lastConnectedVehicleId
+  }
+
   const askIfUserWantsToUseBlueOsValue = async (): Promise<boolean> => {
     let useBlueOsValue = true
 
@@ -122,6 +139,8 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   const tryToDoInitialSync = async (): Promise<void> => {
     const vehicleAddress = await getVehicleAddress()
     const username = await getUsername()
+    const currentVehicleId = await getCurrentVehicleId()
+    const lastConnectedVehicleId = await getLastConnectedVehicleId()
 
     // Clear initial sync routine if there's one left, as we are going to start a new one
     clearTimeout(initialSyncTimeout)
@@ -137,10 +156,12 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         return
       }
 
-      // If Cockpit has a different value than BlueOS, ask the user if they want to use the value from BlueOS or
+      // If Cockpit has a different value than BlueOS and the current vehicle is the same that was connected before, it
+      // means the user has made changes while offline, so we ask the user if they want to use the value from BlueOS or
       // if they want to update BlueOS with the value from Cockpit.
+      // If the current vehicle is different from the last connected vehicle, we just use the value from BlueOS.
 
-      const useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
+      const useBlueOsValue = lastConnectedVehicleId === currentVehicleId ? await askIfUserWantsToUseBlueOsValue() : true
 
       if (useBlueOsValue) {
         currentValue.value = valueOnBlueOS as T
