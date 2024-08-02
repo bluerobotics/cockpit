@@ -9,6 +9,7 @@ import {
 import { isEqual } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 
 import { useInteractionDialog } from './interactionDialog'
 
@@ -50,6 +51,18 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     return vehicleStore.globalAddress
   }
 
+  const getUsername = async (): Promise<string> => {
+    const missionStore = useMissionStore()
+
+    // Wait until we have a username
+    while (!missionStore.username) {
+      console.debug('Waiting for username on BlueOS sync routine.')
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+
+    return missionStore.username
+  }
+
   const askIfUserWantsToUseBlueOsValue = async (): Promise<boolean> => {
     let useBlueOsValue = true
 
@@ -82,6 +95,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
   const updateValueOnBlueOS = async (newValue: T): Promise<void> => {
     const vehicleAddress = await getVehicleAddress()
+    const username = await getUsername()
 
     console.debug(`Updating '${key}' on BlueOS.`)
 
@@ -90,7 +104,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
       clearTimeout(blueOsUpdateTimeout)
 
       try {
-        await setKeyDataOnCockpitVehicleStorage(vehicleAddress, key, newValue)
+        await setKeyDataOnCockpitVehicleStorage(vehicleAddress, `settings/${username}/${key}`, newValue)
         console.info(`Success updating '${key}' on BlueOS.`)
       } catch (fetchError) {
         console.error(`Failed updating '${key}' on BlueOS. Will keep trying.`)
@@ -107,12 +121,13 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
   const tryToDoInitialSync = async (): Promise<void> => {
     const vehicleAddress = await getVehicleAddress()
+    const username = await getUsername()
 
     // Clear initial sync routine if there's one left, as we are going to start a new one
     clearTimeout(initialSyncTimeout)
 
     try {
-      const valueOnBlueOS = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, key)
+      const valueOnBlueOS = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, `settings/${username}/${key}`)
       console.debug(`Success getting value of '${key}' from BlueOS:`, valueOnBlueOS)
 
       // If the value on BlueOS is the same as the one we have locally, we don't need to bother the user
