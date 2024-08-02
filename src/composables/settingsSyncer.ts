@@ -63,6 +63,23 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     return missionStore.username
   }
 
+  const getCurrentVehicleId = async (): Promise<string> => {
+    const vehicleStore = useMainVehicleStore()
+
+    // Wait until we have a vehicle ID
+    while (!vehicleStore.currentlyConnectedVehicleId) {
+      console.debug('Waiting for vehicle ID on BlueOS sync routine.')
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+
+    return vehicleStore.currentlyConnectedVehicleId
+  }
+
+  const getLastConnectedVehicleId = async (): Promise<string | undefined> => {
+    const vehicleStore = useMainVehicleStore()
+    return vehicleStore.lastConnectedVehicleId
+  }
+
   const askIfUserWantsToUseBlueOsValue = async (): Promise<boolean> => {
     let useBlueOsValue = true
 
@@ -122,6 +139,8 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   const tryToDoInitialSync = async (): Promise<void> => {
     const vehicleAddress = await getVehicleAddress()
     const username = await getUsername()
+    const currentVehicleId = await getCurrentVehicleId()
+    const lastConnectedVehicleId = await getLastConnectedVehicleId()
 
     // Clear initial sync routine if there's one left, as we are going to start a new one
     clearTimeout(initialSyncTimeout)
@@ -137,10 +156,17 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         return
       }
 
-      // If Cockpit has a different value than BlueOS, ask the user if they want to use the value from BlueOS or
-      // if they want to update BlueOS with the value from Cockpit.
+      // By default, if there's a conflict, we use the value from BlueOS.
+      let useBlueOsValue = true
 
-      const useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
+      // If the connected vehicle is the same as the last connected vehicle, and there are conflicts, it means the user
+      // has made changes while offline, so we ask the user if they want to keep the local value or the one from BlueOS.
+      // If the connected vehicle is different from the last connected vehicle, we just use the value from BlueOS, as we
+      // don't want to overwrite the value on the new vehicle with the one from the previous vehicle.
+      if (lastConnectedVehicleId === currentVehicleId) {
+        console.debug(`Conflict with BlueOS for key '${key}'. Asking user what to do.`)
+        useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
+      }
 
       if (useBlueOsValue) {
         currentValue.value = valueOnBlueOS as T
