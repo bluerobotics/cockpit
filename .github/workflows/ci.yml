@@ -81,6 +81,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v1
         with:
@@ -92,11 +93,21 @@ jobs:
           bun run build
           bun deploy:electron
 
+      - name: Build artifact name
+        if: "!startsWith(github.ref, 'refs/tags/') && success()"
+        run: |
+          mv dist/Cockpit*.${{ matrix.extension }} dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags).${{ matrix.extension }}
+
+      - name: Build tag name
+        if: startsWith(github.ref, 'refs/tags/') && success()
+        run: |
+          mv dist/Cockpit*.${{ matrix.extension }} dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags --abbrev=0).${{ matrix.extension }}
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: cockpit-${{ matrix.suffix }}
-          path: dist/Cockpit*.${{ matrix.extension }}
+          path: dist/Cockpit-${{ matrix.suffix }}-*.${{ matrix.extension }}
           if-no-files-found: error
 
       - name: Upload Release
@@ -104,7 +115,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/Cockpit*.${{ matrix.extension }}
+          path: dist/Cockpit-${{ matrix.suffix }}-*.${{ matrix.extension }}
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
@@ -119,6 +130,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v1
         with:
@@ -136,6 +148,16 @@ jobs:
           bun install --frozen-lockfile
           bun run build
           env DEBUG="@malept/flatpak-bundler" bun deploy:flatpak
+
+      - name: Build tag name
+        if: startsWith(github.ref, 'refs/tags/') && success()
+        run: |
+          mv dist/Cockpit*.flatpak dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags --abbrev=0).flatpak
+
+      - name: Build name
+        if: "!startsWith(github.ref, 'refs/tags/') && success()"
+        run: |
+          mv dist/Cockpit*.flatpak dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags).flatpak
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
