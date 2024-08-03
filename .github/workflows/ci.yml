@@ -116,7 +116,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          path: dist/Cockpit-${{ matrix.suffix }}-*.${{ matrix.extension }}
+          file: dist/Cockpit-${{ matrix.suffix }}-*.${{ matrix.extension }}
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
