@@ -661,13 +661,13 @@ export const useVideoStore = defineStore('video', () => {
   const issueSelectedIpNotAvailableWarning = (): void => {
     showDialog({
       maxWidth: 600,
-      title: `Cockpit detected that you selected an IP on the video configuration page that is not available
-        on the video server. This will lead to no video being streamed. This can happen if you changed your
-        network or the IP of your vehicle.`,
+      title: 'All available video stream IPs are being blocked',
       message: [
-        'To solve this problem, please',
-        '1. Open the video configuration page (Main-menu > Configuration > Video).',
-        '2. Clear the selected IPs and select an available one from the list.',
+        `Cockpit detected that none of the IPs that are streaming video from your server are in the allowed list. This
+        will lead to no video being streamed.`,
+        'This can happen if you changed your network or the IP of your vehicle.',
+        `To solve this problem, please open the video configuration page (Main-menu > Settings > Video) and clear
+        the selected IPs. Then, select an available IP from the list.`,
       ],
       variant: 'warning',
     })
@@ -676,12 +676,12 @@ export const useVideoStore = defineStore('video', () => {
   const issueNoIpSelectedWarning = (): void => {
     showDialog({
       maxWidth: 600,
-      title: `Cockpit detected more than one IP address being used to route the video streaming.
-        This often leads to video stuttering, especially if one of the IPs is from a non-wired connection.`,
+      title: 'Video being routed from multiple IPs',
       message: [
-        'To prevent issues and achieve an optimal streaming experience, please:',
-        '1. Open the video configuration page (Main-menu > Configuration > Video).',
-        '2. Select the IP address that should be used for the video streaming.',
+        `Cockpit detected that the video streams are being routed from multiple IPs. This often leads to video
+        stuttering, especially if one of the IPs is from a non-wired connection.`,
+        `To prevent issues and achieve an optimal streaming experience, please open the video configuration page
+        (Main-menu > Settings > Video) and select the IP address that should be used for the video streaming.`,
       ],
       variant: 'warning',
     })
