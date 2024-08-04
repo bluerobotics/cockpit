@@ -104,9 +104,53 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
 
   // Track the WebRTC statistics, warn about changes in cumulative values and log the average values
   const historyLength = 30 // Number of samples to keep in the history
-  const cumulativeKeys: WebRTCVideoStat[] = ['packetsLost', 'totalFreezesDuration', 'framesDropped'] // Keys that have cumulative values
-  const averageKeys: WebRTCVideoStat[] = ['packetRate', 'jitter'] // Keys that have average values
+  const cumulativeKeys: WebRTCVideoStat[] = [
+    'bytesReceived',
+    'firCount',
+    'framesDecoded',
+    'framesDropped',
+    'framesReceived',
+    'freezeCount',
+    'headerBytesReceived',
+    'jitterBufferEmittedCount',
+    'keyFramesDecoded',
+    'lastPacketReceivedTimestamp',
+    'nackCount',
+    'packetsLost',
+    'packetsReceived',
+    'pauseCount',
+    'pliCount',
+    'timestamp',
+    'totalAssemblyTime',
+    'totalDecodeTime',
+    'totalFreezesDuration',
+    'totalInterFrameDelay',
+    'totalPausesDuration',
+    'totalProcessingDelay',
+    'totalSquaredInterFrameDelay',
+  ] // Keys that have cumulative values
+  const averageKeys: WebRTCVideoStat[] = [
+    'clockRate',
+    'framesAssembledFromMultiplePackets',
+    'framesPerSecond',
+    'jitter',
+    'jitterBufferDelay',
+    'jitterBufferMinimumDelay',
+    'jitterBufferTargetDelay',
+    'packetRate',
+  ] // Keys that have average values
   const storedKeys = [...cumulativeKeys, ...averageKeys] // Keys to store in the history
+  const cumulativeKeysThatShouldNotIncrease: WebRTCVideoStat[] = [
+    'firCount',
+    'framesDropped',
+    'freezeCount',
+    'nackCount',
+    'packetsLost',
+    'pauseCount',
+    'pliCount',
+    'totalFreezesDuration',
+    'totalPausesDuration',
+  ] // Keys that should not increase
 
   const webrtcStatsAverageLogDelay = 1000
   let lastWebrtcStatsAverageLog = new Date()
@@ -132,8 +176,8 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
         webRtcStatsHistory.value[ev.peerId][key] = keyArray
       })
 
-      // Warn about changes in cumulative values
-      cumulativeKeys.forEach((key) => {
+      // Warn about changes in cumulative values that should not increase
+      cumulativeKeysThatShouldNotIncrease.forEach((key) => {
         const keyArray = webRtcStatsHistory.value[ev.peerId][key]
         if (keyArray.length < 2) return
 
