@@ -6,6 +6,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
+import { reloadCockpit } from '@/libs/utils'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
 export const useMissionStore = defineStore('mission', () => {
@@ -35,10 +36,7 @@ export const useMissionStore = defineStore('mission', () => {
     )
   }
 
-  onMounted(async () => {
-    if (username.value) return
-
-    // If no username is set, ask the user to enter one
+  const changeUsername = async (): Promise<void> => {
     let newUsername: string | undefined
     try {
       newUsername = await askForUsername()
@@ -60,10 +58,19 @@ export const useMissionStore = defineStore('mission', () => {
     }
 
     username.value = newUsername
+    await reloadCockpit()
+  }
+
+  onMounted(async () => {
+    if (username.value) return
+
+    // If no username is set, ask the user to enter one
+    await changeUsername()
   })
 
   return {
     username,
+    changeUsername,
     missionName,
     lastMissionName,
     missionStartTime,
