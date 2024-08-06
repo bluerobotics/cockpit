@@ -13,6 +13,18 @@ import { useMissionStore } from '@/stores/mission'
 
 import { useInteractionDialog } from './interactionDialog'
 
+const getVehicleAddress = async (): Promise<string> => {
+  const vehicleStore = useMainVehicleStore()
+
+  // Wait until we have a global address
+  while (vehicleStore.globalAddress === undefined) {
+    console.debug('Waiting for vehicle global address on BlueOS sync routine.')
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+
+  return vehicleStore.globalAddress
+}
+
 /**
  * This composable will keep a setting in sync between the browser's local storage and BlueOS.
  *
@@ -38,18 +50,6 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   const finishedInitialFetch = ref(false)
   let initialSyncTimeout: ReturnType<typeof setTimeout> | undefined = undefined
   let blueOsUpdateTimeout: ReturnType<typeof setTimeout> | undefined = undefined
-
-  const getVehicleAddress = async (): Promise<string> => {
-    const vehicleStore = useMainVehicleStore()
-
-    while (vehicleStore.globalAddress === undefined) {
-      console.debug('Waiting for vehicle global address on BlueOS sync routine.')
-      await new Promise((r) => setTimeout(r, 1000))
-      // Wait until we have a global address
-    }
-
-    return vehicleStore.globalAddress
-  }
 
   const getUsername = async (): Promise<string> => {
     const missionStore = useMissionStore()
@@ -221,4 +221,10 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   )
 
   return currentValue
+}
+
+export const getSettingsUsernamesFromBlueOS = async (): Promise<string[]> => {
+  const vehicleAddress = await getVehicleAddress()
+  const usernames = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, 'settings')
+  return Object.keys(usernames as string[])
 }
