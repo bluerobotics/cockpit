@@ -1,46 +1,106 @@
 <template>
   <InteractionDialog
+    variant="text-only"
     :show-dialog="showDialog"
-    title="Username prompt"
+    title="Switch user"
     :actions="interactionDialogActions"
     :max-width="700"
   >
     <template #content>
-      <div class="flex flex-col align-center justify-center font-light text-slate-200">
-        <p>Please set your username.</p>
-        <br />
-        <p>This will be used to store your configurations in the vehicle.</p>
-        <p>If you have multiple vehicles, make sure to use the same on all of them.</p>
-        <br />
-        <p>It should be at least 3 characters long.</p>
-        <p>It can contain letters, numbers, and the following characters: _ - .</p>
-        <p>It is case-insensitive.</p>
-        <br />
-        <p>If you don't set it, auto-sync with the vehicle won't work.</p>
-        <p>It can be changed later in the General menu.</p>
-        <v-text-field
-          v-model="newUsername"
-          variant="filled"
-          placeholder="Username"
-          type="input"
-          density="compact"
-          hint="Your identification username. At least 3 characters long."
-          class="w-[50%] mt-8 mb-4"
-        />
+      <div class="flex flex-col align-center justify-center font-light text-slate-200 w-full h-full transition-all">
+        <div
+          v-if="!usernamesStoredOnBlueOS.isEmpty() && !showNewUsernamePrompt"
+          class="w-full h-full flex flex-col align-center justify-center text-center"
+        >
+          <p v-if="missionStore.username === undefined">
+            It seems like you don't have an username set in this device yet.
+          </p>
+          <p>Please select your username below or click "add new" to create a new one.</p>
+          <br />
+          <div class="flex align-center justify-center w-full flex-wrap">
+            <v-btn
+              v-for="username in usernamesStoredOnBlueOS"
+              :key="username"
+              variant="flat"
+              class="bg-[#FFFFFF33] m-2"
+              @click="setNewUsername(username)"
+            >
+              {{ username }}
+            </v-btn>
+            <v-btn
+              :key="'add-new-username'"
+              variant="flat"
+              class="bg-[#ffffff14] m-2"
+              @click="showNewUsernamePrompt = true"
+            >
+              Add new
+            </v-btn>
+          </div>
+          <br />
+        </div>
+        <div v-else class="w-full h-full flex flex-col align-center justify-center">
+          <p>This username will be used to store your settings in the vehicle.</p>
+          <br />
+          <p>If you don't set your username, auto-sync with the vehicle won't work.</p>
+          <p>The user can be set or changed later in the General menu.</p>
+          <br />
+          <v-text-field
+            v-model="newUsername"
+            variant="filled"
+            placeholder="Username"
+            type="input"
+            density="compact"
+            hint="Your identification username."
+            class="w-[50%] m-4"
+            :error-messages="validationError"
+          />
+        </div>
       </div>
     </template>
   </InteractionDialog>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import slugify from 'slugify'
+import { onBeforeMount, ref } from 'vue'
+
+import { getSettingsUsernamesFromBlueOS } from '@/composables/settingsSyncer'
+import { openSnackbar } from '@/composables/snackbar'
+import { useMissionStore } from '@/stores/mission'
 
 import InteractionDialog from './InteractionDialog.vue'
 
 const emit = defineEmits(['confirmed', 'dismissed'])
 
+const missionStore = useMissionStore()
+
 const showDialog = ref(true)
+const showNewUsernamePrompt = ref(false)
+const validationError = ref('')
 const newUsername = ref('')
+const usernamesStoredOnBlueOS = ref<string[]>([])
+
+const setNewUsername = (username: string): void => {
+  newUsername.value = username
+  emit('confirmed', username)
+}
+
+onBeforeMount(async () => {
+  usernamesStoredOnBlueOS.value = await getSettingsUsernamesFromBlueOS()
+})
+
+const validateUsername = (username: string): true | string => {
+  if (username.length < 3) {
+    return 'Username must be at least 3 characters long.'
+  } else if (username.length > 16) {
+    return 'Username must be at most 16 characters long.'
+  } else if (!username.match(/^[a-zA-Z0-9_.-]+$/)) {
+    return 'Username can only contain letters, numbers, and the following characters: _ - .'
+  } else if (username.toLowerCase() !== username) {
+    return 'Username must be lowercase.'
+  }
+  return true
+}
 
 const interactionDialogActions = [
   {
@@ -53,6 +113,14 @@ const interactionDialogActions = [
   {
     text: 'Save',
     action: () => {
+      const slugifiedUsername = slugify(newUsername.value, { lower: true })
+      const usernameValidation = validateUsername(slugifiedUsername)
+      if (usernameValidation !== true) {
+        validationError.value = usernameValidation
+        openSnackbar({ message: usernameValidation, variant: 'error', duration: 5000 })
+        return
+      }
+      newUsername.value = slugifiedUsername
       showDialog.value = false
       emit('confirmed', newUsername.value)
     },
