@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
@@ -37,14 +37,19 @@ const virtualHorizonRoot = ref()
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
 
+// Make canvas size follows window resizing
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+const width = computed(() => widget.value.size.width * windowWidth.value)
+const height = computed(() => widget.value.size.height * windowHeight.value)
+
 // Calculates the smallest between the widget dimensions, so we can keep the inner content always inside it, without overlays
-const { width, height } = useElementSize(virtualHorizonRoot)
 const smallestDimension = computed(() => (width.value < height.value ? width.value : height.value))
 
 // Renders the updated canvas state
 const renderCanvas = (): void => {
   if (canvasRef.value === undefined || canvasRef.value === null) return
   if (canvasContext.value === undefined) canvasContext.value = canvasRef.value.getContext('2d')
+
   const ctx = canvasContext.value
   resetCanvas(ctx)
 
@@ -255,9 +260,6 @@ watch([renderVariables, width, height], () => {
 })
 
 onMounted(() => {
-  if (canvasRef.value === undefined || canvasRef.value === null) return
-  if (canvasContext.value === undefined) canvasContext.value = canvasRef.value.getContext('2d')
-
   // Set initial values, since 0 or 360 degrees does not render
   gsap.to(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
   gsap.to(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })

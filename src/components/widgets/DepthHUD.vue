@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core'
+import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
 import gsap from 'gsap'
 import { unit } from 'mathjs'
@@ -233,6 +233,11 @@ watch(depth, () => {
 watch([renderVars, canvasSize, widget.value.options], () => {
   if (!widgetStore.isWidgetVisible(widget.value)) return
   nextTick(() => renderCanvas())
+})
+
+const canvasVisible = useElementVisibility(canvasRef)
+watch(canvasVisible, (isVisible, wasVisible) => {
+  if (isVisible && !wasVisible) renderCanvas()
 })
 </script>
 

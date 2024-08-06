@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
@@ -85,8 +85,12 @@ onMounted(() => {
   renderCanvas()
 })
 
+// Make canvas size follows window resizing
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+const width = computed(() => widget.value.size.width * windowWidth.value)
+const height = computed(() => widget.value.size.height * windowHeight.value)
+
 // Calculates the smallest between the widget dimensions, so we can keep the inner content always inside it, without overlays
-const { width, height } = useElementSize(compassRoot)
 const smallestDimension = computed(() => (width.value < height.value ? width.value : height.value))
 
 // Renders the updated canvas state
