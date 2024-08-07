@@ -287,7 +287,7 @@
           <div v-for="view in widgetStore.viewsToShow" :key="view.name">
             <Transition name="fade">
               <div
-                v-show="view.name === currentSelectedViewName"
+                v-show="view.name === currentSelectedViewName && showBottomBarNow"
                 class="bar bottom-bar"
                 :style="[
                   interfaceStore.globalGlassMenuStyles,
