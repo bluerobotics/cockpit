@@ -198,42 +198,6 @@
         </GlassModal>
       </teleport>
 
-      <teleport to="body">
-        <v-dialog v-model="showMissionOptionsDialog" width="50%">
-          <v-card class="pa-2 bg-[#20202022] backdrop-blur-2xl text-white rounded-lg">
-            <v-card-title class="flex justify-between">
-              <div />
-              <div>Mission configuration</div>
-              <v-btn
-                icon
-                :width="38"
-                :height="34"
-                variant="text"
-                class="bg-transparent -mt-1 -mr-3"
-                @click="showMissionOptionsDialog = false"
-              >
-                <v-icon
-                  :size="interfaceStore.isOnSmallScreen ? 22 : 26"
-                  :class="interfaceStore.isOnSmallScreen ? '-mr-[10px] -mt-[10px]' : '-mr-[2px]'"
-                  >mdi-close</v-icon
-                >
-              </v-btn>
-            </v-card-title>
-            <v-card-text>
-              <div class="flex flex-col">
-                <p>Misison Name</p>
-                <v-text-field
-                  v-model="store.missionName"
-                  append-inner-icon="mdi-restore"
-                  class="mt-1"
-                  @click:append-inner="store.missionName = store.lastMissionName"
-                />
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-dialog>
-      </teleport>
-
       <div ref="routerSection" class="router-view">
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
           <div
@@ -251,33 +215,28 @@
             >
               <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
             </button>
-            <div
-              class="flex items-center justify-start h-full px-4 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
-              :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
-              @click="showMissionOptionsDialog = true"
-            >
-              <div class="flex items-center overflow-hidden text-lg font-medium text-white whitespace-nowrap">
-                <p v-if="store.missionName" class="overflow-x-hidden text-ellipsis">{{ store.missionName }}</p>
-                <p v-else class="overflow-x-hidden text-ellipsis">
-                  {{ randomMissionName }}
-                  <FontAwesomeIcon icon="fa-pen-to-square" size="1x" class="ml-2 text-slate-200/30" />
-                </p>
-              </div>
-            </div>
-            <div class="grow" />
-            <Alerter class="min-w-[30%] max-w-[30%]" />
-            <div class="grow" />
             <div class="flex-1">
               <MiniWidgetContainer
                 :container="widgetStore.currentMiniWidgetsProfile.containers[0]"
                 :allow-editing="widgetStore.editingMode"
-                align="end"
+                align="start"
               />
             </div>
-            <div
-              class="flex items-center justify-center m-2 text-sm font-bold text-center text-white select-none min-w-[80px]"
-            >
-              {{ format(timeNow, 'E LLL do HH:mm') }}
+            <div class="grow" />
+            <div class="flex-1">
+              <MiniWidgetContainer
+                :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
+                :allow-editing="widgetStore.editingMode"
+                align="center"
+              />
+            </div>
+            <div class="grow" />
+            <div class="flex-1">
+              <MiniWidgetContainer
+                :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
+                :allow-editing="widgetStore.editingMode"
+                align="end"
+              />
             </div>
           </div>
           <AltitudeSlider />
@@ -323,27 +282,23 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useDebounceFn, useFullscreen, useTimestamp, useWindowSize } from '@vueuse/core'
-import { format } from 'date-fns'
+import { onClickOutside, useDebounceFn, useFullscreen, useWindowSize } from '@vueuse/core'
 import { computed, DefineComponent, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import GlassModal from '@/components/GlassModal.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { coolMissionNames } from '@/libs/funny-name/words'
 import {
   availableCockpitActions,
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
-import { useMissionStore } from '@/stores/mission'
 
 import AltitudeSlider from './components/AltitudeSlider.vue'
 import EditMenu from './components/EditMenu.vue'
 import GlassButton from './components/GlassButton.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
-import Alerter from './components/widgets/Alerter.vue'
 import { datalogger } from './libs/sensors-logging'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
@@ -602,14 +557,7 @@ onBeforeUnmount(() => unregisterActionCallback(fullScreenCallbackId))
 
 const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscreen-exit' : 'mdi-overscan'))
 
-// Mission identification
-const store = useMissionStore()
-const showMissionOptionsDialog = ref(false)
-const randomMissionName = coolMissionNames.random()
 const currentSelectedViewName = computed(() => widgetStore.currentView.name)
-
-// Clock
-const timeNow = useTimestamp({ interval: 1000 })
 
 const { width: windowWidth } = useWindowSize()
 
