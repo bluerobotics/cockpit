@@ -122,6 +122,10 @@ export type JoystickButtonActionCorrespondency = {
      * The protocol action that should be triggered
      */
     action: ProtocolAction
+    /**
+     * User's custom label for the button
+     */
+    label?: string
   }
 }
 
@@ -252,6 +256,25 @@ export interface JoystickInput {
    * Input identification
    */
   id: JoystickAxis | JoystickButton
+}
+
+/**
+ * Joystick actions
+ */
+export interface JoystickAction {
+  /**
+   * Action identification
+   */
+  name: string
+  /**
+   * Action's protocol
+   */
+  protocol: string
+  /**
+   * Action's id
+   */
+  id: string
+  [key: string]: string
 }
 
 /**
