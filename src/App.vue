@@ -142,6 +142,23 @@
                     }
                   "
                 />
+                <GlassButton
+                  :label="simplifiedMainMenu ? '' : 'About'"
+                  :label-class="[menuLabelSize, '-mb-1']"
+                  icon="mdi-information-outline"
+                  :icon-size="simplifiedMainMenu ? 25 : undefined"
+                  :icon-class="
+                    interfaceStore.isOnSmallScreen
+                      ? 'scale-[100%] -mb-[1px] md:ml-[2px]'
+                      : 'scale-[95%] -mb-[2px] lg:-mr-[1px] -mr-[2px] xl:-mb-[2px]'
+                  "
+                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  :tooltip="simplifiedMainMenu ? 'About' : undefined"
+                  :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
+                  :width="buttonSize"
+                  :selected="showConfigurationMenu"
+                  @click="openAboutDialog"
+                />
               </div>
             </v-window-item>
             <v-window-item :value="2" class="h-full w-full">
@@ -320,6 +337,7 @@
       </div>
     </v-main>
   </v-app>
+  <About v-if="showAboutDialog" />
 </template>
 
 <script setup lang="ts">
@@ -338,6 +356,7 @@ import {
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { useMissionStore } from '@/stores/mission'
 
+import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
 import EditMenu from './components/EditMenu.vue'
 import GlassButton from './components/GlassButton.vue'
@@ -363,6 +382,7 @@ const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 
+const showAboutDialog = ref(false)
 const showConfigurationMenu = ref(false)
 type ConfigComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | null
 const currentConfigMenuComponent = ref<ConfigComponent>(null)
@@ -586,6 +606,11 @@ const glassMenuStyles = computed(() => ({
   color: interfaceStore.UIGlassEffect.fontColor,
   backdropFilter: `blur(${interfaceStore.UIGlassEffect.blur}px)`,
 }))
+
+const openAboutDialog = (): void => {
+  showAboutDialog.value = true
+  closeMainMenu()
+}
 
 const route = useRoute()
 const routerSection = ref()
