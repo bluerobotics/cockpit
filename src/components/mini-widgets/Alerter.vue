@@ -1,5 +1,5 @@
 <template>
-  <div class="relative flex-grow mx-1 my-1.5 max-w-[25%]">
+  <div class="mx-1 my-1.5 w-[500px]">
     <div
       ref="currentAlertBar"
       class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap bg-slate-800/75"
