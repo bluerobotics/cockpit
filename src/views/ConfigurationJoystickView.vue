@@ -1,8 +1,11 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Joystick configuration</template>
+    <template #title>Joystick configuration </template>
     <template #content>
-      <div :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[85vh]'">
+      <div
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'"
+        class="overflow-y-auto"
+      >
         <div
           v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
           class="px-6 pb-2 flex-centered flex-column position-relative"
@@ -10,17 +13,15 @@
         >
           <p class="text-base text-center font-bold mt-6 mb-4">Connect a joystick and press any key.</p>
         </div>
-        <ExpansiblePanel v-else class="mt-3" no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Funcitons mapping</template>
+        <ExpansiblePanel v-else class="mt-3" no-top-divider :is-expanded="false" compact>
+          <template #title>General</template>
           <template #info>
             <div class="flex flex-col items-center px-5 font-medium">
-              Click the buttons in your physical controller and see them being activated here. If any button does not
-              light up in this virtual joystick or is switched with another, click in it here and follow the
-              instructions to remap it.
+              Click the buttons in your physical controller and see them being activated on the table.
               <br />
               <br />
-              By clicking the virtual buttons and axis you are also able to choose the function in your vehicle that
-              this button controls, as whel as set axis limits.
+              By moving the virtual buttons and axis you are also able to choose the function in your vehicle that this
+              button controls, as whel as set axis limits.
             </div>
           </template>
           <template v-if="showJoystickWarningMessage" #warning>
@@ -57,7 +58,7 @@
                     <Button
                       v-for="functionMapping in controllerStore.protocolMappings"
                       :key="functionMapping.name"
-                      class="m-2"
+                      class="m-1 text-md"
                       :class="{
                         'bg-[#FFFFFF33]': controllerStore.protocolMapping.name === functionMapping.name,
                         'text-sm': interfaceStore.isOnSmallScreen,
@@ -79,7 +80,7 @@
                       class="w-10/12 mt-4 scale-90"
                       theme="dark"
                     />
-                    <div class="flex items-center gap-x-8">
+                    <div v-if="currentJoystick?.model !== 'Unknown'" class="flex items-center gap-x-8">
                       <Button
                         v-for="key in availableModifierKeys"
                         :key="key.id"
@@ -95,108 +96,329 @@
                   </div>
                 </div>
               </div>
-              <div
-                v-for="[key, joystick] in controllerStore.joysticks"
-                :key="key"
-                class="w-[95%] flex-centered flex-column position-relative"
-              >
-                <p class="text-md font-semibold">{{ joystick.model }} controller</p>
+              <div v-if="currentJoystick?.model !== 'Unknown'">
                 <div
-                  v-if="showJoystickLayout"
-                  class="flex flex-col items-center justify-center"
-                  :class="interfaceStore.isOnSmallScreen ? 'w-[90%]' : 'w-[80%]'"
+                  v-for="[key, joystick] in controllerStore.joysticks"
+                  :key="key"
+                  class="w-[95%] flex-centered flex-column position-relative"
                 >
-                  <JoystickPS
-                    class="w-[100%]"
-                    :model="joystick.model"
-                    :left-axis-horiz="joystick.state.axes[0]"
-                    :left-axis-vert="joystick.state.axes[1]"
-                    :right-axis-horiz="joystick.state.axes[2]"
-                    :right-axis-vert="joystick.state.axes[3]"
-                    :b0="joystick.state.buttons[0]"
-                    :b1="joystick.state.buttons[1]"
-                    :b2="joystick.state.buttons[2]"
-                    :b3="joystick.state.buttons[3]"
-                    :b4="joystick.state.buttons[4]"
-                    :b5="joystick.state.buttons[5]"
-                    :b6="joystick.state.buttons[6]"
-                    :b7="joystick.state.buttons[7]"
-                    :b8="joystick.state.buttons[8]"
-                    :b9="joystick.state.buttons[9]"
-                    :b10="joystick.state.buttons[10]"
-                    :b11="joystick.state.buttons[11]"
-                    :b12="joystick.state.buttons[12]"
-                    :b13="joystick.state.buttons[13]"
-                    :b14="joystick.state.buttons[14]"
-                    :b15="joystick.state.buttons[15]"
-                    :b16="joystick.state.buttons[16]"
-                    :b17="joystick.state.buttons[17]"
-                    :buttons-actions-correspondency="currentButtonActions"
-                    @click="(e) => setCurrentInputs(joystick, e)"
+                  <p class="text-md font-semibold">{{ joystick.model }} controller</p>
+                  <div
+                    v-if="showJoystickLayout"
+                    class="flex flex-col items-center justify-center"
+                    :class="interfaceStore.isOnSmallScreen ? 'w-[90%]' : 'w-[80%]'"
+                  >
+                    <JoystickPS
+                      class="w-[100%]"
+                      :model="joystick.model"
+                      :left-axis-horiz="joystick.state.axes[0]"
+                      :left-axis-vert="joystick.state.axes[1]"
+                      :right-axis-horiz="joystick.state.axes[2]"
+                      :right-axis-vert="joystick.state.axes[3]"
+                      :b0="joystick.state.buttons[0]"
+                      :b1="joystick.state.buttons[1]"
+                      :b2="joystick.state.buttons[2]"
+                      :b3="joystick.state.buttons[3]"
+                      :b4="joystick.state.buttons[4]"
+                      :b5="joystick.state.buttons[5]"
+                      :b6="joystick.state.buttons[6]"
+                      :b7="joystick.state.buttons[7]"
+                      :b8="joystick.state.buttons[8]"
+                      :b9="joystick.state.buttons[9]"
+                      :b10="joystick.state.buttons[10]"
+                      :b11="joystick.state.buttons[11]"
+                      :b12="joystick.state.buttons[12]"
+                      :b13="joystick.state.buttons[13]"
+                      :b14="joystick.state.buttons[14]"
+                      :b15="joystick.state.buttons[15]"
+                      :b16="joystick.state.buttons[16]"
+                      :b17="joystick.state.buttons[17]"
+                      :buttons-actions-correspondency="currentButtonActions"
+                      @click="(e) => setCurrentInputs(joystick, e)"
+                    />
+                  </div>
+
+                  <v-switch
+                    v-model="controllerStore.holdLastInputWhenWindowHidden"
+                    label="Hold last joystick input when window is hidden (tab changed or window minimized)"
+                    class="m-2"
                   />
                 </div>
-                <div class="flex items-center justify-evenly">
-                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg scale-90">
-                    <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'"
-                      >Joystick Mapping</span
-                    >
-                    <v-divider class="w-full opacity-95" />
-                    <div class="flex flex-wrap items-center justify-evenly">
-                      <button
-                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
-                        @click="controllerStore.exportJoystickMapping(joystick)"
-                      >
-                        Export to computer
-                      </button>
-                      <label
-                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-center text-uppercase bg-[#00000011]"
-                      >
-                        <input
-                          type="file"
-                          accept="application/json"
-                          hidden
-                          @change="(e) => controllerStore.importJoystickMapping(joystick, e)"
-                        />
-                        Import from computer
-                      </label>
-                    </div>
-                  </div>
-                  <div class="flex flex-col items-center pt-2 max-w-[40%] mb-4 border-[1px] rounded-lg scale-90">
-                    <span class="mb-2 font-bold" :class="interfaceStore.isOnSmallScreen ? 'text-md' : 'text-lg'"
-                      >Functions Mapping</span
-                    >
-                    <v-divider class="w-full opacity-95" />
-                    <div class="flex flex-wrap items-center justify-evenly">
-                      <button
-                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                        class="w-full p-[10px] border-b text-uppercase bg-[#00000011]"
-                        @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
-                      >
-                        Export to computer
-                      </button>
-                      <label
-                        class="w-full p-[10px] border-b text-center text-uppercase bg-[#00000011]"
-                        :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'"
-                      >
-                        <input
-                          type="file"
-                          accept="application/json"
-                          hidden
-                          @change="(e) => controllerStore.importFunctionsMapping(e)"
-                        />
-                        Import from computer
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <v-switch
-                  v-model="controllerStore.holdLastInputWhenWindowHidden"
-                  label="Hold last joystick input when window is hidden (tab changed or window minimized)"
-                  class="m-2"
-                />
               </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel
+          v-if="controllerStore.joysticks && controllerStore.joysticks.size"
+          :is-expanded="true"
+          no-bottom-divider
+          compact
+        >
+          <template #title
+            ><div class="flex justify-between">
+              <p>Function mappings</p>
+            </div>
+          </template>
+          <template #content>
+            <div class="flex w-full justify-end flex-row gap-x-4">
+              <div
+                class="flex border-[1px] border-[#FFFFFF22] rounded-md elevation-1"
+                :style="interfaceStore.globalGlassMenuStyles"
+              >
+                <v-btn
+                  v-tooltip="'Reset mappings to default'"
+                  icon="mdi-reload-alert"
+                  variant="text"
+                  size="24"
+                  class="text-[12px] mx-3 mt-[4px]"
+                />
+                <v-divider vertical />
+                <v-btn
+                  v-tooltip="'Download mappings'"
+                  icon="mdi-tray-arrow-down"
+                  variant="text"
+                  size="24"
+                  class="text-[12px] mx-3 mt-[4px]"
+                  @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
+                />
+                <v-divider vertical />
+                <label>
+                  <input
+                    type="file"
+                    accept="application/json"
+                    hidden
+                    @change="(e) => controllerStore.importFunctionsMapping(e)"
+                  />
+                  <v-icon class="text-[17px] cursor-pointer mx-3 my-2">mdi-tray-arrow-up</v-icon>
+                </label>
+              </div>
+            </div>
+            <div
+              v-for="[key, joystick] in controllerStore.joysticks"
+              :key="key"
+              class="w-full flex-centered flex-column position-relative"
+            >
+              <p class="text-start text-sm font-bold w-[93%]">Axis</p>
+              <v-data-table
+                v-if="controllerStore.joysticks && controllerStore.joysticks.size"
+                :items="tableItems"
+                class="elevation-1 bg-transparent rounded-lg mb-[20px]"
+                theme="dark"
+                :style="interfaceStore.globalGlassMenuStyles"
+              >
+                <template #headers>
+                  <tr>
+                    <th class="w-[100px] text-center"><p class="text-[16px] font-bold">Name</p></th>
+                    <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Preview</p></th>
+                    <th class="w-[50px] text-center"><p class="text-[16px] font-bold">Direction</p></th>
+                    <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Min</p></th>
+                    <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Axis</p></th>
+                    <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Max</p></th>
+                  </tr>
+                </template>
+                <template #item="{ item }">
+                  <tr v-if="item.type === 'axis'">
+                    <td class="w-[100px] text-center">
+                      <div class="flex items-center justify-center gap-x-4">
+                        <p>{{ item.type }}</p>
+                        <p>{{ item.id }}</p>
+                      </div>
+                    </td>
+                    <td class="w-[120px] text-center">
+                      <div class="flex justify-between h-[20px]">
+                        <div class="w-[50px]">
+                          <div
+                            v-if="item.type === 'axis' && joystick.state.axes[item.id]! < 0"
+                            class="w-full h-full bg-[#2c99ce] origin-right"
+                            :style="`transform: scaleX(${joystick.state.axes[item.id]! * -1})`"
+                          ></div>
+                        </div>
+                        <div class="flex flex-col w-[50px] -mt-2">
+                          <p>{{ joystick.state.axes[item.id]?.toFixed(2) || 0.0 }}</p>
+                          <p class="text-[10px]">
+                            {{
+                              Math.abs(
+                                ((joystick.state.axes[item.id as JoystickAxis]?.toFixed(2) as any) || 0.0) *
+                                  (joystick.state.axes[item.id]! > 0
+                                    ? controllerStore.protocolMapping.axesCorrespondencies[item.id as JoystickAxis]?.min
+                                    : controllerStore.protocolMapping.axesCorrespondencies[item.id as JoystickAxis]
+                                        ?.max)
+                              )
+                            }}
+                          </p>
+                        </div>
+                        <div class="w-[50px]">
+                          <div
+                            v-if="item.type === 'axis' && joystick.state.axes[item.id]! > 0"
+                            class="w-full h-full bg-[#2c99ce] origin-left"
+                            :style="`transform: scaleX(${joystick.state.axes[item.id]})`"
+                          ></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="w-[50px] text-center">
+                      <v-icon v-if="item.type === 'axis'">
+                        {{
+                          [JoystickAxis.A0, JoystickAxis.A2].includes(Number(item.id))
+                            ? 'mdi-pan-horizontal'
+                            : 'mdi-pan-vertical'
+                        }}
+                      </v-icon>
+                    </td>
+                    <td class="w-[110px] text-center">
+                      <v-text-field
+                        v-if="item.type === 'axis'"
+                        v-model.number="controllerStore
+                        .protocolMapping.axesCorrespondencies[item.id as JoystickAxis].min"
+                        type="number"
+                        density="compact"
+                        variant="plain"
+                        hide-details
+                        class="ml-4"
+                      />
+                    </td>
+                    <td class="w-[120px] text-center">
+                      <v-select
+                        v-if="item.type === 'axis'"
+                        v-model="controllerStore
+                        .protocolMapping.axesCorrespondencies[item.id as JoystickAxis].action"
+                        :items="controllerStore.availableAxesActions"
+                        item-title="name"
+                        hide-details
+                        class="mb-2"
+                        density="compact"
+                        variant="plain"
+                        theme="dark"
+                        return-object
+                      />
+                    </td>
+                    <td class="w-[110px] text-center">
+                      <v-text-field
+                        v-if="item.type === 'axis'"
+                        v-model.number="controllerStore
+                        .protocolMapping.axesCorrespondencies[item.id as JoystickAxis].max"
+                        type="number"
+                        density="compact"
+                        variant="plain"
+                        hide-details
+                        class="ml-4"
+                      />
+                    </td>
+                  </tr>
+                </template>
+                <template #bottom>
+                  <div class="h-[1px]">
+                    <v-progress-linear
+                      v-if="remappingAxisInput !== false"
+                      v-model="remapAxisTimeProgress"
+                      color="blue"
+                      height="4"
+                      striped
+                      class="w-[98%]"
+                    /></div
+                ></template>
+              </v-data-table>
+              <div class="flex w-full justify-between mt-[50px]">
+                <p class="text-start text-sm font-bold ml-[25px] -mb-[5px]">Buttons</p>
+                <v-btn-group
+                  rounded="md"
+                  density="compact"
+                  :style="interfaceStore.globalGlassMenuStyles"
+                  divided
+                  theme="dark"
+                  class="-mt-9 elevation-1"
+                >
+                  <v-btn
+                    v-for="button in availableModifierKeys"
+                    :key="button.id"
+                    variant="text"
+                    size="small"
+                    :class="[
+                      currentModifierKey.id !== button.id ? 'text-[#FFFFFF63]' : 'bg-[#FFFFFF22]',
+                      {
+                        'text-sm': interfaceStore.isOnSmallScreen,
+                      },
+                    ]"
+                    @click="changeModifierKeyTab(button.id as CockpitModifierKeyOption)"
+                  >
+                    {{ button.name }}
+                  </v-btn>
+                </v-btn-group>
+              </div>
+              <v-data-table
+                v-if="currentJoystick && currentJoystick?.gamepadToCockpitMap?.buttons"
+                :headers="headers"
+                :items="tableItems"
+                items-per-page="32"
+                class="elevation-1 bg-transparent rounded-lg mt-[5px]"
+                theme="dark"
+                :style="interfaceStore.globalGlassMenuStyles"
+              >
+                <template #headers>
+                  <tr>
+                    <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Name</p></th>
+                    <th class="w-[120px] text-center">
+                      <div class="flex justify-center w-full" :class="{ '-mr-3': currentModifierKey.id !== 'regular' }">
+                        <p class="text-[16px] font-bold">Function</p>
+                        <p v-if="currentModifierKey.id !== 'regular'" class="text-[10px] text-end ml-2">
+                          ({{ currentModifierKey.id }})
+                        </p>
+                      </div>
+                    </th>
+                    <th class="w-[150px] text-center"><p class="text-[16px] font-bold">Custom label</p></th>
+                    <th class="w-[50px] text-center"><p class="text-[16px] font-bold">Actions</p></th>
+                  </tr>
+                </template>
+                <template #item="{ item }">
+                  <tr v-if="item.type === 'button'">
+                    <td class="w-[120px]">
+                      <div
+                        class="flex items-center justify-center gap-x-4 rounded-xl"
+                        :class="
+                          item.type === 'button' && joystick.state.buttons[item.id] ? 'bg-[#2c99ce]' : 'bg-transparent'
+                        "
+                      >
+                        <p>{{ item.type }}</p>
+                        <p>{{ item.id }}</p>
+                      </div>
+                    </td>
+                    <td class="w-[120px]">
+                      <div>
+                        <p class="text-center">{{ currentButtonActions[item.id as JoystickButton]?.action.name }}</p>
+                      </div>
+                    </td>
+                    <td class="w-[150px]">
+                      <v-text-field
+                        v-model="controllerStore.protocolMapping
+                        .buttonsCorrespondencies
+                        [currentModifierKey.id as CockpitModifierKeyOption][item.id as TableItem].label"
+                        dense
+                        variant="plain"
+                        hide-details
+                        class="w-full"
+                      />
+                    </td>
+                    <td class="text-center w-[50px]">
+                      <v-btn
+                        v-tooltip:top="'Unmap'"
+                        icon="mdi-delete-circle"
+                        variant="text"
+                        @click="unbindCurrentInput(item)"
+                      >
+                      </v-btn>
+                      <v-btn
+                        v-tooltip="'Map function to button'"
+                        icon="mdi-circle-edit-outline"
+                        variant="text"
+                        class="text-[16px]"
+                        @click="setCurrentInputFromTable(joystick, item)"
+                      >
+                      </v-btn>
+                    </td>
+                  </tr>
+                </template>
+                <template #bottom></template>
+              </v-data-table>
             </div>
           </template>
         </ExpansiblePanel>
@@ -253,15 +475,28 @@
             <ExpansiblePanel
               v-for="protocol in JoystickProtocol"
               :key="protocol"
+              compact
               mark-expanded
               darken-content
               hover-effect
             >
-              <template #title>{{ protocol }}</template>
+              <template #title>
+                {{ protocol }}
+              </template>
               <template #content>
                 <div class="max-h-[30vh] p-1 overflow-y-auto">
+                  <v-text-field
+                    v-if="buttonActionsToShow.filter((a) => a.protocol === protocol).length > 12"
+                    v-model="searchTermsJoy[protocol]"
+                    density="compact"
+                    variant="filled"
+                    theme="dark"
+                    type="text"
+                    placeholder="Search actions..."
+                    class="-mb-4"
+                  />
                   <Button
-                    v-for="action in buttonActionsToShow.filter((a) => a.protocol === protocol)"
+                    v-for="action in sortJoystickActions(protocol)"
                     :key="action.name"
                     class="w-full my-1 text-sm hover:bg-slate-700"
                     :class="{
@@ -269,7 +504,7 @@
                         currentButtonActions[input.id].action.protocol == action.protocol &&
                         currentButtonActions[input.id].action.id == action.id,
                     }"
-                    @click="updateButtonAction(input, action)"
+                    @click="updateButtonAction(input, action as ProtocolAction)"
                   >
                     {{ action.name }}
                   </Button>
@@ -349,7 +584,7 @@
 
 <script setup lang="ts">
 import semver from 'semver'
-import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { type Ref, computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -370,6 +605,7 @@ import {
   type ProtocolAction,
   CockpitModifierKeyOption,
   InputType,
+  JoystickAction,
   JoystickAxis,
   JoystickAxisInput,
   JoystickButton,
@@ -404,6 +640,7 @@ onMounted(async () => {
   m2rSupportsExtendedManualControl.value = semver.gte(m2rVersion, '0.11.19')
   const ardupilotVersion = await getArdupilotVersion(globalAddress)
   ardupilotSupportsExtendedManualControl.value = semver.gte(ardupilotVersion, '4.1.2')
+  console.log('joystick', controllerStore.joysticks)
 
   if (m2rSupportsExtendedManualControl.value || ardupilotSupportsExtendedManualControl.value) {
     showJoystickWarningMessage.value = true
@@ -439,10 +676,59 @@ const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
 const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
 const showJoystickLayout = ref(true)
 
+const protocols = Object.values(JoystickProtocol).filter((value) => typeof value === 'string')
+
+type SearchTerms = {
+  [key: string]: string
+}
+
+type TableItem = JoystickButton | JoystickAxis
+
+const sortJoystickActions = (protocol: string): JoystickAction[] => {
+  const searchTerm = searchTermsJoy[protocol].toLowerCase() || ''
+  return buttonActionsToShow.value
+    .filter((action: JoystickAction) => action.protocol === protocol && action.name.toLowerCase().includes(searchTerm))
+    .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
+}
+
+const searchTermsJoy = reactive(
+  protocols.reduce((acc: SearchTerms, protocol: string) => {
+    acc[protocol] = ''
+    return acc
+  }, {} as SearchTerms)
+)
+
+const headers = ref([
+  { text: 'Type', value: 'type' },
+  { text: 'Index', value: 'index' },
+  { text: 'Actions', value: 'actions', sortable: false },
+])
+
+const tableItems = computed(() => {
+  const axesItems = currentJoystick.value?.gamepadToCockpitMap?.axes.slice(0, 4).map((axis) => ({
+    type: 'axis',
+    id: axis,
+  }))
+  const buttonItems = currentJoystick.value?.gamepadToCockpitMap?.buttons
+    .map((button, index) => ({
+      type: 'button',
+      id: button,
+      index: index,
+    }))
+    .filter((button) => button.index >= 0 && button.index <= 15)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return [...(axesItems as any), ...(buttonItems as any)]
+})
+
 watch(inputClickedDialog, () => {
   justRemappedInput.value = undefined
   justRemappedAxisInput.value = undefined
 })
+
+const setCurrentInputFromTable = (joystick: Joystick, input: JoystickInput): void => {
+  const inputs = [input]
+  setCurrentInputs(joystick, inputs)
+}
 
 const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => {
   currentJoystick.value = joystick
@@ -585,6 +871,15 @@ const confirmationRequiredTooltipText = (input: JoystickInput): string => {
   } else {
     return 'This confirmation setting is applicable only to cockpit actions.'
   }
+}
+
+const unbindCurrentInput = (input: JoystickInput): void => {
+  const actions: ProtocolAction = {
+    id: 'no_function',
+    name: 'No function',
+    protocol: JoystickProtocol.CockpitAction,
+  }
+  updateButtonAction(input, actions)
 }
 
 const updateButtonAction = (input: JoystickInput, action: ProtocolAction): void => {

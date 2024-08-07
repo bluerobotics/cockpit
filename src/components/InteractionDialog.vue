@@ -229,7 +229,6 @@ const startTimer = (): void => {
 }
 
 const stopTimer = (): void => {
-  console.log('🚀 ~ stopTimer:')
   if (timerId.value !== null) {
     clearInterval(timerId.value)
     timerId.value = null
