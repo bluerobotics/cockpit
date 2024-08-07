@@ -1,7 +1,16 @@
 <template>
   <div class="widgets-view">
     <div v-for="view in store.viewsToShow" :key="view.hash" class="widget-view">
-      <div class="w-full h-full bg-slate-500" />
+      <div class="w-full h-full bg-slate-500 flex justify-center align-center">
+        <div
+          v-if="view.widgets.isEmpty()"
+          class="px-10 py-16 rounded-md flex flex-col justify-center align-center bg-slate-400 font-extrabold text-slate-600 w-[480px] text-center text-3xl"
+        >
+          <p>You currently have no widgets!</p>
+          <br />
+          <p>Open edit mode to start tweaking this view.</p>
+        </div>
+      </div>
       <SnappingGrid v-if="store.snapToGrid && store.editingMode" :grid-interval="store.gridInterval" />
       <template v-for="widget in view.widgets.slice().reverse()" :key="widget.hash">
         <WidgetHugger
