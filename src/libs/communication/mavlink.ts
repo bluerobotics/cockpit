@@ -19,7 +19,11 @@ export const sendMavlinkMessage = (message: MavMessage): void => {
     message: message,
   }
   const textEncoder = new TextEncoder()
-  ConnectionManager.write(textEncoder.encode(JSON.stringify(pack)))
+  try {
+    ConnectionManager.write(textEncoder.encode(JSON.stringify(pack)))
+  } catch (error) {
+    console.error('Error sending MAVLink message:', error)
+  }
 }
 
 /**
