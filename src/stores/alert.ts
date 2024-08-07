@@ -143,7 +143,6 @@ export const useAlertStore = defineStore('alert', () => {
       ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !lastAlert.message.startsWith('#'))
     )
       return
-    speak(lastAlert.level)
     speak(lastAlert.message)
   })
 
