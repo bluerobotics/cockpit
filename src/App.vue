@@ -355,6 +355,7 @@ import ConfigurationJoystickView from './views/ConfigurationJoystickView.vue'
 import ConfigurationTelemetryView from './views/ConfigurationLogsView.vue'
 import ConfigurationMissionView from './views/ConfigurationMissionView.vue'
 import ConfigurationUIView from './views/ConfigurationUIView.vue'
+import ConfigurationUserView from './views/ConfigurationUserView.vue'
 import ConfigurationVideoView from './views/ConfigurationVideoView.vue'
 
 const { showDialog, closeDialog } = useInteractionDialog()
@@ -385,6 +386,11 @@ const configMenu = [
     icon: 'mdi-monitor-cellphone',
     title: 'Interface',
     component: markRaw(ConfigurationUIView) as ConfigComponent,
+  },
+  {
+    icon: 'mdi-account',
+    title: 'User',
+    component: markRaw(ConfigurationUserView) as ConfigComponent,
   },
   {
     icon: 'mdi-controller',
