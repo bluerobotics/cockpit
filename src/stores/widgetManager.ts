@@ -627,6 +627,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   // Profile migrations
   // TODO: remove on first stable release
   onBeforeMount(() => {
+    if (currentMiniWidgetsProfile.value.containers.length < 3) {
+      currentMiniWidgetsProfile.value = miniWidgetsProfile
+    }
+
     const alreadyUsedProfileHashes: string[] = []
     const alreadyUsedViewHashes: string[] = []
     const alreadyUsedWidgetHashes: string[] = []
