@@ -22,12 +22,12 @@
           {{ tooltip }}
         </v-tooltip>
       </template>
-      <Icon
+      <v-icon
         v-if="isRound || isUncontained"
         :icon="icon || ''"
-        :width="props.iconSize || calculatedIconSize"
+        :size="props.iconSize || calculatedIconSize"
         :class="iconClass"
-        class="opacity-90"
+        class="opacity-90 scale-[85%]"
       />
       <div v-else class="flex items-center align-center justify-center w-full h-full">
         <Icon :icon="icon || ''" :width="props.iconSize || calculatedIconSize" :class="iconClass" />
@@ -46,7 +46,6 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Icon, IconifyIcon } from '@iconify/vue'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -61,7 +60,7 @@ const props = defineProps<{
   /**
    * The icon to display in the button (prepend on rectangular, centered on round).
    */
-  icon?: string | IconifyIcon
+  icon?: string
   /**
    * Additional Tailwind classes for the icon.
    */
