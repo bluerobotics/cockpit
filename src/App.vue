@@ -596,8 +596,9 @@ const resetHideMouseTimeout = (): void => {
 
 document.addEventListener('mousemove', resetHideMouseTimeout)
 
-// Control bottom bar momentary hiding
+// Control top/bottom bar momentary hiding
 const showBottomBarNow = ref(widgetStore.currentView.showBottomBarOnBoot)
+const showTopBarNow = ref(true)
 watch([() => widgetStore.currentView, () => widgetStore.currentView.showBottomBarOnBoot], () => {
   showBottomBarNow.value = widgetStore.currentView.showBottomBarOnBoot
 })
@@ -606,7 +607,12 @@ const bottomBarToggleCallbackId = registerActionCallback(
   availableCockpitActions.toggle_bottom_bar,
   debouncedToggleBottomBar
 )
-onBeforeUnmount(() => unregisterActionCallback(bottomBarToggleCallbackId))
+const debouncedToggleTopBar = useDebounceFn(() => (showTopBarNow.value = !showTopBarNow.value), 25)
+const topBarToggleCallbackId = registerActionCallback(availableCockpitActions.toggle_top_bar, debouncedToggleTopBar)
+onBeforeUnmount(() => {
+  unregisterActionCallback(bottomBarToggleCallbackId)
+  unregisterActionCallback(topBarToggleCallbackId)
+})
 
 // Start datalogging
 datalogger.startLogging()
