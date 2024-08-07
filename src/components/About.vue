@@ -1,0 +1,65 @@
+<template>
+  <teleport to="body">
+    <InteractionDialog :show-dialog="showDialog" max-width="740" variant="text-only">
+      <template #content>
+        <div class="flex flex-col justify-center align-center w-full h-full">
+          <img :src="CockpitLogo" alt="Cockpit Logo" class="w-64 my-4" />
+          <div class="w-[90%] flex justify-between my-8 py-3">
+            <div class="w-[45%] flex flex-col text-start">
+              <p class="mb-1">
+                Cockpit is an intuitive and customizable cross-platform ground control station for remote vehicles of
+                all types.
+              </p>
+              <p class="my-3">It was created by Blue Robotics and is entirely open-source.</p>
+              <p class="mt-1">
+                It currently supports Ardupilot-based vehicles, but has plans to support any generic vehicle, be it
+                communicating MAVLink or not.
+              </p>
+            </div>
+            <div class="w-[45%] flex flex-col justify-end text-end">
+              <p class="mb-1">Version 1.0.0</p>
+              <p class="my-3">Created by Blue Robotics</p>
+              <p class="mt-1">Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom</p>
+            </div>
+          </div>
+          <div class="mb-5 flex justify-center align-center">
+            <v-btn
+              class="mx-3"
+              variant="text"
+              icon="mdi-github"
+              size="xs"
+              target="_blank"
+              href="https://github.com/bluerobotics/cockpit"
+            />
+            <v-btn
+              class="mx-3"
+              variant="text"
+              icon="mdi-web"
+              size="xs"
+              target="_blank"
+              href="https://bluerobotics.com"
+            />
+            <v-btn
+              class="mx-3"
+              variant="text"
+              icon="mdi-file-document-outline"
+              size="xs"
+              target="_blank"
+              href="https://docs.bluerobotics.com/ardusub-zola/software/control-station/Cockpit-1.0/overview"
+            />
+          </div>
+        </div>
+      </template>
+      <template #actions></template>
+    </InteractionDialog>
+  </teleport>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+import CockpitLogo from '@/assets/cockpit-logo.png'
+import InteractionDialog from '@/components/InteractionDialog.vue'
+
+const showDialog = ref(true)
+</script>
