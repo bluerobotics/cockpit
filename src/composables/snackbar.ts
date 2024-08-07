@@ -1,3 +1,5 @@
+/* eslint-disable vue/one-component-per-file */
+import { v4 as uuid } from 'uuid'
 import { App, createApp, onUnmounted, ref } from 'vue'
 
 import SnackbarComponent from '@/components/Snackbar.vue' // Ensure the correct path
@@ -43,7 +45,7 @@ interface UseSnackbarReturn {
  * Provides methods to control the snackbar.
  * @returns {UseSnackbarReturn} - An object containing the snackbar control methods.
  */
-export function useSnackbar(): UseSnackbarReturn {
+export const useSnackbar = (): UseSnackbarReturn => {
   const snackbarProps = ref<
     SnackbarOptions & {
       /**
@@ -103,4 +105,15 @@ export function useSnackbar(): UseSnackbarReturn {
   })
 
   return { showSnackbar, closeSnackbar }
+}
+
+export const openSnackbar = (options: SnackbarOptions): Promise<string | undefined> => {
+  return new Promise(() => {
+    const mountPoint = document.createElement('div')
+    mountPoint.id = `snackbar-${uuid()}`
+    document.body.appendChild(mountPoint)
+    const snackbarApp = createApp(SnackbarComponent, { showSnackbar: true, ...options })
+    snackbarApp.use(vuetify)
+    snackbarApp.mount(mountPoint)
+  })
 }

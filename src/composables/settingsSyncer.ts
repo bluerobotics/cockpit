@@ -12,6 +12,7 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
 import { useInteractionDialog } from './interactionDialog'
+import { openSnackbar } from './snackbar'
 
 const getVehicleAddress = async (): Promise<string> => {
   const vehicleStore = useMainVehicleStore()
@@ -122,9 +123,13 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
       try {
         await setKeyDataOnCockpitVehicleStorage(vehicleAddress, `settings/${username}/${key}`, newValue)
-        console.info(`Success updating '${key}' on BlueOS.`)
+        const message = `Success updating '${key}' on BlueOS.`
+        openSnackbar({ message, duration: 3000, variant: 'success' })
+        console.info(message)
       } catch (fetchError) {
-        console.error(`Failed updating '${key}' on BlueOS. Will keep trying.`)
+        const message = `Failed updating '${key}' on BlueOS. Will keep trying.`
+        openSnackbar({ message, duration: 3000, variant: 'error' })
+        console.error(message)
         console.error(fetchError)
 
         // If we can't update the value on BlueOS, try again in 10 seconds
@@ -170,8 +175,12 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
       if (useBlueOsValue) {
         currentValue.value = valueOnBlueOS as T
+        const message = `Fetched remote value of key ${key} from the vehicle.`
+        openSnackbar({ message, duration: 3000, variant: 'success' })
       } else {
         updateValueOnBlueOS(currentValue.value)
+        const message = `Pushed local value of key ${key} to the vehicle.`
+        openSnackbar({ message, duration: 3000, variant: 'success' })
       }
 
       console.info(`Success syncing '${key}' with BlueOS.`)
