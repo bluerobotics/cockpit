@@ -27,6 +27,7 @@ export enum MiniWidgetType {
   BaseCommIndicator = 'BaseCommIndicator',
   BatteryIndicator = 'BatteryIndicator',
   ChangeAltitudeCommander = 'ChangeAltitudeCommander',
+  Clock = 'Clock',
   DepthIndicator = 'DepthIndicator',
   RelativeAltitudeIndicator = 'RelativeAltitudeIndicator',
   TakeoffLandCommander = 'TakeoffLandCommander',
