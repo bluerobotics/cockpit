@@ -675,6 +675,28 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
     name: 'Default Cockpit Mini Widget profile',
     containers: [
       {
+        name: 'Top-left container',
+        widgets: [
+          {
+            hash: '2287d53a-dfd2-4978-9830-fa36994b02a1',
+            component: MiniWidgetType.MissionIdentifier,
+            name: 'MissionIdentifier',
+            options: {},
+          },
+        ],
+      },
+      {
+        name: 'Top-center container',
+        widgets: [
+          {
+            hash: 'c3a90d73-32e0-4dbf-bbe6-4d5a27e85b10',
+            component: MiniWidgetType.Alerter,
+            name: 'Alerter',
+            options: {},
+          },
+        ],
+      },
+      {
         name: 'Top-right container',
         widgets: [
           {
@@ -693,6 +715,12 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
             hash: '7b31c4c4-e273-4f75-b0b7-d56263c4177d',
             component: MiniWidgetType.BatteryIndicator,
             name: 'BatteryIndicator',
+            options: {},
+          },
+          {
+            hash: 'b902ca12-d61f-4cce-a3a3-b74bbbf148aa',
+            component: MiniWidgetType.Clock,
+            name: 'Clock',
             options: {},
           },
         ],
