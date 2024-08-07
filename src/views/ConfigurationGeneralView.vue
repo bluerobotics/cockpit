@@ -7,6 +7,32 @@
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>User settings</template>
+          <template #info>
+            <p class="max-w-[400px]">
+              User related configuration. Here you can set the user that is currently set for this device as well as
+              create a new user account.
+            </p>
+          </template>
+          <template #content>
+            <div class="flex align-center justify-between pl-4 pr-2 mt-2 mb-6">
+              <div>
+                <span class="mr-2">Current user:</span>
+                <span class="font-semibold text-2xl">{{ missionStore.username }}</span>
+              </div>
+              <v-btn
+                id="select-profile"
+                size="sm"
+                icon="mdi-swap-horizontal"
+                class="bg-transparent"
+                variant="text"
+                @click="missionStore.changeUsername"
+              />
+            </div>
+          </template>
+        </ExpansiblePanel>
+
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Vehicle network connection (global address)</template>
           <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
           <template #info>Sets the network address for device communication. E.g: blueos.local</template>
@@ -247,11 +273,13 @@ import { isValidNetworkAddress, reloadCockpit } from '@/libs/utils'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
+const missionStore = useMissionStore()
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
