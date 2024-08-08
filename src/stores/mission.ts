@@ -1,12 +1,16 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
+import { reloadCockpit } from '@/libs/utils'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
 export const useMissionStore = defineStore('mission', () => {
+  const username = useStorage<string>('cockpit-username', '')
   const missionName = ref('')
   const slideEventsEnabled = useBlueOsStorage('cockpit-slide-events-enabled', true)
   const slideEventsCategoriesRequired = useBlueOsStorage(
@@ -15,6 +19,7 @@ export const useMissionStore = defineStore('mission', () => {
   )
   const lastMissionName = useStorage('cockpit-last-mission-name', '')
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
+  const { showDialog } = useInteractionDialog()
 
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
@@ -31,7 +36,41 @@ export const useMissionStore = defineStore('mission', () => {
     )
   }
 
+  const changeUsername = async (): Promise<void> => {
+    let newUsername: string | undefined
+    try {
+      newUsername = await askForUsername()
+    } catch (error) {
+      console.error('Username not set. User dismissed dialog.')
+      return
+    }
+    console.debug('Username set:', newUsername)
+
+    // If the user cancels the prompt or sets a name with less than 3 chars, do nothing
+    if (!newUsername || newUsername.trim().length < 3) {
+      showDialog({
+        title: 'Invalid username',
+        message: 'Username must be at least 3 characters long. No username was set. Auto-sync disabled.',
+        variant: 'error',
+        maxWidth: 560,
+      })
+      return
+    }
+
+    username.value = newUsername
+    await reloadCockpit()
+  }
+
+  onMounted(async () => {
+    if (username.value) return
+
+    // If no username is set, ask the user to enter one
+    await changeUsername()
+  })
+
   return {
+    username,
+    changeUsername,
     missionName,
     lastMissionName,
     missionStartTime,

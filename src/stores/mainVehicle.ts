@@ -1,11 +1,17 @@
 import { useStorage, useTimestamp, watchThrottled } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { altitude_setpoint } from '@/libs/altitude-slider'
-import { getCpuTempCelsius, getStatus } from '@/libs/blueos'
+import {
+  getCpuTempCelsius,
+  getKeyDataFromCockpitVehicleStorage,
+  getStatus,
+  setKeyDataOnCockpitVehicleStorage,
+} from '@/libs/blueos'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -81,6 +87,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     enabled: false,
   })
 
+  const lastConnectedVehicleId = localStorage.getItem('cockpit-last-connected-vehicle-id') || undefined
+  const currentlyConnectedVehicleId = ref<string | undefined>()
+
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
@@ -123,6 +132,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   const isVehicleOnline = computed(() => {
     return lastHeartbeat.value !== undefined && new Date(timeNow.value).getTime() - lastHeartbeat.value.getTime() < 5000
+  })
+
+  watch(isVehicleOnline, (isOnline) => {
+    if (isOnline) return
+    currentlyConnectedVehicleId.value = undefined
   })
 
   const rtcConfiguration = computed(() => {
@@ -336,7 +350,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return (vehicle as ArduPilot) || undefined
   }
 
-  VehicleFactory.onVehicles.once((vehicles: WeakRef<Vehicle.Abstract>[]) => {
+  VehicleFactory.onVehicles.once(async (vehicles: WeakRef<Vehicle.Abstract>[]) => {
     mainVehicle.value = getAutoPilot(vehicles)
     modes.value = mainVehicle.value.modesAvailable()
     icon.value = mainVehicle.value.icon()
@@ -377,6 +391,35 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       Object.assign(genericVariables, newGenericVariablesState)
       availableGenericVariables.value = mainVehicle.value?._availableGenericVariablesdMessagePaths ?? []
     })
+
+    // Get the ID for the currently connected vehicle, or create one if it does not exist
+    // Try this every 5 seconds until we have an ID
+    const updateVehicleId = async (): Promise<void> => {
+      try {
+        const maybeId = await getKeyDataFromCockpitVehicleStorage(globalAddress.value, 'cockpit-vehicle-id')
+        if (typeof maybeId !== 'string') {
+          throw new Error('Vehicle ID is not a string.')
+        }
+        currentlyConnectedVehicleId.value = maybeId
+        localStorage.setItem('cockpit-last-connected-vehicle-id', currentlyConnectedVehicleId.value)
+      } catch (idFetchError) {
+        console.error(`Could not get vehicle ID from storage. ${(idFetchError as Error).message}`)
+
+        const newVehicleId = uuid()
+        console.log(`Setting new vehicle ID: ${newVehicleId}`)
+        try {
+          await setKeyDataOnCockpitVehicleStorage(globalAddress.value, 'cockpit-vehicle-id', newVehicleId)
+          currentlyConnectedVehicleId.value = newVehicleId
+          localStorage.setItem('cockpit-last-connected-vehicle-id', currentlyConnectedVehicleId.value)
+        } catch (idSetError) {
+          console.error(`Could not set vehicle ID in storage. ${(idSetError as Error).message}`)
+          console.log('Will try setting the vehicle ID again in 5 seconds...')
+          setTimeout(updateVehicleId, 5000)
+        }
+      }
+    }
+
+    updateVehicleId()
 
     setInterval(async () => {
       const blueosStatus = await getStatus(globalAddress.value)
@@ -506,6 +549,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     webRTCSignallingURI,
     customWebRTCSignallingURI,
     defaultWebRTCSignallingURI,
+    lastConnectedVehicleId,
+    currentlyConnectedVehicleId,
     cpuLoad,
     lastHeartbeat,
     firmwareType,
