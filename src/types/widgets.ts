@@ -23,11 +23,14 @@ export enum WidgetType {
  * The enum value is equal to the component's filename, without the '.vue' extension
  */
 export enum MiniWidgetType {
+  Alerter = 'Alerter',
   ArmerButton = 'ArmerButton',
   BaseCommIndicator = 'BaseCommIndicator',
   BatteryIndicator = 'BatteryIndicator',
   ChangeAltitudeCommander = 'ChangeAltitudeCommander',
+  Clock = 'Clock',
   DepthIndicator = 'DepthIndicator',
+  MissionIdentifier = 'MissionIdentifier',
   RelativeAltitudeIndicator = 'RelativeAltitudeIndicator',
   TakeoffLandCommander = 'TakeoffLandCommander',
   VeryGenericIndicator = 'VeryGenericIndicator',
