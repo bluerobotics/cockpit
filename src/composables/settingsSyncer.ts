@@ -1,5 +1,5 @@
-import { type RemovableRef, useStorage, watchThrottled } from '@vueuse/core'
-import { type MaybeRef, onMounted, ref, unref } from 'vue'
+import { type RemovableRef, useStorage } from '@vueuse/core'
+import { type MaybeRef, onMounted, ref, toRaw, unref, watch } from 'vue'
 
 import {
   getKeyDataFromCockpitVehicleStorage,
@@ -215,18 +215,38 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
   // Update BlueOS value when local value changes.
   // Throttle to avoid spamming BlueOS with requests while the user is updating the value.
-  watchThrottled(
+  let valueBeforeDebouncedChange = structuredClone(toRaw(currentValue.value))
+  let valueUpdateMethodTimeout: ReturnType<typeof setTimeout> | undefined = undefined
+
+  const maybeUpdateValueOnBlueOs = async (newValue: T, oldValue: T): Promise<void> => {
+    console.debug(`Detected changes in the local value for key '${key}'. Updating BlueOS.`)
+
+    // Don't update the value on BlueOS if we haven't finished the initial fetch, so we don't overwrite the value there without user consent
+    if (!finishedInitialFetch.value) {
+      console.debug(`Value of '${key}' changed, but we haven't finished the initial fetch. Not updating BlueOS.`)
+      return
+    }
+
+    if (isEqual(newValue, oldValue)) {
+      console.debug(`Old value for key ${key} is equal to the new one. Aborting update on BlueOS.`)
+      return
+    }
+
+    valueBeforeDebouncedChange = structuredClone(toRaw(newValue))
+
+    const devStore = useDevelopmentStore()
+    if (!devStore.enableBlueOsSettingsSync) return
+
+    updateValueOnBlueOS(newValue)
+  }
+
+  watch(
     currentValue,
     async (newValue) => {
-      const devStore = useDevelopmentStore()
-      if (!devStore.enableBlueOsSettingsSync) return
-
-      // Don't update the value on BlueOS if we haven't finished the initial fetch, so we don't overwrite the value there without user consent
-      if (!finishedInitialFetch.value) return
-
-      updateValueOnBlueOS(newValue)
+      clearTimeout(valueUpdateMethodTimeout)
+      valueUpdateMethodTimeout = setTimeout(() => maybeUpdateValueOnBlueOs(newValue, valueBeforeDebouncedChange), 3000)
     },
-    { throttle: 3000, deep: true }
+    { deep: true }
   )
 
   return currentValue
