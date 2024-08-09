@@ -184,7 +184,10 @@ watch(isMouseOver, () => {
 
 onMounted(async () => {
   // Bind leaflet instance to map element
-  map.value = L.map(mapId.value, { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+  map.value = L.map(mapId.value, { layers: [osm, esri], attributionControl: false }).setView(
+    mapCenter.value as LatLngTuple,
+    zoom.value
+  ) as Map
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
