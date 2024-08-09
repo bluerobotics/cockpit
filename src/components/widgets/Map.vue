@@ -1,7 +1,8 @@
 <template>
-  <div class="page-base">
+  <div ref="mapBase" class="page-base">
     <div :id="mapId" ref="map" class="map">
       <v-btn
+        v-if="showButtons"
         v-tooltip="Boolean(home) ? undefined : 'Home position is currently undefined'"
         class="absolute left-0 m-3 bottom-button bg-slate-50"
         :class="!home ? 'active-events-on-disabled' : ''"
@@ -16,6 +17,7 @@
       />
 
       <v-btn
+        v-if="showButtons"
         v-tooltip="Boolean(vehiclePosition) ? undefined : 'Vehicle position is currently undefined'"
         class="absolute m-3 bottom-button left-10 bg-slate-50"
         :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
@@ -30,6 +32,7 @@
       />
 
       <v-btn
+        v-if="showButtons"
         class="absolute m-3 bottom-button left-20 bg-slate-50"
         elevation="2"
         style="z-index: 1002; border-radius: 0px"
@@ -39,6 +42,7 @@
       />
 
       <v-btn
+        v-if="showButtons"
         class="absolute mb-3 ml-1 bottom-button left-32 bg-slate-50"
         elevation="2"
         style="z-index: 1002; border-radius: 0px"
@@ -83,7 +87,7 @@
 <script setup lang="ts">
 import '@/libs/map/LeafletRotatedMarker.js'
 
-import { useRefHistory } from '@vueuse/core'
+import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, Map } from 'leaflet'
 import { type Ref, computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
@@ -121,6 +125,7 @@ const zoom = ref(15)
 const mapCenter = ref<WaypointCoordinates>([-27.5935, -48.55854])
 const home = ref(mapCenter.value)
 const mapId = computed(() => `map-${widget.value.hash}`)
+const showButtons = ref(false)
 
 // Register the usage of the coordinate variables for logging
 datalogger.registerUsage(DatalogVariable.latitude)
@@ -154,12 +159,38 @@ const baseMaps = {
   'Esri World Imagery': esri,
 }
 
+// Show buttons when the mouse is over the widget
+const mapBase = ref<HTMLElement>()
+const isMouseOver = useElementHover(mapBase)
+
+const zoomControl = L.control.zoom({ position: 'bottomright' })
+const layerControl = L.control.layers(baseMaps)
+
+watch(showButtons, () => {
+  if (map.value === undefined) return
+  if (showButtons.value) {
+    map.value.addControl(zoomControl)
+    map.value.addControl(layerControl)
+  } else {
+    map.value.removeControl(zoomControl)
+    map.value.removeControl(layerControl)
+  }
+})
+
+watch(isMouseOver, () => {
+  console.log('Mouse over:', isMouseOver.value)
+  showButtons.value = isMouseOver.value
+})
+
 onMounted(async () => {
   // Bind leaflet instance to map element
-  map.value = L.map(mapId.value, { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+  map.value = L.map(mapId.value, { layers: [osm, esri], attributionControl: false }).setView(
+    mapCenter.value as LatLngTuple,
+    zoom.value
+  ) as Map
 
-  // Add zoom control to the map
-  map.value.zoomControl.setPosition('bottomright')
+  // Remove default zoom control
+  map.value.removeControl(map.value.zoomControl)
 
   // Update center value after panning
   map.value.on('moveend', () => {
@@ -186,10 +217,6 @@ onMounted(async () => {
   map.value.on('contextmenu', () => {
     hideContextMenuAndMarker()
   })
-
-  // Add tile layers to the map
-  const layerControl = L.control.layers(baseMaps)
-  map.value.addControl(layerControl)
 
   // Enable auto update for target follower
   targetFollower.enableAutoUpdate()
