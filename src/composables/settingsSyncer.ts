@@ -178,7 +178,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         const message = `Fetched remote value of key ${key} from the vehicle.`
         openSnackbar({ message, duration: 3000, variant: 'success' })
       } else {
-        updateValueOnBlueOS(currentValue.value)
+        await updateValueOnBlueOS(currentValue.value)
         const message = `Pushed local value of key ${key} to the vehicle.`
         openSnackbar({ message, duration: 3000, variant: 'success' })
       }
@@ -189,17 +189,25 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     } catch (initialSyncError) {
       // If the initial sync fails because there's no value for the key on BlueOS, we can just use the current value
       if ((initialSyncError as Error).name === NoPathInBlueOsErrorName) {
-        console.debug(`No value for '${key}' on BlueOS. Using current value.`)
-        updateValueOnBlueOS(currentValue.value)
-        finishedInitialFetch.value = true
-        return
+        console.debug(`No value for '${key}' on BlueOS. Using current value. Will push it to BlueOS.`)
+        try {
+          await updateValueOnBlueOS(currentValue.value)
+          finishedInitialFetch.value = true
+          return
+        } catch (fetchError) {
+          console.error(`Not able to push current value of '${key}' to BlueOS. ${fetchError}`)
+          console.error(`Failed syncing '${key}' with BlueOS. Will keep trying.`)
+
+          // If we can't update the value on BlueOS, try again in 10 seconds
+          initialSyncTimeout = setTimeout(tryToDoInitialSync, 10000)
+          return
+        }
       }
 
       // If the initial sync fails because we can't connect to BlueOS, try again in 10 seconds
       initialSyncTimeout = setTimeout(tryToDoInitialSync, 10000)
 
-      console.error(`Failed syncing '${key}' with BlueOS. Will keep trying.`)
-      console.error(`Not able to get current value of '${key}' on BlueOS. ${initialSyncError}`)
+      console.error(`Failed syncing '${key}' with BlueOS. Will keep trying. Error: ${initialSyncError}`)
     }
   }
 
