@@ -507,7 +507,7 @@
       <div
         v-for="miniWidget in availableMiniWidgetTypes"
         :key="miniWidget.hash"
-        class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4"
+        class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip"
       >
         <div />
         <div class="m-2 pointer-events-none select-none">
