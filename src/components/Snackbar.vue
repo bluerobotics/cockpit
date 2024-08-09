@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   openSnackbar: Boolean,
@@ -61,5 +61,9 @@ watch(visibility, (newVal) => {
   if (!newVal) {
     emits('update:openSnackbar', false)
   }
+})
+
+onMounted(() => {
+  console.debug('Snackbar message:', textMessage.value)
 })
 </script>
