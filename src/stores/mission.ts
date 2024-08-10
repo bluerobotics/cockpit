@@ -11,6 +11,7 @@ import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
 export const useMissionStore = defineStore('mission', () => {
   const username = useStorage<string>('cockpit-username', '')
+  const lastConnectedUser = localStorage.getItem('cockpit-last-connected-user') || undefined
   const missionName = ref('')
   const slideEventsEnabled = useBlueOsStorage('cockpit-slide-events-enabled', true)
   const slideEventsCategoriesRequired = useBlueOsStorage(
@@ -62,6 +63,9 @@ export const useMissionStore = defineStore('mission', () => {
   }
 
   onMounted(async () => {
+    // If theres a username saved, assign it as the last connected user
+    localStorage.setItem('cockpit-last-connected-user', username.value)
+    console.log(`Last connected user set to ${username.value}.`)
     if (username.value) return
 
     // If no username is set, ask the user to enter one
@@ -70,6 +74,7 @@ export const useMissionStore = defineStore('mission', () => {
 
   return {
     username,
+    lastConnectedUser,
     changeUsername,
     missionName,
     lastMissionName,
