@@ -564,6 +564,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   watch(editingMode, () => resetWidgetsEditingState())
 
+  watch(
+    savedProfiles,
+    () => {
+      if (currentProfileIndex.value < savedProfiles.value.length) return
+      console.warn('Current profile index is out of bounds. Resetting to 0.')
+      currentProfileIndex.value = 0
+    },
+    { deep: true }
+  )
+
   const isFullScreen = (widget: Widget): boolean => {
     return isEqual(widget.position, fullScreenPosition) && isEqual(widget.size, fullScreenSize)
   }
