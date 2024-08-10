@@ -218,28 +218,13 @@ export type Profile = {
 export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   if (maybeWidget.hash === undefined) throw new Error('Widget validation failed: property hash is missing.')
 
-  const widgetProps = ['component', 'position', 'size', 'name', 'options', 'managerVars']
-  const managetVarsProps = [
-    'configMenuOpen',
-    'allowMoving',
-    'lastNonMaximizedX',
-    'lastNonMaximizedY',
-    'lastNonMaximizedWidth',
-    'lastNonMaximizedHeight',
-    'highlighted',
-  ]
+  const widgetProps = ['component', 'position', 'size', 'name', 'options']
   const checkFails: string[] = []
 
   widgetProps.forEach((p) => {
     // @ts-ignore
     if (maybeWidget[p] !== undefined) return
     checkFails.push(`Property ${p} is missing.`)
-  })
-
-  managetVarsProps.forEach((p) => {
-    // @ts-ignore
-    if (maybeWidget['managerVars'] !== undefined && maybeWidget['managerVars'][p] !== undefined) return
-    checkFails.push(`Property ${p} of the managerVars is missing.`)
   })
 
   if (checkFails.length !== 0) {
@@ -252,20 +237,13 @@ export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
 export const validateMiniWidget = (maybeMiniWidget: MiniWidget): maybeMiniWidget is MiniWidget => {
   if (maybeMiniWidget.hash === undefined) throw new Error('Mini widget validation failed: property hash is missing.')
 
-  const miniWidgetProps = ['component', 'name', 'options', 'managerVars']
-  const managetVarsProps = ['configMenuOpen', 'highlighted']
+  const miniWidgetProps = ['component', 'name', 'options']
   const checkFails: string[] = []
 
   miniWidgetProps.forEach((p) => {
     // @ts-ignore
     if (maybeMiniWidget[p] !== undefined) return
     checkFails.push(`Property ${p} is missing.`)
-  })
-
-  managetVarsProps.forEach((p) => {
-    // @ts-ignore
-    if (maybeMiniWidget['managerVars'] !== undefined && maybeMiniWidget['managerVars'][p] !== undefined) return
-    checkFails.push(`Property ${p} of the managerVars is missing.`)
   })
 
   if (checkFails.length !== 0) {
