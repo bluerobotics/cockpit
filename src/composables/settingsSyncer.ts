@@ -81,6 +81,11 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     return vehicleStore.lastConnectedVehicleId
   }
 
+  const getLastConnectedUser = async (): Promise<string | undefined> => {
+    const missoinStore = useMissionStore()
+    return missoinStore.lastConnectedUser
+  }
+
   const askIfUserWantsToUseBlueOsValue = async (): Promise<boolean> => {
     let useBlueOsValue = true
 
@@ -146,6 +151,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     const username = await getUsername()
     const currentVehicleId = await getCurrentVehicleId()
     const lastConnectedVehicleId = await getLastConnectedVehicleId()
+    const lastConnectedUser = await getLastConnectedUser()
 
     // Clear initial sync routine if there's one left, as we are going to start a new one
     clearTimeout(initialSyncTimeout)
@@ -164,11 +170,12 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
       // By default, if there's a conflict, we use the value from BlueOS.
       let useBlueOsValue = true
 
-      // If the connected vehicle is the same as the last connected vehicle, and there are conflicts, it means the user
-      // has made changes while offline, so we ask the user if they want to keep the local value or the one from BlueOS.
+      // If the connected vehicle is the same as the last connected vehicle, and the user is also the same, and there
+      // are conflicts, it means the user has made changes while offline, so we ask the user if they want to keep the
+      // local value or the one from BlueOS.
       // If the connected vehicle is different from the last connected vehicle, we just use the value from BlueOS, as we
       // don't want to overwrite the value on the new vehicle with the one from the previous vehicle.
-      if (lastConnectedVehicleId === currentVehicleId) {
+      if (lastConnectedUser === username && lastConnectedVehicleId === currentVehicleId) {
         console.debug(`Conflict with BlueOS for key '${key}'. Asking user what to do.`)
         useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
       }
