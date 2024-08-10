@@ -3,16 +3,16 @@
     v-model="visibility"
     elevation="4"
     rounded="lg"
-    color="#ffffff40"
+    :color="selectedVariantColor"
     :timeout="messageDuration"
     location="bottom left"
     content-class="bg-[#4f4f4f44] backdrop-filter backdrop-blur-lg text-white mb-[50px]"
     :style="{ marginBottom: 40 }"
   >
-    {{ textMessage }}
+    {{ message }}
     <template v-if="closeButton" #actions>
-      <v-btn color="white" variant="text" @click="closeSnackbar"> <v-icon>mdi-close</v-icon> </v-btn></template
-    >
+      <v-btn color="white" variant="text" @click="closeSnackbar"> <v-icon>mdi-close</v-icon> </v-btn>
+    </template>
   </v-snackbar>
 </template>
 
@@ -20,7 +20,7 @@
 import { onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
-  openSnackbar: Boolean,
+  showSnackbar: Boolean,
   closeButton: Boolean,
   message: {
     type: String,
@@ -30,38 +30,62 @@ const props = defineProps({
     type: Number,
     default: 3000,
   },
+  variant: {
+    type: String,
+    default: 'info',
+  },
 })
 
-const emits = defineEmits(['update:openSnackbar'])
+const emits = defineEmits(['update:showSnackbar'])
 
-const visibility = ref(props.openSnackbar)
+const visibility = ref(props.showSnackbar)
 const textMessage = ref(props.message)
 const messageDuration = ref(props.duration || 3000)
 
+const selectedVariantColor = ref('')
+
+// Function to set the color based on variant
+const setVariantColor = (variant: string): void => {
+  switch (variant) {
+    case 'success':
+      selectedVariantColor.value = '#4CAF5044'
+      break
+    case 'error':
+      selectedVariantColor.value = '#F4433644'
+      break
+    case 'warning':
+      selectedVariantColor.value = '#FFC10744'
+      break
+    case 'info':
+      selectedVariantColor.value = '#2196F344'
+      break
+    default:
+      selectedVariantColor.value = '#FFFFFF33'
+  }
+}
+
+// Set the initial color based on the variant prop
+setVariantColor(props.variant)
+
+// Watch for changes to the variant prop and update the color accordingly
+watch(
+  () => props.variant,
+  (newVal) => {
+    setVariantColor(newVal)
+  }
+)
+
 const closeSnackbar = (): void => {
   visibility.value = false
-  emits('update:openSnackbar', false)
+  emits('update:showSnackbar', false)
 }
 
 watch(
-  () => props.openSnackbar,
+  () => props.showSnackbar,
   (newVal) => {
     visibility.value = newVal
   }
 )
-
-watch(
-  () => props.message,
-  (newVal) => {
-    textMessage.value = newVal
-  }
-)
-
-watch(visibility, (newVal) => {
-  if (!newVal) {
-    emits('update:openSnackbar', false)
-  }
-})
 
 onMounted(() => {
   console.debug('Snackbar message:', textMessage.value)
