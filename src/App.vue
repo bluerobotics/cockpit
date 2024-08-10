@@ -31,18 +31,6 @@
                     : 'lg:gap-y-3 xl:gap-y-4 gap-y-5 py-5'
                 "
               >
-                <div
-                  v-if="interfaceStore.mainMenuStyleTrigger === 'center-left'"
-                  id="menu-trigger"
-                  class="absolute right-0 top-[50%] -translate-y-[50%] flex items-center justify-center w-[30px] px-0 py-2 cursor-pointer overflow-hidden rounded-r-lg rounded-br-lg -ml-[1px]"
-                  @click="toggleMainMenu"
-                >
-                  <v-icon
-                    class="text-white opacity-70"
-                    :class="simplifiedMainMenu ? 'text-[30px] -mr-[14px]' : 'text-[40px] -mr-[8px]'"
-                    >mdi-menu-left</v-icon
-                  >
-                </div>
                 <GlassButton
                   v-if="route.name === 'widgets-view'"
                   :label="simplifiedMainMenu ? '' : 'Edit Interface'"
@@ -89,7 +77,7 @@
                   :icon-class="
                     interfaceStore.isOnSmallScreen
                       ? 'scale-[95%] -mr-[2px] -mb-[1px]'
-                      : 'scale-[95%] lg:-mr-[2px] -mr-[3px]'
+                      : 'scale-[95%] ml-[2px] lg:-mr-[2px]'
                   "
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
@@ -111,13 +99,13 @@
                   :icon-class="
                     interfaceStore.isOnSmallScreen
                       ? 'scale-[100%] -mb-[1px] md:ml-[2px]'
-                      : 'scale-[95%] -mb-[2px] lg:-mr-[1px] -mr-[2px] xl:-mb-[2px]'
+                      : 'scale-[97%]  lg:ml-[1px] -mr-[2px] xl:-mb-[4px]'
                   "
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
-                  :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
                   :width="buttonSize"
                   :selected="showConfigurationMenu"
+                  class="mb-2"
                   @click="mainMenuStep = 2"
                 />
                 <GlassButton
@@ -128,7 +116,7 @@
                   :icon-class="
                     interfaceStore.isOnSmallScreen
                       ? '-mb-[1px] scale-90 -mr-[2px] md:ml-[1px] md:-mb-[2px]'
-                      : '2xl:-mb-[2px] xl:-mb-[2px] -mb-[1px] scale-90 -mr-[2px]'
+                      : '2xl:-mb-[2px] xl:-mb-[2px] -mb-[1px] scale-90 -mr-[3px]'
                   "
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
@@ -159,7 +147,7 @@
                   :selected="currentConfigMenuComponent === menuitem.component"
                   variant="uncontained"
                   :height="buttonSize * 0.45"
-                  :icon-size="buttonSize * 0.6"
+                  :icon-size="buttonSize * 0.5"
                   @click="toggleConfigComponent(menuitem.component)"
                   ><template #content
                     ><div v-if="currentConfigMenuComponent === menuitem.component" class="arrow-left"></div></template
