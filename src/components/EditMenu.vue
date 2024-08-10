@@ -91,6 +91,13 @@
             </div>
 
             <v-divider />
+            <v-list-item class="hover:bg-white/[0.04]">
+              <label class="flex w-full h-full cursor-pointer justify-between">
+                <v-list-item-title>Import</v-list-item-title>
+                <input type="file" accept="application/json" hidden @change="(e: Event) => store.importProfile(e)" />
+                <v-icon size="20">mdi-upload</v-icon>
+              </label>
+            </v-list-item>
             <v-list-item @click="store.exportProfile(store.currentProfile)">
               <div class="flex w-full justify-between">
                 <v-list-item-title>Export</v-list-item-title>
