@@ -6,10 +6,11 @@ import {
   NoPathInBlueOsErrorName,
   setKeyDataOnCockpitVehicleStorage,
 } from '@/libs/blueos'
-import { isEqual } from '@/libs/utils'
+import { isEqual, reloadCockpit } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import { savedProfilesKey } from '@/stores/widgetManager'
 
 import { useInteractionDialog } from './interactionDialog'
 import { openSnackbar } from './snackbar'
@@ -184,6 +185,20 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         currentValue.value = valueOnBlueOS as T
         const message = `Fetched remote value of key ${key} from the vehicle.`
         openSnackbar({ message, duration: 3000, variant: 'success' })
+
+        // TODO: This is a workaround to make the profiles work after an import.
+        // We need to find a better way to handle this, without reloading.
+        if (key === savedProfilesKey) {
+          await showDialog({
+            title: 'Widget profiles imported',
+            message: `The widget profiles have been imported from the vehicle. We need to reload the page to apply the
+            changes.`,
+            variant: 'warning',
+            actions: [{ text: 'OK', action: closeDialog }],
+            timer: 3000,
+          })
+          reloadCockpit()
+        }
       } else {
         await updateValueOnBlueOS(currentValue.value)
         const message = `Pushed local value of key ${key} to the vehicle.`

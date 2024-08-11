@@ -40,7 +40,7 @@ import {
 
 const { showDialog } = useInteractionDialog()
 
-const savedProfilesKey = 'cockpit-saved-profiles-v8'
+export const savedProfilesKey = 'cockpit-saved-profiles-v8'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const editingMode = ref(false)
