@@ -133,6 +133,12 @@
                 <v-icon size="22">mdi-plus</v-icon>
               </div>
             </v-list-item>
+            <v-list-item @click="store.snapToGrid = !store.snapToGrid">
+              <div class="flex w-full justify-between mt-[6px]">
+                <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
+                <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
+              </div>
+            </v-list-item>
             <v-list-item @click="resetSavedProfiles">
               <div class="flex w-full justify-between mt-[6px]">
                 <v-list-item-title>Reset saved profiles</v-list-item-title>
@@ -573,15 +579,6 @@
       </v-card>
     </GlassModal>
   </teleport>
-  <teleport to="body">
-    <v-dialog v-model="editMenuDialogRevealed" width="20rem">
-      <v-card class="pa-2">
-        <v-card-text>
-          <v-switch v-model="store.snapToGrid" label="Snap to grid" class="m-2 text-slate-800" />
-        </v-card-text>
-      </v-card>
-    </v-dialog>
-  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -752,9 +749,6 @@ const widgetAddMenuGroupOptions = {
 }
 
 const editMode = toRefs(props).editMode
-
-const editMenuDialogRevealed = ref(false)
-useConfirmDialog(editMenuDialogRevealed)
 
 const viewBeingRenamed = ref(store.currentView)
 const newViewName = ref('')
