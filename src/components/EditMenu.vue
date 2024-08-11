@@ -818,6 +818,7 @@ const resetSavedProfiles = (): void => {
         text: 'reset profiles',
         action: () => {
           store.resetSavedProfiles()
+          closeDialog()
         },
       },
     ],
