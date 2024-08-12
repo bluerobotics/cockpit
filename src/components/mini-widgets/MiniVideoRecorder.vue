@@ -275,12 +275,12 @@ if (widgetStore.isRealMiniWidget(miniWidget.value)) {
           ],
         })
       }
+    }
 
-      const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.streamName)
-      // If the widget is not connected to the MediaStream, try to connect it
-      if (!isEqual(updatedMediaStream, mediaStream.value)) {
-        mediaStream.value = updatedMediaStream
-      }
+    const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.streamName)
+    // If the widget is not connected to the MediaStream, try to connect it
+    if (!isEqual(updatedMediaStream, mediaStream.value)) {
+      mediaStream.value = updatedMediaStream
     }
   }, 1000)
 }
