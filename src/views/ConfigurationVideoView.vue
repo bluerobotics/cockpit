@@ -95,20 +95,35 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>File download options:</template>
+          <template #title>Video library options:</template>
           <template #info>
             <li>
-              Select whether video and subtitle files should be bundled together in a ZIP archive, or downloaded
-              individually.
+              CHoose to process videos manual or automatically after recorfing ends. In some low end hardware systems
+              and for long durations videos, auto-processing could take some time.
             </li>
             <li>
-              Zipping allows a single download of a group of files, but requires waiting for the files to get zipped
-              together. Depending on file sizes, the zipping process may complete within seconds or could take minutes.
+              Select whether video and subtitle files should be bundled together in a ZIP archive, or downloaded
+              individually. Zipping allows a single download of a group of files, but requires waiting for the files to
+              get zipped together. Depending on file sizes, the zipping process may complete within seconds or could
+              take minutes.
             </li>
           </template>
           <template #content>
             <div class="flex items-center justify-start w-[50%] ml-2">
-              <v-checkbox v-model="videoStore.zipMultipleFiles" label="Zip multiple files" class="text-sm mx-2" />
+              <v-checkbox
+                v-model="videoStore.autoProcessVideos"
+                label="Auto process videos"
+                class="text-sm mx-2"
+                hide-details
+              />
+            </div>
+            <div class="flex items-center justify-start w-[50%] ml-2">
+              <v-checkbox
+                v-model="videoStore.zipMultipleFiles"
+                label="Zip multiple files"
+                class="text-sm mx-2"
+                hide-details
+              />
             </div>
           </template>
         </ExpansiblePanel>
