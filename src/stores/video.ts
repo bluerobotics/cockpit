@@ -11,6 +11,7 @@ import adapter from 'webrtc-adapter'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { useSnackbar } from '@/composables/snackbar'
 import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
@@ -31,6 +32,7 @@ import {
 } from '@/types/video'
 
 import { useAlertStore } from './alert'
+const { showSnackbar } = useSnackbar()
 
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
@@ -274,32 +276,70 @@ export const useVideoStore = defineStore('video', () => {
         This usually happens when the device's storage is full or the performance is low.
         We recommend stopping the recording and trying again, as the video may be incomplete or corrupted
         on several parts.`
+      const sequentialChunksLossMessage = `Warning: Several video chunks could not be saved. The video recording may be impacted.`
+      const fivePercentChunksLossMessage = `Warning: More than 5% of the video chunks could not be saved. The video recording may be impacted.`
 
       console.error(chunkLossWarningMsg)
-      showDialog({ title: 'Video Recording Issue', message: chunkLossWarningMsg, variant: 'error' })
 
-      losingChunksWarningIssued = true
-      Object.keys(unsavedChunkAlerts).forEach((key) => {
-        clearTimeout(unsavedChunkAlerts[key])
-        delete unsavedChunkAlerts[key]
+      showSnackbar({
+        message: 'Oops, looks like a video chunk could not be saved. Retrying...',
+        duration: 2000,
+        variant: 'info',
+        closeButton: false,
       })
+
+      sequentialLostChunks++
+      totalLostChunks++
+
+      // Check for 5 or more sequential lost chunks
+      if (sequentialLostChunks >= 5 && losingChunksWarningIssued === false) {
+        showDialog({
+          message: sequentialChunksLossMessage,
+          variant: 'error',
+        })
+        sequentialLostChunks = 0
+        losingChunksWarningIssued = true
+      }
+
+      // Check if more than 5% of total video chunks are lost
+      const lostChunkPercentage = (totalLostChunks / totalChunks) * 100
+      if (totalChunks > 10 && lostChunkPercentage > 5 && losingChunksWarningIssued === false) {
+        showDialog({
+          message: fivePercentChunksLossMessage,
+          variant: 'error',
+        })
+        losingChunksWarningIssued = true
+      }
     }
+
+    Object.keys(unsavedChunkAlerts).forEach((key) => {
+      clearTimeout(unsavedChunkAlerts[key])
+      delete unsavedChunkAlerts[key]
+    })
+
+    let sequentialLostChunks = 0
+    let totalChunks = 0
+    let totalLostChunks = 0
 
     let chunksCount = -1
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
-      // Since this operation is async, at any given moment there might be more than one chunk processing promise started.
-      // To prevent reusing the name of the previous chunk (because of the counter not having been updated yet), we
-      // update the chunk count/name before anything else.
       chunksCount++
+      totalChunks++
       const chunkName = `${recordingHash}_${chunksCount}`
-      if (!losingChunksWarningIssued) {
-        unsavedChunkAlerts[chunkName] = setTimeout(() => warnAboutChunkLoss(), 5000)
-      }
 
       try {
+        // Intentional logic to lose every 5th chunk
+        if (chunksCount > 5 && chunksCount < 12) {
+          console.error(`Intentional chunk loss -> ${chunksCount}.`)
+          throw new Error(`Intentional chunk loss -> ${chunksCount}.`)
+        }
         await tempVideoChunksDB.setItem(chunkName, e.data)
+        sequentialLostChunks = 0
       } catch {
-        if (!losingChunksWarningIssued) warnAboutChunkLoss()
+        sequentialLostChunks++
+        totalLostChunks++
+
+        warnAboutChunkLoss()
         return
       }
 
