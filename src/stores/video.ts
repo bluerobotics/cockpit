@@ -52,6 +52,7 @@ export const useVideoStore = defineStore('video', () => {
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const timeNow = useTimestamp({ interval: 500 })
+  const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
@@ -373,6 +374,21 @@ export const useVideoStore = defineStore('video', () => {
       // Register that the recording finished and it's ready to be processed
       info.dateFinish = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
+
+      if (autoProcessVideos.value) {
+        try {
+          await processVideoChunksAndTelemetry([recordingHash])
+          showSnackbar({
+            message: 'Video processing completed.',
+            duration: 2000,
+            variant: 'success',
+            closeButton: false,
+          })
+        } catch (error) {
+          console.error('Failed to process video:', error)
+          alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamName}.`))
+        }
+      }
 
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
@@ -831,6 +847,7 @@ export const useVideoStore = defineStore('video', () => {
   )
 
   return {
+    autoProcessVideos,
     availableIceIps,
     allowedIceIps,
     enableAutoIceIpFetch,
