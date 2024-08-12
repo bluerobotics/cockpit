@@ -23,11 +23,13 @@ loadFonts()
 
 const app = createApp(App)
 
-// Only track usage statistics if the user has not opted out
-if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry')) {
+// Initialize Sentry for error tracking
+// Only track usage statistics if the user has not opted out and the app is not in development mode
+if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry') && import.meta.env.DEV === false) {
+  console.log('Initializing Sentry telemetry...')
   Sentry.init({
     app,
-    dsn: 'https://24f33bd0a8e35e7505da20846dcbca92@o4507696465707008.ingest.us.sentry.io/4507696619061248',
+    dsn: 'https://d7329dcf760fa1cc9fa6c7a5f16f60a1@o4507696465707008.ingest.us.sentry.io/4507762984222720',
     integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
     tracesSampleRate: 0.1, //  Capture 10% of the transactions
     tracePropagationTargets: [],
