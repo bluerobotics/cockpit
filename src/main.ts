@@ -31,12 +31,13 @@ if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry') && 
     app,
     dsn: 'https://d7329dcf760fa1cc9fa6c7a5f16f60a1@o4507696465707008.ingest.us.sentry.io/4507762984222720',
     integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
-    tracesSampleRate: 0.1, //  Capture 10% of the transactions
+    sampleRate: 1.0, // Capture all errors
+    tracesSampleRate: 1.0, // Capture all traces
     tracePropagationTargets: [],
-    replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
     replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
     transport: Sentry.makeBrowserOfflineTransport(Sentry.makeFetchTransport), // Cache events and send them when the user comes back online
   })
+  Sentry.getCurrentScope().setLevel('info')
 }
 
 app.component('FontAwesomeIcon', FontAwesomeIcon)
