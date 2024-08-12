@@ -55,7 +55,7 @@
           </div>
           <div v-if="hasWarningSlot" class="flex justify-end items-center w-[10%] relative">
             <v-btn
-              class="ml-auto w-[10px] rounded-full"
+              class="ml-auto w-[10px] rounded-full mr-2"
               size="small"
               color="transparent"
               elevation="0"
