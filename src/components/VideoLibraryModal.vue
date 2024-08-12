@@ -146,7 +146,10 @@
               </div>
               <div
                 v-if="availableVideos.length > 1"
-                class="flex flex-row justify-between align-center h-[45px] w-full mb-[-15px]"
+                class="flex flex-row align-center h-[45px] w-full mb-[-15px]"
+                :class="
+                  availableVideos.filter((video) => !video.isProcessed).length > 0 ? 'justify-between' : 'justify-start'
+                "
               >
                 <div>
                   <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
@@ -171,6 +174,7 @@
                 </div>
                 <div>
                   <v-btn
+                    v-if="availableVideos.filter((video) => !video.isProcessed).length > 0"
                     variant="text"
                     size="small"
                     class="mt-[5px]"
@@ -400,13 +404,6 @@
       </div>
     </div>
   </v-dialog>
-  <Snackbar
-    :open-snackbar="openSnackbar"
-    :message="snackbarMessage"
-    :duration="3000"
-    :close-button="false"
-    @update:open-snackbar="openSnackbar = $event"
-  />
   <InteractionDialog
     :show-dialog="showProcessingInteractionDialog"
     :title="interactionDialogTitle"
@@ -486,16 +483,17 @@ import { computed, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useSnackbar } from '@/composables/snackbar'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { DialogActions } from '@/types/general'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
 
 import InteractionDialog from './InteractionDialog.vue'
-import Snackbar from './Snackbar.vue'
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
+const { showSnackbar } = useSnackbar()
 
 const props = defineProps({
   openModal: Boolean,
@@ -524,7 +522,6 @@ const isVisible = ref(props.openModal)
 const selectedVideos = ref<VideoLibraryFile[]>([])
 const videoPlayerRef = ref<HTMLVideoElement | null>(null)
 const currentTab = ref('videos')
-const openSnackbar = ref(false)
 const snackbarMessage = ref('')
 const isMultipleSelectionMode = ref(false)
 const longPressSelected = ref(false)
@@ -655,7 +652,12 @@ const processVideos = async (): Promise<void> => {
     const errorMsg = `Video processing failed: ${(error as Error).message ?? error!.toString()}`
     console.error(errorMsg)
     snackbarMessage.value = errorMsg
-    openSnackbar.value = true
+    showSnackbar({
+      message: errorMsg,
+      duration: 3000,
+      variant: 'error',
+      closeButton: true,
+    })
     errorProcessingVideos.value = true
   }
 }
@@ -737,7 +739,12 @@ const selectUnprocessedVideos = (): void => {
     isMultipleSelectionMode.value = true
   } else {
     snackbarMessage.value = 'No unprocessed videos found'
-    openSnackbar.value = true
+    showSnackbar({
+      message: snackbarMessage.value,
+      duration: 3000,
+      variant: 'info',
+      closeButton: true,
+    })
   }
 }
 
@@ -747,7 +754,12 @@ const selectProcessedVideos = (): void => {
     isMultipleSelectionMode.value = true
   } else {
     snackbarMessage.value = 'No processed videos found'
-    openSnackbar.value = true
+    showSnackbar({
+      message: snackbarMessage.value,
+      duration: 3000,
+      variant: 'info',
+      closeButton: true,
+    })
   }
 }
 
@@ -769,7 +781,12 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
     const progressPercentage = ((100 * progress) / total).toFixed(1)
     if (!initialMessageShown) return
     snackbarMessage.value = `Preparing download: ${progressPercentage}%.`
-    openSnackbar.value = true
+    showSnackbar({
+      message: snackbarMessage.value,
+      duration: 15000,
+      variant: 'info',
+      closeButton: true,
+    })
   }
 
   snackbarMessage.value = 'Getting your download ready...'
@@ -782,7 +799,12 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
     if (video.isProcessed) tempProcessedVideos.push(video.fileName)
     if (!video.isProcessed && video.hash) tempUnprocessedVideos.push(video.hash)
   })
-  openSnackbar.value = true
+  showSnackbar({
+    message: snackbarMessage.value,
+    duration: 3000,
+    variant: 'info',
+    closeButton: true,
+  })
 
   if (tempUnprocessedVideos.length > 0) {
     const confirm = await confirmDownloadOfUnprocessedVideos()
@@ -847,7 +869,12 @@ const discardVideosAndUpdateDB = async (): Promise<void> => {
   }
 
   snackbarMessage.value = `${selectedVideoArraySize} video(s) discarded.`
-  openSnackbar.value = true
+  showSnackbar({
+    message: snackbarMessage.value,
+    duration: 3000,
+    variant: 'info',
+    closeButton: true,
+  })
   await fetchVideosAndLogData()
   selectedVideos.value = availableVideos.value.length > 0 ? [availableVideos.value[0]] : []
   if (availableVideos.value.length === 1) isMultipleSelectionMode.value = false
