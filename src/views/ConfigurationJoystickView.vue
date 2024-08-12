@@ -125,35 +125,34 @@
                     </div>
                   </div>
                   <div
-                    class="flex border-[1px] border-[#FFFFFF22] rounded-md elevation-1"
+                    class="flex border-[1px] border-[#FFFFFF22] rounded-md elevation-1 mb-[2px] mr-[4px]"
                     :style="interfaceStore.globalGlassMenuStyles"
                   >
-                    <v-btn
-                      v-tooltip="'Reset mappings to default'"
-                      icon="mdi-reload-alert"
-                      variant="text"
-                      size="24"
-                      class="text-[12px] mx-3 mt-[4px]"
-                    />
+                    <v-tooltip location="top" text="Download joystick mappings">
+                      <template #activator="{ props }">
+                        <v-btn
+                          v-bind="props"
+                          icon="mdi-tray-arrow-down"
+                          variant="text"
+                          size="24"
+                          class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                          @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
+                      /></template>
+                    </v-tooltip>
                     <v-divider vertical />
-                    <v-btn
-                      v-tooltip="'Download mappings'"
-                      icon="mdi-tray-arrow-down"
-                      variant="text"
-                      size="24"
-                      class="text-[12px] mx-3 mt-[4px]"
-                      @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
-                    />
-                    <v-divider vertical />
-                    <label>
-                      <input
-                        type="file"
-                        accept="application/json"
-                        hidden
-                        @change="(e) => controllerStore.importFunctionsMapping(e)"
-                      />
-                      <v-icon class="text-[17px] cursor-pointer mx-3 my-2">mdi-tray-arrow-up</v-icon>
-                    </label>
+                    <v-tooltip location="top" text="Upload joystick mappings">
+                      <template #activator="{ props }">
+                        <label v-bind="props">
+                          <input
+                            type="file"
+                            accept="application/json"
+                            hidden
+                            @change="(e) => controllerStore.importFunctionsMapping(e)"
+                          />
+                          <v-icon class="text-[16px] cursor-pointer mx-3 mt-[1px]">mdi-tray-arrow-up</v-icon>
+                        </label>
+                      </template>
+                    </v-tooltip>
                   </div>
                 </div>
               </v-tabs>
