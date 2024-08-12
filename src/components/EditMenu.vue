@@ -16,15 +16,15 @@
       <img
         :src="pickVehicleImage(store.currentProfile.name)"
         alt="current-vehicle"
-        class="ml-2 my-1 p-1 2xl:w-[60px] xl:w-[50px] w-[40px] aspect-square"
+        class="ml-2 my-1 p-1 mr-2 2xl:w-[60px] xl:w-[50px] w-[40px] aspect-square"
       />
-      <div class="flex justify-between relative">
-        <div class="flex text-start 2xl:w-[230px] xl:w-[190px] w-[170px]">
+      <div class="flex justify-between items-center relative">
+        <div class="flex text-start 2xl:w-[260px] xl:w-[220px] w-[170px]">
           <v-btn
             id="profile"
             variant="text"
             :size="interfaceStore.is2xl ? 'x-large' : 'large'"
-            class="2xl:w-[230px] xl:w-[190px] w-[170px]"
+            class="2xl:w-[260px] xl:w-[220px] w-[170px]"
             :class="isDialOpen ? 'bg-[#49697c] p-3 border-b-2 border-[#041e2e55]' : 'bg-[#273842]'"
             @click="toggleDial"
           >
@@ -57,23 +57,24 @@
                 :src="pickVehicleImage(profile.name)"
                 alt="current-vehicle"
                 class="mr-3 2xl:w-[30px] w-[25px] 2xl:h-[30px] h-[25px] aspect-square"
-              /><span
-                class="text-nowrap wrapclass text-left 2xl:max-w-[250px] xl:max-w-[240px] lg:max-w-[150px] max-w-[120px] mt-[1px] 2xl:text-[18px] xl:text-[18px] text-[16px]"
-                >{{ profile.name }} {{ profile.name.endsWith('profile') ? '' : 'profile' }}</span
-              >
+              />
+              <span
+                class="text-nowrap wrapclass text-left 2xl:max-w-[270px] xl:max-w-[240px] lg:max-w-[150px] max-w-[120px] mt-[1px] 2xl:text-[18px] xl:text-[18px] text-[16px]"
+                >{{ profile.name }} {{ profile.name.endsWith('profile') ? '' : 'profile' }}
+              </span>
             </div>
           </div>
         </div>
-      </div>
-      <div class="flex justify-between items-center 2xl:w-[75px] xl:w-[60px] w-[55px]">
         <v-btn
           id="select-profile"
-          size="sm"
-          icon="mdi-swap-horizontal"
-          class="bg-transparent 2xl:text-xl xl:text-md text-sm 2xl:-mr-5 ml-1 xl:mb-[2px] mb-[2px]"
+          size="20px"
+          class="bg-transparent 2xl:text-xl xl:text-md text-sm"
           variant="text"
           @click="toggleDial"
-        />
+          ><v-icon class="-mt-[1px]">mdi-menu-down</v-icon></v-btn
+        >
+      </div>
+      <div class="flex justify-end items-center 2xl:w-[75px] xl:w-[60px] w-[55px]">
         <v-menu offset-y theme="dark">
           <template #activator="{ props: buttonProps }">
             <v-btn
@@ -141,7 +142,7 @@
             </v-list-item>
             <v-list-item @click="resetSavedProfiles">
               <div class="flex w-full justify-between mt-[6px]">
-                <v-list-item-title>Reset saved profiles</v-list-item-title>
+                <v-list-item-title class="mr-6">Reset saved profiles</v-list-item-title>
                 <v-icon size="20" class="mt-[2px]">mdi-reload</v-icon>
               </div>
             </v-list-item>

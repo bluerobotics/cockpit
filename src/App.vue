@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-main>
-      <div v-if="!showMainMenu && interfaceStore.mainMenuStyleTrigger === 'center-left'">
+      <div v-if="!widgetStore.editingMode && !showMainMenu && interfaceStore.mainMenuStyleTrigger === 'center-left'">
         <div
           id="menu-trigger"
           class="menu-trigger flex items-center justify-center w-[30px] px-0 py-2 cursor-pointer overflow-hidden rounded-r-lg rounded-br-lg -ml-[1px]"
