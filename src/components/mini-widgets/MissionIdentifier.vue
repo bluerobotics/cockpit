@@ -36,7 +36,7 @@
         </v-card-title>
         <v-card-text>
           <div class="flex flex-col">
-            <p>Misison Name</p>
+            <p>Mission Name</p>
             <v-text-field
               v-model="store.missionName"
               append-inner-icon="mdi-restore"
