@@ -53,6 +53,7 @@
     "pinia": "^2.0.13",
     "roboto-fontface": "*",
     "semver": "^7.5.4",
+    "slugify": "^1.6.6",
     "sweetalert2": "^11.7.1",
     "tailwind-scrollbar-hide": "^1.1.7",
     "uuid": "^8.3.2",
