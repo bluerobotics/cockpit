@@ -37,8 +37,12 @@ const currentSystemLog: SystemLog = {
 /* eslint-enable jsdoc/require-jsdoc */
 
 const saveLogEventInDB = (event: LogEvent): void => {
-  currentSystemLog.events.push(event)
-  cockpitSytemLogsDB.setItem(fileName, currentSystemLog)
+  try {
+    currentSystemLog.events.push(event)
+    cockpitSytemLogsDB.setItem(fileName, currentSystemLog)
+  } catch (error) {
+    // We do not want to log this error, as it would create an infinite loop
+  }
 }
 
 const enableSystemLogging = localStorage.getItem(systemLoggingEnablingKey)
