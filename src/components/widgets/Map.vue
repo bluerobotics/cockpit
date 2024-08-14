@@ -178,7 +178,6 @@ watch(showButtons, () => {
 })
 
 watch(isMouseOver, () => {
-  console.log('Mouse over:', isMouseOver.value)
   showButtons.value = isMouseOver.value
 })
 
