@@ -304,8 +304,8 @@ const hasWarningSlot = computed(() => !!slots.warning?.())
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100px;
-  height: 100px;
+  width: 60px;
+  height: 60px;
   background: rgba(255, 255, 0, 0.2);
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(0);
