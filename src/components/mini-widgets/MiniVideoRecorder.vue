@@ -106,7 +106,7 @@ import type { MiniWidget } from '@/types/widgets'
 
 import VideoLibrary from '../VideoLibraryModal.vue'
 
-const { showDialog, closeDialog } = useInteractionDialog()
+const { showDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const videoStore = useVideoStore()
@@ -269,26 +269,6 @@ if (widgetStore.isRealMiniWidget(miniWidget.value)) {
     if (miniWidget.value.options.internalStreamName === undefined && !namesAvailableStreams.value.isEmpty()) {
       miniWidget.value.options.internalStreamName = namesAvailableStreams.value[0]
       nameSelectedStream.value = miniWidget.value.options.internalStreamName
-
-      // If there are multiple streams available, warn user that we chose one automatically and they should change if wanted
-      if (namesAvailableStreams.value.length > 1) {
-        const text = `You have multiple streams available, so we chose one randomly to start with.
-          If you want to change it, please open the widget configuration.`
-        showDialog({
-          maxWidth: 600,
-          title: 'Multiple streams detected',
-          message: text,
-          variant: 'info',
-          actions: [
-            {
-              text: 'Ok',
-              action: () => {
-                closeDialog()
-              },
-            },
-          ],
-        })
-      }
     }
 
     // If the stream name is defined, try to connect the widget to the MediaStream
