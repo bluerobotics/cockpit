@@ -7,9 +7,18 @@
     :max-width="700"
   >
     <template #content>
-      <div class="flex flex-col align-center justify-center font-light text-slate-200 w-full h-full transition-all">
+      <div
+        v-if="usernamesStoredOnBlueOS === null && mainVehicleStore.isVehicleOnline"
+        class="flex justify-center items-center h-[120px] w-full"
+      >
+        <v-progress-circular color="white" indeterminate class="mb-10" />
+      </div>
+      <div
+        v-else
+        class="flex flex-col align-center justify-center font-light text-slate-200 w-full h-full transition-all"
+      >
         <div
-          v-if="!usernamesStoredOnBlueOS.isEmpty() && !showNewUsernamePrompt"
+          v-if="!usernamesStoredOnBlueOS?.isEmpty() && !showNewUsernamePrompt"
           class="w-full h-full flex flex-col align-center justify-center text-center"
         >
           <p v-if="missionStore.username === undefined">
@@ -66,6 +75,7 @@ import { onBeforeMount, ref } from 'vue'
 
 import { getSettingsUsernamesFromBlueOS } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
 import InteractionDialog from './InteractionDialog.vue'
@@ -73,12 +83,13 @@ import InteractionDialog from './InteractionDialog.vue'
 const emit = defineEmits(['confirmed', 'dismissed'])
 
 const missionStore = useMissionStore()
+const mainVehicleStore = useMainVehicleStore()
 
 const showDialog = ref(true)
 const showNewUsernamePrompt = ref(false)
 const validationError = ref('')
 const newUsername = ref('')
-const usernamesStoredOnBlueOS = ref<string[]>([])
+const usernamesStoredOnBlueOS = ref<string[] | null>(null)
 
 const setNewUsername = (username: string): void => {
   newUsername.value = username

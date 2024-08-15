@@ -1,6 +1,6 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -8,6 +8,8 @@ import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
+
+import { useMainVehicleStore } from './mainVehicle'
 
 export const useMissionStore = defineStore('mission', () => {
   const username = useStorage<string>('cockpit-username', '')
@@ -21,6 +23,8 @@ export const useMissionStore = defineStore('mission', () => {
   const lastMissionName = useStorage('cockpit-last-mission-name', '')
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
   const { showDialog } = useInteractionDialog()
+
+  const mainVehicleStore = useMainVehicleStore()
 
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
@@ -62,15 +66,22 @@ export const useMissionStore = defineStore('mission', () => {
     await reloadCockpit()
   }
 
-  onMounted(async () => {
-    // If theres a username saved, assign it as the last connected user
-    localStorage.setItem('cockpit-last-connected-user', username.value)
-    console.log(`Last connected user set to ${username.value}.`)
-    if (username.value) return
+  watch(
+    () => mainVehicleStore.isVehicleOnline,
+    async (newValue) => {
+      if (newValue) {
+        // If there's a username saved, assign it as the last connected user
+        localStorage.setItem('cockpit-last-connected-user', username.value)
+        console.log(`Last connected user set to ${username.value}.`)
 
-    // If no username is set, ask the user to enter one
-    await changeUsername()
-  })
+        if (!username.value) {
+          // If no username is set and vehicle is connected, ask the user to enter one
+          await changeUsername()
+        }
+      }
+    },
+    { immediate: true }
+  )
 
   return {
     username,
