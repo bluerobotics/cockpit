@@ -191,3 +191,8 @@ export type WebRTCStatsEvent = {
     }
   }
 }
+
+export type VideoStreamCorrespondency = {
+  name: string
+  externalId: string
+}

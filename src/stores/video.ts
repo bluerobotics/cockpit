@@ -29,6 +29,7 @@ import {
   type VideoProcessingDetails,
   getBlobExtensionContainer,
   VideoExtensionContainer,
+  VideoStreamCorrespondency,
 } from '@/types/video'
 
 import { useAlertStore } from './alert'
@@ -42,6 +43,7 @@ export const useVideoStore = defineStore('video', () => {
   const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
+  const streamsCorrespondency = useBlueOsStorage<VideoStreamCorrespondency[]>('cockpit-streams-correspondency', [])
   const allowedIceIps = useBlueOsStorage<string[]>('cockpit-allowed-stream-ips', [])
   const enableAutoIceIpFetch = useBlueOsStorage('cockpit-enable-auto-ice-ip-fetch', true)
   const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
@@ -55,6 +57,35 @@ export const useVideoStore = defineStore('video', () => {
   const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
+
+  const namessAvailableAbstractedStreams = computed(() => {
+    return streamsCorrespondency.value.map((stream) => stream.name)
+  })
+
+  const externalStreamId = (internalName: string): string | undefined => {
+    const corr = streamsCorrespondency.value.find((stream) => stream.name === internalName)
+    return corr ? corr.externalId : undefined
+  }
+
+  const initializeStreamsCorrespondency = (): void => {
+    if (streamsCorrespondency.value.length >= namesAvailableStreams.value.length) return
+
+    // If there are more external streams available than the ones in the correspondency, add the extra ones
+    const newCorrespondency: VideoStreamCorrespondency[] = []
+    let i = 1
+    namesAvailableStreams.value.forEach((streamName) => {
+      newCorrespondency.push({
+        name: `Stream ${i}`,
+        externalId: streamName,
+      })
+      i++
+    })
+    streamsCorrespondency.value = newCorrespondency
+  }
+
+  watch(namesAvailableStreams, () => {
+    initializeStreamsCorrespondency()
+  })
 
   // If the allowed ICE IPs are updated, all the streams should be reconnected
   watch([allowedIceIps, allowedIceProtocols], () => {
@@ -859,6 +890,9 @@ export const useVideoStore = defineStore('video', () => {
     namesAvailableStreams,
     videoStoringDB,
     tempVideoChunksDB,
+    streamsCorrespondency,
+    namessAvailableAbstractedStreams,
+    externalStreamId,
     discardProcessedFilesFromVideoDB,
     discardUnprocessedFilesFromVideoDB,
     downloadFilesFromVideoDB,

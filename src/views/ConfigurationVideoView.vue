@@ -3,7 +3,57 @@
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div class="flex-col h-full ml-[1vw] max-w-[500px] max-h-[85vh] overflow-y-auto pr-3">
+      <div class="flex-col h-full ml-[1vw] max-w-[540px] max-h-[85vh] overflow-y-auto pr-3">
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Streams mapping</template>
+          <template #info>
+            Here you can map your external video streams to internal names. This allows you to easily switch between
+            different video sources in Cockpit, without having to reconfigure every widget that uses the video stream.
+            The widgets will be connected to the internal names, and the external video stream will be mapped to the
+            internal name, so if you need to change the external one, you only need to do it here.
+          </template>
+          <template #content>
+            <div class="flex justify-center flex-col w-[90%] ml-2 mb-8 mt-2">
+              <v-data-table
+                :items="videoStore.streamsCorrespondency"
+                items-per-page="10"
+                class="elevation-1 bg-transparent rounded-lg"
+                theme="dark"
+                :style="interfaceStore.globalGlassMenuStyles"
+              >
+                <template #headers>
+                  <tr>
+                    <th class="text-center"><p class="text-[16px] font-bold">Internal name</p></th>
+                    <th class="text-center"><p class="text-[16px] font-bold">External name</p></th>
+                  </tr>
+                </template>
+                <template #item="{ item }">
+                  <tr>
+                    <td>
+                      <div class="flex items-center justify-center rounded-xl mx-3">
+                        {{ item.name }}
+                      </div>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-center rounded-xl mx-3">
+                        <v-select
+                          v-model="item.externalId"
+                          :items="videoStore.namesAvailableStreams"
+                          hide-details
+                          class="mb-2"
+                          density="compact"
+                          variant="plain"
+                          theme="dark"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <template #bottom></template>
+              </v-data-table>
+            </div>
+          </template>
+        </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC remote IP Addresses</template>
           <template #info>
@@ -35,7 +85,7 @@
             </div>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Allowed WebRTC protocols:</template>
           <template #info>
             <li>

@@ -120,7 +120,7 @@ const props = defineProps<{
 const miniWidget = toRefs(props).miniWidget
 
 const nameSelectedStream = ref<string | undefined>()
-const { namesAvailableStreams } = storeToRefs(videoStore)
+const { namessAvailableAbstractedStreams: namesAvailableStreams } = storeToRefs(videoStore)
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
 const isVideoLibraryDialogOpen = ref(false)
@@ -130,6 +130,16 @@ const mediaStream = ref<MediaStream | undefined>()
 const isProcessingVideo = ref(false)
 const numberOfVideosOnDB = ref(0)
 
+const externalStreamId = computed(() => {
+  return nameSelectedStream.value ? videoStore.externalStreamId(nameSelectedStream.value) : undefined
+})
+
+watch(
+  () => videoStore.streamsCorrespondency,
+  () => (mediaStream.value = undefined),
+  { deep: true }
+)
+
 onMounted(async () => {
   await fetchNumebrOfTempVideos()
 })
@@ -138,14 +148,14 @@ onBeforeMount(async () => {
   // Set initial widget options if they don't exist
   if (Object.keys(miniWidget.value.options).length === 0) {
     miniWidget.value.options = {
-      streamName: undefined as string | undefined,
+      internalStreamName: undefined as string | undefined,
     }
   }
-  nameSelectedStream.value = miniWidget.value.options.streamName
+  nameSelectedStream.value = miniWidget.value.options.internalStreamName
 })
 
 watch(nameSelectedStream, () => {
-  miniWidget.value.options.streamName = nameSelectedStream.value
+  miniWidget.value.options.internalStreamName = nameSelectedStream.value
   mediaStream.value = undefined
 })
 
@@ -180,8 +190,8 @@ function assertStreamIsSelectedAndAvailable(
 
 const toggleRecording = async (): Promise<void> => {
   if (isRecording.value) {
-    if (nameSelectedStream.value !== undefined) {
-      videoStore.stopRecording(nameSelectedStream.value)
+    if (externalStreamId.value !== undefined) {
+      videoStore.stopRecording(externalStreamId.value)
     }
     return
   }
@@ -197,23 +207,27 @@ const toggleRecording = async (): Promise<void> => {
 }
 
 const startRecording = (): void => {
-  if (nameSelectedStream.value && !videoStore.getStreamData(nameSelectedStream.value)?.connected) {
+  if (externalStreamId.value === undefined) {
+    showDialog({ title: 'Cannot start recording.', message: 'No stream selected.', variant: 'error' })
+    return
+  }
+  if (!videoStore.getStreamData(externalStreamId.value)?.connected) {
     showDialog({ title: 'Cannot start recording.', message: 'Stream is not connected.', variant: 'error' })
     return
   }
   assertStreamIsSelectedAndAvailable(nameSelectedStream.value)
-  videoStore.startRecording(nameSelectedStream.value)
+  videoStore.startRecording(externalStreamId.value)
   widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = false
 }
 
 const isRecording = computed(() => {
-  if (nameSelectedStream.value === undefined) return false
-  return videoStore.isRecording(nameSelectedStream.value)
+  if (externalStreamId.value === undefined) return false
+  return videoStore.isRecording(externalStreamId.value)
 })
 
 const timePassedString = computed(() => {
-  if (nameSelectedStream.value === undefined) return '00:00:00'
-  const timeRecordingStart = videoStore.getStreamData(nameSelectedStream.value)?.timeRecordingStart
+  if (externalStreamId.value === undefined) return '00:00:00'
+  const timeRecordingStart = videoStore.getStreamData(externalStreamId.value)?.timeRecordingStart
   if (timeRecordingStart === undefined) return '00:00:00'
 
   const duration = intervalToDuration({ start: timeRecordingStart, end: timeNow.value })
@@ -223,8 +237,8 @@ const timePassedString = computed(() => {
   return `${durationHours}:${durationMinutes}:${durationSeconds}`
 })
 
-const updateCurrentStream = async (streamName: string | undefined): Promise<void> => {
-  assertStreamIsSelectedAndAvailable(streamName)
+const updateCurrentStream = async (internalStreamName: string | undefined): Promise<void> => {
+  assertStreamIsSelectedAndAvailable(internalStreamName)
 
   mediaStream.value = undefined
   isLoadingStream.value = true
@@ -244,7 +258,7 @@ const updateCurrentStream = async (streamName: string | undefined): Promise<void
     return
   }
 
-  miniWidget.value.options.streamName = streamName
+  miniWidget.value.options.internalStreamName = internalStreamName
 }
 
 let streamConnectionRoutine: ReturnType<typeof setInterval> | undefined = undefined
@@ -252,9 +266,9 @@ let streamConnectionRoutine: ReturnType<typeof setInterval> | undefined = undefi
 if (widgetStore.isRealMiniWidget(miniWidget.value)) {
   streamConnectionRoutine = setInterval(() => {
     // If the video recording widget is cold booted, assign the first stream to it
-    if (miniWidget.value.options.streamName === undefined && !namesAvailableStreams.value.isEmpty()) {
-      miniWidget.value.options.streamName = namesAvailableStreams.value[0]
-      nameSelectedStream.value = miniWidget.value.options.streamName
+    if (miniWidget.value.options.internalStreamName === undefined && !namesAvailableStreams.value.isEmpty()) {
+      miniWidget.value.options.internalStreamName = namesAvailableStreams.value[0]
+      nameSelectedStream.value = miniWidget.value.options.internalStreamName
 
       // If there are multiple streams available, warn user that we chose one automatically and they should change if wanted
       if (namesAvailableStreams.value.length > 1) {
@@ -277,10 +291,13 @@ if (widgetStore.isRealMiniWidget(miniWidget.value)) {
       }
     }
 
-    const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.streamName)
-    // If the widget is not connected to the MediaStream, try to connect it
-    if (!isEqual(updatedMediaStream, mediaStream.value)) {
-      mediaStream.value = updatedMediaStream
+    // If the stream name is defined, try to connect the widget to the MediaStream
+    if (externalStreamId.value !== undefined) {
+      const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.internalStreamName)
+      // If the widget is not connected to the MediaStream, try to connect it
+      if (!isEqual(updatedMediaStream, mediaStream.value)) {
+        mediaStream.value = updatedMediaStream
+      }
     }
   }, 1000)
 }
