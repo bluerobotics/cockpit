@@ -73,7 +73,7 @@
           hide-details
           return-object
         />
-        <v-banner-text>Saved stream name: "{{ widget.options.streamName }}"</v-banner-text>
+        <v-banner-text>Saved stream name: "{{ widget.options.internalStreamName }}"</v-banner-text>
         <v-switch
           v-model="widget.options.flipHorizontally"
           class="my-1"
@@ -113,7 +113,7 @@ const { showDialog } = useInteractionDialog()
 const videoStore = useVideoStore()
 const widgetStore = useWidgetManagerStore()
 
-const { namesAvailableStreams } = storeToRefs(videoStore)
+const { namessAvailableAbstractedStreams: namesAvailableStreams } = storeToRefs(videoStore)
 
 const props = defineProps<{
   /**
@@ -136,17 +136,27 @@ onBeforeMount(() => {
     flipHorizontally: false,
     flipVertically: false,
     rotationAngle: 0,
-    streamName: undefined as string | undefined,
+    internalStreamName: undefined as string | undefined,
   }
   widget.value.options = Object.assign({}, defaultOptions, widget.value.options)
-  nameSelectedStream.value = widget.value.options.streamName
+  nameSelectedStream.value = widget.value.options.internalStreamName
 })
+
+const externalStreamId = computed(() => {
+  return nameSelectedStream.value ? videoStore.externalStreamId(nameSelectedStream.value) : undefined
+})
+
+watch(
+  () => videoStore.streamsCorrespondency,
+  () => (mediaStream.value = undefined),
+  { deep: true }
+)
 
 const streamConnectionRoutine = setInterval(() => {
   // If the video player widget is cold booted, assign the first stream to it
-  if (widget.value.options.streamName === undefined && !namesAvailableStreams.value.isEmpty()) {
-    widget.value.options.streamName = namesAvailableStreams.value[0]
-    nameSelectedStream.value = widget.value.options.streamName
+  if (widget.value.options.internalStreamName === undefined && !namesAvailableStreams.value.isEmpty()) {
+    widget.value.options.internalStreamName = namesAvailableStreams.value[0]
+    nameSelectedStream.value = widget.value.options.internalStreamName
 
     // If there are multiple streams available, warn user that we chose one automatically and he should change if wanted
     if (namesAvailableStreams.value.length > 1) {
@@ -156,21 +166,23 @@ const streamConnectionRoutine = setInterval(() => {
     }
   }
 
-  const updatedMediaStream = videoStore.getMediaStream(widget.value.options.streamName)
-  // If the widget is not connected to the MediaStream, try to connect it
-  if (!isEqual(updatedMediaStream, mediaStream.value)) {
-    mediaStream.value = updatedMediaStream
-  }
+  if (externalStreamId.value !== undefined) {
+    const updatedMediaStream = videoStore.getMediaStream(externalStreamId.value)
+    // If the widget is not connected to the MediaStream, try to connect it
+    if (!isEqual(updatedMediaStream, mediaStream.value)) {
+      mediaStream.value = updatedMediaStream
+    }
 
-  const updatedStreamState = videoStore.getStreamData(widget.value.options.streamName)?.connected ?? false
-  if (updatedStreamState !== streamConnected.value) {
-    streamConnected.value = updatedStreamState
+    const updatedStreamState = videoStore.getStreamData(externalStreamId.value)?.connected ?? false
+    if (updatedStreamState !== streamConnected.value) {
+      streamConnected.value = updatedStreamState
+    }
   }
 }, 1000)
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
 
 watch(nameSelectedStream, () => {
-  widget.value.options.streamName = nameSelectedStream.value
+  widget.value.options.internalStreamName = nameSelectedStream.value
   mediaStream.value = undefined
 })
 
@@ -203,19 +215,19 @@ const transformStyle = computed(() => {
 })
 
 const serverStatus = computed(() => {
-  if (nameSelectedStream.value === undefined) return 'Unknown.'
-  return videoStore.getStreamData(nameSelectedStream.value)?.webRtcManager.signallerStatus ?? 'Unknown.'
+  if (externalStreamId.value === undefined) return 'Unknown.'
+  return videoStore.getStreamData(externalStreamId.value)?.webRtcManager.signallerStatus ?? 'Unknown.'
 })
 
 const streamStatus = computed(() => {
-  if (nameSelectedStream.value === undefined) return 'Unknown.'
+  if (externalStreamId.value === undefined) return 'Unknown.'
 
   const availableSources = videoStore.availableIceIps
   if (!availableSources.isEmpty() && !availableSources.find((ip) => videoStore.allowedIceIps.includes(ip))) {
     return `Stream is coming from IPs [${availableSources.join(', ')}], which are not in the list of allowed sources
       [${videoStore.allowedIceIps.join(', ')}].\\n Please check your configuration.`
   }
-  return videoStore.getStreamData(nameSelectedStream.value)?.webRtcManager.streamStatus ?? 'Unknown.'
+  return videoStore.getStreamData(externalStreamId.value)?.webRtcManager.streamStatus ?? 'Unknown.'
 })
 </script>
 
