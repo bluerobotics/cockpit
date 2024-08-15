@@ -15,6 +15,12 @@ import { savedProfilesKey } from '@/stores/widgetManager'
 import { useInteractionDialog } from './interactionDialog'
 import { openSnackbar } from './snackbar'
 
+export const resetJustMadeKey = 'cockpit-reset-just-made'
+const resetJustMade = useStorage(resetJustMadeKey, false)
+setTimeout(() => {
+  resetJustMade.value = false
+}, 10000)
+
 const getVehicleAddress = async (): Promise<string> => {
   const vehicleStore = useMainVehicleStore()
 
@@ -176,7 +182,9 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
       // local value or the one from BlueOS.
       // If the connected vehicle is different from the last connected vehicle, we just use the value from BlueOS, as we
       // don't want to overwrite the value on the new vehicle with the one from the previous vehicle.
-      if (lastConnectedUser === username && lastConnectedVehicleId === currentVehicleId) {
+      if (resetJustMade.value) {
+        useBlueOsValue = false
+      } else if (lastConnectedUser === username && lastConnectedVehicleId === currentVehicleId) {
         console.debug(`Conflict with BlueOS for key '${key}'. Asking user what to do.`)
         useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
       }

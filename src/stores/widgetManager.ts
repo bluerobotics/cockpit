@@ -14,7 +14,7 @@ import {
 } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { resetJustMadeKey, useBlueOsStorage } from '@/composables/settingsSyncer'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import * as Words from '@/libs/funny-name/words'
 import {
@@ -216,10 +216,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * Reset saved profiles to original state
    */
   function resetSavedProfiles(): void {
+    localStorage.setItem(resetJustMadeKey, 'true')
     savedProfiles.value = widgetProfiles
     currentProfileIndex.value = 0
     currentViewIndex.value = 0
-    reloadCockpit(5000)
+    reloadCockpit(3000)
   }
 
   const exportProfile = (profile: Profile): void => {
