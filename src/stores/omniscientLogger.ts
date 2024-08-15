@@ -14,7 +14,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   // Routine to log the framerate of the video streams
   const streamsFrameRateHistory = ref<{ [key in string]: number[] }>({})
   let lastStreamAverageFramerateLog = new Date()
-  const streamAverageFramerateLogDelay = 1000
+  const streamAverageFramerateLogDelay = 10000
   setInterval(() => {
     Object.keys(videoStore.activeStreams).forEach((streamName) => {
       if (videoStore.activeStreams[streamName] === undefined) return
@@ -48,7 +48,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   // Routine to log the framerate of the application rendering
   const appFrameRateHistory = ref<number[]>([])
   const appAverageFrameRateSampleDelay = 100
-  const appAverageFrameRateLogDelay = 1000
+  const appAverageFrameRateLogDelay = 10000
   let lastAppAverageFpsLog = new Date()
   const fpsMeter = (): void => {
     let prevTime = performance.now()
@@ -152,7 +152,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     'totalPausesDuration',
   ] // Keys that should not increase
 
-  const webrtcStatsAverageLogDelay = 1000
+  const webrtcStatsAverageLogDelay = 10000
   let lastWebrtcStatsAverageLog = new Date()
   const webRtcStatsHistory = ref<{ [id in string]: { [stat in string]: (number | string)[] } }>({})
 
