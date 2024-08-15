@@ -767,6 +767,7 @@ export const useVideoStore = defineStore('video', () => {
       // about them from BlueOS. If that fails, send a warning an clear the check routine.
       if (allowedIceIps.value.isEmpty() && availableIceIps.value.length >= 1) {
         // Try to select the IP automatically if it's a wired connection (based on BlueOS data).
+        let currentlyOnWirelessConnection = false
         try {
           const ipsInfo = await getIpsInformationFromVehicle(globalAddress)
           const newAllowedIps: string[] = []
@@ -774,6 +775,9 @@ export const useVideoStore = defineStore('video', () => {
             const isIceIp = availableIceIps.value.includes(ipInfo.ipv4Address)
             const alreadyAllowedIp = [...allowedIceIps.value, ...newAllowedIps].includes(ipInfo.ipv4Address)
             const theteredInterfaceTypes = ['WIRED', 'USB']
+            if (globalAddress === ipInfo.ipv4Address && !theteredInterfaceTypes.includes(ipInfo.interfaceType)) {
+              currentlyOnWirelessConnection = true
+            }
             if (!theteredInterfaceTypes.includes(ipInfo.interfaceType) || alreadyAllowedIp || !isIceIp) return
             console.info(`Adding the wired address '${ipInfo.ipv4Address}' to the list of allowed ICE IPs.`)
             newAllowedIps.push(ipInfo.ipv4Address)
@@ -792,7 +796,7 @@ export const useVideoStore = defineStore('video', () => {
 
         // If the system was still not able to populate the allowed IPs list yet, warn the user.
         // Otherwise, clear the check routine.
-        if (allowedIceIps.value.isEmpty() && !noIpSelectedWarningIssued) {
+        if (allowedIceIps.value.isEmpty() && !noIpSelectedWarningIssued && !currentlyOnWirelessConnection) {
           console.info('No ICE IPs selected for the allowed list. Warning user.')
           issueNoIpSelectedWarning()
           noIpSelectedWarningIssued = true
