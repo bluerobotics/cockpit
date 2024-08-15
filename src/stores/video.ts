@@ -16,7 +16,7 @@ import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { datalogger } from '@/libs/sensors-logging'
-import { isEqual } from '@/libs/utils'
+import { isEqual, sleep } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
@@ -161,6 +161,8 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.timeRecordingStart = undefined
 
     activeStreams.value[streamName]!.mediaRecorder!.stop()
+
+    datalogger.stopLogging()
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
 
@@ -233,6 +235,7 @@ export const useVideoStore = defineStore('video', () => {
 
     if (!datalogger.logging()) {
       datalogger.startLogging()
+      sleep(100)
     }
 
     activeStreams.value[streamName]!.timeRecordingStart = new Date()

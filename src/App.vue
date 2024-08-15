@@ -306,7 +306,6 @@ import EditMenu from './components/EditMenu.vue'
 import GlassButton from './components/GlassButton.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
-import { datalogger } from './libs/sensors-logging'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
@@ -626,9 +625,6 @@ onBeforeUnmount(() => {
   unregisterActionCallback(bottomBarToggleCallbackId)
   unregisterActionCallback(topBarToggleCallbackId)
 })
-
-// Start datalogging
-datalogger.startLogging()
 
 // Dynamic styles
 const currentTopBarHeightPixels = computed(() => `${widgetStore.currentTopBarHeightPixels}px`)
