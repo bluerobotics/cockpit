@@ -234,7 +234,7 @@ class DataLogger {
    */
   startLogging(): void {
     if (this.logging()) {
-      showDialog({ title: 'Error', message: 'A log is already being generated.', variant: 'error', timer: 3000 })
+      console.warn('Tried to start logging but there was already a log being generated.')
       return
     }
 
@@ -322,7 +322,7 @@ class DataLogger {
    */
   stopLogging(): void {
     if (!this.logging()) {
-      showDialog({ title: 'Error', message: 'No log is being generated.', variant: 'error', timer: 3000 })
+      console.warn('Tried to stop logging but no log was being generated.')
       return
     }
 
