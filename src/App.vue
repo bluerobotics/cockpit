@@ -285,7 +285,7 @@
       </div>
     </v-main>
   </v-app>
-  <About v-if="showAboutDialog" @update:showAboutDialog="showAboutDialog = $event" />
+  <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
 </template>
 
 <script setup lang="ts">
