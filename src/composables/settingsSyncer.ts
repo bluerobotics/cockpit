@@ -274,7 +274,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     currentValue,
     async (newValue) => {
       clearTimeout(valueUpdateMethodTimeout)
-      valueUpdateMethodTimeout = setTimeout(() => maybeUpdateValueOnBlueOs(newValue, valueBeforeDebouncedChange), 3000)
+      valueUpdateMethodTimeout = setTimeout(() => maybeUpdateValueOnBlueOs(newValue, valueBeforeDebouncedChange), 1000)
     },
     { deep: true }
   )
