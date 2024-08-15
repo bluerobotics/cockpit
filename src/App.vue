@@ -5,6 +5,7 @@
         <div
           id="menu-trigger"
           class="menu-trigger flex items-center justify-center w-[30px] px-0 py-2 cursor-pointer overflow-hidden rounded-r-lg rounded-br-lg -ml-[1px]"
+          :class="interfaceStore.isOnSmallScreen ? 'top-[30%]' : 'top-[50%]'"
           :style="interfaceStore.globalGlassMenuStyles"
           @click="toggleMainMenu"
         >
@@ -137,7 +138,7 @@
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
                   :icon-class="
                     interfaceStore.isOnSmallScreen
-                      ? 'scale-[100%] -mb-[1px] md:ml-[2px]'
+                      ? 'scale-[90%] mt-[15px] -mr-[4px] md:ml-[1px] md:-mb-[2px]'
                       : 'scale-[95%] -mb-[2px] lg:-mr-[1px] -mr-[2px] xl:-mb-[2px]'
                   "
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
@@ -284,7 +285,7 @@
       </div>
     </v-main>
   </v-app>
-  <About v-if="showAboutDialog" />
+  <About v-if="showAboutDialog" @update:showAboutDialog="showAboutDialog = $event" />
 </template>
 
 <script setup lang="ts">
@@ -740,7 +741,6 @@ body.hide-cursor {
 .menu-trigger {
   position: fixed;
   left: 0;
-  top: 50%;
   transform: translateY(-50%);
   z-index: 1050;
 }
