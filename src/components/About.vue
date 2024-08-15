@@ -2,6 +2,7 @@
   <teleport to="body">
     <InteractionDialog :show-dialog="showDialog" max-width="740" variant="text-only">
       <template #content>
+        <div class="flex absolute top-0 right-0"><v-btn icon="mdi-close" variant="text" @click="closeDialog" /></div>
         <div class="flex flex-col justify-center align-center w-full h-full">
           <img :src="CockpitLogo" alt="Cockpit Logo" class="w-64 my-4" />
           <div class="w-[90%] flex justify-between my-8 py-3">
@@ -50,16 +51,37 @@
           </div>
         </div>
       </template>
-      <template #actions></template>
+      <template #actions
+        ><div class="flex w-full justify-end"><v-btn @click="closeDialog">Close</v-btn></div></template
+      >
     </InteractionDialog>
   </teleport>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 import CockpitLogo from '@/assets/cockpit-logo.png'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 
 const showDialog = ref(true)
+const emit = defineEmits(['update:showAboutDialog'])
+
+const closeDialog = (): void => {
+  showDialog.value = false
+  emit('update:showAboutDialog', false)
+}
+
+watch(
+  () => showDialog.value,
+  (newVal) => {
+    if (!newVal) {
+      emit('update:showAboutDialog', false)
+    }
+  }
+)
+
+onUnmounted(() => {
+  showDialog.value = false
+})
 </script>
