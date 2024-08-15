@@ -544,7 +544,12 @@
         <v-card-text>
           <p>New view name</p>
           <v-text-field v-model="newViewName" counter="25" variant="filled" />
-          <v-switch v-model="store.currentView.showBottomBarOnBoot" label="Show bottom bar on boot" class="mt-2 mx-2" />
+          <v-switch
+            v-model="store.currentView.showBottomBarOnBoot"
+            label="Show bottom bar on boot"
+            class="mt-2 mx-2"
+            :color="store.currentView.showBottomBarOnBoot ? 'white' : undefined"
+          />
         </v-card-text>
         <v-divider />
         <v-card-actions class="flex justify-between pt-3">
