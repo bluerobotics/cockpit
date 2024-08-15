@@ -329,11 +329,6 @@ export const useVideoStore = defineStore('video', () => {
       const chunkName = `${recordingHash}_${chunksCount}`
 
       try {
-        // Intentional logic to lose every 5th chunk
-        if (chunksCount > 5 && chunksCount < 12) {
-          console.error(`Intentional chunk loss -> ${chunksCount}.`)
-          throw new Error(`Intentional chunk loss -> ${chunksCount}.`)
-        }
         await tempVideoChunksDB.setItem(chunkName, e.data)
         sequentialLostChunks = 0
       } catch {
