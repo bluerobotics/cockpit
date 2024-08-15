@@ -139,8 +139,6 @@ export class Signaller {
           return
         }
 
-        console.debug('[WebRTC] [Signaller] Message accepted from requestConsumerId:', message)
-
         signaller.removeEventListener('message', consumerIdListener)
 
         const consumerId: string = answer.content.id
@@ -162,7 +160,6 @@ export class Signaller {
 
     try {
       this.ws.send(JSON.stringify(message))
-      console.debug('[WebRTC] [Signaller] Message sent:', message)
       signaller.onStatusChange?.('Consumer Id requested, waiting answer...')
     } catch (reason) {
       const error = `Failed requesting peer id. Reason: ${reason}`
@@ -195,7 +192,6 @@ export class Signaller {
         return
       }
       this.ws.send(JSON.stringify(message))
-      console.debug('[WebRTC] [Signaller] Message sent:', message)
       this.onStatusChange?.('StreamsAvailable requested')
     } catch (error) {
       const errorMsg = `Failed requesting available streams. Reason: ${error}`
@@ -229,8 +225,6 @@ export class Signaller {
           return
         }
 
-        console.debug('[WebRTC] [Signaller] Message accepted from requestSessionId:', message)
-
         const sessionId = answer.content.session_id
         if (sessionId === undefined) {
           return
@@ -262,7 +256,6 @@ export class Signaller {
 
     try {
       this.ws.send(JSON.stringify(message))
-      console.debug('[WebRTC] [Signaller] Message sent:', message)
       signaller.onStatusChange?.('Session Id requested, waiting answer...')
     } catch (reason) {
       const error = `Failed requesting Session Id. Reason: ${reason}`
@@ -296,7 +289,6 @@ export class Signaller {
 
     try {
       this.ws.send(JSON.stringify(message))
-      console.debug('[WebRTC] [Signaller] Message sent:', message)
       this.onStatusChange?.('ICE Candidate sent')
     } catch (error) {
       const errorMsg = `Failed sending ICE Candidate. Reason: ${error}`
@@ -333,7 +325,6 @@ export class Signaller {
 
     try {
       this.ws.send(JSON.stringify(message))
-      console.debug('[WebRTC] [Signaller] Message sent:', message)
       this.onStatusChange?.('ICE Candidate sent')
     } catch (error) {
       const errorMsg = `Failed sending SDP. Reason: ${error}`
@@ -374,8 +365,6 @@ export class Signaller {
         if (question.type !== 'endSession') {
           return
         }
-
-        console.debug('[WebRTC] [Signaller] Message accepted from parseEndSessionQuestion:', message)
 
         const endSessionQuestion = question.content
         if (
@@ -429,8 +418,6 @@ export class Signaller {
           return
         }
 
-        console.debug('[WebRTC] [Signaller] Message accepted from parseNegotiation:', message)
-
         const negotiation: Negotiation = message.content
 
         if (
@@ -466,7 +453,6 @@ export class Signaller {
    * @param {OnAvailableStreamsCallback} onAvailableStreams - A callback for when an "availableStreams" Answer is received
    */
   public parseAvailableStreamsAnswer(onAvailableStreams: OnAvailableStreamsCallback): void {
-    console.debug('[WebRTC] [Signaller] Registering callback for when list of available streams arrive.')
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const signaller = this
     this.addEventListener('message', function availableStreamListener(ev: MessageEvent): void {
@@ -480,8 +466,6 @@ export class Signaller {
         if (answer.type !== 'availableStreams') {
           return
         }
-
-        console.debug('[WebRTC] [Signaller] Message accepted from parseAvailableStreamsAnswer:', message)
 
         signaller.removeEventListener('message', availableStreamListener)
 
