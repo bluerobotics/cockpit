@@ -32,8 +32,8 @@ import { type AsyncComponentLoader, defineAsyncComponent } from 'vue'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
 
-import SnappingGrid from '../components/SnappingGrid.vue'
-import WidgetHugger from '../components/WidgetHugger.vue'
+import SnappingGrid from '@/components/SnappingGrid.vue'
+import WidgetHugger from '@/components/WidgetHugger.vue'
 
 const store = useWidgetManagerStore()
 
