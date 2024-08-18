@@ -301,23 +301,23 @@ import {
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 
-import About from '@/components/About.vue'
-import AltitudeSlider from '@/components/AltitudeSlider.vue'
-import EditMenu from '@/components/EditMenu.vue'
-import GlassButton from '@/components/GlassButton.vue'
-import MiniWidgetContainer from '@/components/MiniWidgetContainer.vue'
-import SlideToConfirm from '@/components/SlideToConfirm.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import About from '@/components/About.vue'
+import AltitudeSlider from '@/components/AltitudeSlider.vue'
 import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
 import ConfigurationDevelopmentView from '@/views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from '@/views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
-import ConfigurationTelemetryView from '@/views/ConfigurationLogsView.vue'
 import ConfigurationMissionView from '@/views/ConfigurationMissionView.vue'
+import ConfigurationTelemetryView from '@/views/ConfigurationLogsView.vue'
 import ConfigurationUIView from '@/views/ConfigurationUIView.vue'
 import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
+import EditMenu from '@/components/EditMenu.vue'
+import GlassButton from '@/components/GlassButton.vue'
+import MiniWidgetContainer from '@/components/MiniWidgetContainer.vue'
+import SlideToConfirm from '@/components/SlideToConfirm.vue'
 
 const { showDialog, closeDialog } = useInteractionDialog()
 
