@@ -1,7 +1,7 @@
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType, MavModeFlag } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import * as ardusub_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Sub-4.1/apm.pdef.json'
+import * as ardusub_metadata from '@/libs/vehicle/ardupilot/ParameterRepository/Sub-4.5/apm.pdef.json'
 
 import * as Vehicle from '../vehicle'
 import { ArduPilotVehicle } from './ardupilot'
