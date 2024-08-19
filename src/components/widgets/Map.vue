@@ -199,9 +199,17 @@ const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserve
   maxZoom: 19,
 })
 
+const google = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+  maxZoom: 23,
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+  maxNativeZoom: 22,
+  attribution: '© Google Maps',
+})
+
 const baseMaps = {
   'OpenStreetMap': osm,
   'Esri World Imagery': esri,
+  'Google Maps': google,
 }
 
 const overlays = {
@@ -234,7 +242,7 @@ watch(isMouseOver, () => {
 onMounted(async () => {
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
-    layers: [osm, esri, seamarks, marineProfile],
+    layers: [google, osm, esri, seamarks, marineProfile],
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
