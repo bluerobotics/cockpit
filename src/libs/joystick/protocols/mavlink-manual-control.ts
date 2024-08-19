@@ -112,6 +112,10 @@ export enum MAVLinkButtonFunction {
   relay2_momentary = 'Relay 2 momentary', // 105
   relay3_momentary = 'Relay 3 momentary', // 106
   relay4_momentary = 'Relay 4 momentary', // 107
+  script_1 = 'Script 1', // 108
+  script_2 = 'Script 2', // 109
+  script_3 = 'Script 3', // 110
+  script_4 = 'Script 4', // 111
 }
 
 export enum MAVLinkManualControlButton {
@@ -311,6 +315,10 @@ const mavlinkManualControlButtonFunctions: { [key in MAVLinkButtonFunction]: MAV
   [MAVLinkButtonFunction.relay2_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.relay2_momentary, 'Relay 2 momentary'),
   [MAVLinkButtonFunction.relay3_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.relay3_momentary, 'Relay 3 momentary'),
   [MAVLinkButtonFunction.relay4_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.relay4_momentary, 'Relay 4 momentary'),
+  [MAVLinkButtonFunction.script_1]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.script_1, 'Script 1'),
+  [MAVLinkButtonFunction.script_2]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.script_2, 'Script 2'),
+  [MAVLinkButtonFunction.script_3]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.script_3, 'Script 3'),
+  [MAVLinkButtonFunction.script_4]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.script_4, 'Script 4'),
 }
 
 // Exclude shift key so it's not mapped by user, as it's automatically handled by Cockpit backend.
