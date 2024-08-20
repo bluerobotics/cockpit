@@ -7,10 +7,7 @@
     :max-width="700"
   >
     <template #content>
-      <div
-        v-if="usernamesStoredOnBlueOS === null && mainVehicleStore.isVehicleOnline"
-        class="flex justify-center items-center h-[120px] w-full"
-      >
+      <div v-if="isLoading" class="flex justify-center items-center h-[120px] w-full">
         <v-progress-circular color="white" indeterminate class="mb-10" />
       </div>
       <div
@@ -18,7 +15,7 @@
         class="flex flex-col align-center justify-center font-light text-slate-200 w-full h-full transition-all"
       >
         <div
-          v-if="!usernamesStoredOnBlueOS?.isEmpty() && !showNewUsernamePrompt"
+          v-if="!isUsernamesEmpty && !showNewUsernamePrompt"
           class="w-full h-full flex flex-col align-center justify-center text-center"
         >
           <p v-if="missionStore.username === undefined">
@@ -71,7 +68,7 @@
 
 <script setup lang="ts">
 import slugify from 'slugify'
-import { onBeforeMount, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { getSettingsUsernamesFromBlueOS } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
@@ -90,15 +87,38 @@ const showNewUsernamePrompt = ref(false)
 const validationError = ref('')
 const newUsername = ref('')
 const usernamesStoredOnBlueOS = ref<string[] | null>(null)
+const isLoading = ref(true)
 
 const setNewUsername = (username: string): void => {
   newUsername.value = username
   emit('confirmed', username)
 }
 
-onBeforeMount(async () => {
-  usernamesStoredOnBlueOS.value = await getSettingsUsernamesFromBlueOS()
+const loadUsernames = async (): Promise<void> => {
+  try {
+    const usernames = await getSettingsUsernamesFromBlueOS()
+    if (!usernames?.length) {
+      usernamesStoredOnBlueOS.value = []
+      return
+    }
+    usernamesStoredOnBlueOS.value = usernames
+  } catch (error) {
+    usernamesStoredOnBlueOS.value = []
+    console.error('Failed to load usernames.')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  if (mainVehicleStore.isVehicleOnline) {
+    loadUsernames()
+  } else {
+    isLoading.value = false
+  }
 })
+
+const isUsernamesEmpty = computed(() => !usernamesStoredOnBlueOS.value || usernamesStoredOnBlueOS.value.length === 0)
 
 const validateUsername = (username: string): true | string => {
   if (username.length < 3) {
