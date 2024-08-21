@@ -205,7 +205,7 @@
       </teleport>
 
       <div ref="routerSection" class="router-view">
-        <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
+        <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }" :style="connectionStatusFeedback">
           <div
             id="mainTopBar"
             class="bar top-bar"
@@ -307,6 +307,7 @@ import EditMenu from './components/EditMenu.vue'
 import GlassButton from './components/GlassButton.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
+import { useSnackbar } from './composables/snackbar'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
@@ -320,6 +321,7 @@ import ConfigurationUIView from './views/ConfigurationUIView.vue'
 import ConfigurationVideoView from './views/ConfigurationVideoView.vue'
 
 const { showDialog, closeDialog } = useInteractionDialog()
+const { showSnackbar } = useSnackbar()
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
@@ -512,6 +514,42 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleEscKey)
 })
+
+/* eslint-disable jsdoc/require-jsdoc  */
+const connectionStatusFeedback = ref<{ border: string; transition?: string }>({ border: '0px' })
+
+const resetConnectionStatusFeedback = (): void => {
+  setTimeout(() => {
+    connectionStatusFeedback.value = {
+      border: '0px solid transparent',
+      transition: 'border 4s ease-out',
+    }
+  }, 4000)
+}
+
+// Connection monitoring and visual feedback
+watch(
+  () => vehicleStore.isVehicleOnline,
+  (isOnline) => {
+    if (!isOnline) {
+      showSnackbar({
+        message: 'Vehicle connection lost: reestablishing',
+        variant: 'error',
+        duration: 3000,
+        closeButton: false,
+      })
+      connectionStatusFeedback.value = { border: '3px solid red' }
+
+      resetConnectionStatusFeedback()
+      return
+    }
+
+    showSnackbar({ message: 'Vehicle connected', variant: 'success', duration: 3000, closeButton: false })
+    connectionStatusFeedback.value = { border: '3px solid green' }
+
+    resetConnectionStatusFeedback()
+  }
+)
 
 const buttonSize = computed(() => {
   if (interfaceStore.is2xl) return 60
