@@ -37,13 +37,13 @@ import { useDisplay } from 'vuetify'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
-import ConfigurationAlertsView from '../views/ConfigurationAlertsView.vue'
-import ConfigurationDevelopmentView from '../views/ConfigurationDevelopmentView.vue'
-import ConfigurationGeneralView from '../views/ConfigurationGeneralView.vue'
-import ConfigurationJoystickView from '../views/ConfigurationJoystickView.vue'
-import ConfigurationLogsView from '../views/ConfigurationLogsView.vue'
-import ConfigurationMissionView from '../views/ConfigurationMissionView.vue'
-import ConfigurationVideoView from '../views/ConfigurationVideoView.vue'
+import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
+import ConfigurationDevelopmentView from '@/views/ConfigurationDevelopmentView.vue'
+import ConfigurationGeneralView from '@/views/ConfigurationGeneralView.vue'
+import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
+import ConfigurationLogsView from '@/views/ConfigurationLogsView.vue'
+import ConfigurationMissionView from '@/views/ConfigurationMissionView.vue'
+import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
 
 const store = useMainVehicleStore()
 
