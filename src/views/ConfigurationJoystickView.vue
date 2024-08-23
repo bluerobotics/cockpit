@@ -440,8 +440,15 @@
           class="flex flex-row justify-between w-full h-full align-center gap-x-16"
         >
           <div class="flex flex-col w-[30%] h-[100px] justify-around">
-            <v-btn variant="elevated" class="bg-[#FFFFFF33]">assign as Shift</v-btn>
-            <v-btn variant="elevated" class="bg-[#FFFFFF33]">Unmap input</v-btn>
+            <v-btn
+              variant="elevated"
+              class="bg-[#FFFFFF33]"
+              @click="updateButtonAction(input, shiftFunction as ProtocolAction)"
+              >Assign as Shift</v-btn
+            >
+            <v-btn variant="elevated" class="bg-[#FFFFFF33]" @click="unbindCurrentInput(input as JoystickButtonInput)"
+              >Unmap Input</v-btn
+            >
           </div>
           <div class="flex flex-col w-[300px] justify-evenly">
             <ExpansiblePanel
@@ -487,7 +494,7 @@
           </div>
         </div>
         <Transition>
-          <p v-if="showButtonFunctionAssignmentFeedback" class="text-lg font-medium">
+          <p v-if="showButtonFunctionAssignmentFeedback" class="text-lg font-medium mt-4">
             {{ buttonFunctionAssignmentFeedback }}
           </p>
         </Transition>
@@ -626,6 +633,12 @@ const protocols = Object.values(JoystickProtocol).filter((value) => typeof value
 
 type SearchTerms = {
   [key: string]: string
+}
+
+const shiftFunction = {
+  protocol: 'cockpit-modifier-key',
+  id: 'shift',
+  name: 'Shift',
 }
 
 watch(
