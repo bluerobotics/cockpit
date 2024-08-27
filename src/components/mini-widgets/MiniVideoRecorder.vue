@@ -1,8 +1,7 @@
 <template>
   <div
     ref="recorderWidget"
-    class="flex justify-around px-2 py-1 text-center rounded-lg h-9 align-center bg-slate-800/60"
-    :class="{ 'w-48': numberOfVideosOnDB > 0, 'w-32': numberOfVideosOnDB <= 0 }"
+    class="flex justify-around px-2 py-1 text-center rounded-lg w-40 h-9 align-center bg-slate-800/60"
   >
     <div
       v-if="!isProcessingVideo"
@@ -32,18 +31,16 @@
     <div v-else-if="isProcessingVideo" class="w-16 text-justify text-slate-100">
       <div class="text-xs text-center text-white select-none flex-nowrap">Processing video...</div>
     </div>
-    <div v-if="numberOfVideosOnDB > 0" class="flex justify-center w-8">
-      <v-divider vertical class="h-6" />
+    <div class="flex justify-center w-6">
+      <v-divider vertical class="h-6 ml-1" />
       <v-badge
         color="info"
         :content="numberOfVideosOnDB"
         :dot="isOutside || isVideoLibraryDialogOpen"
         class="cursor-pointer"
-        @click="isVideoLibraryDialogOpen = true"
+        @click="openVideoLibraryModal"
       >
-        <v-icon class="w-6 h-6 ml-3 text-slate-100" @click="isVideoLibraryDialogOpen = true">
-          mdi-video-box
-        </v-icon></v-badge
+        <v-icon class="w-6 h-6 ml-1 text-slate-100" @click="openVideoLibraryModal"> mdi-video-box </v-icon></v-badge
       >
     </div>
   </div>
@@ -88,7 +85,6 @@
       </div>
     </div>
   </v-dialog>
-  <VideoLibrary :open-modal="isVideoLibraryDialogOpen" @update:open-modal="handleModalUpdate" />
 </template>
 
 <script setup lang="ts">
@@ -103,8 +99,6 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
-
-import VideoLibrary from '../VideoLibraryModal.vue'
 
 const { showDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
@@ -134,6 +128,10 @@ const externalStreamId = computed(() => {
   return nameSelectedStream.value ? videoStore.externalStreamId(nameSelectedStream.value) : undefined
 })
 
+const openVideoLibraryModal = (): void => {
+  interfaceStore.setVideoLibraryVisibility(true)
+}
+
 watch(
   () => videoStore.streamsCorrespondency,
   () => (mediaStream.value = undefined),
@@ -141,7 +139,7 @@ watch(
 )
 
 onMounted(async () => {
-  await fetchNumebrOfTempVideos()
+  await fetchNumberOfTempVideos()
 })
 
 onBeforeMount(async () => {
@@ -159,12 +157,8 @@ watch(nameSelectedStream, () => {
   mediaStream.value = undefined
 })
 
-const handleModalUpdate = (newVal: boolean): void => {
-  isVideoLibraryDialogOpen.value = newVal
-}
-
 // Fetch number of temporary videos on storage
-const fetchNumebrOfTempVideos = async (): Promise<void> => {
+const fetchNumberOfTempVideos = async (): Promise<void> => {
   const nProcessedVideos = (await videoStore.videoStoringDB.keys()).filter((k) => videoStore.isVideoFilename(k)).length
   const nFailedUnprocessedVideos = Object.keys(videoStore.keysFailedUnprocessedVideos).length
   numberOfVideosOnDB.value = nProcessedVideos + nFailedUnprocessedVideos
@@ -288,20 +282,20 @@ watch(
   () => videoStore.areThereVideosProcessing,
   (newValue) => {
     isProcessingVideo.value = newValue
-    fetchNumebrOfTempVideos()
+    fetchNumberOfTempVideos()
   }
 )
 
 watch(
   () => videoStore.keysFailedUnprocessedVideos,
-  () => fetchNumebrOfTempVideos()
+  () => fetchNumberOfTempVideos()
 )
 
 watch(
   () => isVideoLibraryDialogOpen.value,
   async (newValue) => {
     if (newValue === false) {
-      await fetchNumebrOfTempVideos()
+      await fetchNumberOfTempVideos()
     }
   }
 )
