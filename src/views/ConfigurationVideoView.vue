@@ -148,7 +148,7 @@
           <template #title>Video library options:</template>
           <template #info>
             <li>
-              CHoose to process videos manual or automatically after recorfing ends. In some low end hardware systems
+              Choose to process videos manual or automatically after recording ends. In some low end hardware systems
               and for long durations videos, auto-processing could take some time.
             </li>
             <li>
@@ -159,13 +159,24 @@
             </li>
           </template>
           <template #content>
-            <div class="flex items-center justify-start w-[50%] ml-2">
+            <div class="flex items-center justify-between w-[96%] ml-2">
               <v-checkbox
                 v-model="videoStore.autoProcessVideos"
                 label="Auto process videos"
                 class="text-sm mx-2"
                 hide-details
               />
+              <v-btn variant="flat" class="bg-[#FFFFFF22] px-3 elevation-1" @click="openVideoLibrary">
+                <template #append>
+                  <v-divider vertical></v-divider>
+                  <v-badge color="info" dot class="cursor-pointer" @click="openVideoLibrary">
+                    <v-icon class="w-6 h-6 ml-1 text-slate-100" @click="openVideoLibrary">
+                      mdi-video-box
+                    </v-icon></v-badge
+                  >
+                </template>
+                Video Library
+              </v-btn>
             </div>
             <div class="flex items-center justify-start w-[50%] ml-2">
               <v-checkbox
@@ -206,6 +217,10 @@ onMounted(() => {
     allowedIceProtocols.value = availableICEProtocols
   }
 })
+
+const openVideoLibrary = (): void => {
+  interfaceStore.setVideoLibraryVisibility(true)
+}
 
 /**
  * Handles the input for setting the jitter buffer target

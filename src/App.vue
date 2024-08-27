@@ -198,6 +198,7 @@
         <GlassModal
           :is-visible="currentConfigMenuComponent !== null && mainMenuStep !== 1"
           position="menuitem"
+          :class="interfaceStore.isVideoLibraryVisible ? 'opacity-0' : 'opacity-100'"
           @close-modal="currentConfigMenuComponent = null"
         >
           <component :is="currentConfigMenuComponent"></component>
@@ -286,6 +287,7 @@
     </v-main>
   </v-app>
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
+  <VideoLibraryModal :open-modal="interfaceStore.isVideoLibraryVisible" />
 </template>
 
 <script setup lang="ts">
@@ -294,6 +296,7 @@ import { computed, DefineComponent, markRaw, onBeforeUnmount, onMounted, ref, wa
 import { useRoute } from 'vue-router'
 
 import GlassModal from '@/components/GlassModal.vue'
+import VideoLibraryModal from '@/components/VideoLibraryModal.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
   availableCockpitActions,

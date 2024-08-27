@@ -591,6 +591,7 @@ const closeModal = (): void => {
   deselectAllVideos()
   lastSelectedVideo.value = null
   isMultipleSelectionMode.value = false
+  interfaceStore.setVideoLibraryVisibility(false)
 }
 
 // Extracts a date or any string enclosed within parentheses from a given title string
@@ -978,6 +979,7 @@ watch(isVisible, (newValue) => {
     isMultipleSelectionMode.value = false
     lastSelectedVideo.value = null
     showOnScreenProgress.value = false
+    interfaceStore.setVideoLibraryVisibility(false)
   }
 })
 
@@ -1104,6 +1106,7 @@ onBeforeUnmount(() => {
   Object.values(hammerInstances.value).forEach((instance) => {
     instance.destroy()
   })
+  interfaceStore.setVideoLibraryVisibility(false)
 })
 </script>
 
