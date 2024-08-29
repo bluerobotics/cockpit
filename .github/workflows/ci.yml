@@ -73,6 +73,10 @@ jobs:
           suffix: linux
           extension: AppImage
 
+        - os: ubuntu-24-arm
+          suffix: linux-arm
+          extension: AppImage
+
         - os: windows-latest
           suffix: windows
           extension: exe
@@ -84,14 +88,30 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Install snapcraft for arm64
+        if: matrix.os == 'ubuntu-24-arm'
+        run: |
+          sudo apt update
+          sudo apt install -y --fix-missing snapd
+          sudo snap install snapcraft --classic
+
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: Build electron
+      - name: Bun build
         run: |
           bun install --frozen-lockfile
           bun run build
+
+      - name: Bun deploy (arm)
+        if: matrix.os == 'ubuntu-24-arm'
+        run: |
+          SNAPCRAFT_BUILD_ENVIRONMENT="host" bun deploy:electron
+
+      - name: Bun deploy (others)
+        if: matrix.os != 'ubuntu-24-arm'
+        run: |
           bun deploy:electron
 
       - name: Build artifact name
