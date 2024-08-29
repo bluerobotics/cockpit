@@ -144,7 +144,16 @@ jobs:
 
   deploy-flatpak:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-latest
+          suffix: linux
+
+        - os: ubuntu-24-arm
+          suffix: linux-arm
 
     steps:
       - name: Checkout
@@ -178,12 +187,12 @@ jobs:
       - name: Build name
         if: "!startsWith(github.ref, 'refs/tags/') && success()"
         run: |
-          mv dist/Cockpit*.flatpak dist/Cockpit-linux-$(git describe --tags).flatpak
+          mv dist/Cockpit*.flatpak dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags).flatpak
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: cockpit-flatpak
+          name: cockpit-${{ matrix.suffix }}-flatpak
           path: dist/Cockpit*.flatpak
           if-no-files-found: error
 
