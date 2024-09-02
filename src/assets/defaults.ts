@@ -40,6 +40,7 @@ export const defaultMiniWidgetManagerVars: MiniWidgetManagerVars = {
 const hostname = window.location.hostname
 export const defaultBlueOsAddress = 'http://blueos-avahi.local'
 export const defaultGlobalAddress = hostname == '' || hostname == undefined ? defaultBlueOsAddress : hostname
+export const defaultUIGlassColor = { opacity: 0.8, bgColor: '#4F4F4F1A', fontColor: '#FFFFFF', blur: 25 }
 export const widgetProfiles: Profile[] = [
   {
     name: 'ROV default',
