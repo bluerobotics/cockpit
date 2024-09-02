@@ -8,7 +8,7 @@
 </div>
 <br>
 
-<b>An intuitive and customizable cross-platform ground control station for remote vehicles of all types. [Check it here](https://docs.bluerobotics.com/cockpit)</b>
+**An intuitive and customizable cross-platform ground control station for remote vehicles of all types. [Click here for a demo!](https://docs.bluerobotics.com/cockpit)**
 
 [![Test, Build and Deploy Images](https://github.com/bluerobotics/cockpit/actions/workflows/ci.yml/badge.svg)](https://github.com/bluerobotics/cockpit/actions/workflows/ci.yml)
 ![Downloads](https://img.shields.io/github/downloads/bluerobotics/cockpit/total?label=Downloads)
@@ -19,6 +19,10 @@
 [![Docker](https://img.shields.io/docker/v/bluerobotics/cockpit?label=Docker&style=flat)
 ![Pulls](https://img.shields.io/docker/pulls/bluerobotics/cockpit?label=Pulls)
 ![Size](https://img.shields.io/docker/image-size/bluerobotics/cockpit?label=Size)](https://hub.docker.com/r/bluerobotics/cockpit/tags)
+
+# Standard Usage
+
+**See [our documentation](https://blueos.cloud/docs/extensions/cockpit/1.0/overview/)** 📖
 
 # Development
 
