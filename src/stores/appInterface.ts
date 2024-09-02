@@ -21,22 +21,16 @@ export const useAppInterfaceStore = defineStore('responsive', {
     }),
     displayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', defaultDisplayUnitPreferences),
     mainMenuStyleTrigger: useBlueOsStorage('main-menu-style', 'center-left'),
+    componentToHighlight: 'none',
+    isMainMenuVisible: false,
+    mainMenuCurrentStep: 1,
+    configComponent: -1,
+    isGlassModalAlwaysOnTop: false,
+    isTutorialVisible: false,
   }),
   actions: {
     updateWidth() {
       this.width = windowWidth.value
-    },
-    setVideoLibraryVisibility(value: boolean) {
-      this.videoLibraryVisibility = value
-    },
-    setConfigModalVisibility(value: boolean) {
-      this.configModalVisibility = value
-    },
-    setUIGlassEffect(opacity: number, bgColor: string, fontColor: string, blur: number) {
-      this.UIGlassEffect.opacity = opacity
-      this.UIGlassEffect.bgColor = bgColor
-      this.UIGlassEffect.fontColor = fontColor
-      this.UIGlassEffect.blur = blur
     },
     setBgOpacity(opacity: number) {
       this.UIGlassEffect.opacity = opacity
@@ -85,6 +79,15 @@ export const useAppInterfaceStore = defineStore('responsive', {
       backdropFilter: `blur(${state.UIGlassEffect.blur}px)`,
       border: '1px solid rgba(255, 255, 255, 0.08)',
       boxShadow: '0px 4px 4px 0px #00000033, 0px 8px 12px 6px #00000016',
+    }),
+    highlightedComponent: (state) => state.componentToHighlight,
+    globalGlassMenuHighlightStyles: (state) => ({
+      backgroundColor: state.UIGlassEffect.bgColor,
+      color: state.UIGlassEffect.fontColor,
+      backdropFilter: `blur(${state.UIGlassEffect.blur}px)`,
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      boxShadow: '0px 4px 4px 0px #00000033, 0px 8px 12px 6px #00000016',
+      animation: 'highlightBackground 0.5s alternate 20',
     }),
   },
 })

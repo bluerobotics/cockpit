@@ -219,7 +219,7 @@ onMounted(() => {
 })
 
 const openVideoLibrary = (): void => {
-  interfaceStore.setVideoLibraryVisibility(true)
+  interfaceStore.videoLibraryVisibility = true
 }
 
 /**

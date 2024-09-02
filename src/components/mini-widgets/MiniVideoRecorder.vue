@@ -129,7 +129,7 @@ const externalStreamId = computed(() => {
 })
 
 const openVideoLibraryModal = (): void => {
-  interfaceStore.setVideoLibraryVisibility(true)
+  interfaceStore.videoLibraryVisibility = true
 }
 
 watch(

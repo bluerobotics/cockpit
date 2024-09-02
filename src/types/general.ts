@@ -1,3 +1,5 @@
+import { DefineComponent } from 'vue'
+
 export type Point2D = {
   /**
    * Horizontal coordinate of the point
@@ -29,3 +31,5 @@ export interface DialogActions {
   class?: string
   disabled?: boolean
 }
+
+export type ConfigComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | null
