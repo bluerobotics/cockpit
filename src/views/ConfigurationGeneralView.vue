@@ -15,19 +15,31 @@
             </p>
           </template>
           <template #content>
-            <div class="flex align-center justify-between pl-4 pr-2 mt-2 mb-6">
-              <div>
-                <span class="mr-2">Current user:</span>
-                <span class="font-semibold text-2xl">{{ missionStore.username }}</span>
+            <div class="flex flex-col w-full items-start">
+              <div class="flex align-center w-full justify-between pl-3 pr-2 mt-1 mb-6">
+                <div>
+                  <span class="mr-2">Current user:</span>
+                  <span class="font-semibold text-2xl cursor-pointer" @click="missionStore.changeUsername">{{
+                    missionStore.username
+                  }}</span>
+                </div>
+                <v-btn
+                  id="select-profile"
+                  size="sm"
+                  icon="mdi-swap-horizontal"
+                  class="bg-transparent"
+                  variant="text"
+                  @click="missionStore.changeUsername"
+                />
               </div>
               <v-btn
-                id="select-profile"
-                size="sm"
-                icon="mdi-swap-horizontal"
-                class="bg-transparent"
-                variant="text"
-                @click="missionStore.changeUsername"
-              />
+                size="x-small"
+                class="bg-[#FFFFFF22] -mt-3 mb-4 ml-4 shadow-2"
+                variant="flat"
+                @click="openTutorial"
+              >
+                Show tutorial
+              </v-btn>
             </div>
           </template>
         </ExpansiblePanel>
@@ -40,12 +52,18 @@
             <v-form
               ref="globalAddressForm"
               v-model="globalAddressFormValid"
-              class="flex w-full mt-2"
+              class="flex w-full mt-2 mb-2"
               @submit.prevent="setGlobalAddress"
             >
               <div
-                class="flex justify-start items-center w-[86%]"
+                class="flex justify-start items-center w-[86%] mb-4"
                 :class="interfaceStore.isOnSmallScreen ? 'scale-80' : 'scale-100'"
+                :style="
+                  interfaceStore.highlightedComponent === 'vehicle-address' && {
+                    animation: 'highlightBackground 0.5s alternate 20',
+                    borderRadius: '10px',
+                  }
+                "
               >
                 <v-text-field
                   v-model="newGlobalAddress"
@@ -53,6 +71,7 @@
                   type="input"
                   density="compact"
                   hint="Address of the Vehicle. E.g: blueos.local"
+                  hide-details
                   class="w-[80%]"
                   :rules="[isValidHostAddress, isValidConnectionURI]"
                   @click:append-inner="resetGlobalAddress"
@@ -65,7 +84,7 @@
                 </v-text-field>
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  class="bg-transparent -mt-5"
+                  class="bg-transparent"
                   :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
                   variant="text"
                   type="submit"
@@ -476,6 +495,12 @@ const tryToPrettifyRtcConfig = (): void => {
   } catch (error) {
     // Do nothing if the JSON is invalid
   }
+}
+
+const openTutorial = (): void => {
+  interfaceStore.isMainMenuVisible = false
+  interfaceStore.configComponent = -1
+  interfaceStore.isTutorialVisible = true
 }
 
 watch(customRtcConfiguration, () => tryToPrettifyRtcConfig())

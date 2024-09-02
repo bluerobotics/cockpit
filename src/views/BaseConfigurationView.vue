@@ -45,6 +45,7 @@ const props = defineProps<{
 const hasNoCloseIcon = ref(props.noCloseIcon || false)
 
 const closeModal = (): void => {
-  interfaceStore.setConfigModalVisibility(false)
+  interfaceStore.configModalVisibility = false
+  interfaceStore.configComponent = -1
 }
 </script>

@@ -5,6 +5,7 @@
     class="glass-modal"
     :class="[interfaceStore.isOnSmallScreen ? 'rounded-[10px]' : 'rounded-[20px]', selectedOverflow]"
     :style="[modalPositionStyle, interfaceStore.globalGlassMenuStyles]"
+    @click="bringModalUp"
   >
     <slot></slot>
   </div>
@@ -48,6 +49,25 @@ const modalPosition = ref(props.position || 'center')
 const selectedOverflow = ref(props.overflow || 'auto')
 const isPersistent = ref(props.isPersistent || false)
 const modal = ref<HTMLElement | null>(null)
+const zIndexToggle = ref(200)
+const isAlwaysOnTop = ref(false)
+
+const bringModalUp = (): void => {
+  zIndexToggle.value = 2000
+}
+
+watch(
+  () => interfaceStore.isGlassModalAlwaysOnTop,
+  (val) => {
+    if (val === true) {
+      isAlwaysOnTop.value = true
+      zIndexToggle.value = 5000
+      return
+    }
+    isAlwaysOnTop.value = false
+    zIndexToggle.value = 200
+  }
+)
 
 const modalPositionStyle = computed(() => {
   switch (modalPosition.value) {
@@ -71,6 +91,7 @@ const modalPositionStyle = computed(() => {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
+        zIndex: zIndexToggle.value,
       }
   }
 })
@@ -82,6 +103,9 @@ const closeModal = (): void => {
 onClickOutside(modal, () => {
   if (!isPersistent.value) {
     closeModal()
+  }
+  if (!isAlwaysOnTop.value) {
+    zIndexToggle.value = 100
   }
 })
 

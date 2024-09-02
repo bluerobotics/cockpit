@@ -1,12 +1,22 @@
 <template>
   <v-app>
     <v-main>
-      <div v-if="!widgetStore.editingMode && !showMainMenu && interfaceStore.mainMenuStyleTrigger === 'center-left'">
+      <div
+        v-if="
+          !widgetStore.editingMode &&
+          !interfaceStore.isMainMenuVisible &&
+          interfaceStore.mainMenuStyleTrigger === 'center-left'
+        "
+      >
         <div
           id="menu-trigger"
-          class="menu-trigger flex items-center justify-center w-[30px] px-0 py-2 cursor-pointer overflow-hidden rounded-r-lg rounded-br-lg -ml-[1px]"
-          :class="interfaceStore.isOnSmallScreen ? 'top-[30%]' : 'top-[50%]'"
-          :style="interfaceStore.globalGlassMenuStyles"
+          class="menu-trigger border-4 flex items-center justify-center w-[30px] px-0 py-2 cursor-pointer overflow-hidden rounded-r-lg rounded-br-lg -ml-[1px]"
+          :class="[interfaceStore.isOnSmallScreen ? 'top-[30%]' : 'top-[50%]']"
+          :style="
+            interfaceStore.highlightedComponent === 'menu-trigger'
+              ? interfaceStore.globalGlassMenuHighlightStyles
+              : interfaceStore.globalGlassMenuStyles
+          "
           @click="toggleMainMenu"
         >
           <v-icon class="text-white text-[46px] opacity-80">mdi-menu-right</v-icon>
@@ -14,7 +24,7 @@
       </div>
       <transition name="slide-in-left">
         <div
-          v-if="showMainMenu"
+          v-if="interfaceStore.isMainMenuVisible"
           ref="mainMenu"
           class="left-menu slide-in"
           :style="[
@@ -22,7 +32,7 @@
             simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth,
           ]"
         >
-          <v-window v-model="mainMenuStep" class="h-full w-full">
+          <v-window v-model="interfaceStore.mainMenuCurrentStep" class="h-full w-full">
             <v-window-item :value="1" class="h-full">
               <div
                 class="relative flex flex-col h-full justify-between align-center items-center select-none"
@@ -107,7 +117,13 @@
                   :width="buttonSize"
                   :selected="showConfigurationMenu"
                   class="mb-2"
-                  @click="mainMenuStep = 2"
+                  :style="
+                    interfaceStore.highlightedComponent === 'config-menu-item' && {
+                      animation: 'highlightBackground 0.5s alternate 20',
+                      borderRadius: '10px',
+                    }
+                  "
+                  @click="interfaceStore.mainMenuCurrentStep = 2"
                 />
                 <GlassButton
                   :label="simplifiedMainMenu ? '' : isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
@@ -166,6 +182,12 @@
                   variant="uncontained"
                   :height="buttonSize * 0.45"
                   :icon-size="buttonSize * 0.5"
+                  :style="
+                    interfaceStore.highlightedComponent === menuitem.title && {
+                      animation: 'highlightBackground 0.5s alternate 20',
+                      borderRadius: '8px',
+                    }
+                  "
                   @click="toggleConfigComponent(menuitem.component)"
                   ><template #content
                     ><div v-if="currentConfigMenuComponent === menuitem.component" class="arrow-left"></div></template
@@ -182,7 +204,7 @@
                     :selected="false"
                     @click="
                       () => {
-                        mainMenuStep = 1
+                        interfaceStore.mainMenuCurrentStep = 1
                         currentConfigMenuComponent = null
                       }
                     "
@@ -196,7 +218,11 @@
 
       <teleport to="body">
         <GlassModal
-          :is-visible="currentConfigMenuComponent !== null && mainMenuStep !== 1"
+          :is-visible="
+            currentConfigMenuComponent !== null &&
+            interfaceStore.mainMenuCurrentStep === 2 &&
+            interfaceStore.isMainMenuVisible
+          "
           position="menuitem"
           :class="interfaceStore.isVideoLibraryVisible ? 'opacity-0' : 'opacity-100'"
           @close-modal="currentConfigMenuComponent = null"
@@ -287,15 +313,17 @@
     </v-main>
   </v-app>
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
+  <Tutorial :show-tutorial="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal :open-modal="interfaceStore.isVideoLibraryVisible" />
 </template>
 
 <script setup lang="ts">
 import { onClickOutside, useDebounceFn, useFullscreen, useWindowSize } from '@vueuse/core'
-import { computed, DefineComponent, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import GlassModal from '@/components/GlassModal.vue'
+import Tutorial from '@/components/Tutorial.vue'
 import VideoLibraryModal from '@/components/VideoLibraryModal.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
@@ -314,6 +342,7 @@ import { useSnackbar } from './composables/snackbar'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
+import { ConfigComponent } from './types/general'
 import ConfigurationAlertsView from './views/ConfigurationAlertsView.vue'
 import ConfigurationDevelopmentView from './views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from './views/ConfigurationGeneralView.vue'
@@ -332,14 +361,11 @@ const interfaceStore = useAppInterfaceStore()
 
 const showAboutDialog = ref(false)
 const showConfigurationMenu = ref(false)
-type ConfigComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | null
 const currentConfigMenuComponent = ref<ConfigComponent>(null)
 
 // Main menu
-const showMainMenu = ref(false)
 const isMenuOpen = ref(false)
 const isSlidingOut = ref(false)
-const mainMenuStep = ref(1)
 const simplifiedMainMenu = ref(false)
 const windowHeight = ref(window.innerHeight)
 
@@ -386,19 +412,30 @@ const configMenu = [
   },
 ]
 
+watch(
+  () => interfaceStore.configComponent,
+  (component) => {
+    if (component < 0) {
+      currentConfigMenuComponent.value = null
+      return
+    }
+    currentConfigMenuComponent.value = configMenu[component].component
+  }
+)
+
 const toggleConfigComponent = (component: ConfigComponent): void => {
   if (currentConfigMenuComponent.value === null) {
     currentConfigMenuComponent.value = component
-    interfaceStore.setConfigModalVisibility(true)
+    interfaceStore.configModalVisibility = true
     return
   }
   if (currentConfigMenuComponent.value === component) {
     currentConfigMenuComponent.value = null
-    interfaceStore.setConfigModalVisibility(false)
+    interfaceStore.configModalVisibility = false
     return
   }
   currentConfigMenuComponent.value = component
-  interfaceStore.setConfigModalVisibility(true)
+  interfaceStore.configModalVisibility = true
 }
 
 const isConfigModalVisible = computed(() => interfaceStore.isConfigModalVisible)
@@ -433,7 +470,9 @@ onBeforeUnmount(() => {
 
 const mainMenuWidth = computed(() => {
   const width =
-    interfaceStore.isOnSmallScreen && mainMenuStep.value === 2 ? '60px' : `${interfaceStore.mainMenuWidth}px`
+    interfaceStore.isOnSmallScreen && interfaceStore.mainMenuCurrentStep === 2
+      ? '60px'
+      : `${interfaceStore.mainMenuWidth}px`
   return { width }
 })
 
@@ -455,7 +494,7 @@ const openMainMenu = (): void => {
         {
           text: 'Continue anyway',
           action: () => {
-            showMainMenu.value = true
+            interfaceStore.isMainMenuVisible = true
             isMenuOpen.value = true
             closeDialog()
           },
@@ -471,16 +510,16 @@ const openMainMenu = (): void => {
     }).then((result) => {
       if (result.isConfirmed && vehicleStore.isArmed) {
         vehicleStore.disarm().then(() => {
-          showMainMenu.value = true
+          interfaceStore.isMainMenuVisible = true
           isMenuOpen.value = true
         })
       } else {
-        showMainMenu.value = true
+        interfaceStore.isMainMenuVisible = true
         isMenuOpen.value = true
       }
     })
   } else {
-    showMainMenu.value = true
+    interfaceStore.isMainMenuVisible = true
     isMenuOpen.value = true
   }
 }
@@ -489,23 +528,23 @@ const openMainMenu = (): void => {
 const closeMainMenu = (): void => {
   isSlidingOut.value = true
   setTimeout(() => {
-    showMainMenu.value = false
+    interfaceStore.isMainMenuVisible = false
     isSlidingOut.value = false
     isMenuOpen.value = false
-    mainMenuStep.value = 1
+    interfaceStore.mainMenuCurrentStep = 1
     currentConfigMenuComponent.value = null
   }, 20)
 }
 
 const disarmVehicle = (): void => {
   vehicleStore.disarm().then(() => {
-    showMainMenu.value = true
+    interfaceStore.isMainMenuVisible = true
   })
   closeDialog()
 }
 
 const handleEscKey = (event: KeyboardEvent): void => {
-  if (event.key === 'Escape' && showMainMenu.value) {
+  if (event.key === 'Escape' && interfaceStore.isMainMenuVisible) {
     closeMainMenu()
   }
 }
@@ -577,10 +616,14 @@ const menuLabelSize = computed(() => {
 
 const mainMenu = ref()
 onClickOutside(mainMenu, () => {
-  if (mainMenuStep.value === 1) {
+  if (interfaceStore.mainMenuCurrentStep === 1 && !interfaceStore.isTutorialVisible) {
     closeMainMenu()
   }
-  if (mainMenuStep.value === 2 && currentConfigMenuComponent.value === null) {
+  if (
+    interfaceStore.mainMenuCurrentStep === 2 &&
+    currentConfigMenuComponent.value === null &&
+    !interfaceStore.isTutorialVisible
+  ) {
     closeMainMenu()
   }
 })
