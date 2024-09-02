@@ -1,0 +1,43 @@
+name: Widget idea
+description: Suggest/request a new type of widget
+title: "widget: "
+labels: ["widget-specific", "ui"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please fill out the following details so we can respond and act efficiently.
+
+  - type: textarea
+    attributes:
+      label: Problem to solve
+      description: Describe why a new widget is needed, in detail.
+      placeholder: |
+        Example: "I want to visually track and compare data from multiple sensors over time."
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Desired approach
+      description: Suggest specific functionality and/or interface ideas that you think should be included / considered. If possible, provide diagrams/sketches/images as interface references.
+      placeholder: |
+        A plotting widget with support for multiple variables could show the values over time, and allowing (optional) logarithmic scaling for the horizontal axis could focus attention on the most recent values.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Links to similar widgets or interfaces in other software/games, relevant forum discussion threads, etc.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Prerequisites
+      description: Please confirm the following (and check the boxes) before submitting.
+      options:
+        - label: I have checked to make sure that a similar request has not already been filed or fixed.
+          required: true
