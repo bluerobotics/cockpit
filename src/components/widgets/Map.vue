@@ -449,8 +449,6 @@ const onMapClick = (event: L.LeafletMouseEvent): void => {
 }
 
 const onMenuOptionSelect = (option: string): void => {
-  console.debug(`Map context menu option selected: ${option}.`)
-
   switch (option) {
     case 'goto':
       if (clickedLocation.value) {
