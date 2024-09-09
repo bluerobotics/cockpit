@@ -115,7 +115,7 @@ const holdActionTimeMs = 1000
 export const canByPassCategory = (category: EventCategory): boolean => {
   const missionStore = useMissionStore()
 
-  return !(missionStore.slideEventsEnabled && eventCategoriesDefaultMapping[category])
+  return !(missionStore.slideEventsEnabled && missionStore.slideEventsCategoriesRequired[category])
 }
 
 /**
