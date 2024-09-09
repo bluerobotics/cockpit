@@ -232,7 +232,7 @@
               <div class="flex flex-col justify-around align-center w-[100px] -mr-6">
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
+                  :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
                   class="bg-transparent -mb-5"
                   variant="text"
                   type="submit"
