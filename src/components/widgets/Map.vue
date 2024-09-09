@@ -3,7 +3,7 @@
     <div :id="mapId" ref="map" class="map">
       <v-btn
         v-if="showButtons"
-        v-tooltip="Boolean(home) ? undefined : 'Home position is currently undefined'"
+        v-tooltip="home ? 'Center map on home position.' : 'Home position is currently undefined.'"
         class="absolute left-0 m-3 bottom-button bg-slate-50"
         :class="!home ? 'active-events-on-disabled' : ''"
         :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
@@ -18,7 +18,7 @@
 
       <v-btn
         v-if="showButtons"
-        v-tooltip="Boolean(vehiclePosition) ? undefined : 'Vehicle position is currently undefined'"
+        v-tooltip="vehiclePosition ? 'Center map on vehicle position.' : 'Vehicle position is currently undefined.'"
         class="absolute m-3 bottom-button left-10 bg-slate-50"
         :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
         :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
@@ -123,7 +123,7 @@ const missionStore = useMissionStore()
 const map: Ref<Map | undefined> = ref()
 const zoom = ref(15)
 const mapCenter = ref<WaypointCoordinates>([-27.5935, -48.55854])
-const home = ref(mapCenter.value)
+const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = ref(false)
 
