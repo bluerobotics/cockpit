@@ -40,6 +40,13 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     variableMultiplier: 100,
   },
   {
+    displayName: 'Water Temp',
+    variableName: 'SCALED_PRESSURE2.temperature',
+    iconName: 'mdi-thermometer',
+    variableUnit: '°C',
+    variableMultiplier: 0.01,
+  },
+  {
     displayName: 'Tether Turns',
     variableName: 'TetherTrn',
     iconName: 'mdi-horizontal-rotate-clockwise',
