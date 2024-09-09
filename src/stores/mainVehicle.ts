@@ -331,8 +331,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     usedGenericVariables.value.forEach((variable) => {
       mainVehicle.value?.registerUsageOfMessageType(variable)
     })
-
-    console.log('List of tracked generic variables udpated: ', usedGenericVariables.value)
   }
 
   ConnectionManager.onMainConnection.add(() => {

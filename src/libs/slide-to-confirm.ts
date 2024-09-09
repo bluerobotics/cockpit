@@ -166,8 +166,6 @@ export function slideToConfirm(
     return
   }
 
-  console.log(`slideToConfirm with text: ${content.text}`)
-
   // Register the hold to confirm action for joystick listening
   const holdToConfirmCallbackId = registerHoldToConfirm()
 

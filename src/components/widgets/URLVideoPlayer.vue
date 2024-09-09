@@ -69,7 +69,6 @@ const widget = toRefs(props).widget
 
 const videoPlayer = ref()
 watch(widget.value.options, () => {
-  console.log(widget.value.options.source)
   videoPlayer.value.pause()
   videoPlayer.value.play()
 })
