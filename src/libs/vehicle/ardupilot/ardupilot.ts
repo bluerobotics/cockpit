@@ -190,7 +190,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     // We already tested the ack and know that it is of the correct type
     const commandAck = incomingAckCommand as unknown as CommandAck
 
-    console.log('Received command acknowledgment:', commandAck)
+    console.debug('Received command acknowledgment:', commandAck)
 
     const confirmationResults = [MavResult.MAV_RESULT_ACCEPTED, MavResult.MAV_RESULT_IN_PROGRESS]
     if (confirmationResults.includes(commandAck.result.type)) {
