@@ -151,6 +151,18 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     'totalFreezesDuration',
     'totalPausesDuration',
   ] // Keys that should not increase
+  const averageKeysThatShouldNotDecrease: WebRTCVideoStat[] = [
+    'clockRate',
+    'framesAssembledFromMultiplePackets',
+    'framesPerSecond',
+    'packetRate',
+  ] // Keys that should not decrease
+  const averageKeysThatShouldNotIncrease: WebRTCVideoStat[] = [
+    'jitter',
+    'jitterBufferDelay',
+    'jitterBufferMinimumDelay',
+    'jitterBufferTargetDelay',
+  ] // Keys that should not increase
 
   const webrtcStatsAverageLogDelay = 10000
   let lastWebrtcStatsAverageLog = new Date()
@@ -188,6 +200,29 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
 
         if (lastValue > prevValue) {
           console.warn(`Cumulative value '${key}' increased for peer '${ev.peerId}': ${lastValue.toFixed(2)}.`)
+        }
+      })
+
+      // Warn about changes in average values that should not change
+      averageKeys.forEach((key) => {
+        const keyArray = webRtcStatsHistory.value[ev.peerId][key]
+        if (keyArray.length < historyLength) return
+
+        const average = (keyArray as number[]).reduce((a, b) => a + b, 0) / keyArray.length
+        const currentValue = keyArray[keyArray.length - 1] as number
+
+        if (averageKeysThatShouldNotDecrease.includes(key)) {
+          const minThreshold = 0.9 * average
+          if (currentValue < minThreshold) {
+            console.debug(`Drop in the value of key '${key}' for peer '${ev.peerId}': ${currentValue.toFixed(2)}.`)
+          }
+        }
+
+        if (averageKeysThatShouldNotIncrease.includes(key)) {
+          const minThreshold = 1.1 * average
+          if (currentValue > minThreshold) {
+            console.debug(`Increase in the value of key '${key}' for peer '${ev.peerId}': ${currentValue.toFixed(2)}.`)
+          }
         }
       })
 
