@@ -222,8 +222,12 @@ onMounted(async () => {
 
   window.addEventListener('keydown', onKeydown)
 
-  // Pan map to home on mounting
-  targetFollower.goToTarget(WhoToFollow.HOME)
+  // Pan map to vehicle on mounting if it's position is available, otherwise pan to home
+  if (vehiclePosition.value) {
+    targetFollower.goToTarget(WhoToFollow.VEHICLE)
+  } else {
+    targetFollower.goToTarget(WhoToFollow.HOME)
+  }
 })
 
 // Before unmounting:
@@ -342,6 +346,12 @@ watch(vehicleStore.coordinates, () => {
     map.value.addLayer(vehicleMarker.value)
   }
   vehicleMarker.value.setLatLng(vehiclePosition.value)
+})
+
+// If vehicle position was not available and now it is, start following it
+watch(vehiclePosition, () => {
+  if (followerTarget.value === WhoToFollow.VEHICLE || vehiclePosition.value === undefined) return
+  targetFollower.follow(WhoToFollow.VEHICLE)
 })
 
 // Dinamically update data of the vehicle tooltip
