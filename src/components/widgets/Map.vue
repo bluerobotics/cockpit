@@ -85,8 +85,6 @@
 </template>
 
 <script setup lang="ts">
-import '@/libs/map/LeafletRotatedMarker.js'
-
 import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, Map } from 'leaflet'
@@ -321,26 +319,27 @@ watch(vehicleStore.coordinates, () => {
   if (!map.value || !vehiclePosition.value) return
 
   if (vehicleMarker.value === undefined) {
-    vehicleMarker.value = L.marker(vehiclePosition.value)
-
     let vehicleIconUrl = genericVehicleMarkerImage
+
     if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) {
       vehicleIconUrl = blueboatMarkerImage
     } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
       vehicleIconUrl = brov2MarkerImage
     }
 
-    const vehicleMarkerIcon = new L.Icon({
-      iconUrl: vehicleIconUrl,
+    const vehicleMarkerIcon = L.divIcon({
+      className: 'vehicle-marker',
+      html: `<img src="${vehicleIconUrl}" style="width: 64px; height: 64px;">`,
       iconSize: [64, 64],
       iconAnchor: [32, 32],
     })
 
-    vehicleMarker.value.setIcon(vehicleMarkerIcon)
+    vehicleMarker.value = L.marker(vehiclePosition.value, { icon: vehicleMarkerIcon })
+
     const vehicleMarkerTooltip = L.tooltip({
       content: 'No data available',
       className: 'waypoint-tooltip',
-      offset: [64, -12],
+      offset: [40, 0],
     })
     vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
     map.value.addLayer(vehicleMarker.value)
@@ -366,8 +365,11 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
     <p>Last seen: ${timeAgoSeenText.value}</p>
   `)
 
-  // @ts-ignore: LeafletRotatedMarker adds the `setRotationAngle` method and does not have a type definition
-  vehicleMarker.value.setRotationAngle(vehicleHeading.value)
+  // Update the rotation
+  const iconElement = vehicleMarker.value.getElement()?.querySelector('img')
+  if (iconElement) {
+    iconElement.style.transform = `rotate(${vehicleHeading.value}deg)`
+  }
 })
 
 // Create marker for the home position
