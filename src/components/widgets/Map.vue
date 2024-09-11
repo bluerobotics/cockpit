@@ -348,8 +348,8 @@ watch(vehicleStore.coordinates, () => {
 })
 
 // If vehicle position was not available and now it is, start following it
-watch(vehiclePosition, () => {
-  if (followerTarget.value === WhoToFollow.VEHICLE || vehiclePosition.value === undefined) return
+watch(vehiclePosition, (_, oldPosition) => {
+  if (followerTarget.value === WhoToFollow.VEHICLE || oldPosition !== undefined) return
   targetFollower.follow(WhoToFollow.VEHICLE)
 })
 
