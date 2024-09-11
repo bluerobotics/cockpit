@@ -15,6 +15,7 @@ import {
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { resetJustMadeKey, useBlueOsStorage } from '@/composables/settingsSyncer'
+import { openSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import * as Words from '@/libs/funny-name/words'
 import {
@@ -552,10 +553,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
     const numberOfVisibleViews = indexesOfVisibleViews.length
     if (numberOfVisibleViews === 1) {
-      showDialog({
+      openSnackbar({
         variant: 'error',
         message: 'No visible views other the current one.',
-        timer: 2500,
+        duration: 2500,
       })
       return
     }
