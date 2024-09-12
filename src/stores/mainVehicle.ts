@@ -305,7 +305,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    * Start mission that is on the vehicle
    */
   async function startMission(): Promise<void> {
-    mainVehicle.value?.startMission()
+    if (!mainVehicle.value) throw new Error('No vehicle available to start mission.')
+
+    await mainVehicle.value.startMission()
   }
 
   /**

@@ -544,8 +544,12 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 }
 
 // Allow executing missions
-const executeMissionOnVehicle = (): void => {
-  vehicleStore.startMission()
+const executeMissionOnVehicle = async (): Promise<void> => {
+  try {
+    await vehicleStore.startMission()
+  } catch (error) {
+    openSnackbar({ message: 'Failed to start mission.', variant: 'error' })
+  }
 }
 
 // Set dynamic styles for correct displacement of the bottom buttons when the widget is below the bottom bar
