@@ -159,7 +159,8 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   }
   try {
     await vehicleStore.uploadMission(missionStore.currentPlanningWaypoints, loadingCallback)
-    showDialog({ variant: 'success', message: 'Mission upload succeed!', timer: 2000 })
+    const message = `Mission upload succeed! Open the Map widget in Flight Mode and click the "play" button to start the mission.`
+    showDialog({ variant: 'success', message, timer: 6000 })
   } catch (error) {
     showDialog({ variant: 'error', title: 'Mission upload failed', message: error as string, timer: 5000 })
   } finally {
