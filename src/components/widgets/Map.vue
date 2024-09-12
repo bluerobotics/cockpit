@@ -534,8 +534,8 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
     missionItemsInVehicle.forEach((w) => {
       missionStore.currentPlanningWaypoints.push(w)
-      showDialog({ variant: 'success', message: 'Mission download succeed!', timer: 2000 })
     })
+    openSnackbar({ variant: 'success', message: 'Mission download succeed!', duration: 3000 })
   } catch (error) {
     showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
   } finally {
