@@ -656,14 +656,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @param {Coordinates} coordinates
    * @returns {Promise<void>} A promise that resolves when the command is sent
    */
-  goTo(
+  async goTo(
     hold: number,
     acceptanceRadius: number,
     passRadius: number,
     yaw: number,
     coordinates: Coordinates
   ): Promise<void> {
-    return this.sendCommandInt(
+    await this.sendCommandInt(
       MavCmd.MAV_CMD_DO_REPOSITION,
       hold,
       acceptanceRadius,

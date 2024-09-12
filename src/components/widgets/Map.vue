@@ -94,6 +94,7 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { openSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
@@ -475,8 +476,15 @@ const onMenuOptionSelect = (option: string): void => {
         const longitude = clickedLocation.value[1]
 
         slideToConfirm(
-          () => {
-            vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
+          async () => {
+            try {
+              await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
+            } catch (error) {
+              openSnackbar({
+                message: error as string,
+                variant: 'error',
+              })
+            }
           },
           {
             command: 'GoTo',
