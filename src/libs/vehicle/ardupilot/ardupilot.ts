@@ -1046,7 +1046,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const initTimeDown = new Date().getTime()
     let timeoutReachedDownload = false
     while (!allItemsDownloaded && !timeoutReachedDownload) {
-      await sleep(100)
+      await sleep(10)
       timeoutReachedDownload = new Date().getTime() - initTimeDown > 10000
       loadingCallback((100 * itemToDownload) / itemsCount)
 
