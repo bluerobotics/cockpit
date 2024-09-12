@@ -24,6 +24,7 @@ import {
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
+import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
 import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
@@ -240,11 +241,21 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to execute go to command.')
     }
 
+    if (mainVehicle.value.firmware() !== Vehicle.Firmware.ArduPilot) {
+      throw new Error('Go to command is not supported by this vehicle.')
+    }
+
+    console.log(mainVehicle.value.type())
+    console.log(mainVehicle.value.mode())
+    if (mainVehicle.value.type() === Vehicle.Type.Rover && mainVehicle.value.mode() !== CustomMode.GUIDED) {
+      throw new Error('Vehicle should be in GUIDED mode to execute "go to" commands.')
+    }
+
     const waypoint = new Coordinates()
     waypoint.latitude = latitude
     waypoint.altitude = alt
     waypoint.longitude = longitude
-    mainVehicle.value.goTo(hold, acceptanceRadius, passRadius, yaw, waypoint)
+    await mainVehicle.value.goTo(hold, acceptanceRadius, passRadius, yaw, waypoint)
   }
 
   /**
