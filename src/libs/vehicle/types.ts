@@ -110,8 +110,7 @@ export class Coordinates {
 export class CommandAck {
   command: Type<MavCmd>
   result: Type<MavResult>
-  progress: number
-  resultText: string
+  progress: number | undefined
   targetSystem: number
   targetComponent: number
 
