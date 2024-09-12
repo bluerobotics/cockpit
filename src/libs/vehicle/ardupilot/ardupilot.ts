@@ -389,7 +389,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
           command: commandAck.command,
           result: commandAck.result,
           progress: commandAck.progress,
-          resultText: commandAck.resultText,
           targetSystem: commandAck.targetSystem,
           targetComponent: commandAck.targetComponent,
         })
