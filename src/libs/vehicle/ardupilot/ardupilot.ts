@@ -120,46 +120,12 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
-   * Helper to send long mavlink commands
-   * Each parameter depends of the value specified by the protocol
-   * @param {MavCmd} mav_command
-   * @param {number} param1
-   * @param {number} param2
-   * @param {number} param3
-   * @param {number} param4
-   * @param {number} param5
-   * @param {number} param6
-   * @param {number} param7
-   * @returns {Promise<CommandAck>} A promise that resolves with the command acknowledgment.
+   * Helper to send mavlink commands
+   * @param {Message.CommandLong | Message.CommandInt} commandMessage
+   * @returns {Promise<void>} A promise that resolves with the command acknowledgment.
    */
-  async sendCommandLong(
-    mav_command: MavCmd,
-    param1 = 0,
-    param2 = 0,
-    param3 = 0,
-    param4 = 0,
-    param5 = 0,
-    param6 = 0,
-    param7 = 0
-  ): Promise<void> {
-    const command: Message.CommandLong = {
-      type: MAVLinkType.COMMAND_LONG,
-      param1: param1,
-      param2: param2,
-      param3: param3,
-      param4: param4,
-      param5: param5,
-      param6: param6,
-      param7: param7,
-      command: {
-        type: mav_command,
-      },
-      target_system: this.currentSystemId,
-      target_component: 1,
-      confirmation: 0,
-    }
-
-    sendMavlinkMessage(command)
+  async sendCommand(commandMessage: Message.CommandLong | Message.CommandInt): Promise<void> {
+    sendMavlinkMessage(commandMessage)
 
     // Monitor the acknowledgment of the command and throw an error if it fails or reaches a timeout
     let incomingAckCommand: CommandAck | undefined = undefined
@@ -177,14 +143,16 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     // Wait for the acknowledgment to be received
     while (!timeoutReached && !receivedCommandAck) {
       await sleep(100)
-      receivedCommandAck = (incomingAckCommand as unknown as CommandAck)?.command.type === mav_command
+      receivedCommandAck = (incomingAckCommand as unknown as CommandAck)?.command.type === commandMessage.command.type
       timeoutReached = differenceInMilliseconds(new Date(), dateCommand) > timeout
     }
 
     this.onCommandAck.remove(ackHandler)
 
     if (!receivedCommandAck) {
-      throw Error(`No acknowledgment received for command '${mav_command}' before timeout (${timeout / 1000}s).`)
+      throw Error(
+        `No acknowledgment received for command '${commandMessage.command.type}' before timeout (${timeout / 1000}s).`
+      )
     }
 
     // We already tested the ack and know that it is of the correct type
@@ -198,6 +166,92 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     }
 
     throw new Error(`Command failed with result: ${commandAck.result.type}`)
+  }
+
+  /**
+   * Helper to send long mavlink commands
+   * Each parameter depends of the value specified by the protocol
+   * @param {MavCmd} mav_command
+   * @param {number} param1
+   * @param {number} param2
+   * @param {number} param3
+   * @param {number} param4
+   * @param {number} param5
+   * @param {number} param6
+   * @param {number} param7
+   * @returns {Promise<void>} A promise that resolves when the command is acknowledged.
+   */
+  async sendCommandLong(
+    mav_command: MavCmd,
+    param1 = 0,
+    param2 = 0,
+    param3 = 0,
+    param4 = 0,
+    param5 = 0,
+    param6 = 0,
+    param7 = 0
+  ): Promise<void> {
+    const commandMessage: Message.CommandLong = {
+      type: MAVLinkType.COMMAND_LONG,
+      param1: param1,
+      param2: param2,
+      param3: param3,
+      param4: param4,
+      param5: param5,
+      param6: param6,
+      param7: param7,
+      command: {
+        type: mav_command,
+      },
+      target_system: this.currentSystemId,
+      target_component: 1,
+      confirmation: 0,
+    }
+    return this.sendCommand(commandMessage)
+  }
+
+  /**
+   * Helper to send int mavlink commands
+   * Each parameter depends of the value specified by the protocol
+   * @param {MavCmd} mav_command
+   * @param {number} param1
+   * @param {number} param2
+   * @param {number} param3
+   * @param {number} param4
+   * @param {number} x (latitude)
+   * @param {number} y (longitude)
+   * @param {number} z (altitude)
+   * @returns {Promise<void>} A promise that resolves when the command is acknowledged.
+   */
+  async sendCommandInt(
+    mav_command: MavCmd,
+    param1 = 0,
+    param2 = 0,
+    param3 = 0,
+    param4 = 0,
+    x = 0,
+    y = 0,
+    z = 0
+  ): Promise<void> {
+    const commandMessage: Message.CommandInt = {
+      type: MAVLinkType.COMMAND_INT,
+      param1: param1,
+      param2: param2,
+      param3: param3,
+      param4: param4,
+      x: Math.round((x || 0) * 1e7),
+      y: Math.round((y || 0) * 1e7),
+      z: z,
+      command: {
+        type: mav_command,
+      },
+      target_system: this.currentSystemId,
+      target_component: 1,
+      frame: { type: MavFrame.MAV_FRAME_GLOBAL },
+      current: 0,
+      autocontinue: 0,
+    }
+    return this.sendCommand(commandMessage)
   }
 
   registerUsageOfMessageType = (messagePath: string): void => {
@@ -592,6 +646,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     await this.setMode(landMode as Modes)
     return
   }
+
   /**
    * Goto position
    * @param {number} hold Hold time. (ignored by fixed wing, time to stay at waypoint for rotary wing)
@@ -599,27 +654,25 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * @param {number} passRadius 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.
    * @param {number} yaw Desired yaw angle at waypoint (rotary wing). NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
    * @param {Coordinates} coordinates
+   * @returns {Promise<void>} A promise that resolves when the command is sent
    */
-  goTo(hold: number, acceptanceRadius: number, passRadius: number, yaw: number, coordinates: Coordinates): void {
-    const gotoMessage: Message.CommandInt = {
-      type: MAVLinkType.COMMAND_INT,
-      target_system: this.currentSystemId,
-      target_component: 1,
-      seq: 0,
-      frame: { type: MavFrame.MAV_FRAME_GLOBAL },
-      command: { type: MavCmd.MAV_CMD_DO_REPOSITION },
-      current: 0,
-      autocontinue: 0,
-      param1: hold,
-      param2: acceptanceRadius,
-      param3: passRadius,
-      param4: yaw,
-      x: Math.round(coordinates.latitude * 1e7),
-      y: Math.round(coordinates.longitude * 1e7),
-      z: coordinates.altitude,
-    }
-
-    sendMavlinkMessage(gotoMessage)
+  goTo(
+    hold: number,
+    acceptanceRadius: number,
+    passRadius: number,
+    yaw: number,
+    coordinates: Coordinates
+  ): Promise<void> {
+    return this.sendCommandInt(
+      MavCmd.MAV_CMD_DO_REPOSITION,
+      hold,
+      acceptanceRadius,
+      passRadius,
+      yaw,
+      coordinates.latitude,
+      coordinates.longitude,
+      coordinates.altitude
+    )
   }
 
   /**
