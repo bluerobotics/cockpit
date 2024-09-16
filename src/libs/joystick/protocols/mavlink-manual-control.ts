@@ -607,8 +607,8 @@ export class MavlinkManualControlManager {
       if (buttonAction === undefined) return
       showDialog({
         maxWidth: 600,
-        message: `There are no spots left in the vehicle for the MAVLink Manual Control function ${actionId}.
-        Consider mapping this function to a shift button.`,
+        message: `The autopilot's MAVLink Manual Control button slots are full - the ${actionId} function cannot be assigned.
+        Consider mapping it to a "shift"ed slot instead, or unmapping an unused autopilot button function first.`,
         variant: 'error',
         timer: 6000,
       })
@@ -620,8 +620,8 @@ export class MavlinkManualControlManager {
       if (buttonAction === undefined) return
       showDialog({
         maxWidth: 600,
-        message: `There are no spots left in the vehicle for the MAVLink Manual Control function ${actionId}.
-        Consider mapping this function to a shift button.`,
+        message: `The autopilot's MAVLink Manual Control button slots are full - the ${actionId} function cannot be assigned.
+        Consider mapping it to a "shift"ed slot instead, or unmapping an unused autopilot button function first.`,
         variant: 'error',
         timer: 6000,
       })
