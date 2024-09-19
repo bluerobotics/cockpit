@@ -3,6 +3,43 @@
     <div id="planningMap" ref="planningMap" />
     <div class="absolute left-0 w-40 h-auto flex flex-col p-2 m-4 rounded-md bg-slate-700 opacity-90 max-h-[85%]">
       <div class="flex flex-col w-full h-full p-2 overflow-y-scroll">
+        <button
+          :class="{ 'bg-slate-50': isCreatingSurvey }"
+          class="h-auto py-1 px-2 m-2 font-medium text-sm rounded-sm bg-slate-300 hover:bg-slate-400 transition-colors duration-200"
+          @click="isCreatingSurvey = !isCreatingSurvey"
+        >
+          {{ isCreatingSurvey ? 'Cancel Survey' : 'Create Survey' }}
+        </button>
+        <div v-if="isCreatingSurvey" class="flex flex-col">
+          <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
+          <input
+            v-model.number="distanceBetweenSurveyLines"
+            class="px-2 m-1 rounded-sm bg-slate-100"
+            type="number"
+            min="1"
+          />
+          <p class="m-1 overflow-visible text-sm text-slate-200">Lines angle (degrees)</p>
+          <input
+            v-model.number="surveyLinesAngle"
+            class="px-2 m-1 rounded-sm bg-slate-100"
+            type="number"
+            min="0"
+            max="359"
+          />
+          <button
+            class="h-auto py-1 px-2 m-2 font-medium text-sm rounded-sm bg-slate-300 hover:bg-slate-400 transition-colors duration-200"
+            @click="clearSurveyPath"
+          >
+            Clear Path
+          </button>
+          <button
+            class="h-auto py-1 px-2 m-2 font-medium text-sm rounded-sm bg-slate-300 hover:bg-slate-400 transition-colors duration-200"
+            @click="generateWaypointsFromSurvey"
+          >
+            Generate Waypoints
+          </button>
+        </div>
+        <div class="w-full h-px mb-3 bg-gray-50" />
         <p class="text-sm text-slate-200">Waypoint type</p>
         <button
           :class="{ 'bg-slate-50': currentWaypointType === WaypointType.PASS_BY }"
@@ -126,10 +163,11 @@ import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, Map, Marker } from 'leaflet'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
+import { generateSurveyPath } from '@/libs/utils-map'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import {
@@ -290,6 +328,269 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
   reader.readAsText(e.target.files[0])
 }
 
+const isCreatingSurvey = ref(false)
+const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
+const surveyPolygonVertexesMarkers = ref<L.Marker[]>([])
+const rawDistanceBetweenSurveyLines = ref(10)
+const rawSurveyLinesAngle = ref(0)
+
+// Distance between lines in the survey path
+const distanceBetweenSurveyLines = computed({
+  get: () => Math.max(1, rawDistanceBetweenSurveyLines.value),
+  set: (value) => (rawDistanceBetweenSurveyLines.value = Math.max(1, value)), // Ensure the distance is at least 1
+})
+
+// Angle of the survey path lines
+const surveyLinesAngle = computed({
+  get: () => ((rawSurveyLinesAngle.value % 360) + 360) % 360, // This ensures the angle is always between 0 and 359
+  set: (value) => (rawSurveyLinesAngle.value = ((value % 360) + 360) % 360),
+})
+
+const surveyPathLayer = ref<L.Polyline | null>(null)
+const surveyPolygonLayer = ref<L.Polygon | null>(null)
+
+const clearSurveyPath = (): void => {
+  if (surveyPathLayer.value) {
+    planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
+    surveyPathLayer.value = null
+  }
+  if (surveyPolygonLayer.value) {
+    planningMap.value?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
+    surveyPolygonLayer.value = null
+  }
+  surveyPolygonVertexesMarkers.value.forEach((marker) => marker.remove())
+  surveyEdgeAddMarkers.forEach((marker) => marker.remove())
+  surveyPolygonVertexesMarkers.value = []
+  surveyPolygonVertexesPositions.value = []
+}
+
+watch(isCreatingSurvey, (isCreatingNow) => {
+  if (!isCreatingNow) clearSurveyPath()
+
+  if (planningMap.value) {
+    const mapContainer = planningMap.value.getContainer()
+    if (isCreatingNow) {
+      mapContainer.classList.add('survey-cursor')
+    } else {
+      mapContainer.classList.remove('survey-cursor')
+    }
+  }
+})
+
+const updateSurveyMarkersPositions = (): void => {
+  surveyPolygonVertexesMarkers.value.forEach((marker, index) => {
+    const latlng = surveyPolygonVertexesPositions.value[index]
+    marker.setLatLng(latlng)
+  })
+  updateSurveyEdgeAddMarkers()
+}
+
+const updatePolygon = (): void => {
+  surveyPolygonVertexesPositions.value = surveyPolygonVertexesMarkers.value.map((marker) => marker.getLatLng())
+  if (surveyPolygonLayer.value) {
+    surveyPolygonLayer.value.setLatLngs(surveyPolygonVertexesPositions.value)
+  } else if (surveyPolygonVertexesPositions.value.length >= 3) {
+    surveyPolygonLayer.value = L.polygon(surveyPolygonVertexesPositions.value, {
+      color: '#3B82F6',
+      fillColor: '#60A5FA',
+      fillOpacity: 0.2,
+      weight: 3,
+      className: 'survey-polygon',
+    }).addTo(toRaw(planningMap.value)!)
+  }
+  updateSurveyMarkersPositions()
+}
+
+const checkAndRemoveSurveyPath = (): void => {
+  if (surveyPolygonVertexesPositions.value.length >= 4 || !surveyPathLayer.value) return
+  planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
+  surveyPathLayer.value = null
+}
+
+const createSurveyPath = (): void => {
+  if (surveyPolygonVertexesPositions.value.length < 4) {
+    checkAndRemoveSurveyPath()
+    return
+  }
+
+  try {
+    const continuousPath = generateSurveyPath(
+      surveyPolygonVertexesPositions.value,
+      distanceBetweenSurveyLines.value,
+      surveyLinesAngle.value
+    )
+
+    if (continuousPath.length === 0) {
+      showDialog({
+        variant: 'error',
+        message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
+        timer: 5000,
+      })
+      return
+    }
+
+    if (surveyPathLayer.value) {
+      planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
+    }
+
+    surveyPathLayer.value = L.polyline(continuousPath, {
+      color: '#2563EB',
+      weight: 3,
+      opacity: 0.8,
+      className: 'survey-path',
+    }).addTo(toRaw(planningMap.value)!)
+  } catch (error) {
+    showDialog({
+      variant: 'error',
+      message: `Failed to generate survey path: ${(error as Error).message}`,
+      timer: 5000,
+    })
+  }
+}
+
+// Watch for changes in distanceBetweenSurveyLines and surveyLinesAngle
+watch([distanceBetweenSurveyLines, surveyLinesAngle], () => createSurveyPath())
+
+const surveyEdgeAddMarkers: L.Marker[] = []
+
+const updateSurveyEdgeAddMarkers = (): void => {
+  // Remove existing edge markers
+  surveyEdgeAddMarkers.forEach((marker) => marker.remove())
+  surveyEdgeAddMarkers.length = 0
+
+  // Add new edge markers
+  if (surveyPolygonVertexesPositions.value.length >= 3) {
+    for (let i = 0; i < surveyPolygonVertexesPositions.value.length; i++) {
+      const start = surveyPolygonVertexesPositions.value[i]
+      const end = surveyPolygonVertexesPositions.value[(i + 1) % surveyPolygonVertexesPositions.value.length]
+      const middle = L.latLng((start.lat + end.lat) / 2, (start.lng + end.lng) / 2)
+
+      const surveyEdgeAddMarker = L.marker(middle, {
+        icon: L.divIcon({
+          html: `
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+              <circle cx="10" cy="10" r="9" fill="white" stroke="#3B82F6" stroke-width="2"/>
+              <path d="M10 5V15M5 10H15" stroke="#3B82F6" stroke-width="2"/>
+            </svg>
+          `,
+          className: 'edge-marker',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        }),
+      })
+
+      surveyEdgeAddMarker.on('click', (e: L.LeafletMouseEvent) => addSurveyPoint(e.latlng, i))
+      surveyEdgeAddMarker.addTo(toRaw(planningMap.value)!)
+      surveyEdgeAddMarkers.push(surveyEdgeAddMarker)
+    }
+  }
+}
+
+const addSurveyPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefined): void => {
+  if (!isCreatingSurvey.value) return
+  if (edgeIndex === undefined) {
+    surveyPolygonVertexesPositions.value.push(latlng)
+  } else {
+    surveyPolygonVertexesPositions.value.splice(edgeIndex + 1, 0, latlng)
+  }
+  let justCreated = true
+  const newMarker = L.marker(latlng, {
+    icon: L.divIcon({
+      html: `
+        <div class="survey-vertex-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5" fill="#3B82F6" stroke="white" stroke-width="2"/>
+          </svg>
+          <div class="delete-popup" style="display: none;">
+            <button class="delete-button">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      `,
+      className: 'custom-div-icon',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    }),
+    draggable: true,
+  })
+    .on('drag', () => {
+      updatePolygon()
+      createSurveyPath()
+    })
+    .on('mouseover', (event: L.LeafletEvent) => {
+      if (justCreated) {
+        justCreated = false
+        return
+      }
+      const target = event.target as L.Marker
+      const popup = target.getElement()?.querySelector('.delete-popup') as HTMLDivElement
+      if (popup) popup.style.display = 'block'
+    })
+    .on('mouseout', (event: L.LeafletEvent) => {
+      const target = event.target as L.Marker
+      const popup = target.getElement()?.querySelector('.delete-popup') as HTMLDivElement
+      if (popup) popup.style.display = 'none'
+    })
+    .on('click', (event: L.LeafletEvent) => {
+      const target = event.target as L.Marker
+      const index = surveyPolygonVertexesMarkers.value.indexOf(target)
+      if (index !== -1) {
+        surveyPolygonVertexesPositions.value.splice(index, 1)
+        surveyPolygonVertexesMarkers.value.splice(index, 1)
+        target.remove()
+        updatePolygon()
+        updateSurveyEdgeAddMarkers()
+        checkAndRemoveSurveyPath()
+        createSurveyPath()
+      }
+    })
+    .addTo(toRaw(planningMap.value)!)
+  if (edgeIndex === undefined) {
+    surveyPolygonVertexesMarkers.value.push(newMarker)
+  } else {
+    surveyPolygonVertexesMarkers.value.splice(edgeIndex + 1, 0, newMarker)
+  }
+  updatePolygon()
+  updateSurveyEdgeAddMarkers()
+  createSurveyPath()
+}
+
+const generateWaypointsFromSurvey = (): void => {
+  if (!surveyPathLayer.value) {
+    showDialog({ variant: 'error', message: 'No survey path to generate waypoints from.', timer: 3000 })
+    return
+  }
+
+  const surveyLatLngs = surveyPathLayer.value.getLatLngs()
+  if (!Array.isArray(surveyLatLngs) || surveyLatLngs.length === 0) {
+    showDialog({ variant: 'error', message: 'Invalid survey path.', timer: 3000 })
+    return
+  }
+
+  // Clear existing waypoints
+  missionStore.currentPlanningWaypoints.forEach((waypoint: Waypoint) => removeWaypoint(waypoint))
+
+  // Generate new waypoints from survey path
+  // @ts-ignore: L.LatLng is not assignable to LatLngTuple
+  surveyLatLngs.flat().forEach((latLng: L.LatLng) => {
+    addWaypoint(
+      [latLng.lat, latLng.lng],
+      currentWaypointAltitude.value,
+      WaypointType.PASS_BY,
+      currentWaypointAltitudeRefType.value
+    )
+  })
+
+  // Remove survey path and polygon
+  clearSurveyPath()
+  isCreatingSurvey.value = false
+
+  showDialog({ variant: 'success', message: 'Waypoints generated from survey path.', timer: 3000 })
+}
+
 onMounted(async () => {
   const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -327,12 +628,16 @@ onMounted(async () => {
   await goHome()
 
   planningMap.value.on('click', (e) => {
-    addWaypoint(
-      [e.latlng.lat, e.latlng.lng],
-      currentWaypointAltitude.value,
-      currentWaypointType.value,
-      currentWaypointAltitudeRefType.value
-    )
+    if (isCreatingSurvey.value) {
+      addSurveyPoint(e.latlng)
+    } else {
+      addWaypoint(
+        [e.latlng.lat, e.latlng.lng],
+        currentWaypointAltitude.value,
+        currentWaypointType.value,
+        currentWaypointAltitudeRefType.value
+      )
+    }
   })
 
   const layerControl = L.control.layers(baseMaps)
@@ -457,5 +762,94 @@ watch([home, planningMap], async () => {
 }
 .active-events-on-disabled {
   pointer-events: all;
+}
+.survey-polygon {
+  fill-opacity: 0.2;
+  stroke-width: 2;
+  stroke: #3b82f6;
+  cursor: crosshair;
+}
+.survey-path {
+  stroke-width: 2;
+  stroke-dasharray: 16, 16;
+  stroke: #2563eb;
+}
+.survey-cursor {
+  cursor: crosshair;
+}
+.custom-div-icon {
+  background: none;
+  border: none;
+}
+
+.custom-div-icon svg {
+  display: block;
+}
+
+/* Increase clickable area */
+.custom-div-icon::after {
+  content: '';
+  cursor: grab;
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+}
+
+.edge-marker {
+  background: none;
+  border: none;
+}
+
+.edge-marker svg {
+  transition: all 0.3s ease;
+}
+
+.edge-marker:hover svg {
+  transform: scale(1.2);
+}
+
+/* Add hover effect to survey point markers */
+.custom-div-icon:hover .delete-icon {
+  display: block;
+}
+
+/* Add animation to survey path */
+@keyframes move {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -100%;
+  }
+}
+
+.survey-path {
+  animation: move 30s infinite linear;
+}
+
+.survey-vertex-icon {
+  position: relative;
+}
+
+.delete-popup {
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  background-color: rgba(239, 68, 68, 0.8);
+  border-radius: 50%;
+  padding: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-button {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
