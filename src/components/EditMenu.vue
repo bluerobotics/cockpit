@@ -520,6 +520,7 @@
     >
       <div
         v-for="miniWidget in availableMiniWidgetTypes"
+        :ref="(el) => (miniWidgetContainers[miniWidget.component] = el as HTMLElement)"
         :key="miniWidget.hash"
         class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip"
       >
@@ -866,6 +867,24 @@ onMounted(() => {
 })
 
 const widgetMode = ref('Regular widgets' || 'Mini widgets')
+
+// Resize mini widgets so they fit the layout when the widget mode is set to mini widgets
+const miniWidgetContainers = ref<Record<string, HTMLElement>>({})
+watch(widgetMode, () => {
+  if (widgetMode.value !== 'Mini widgets') return
+  nextTick(() => {
+    Object.values(miniWidgetContainers.value).forEach((element) => {
+      if (element.scrollWidth > element.clientWidth) {
+        let scale = 1
+        while (element.scrollWidth > element.clientWidth) {
+          scale -= 0.01
+          const actualElement = element.children[1] as HTMLElement
+          actualElement.style.scale = `${scale}`
+        }
+      }
+    })
+  })
+})
 
 const availableVehicleTypes = computed(() => Object.keys(MavType))
 
