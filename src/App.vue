@@ -184,8 +184,8 @@
                   :icon-size="buttonSize * 0.5"
                   :style="
                     interfaceStore.highlightedComponent === menuitem.title && {
-                      animation: 'highlightBackground 0.5s alternate 20',
-                      borderRadius: '8px',
+                      animation: 'highlightBackground 0.5s alternate 50',
+                      borderRadius: '4px',
                     }
                   "
                   @click="toggleConfigComponent(menuitem.component)"

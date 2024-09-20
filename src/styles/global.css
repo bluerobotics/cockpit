@@ -63,6 +63,6 @@ select:focus {
 }
 
 @keyframes highlightBackground {
-    0% { background-color: rgba(59, 120, 168, 0.4); }
+    0% { background-color: rgba(255, 234, 43, 0.438); }
     100% { background-color: transparent; }
   }
