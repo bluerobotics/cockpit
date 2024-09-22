@@ -889,11 +889,11 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   const logFileOperations: Promise<VideoLibraryLogFile>[] = []
 
   // Fetch processed videos and logs
-  await videoStore.videoStoringDB.iterate((value, key) => {
+  await videoStore.videoStorage.iterate((value, key) => {
     if (videoStore.isVideoFilename(key)) {
       videoFilesOperations.push(
         (async () => {
-          const videoBlob = await videoStore.videoStoringDB.getItem<Blob>(key)
+          const videoBlob = await videoStore.videoStorage.getItem<Blob>(key)
           let url = ''
           let isProcessed = true
           if (videoBlob instanceof Blob) {
@@ -910,7 +910,7 @@ const fetchVideosAndLogData = async (): Promise<void> => {
     if (key.endsWith('.ass')) {
       logFileOperations.push(
         (async () => {
-          const videoBlob = await videoStore.videoStoringDB.getItem<Blob>(key)
+          const videoBlob = await videoStore.videoStorage.getItem<Blob>(key)
           let url = ''
           if (videoBlob instanceof Blob) {
             url = URL.createObjectURL(videoBlob)

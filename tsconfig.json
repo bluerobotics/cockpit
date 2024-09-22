@@ -12,6 +12,11 @@
     }
   ],
   "compilerOptions": {
-    "target": "es2021"
+    "target": "es2021",
+    "baseUrl": "./",
+    "paths": {
+      "@/libs/videoStorage": ["src/libs/videoStorage.*.ts"],
+      // ... existing paths ...
+    }
   },
 }
