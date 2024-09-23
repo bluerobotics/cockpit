@@ -23,15 +23,50 @@
               >
                 <template #headers>
                   <tr>
-                    <th class="text-center"><p class="text-[16px] font-bold">Internal name</p></th>
-                    <th class="text-center"><p class="text-[16px] font-bold">External name</p></th>
+                    <th class="text-center">
+                      <p class="text-[16px] font-bold">Internal name</p>
+                    </th>
+                    <th class="text-center">
+                      <p class="text-[16px] font-bold">External name</p>
+                    </th>
                   </tr>
                 </template>
                 <template #item="{ item }">
                   <tr>
                     <td>
-                      <div class="flex items-center justify-center rounded-xl mx-3">
-                        {{ item.name }}
+                      <div
+                        :id="`internal-name-${item.externalId}`"
+                        class="flex items-center justify-center rounded-xl mx-3"
+                        @mouseover="hoveredStreamId = item.externalId"
+                        @mouseleave="hoveredStreamId = null"
+                      >
+                        <div
+                          v-if="editingStreamId !== item.externalId"
+                          class="flex justify-between items-center cursor-pointer w-[160px] h-[30px]"
+                          @dblclick="editStreamName(item)"
+                        >
+                          <p class="w-[160px] overflow-hidden text-ellipsis text-center whitespace-nowrap">
+                            {{ item.name }}
+                          </p>
+                          <v-btn
+                            v-if="hoveredStreamId === item.externalId"
+                            icon
+                            variant="text"
+                            size="x-small"
+                            class="-mr-8"
+                            @click="editStreamName(item)"
+                          >
+                            <v-icon>mdi-pencil</v-icon>
+                          </v-btn>
+                        </div>
+                        <input
+                          v-else
+                          :id="`edit-input-${item.externalId}`"
+                          v-model="editingStreamName"
+                          class="px-2 py-1 border rounded-sm"
+                          @blur="saveStreamName(item)"
+                          @keyup.enter="saveStreamName(item)"
+                        />
                       </div>
                     </td>
                     <td>
@@ -195,11 +230,12 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
+import { VideoStreamCorrespondency } from '@/types/video'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
@@ -211,6 +247,23 @@ const availableICEProtocols = ['udp', 'tcp']
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
+const editingStreamId = ref<string | null>(null)
+const editingStreamName = ref('')
+const hoveredStreamId = ref<string | null>(null)
+
+const editStreamName = (item: VideoStreamCorrespondency): void => {
+  editingStreamId.value = item.externalId
+  editingStreamName.value = item.name
+  setTimeout(() => {
+    const inputElement = document.getElementById(`edit-input-${item.externalId}`)
+    inputElement?.focus()
+  }, 0)
+}
+
+const saveStreamName = (item: VideoStreamCorrespondency): void => {
+  item.name = editingStreamName.value
+  editingStreamId.value = null
+}
 
 onMounted(() => {
   if (allowedIceProtocols.value.length === 0) {
