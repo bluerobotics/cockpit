@@ -6,5 +6,6 @@
     "version": "0.0.0",
     "new_page": true,
     "webpage": "https://github.com/bluerobotics/BlueOS-docker",
-    "api": "https://github.com/bluerobotics/BlueOS-docker"
+    "api": "https://github.com/bluerobotics/BlueOS-docker",
+    "extra_query": "webRTCConfiguration={\"iceServers\":[{\"urls\":\"stun:stun.l.google.com:19302\"}]}"
 }
