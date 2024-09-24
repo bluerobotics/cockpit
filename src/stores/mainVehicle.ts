@@ -5,6 +5,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { useSnackbar } from '@/composables/snackbar'
 import { altitude_setpoint } from '@/libs/altitude-slider'
 import {
   getCpuTempCelsius,
@@ -64,6 +65,8 @@ const defaultRtcConfiguration = {
   bundlePolicy: 'max-bundle',
   iceServers: [],
 } as RTCConfiguration
+
+const { showSnackbar } = useSnackbar()
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const controllerStore = useControllerStore()
@@ -299,6 +302,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function clearMissions(): Promise<void> {
     mainVehicle.value?.clearMissions()
+    showSnackbar({ message: 'Mission deleted from vehicle', variant: 'info' })
   }
 
   /**
