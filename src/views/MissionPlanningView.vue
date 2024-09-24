@@ -1,121 +1,197 @@
 <template>
   <div class="mission-planning">
     <div id="planningMap" ref="planningMap" />
-    <div class="absolute left-0 w-40 h-auto flex flex-col p-2 m-4 rounded-md bg-slate-700 opacity-90 max-h-[85%]">
-      <div class="flex flex-col w-full h-full p-2 overflow-y-scroll">
+    <div
+      v-show="!interfaceStore.isMainMenuVisible"
+      class="absolute flex flex-col left-10 rounded-[10px]"
+      :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '250px' }]"
+    >
+      <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
         <button
-          :class="{ 'bg-slate-50': isCreatingSurvey }"
-          class="h-auto py-1 px-2 m-2 font-medium text-sm rounded-sm bg-slate-300 hover:bg-slate-400 transition-colors duration-200"
-          @click="isCreatingSurvey = !isCreatingSurvey"
+          v-if="!isCreatingSimpleMission"
+          :class="{ ' elevation-4': isCreatingSurvey }"
+          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
+          @click="toggleSurvey"
         >
-          {{ isCreatingSurvey ? 'Cancel Survey' : 'Create Survey' }}
+          {{
+            isCreatingSurvey
+              ? 'CANCEL SURVEY'
+              : missionStore.currentPlanningWaypoints.length > 0
+              ? 'ADD SURVEY'
+              : 'CREATE SURVEY'
+          }}
         </button>
+        <button
+          v-if="!isCreatingSurvey && !isCreatingSimpleMission"
+          :class="{ ' elevation-4': isCreatingSimpleMission }"
+          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
+          @click="toggleSimpleMission"
+        >
+          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD MISSION' : 'CREATE MISSION' }}
+        </button>
+        <v-divider v-if="!isCreatingSimpleMission" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
           <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
           <input
             v-model.number="distanceBetweenSurveyLines"
-            class="px-2 m-1 rounded-sm bg-slate-100"
+            class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
             min="1"
           />
           <p class="m-1 overflow-visible text-sm text-slate-200">Lines angle (degrees)</p>
           <input
             v-model.number="surveyLinesAngle"
-            class="px-2 m-1 rounded-sm bg-slate-100"
+            class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
             min="0"
             max="359"
           />
           <button
-            class="h-auto py-1 px-2 m-2 font-medium text-sm rounded-sm bg-slate-300 hover:bg-slate-400 transition-colors duration-200"
-            @click="clearSurveyPath"
-          >
-            Clear Path
-          </button>
-          <button
-            class="h-auto py-1 px-2 m-2 font-medium text-sm rounded-sm bg-slate-300 hover:bg-slate-400 transition-colors duration-200"
+            :class="{
+              'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
+                surveyPolygonVertexesMarkers.length < 3,
+            }"
+            class="h-auto py-2 px-2 m-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
             @click="generateWaypointsFromSurvey"
           >
-            Generate Waypoints
+            GENERATE WAYPOINTS
+          </button>
+          <div class="flex w-full justify-end">
+            <v-btn
+              :disabled="surveyPolygonVertexesMarkers.length < 1"
+              variant="text"
+              class="h-auto my-1 font-medium text-xs rounded-md transition-colors duration-200"
+              @click="clearSurveyPath"
+            >
+              Clear Path
+            </v-btn>
+          </div>
+        </div>
+        <v-divider v-if="isCreatingSurvey" class="my-2" />
+        <div v-if="isCreatingSurvey || isCreatingSimpleMission" class="flex flex-col w-full h-full p-2">
+          <p class="text-sm text-slate-200">Waypoint type</p>
+          <select
+            v-model="WaypointType.PASS_BY"
+            class="h-auto py-2 px-2 my-2 mx-5 font-medium text-sm rounded-sm bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
+          >
+            <option :value="WaypointType.PASS_BY">Pass-by</option>
+          </select>
+
+          <v-divider class="my-2" />
+          <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
+          <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
+          <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
+          <select
+            v-model="currentWaypointAltitudeRefType"
+            class="h-auto py-2 px-2 my-2 mx-5 font-medium text-sm rounded-sm bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
+          >
+            <option :value="AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL" class="bg-[#00000099]">
+              {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
+            </option>
+            <option :value="AltitudeReferenceType.RELATIVE_TO_HOME" class="bg-[#00000099]">
+              {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
+            </option>
+            <option :value="AltitudeReferenceType.RELATIVE_TO_TERRAIN" class="bg-[#00000099]">
+              {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
+            </option>
+          </select>
+          <p class="m-1 overflow-visible mt-2 text-sm text-slate-200">Default cruise speed (m/s)</p>
+          <input v-model="defaultCruiseSpeed" class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]" />
+          <v-divider class="my-2" />
+          <button
+            :disabled="missionStore.currentPlanningWaypoints.length < 2"
+            class="bg-[#FFFFFF33] hover:bg-[#FFFFFF44] text-[12px] mx-8 py-2 rounded-sm my-2"
+            :class="{ 'bg-[#FFFFFF11] text-[#FFFFFF22]': missionStore.currentPlanningWaypoints.length < 2 }"
+            @click="toggleSimpleMission"
+          >
+            ADD TO MISSION
           </button>
         </div>
-        <div class="w-full h-px mb-3 bg-gray-50" />
-        <p class="text-sm text-slate-200">Waypoint type</p>
+
+        <div>
+          <div class="flex justify-end mt-2 mb-2">
+            <v-tooltip location="top" text="Save mission to file">
+              <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon="mdi-content-save"
+                  variant="text"
+                  size="24"
+                  class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                  @click="saveMissionToFile"
+                />
+              </template>
+            </v-tooltip>
+            <v-divider v-if="missionStore.currentPlanningWaypoints.length > 0" vertical />
+            <v-tooltip location="top" text="Load mission from file">
+              <template #activator="{ props }">
+                <label v-bind="props">
+                  <input type="file" accept=".cmp" hidden @change="(e) => loadMissionFromFile(e)" />
+                  <v-icon class="text-[16px] cursor-pointer mx-3 mt-[1px]">mdi-folder-open</v-icon>
+                </label>
+              </template>
+            </v-tooltip>
+            <v-divider vertical />
+            <v-tooltip location="top" text="Clear mission on vehicle">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon="mdi-delete"
+                  variant="text"
+                  size="24"
+                  class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                  @click="clearMissionOnVehicle"
+                />
+              </template>
+            </v-tooltip>
+          </div>
+        </div>
+        <v-divider v-if="isCreatingSimpleMission || isCreatingSurvey" class="my-2" />
         <button
-          :class="{ 'bg-slate-50': currentWaypointType === WaypointType.PASS_BY }"
-          class="h-6 m-2 font-medium rounded-sm bg-slate-300"
-          @click="currentWaypointType = WaypointType.PASS_BY"
+          v-if="isCreatingSimpleMission || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0"
+          :disabled="missionStore.currentPlanningWaypoints.length < 2"
+          :class="{
+            'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
+              missionStore.currentPlanningWaypoints.length < 2,
+          }"
+          class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
+          @click="uploadMissionToVehicle"
         >
-          Pass-by
+          UPLOAD MISSION TO VEHICLE
         </button>
-        <div class="w-full h-px my-3 bg-gray-50" />
-        <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
-        <input v-model="currentWaypointAltitude" class="px-2 m-1 rounded-sm bg-slate-100" />
-        <div class="w-full h-px my-3 bg-gray-50" />
-        <p class="m-1 overflow-visible text-sm text-slate-200">Altitude type:</p>
-        <button
-          :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }"
-          class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
-          @click="currentWaypointAltitudeRefType = AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL"
-        >
-          {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
-        </button>
-        <button
-          :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.RELATIVE_TO_HOME }"
-          class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
-          @click="currentWaypointAltitudeRefType = AltitudeReferenceType.RELATIVE_TO_HOME"
-        >
-          {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
-        </button>
-        <button
-          :class="{ 'bg-slate-50': currentWaypointAltitudeRefType === AltitudeReferenceType.RELATIVE_TO_TERRAIN }"
-          class="h-auto p-1 m-2 font-medium rounded-sm bg-slate-300"
-          @click="currentWaypointAltitudeRefType = AltitudeReferenceType.RELATIVE_TO_TERRAIN"
-        >
-          {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
-        </button>
-        <div class="w-full h-px my-3 bg-gray-50" />
-        <p class="m-1 overflow-visible text-sm text-slate-200">Default cruise speed (m/s)</p>
-        <input v-model="defaultCruiseSpeed" class="px-2 m-1 rounded-sm bg-slate-100" />
-        <div class="w-full h-px my-3 bg-gray-50" />
-        <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="saveMissionToFile">Save</button>
-        <button class="h-6 m-2 font-medium rounded-sm bg-slate-300">
-          <label class="block w-full h-full cursor-pointer">
-            <input type="file" accept=".cmp" hidden @change="(e) => loadMissionFromFile(e)" />
-            Load
-          </label>
-        </button>
-        <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="uploadMissionToVehicle">Upload</button>
-        <button class="h-6 m-2 font-medium rounded-sm bg-slate-300" @click="clearMissionOnVehicle">Clear</button>
       </div>
     </div>
-    <div class="absolute flex flex-col right-0 m-4 p-2 rounded-md max-h-[70%] w-52 bg-slate-700 opacity-90">
-      <div class="flex flex-col w-full h-full p-2 overflow-y-scroll">
+    <div
+      v-if="missionStore.currentPlanningWaypoints.length > 0"
+      class="absolute flex flex-col right-8 m-4 p-2 rounded-[16px] max-h-[70%] w-52"
+      :style="interfaceStore.globalGlassMenuStyles"
+    >
+      <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
         <p v-if="missionStore.currentPlanningWaypoints.length === 0" class="text-lg text-center text-slate-100">
           No waypoints added to the mission.
         </p>
         <div v-for="(waypoint, index) in missionStore.currentPlanningWaypoints" :key="waypoint.id">
-          <div class="flex items-center justify-around px-4">
+          <div class="flex w-full items-center justify-between px-1">
             <div>
               <p class="text-base text-slate-100">Waypoint {{ index }} ({{ waypoint.type }})</p>
               <p class="text-sm text-slate-200">Altitude: {{ waypoint.altitude }} m</p>
             </div>
-            <button
-              class="flex items-center justify-center w-6 h-6 m-2 rounded-sm text-slate-400"
-              @click="removeWaypoint(waypoint)"
-            >
+            <button class="flex items-center justify-center w-6 h-6 m-2 rounded-sm" @click="removeWaypoint(waypoint)">
               <v-icon>mdi-delete</v-icon>
             </button>
           </div>
-          <div v-if="index !== missionStore.currentPlanningWaypoints.length - 1" class="w-full h-px my-3 bg-gray-50" />
+          <div
+            v-if="index !== missionStore.currentPlanningWaypoints.length - 1"
+            class="w-full h-px my-3 bg-[#FFFFFF33]"
+          />
         </div>
       </div>
     </div>
     <v-tooltip location="top center" text="Home position is currently undefined" :disabled="Boolean(home)">
       <template #activator="{ props: tooltipProps }">
         <v-btn
-          class="absolute m-3 rounded-sm shadow-sm left-44 bottom-14 bg-slate-50"
-          :class="!home ? 'active-events-on-disabled' : ''"
+          class="absolute m-3 rounded-sm shadow-sm bottom-14 bg-slate-50"
+          :class="[!home ? 'active-events-on-disabled' : '', isCreatingSurvey ? 'left-[320px]' : 'left-6']"
           :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
           icon="mdi-home-map-marker"
           size="x-small"
@@ -133,8 +209,8 @@
     >
       <template #activator="{ props: tooltipProps }">
         <v-btn
-          class="absolute m-3 rounded-sm shadow-sm bottom-14 left-56 bg-slate-50"
-          :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
+          class="absolute m-3 rounded-sm shadow-sm bottom-14 bg-slate-50"
+          :class="[!vehiclePosition ? 'active-events-on-disabled' : '', isCreatingSurvey ? 'left-[360px]' : 'left-16']"
           :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
           icon="mdi-airplane-marker"
           size="x-small"
@@ -159,6 +235,7 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
+import { useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, Map, Marker } from 'leaflet'
 import { v4 as uuid } from 'uuid'
@@ -168,8 +245,10 @@ import { computed, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import {
   type CockpitMission,
   type Waypoint,
@@ -181,11 +260,19 @@ import {
 
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
+const interfaceStore = useAppInterfaceStore()
+const widgetStore = useWidgetManagerStore()
+const { height: windowHeight } = useWindowSize()
+
 const { showDialog } = useInteractionDialog()
 
 const clearMissionOnVehicle = (): void => {
   vehicleStore.clearMissions()
 }
+
+const calculatedHeight = computed(() => {
+  return windowHeight.value - widgetStore.currentBottomBarHeightPixels - widgetStore.currentTopBarHeightPixels - 20
+})
 
 const uploadingMission = ref(false)
 const missionUploadProgress = ref(0)
@@ -216,6 +303,23 @@ const currentWaypointAltitude = ref(0)
 const defaultCruiseSpeed = ref(1)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = ref<{ [id: string]: Marker }>({})
+const isCreatingSimpleMission = ref(false)
+
+const toggleSimpleMission = (): void => {
+  if (isCreatingSimpleMission.value) {
+    isCreatingSimpleMission.value = false
+    return
+  }
+  isCreatingSimpleMission.value = true
+}
+
+const toggleSurvey = (): void => {
+  if (isCreatingSurvey.value) {
+    isCreatingSurvey.value = false
+    return
+  }
+  isCreatingSurvey.value = true
+}
 
 const targetFollower = new TargetFollower(
   (newTarget: WhoToFollow | undefined) => (followerTarget.value = newTarget),
@@ -246,18 +350,21 @@ const addWaypoint = (
   altitudeReferenceType: AltitudeReferenceType
 ): void => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
+
   const waypointId = uuid()
   const waypoint: Waypoint = { id: waypointId, coordinates, altitude, type, altitudeReferenceType }
+
   missionStore.currentPlanningWaypoints.push(waypoint)
+
   const newMarker = L.marker(coordinates, { draggable: true })
   // @ts-ignore - onMove is a valid LeafletMouseEvent
   newMarker.on('move', (e: L.LeafletMouseEvent) => {
     missionStore.moveWaypoint(waypointId, [e.latlng.lat, e.latlng.lng])
   })
   newMarker.on('contextmenu', () => {
-    // @ts-ignore: Event has the latlng property
     removeWaypoint(waypoint)
   })
+
   const markerIcon = L.divIcon({
     className: 'marker-icon',
     iconSize: [16, 16],
@@ -630,7 +737,7 @@ onMounted(async () => {
   planningMap.value.on('click', (e) => {
     if (isCreatingSurvey.value) {
       addSurveyPoint(e.latlng)
-    } else {
+    } else if (isCreatingSimpleMission.value) {
       addWaypoint(
         [e.latlng.lat, e.latlng.lng],
         currentWaypointAltitude.value,
@@ -648,6 +755,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   targetFollower.disableAutoUpdate()
+  missionStore.clearMission()
 })
 
 const vehiclePosition = computed((): [number, number] | undefined =>
@@ -723,6 +831,17 @@ navigator?.geolocation?.watchPosition(
   (position) => (home.value = [position.coords.latitude, position.coords.longitude]),
   (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
   { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+)
+
+watch(
+  () => interfaceStore.mainMenuCurrentStep,
+  (step) => {
+    if (step > 1) {
+      isCreatingSimpleMission.value = false
+      isCreatingSurvey.value = false
+      return
+    }
+  }
 )
 
 // If home position is updated and map was not yet centered on it, center

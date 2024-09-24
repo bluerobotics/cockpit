@@ -41,6 +41,12 @@ export const useMissionStore = defineStore('mission', () => {
     )
   }
 
+  const clearMission = (): void => {
+    currentPlanningWaypoints.splice(0)
+    missionName.value = ''
+    missionStartTime.value = new Date()
+  }
+
   const changeUsername = async (): Promise<void> => {
     let newUsername: string | undefined
     try {
@@ -94,5 +100,6 @@ export const useMissionStore = defineStore('mission', () => {
     slideEventsEnabled,
     slideEventsCategoriesRequired,
     moveWaypoint,
+    clearMission,
   }
 })
