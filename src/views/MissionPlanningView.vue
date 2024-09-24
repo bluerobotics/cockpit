@@ -372,7 +372,7 @@ const addWaypoint = (
   })
   newMarker.setIcon(markerIcon)
   const markerTooltip = L.tooltip({
-    content: `${Object.keys(waypointMarkers.value).length}`,
+    content: `${missionStore.currentPlanningWaypoints.length}`,
     permanent: true,
     direction: 'center',
     className: 'waypoint-tooltip',
@@ -380,8 +380,14 @@ const addWaypoint = (
   })
   newMarker.bindTooltip(markerTooltip)
   planningMap.value.addLayer(newMarker)
-  // @ts-ignore: Marker type is always a layer and thus can be deleted
   waypointMarkers.value[waypointId] = newMarker
+
+  const existingWaypointsCount = missionStore.currentPlanningWaypoints.length
+
+  if (existingWaypointsCount > 1) {
+    const previousWaypoint = missionStore.currentPlanningWaypoints[existingWaypointsCount - 2]
+    addWaypointConnection(previousWaypoint, waypoint)
+  }
 }
 
 const removeWaypoint = (waypoint: Waypoint): void => {
@@ -440,6 +446,8 @@ const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
 const surveyPolygonVertexesMarkers = ref<L.Marker[]>([])
 const rawDistanceBetweenSurveyLines = ref(10)
 const rawSurveyLinesAngle = ref(0)
+const existingWaypoints = ref<Waypoint[]>([])
+const surveyWaypoints = ref<Waypoint[]>([])
 
 // Distance between lines in the survey path
 const distanceBetweenSurveyLines = computed({
@@ -665,6 +673,16 @@ const addSurveyPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefi
   createSurveyPath()
 }
 
+// Save existing waypoints so they won't be reprocessed and will be connected to the new survey
+watch(isCreatingSurvey, (isCreatingNow) => {
+  if (isCreatingNow) {
+    existingWaypoints.value = [...missionStore.currentPlanningWaypoints]
+    surveyWaypoints.value = []
+  } else {
+    clearSurveyPath()
+  }
+})
+
 const generateWaypointsFromSurvey = (): void => {
   if (!surveyPathLayer.value) {
     showDialog({ variant: 'error', message: 'No survey path to generate waypoints from.', timer: 3000 })
@@ -677,25 +695,52 @@ const generateWaypointsFromSurvey = (): void => {
     return
   }
 
-  // Clear existing waypoints
-  missionStore.currentPlanningWaypoints.forEach((waypoint: Waypoint) => removeWaypoint(waypoint))
-
-  // Generate new waypoints from survey path
+  surveyWaypoints.value = []
   // @ts-ignore: L.LatLng is not assignable to LatLngTuple
-  surveyLatLngs.flat().forEach((latLng: L.LatLng) => {
-    addWaypoint(
-      [latLng.lat, latLng.lng],
-      currentWaypointAltitude.value,
-      WaypointType.PASS_BY,
-      currentWaypointAltitudeRefType.value
-    )
+  surveyLatLngs.flat().forEach((latLng: L.LatLng, index: number) => {
+    const waypointId = uuid()
+    const waypoint: Waypoint = {
+      id: waypointId,
+      coordinates: [latLng.lat, latLng.lng],
+      altitude: currentWaypointAltitude.value,
+      type: WaypointType.PASS_BY,
+      altitudeReferenceType: currentWaypointAltitudeRefType.value,
+    }
+    surveyWaypoints.value.push(waypoint)
+    addWaypoint(waypoint.coordinates, waypoint.altitude, waypoint.type, waypoint.altitudeReferenceType)
+
+    // Connects existing waypoints to the new survey
+    if (index > 0) {
+      const previousWaypoint = surveyWaypoints.value[index - 1]
+      addWaypointConnection(previousWaypoint, waypoint)
+    }
   })
+
+  // Also connects existing waypoints to the new survey
+  if (existingWaypoints.value.length > 0 && surveyWaypoints.value.length > 0) {
+    const lastExistingWaypoint = existingWaypoints.value[existingWaypoints.value.length - 1]
+    const firstNewWaypoint = surveyWaypoints.value[0]
+    addWaypointConnection(lastExistingWaypoint, firstNewWaypoint)
+  }
+
+  missionStore.currentPlanningWaypoints = [...existingWaypoints.value, ...surveyWaypoints.value]
 
   // Remove survey path and polygon
   clearSurveyPath()
   isCreatingSurvey.value = false
 
   showDialog({ variant: 'success', message: 'Waypoints generated from survey path.', timer: 3000 })
+}
+
+// Helper function to connect two waypoints with a polyline
+const addWaypointConnection = (fromWaypoint: Waypoint, toWaypoint: Waypoint): void => {
+  const polyline = L.polyline([fromWaypoint.coordinates, toWaypoint.coordinates], {
+    color: '#2563EB',
+    weight: 3,
+    opacity: 0.8,
+    className: 'waypoint-connection',
+  })
+  planningMap.value?.addLayer(polyline)
 }
 
 onMounted(async () => {
