@@ -1,30 +1,83 @@
 <template>
-  <div
-    v-tooltip="'Your vehicle does not provide state-of-charge. Displaying voltage and current instead.'"
-    class="flex items-center w-[5.5rem] h-12 text-white justify-center"
-  >
+  <div v-tooltip="'Battery information'" class="flex items-center w-[5.5rem] h-12 text-white justify-center">
     <span class="relative w-[1.5rem] mdi battery-icon" :class="[batteryIconClass]">
       <span class="absolute text-sm text-yellow-400 -bottom-[2px] -right-[7px] mdi mdi-alert-circle"></span>
     </span>
     <div class="flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end">
-      <div class="w-full">
-        <span class="font-mono">{{ voltageDisplayValue }}</span>
-        <span> V</span>
-      </div>
-      <div class="w-full">
-        <span class="font-mono">{{ currentDisplayValue }}</span>
-        <span> A</span>
-      </div>
+      <template v-if="showVoltageAndCurrent">
+        <div class="w-full">
+          <span class="font-mono">{{ voltageDisplayValue }}</span>
+          <span> V</span>
+        </div>
+        <div class="w-full">
+          <span class="font-mono">{{ currentDisplayValue }}</span>
+          <span> A</span>
+        </div>
+      </template>
+      <template v-else>
+        <div class="w-full">
+          <span class="font-mono">{{ instantaneousWattsDisplayValue }}</span>
+          <span> W</span>
+        </div>
+        <div class="w-full">
+          <span class="font-mono">{{ totalConsumedWattsDisplayValue }}</span>
+          <span> Wh</span>
+        </div>
+      </template>
     </div>
   </div>
+  <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
+    <v-card class="pa-4 text-white" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="text-center">Battery Indicator Config</v-card-title>
+      <v-card-text class="flex flex-col gap-y-4">
+        <v-checkbox v-model="miniWidget.options.showVoltageAndCurrent" label="Show Voltage and Current" hide-details />
+        <v-checkbox
+          v-model="miniWidget.options.showPowerAndConsumption"
+          label="Show Power and Consumption"
+          hide-details
+        />
+        <v-text-field
+          v-if="miniWidget.options.showVoltageAndCurrent && miniWidget.options.showPowerAndConsumption"
+          v-model.number="miniWidget.options.toggleInterval"
+          label="Toggle Interval (ms)"
+          type="number"
+          min="1000"
+          step="100"
+          density="compact"
+          variant="outlined"
+          hide-details
+        />
+      </v-card-text>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeMount, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { MiniWidget } from '@/types/widgets'
+
+/**
+ * Props for the BatteryIndicator component
+ */
+const props = defineProps<{
+  /**
+   * Configuration of the widget
+   */
+  miniWidget: MiniWidget
+}>()
+const miniWidget = toRefs(props).miniWidget
 
 const store = useMainVehicleStore()
+const widgetStore = useWidgetManagerStore()
+const interfaceStore = useAppInterfaceStore()
+
+const showVoltageAndCurrent = ref(true)
+const toggleIntervaler = ref<ReturnType<typeof setInterval> | undefined>(undefined)
 
 const voltageDisplayValue = computed(() => {
   if (store?.powerSupply?.voltage === undefined) return NaN
@@ -40,10 +93,54 @@ const currentDisplayValue = computed(() => {
     : store.powerSupply.current.toFixed(1)
 })
 
-// TODO: With a proper percentage model in hand, we should use different icons for each battery level.
-// TODO: We can also allow the user to set it's 100% and 0% voltages and use a linear fit accordingly
+const instantaneousWattsDisplayValue = computed(() => {
+  return store.instantaneousWatts ? store.instantaneousWatts.toFixed(1) : NaN
+})
+
+const totalConsumedWattsDisplayValue = computed(() => {
+  return store.totalConsumedWatts.toFixed(1)
+})
+
 const batteryIconClass = computed(() => {
   return 'mdi-battery'
+})
+
+const setupToggleInterval = (): void => {
+  if (toggleIntervaler.value) {
+    clearInterval(toggleIntervaler.value)
+  }
+
+  if (miniWidget.value.options.showVoltageAndCurrent && miniWidget.value.options.showPowerAndConsumption) {
+    toggleIntervaler.value = setInterval(() => {
+      showVoltageAndCurrent.value = !showVoltageAndCurrent.value
+    }, miniWidget.value.options.toggleInterval)
+  } else {
+    showVoltageAndCurrent.value = miniWidget.value.options.showVoltageAndCurrent
+  }
+}
+
+watch(() => miniWidget.value.options, setupToggleInterval, { deep: true })
+
+onBeforeMount(() => {
+  // Set default options if not already set
+  const defaultOptions = {
+    showVoltageAndCurrent: true,
+    showPowerAndConsumption: true,
+    toggleInterval: 3000,
+  }
+  miniWidget.value.options = Object.assign({}, defaultOptions, miniWidget.value.options)
+
+  setupToggleInterval()
+
+  // Register new variables for logging
+  datalogger.registerUsage('Instantaneous Watts' as DatalogVariable)
+  datalogger.registerUsage('Total Consumed Wh' as DatalogVariable)
+})
+
+onUnmounted(() => {
+  if (toggleIntervaler.value) {
+    clearInterval(toggleIntervaler.value)
+  }
 })
 </script>
 

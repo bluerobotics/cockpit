@@ -29,6 +29,8 @@ export enum DatalogVariable {
   missionName = 'Mission name',
   time = 'Time',
   date = 'Date',
+  instantaneousPower = 'Instantaneous power',
+  totalConsumedWh = 'Consumed power',
 }
 
 const logDateFormat = 'LLL dd, yyyy'
@@ -275,6 +277,8 @@ class DataLogger {
         [DatalogVariable.missionName]: { value: missionStore.missionName || 'Cockpit', hideLabel: true, ...timeNowObj },
         [DatalogVariable.time]: { value: format(timeNow, 'HH:mm:ss O'), hideLabel: true, ...timeNowObj },
         [DatalogVariable.date]: { value: format(timeNow, 'LLL dd, yyyy'), hideLabel: true, ...timeNowObj },
+        [DatalogVariable.instantaneousPower]: { value: `${vehicleStore.instantaneousWatts?.toFixed(1)} W` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.totalConsumedWh]: { value: `${vehicleStore.totalConsumedWatts.toFixed(1)} Wh`, ...timeNowObj },
       }
 
       /* eslint-enable vue/max-len, prettier/prettier, max-len */
