@@ -30,22 +30,29 @@
     <v-card class="pa-4 text-white" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">Battery Indicator Config</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
-        <v-checkbox v-model="miniWidget.options.showVoltageAndCurrent" label="Show Voltage and Current" hide-details />
+        <v-checkbox
+          v-model="miniWidget.options.showVoltageAndCurrent"
+          label="Show Voltage and Current"
+          hide-details
+          @update:model-value="validateShowOptions"
+        />
         <v-checkbox
           v-model="miniWidget.options.showPowerAndConsumption"
           label="Show Power and Consumption"
           hide-details
+          @update:model-value="validateShowOptions"
         />
         <v-text-field
           v-if="miniWidget.options.showVoltageAndCurrent && miniWidget.options.showPowerAndConsumption"
-          v-model.number="miniWidget.options.toggleInterval"
+          v-model.number="toggleInterval"
           label="Toggle Interval (ms)"
           type="number"
-          min="1000"
+          :min="minInterval"
           step="100"
           density="compact"
           variant="outlined"
-          hide-details
+          :error-messages="intervalErrorMessage"
+          @update:model-value="(v) => validateToggleInterval(Number(v))"
         />
       </v-card-text>
     </v-card>
@@ -78,6 +85,8 @@ const interfaceStore = useAppInterfaceStore()
 
 const showVoltageAndCurrent = ref(true)
 const toggleIntervaler = ref<ReturnType<typeof setInterval> | undefined>(undefined)
+const minInterval = 500
+const toggleInterval = ref(miniWidget.value.options.toggleInterval)
 
 const voltageDisplayValue = computed(() => {
   if (store?.powerSupply?.voltage === undefined) return NaN
@@ -110,6 +119,8 @@ const setupToggleInterval = (): void => {
     clearInterval(toggleIntervaler.value)
   }
 
+  toggleInterval.value = miniWidget.value.options.toggleInterval
+
   if (miniWidget.value.options.showVoltageAndCurrent && miniWidget.value.options.showPowerAndConsumption) {
     toggleIntervaler.value = setInterval(() => {
       showVoltageAndCurrent.value = !showVoltageAndCurrent.value
@@ -121,6 +132,24 @@ const setupToggleInterval = (): void => {
 
 watch(() => miniWidget.value.options, setupToggleInterval, { deep: true })
 
+const validateShowOptions = (value: boolean): void => {
+  if (!miniWidget.value.options.showVoltageAndCurrent && !miniWidget.value.options.showPowerAndConsumption) {
+    // If both options are unchecked, force the current one to be checked
+    miniWidget.value.options[value ? 'showPowerAndConsumption' : 'showVoltageAndCurrent'] = true
+  }
+}
+
+const intervalErrorMessage = ref('')
+
+const validateToggleInterval = (value: number): void => {
+  if (value < minInterval) {
+    intervalErrorMessage.value = `Interval must be at least ${minInterval}ms`
+  } else {
+    intervalErrorMessage.value = ''
+    miniWidget.value.options.toggleInterval = value
+  }
+}
+
 onBeforeMount(() => {
   // Set default options if not already set
   const defaultOptions = {
@@ -128,7 +157,16 @@ onBeforeMount(() => {
     showPowerAndConsumption: true,
     toggleInterval: 3000,
   }
-  miniWidget.value.options = Object.assign({}, defaultOptions, miniWidget.value.options)
+
+  // If both show options are disabled, use default options
+  if (!miniWidget.value.options.showVoltageAndCurrent && !miniWidget.value.options.showPowerAndConsumption) {
+    miniWidget.value.options = { ...defaultOptions }
+  } else {
+    miniWidget.value.options = Object.assign({}, defaultOptions, miniWidget.value.options)
+  }
+
+  // Ensure toggle interval is above the minimum
+  miniWidget.value.options.toggleInterval = Math.max(minInterval, miniWidget.value.options.toggleInterval)
 
   setupToggleInterval()
 
