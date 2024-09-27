@@ -69,6 +69,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   const miniWidgetManagerVars = (miniWidgetHash: string): MiniWidgetManagerVars => {
+    if (!isRealMiniWidget(miniWidgetHash)) {
+      return { ...defaultMiniWidgetManagerVars }
+    }
     if (!_miniWidgetManagerVars.value[miniWidgetHash]) {
       _miniWidgetManagerVars.value[miniWidgetHash] = { ...defaultMiniWidgetManagerVars }
     }
@@ -456,17 +459,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   /**
    * States whether the given mini-widget is a real mini-widget
    * Fake mini-widgets are those used as placeholders, in the edit-menu, for example
-   * @param { MiniWidget } miniWidget - Mini-widget
+   * @param { string } miniWidgetHash - Hash of the mini-widget
    * @returns { boolean }
    */
-  function isRealMiniWidget(miniWidget: MiniWidget): boolean {
-    return savedProfiles.value.some((profile) =>
-      profile.views.some((view) =>
-        view.miniWidgetContainers.some((container) =>
-          container.widgets.some((widget) => widget.hash === miniWidget.hash)
-        )
-      )
-    )
+  function isRealMiniWidget(miniWidgetHash: string): boolean {
+    const allContainers = [
+      ...savedProfiles.value.flatMap((profile) => profile.views.flatMap((view) => view.miniWidgetContainers)),
+      ...currentMiniWidgetsProfile.value.containers,
+    ]
+
+    return allContainers.some((container) => container.widgets.some((widget) => widget.hash === miniWidgetHash))
   }
 
   const fullScreenPosition = { x: 0, y: 0 }

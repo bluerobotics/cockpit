@@ -257,7 +257,7 @@ const updateCurrentStream = async (internalStreamName: string | undefined): Prom
 
 let streamConnectionRoutine: ReturnType<typeof setInterval> | undefined = undefined
 
-if (widgetStore.isRealMiniWidget(miniWidget.value)) {
+if (widgetStore.isRealMiniWidget(miniWidget.value.hash)) {
   streamConnectionRoutine = setInterval(() => {
     // If the video recording widget is cold booted, assign the first stream to it
     if (miniWidget.value.options.internalStreamName === undefined && !namesAvailableStreams.value.isEmpty()) {
