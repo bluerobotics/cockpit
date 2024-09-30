@@ -1,7 +1,13 @@
 <template>
-  <GlassModal :is-visible="showTutorial" class="pa-5 z-[1000000]">
+  <GlassModal
+    :is-visible="showTutorial"
+    class="pa-5 z-[1000000]"
+    :draggable="true"
+    storage-key="tutorial-modal"
+    is-persistent
+  >
     <div class="w-[600px]" :class="tallContent ? 'h-[350px]' : 'h-[280px]'">
-      <v-window v-model="currentTutorialStep" class="w-full h-full" reverse>
+      <v-window v-model="currentTutorialStep" class="w-full h-full cursor-move" reverse>
         <v-window-item v-for="step in steps" :key="step.id" :value="step.id" class="flex justify-center items-center">
           <v-timeline direction="horizontal" class="custom-timeline">
             <v-timeline-item
@@ -10,6 +16,7 @@
               fill-dot
               size="x-large"
               elevation="3"
+              class="cursor-move"
               :dot-color="vehicleStore.isVehicleOnline ? '#4fa483' : '#2c614c'"
             >
               <div
@@ -63,7 +70,7 @@
         @click="nextTutorialStep"
         @keydown.enter="nextTutorialStep"
       >
-        {{ currentTutorialStep === steps.length ? 'Close' : 'Next' }}
+        {{ currentTutorialStep === steps.length ? 'Close' : currentTutorialStep === 1 ? 'Start' : 'Next' }}
       </v-btn>
     </div>
   </GlassModal>
@@ -370,6 +377,8 @@ const backTutorialStep = (): void => {
 
 const closeTutorial = (): void => {
   showTutorial.value = false
+  interfaceStore.componentToHighlight = 'none'
+  currentTutorialStep.value = 1
   emits('update:showTutorial', false)
 }
 
