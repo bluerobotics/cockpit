@@ -1,5 +1,5 @@
 <template>
-  <div ref="mapBase" class="page-base">
+  <div ref="mapBase" class="page-base" :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'">
     <div :id="mapId" ref="map" class="map">
       <v-btn
         v-if="showButtons"
