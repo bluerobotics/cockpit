@@ -55,6 +55,7 @@ export const useVideoStore = defineStore('video', () => {
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const timeNow = useTimestamp({ interval: 500 })
   const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
+  const lastRenamedStreamName = ref('')
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
@@ -870,6 +871,33 @@ export const useVideoStore = defineStore('video', () => {
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording streams: ${streamsThatStopped.join(', ')}.`))
   }
 
+  const renameStreamInternalNameById = (streamID: string, newInternalName: string): void => {
+    const streamCorr = streamsCorrespondency.value.find((stream) => stream.externalId === streamID)
+
+    if (streamCorr) {
+      const oldInternalName = streamCorr.name
+      streamCorr.name = newInternalName
+
+      const streamData = activeStreams.value[oldInternalName]
+      if (streamData) {
+        activeStreams.value = {
+          ...activeStreams.value,
+          [newInternalName]: streamData,
+        }
+        delete activeStreams.value[oldInternalName]
+      }
+      lastRenamedStreamName.value = newInternalName
+      console.log(`Stream internal name updated from '${oldInternalName}' to '${newInternalName}'.`)
+    } else {
+      console.warn(`Stream with ID '${streamID}' not found.`)
+      showSnackbar({
+        variant: 'error',
+        message: `Stream with ID '${streamID}' not found.`,
+        duration: 3000,
+      })
+    }
+  }
+
   registerActionCallback(
     availableCockpitActions.start_recording_all_streams,
     useThrottleFn(startRecordingAllStreams, 3000)
@@ -916,5 +944,7 @@ export const useVideoStore = defineStore('video', () => {
     processVideoChunksAndTelemetry,
     isVideoFilename,
     activeStreams,
+    renameStreamInternalNameById,
+    lastRenamedStreamName,
   }
 })
