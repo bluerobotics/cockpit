@@ -70,7 +70,7 @@
           variant="text"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
-          Cancel
+          Close
         </v-btn>
         <v-btn
           class="bg-[#FFFFFF11] hover:bg-[#FFFFFF33]"
@@ -123,10 +123,9 @@ const timeNow = useTimestamp({ interval: 100 })
 const mediaStream = ref<MediaStream | undefined>()
 const isProcessingVideo = ref(false)
 const numberOfVideosOnDB = ref(0)
+const selectedExternalId = ref<string | undefined>()
 
-const externalStreamId = computed(() => {
-  return nameSelectedStream.value ? videoStore.externalStreamId(nameSelectedStream.value) : undefined
-})
+const externalStreamId = computed(() => selectedExternalId.value)
 
 const openVideoLibraryModal = (): void => {
   interfaceStore.videoLibraryVisibility = true
@@ -150,10 +149,40 @@ onBeforeMount(async () => {
     }
   }
   nameSelectedStream.value = miniWidget.value.options.internalStreamName
+
+  if (nameSelectedStream.value) {
+    selectedExternalId.value = videoStore.externalStreamId(nameSelectedStream.value)
+  }
 })
 
 watch(nameSelectedStream, () => {
   miniWidget.value.options.internalStreamName = nameSelectedStream.value
+  mediaStream.value = undefined
+})
+
+watch(
+  () => videoStore.streamsCorrespondency,
+  (newStreamsCorrespondency) => {
+    if (!selectedExternalId.value) return
+
+    const matchingStream = newStreamsCorrespondency.find((stream) => stream.externalId === selectedExternalId.value)
+
+    if (matchingStream) {
+      if (nameSelectedStream.value !== matchingStream.name) {
+        nameSelectedStream.value = matchingStream.name
+      }
+    } else {
+      // The externalId no longer exists; handle accordingly
+      nameSelectedStream.value = undefined
+      selectedExternalId.value = undefined
+    }
+  },
+  { deep: true }
+)
+
+watch(nameSelectedStream, (newName) => {
+  selectedExternalId.value = newName ? videoStore.externalStreamId(newName) : undefined
+  miniWidget.value.options.internalStreamName = newName
   mediaStream.value = undefined
 })
 
@@ -184,39 +213,39 @@ function assertStreamIsSelectedAndAvailable(
 
 const toggleRecording = async (): Promise<void> => {
   if (isRecording.value) {
-    if (externalStreamId.value !== undefined) {
-      videoStore.stopRecording(externalStreamId.value)
+    if (selectedExternalId.value) {
+      videoStore.stopRecording(selectedExternalId.value)
     }
     return
   }
 
-  // If there's no stream selected, open the configuration dialog so user can choose the stream which will be recorded
-  if (nameSelectedStream.value === undefined) {
+  if (!nameSelectedStream.value) {
     widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = true
     return
   }
 
-  // If there's a stream selected already, try to use it without requiring further user interaction
   startRecording()
 }
 
 const startRecording = (): void => {
-  if (externalStreamId.value === undefined) {
+  if (!selectedExternalId.value) {
     showDialog({ title: 'Cannot start recording.', message: 'No stream selected.', variant: 'error' })
     return
   }
-  if (!videoStore.getStreamData(externalStreamId.value)?.connected) {
+
+  if (!videoStore.getStreamData(selectedExternalId.value)?.connected) {
     showDialog({ title: 'Cannot start recording.', message: 'Stream is not connected.', variant: 'error' })
     return
   }
+
   assertStreamIsSelectedAndAvailable(nameSelectedStream.value)
-  videoStore.startRecording(externalStreamId.value)
+  videoStore.startRecording(selectedExternalId.value)
   widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = false
 }
 
 const isRecording = computed(() => {
-  if (externalStreamId.value === undefined) return false
-  return videoStore.isRecording(externalStreamId.value)
+  if (!selectedExternalId.value) return false
+  return videoStore.isRecording(selectedExternalId.value)
 })
 
 const timePassedString = computed(() => {

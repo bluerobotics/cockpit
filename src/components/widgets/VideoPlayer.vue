@@ -146,7 +146,24 @@ const externalStreamId = computed(() => {
 
 watch(
   () => videoStore.streamsCorrespondency,
-  () => (mediaStream.value = undefined),
+  () => {
+    mediaStream.value = undefined
+
+    if (!nameSelectedStream.value) return
+
+    const selectedExternalId = videoStore.externalStreamId(nameSelectedStream.value)
+    if (!selectedExternalId) return
+
+    const newStreamCorr = videoStore.streamsCorrespondency.find((stream) => stream.externalId === selectedExternalId)
+    if (!newStreamCorr) return
+
+    const newInternalName = newStreamCorr.name
+
+    if (nameSelectedStream.value !== newInternalName) {
+      nameSelectedStream.value = newInternalName
+      widget.value.options.internalStreamName = newInternalName
+    }
+  },
   { deep: true }
 )
 
@@ -168,6 +185,14 @@ const streamConnectionRoutine = setInterval(() => {
     if (updatedStreamState !== streamConnected.value) {
       streamConnected.value = updatedStreamState
     }
+  }
+
+  if (!namesAvailableStreams.value.isEmpty() && !namesAvailableStreams.value.includes(nameSelectedStream.value!)) {
+    if (videoStore.lastRenamedStreamName !== '') {
+      nameSelectedStream.value = videoStore.lastRenamedStreamName
+      return
+    }
+    nameSelectedStream.value = namesAvailableStreams.value[0]
   }
 }, 1000)
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
