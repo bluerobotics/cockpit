@@ -463,8 +463,11 @@
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the main view area
         </div>
-        <div v-show="widgetMode === 'Regular'" class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 rounded-lg">
-          (Click on card to add)
+        <div
+          v-show="widgetMode === 'Regular widgets'"
+          class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 bg-[#3B78A8] rounded-lg"
+        >
+          Click or drag to add
         </div>
         <div v-show="widgetMode === 'Mini'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the top and bottom bars
@@ -484,12 +487,11 @@
         v-for="widgetType in availableWidgetTypes"
         :key="widgetType"
         class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4"
-        @click="store.addWidget(widgetType, store.currentView)"
+        draggable="true"
+        @dragstart="onRegularWidgetDragStart"
+        @dragend="onRegularWidgetDragEnd(widgetType)"
       >
-        <div class="absolute flex top-[50px] text-[60px] opacity-0 hover:opacity-100">
-          <v-icon icon="mdi-plus-circle" />
-        </div>
-        <v-tooltip text="Click to add" location="top" theme="light">
+        <v-tooltip text="Click or drag to add" location="top" theme="light">
           <template #activator="{ props: tooltipProps }">
             <div />
             <img
@@ -897,6 +899,22 @@ watch(widgetMode, () => {
     })
   })
 })
+
+const onRegularWidgetDragStart = (event: DragEvent): void => {
+  const target = event.target as HTMLElement
+  if (target) {
+    target.style.opacity = '0.5'
+  }
+}
+
+const onRegularWidgetDragEnd = (widgetType: WidgetType): void => {
+  store.addWidget(widgetType, store.currentView)
+
+  const widgetCards = document.querySelectorAll('[draggable="true"]')
+  widgetCards.forEach((card) => {
+    ;(card as HTMLElement).style.opacity = '1'
+  })
+}
 
 const availableVehicleTypes = computed(() => Object.keys(MavType))
 
