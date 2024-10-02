@@ -14,7 +14,9 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
+import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import { slideToConfirm } from '@/libs/slide-to-confirm'
 import { Alert, AlertLevel } from '@/types/alert'
 import {
   type JoystickProtocolActionsMapping,
@@ -373,6 +375,31 @@ export const useControllerStore = defineStore('controller', () => {
       alertStore.pushAlert(new Alert(AlertLevel.Warning, 'Could not load default mapping for vehicle type.'))
     }
   }
+
+  const actionsToCallFromJoystick = ref<CockpitActionsFunction[]>([])
+  const addActionToCallFromJoystick = (actionId: CockpitActionsFunction): void => {
+    if (!actionsToCallFromJoystick.value.includes(actionId)) {
+      actionsToCallFromJoystick.value.push(actionId)
+    }
+  }
+
+  registerControllerUpdateCallback((joystickState, actionsMapping, activeActions, actionsConfirmRequired) => {
+    if (!joystickState || !actionsMapping || !activeActions || !actionsConfirmRequired) {
+      return
+    }
+
+    actionsToCallFromJoystick.value = []
+
+    const actionsToCallback = activeActions.filter((a) => a.protocol === JoystickProtocol.CockpitAction)
+    Object.values(actionsToCallback).forEach((a) => {
+      const callback = (): void => addActionToCallFromJoystick(a.id as CockpitActionsFunction)
+      slideToConfirm(callback, { command: a.name }, !actionsConfirmRequired[a.id])
+    })
+
+    if (enableForwarding.value) {
+      actionsToCallFromJoystick.value.forEach((a) => executeActionCallback(a as CockpitActionsFunction))
+    }
+  })
 
   return {
     registerControllerUpdateCallback,
