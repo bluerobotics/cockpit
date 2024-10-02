@@ -221,7 +221,7 @@
                   :items="tableItems"
                   class="elevation-1 bg-transparent rounded-lg mb-[20px]"
                   theme="dark"
-                  no-data-text="Press any joystick button"
+                  no-data-text=""
                   :style="interfaceStore.globalGlassMenuStyles"
                 >
                   <template #headers>
@@ -233,6 +233,7 @@
                       <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Axis</p></th>
                       <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Max</p></th>
                     </tr>
+                    <p v-if="tableItems.length === 0" class="fixed top-[67%] left-[40%]">Press a key or move an axis</p>
                   </template>
                   <template #item="{ item }">
                     <tr v-if="item.type === 'axis'">
@@ -627,7 +628,7 @@ const inputClickedDialog = ref(false)
 const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
 const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
 const showJoystickLayout = ref(true)
-const currentTabVIew = ref()
+const currentTabVIew = ref('table')
 
 const protocols = Object.values(JoystickProtocol).filter((value) => typeof value === 'string')
 
