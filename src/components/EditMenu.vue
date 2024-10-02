@@ -520,13 +520,14 @@
       <div
         v-for="miniWidget in availableMiniWidgetTypes"
         id="mini-widget-card"
+        :ref="(el) => (miniWidgetContainers[miniWidget.component] = el as HTMLElement)"
         :key="miniWidget.hash"
-        class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip pointer-events-none"
+        class="flex flex-col items-center justify-between w-full rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip pointer-events-none"
         :draggable="false"
       >
         <div />
         <div id="draggable-mini-widget" class="m-2 pointer-events-auto select-auto cursor-grab" :draggable="true">
-          <div class="pointer-events-none">
+          <div class="flex justify-center pointer-events-none min-w-[160px]">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
         </div>
