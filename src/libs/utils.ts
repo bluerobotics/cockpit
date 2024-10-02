@@ -149,3 +149,25 @@ export const reloadCockpit = (timeout = 500): void => {
   showDialog({ message: restartMessage, variant: 'info', timer: timeout })
   setTimeout(() => location.reload(), timeout)
 }
+
+/**
+ * Detects if the application is running in Electron
+ * @returns {boolean} True if running in Electron, false otherwise
+ */
+export const isElectron = (): boolean => {
+  // Check if the userAgent contains 'electron' (for renderer process)
+  if (typeof navigator === 'object' && typeof navigator.userAgent === 'string') {
+    return navigator.userAgent.toLowerCase().includes('electron')
+  }
+
+  // Check if the process object exists and contains 'electron' (for main process)
+  if (
+    typeof process === 'object' &&
+    typeof process.versions === 'object' &&
+    typeof process.versions.electron === 'string'
+  ) {
+    return true
+  }
+
+  return false
+}
