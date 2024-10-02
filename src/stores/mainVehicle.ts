@@ -18,11 +18,7 @@ import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import {
-  availableCockpitActions,
-  CockpitActionsManager,
-  registerActionCallback,
-} from '@/libs/joystick/protocols/cockpit-actions'
+import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
@@ -523,9 +519,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   const mavlinkManualControlManager = new MavlinkManualControlManager()
-  const cockpitActionsManager = new CockpitActionsManager()
   controllerStore.registerControllerUpdateCallback(mavlinkManualControlManager.updateControllerData)
-  controllerStore.registerControllerUpdateCallback(cockpitActionsManager.updateControllerData)
 
   // Loop to send MAVLink Manual Control messages
   setInterval(() => {
@@ -540,13 +534,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
-
-  // Loop to send Cockpit Action messages
-  setInterval(() => {
-    if (controllerStore.enableForwarding) {
-      cockpitActionsManager.sendCockpitActions()
-    }
-  }, 10)
 
   return {
     arm,
