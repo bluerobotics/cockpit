@@ -1,10 +1,7 @@
 /* eslint-disable vue/max-len */
 /* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
-import { v4 as uuid4 } from 'uuid'
-
-import { slideToConfirm } from '@/libs/slide-to-confirm'
-import { type JoystickProtocolActionsMapping,type JoystickState, type ProtocolAction, JoystickProtocol } from '@/types/joystick'
+import { type ProtocolAction,JoystickProtocol } from '@/types/joystick'
 
 /**
  * Possible functions in the MAVLink `MANUAL_CONTROL` message protocol
@@ -67,54 +64,47 @@ interface CallbackEntry {
   callback: CockpitActionCallback
 }
 
-// @ts-ignore: Typescript does not get that we are initializing the object dinamically
-const actionsCallbacks: { [id in string]: CallbackEntry } = {}
-
-export const registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): string => {
-  const id = uuid4()
-  actionsCallbacks[id] = { action, callback }
-  return id
-}
-export const unregisterActionCallback = (id: string): void => {
-  delete actionsCallbacks[id]
-}
-
 /**
  * Responsible for routing cockpit actions
  */
 export class CockpitActionsManager {
-  joystickState: JoystickState
-  currentActionsMapping: JoystickProtocolActionsMapping
-  activeButtonsActions: ProtocolAction[]
-  actionsJoystickConfirmRequired: Record<string, boolean>
+  actionsCallbacks: Record<string, CallbackEntry> = {}
 
-  updateControllerData = (
-    state: JoystickState,
-    protocolActionsMapping: JoystickProtocolActionsMapping,
-    activeButtonsActions: ProtocolAction[],
-    actionsJoystickConfirmRequired: Record<string, boolean>
-  ): void => {
-    this.joystickState = state
-    this.currentActionsMapping = protocolActionsMapping
-    this.activeButtonsActions = activeButtonsActions
-    this.actionsJoystickConfirmRequired = actionsJoystickConfirmRequired
+  registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): string => {
+    this.actionsCallbacks[action.id] = { action, callback }
+    return action.id
   }
 
-  sendCockpitActions = (): void => {
-    if (!this.joystickState || !this.currentActionsMapping || !this.activeButtonsActions) return
-
-    const actionsToCallback = this.activeButtonsActions.filter((a) => a.protocol === JoystickProtocol.CockpitAction)
-    Object.values(actionsCallbacks).forEach((entry) => {
-      if (actionsToCallback.map((a) => a.id).includes(entry.action.id)) {
-        console.log('Sending action', entry.action.name, '/ Require confirm:', this.actionsJoystickConfirmRequired[entry.action.id])
-        slideToConfirm(
-          entry.callback,
-          {
-            command: entry.action.name,
-          },
-          !this.actionsJoystickConfirmRequired[entry.action.id]
-        )
-      }
-    })
+  unregisterActionCallback = (id: string): void => {
+    delete this.actionsCallbacks[id]
   }
+
+  executeActionCallback = (id: string): void => {
+    const callbackEntry = this.actionsCallbacks[id]
+    if (!callbackEntry) {
+      console.error(`Callback for action ${id} not found.`)
+      return
+    }
+
+    console.debug(`Executing action callback for action ${id}.`)
+    try {
+      callbackEntry.callback()
+    } catch (error) {
+      console.error(`Error executing action callback for action ${id}.`, error)
+    }
+  }
+}
+
+export const cockpitActionsManager = new CockpitActionsManager()
+
+export const registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): string => {
+  return cockpitActionsManager.registerActionCallback(action, callback)
+}
+
+export const unregisterActionCallback = (id: string): void => {
+  cockpitActionsManager.unregisterActionCallback(id)
+}
+
+export const executeActionCallback = (id: string): void => {
+  cockpitActionsManager.executeActionCallback(id)
 }
