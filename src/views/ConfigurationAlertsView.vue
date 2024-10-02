@@ -6,12 +6,24 @@
         class="flex flex-col justify-around align-start ml-5 max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
-        <v-switch
-          v-model="alertStore.enableVoiceAlerts"
-          label="Enable voice alerts"
-          color="white"
-          class="mt-2 -mb-2 ml-3"
-        />
+        <div class="flex w-full justify-between pr-10">
+          <v-switch
+            v-model="alertStore.enableVoiceAlerts"
+            label="Enable voice alerts"
+            color="white"
+            class="mt-2 -mb-2 ml-3"
+          />
+          <v-checkbox
+            v-model="alertStore.enabledAlertLevels.find((level) => level.level === AlertLevel.Critical)!.enabled"
+            v-tooltip="
+              'Critical system alerts work separately from your voice alert settings. These alerts are rare but really important, so we recommend keeping them on.'
+            "
+            label="Critical system alerts"
+            hide-details
+            color="white"
+            class="mt-1"
+          />
+        </div>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title> Enable voice on specific alert levels:</template>
           <template #info
@@ -26,6 +38,7 @@
                 class="mx-2 min-w-[100px]"
               >
                 <v-checkbox
+                  v-if="enabledLevel.level !== AlertLevel.Critical"
                   v-model="enabledLevel.enabled"
                   :label="capitalize(enabledLevel.level)"
                   hide-details
@@ -55,6 +68,7 @@ import Dropdown from '@/components/Dropdown.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAlertStore } from '@/stores/alert'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { AlertLevel } from '@/types/alert'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
