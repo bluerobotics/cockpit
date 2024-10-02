@@ -1,14 +1,18 @@
 <template>
   <div>
-    <div v-tooltip="tooltipText" class="relative cursor-pointer" :class="indicatorClass" @click="showDialog = true">
-      <FontAwesomeIcon icon="fa-solid fa-gamepad" size="xl" />
-      <FontAwesomeIcon
-        v-if="!joystickConnected || !controllerStore.enableForwarding"
-        icon="fa-solid fa-slash"
-        size="xl"
-        class="absolute left-0"
-      />
-    </div>
+    <v-tooltip :text="tooltipText" location="bottom">
+      <template #activator="{ props: tooltipProps }">
+        <div v-bind="tooltipProps" class="relative cursor-pointer" :class="indicatorClass" @click="showDialog = true">
+          <FontAwesomeIcon icon="fa-solid fa-gamepad" size="xl" />
+          <FontAwesomeIcon
+            v-if="!joystickConnected || !controllerStore.enableForwarding"
+            icon="fa-solid fa-slash"
+            size="xl"
+            class="absolute left-0"
+          />
+        </div>
+      </template>
+    </v-tooltip>
 
     <InteractionDialog
       v-model="showDialog"
