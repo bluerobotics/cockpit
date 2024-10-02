@@ -336,6 +336,7 @@ export const useControllerStore = defineStore('controller', () => {
         return
       }
       protocolMapping.value = maybeFunctionsMapping
+      showDialog({ message: 'Functions mapping imported successful.', variant: 'success', timer: 2000 })
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
     reader.readAsText(e.target.files[0])
