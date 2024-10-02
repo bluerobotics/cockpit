@@ -21,7 +21,7 @@
           :is-expanded="!interfaceStore.isOnPhoneScreen"
           compact
         >
-          <template #title>General</template>
+          <template #title>General settings</template>
           <template #info>
             <div class="flex flex-col items-start px-5 font-medium">
               <li>
@@ -342,7 +342,7 @@
                   v-if="currentJoystick && currentJoystick?.gamepadToCockpitMap?.buttons"
                   :headers="headers"
                   :items="tableItems"
-                  items-per-page="32"
+                  :items-per-page="64"
                   class="elevation-1 bg-transparent rounded-lg mt-[5px]"
                   theme="dark"
                   :style="interfaceStore.globalGlassMenuStyles"
@@ -424,7 +424,7 @@
   </BaseConfigurationView>
   <teleport to="body">
     <InteractionDialog
-      v-if="currentJoystick"
+      v-show="currentJoystick"
       :show-dialog="inputClickedDialog"
       max-width="auto"
       variant="text-only"
@@ -682,12 +682,12 @@ const tableItems = computed(() => {
   }
 
   const originalAxes = currentJoystick.value.gamepadToCockpitMap?.axes || []
-  const axesItems = originalAxes.slice(0, 4).map((axis) => ({ type: 'axis', id: axis }))
+  const axesItems = originalAxes.slice(0, 31).map((axis) => ({ type: 'axis', id: axis }))
 
   const originalButtons = currentJoystick.value.gamepadToCockpitMap?.buttons || []
   const buttonItems = originalButtons
     .map((button, index) => ({ type: 'button', id: button, index: index }))
-    .filter((button) => button.index >= 0 && button.index <= 15)
+    .filter((button) => button.index >= 0 && button.index <= 31)
 
   return [...axesItems, ...buttonItems]
 })
@@ -732,7 +732,7 @@ const unbindCurrentInput = (input: JoystickButtonInput): void => {
   updateButtonAction(input, actions)
 }
 
-const updateButtonAction = (input: JoystickInput, action: ProtocolAction): void => {
+const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction): void => {
   controllerStore.protocolMapping.buttonsCorrespondencies[currentModifierKey.value.id as CockpitModifierKeyOption][
     input.id
   ].action = action

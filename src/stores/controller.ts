@@ -2,7 +2,7 @@ import { useDocumentVisibility } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
-import { computed, ref, toRaw, watch } from 'vue'
+import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
 import {
   availableGamepadToCockpitMaps,
@@ -81,6 +81,44 @@ export const useControllerStore = defineStore('controller', () => {
     }
     protocolMappingIndex.value = mappingIndex
   }
+
+  const initializeProtocolMapping = (mapping: JoystickProtocolActionsMapping): void => {
+    // Initialize axesCorrespondencies for all axes up to 31
+    for (let axis = 0; axis <= 31; axis++) {
+      if (mapping.axesCorrespondencies[axis] === undefined) {
+        mapping.axesCorrespondencies[axis] = {
+          action: otherAvailableActions.no_function,
+          min: -1.0,
+          max: 1.0,
+        }
+      }
+    }
+
+    // Initialize buttonsCorrespondencies for all buttons up to 31
+    const modifierKeys = Object.keys(mapping.buttonsCorrespondencies)
+    for (const modKey of modifierKeys) {
+      const buttonsCorrespondency = mapping.buttonsCorrespondencies[modKey as CockpitModifierKeyOption]
+      for (let button = 0; button <= 31; button++) {
+        if (buttonsCorrespondency[button] === undefined) {
+          buttonsCorrespondency[button] = {
+            action: otherAvailableActions.no_function,
+          }
+        }
+      }
+    }
+  }
+
+  onMounted(() => {
+    initializeProtocolMapping(protocolMapping.value)
+  })
+
+  watch(
+    () => protocolMapping.value,
+    (newMapping) => {
+      initializeProtocolMapping(newMapping)
+    },
+    { immediate: true, deep: true }
+  )
 
   const registerControllerUpdateCallback = (callback: controllerUpdateCallback): void => {
     updateCallbacks.value.push(callback)
@@ -161,13 +199,13 @@ export const useControllerStore = defineStore('controller', () => {
   ): ProtocolAction[] => {
     let modifierKeyId = modifierKeyActions.regular.id
 
-    Object.entries(mapping.buttonsCorrespondencies.regular).forEach((e) => {
-      const buttonActive = joystickState.buttons[Number(e[0])] ?? 0 > 0.5
+    Object.entries(mapping.buttonsCorrespondencies.regular).forEach(([key, value]) => {
+      const buttonActive = joystickState.buttons[Number(key)] ?? 0 > 0.5
       const isModifier = Object.values(modifierKeyActions)
         .map((a) => JSON.stringify(a))
-        .includes(JSON.stringify(e[1].action))
+        .includes(JSON.stringify(value.action))
       if (buttonActive && isModifier) {
-        modifierKeyId = e[1].action.id
+        modifierKeyId = value.action.id
       }
     })
 
@@ -176,10 +214,15 @@ export const useControllerStore = defineStore('controller', () => {
     const activeActions = joystickState.buttons
       .map((btnState, idx) => ({ id: idx, value: btnState }))
       .filter((btn) => btn.value ?? 0 > 0.5)
-      .map(
-        (btn) =>
-          mapping.buttonsCorrespondencies[modifierKeyId as CockpitModifierKeyOption][btn.id as JoystickButton].action
-      )
+      .map((btn) => {
+        const btnMapping = mapping.buttonsCorrespondencies[modifierKeyId as CockpitModifierKeyOption][btn.id]
+        if (btnMapping && btnMapping.action) {
+          return btnMapping.action
+        } else {
+          // Return a default action or handle accordingly
+          return otherAvailableActions.no_function
+        }
+      })
 
     return activeActions.concat(modKeyAction)
   }

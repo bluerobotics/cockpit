@@ -94,7 +94,7 @@ export type JoystickAxisActionCorrespondency = {
   /**
    * The ID of the axis that holds the correspondent action
    */
-  [key in JoystickAxis]: {
+  [key in number]: {
     /**
      * The protocol action that should be triggered
      */
@@ -117,7 +117,7 @@ export type JoystickButtonActionCorrespondency = {
   /**
    * The ID of the button that holds the correspondent action
    */
-  [key in JoystickButton]: {
+  [key in number]: {
     /**
      * The protocol action that should be triggered
      */
@@ -159,7 +159,7 @@ export interface JoystickProtocolActionsMapping {
 }
 
 export type CockpitButton = null | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 // eslint-disable-line
-export type CockpitAxis = null | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+export type CockpitAxis = null | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 // eslint-disable-line
 
 /**
  * This interface defines the mapping for a specific controller from the Gamepad API to Cockpit's standard.
@@ -233,6 +233,34 @@ export enum JoystickAxis {
   A1 = 1, // Vertical axis for left stick (negative up/positive down)
   A2 = 2, // Horizontal axis for right stick (negative left/positive right)
   A3 = 3, // Vertical axis for right stick (negative up/positive down)
+  A4 = 4, // Left trigger (positive pressed)
+  A5 = 5, // Right trigger (positive pressed)
+  A6 = 6, // Horizontal axis for D-pad (negative left/positive right)
+  A7 = 7, // Vertical axis for D-pad (negative up/positive down)
+  A8 = 8, // Extra non-standard axes
+  A9 = 9, // Extra non-standard axes
+  A10 = 10, // Extra non-standard axes
+  A11 = 11, // Extra non-standard axes
+  A12 = 12, // Extra non-standard axes
+  A13 = 13, // Extra non-standard axes
+  A14 = 14, // Extra non-standard axes
+  A15 = 15, // Extra non-standard axes
+  A16 = 16, // Extra non-standard axes
+  A17 = 17, // Extra non-standard axes
+  A18 = 18, // Extra non-standard axes
+  A19 = 19, // Extra non-standard axes
+  A20 = 20, // Extra non-standard axes
+  A21 = 21, // Extra non-standard axes
+  A22 = 22, // Extra non-standard axes
+  A23 = 23, // Extra non-standard axes
+  A24 = 24, // Extra non-standard axes
+  A25 = 25, // Extra non-standard axes
+  A26 = 26, // Extra non-standard axes
+  A27 = 27, // Extra non-standard axes
+  A28 = 28, // Extra non-standard axes
+  A29 = 29, // Extra non-standard axes
+  A30 = 30, // Extra non-standard axes
+  A31 = 31, // Extra non-standard axes
 }
 
 /**
