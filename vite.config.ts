@@ -4,6 +4,9 @@ import electron from 'vite-plugin-electron'
 import { VitePWA } from 'vite-plugin-pwa'
 import vuetify from 'vite-plugin-vuetify'
 
+// Determine if the build is for Electron based on an environment variable
+const isElectron = process.env.BUILD_TARGET === 'electron'
+
 const path = require('path') // eslint-disable-line @typescript-eslint/no-var-requires
 
 export default defineConfig({
@@ -28,7 +31,15 @@ export default defineConfig({
   define: { 'process.env': {} },
   resolve: {
     alias: {
+      '@/libs/videoStorage': isElectron
+        ? path.resolve(__dirname, 'src/libs/videoStorage.electron.ts')
+        : path.resolve(__dirname, 'src/libs/videoStorage.browser.ts'),
       '@': path.resolve(__dirname, 'src'),
+    },
+  },
+  build: {
+    rollupOptions: {
+      external: isElectron ? ['electron', 'path', 'fs', 'os'] : [],
     },
   },
   test: {

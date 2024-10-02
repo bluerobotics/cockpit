@@ -149,3 +149,11 @@ export const reloadCockpit = (timeout = 500): void => {
   showDialog({ message: restartMessage, variant: 'info', timer: timeout })
   setTimeout(() => location.reload(), timeout)
 }
+
+/**
+ * Checks if the current environment is Electron
+ * @returns {boolean} True if running in Electron, false otherwise
+ */
+export const isElectron = (): boolean => {
+  return typeof process !== 'undefined' && process.versions && !!process.versions.electron
+}

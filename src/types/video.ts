@@ -110,6 +110,11 @@ export interface FileDescriptor {
 
 export interface StorageDB {
   getItem: (key: string) => Promise<Blob | null | undefined>
+  setItem: (key: string, value: Blob) => Promise<void>
+  removeItem: (key: string) => Promise<void>
+  clear: () => Promise<void>
+  keys: () => Promise<string[]>
+  iterate: (callback: (value: unknown, key: string, iterationNumber: number) => void) => Promise<void>
 }
 
 export type DownloadProgressCallback = (progress: number, total: number) => Promise<void>
