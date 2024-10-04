@@ -79,6 +79,12 @@ const props = defineProps<{
 }>()
 const miniWidget = toRefs(props).miniWidget
 
+const defaultOptions = {
+  showCurrent: true,
+  showPower: true,
+  toggleInterval: 1000,
+}
+
 const store = useMainVehicleStore()
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
@@ -86,7 +92,7 @@ const interfaceStore = useAppInterfaceStore()
 const showVoltageAndCurrent = ref(true)
 const toggleIntervaler = ref<ReturnType<typeof setInterval> | undefined>(undefined)
 const minInterval = 500
-const toggleInterval = ref(miniWidget.value.options.toggleInterval)
+const toggleInterval = ref(miniWidget.value.options.toggleInterval ?? defaultOptions.toggleInterval)
 
 const voltageDisplayValue = computed(() => {
   if (store?.powerSupply?.voltage === undefined) return NaN
@@ -151,13 +157,6 @@ const validateToggleInterval = (value: number): void => {
 }
 
 onBeforeMount(() => {
-  // Set default options if not already set
-  const defaultOptions = {
-    showVoltageAndCurrent: true,
-    showPowerAndConsumption: true,
-    toggleInterval: 3000,
-  }
-
   // If both show options are disabled, use default options
   if (!miniWidget.value.options.showVoltageAndCurrent && !miniWidget.value.options.showPowerAndConsumption) {
     miniWidget.value.options = { ...defaultOptions }
