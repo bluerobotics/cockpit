@@ -47,6 +47,11 @@ const saveLogEventInDB = (event: LogEvent): void => {
 
 const enableSystemLogging = localStorage.getItem(systemLoggingEnablingKey)
 if (enableSystemLogging === 'true') {
+  console.log(`
+    System logging is enabled.
+    This means that all console logs will be saved to the database, and won't be displayed in the console.
+    To disable system logging go to "Configuration" -> "Development".
+  `)
   const oldConsoleFunction = {
     error: console.error,
     warn: console.warn,
@@ -55,10 +60,9 @@ if (enableSystemLogging === 'true') {
     trace: console.trace,
     log: console.log,
   }
-  Object.entries(oldConsoleFunction).forEach(([level, fn]) => {
+  Object.entries(oldConsoleFunction).forEach(([level]) => {
     // @ts-ignore
     window.console[level] = (...o: any[]) => {
-      fn(...o)
       let wholeMessage = ''
       o.forEach((m) => {
         let msg = m
