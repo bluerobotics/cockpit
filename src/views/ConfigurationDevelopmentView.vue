@@ -55,7 +55,18 @@
           />
         </div>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>System logs</template>
+          <template #title>
+            <div class="flex justify-between">
+              <span>System logs</span>
+              <span class="text-sm text-gray-300 cursor-pointer" @click.stop="deleteOldLogs">
+                <v-tooltip text="Delete old logs">
+                  <template #activator="{ props }">
+                    <v-icon left class="mr-2" v-bind="props">mdi-delete-sweep</v-icon>
+                  </template>
+                </v-tooltip>
+              </span>
+            </div>
+          </template>
           <template #content>
             <v-data-table
               :items="systemLogsData"
@@ -65,7 +76,10 @@
               class="w-full max-h-[60%] rounded-md bg-[#FFFFFF11]"
             >
               <template #item.actions="{ item }">
-                <div class="text-center cursor-pointer icon-btn mdi mdi-download" @click="downloadLog(item.name)" />
+                <div class="flex justify-center space-x-2">
+                  <div class="cursor-pointer icon-btn mdi mdi-download" @click="downloadLog(item.name)" />
+                  <div class="cursor-pointer icon-btn mdi mdi-delete" @click="deleteLog(item.name)" />
+                </div>
               </template>
             </v-data-table>
           </template>
@@ -128,6 +142,33 @@ const downloadLog = async (logName: string): Promise<void> => {
   const logParts = JSON.stringify(log, null, 2)
   const logBlob = new Blob([logParts], { type: 'application/json' })
   saveAs(logBlob, logName)
+}
+
+const deleteLog = async (logName: string): Promise<void> => {
+  await cockpitSytemLogsDB.removeItem(logName)
+  systemLogsData.value = systemLogsData.value.filter((log) => log.name !== logName)
+}
+
+const deleteOldLogs = async (): Promise<void> => {
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  const logsToDelete: string[] = []
+  await cockpitSytemLogsDB.iterate((log: SystemLog, logName: string) => {
+    const logDate = new Date(log.initialDate)
+    if (logDate < yesterday) {
+      logsToDelete.push(logName)
+    }
+  })
+
+  for (const logName of logsToDelete) {
+    await cockpitSytemLogsDB.removeItem(logName)
+  }
+
+  systemLogsData.value = systemLogsData.value.filter((log) => {
+    const logDate = new Date(log.initialDate)
+    return logDate >= yesterday
+  })
 }
 </script>
 <style scoped>
