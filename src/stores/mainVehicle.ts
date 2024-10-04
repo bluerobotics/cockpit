@@ -102,8 +102,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const coordinates: Coordinates = reactive({} as Coordinates)
   const powerSupply: PowerSupply = reactive({} as PowerSupply)
   const instantaneousWatts = ref<number | undefined>(undefined)
-  const totalConsumedWatts = ref<number>(0)
-  const lastUpdateTime = ref<number>(Date.now())
   const velocity: Velocity = reactive({} as Velocity)
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean | undefined>(undefined)
@@ -399,16 +397,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onPowerSupply.add((newPowerSupply: PowerSupply) => {
       Object.assign(powerSupply, newPowerSupply)
 
-      const currentTime = Date.now()
-      const timeDiff = (currentTime - lastUpdateTime.value) / 1000 // Convert to seconds
-
       instantaneousWatts.value =
-        powerSupply.voltage && powerSupply.current ? powerSupply.voltage * powerSupply.current : undefined
-      totalConsumedWatts.value += (instantaneousWatts.value || 0 * timeDiff) / 3600
-
-      if (instantaneousWatts.value !== undefined) {
-        lastUpdateTime.value = currentTime
-      }
+        powerSupply.voltage !== undefined && powerSupply.current !== undefined
+          ? powerSupply.voltage * powerSupply.current
+          : undefined
     })
     mainVehicle.value.onStatusText.add((newStatusText: StatusText) => {
       Object.assign(statusText, newStatusText)
@@ -590,7 +582,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     velocity,
     powerSupply,
     instantaneousWatts,
-    totalConsumedWatts,
     statusText,
     statusGPS,
     mode,
