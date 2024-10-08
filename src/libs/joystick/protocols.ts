@@ -7,14 +7,15 @@ import {
 } from './protocols/mavlink-manual-control'
 import { modifierKeyActions, otherAvailableActions } from './protocols/other'
 
-export const allAvailableAxes: ProtocolAction[] = [
-  ...Object.values(mavlinkManualControlAxes),
-  ...Object.values(otherAvailableActions),
-]
+export const allAvailableAxes = (): ProtocolAction[] => {
+  return [...Object.values(mavlinkManualControlAxes), ...Object.values(otherAvailableActions)]
+}
 
-export const allAvailableButtons: ProtocolAction[] = [
-  ...Object.values(availableCockpitActions),
-  ...Object.values(availableMavlinkManualControlButtonFunctions),
-  ...Object.values(otherAvailableActions),
-  ...Object.values(modifierKeyActions),
-]
+export const allAvailableButtons = (): ProtocolAction[] => {
+  return [
+    ...Object.values(availableCockpitActions),
+    ...Object.values(availableMavlinkManualControlButtonFunctions),
+    ...Object.values(otherAvailableActions),
+    ...Object.values(modifierKeyActions),
+  ]
+}
