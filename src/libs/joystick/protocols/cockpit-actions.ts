@@ -34,8 +34,8 @@ export class CockpitAction implements ProtocolAction {
   }
 }
 
-// Available actions
-export const availableCockpitActions: { [key in CockpitActionsFunction]: CockpitAction } = {
+// Predefined actions
+export const predefinedCockpitActions: { [key in CockpitActionsFunction]: CockpitAction } = {
   [CockpitActionsFunction.go_to_next_view]: new CockpitAction(CockpitActionsFunction.go_to_next_view, 'Go to next view'),
   [CockpitActionsFunction.go_to_previous_view]: new CockpitAction(CockpitActionsFunction.go_to_previous_view, 'Go to previous view'),
   [CockpitActionsFunction.toggle_full_screen]: new CockpitAction(CockpitActionsFunction.toggle_full_screen, 'Toggle full screen'),
@@ -68,7 +68,16 @@ interface CallbackEntry {
  * Responsible for routing cockpit actions
  */
 export class CockpitActionsManager {
+  availableActions: { [key in CockpitActionsFunction]: CockpitAction } = { ...predefinedCockpitActions }
   actionsCallbacks: Record<string, CallbackEntry> = {}
+
+  registerNewAction = (action: CockpitAction): void => {
+    this.availableActions[action.id] = action
+  }
+
+  unregisterAction = (id: CockpitActionsFunction): void => {
+    delete this.availableActions[id]
+  }
 
   registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): string => {
     this.actionsCallbacks[action.id] = { action, callback }
@@ -97,6 +106,16 @@ export class CockpitActionsManager {
 
 export const cockpitActionsManager = new CockpitActionsManager()
 
+export const registerNewAction = (action: CockpitAction): void => {
+  cockpitActionsManager.registerNewAction(action)
+  console.debug(`Registered new action ${action.name} with id (${action.id}).`)
+}
+
+export const deleteAction = (id: CockpitActionsFunction): void => {
+  cockpitActionsManager.unregisterAction(id)
+  console.debug(`Unregistered action with id (${id}).`)
+}
+
 export const registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): string => {
   return cockpitActionsManager.registerActionCallback(action, callback)
 }
@@ -108,3 +127,5 @@ export const unregisterActionCallback = (id: string): void => {
 export const executeActionCallback = (id: string): void => {
   cockpitActionsManager.executeActionCallback(id)
 }
+
+export const availableCockpitActions = cockpitActionsManager.availableActions
