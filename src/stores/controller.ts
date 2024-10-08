@@ -49,8 +49,8 @@ export const useControllerStore = defineStore('controller', () => {
   const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
   const protocolMappingIndex = useBlueOsStorage(protocolMappingIndexKey, 0)
   const cockpitStdMappings = useBlueOsStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
-  const availableAxesActions = allAvailableAxes
-  const availableButtonActions = allAvailableButtons
+  const availableAxesActions = ref(allAvailableAxes())
+  const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
   const vehicleTypeProtocolMappingCorrespondency = useBlueOsStorage<typeof defaultProtocolMappingVehicleCorrespondency>(
@@ -400,6 +400,11 @@ export const useControllerStore = defineStore('controller', () => {
       actionsToCallFromJoystick.value.forEach((a) => executeActionCallback(a as CockpitActionsFunction))
     }
   })
+
+  setInterval(() => {
+    availableButtonActions.value = allAvailableButtons()
+    availableAxesActions.value = allAvailableAxes()
+  }, 1000)
 
   return {
     registerControllerUpdateCallback,
