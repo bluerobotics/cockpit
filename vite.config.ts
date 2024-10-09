@@ -9,10 +9,13 @@ const path = require('path') // eslint-disable-line @typescript-eslint/no-var-re
 export default defineConfig({
   plugins: [
     electron({
-      main: {
-        entry: 'electron/main.ts',
+      entry: 'electron/main.ts',
+      vite: {
+        build: {
+          outDir: 'dist/electron',
+        },
       },
-    }).filter((configuration) => configuration.apply === 'build'),
+    }),
     vue(),
     vuetify({
       autoImport: true,

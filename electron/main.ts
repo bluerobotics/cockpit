@@ -29,7 +29,11 @@ function createWindow(): void {
     mainWindow?.webContents.send('main-process-message', new Date().toLocaleString())
   })
 
-  mainWindow.loadFile(join(ROOT_PATH.dist, 'index.html'))
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
+  } else {
+    mainWindow.loadFile(join(ROOT_PATH.dist, 'index.html'))
+  }
 }
 
 app.on('window-all-closed', () => {
