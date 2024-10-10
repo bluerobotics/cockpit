@@ -1,6 +1,6 @@
 {
   "name": "cockpit",
-  "version": "0.0.0",
+  "version": "1.2.1",
   "private": true,
   "main": "dist/electron/main.js",
   "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
@@ -121,6 +121,10 @@
     ],
     "appId": "org.bluerobotics.cockpit",
     "productName": "Cockpit",
+    "publish": {
+      "provider": "github",
+      "owner": "bluerobotics"
+    },
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "public/pwa-512x512.png"
