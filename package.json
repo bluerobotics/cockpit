@@ -86,7 +86,7 @@
     "autoprefixer": "^10.4.13",
     "c8": "^7.11.3",
     "electron": "^29.2.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^25.1.8",
     "eslint": "^8.5.0",
     "eslint-plugin-jsdoc": "^43.1.1",
     "eslint-plugin-simple-import-sort": "^7.0.0",
