@@ -141,3 +141,10 @@ app.whenReady().then(() => {
 
   internalLog(`Cockpit version: ${app.getVersion()}`)
 })
+
+app.on('before-quit', () => {
+  // @ts-ignore: import.meta.env does not exist in the types
+  if (import.meta.env.DEV) {
+    app.exit()
+  }
+})
