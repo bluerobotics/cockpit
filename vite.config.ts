@@ -1,6 +1,6 @@
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
-import electron from 'vite-plugin-electron'
+import electron, { startup, treeKillSync } from 'vite-plugin-electron'
 import { VitePWA } from 'vite-plugin-pwa'
 import vuetify from 'vite-plugin-vuetify'
 
@@ -14,6 +14,14 @@ export default defineConfig({
         build: {
           outDir: 'dist/electron',
         },
+      },
+      onstart: () => {
+        // @ts-ignore: process.electronApp exists in vite-plugin-electron but not in the types
+        if (process.electronApp) {
+          // @ts-ignore: process.electronApp.pid exists in vite-plugin-electron but not in the types
+          treeKillSync(process.electronApp.pid)
+        }
+        startup()
       },
     }),
     vue(),

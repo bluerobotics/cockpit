@@ -38,6 +38,8 @@
     "browser-or-node": "^2.0.0",
     "colord": "^2.9.3",
     "date-fns": "^2.29.3",
+    "electron-log": "^5.2.0",
+    "electron-updater": "^6.3.9",
     "file-saver": "^2.0.5",
     "floating-vue": "^5.0.3",
     "flowbite": "^2.2.1",
@@ -86,7 +88,7 @@
     "autoprefixer": "^10.4.13",
     "c8": "^7.11.3",
     "electron": "^29.2.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^25.1.8",
     "eslint": "^8.5.0",
     "eslint-plugin-jsdoc": "^43.1.1",
     "eslint-plugin-simple-import-sort": "^7.0.0",
@@ -119,6 +121,10 @@
     ],
     "appId": "org.bluerobotics.cockpit",
     "productName": "Cockpit",
+    "publish": {
+      "provider": "github",
+      "owner": "bluerobotics"
+    },
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "public/pwa-512x512.png"
