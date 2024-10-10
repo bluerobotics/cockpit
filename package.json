@@ -1,6 +1,6 @@
 {
   "name": "cockpit",
-  "version": "1.2.1",
+  "version": "0.0.0",
   "private": true,
   "main": "dist/electron/main.js",
   "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",

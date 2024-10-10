@@ -107,40 +107,31 @@ jobs:
       - name: Bun deploy (arm)
         if: matrix.os == 'ubuntu-24-arm'
         run: |
-          SNAPCRAFT_BUILD_ENVIRONMENT="host" bun deploy:electron
+          SNAPCRAFT_BUILD_ENVIRONMENT="host" bun deploy:electron -c.extraMetadata.version=$(git describe --tags --abbrev=0)
 
-      - name: Bun deploy (others)
-        if: matrix.os != 'ubuntu-24-arm'
+      - name: Bun deploy (windows)
+        if: matrix.os == 'windows-latest'
         run: |
           bun deploy:electron
 
-      - name: Build artifact name
-        if: "!startsWith(github.ref, 'refs/tags/') && success()"
+      - name: Bun deploy (others)
+        if: matrix.os != 'ubuntu-24-arm' && matrix.os != 'windows-latest'
         run: |
-          mv dist/Cockpit*.${{ matrix.extension }} dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags).${{ matrix.extension }}
-          mv dist/latest*.yml dist/latest-${{ matrix.suffix }}.yml 2>/dev/null || true
-
-      - name: Build tag name
-        if: startsWith(github.ref, 'refs/tags/') && success()
-        run: |
-          mv dist/Cockpit*.${{ matrix.extension }} dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags --abbrev=0).${{ matrix.extension }}
-          mv dist/latest*.yml dist/latest-${{ matrix.suffix }}.yml 2>/dev/null || true
+          bun deploy:electron -c.extraMetadata.version=$(git describe --tags --abbrev=0)
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
         with:
-          name: cockpit-${{ matrix.suffix }}
-          path: dist/Cockpit-${{ matrix.suffix }}-*.${{ matrix.extension }}
+          path: dist/Cockpit*.${{ matrix.extension }}
           if-no-files-found: error
 
       - name: Upload latest metadata artifact
         uses: actions/upload-artifact@v3
         with:
-          name: cockpit-${{ matrix.suffix }}
-          path: dist/latest-${{ matrix.suffix }}.yml
+          path: dist/latest-*.yml
           if-no-files-found: error
 
-      - name: Upload binary artifact
+      - name: Upload binary release
         uses: svenstaro/upload-release-action@v2
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
@@ -151,12 +142,12 @@ jobs:
           prerelease: true
           file_glob: true
 
-      - name: Upload latest metadata artifact
+      - name: Upload latest metadata release
         uses: svenstaro/upload-release-action@v2
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/latest-${{ matrix.suffix }}.yml
+          file: dist/latest-*.yml
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
