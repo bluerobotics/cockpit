@@ -66,20 +66,28 @@ jobs:
       matrix:
         include:
         - os: macos-13
-          suffix: macos
+          suffix: mac
+          arch: x64
           extension: dmg
+          latestMetadataName: latest-mac.yml
 
         - os: ubuntu-latest
           suffix: linux
+          arch: x86_64
           extension: AppImage
+          latestMetadataName: latest-linux.yml
 
         - os: ubuntu-24-arm
           suffix: linux-arm
+          arch: arm64
           extension: AppImage
+          latestMetadataName: latest-linux-arm64.yml
 
         - os: windows-latest
-          suffix: windows
+          suffix: win
+          arch: x64
           extension: exe
+          latestMetadataName: latest.yml
 
     steps:
       - name: Checkout
@@ -99,6 +107,14 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Set version as environment variable (Windows)
+        if: matrix.os == 'windows-latest'
+        run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $env:GITHUB_ENV
+
+      - name: Set version as environment variable (others)
+        if: matrix.os != 'windows-latest'
+        run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $GITHUB_ENV
+
       - name: Bun build
         run: |
           bun install --frozen-lockfile
@@ -107,36 +123,63 @@ jobs:
       - name: Bun deploy (arm)
         if: matrix.os == 'ubuntu-24-arm'
         run: |
-          SNAPCRAFT_BUILD_ENVIRONMENT="host" bun deploy:electron
+          SNAPCRAFT_BUILD_ENVIRONMENT="host" bun run deploy:electron
 
       - name: Bun deploy (others)
         if: matrix.os != 'ubuntu-24-arm'
         run: |
-          bun deploy:electron
+          bun run deploy:electron
 
-      - name: Build artifact name
-        if: "!startsWith(github.ref, 'refs/tags/') && success()"
-        run: |
-          mv dist/Cockpit*.${{ matrix.extension }} dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags).${{ matrix.extension }}
-
-      - name: Build tag name
-        if: startsWith(github.ref, 'refs/tags/') && success()
-        run: |
-          mv dist/Cockpit*.${{ matrix.extension }} dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags --abbrev=0).${{ matrix.extension }}
-
-      - name: Upload Artifact
+      - name: Upload binary artifact
         uses: actions/upload-artifact@v3
         with:
-          name: cockpit-${{ matrix.suffix }}
-          path: dist/Cockpit-${{ matrix.suffix }}-*.${{ matrix.extension }}
+          name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
+          path: dist/Cockpit*.${{ matrix.extension }}
           if-no-files-found: error
 
-      - name: Upload Release
+      - name: Upload diff artifact (mac-only)
+        if: matrix.os == 'macos-13'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.zip
+          path: dist/Cockpit*.zip
+          if-no-files-found: error
+
+      - name: Upload latest metadata artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.latestMetadataName }}
+          path: dist/latest*.yml
+          if-no-files-found: error
+
+      - name: Upload binary release
         uses: svenstaro/upload-release-action@v2
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/Cockpit-${{ matrix.suffix }}-*.${{ matrix.extension }}
+          file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
+          file_glob: true
+
+      - name: Upload diff release (mac-only)
+        uses: svenstaro/upload-release-action@v2
+        if: startsWith(github.ref, 'refs/tags/') && success() && matrix.os == 'macos-13'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.zip
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
+          file_glob: true
+
+      - name: Upload latest metadata release
+        uses: svenstaro/upload-release-action@v2
+        if: startsWith(github.ref, 'refs/tags/') && success()
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/${{ matrix.latestMetadataName }}
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true

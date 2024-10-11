@@ -9,7 +9,7 @@
     "build:serve": "bun run build && bun run serve",
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "electron-builder --dir",
-    "deploy:electron": "electron-builder --publish=never",
+    "deploy:electron": "electron-builder --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
     "deploy:flatpak": "electron-builder --x64 --linux flatpak",
     "dev": "vite --host",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
@@ -119,6 +119,11 @@
     ],
     "appId": "org.bluerobotics.cockpit",
     "productName": "Cockpit",
+    "publish": {
+      "provider": "github",
+      "owner": "bluerobotics"
+    },
+    "artifactName": "${productName}-${os}-${arch}-${version}.${ext}",
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "public/pwa-512x512.png"
