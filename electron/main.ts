@@ -61,3 +61,10 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 app.whenReady().then(createWindow)
+
+app.on('before-quit', () => {
+  // @ts-ignore: import.meta.env does not exist in the types
+  if (import.meta.env.DEV) {
+    app.exit()
+  }
+})
