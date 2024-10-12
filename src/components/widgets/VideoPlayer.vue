@@ -1,5 +1,6 @@
 <template>
   <div ref="videoWidget" class="video-widget">
+    <statsForNerds v-if="widget.options.statsForNerds" :stream-name="externalStreamId" />
     <div v-if="nameSelectedStream === undefined" class="no-video-alert">
       <span>No video stream selected.</span>
     </div>
@@ -88,6 +89,13 @@
           :color="widget.options.flipVertically ? 'white' : undefined"
           hide-details
         />
+        <v-switch
+          v-model="widget.options.statsForNerds"
+          class="my-1"
+          label="Stats for nerds"
+          :color="widget.options.statsForNerds ? 'white' : undefined"
+          hide-details
+        />
         <div class="flex-wrap justify-center d-flex ga-5">
           <v-btn prepend-icon="mdi-file-rotate-left" variant="outlined" @click="rotateVideo(-90)"> Rotate Left</v-btn>
           <v-btn prepend-icon="mdi-file-rotate-right" variant="outlined" @click="rotateVideo(+90)"> Rotate Right</v-btn>
@@ -101,6 +109,7 @@
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
+import StatsForNerds from '@/components/VideoPlayerStatsForNerds.vue'
 import { isEqual } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
@@ -134,6 +143,7 @@ onBeforeMount(() => {
     flipHorizontally: false,
     flipVertically: false,
     rotationAngle: 0,
+    statsForNerds: false,
     internalStreamName: undefined as string | undefined,
   }
   widget.value.options = Object.assign({}, defaultOptions, widget.value.options)
