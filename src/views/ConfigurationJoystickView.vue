@@ -459,7 +459,8 @@
               mark-expanded
               darken-content
               hover-effect
-              :is-expanded="protocol === JoystickProtocol.MAVLinkManualControl"
+              :is-expanded="protocol === protocolToExpand"
+              @update:is-expanded="(isExpanded: boolean) => reactToPanelExpansion(isExpanded, protocol)"
             >
               <template #title>
                 {{ protocol }}
@@ -549,7 +550,7 @@
       </template>
       <template #actions>
         <div class="flex justify-end w-full">
-          <v-btn variant="text" class="m-1" @click="inputClickedDialog = false"> Close </v-btn>
+          <v-btn variant="text" class="m-1" @click="closeInputMappingDialog"> Close </v-btn>
         </div>
       </template>
     </InteractionDialog>
@@ -818,4 +819,16 @@ const vehicleTypesAssignedToCurrentProfile = computed({
     })
   },
 })
+
+const protocolToExpand = ref<JoystickProtocol | undefined>(undefined)
+
+const reactToPanelExpansion = (isExpanded: boolean, protocol: JoystickProtocol): void => {
+  console.log(`${protocol} is expanded: ${isExpanded}`)
+  protocolToExpand.value = isExpanded ? protocol : undefined
+}
+
+const closeInputMappingDialog = (): void => {
+  inputClickedDialog.value = false
+  protocolToExpand.value = undefined
+}
 </script>
