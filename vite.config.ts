@@ -6,24 +6,28 @@ import vuetify from 'vite-plugin-vuetify'
 
 const path = require('path') // eslint-disable-line @typescript-eslint/no-var-requires
 
+// Check if we're running in Electron mode
+const isElectron = process.env.ELECTRON === 'true'
+
 export default defineConfig({
   plugins: [
-    electron({
-      entry: 'electron/main.ts',
-      vite: {
-        build: {
-          outDir: 'dist/electron',
+    isElectron &&
+      electron({
+        entry: 'electron/main.ts',
+        vite: {
+          build: {
+            outDir: 'dist/electron',
+          },
         },
-      },
-      onstart: () => {
-        // @ts-ignore: process.electronApp exists in vite-plugin-electron but not in the types
-        if (process.electronApp) {
-          // @ts-ignore: process.electronApp.pid exists in vite-plugin-electron but not in the types
-          treeKillSync(process.electronApp.pid)
-        }
-        startup()
-      },
-    }),
+        onstart: () => {
+          // @ts-ignore: process.electronApp exists in vite-plugin-electron but not in the types
+          if (process.electronApp) {
+            // @ts-ignore: process.electronApp.pid exists in vite-plugin-electron but not in the types
+            treeKillSync(process.electronApp.pid)
+          }
+          startup()
+        },
+      }),
     vue(),
     vuetify({
       autoImport: true,
@@ -35,7 +39,7 @@ export default defineConfig({
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
     }),
-  ],
+  ].filter(Boolean),
   define: { 'process.env': {} },
   resolve: {
     alias: {

@@ -12,6 +12,7 @@
     "deploy:electron": "electron-builder --publish=never",
     "deploy:flatpak": "electron-builder --x64 --linux flatpak",
     "dev": "vite --host",
+    "dev:electron": "ELECTRON=true vite --host",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "lint:fix": "eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "preview": "vite preview --port 5050",
