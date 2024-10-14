@@ -179,6 +179,8 @@ const warningContent = ref<HTMLElement | null>(null)
 const animateWarning = ref(true)
 const showElevationEffect = ref(isPanelExpanded.value || false)
 
+const emit = defineEmits(['update:isExpanded'])
+
 const togglePanel = (): void => {
   if (isPanelExpanded.value) {
     isPanelExpanded.value = false
@@ -189,6 +191,7 @@ const togglePanel = (): void => {
     showElevationEffect.value = true
     isPanelExpanded.value = true
   }
+  emit('update:isExpanded', isPanelExpanded.value)
 }
 
 const textSize = computed(() => {
