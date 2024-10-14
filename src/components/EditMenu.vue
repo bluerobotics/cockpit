@@ -9,7 +9,7 @@
   </div>
   <div v-if="editMode" class="flex fixed top-0 left-0 h-[100vh] w-[22vw] bg-[#031C2B]" />
   <div
-    class="relative flex flex-col justify-start overflow-y-auto text-white edit-panel left-panel"
+    class="relative flex flex-col justify-start overflow-y-auto text-white edit-panel left-panel h-full"
     :class="{ active: editMode }"
   >
     <div class="flex justify-between items-center w-full bg-[#CBCBCB2A] relative">
@@ -185,7 +185,7 @@
     <div
       :key="forceUpdate"
       ref="content"
-      class="bg-[#041e2e99]"
+      class="bg-[#041e2e99] h-full"
       :class="['content-expand-collapse', { expanding: isViewsPanelExpanded, collapsing: !isViewsPanelExpanded }]"
     >
       <div class="h-full pt-1 bg-[#041e2e99]">
@@ -227,7 +227,7 @@
       </div>
     </div>
     <v-divider />
-    <div id="view-widgets-list" class="overflow-y-auto max-h-[88vh]">
+    <div id="view-widgets-list" class="overflow-y-scroll h-full">
       <div class="flex justify-center w-full bg-[#CBCBCB09]">
         <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
           <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
