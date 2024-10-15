@@ -10,7 +10,7 @@
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "ELECTRON=true electron-builder --dir",
     "deploy:electron": "ELECTRON=true electron-builder --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
-    "deploy:flatpak": "ELECTRON=true electron-builder --x64 --linux flatpak",
+    "deploy:flatpak": "ELECTRON=true electron-builder --x64 --publish=never --linux flatpak -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
     "dev": "vite --host",
     "dev:electron": "ELECTRON=true vite --host",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
