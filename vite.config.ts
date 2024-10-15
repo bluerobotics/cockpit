@@ -6,12 +6,13 @@ import vuetify from 'vite-plugin-vuetify'
 
 const path = require('path') // eslint-disable-line @typescript-eslint/no-var-requires
 
-// Check if we're running in Electron mode
+// Check if we're running in Electron mode or building the application
 const isElectron = process.env.ELECTRON === 'true'
+const isBuilding = process.argv.includes('build')
 
 export default defineConfig({
   plugins: [
-    isElectron &&
+    (isElectron || isBuilding) &&
       electron({
         entry: 'electron/main.ts',
         vite: {
