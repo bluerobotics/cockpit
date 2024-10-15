@@ -78,7 +78,7 @@ jobs:
           latestMetadataName: latest-linux.yml
 
         - os: ubuntu-24-arm
-          suffix: linux-arm
+          suffix: linux
           arch: arm64
           extension: AppImage
           latestMetadataName: latest-linux-arm64.yml
@@ -194,9 +194,13 @@ jobs:
         include:
         - os: ubuntu-latest
           suffix: linux
+          arch: x86_64
+          extension: flatpak
 
         - os: ubuntu-24-arm
-          suffix: linux-arm
+          suffix: linux
+          arch: arm64
+          extension: flatpak
 
     steps:
       - name: Checkout
@@ -216,27 +220,20 @@ jobs:
           sudo flatpak remote-add --system flathub https://flathub.org/repo/flathub.flatpakrepo
           flatpak remote-add --user flathub https://flathub.org/repo/flathub.flatpakrepo || true
 
+      - name: Set version as environment variable (others)
+        run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $GITHUB_ENV
+
       - name: Build electron
         run: |
           bun install --frozen-lockfile
           bun run build
-          env DEBUG="@malept/flatpak-bundler" bun deploy:flatpak
-
-      - name: Build tag name
-        if: startsWith(github.ref, 'refs/tags/') && success()
-        run: |
-          mv dist/Cockpit*.flatpak dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags --abbrev=0).flatpak
-
-      - name: Build name
-        if: "!startsWith(github.ref, 'refs/tags/') && success()"
-        run: |
-          mv dist/Cockpit*.flatpak dist/Cockpit-${{ matrix.suffix }}-$(git describe --tags).flatpak
+          env DEBUG="@malept/flatpak-bundler" bun run deploy:flatpak
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: cockpit-${{ matrix.suffix }}-flatpak
-          path: dist/Cockpit*.flatpak
+          name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
+          path: dist/Cockpit*.${{ matrix.extension }}
           if-no-files-found: error
 
       - name: Upload Release
@@ -244,7 +241,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/Cockpit*.flatpak
+          file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
