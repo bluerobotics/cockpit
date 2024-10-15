@@ -59,6 +59,10 @@ export interface Props {
    * To hide or not content that overflows the widget area
    */
   hideOverflow?: boolean
+  /**
+   * To change the widget sizes according to window size
+   */
+  disableResponsiveness?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -75,6 +79,7 @@ const outerWidgetRef = ref<HTMLElement | undefined>()
 const innerWidgetRef = ref<HTMLElement | undefined>()
 const widgetView = computed(() => outerWidgetRef.value?.parentElement)
 const widgetResizeHandles = computed(() => outerWidgetRef.value?.getElementsByClassName('resize-handle'))
+const disableResponsiveness = toRefs(props).disableResponsiveness
 
 const devStore = useDevelopmentStore()
 
@@ -272,8 +277,8 @@ const temporaryPosition = computed(() => {
 })
 
 const sizeStyle = computed(() => ({
-  width: `${100 * size.value.width}%`,
-  height: `${100 * size.value.height}%`,
+  width: disableResponsiveness.value ? `${1000 * size.value.width}px` : `${100 * size.value.width}%`,
+  height: disableResponsiveness.value ? `${1000 * size.value.height}px` : `${100 * size.value.height}%`,
 }))
 
 const positionStyle = computed(() => ({

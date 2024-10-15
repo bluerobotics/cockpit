@@ -7,6 +7,7 @@ import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeMount, onBeforeUnmount, Ref, ref, watch } from 'vue'
 
 import {
+  defaultCustomWidgetContainers,
   defaultMiniWidgetManagerVars,
   defaultProfileVehicleCorrespondency,
   defaultWidgetManagerVars,
@@ -16,6 +17,7 @@ import { miniWidgetsProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { resetJustMadeKey, useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
+import { useSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import * as Words from '@/libs/funny-name/words'
 import {
@@ -32,6 +34,8 @@ import {
   type Profile,
   type View,
   type Widget,
+  CustomWidgetElement,
+  CustomWidgetElementContainer,
   MiniWidgetManagerVars,
   validateProfile,
   validateView,
@@ -40,6 +44,7 @@ import {
 } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
+const { showSnackbar } = useSnackbar()
 
 export const savedProfilesKey = 'cockpit-saved-profiles-v8'
 
@@ -60,6 +65,131 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   )
   const _widgetManagerVars: Ref<Record<string, WidgetManagerVars>> = ref({})
   const _miniWidgetManagerVars: Ref<Record<string, MiniWidgetManagerVars>> = ref({})
+  const isElementsPropsDrawerVisible = ref(false)
+  const elementToShowOnDrawer = ref<CustomWidgetElement>()
+  const widgetToEdit = ref<Widget>()
+
+  const editWidgetByHash = (hash: string): Widget | undefined => {
+    widgetToEdit.value = currentProfile.value.views
+      .flatMap((view) => view.widgets)
+      .find((widget) => widget.hash === hash)
+    return widgetToEdit.value
+  }
+
+  const getElementByHash = (hash: string): CustomWidgetElement | undefined => {
+    const customWidgetElement = currentProfile.value.views
+      .flatMap((view) => view.widgets)
+      .filter((widget) => widget.component === WidgetType.CustomWidgetBase)
+      .flatMap((widget) => widget.options.elementContainers)
+      .flatMap((container) => container.elements)
+      .find((element) => element.hash === hash)
+
+    return customWidgetElement
+  }
+
+  const showElementPropsDrawer = (customWidgetElementHash: string): void => {
+    console.log('🚀 ~ customWidgetElementHash:', customWidgetElementHash)
+    const customWidgetElement = getElementByHash(customWidgetElementHash)
+    if (!customWidgetElement) {
+      showSnackbar({ variant: 'error', message: 'Could not find element with the given hash.', duration: 3000 })
+      return
+    }
+    elementToShowOnDrawer.value = customWidgetElement
+    isElementsPropsDrawerVisible.value = true
+  }
+
+  const removeElementFromCustomWidget = (elementHash: string): void => {
+    const customWidgetElement = getElementByHash(elementHash)
+    if (!customWidgetElement) {
+      showSnackbar({ variant: 'error', message: 'Could not find element with the given hash.', duration: 3000 })
+      return
+    }
+
+    const customWidget = currentProfile.value.views
+      .flatMap((view) => view.widgets)
+      .filter((widget) => widget.component === WidgetType.CustomWidgetBase)
+      .find((widget) =>
+        widget.options.elementContainers.some((container: CustomWidgetElementContainer) =>
+          container.elements.includes(customWidgetElement)
+        )
+      )
+
+    if (!customWidget) {
+      showSnackbar({
+        variant: 'error',
+        message: 'Could not find the custom widget containing the element.',
+        duration: 3000,
+      })
+      return
+    }
+
+    const customWidgetContainer = customWidget.options.elementContainers.find(
+      (container: CustomWidgetElementContainer) => container.elements.includes(customWidgetElement)
+    )
+    if (!customWidgetContainer) {
+      showSnackbar({
+        variant: 'error',
+        message: 'Could not find the container containing the element.',
+        duration: 3000,
+      })
+      return
+    }
+
+    customWidgetContainer.elements = customWidgetContainer.elements.filter(
+      (element: CustomWidgetElement) => element.hash !== elementHash
+    )
+  }
+
+  const downloadWidgetAsBrw = (widget: Widget): void => {
+    const blob = new Blob([JSON.stringify(widget)], { type: 'application/json;charset=utf-8' })
+    const fileName = `${widget.name}.brw`
+    saveAs(blob, fileName)
+  }
+
+  const loadWidgetFromFile = (widgetHash: string, loadedWidget: Widget): void => {
+    const currentViewWidgets = currentProfile.value.views[currentViewIndex.value].widgets
+    const widgetIndex = currentViewWidgets.findIndex((widget) => widget.hash === widgetHash)
+
+    if (widgetIndex === -1) {
+      showSnackbar({ variant: 'error', message: 'Widget not found with the given hash.', duration: 3000 })
+      return
+    }
+
+    const currentPosition = currentViewWidgets[widgetIndex].position
+    const newWidgetHash = uuid4()
+    loadedWidget.hash = newWidgetHash
+    loadedWidget.position = currentPosition
+
+    currentViewWidgets[widgetIndex] = loadedWidget
+    showSnackbar({ variant: 'success', message: 'Widget loaded successfully with new hash.', duration: 3000 })
+  }
+
+  /**
+   * Updates the options of a custom widget element by its hash.
+   * @param {string} elementHash - The unique identifier of the element.
+   * @param {Record<string, any>} newOptions - The new options to merge with the existing ones.
+   */
+  const updateElementOptions = (elementHash: string, newOptions: Record<string, any>): void => {
+    const element = getElementByHash(elementHash)
+    if (element) {
+      element.options = {
+        ...element.options,
+        ...newOptions,
+      }
+    } else {
+      showSnackbar({ variant: 'error', message: 'Element not found.', duration: 3000 })
+    }
+  }
+
+  const allowMovingAndResizing = (widgetHash: string, forcedState: boolean): void => {
+    currentProfile.value.views.forEach((view) => {
+      view.widgets.forEach((widget) => {
+        if (widget.hash === widgetHash) {
+          widgetManagerVars(widgetHash).allowMoving = forcedState
+        }
+      })
+    })
+  }
 
   const widgetManagerVars = (widgetHash: string): WidgetManagerVars => {
     if (!_widgetManagerVars.value[widgetHash]) {
@@ -412,6 +542,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   function addWidget(widgetType: WidgetType, view: View): void {
     const widgetHash = uuid4()
+    let disableWidgetResponsiveness = false
 
     const widget = {
       hash: widgetHash,
@@ -422,8 +553,23 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       options: {},
     }
 
+    if (widgetType === WidgetType.CustomWidgetBase) {
+      disableWidgetResponsiveness = true
+      widget.options = {
+        elementContainers: defaultCustomWidgetContainers,
+        columns: 1,
+        leftColumnWidth: 50,
+        backgroundOpacity: 0.2,
+        backgroundColor: '#FFFFFF',
+        backgroundBlur: 25,
+      }
+    }
+
     view.widgets.unshift(widget)
-    Object.assign(widgetManagerVars(widget.hash), { ...defaultWidgetManagerVars, ...{ allowMoving: true } })
+    Object.assign(widgetManagerVars(widget.hash), {
+      ...defaultWidgetManagerVars,
+      ...{ allowMoving: true, disableResponsiveness: disableWidgetResponsiveness },
+    })
   }
 
   /**
@@ -434,6 +580,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const view = viewFromWidget(widget)
     const index = view.widgets.indexOf(widget)
     view.widgets.splice(index, 1)
+    elementToShowOnDrawer.value = undefined
   }
 
   /**
@@ -682,6 +829,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentMiniWidgetsProfile,
     savedProfiles,
     vehicleTypeProfileCorrespondency,
+    allowMovingAndResizing,
     loadProfile,
     saveProfile,
     resetSavedProfiles,
@@ -713,5 +861,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     visibleAreaMinClearancePixels,
     currentTopBarHeightPixels,
     currentBottomBarHeightPixels,
+    showElementPropsDrawer,
+    isElementsPropsDrawerVisible,
+    elementToShowOnDrawer,
+    updateElementOptions,
+    removeElementFromCustomWidget,
+    downloadWidgetAsBrw,
+    loadWidgetFromFile,
+    widgetToEdit,
+    editWidgetByHash,
   }
 })

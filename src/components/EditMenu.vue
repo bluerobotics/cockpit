@@ -453,7 +453,7 @@
           theme="dark"
           variant="filled"
           density="compact"
-          :items="['Regular', 'Mini']"
+          :items="['Regular', 'Mini', 'Custom']"
           class="bg-[#27384255] 2xl:scale-100 scale-[80%]"
           hide-details
           @change="widgetMode = $event"
@@ -463,17 +463,22 @@
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the main view area
         </div>
-        <div
-          v-show="widgetMode === 'Regular widgets'"
-          class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 bg-[#3B78A8] rounded-lg"
-        >
-          Click or drag to add
+        <div v-show="widgetMode === 'Regular'" class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 rounded-lg">
+          (Click on card to add)
         </div>
         <div v-show="widgetMode === 'Mini'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the top and bottom bars
         </div>
         <div v-show="widgetMode === 'Mini'" class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 rounded-lg">
           (Drag card in place to add)
+        </div>
+        <div v-show="widgetMode === 'Custom'">
+          <v-btn
+            type="flat"
+            class="bg-[#3B78A8] text-white w-[95%]"
+            @click="store.addWidget(WidgetType.CustomWidgetBase, store.currentView)"
+            >Create Custom Widget
+          </v-btn>
         </div>
       </div>
     </div>
@@ -491,7 +496,10 @@
         @dragstart="onRegularWidgetDragStart"
         @dragend="onRegularWidgetDragEnd(widgetType)"
       >
-        <v-tooltip text="Click or drag to add" location="top" theme="light">
+        <div class="absolute flex top-[50px] text-[60px] opacity-0 hover:opacity-100">
+          <v-icon icon="mdi-plus-circle" />
+        </div>
+        <v-tooltip text="Click to add" location="top" theme="light">
           <template #activator="{ props: tooltipProps }">
             <div />
             <img
@@ -520,20 +528,45 @@
       <div
         v-for="miniWidget in availableMiniWidgetTypes"
         id="mini-widget-card"
-        :ref="(el) => (miniWidgetContainers[miniWidget.component] = el as HTMLElement)"
         :key="miniWidget.hash"
-        class="flex flex-col items-center justify-between w-full rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip pointer-events-none"
+        class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip pointer-events-none"
         :draggable="false"
       >
         <div />
         <div id="draggable-mini-widget" class="m-2 pointer-events-auto select-auto cursor-grab" :draggable="true">
-          <div class="flex justify-center pointer-events-none min-w-[160px]">
+          <div class="pointer-events-none">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
         </div>
         <div class="flex items-center justify-center w-full p-1 transition-all bg-[#3B78A8] rounded-b-md text-white">
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
+            'Very Generic Indicator'
+          }}</span>
+        </div>
+      </div>
+    </div>
+    <div
+      v-show="widgetMode === 'Custom'"
+      ref="availableCustomWidgetElementsContainer"
+      class="flex items-center w-full h-full gap-3 overflow-auto pr-2"
+    >
+      <div
+        v-for="element in availableCustomWidgetElementsTypes"
+        id="mini-widget-card"
+        :key="element.hash"
+        class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip pointer-events-none"
+        draggable="false"
+      >
+        <div />
+        <div id="draggable-mini-widget" class="m-2 pointer-events-auto select-auto cursor-grab" draggable="true">
+          <div class="pointer-events-none">
+            <CustomWidgetInstantiator :element="element" />
+          </div>
+        </div>
+        <div class="flex items-center justify-center w-full p-1 transition-all bg-[#3B78A8] rounded-b-md text-white">
+          <span class="whitespace-normal text-center">{{
+            element.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
             'Very Generic Indicator'
           }}</span>
         </div>
@@ -587,6 +620,21 @@
       </v-card>
     </GlassModal>
   </teleport>
+  <transition
+    enter-active-class="transition-transform duration-500 ease-in-out"
+    leave-active-class="transition-transform duration-0 ease-in-out"
+    enter-from-class="translate-x-full opacity-0"
+    enter-to-class="translate-x-0 opacity-100"
+    leave-from-class="translate-x-0 opacity-100"
+    leave-to-class="translate-x-full opacity-0"
+  >
+    <div
+      v-if="store.isElementsPropsDrawerVisible && store.editingMode && store.elementToShowOnDrawer"
+      class="flex fixed w-[250px] h-[78vh] right-0 top-0 border-l-[1px] border-[#FFFFFF44] text-white elevation-5 bg-[#2d404d]"
+    >
+      <ElementConfigPanel />
+    </div>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -596,13 +644,14 @@ import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
 
-import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
+import { defaultCustomWidgetManagerVars, defaultMiniWidgetManagerVars } from '@/assets/defaults'
 import BoatThumb from '@/assets/vehicles/BlueBoat_thumb.png'
 import BlueRoboticsLogo from '@/assets/vehicles/BlueRoboticsLogo.png'
 import RovThumb from '@/assets/vehicles/BlueROV_thumb.png'
 import AttitudeImg from '@/assets/widgets/Attitude.png'
 import CompassImg from '@/assets/widgets/Compass.png'
 import CompassHUDImg from '@/assets/widgets/CompassHUD.png'
+import CustomWidgetBaseImg from '@/assets/widgets/CustomWidgetBase.png'
 import DepthHUDImg from '@/assets/widgets/DepthHUD.png'
 import IFrameImg from '@/assets/widgets/IFrame.png'
 import ImageViewImg from '@/assets/widgets/ImageView.png'
@@ -616,8 +665,17 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { type Profile, type View, type Widget, MiniWidgetType, WidgetType } from '@/types/widgets'
+import {
+  type Profile,
+  type View,
+  type Widget,
+  CustomWidgetElementType,
+  MiniWidgetType,
+  WidgetType,
+} from '@/types/widgets'
 
+import CustomWidgetInstantiator from './CustomWidgetElementInstantiator.vue'
+import ElementConfigPanel from './ElementConfigPanel.vue'
 import ExpansiblePanel from './ExpansiblePanel.vue'
 import GlassModal from './GlassModal.vue'
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
@@ -670,11 +728,22 @@ const availableMiniWidgetTypes = computed(() =>
   }))
 )
 
+const availableCustomWidgetElementsTypes = computed(() =>
+  Object.values(CustomWidgetElementType).map((widgetType) => ({
+    component: widgetType,
+    name: widgetType,
+    options: {},
+    hash: uuid(),
+    managerVars: defaultCustomWidgetManagerVars,
+    cockpitActions: [],
+  }))
+)
 const widgetImages = {
   Attitude: AttitudeImg,
   Compass: CompassImg,
-  DepthHUD: DepthHUDImg,
   CompassHUD: CompassHUDImg,
+  CustomWidgetBase: CustomWidgetBaseImg,
+  DepthHUD: DepthHUDImg,
   IFrame: IFrameImg,
   ImageView: ImageViewImg,
   Map: MapImg,
@@ -760,6 +829,13 @@ onMounted(() => {
 
 const widgetAddMenuGroupOptions = {
   name: 'generalGroup',
+  pull: 'clone',
+  put: false,
+  revertClone: false,
+}
+
+const customWidgetAddMenuGroupOptions = {
+  name: 'customWidgetsGroup',
   pull: 'clone',
   put: false,
   revertClone: false,
@@ -851,6 +927,7 @@ const resetSavedProfiles = (): void => {
 
 const availableWidgetsContainer = ref()
 const availableMiniWidgetsContainer = ref()
+const availableCustomWidgetElementsContainer = ref()
 
 // @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
 const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
@@ -859,6 +936,18 @@ const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
   sort: false,
 })
 useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidgetsContainerOptions)
+
+// @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
+const customWidgetElementContainerOptions = ref<UseDraggableOptions>({
+  animation: '150',
+  group: customWidgetAddMenuGroupOptions,
+  sort: false,
+})
+useDraggable(
+  availableCustomWidgetElementsContainer,
+  availableCustomWidgetElementsTypes,
+  customWidgetElementContainerOptions
+)
 
 onMounted(() => {
   const widgetContainers = [availableWidgetsContainer.value, availableMiniWidgetsContainer.value]
