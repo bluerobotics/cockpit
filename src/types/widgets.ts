@@ -59,7 +59,7 @@ export enum CustomWidgetElementType {
 }
 
 /**
- *
+ * Available variables to be used in the Custom Widget creator.
  */
 export enum CustomWidgetVarsType {
   Button = 'boolean',
@@ -72,7 +72,7 @@ export enum CustomWidgetVarsType {
 }
 
 /**
- *
+ * Available containers to be used in the Custom Widget creator.
  */
 export enum CustomWidgetElementContainers {
   Left0 = '0-left',
@@ -98,11 +98,33 @@ export enum CustomWidgetElementContainers {
 }
 
 /**
+ * Options for the Cockpit Actions parameters
+ */
+export interface CockpitActionParameter {
+  /**
+   * Parameter ID, equals to initial name of the parameter
+   */
+  id: string
+  /**
+   * Parameter name
+   */
+  name: string
+  /**
+   * Parameter type
+   */
+  type: 'string' | 'boolean' | 'number'
+  /**
+   * Parameter description
+   */
+  description?: string
+}
+
+/**
  * Options for the Custom Widgets inner elements
  */
 export type CustomWidgetElementOptions = {
   /**
-   *
+   * Custom widget element - Label
    */
   [CustomWidgetElementType.Label]: {
     /**
@@ -110,45 +132,54 @@ export type CustomWidgetElementOptions = {
      */
     hash: string
     /**
-     *
+     * Element name
      */
     name: string
     /**
-     *
+     * Element options
      */
     options: {
       /**
-       *
+       * Variable type
        */
-      cockpitAction: CockpitAction
+      variableType: string
+      /**
+       * Action parameter
+       */
+      actionParameter: CockpitActionParameter
       /**
        * The label text
        */
       text: string
       /**
-       * The size of the label's font (in pixels)
+       * Layout options
        */
-      textSize: number
-      /**
-       * Alignment of the element
-       */
-      align: 'start' | 'center' | 'end'
-      /**
-       * The weight of the label's font
-       */
-      weight: 'normal' | 'bold' | 'bolder' | 'lighter'
-      /**
-       * The decoration for the label's text
-       */
-      decoration: 'none' | 'underline' | 'line-through' | 'overline'
-      /**
-       * The color of the label's text
-       */
-      color: string
+      layout: {
+        /**
+         * The size of the label's font (in pixels)
+         */
+        textSize: number
+        /**
+         * Alignment of the element
+         */
+        align: 'start' | 'center' | 'end'
+        /**
+         * The weight of the label's font
+         */
+        weight: 'normal' | 'bold' | 'bolder' | 'lighter'
+        /**
+         * The decoration for the label's text
+         */
+        decoration: 'none' | 'underline' | 'line-through' | 'overline'
+        /**
+         * The color of the label's text
+         */
+        color: string
+      }
     }
   }
   /**
-   *
+   * Custom widget element - Button
    */
   [CustomWidgetElementType.Button]: {
     /**
@@ -156,45 +187,54 @@ export type CustomWidgetElementOptions = {
      */
     hash: string
     /**
-     *
+     * Element name
      */
     name: string
     /**
-     *
+     * Element options
      */
     options: {
       /**
-       *
+       * Variable type
+       */
+      variableType: string
+      /**
+       * Action parameter
        */
       cockpitAction: CockpitAction
       /**
-       * Alignment of the element
+       * Layout options
        */
-      align: 'start' | 'center' | 'end'
-      /**
-       *
-       */
-      label: string
-      /**
-       *
-       */
-      buttonSize: 'small' | 'default' | 'large'
-      /**
-       *
-       */
-      backgroundColor: string
-      /**
-       *
-       */
-      textColor: string
-      /**
-       *
-       */
-      variant: 'text' | 'outlined' | 'flat' | 'elevated' | 'tonal' | 'plain'
+      layout: {
+        /**
+         * Alignment of the element
+         */
+        align: 'start' | 'center' | 'end'
+        /**
+         * The label of the button
+         */
+        label: string
+        /**
+         * The size of the button
+         */
+        buttonSize: 'small' | 'default' | 'large'
+        /**
+         * The color of the button
+         */
+        backgroundColor: string
+        /**
+         * The color of the button's text
+         */
+        textColor: string
+        /**
+         * The variant of the button
+         */
+        variant: 'text' | 'outlined' | 'flat' | 'elevated' | 'tonal' | 'plain'
+      }
     }
   }
   /**
-   *
+   * Custom widget element - Checkbox
    */
   [CustomWidgetElementType.Checkbox]: {
     /**
@@ -202,37 +242,46 @@ export type CustomWidgetElementOptions = {
      */
     hash: string
     /**
-     *
+     * Element name
      */
     name: string
     /**
-     *
+     * Element value
+     */
+    checked: boolean
+    /**
+     * Element options
      */
     options: {
       /**
-       *
+       * Variable type
        */
-      cockpitAction: CockpitAction
+      variableType: string
       /**
-       * Alignment of the element
+       * Action parameter
        */
-      align: 'start' | 'center' | 'end'
+      actionParameter: CockpitActionParameter
       /**
-       *
+       * Layout props for the element
        */
-      checked: boolean
-      /**
-       *
-       */
-      color: string
-      /**
-       *
-       */
-      label: string
+      layout: {
+        /**
+         * Alignment of the element
+         */
+        align: 'start' | 'center' | 'end'
+        /**
+         * The size of the checkbox
+         */
+        color: string
+        /**
+         * The label of the checkbox
+         */
+        label: string
+      }
     }
   }
   /**
-   *
+   * Custom widget element - Dial
    */
   [CustomWidgetElementType.Dial]: {
     /**
@@ -240,45 +289,54 @@ export type CustomWidgetElementOptions = {
      */
     hash: string
     /**
-     *
+     * Element name
      */
     name: string
     /**
-     *
+     * Element options
      */
     options: {
       /**
-       *
+       * Variable type
        */
-      cockpitAction: CockpitAction
+      variableType: string
       /**
-       * Alignment of the element
+       * Action parameter
        */
-      align: 'start' | 'center' | 'end'
+      actionParameter: CockpitActionParameter
       /**
-       *
+       * Layout options
        */
-      size: 'small' | 'medium' | 'large'
-      /**
-       *
-       */
-      color: string
-      /**
-       *
-       */
-      minValue: number
-      /**
-       *
-       */
-      maxValue: number
-      /**
-       *
-       */
-      showValue: boolean
+      layout: {
+        /**
+         * Alignment of the element
+         */
+        align: 'start' | 'center' | 'end'
+        /**
+         * The size of the dial
+         */
+        size: 'small' | 'medium' | 'large'
+        /**
+         * The color of the dial
+         */
+        color: string
+        /**
+         * The minimum value of the dial
+         */
+        minValue: number
+        /**
+         * The maximum value of the dial
+         */
+        maxValue: number
+        /**
+         * The step value of the dial
+         */
+        showValue: boolean
+      }
     }
   }
   /**
-   *
+   * Custom widget element - Dropdown
    */
   [CustomWidgetElementType.Dropdown]: {
     /**
@@ -286,29 +344,53 @@ export type CustomWidgetElementOptions = {
      */
     hash: string
     /**
-     *
+     * Element name
      */
     name: string
     /**
-     *
+     * Element options
      */
     options: {
       /**
-       *
+       * Variable type
        */
-      cockpitAction: CockpitAction
+      variableType: string
       /**
-       * Alignment of the element
+       * Action parameter
        */
-      align: 'start' | 'center' | 'end'
+      actionParameter: CockpitActionParameter
       /**
-       *
+       * Layout options
        */
-      options: string[]
+      layout: {
+        /**
+         * Alignment of the element
+         */
+        selectorOptions: [
+          {
+            /**
+             * The name of the option
+             */
+            name: string
+            /**
+             * The value of the option
+             */
+            value: string
+          }
+        ]
+        /**
+         * Alignment of the element
+         */
+        align: 'start' | 'center' | 'end'
+        /**
+         *  The size of the dropdown
+         */
+        width: number
+      }
     }
   }
   /**
-   *
+   * Custom widget element - Slider
    */
   [CustomWidgetElementType.Slider]: {
     /**
@@ -316,53 +398,62 @@ export type CustomWidgetElementOptions = {
      */
     hash: string
     /**
-     *
+     * Element name
      */
     name: string
     /**
-     *
+     * Element options
      */
     options: {
       /**
-       *
+       * Variable type
        */
-      cockpitAction: CockpitAction
+      variableType: string
       /**
-       * Alignment of the element
+       * Action parameter
        */
-      align: 'start' | 'center' | 'end'
+      actionParameter: CockpitActionParameter
       /**
-       *
+       * Layout options
        */
-      size: 'small' | 'medium' | 'large'
-      /**
-       *
-       */
-      color: string
-      /**
-       *
-       */
-      minValue: number
-      /**
-       *
-       */
-      maxValue: number
-      /**
-       *
-       */
-      showValue: boolean
-      /**
-       *
-       */
-      label: string
-      /**
-       *
-       */
-      labelWidth: number
+      layout: {
+        /**
+         * Alignment of the element
+         */
+        align: 'start' | 'center' | 'end'
+        /**
+         * The size of the slider
+         */
+        size: 'small' | 'medium' | 'large'
+        /**
+         * The color of the slider
+         */
+        color: string
+        /**
+         * The minimum value of the slider
+         */
+        minValue: number
+        /**
+         * The maximum value of the slider
+         */
+        maxValue: number
+        /**
+         * The step value of the slider
+         */
+        showTooltip: boolean
+        /**
+         * The label of the slider
+         */
+        label: string
+        /**
+         * The width of the label
+         */
+        labelWidth: number
+      }
     }
   }
   /**
-   *
+   * Custom widget element - Switch
    */
   [CustomWidgetElementType.Switch]: {
     /**
@@ -370,33 +461,42 @@ export type CustomWidgetElementOptions = {
      */
     hash: string
     /**
-     *
+     * Element name
      */
     name: string
     /**
-     *
+     * Element options
      */
     options: {
       /**
-       *
+       * Variable type
        */
-      cockpitAction: CockpitAction
+      variableType: string
       /**
-       * Alignment of the element
+       * Action parameter
        */
-      align: 'start' | 'center' | 'end'
+      actionParameter: CockpitActionParameter
       /**
-       *
+       * Layout options
        */
-      size: 'small' | 'medium' | 'large'
-      /**
-       *
-       */
-      color: string
-      /**
-       *
-       */
-      label: string
+      layout: {
+        /**
+         * Alignment of the element
+         */
+        align: 'start' | 'center' | 'end'
+        /**
+         * The size of the switch
+         */
+        size: 'small' | 'medium' | 'large'
+        /**
+         * The color of the switch
+         */
+        color: string
+        /**
+         * The label of the switch
+         */
+        label: string
+      }
     }
   }
 }
@@ -535,42 +635,42 @@ export type MiniWidget = {
 
 export type CustomWidget = {
   /**
-   *
+   * Unique identifier for the widget
    */
   hash: string
   /**
-   *
+   * Component type of the widget
    */
   component: WidgetType
   /**
-   *
+   * 2D position of the widget (top-left corner)
    */
   position: Point2D
   /**
-   *
+   * Size of the widget box
    */
   size: SizeRect2D
   /**
-   *
+   * Editable name for the widget
    */
   name: string
   /**
-   *
+   * Internal options of the widget
    */
   elementContainers: Array<{
     /**
-     *
+     * Editable name for the container
      */
     name: CustomWidgetElementContainers
     /**
-     *
+     * Array of elements that are stored in the container
      */
     elements: CustomWidgetElement[]
   }>
   /**
-   *
+   * Internal options of the widget
    */
-  options: Record<string, any>
+  options: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export type CustomWidgetElement = {
@@ -586,6 +686,10 @@ export type CustomWidgetElement = {
    * Component type of the element
    */
   component: CustomWidgetElementType
+  /**
+   * If the element is a boolean input or not
+   */
+  isBoolean: boolean
   /**
    * Internal options of the widget
    */

@@ -312,7 +312,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { openSnackbar } from '@/composables/snackbar'
@@ -665,6 +665,7 @@ const saveUrlParameter = (): void => {
 
 onMounted(() => {
   loadSavedActions()
+  console.log('🚀 ~ allSavedActionConfigs:', allSavedActionConfigs.value)
 })
 </script>
 

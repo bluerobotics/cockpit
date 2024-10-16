@@ -5,8 +5,9 @@
 </template>
 
 <script setup lang="ts">
-import { type AsyncComponentLoader, defineAsyncComponent, toRefs } from 'vue'
+import { type AsyncComponentLoader, defineAsyncComponent, onMounted, toRefs } from 'vue'
 
+import { createCockpitActionVariable } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { CustomWidgetElement, CustomWidgetElementType } from '@/types/widgets'
 
@@ -31,4 +32,12 @@ const componentFromType = (componentType: CustomWidgetElementType): AsyncCompone
 
   return componentCache[componentType]
 }
+
+const registerCockpitActions = (): void => {
+  if (element.value.options.actionParameter) {
+    createCockpitActionVariable(element.value.options.actionParameter)
+  }
+}
+
+onMounted(() => registerCockpitActions())
 </script>

@@ -88,7 +88,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   const showElementPropsDrawer = (customWidgetElementHash: string): void => {
-    console.log('🚀 ~ customWidgetElementHash:', customWidgetElementHash)
     const customWidgetElement = getElementByHash(customWidgetElementHash)
     if (!customWidgetElement) {
       showSnackbar({ variant: 'error', message: 'Could not find element with the given hash.', duration: 3000 })
@@ -156,12 +155,39 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
 
     const currentPosition = currentViewWidgets[widgetIndex].position
-    const newWidgetHash = uuid4()
-    loadedWidget.hash = newWidgetHash
-    loadedWidget.position = currentPosition
 
+    reassignHashesToWidget(loadedWidget)
+
+    loadedWidget.position = currentPosition
     currentViewWidgets[widgetIndex] = loadedWidget
+
     showSnackbar({ variant: 'success', message: 'Widget loaded successfully with new hash.', duration: 3000 })
+  }
+
+  const reassignHashesToWidget = (widget: Widget): void => {
+    const oldToNewHashMap = new Map<string, string>()
+
+    const oldWidgetHash = widget.hash
+    widget.hash = uuid4()
+    oldToNewHashMap.set(oldWidgetHash, widget.hash)
+
+    for (const container of widget.options.elementContainers) {
+      for (const element of container.elements) {
+        reassignHashesToElement(element, oldToNewHashMap)
+      }
+    }
+  }
+
+  const reassignHashesToElement = (element: CustomWidgetElement, hashMap: Map<string, string>): void => {
+    const oldHash = element.hash
+    element.hash = uuid4()
+    hashMap.set(oldHash, element.hash)
+
+    if (element.options && element.options.actionParameter) {
+      const actionParameter = element.options.actionParameter
+      actionParameter.id = `${actionParameter.id}_new`
+      actionParameter.name = `${actionParameter.name}_new`
+    }
   }
 
   /**
@@ -169,6 +195,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param {string} elementHash - The unique identifier of the element.
    * @param {Record<string, any>} newOptions - The new options to merge with the existing ones.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateElementOptions = (elementHash: string, newOptions: Record<string, any>): void => {
     const element = getElementByHash(elementHash)
     if (element) {
@@ -176,8 +203,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         ...element.options,
         ...newOptions,
       }
-    } else {
-      showSnackbar({ variant: 'error', message: 'Element not found.', duration: 3000 })
     }
   }
 

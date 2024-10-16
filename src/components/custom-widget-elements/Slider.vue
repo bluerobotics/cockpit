@@ -7,32 +7,45 @@
         : 'border-0'
     "
   >
-    <div :style="{ minWidth: element.options.labelWidth + 'px' }">
-      <p v-if="element.options.label !== ''" class="mr-3 mb-[3px]">
-        {{ element.options.label }}
+    <div :style="{ minWidth: element.options.layout?.labelWidth + 'px' }">
+      <p v-if="element.options.layout?.label !== ''" class="mr-3 mb-[3px]">
+        {{ element.options.layout?.label }}
       </p>
     </div>
     <v-slider
       v-model="sliderValue"
-      :min="element.options.minValue"
-      :max="element.options.maxValue"
-      :thumb-label="element.options.showValue"
+      :min="element.options.layout?.minValue"
+      :max="element.options.layout?.maxValue"
+      :thumb-label="element.options.layout?.showTooltip"
       hide-details
       class="min-w-20"
-      :color="element.options.color || 'white'"
+      :color="element.options.layout?.color || 'white'"
       :class="{
         'pointer-events-none': widgetStore.editingMode,
-        'scale-75': element.options.size === 'small',
-        'scale-125': element.options.size === 'large',
+        'scale-75': element.options.layout?.size === 'small',
+        'scale-125': element.options.layout?.size === 'large',
       }"
+      @change="
+        () => {
+          if (element.options.actionParameter) {
+            setCockpitActionVariableData(element.options.actionParameter.name, sliderValue.toFixed(1))
+          }
+        }
+      "
     ></v-slider>
   </div>
 </template>
 
 <script setup lang="ts">
 import { toRefs } from '@vueuse/core'
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
+import {
+  deleteCockpitActionVariable,
+  listenCockpitActionVariable,
+  setCockpitActionVariableData,
+  unlistenCockpitActionVariable,
+} from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -52,15 +65,29 @@ const sliderValue = ref(0)
 onMounted(() => {
   if (!element.value.options || Object.keys(element.value.options).length === 0) {
     widgetStore.updateElementOptions(element.value.hash, {
-      label: '',
-      minValue: 0,
-      maxValue: 100,
-      showValue: true,
-      color: '#FFFFFF',
-      size: 'medium',
-      cockpitAction: element.value.options.cockpitAction || '',
-      labelWidth: element.value.options.labelWidth || 0,
+      layout: {
+        label: '',
+        minValue: 0,
+        maxValue: 100,
+        showTooltip: true,
+        color: '#FFFFFF',
+        size: 'medium',
+        labelWidth: element.value.options.layout?.labelWidth || 0,
+      },
+      actionParameter: undefined,
     })
+  }
+  if (element.value.options.actionParameter) {
+    listenCockpitActionVariable(element.value.options.actionParameter?.name, (value) => {
+      sliderValue.value = value as number
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (element.value.options.actionParameter) {
+    unlistenCockpitActionVariable(element.value.options.actionParameter.name)
+    deleteCockpitActionVariable(element.value.options.actionParameter.name)
   }
 })
 </script>

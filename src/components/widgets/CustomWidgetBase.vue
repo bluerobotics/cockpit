@@ -2,7 +2,11 @@
   <div
     ref="widgetBase"
     class="h-full rounded-lg overflow-hidden"
-    :class="isWrapped ? 'w-[40px] ml-auto' : 'w-full'"
+    :class="[
+      isWrapped ? 'w-[40px]' : 'w-full',
+      isWrapped && wrapDirection === 'left' ? 'ml-0 mr-auto' : '',
+      isWrapped && wrapDirection === 'right' ? 'mr-0 ml-auto' : '',
+    ]"
     :width="canvasSize.width"
     :height="canvasSize.height"
     :style="[
@@ -32,8 +36,8 @@
         </div>
         <div class="flex">
           <v-menu v-if="widgetStore.editingMode" theme="dark">
-            <template #activator="{ props }">
-              <v-btn size="20" icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
+            <template #activator="{ props: buttonProps }">
+              <v-btn size="20" icon="mdi-dots-vertical" variant="text" v-bind="buttonProps"></v-btn>
             </template>
 
             <v-list>
@@ -125,8 +129,8 @@
       <div />
       <v-btn
         v-if="!widgetStore.editingMode"
-        class="fixed bottom-[2px] left-[2px]"
-        :icon="isWrapped ? 'mdi-chevron-left' : 'mdi-chevron-right'"
+        :class="['fixed bottom-[2px]', wrapDirection === 'left' ? 'left-[2px]' : 'right-[2px]']"
+        :icon="wrapChevronIcon"
         variant="text"
         size="36"
         @click="isWrapped = !isWrapped"
@@ -192,7 +196,7 @@ const { showSnackbar } = useSnackbar()
 
 const props = defineProps<{
   /**
-   *
+   * Widget instance
    */
   widget: CustomWidget
 }>()
@@ -210,6 +214,29 @@ const leftColumnWidth = ref(props.widget.options.leftColumnWidth || 50)
 const isDragging = ref(false)
 const widgetBase = ref<HTMLElement | null>(null)
 const isWrapped = ref(false)
+const wrapDirection = ref<'left' | 'right'>('right')
+
+const updateWrapDirection = (): void => {
+  if (widgetBase.value) {
+    const widgetRect = widgetBase.value.getBoundingClientRect()
+    const screenWidth = window.innerWidth
+    const widgetCenterX = widgetRect.left + widgetRect.width / 2
+
+    if (widgetCenterX < screenWidth / 2) {
+      wrapDirection.value = 'left'
+    } else {
+      wrapDirection.value = 'right'
+    }
+  }
+}
+
+const wrapChevronIcon = computed(() => {
+  if (wrapDirection.value === 'left') {
+    return isWrapped.value ? 'mdi-chevron-right' : 'mdi-chevron-left'
+  } else {
+    return isWrapped.value ? 'mdi-chevron-left' : 'mdi-chevron-right'
+  }
+})
 
 const enableEditing = (): void => {
   editedName.value = props.widget.name
@@ -314,6 +341,7 @@ const enableMovingOnDrag = (): void => {
 }
 
 const disableMovingOnDrag = (): void => {
+  updateWrapDirection()
   widgetStore.allowMovingAndResizing(currentWidget.value.hash, false)
   window.removeEventListener('mouseup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
@@ -339,7 +367,7 @@ const widgetAdded = (e: SortableEvent.SortableEvent, containerName: string): voi
   }
 }
 
-const { width: windowWidth, height: windowHeight } = useWindowSize()
+const { width: windowWidth } = useWindowSize()
 const canvasSize = computed(() => ({
   width: currentWidget.value.size.width * windowWidth.value,
   height: currentWidget.value.size.height * windowWidth.value,
@@ -369,7 +397,6 @@ const loadWidgetFromStore = (): void => {
 }
 
 onBeforeMount(() => {
-  console.log('🚀 ~ props.widget:', props.widget)
   props.widget.options.elementContainers.forEach((container: CustomWidgetElementContainer) => {
     lastKnownHashes.value.set(
       container.name,
@@ -379,6 +406,8 @@ onBeforeMount(() => {
 })
 
 onMounted(() => {
+  updateWrapDirection()
+  window.addEventListener('resize', updateWrapDirection)
   containerRef.value = document.querySelector('.main')
   loadWidgetFromStore()
   disableMovingOnDrag()

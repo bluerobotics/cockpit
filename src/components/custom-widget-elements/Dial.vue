@@ -2,7 +2,7 @@
   <div
     id="dial"
     class="flex items-center w-auto"
-    :style="{ justifyContent: element.options.align }"
+    :style="{ justifyContent: element.options.layout?.align }"
     :class="
       widgetStore.elementToShowOnDrawer?.hash === element.hash && widgetStore.editingMode
         ? 'bg-[#00000010] '
@@ -19,7 +19,7 @@
       </div>
     </div>
     <div
-      v-if="element.options.showValue"
+      v-if="element.options.layout?.showValue"
       class="value-display bg-[#FFFFFF22] border-[#FFFFFF44] border-[1px] rounded-md p-[2px] min-w-9 text-center elevation-1"
     >
       {{ Math.round(potentiometerValue) }}
@@ -28,8 +28,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRefs } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
 
+import {
+  deleteCockpitActionVariable,
+  listenCockpitActionVariable,
+  setCockpitActionVariableData,
+  unlistenCockpitActionVariable,
+} from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -50,18 +56,30 @@ const rotationAngle = ref(-150)
 onMounted(() => {
   if (!element.value.options || Object.keys(element.value.options).length === 0) {
     widgetStore.updateElementOptions(element.value.hash, {
-      minValue: 0,
-      maxValue: 100,
-      size: 'small',
-      showValue: true,
-      cockpitAction: element.value.options.cockpitAction || '',
-      align: 'center',
+      variableType: 'number',
+      actionParameter: undefined,
+      layout: {
+        minValue: 0,
+        maxValue: 100,
+        size: 'medium',
+        showValue: true,
+        align: 'center',
+      },
+    })
+  }
+  if (element.value.options.actionParameter) {
+    listenCockpitActionVariable(element.value.options.actionParameter?.name, (value) => {
+      potentiometerValue.value = value as number
+      const rotationRange = 300
+      const valueRange = element.value.options.layout.maxValue - element.value.options.layout.minValue || 1
+      rotationAngle.value =
+        (((value as number) - element.value.options.layout?.minValue) / valueRange) * rotationRange - 150
     })
   }
 })
 
 const sizeClass = computed(() => {
-  switch (element.value.options.size) {
+  switch (element.value.options.layout?.size) {
     case 'medium':
       return 'potentiometer-medium'
     case 'large':
@@ -90,8 +108,12 @@ const startDrag = (event: MouseEvent): void => {
     rotationAngle.value = adjustedAngle
 
     const rotationRange = 300
-    const valueRange = element.value.options.maxValue - element.value.options.minValue
-    potentiometerValue.value = ((adjustedAngle + 150) / rotationRange) * valueRange + element.value.options.minValue
+    const valueRange = element.value.options.layout?.maxValue - element.value.options.layout?.minValue
+    potentiometerValue.value =
+      ((adjustedAngle + 150) / rotationRange) * valueRange + element.value.options.layout?.minValue
+    if (element.value.options.actionParameter) {
+      setCockpitActionVariableData(element.value.options.actionParameter.name, potentiometerValue.value.toFixed(1))
+    }
   }
 
   const stopDrag = (): void => {
@@ -102,6 +124,13 @@ const startDrag = (event: MouseEvent): void => {
   document.addEventListener('mousemove', handleDrag)
   document.addEventListener('mouseup', stopDrag)
 }
+
+onUnmounted(() => {
+  if (element.value.options.actionParameter) {
+    unlistenCockpitActionVariable(element.value.options.actionParameter.name)
+    deleteCockpitActionVariable(element.value.options.actionParameter.name)
+  }
+})
 </script>
 
 <style scoped>

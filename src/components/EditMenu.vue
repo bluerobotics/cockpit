@@ -152,7 +152,7 @@
     </div>
     <v-divider class="opacity-20" />
     <div
-      class="flex flex-row justify-start relative items-center bg-[#CBCBCB2A] elevation-5 2xl:h-full xl:h-[45px] h-[35px] overflow-hidden"
+      class="flex flex-row max-h-[48px] justify-start relative items-center bg-[#CBCBCB2A] elevation-5 2xl:h-full xl:h-[45px] h-[35px] overflow-hidden"
     >
       <v-icon
         size="sm"
@@ -444,7 +444,7 @@
   <div class="flex items-center justify-between edit-panel bottom-panel" :class="{ active: editMode }">
     <div class="w-px h-full bg-[#FFFFFF18]" />
     <div
-      class="flex flex-col justify-between items-center 2xl:w-[30%] w-[25%] max-w-[240px] h-full text-white 2xl:pr-2 px-1 2xl:py-5 xl:py-4 lg:py-1"
+      class="flex flex-col justify-around items-center 2xl:w-[30%] w-[25%] max-w-[240px] h-full text-white 2xl:pr-2 px-1 2xl:py-5 xl:py-4 lg:py-1"
     >
       <div>
         <p class="2xl:text-md text-xs ml-1">Widget type:</p>
@@ -463,21 +463,17 @@
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the main view area
         </div>
-        <div v-show="widgetMode === 'Regular'" class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 rounded-lg">
-          (Click on card to add)
-        </div>
+        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
         <div v-show="widgetMode === 'Mini'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the top and bottom bars
         </div>
-        <div v-show="widgetMode === 'Mini'" class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 rounded-lg">
-          (Drag card in place to add)
-        </div>
+        <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
         <div v-show="widgetMode === 'Custom'">
           <v-btn
             type="flat"
-            class="bg-[#3B78A8] text-white w-[95%]"
+            class="bg-[#FFFFFF33] text-white w-[95%]"
             @click="store.addWidget(WidgetType.CustomWidgetBase, store.currentView)"
-            >Create Custom Widget
+            >Add widget base
           </v-btn>
         </div>
       </div>
@@ -630,7 +626,7 @@
   >
     <div
       v-if="store.isElementsPropsDrawerVisible && store.editingMode && store.elementToShowOnDrawer"
-      class="flex fixed w-[250px] h-[78vh] right-0 top-0 border-l-[1px] border-[#FFFFFF44] text-white elevation-5 bg-[#2d404d]"
+      class="flex fixed w-[250px] h-[78vh] right-0 top-0 border-l-[1px] border-[#FFFFFF44] text-white elevation-5 bg-[#051e2d]"
     >
       <ElementConfigPanel />
     </div>
@@ -734,6 +730,7 @@ const availableCustomWidgetElementsTypes = computed(() =>
     name: widgetType,
     options: {},
     hash: uuid(),
+    isBoolean: false,
     managerVars: defaultCustomWidgetManagerVars,
     cockpitActions: [],
   }))
