@@ -70,7 +70,18 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const ws_protocol = location?.protocol === 'https:' ? 'wss' : 'ws'
 
   const cpuLoad = ref<number>()
-  const globalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
+  const rawGlobalAddress = useStorage('cockpit-vehicle-address', defaultGlobalAddress)
+  const globalAddress = computed({
+    get() {
+      if (rawGlobalAddress.value.includes('://')) {
+        return rawGlobalAddress.value.split('://')[1]
+      }
+      return rawGlobalAddress.value
+    },
+    set(newValue) {
+      rawGlobalAddress.value = newValue
+    },
+  })
 
   const defaultMainConnectionURI = computed(() => `${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`)
   const defaultWebRTCSignallingURI = computed(() => `${ws_protocol}://${globalAddress.value}:6021/`)
