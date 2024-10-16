@@ -134,7 +134,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
-          path: dist/Cockpit*.${{ matrix.extension }}
+          path: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
           if-no-files-found: error
 
       - name: Upload diff artifact (mac-only)
@@ -223,17 +223,30 @@ jobs:
       - name: Set version as environment variable (others)
         run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $GITHUB_ENV
 
-      - name: Build electron
+      - name: Build electron (arm)
+        if: matrix.os == 'ubuntu-24-arm'
         run: |
           bun install --frozen-lockfile
           bun run build
-          env DEBUG="@malept/flatpak-bundler" bun run deploy:flatpak
+          env DEBUG="@malept/flatpak-bundler" bun run deploy:flatpak --arm64
+
+      - name: Build electron (x86_64)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+          env DEBUG="@malept/flatpak-bundler" bun run deploy:flatpak --x64
+
+      - name: Rename 'aarch64' to 'arm64'
+        if: matrix.os == 'ubuntu-24-arm'
+        run: |
+          mv dist/Cockpit-${{ matrix.suffix }}-aarch64-${{ env.VERSION }}.${{ matrix.extension }} dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
-          path: dist/Cockpit*.${{ matrix.extension }}
+          path: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
           if-no-files-found: error
 
       - name: Upload Release
