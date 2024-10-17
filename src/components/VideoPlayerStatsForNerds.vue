@@ -6,7 +6,7 @@
 
 <script lang="ts" setup>
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useVideoStore } from '@/stores/video'
 import { WebRTCStatsEvent } from '@/types/video'
@@ -34,6 +34,7 @@ const props = defineProps({
 const canvasRef = ref(null)
 const framerateData = ref([])
 const bitrateData = ref([])
+const packetLostData = ref([])
 let animationFrameId = null
 let intervalId = null
 let bitrate = 0
@@ -54,11 +55,13 @@ let framedrops = 0
 
 let packetLossPercentage = 0
 let framerate = 0
+let packetLostDelta = 0
 let videoHeight = 0
 
 const maxDataPoints = 100
 let maxBitrateReceived = 1000 // max bitrate received, used for scaling the plot
 let maxFramerateReceived = 30 // max framerate received, used for scaling the plot
+let maxPacketLost = 10 // max packet lost, used for scaling the plot
 let absoluteMaxFrameRate = 120 // Absolute maximum framerate, used for dealing with outliers
 
 const plotHeight = 60 // Height of the plot area
@@ -82,28 +85,29 @@ function draw(): void {
 
   ctx.clearRect(0, 0, width, height)
 
-  // Draw bitrate plot
-  ctx.strokeStyle = 'rgb(255, 165, 0)' // Orange
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  for (let i = 0; i < bitrateData.value.length; i++) {
-    const x = (i / (maxDataPoints - 1)) * width
-    const y = height - normalizeValue(bitrateData.value[i], maxBitrateReceived)
-    if (i === 0) ctx.moveTo(x, y)
-    else ctx.lineTo(x, y)
+  /**
+   *
+   * @param {number[]} data  - The data to plot
+   * @param {string} color - The color of the plot
+   * @param {number} max - The maximum value of the data, used for scaling the plot
+   */
+  function drawPlot(data: number[], color: string, max: number): void {
+    ctx.strokeStyle = color
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    for (let i = 0; i < data.length; i++) {
+      const x = (i / (maxDataPoints - 1)) * width
+      const y = height - normalizeValue(data[i], max)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.stroke()
   }
-  ctx.stroke()
 
-  // Draw framerate plot
-  ctx.strokeStyle = 'rgb(0, 255, 0)' // Green
-  ctx.beginPath()
-  for (let i = 0; i < framerateData.value.length; i++) {
-    const x = (i / (maxDataPoints - 1)) * width
-    const y = height - normalizeValue(framerateData.value[i], maxFramerateReceived)
-    if (i === 0) ctx.moveTo(x, y)
-    else ctx.lineTo(x, y)
-  }
-  ctx.stroke()
+  // Draw the plots
+  drawPlot(bitrateData.value, 'rgb(255, 165, 0)', maxBitrateReceived)
+  drawPlot(framerateData.value, 'rgb(0, 255, 0)', maxFramerateReceived)
+  drawPlot(packetLostData.value, 'rgb(255, 0, 0)', maxPacketLost)
 
   // Print text stats
   const color = connectionLost ? 'red' : 'white'
@@ -138,13 +142,15 @@ const webrtcStats = new WebRTCStats({ getStatsInterval: 100 })
 function update(): void {
   framerateData.value.push(framerate)
   bitrateData.value.push(bitrate)
+  packetLostData.value.push(Math.min(packetLostDelta, maxPacketLost))
   if (framerateData.value.length > maxDataPoints) framerateData.value.shift()
   if (bitrateData.value.length > maxDataPoints) bitrateData.value.shift()
+  if (packetLostData.value.length > maxDataPoints) packetLostData.value.shift()
 
   // Update max values
   maxBitrateReceived = Math.max(maxBitrateReceived, ...bitrateData.value)
   maxFramerateReceived = Math.max(maxFramerateReceived, ...framerateData.value)
-  if (maxFramerateReceived > absoluteMaxFrameRate) maxFramerateReceived = absoluteMaxFrameRate
+  maxFramerateReceived = Math.min(maxFramerateReceived, absoluteMaxFrameRate)
 }
 
 watch(videoStore.activeStreams, (streams): void => {
@@ -174,6 +180,7 @@ onMounted(() => {
         const newBitrate = videoData.bitrate / 1000
         bitrate = bitrate * 0.8 + newBitrate * 0.2
       }
+      packetLostDelta = videoData.packetsLost - packetsLost
       packetsLost = videoData.packetsLost
       nackCount = videoData.nackCount
       pliCount = videoData.pliCount
@@ -199,6 +206,10 @@ onMounted(() => {
 onUnmounted(() => {
   clearInterval(intervalId)
   cancelAnimationFrame(animationFrameId)
+})
+
+onBeforeUnmount(() => {
+  webrtcStats.destroy()
 })
 </script>
 
