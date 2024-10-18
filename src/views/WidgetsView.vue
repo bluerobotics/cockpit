@@ -18,6 +18,7 @@
           :widget="widget"
           :allow-moving="store.widgetManagerVars(widget.hash).allowMoving"
           :allow-resizing="store.editingMode"
+          :disable-responsiveness="store.widgetManagerVars(widget.hash).disableResponsiveness"
         >
           <component :is="componentFromType(widget.component)" :widget="widget" />
         </WidgetHugger>

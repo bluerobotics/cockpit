@@ -12,7 +12,7 @@
             <p>View, manage, and create HTTP request actions.</p>
           </template>
           <template #content>
-            <div class="flex justify-center flex-col ml-2 mb-8 mt-2 w-[640px]">
+            <div class="flex justify-center flex-col mr-1 mb-8 mt-2 w-[640px]">
               <v-data-table
                 :items="allSavedActionConfigs"
                 items-per-page="10"
@@ -23,13 +23,13 @@
                 <template #headers>
                   <tr>
                     <th class="text-left">
-                      <p class="text-[16px] font-bold">Name</p>
+                      <p class="text-[16px] ml-[40px] font-bold">Name</p>
                     </th>
                     <th class="text-center">
                       <p class="text-[16px] font-bold">URL</p>
                     </th>
                     <th class="text-right">
-                      <p class="text-[16px] font-bold">Actions</p>
+                      <p class="text-[16px] mr-[50px] font-bold">Actions</p>
                     </th>
                   </tr>
                 </template>
@@ -55,6 +55,7 @@
                           @click="openActionEditDialog(item.id)"
                         />
                         <v-btn
+                          v-tooltip="'Run/Test'"
                           variant="outlined"
                           class="rounded-full mx-1"
                           icon="mdi-play"
@@ -62,6 +63,7 @@
                           @click="runAction(item.id)"
                         />
                         <v-btn
+                          v-tooltip="'Export'"
                           variant="outlined"
                           class="rounded-full mx-1 pl-[3px] pt-[1px]"
                           icon="mdi-export"
@@ -81,8 +83,9 @@
                   </tr>
                 </template>
                 <template #bottom>
-                  <tr class="w-full">
-                    <td colspan="3" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-2">
+                  <v-divider />
+                  <tr class="flex w-full mt-2">
+                    <td colspan="3" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-4">
                       <v-btn variant="outlined" class="rounded-lg" @click="openNewActionDialog()">
                         <v-icon start>mdi-plus</v-icon>
                         New HTTP action
@@ -109,7 +112,7 @@
     </template>
   </BaseConfigurationView>
 
-  <v-dialog v-model="actionDialog.show" max-width="500px">
+  <v-dialog v-model="actionDialog.show" max-width="500px" :style="{ opacity: windowOpacity }">
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">{{
         editMode ? 'Edit action' : 'Create new action'
@@ -198,7 +201,7 @@
           <v-btn color="white" variant="text" @click="closeActionDialog">Cancel</v-btn>
           <div class="flex gap-x-10">
             <v-btn variant="text" @click="resetNewAction">Reset</v-btn>
-            <v-btn color="primary" :disabled="!isFormValid" variant="text" @click="saveActionConfig">
+            <v-btn :disabled="!isFormValid" variant="text" @click="saveActionConfig">
               {{ editMode ? 'Save' : 'Create' }}
             </v-btn>
           </div>
@@ -366,6 +369,8 @@ const headerDialog = ref({
   error: '',
 })
 
+const windowOpacity = ref(1)
+
 const paramValueOptions = computed(() => {
   const options = [{ title: 'Fixed (specify below)', value: 'fixed' }]
   const availableInputParameters = getAllCockpitActionVariablesInfo()
@@ -470,6 +475,7 @@ const isValidHeaders = (headers: Record<string, string>): { isValid: boolean; er
 }
 
 const openUrlParamDialog = (): void => {
+  windowOpacity.value = 0
   urlParamDialog.value = {
     show: true,
     key: '',
@@ -480,6 +486,7 @@ const openUrlParamDialog = (): void => {
 
 const closeUrlParamDialog = (): void => {
   urlParamDialog.value.show = false
+  windowOpacity.value = 1
 }
 
 const addUrlParameter = (): void => {
@@ -490,6 +497,7 @@ const addUrlParameter = (): void => {
 }
 
 const openJsonDialog = (): void => {
+  windowOpacity.value = 0
   bodyDialog.value = {
     show: true,
     bodyText: newActionConfig.value.body,
@@ -499,6 +507,7 @@ const openJsonDialog = (): void => {
 }
 
 const closeJsonDialog = (): void => {
+  windowOpacity.value = 1
   bodyDialog.value.show = false
 }
 
@@ -514,6 +523,7 @@ const removeUrlParam = (key: string): void => {
 }
 
 const openHeaderDialog = (): void => {
+  windowOpacity.value = 0
   headerDialog.value = {
     show: true,
     key: '',
@@ -523,6 +533,7 @@ const openHeaderDialog = (): void => {
 }
 
 const closeHeaderDialog = (): void => {
+  windowOpacity.value = 1
   headerDialog.value.show = false
   headerDialog.value.error = ''
 }

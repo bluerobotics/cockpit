@@ -1,3 +1,5 @@
+import { useSnackbar } from '@/composables/snackbar'
+
 /**
  * A variable to be used on a Cockpit action
  * @param { string } id - The id of the variable
@@ -19,6 +21,8 @@ class CockpitActionVariable {
   }
 }
 
+const { showSnackbar } = useSnackbar()
+
 const cockpitActionVariableInfo: Record<string, CockpitActionVariable> = {}
 export const cockpitActionVariableData: Record<string, string | number | boolean> = {}
 const cockpitActionVariableListeners: Record<string, ((value: string | number | boolean) => void)[]> = {}
@@ -33,7 +37,13 @@ export const getCockpitActionVariableInfo = (id: string): CockpitActionVariable 
 
 export const createCockpitActionVariable = (variable: CockpitActionVariable): void => {
   if (cockpitActionVariableInfo[variable.id]) {
-    throw new Error(`Cockpit action variable with id '${variable.id}' already exists. Update it instead.`)
+    console.log(`Cockpit action variable with id '${variable.id}' already exists. Renaming to ${variable.name}_new.`)
+    showSnackbar({
+      message: `Cockpit action variable with id '${variable.id}' already exists. Renaming to ${variable.name}_new.`,
+    })
+    variable.id = `${variable.id}_new`
+    variable.name = `${variable.name}_new`
+    cockpitActionVariableInfo[variable.id] = variable
   }
   cockpitActionVariableInfo[variable.id] = variable
 }
@@ -43,6 +53,9 @@ export const updateCockpitActionVariableInfo = (variable: CockpitActionVariable)
     throw new Error(`Cockpit action variable with id '${variable.id}' does not exist. Create it first.`)
   }
   cockpitActionVariableInfo[variable.id] = variable
+  if ((cockpitActionVariableInfo[variable.id] = variable)) {
+    showSnackbar({ message: 'Parameter successfully updated', variant: 'success' })
+  }
 }
 
 export const getCockpitActionVariableData = (id: string): string | number | boolean | undefined => {
@@ -57,6 +70,11 @@ export const setCockpitActionVariableData = (id: string, data: string | number |
 export const deleteCockpitActionVariable = (id: string): void => {
   delete cockpitActionVariableInfo[id]
   delete cockpitActionVariableData[id]
+  if (!cockpitActionVariableInfo[id]) {
+    showSnackbar({ message: 'Parameter successfully deleted', variant: 'success' })
+    return
+  }
+  showSnackbar({ message: 'Parameter could not be deleted', variant: 'error' })
 }
 
 export const listenCockpitActionVariable = (id: string, listener: (value: string | number | boolean) => void): void => {
