@@ -81,7 +81,15 @@
     absolute
     bottom
     color="white"
+    :style="`top: ${topProgressBarDisplacement}`"
   />
+  <p
+    v-if="fetchingMission"
+    :style="{ top: topProgressBarDisplacement }"
+    class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
+  >
+    Loading mission...
+  </p>
 </template>
 
 <script setup lang="ts">
@@ -556,6 +564,10 @@ const executeMissionOnVehicle = async (): Promise<void> => {
 const widgetStore = useWidgetManagerStore()
 const bottomButtonsDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).bottom, 0)}px`
+})
+
+const topProgressBarDisplacement = computed(() => {
+  return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
 })
 </script>
 
