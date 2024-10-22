@@ -417,7 +417,7 @@ watch(vehiclePositionHistory, (newPoints) => {
   if (map.value === undefined || newPoints === undefined) return
 
   if (vehicleHistoryPolyline.value === undefined) {
-    vehicleHistoryPolyline.value = L.polyline([], { color: '#358AC3' }).addTo(map.value)
+    vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
   }
 
   const latLongHistory = newPoints.filter((posHis) => posHis.snapshot !== undefined).map((posHis) => posHis.snapshot)

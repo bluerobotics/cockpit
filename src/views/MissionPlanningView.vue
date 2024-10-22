@@ -735,7 +735,7 @@ const generateWaypointsFromSurvey = (): void => {
 // Helper function to connect two waypoints with a polyline
 const addWaypointConnection = (fromWaypoint: Waypoint, toWaypoint: Waypoint): void => {
   const polyline = L.polyline([fromWaypoint.coordinates, toWaypoint.coordinates], {
-    color: '#2563EB',
+    color: '#3B82F6',
     weight: 3,
     opacity: 0.8,
     className: 'waypoint-connection',
