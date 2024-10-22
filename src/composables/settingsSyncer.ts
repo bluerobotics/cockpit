@@ -136,11 +136,11 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
       try {
         await setKeyDataOnCockpitVehicleStorage(vehicleAddress, `settings/${username}/${key}`, newValue)
         const message = `Success updating '${key}' on BlueOS.`
-        openSnackbar({ message, duration: 3000, variant: 'success' })
+        openSnackbar({ message, duration: 3000, variant: 'success', closeButton: true })
         console.info(message)
       } catch (fetchError) {
         const message = `Failed updating '${key}' on BlueOS. Will keep trying.`
-        openSnackbar({ message, duration: 3000, variant: 'error' })
+        openSnackbar({ message, duration: 3000, variant: 'error', closeButton: true })
         console.error(message)
         console.error(fetchError)
 
