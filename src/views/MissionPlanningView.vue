@@ -227,8 +227,15 @@
       absolute
       bottom
       height="10"
-      color="rgba(0, 110, 255, 0.8)"
+      color="white"
+      :style="`top: ${widgetStore.currentTopBarHeightPixels}px`"
     />
+    <p
+      v-if="uploadingMission"
+      class="fixed top-[58px] left-[7px] flex text-md font-bold text-white z-30 drop-shadow-md"
+    >
+      Uploading mission to vehicle...
+    </p>
   </div>
 </template>
 
@@ -283,6 +290,9 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     missionUploadProgress.value = loadingPerc
   }
   try {
+    if (!vehicleStore.isVehicleOnline) {
+      throw 'Vehicle is not online.'
+    }
     await vehicleStore.uploadMission(missionStore.currentPlanningWaypoints, loadingCallback)
     const message = `Mission upload succeed! Open the Map widget in Flight Mode and click the "play" button to start the mission.`
     showDialog({ variant: 'success', message, timer: 6000 })
@@ -729,7 +739,7 @@ const generateWaypointsFromSurvey = (): void => {
   clearSurveyPath()
   isCreatingSurvey.value = false
 
-  showDialog({ variant: 'success', message: 'Waypoints generated from survey path.', timer: 3000 })
+  showDialog({ variant: 'success', message: 'Waypoints generated from survey path.', timer: 1000 })
 }
 
 // Helper function to connect two waypoints with a polyline
