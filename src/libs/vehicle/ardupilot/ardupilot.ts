@@ -1149,7 +1149,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     let lastSeqRequested = -1
     while (missionAck === undefined && !timeoutReachedUpload) {
       await sleep(10)
-      timeoutReachedUpload = new Date().getTime() - initTimeUpload > 10000
+      timeoutReachedUpload = new Date().getTime() - initTimeUpload > 50000
       const lastMissionItemRequestMessage =
         this._messages.get(MAVLinkType.MISSION_REQUEST) || this._messages.get(MAVLinkType.MISSION_REQUEST_INT)
       if (lastMissionItemRequestMessage === undefined) continue
