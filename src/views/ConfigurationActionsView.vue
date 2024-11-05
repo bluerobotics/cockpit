@@ -105,6 +105,7 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <MavlinkMessageActionConfig />
       </div>
     </template>
   </BaseConfigurationView>
@@ -314,6 +315,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 
+import MavlinkMessageActionConfig from '@/components/configuration/MavlinkMessageActionConfig.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { openSnackbar } from '@/composables/snackbar'
 import { getAllCockpitActionVariablesInfo } from '@/libs/actions/data-lake'
