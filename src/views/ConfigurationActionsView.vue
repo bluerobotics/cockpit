@@ -106,6 +106,7 @@
           </template>
         </ExpansiblePanel>
         <MavlinkMessageActionConfig />
+        <JavascriptActionConfig />
       </div>
     </template>
   </BaseConfigurationView>
@@ -315,6 +316,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 
+import JavascriptActionConfig from '@/components/configuration/JavascriptActionConfig.vue'
 import MavlinkMessageActionConfig from '@/components/configuration/MavlinkMessageActionConfig.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { openSnackbar } from '@/composables/snackbar'
