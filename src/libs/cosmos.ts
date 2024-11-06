@@ -1,5 +1,26 @@
 import { isBrowser } from 'browser-or-node'
 
+import {
+  cockpitActionVariableData,
+  createCockpitActionVariable,
+  deleteCockpitActionVariable,
+  getAllCockpitActionVariablesInfo,
+  getCockpitActionVariableData,
+  getCockpitActionVariableInfo,
+  listenCockpitActionVariable,
+  setCockpitActionVariableData,
+  unlistenCockpitActionVariable,
+  updateCockpitActionVariableInfo,
+} from './actions/data-lake'
+import {
+  availableCockpitActions,
+  deleteAction,
+  executeActionCallback,
+  registerActionCallback,
+  registerNewAction,
+  unregisterActionCallback,
+} from './joystick/protocols/cockpit-actions'
+
 declare global {
   /**
    * Running time assert for development
@@ -58,11 +79,58 @@ declare global {
      */
     sum(): number
   }
+
+  /* eslint-disable jsdoc/require-jsdoc */
+  interface Window {
+    cockpit: {
+      // Data lake:
+      cockpitActionVariableData: typeof cockpitActionVariableData
+      getCockpitActionVariableData: typeof getCockpitActionVariableData
+      listenCockpitActionVariable: typeof listenCockpitActionVariable
+      unlistenCockpitActionVariable: typeof unlistenCockpitActionVariable
+      getAllCockpitActionVariablesInfo: typeof getAllCockpitActionVariablesInfo
+      getCockpitActionVariableInfo: typeof getCockpitActionVariableInfo
+      setCockpitActionVariableData: typeof setCockpitActionVariableData
+      createCockpitActionVariable: typeof createCockpitActionVariable
+      updateCockpitActionVariableInfo: typeof updateCockpitActionVariableInfo
+      deleteCockpitActionVariable: typeof deleteCockpitActionVariable
+      // Cockpit actions:
+      availableCockpitActions: typeof availableCockpitActions
+      registerNewAction: typeof registerNewAction
+      deleteAction: typeof deleteAction
+      registerActionCallback: typeof registerActionCallback
+      unregisterActionCallback: typeof unregisterActionCallback
+      executeActionCallback: typeof executeActionCallback
+    }
+  }
+  /* eslint-enable jsdoc/require-jsdoc */
 }
 
 // Use global as window when running for browsers
 if (isBrowser) {
   var global = window /* eslint-disable-line */
+}
+
+// Expose data-lake and cockpit action methods to the global scope under a "cockpit" property
+window.cockpit = {
+  // Data lake:
+  cockpitActionVariableData: cockpitActionVariableData,
+  getCockpitActionVariableData: getCockpitActionVariableData,
+  listenCockpitActionVariable: listenCockpitActionVariable,
+  unlistenCockpitActionVariable: unlistenCockpitActionVariable,
+  getAllCockpitActionVariablesInfo: getAllCockpitActionVariablesInfo,
+  getCockpitActionVariableInfo: getCockpitActionVariableInfo,
+  setCockpitActionVariableData: setCockpitActionVariableData,
+  createCockpitActionVariable: createCockpitActionVariable,
+  updateCockpitActionVariableInfo: updateCockpitActionVariableInfo,
+  deleteCockpitActionVariable: deleteCockpitActionVariable,
+  // Cockpit actions:
+  availableCockpitActions: availableCockpitActions,
+  registerNewAction: registerNewAction,
+  deleteAction: deleteAction,
+  registerActionCallback: registerActionCallback,
+  unregisterActionCallback: unregisterActionCallback,
+  executeActionCallback: executeActionCallback,
 }
 
 /* c8 ignore start */
