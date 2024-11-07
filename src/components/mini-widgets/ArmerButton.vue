@@ -1,7 +1,7 @@
 <template>
   <button
     class="relative flex items-center justify-center w-32 p-1 rounded-md shadow-inner h-9 bg-slate-800/60"
-    @click="vehicleStore.isArmed ? disarm() : arm()"
+    @click="!widgetStore.editingMode && (vehicleStore.isArmed ? disarm() : arm())"
   >
     <div
       class="absolute top-auto flex items-center px-1 rounded-[4px] shadow transition-all w-[70%] h-[80%]"
@@ -24,8 +24,10 @@
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import { tryOrAlert } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 
 const vehicleStore = useMainVehicleStore()
+const widgetStore = useWidgetManagerStore()
 
 const arm = (): void => {
   const tryToArm = async (): Promise<void> => tryOrAlert(vehicleStore.arm)
