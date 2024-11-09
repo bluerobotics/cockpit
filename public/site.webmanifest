@@ -1,22 +1,42 @@
 {
-    "name": "Cockpit",
-    "short_name": "Cockpit",
-    "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
-    "icons": [
-        {
-            "src": "pwa-192x192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "pwa-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        }
-    ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
-    "display": "fullscreen",
-    "orientation": "landscape",
-    "start_url": "/"
+  "name": "Cockpit",
+  "short_name": "Cockpit",
+  "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
+  "icons": [
+    {
+      "src": "pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot-not-wide.png",
+      "sizes": "2047x1194",
+      "type": "image/png"
+    },
+    {
+      "src": "screenshot-wide.png",
+      "form_factor": "wide",
+      "sizes": "927x416",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "display_override": [
+    "fullscreen",
+    "minimal-ui",
+    "window-controls-overlay"
+  ],
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "start_url": "/",
+  "id": "/",
+  "lang": "en"
 }
