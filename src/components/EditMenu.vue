@@ -643,6 +643,7 @@ import CompassImg from '@/assets/widgets/Compass.png'
 import CompassHUDImg from '@/assets/widgets/CompassHUD.png'
 import CustomWidgetBaseImg from '@/assets/widgets/CustomWidgetBase.png'
 import DepthHUDImg from '@/assets/widgets/DepthHUD.png'
+import DoItYourselfImg from '@/assets/widgets/DoItYourself.png'
 import IFrameImg from '@/assets/widgets/IFrame.png'
 import ImageViewImg from '@/assets/widgets/ImageView.png'
 import MapImg from '@/assets/widgets/Map.png'
@@ -804,6 +805,7 @@ const widgetImages = {
   CompassHUD: CompassHUDImg,
   CustomWidgetBase: CustomWidgetBaseImg,
   DepthHUD: DepthHUDImg,
+  DoItYourself: DoItYourselfImg,
   IFrame: IFrameImg,
   ImageView: ImageViewImg,
   Map: MapImg,
