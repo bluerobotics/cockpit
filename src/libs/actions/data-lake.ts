@@ -20,7 +20,7 @@ class CockpitActionVariable {
 }
 
 const cockpitActionVariableInfo: Record<string, CockpitActionVariable> = {}
-export const cockpitActionVariableData: Record<string, string | number | boolean> = {}
+export const cockpitActionVariableData: Record<string, string | number | boolean | undefined> = {}
 const cockpitActionVariableListeners: Record<string, ((value: string | number | boolean) => void)[]> = {}
 
 export const getAllCockpitActionVariablesInfo = (): Record<string, CockpitActionVariable> => {
@@ -31,11 +31,15 @@ export const getCockpitActionVariableInfo = (id: string): CockpitActionVariable 
   return cockpitActionVariableInfo[id]
 }
 
-export const createCockpitActionVariable = (variable: CockpitActionVariable): void => {
+export const createCockpitActionVariable = (
+  variable: CockpitActionVariable,
+  initialValue?: string | number | boolean
+): void => {
   if (cockpitActionVariableInfo[variable.id]) {
     throw new Error(`Cockpit action variable with id '${variable.id}' already exists. Update it instead.`)
   }
   cockpitActionVariableInfo[variable.id] = variable
+  cockpitActionVariableData[variable.id] = initialValue
 }
 
 export const updateCockpitActionVariableInfo = (variable: CockpitActionVariable): void => {
@@ -73,6 +77,7 @@ export const unlistenCockpitActionVariable = (id: string): void => {
 const notifyCockpitActionVariableListeners = (id: string): void => {
   if (cockpitActionVariableListeners[id]) {
     const value = cockpitActionVariableData[id]
+    if (value === undefined) return
     cockpitActionVariableListeners[id].forEach((listener) => listener(value))
   }
 }
