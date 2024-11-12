@@ -100,10 +100,6 @@ export interface CockpitStandardLogPoint {
    */
   epoch: number
   /**
-   * Seconds passed since the beggining of the logging
-   */
-  seconds: number
-  /**
    * The actual vehicle data
    */
   data: ExtendedVariablesData
@@ -200,8 +196,8 @@ export class CurrentlyLoggedVariables {
  * Manager logging vehicle data and others
  */
 class DataLogger {
-  shouldBeLogging = false
-  currentCockpitLog: CockpitStandardLog = []
+  logRequesters: string[] = []
+  datetimeLastLogPoint: Date | null = null
   variablesBeingUsed: DatalogVariable[] = []
   veryGenericIndicators: VeryGenericData[] = []
   telemetryDisplayData = useBlueOsStorage<OverlayGrid>(
@@ -222,6 +218,7 @@ class DataLogger {
     fontStrikeout: false,
   })
   logInterval = useBlueOsStorage<number>('cockpit-datalogger-log-interval', 1000)
+
   cockpitLogsDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
     name: 'Cockpit - Sensor Logs',
@@ -230,29 +227,32 @@ class DataLogger {
     description: 'Local backups of Cockpit sensor logs, to be retrieved in case of failure.',
   })
 
+  cockpitTemporaryLogsDB = localforage.createInstance({
+    driver: localforage.INDEXEDDB,
+    name: 'Cockpit - Temporary Sensor Log points',
+    storeName: 'cockpit-temporary-sensor-logs-db',
+    version: 1.0,
+    description: 'Temporary storage of Cockpit sensor log points.',
+  })
+
   /**
    * Start an intervaled logging
+   * @param {string} requesterId The ID of the requester. Can be any string, but should be unique. It will be used to
+   * stop the logging individually, so one log requester does not interfere with another.
    */
-  startLogging(): void {
-    if (this.logging()) {
-      console.warn('Tried to start logging but there was already a log being generated.')
+  startLogging(requesterId: string): void {
+    this.logRequesters.push(requesterId)
+    if (this.logRequesters.filter((id) => id !== requesterId).length > 0) {
+      console.info('Tried to start logging but there was already a log being generated.')
       return
     }
-
-    this.shouldBeLogging = true
 
     const vehicleStore = useMainVehicleStore()
     const missionStore = useMissionStore()
     const interfaceStore = useAppInterfaceStore()
 
-    const initialTime = new Date()
-    const fileName = `Cockpit (${format(initialTime, `${logDateFormat} - HH꞉mm꞉ss O`)}).clog`
-    this.currentCockpitLog = []
-
     const logRoutine = async (): Promise<void> => {
       const timeNow = new Date()
-      const secondsNow = differenceInSeconds(timeNow, initialTime)
-
       const timeNowObj = { lastChanged: timeNow.getTime() }
 
       const unitPrefs = interfaceStore.displayUnitPreferences
@@ -285,16 +285,13 @@ class DataLogger {
 
       const logPoint: CockpitStandardLogPoint = {
         epoch: timeNow.getTime(),
-        seconds: secondsNow,
         data: structuredClone(variablesData),
       }
 
-      /* eslint-enable vue/max-len, prettier/prettier, max-len */
-      this.currentCockpitLog.push(logPoint)
+      await this.cockpitTemporaryLogsDB.setItem(`epoch=${logPoint.epoch}`, logPoint)
+      this.datetimeLastLogPoint = new Date()
 
-      await this.cockpitLogsDB.setItem(fileName, this.currentCockpitLog)
-
-      if (this.shouldBeLogging) {
+      if (this.shouldBeLogging()) {
         setTimeout(logRoutine, this.logInterval.value)
       }
     }
@@ -320,23 +317,46 @@ class DataLogger {
   }
 
   /**
-   * Stop the current logging operation
+   * Removes the requester from the log requesters list. If there are no requesters left, logging will stop.
+   * @param {string} requesterId The ID of the requester to stop
    */
-  stopLogging(): void {
-    if (!this.logging()) {
-      console.warn('Tried to stop logging but no log was being generated.')
+  stopLogging(requesterId: string): void {
+    this.logRequesters = this.logRequesters.filter((id) => id !== requesterId)
+    console.info(`Stopped logging for requester: ${requesterId}.`)
+
+    if (this.logRequesters.length !== 0) {
+      console.info(`Logging still active for ${this.logRequesters.length} requesters.`)
       return
     }
 
-    this.shouldBeLogging = false
+    console.info('No more log requesters. Logging will stop.')
   }
 
   /**
-   * Wether the logger is currently logging or not
+   * Force stops logging.
+   * This will stop logging for all requesters.
+   */
+  forceStopLogging(): void {
+    this.logRequesters = []
+  }
+
+  /**
+   * Checks if logging should be active based on the presence of log requesters.
+   * @returns {boolean} True if there are any log requesters, indicating logging should be active.
+   */
+  shouldBeLogging(): boolean {
+    return this.logRequesters.length > 0
+  }
+
+  /**
+   * Wether the logger is currently logging or not, based on the date of the last log point and the log interval.
    * @returns {boolean}
    */
   logging(): boolean {
-    return this.shouldBeLogging
+    return (
+      this.datetimeLastLogPoint !== null &&
+      this.datetimeLastLogPoint > new Date(Date.now() - this.logInterval.value * 2)
+    )
   }
 
   /**
@@ -391,46 +411,49 @@ class DataLogger {
   }
 
   /**
-   * Returns a log that encompasses the given time
-   * @param { Date } datetime - A timestamp that is between the initial and final time of the log
-   * @returns { CockpitStandardLog | null }
+   * Generate a log between the initial and final time
+   * @param {Date} initialTime - The initial time. Only log points after this time will be considered.
+   * @param {Date} finalTime - The final time. Only log points before this time will be considered.
+   * @returns {Promise<CockpitStandardLog>} The generated log file.
    */
-  async findLogByInitialTime(datetime: Date): Promise<CockpitStandardLog | null> {
-    const availableLogsKeys = await this.cockpitLogsDB.keys()
-    const logKeysFromLastDay = availableLogsKeys.filter((key) => {
-      const yesterday = new Date().setDate(new Date().getDate() - 1)
-      return key.includes(format(datetime, logDateFormat)) || key.includes(format(yesterday, logDateFormat))
+  async generateLog(initialTime: Date, finalTime: Date): Promise<CockpitStandardLog> {
+    const logDateTimeFmt = `${logDateFormat} / HH꞉mm꞉ss O`
+    const fileName = `Cockpit (${format(initialTime, logDateTimeFmt)} - ${format(finalTime, logDateTimeFmt)}).clog`
+
+    const availableLogsKeys = await this.cockpitTemporaryLogsDB.keys()
+
+    // The key is in the format epoch=<epoch>. We extract the epoch and compare it to the initial and final times
+    // to see if the log point is in the range of the desired log.
+    const keysLogPointsInRange = availableLogsKeys.filter((key) => {
+      const epochString = Number(key.split('=')[1])
+      const logPointDate = new Date(epochString)
+      return logPointDate >= initialTime && logPointDate <= finalTime
     })
 
-    for (const key of [...logKeysFromLastDay, ...availableLogsKeys]) {
-      const log = await this.cockpitLogsDB.getItem(key)
-
-      // Only consider logs that are actually logs (arrays with at least two elements with an epoch property)
-      if (!Array.isArray(log) || log.length < 2) continue
-      if (log[0].epoch === undefined || log[log.length - 1].epoch === undefined) continue
-
-      const logInitialTime = new Date(log[0].epoch)
-      const logFinalTime = new Date(log[log.length - 1].epoch)
-
-      if (datetime >= logInitialTime && datetime <= logFinalTime) {
-        return log
-      }
+    if (keysLogPointsInRange.length === 0) {
+      throw new Error('No log points found in the given range.')
     }
 
-    return null
-  }
+    const logPointsInRange: CockpitStandardLogPoint[] = []
+    for (const key of keysLogPointsInRange) {
+      const log = (await this.cockpitTemporaryLogsDB.getItem(key)) as CockpitStandardLogPoint
 
-  /**
-   * Get desired part of a log based on timestamp
-   * @param {CockpitStandardLog} completeLog The log from which the slice should be taken from
-   * @param {Date} initialTime The timestamp from which the log should be started from
-   * @param {Date} finalTime The timestamp in which the log should be terminated
-   * @returns {CockpitStandardLog} The actual log
-   */
-  getSlice(completeLog: CockpitStandardLog, initialTime: Date, finalTime: Date): CockpitStandardLog {
-    return completeLog
-      .filter((logPoint) => logPoint.epoch > initialTime.getTime() && logPoint.epoch < finalTime.getTime())
-      .map((logPoint) => ({ ...logPoint, ...{ seconds: differenceInSeconds(new Date(logPoint.epoch), initialTime) } }))
+      // Only consider real log points(objects with an epoch and data property, and non-empty data)
+      if (log.epoch === undefined || log.data === undefined || Object.keys(log.data).length === 0) continue
+
+      logPointsInRange.push(log)
+    }
+
+    // Sort the log points by epoch, generate a final log file and put in in the local database
+    const sortedLogPoints = logPointsInRange.sort((a, b) => a.epoch - b.epoch)
+    const finalLog = sortedLogPoints.map((logPoint) => ({
+      ...logPoint,
+      ...{ seconds: differenceInSeconds(new Date(logPoint.epoch), initialTime) },
+    }))
+
+    await this.cockpitLogsDB.setItem(fileName, finalLog)
+
+    return finalLog
   }
 
   /**
