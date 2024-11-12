@@ -15,7 +15,7 @@ import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
-import { datalogger } from '@/libs/sensors-logging'
+import { CockpitStandardLog, datalogger } from '@/libs/sensors-logging'
 import { isEqual, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -199,7 +199,7 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.mediaRecorder!.stop()
 
-    datalogger.stopLogging()
+    datalogger.stopLogging(streamName)
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
 
@@ -287,10 +287,8 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
 
-    if (!datalogger.logging()) {
-      datalogger.startLogging()
-      sleep(100)
-    }
+    datalogger.startLogging(streamName)
+    await sleep(100)
 
     activeStreams.value[streamName]!.timeRecordingStart = new Date()
     const streamData = activeStreams.value[streamName] as StreamData
@@ -658,16 +656,19 @@ export const useVideoStore = defineStore('video', () => {
       updateLastProcessingUpdate(hash)
 
       debouncedUpdateFileProgress(info.fileName, 80, `Generating telemetry file.`)
-      const telemetryLog = await datalogger.findLogByInitialTime(dateStart)
-      if (!telemetryLog) {
-        throw new Error(`No telemetry log found for the video ${info.fileName}:`)
+      let telemetryLog: CockpitStandardLog | undefined = undefined
+      try {
+        telemetryLog = await datalogger.generateLog(dateStart, dateFinish)
+      } catch (error) {
+        showSnackbar({ message: `Failed to generate telemetry file. ${error}`, variant: 'error', duration: 5000 })
       }
 
-      debouncedUpdateFileProgress(info.fileName, 95, `Saving telemetry file.`)
-      const videoTelemetryLog = datalogger.getSlice(telemetryLog, dateStart, dateFinish)
-      const assLog = datalogger.toAssOverlay(videoTelemetryLog, info.vWidth!, info.vHeight!, dateStart.getTime())
-      const logBlob = new Blob([assLog], { type: 'text/plain' })
-      videoStorage.setItem(`${info.fileName}.ass`, logBlob)
+      if (telemetryLog !== undefined) {
+        debouncedUpdateFileProgress(info.fileName, 95, `Converting telemetry file.`)
+        const assLog = datalogger.toAssOverlay(telemetryLog, info.vWidth!, info.vHeight!, dateStart.getTime())
+        const logBlob = new Blob([assLog], { type: 'text/plain' })
+        videoStorage.setItem(`${info.fileName}.ass`, logBlob)
+      }
 
       updateLastProcessingUpdate(hash)
 
