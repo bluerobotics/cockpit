@@ -21,6 +21,7 @@ export type Waypoint = {
    * Unique identification for the waypoint.
    */
   id: string
+
   /**
    * Geographical coordinates of the waypoint in the following format: [latitude, longitude].
    */
@@ -77,6 +78,77 @@ export type CockpitMission = {
    * The waypoints of the mission
    */
   waypoints: Waypoint[]
+}
+
+/**
+ * Survey object that contains the information about the survey to be performed.
+ */
+export interface Survey {
+  /**
+   * Unique identification for the survey.
+   */
+  id: string
+  /**
+   * Coordinates of the polygon that will be surveyed.
+   */
+  polygonCoordinates: WaypointCoordinates[]
+  /**
+   * Density of the scan.
+   */
+  distanceBetweenLines: number
+  /**
+   * Angle of the survey lines.
+   */
+  surveyLinesAngle: number
+  /**
+   * Executable mission waypoints.
+   */
+  waypoints: Waypoint[]
+}
+
+/**
+ * Last state of the survey.
+ */
+export interface SurveyState {
+  /**
+   * Coordinates of the waypoints
+   */
+  polygonCoordinates: WaypointCoordinates[]
+  /**
+   * Waypoints of the survey.
+   */
+  waypoints: Waypoint[]
+  /**
+   * Density of the scan.
+   */
+  distanceBetweenLines: number
+  /**
+   *  Angle of the survey lines.
+   */
+  surveyLinesAngle: number
+}
+
+export type SurveyPolygon = {
+  /**
+   * The coordinates of the polygon that will be surveyed.
+   */
+  polygonPositions: L.LatLng[]
+  /**
+   * The markers that represent the polygon vertices.
+   */
+  polygonMarkers: L.Marker[]
+  /**
+   * The markers that represent the polygon edges.
+   */
+  edgeMarkers: L.Marker[]
+  /**
+   * Density of the scan.
+   */
+  distanceBetweenLines: number
+  /**
+   * Angle of the survey lines.
+   */
+  surveyLinesAngle: number
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
