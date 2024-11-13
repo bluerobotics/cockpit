@@ -7,7 +7,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
-import type { Waypoint, WaypointCoordinates } from '@/types/mission'
+import type { Survey, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 import { useMainVehicleStore } from './mainVehicle'
 
@@ -29,6 +29,26 @@ export const useMissionStore = defineStore('mission', () => {
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
+
+  const surveys = reactive<Survey[]>([])
+
+  const addSurvey = (survey: Survey): void => {
+    surveys.push(survey)
+  }
+
+  const updateSurvey = (id: string, updatedSurvey: Partial<Survey>): void => {
+    const index = surveys.findIndex((s) => s.id === id)
+    if (index !== -1) {
+      surveys[index] = { ...surveys[index], ...updatedSurvey }
+    }
+  }
+
+  const removeSurvey = (id: string): void => {
+    const index = surveys.findIndex((s) => s.id === id)
+    if (index !== -1) {
+      surveys.splice(index, 1)
+    }
+  }
 
   const moveWaypoint = (id: string, newCoordinates: WaypointCoordinates): void => {
     const waypoint = currentPlanningWaypoints.find((w) => w.id === id)
@@ -89,6 +109,10 @@ export const useMissionStore = defineStore('mission', () => {
     { immediate: true }
   )
 
+  const clearWaypoints = (): void => {
+    currentPlanningWaypoints.splice(0)
+  }
+
   return {
     username,
     lastConnectedUser,
@@ -101,5 +125,10 @@ export const useMissionStore = defineStore('mission', () => {
     slideEventsCategoriesRequired,
     moveWaypoint,
     clearMission,
+    surveys,
+    addSurvey,
+    updateSurvey,
+    removeSurvey,
+    clearWaypoints,
   }
 })
