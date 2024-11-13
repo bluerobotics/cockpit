@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 
 import AboutViewVue from '../views/AboutView.vue'
-import MissionPlanningView from '../views/MissionPlanningView.vue'
+import MissionPlanningView from '../views/MissionPlanning/MissionPlanningView.vue'
 import WidgetsView from '../views/WidgetsView.vue'
 
 const router = createRouter({
