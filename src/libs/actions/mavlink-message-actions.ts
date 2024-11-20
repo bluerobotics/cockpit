@@ -116,12 +116,12 @@ export const saveMavlinkMessageActionConfigs = (): void => {
 export type MavlinkMessageActionCallback = () => void
 
 export const getMavlinkMessageActionCallback = (id: string): MavlinkMessageActionCallback => {
-  const action = getMavlinkMessageActionConfig(id)
-  if (!action) {
-    throw new Error(`Action with id ${id} not found.`)
-  }
-
   return () => {
+    const action = getMavlinkMessageActionConfig(id)
+    if (!action) {
+      throw new Error(`Action with id ${id} not found.`)
+    }
+
     const message: Message = {
       type: action.messageType,
       ...processMessageConfig(action.messageConfig),
@@ -144,7 +144,7 @@ const processMessageConfig = (config: MavlinkMessageConfig): Record<string, any>
       if (typeof v.value === 'string' && v.value.startsWith('{{') && v.value.endsWith('}}')) {
         const variableName = v.value.slice(2, -2).trim()
         const variableValue = getCockpitActionVariableData(variableName)
-        processedConfig[k] = variableValue
+        processedConfig[k] = typeof variableValue === 'boolean' ? (variableValue ? 1 : 0) : variableValue
       } else if (v.type === MessageFieldType.TYPE_STRUCT_ENUM) {
         processedConfig[k] = { type: v.value }
       } else if (v.type === MessageFieldType.NUMBER) {
