@@ -18,7 +18,7 @@
               </p>
             </div>
             <div class="w-[45%] flex flex-col justify-end text-end">
-              <p class="mb-1">Version 1.0.1</p>
+              <p class="mb-1">Version {{ app_version }}</p>
               <p class="my-3">Created by Blue Robotics</p>
               <p class="mt-1">Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom</p>
             </div>
@@ -63,6 +63,7 @@ import { onUnmounted, ref, watch } from 'vue'
 
 import CockpitLogo from '@/assets/cockpit-logo.png'
 import InteractionDialog from '@/components/InteractionDialog.vue'
+import { app_version } from '@/libs/cosmos'
 
 const showDialog = ref(true)
 const emit = defineEmits(['update:showAboutDialog'])

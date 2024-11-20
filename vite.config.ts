@@ -1,10 +1,11 @@
 import vue from '@vitejs/plugin-vue'
+import path from 'path'
 import { defineConfig } from 'vite'
 import electron, { startup, treeKillSync } from 'vite-plugin-electron'
 import { VitePWA } from 'vite-plugin-pwa'
 import vuetify from 'vite-plugin-vuetify'
 
-const path = require('path') // eslint-disable-line @typescript-eslint/no-var-requires
+import { getVersion } from './src/libs/non-browser-utils'
 
 // Check if we're running in Electron mode or building the application
 const isElectron = process.env.ELECTRON === 'true'
@@ -41,7 +42,10 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
     }),
   ].filter(Boolean),
-  define: { 'process.env': {} },
+  define: {
+    'process.env': {},
+    '__APP_VERSION__': JSON.stringify(getVersion()),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
