@@ -171,4 +171,7 @@ Array.prototype.sum = function (this: number[]): number {
   return this.reduce((a, b) => a + b, 0)
 }
 
+declare const __APP_VERSION__: string
+export const app_version = __APP_VERSION__
+
 export default global!
