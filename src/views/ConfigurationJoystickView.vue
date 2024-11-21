@@ -592,20 +592,11 @@ const controllerStore = useControllerStore()
 const { globalAddress } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 
-const m2rSupportsExtendedManualControl = ref<boolean>()
-const ardupilotSupportsExtendedManualControl = ref<boolean>()
 const showJoystickWarningMessage = ref(false)
 
 onMounted(async () => {
   controllerStore.enableForwarding = false
-  const m2rVersion = await getMavlink2RestVersion(globalAddress)
-  m2rSupportsExtendedManualControl.value = semver.gte(m2rVersion, '0.11.19')
-  const ardupilotVersion = await getArdupilotVersion(globalAddress)
-  ardupilotSupportsExtendedManualControl.value = semver.gte(ardupilotVersion, '4.1.2')
-
-  if (m2rSupportsExtendedManualControl.value || ardupilotSupportsExtendedManualControl.value) {
-    showJoystickWarningMessage.value = true
-  }
+  warnIfJoystickDoesNotSupportExtendedManualControl()
 })
 
 // Does not let the joystick forwarding to be enabled while the user is in this page
@@ -657,6 +648,20 @@ watch(
 const filteredProtocols = protocols.filter(
   (protocol) => protocol === JoystickProtocol.MAVLinkManualControl || protocol === JoystickProtocol.CockpitAction
 )
+
+const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void> => {
+  try {
+    const m2rVersion = await getMavlink2RestVersion(globalAddress)
+    const m2rSupportsExtendedManualControl = semver.gte(m2rVersion, '0.11.19')
+    const ardupilotVersion = await getArdupilotVersion(globalAddress)
+    const ardupilotSupportsExtendedManualControl = semver.gte(ardupilotVersion, '4.1.2')
+
+    showJoystickWarningMessage.value = !m2rSupportsExtendedManualControl || !ardupilotSupportsExtendedManualControl
+  } catch (error) {
+    console.error(`Error getting Mavlink2Rest or Ardupilot version. ${error}. Will try again in 10 seconds.`)
+    setTimeout(warnIfJoystickDoesNotSupportExtendedManualControl, 10000)
+  }
+}
 
 const sortJoystickActions = (protocol: string): JoystickAction[] => {
   const searchTerm = searchTermsJoy[protocol].toLowerCase() || ''
