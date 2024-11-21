@@ -450,9 +450,15 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     updateVehicleId()
 
     setInterval(async () => {
-      const blueosStatus = await getStatus(globalAddress.value)
-      // If blueos is not available, do not try to get data from it
-      if (!blueosStatus) return
+      try {
+        const blueosStatus = await getStatus(globalAddress.value)
+        if (!blueosStatus) {
+          throw new Error('BlueOS is not available.')
+        }
+      } catch (error) {
+        console.error(error)
+        return
+      }
 
       const blueosVariablesAddresses = {
         cpuTemp: 'blueos/cpu/tempC',
