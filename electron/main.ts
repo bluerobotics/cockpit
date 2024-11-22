@@ -1,6 +1,8 @@
 import { app, BrowserWindow, protocol, screen } from 'electron'
 import { join } from 'path'
 
+import { setupNetworkService } from './services/network'
+
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
 }
@@ -58,6 +60,8 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ])
+
+setupNetworkService()
 
 app.whenReady().then(createWindow)
 

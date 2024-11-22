@@ -93,7 +93,7 @@ const slots = useSlots()
 /**
  * Interface to an array of buttons for the Interaction Dialog's footer
  */
-interface Action {
+export interface Action {
   /**
    * Button Text
    */
