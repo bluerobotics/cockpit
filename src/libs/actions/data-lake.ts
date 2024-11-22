@@ -5,7 +5,7 @@
  * @param { 'string' | 'number' | 'boolean' } type - The type of the variable (string, number or boolean)
  * @param { string } description - What the variable does or means
  */
-class CockpitActionVariable {
+export class CockpitActionVariable {
   id: string
   name: string
   type: 'string' | 'number' | 'boolean'

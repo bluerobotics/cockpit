@@ -3,6 +3,11 @@ import { useDocumentVisibility } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
+import {
+  CockpitActionVariable,
+  createCockpitActionVariable,
+  setCockpitActionVariableData,
+} from '@/libs/actions/data-lake'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useVideoStore } from './video'
@@ -11,6 +16,20 @@ export const webrtcStats = new WebRTCStats({ getStatsInterval: 250 })
 
 export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   const videoStore = useVideoStore()
+
+  // Routine to log the memory usage of the application
+  const cockpitMemoryUsageVariable = new CockpitActionVariable(
+    'cockpit-memory-usage',
+    'Cockpit Memory Usage',
+    'number',
+    'The memory usage of the Cockpit application in MB. This value is updated every 100ms.'
+  )
+  createCockpitActionVariable(cockpitMemoryUsageVariable)
+
+  setInterval(() => {
+    const currentMemoryUsage = window.performance.memory.usedJSHeapSize / 1024 / 1024
+    setCockpitActionVariableData(cockpitMemoryUsageVariable.id, currentMemoryUsage)
+  }, 100)
 
   // Routine to log the framerate of the video streams
   const streamsFrameRateHistory = ref<{ [key in string]: number[] }>({})
