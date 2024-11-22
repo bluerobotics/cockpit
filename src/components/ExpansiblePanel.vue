@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, useSlots, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -253,6 +253,21 @@ watch(isWarningOpen, (newValue) => {
   }
 })
 
+const hasWarningSlot = ref(false)
+const warningSlotObserver = ref<MutationObserver | null>(null)
+const updateHasWarningSlot = (): void => (hasWarningSlot.value = !!slots.warning?.())
+const hasInfoSlot = ref(false)
+const infoSlotObserver = ref<MutationObserver | null>(null)
+const updateHasInfoSlot = (): void => (hasInfoSlot.value = !!slots.info?.())
+
+const setupSlotObservers = (): void => {
+  warningSlotObserver.value = new MutationObserver(updateHasWarningSlot)
+  warningSlotObserver.value.observe(warningContent.value, { attributes: true, childList: true, subtree: true })
+
+  infoSlotObserver.value = new MutationObserver(updateHasInfoSlot)
+  infoSlotObserver.value.observe(infoContent.value, { attributes: true, childList: true, subtree: true })
+}
+
 onMounted(() => {
   if (content.value && !isPanelExpanded.value) {
     content.value.style.maxHeight = '0px'
@@ -263,10 +278,16 @@ onMounted(() => {
   if (warningContent.value && !isWarningOpen.value) {
     warningContent.value.style.maxHeight = '0px'
   }
+
+  updateHasWarningSlot()
+  updateHasInfoSlot()
+  setupSlotObservers()
 })
 
-const hasInfoSlot = computed(() => !!slots.info?.())
-const hasWarningSlot = computed(() => !!slots.warning?.())
+onBeforeUnmount(() => {
+  if (warningSlotObserver.value) warningSlotObserver.value.disconnect()
+  if (infoSlotObserver.value) infoSlotObserver.value.disconnect()
+})
 </script>
 
 <style scoped>
