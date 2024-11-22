@@ -18,7 +18,14 @@
               </p>
             </div>
             <div class="w-[45%] flex flex-col justify-end text-end">
-              <p class="mb-1">Version {{ app_version }}</p>
+              <p class="mb-1">
+                Version
+                <a :href="app_version.link" target="_blank" class="text-primary hover:underline">
+                  {{ app_version.version }}
+                </a>
+                <br />
+                <span class="text-sm text-gray-500">Released: {{ app_version.date }}</span>
+              </p>
               <p class="my-3">Created by Blue Robotics</p>
               <p class="mt-1">Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom</p>
             </div>
