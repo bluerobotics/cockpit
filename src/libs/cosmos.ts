@@ -1,5 +1,7 @@
 import { isBrowser } from 'browser-or-node'
 
+import { NetworkInfo } from '@/types/network'
+
 import {
   cockpitActionVariableData,
   createCockpitActionVariable,
@@ -110,7 +112,7 @@ declare global {
        * Get network information from the main process
        * @returns Promise containing subnet information
        */
-      getNetworkInfo: () => Promise<{ subnet: string }>
+      getInfoOnSubnets: () => Promise<NetworkInfo[]>
     }
   }
   /* eslint-enable jsdoc/require-jsdoc */
