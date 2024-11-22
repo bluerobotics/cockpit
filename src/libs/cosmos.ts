@@ -191,6 +191,38 @@ declare global {
        * @returns Promise containing subnet information
        */
       getInfoOnSubnets: () => Promise<NetworkInfo[]>
+      /**
+       * Register callback for update available event
+       */
+      onUpdateAvailable: (callback: (info: any) => void) => void
+      /**
+       * Register callback for update downloaded event
+       */
+      onUpdateDownloaded: (callback: (info: any) => void) => void
+      /**
+       * Trigger update download
+       */
+      downloadUpdate: () => void
+      /**
+       * Trigger update installation
+       */
+      installUpdate: () => void
+      /**
+       * Cancel ongoing update
+       */
+      cancelUpdate: () => void
+      /**
+       * Register callback for checking for update event
+       */
+      onCheckingForUpdate: (callback: () => void) => void
+      /**
+       * Register callback for update not available event
+       */
+      onUpdateNotAvailable: (callback: (info: any) => void) => void
+      /**
+       * Register callback for download progress event
+       */
+      onDownloadProgress: (callback: (info: any) => void) => void
     }
   }
 }
