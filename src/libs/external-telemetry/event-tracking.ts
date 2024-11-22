@@ -2,6 +2,8 @@ import ky from 'ky'
 import localforage from 'localforage'
 import posthog from 'posthog-js'
 
+const cockpitTelemetryEnabledKey = 'cockpit-enable-usage-statistics-telemetry'
+
 type EventPayload = {
   /**
    * The name of the event
@@ -21,6 +23,7 @@ type EventPayload = {
  *
  */
 class EventTracker {
+  private static enableEventTracking = false
   static postHogApiUrl = 'https://us.i.posthog.com'
   static postHogApiKey = 'phc_SfqVeZcpYHmhUn9NRizThxFxiI9fKqvjRjmBDB8ToRs'
   static posthog: ReturnType<typeof posthog.init> | undefined = undefined
@@ -30,6 +33,16 @@ class EventTracker {
    * Initialize the event tracking system
    */
   constructor() {
+    // Only track usage statistics if the user has not opted out and the app is not in development mode
+    const isRunningInProduction = import.meta.env.PROD
+    const userHasExternalTelemetryEnabled = window.localStorage.getItem(cockpitTelemetryEnabledKey) === 'true'
+    EventTracker.enableEventTracking = isRunningInProduction && userHasExternalTelemetryEnabled
+
+    if (!EventTracker.enableEventTracking) {
+      console.info('Event tracking is disabled. Not initializing event tracker.')
+      return
+    }
+
     if (!EventTracker.posthog) {
       EventTracker.posthog = posthog.init(EventTracker.postHogApiKey, {
         api_host: EventTracker.postHogApiUrl,
@@ -56,6 +69,8 @@ class EventTracker {
    * @param {Record<string, unknown>} eventProperties - The properties of the event
    */
   async capture(eventName: string, eventProperties?: Record<string, unknown>): Promise<void> {
+    if (!EventTracker.enableEventTracking) return
+
     const eventId = `${eventName}-${Date.now()}`
     const eventPayload: EventPayload = {
       eventName,
