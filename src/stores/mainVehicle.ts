@@ -471,9 +471,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       })
 
       if (usedGenericVariables.value.includes(blueosVariablesAddresses.cpuTemp)) {
-        getCpuTempCelsius(globalAddress.value).then((temp) => {
+        try {
+          const temp = await getCpuTempCelsius(globalAddress.value)
           Object.assign(genericVariables, { ...genericVariables, ...{ [blueosVariablesAddresses.cpuTemp]: temp } })
-        })
+        } catch (error) {
+          console.error(error)
+        }
       }
     }, 1000)
 
