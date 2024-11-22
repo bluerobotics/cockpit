@@ -9,7 +9,7 @@ import {
   createCockpitActionVariable,
   setCockpitActionVariableData,
 } from '@/libs/actions/data-lake'
-import { eventTracker } from '@/libs/external-telemetry/event-tracking'
+import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useVideoStore } from './video'

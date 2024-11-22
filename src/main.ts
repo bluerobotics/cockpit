@@ -13,7 +13,7 @@ import { createApp } from 'vue'
 import VueVirtualScroller from 'vue-virtual-scroller'
 
 import { app_version } from '@/libs/cosmos'
-import { eventTracker } from '@/libs/external-telemetry/event-tracking'
+import eventTracker from '@/libs/external-telemetry/event-tracking'
 
 import App from './App.vue'
 import vuetify from './plugins/vuetify'
