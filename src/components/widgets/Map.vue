@@ -161,9 +161,30 @@ const esri = L.tileLayer(
   { maxZoom: 19, attribution: '© Esri World Imagery' }
 )
 
+// Overlays
+const seamarks = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '© OpenSeaMap contributors',
+})
+
+const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserver/gwc/service/wms', {
+  layers: 'gebco2021:gebco_2021',
+  format: 'image/png',
+  transparent: true,
+  version: '1.1.1',
+  attribution: '© GEBCO, OpenSeaMap',
+  tileSize: 256,
+  maxZoom: 19,
+})
+
 const baseMaps = {
   'OpenStreetMap': osm,
   'Esri World Imagery': esri,
+}
+
+const overlays = {
+  'Seamarks': seamarks,
+  'Marine Profile': marineProfile,
 }
 
 // Show buttons when the mouse is over the widget
@@ -171,7 +192,7 @@ const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
-const layerControl = L.control.layers(baseMaps)
+const layerControl = L.control.layers(baseMaps, overlays)
 
 watch(showButtons, () => {
   if (map.value === undefined) return
@@ -190,10 +211,10 @@ watch(isMouseOver, () => {
 
 onMounted(async () => {
   // Bind leaflet instance to map element
-  map.value = L.map(mapId.value, { layers: [osm, esri], attributionControl: false }).setView(
-    mapCenter.value as LatLngTuple,
-    zoom.value
-  ) as Map
+  map.value = L.map(mapId.value, {
+    layers: [osm, esri, seamarks, marineProfile],
+    attributionControl: false,
+  }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
