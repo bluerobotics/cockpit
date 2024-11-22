@@ -82,26 +82,104 @@ declare global {
     sum(): number
   }
 
-  /* eslint-disable jsdoc/require-jsdoc */
+  /**
+   * Extended Window interface with custom dedicated dedicated APIs.
+   */
   interface Window {
+    /**
+     * Exposed Cockpit APIs
+     * E.g. data-lake, cockpit actions, etc.
+     */
     cockpit: {
       // Data lake:
+
+      /**
+       * The object that holds the data-lake variables data
+       */
       dataLakeVariableData: typeof dataLakeVariableData
+      /**
+       * Get data from an specific data lake variable
+       * @param id - The id of the data to retrieve
+       * @returns The data or undefined if not available
+       */
       getDataLakeVariableData: typeof getDataLakeVariableData
+      /**
+       * Listen to data changes on a specific data lake variable
+       * @param id - The id of the data to listen to
+       * @param listener - The listener callback
+       */
       listenDataLakeVariable: typeof listenDataLakeVariable
+      /**
+       * Stop listening to data changes on a specific data lake variable
+       * @param id - The id of the data to stop listening to
+       */
       unlistenDataLakeVariable: typeof unlistenDataLakeVariable
+      /**
+       * Get info about all variables in the data lake
+       * @returns Data lake data
+       */
       getAllDataLakeVariablesInfo: typeof getAllDataLakeVariablesInfo
+      /**
+       * Get info about a specific variable in the data lake
+       * @param id - The id of the data to retrieve
+       * @returns The data info or undefined if not available
+       */
       getDataLakeVariableInfo: typeof getDataLakeVariableInfo
+      /**
+       * Set the value of an specific data lake variable
+       * @param id - The id of the data to set
+       * @param value - The value to set
+       */
       setDataLakeVariableData: typeof setDataLakeVariableData
+      /**
+       * Create a new variable in the data lake
+       * @param variable - The variable to create
+       * @param initialValue - The initial value for the variable
+       */
       createDataLakeVariable: typeof createDataLakeVariable
+      /**
+       * Update information about an specific data lake variable
+       * @param variable - The variable to update
+       */
       updateDataLakeVariableInfo: typeof updateDataLakeVariableInfo
+      /**
+       * Delete a variable from the data lake
+       * @param id - The id of the variable to delete
+       */
       deleteDataLakeVariable: typeof deleteDataLakeVariable
+
       // Cockpit actions:
+
+      /**
+       * Get all available cockpit actions
+       * @returns Available cockpit actions
+       */
       availableCockpitActions: typeof availableCockpitActions
+      /**
+       * Register a new cockpit action
+       * @param action - The action to register
+       */
       registerNewAction: typeof registerNewAction
+      /**
+       * Delete a cockpit action
+       * @param id - The id of the action to delete
+       */
       deleteAction: typeof deleteAction
+      /**
+       * Register a callback for a cockpit action
+       * @param action - The action to register the callback for
+       * @param callback - The callback to register
+       */
       registerActionCallback: typeof registerActionCallback
+      /**
+       * Unregister a callback for a cockpit action
+       * @param id - The id of the action to unregister the callback for
+       */
       unregisterActionCallback: typeof unregisterActionCallback
+      /**
+       * Execute the callback for a cockpit action
+       * @param id - The id of the action to execute the callback for
+       */
       executeActionCallback: typeof executeActionCallback
     }
     /**
@@ -115,7 +193,6 @@ declare global {
       getInfoOnSubnets: () => Promise<NetworkInfo[]>
     }
   }
-  /* eslint-enable jsdoc/require-jsdoc */
 }
 
 // Use global as window when running for browsers
