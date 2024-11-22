@@ -55,6 +55,12 @@
           />
         </div>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>MAVLink Inspector</template>
+          <template #content>
+            <MAVLinkInspector />
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>
             <div class="flex justify-between">
               <span>System logs</span>
@@ -97,6 +103,7 @@ import { saveAs } from 'file-saver'
 import { onBeforeMount } from 'vue'
 import { ref } from 'vue'
 
+import MAVLinkInspector from '@/components/development/MAVLinkInspector.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { type SystemLog, cockpitSytemLogsDB } from '@/libs/system-logging'
 import { reloadCockpit } from '@/libs/utils'
