@@ -8,3 +8,6 @@ cypress/videos/
 cypress/screenshots/
 
 *.log
+
+# Sentry Config File
+.env.sentry-build-plugin
