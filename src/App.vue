@@ -316,6 +316,7 @@
   <Tutorial :show-tutorial="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal :open-modal="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
+  <UpdateNotification v-if="isElectron()" />
 </template>
 
 <script setup lang="ts">
@@ -325,6 +326,7 @@ import { useRoute } from 'vue-router'
 
 import GlassModal from '@/components/GlassModal.vue'
 import Tutorial from '@/components/Tutorial.vue'
+import UpdateNotification from '@/components/UpdateNotification.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import VideoLibraryModal from '@/components/VideoLibraryModal.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
