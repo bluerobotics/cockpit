@@ -13,6 +13,7 @@ import { createApp } from 'vue'
 import VueVirtualScroller from 'vue-virtual-scroller'
 
 import { app_version } from '@/libs/cosmos'
+import eventTracker from '@/libs/external-telemetry/event-tracking'
 
 import App from './App.vue'
 import vuetify from './plugins/vuetify'
@@ -24,6 +25,8 @@ library.add(fas, far)
 loadFonts()
 
 const app = createApp(App)
+
+eventTracker.capture('App started')
 
 // Initialize Sentry for error tracking
 // Only track usage statistics if the user has not opted out and the app is not in development mode
