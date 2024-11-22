@@ -39,6 +39,7 @@
     "browser-or-node": "^2.0.0",
     "colord": "^2.9.3",
     "date-fns": "^2.29.3",
+    "electron-log": "^5.2.0",
     "electron-store": "^10.0.0",
     "electron-updater": "^6.3.9",
     "file-saver": "^2.0.5",
