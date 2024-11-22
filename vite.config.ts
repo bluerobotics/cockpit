@@ -44,7 +44,9 @@ export default defineConfig({
   ].filter(Boolean),
   define: {
     'process.env': {},
-    '__APP_VERSION__': JSON.stringify(getVersion()),
+    '__APP_VERSION__': JSON.stringify(getVersion().version),
+    '__APP_VERSION_DATE__': JSON.stringify(getVersion().date),
+    '__APP_VERSION_LINK__': JSON.stringify(getVersion().link),
   },
   resolve: {
     alias: {

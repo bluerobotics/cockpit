@@ -172,6 +172,33 @@ Array.prototype.sum = function (this: number[]): number {
 }
 
 declare const __APP_VERSION__: string
-export const app_version = __APP_VERSION__
+declare const __APP_VERSION_DATE__: string
+declare const __APP_VERSION_LINK__: string
+
+/**
+ * Interface representing version information for the application
+ */
+export interface AppVersionInfo {
+  /**
+   * @property {string} version - The version number or commit hash of the application, or 'unknown' in last case.
+   * If the version is a tag prefixed with "v", it is stripped.
+   * If a tag is not found, the commit hash is used.
+   * If a commit hash is not found, 'unknown' is used.
+   */
+  version: string
+  /**
+   * @property {string} date - The release date for tags or commit date for commits
+   */
+  date: string
+  /**
+   * @property {string} link - URL to the GitHub release page for tags or commit page for commits
+   */
+  link: string
+}
+export const app_version: AppVersionInfo = {
+  version: __APP_VERSION__,
+  date: __APP_VERSION_DATE__,
+  link: __APP_VERSION_LINK__,
+}
 
 export default global!
