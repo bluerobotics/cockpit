@@ -1,9 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useInteractionDialog } from '@/composables/interactionDialog'
-
-const { showDialog } = useInteractionDialog()
-
 export const constrain = (value: number, min: number, max: number): number => {
   return Math.max(Math.min(value, max), min)
 }
@@ -135,7 +131,7 @@ export const tryOrAlert = async (tryFunction: () => Promise<void>): Promise<void
   try {
     await tryFunction()
   } catch (error) {
-    showDialog({ message: error as string, variant: 'error' })
+    console.error(error as string)
   }
 }
 
@@ -145,8 +141,7 @@ export const tryOrAlert = async (tryFunction: () => Promise<void>): Promise<void
  */
 export const reloadCockpit = (timeout = 500): void => {
   const restartMessage = `Restarting Cockpit in ${timeout / 1000} seconds...`
-  console.log(restartMessage)
-  showDialog({ message: restartMessage, variant: 'info', timer: timeout })
+  console.info(restartMessage)
   setTimeout(() => location.reload(), timeout)
 }
 
