@@ -13,6 +13,7 @@ export enum WidgetType {
   ImageView = 'ImageView',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
+  Plotter = 'Plotter',
   URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',
   VirtualHorizon = 'VirtualHorizon',
