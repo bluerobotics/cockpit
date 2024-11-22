@@ -1,4 +1,7 @@
-import { getStatus } from '../blueos'
+import ky from 'ky'
+
+import { NetworkInfo } from '@/types/network'
+
 import { isElectron } from '../utils'
 
 /**
@@ -41,44 +44,17 @@ class VehicleDiscover {
   private async checkAddress(address: string): Promise<NetworkVehicle | null> {
     try {
       // First check if the vehicle is online
-      const hasRespondingStatusEndpoint = await getStatus(address)
-      if (!hasRespondingStatusEndpoint) {
-        return null
-      }
+      const statusResponse = await ky.get(`http://${address}/status`, { timeout: 3000 })
+      if (!statusResponse.ok) return null
 
       // Try to get the vehicle name
-      try {
-        const response = await fetch(`http://${address}/beacon/v1.0/vehicle_name`)
-        if (!response.ok) {
-          return null
-        }
-        const name = await response.text()
-        return { address, name }
-      } catch {
-        // If we can't get the name, it's because it's not a vehicle (or maybe BlueOS's Beacon service is not running)
-        return null
-      }
+      const nameResponse = await ky.get(`http://${address}/beacon/v1.0/vehicle_name`, { timeout: 5000 })
+      if (!nameResponse.ok) return null
+      const name = await nameResponse.text()
+      return { address, name }
     } catch {
-      // If we can't get the status, it's because the vehicle is not online
+      // If we can't get the name, it's because it's not a vehicle (or maybe BlueOS's Beacon service is not running)
       return null
-    }
-  }
-
-  /**
-   * Get the local subnet
-   * @returns {string | null} The local subnet, or null if not running in Electron
-   */
-  private async getLocalSubnet(): Promise<string> {
-    if (!isElectron() || !window.electronAPI?.getNetworkInfo) {
-      const msg = 'For technical reasons, getting information about the local subnet is only available in Electron.'
-      throw new Error(msg)
-    }
-
-    try {
-      const { subnet } = await window.electronAPI.getNetworkInfo()
-      return subnet
-    } catch (error) {
-      throw new Error(`Failed to get information about the local subnet. ${error}`)
     }
   }
 
@@ -96,23 +72,37 @@ class VehicleDiscover {
     }
 
     const search = async (): Promise<NetworkVehicle[]> => {
-      const subnet = await this.getLocalSubnet()
-
-      if (!subnet) {
-        throw new Error('Failed to get information about the local subnet.')
+      if (!isElectron() || !window.electronAPI?.getInfoOnSubnets) {
+        const msg = 'For technical reasons, getting information about the local subnet is only available in Electron.'
+        throw new Error(msg)
       }
 
-      const promises: Promise<NetworkVehicle | null>[] = []
-
-      // Check all IPs in the subnet
-      for (let i = 1; i <= 254; i++) {
-        const address = `${subnet}.${i}`
-        promises.push(this.checkAddress(address))
+      let localSubnets: NetworkInfo[] | undefined
+      try {
+        localSubnets = await window.electronAPI.getInfoOnSubnets()
+      } catch (error) {
+        throw new Error(`Failed to get information about the local subnets. ${error}`)
       }
 
-      const vehiclesFound = await Promise.all(promises).then((results) => {
-        return results.filter((result): result is NetworkVehicle => result !== null)
-      })
+      if (localSubnets.length === 0) {
+        throw new Error('Failed to get information about the local subnets.')
+      }
+
+      const vehiclesFound: NetworkVehicle[] = []
+      for (const subnet of localSubnets) {
+        const topSideAddress = subnet.topSideAddress
+        const possibleAddresses = subnet.availableAddresses.filter((address) => address !== topSideAddress)
+
+        const promises: Promise<NetworkVehicle | null>[] = possibleAddresses.map((address) => {
+          return this.checkAddress(address)
+        })
+
+        const vehicles = await Promise.all(promises).then((results) => {
+          return results.filter((result): result is NetworkVehicle => result !== null)
+        })
+
+        vehiclesFound.push(...vehicles)
+      }
 
       this.currentSearch = undefined
 

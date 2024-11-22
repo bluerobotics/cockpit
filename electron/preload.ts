@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  getNetworkInfo: () => ipcRenderer.invoke('get-network-info'),
+  getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
 })

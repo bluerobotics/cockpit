@@ -1,39 +1,45 @@
 import { ipcMain } from 'electron'
 import { networkInterfaces } from 'os'
 
-/**
- * Information about the network
- */
-interface NetworkInfo {
-  /**
-   * The subnet of the local machine
-   */
-  subnet: string
-}
-
+import { NetworkInfo } from '../../src/types/network'
 /**
  * Get the network information
  * @returns {NetworkInfo} The network information
  */
-const getNetworkInfo = (): NetworkInfo => {
-  const nets = networkInterfaces()
+const getInfoOnSubnets = (): NetworkInfo[] => {
+  const allSubnets = networkInterfaces()
 
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name] ?? []) {
-      // Skip over non-IPv4 and internal addresses
-      if (net.family === 'IPv4' && !net.internal) {
-        // Return the subnet (e.g., if IP is 192.168.1.5, return 192.168.1)
-        return { subnet: net.address.split('.').slice(0, 3).join('.') }
-      }
-    }
+  const ipv4Subnets = Object.entries(allSubnets)
+    .flatMap(([_, nets]) => {
+      return nets.map((net) => ({ ...net, interfaceName: _ }))
+    })
+    .filter((net) => net.family === 'IPv4')
+    .filter((net) => !net.internal)
+
+  if (ipv4Subnets.length === 0) {
+    throw new Error('No network interfaces found.')
   }
 
-  throw new Error('No network interface found.')
+  return ipv4Subnets.map((subnet) => {
+    // TODO: Use the mask to calculate the available addresses. The current implementation is not correct for anything else than /24.
+    const subnetPrefix = subnet.address.split('.').slice(0, 3).join('.')
+    const availableAddresses: string[] = []
+    for (let i = 1; i <= 254; i++) {
+      availableAddresses.push(`${subnetPrefix}.${i}`)
+    }
+
+    return {
+      topSideAddress: subnet.address,
+      macAddress: subnet.mac,
+      interfaceName: subnet.interfaceName,
+      availableAddresses,
+    }
+  })
 }
 
 /**
  * Setup the network service
  */
 export const setupNetworkService = (): void => {
-  ipcMain.handle('get-network-info', getNetworkInfo)
+  ipcMain.handle('get-info-on-subnets', getInfoOnSubnets)
 }

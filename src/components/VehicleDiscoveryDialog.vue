@@ -30,7 +30,9 @@
 
         <div v-if="!searching && !searched" class="flex flex-col gap-2 items-center justify-center text-center">
           <p v-if="props.showAutoSearchOption" class="font-bold">It looks like you're not connected to a vehicle!</p>
-          <p class="max-w-[25rem] mb-2">This tool allows you to locate and connect to vehicles within your network.</p>
+          <p class="max-w-[25rem] mb-2">
+            This tool allows you to locate and connect to BlueOS vehicles within your network.
+          </p>
         </div>
 
         <div v-if="!searching" class="flex justify-center items-center">
@@ -49,6 +51,7 @@ import { ref, watch } from 'vue'
 
 import { useSnackbar } from '@/composables/snackbar'
 import vehicleDiscover, { NetworkVehicle } from '@/libs/electron/vehicle-discovery'
+import { reloadCockpit } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import InteractionDialog, { Action } from './InteractionDialog.vue'
@@ -116,9 +119,10 @@ const searchVehicles = async (): Promise<void> => {
   searched.value = true
 }
 
-const selectVehicle = (address: string): void => {
+const selectVehicle = async (address: string): Promise<void> => {
   mainVehicleStore.globalAddress = address
   isOpen.value = false
+  await reloadCockpit()
   showSnackbar({ message: 'Vehicle address updated', variant: 'success', duration: 5000 })
 }
 
