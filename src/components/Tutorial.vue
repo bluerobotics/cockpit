@@ -389,7 +389,7 @@ const setVehicleConnectedVisible = (): void => {
 }
 
 const handleKeydown = (event: KeyboardEvent): void => {
-  if (event.key === 'Enter') {
+  if (event.key === 'Enter' && showTutorial.value) {
     if (currentTutorialStep.value !== 5) {
       nextTutorialStep()
       return
