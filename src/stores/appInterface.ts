@@ -14,8 +14,8 @@ export const useAppInterfaceStore = defineStore('responsive', {
     configModalVisibility: false,
     videoLibraryVisibility: false,
     UIGlassEffect: useBlueOsStorage('cockpit-ui-glass-effect', {
-      opacity: 0.8,
-      bgColor: '#4F4F4F1A',
+      opacity: 0.9,
+      bgColor: '#63636354',
       fontColor: '#FFFFFF',
       blur: 25,
     }),
