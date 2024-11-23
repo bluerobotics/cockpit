@@ -1,3 +1,5 @@
+import { MAVLink20Processor } from 'mavlink-browser'
+
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 
 import * as Connection from './connection'
@@ -9,7 +11,8 @@ export class WebSocketConnection extends Connection.Abstract {
   _socket: WebSocket
   private _textEncoder = new TextEncoder()
   private _textDecoder = new TextDecoder()
-
+  private mavlinkParser = new MAVLink20Processor(null, 255, 240)
+  private raw_mavlink_detected = false
   /**
    * Websocket constructor
    * @param  {Connection.URI} uri
@@ -17,7 +20,11 @@ export class WebSocketConnection extends Connection.Abstract {
    */
   constructor(uri: Connection.URI, vehicleProtocol: Protocol.Type) {
     super(uri, vehicleProtocol)
-
+    this.mavlinkParser.on('message', (message: any) => {
+      this.raw_mavlink_detected = true
+      const data = this._textEncoder.encode(this.mavlink2restfy(message))
+      this.onRead.emit_value(data)
+    })
     this._socket = this.createSocket(uri)
   }
 
@@ -54,7 +61,12 @@ export class WebSocketConnection extends Connection.Abstract {
    * @returns {boolean}
    */
   write(data: Uint8Array): boolean {
-    this._socket?.send(this._textDecoder.decode(data))
+    if (this.raw_mavlink_detected) {
+      data = this.mavlinkParser.fromMavlink2RestV1Format(this._textDecoder.decode(data))
+      this._socket?.send(data)
+    } else {
+      this._socket?.send(this._textDecoder.decode(data))
+    }
     return true
   }
 
@@ -72,7 +84,13 @@ export class WebSocketConnection extends Connection.Abstract {
     // We need to have the same abstraction for all onRead
     socket.onmessage = (message: MessageEvent) => {
       try {
-        this.onRead.emit_value(this._textEncoder.encode(message.data))
+        if (String.fromCharCode(message.data[0]) == '{') {
+          this.onRead.emit_value(this._textEncoder.encode(message.data))
+        } else {
+          new Response(message.data).arrayBuffer().then((buffer) => {
+            this.mavlinkParser.parseBuffer(new Uint8Array(buffer))
+          })
+        }
       } catch (error) {
         console.error('Error reading websocket message: ', error)
       }
@@ -83,5 +101,14 @@ export class WebSocketConnection extends Connection.Abstract {
       }, 2000)
     }
     return socket
+  }
+
+  /**
+   *
+   * @param {any} message a "raw" MAVLink message as it comes from Mavlink20Processor
+   * @returns {string} a MAVLink2Rest-like stringified json object
+   */
+  mavlink2restfy(message): any {
+    return JSON.stringify(this.mavlinkParser.toMavlink2RestV1Format(message))
   }
 }
