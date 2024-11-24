@@ -678,6 +678,7 @@ const widgetImages = {
   IFrame: IFrameImg,
   ImageView: ImageViewImg,
   Map: MapImg,
+  Cesium: MapImg,
   MiniWidgetsBar: MiniWidgetsBarImg,
   URLVideoPlayer: URLVideoPlayerImg,
   VideoPlayer: VideoPlayerImg,

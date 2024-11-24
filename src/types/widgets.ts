@@ -12,6 +12,7 @@ export enum WidgetType {
   IFrame = 'IFrame',
   ImageView = 'ImageView',
   Map = 'Map',
+  Cesium = 'Cesium',
   MiniWidgetsBar = 'MiniWidgetsBar',
   URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',

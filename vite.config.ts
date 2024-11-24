@@ -3,6 +3,7 @@ import { defineConfig } from 'vite'
 import electron, { startup, treeKillSync } from 'vite-plugin-electron'
 import { VitePWA } from 'vite-plugin-pwa'
 import vuetify from 'vite-plugin-vuetify'
+import cesium from 'vite-plugin-cesium'
 
 const path = require('path') // eslint-disable-line @typescript-eslint/no-var-requires
 
@@ -40,8 +41,12 @@ export default defineConfig({
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
     }),
+    cesium(), // Add Cesium plugin
   ].filter(Boolean),
-  define: { 'process.env': {} },
+  define: { 
+    'process.env': {},
+    CESIUM_BASE_URL: JSON.stringify('')
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
