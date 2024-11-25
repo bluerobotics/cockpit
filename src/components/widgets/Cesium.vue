@@ -1,185 +1,218 @@
 <template>
-  <div class="w-full h-full relative">
-    <div ref="cesiumContainer" class="w-full h-full"></div>
+  <div ref="mapBase" class="page-base" :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'">
+    <div ref="cesiumContainer" class="map"></div>
 
-    <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
+    <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
       <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-        <v-card-title class="text-center">Map Settings</v-card-title>
+        <v-card-title class="text-center">Map widget settings</v-card-title>
         <v-card-text>
-          <div>
-            <span class="text-xs font-semibold leading-3 text-slate-600">Map Style</span>
-            <Dropdown
-              v-model="widget.options.mapStyle"
-              :options="['Satellite', 'OSM', 'Dark']"
-              class="max-w-[144px]"
-              theme="dark"
-            />
-          </div>
-          <div class="mt-4">
-            <v-switch
-              v-model="widget.options.showTerrain"
-              label="Show 3D Terrain"
-              :color="widget.options.showTerrain ? 'white' : undefined"
-              hide-details
-            />
-          </div>
-          <div class="mt-4">
-            <v-switch
-              v-model="widget.options.debugFPS"
-              label="Show FPS Counter"
-              :color="widget.options.debugFPS ? 'white' : undefined"
-              hide-details
-            />
-          </div>
+          <v-switch
+            v-model="widget.options.showVehiclePath"
+            class="my-1"
+            label="Show vehicle path"
+            :color="widget.options.showVehiclePath ? 'white' : undefined"
+            hide-details
+          />
         </v-card-text>
-        <v-card-actions class="flex justify-end">
-          <v-btn color="white" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
-            Close
-          </v-btn>
-        </v-card-actions>
       </v-card>
     </v-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, onBeforeUnmount, ref, toRefs, watch } from 'vue'
-import {
-  Viewer,
-  createWorldTerrainAsync,
-  OpenStreetMapImageryProvider,
-  TileMapServiceImageryProvider,
-  UrlTemplateImageryProvider
+import { type Ref, computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
+import { 
+  Viewer, 
+  createWorldTerrainAsync, 
+  Cartesian3, 
+  Entity, 
+  HeightReference,
+  ModelGraphics,
+  CallbackProperty,
+  HeadingPitchRoll,
+  Math,
+  Transforms,
+  Quaternion
 } from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
-import Dropdown from '../Dropdown.vue'
 
 // Initialize stores
+const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 
 // Define props
-const props = defineProps<{
-  widget: Widget
-}>()
+const props = defineProps<{ widget: Widget }>()
 const widget = toRefs(props).widget
 
 // Set up refs
 const cesiumContainer = ref<HTMLElement | null>(null)
 const viewer = ref<Viewer | null>(null)
+const vehicleEntity = ref<Entity | null>(null)
+const mapBase = ref<HTMLElement>()
+
+// Register coordinate variables for logging
+datalogger.registerUsage(DatalogVariable.latitude)
+datalogger.registerUsage(DatalogVariable.longitude)
 
 // Initialize widget options
 onBeforeMount(() => {
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
-      mapStyle: 'Satellite',
-      showTerrain: true,
-      debugFPS: true
+      showVehiclePath: true,
     }
   }
 })
+
+// Calculate live vehicle position and heading
+const vehiclePosition = computed(() =>
+  vehicleStore.coordinates.latitude
+    ? ([vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude] as WaypointCoordinates)
+    : undefined
+)
+
+const vehicleAttitude = computed(() => 
+  vehicleStore.attitude
+)
+
+// Create position callback property
+const createPositionCallback = () => {
+  return new CallbackProperty((time, result) => {
+    if (!vehiclePosition.value) return undefined
+    return Cartesian3.fromDegrees(
+      vehiclePosition.value[1],
+      vehiclePosition.value[0],
+      vehicleStore.coordinates.altitude
+    )
+  }, false)
+}
+
+// Create orientation callback property
+const createOrientationCallback = () => {
+  return new CallbackProperty((time, result) => {
+    if (!vehicleAttitude.value || !vehiclePosition.value) {
+      return undefined
+    }
+    
+    const hpr = new HeadingPitchRoll(
+      vehicleAttitude.value.yaw - Math.PI_OVER_TWO,
+      vehicleAttitude.value.pitch,
+      vehicleAttitude.value.roll
+    )
+    
+    const position = Cartesian3.fromDegrees(
+      vehiclePosition.value[1],
+      vehiclePosition.value[0],
+      vehicleStore.coordinates.altitude
+    )
+
+    result = result || new Quaternion()
+    return Transforms.headingPitchRollQuaternion(
+      position,
+      hpr
+    )
+  }, false)
+}
+
+// Get model configuration based on vehicle type
+const getModelConfig = () => {
+  let modelUrl = '/models/boat.glb'
+  let modelScale = 1.0
+  let modelMinPixelSize = 50
+
+  if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) {
+    modelUrl = '/models/boat.glb'
+    modelScale = 0.5
+  } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
+    modelUrl = "/models/bluerov.glb"
+    modelScale = 10
+  }
+
+  return { modelUrl, modelScale, modelMinPixelSize }
+}
 
 // Initialize Cesium viewer
 onMounted(async () => {
   if (!cesiumContainer.value) return
 
-  const terrainProvider = widget.value.options.showTerrain ? await createWorldTerrainAsync() : undefined
+  const terrainProvider = await createWorldTerrainAsync()
 
-  // Create the Cesium viewer with minimal controls
   viewer.value = new Viewer(cesiumContainer.value, {
+    terrainProvider,
     baseLayerPicker: false,
     timeline: false,
     animation: false,
     homeButton: false,
     navigationHelpButton: false,
     sceneModePicker: false,
-    requestRenderMode: true,
     geocoder: false,
     fullscreenButton: false
   })
 
-  if (terrainProvider) {
-    viewer.value.terrainProvider = terrainProvider
+  createVehicleEntity()
+})
+
+// Create and update vehicle entity
+const createVehicleEntity = () => {
+  if (!viewer.value) return
+
+  if (vehicleEntity.value) {
+    viewer.value.entities.remove(vehicleEntity.value)
   }
 
-  // Set initial map style
-  updateMapStyle(widget.value.options.mapStyle)
+  const { modelUrl, modelScale, modelMinPixelSize } = getModelConfig()
+
+  vehicleEntity.value = viewer.value.entities.add({
+    position: createPositionCallback(),
+    orientation: createOrientationCallback(),
+    model: new ModelGraphics({
+      uri: modelUrl,
+      scale: modelScale,
+      minimumPixelSize: modelMinPixelSize,
+      maximumScale: 1000,
+      runAnimations: false,
+      heightReference: HeightReference.RELATIVE_TO_GROUND
+    })
+  })
   
-  // Set debug FPS display
-  viewer.value.scene.debugShowFramesPerSecond = widget.value.options.debugFPS
-})
-
-// Watch for option changes
-watch(() => widget.value.options.mapStyle, (newStyle) => {
-  updateMapStyle(newStyle)
-})
-
-watch(() => widget.value.options.showTerrain, async (showTerrain) => {
-  if (!viewer.value) return
-  const terrainProvider = showTerrain ? await createWorldTerrainAsync() : undefined
-  if (terrainProvider) {
-    viewer.value.terrainProvider = terrainProvider
-  }
-})
-
-watch(() => widget.value.options.debugFPS, (showFPS) => {
-  if (!viewer.value) return
-  viewer.value.scene.debugShowFramesPerSecond = showFPS
-})
-
-// Update map style function
-const updateMapStyle = (style: string) => {
-  if (!viewer.value) return
-
-  // Remove existing imagery layers
-  viewer.value.imageryLayers.removeAll()
-
-  switch (style) {
-    case 'Satellite':
-      viewer.value.imageryLayers.addImageryProvider(
-        new UrlTemplateImageryProvider({
-          url: 'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg',
-          minimumLevel: 0,
-          maximumLevel: 14,
-          credit: 'Sentinel-2 cloudless by EOX IT Services GmbH'
-        })
-      )
-      break
-    case 'OSM':
-      viewer.value.imageryLayers.addImageryProvider(
-        new OpenStreetMapImageryProvider({
-          url: 'https://a.tile.openstreetmap.org/'
-        })
-      )
-      break
-    case 'Dark':
-      viewer.value.imageryLayers.addImageryProvider(
-        new UrlTemplateImageryProvider({
-          url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png',
-          minimumLevel: 0,
-          maximumLevel: 20,
-          credit: 'Dark theme by Stadia Maps'
-        })
-      )
-      break
-  }
+  // Set the entity to be tracked by the camera
+  viewer.value.trackedEntity = vehicleEntity.value
+  
+  // Configure the tracking behavior
+  viewer.value.scene.camera.percentageChanged = 0.01
 }
 
 // Cleanup on unmount
 onBeforeUnmount(() => {
   if (viewer.value) {
     viewer.value.destroy()
-    viewer.value = null
   }
 })
 </script>
 
 <style>
-/* Hide Cesium credits */
+.page-base {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map {
+  position: absolute;
+  z-index: 0;
+  height: 100%;
+  width: 100%;
+}
+
 .cesium-viewer-bottom {
   display: none;
 }
