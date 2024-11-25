@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { type Ref, computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
+import { type Ref, computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 import { 
   Viewer, 
   createWorldTerrainAsync, 
@@ -30,9 +30,10 @@ import {
   ModelGraphics,
   CallbackProperty,
   HeadingPitchRoll,
-  Math,
+  Math as CesiumMath,
   Transforms,
-  Quaternion
+  Quaternion,
+  JulianDate
 } from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 
@@ -59,59 +60,176 @@ const viewer = ref<Viewer | null>(null)
 const vehicleEntity = ref<Entity | null>(null)
 const mapBase = ref<HTMLElement>()
 
-// Register coordinate variables for logging
-datalogger.registerUsage(DatalogVariable.latitude)
-datalogger.registerUsage(DatalogVariable.longitude)
+interface Position {
+  lat: number;
+  lon: number;
+  alt: number;
+  timestamp: number;
+}
 
-// Initialize widget options
-onBeforeMount(() => {
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      showVehiclePath: true,
+interface Attitude {
+  yaw: number;
+  pitch: number;
+  roll: number;
+  timestamp: number;
+}
+
+const prevPosition = ref<Position | null>(null)
+const currentPosition = ref<Position | null>(null)
+const prevAttitude = ref<Attitude | null>(null)
+const currentAttitude = ref<Attitude | null>(null)
+
+// Track update rates
+const updateIntervals = ref<number[]>([])
+const maxIntervalSamples = 10
+const getAverageUpdateInterval = () => {
+  if (updateIntervals.value.length === 0) return 200 // Default fallback
+  const sum = updateIntervals.value.reduce((a, b) => a + b, 0)
+  return sum / updateIntervals.value.length
+}
+
+// Watch for position and attitude changes
+watch(() => vehicleStore.coordinates, (newCoords) => {
+  if (newCoords.latitude && newCoords.longitude) {
+    const now = Date.now()
+    
+    if (currentPosition.value) {
+      // Update our interval tracking
+      const interval = now - currentPosition.value.timestamp
+      updateIntervals.value.push(interval)
+      if (updateIntervals.value.length > maxIntervalSamples) {
+        updateIntervals.value.shift()
+      }
+      
+      prevPosition.value = currentPosition.value
+    }
+    
+    currentPosition.value = {
+      lat: newCoords.latitude,
+      lon: newCoords.longitude,
+      alt: newCoords.altitude,
+      timestamp: now
     }
   }
-})
+}, { deep: true })
 
-// Calculate live vehicle position and heading
-const vehiclePosition = computed(() =>
-  vehicleStore.coordinates.latitude
-    ? ([vehicleStore.coordinates.latitude, vehicleStore.coordinates.longitude] as WaypointCoordinates)
-    : undefined
-)
+watch(() => vehicleStore.attitude, (newAttitude) => {
+  const now = Date.now()
+  
+  if (currentAttitude.value) {
+    prevAttitude.value = currentAttitude.value
+  }
+  
+  currentAttitude.value = {
+    yaw: newAttitude.yaw,
+    pitch: newAttitude.pitch,
+    roll: newAttitude.roll,
+    timestamp: now
+  }
+}, { deep: true })
 
-const vehicleAttitude = computed(() => 
-  vehicleStore.attitude
-)
+const lerp = (start: number, end: number, factor: number) => {
+  return start + (end - start) * factor
+}
+
+const lerpAngle = (start: number, end: number, factor: number) => {
+  let diff = end - start
+  if (diff > globalThis.Math.PI) diff -= globalThis.Math.PI * 2
+  if (diff < -globalThis.Math.PI) diff += globalThis.Math.PI * 2
+  return start + diff * factor
+}
 
 // Create position callback property
 const createPositionCallback = () => {
   return new CallbackProperty((time, result) => {
-    if (!vehiclePosition.value) return undefined
-    return Cartesian3.fromDegrees(
-      vehiclePosition.value[1],
-      vehiclePosition.value[0],
-      vehicleStore.coordinates.altitude
-    )
+    if (!currentPosition.value || !prevPosition.value) {
+      return currentPosition.value ? 
+        Cartesian3.fromDegrees(
+          currentPosition.value.lon,
+          currentPosition.value.lat,
+          currentPosition.value.alt
+        ) : undefined
+    }
+    
+    const now = Date.now()
+    const updateInterval = getAverageUpdateInterval()
+    const elapsed = now - currentPosition.value.timestamp
+    const expectedInterval = updateInterval * 1 // Add some buffer for jitter
+    
+    // Calculate interpolation factor based on elapsed time relative to expected interval
+    const interpolationFactor = globalThis.Math.min(elapsed / expectedInterval, 1)
+    
+    // If we're at or past the expected next update, just use current position
+    if (interpolationFactor >= 1) {
+      return Cartesian3.fromDegrees(
+        currentPosition.value.lon,
+        currentPosition.value.lat,
+        currentPosition.value.alt
+      )
+    }
+
+    // Apply smoothstep interpolation for more natural motion
+    const smoothFactor = interpolationFactor * interpolationFactor * (3 - 2 * interpolationFactor)
+    
+    // Interpolate between previous and current position
+    const lat = lerp(prevPosition.value.lat, currentPosition.value.lat, smoothFactor)
+    const lon = lerp(prevPosition.value.lon, currentPosition.value.lon, smoothFactor)
+    const alt = lerp(prevPosition.value.alt, currentPosition.value.alt, smoothFactor)
+
+    return Cartesian3.fromDegrees(lon, lat, alt)
   }, false)
 }
 
 // Create orientation callback property
 const createOrientationCallback = () => {
   return new CallbackProperty((time, result) => {
-    if (!vehicleAttitude.value || !vehiclePosition.value) {
+    if (!currentAttitude.value || !currentPosition.value) {
       return undefined
     }
     
+    if (!prevAttitude.value) {
+      const hpr = new HeadingPitchRoll(
+        currentAttitude.value.yaw - CesiumMath.PI_OVER_TWO,
+        currentAttitude.value.pitch,
+        currentAttitude.value.roll
+      )
+      
+      const position = Cartesian3.fromDegrees(
+        currentPosition.value.lon,
+        currentPosition.value.lat,
+        currentPosition.value.alt
+      )
+
+      result = result || new Quaternion()
+      return Transforms.headingPitchRollQuaternion(position, hpr)
+    }
+    
+    const now = Date.now()
+    const updateInterval = getAverageUpdateInterval()
+    const elapsed = now - currentAttitude.value.timestamp
+    const expectedInterval = updateInterval * 1.5 // Add some buffer for jitter
+    
+    // Calculate interpolation factor based on elapsed time relative to expected interval
+    const interpolationFactor = globalThis.Math.min(elapsed / expectedInterval, 1)
+    
+    // Apply smoothstep interpolation
+    const smoothFactor = interpolationFactor * interpolationFactor * (3 - 2 * interpolationFactor)
+    
+    // Interpolate angles
+    const yaw = lerpAngle(prevAttitude.value.yaw, currentAttitude.value.yaw, smoothFactor)
+    const pitch = lerpAngle(prevAttitude.value.pitch, currentAttitude.value.pitch, smoothFactor)
+    const roll = lerpAngle(prevAttitude.value.roll, currentAttitude.value.roll, smoothFactor)
+    
     const hpr = new HeadingPitchRoll(
-      vehicleAttitude.value.yaw - Math.PI_OVER_TWO,
-      vehicleAttitude.value.pitch,
-      vehicleAttitude.value.roll
+      yaw - CesiumMath.PI_OVER_TWO,
+      pitch,
+      roll
     )
     
     const position = Cartesian3.fromDegrees(
-      vehiclePosition.value[1],
-      vehiclePosition.value[0],
-      vehicleStore.coordinates.altitude
+      currentPosition.value.lon,
+      currentPosition.value.lat,
+      currentPosition.value.alt
     )
 
     result = result || new Quaternion()
@@ -121,6 +239,7 @@ const createOrientationCallback = () => {
     )
   }, false)
 }
+
 
 // Get model configuration based on vehicle type
 const getModelConfig = () => {
