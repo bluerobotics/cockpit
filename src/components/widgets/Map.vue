@@ -161,9 +161,17 @@ const esri = L.tileLayer(
   { maxZoom: 19, attribution: '© Esri World Imagery' }
 )
 
+const google = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+  maxZoom: 23,
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+  maxNativeZoom: 22,
+  attribution: '© Google Maps',
+})
+
 const baseMaps = {
   'OpenStreetMap': osm,
   'Esri World Imagery': esri,
+  'Google Maps': google,
 }
 
 // Show buttons when the mouse is over the widget
@@ -190,7 +198,7 @@ watch(isMouseOver, () => {
 
 onMounted(async () => {
   // Bind leaflet instance to map element
-  map.value = L.map(mapId.value, { layers: [osm, esri], attributionControl: false }).setView(
+  map.value = L.map(mapId.value, { layers: [google, osm, esri], attributionControl: false }).setView(
     mapCenter.value as LatLngTuple,
     zoom.value
   ) as Map
