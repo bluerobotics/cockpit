@@ -3,37 +3,51 @@
 </template>
 
 <script setup lang="ts">
-import { type AsyncComponentLoader, defineAsyncComponent, toRefs } from 'vue'
+import { defineAsyncComponent, onMounted, toRefs } from 'vue'
 
-import { type MiniWidget, MiniWidgetType } from '@/types/widgets'
+import { createCockpitActionVariable, getCockpitActionVariableInfo } from '@/libs/actions/data-lake'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
+import { type MiniWidget, CustomWidgetElement } from '@/types/widgets'
+
+const widgetStore = useWidgetManagerStore()
 
 const props = defineProps<{
   /**
    * Mini-widget instance
    */
-  miniWidget: MiniWidget
+  miniWidget: MiniWidget | CustomWidgetElement
 }>()
 
 const miniWidget = toRefs(props).miniWidget
 
-const componentCache: Record<string, AsyncComponentLoader> = {}
+const componentCache: Record<string, ReturnType<typeof defineAsyncComponent>> = {}
 
-const componentFromType = (componentType: MiniWidgetType): AsyncComponentLoader => {
-  if (!Object.values(MiniWidgetType).includes(componentType)) {
-    console.error(`Trying to import mini-widget with unknown '${componentType}' type. Import aborted.`)
-    return
+const componentFromType = (componentType: string): ReturnType<typeof defineAsyncComponent> => {
+  if (!componentCache[componentType]) {
+    componentCache[componentType] = defineAsyncComponent(async () => {
+      try {
+        return await import(`../components/mini-widgets/${componentType}.vue`)
+      } catch (error) {
+        return await import(`../components/custom-widget-elements/${componentType}.vue`)
+      }
+    })
   }
-
-  if (componentCache[componentType] === undefined) {
-    try {
-      componentCache[componentType] = defineAsyncComponent(
-        () => import(`../components/mini-widgets/${componentType}.vue`)
-      )
-    } catch (error) {
-      console.error(`Failed to load mini-widget component: ${componentType}`, error)
-    }
-  }
-
   return componentCache[componentType]
 }
+
+const registerCockpitActions = (): void => {
+  if (
+    miniWidget.value.options.actionVariable &&
+    getCockpitActionVariableInfo(miniWidget.value.options.actionVariable.id) !== undefined
+  )
+    return
+  if (miniWidget.value.options.actionVariable) {
+    createCockpitActionVariable(
+      miniWidget.value.options.actionVariable,
+      widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
+    )
+  }
+}
+
+onMounted(() => registerCockpitActions())
 </script>

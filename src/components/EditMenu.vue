@@ -152,7 +152,7 @@
     </div>
     <v-divider class="opacity-20" />
     <div
-      class="flex flex-row justify-start relative items-center bg-[#CBCBCB2A] elevation-5 2xl:h-full xl:h-[45px] h-[35px] overflow-hidden"
+      class="flex flex-row max-h-[48px] justify-start relative items-center bg-[#CBCBCB2A] elevation-5 2xl:h-full xl:h-[45px] h-[35px] overflow-hidden"
     >
       <v-icon
         size="sm"
@@ -444,7 +444,7 @@
   <div class="flex items-center justify-between edit-panel bottom-panel" :class="{ active: editMode }">
     <div class="w-px h-full bg-[#FFFFFF18]" />
     <div
-      class="flex flex-col justify-between items-center 2xl:w-[30%] w-[25%] max-w-[240px] h-full text-white 2xl:pr-2 px-1 2xl:py-5 xl:py-4 lg:py-1"
+      class="flex flex-col justify-around items-center 2xl:w-[30%] w-[25%] max-w-[240px] h-full text-white 2xl:pr-2 px-1 2xl:py-5 xl:py-4 lg:py-1"
     >
       <div>
         <p class="2xl:text-md text-xs ml-1">Widget type:</p>
@@ -453,7 +453,7 @@
           theme="dark"
           variant="filled"
           density="compact"
-          :items="['Regular', 'Mini']"
+          :items="['Regular', 'Mini', 'Input']"
           class="bg-[#27384255] 2xl:scale-100 scale-[80%]"
           hide-details
           @change="widgetMode = $event"
@@ -463,17 +463,18 @@
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the main view area
         </div>
-        <div
-          v-show="widgetMode === 'Regular widgets'"
-          class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 bg-[#3B78A8] rounded-lg"
-        >
-          Click or drag to add
-        </div>
+        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
         <div v-show="widgetMode === 'Mini'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the top and bottom bars
         </div>
-        <div v-show="widgetMode === 'Mini'" class="2xl:text-md text-sm mt-3 2xl:px-3 px-2 rounded-lg">
-          (Drag card in place to add)
+        <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
+        <div v-show="widgetMode === 'Input'">
+          <v-btn
+            type="flat"
+            class="bg-[#FFFFFF33] text-white w-[95%]"
+            @click="store.addWidget(WidgetType.CustomWidgetBase, store.currentView)"
+            >Add widget base
+          </v-btn>
         </div>
       </div>
     </div>
@@ -491,7 +492,7 @@
         @dragstart="onRegularWidgetDragStart"
         @dragend="onRegularWidgetDragEnd(widgetType)"
       >
-        <v-tooltip text="Click or drag to add" location="top" theme="light">
+        <v-tooltip text="Drag to add" location="top" theme="light">
           <template #activator="{ props: tooltipProps }">
             <div />
             <img
@@ -504,8 +505,7 @@
               class="flex items-center justify-center w-full p-1 transition-all bg-[#3B78A8] rounded-b-md text-white"
             >
               <span class="whitespace-normal text-center">{{
-                widgetType.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
-                'Very Generic Indicator'
+                widgetType.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
               }}</span>
             </div>
           </template>
@@ -522,19 +522,49 @@
         id="mini-widget-card"
         :ref="(el) => (miniWidgetContainers[miniWidget.component] = el as HTMLElement)"
         :key="miniWidget.hash"
-        class="flex flex-col items-center justify-between w-full rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip pointer-events-none"
+        class="flex flex-col items-center w-full justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip"
         :draggable="false"
       >
         <div />
         <div id="draggable-mini-widget" class="m-2 pointer-events-auto select-auto cursor-grab" :draggable="true">
-          <div class="flex justify-center pointer-events-none min-w-[160px]">
+          <div class="flex justify-center pointer-events-none min-w-[170px]">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
         </div>
-        <div class="flex items-center justify-center w-full p-1 transition-all bg-[#3B78A8] rounded-b-md text-white">
+        <div
+          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B78A8] rounded-b-md text-white"
+        >
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
-            'Very Generic Indicator'
+            'Very generic indicator'
+          }}</span>
+        </div>
+      </div>
+    </div>
+    <div
+      v-show="widgetMode === 'Input'"
+      ref="availableCustomWidgetElementsContainer"
+      class="flex items-center w-full h-full gap-3 overflow-auto pr-2"
+    >
+      <div
+        v-for="miniWidget in availableCustomWidgetElementsTypes"
+        id="mini-widget-card"
+        :key="miniWidget.hash"
+        class="flex flex-col items-center w-full justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip"
+        draggable="false"
+      >
+        <div />
+        <div id="draggable-mini-widget" class="m-2 pointer-events-auto select-auto cursor-grab" draggable="true">
+          <div class="flex justify-center pointer-events-none min-w-[170px]">
+            <MiniWidgetInstantiator :mini-widget="miniWidget" />
+          </div>
+        </div>
+        <div
+          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B78A8] rounded-b-md text-white"
+        >
+          <span class="whitespace-normal text-center">{{
+            miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
+            'Very generic indicator'
           }}</span>
         </div>
       </div>
@@ -587,6 +617,21 @@
       </v-card>
     </GlassModal>
   </teleport>
+  <transition
+    enter-active-class="transition-transform duration-500 ease-in-out"
+    leave-active-class="transition-transform duration-0 ease-in-out"
+    enter-from-class="translate-x-full opacity-0"
+    enter-to-class="translate-x-0 opacity-100"
+    leave-from-class="translate-x-0 opacity-100"
+    leave-to-class="translate-x-full opacity-0"
+  >
+    <div
+      v-if="store.isElementsPropsDrawerVisible && store.editingMode && store.elementToShowOnDrawer"
+      class="flex fixed w-[250px] h-[78vh] right-0 top-0 border-l-[1px] border-[#FFFFFF44] text-white elevation-5 bg-[#051e2d]"
+    >
+      <ElementConfigPanel />
+    </div>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -603,6 +648,7 @@ import RovThumb from '@/assets/vehicles/BlueROV_thumb.png'
 import AttitudeImg from '@/assets/widgets/Attitude.png'
 import CompassImg from '@/assets/widgets/Compass.png'
 import CompassHUDImg from '@/assets/widgets/CompassHUD.png'
+import CustomWidgetBaseImg from '@/assets/widgets/CustomWidgetBase.png'
 import DepthHUDImg from '@/assets/widgets/DepthHUD.png'
 import IFrameImg from '@/assets/widgets/IFrame.png'
 import ImageViewImg from '@/assets/widgets/ImageView.png'
@@ -616,8 +662,16 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { type Profile, type View, type Widget, MiniWidgetType, WidgetType } from '@/types/widgets'
+import {
+  type Profile,
+  type View,
+  type Widget,
+  CustomWidgetElementType,
+  MiniWidgetType,
+  WidgetType,
+} from '@/types/widgets'
 
+import ElementConfigPanel from './ElementConfigPanel.vue'
 import ExpansiblePanel from './ExpansiblePanel.vue'
 import GlassModal from './GlassModal.vue'
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
@@ -670,11 +724,21 @@ const availableMiniWidgetTypes = computed(() =>
   }))
 )
 
+const availableCustomWidgetElementsTypes = computed(() =>
+  Object.values(CustomWidgetElementType).map((widgetType) => ({
+    component: widgetType,
+    name: widgetType,
+    options: {},
+    hash: uuid(),
+    managerVars: defaultMiniWidgetManagerVars,
+  }))
+)
 const widgetImages = {
   Attitude: AttitudeImg,
   Compass: CompassImg,
-  DepthHUD: DepthHUDImg,
   CompassHUD: CompassHUDImg,
+  CustomWidgetBase: CustomWidgetBaseImg,
+  DepthHUD: DepthHUDImg,
   IFrame: IFrameImg,
   ImageView: ImageViewImg,
   Map: MapImg,
@@ -851,6 +915,7 @@ const resetSavedProfiles = (): void => {
 
 const availableWidgetsContainer = ref()
 const availableMiniWidgetsContainer = ref()
+const availableCustomWidgetElementsContainer = ref()
 
 // @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
 const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
@@ -860,8 +925,24 @@ const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
 })
 useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidgetsContainerOptions)
 
+// @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
+const customWidgetElementContainerOptions = ref<UseDraggableOptions>({
+  animation: '150',
+  group: widgetAddMenuGroupOptions,
+  sort: false,
+})
+useDraggable(
+  availableCustomWidgetElementsContainer,
+  availableCustomWidgetElementsTypes,
+  customWidgetElementContainerOptions
+)
+
 onMounted(() => {
-  const widgetContainers = [availableWidgetsContainer.value, availableMiniWidgetsContainer.value]
+  const widgetContainers = [
+    availableWidgetsContainer.value,
+    availableMiniWidgetsContainer.value,
+    availableCustomWidgetElementsContainer.value,
+  ]
   widgetContainers.forEach((container) => {
     container.addEventListener(
       'wheel',
@@ -881,12 +962,12 @@ onMounted(() => {
   })
 })
 
-const widgetMode = ref('Regular' || 'Mini')
+const widgetMode = ref('Regular')
 
 // Resize mini widgets so they fit the layout when the widget mode is set to mini widgets
 const miniWidgetContainers = ref<Record<string, HTMLElement>>({})
 watch(widgetMode, () => {
-  if (widgetMode.value !== 'Mini widgets') return
+  if (widgetMode.value !== 'Mini') return
   nextTick(() => {
     Object.values(miniWidgetContainers.value).forEach((element) => {
       if (element.scrollWidth > element.clientWidth) {
