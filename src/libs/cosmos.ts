@@ -80,30 +80,144 @@ declare global {
     sum(): number
   }
 
-  /* eslint-disable jsdoc/require-jsdoc */
+  /**
+   * Extended Window interface with some dedicated APIs, including data-lake methods, cockpit actions management and
+   * Electron messaging.
+   */
   interface Window {
+    /**
+     * Exposed data-lake and cockpit action methods
+     */
     cockpit: {
-      // Data lake:
+      /**
+       * The object that holds the data-lake variables data
+       */
       cockpitActionVariableData: typeof cockpitActionVariableData
+      /**
+       * Get data from an specific data lake variable
+       * @param id - The id of the data to retrieve
+       * @returns The data or undefined if not available
+       */
       getCockpitActionVariableData: typeof getCockpitActionVariableData
+      /**
+       * Listen to data changes on a specific data lake variable
+       * @param id - The id of the data to listen to
+       * @param listener - The listener callback
+       */
       listenCockpitActionVariable: typeof listenCockpitActionVariable
+      /**
+       * Stop listening to data changes on a specific data lake variable
+       * @param id - The id of the data to stop listening to
+       */
       unlistenCockpitActionVariable: typeof unlistenCockpitActionVariable
+      /**
+       * Get info about all variables in the data lake
+       * @returns Data lake data
+       */
       getAllCockpitActionVariablesInfo: typeof getAllCockpitActionVariablesInfo
+      /**
+       * Get info about a specific variable in the data lake
+       * @param id - The id of the data to retrieve
+       * @returns The data info or undefined if not available
+       */
       getCockpitActionVariableInfo: typeof getCockpitActionVariableInfo
+      /**
+       * Set the value of an specific data lake variable
+       * @param id - The id of the data to set
+       * @param value - The value to set
+       */
       setCockpitActionVariableData: typeof setCockpitActionVariableData
+      /**
+       * Create a new variable in the data lake
+       * @param variable - The variable to create
+       * @param initialValue - The initial value for the variable
+       */
       createCockpitActionVariable: typeof createCockpitActionVariable
+      /**
+       * Update information about an specific data lake variable
+       * @param variable - The variable to update
+       */
       updateCockpitActionVariableInfo: typeof updateCockpitActionVariableInfo
+      /**
+       * Delete a variable from the data lake
+       * @param id - The id of the variable to delete
+       */
       deleteCockpitActionVariable: typeof deleteCockpitActionVariable
+
+      /**
+       * Cockpit actions related methods
+       */
       // Cockpit actions:
+      /**
+       * Get all available cockpit actions
+       * @returns Available cockpit actions
+       */
       availableCockpitActions: typeof availableCockpitActions
+      /**
+       * Register a new cockpit action
+       * @param action - The action to register
+       */
       registerNewAction: typeof registerNewAction
+      /**
+       * Delete a cockpit action
+       * @param id - The id of the action to delete
+       */
       deleteAction: typeof deleteAction
+      /**
+       * Register a callback for a cockpit action
+       * @param action - The action to register the callback for
+       * @param callback - The callback to register
+       */
       registerActionCallback: typeof registerActionCallback
+      /**
+       * Unregister a callback for a cockpit action
+       * @param id - The id of the action to unregister the callback for
+       */
       unregisterActionCallback: typeof unregisterActionCallback
+      /**
+       * Execute the callback for a cockpit action
+       * @param id - The id of the action to execute the callback for
+       */
       executeActionCallback: typeof executeActionCallback
     }
+    /**
+     * Electron API for update management
+     */
+    electronAPI: {
+      /**
+       * Register callback for update available event
+       */
+      onUpdateAvailable: (callback: (info: any) => void) => void
+      /**
+       * Register callback for update downloaded event
+       */
+      onUpdateDownloaded: (callback: (info: any) => void) => void
+      /**
+       * Trigger update download
+       */
+      downloadUpdate: () => void
+      /**
+       * Trigger update installation
+       */
+      installUpdate: () => void
+      /**
+       * Cancel ongoing update
+       */
+      cancelUpdate: () => void
+      /**
+       * Register callback for checking for update event
+       */
+      onCheckingForUpdate: (callback: () => void) => void
+      /**
+       * Register callback for update not available event
+       */
+      onUpdateNotAvailable: (callback: (info: any) => void) => void
+      /**
+       * Register callback for download progress event
+       */
+      onDownloadProgress: (callback: (info: any) => void) => void
+    }
   }
-  /* eslint-enable jsdoc/require-jsdoc */
 }
 
 // Use global as window when running for browsers
