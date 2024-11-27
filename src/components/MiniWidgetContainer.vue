@@ -25,7 +25,7 @@
         @mouseover="widgetStore.miniWidgetManagerVars(miniWidget.hash).highlighted = allowEditing"
         @mouseleave="widgetStore.miniWidgetManagerVars(miniWidget.hash).highlighted = false"
       >
-        <div :class="{ 'select-none pointer-events-none': allowEditing }">
+        <div :class="{ 'select-none ': allowEditing }">
           <MiniWidgetInstantiator :mini-widget="miniWidget" />
         </div>
       </div>
@@ -36,12 +36,12 @@
       <div
         v-if="showWidgetTrashArea"
         ref="widgetTrashArea"
-        class="absolute w-64 h-64 -translate-x-32 -translate-y-32 top-1/2 left-1/2 bg-slate-500/50 z-[65] rounded-3xl flex items-center justify-center hover:bg-slate-200/50 transition-all"
+        class="absolute w-32 h-32 -translate-x-32 -translate-y-32 bottom-[20%] left-1/3 bg-[#FF000055] z-[65] rounded-xl flex items-center justify-center hover:bg-slate-200/50 transition-all"
       >
-        <div class="relative w-full h-full">
+        <div class="relative flex justify-center items-center w-full h-full">
           <FontAwesomeIcon
             icon="fa-solid fa-trash"
-            class="absolute h-24 transition-all -translate-x-12 -translate-y-12 top-1/2 left-1/2 text-slate-50/30"
+            class="absolute h-16 transition-all -translate-x-7 -translate-y-8 top-1/2 left-1/2 text-white"
           />
           <VueDraggable
             v-model="trashList"
@@ -51,7 +51,7 @@
             @add="handleDeleteWidget"
           >
             <div v-for="miniWidget in trashList" :key="miniWidget.hash">
-              <div class="pointer-events-none select-none">
+              <div class="select-none">
                 <MiniWidgetInstantiator :mini-widget="miniWidget" />
               </div>
             </div>
@@ -146,6 +146,7 @@ const handleDeleteWidget = (event: DraggableEvent): void => {
     // Remove miniWidget variableName from Logged variables list
     CurrentlyLoggedVariables.removeVariable(widgetData.options.displayName)
   }
+  widgetStore.elementToShowOnDrawer = undefined
   trashList.value = []
 }
 </script>

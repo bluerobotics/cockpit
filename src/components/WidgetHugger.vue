@@ -87,7 +87,7 @@ const hoveringWidgetOrOverlay = computed(() => hoveringOverlay.value || hovering
 
 // Put the widget into highlighted state when in edit-mode and hovering over it
 watch([hoveringWidgetOrOverlay, allowMoving], () => {
-  widgetStore.widgetManagerVars(widget.value.hash).highlighted = hoveringWidgetOrOverlay.value && allowMoving.value
+  widgetStore.widgetManagerVars(widget.value.hash).highlighted = hoveringWidgetOrOverlay.value
 })
 
 const draggingWidget = ref(false)

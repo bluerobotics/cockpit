@@ -37,6 +37,89 @@ export const defaultMiniWidgetManagerVars: MiniWidgetManagerVars = {
   highlighted: false,
 }
 
+export const defaultCustomWidgetContainers = [
+  {
+    name: '0-left',
+    elements: [],
+  },
+  {
+    name: '1-left',
+    elements: [],
+  },
+  {
+    name: '2-left',
+    elements: [],
+  },
+  {
+    name: '3-left',
+    elements: [],
+  },
+  {
+    name: '4-left',
+    elements: [],
+  },
+  {
+    name: '5-left',
+    elements: [],
+  },
+  {
+    name: '6-left',
+    elements: [],
+  },
+  {
+    name: '7-left',
+    elements: [],
+  },
+  {
+    name: '8-left',
+    elements: [],
+  },
+  {
+    name: '9-left',
+    elements: [],
+  },
+  {
+    name: '0-right',
+    elements: [],
+  },
+  {
+    name: '1-right',
+    elements: [],
+  },
+  {
+    name: '2-right',
+    elements: [],
+  },
+  {
+    name: '3-right',
+    elements: [],
+  },
+  {
+    name: '4-right',
+    elements: [],
+  },
+  {
+    name: '5-right',
+    elements: [],
+  },
+  {
+    name: '6-right',
+    elements: [],
+  },
+  {
+    name: '7-right',
+    elements: [],
+  },
+  {
+    name: '8-right',
+    elements: [],
+  },
+  {
+    name: '9-right',
+    elements: [],
+  },
+]
+
 const hostname = window.location.hostname
 export const defaultBlueOsAddress = 'http://blueos-avahi.local'
 export const defaultGlobalAddress = !hostname || hostname == 'localhost' ? defaultBlueOsAddress : hostname
