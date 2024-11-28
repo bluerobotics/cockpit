@@ -1,0 +1,46 @@
+{
+    "VsCodeTaskButtons.showCounter": true,
+    "VsCodeTaskButtons.tasks": [
+        {
+            "label": "🐳 Docker",
+            "task": "🏗️ Build Docker Container",
+            "tooltip": "Build the Docker container",
+            "hide": "${env:REMOTE_CONTAINERS}"
+        },
+        {
+            "label": "$(server-process) DevServer",
+            "task": "🚀 Start Dev Server",
+            "description": "$(debug-start) Start the development server"
+        },
+        {
+            "label": "$(package) Dependencies",
+            "tasks": [
+                {
+                    "label": "📦 Install Dependencies",
+                    "task": "📦 Install Dependencies",
+                    "description": "$(package) Install project dependencies"
+                },
+                {
+                    "label": "🧹 Clean Install",
+                    "task": "🧹 Clean Install",
+                    "description": "$(trash) Remove and reinstall all dependencies"
+                }
+            ]
+        },
+        {
+            "label": "$(tools) Build",
+            "tasks": [
+                {
+                    "label": "🔨 Build Project",
+                    "task": "🔨 Build",
+                    "description": "$(gear) Build the project"
+                }
+            ]
+        },
+        {
+            "label": "$(beaker) Test",
+            "task": "🧪 Run Tests",
+            "tooltip": "🧪 Run project tests"
+        }
+    ]
+}

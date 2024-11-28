@@ -1,0 +1,30 @@
+{
+  "name": "Cockpit Development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "USERNAME": "dev",
+      "USER_UID": "1000",
+      "USER_GID": "1000"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "vue.volar",
+        "bradlc.vscode-tailwindcss",
+        "spencerwmiles.vscode-task-buttons"
+      ],
+      "settings": {
+        "task.quickOpen.detail": true,
+        "task.quickOpen.skip": false,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "forwardPorts": [5173],
+  "postCreateCommand": "git submodule update --init --recursive && bun install && exit 0",
+  "remoteUser": "dev",
+  "updateRemoteUserUID": true
+}
