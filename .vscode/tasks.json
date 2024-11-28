@@ -1,0 +1,91 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🏗️ Build Docker Container",
+            "type": "shell",
+            "command": "echo 'Building Docker container...' && docker build -t bun-cockpit-container .devcontainer/ && echo '✅ Container built successfully!'",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "group": "build",
+            "options": {
+                "env": {
+                    "INSIDE_CONTAINER": "${env:REMOTE_CONTAINERS}"
+                }
+            },
+            "runOptions": {
+                "runOn": "default"
+            }
+        },
+        {
+            "label": "🚀 Start Dev Server",
+            "type": "shell",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -it -v ${workspaceFolder}:/workspace -p 5173:5173 bun-cockpit-container dev; else bun dev --host 0.0.0.0; fi",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true,
+                "close": false
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "📦 Install Dependencies",
+            "type": "shell",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace bun-cockpit-container install; else bun install; fi",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "🧪 Run Tests",
+            "type": "shell",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace bun-cockpit-container test; else bun test; fi",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "🔨 Build",
+            "type": "shell",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace bun-cockpit-container run build; else bun run build; fi",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "🧹 Clean Install",
+            "type": "shell",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace bun-cockpit-container bash -c \"rm -rf node_modules bun.lockb && bun install\"; else rm -rf node_modules bun.lockb && bun install; fi",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        }
+    ]
+}
