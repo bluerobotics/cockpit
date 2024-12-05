@@ -6,6 +6,7 @@
         :src="widget.options.source"
         :style="iframeStyle"
         frameborder="0"
+        allowtransparency="true"
         @load="loadFinished"
       />
     </teleport>
