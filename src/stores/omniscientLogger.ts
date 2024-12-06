@@ -1,5 +1,6 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 import { useDocumentVisibility } from '@vueuse/core'
+import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
@@ -8,6 +9,7 @@ import {
   createCockpitActionVariable,
   setCockpitActionVariableData,
 } from '@/libs/actions/data-lake'
+import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useVideoStore } from './video'
@@ -274,6 +276,12 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       console.error('Error while logging WebRTC statistics:', error)
     }
   })
+
+  // Routine to send a ping event to the event tracking system every 5 minutes
+  const initialTimestamp = new Date()
+  setInterval(() => {
+    eventTracker.capture('Ping', { runningTimeInSeconds: differenceInSeconds(new Date(), initialTimestamp) })
+  }, 1000 * 60 * 5)
 
   return {
     streamsFrameRateHistory,

@@ -14,6 +14,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
+import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { datalogger } from '@/libs/sensors-logging'
 import { isEqual, sleep } from '@/libs/utils'
@@ -190,6 +191,10 @@ export const useVideoStore = defineStore('video', () => {
   const stopRecording = (streamName: string): void => {
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
+    const timeRecordingStart = activeStreams.value[streamName]?.timeRecordingStart
+    const durationInSeconds = timeRecordingStart ? differenceInSeconds(new Date(), timeRecordingStart) : undefined
+    eventTracker.capture('Video recording stop', { streamName, durationInSeconds })
+
     activeStreams.value[streamName]!.timeRecordingStart = undefined
 
     activeStreams.value[streamName]!.mediaRecorder!.stop()
@@ -249,6 +254,7 @@ export const useVideoStore = defineStore('video', () => {
    * @param {string} streamName - Name of the stream
    */
   const startRecording = async (streamName: string): Promise<void> => {
+    eventTracker.capture('Video recording start', { streamName: streamName })
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {

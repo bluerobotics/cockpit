@@ -1,4 +1,5 @@
 import { useStorage, useTimestamp, watchThrottled } from '@vueuse/core'
+import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
@@ -18,6 +19,7 @@ import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
+import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
@@ -121,6 +123,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const genericVariables: Record<string, unknown> = reactive({})
   const availableGenericVariables = ref<string[]>([])
   const usedGenericVariables = ref<string[]>([])
+  const vehicleArmingTime = ref<Date | undefined>(undefined)
 
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -387,7 +390,19 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       Object.assign(attitude, newAttitude)
     })
     mainVehicle.value.onArm.add((armed: boolean) => {
+      const wasArmed = isArmed.value
       isArmed.value = armed
+
+      // If the vehicle was already in the desired state or it's the first time we are checking, do not capture an event
+      if (wasArmed === undefined || wasArmed === armed) return
+
+      if (armed) {
+        vehicleArmingTime.value = new Date()
+        eventTracker.capture('Vehicle armed')
+      } else {
+        const armDurationInSeconds = differenceInSeconds(new Date(), vehicleArmingTime.value ?? new Date())
+        eventTracker.capture('Vehicle disarmed', { armDurationInSeconds })
+      }
     })
     mainVehicle.value.onTakeoff.add((inAir: boolean) => {
       flying.value = inAir
