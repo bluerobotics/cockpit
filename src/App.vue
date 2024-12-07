@@ -315,6 +315,7 @@
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
   <Tutorial :show-tutorial="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal :open-modal="interfaceStore.isVideoLibraryVisible" />
+  <UpdateNotification v-if="isElectron()" />
 </template>
 
 <script setup lang="ts">
@@ -324,6 +325,7 @@ import { useRoute } from 'vue-router'
 
 import GlassModal from '@/components/GlassModal.vue'
 import Tutorial from '@/components/Tutorial.vue'
+import UpdateNotification from '@/components/UpdateNotification.vue'
 import VideoLibraryModal from '@/components/VideoLibraryModal.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
@@ -339,6 +341,7 @@ import GlassButton from './components/GlassButton.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
 import { useSnackbar } from './composables/snackbar'
+import { isElectron } from './libs/utils'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
