@@ -1,6 +1,8 @@
 import { app, BrowserWindow, protocol, screen } from 'electron'
 import { join } from 'path'
 
+import { setupFilesystemStorage } from './services/storage'
+
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
 }
@@ -15,10 +17,9 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     icon: join(ROOT_PATH.dist, 'pwa-512x512.png'),
     webPreferences: {
-      webSecurity: false,
-      contextIsolation: false,
-      nodeIntegration: true,
-      allowRunningInsecureContent: true,
+      preload: join(ROOT_PATH.dist, 'electron/preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
     width,
     height,
@@ -60,7 +61,16 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
-app.whenReady().then(createWindow)
+console.log('Setting up filesystem storage...')
+setupFilesystemStorage()
+
+app.whenReady().then(async () => {
+  console.log('Electron app is ready.')
+  console.log(`Cockpit version: ${app.getVersion()}`)
+
+  console.log('Creating window...')
+  await createWindow()
+})
 
 app.on('before-quit', () => {
   // @ts-ignore: import.meta.env does not exist in the types

@@ -14,22 +14,32 @@ const isBuilding = process.argv.includes('build')
 export default defineConfig({
   plugins: [
     (isElectron || isBuilding) &&
-      electron({
-        entry: 'electron/main.ts',
-        vite: {
-          build: {
-            outDir: 'dist/electron',
+      electron([
+        {
+          entry: 'electron/main.ts',
+          vite: {
+            build: {
+              outDir: 'dist/electron',
+            },
+          },
+          onstart: () => {
+            // @ts-ignore: process.electronApp exists in vite-plugin-electron but not in the types
+            if (process.electronApp) {
+              // @ts-ignore: process.electronApp.pid exists in vite-plugin-electron but not in the types
+              treeKillSync(process.electronApp.pid)
+            }
+            startup()
           },
         },
-        onstart: () => {
-          // @ts-ignore: process.electronApp exists in vite-plugin-electron but not in the types
-          if (process.electronApp) {
-            // @ts-ignore: process.electronApp.pid exists in vite-plugin-electron but not in the types
-            treeKillSync(process.electronApp.pid)
-          }
-          startup()
+        {
+          entry: 'electron/preload.ts',
+          vite: {
+            build: {
+              outDir: 'dist/electron',
+            },
+          },
         },
-      }),
+      ]),
     vue(),
     vuetify({
       autoImport: true,
