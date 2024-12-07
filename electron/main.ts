@@ -1,6 +1,8 @@
 import { app, BrowserWindow, protocol, screen } from 'electron'
 import { join } from 'path'
 
+import { setupNetworkService } from './services/network'
+
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
 }
@@ -15,10 +17,9 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     icon: join(ROOT_PATH.dist, 'pwa-512x512.png'),
     webPreferences: {
-      webSecurity: false,
-      contextIsolation: false,
-      nodeIntegration: true,
-      allowRunningInsecureContent: true,
+      preload: join(ROOT_PATH.dist, 'electron/preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
     width,
     height,
@@ -59,6 +60,8 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ])
+
+setupNetworkService()
 
 app.whenReady().then(createWindow)
 

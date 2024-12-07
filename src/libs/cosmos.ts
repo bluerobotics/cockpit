@@ -102,6 +102,16 @@ declare global {
       unregisterActionCallback: typeof unregisterActionCallback
       executeActionCallback: typeof executeActionCallback
     }
+    /**
+     * Electron API exposed through preload script
+     */
+    electronAPI?: {
+      /**
+       * Get network information from the main process
+       * @returns Promise containing subnet information
+       */
+      getNetworkInfo: () => Promise<{ subnet: string }>
+    }
   }
   /* eslint-enable jsdoc/require-jsdoc */
 }
