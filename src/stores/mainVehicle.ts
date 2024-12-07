@@ -480,7 +480,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       }
     }, 1000)
 
-    mainVehicle.value.onMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
+    mainVehicle.value.onIncomingMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.component_id != 1) {
         return
       }
@@ -517,6 +517,20 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         .first()
     })
   })
+
+  const listenToIncomingMessages = (messageType: string, callback: (pack: Package) => void): void => {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to listen for incoming messages.')
+    }
+    mainVehicle.value?.onIncomingMAVLinkMessage.add(messageType, callback)
+  }
+
+  const listenToOutgoingMessages = (messageType: string, callback: (pack: Package) => void): void => {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to listen for outgoing messages.')
+    }
+    mainVehicle.value?.onOutgoingMAVLinkMessage.add(messageType, callback)
+  }
 
   // Allow us to set custom commands to be used in the browser
   // Expert mode
@@ -603,5 +617,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     genericVariables,
     availableGenericVariables,
     registerUsageOfGenericVariable,
+    listenToIncomingMessages,
+    listenToOutgoingMessages,
   }
 })
