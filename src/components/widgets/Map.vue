@@ -592,7 +592,7 @@ const topProgressBarDisplacement = computed(() => {
 })
 </script>
 
-<style>
+<style scoped>
 .page-base {
   min-height: 100vh;
   display: flex;
