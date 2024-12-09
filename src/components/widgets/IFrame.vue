@@ -3,6 +3,7 @@
     <teleport to=".widgets-view">
       <iframe
         v-show="iframe_loaded"
+        ref="iframe"
         :src="widget.options.source"
         :style="iframeStyle"
         frameborder="0"
@@ -62,6 +63,11 @@ import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { ConnectionManager } from '@/libs/connection/connection-manager'
+
+const vehicleStore = useMainVehicleStore()
+
 const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()
@@ -133,12 +139,17 @@ const iframeOpacity = computed<number>(() => {
   return (100 - transparency.value) / 100
 })
 
+const iframe = ref()
+
 /**
  * Called when iframe finishes loading
  */
 function loadFinished(): void {
   console.log('Finished loading')
   iframe_loaded.value = true
+  setTimeout(() => {
+    iframe.value.contentWindow.MavlinkSignal = ConnectionManager.onRead
+  }, 1000)
 }
 
 watch(
