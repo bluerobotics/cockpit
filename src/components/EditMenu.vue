@@ -658,6 +658,7 @@ import PlotterImg from '@/assets/widgets/Plotter.png'
 import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
 import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
 import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
+import WebcamViewImg from '@/assets/widgets/WebcamView.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
@@ -742,6 +743,7 @@ const widgetImages = {
   DepthHUD: DepthHUDImg,
   IFrame: IFrameImg,
   ImageView: ImageViewImg,
+  Webcam: WebcamViewImg,
   Map: MapImg,
   MiniWidgetsBar: MiniWidgetsBarImg,
   Plotter: PlotterImg,
