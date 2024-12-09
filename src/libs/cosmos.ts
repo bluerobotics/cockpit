@@ -103,6 +103,36 @@ declare global {
       registerActionCallback: typeof registerActionCallback
       unregisterActionCallback: typeof unregisterActionCallback
       executeActionCallback: typeof executeActionCallback
+      /* eslint-enable jsdoc/require-jsdoc */
+    }
+    /**
+     * Electron API for update management
+     */
+    electronAPI: {
+      /**
+       * Set an item in the filesystem storage
+       */
+      setItem: (key: string, value: Blob) => Promise<void>
+      /**
+       * Get an item from the filesystem storage
+       */
+      getItem: (key: string) => Promise<ArrayBuffer | null | undefined>
+      /**
+       * Remove an item from the filesystem storage
+       */
+      removeItem: (key: string) => Promise<void>
+      /**
+       * Clear the filesystem storage
+       */
+      clear: () => Promise<void>
+      /**
+       * Get all keys from the filesystem storage
+       */
+      keys: () => Promise<string[]>
+      /**
+       * Iterate over the items in the filesystem storage
+       */
+      iterate: (callback: (value: Blob, key: string, iterationNumber: number) => void) => Promise<void>
     }
     /**
      * Electron API exposed through preload script
@@ -115,7 +145,6 @@ declare global {
       getInfoOnSubnets: () => Promise<NetworkInfo[]>
     }
   }
-  /* eslint-enable jsdoc/require-jsdoc */
 }
 
 // Use global as window when running for browsers
