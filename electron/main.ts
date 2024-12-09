@@ -1,7 +1,14 @@
 import { app, BrowserWindow, protocol, screen } from 'electron'
+import logger from 'electron-log'
 import { join } from 'path'
 
+import { setupAutoUpdater } from './services/auto-update'
 import { setupNetworkService } from './services/network'
+
+// If the app is packaged, push logs to the system instead of the console
+if (app.isPackaged) {
+  Object.assign(console, logger.functions)
+}
 
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
@@ -23,11 +30,6 @@ function createWindow(): void {
     },
     width,
     height,
-  })
-
-  // Test active push message to Renderer-process.
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow?.webContents.send('main-process-message', new Date().toLocaleString())
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -63,7 +65,17 @@ protocol.registerSchemesAsPrivileged([
 
 setupNetworkService()
 
-app.whenReady().then(createWindow)
+app.whenReady().then(async () => {
+  console.log('Electron app is ready.')
+  console.log(`Cockpit version: ${app.getVersion()}`)
+
+  console.log('Creating window...')
+  createWindow()
+
+  setTimeout(() => {
+    setupAutoUpdater(mainWindow as BrowserWindow)
+  }, 5000)
+})
 
 app.on('before-quit', () => {
   // @ts-ignore: import.meta.env does not exist in the types
