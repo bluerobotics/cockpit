@@ -2,7 +2,6 @@ import { useDebounceFn, useStorage, useThrottleFn, useTimestamp } from '@vueuse/
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { differenceInSeconds, format } from 'date-fns'
 import { saveAs } from 'file-saver'
-import localforage from 'localforage'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
 import { computed, ref, watch } from 'vue'
@@ -18,6 +17,7 @@ import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { datalogger } from '@/libs/sensors-logging'
 import { isEqual, sleep } from '@/libs/utils'
+import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
@@ -281,7 +281,7 @@ export const useVideoStore = defineStore('video', () => {
 
     let recordingHash = ''
     let refreshHash = true
-    const namesCurrentChunksOnDB = await tempVideoChunksDB.keys()
+    const namesCurrentChunksOnDB = await tempVideoStorage.keys()
     while (refreshHash) {
       recordingHash = uuid().slice(0, 8)
       refreshHash = namesCurrentChunksOnDB.some((chunkName) => chunkName.includes(recordingHash))
@@ -370,7 +370,7 @@ export const useVideoStore = defineStore('video', () => {
       const chunkName = `${recordingHash}_${chunksCount}`
 
       try {
-        await tempVideoChunksDB.setItem(chunkName, e.data)
+        await tempVideoStorage.setItem(chunkName, e.data)
         sequentialLostChunks = 0
       } catch {
         sequentialLostChunks++
@@ -387,7 +387,7 @@ export const useVideoStore = defineStore('video', () => {
       // Gets the thumbnail from the first chunk
       if (chunksCount === 0) {
         try {
-          const videoChunk = await tempVideoChunksDB.getItem(chunkName)
+          const videoChunk = await tempVideoStorage.getItem(chunkName)
           if (videoChunk) {
             const firstChunkBlob = new Blob([videoChunk as Blob])
             const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
@@ -436,13 +436,13 @@ export const useVideoStore = defineStore('video', () => {
   const discardProcessedFilesFromVideoDB = async (fileNames: string[]): Promise<void> => {
     console.debug(`Discarding files from the video recovery database: ${fileNames.join(', ')}`)
     for (const filename of fileNames) {
-      await videoStoringDB.removeItem(filename)
+      await videoStorage.removeItem(filename)
     }
   }
 
   const discardUnprocessedFilesFromVideoDB = async (hashes: string[]): Promise<void> => {
     for (const hash of hashes) {
-      await tempVideoChunksDB.removeItem(hash)
+      await tempVideoStorage.removeItem(hash)
       delete unprocessedVideos.value[hash]
     }
   }
@@ -462,7 +462,7 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const downloadFiles = async (
-    db: StorageDB,
+    db: StorageDB | LocalForage,
     keys: string[],
     shouldZip = false,
     zipFilenamePrefix = 'Cockpit-Video-Files',
@@ -496,9 +496,9 @@ export const useVideoStore = defineStore('video', () => {
     console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
     if (zipMultipleFiles.value) {
       const ZipFilename = fileNames.length > 1 ? 'Cockpit-Video-Recordings' : 'Cockpit-Video-Recording'
-      await downloadFiles(videoStoringDB, fileNames, true, ZipFilename, progressCallback)
+      await downloadFiles(videoStorage, fileNames, true, ZipFilename, progressCallback)
     } else {
-      await downloadFiles(videoStoringDB, fileNames)
+      await downloadFiles(videoStorage, fileNames)
     }
   }
 
@@ -506,47 +506,33 @@ export const useVideoStore = defineStore('video', () => {
     console.debug(`Downloading ${hashes.length} video chunks from the temporary database.`)
 
     for (const hash of hashes) {
-      const fileNames = (await tempVideoChunksDB.keys()).filter((filename) => filename.includes(hash))
+      const fileNames = (await tempVideoStorage.keys()).filter((filename) => filename.includes(hash))
       const zipFilenamePrefix = `Cockpit-Unprocessed-Video-Chunks-${hash}`
-      await downloadFiles(tempVideoChunksDB, fileNames, true, zipFilenamePrefix, progressCallback)
+      await downloadFiles(tempVideoStorage, fileNames, true, zipFilenamePrefix, progressCallback)
     }
   }
 
   // Used to clear the temporary video database
   const clearTemporaryVideoDB = async (): Promise<void> => {
-    await tempVideoChunksDB.clear()
+    await tempVideoStorage.clear()
   }
 
   const temporaryVideoDBSize = async (): Promise<number> => {
     let totalSizeBytes = 0
-    await tempVideoChunksDB.iterate((chunk) => {
-      totalSizeBytes += (chunk as Blob).size
-    })
+    const keys = await tempVideoStorage.keys()
+    for (const key of keys) {
+      const blob = await tempVideoStorage.getItem(key)
+      if (blob) {
+        totalSizeBytes += blob.size
+      }
+    }
     return totalSizeBytes
   }
 
   const videoStorageFileSize = async (filename: string): Promise<number | undefined> => {
-    const file = await videoStoringDB.getItem(filename)
+    const file = await videoStorage.getItem(filename)
     return file ? (file as Blob).size : undefined
   }
-
-  // Used to store chunks of an ongoing recording, that will be merged into a video file when the recording is stopped
-  const tempVideoChunksDB = localforage.createInstance({
-    driver: localforage.INDEXEDDB,
-    name: 'Cockpit - Temporary Video',
-    storeName: 'cockpit-temp-video-db',
-    version: 1.0,
-    description: 'Database for storing the chunks of an ongoing recording, to be merged afterwards.',
-  })
-
-  // Offer download of backuped videos
-  const videoStoringDB = localforage.createInstance({
-    driver: localforage.INDEXEDDB,
-    name: 'Cockpit - Video Recovery',
-    storeName: 'cockpit-video-recovery-db',
-    version: 1.0,
-    description: 'Local backups of Cockpit video recordings to be retrieved in case of failure.',
-  })
 
   const updateLastProcessingUpdate = (recordingHash: string): void => {
     const info = unprocessedVideos.value[recordingHash]
@@ -599,11 +585,14 @@ export const useVideoStore = defineStore('video', () => {
       const dateFinish = new Date(info.dateFinish!)
 
       debouncedUpdateFileProgress(info.fileName, 30, 'Grouping video chunks.')
-      await tempVideoChunksDB.iterate((videoChunk, chunkName) => {
-        if (chunkName.includes(hash)) {
-          chunks.push({ blob: videoChunk as Blob, name: chunkName })
+      const keys = await tempVideoStorage.keys()
+      const filteredKeys = keys.filter((key) => key.includes(hash))
+      for (const key of filteredKeys) {
+        const blob = await tempVideoStorage.getItem(key)
+        if (blob && blob.size > 0) {
+          chunks.push({ blob, name: key })
         }
-      })
+      }
 
       // As we advance through the processing, we update the last processing update date, so consumers know this is ongoing
       updateLastProcessingUpdate(hash)
@@ -639,7 +628,7 @@ export const useVideoStore = defineStore('video', () => {
       updateLastProcessingUpdate(hash)
 
       debouncedUpdateFileProgress(info.fileName, 75, `Saving video file.`)
-      await videoStoringDB.setItem(`${info.fileName}.${extensionContainer || 'webm'}`, durFixedBlob ?? mergedBlob)
+      await videoStorage.setItem(`${info.fileName}.${extensionContainer || 'webm'}`, durFixedBlob ?? mergedBlob)
 
       updateLastProcessingUpdate(hash)
 
@@ -653,7 +642,7 @@ export const useVideoStore = defineStore('video', () => {
       const videoTelemetryLog = datalogger.getSlice(telemetryLog, dateStart, dateFinish)
       const assLog = datalogger.toAssOverlay(videoTelemetryLog, info.vWidth!, info.vHeight!, dateStart.getTime())
       const logBlob = new Blob([assLog], { type: 'text/plain' })
-      videoStoringDB.setItem(`${info.fileName}.ass`, logBlob)
+      videoStorage.setItem(`${info.fileName}.ass`, logBlob)
 
       updateLastProcessingUpdate(hash)
 
@@ -666,7 +655,11 @@ export const useVideoStore = defineStore('video', () => {
 
   // Remove temp chunks and video metadata from the database
   const cleanupProcessedData = async (recordingHash: string): Promise<void> => {
-    await tempVideoChunksDB.removeItem(recordingHash)
+    const keys = await tempVideoStorage.keys()
+    const filteredKeys = keys.filter((key) => key.includes(recordingHash) && key.includes('_'))
+    for (const key of filteredKeys) {
+      await tempVideoStorage.removeItem(key)
+    }
     delete unprocessedVideos.value[recordingHash]
   }
 
@@ -705,7 +698,7 @@ export const useVideoStore = defineStore('video', () => {
     if (keysFailedUnprocessedVideos.value.isEmpty()) return
     console.log(`Processing unprocessed videos: ${keysFailedUnprocessedVideos.value.join(', ')}`)
 
-    const chunks = await tempVideoChunksDB.keys()
+    const chunks = await tempVideoStorage.keys()
     if (chunks.length === 0) {
       discardUnprocessedVideos()
       throw new Error('No video recording data found. Discarding leftover info.')
@@ -732,14 +725,14 @@ export const useVideoStore = defineStore('video', () => {
     console.log('Discarding unprocessed videos.')
 
     const keysUnprocessedVideos = includeNotFailed ? keysAllUnprocessedVideos.value : keysFailedUnprocessedVideos.value
-    const currentChunks = await tempVideoChunksDB.keys()
+    const currentChunks = await tempVideoStorage.keys()
     const chunksUnprocessedVideos = currentChunks.filter((chunkName) => {
       return keysUnprocessedVideos.some((key) => chunkName.includes(key))
     })
 
     unprocessedVideos.value = {}
     for (const chunk of chunksUnprocessedVideos) {
-      tempVideoChunksDB.removeItem(chunk)
+      tempVideoStorage.removeItem(chunk)
     }
   }
 
@@ -922,8 +915,8 @@ export const useVideoStore = defineStore('video', () => {
     jitterBufferTarget,
     zipMultipleFiles,
     namesAvailableStreams,
-    videoStoringDB,
-    tempVideoChunksDB,
+    videoStorage,
+    tempVideoStorage,
     streamsCorrespondency,
     namessAvailableAbstractedStreams,
     externalStreamId,
