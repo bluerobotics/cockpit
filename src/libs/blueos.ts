@@ -1,5 +1,26 @@
 import ky, { HTTPError } from 'ky'
 
+import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { ExternalWidgetSetupInfo } from '@/types/widgets'
+
+/**
+ * Cockpits extra json format. Taken from extensions in BlueOS and (eventually) other places
+ */
+interface ExtrasJson {
+  /**
+   *  The version of the cockpit API that the extra json is compatible with
+   */
+  target_cockpit_api_version: string
+  /**
+   *  The target system that the extra json is compatible with, in our case, "cockpit"
+   */
+  target_system: string
+  /**
+   *  A list of widgets that the extra json contains. src/types/widgets.ts
+   */
+  widgets: ExternalWidgetSetupInfo[]
+}
+
 export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
 
 const defaultTimeout = 10000
@@ -28,6 +49,46 @@ export const getKeyDataFromCockpitVehicleStorage = async (
   storageKey: string
 ): Promise<Record<string, any> | undefined> => {
   return await getBagOfHoldingFromVehicle(vehicleAddress, `cockpit/${storageKey}`)
+}
+
+export const getWidgetsFromBlueOS = async (): Promise<ExternalWidgetSetupInfo[]> => {
+  const vehicleStore = useMainVehicleStore()
+
+  // Wait until we have a global address
+  while (vehicleStore.globalAddress === undefined) {
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+  const options = { timeout: defaultTimeout, retry: 0 }
+  const services = (await ky
+    .get(`http://${vehicleStore.globalAddress}/helper/v1.0/web_services`, options)
+    .json()) as Record<string, any>
+  // first we gather all the extra jsons with the cockpit key
+  const extraWidgets = await services.reduce(
+    async (accPromise: Promise<ExternalWidgetSetupInfo[]>, service: Record<string, any>) => {
+      const acc = await accPromise
+      const worksInRelativePaths = service.metadata?.works_in_relative_paths
+      if (service.metadata?.extras?.cockpit === undefined) {
+        return acc
+      }
+      const baseUrl = worksInRelativePaths
+        ? `http://${vehicleStore.globalAddress}/extensionv2/${service.metadata.sanitized_name}`
+        : `http://${vehicleStore.globalAddress}:${service.port}`
+      const fullUrl = baseUrl + service.metadata?.extras?.cockpit
+
+      const extraJson: ExtrasJson = await ky.get(fullUrl, options).json()
+      const widgets: ExternalWidgetSetupInfo[] = extraJson.widgets.map((widget) => {
+        return {
+          ...widget,
+          iframe_url: baseUrl + widget.iframe_url,
+          iframe_icon: baseUrl + widget.iframe_icon,
+        }
+      })
+      return acc.concat(widgets)
+    },
+    Promise.resolve([] as ExternalWidgetSetupInfo[])
+  )
+
+  return extraWidgets
 }
 
 export const setBagOfHoldingOnVehicle = async (
