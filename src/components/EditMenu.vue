@@ -472,7 +472,7 @@
           <v-btn
             type="flat"
             class="bg-[#FFFFFF33] text-white w-[95%]"
-            @click="store.addWidget(WidgetType.CustomWidgetBase, store.currentView)"
+            @click="store.addWidget(makeNewWidget(WidgetType.CustomWidgetBase), store.currentView)"
             >Add widget base
           </v-btn>
         </div>
@@ -718,6 +718,35 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:editMode', editMode: boolean): void
 }>()
+
+const findUniqueName = (name: string): string => {
+  let newName = name
+  let i = 1
+  const existingNames = store.currentView.widgets.map((widget) => widget.name)
+  while (existingNames.includes(newName)) {
+    newName = `${name} ${i}`
+    i++
+  }
+  return newName
+}
+/*
+ * Makes a new widget with an unique name
+ */
+const makeNewWidget = (widget: WidgetType, name?: string, options?: Record<string, any>): ExtendedWidget => {
+  const newName = name || widget
+  return {
+    name: findUniqueName(newName),
+    component: widget,
+    options: options || {},
+  }
+}
+
+const makeWidgetUnique = (widget: ExtendedWidget): ExtendedWidget => {
+  return {
+    ...widget,
+    name: findUniqueName(widget.name),
+  }
+}
 
 const availableWidgetTypes = computed(() =>
   Object.values(WidgetType).map((widgetType) => {
@@ -1023,8 +1052,8 @@ const onRegularWidgetDragStart = (event: DragEvent): void => {
   }
 }
 
-const onRegularWidgetDragEnd = (widgetType: ExtendedWidget): void => {
-  store.addWidget(widgetType, store.currentView)
+const onRegularWidgetDragEnd = (widget: ExtendedWidget): void => {
+  store.addWidget(makeWidgetUnique(widget), store.currentView)
 
   const widgetCards = document.querySelectorAll('[draggable="true"]')
   widgetCards.forEach((card) => {
