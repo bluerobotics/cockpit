@@ -2,6 +2,7 @@ import { app, BrowserWindow, protocol, screen } from 'electron'
 import { join } from 'path'
 
 import { setupNetworkService } from './services/network'
+import { setupFilesystemStorage } from './services/storage'
 
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
@@ -61,9 +62,16 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
+setupFilesystemStorage()
 setupNetworkService()
 
-app.whenReady().then(createWindow)
+app.whenReady().then(async () => {
+  console.log('Electron app is ready.')
+  console.log(`Cockpit version: ${app.getVersion()}`)
+
+  console.log('Creating window...')
+  createWindow()
+})
 
 app.on('before-quit', () => {
   // @ts-ignore: import.meta.env does not exist in the types
