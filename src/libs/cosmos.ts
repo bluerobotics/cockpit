@@ -1,5 +1,6 @@
 import { isBrowser } from 'browser-or-node'
 
+import { ElectronStorageDB } from '@/types/general'
 import { NetworkInfo } from '@/types/network'
 
 import {
@@ -185,7 +186,7 @@ declare global {
     /**
      * Electron API exposed through preload script
      */
-    electronAPI?: {
+    electronAPI?: ElectronStorageDB & {
       /**
        * Get network information from the main process
        * @returns Promise containing subnet information
