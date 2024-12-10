@@ -188,7 +188,8 @@ watch(nameSelectedStream, (newName) => {
 
 // Fetch number of temporary videos on storage
 const fetchNumberOfTempVideos = async (): Promise<void> => {
-  const nProcessedVideos = (await videoStore.videoStoringDB.keys()).filter((k) => videoStore.isVideoFilename(k)).length
+  const keys = await videoStore.videoStorage.keys()
+  const nProcessedVideos = keys.filter((k) => videoStore.isVideoFilename(k)).length
   const nFailedUnprocessedVideos = Object.keys(videoStore.keysFailedUnprocessedVideos).length
   numberOfVideosOnDB.value = nProcessedVideos + nFailedUnprocessedVideos
 }
