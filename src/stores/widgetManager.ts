@@ -36,6 +36,7 @@ import {
   type Widget,
   CustomWidgetElement,
   CustomWidgetElementContainer,
+  InternalWidgetSetupInfo,
   MiniWidgetManagerVars,
   validateProfile,
   validateView,
@@ -555,22 +556,22 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   /**
    * Add widget with given type to given view
-   * @param { WidgetType } widgetType - Type of the widget
+   * @param { WidgetType } widget - Type of the widget
    * @param { View } view - View
    */
-  function addWidget(widgetType: WidgetType, view: View): void {
+  function addWidget(widget: InternalWidgetSetupInfo, view: View): void {
     const widgetHash = uuid4()
 
-    const widget = {
+    const newWidget = {
       hash: widgetHash,
-      name: widgetType,
-      component: widgetType,
+      name: widget.name,
+      component: widget.component,
       position: { x: 0.4, y: 0.32 },
       size: { width: 0.2, height: 0.36 },
-      options: {},
+      options: widget.options,
     }
 
-    if (widgetType === WidgetType.CustomWidgetBase) {
+    if (widget.component === WidgetType.CustomWidgetBase) {
       widget.options = {
         elementContainers: defaultCustomWidgetContainers,
         columns: 1,
@@ -581,8 +582,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       }
     }
 
-    view.widgets.unshift(widget)
-    Object.assign(widgetManagerVars(widget.hash), {
+    view.widgets.unshift(newWidget)
+    Object.assign(widgetManagerVars(newWidget.hash), {
       ...defaultWidgetManagerVars,
       ...{ allowMoving: true },
     })
