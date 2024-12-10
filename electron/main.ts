@@ -5,6 +5,7 @@ import { join } from 'path'
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupNetworkService } from './services/network'
+import { setupFilesystemStorage } from './services/storage'
 
 // If the app is packaged, push logs to the system instead of the console
 if (app.isPackaged) {
@@ -71,6 +72,7 @@ protocol.registerSchemesAsPrivileged([
   },
 ])
 
+setupFilesystemStorage()
 setupNetworkService()
 
 app.whenReady().then(async () => {

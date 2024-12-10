@@ -108,10 +108,6 @@ export interface FileDescriptor {
   filename: string
 }
 
-export interface StorageDB {
-  getItem: (key: string) => Promise<Blob | null | undefined>
-}
-
 export type DownloadProgressCallback = (progress: number, total: number) => Promise<void>
 
 export enum VideoExtensionContainer {
