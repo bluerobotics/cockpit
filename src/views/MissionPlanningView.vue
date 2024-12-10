@@ -1,6 +1,59 @@
 <template>
   <div class="mission-planning">
-    <div id="planningMap" ref="planningMap" />
+    <div id="planningMap" ref="planningMap" class="relative" />
+    <v-tooltip location="top" text="Generate waypoints">
+      <template #activator="{ props }">
+        <div
+          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="confirmButtonStyle"
+          class="absolute text-[22px] bg-transparent rounded-full cursor-pointer elevation-4"
+          variant="text"
+          @click="generateWaypointsFromSurvey"
+        >
+          <v-icon color="green" class="border-2 rounded-full bg-white">mdi-check-circle</v-icon>
+        </div>
+      </template>
+    </v-tooltip>
+    <v-tooltip location="top" text="Scan spacing">
+      <template #activator="{ props }">
+        <div
+          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="confirmButtonStyle"
+          class="absolute mt-[73px] ml-[10px] rounded-lg elevation-4"
+          variant="text"
+        >
+          <input
+            v-model.number="distanceBetweenSurveyLines"
+            class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
+            type="number"
+            min="1"
+          /></div
+      ></template>
+    </v-tooltip>
+    <v-tooltip location="top" text="Clear survey">
+      <template #activator="{ props }">
+        <div
+          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="confirmButtonStyle"
+          class="absolute text-[14px] mt-[130px] ml-[3px] bg-transparent rounded-full cursor-pointer elevation-4"
+          variant="text"
+          @click="clearSurveyCreation"
+        >
+          <v-icon color="white" class="border-2 rounded-full bg-red">mdi-close</v-icon>
+        </div></template
+      >
+    </v-tooltip>
+    <div
+      v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+      :style="confirmButtonStyle"
+      class="absolute central-element flex justify-start items-start mt-12 -ml-[80px]"
+    >
+      <ScanDirectionDial v-model:angle="surveyLinesAngle" polygon-state auto-update />
+    </div>
+
     <div
       v-show="!interfaceStore.isMainMenuVisible"
       class="absolute flex flex-col left-10 rounded-[10px]"
@@ -24,23 +77,22 @@
         <button
           v-if="!isCreatingSurvey && !isCreatingSimpleMission"
           :class="{ ' elevation-4': isCreatingSimpleMission }"
-          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
+          class="h-auto py-2 px-2 m-2 mb-3 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSimpleMission"
         >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD MISSION' : 'CREATE MISSION' }}
+          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
         </button>
-        <v-divider v-if="!isCreatingSimpleMission" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
-          <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">Scan spacing (m)</p>
           <input
             v-model.number="distanceBetweenSurveyLines"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
             min="1"
           />
-          <p class="m-1 overflow-visible text-sm text-slate-200">Lines angle (degrees)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">Scanning angle (deg)</p>
           <input
-            v-model.number="surveyLinesAngle"
+            v-model.number="surveyLinesAngleDisplay"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
             min="0"
@@ -97,53 +149,58 @@
           </select>
           <p class="m-1 overflow-visible mt-2 text-sm text-slate-200">Default cruise speed (m/s)</p>
           <input v-model="defaultCruiseSpeed" class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]" />
-          <v-divider class="my-2" />
-          <button
-            :disabled="missionStore.currentPlanningWaypoints.length < 2"
-            class="bg-[#FFFFFF33] hover:bg-[#FFFFFF44] text-[12px] mx-8 py-2 rounded-sm my-2"
-            :class="{ 'bg-[#FFFFFF11] text-[#FFFFFF22]': missionStore.currentPlanningWaypoints.length < 2 }"
-            @click="toggleSimpleMission"
-          >
-            ADD TO MISSION
-          </button>
+          <div class="flex w-full justify-end">
+            <v-btn variant="text" size="small" @click="toggleSimpleMission"> close </v-btn>
+          </div>
+          <v-divider class="mt-2 mb-1" />
         </div>
-
         <div>
-          <div class="flex justify-end mt-2 mb-2">
-            <v-tooltip location="top" text="Save mission to file">
-              <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon="mdi-content-save"
-                  variant="text"
-                  size="24"
-                  class="text-[12px] mx-3 mt-[2px] mb-[1px]"
-                  @click="saveMissionToFile"
-                />
-              </template>
-            </v-tooltip>
-            <v-divider v-if="missionStore.currentPlanningWaypoints.length > 0" vertical />
-            <v-tooltip location="top" text="Load mission from file">
-              <template #activator="{ props }">
-                <label v-bind="props">
-                  <input type="file" accept=".cmp" hidden @change="(e) => loadMissionFromFile(e)" />
-                  <v-icon class="text-[16px] cursor-pointer mx-3 mt-[1px]">mdi-folder-open</v-icon>
-                </label>
-              </template>
-            </v-tooltip>
-            <v-divider vertical />
-            <v-tooltip location="top" text="Clear mission on vehicle">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon="mdi-delete"
-                  variant="text"
-                  size="24"
-                  class="text-[12px] mx-3 mt-[2px] mb-[1px]"
-                  @click="clearMissionOnVehicle"
-                />
-              </template>
-            </v-tooltip>
+          <div class="flex justify-between mb-1">
+            <v-btn
+              :disabled="missionStore.currentPlanningWaypoints.length === 0"
+              class="mt-[4px] text-white ml-2"
+              variant="text"
+              size="x-small"
+              @click="clearAll"
+            >
+              Clear All
+            </v-btn>
+            <div class="flex">
+              <v-tooltip location="top" text="Save paths to file">
+                <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon="mdi-content-save"
+                    variant="text"
+                    size="24"
+                    class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                    @click="saveMissionToFile"
+                  />
+                </template>
+              </v-tooltip>
+              <v-divider v-if="missionStore.currentPlanningWaypoints.length > 0" vertical />
+              <v-tooltip location="top" text="Load vehicle path from file">
+                <template #activator="{ props }">
+                  <label v-bind="props">
+                    <input type="file" accept=".cmp" hidden @change="(e) => loadMissionFromFile(e)" />
+                    <v-icon class="text-[16px] cursor-pointer mx-3 mt-[1px]">mdi-folder-open</v-icon>
+                  </label>
+                </template>
+              </v-tooltip>
+              <v-divider vertical class="-mr-1" />
+              <v-tooltip location="top" text="Clear mission on vehicle">
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon="mdi-delete"
+                    variant="text"
+                    size="24"
+                    class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                    @click="clearMissionOnVehicle"
+                  />
+                </template>
+              </v-tooltip>
+            </div>
           </div>
         </div>
         <v-divider v-if="isCreatingSimpleMission || isCreatingSurvey" class="my-2" />
@@ -159,32 +216,6 @@
         >
           UPLOAD MISSION TO VEHICLE
         </button>
-      </div>
-    </div>
-    <div
-      v-if="missionStore.currentPlanningWaypoints.length > 0"
-      class="absolute flex flex-col right-8 m-4 p-2 rounded-[16px] max-h-[70%] w-52"
-      :style="interfaceStore.globalGlassMenuStyles"
-    >
-      <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
-        <p v-if="missionStore.currentPlanningWaypoints.length === 0" class="text-lg text-center text-slate-100">
-          No waypoints added to the mission.
-        </p>
-        <div v-for="(waypoint, index) in missionStore.currentPlanningWaypoints" :key="waypoint.id">
-          <div class="flex w-full items-center justify-between px-1">
-            <div>
-              <p class="text-base text-slate-100">Waypoint {{ index }} ({{ waypoint.type }})</p>
-              <p class="text-sm text-slate-200">Altitude: {{ waypoint.altitude }} m</p>
-            </div>
-            <button class="flex items-center justify-center w-6 h-6 m-2 rounded-sm" @click="removeWaypoint(waypoint)">
-              <v-icon>mdi-delete</v-icon>
-            </button>
-          </div>
-          <div
-            v-if="index !== missionStore.currentPlanningWaypoints.length - 1"
-            class="w-full h-px my-3 bg-[#FFFFFF33]"
-          />
-        </div>
       </div>
     </div>
     <v-tooltip location="top center" text="Home position is currently undefined" :disabled="Boolean(home)">
@@ -237,6 +268,22 @@
       Uploading mission to vehicle...
     </p>
   </div>
+
+  <ContextMenu
+    :visible="contextMenuVisible"
+    :position="contextMenuPosition"
+    :selected-survey-id="selectedSurvey?.id"
+    :is-creating-survey="isCreatingSurvey"
+    :is-creating-simple-mission="isCreatingSimpleMission"
+    :undo-is-in-progress="undoIsInProgress"
+    :surveys="missionStore.surveys"
+    :current-planning-waypoints="missionStore.currentPlanningWaypoints"
+    @close="hideContextMenu"
+    @toggle-survey="toggleSurvey"
+    @toggle-simple-mission="toggleSimpleMission"
+    @undo-generate-waypoints="undoGenerateWaypoints"
+    @delete-selected-survey="deleteSelectedSurvey"
+  />
 </template>
 
 <script setup lang="ts">
@@ -244,12 +291,15 @@ import 'leaflet/dist/leaflet.css'
 
 import { useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
-import L, { type LatLngTuple, Map, Marker } from 'leaflet'
+import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
-import { computed, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, toRaw, watch } from 'vue'
 
+import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
+import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useSnackbar } from '@/composables/snackbar'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -262,9 +312,10 @@ import {
   type WaypointCoordinates,
   AltitudeReferenceType,
   instanceOfCockpitMission,
+  Survey,
+  SurveyPolygon,
   WaypointType,
 } from '@/types/mission'
-
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
@@ -272,6 +323,7 @@ const widgetStore = useWidgetManagerStore()
 const { height: windowHeight } = useWindowSize()
 
 const { showDialog } = useInteractionDialog()
+const { showSnackbar } = useSnackbar()
 
 const clearMissionOnVehicle = (): void => {
   vehicleStore.clearMissions()
@@ -283,9 +335,11 @@ const calculatedHeight = computed(() => {
 
 const uploadingMission = ref(false)
 const missionUploadProgress = ref(0)
+
 const uploadMissionToVehicle = async (): Promise<void> => {
   uploadingMission.value = true
   missionUploadProgress.value = 0
+
   const loadingCallback = async (loadingPerc: number): Promise<void> => {
     missionUploadProgress.value = loadingPerc
   }
@@ -314,21 +368,403 @@ const defaultCruiseSpeed = ref(1)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = ref<{ [id: string]: Marker }>({})
 const isCreatingSimpleMission = ref(false)
+const selectedSurveyId = ref(missionStore.surveys[0]?.id || '')
+const selectedSurvey = computed(() => {
+  return missionStore.surveys.find((survey) => survey.id === selectedSurveyId.value)
+})
+const surveyPolygonLayers = ref<{ [key: string]: Polygon }>({})
+const contextMenuVisible = ref(false)
+const contextMenuPosition = ref({ x: 0, y: 0 })
+const isCreatingSurvey = ref(false)
+const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
+const surveyPolygonVertexesMarkers = ref<L.Marker[]>([])
+const rawDistanceBetweenSurveyLines = ref(10)
+const rawSurveyLinesAngle = ref(0)
+const existingWaypoints = ref<Waypoint[]>([])
+const surveyWaypoints = ref<Waypoint[]>([])
+const confirmButtonStyle = ref<Record<string, string>>({})
+const isDragging = ref(false)
+let dragStartLatLng: L.LatLng | null = null
+let polygonLatLngsAtDragStart: L.LatLng[] = []
+let ignoreNextClick = false
+const canUndo = ref<Record<string, boolean>>({})
+const undoIsInProgress = ref(false)
+const lastSurveyState = ref<Record<string, SurveyPolygon>>({})
+const lastSelectedSurveyId = ref('')
+
+const onPolygonMouseDown = (event: L.LeafletMouseEvent): void => {
+  isDragging.value = true
+  dragStartLatLng = event.latlng
+  polygonLatLngsAtDragStart = surveyPolygonVertexesPositions.value.map((latlng) => latlng.clone())
+  planningMap.value?.dragging.disable()
+
+  planningMap.value?.on('mousemove', onPolygonMouseMove)
+  planningMap.value?.on('mouseup', onPolygonMouseUp)
+
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+const onPolygonMouseUp = (event: L.LeafletMouseEvent): void => {
+  isDragging.value = false
+  dragStartLatLng = null
+  polygonLatLngsAtDragStart = []
+  planningMap.value?.dragging.enable()
+
+  planningMap.value?.off('mousemove', onPolygonMouseMove)
+  planningMap.value?.off('mouseup', onPolygonMouseUp)
+
+  ignoreNextClick = true
+
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+const onPolygonMouseMove = (event: L.LeafletMouseEvent): void => {
+  if (!isDragging.value || !dragStartLatLng) return
+
+  const latDiff = event.latlng.lat - dragStartLatLng.lat
+  const lngDiff = event.latlng.lng - dragStartLatLng.lng
+
+  surveyPolygonVertexesPositions.value = polygonLatLngsAtDragStart.map((latlng) =>
+    L.latLng(latlng.lat + latDiff, latlng.lng + lngDiff)
+  )
+
+  surveyPolygonLayer.value?.setLatLngs(surveyPolygonVertexesPositions.value)
+  surveyPolygonVertexesMarkers.value.forEach((marker, index) => {
+    marker.setLatLng(surveyPolygonVertexesPositions.value[index])
+  })
+
+  updateSurveyEdgeAddMarkers()
+  createSurveyPath()
+  updateConfirmButtonPosition()
+
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+const enablePolygonDragging = (): void => {
+  if (surveyPolygonLayer.value) {
+    surveyPolygonLayer.value.off('mousedown', onPolygonMouseDown)
+    surveyPolygonLayer.value.on('mousedown', onPolygonMouseDown)
+  }
+}
+
+const disablePolygonDragging = (): void => {
+  if (surveyPolygonLayer.value) {
+    surveyPolygonLayer.value.off('mousedown', onPolygonMouseDown)
+  }
+}
+
+const showContextMenu = (event: LeafletMouseEvent): void => {
+  if (isCreatingSurvey.value) return
+  event.originalEvent.preventDefault()
+  contextMenuPosition.value = {
+    x: event.originalEvent.clientX,
+    y: event.originalEvent.clientY,
+  }
+  contextMenuVisible.value = true
+}
+
+const hideContextMenu = (): void => {
+  contextMenuVisible.value = false
+}
+
+const handleKeyDown = (event: KeyboardEvent): void => {
+  if (event.key === 'Escape' && isCreatingSurvey.value) {
+    clearSurveyCreation()
+  }
+  if (event.key === 'Enter' && isCreatingSurvey.value) {
+    generateWaypointsFromSurvey()
+  }
+  if (
+    event.ctrlKey &&
+    event.key.toLowerCase() === 'z' &&
+    canUndo.value[selectedSurveyId.value] &&
+    !undoIsInProgress.value
+  ) {
+    undoGenerateWaypoints()
+    event.preventDefault()
+  }
+}
+
+const clearSurveyCreation = (): void => {
+  clearSurveyPath()
+  isCreatingSurvey.value = false
+  lastSurveyState.value = {}
+  canUndo.value = {}
+}
+
+const clearAll = (): void => {
+  missionStore.currentPlanningWaypoints = []
+
+  missionStore.surveys = []
+
+  Object.values(waypointMarkers.value).forEach((marker) => {
+    marker.removeFrom(planningMap.value!)
+  })
+  waypointMarkers.value = {}
+
+  Object.values(surveyPolygonLayers.value).forEach((layer) => {
+    layer.removeFrom(planningMap.value!)
+  })
+  surveyPolygonLayers.value = {}
+
+  clearSurveyPath()
+  surveyEdgeAddMarkers.forEach((marker) => marker.remove())
+  surveyEdgeAddMarkers.length = 0
+
+  selectedSurveyId.value = ''
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onMounted(async () => {
+  await nextTick()
+  if (planningMap.value) {
+    planningMap.value?.on('click', () => {
+      selectedSurveyId.value = ''
+    })
+    planningMap.value.on('contextmenu', showContextMenu)
+    planningMap.value.on('click', hideContextMenu)
+  }
+})
+
+const addSurveyPolygonToMap = (survey: Survey): void => {
+  if (!planningMap.value) return
+
+  const surveyPolygonLayer = L.polygon(
+    survey.polygonCoordinates.map((coord) => [coord[0], coord[1]]),
+    {
+      color: survey.id === selectedSurveyId.value ? '#FFD700' : '#3B82F6',
+      fillColor: survey.id === selectedSurveyId.value ? '#FFD700' : '#60A5FA',
+      fillOpacity: 0.2,
+      weight: 3,
+      className: 'survey-polygon',
+    }
+  ).addTo(planningMap.value)
+
+  surveyPolygonLayers.value[survey.id] = surveyPolygonLayer
+
+  surveyPolygonLayer.on('click', (event: LeafletMouseEvent) => {
+    if (isCreatingSimpleMission.value) return
+    selectedSurveyId.value = survey.id
+    lastSelectedSurveyId.value = survey.id
+    L.DomEvent.stopPropagation(event)
+  })
+
+  surveyPolygonLayer.on('contextmenu', (event: LeafletMouseEvent) => {
+    if (selectedSurveyId.value !== survey.id && !isCreatingSimpleMission.value) {
+      selectedSurveyId.value = survey.id
+      lastSelectedSurveyId.value = survey.id
+    }
+
+    L.DomEvent.stopPropagation(event.originalEvent)
+    L.DomEvent.preventDefault(event.originalEvent)
+
+    showContextMenu(event)
+  })
+
+  let pressTimer: number | null = null
+  const LONG_PRESS_DURATION = 500
+
+  const handleTouchStart = (event: TouchEvent): void => {
+    if (isCreatingSimpleMission.value) return
+
+    event.preventDefault()
+
+    pressTimer = window.setTimeout(() => {
+      if (selectedSurveyId.value !== survey.id) {
+        selectedSurveyId.value = survey.id
+      }
+      const touch = event.touches[0]
+      const x = touch.clientX
+      const y = touch.clientY
+
+      contextMenuPosition.value = { x, y }
+      contextMenuVisible.value = true
+    }, LONG_PRESS_DURATION)
+  }
+
+  const handleTouchEnd = (): void => {
+    if (pressTimer) {
+      clearTimeout(pressTimer)
+      pressTimer = null
+    }
+  }
+
+  surveyPolygonLayer.on('touchstart', handleTouchStart as any) // eslint-disable @typescript-eslint/no-explicit-any
+  surveyPolygonLayer.on('touchend', handleTouchEnd)
+  surveyPolygonLayer.on('touchcancel', handleTouchEnd)
+}
+
+watch(
+  () => missionStore.surveys.slice(),
+  (newSurveys) => {
+    Object.values(surveyPolygonLayers.value).forEach((layer) => {
+      planningMap.value?.removeLayer(layer)
+    })
+    surveyPolygonLayers.value = {}
+
+    newSurveys.forEach((survey) => {
+      addSurveyPolygonToMap(survey)
+    })
+  },
+  { immediate: true }
+)
+
+watch(selectedSurveyId, (newId, oldId) => {
+  if (oldId && surveyPolygonLayers.value[oldId]) {
+    surveyPolygonLayers.value[oldId].setStyle({
+      color: '#3B82F6',
+      fillColor: '#60A5FA',
+    })
+  }
+
+  if (newId && surveyPolygonLayers.value[newId]) {
+    surveyPolygonLayers.value[newId].setStyle({
+      color: '#FFD700',
+      fillColor: '#FFD700',
+    })
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+  Object.values(surveyPolygonLayers.value).forEach((layer) => {
+    layer.off('click')
+    planningMap.value?.removeLayer(layer)
+  })
+  surveyPolygonLayers.value = {}
+})
+
+const regenerateSurveyWaypoints = (angle?: number): void => {
+  if (!selectedSurvey.value) {
+    showSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
+    return
+  }
+
+  selectedSurvey.value.waypoints.forEach((waypoint) => {
+    const marker = waypointMarkers.value[waypoint.id]
+    if (marker) {
+      planningMap.value?.removeLayer(marker)
+      delete waypointMarkers.value[waypoint.id]
+    }
+  })
+
+  const adjustedAngle = 90 - (angle || selectedSurvey.value.surveyLinesAngle)
+  const continuousPath = generateSurveyPath(
+    selectedSurvey.value.polygonCoordinates.map((coord) => L.latLng(coord[0], coord[1])),
+    selectedSurvey.value.distanceBetweenLines,
+    adjustedAngle
+  )
+
+  if (!continuousPath.length) {
+    showSnackbar({
+      message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
+      closeButton: true,
+      duration: 2000,
+    })
+    return
+  }
+
+  const newWaypoints: Waypoint[] = continuousPath.map((latLng: L.LatLng) => ({
+    id: uuid(),
+    coordinates: [latLng.lat, latLng.lng],
+    altitude: currentWaypointAltitude.value,
+    type: currentWaypointType.value,
+    altitudeReferenceType: currentWaypointAltitudeRefType.value,
+  }))
+
+  const firstOldWaypointIndex = missionStore.currentPlanningWaypoints.findIndex(
+    (wp) => wp.id === selectedSurvey.value!.waypoints[0].id
+  )
+
+  if (firstOldWaypointIndex === -1) {
+    showSnackbar({ variant: 'error', message: 'Failed to find old waypoints.', duration: 2000 })
+    return
+  }
+
+  missionStore.currentPlanningWaypoints.splice(
+    firstOldWaypointIndex,
+    selectedSurvey.value.waypoints.length,
+    ...newWaypoints
+  )
+
+  selectedSurvey.value.waypoints = newWaypoints
+  selectedSurvey.value.surveyLinesAngle = angle || selectedSurvey.value.surveyLinesAngle
+  missionStore.updateSurvey(selectedSurveyId.value, { ...selectedSurvey.value })
+
+  newWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
+
+  reNumberWaypoints()
+}
+
+const addWaypointMarker = (waypoint: Waypoint): void => {
+  if (!planningMap.value) return
+
+  const newMarker = L.marker(waypoint.coordinates, { draggable: true })
+
+  newMarker.on('drag', () => {
+    const latlng = newMarker.getLatLng()
+    missionStore.moveWaypoint(waypoint.id, [latlng.lat, latlng.lng])
+  })
+
+  newMarker.on('dragend', () => {
+    const latlng = newMarker.getLatLng()
+    missionStore.moveWaypoint(waypoint.id, [latlng.lat, latlng.lng])
+  })
+
+  newMarker.on('contextmenu', () => {
+    removeWaypoint(waypoint)
+  })
+
+  const markerIcon = L.divIcon({
+    className: 'marker-icon',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  })
+  newMarker.setIcon(markerIcon)
+
+  const markerTooltip = L.tooltip({
+    content: '',
+    permanent: true,
+    direction: 'center',
+    className: 'waypoint-tooltip',
+    opacity: 1,
+  })
+  newMarker.bindTooltip(markerTooltip)
+
+  newMarker.addTo(planningMap.value)
+  waypointMarkers.value[waypoint.id] = newMarker
+}
 
 const toggleSimpleMission = (): void => {
+  if (isCreatingSurvey.value) {
+    isCreatingSurvey.value = false
+  }
   if (isCreatingSimpleMission.value) {
     isCreatingSimpleMission.value = false
     return
   }
   isCreatingSimpleMission.value = true
+  hideContextMenu()
 }
 
 const toggleSurvey = (): void => {
+  if (isCreatingSimpleMission.value) {
+    isCreatingSimpleMission.value = false
+  }
   if (isCreatingSurvey.value) {
     isCreatingSurvey.value = false
+    lastSurveyState.value = {}
+    canUndo.value = {}
     return
   }
   isCreatingSurvey.value = true
+  hideContextMenu()
 }
 
 const targetFollower = new TargetFollower(
@@ -346,8 +782,11 @@ const goHome = async (): Promise<void> => {
 
 watch(mapCenter, (newCenter, oldCenter) => {
   if (newCenter.toString() === oldCenter.toString()) return
-  planningMap.value?.panTo(newCenter as LatLngTuple)
+  if (planningMap.value && planningMap.value.panTo) {
+    planningMap.value.panTo(newCenter as LatLngTuple)
+  }
 })
+
 watch(zoom, (newZoom, oldZoom) => {
   if (newZoom === oldZoom) return
   planningMap.value?.setZoom(zoom.value)
@@ -359,51 +798,39 @@ const addWaypoint = (
   type: WaypointType,
   altitudeReferenceType: AltitudeReferenceType
 ): void => {
-  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+  if (!isDragging.value) {
+    if (planningMap.value === undefined) throw new Error('Map not yet defined')
 
-  const waypointId = uuid()
-  const waypoint: Waypoint = { id: waypointId, coordinates, altitude, type, altitudeReferenceType }
+    const waypointId = uuid()
 
-  missionStore.currentPlanningWaypoints.push(waypoint)
+    const waypoint: Waypoint = {
+      id: waypointId,
+      coordinates,
+      altitude,
+      type,
+      altitudeReferenceType,
+    }
 
-  const newMarker = L.marker(coordinates, { draggable: true })
-  // @ts-ignore - onMove is a valid LeafletMouseEvent
-  newMarker.on('move', (e: L.LeafletMouseEvent) => {
-    missionStore.moveWaypoint(waypointId, [e.latlng.lat, e.latlng.lng])
-  })
-  newMarker.on('contextmenu', () => {
-    removeWaypoint(waypoint)
-  })
+    missionStore.currentPlanningWaypoints.push(waypoint)
 
-  const markerIcon = L.divIcon({
-    className: 'marker-icon',
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-  })
-  newMarker.setIcon(markerIcon)
-  const markerTooltip = L.tooltip({
-    content: `${missionStore.currentPlanningWaypoints.length}`,
-    permanent: true,
-    direction: 'center',
-    className: 'waypoint-tooltip',
-    opacity: 1,
-  })
-  newMarker.bindTooltip(markerTooltip)
-  planningMap.value.addLayer(newMarker)
-  waypointMarkers.value[waypointId] = newMarker
+    addWaypointMarker(waypoint)
 
-  const existingWaypointsCount = missionStore.currentPlanningWaypoints.length
-
-  if (existingWaypointsCount > 1) {
-    const previousWaypoint = missionStore.currentPlanningWaypoints[existingWaypointsCount - 2]
-    addWaypointConnection(previousWaypoint, waypoint)
+    reNumberWaypoints()
   }
 }
 
 const removeWaypoint = (waypoint: Waypoint): void => {
   const index = missionStore.currentPlanningWaypoints.indexOf(waypoint)
   missionStore.currentPlanningWaypoints.splice(index, 1)
-  // @ts-ignore: Marker type is always a layer and thus can be deleted
+
+  missionStore.surveys.forEach((survey) => {
+    const surveyWaypointIndex = survey.waypoints.findIndex((wp) => wp.id === waypoint.id)
+    if (surveyWaypointIndex !== -1) {
+      survey.waypoints = survey.waypoints.filter((wp) => wp.id !== waypoint.id)
+      missionStore.updateSurvey(survey.id, { ...survey })
+    }
+  })
+
   planningMap.value?.removeLayer(waypointMarkers.value[waypoint.id])
   delete waypointMarkers.value[waypoint.id]
 }
@@ -427,11 +854,19 @@ const saveMissionToFile = async (): Promise<void> => {
   saveAs(blob, 'mission_plan.cmp')
 }
 
+const reNumberWaypoints = (): void => {
+  missionStore.currentPlanningWaypoints.forEach((wp, index) => {
+    const marker = waypointMarkers.value[wp.id]
+    if (marker) {
+      marker.getTooltip()?.setContent(`${index + 1}`)
+    }
+  })
+}
+
 const loadMissionFromFile = async (e: Event): Promise<void> => {
   const reader = new FileReader()
-  reader.onload = (event: Event) => {
-    // @ts-ignore: We know the event type and need refactor of the event typing
-    const contents = event.target.result
+  reader.onload = (event: ProgressEvent<FileReader>) => {
+    const contents = event.target?.result as string
     const maybeMission = JSON.parse(contents)
     if (!instanceOfCockpitMission(maybeMission)) {
       showDialog({ variant: 'error', message: 'Invalid mission file.', timer: 3000 })
@@ -443,21 +878,20 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
     currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
     defaultCruiseSpeed.value = maybeMission['settings']['defaultCruiseSpeed']
-    maybeMission['waypoints'].forEach((w: Waypoint) => {
-      addWaypoint(w.coordinates, w.altitude, w.type, w.altitudeReferenceType)
+    maybeMission.waypoints.forEach((w: Waypoint) => {
+      const waypoint: Waypoint = {
+        ...w,
+        id: uuid(),
+      }
+      missionStore.currentPlanningWaypoints.push(waypoint)
+      addWaypointMarker(waypoint)
     })
   }
-  // @ts-ignore: We know the event type and need refactor of the event typing
-  reader.readAsText(e.target.files[0])
+  const input = e.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    reader.readAsText(input.files[0])
+  }
 }
-
-const isCreatingSurvey = ref(false)
-const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
-const surveyPolygonVertexesMarkers = ref<L.Marker[]>([])
-const rawDistanceBetweenSurveyLines = ref(10)
-const rawSurveyLinesAngle = ref(0)
-const existingWaypoints = ref<Waypoint[]>([])
-const surveyWaypoints = ref<Waypoint[]>([])
 
 // Distance between lines in the survey path
 const distanceBetweenSurveyLines = computed({
@@ -471,6 +905,15 @@ const surveyLinesAngle = computed({
   set: (value) => (rawSurveyLinesAngle.value = ((value % 360) + 360) % 360),
 })
 
+const surveyLinesAngleDisplay = computed({
+  get() {
+    return Number(surveyLinesAngle.value.toFixed(1))
+  },
+  set(value) {
+    surveyLinesAngle.value = value
+  },
+})
+
 const surveyPathLayer = ref<L.Polyline | null>(null)
 const surveyPolygonLayer = ref<L.Polygon | null>(null)
 
@@ -480,6 +923,7 @@ const clearSurveyPath = (): void => {
     surveyPathLayer.value = null
   }
   if (surveyPolygonLayer.value) {
+    disablePolygonDragging()
     planningMap.value?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
     surveyPolygonLayer.value = null
   }
@@ -512,6 +956,7 @@ const updateSurveyMarkersPositions = (): void => {
 
 const updatePolygon = (): void => {
   surveyPolygonVertexesPositions.value = surveyPolygonVertexesMarkers.value.map((marker) => marker.getLatLng())
+
   if (surveyPolygonLayer.value) {
     surveyPolygonLayer.value.setLatLngs(surveyPolygonVertexesPositions.value)
   } else if (surveyPolygonVertexesPositions.value.length >= 3) {
@@ -522,7 +967,10 @@ const updatePolygon = (): void => {
       weight: 3,
       className: 'survey-polygon',
     }).addTo(toRaw(planningMap.value)!)
+
+    enablePolygonDragging()
   }
+
   updateSurveyMarkersPositions()
 }
 
@@ -539,10 +987,11 @@ const createSurveyPath = (): void => {
   }
 
   try {
+    const adjustedAngle = 90 - surveyLinesAngle.value
     const continuousPath = generateSurveyPath(
       surveyPolygonVertexesPositions.value,
       distanceBetweenSurveyLines.value,
-      surveyLinesAngle.value
+      adjustedAngle
     )
 
     if (continuousPath.length === 0) {
@@ -573,7 +1022,6 @@ const createSurveyPath = (): void => {
   }
 }
 
-// Watch for changes in distanceBetweenSurveyLines and surveyLinesAngle
 watch([distanceBetweenSurveyLines, surveyLinesAngle], () => createSurveyPath())
 
 const surveyEdgeAddMarkers: L.Marker[] = []
@@ -593,11 +1041,11 @@ const updateSurveyEdgeAddMarkers = (): void => {
       const surveyEdgeAddMarker = L.marker(middle, {
         icon: L.divIcon({
           html: `
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
-              <circle cx="10" cy="10" r="9" fill="white" stroke="#3B82F6" stroke-width="2"/>
-              <path d="M10 5V15M5 10H15" stroke="#3B82F6" stroke-width="2"/>
-            </svg>
-          `,
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                <circle cx="10" cy="10" r="9" fill="white" stroke="#3B82F6" stroke-width="2"/>
+                <path d="M10 5V15M5 10H15" stroke="#3B82F6" stroke-width="2"/>
+              </svg>
+            `,
           className: 'edge-marker',
           iconSize: [20, 20],
           iconAnchor: [10, 10],
@@ -622,19 +1070,19 @@ const addSurveyPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefi
   const newMarker = L.marker(latlng, {
     icon: L.divIcon({
       html: `
-        <div class="survey-vertex-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="5" fill="#3B82F6" stroke="white" stroke-width="2"/>
-          </svg>
-          <div class="delete-popup" style="display: none;">
-            <button class="delete-button">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
+          <div class="survey-vertex-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="5" fill="#3B82F6" stroke="white" stroke-width="2"/>
+            </svg>
+            <div class="delete-popup" style="display: none;">
+              <button class="delete-button">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
-      `,
+        `,
       className: 'custom-div-icon',
       iconSize: [24, 24],
       iconAnchor: [12, 12],
@@ -683,7 +1131,60 @@ const addSurveyPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefi
   createSurveyPath()
 }
 
-// Save existing waypoints so they won't be reprocessed and will be connected to the new survey
+const calculateBottomRightCorner = (points: L.LatLng[]): L.LatLng | null => {
+  if (points.length === 0) return null
+
+  let bottomRightWaypoint = points[0]
+
+  points.forEach((point) => {
+    if (point.lat <= bottomRightWaypoint.lat && point.lng >= bottomRightWaypoint.lng) {
+      bottomRightWaypoint = point
+    }
+  })
+
+  return bottomRightWaypoint
+}
+
+const updateConfirmButtonPosition = (): void => {
+  if (!planningMap.value) return
+
+  if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length >= 3) {
+    const position = calculateBottomRightCorner(surveyPolygonVertexesPositions.value)
+    if (position) {
+      const point = planningMap.value.latLngToContainerPoint(position)
+
+      confirmButtonStyle.value = {
+        left: `${point.x + 62}px`,
+        top: `${point.y + 62}px`,
+      }
+    }
+  } else {
+    confirmButtonStyle.value = { display: 'none' }
+  }
+}
+
+watch(
+  [surveyPolygonVertexesPositions, isCreatingSurvey],
+  () => {
+    updateConfirmButtonPosition()
+  },
+  { immediate: true, deep: true }
+)
+
+onUnmounted(async () => {
+  await nextTick()
+  if (planningMap.value) {
+    setTimeout(() => {
+      planningMap.value?.invalidateSize()
+    }, 100)
+    planningMap.value.off()
+    planningMap.value.remove()
+    planningMap.value = undefined
+  }
+  targetFollower.disableAutoUpdate()
+  missionStore.clearMission()
+})
+
 watch(isCreatingSurvey, (isCreatingNow) => {
   if (isCreatingNow) {
     existingWaypoints.value = [...missionStore.currentPlanningWaypoints]
@@ -694,102 +1195,178 @@ watch(isCreatingSurvey, (isCreatingNow) => {
 })
 
 const generateWaypointsFromSurvey = (): void => {
-  if (!surveyPathLayer.value) {
-    showDialog({ variant: 'error', message: 'No survey path to generate waypoints from.', timer: 3000 })
+  if (!surveyPolygonVertexesPositions.value.length) {
+    console.log('No survey polygon defined.')
     return
   }
 
-  const surveyLatLngs = surveyPathLayer.value.getLatLngs()
-  if (!Array.isArray(surveyLatLngs) || surveyLatLngs.length === 0) {
-    showDialog({ variant: 'error', message: 'Invalid survey path.', timer: 3000 })
+  const newSurveyId = uuid()
+
+  lastSurveyState.value[newSurveyId] = {
+    polygonPositions: [...surveyPolygonVertexesPositions.value],
+    polygonMarkers: [...(surveyPolygonVertexesMarkers.value as L.Marker<any>[])],
+    edgeMarkers: [...(surveyEdgeAddMarkers as L.Marker<any>[])],
+  }
+  canUndo.value[newSurveyId] = true
+
+  const polygonCoordinates: WaypointCoordinates[] = surveyPolygonVertexesPositions.value.map((latLng) => [
+    latLng.lat,
+    latLng.lng,
+  ])
+
+  const adjustedAngle = 90 - surveyLinesAngle.value
+  const continuousPath = generateSurveyPath(
+    surveyPolygonVertexesPositions.value,
+    distanceBetweenSurveyLines.value,
+    adjustedAngle
+  )
+
+  if (!continuousPath.length) {
+    showDialog({
+      variant: 'error',
+      message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
+      timer: 3000,
+    })
     return
   }
 
-  surveyWaypoints.value = []
-  // @ts-ignore: L.LatLng is not assignable to LatLngTuple
-  surveyLatLngs.flat().forEach((latLng: L.LatLng, index: number) => {
-    const waypointId = uuid()
-    const waypoint: Waypoint = {
-      id: waypointId,
-      coordinates: [latLng.lat, latLng.lng],
-      altitude: currentWaypointAltitude.value,
-      type: WaypointType.PASS_BY,
-      altitudeReferenceType: currentWaypointAltitudeRefType.value,
-    }
-    surveyWaypoints.value.push(waypoint)
-    addWaypoint(waypoint.coordinates, waypoint.altitude, waypoint.type, waypoint.altitudeReferenceType)
+  const newSurveyWaypoints: Waypoint[] = continuousPath.map((latLng: L.LatLng) => ({
+    id: uuid(),
+    coordinates: [latLng.lat, latLng.lng],
+    altitude: currentWaypointAltitude.value,
+    type: currentWaypointType.value,
+    altitudeReferenceType: currentWaypointAltitudeRefType.value,
+  }))
 
-    // Connects existing waypoints to the new survey
-    if (index > 0) {
-      const previousWaypoint = surveyWaypoints.value[index - 1]
-      addWaypointConnection(previousWaypoint, waypoint)
-    }
-  })
+  const insertionIndex = missionStore.currentPlanningWaypoints.length
 
-  // Also connects existing waypoints to the new survey
-  if (existingWaypoints.value.length > 0 && surveyWaypoints.value.length > 0) {
-    const lastExistingWaypoint = existingWaypoints.value[existingWaypoints.value.length - 1]
-    const firstNewWaypoint = surveyWaypoints.value[0]
-    addWaypointConnection(lastExistingWaypoint, firstNewWaypoint)
+  missionStore.currentPlanningWaypoints.splice(insertionIndex, 0, ...newSurveyWaypoints)
+
+  const newSurvey: Survey = {
+    id: newSurveyId,
+    polygonCoordinates: polygonCoordinates,
+    distanceBetweenLines: distanceBetweenSurveyLines.value,
+    surveyLinesAngle: surveyLinesAngle.value,
+    waypoints: newSurveyWaypoints,
   }
+  missionStore.addSurvey(newSurvey)
+  selectedSurveyId.value = newSurvey.id
 
-  missionStore.currentPlanningWaypoints = [...existingWaypoints.value, ...surveyWaypoints.value]
+  newSurveyWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
 
-  // Remove survey path and polygon
   clearSurveyPath()
   isCreatingSurvey.value = false
+  if (undoIsInProgress.value) {
+    undoAndRegenerateAllSurveys()
+    setTimeout(() => {
+      undoIsInProgress.value = false
+    }, 1000)
+  }
 
-  showDialog({ variant: 'success', message: 'Waypoints generated from survey path.', timer: 1000 })
+  reNumberWaypoints()
+
+  showSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
 }
 
-// Helper function to connect two waypoints with a polyline
-const addWaypointConnection = (fromWaypoint: Waypoint, toWaypoint: Waypoint): void => {
-  const polyline = L.polyline([fromWaypoint.coordinates, toWaypoint.coordinates], {
-    color: '#3B82F6',
-    weight: 3,
-    opacity: 0.8,
-    className: 'waypoint-connection',
+const undoGenerateWaypoints = (): void => {
+  if (undoIsInProgress.value) return
+  contextMenuVisible.value = false
+  undoIsInProgress.value = true
+  const surveyId = selectedSurveyId.value
+  if (!surveyId || !canUndo.value[surveyId] || !lastSurveyState.value[surveyId]) {
+    showSnackbar({ variant: 'error', message: 'Nothing to undo.', duration: 2000 })
+    return
+  }
+
+  if (selectedSurvey.value) {
+    selectedSurvey.value.waypoints.forEach((waypoint) => {
+      const index = missionStore.currentPlanningWaypoints.findIndex((wp) => wp.id === waypoint.id)
+      if (index !== -1) {
+        missionStore.currentPlanningWaypoints.splice(index, 1)
+      }
+
+      const marker = waypointMarkers.value[waypoint.id]
+      if (marker) {
+        planningMap.value?.removeLayer(marker)
+        delete waypointMarkers.value[waypoint.id]
+      }
+    })
+  }
+
+  planningMap.value?.eachLayer((layer) => {
+    if (layer instanceof L.Polyline && layer.options.className === 'waypoint-connection') {
+      planningMap.value?.removeLayer(layer)
+    }
   })
-  planningMap.value?.addLayer(polyline)
+
+  const index = missionStore.surveys.findIndex((survey) => survey.id === surveyId)
+  if (index !== -1) {
+    missionStore.surveys.splice(index, 1)
+  }
+  selectedSurveyId.value = ''
+
+  const surveyState = lastSurveyState.value[surveyId]
+  surveyPolygonVertexesPositions.value = surveyState.polygonPositions
+  surveyPolygonVertexesMarkers.value = []
+
+  surveyState.polygonMarkers.forEach((marker) => {
+    marker.addTo(planningMap.value!)
+    surveyPolygonVertexesMarkers.value.push(marker)
+  })
+
+  surveyEdgeAddMarkers.length = 0
+  surveyState.edgeMarkers.forEach((marker) => {
+    marker.addTo(planningMap.value!)
+    surveyEdgeAddMarkers.push(marker)
+  })
+
+  surveyPolygonLayer.value = L.polygon(surveyPolygonVertexesPositions.value, {
+    color: '#3B82F6',
+    fillColor: '#60A5FA',
+    fillOpacity: 0.2,
+    weight: 3,
+    className: 'survey-polygon',
+  }).addTo(planningMap.value!)
+
+  enablePolygonDragging()
+
+  delete lastSurveyState.value[surveyId]
+  delete canUndo.value[surveyId]
+  isCreatingSurvey.value = true
+
+  createSurveyPath()
+  showSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
 }
 
 onMounted(async () => {
-  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap',
-  })
   const esri = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 19, attribution: '© Esri World Imagery' }
+    { maxZoom: 22, maxNativeZoom: 19, attribution: '© Esri World Imagery' }
   )
+
+  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 22,
+    maxNativeZoom: 19,
+    attribution: '© OpenStreetMap',
+  })
+
+  planningMap.value = L.map('planningMap', { layers: [esri] }).setView(mapCenter.value as LatLngTuple, zoom.value)
+
+  planningMap.value.zoomControl.setPosition('bottomright')
 
   const baseMaps = {
     'OpenStreetMap': osm,
     'Esri World Imagery': esri,
   }
 
-  planningMap.value = L.map('planningMap', { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(planningMap.value)
-  planningMap.value.zoomControl.setPosition('bottomright')
+  L.control.layers(baseMaps).addTo(planningMap.value)
 
-  planningMap.value.on('moveend', () => {
-    if (planningMap.value === undefined) return
-    let { lat, lng } = planningMap.value.getCenter()
-    if (lat && lng) {
-      mapCenter.value = [lat, lng]
+  planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
+    if (ignoreNextClick) {
+      ignoreNextClick = false
+      return
     }
-  })
-  planningMap.value.on('zoomend', () => {
-    if (planningMap.value === undefined) return
-    zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
-  })
 
-  await goHome()
-
-  planningMap.value.on('click', (e) => {
     if (isCreatingSurvey.value) {
       addSurveyPoint(e.latlng)
     } else if (isCreatingSimpleMission.value) {
@@ -802,10 +1379,108 @@ onMounted(async () => {
     }
   })
 
-  const layerControl = L.control.layers(baseMaps)
-  planningMap.value.addControl(layerControl)
+  planningMap.value.on('move', updateConfirmButtonPosition)
+  planningMap.value.on('zoom', updateConfirmButtonPosition)
+
+  planningMap.value.on('moveend', () => {
+    if (planningMap.value) {
+      const { lat, lng } = planningMap.value.getCenter()
+      mapCenter.value = [lat, lng]
+    }
+  })
+
+  planningMap.value.on('zoomend', () => {
+    if (planningMap.value) {
+      zoom.value = planningMap.value.getZoom()
+    }
+  })
+
+  await goHome()
 
   targetFollower.enableAutoUpdate()
+})
+
+const deleteSelectedSurvey = (): void => {
+  const surveyId = selectedSurveyId.value
+  if (!surveyId) {
+    showSnackbar({ variant: 'error', message: 'No survey selected to delete.', duration: 2000 })
+    return
+  }
+
+  const surveyIndex = missionStore.surveys.findIndex((s) => s.id === surveyId)
+  if (surveyIndex === -1) {
+    showSnackbar({ variant: 'error', message: 'Selected survey does not exist.', duration: 2000 })
+    return
+  }
+
+  const polygonLayer = surveyPolygonLayers.value[surveyId]
+  if (polygonLayer) {
+    planningMap.value?.removeLayer(polygonLayer)
+    delete surveyPolygonLayers.value[surveyId]
+  }
+
+  clearSurveyVertexMarkers()
+
+  const waypointsToRemove = missionStore.surveys[surveyIndex].waypoints
+  waypointsToRemove.forEach((waypoint) => {
+    const waypointIndex = missionStore.currentPlanningWaypoints.findIndex((wp) => wp.id === waypoint.id)
+    if (waypointIndex !== -1) {
+      missionStore.currentPlanningWaypoints.splice(waypointIndex, 1)
+    }
+    const waypointMarker = waypointMarkers.value[waypoint.id]
+    if (waypointMarker) {
+      planningMap.value?.removeLayer(waypointMarker)
+      delete waypointMarkers.value[waypoint.id]
+    }
+  })
+
+  surveyEdgeAddMarkers.forEach((marker) => marker.remove())
+  surveyEdgeAddMarkers.length = 0
+
+  missionStore.surveys.splice(surveyIndex, 1)
+
+  if (selectedSurveyId.value === surveyId) {
+    selectedSurveyId.value = missionStore.surveys.length > 0 ? missionStore.surveys[0].id : ''
+  }
+
+  if (lastSurveyState.value[surveyId]) {
+    delete lastSurveyState.value[surveyId]
+  }
+  if (canUndo.value[surveyId]) {
+    delete canUndo.value[surveyId]
+  }
+
+  undoAndRegenerateAllSurveys()
+
+  showSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
+  hideContextMenu()
+}
+
+const undoAndRegenerateAllSurveys = (): void => {
+  const startIndex = missionStore.surveys.findIndex((survey) => survey.id === selectedSurveyId.value)
+
+  if (startIndex === -1) {
+    console.error('Selected survey not found in the mission store.')
+    return
+  }
+
+  missionStore.surveys.forEach((survey) => {
+    selectedSurveyId.value = survey.id
+    setTimeout(() => {
+      undoGenerateWaypoints()
+      generateWaypointsFromSurvey()
+    }, 200)
+  })
+}
+
+const clearSurveyVertexMarkers = (): void => {
+  surveyPolygonVertexesMarkers.value.forEach((marker) => marker.remove())
+  surveyPolygonVertexesMarkers.value = []
+}
+
+provide('regenerateSurveyWaypoints', regenerateSurveyWaypoints)
+provide('surveyLinesAngle', (angle: number) => {
+  surveyLinesAngle.value = angle
 })
 
 onUnmounted(() => {
@@ -872,14 +1547,35 @@ watch(planningMap, (newMap, oldMap) => {
   }
 })
 
-const missionWaypointsPolyline = ref()
-watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
-  if (planningMap.value === undefined) throw new Error('Map not yet defined')
-  if (missionWaypointsPolyline.value === undefined) {
-    missionWaypointsPolyline.value = L.polyline(newWaypoints.map((w) => w.coordinates)).addTo(planningMap.value)
-  }
-  missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
-})
+const missionWaypointsPolyline = ref<L.Polyline | undefined>()
+
+watch(
+  () => missionStore.currentPlanningWaypoints.map((w) => w.coordinates),
+  (newCoordinates) => {
+    if (!planningMap.value) {
+      return
+    }
+
+    if (missionWaypointsPolyline.value === undefined) {
+      if (newCoordinates.length > 0) {
+        missionWaypointsPolyline.value = L.polyline(newCoordinates, {
+          color: '#3B82F6',
+          weight: 3,
+          opacity: 0.8,
+          className: 'mission-waypoints-polyline',
+        }).addTo(planningMap.value!)
+      }
+    } else {
+      if (newCoordinates.length > 0) {
+        missionWaypointsPolyline.value.setLatLngs(newCoordinates)
+      } else {
+        planningMap.value!.removeLayer(missionWaypointsPolyline.value)
+        missionWaypointsPolyline.value = undefined
+      }
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 // Try to update home position based on browser geolocation
 navigator?.geolocation?.watchPosition(
@@ -1025,5 +1721,17 @@ watch([home, planningMap], async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.confirm-button {
+  position: relative;
+  top: 0;
+  right: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.confirm-button:hover svg {
+  transform: scale(1.1);
 }
 </style>
