@@ -3,6 +3,39 @@ import { CockpitAction } from '@/libs/joystick/protocols/cockpit-actions'
 import type { Point2D, SizeRect2D } from './general'
 
 /**
+ * Widget configuration object as received from BlueOS
+ */
+export interface BlueOsWidget {
+  /**
+   * Name of the widget, this is displayed on edit mode widget browser
+   */
+  name: string
+  /**
+   * The URL at which the widget is located
+   * This is expected to be an absolute url
+   */
+  url: string
+}
+
+/**
+ *  Widget type on steroids. This is the WidgetType with added Custom name and options
+ */
+export interface ExtendedWidget {
+  /**
+   *  Widget type
+   */
+  component: WidgetType
+  /**
+   *  Widget name, this will be displayed on edit mode
+   */
+  name: string
+  /**
+   *  Widget options, this is the configuration that will be passed to the widget when it is created
+   */
+  options: Record<string, unknown>
+}
+
+/**
  * Available components to be used in the Widget system
  * The enum value is equal to the component's filename, without the '.vue' extension
  */

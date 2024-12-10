@@ -1,5 +1,8 @@
 import ky, { HTTPError } from 'ky'
 
+import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { BlueOsWidget } from '@/types/widgets'
+
 export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
 
 const defaultTimeout = 10000
@@ -28,6 +31,38 @@ export const getKeyDataFromCockpitVehicleStorage = async (
   storageKey: string
 ): Promise<Record<string, any> | undefined> => {
   return await getBagOfHoldingFromVehicle(vehicleAddress, `cockpit/${storageKey}`)
+}
+
+export const getWidgetsFromBlueOS = async (): Promise<BlueOsWidget[]> => {
+  const vehicleStore = useMainVehicleStore()
+
+  // Wait until we have a global address
+  while (vehicleStore.globalAddress === undefined) {
+    console.debug('Waiting for vehicle global address on BlueOS sync routine.')
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+  try {
+    const options = { timeout: defaultTimeout, retry: 0 }
+    const data = (await ky
+      .get(`http://${vehicleStore.globalAddress}/helper/v1.0/web_services`, options)
+      .json()) as Record<string, any>
+    // include the vehicle base address into the relative urls provided with the widgets
+    return Object.keys(data).reduce((widgets: BlueOsWidget[], key) => {
+      const value = data[key]
+      if (typeof value === 'object' && value.metadata?.cockpit_widget) {
+        const newWidgets: BlueOsWidget[] = value.metadata.cockpit_widget.map((widget: BlueOsWidget) => ({
+          ...widget,
+          url: `http://${vehicleStore.globalAddress}:${value.port}${widget.url}`,
+        }))
+        return [...widgets, ...newWidgets]
+      }
+      return widgets
+    }, [])
+  } catch (error) {
+    const errorBody = await (error as HTTPError).response.json()
+    console.error(errorBody)
+  }
+  return []
 }
 
 export const setBagOfHoldingOnVehicle = async (
