@@ -21,10 +21,10 @@ import { isEqual, sleep } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
+import { StorageDB } from '@/types/general'
 import {
   type DownloadProgressCallback,
   type FileDescriptor,
-  type StorageDB,
   type StreamData,
   type UnprocessedVideoInfo,
   type VideoProcessingDetails,
