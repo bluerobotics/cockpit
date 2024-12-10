@@ -1,6 +1,7 @@
 import { app, BrowserWindow, protocol, screen } from 'electron'
 import { join } from 'path'
 
+import store from './services/config-store'
 import { setupNetworkService } from './services/network'
 
 export const ROOT_PATH = {
@@ -13,7 +14,6 @@ let mainWindow: BrowserWindow | null
  * Create electron window
  */
 function createWindow(): void {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize
   mainWindow = new BrowserWindow({
     icon: join(ROOT_PATH.dist, 'pwa-512x512.png'),
     webPreferences: {
@@ -21,8 +21,16 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
     },
-    width,
-    height,
+    width: store.get('windowBounds')?.width ?? screen.getPrimaryDisplay().workAreaSize.width,
+    height: store.get('windowBounds')?.height ?? screen.getPrimaryDisplay().workAreaSize.height,
+    x: store.get('windowBounds')?.x ?? screen.getPrimaryDisplay().bounds.x,
+    y: store.get('windowBounds')?.y ?? screen.getPrimaryDisplay().bounds.y,
+  })
+
+  mainWindow.on('close', () => {
+    const windowBounds = mainWindow!.getBounds()
+    const { x, y, width, height } = windowBounds
+    store.set('windowBounds', { x, y, width, height })
   })
 
   // Test active push message to Renderer-process.
