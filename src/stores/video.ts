@@ -639,7 +639,7 @@ export const useVideoStore = defineStore('video', () => {
       updateLastProcessingUpdate(hash)
 
       debouncedUpdateFileProgress(info.fileName, 75, `Saving video file.`)
-      await videoStoringDB.setItem(`${info.fileName}.${extensionContainer || '.webm'}`, durFixedBlob ?? mergedBlob)
+      await videoStoringDB.setItem(`${info.fileName}.${extensionContainer || 'webm'}`, durFixedBlob ?? mergedBlob)
 
       updateLastProcessingUpdate(hash)
 
