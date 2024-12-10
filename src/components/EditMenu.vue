@@ -472,7 +472,7 @@
           <v-btn
             type="flat"
             class="bg-[#FFFFFF33] text-white w-[95%]"
-            @click="store.addWidget(WidgetType.CustomWidgetBase, store.currentView)"
+            @click="store.addWidget(makeNewWidget(WidgetType.CustomWidgetBase), store.currentView)"
             >Add widget base
           </v-btn>
         </div>
@@ -485,19 +485,19 @@
       class="flex items-center justify-between w-full h-full gap-3 overflow-x-auto text-white -mb-1 pr-2 cursor-pointer"
     >
       <div
-        v-for="widgetType in availableWidgetTypes"
-        :key="widgetType"
+        v-for="widget in allAvailableWidgets"
+        :key="widget.name"
         class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4"
         draggable="true"
         @dragstart="onRegularWidgetDragStart"
-        @dragend="onRegularWidgetDragEnd(widgetType)"
+        @dragend="onRegularWidgetDragEnd(widget)"
       >
         <v-tooltip text="Drag to add" location="top" theme="light">
           <template #activator="{ props: tooltipProps }">
             <div />
             <img
               v-bind="tooltipProps"
-              :src="widgetImages[widgetType]"
+              :src="widgetImages[widget.component]"
               alt="widget-icon"
               class="p-4 max-h-[75%] max-w-[95%]"
             />
@@ -505,7 +505,7 @@
               class="flex items-center justify-center w-full p-1 transition-all bg-[#3B78A8] rounded-b-md text-white"
             >
               <span class="whitespace-normal text-center">{{
-                widgetType.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
+                widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
               }}</span>
             </div>
           </template>
@@ -659,6 +659,7 @@ import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
 import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
 import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { getWidgetsFromBlueOS } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -667,7 +668,9 @@ import {
   type Profile,
   type View,
   type Widget,
+  BlueOsWidget,
   CustomWidgetElementType,
+  ExtendedWidget,
   MiniWidgetType,
   WidgetType,
 } from '@/types/widgets'
@@ -695,6 +698,8 @@ const toggleDial = (): void => {
 
 const forceUpdate = ref(0)
 
+const blueosWidgets = ref<BlueOsWidget[]>([])
+
 watch(
   () => store.currentView.widgets,
   () => {
@@ -714,7 +719,58 @@ const emit = defineEmits<{
   (e: 'update:editMode', editMode: boolean): void
 }>()
 
-const availableWidgetTypes = computed(() => Object.values(WidgetType))
+const findUniqueName = (name: string): string => {
+  let newName = name
+  let i = 1
+  const existingNames = store.currentView.widgets.map((widget) => widget.name)
+  while (existingNames.includes(newName)) {
+    newName = `${name} ${i}`
+    i++
+  }
+  return newName
+}
+/*
+ * Makes a new widget with an unique name
+ */
+const makeNewWidget = (widget: WidgetType, name?: string, options?: Record<string, any>): ExtendedWidget => {
+  const newName = name || widget
+  return {
+    name: findUniqueName(newName),
+    component: widget,
+    options: options || {},
+  }
+}
+
+const makeWidgetUnique = (widget: ExtendedWidget): ExtendedWidget => {
+  return {
+    ...widget,
+    name: findUniqueName(widget.name),
+  }
+}
+
+const availableWidgetTypes = computed(() =>
+  Object.values(WidgetType).map((widgetType) => {
+    return {
+      component: widgetType,
+      name: widgetType,
+      options: {},
+    }
+  })
+)
+
+const allAvailableWidgets = computed(() => {
+  return [
+    ...blueosWidgets.value.map((widget) => ({
+      component: WidgetType.IFrame,
+      name: widget.name,
+      options: {
+        source: widget.url,
+      },
+    })),
+    ...availableWidgetTypes.value,
+  ]
+})
+
 const availableMiniWidgetTypes = computed(() =>
   Object.values(MiniWidgetType).map((widgetType) => ({
     component: widgetType,
@@ -927,6 +983,10 @@ const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
 })
 useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidgetsContainerOptions)
 
+const getBlueosWidgets = async (): Promise<void> => {
+  blueosWidgets.value = await getWidgetsFromBlueOS()
+}
+
 // @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
 const customWidgetElementContainerOptions = ref<UseDraggableOptions>({
   animation: '150',
@@ -940,6 +1000,7 @@ useDraggable(
 )
 
 onMounted(() => {
+  getBlueosWidgets()
   const widgetContainers = [
     availableWidgetsContainer.value,
     availableMiniWidgetsContainer.value,
@@ -991,8 +1052,8 @@ const onRegularWidgetDragStart = (event: DragEvent): void => {
   }
 }
 
-const onRegularWidgetDragEnd = (widgetType: WidgetType): void => {
-  store.addWidget(widgetType, store.currentView)
+const onRegularWidgetDragEnd = (widget: ExtendedWidget): void => {
+  store.addWidget(makeWidgetUnique(widget), store.currentView)
 
   const widgetCards = document.querySelectorAll('[draggable="true"]')
   widgetCards.forEach((card) => {
