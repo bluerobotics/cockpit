@@ -59,6 +59,7 @@ const miniWidget = toRefs(props).miniWidget
 
 const potentiometerValue = ref(0)
 const rotationAngle = ref(-150)
+let listenerId: string | undefined
 
 watch(
   () => widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen,
@@ -106,7 +107,7 @@ onMounted(() => {
     })
   }
   if (miniWidget.value.options.dataLakeVariable) {
-    listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
       setDialValue(value as number)
     })
     const initialValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
@@ -183,8 +184,10 @@ const startDrag = (event: MouseEvent): void => {
 
 onUnmounted(() => {
   if (miniWidget.value.options.dataLakeVariable) {
-    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
     deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
+    if (listenerId) {
+      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, listenerId)
+    }
   }
 })
 </script>

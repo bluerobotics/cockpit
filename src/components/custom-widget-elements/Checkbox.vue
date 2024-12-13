@@ -47,6 +47,7 @@ const props = defineProps<{
 
 const miniWidget = toRefs(props).miniWidget
 const isChecked = ref(false)
+let listenerId: string | undefined
 
 const handleToggleAction = (): void => {
   if (widgetStore.editingMode) return
@@ -83,7 +84,7 @@ onMounted(() => {
     })
   }
   if (miniWidget.value.options.dataLakeVariable) {
-    listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
       isChecked.value = value as boolean
     })
     isChecked.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
@@ -92,8 +93,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (miniWidget.value.options.dataLakeVariable) {
-    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
     deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
+    if (listenerId) {
+      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, listenerId)
+    }
   }
 })
 </script>

@@ -1,3 +1,5 @@
+import { v4 as uuid } from 'uuid'
+
 /**
  * A variable to be used on a Cockpit action
  * @param { string } id - The id of the variable
@@ -21,7 +23,7 @@ export class DataLakeVariable {
 
 const dataLakeVariableInfo: Record<string, DataLakeVariable> = {}
 export const dataLakeVariableData: Record<string, string | number | boolean | undefined> = {}
-const dataLakeVariableListeners: Record<string, ((value: string | number | boolean) => void)[]> = {}
+const dataLakeVariableListeners: Record<string, Record<string, (value: string | number | boolean) => void>> = {}
 
 export const getAllDataLakeVariablesInfo = (): Record<string, DataLakeVariable> => {
   return dataLakeVariableInfo
@@ -60,21 +62,34 @@ export const deleteDataLakeVariable = (id: string): void => {
   delete dataLakeVariableData[id]
 }
 
-export const listenDataLakeVariable = (id: string, listener: (value: string | number | boolean) => void): void => {
-  if (!dataLakeVariableListeners[id]) {
-    dataLakeVariableListeners[id] = []
+export const listenDataLakeVariable = (
+  variableId: string,
+  listener: (value: string | number | boolean) => void
+): string => {
+  if (!dataLakeVariableListeners[variableId]) {
+    dataLakeVariableListeners[variableId] = {}
   }
-  dataLakeVariableListeners[id].push(listener)
+  const listenerId = uuid()
+  dataLakeVariableListeners[variableId][listenerId] = listener
+  return listenerId
 }
 
-export const unlistenDataLakeVariable = (id: string): void => {
-  delete dataLakeVariableListeners[id]
+export const unlistenDataLakeVariable = (variableId: string, listenerId: string): void => {
+  if (!dataLakeVariableListeners[variableId]) {
+    console.warn(`No listeners found for variable with id '${variableId}'.`)
+    return
+  }
+  if (!dataLakeVariableListeners[variableId][listenerId]) {
+    console.warn(`No listener found with id '${listenerId}' for variable with id '${variableId}'.`)
+    return
+  }
+  delete dataLakeVariableListeners[variableId][listenerId]
 }
 
 const notifyDataLakeVariableListeners = (id: string): void => {
   if (dataLakeVariableListeners[id]) {
     const value = dataLakeVariableData[id]
     if (value === undefined) return
-    dataLakeVariableListeners[id].forEach((listener) => listener(value))
+    Object.values(dataLakeVariableListeners[id]).forEach((listener) => listener(value))
   }
 }

@@ -139,6 +139,7 @@ const props = defineProps<{
 }>()
 const widget = toRefs(props).widget
 const availableDataLakeVariables = ref<DataLakeVariable[]>([])
+let listenerId: string | undefined
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
@@ -180,11 +181,11 @@ const changeDataLakeVariable = (newId: string): void => {
   }
 
   const oldId = widget.value.options.dataLakeVariableId
-  if (oldId !== undefined) {
-    unlistenDataLakeVariable(oldId)
+  if (oldId !== undefined && listenerId) {
+    unlistenDataLakeVariable(oldId, listenerId)
   }
 
-  listenDataLakeVariable(newId, (value) => {
+  listenerId = listenDataLakeVariable(newId, (value) => {
     valuesHistory.push(value as number)
 
     cutExtraSamples()

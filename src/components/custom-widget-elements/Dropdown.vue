@@ -43,6 +43,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType, SelectorOption } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
+let listenerId: string | undefined
 
 const props = defineProps<{
   /**
@@ -112,7 +113,7 @@ onMounted(() => {
     })
   }
   if (miniWidget.value.options.dataLakeVariable) {
-    listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
       selectedOption.value = options.value.find((option) => option.value === value)
     })
     const storedValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
@@ -125,8 +126,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (miniWidget.value.options.dataLakeVariable) {
-    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
     deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
+    if (listenerId) {
+      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, listenerId)
+    }
   }
 })
 </script>
