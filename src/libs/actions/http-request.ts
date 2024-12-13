@@ -6,7 +6,7 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
-import { getCockpitActionVariableData, getCockpitActionVariableInfo } from './data-lake'
+import { getDataLakeVariableData, getDataLakeVariableInfo } from './data-lake'
 
 const httpRequestActionIdPrefix = 'http-request-action'
 
@@ -128,8 +128,8 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
           for (const input of cockpitInputsInBody) {
             try {
               const parsedInput = input.replace('{{', '').replace('}}', '').trim()
-              const inputData = getCockpitActionVariableData(parsedInput)
-              const variableInfo = getCockpitActionVariableInfo(parsedInput)
+              const inputData = getDataLakeVariableData(parsedInput)
+              const variableInfo = getDataLakeVariableInfo(parsedInput)
 
               if (inputData !== undefined) {
                 let valueToReplace: string
@@ -198,7 +198,7 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
           for (const [key, value] of cockpitInputsInUrlParams) {
             try {
               const parsedInput = value.replace('{{', '').replace('}}', '').trim()
-              const inputData = getCockpitActionVariableData(parsedInput)
+              const inputData = getDataLakeVariableData(parsedInput)
               if (inputData) {
                 parsedUrlParams[key] = inputData.toString()
               }

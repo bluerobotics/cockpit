@@ -27,11 +27,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, toRefs, watch } from 'vue'
 
-import {
-  deleteCockpitActionVariable,
-  listenCockpitActionVariable,
-  unlistenCockpitActionVariable,
-} from '@/libs/actions/data-lake'
+import { deleteDataLakeVariable, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -72,11 +68,11 @@ onMounted(() => {
         align: 'center',
       },
       variableType: 'string',
-      actionVariable: undefined,
+      dataLakeVariable: undefined,
     })
   }
-  if (props.miniWidget.options.actionVariable) {
-    listenCockpitActionVariable(props.miniWidget.options.actionVariable?.name, (value) => {
+  if (props.miniWidget.options.dataLakeVariable) {
+    listenDataLakeVariable(props.miniWidget.options.dataLakeVariable?.name, (value) => {
       miniWidget.value.options.text = value as string
     })
     miniWidget.value.options.text = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as string
@@ -84,9 +80,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (miniWidget.value.options.actionVariable) {
-    unlistenCockpitActionVariable(miniWidget.value.options.actionVariable.name)
-    deleteCockpitActionVariable(miniWidget.value.options.actionVariable.id)
+  if (miniWidget.value.options.dataLakeVariable) {
+    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
+    deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
   }
 })
 </script>

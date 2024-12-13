@@ -4,11 +4,7 @@ import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
-import {
-  CockpitActionVariable,
-  createCockpitActionVariable,
-  setCockpitActionVariableData,
-} from '@/libs/actions/data-lake'
+import { createDataLakeVariable, DataLakeVariable, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
@@ -20,17 +16,17 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   const videoStore = useVideoStore()
 
   // Routine to log the memory usage of the application
-  const cockpitMemoryUsageVariable = new CockpitActionVariable(
+  const cockpitMemoryUsageVariable = new DataLakeVariable(
     'cockpit-memory-usage',
     'Cockpit Memory Usage',
     'number',
     'The memory usage of the Cockpit application in MB. This value is updated every 100ms.'
   )
-  createCockpitActionVariable(cockpitMemoryUsageVariable)
+  createDataLakeVariable(cockpitMemoryUsageVariable)
 
   setInterval(() => {
     const currentMemoryUsage = window.performance.memory.usedJSHeapSize / 1024 / 1024
-    setCockpitActionVariableData(cockpitMemoryUsageVariable.id, currentMemoryUsage)
+    setDataLakeVariableData(cockpitMemoryUsageVariable.id, currentMemoryUsage)
   }, 100)
 
   // Routine to log the framerate of the video streams

@@ -35,10 +35,10 @@ import { toRefs } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
-  deleteCockpitActionVariable,
-  listenCockpitActionVariable,
-  setCockpitActionVariableData,
-  unlistenCockpitActionVariable,
+  deleteDataLakeVariable,
+  listenDataLakeVariable,
+  setDataLakeVariableData,
+  unlistenDataLakeVariable,
 } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
@@ -71,9 +71,9 @@ watch(
 
 const handleSliderChange = (): void => {
   if (widgetStore.editingMode) return
-  if (miniWidget.value.options.actionVariable) {
+  if (miniWidget.value.options.dataLakeVariable) {
     widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, sliderValue.value.toFixed(1))
-    setCockpitActionVariableData(miniWidget.value.options.actionVariable.name, sliderValue.value.toFixed(1))
+    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, sliderValue.value.toFixed(1))
   }
 }
 
@@ -90,11 +90,11 @@ onMounted(() => {
         labelWidth: miniWidget.value.options.layout?.labelWidth || 0,
       },
       variableType: 'number',
-      actionVariable: undefined,
+      dataLakeVariable: undefined,
     })
   }
-  if (miniWidget.value.options.actionVariable) {
-    listenCockpitActionVariable(miniWidget.value.options.actionVariable?.name, (value) => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
       sliderValue.value = value as number
     })
     sliderValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as number
@@ -102,9 +102,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (miniWidget.value.options.actionVariable) {
-    unlistenCockpitActionVariable(miniWidget.value.options.actionVariable.name)
-    deleteCockpitActionVariable(miniWidget.value.options.actionVariable.id)
+  if (miniWidget.value.options.dataLakeVariable) {
+    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
+    deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
   }
 })
 </script>

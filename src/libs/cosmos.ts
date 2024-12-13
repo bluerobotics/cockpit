@@ -3,16 +3,16 @@ import { isBrowser } from 'browser-or-node'
 import { NetworkInfo } from '@/types/network'
 
 import {
-  cockpitActionVariableData,
-  createCockpitActionVariable,
-  deleteCockpitActionVariable,
-  getAllCockpitActionVariablesInfo,
-  getCockpitActionVariableData,
-  getCockpitActionVariableInfo,
-  listenCockpitActionVariable,
-  setCockpitActionVariableData,
-  unlistenCockpitActionVariable,
-  updateCockpitActionVariableInfo,
+  createDataLakeVariable,
+  dataLakeVariableData,
+  deleteDataLakeVariable,
+  getAllDataLakeVariablesInfo,
+  getDataLakeVariableData,
+  getDataLakeVariableInfo,
+  listenDataLakeVariable,
+  setDataLakeVariableData,
+  unlistenDataLakeVariable,
+  updateDataLakeVariableInfo,
 } from './actions/data-lake'
 import {
   availableCockpitActions,
@@ -86,16 +86,16 @@ declare global {
   interface Window {
     cockpit: {
       // Data lake:
-      cockpitActionVariableData: typeof cockpitActionVariableData
-      getCockpitActionVariableData: typeof getCockpitActionVariableData
-      listenCockpitActionVariable: typeof listenCockpitActionVariable
-      unlistenCockpitActionVariable: typeof unlistenCockpitActionVariable
-      getAllCockpitActionVariablesInfo: typeof getAllCockpitActionVariablesInfo
-      getCockpitActionVariableInfo: typeof getCockpitActionVariableInfo
-      setCockpitActionVariableData: typeof setCockpitActionVariableData
-      createCockpitActionVariable: typeof createCockpitActionVariable
-      updateCockpitActionVariableInfo: typeof updateCockpitActionVariableInfo
-      deleteCockpitActionVariable: typeof deleteCockpitActionVariable
+      dataLakeVariableData: typeof dataLakeVariableData
+      getDataLakeVariableData: typeof getDataLakeVariableData
+      listenDataLakeVariable: typeof listenDataLakeVariable
+      unlistenDataLakeVariable: typeof unlistenDataLakeVariable
+      getAllDataLakeVariablesInfo: typeof getAllDataLakeVariablesInfo
+      getDataLakeVariableInfo: typeof getDataLakeVariableInfo
+      setDataLakeVariableData: typeof setDataLakeVariableData
+      createDataLakeVariable: typeof createDataLakeVariable
+      updateDataLakeVariableInfo: typeof updateDataLakeVariableInfo
+      deleteDataLakeVariable: typeof deleteDataLakeVariable
       // Cockpit actions:
       availableCockpitActions: typeof availableCockpitActions
       registerNewAction: typeof registerNewAction
@@ -126,16 +126,16 @@ if (isBrowser) {
 // Expose data-lake and cockpit action methods to the global scope under a "cockpit" property
 window.cockpit = {
   // Data lake:
-  cockpitActionVariableData: cockpitActionVariableData,
-  getCockpitActionVariableData: getCockpitActionVariableData,
-  listenCockpitActionVariable: listenCockpitActionVariable,
-  unlistenCockpitActionVariable: unlistenCockpitActionVariable,
-  getAllCockpitActionVariablesInfo: getAllCockpitActionVariablesInfo,
-  getCockpitActionVariableInfo: getCockpitActionVariableInfo,
-  setCockpitActionVariableData: setCockpitActionVariableData,
-  createCockpitActionVariable: createCockpitActionVariable,
-  updateCockpitActionVariableInfo: updateCockpitActionVariableInfo,
-  deleteCockpitActionVariable: deleteCockpitActionVariable,
+  dataLakeVariableData: dataLakeVariableData,
+  getDataLakeVariableData: getDataLakeVariableData,
+  listenDataLakeVariable: listenDataLakeVariable,
+  unlistenDataLakeVariable: unlistenDataLakeVariable,
+  getAllDataLakeVariablesInfo: getAllDataLakeVariablesInfo,
+  getDataLakeVariableInfo: getDataLakeVariableInfo,
+  setDataLakeVariableData: setDataLakeVariableData,
+  createDataLakeVariable: createDataLakeVariable,
+  updateDataLakeVariableInfo: updateDataLakeVariableInfo,
+  deleteDataLakeVariable: deleteDataLakeVariable,
   // Cockpit actions:
   availableCockpitActions: availableCockpitActions,
   registerNewAction: registerNewAction,

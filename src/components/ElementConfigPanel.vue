@@ -246,33 +246,35 @@
             <div class="flex w-full justify-between items-center h-[40px] border-b-[1px] border-[#FFFFFF33]">
               <p class="text-center w-full text-sm">Action URL parameter</p>
               <v-btn
-                v-if="openNewActionVariableForm === false && currentElement.options.actionVariable?.name === undefined"
+                v-if="
+                  openNewDataLakeVariableForm === false && currentElement.options.dataLakeVariable?.name === undefined
+                "
                 variant="elevated"
                 class="bg-[#3B78A8] mr-[13px]"
                 size="x-small"
-                @click="openNewActionVariableForm = true"
+                @click="openNewDataLakeVariableForm = true"
                 >create</v-btn
               >
             </div>
           </template>
-          <template v-if="openNewActionVariableForm || currentElement.options.actionVariable?.name">
+          <template v-if="openNewDataLakeVariableForm || currentElement.options.dataLakeVariable?.name">
             <div
               class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]"
-              :class="{ 'border-[1px] border-red-700': actionVariableError.includes('This name is already in use') }"
+              :class="{ 'border-[1px] border-red-700': dataLakeVariableError.includes('This name is already in use') }"
             >
               <p class="ml-1 text-[14px]">Name</p>
-              <input v-model="futureActionVariable.name" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
+              <input v-model="futureDataLakeVariable.name" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
             </div>
             <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
               <p class="ml-1 text-[14px]">Description</p>
-              <input v-model="futureActionVariable.description" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
+              <input v-model="futureDataLakeVariable.description" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
             </div>
             <div class="flex w-full justify-end">
               <v-btn
                 variant="text"
                 size="x-small"
                 class="mr-[15px] mt-2"
-                :disabled="currentElement.options.actionVariable === undefined"
+                :disabled="currentElement.options.dataLakeVariable === undefined"
                 @click="deleteParameterFromDataLake"
                 >delete</v-btn
               >
@@ -281,11 +283,11 @@
                 size="x-small"
                 class="bg-[#3B78A8] mr-1 mt-2"
                 :class="{
-                  'opacity-10': futureActionVariable.name === '',
+                  'opacity-10': futureDataLakeVariable.name === '',
                 }"
-                :disabled="futureActionVariable.name === ''"
+                :disabled="futureDataLakeVariable.name === ''"
                 @click="saveOrUpdateParameter"
-                >{{ currentElement.options.actionVariable === undefined ? 'save' : 'update' }}</v-btn
+                >{{ currentElement.options.dataLakeVariable === undefined ? 'save' : 'update' }}</v-btn
               >
             </div>
           </template>
@@ -306,10 +308,10 @@
           </template>
         </div>
         <div
-          v-if="actionVariableError.length > 0"
+          v-if="dataLakeVariableError.length > 0"
           class="flex justify-center items-center text-[14px] text-center h-[30px] bg-red-800 rounded-lg"
         >
-          <p v-for="message in actionVariableError" :key="message">• {{ message }}</p>
+          <p v-for="message in dataLakeVariableError" :key="message">• {{ message }}</p>
         </div>
       </template>
     </ExpansiblePanel>
@@ -322,22 +324,22 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import {
-  createCockpitActionVariable,
-  deleteCockpitActionVariable,
-  getCockpitActionVariableInfo,
-  updateCockpitActionVariableInfo,
+  createDataLakeVariable,
+  deleteDataLakeVariable,
+  getDataLakeVariableInfo,
+  updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
 import { getAllHttpRequestActionConfigs, HttpRequestActionConfig } from '@/libs/actions/http-request'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { CockpitActionVariable, CustomWidgetElement, CustomWidgetElementType } from '@/types/widgets'
+import { CustomWidgetElement, CustomWidgetElementType, DataLakeVariable } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 const { showSnackbar } = useSnackbar()
 
 const currentElement = ref<CustomWidgetElement | undefined>(widgetStore.elementToShowOnDrawer)
-const defaultActionVariable: CockpitActionVariable = {
+const defaultDataLakeVariable: DataLakeVariable = {
   id: '',
   name: '',
   type: currentElement.value?.options.variableType,
@@ -345,22 +347,22 @@ const defaultActionVariable: CockpitActionVariable = {
 }
 
 const availableCockpitActions = reactive<Record<string, HttpRequestActionConfig>>({})
-const futureActionVariable = ref<CockpitActionVariable>(defaultActionVariable)
-const openNewActionVariableForm = ref(false)
+const futureDataLakeVariable = ref<DataLakeVariable>(defaultDataLakeVariable)
+const openNewDataLakeVariableForm = ref(false)
 const isOptionsMenuOpen = ref<{ [key: number]: boolean }>({})
-const actionVariableError = ref<string[]>([])
+const dataLakeVariableError = ref<string[]>([])
 
 watch(
   () => widgetStore.elementToShowOnDrawer,
   (newValue) => {
     currentElement.value = newValue
-    futureActionVariable.value = newValue?.options.actionVariable || {
+    futureDataLakeVariable.value = newValue?.options.dataLakeVariable || {
       id: '',
       name: '',
       type: currentElement.value?.options.variableType,
       description: '',
     }
-    openNewActionVariableForm.value = false
+    openNewDataLakeVariableForm.value = false
     if (newValue && newValue.hash) {
       widgetStore.miniWidgetManagerVars(newValue.hash).configMenuOpen = false
     }
@@ -377,16 +379,16 @@ const showActionExistsError = (): void => {
     message: 'Variable name already exists',
     variant: 'error',
   })
-  actionVariableError.value.push('This name is already in use')
+  dataLakeVariableError.value.push('This name is already in use')
   setTimeout(() => {
-    actionVariableError.value.splice(0, 1)
+    dataLakeVariableError.value.splice(0, 1)
   }, 3000)
 }
 
 const deleteParameterFromDataLake = async (): Promise<void> => {
-  if (currentElement.value?.options.actionVariable?.name) {
+  if (currentElement.value?.options.dataLakeVariable?.name) {
     try {
-      await deleteCockpitActionVariable(currentElement.value.options.actionVariable)
+      await deleteDataLakeVariable(currentElement.value.options.dataLakeVariable)
       showSnackbar({
         message: 'Action variable deleted',
         variant: 'success',
@@ -397,37 +399,37 @@ const deleteParameterFromDataLake = async (): Promise<void> => {
         variant: 'error',
       })
     }
-    futureActionVariable.value.name = ''
-    futureActionVariable.value = defaultActionVariable
-    currentElement.value.options.actionVariable = undefined
-    openNewActionVariableForm.value = false
+    futureDataLakeVariable.value.name = ''
+    futureDataLakeVariable.value = defaultDataLakeVariable
+    currentElement.value.options.dataLakeVariable = undefined
+    openNewDataLakeVariableForm.value = false
   }
 }
 
 const saveOrUpdateParameter = (): void => {
-  let newCockpitActionVariable = {
-    id: futureActionVariable.value?.id === '' ? futureActionVariable.value?.name : futureActionVariable.value?.id,
-    name: futureActionVariable.value?.name,
+  let newDataLakeVariable = {
+    id: futureDataLakeVariable.value?.id === '' ? futureDataLakeVariable.value?.name : futureDataLakeVariable.value?.id,
+    name: futureDataLakeVariable.value?.name,
     type: currentElement.value?.options.variableType,
-    description: futureActionVariable.value?.description,
+    description: futureDataLakeVariable.value?.description,
   }
   if (
     currentElement.value &&
-    futureActionVariable.value &&
-    currentElement.value.options.actionVariable?.name === undefined // Knows that it's a new input element being named
+    futureDataLakeVariable.value &&
+    currentElement.value.options.dataLakeVariable?.name === undefined // Knows that it's a new input element being named
   ) {
-    if (getCockpitActionVariableInfo(newCockpitActionVariable.id) !== undefined) {
+    if (getDataLakeVariableInfo(newDataLakeVariable.id) !== undefined) {
       showActionExistsError()
       return
     }
-    createCockpitActionVariable(newCockpitActionVariable)
-    currentElement.value.options.actionVariable = newCockpitActionVariable
+    createDataLakeVariable(newDataLakeVariable)
+    currentElement.value.options.dataLakeVariable = newDataLakeVariable
     return
   }
-  if (futureActionVariable.value && currentElement.value?.options.actionVariable?.name) {
-    newCockpitActionVariable.id = currentElement.value.options.actionVariable.id
-    updateCockpitActionVariableInfo(newCockpitActionVariable)
-    currentElement.value.options.actionVariable = newCockpitActionVariable
+  if (futureDataLakeVariable.value && currentElement.value?.options.dataLakeVariable?.name) {
+    newDataLakeVariable.id = currentElement.value.options.dataLakeVariable.id
+    updateDataLakeVariableInfo(newDataLakeVariable)
+    currentElement.value.options.dataLakeVariable = newDataLakeVariable
   }
 }
 
@@ -509,8 +511,8 @@ const loadSavedActions = (): void => {
 }
 
 onMounted(() => {
-  if (currentElement.value?.options.actionVariable?.name) {
-    futureActionVariable.value = currentElement.value?.options.actionVariable
+  if (currentElement.value?.options.dataLakeVariable?.name) {
+    futureDataLakeVariable.value = currentElement.value?.options.dataLakeVariable
   }
   loadSavedActions()
 })

@@ -5,7 +5,7 @@
  * @param { 'string' | 'number' | 'boolean' } type - The type of the variable (string, number or boolean)
  * @param { string } description - What the variable does or means
  */
-export class CockpitActionVariable {
+export class DataLakeVariable {
   id: string
   name: string
   type: 'string' | 'number' | 'boolean'
@@ -19,65 +19,62 @@ export class CockpitActionVariable {
   }
 }
 
-const cockpitActionVariableInfo: Record<string, CockpitActionVariable> = {}
-export const cockpitActionVariableData: Record<string, string | number | boolean | undefined> = {}
-const cockpitActionVariableListeners: Record<string, ((value: string | number | boolean) => void)[]> = {}
+const dataLakeVariableInfo: Record<string, DataLakeVariable> = {}
+export const dataLakeVariableData: Record<string, string | number | boolean | undefined> = {}
+const dataLakeVariableListeners: Record<string, ((value: string | number | boolean) => void)[]> = {}
 
-export const getAllCockpitActionVariablesInfo = (): Record<string, CockpitActionVariable> => {
-  return cockpitActionVariableInfo
+export const getAllDataLakeVariablesInfo = (): Record<string, DataLakeVariable> => {
+  return dataLakeVariableInfo
 }
 
-export const getCockpitActionVariableInfo = (id: string): CockpitActionVariable | undefined => {
-  return cockpitActionVariableInfo[id]
+export const getDataLakeVariableInfo = (id: string): DataLakeVariable | undefined => {
+  return dataLakeVariableInfo[id]
 }
 
-export const createCockpitActionVariable = (
-  variable: CockpitActionVariable,
-  initialValue?: string | number | boolean
-): void => {
-  if (cockpitActionVariableInfo[variable.id]) {
+export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?: string | number | boolean): void => {
+  if (dataLakeVariableInfo[variable.id]) {
     throw new Error(`Cockpit action variable with id '${variable.id}' already exists. Update it instead.`)
   }
-  cockpitActionVariableInfo[variable.id] = variable
-  cockpitActionVariableData[variable.id] = initialValue
+  dataLakeVariableInfo[variable.id] = variable
+  dataLakeVariableData[variable.id] = initialValue
 }
 
-export const updateCockpitActionVariableInfo = (variable: CockpitActionVariable): void => {
-  if (!cockpitActionVariableInfo[variable.id]) {
+export const updateDataLakeVariableInfo = (variable: DataLakeVariable): void => {
+  if (!dataLakeVariableInfo[variable.id]) {
     throw new Error(`Cockpit action variable with id '${variable.id}' does not exist. Create it first.`)
   }
-  cockpitActionVariableInfo[variable.id] = variable
+  dataLakeVariableInfo[variable.id] = variable
 }
 
-export const getCockpitActionVariableData = (id: string): string | number | boolean | undefined => {
-  return cockpitActionVariableData[id]
+export const getDataLakeVariableData = (id: string): string | number | boolean | undefined => {
+  return dataLakeVariableData[id]
 }
 
-export const setCockpitActionVariableData = (id: string, data: string | number | boolean): void => {
-  cockpitActionVariableData[id] = data
-  notifyCockpitActionVariableListeners(id)
+export const setDataLakeVariableData = (id: string, data: string | number | boolean): void => {
+  dataLakeVariableData[id] = data
+  notifyDataLakeVariableListeners(id)
 }
 
-export const deleteCockpitActionVariable = (id: string): void => {
-  delete cockpitActionVariableInfo[id]
-  delete cockpitActionVariableData[id]
+export const deleteDataLakeVariable = (id: string): void => {
+  delete dataLakeVariableInfo[id]
+  delete dataLakeVariableData[id]
 }
 
-export const listenCockpitActionVariable = (id: string, listener: (value: string | number | boolean) => void): void => {
-  if (!cockpitActionVariableListeners[id]) {
-    cockpitActionVariableListeners[id] = []
+export const listenDataLakeVariable = (id: string, listener: (value: string | number | boolean) => void): void => {
+  if (!dataLakeVariableListeners[id]) {
+    dataLakeVariableListeners[id] = []
   }
-  cockpitActionVariableListeners[id].push(listener)
+  dataLakeVariableListeners[id].push(listener)
 }
 
-export const unlistenCockpitActionVariable = (id: string): void => {
-  delete cockpitActionVariableListeners[id]
+export const unlistenDataLakeVariable = (id: string): void => {
+  delete dataLakeVariableListeners[id]
 }
 
-const notifyCockpitActionVariableListeners = (id: string): void => {
-  if (cockpitActionVariableListeners[id]) {
-    const value = cockpitActionVariableData[id]
+const notifyDataLakeVariableListeners = (id: string): void => {
+  if (dataLakeVariableListeners[id]) {
+    const value = dataLakeVariableData[id]
     if (value === undefined) return
-    cockpitActionVariableListeners[id].forEach((listener) => listener(value))
+    dataLakeVariableListeners[id].forEach((listener) => listener(value))
   }
 }

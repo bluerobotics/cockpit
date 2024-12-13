@@ -99,7 +99,7 @@ export type SelectorOption = {
 /**
  * Options for the Cockpit Actions parameters
  */
-export interface CockpitActionVariable {
+export interface DataLakeVariable {
   /**
    * Parameter ID, equals to initial name of the parameter
    */
@@ -149,7 +149,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Action parameter
        */
-      actionVariable: CockpitActionVariable
+      dataLakeVariable: DataLakeVariable
       /**
        * The label text
        */
@@ -267,7 +267,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Action parameter
        */
-      actionVariable: CockpitActionVariable
+      dataLakeVariable: DataLakeVariable
       /**
        * Layout props for the element
        */
@@ -314,7 +314,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Action parameter
        */
-      actionVariable: CockpitActionVariable
+      dataLakeVariable: DataLakeVariable
       /**
        * Layout options
        */
@@ -377,7 +377,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Action parameter
        */
-      actionVariable: CockpitActionVariable
+      dataLakeVariable: DataLakeVariable
       /**
        * Last selected value
        */
@@ -428,7 +428,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Action parameter
        */
-      actionVariable: CockpitActionVariable
+      dataLakeVariable: DataLakeVariable
       /**
        * Layout options
        */
@@ -495,7 +495,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Action parameter
        */
-      actionVariable: CockpitActionVariable
+      dataLakeVariable: DataLakeVariable
       /**
        * Layout options
        */

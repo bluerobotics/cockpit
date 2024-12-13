@@ -176,10 +176,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     element.hash = uuid4()
     hashMap.set(oldHash, element.hash)
 
-    if (element.options && element.options.actionVariable) {
-      const actionVariable = element.options.actionVariable
-      actionVariable.id = `${actionVariable.id}_new`
-      actionVariable.name = `${actionVariable.name}_new`
+    if (element.options && element.options.dataLakeVariable) {
+      const dataLakeVariable = element.options.dataLakeVariable
+      dataLakeVariable.id = `${dataLakeVariable.id}_new`
+      dataLakeVariable.name = `${dataLakeVariable.name}_new`
     }
   }
 
