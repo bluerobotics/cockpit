@@ -29,7 +29,6 @@
               persistent-hint
               variant="outlined"
               density="comfortable"
-              @update:model-value="changeDataLakeVariable"
             />
           </div>
         </v-col>
@@ -174,13 +173,12 @@ const cutExtraSamples = (): void => {
   }
 }
 
-const changeDataLakeVariable = (newId: string): void => {
+const changeDataLakeVariable = (newId: string, oldId?: string): void => {
   if (newId === undefined) {
     console.error('No data lake variable ID provided!')
     return
   }
 
-  const oldId = widget.value.options.dataLakeVariableId
   if (oldId !== undefined && listenerId) {
     unlistenDataLakeVariable(oldId, listenerId)
   }
@@ -197,6 +195,14 @@ watch([widget.value.options.maxSamples, widget.value.options.limitSamples], () =
   cutExtraSamples()
   renderCanvas()
 })
+
+watch(
+  () => widget.value.options.dataLakeVariableId,
+  (newId, oldId) => {
+    changeDataLakeVariable(newId, oldId)
+    valuesHistory.length = 0
+  }
+)
 
 // Make canvas size follows window resizing
 const { width: windowWidth, height: windowHeight } = useWindowSize()
