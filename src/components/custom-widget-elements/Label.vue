@@ -41,6 +41,7 @@ const props = defineProps<{
 }>()
 
 const miniWidget = toRefs(props).miniWidget
+let listenerId: string | undefined
 
 watch(
   () => widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen,
@@ -72,7 +73,7 @@ onMounted(() => {
     })
   }
   if (props.miniWidget.options.dataLakeVariable) {
-    listenDataLakeVariable(props.miniWidget.options.dataLakeVariable?.name, (value) => {
+    listenerId = listenDataLakeVariable(props.miniWidget.options.dataLakeVariable?.name, (value) => {
       miniWidget.value.options.text = value as string
     })
     miniWidget.value.options.text = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as string
@@ -81,8 +82,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (miniWidget.value.options.dataLakeVariable) {
-    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
     deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
+    if (listenerId) {
+      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, listenerId)
+    }
   }
 })
 </script>
