@@ -272,9 +272,9 @@ const renderCanvas = (): void => {
     ctx.textBaseline = 'bottom'
 
     // Draw the values
-    drawText(ctx, `Current: ${currentValue.toFixed(2)}`, 10, canvasHeight - 10)
-    drawText(ctx, `Min: ${minValue.toFixed(2)}`, 10, canvasHeight - 30)
-    drawText(ctx, `Max: ${maxValue.toFixed(2)}`, 10, canvasHeight - 50)
+    drawText(ctx, `Current: ${Number(currentValue).toFixed(2)}`, 10, canvasHeight - 10)
+    drawText(ctx, `Min: ${Number(minValue).toFixed(2)}`, 10, canvasHeight - 30)
+    drawText(ctx, `Max: ${Number(maxValue).toFixed(2)}`, 10, canvasHeight - 50)
   } catch (error) {
     console.error('Error drawing graph:', error)
   }
