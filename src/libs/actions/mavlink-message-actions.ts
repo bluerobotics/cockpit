@@ -9,7 +9,7 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
-import { getCockpitActionVariableData } from './data-lake'
+import { getDataLakeVariableData } from './data-lake'
 
 const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
 
@@ -135,7 +135,7 @@ const processMessageConfig = (config: MavlinkMessageConfig): Record<string, any>
 
   if (typeof config === 'string') {
     const configWithDynamicValues = config.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, p1) => {
-      const variableValue = getCockpitActionVariableData(p1)
+      const variableValue = getDataLakeVariableData(p1)
       return variableValue ? variableValue.toString() : match
     })
     processedConfig = JSON.parse(configWithDynamicValues)
@@ -143,7 +143,7 @@ const processMessageConfig = (config: MavlinkMessageConfig): Record<string, any>
     for (const [k, v] of Object.entries(config)) {
       if (typeof v.value === 'string' && v.value.startsWith('{{') && v.value.endsWith('}}')) {
         const variableName = v.value.slice(2, -2).trim()
-        const variableValue = getCockpitActionVariableData(variableName)
+        const variableValue = getDataLakeVariableData(variableName)
         processedConfig[k] = typeof variableValue === 'boolean' ? (variableValue ? 1 : 0) : variableValue
       } else if (v.type === MessageFieldType.TYPE_STRUCT_ENUM) {
         processedConfig[k] = { type: v.value }

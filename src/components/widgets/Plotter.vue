@@ -116,10 +116,10 @@ import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
 import {
-  CockpitActionVariable,
-  getAllCockpitActionVariablesInfo,
-  listenCockpitActionVariable,
-  unlistenCockpitActionVariable,
+  DataLakeVariable,
+  getAllDataLakeVariablesInfo,
+  listenDataLakeVariable,
+  unlistenDataLakeVariable,
 } from '@/libs/actions/data-lake'
 import { resetCanvas } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -138,7 +138,7 @@ const props = defineProps<{
   widget: Widget
 }>()
 const widget = toRefs(props).widget
-const availableDataLakeVariables = ref<CockpitActionVariable[]>([])
+const availableDataLakeVariables = ref<DataLakeVariable[]>([])
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
@@ -156,7 +156,7 @@ onBeforeMount(() => {
 
 onMounted(() => {
   changeDataLakeVariable(widget.value.options.dataLakeVariableId)
-  availableDataLakeVariables.value = Object.values(getAllCockpitActionVariablesInfo()).filter(
+  availableDataLakeVariables.value = Object.values(getAllDataLakeVariablesInfo()).filter(
     (variable) => variable.type === 'number'
   )
 })
@@ -181,10 +181,10 @@ const changeDataLakeVariable = (newId: string): void => {
 
   const oldId = widget.value.options.dataLakeVariableId
   if (oldId !== undefined) {
-    unlistenCockpitActionVariable(oldId)
+    unlistenDataLakeVariable(oldId)
   }
 
-  listenCockpitActionVariable(newId, (value) => {
+  listenDataLakeVariable(newId, (value) => {
     valuesHistory.push(value as number)
 
     cutExtraSamples()

@@ -38,10 +38,10 @@
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import {
-  deleteCockpitActionVariable,
-  listenCockpitActionVariable,
-  setCockpitActionVariableData,
-  unlistenCockpitActionVariable,
+  deleteDataLakeVariable,
+  listenDataLakeVariable,
+  setDataLakeVariableData,
+  unlistenDataLakeVariable,
 } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
@@ -102,11 +102,11 @@ onMounted(() => {
         notchColor: '#303030aa',
       },
       variableType: 'number',
-      actionVariable: undefined,
+      dataLakeVariable: undefined,
     })
   }
-  if (miniWidget.value.options.actionVariable) {
-    listenCockpitActionVariable(miniWidget.value.options.actionVariable?.name, (value) => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
       setDialValue(value as number)
     })
     const initialValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
@@ -165,10 +165,10 @@ const startDrag = (event: MouseEvent): void => {
     potentiometerValue.value =
       ((newRotationAngle + 150) / rotationRange) * valueRange + miniWidget.value.options.layout?.minValue
 
-    if (miniWidget.value.options.actionVariable) {
+    if (miniWidget.value.options.dataLakeVariable) {
       if (widgetStore.editingMode) return
       widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, Math.round(potentiometerValue.value))
-      setCockpitActionVariableData(miniWidget.value.options.actionVariable.name, Math.round(potentiometerValue.value))
+      setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, Math.round(potentiometerValue.value))
     }
   }
 
@@ -182,9 +182,9 @@ const startDrag = (event: MouseEvent): void => {
 }
 
 onUnmounted(() => {
-  if (miniWidget.value.options.actionVariable) {
-    unlistenCockpitActionVariable(miniWidget.value.options.actionVariable.name)
-    deleteCockpitActionVariable(miniWidget.value.options.actionVariable.id)
+  if (miniWidget.value.options.dataLakeVariable) {
+    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
+    deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
   }
 })
 </script>

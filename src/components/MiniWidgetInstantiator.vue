@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { defineAsyncComponent, onMounted, toRefs } from 'vue'
 
-import { createCockpitActionVariable, getCockpitActionVariableInfo } from '@/libs/actions/data-lake'
+import { createDataLakeVariable, getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { type MiniWidget, CustomWidgetElement } from '@/types/widgets'
 
@@ -37,13 +37,13 @@ const componentFromType = (componentType: string): ReturnType<typeof defineAsync
 
 const registerCockpitActions = (): void => {
   if (
-    miniWidget.value.options.actionVariable &&
-    getCockpitActionVariableInfo(miniWidget.value.options.actionVariable.id) !== undefined
+    miniWidget.value.options.dataLakeVariable &&
+    getDataLakeVariableInfo(miniWidget.value.options.dataLakeVariable.id) !== undefined
   )
     return
-  if (miniWidget.value.options.actionVariable) {
-    createCockpitActionVariable(
-      miniWidget.value.options.actionVariable,
+  if (miniWidget.value.options.dataLakeVariable) {
+    createDataLakeVariable(
+      miniWidget.value.options.dataLakeVariable,
       widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
     )
   }

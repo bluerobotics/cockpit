@@ -306,7 +306,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { openSnackbar } from '@/composables/snackbar'
-import { getAllCockpitActionVariablesInfo } from '@/libs/actions/data-lake'
+import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
 import {
   availableHttpRequestMethods,
   deleteHttpRequestActionConfig,
@@ -355,7 +355,7 @@ const headerDialog = ref({
 
 const paramValueOptions = computed(() => {
   const options = [{ title: 'Fixed (specify below)', value: 'fixed' }]
-  const availableInputParameters = getAllCockpitActionVariablesInfo()
+  const availableInputParameters = getAllDataLakeVariablesInfo()
   Object.values(availableInputParameters).forEach((parameter) => {
     options.push({ title: parameter.id, value: parameter.id })
   })
