@@ -1,63 +1,305 @@
 <template>
-  <div class="flex flex-col text-center">
-    <v-btn
-      class="absolute top-0 left-0"
-      variant="text"
-      size="small"
-      icon="mdi-close"
-      style="z-index: 50000"
-      @click="CloseConfigPanel"
-    />
-    <v-btn
-      class="absolute bg-[#FFFFFF44] text-white bottom-2 right-2"
-      variant="plain"
-      size="small"
-      prepend-icon="mdi-delete"
-      @click="deleteElement"
-    >
-      Delete
-    </v-btn>
-    <ExpansiblePanel
-      v-if="currentElement"
-      mark-expanded
-      compact
-      elevation-effect
-      no-bottom-divider
-      darken-content
-      invert-chevron
-      :is-expanded="true"
-    >
-      <template #title><p class="ml-10">Options</p></template>
-      <template #content>
-        <div class="flex flex-col items-center mb-4 -ml-[7px] w-[248px]">
-          <div
-            v-for="optionKey in sortedOptionKeys"
-            :key="optionKey"
-            class="flex w-full justify-between items-center border-b-[1px] border-[#FFFFFF33] h-auto"
-          >
-            <p class="text-start ml-1 text-[14px] w-[60%]">{{ formatLabel(optionKey) }}</p>
-
-            <template
-              v-if="
-                typeof currentElement.options.layout[optionKey] === 'string' &&
-                !Array.isArray(getSelectChoices(optionKey)) &&
-                !isColorPicker(optionKey) &&
-                optionKey !== 'cockpitAction' &&
-                optionKey !== 'cockpitActions'
-              "
+  <div
+    class="flex fixed w-[250px] h-[78vh] right-0 top-0 border-l-[1px] border-[#FFFFFF44] text-white elevation-5 bg-[#051e2d]"
+  >
+    <div class="flex flex-col text-center">
+      <v-btn
+        class="absolute top-0 left-0"
+        variant="text"
+        size="small"
+        icon="mdi-close"
+        style="z-index: 50000"
+        @click="CloseConfigPanel"
+      />
+      <v-btn
+        class="absolute bg-[#FFFFFF44] text-white bottom-2 right-2"
+        variant="plain"
+        size="small"
+        prepend-icon="mdi-delete"
+        @click="deleteElement"
+      >
+        Delete
+      </v-btn>
+      <ExpansiblePanel
+        v-if="currentElement"
+        mark-expanded
+        compact
+        elevation-effect
+        no-bottom-divider
+        darken-content
+        invert-chevron
+        :is-expanded="true"
+      >
+        <template #title><p class="ml-10">Options</p></template>
+        <template #content>
+          <div class="flex flex-col items-center mb-4 -ml-[7px] w-[248px]">
+            <div
+              v-for="optionKey in sortedOptionKeys"
+              :key="optionKey"
+              class="flex w-full justify-between items-center border-b-[1px] border-[#FFFFFF33] h-auto"
             >
-              <div class="max-w-[120px]">
-                <input
-                  v-model="currentElement.options.layout[optionKey]"
-                  type="text"
-                  class="p-2 bg-[#FFFFFF11] w-[123px]"
-                />
+              <p class="text-start ml-1 text-[14px] w-[60%]">{{ formatLabel(optionKey) }}</p>
+
+              <template
+                v-if="
+                  typeof currentElement.options.layout[optionKey] === 'string' &&
+                  !Array.isArray(getSelectChoices(optionKey)) &&
+                  !isColorPicker(optionKey) &&
+                  optionKey !== 'cockpitAction' &&
+                  optionKey !== 'cockpitActions'
+                "
+              >
+                <div class="max-w-[120px]">
+                  <input
+                    v-model="currentElement.options.layout[optionKey]"
+                    type="text"
+                    class="p-2 bg-[#FFFFFF11] w-[123px]"
+                  />
+                </div>
+              </template>
+
+              <template v-if="optionKey === 'cockpitAction'">
+                <div class="max-w-[120px]">
+                  <select v-model="currentElement.options.layout[optionKey]" class="p-2 bg-[#FFFFFF11] w-[120px]">
+                    <option
+                      v-for="cockpitAction in availableCockpitActions"
+                      :key="cockpitAction.name"
+                      :value="cockpitAction"
+                      class="bg-[#000000AA]"
+                    >
+                      {{ cockpitAction.name }}
+                    </option>
+                  </select>
+                </div>
+              </template>
+
+              <template v-if="typeof currentElement.options.layout[optionKey] === 'number'">
+                <div class="max-w-[120px]">
+                  <input
+                    v-model="currentElement.options.layout[optionKey]"
+                    type="number"
+                    class="p-2 bg-[#FFFFFF11] w-[128px]"
+                  />
+                </div>
+              </template>
+
+              <template v-else-if="Array.isArray(getSelectChoices(optionKey)) && optionKey !== 'selectorOptions'">
+                <div class="max-w-[120px]">
+                  <select v-model="currentElement.options.layout[optionKey]" class="p-2 bg-[#FFFFFF11] w-[120px]">
+                    <option
+                      v-for="choice in getSelectChoices(optionKey)"
+                      :key="choice"
+                      :value="choice"
+                      class="bg-[#000000AA]"
+                    >
+                      {{ choice }}
+                    </option>
+                  </select>
+                </div>
+              </template>
+
+              <template v-else-if="typeof currentElement.options.layout[optionKey] === 'boolean'">
+                <div class="flex items-center max-w-[120px]">
+                  <v-checkbox
+                    v-model="currentElement.options.layout[optionKey]"
+                    hide-details
+                    density="compact"
+                    class="text-white mr-10 h-[40px]"
+                  />
+                </div>
+              </template>
+
+              <template v-else-if="isColorPicker(optionKey)">
+                <div class="max-w-[120px]">
+                  <input v-model="currentElement.options.layout[optionKey]" type="color" class="p-0 w-20 mr-4" />
+                </div>
+              </template>
+
+              <template v-if="optionKey === 'selectorOptions'">
+                <div class="flex flex-col w-[144px] items-end h-auto">
+                  <div
+                    v-for="(item, index) in currentElement.options.layout[optionKey]"
+                    :key="index"
+                    class="flex items-center text-center border-b-[1px] border-l-[1px] border-[#FFFFFF11] w-full whitespace-nowrap"
+                  >
+                    <v-btn
+                      v-if="currentElement.options.layout.selectorOptions.length > 1"
+                      icon
+                      size="x-small"
+                      variant="text"
+                      @click="removeSelectorOption(optionKey, index)"
+                    >
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                    <v-menu
+                      v-model="isOptionsMenuOpen[index]"
+                      :close-on-content-click="false"
+                      location="top start"
+                      origin="top start"
+                      transition="scale-transition"
+                    >
+                      <template #activator="{ props }">
+                        <div class="flex justify-end items-center min-h-[40px] w-full">
+                          <p
+                            v-if="currentElement.options.layout[optionKey][index].name"
+                            v-bind="props"
+                            class="text-[14px] text-center w-[130px] cursor-pointer"
+                          >
+                            {{ currentElement.options.layout[optionKey][index].name }}
+                          </p>
+
+                          <v-btn
+                            v-else
+                            variant="elevated"
+                            class="bg-[#FFFFFF22] my-[10px] mr-[23px] w-22"
+                            size="x-small"
+                            v-bind="props"
+                            >edit</v-btn
+                          >
+                        </div>
+                      </template>
+                      <v-card
+                        class="flex flex-col overflow-hidden pa-3 pb-0 gap-x-4"
+                        :style="interfaceStore.globalGlassMenuStyles"
+                      >
+                        <div class="flex gap-x-4">
+                          <div class="flex flex-col items-center">
+                            <p class="text-[14px]">{{ `Option ${index + 1} name` }}</p>
+                            <input
+                              v-model="currentElement.options.layout[optionKey][index].name"
+                              placeholder="option name"
+                              theme="dark"
+                              type="text"
+                              class="p-2 w-[120px] bg-[#FFFFFF11]"
+                            />
+                          </div>
+                          <div class="flex flex-col items-center">
+                            <p class="text-[14px]">{{ `Option ${index + 1} value` }}</p>
+                            <input
+                              v-model="currentElement.options.layout[optionKey][index].value"
+                              placeholder="value"
+                              theme="dark"
+                              type="text"
+                              class="p-2 w-[120px] bg-[#FFFFFF11]"
+                            />
+                          </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                          <v-btn
+                            variant="text"
+                            size="x-small"
+                            class="my-2"
+                            @click="
+                              () => {
+                                if (currentElement?.options.layout[optionKey][index].name === '') {
+                                  removeSelectorOption(optionKey, index)
+                                }
+                                isOptionsMenuOpen[index] = false
+                              }
+                            "
+                            >close</v-btn
+                          >
+                          <v-btn
+                            variant="text"
+                            size="small"
+                            class="my-3"
+                            :disabled="currentElement.options.layout[optionKey][index].name === ''"
+                            @click="
+                              () => {
+                                addSelectorOption(optionKey)
+                                isOptionsMenuOpen[index] = false
+                                isOptionsMenuOpen[index + 1] = true
+                              }
+                            "
+                            >add another option</v-btn
+                          >
+                        </div>
+                      </v-card>
+                    </v-menu>
+                  </div>
+                  <v-btn
+                    variant="elevated"
+                    class="bg-[#3B78A8] my-[10px] mr-[13px] w-22"
+                    size="x-small"
+                    @click="addSelectorOption(optionKey)"
+                    >add</v-btn
+                  >
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </ExpansiblePanel>
+      <ExpansiblePanel
+        v-if="currentElement"
+        :key="currentElement.hash"
+        no-bottom-divider
+        no-top-divider
+        mark-expanded
+        elevation-effect
+        compact
+        darken-content
+        invert-chevron
+        :is-expanded="true"
+      >
+        <template #title>Cockpit actions</template>
+        <template #content>
+          <div class="flex flex-col items-center mb-4 -ml-[7px] w-[248px]">
+            <template v-if="currentElement.component !== CustomWidgetElementType.Button">
+              <div class="flex w-full justify-between items-center h-[40px] border-b-[1px] border-[#FFFFFF33]">
+                <p class="text-center w-full text-sm">Action URL parameter</p>
+                <v-btn
+                  v-if="
+                    openNewDataLakeVariableForm === false && currentElement.options.dataLakeVariable?.name === undefined
+                  "
+                  variant="elevated"
+                  class="bg-[#3B78A8] mr-[13px]"
+                  size="x-small"
+                  @click="openNewDataLakeVariableForm = true"
+                  >create</v-btn
+                >
               </div>
             </template>
-
-            <template v-if="optionKey === 'cockpitAction'">
-              <div class="max-w-[120px]">
-                <select v-model="currentElement.options.layout[optionKey]" class="p-2 bg-[#FFFFFF11] w-[120px]">
+            <template v-if="openNewDataLakeVariableForm || currentElement.options.dataLakeVariable?.name">
+              <div
+                class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]"
+                :class="{
+                  'border-[1px] border-red-700': dataLakeVariableError.includes('This name is already in use'),
+                }"
+              >
+                <p class="ml-1 text-[14px]">Name</p>
+                <input v-model="futureDataLakeVariable.name" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
+              </div>
+              <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
+                <p class="ml-1 text-[14px]">Description</p>
+                <input v-model="futureDataLakeVariable.description" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
+              </div>
+              <div class="flex w-full justify-end">
+                <v-btn
+                  variant="text"
+                  size="x-small"
+                  class="mr-[15px] mt-2"
+                  :disabled="currentElement.options.dataLakeVariable === undefined"
+                  @click="deleteParameterFromDataLake"
+                  >delete</v-btn
+                >
+                <v-btn
+                  variant="elevated"
+                  size="x-small"
+                  class="bg-[#3B78A8] mr-1 mt-2"
+                  :class="{
+                    'opacity-10': futureDataLakeVariable.name === '',
+                  }"
+                  :disabled="futureDataLakeVariable.name === ''"
+                  @click="saveOrUpdateParameter"
+                  >{{ currentElement.options.dataLakeVariable === undefined ? 'save' : 'update' }}</v-btn
+                >
+              </div>
+            </template>
+            <template v-if="currentElement.component === CustomWidgetElementType.Button">
+              <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
+                <p class="ml-1 text-[14px]">Action to trigger</p>
+                <select v-model="currentElement.options.cockpitAction" class="p-2 bg-[#FFFFFF11] w-[123px]">
                   <option
                     v-for="cockpitAction in availableCockpitActions"
                     :key="cockpitAction.name"
@@ -69,252 +311,16 @@
                 </select>
               </div>
             </template>
-
-            <template v-if="typeof currentElement.options.layout[optionKey] === 'number'">
-              <div class="max-w-[120px]">
-                <input
-                  v-model="currentElement.options.layout[optionKey]"
-                  type="number"
-                  class="p-2 bg-[#FFFFFF11] w-[128px]"
-                />
-              </div>
-            </template>
-
-            <template v-else-if="Array.isArray(getSelectChoices(optionKey)) && optionKey !== 'selectorOptions'">
-              <div class="max-w-[120px]">
-                <select v-model="currentElement.options.layout[optionKey]" class="p-2 bg-[#FFFFFF11] w-[120px]">
-                  <option
-                    v-for="choice in getSelectChoices(optionKey)"
-                    :key="choice"
-                    :value="choice"
-                    class="bg-[#000000AA]"
-                  >
-                    {{ choice }}
-                  </option>
-                </select>
-              </div>
-            </template>
-
-            <template v-else-if="typeof currentElement.options.layout[optionKey] === 'boolean'">
-              <div class="flex items-center max-w-[120px]">
-                <v-checkbox
-                  v-model="currentElement.options.layout[optionKey]"
-                  hide-details
-                  density="compact"
-                  class="text-white mr-10 h-[40px]"
-                />
-              </div>
-            </template>
-
-            <template v-else-if="isColorPicker(optionKey)">
-              <div class="max-w-[120px]">
-                <input v-model="currentElement.options.layout[optionKey]" type="color" class="p-0 w-20 mr-4" />
-              </div>
-            </template>
-
-            <template v-if="optionKey === 'selectorOptions'">
-              <div class="flex flex-col w-[144px] items-end h-auto">
-                <div
-                  v-for="(item, index) in currentElement.options.layout[optionKey]"
-                  :key="index"
-                  class="flex items-center text-center border-b-[1px] border-l-[1px] border-[#FFFFFF11] w-full whitespace-nowrap"
-                >
-                  <v-btn
-                    v-if="currentElement.options.layout.selectorOptions.length > 1"
-                    icon
-                    size="x-small"
-                    variant="text"
-                    @click="removeSelectorOption(optionKey, index)"
-                  >
-                    <v-icon>mdi-delete</v-icon>
-                  </v-btn>
-                  <v-menu
-                    v-model="isOptionsMenuOpen[index]"
-                    :close-on-content-click="false"
-                    location="top start"
-                    origin="top start"
-                    transition="scale-transition"
-                  >
-                    <template #activator="{ props }">
-                      <div class="flex justify-end items-center min-h-[40px] w-full">
-                        <p
-                          v-if="currentElement.options.layout[optionKey][index].name"
-                          v-bind="props"
-                          class="text-[14px] text-center w-[130px] cursor-pointer"
-                        >
-                          {{ currentElement.options.layout[optionKey][index].name }}
-                        </p>
-
-                        <v-btn
-                          v-else
-                          variant="elevated"
-                          class="bg-[#FFFFFF22] my-[10px] mr-[23px] w-22"
-                          size="x-small"
-                          v-bind="props"
-                          >edit</v-btn
-                        >
-                      </div>
-                    </template>
-                    <v-card
-                      class="flex flex-col overflow-hidden pa-3 pb-0 gap-x-4"
-                      :style="interfaceStore.globalGlassMenuStyles"
-                    >
-                      <div class="flex gap-x-4">
-                        <div class="flex flex-col items-center">
-                          <p class="text-[14px]">{{ `Option ${index + 1} name` }}</p>
-                          <input
-                            v-model="currentElement.options.layout[optionKey][index].name"
-                            placeholder="option name"
-                            theme="dark"
-                            type="text"
-                            class="p-2 w-[120px] bg-[#FFFFFF11]"
-                          />
-                        </div>
-                        <div class="flex flex-col items-center">
-                          <p class="text-[14px]">{{ `Option ${index + 1} value` }}</p>
-                          <input
-                            v-model="currentElement.options.layout[optionKey][index].value"
-                            placeholder="value"
-                            theme="dark"
-                            type="text"
-                            class="p-2 w-[120px] bg-[#FFFFFF11]"
-                          />
-                        </div>
-                      </div>
-                      <div class="flex justify-between items-center">
-                        <v-btn
-                          variant="text"
-                          size="x-small"
-                          class="my-2"
-                          @click="
-                            () => {
-                              if (currentElement?.options.layout[optionKey][index].name === '') {
-                                removeSelectorOption(optionKey, index)
-                              }
-                              isOptionsMenuOpen[index] = false
-                            }
-                          "
-                          >close</v-btn
-                        >
-                        <v-btn
-                          variant="text"
-                          size="small"
-                          class="my-3"
-                          :disabled="currentElement.options.layout[optionKey][index].name === ''"
-                          @click="
-                            () => {
-                              addSelectorOption(optionKey)
-                              isOptionsMenuOpen[index] = false
-                              isOptionsMenuOpen[index + 1] = true
-                            }
-                          "
-                          >add another option</v-btn
-                        >
-                      </div>
-                    </v-card>
-                  </v-menu>
-                </div>
-                <v-btn
-                  variant="elevated"
-                  class="bg-[#3B78A8] my-[10px] mr-[13px] w-22"
-                  size="x-small"
-                  @click="addSelectorOption(optionKey)"
-                  >add</v-btn
-                >
-              </div>
-            </template>
           </div>
-        </div>
-      </template>
-    </ExpansiblePanel>
-    <ExpansiblePanel
-      v-if="currentElement"
-      :key="currentElement.hash"
-      no-bottom-divider
-      no-top-divider
-      mark-expanded
-      elevation-effect
-      compact
-      darken-content
-      invert-chevron
-      :is-expanded="true"
-    >
-      <template #title>Cockpit actions</template>
-      <template #content>
-        <div class="flex flex-col items-center mb-4 -ml-[7px] w-[248px]">
-          <template v-if="currentElement.component !== CustomWidgetElementType.Button">
-            <div class="flex w-full justify-between items-center h-[40px] border-b-[1px] border-[#FFFFFF33]">
-              <p class="text-center w-full text-sm">Action URL parameter</p>
-              <v-btn
-                v-if="
-                  openNewDataLakeVariableForm === false && currentElement.options.dataLakeVariable?.name === undefined
-                "
-                variant="elevated"
-                class="bg-[#3B78A8] mr-[13px]"
-                size="x-small"
-                @click="openNewDataLakeVariableForm = true"
-                >create</v-btn
-              >
-            </div>
-          </template>
-          <template v-if="openNewDataLakeVariableForm || currentElement.options.dataLakeVariable?.name">
-            <div
-              class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]"
-              :class="{ 'border-[1px] border-red-700': dataLakeVariableError.includes('This name is already in use') }"
-            >
-              <p class="ml-1 text-[14px]">Name</p>
-              <input v-model="futureDataLakeVariable.name" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
-            </div>
-            <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
-              <p class="ml-1 text-[14px]">Description</p>
-              <input v-model="futureDataLakeVariable.description" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
-            </div>
-            <div class="flex w-full justify-end">
-              <v-btn
-                variant="text"
-                size="x-small"
-                class="mr-[15px] mt-2"
-                :disabled="currentElement.options.dataLakeVariable === undefined"
-                @click="deleteParameterFromDataLake"
-                >delete</v-btn
-              >
-              <v-btn
-                variant="elevated"
-                size="x-small"
-                class="bg-[#3B78A8] mr-1 mt-2"
-                :class="{
-                  'opacity-10': futureDataLakeVariable.name === '',
-                }"
-                :disabled="futureDataLakeVariable.name === ''"
-                @click="saveOrUpdateParameter"
-                >{{ currentElement.options.dataLakeVariable === undefined ? 'save' : 'update' }}</v-btn
-              >
-            </div>
-          </template>
-          <template v-if="currentElement.component === CustomWidgetElementType.Button">
-            <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
-              <p class="ml-1 text-[14px]">Action to trigger</p>
-              <select v-model="currentElement.options.cockpitAction" class="p-2 bg-[#FFFFFF11] w-[123px]">
-                <option
-                  v-for="cockpitAction in availableCockpitActions"
-                  :key="cockpitAction.name"
-                  :value="cockpitAction"
-                  class="bg-[#000000AA]"
-                >
-                  {{ cockpitAction.name }}
-                </option>
-              </select>
-            </div>
-          </template>
-        </div>
-        <div
-          v-if="dataLakeVariableError.length > 0"
-          class="flex justify-center items-center text-[14px] text-center h-[30px] bg-red-800 rounded-lg"
-        >
-          <p v-for="message in dataLakeVariableError" :key="message">• {{ message }}</p>
-        </div>
-      </template>
-    </ExpansiblePanel>
+          <div
+            v-if="dataLakeVariableError.length > 0"
+            class="flex justify-center items-center text-[14px] text-center h-[30px] bg-red-800 rounded-lg"
+          >
+            <p v-for="message in dataLakeVariableError" :key="message">• {{ message }}</p>
+          </div>
+        </template>
+      </ExpansiblePanel>
+    </div>
   </div>
 </template>
 
