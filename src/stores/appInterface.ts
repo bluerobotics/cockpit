@@ -27,6 +27,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     configComponent: -1,
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
+    configPanelVisible: false,
   }),
   actions: {
     updateWidth() {
@@ -89,6 +90,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
       boxShadow: '0px 4px 4px 0px #00000033, 0px 8px 12px 6px #00000016',
       animation: 'highlightBackground 0.5s alternate 20',
     }),
+    isConfigPanelVisible: (state) => state.configPanelVisible,
   },
 })
 

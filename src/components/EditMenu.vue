@@ -617,21 +617,10 @@
       </v-card>
     </GlassModal>
   </teleport>
-  <transition
-    enter-active-class="transition-transform duration-500 ease-in-out"
-    leave-active-class="transition-transform duration-0 ease-in-out"
-    enter-from-class="translate-x-full opacity-0"
-    enter-to-class="translate-x-0 opacity-100"
-    leave-from-class="translate-x-0 opacity-100"
-    leave-to-class="translate-x-full opacity-0"
-  >
-    <div
-      v-if="store.isElementsPropsDrawerVisible && store.editingMode && store.elementToShowOnDrawer"
-      class="flex fixed w-[250px] h-[78vh] right-0 top-0 border-l-[1px] border-[#FFFFFF44] text-white elevation-5 bg-[#051e2d]"
-    >
-      <ElementConfigPanel />
-    </div>
-  </transition>
+
+  <SideConfigPanel position="right">
+    <ElementConfigPanel v-if="store.elementToShowOnDrawer?.hash" />
+  </SideConfigPanel>
 </template>
 
 <script setup lang="ts">
@@ -672,10 +661,11 @@ import {
   WidgetType,
 } from '@/types/widgets'
 
-import ElementConfigPanel from './ElementConfigPanel.vue'
 import ExpansiblePanel from './ExpansiblePanel.vue'
 import GlassModal from './GlassModal.vue'
+import ElementConfigPanel from './InputElementConfig.vue'
 import MiniWidgetInstantiator from './MiniWidgetInstantiator.vue'
+import SideConfigPanel from './SideConfigPanel.vue'
 
 const { showDialog, closeDialog } = useInteractionDialog()
 
@@ -713,6 +703,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:editMode', editMode: boolean): void
 }>()
+
+watch(
+  () => store.elementToShowOnDrawer?.hash,
+  (newValue) => {
+    if (newValue) interfaceStore.configPanelVisible = true
+    if (!newValue) interfaceStore.configPanelVisible = false
+  }
+)
 
 const availableWidgetTypes = computed(() => Object.values(WidgetType))
 const availableMiniWidgetTypes = computed(() =>
@@ -1064,25 +1062,6 @@ const vehicleTypesAssignedToCurrentProfile = computed({
   color: white;
 }
 
-.fade-and-suffle-move,
-.fade-and-suffle-enter-active,
-.fade-and-suffle-leave-active,
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
-}
-.fade-and-suffle-enter-from,
-.fade-enter-from,
-.fade-and-suffle-leave-to,
-.fade-leave-to {
-  opacity: 0;
-  transform: scaleY(0.01) translate(30px, 0);
-}
-
-.sortable-ghost {
-  cursor: grabbing;
-}
-
 .icon-btn {
   display: flex;
   align-items: center;
@@ -1096,13 +1075,6 @@ const vehicleTypesAssignedToCurrentProfile = computed({
   border-radius: 0.125rem;
   cursor: pointer;
   opacity: 0.8;
-}
-.icon-bt {
-  opacity: 1;
-}
-
-.selected-view {
-  @apply bg-slate-400;
 }
 
 .content-expand-collapse {
@@ -1118,10 +1090,6 @@ const vehicleTypesAssignedToCurrentProfile = computed({
 
 .content-expand-collapse.collapsing {
   max-height: 0;
-}
-
-.linear-gradient {
-  background: linear-gradient(90deg, rgba(39, 56, 66, 0) 0%, rgba(39, 56, 66, 1) 57%, rgba(39, 56, 66, 1) 100%);
 }
 
 .wrapclass {
