@@ -1,6 +1,7 @@
 import { differenceInMilliseconds } from 'date-fns'
 import { unit } from 'mathjs'
 
+import { setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
@@ -293,6 +294,10 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     if (system_id !== this.currentSystemId || component_id !== 1) {
       return
     }
+
+    const messageName = mavlink_message.message.type
+    const entries = prepareMessageForDataLake(messageName, mavlink_message.message)
+    entries.forEach(([path, value]) => setDataLakeVariableData(path, value))
 
     // Update our internal messages
     this._messages.set(mavlink_message.message.type, { ...mavlink_message.message, epoch: new Date().getTime() })
