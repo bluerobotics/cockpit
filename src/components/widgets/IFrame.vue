@@ -3,6 +3,7 @@
     <teleport to=".widgets-view">
       <iframe
         v-show="iframe_loaded"
+        ref="iframe"
         :src="widget.options.source"
         :style="iframeStyle"
         frameborder="0"
@@ -54,10 +55,11 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import { computed, defineProps, onBeforeMount, ref, toRefs, watch } from 'vue'
+import { computed, defineProps, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
 import Snackbar from '@/components/Snackbar.vue'
+import { listenDataLakeVariable } from '@/libs/actions/data-lake'
 import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -65,7 +67,7 @@ import type { Widget } from '@/types/widgets'
 const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()
-
+const iframe = ref()
 const props = defineProps<{
   /**
    * Widget reference
@@ -96,15 +98,30 @@ const updateURL = (): void => {
   openSnackbar.value = true
 }
 
-onBeforeMount(() => {
+const apiEventCallback = (event: MessageEvent): void => {
+  if (event.data.type !== 'cockpit:listenToDatalakeVariables') {
+    return
+  }
+  const { variable } = event.data
+  listenDataLakeVariable(variable, (value) => {
+    iframe.value.contentWindow.postMessage({ type: 'cockpit:datalakeVariable', variable, value }, '*')
+  })
+}
+
+onBeforeMount((): void => {
+  window.addEventListener('message', apiEventCallback, true)
+
   if (Object.keys(widget.value.options).length !== 0) {
     return
   }
-
   widget.value.options = {
     source: defaultBlueOsAddress,
   }
   inputURL.value = defaultBlueOsAddress
+})
+
+onBeforeUnmount((): void => {
+  window.removeEventListener('message', apiEventCallback, true)
 })
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
