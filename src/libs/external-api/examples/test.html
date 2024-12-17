@@ -1,0 +1,34 @@
+<!--
+This is a test page to test the datalake consumption of the external-api library, in a widget
+to test, run "python -m http.server" in the cockpit root directory and create an iframe widget with the url
+http://localhost:8000/src/libs/external-api/examples/test.html
+This should be served independently of the cockpit app in order to test the "same-origin" policies
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Datalake consumption test</h1>
+    <div id="pitchDisplay"></div>
+    <div id="rollDisplay"></div>
+
+    <script src="/dist/lib/cockpit-external-api.browser.js"></script>
+    <script>
+        CockpitAPI.listenToDatalakeVariable('ATTITUDE/pitch', function(data) {
+          document.getElementById('pitchDisplay').innerText = 'Pitch (1Hz): ' + data;
+        }, 1);
+        CockpitAPI.listenToDatalakeVariable('ATTITUDE/roll', function(data) {
+
+          document.getElementById('rollDisplay').innerText = 'Roll (10Hz): ' + data;
+        }, 10);
+    </script>
+</body>
+</html>
