@@ -52,10 +52,21 @@ export const getDataLakeVariableData = (id: string): string | number | boolean |
   return dataLakeVariableData[id]
 }
 
-export const setDataLakeVariableData = (id: string, data: string | number | boolean): void => {
+export const setDataLakeVariableData = (
+  id: string,
+  data: object | string | number | boolean | Array<string | number>
+): void => {
+  if (data === null) return
+  if (typeof data !== 'string' && typeof data !== 'number') return
+
+  if (dataLakeVariableInfo[id] === undefined) {
+    createDataLakeVariable(new DataLakeVariable(id, id, typeof data === 'string' ? 'string' : 'number'))
+  }
+
   dataLakeVariableData[id] = data
   notifyDataLakeVariableListeners(id)
 }
+
 
 export const deleteDataLakeVariable = (id: string): void => {
   delete dataLakeVariableInfo[id]
