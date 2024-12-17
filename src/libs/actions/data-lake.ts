@@ -67,7 +67,6 @@ export const setDataLakeVariableData = (
   notifyDataLakeVariableListeners(id)
 }
 
-
 export const deleteDataLakeVariable = (id: string): void => {
   delete dataLakeVariableInfo[id]
   delete dataLakeVariableData[id]
