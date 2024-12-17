@@ -1,0 +1,49 @@
+name: Publish Library to NPM
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      
+      - name: Build library
+        run: bun run build:lib
+        working-directory: .
+      
+      - name: Create package.json for library
+        run: |
+          cd dist/lib
+          {
+            echo '{
+              "name": "@bluerobotics/cockpit-api",
+              "version": "'${{ github.ref_name }}'",
+              "main": "cockpit-external-api.umd.js",
+              "module": "cockpit-external-api.es.js",
+              "types": "types/index.d.ts",
+              "publishConfig": {
+                "access": "public"
+              }
+            }'
+          } > package.json
+      
+      - name: Publish to NPM
+        run: npm publish
+        working-directory: dist/lib
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM }}
