@@ -32,9 +32,20 @@
                   @click="missionStore.changeUsername"
                 />
               </div>
-              <v-btn size="x-small" class="bg-[#FFFFFF22] -mt-3 mb-4 shadow-2" variant="flat" @click="openTutorial">
-                Show tutorial
-              </v-btn>
+              <div class="flex flex-row">
+                <v-btn size="x-small" class="bg-[#FFFFFF22] -mt-3 mb-4 shadow-2" variant="flat" @click="openTutorial">
+                  Show tutorial
+                </v-btn>
+                <v-btn
+                  v-if="isElectron()"
+                  size="x-small"
+                  class="bg-[#FFFFFF22] -mt-3 mb-4 ml-2 shadow-2"
+                  variant="flat"
+                  @click="openCockpitFolder"
+                >
+                  Open Cockpit folder
+                </v-btn>
+              </div>
             </div>
           </template>
         </ExpansiblePanel>
@@ -292,6 +303,7 @@ import { onMounted, ref, watch } from 'vue'
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
+import { useSnackbar } from '@/composables/snackbar'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import { isValidNetworkAddress, reloadCockpit } from '@/libs/utils'
@@ -306,6 +318,7 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
+const { showSnackbar } = useSnackbar()
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
@@ -517,6 +530,19 @@ onMounted(() => {
 })
 
 const showDiscoveryDialog = ref(false)
+
+const openCockpitFolder = (): void => {
+  if (isElectron() && window.electronAPI) {
+    window.electronAPI?.openCockpitFolder()
+  } else {
+    showSnackbar({
+      message: 'This feature is only available in the desktop version of Cockpit.',
+      duration: 3000,
+      variant: 'error',
+      closeButton: true,
+    })
+  }
+}
 </script>
 <style scoped>
 .uri-input {

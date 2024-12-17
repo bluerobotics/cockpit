@@ -484,6 +484,7 @@ import { ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
+import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { DialogActions } from '@/types/general'
@@ -580,7 +581,30 @@ const fileActionButtons = computed(() => [
     disabled: showOnScreenProgress.value === true || isPreparingDownload.value === true,
     action: () => downloadVideoAndTelemetryFiles(),
   },
+  {
+    name: 'Open Folder',
+    icon: 'mdi-folder-outline',
+    size: 28,
+    tooltip: 'Open videos folder',
+    confirmAction: false,
+    show: isElectron(),
+    disabled: false,
+    action: () => openVideoFolder(),
+  },
 ])
+
+const openVideoFolder = (): void => {
+  if (isElectron() && window.electronAPI) {
+    window.electronAPI?.openVideoFolder()
+  } else {
+    showSnackbar({
+      message: 'This feature is only available in the desktop version of Cockpit.',
+      duration: 3000,
+      variant: 'error',
+      closeButton: true,
+    })
+  }
+}
 
 const closeModal = (): void => {
   isVisible.value = false

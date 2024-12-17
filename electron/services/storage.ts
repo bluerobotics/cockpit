@@ -1,10 +1,10 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import { app } from 'electron'
 import * as fs from 'fs/promises'
 import { dirname, join } from 'path'
 
 // Create a new storage interface for filesystem
-const cockpitFolderPath = join(app.getPath('home'), 'Cockpit')
+export const cockpitFolderPath = join(app.getPath('home'), 'Cockpit')
 fs.mkdir(cockpitFolderPath, { recursive: true })
 
 export const filesystemStorage = {
@@ -57,5 +57,14 @@ export const setupFilesystemStorage = (): void => {
   })
   ipcMain.handle('keys', async (_, data) => {
     return await filesystemStorage.keys(data.subFolders)
+  })
+  ipcMain.handle('open-cockpit-folder', async () => {
+    await fs.mkdir(cockpitFolderPath, { recursive: true })
+    await shell.openPath(cockpitFolderPath)
+  })
+  ipcMain.handle('open-video-folder', async () => {
+    const videoFolderPath = join(cockpitFolderPath, 'videos')
+    await fs.mkdir(videoFolderPath, { recursive: true })
+    await shell.openPath(videoFolderPath)
   })
 }

@@ -224,6 +224,14 @@ declare global {
        * Register callback for download progress event
        */
       onDownloadProgress: (callback: (info: any) => void) => void
+      /**
+       * Open cockpit folder
+       */
+      openCockpitFolder: () => void
+      /**
+       * Open video folder
+       */
+      openVideoFolder: () => void
     }
   }
 }

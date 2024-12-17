@@ -31,4 +31,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   keys: async (subFolders?: string[]) => {
     return await ipcRenderer.invoke('keys', { subFolders })
   },
+  openCockpitFolder: () => ipcRenderer.invoke('open-cockpit-folder'),
+  openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
 })
