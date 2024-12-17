@@ -1,0 +1,65 @@
+name: Publish Library to NPM
+
+# Trigger on tag push
+on:
+  push:
+    tags:
+      - 'API-v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Setup Node.js environment
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Extract version from tag
+      - name: Extract API version
+        run: echo "API_VERSION=${GITHUB_REF_NAME#API-v}" >> $GITHUB_ENV
+
+      # Setup Bun
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      # Update version in source code
+      - name: Update API version constant
+        run: |
+          sed -i "s/COCKPIT_WIDGET_API_VERSION = '.*'/COCKPIT_WIDGET_API_VERSION = '${{ env.API_VERSION }}'/" src/libs/external-api/api.ts
+
+      # Install dependencies
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      
+      # Build library
+      - name: Build library
+        run: bun run build:lib
+        working-directory: .
+      
+      # Create package.json for distribution
+      - name: Create package.json for library
+        run: |
+          cd dist/lib
+          {
+            echo '{
+              "name": "@bluerobotics/cockpit-api",
+              "version": "'${{ env.API_VERSION }}'",
+              "main": "cockpit-external-api.umd.js",
+              "module": "cockpit-external-api.es.js",
+              "publishConfig": {
+                "access": "public"
+              }
+            }'
+          } > package.json
+      
+      # Publish to NPM
+      - name: Publish to NPM
+        run: npm publish
+        working-directory: dist/lib
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
