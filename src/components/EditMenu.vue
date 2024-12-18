@@ -487,17 +487,26 @@
       <div
         v-for="widget in allAvailableWidgets"
         :key="widget.name"
-        class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4"
+        class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 relative"
+        :class="{ 'border-2 border-[#135da3]': widget.isExternal }"
         draggable="true"
         @dragstart="onRegularWidgetDragStart"
         @dragend="onRegularWidgetDragEnd(widget)"
       >
+        <div
+          v-if="widget.isExternal"
+          class="absolute top-0 left-0 bg-[#135da3] text-white text-xs px-1 py-0.5 rounded-tl-md rounded-br-md"
+        >
+          External
+        </div>
+
         <v-tooltip text="Drag to add" location="top" theme="light">
           <template #activator="{ props: tooltipProps }">
             <div />
             <img v-bind="tooltipProps" :src="widget.icon" alt="widget-icon" class="p-4 max-h-[75%] max-w-[95%]" />
             <div
-              class="flex items-center justify-center w-full p-1 transition-all bg-[#3B78A8] rounded-b-md text-white"
+              class="flex items-center justify-center w-full p-1 transition-all rounded-b-md text-white"
+              :class="{ 'bg-[#135da3]': widget.isExternal, 'bg-[#4fa483]': !widget.isExternal }"
             >
               <span class="whitespace-normal text-center">{{
                 widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
@@ -758,11 +767,15 @@ const allAvailableWidgets = computed(() => {
       component: WidgetType.IFrame,
       icon: widget.iframe_icon,
       name: widget.name,
+      isExternal: true,
       options: {
         source: widget.iframe_url,
       },
     })),
-    ...availableInternalWidgets.value,
+    ...availableInternalWidgets.value.map((widget) => ({
+      ...widget,
+      isExternal: false,
+    })),
   ]
 })
 
