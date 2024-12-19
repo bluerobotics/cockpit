@@ -55,6 +55,7 @@ export enum WidgetType {
   DepthHUD = 'DepthHUD',
   IFrame = 'IFrame',
   ImageView = 'ImageView',
+  Webcam = 'Webcam',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
   Plotter = 'Plotter',
