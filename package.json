@@ -19,7 +19,8 @@
     "serve": "vite preview",
     "test:ci": "vitest --coverage --run",
     "test:unit": "vitest",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false"
+    "typecheck": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
+    "build:lib": "BUILD_MODE=library vite build"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
