@@ -65,6 +65,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+        - os: macos-13-xlarge
+          suffix: mac
+          arch: arm64
+          extension: dmg
+          latestMetadataName: latest-mac-arm64.yml
+
         - os: macos-13
           suffix: mac
           arch: x64
@@ -143,7 +149,7 @@ jobs:
         with:
           name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.zip
           path: dist/Cockpit*.zip
-          if-no-files-found: error
+          if-no-files-found: ignore
 
       - name: Upload latest metadata artifact
         uses: actions/upload-artifact@v4
