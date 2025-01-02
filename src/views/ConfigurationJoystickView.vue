@@ -13,14 +13,7 @@
         >
           <p class="text-base text-center font-bold mt-6 mb-4">Connect a joystick and press any key.</p>
         </div>
-        <ExpansiblePanel
-          v-else
-          class="mt-3"
-          no-top-divider
-          no-bottom-divider
-          :is-expanded="!interfaceStore.isOnPhoneScreen"
-          compact
-        >
+        <ExpansiblePanel v-else no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
           <template #title>General settings</template>
           <template #info>
             <div class="flex flex-col items-start px-5 font-medium">
