@@ -121,7 +121,17 @@
   },
   "build": {
     "files": [
-      "dist"
+      "dist/**/*",
+      "!dist/**/*.map",
+      "!dist/**/*.d.ts",
+      "!dist/**/*.js.map"
+    ],
+    "directories": {
+      "buildResources": "public"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/**/*.node"
     ],
     "appId": "org.bluerobotics.cockpit",
     "productName": "Cockpit",
@@ -131,8 +141,21 @@
     },
     "artifactName": "${productName}-${os}-${arch}-${version}.${ext}",
     "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "category": "public.app-category.utilities",
-      "icon": "public/pwa-512x512.png"
+      "icon": "public/pwa-512x512.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "win": {
       "icon": "public/pwa-512x512.png"
