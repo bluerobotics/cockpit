@@ -310,6 +310,34 @@
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
+              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+                <template #title>Settings</template>
+                <template #content>
+                  <p class="text-[12px] mt-2 ml-1">Telemetry frequency - 1 to 100 Hz (default 1 Hz)</p>
+                  <div class="flex mb-1 justify">
+                    <v-slider
+                      v-model="newFrequency"
+                      color="white"
+                      class="mt-1 scale-90 w-[100px]"
+                      min="1"
+                      step="1"
+                      max="100"
+                      hide-details
+                    />
+                    <v-text-field
+                      v-model="newFrequencyString"
+                      min="1"
+                      step="1"
+                      max="100"
+                      class="bg-transparent w-[40px] -mr-2"
+                      type="number"
+                      density="compact"
+                      variant="plain"
+                      hide-details
+                    />
+                  </div>
+                </template>
+              </ExpansiblePanel>
               <div class="flex justify-end w-full mt-2">
                 <v-btn size="x-small" variant="text" class="mr-2" @click="resetAllChips">
                   Reset Positions
@@ -369,30 +397,12 @@
             </div>
           </div>
         </div>
-        <div v-show="selectedTab === 'logs'" class="flex flex-col justify-center align-center">
-          <h1 class="text-lg font-bold text-white">Frequency of the telemetry log</h1>
-          <span class="text-sm text-slate-400 w-[50%] text-center">
-            Common values (1 - 100Hz) can be set with the slider.
-          </span>
-          <span class="text-sm text-slate-400">
-            The full allowed range (0.1 - 1000Hz) can be specified using the text input.
-          </span>
-          <div class="flex flex-col justify-center m-3 align-center">
-            <fwb-range v-model="newFrequency" class="m-2" :min="1" :max="100" :steps="1" label="" />
-            <fwb-input v-model="newFrequencyString" class="w-24 m-1 text-center align-middle">
-              <template #suffix>
-                <span class="flex justify-center h-7 align-center">Hz</span>
-              </template>
-            </fwb-input>
-          </div>
-        </div>
       </template>
     </BaseConfigurationView>
   </div>
 </template>
 
 <script setup lang="ts">
-import { FwbInput, FwbRange } from 'flowbite-vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
@@ -435,7 +445,6 @@ const originalLoggedVariables = ref<string[]>([])
 const otherLoggingElements = ref(otherAvailableLoggingElements)
 const originalOtherLoggingElements = ref(otherAvailableLoggingElements)
 const newFrequency = ref(1000 / datalogger.logInterval.value)
-const selectedTab = ref('telemetry')
 const customMessageElements = ref<string[]>([])
 const newMessage = ref('')
 const dragPosition = ref(0)
@@ -593,5 +602,8 @@ const newFrequencyString = computed({
 }
 .mock-screen {
   position: absolute;
+}
+. input[type='number']::-webkit-inner-spin-button {
+  margin-left: 6px;
 }
 </style>
