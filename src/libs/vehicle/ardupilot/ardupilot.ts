@@ -1,6 +1,7 @@
 import { differenceInMilliseconds } from 'date-fns'
 import { unit } from 'mathjs'
 
+import { setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
@@ -45,6 +46,7 @@ import type { MetadataFile } from '@/types/ardupilot-metadata'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import * as Vehicle from '../vehicle'
+import { flattenData } from './data-flattener'
 import { defaultMessageFrequency } from './defaults'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -293,6 +295,21 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     if (system_id !== this.currentSystemId || component_id !== 1) {
       return
     }
+
+    const messageType = mavlink_message.message.type
+
+    // Special handling for NAMED_VALUE_FLOAT messages
+    if (messageType === 'NAMED_VALUE_FLOAT') {
+      const name = (mavlink_message.message.name as string[]).join('').replace(/\0/g, '')
+      setDataLakeVariableData(`${messageType}/${name}`, mavlink_message.message.value)
+      return
+    }
+
+    // For all other messages, use the flattener
+    const flattened = flattenData(mavlink_message.message)
+    flattened.forEach(({ path, value }) => {
+      setDataLakeVariableData(path, value)
+    })
 
     // Update our internal messages
     this._messages.set(mavlink_message.message.type, { ...mavlink_message.message, epoch: new Date().getTime() })
