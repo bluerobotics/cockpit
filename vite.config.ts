@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import { defineConfig } from 'vite'
@@ -12,6 +13,9 @@ const isElectron = process.env.ELECTRON === 'true'
 const isBuilding = process.argv.includes('build')
 
 export default defineConfig({
+  build: {
+    sourcemap: true,
+  },
   plugins: [
     (isElectron || isBuilding) &&
       electron([
@@ -40,6 +44,11 @@ export default defineConfig({
           },
         },
       ]),
+    sentryVitePlugin({
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: 'blue-robotics-c7',
+      project: 'cockpit-frontend-production',
+    }),
     vue(),
     vuetify({
       autoImport: true,
