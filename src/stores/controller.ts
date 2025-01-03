@@ -12,7 +12,7 @@ import {
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { type JoystickEvent, EventType, joystickManager, JoystickModel } from '@/libs/joystick/manager'
+import { joystickManager, JoystickModel, JoysticksMap, JoystickStateEvent } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
@@ -126,10 +126,10 @@ export const useControllerStore = defineStore('controller', () => {
     updateCallbacks.value.push(callback)
   }
 
-  joystickManager.onJoystickUpdate((event) => processJoystickEvent(event))
+  joystickManager.onJoystickConnectionUpdate((event) => processJoystickConnectionEvent(event))
   joystickManager.onJoystickStateUpdate((event) => processJoystickStateEvent(event))
 
-  const processJoystickEvent = (event: Map<number, Gamepad>): void => {
+  const processJoystickConnectionEvent = (event: JoysticksMap): void => {
     const newMap = new Map(Array.from(event).map(([index, gamepad]) => [index, new Joystick(gamepad)]))
 
     // Add new joysticks
@@ -173,9 +173,9 @@ export const useControllerStore = defineStore('controller', () => {
 
   const { showDialog } = useInteractionDialog()
 
-  const processJoystickStateEvent = (event: JoystickEvent): void => {
+  const processJoystickStateEvent = (event: JoystickStateEvent): void => {
     const joystick = joysticks.value.get(event.detail.index)
-    if (joystick === undefined || (event.type !== EventType.Axis && event.type !== EventType.Button)) return
+    if (joystick === undefined) return
     joystick.gamepad = event.detail.gamepad
 
     const joystickModel = joystick.model || JoystickModel.Unknown
