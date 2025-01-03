@@ -10,6 +10,7 @@ import * as Sentry from '@sentry/vue'
 import FloatingVue from 'floating-vue'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
+import VueDraggableResizable from 'vue-draggable-resizable'
 import VueVirtualScroller from 'vue-virtual-scroller'
 
 import { app_version } from '@/libs/cosmos'
@@ -47,6 +48,7 @@ if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry') && 
 }
 
 app.component('FontAwesomeIcon', FontAwesomeIcon)
+app.component('VueDraggableResizable', VueDraggableResizable)
 app.use(router).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
 app.mount('#app')
 

@@ -25,3 +25,9 @@ declare module 'vue-virtual-scroller' {
 
   export default plugin
 }
+
+declare module 'vue-draggable-resizable' {
+  import { DefineComponent } from 'vue'
+  const component: DefineComponent<Record<string, never>>
+  export default component
+}
