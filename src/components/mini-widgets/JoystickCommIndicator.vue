@@ -43,7 +43,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
-import { joystickManager } from '@/libs/joystick/manager'
+import { joystickManager, JoysticksMap } from '@/libs/joystick/manager'
 import { useControllerStore } from '@/stores/controller'
 
 const controllerStore = useControllerStore()
@@ -51,12 +51,12 @@ const joystickConnected = ref(false)
 const showDialog = ref(false)
 
 onMounted(() => {
-  joystickManager.onJoystickUpdate((event) => {
-    processJoystickEvent(event)
+  joystickManager.onJoystickConnectionUpdate((event) => {
+    processJoystickConnectionEvent(event)
   })
 })
 
-const processJoystickEvent = (event: Map<number, Gamepad>): void => {
+const processJoystickConnectionEvent = (event: JoysticksMap): void => {
   joystickConnected.value = event.size !== 0
 }
 
