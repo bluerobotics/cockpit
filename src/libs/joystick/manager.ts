@@ -157,7 +157,7 @@ export type JoystickButtonEvent = {
   }
 }
 
-export type JoysticConnectEvent = {
+export type JoystickConnectEvent = {
   /**
    * Event type
    */
@@ -177,7 +177,7 @@ export type JoysticConnectEvent = {
   }
 }
 
-export type JoysticDisconnectEvent = {
+export type JoystickDisconnectEvent = {
   /**
    * Event type
    */
@@ -206,11 +206,11 @@ export type GamepadState = {
 
 export type JoysticksMap = Map<number, Gamepad>
 
-export type JoystickEvent = JoysticConnectEvent | JoysticDisconnectEvent
+export type JoystickConnectionEvent = JoystickConnectEvent | JoystickDisconnectEvent
 export type JoystickStateEvent = JoystickAxisEvent | JoystickButtonEvent
 
 type CallbackJoystickStateEventType = (event: JoystickStateEvent) => void
-type CallbackJoystickEventType = (event: JoysticksMap) => void
+type CallbackJoystickConnectionEventType = (event: JoysticksMap) => void
 
 /**
  * Joystick Manager
@@ -219,7 +219,7 @@ type CallbackJoystickEventType = (event: JoysticksMap) => void
 class JoystickManager {
   private static instance = new JoystickManager()
 
-  private callbacksJoystick: Array<CallbackJoystickEventType> = []
+  private callbacksJoystickConnection: Array<CallbackJoystickConnectionEventType> = []
   private callbacksJoystickState: Array<CallbackJoystickStateEventType> = []
   private joysticks: JoysticksMap = new Map()
   private enabledJoysticks: Array<string> = []
@@ -245,8 +245,8 @@ class JoystickManager {
    * Callback to be used and receive joystick connection updates
    * @param {JoysticksMap} callback
    */
-  onJoystickUpdate(callback: CallbackJoystickEventType): void {
-    this.callbacksJoystick.push(callback)
+  onJoystickConnectionUpdate(callback: CallbackJoystickConnectionEventType): void {
+    this.callbacksJoystickConnection.push(callback)
   }
 
   /**
@@ -320,9 +320,9 @@ class JoystickManager {
 
   /**
    * Process joystick event internally
-   * @param {JoystickEvent} event
+   * @param {JoystickConnectionEvent} event
    */
-  private processJoystickUpdate(event: JoystickEvent): void {
+  private processJoystickConnectionUpdate(event: JoystickConnectionEvent): void {
     const index = event.detail.index
 
     if (event.type == EventType.Connected) {
@@ -338,7 +338,7 @@ class JoystickManager {
       this.joysticks.delete(index)
     }
 
-    for (const callback of this.callbacksJoystick) {
+    for (const callback of this.callbacksJoystickConnection) {
       callback(this.joysticks)
     }
   }
@@ -375,14 +375,14 @@ class JoystickManager {
    */
   private handleGamepadConnected(event: GamepadEvent): void {
     const gamepad = event.gamepad
-    const joystickEvent: JoysticConnectEvent = {
+    const joystickEvent: JoystickConnectEvent = {
       type: EventType.Connected,
       detail: {
         index: gamepad.index,
         gamepad: gamepad,
       },
     }
-    this.processJoystickUpdate(joystickEvent)
+    this.processJoystickConnectionUpdate(joystickEvent)
   }
 
   /**
@@ -390,13 +390,13 @@ class JoystickManager {
    * @param {GamepadEvent} event - Gamepad disconnection event
    */
   private handleGamepadDisconnected(event: GamepadEvent): void {
-    const joystickEvent: JoysticDisconnectEvent = {
+    const joystickEvent: JoystickDisconnectEvent = {
       type: EventType.Disconnected,
       detail: {
         index: event.gamepad.index,
       },
     }
-    this.processJoystickUpdate(joystickEvent)
+    this.processJoystickConnectionUpdate(joystickEvent)
   }
 
   /**
