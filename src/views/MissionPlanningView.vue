@@ -237,6 +237,13 @@
       Uploading mission to vehicle...
     </p>
   </div>
+  <SideConfigPanel position="right" hide-button style="z-index: 600; pointer-events: auto">
+    <WaypointConfigPanel
+      v-if="selectedWaypoint?.id"
+      :selected-waypoint="selectedWaypoint"
+      @remove-waypoint="removeWaypoint"
+    />
+  </SideConfigPanel>
 </template>
 
 <script setup lang="ts">
@@ -249,6 +256,8 @@ import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
+import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
+import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
@@ -314,7 +323,29 @@ const defaultCruiseSpeed = ref(1)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = ref<{ [id: string]: Marker }>({})
 const isCreatingSimpleMission = ref(false)
+const selectedWaypoint = ref<Waypoint | undefined>(undefined)
 
+    const mapContainer = planningMap.value.getContainer()
+    planningMap.value.on('click', () => {
+      selectedWaypoint.value = undefined
+    planningMap.value.on('contextmenu', (e: LeafletMouseEvent) => {
+      selectedWaypoint.value = undefined
+      if (selectedSurveyId.value === '') {
+        showContextMenu(e)
+      }
+    })
+
+    mapContainer.style.cursor = 'crosshair'
+
+    planningMap.value.on('mousedown', () => {
+      mapContainer.style.cursor = 'grabbing'
+    })
+    planningMap.value.on('mouseup', () => {
+      mapContainer.style.cursor = 'crosshair'
+    })
+    planningMap.value.on('mouseout', () => {
+      mapContainer.style.cursor = 'crosshair'
+    })
 const toggleSimpleMission = (): void => {
   if (isCreatingSimpleMission.value) {
     isCreatingSimpleMission.value = false
@@ -343,6 +374,35 @@ const goHome = async (): Promise<void> => {
 
   targetFollower.goToTarget(WhoToFollow.HOME)
 }
+
+// Watches for changes in the selected waypoint and updates marker accordingly
+watch(selectedWaypoint, (newWaypoint, oldWaypoint) => {
+  if (oldWaypoint) {
+    const oldMarker = waypointMarkers.value[oldWaypoint.id]
+    if (oldMarker) {
+      oldMarker.setIcon(
+        L.divIcon({
+          className: 'marker-icon',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        })
+      )
+    }
+  }
+  if (newWaypoint) {
+    const newMarker = waypointMarkers.value[newWaypoint.id]
+    const markerClass = newWaypoint.id === selectedWaypoint.value?.id ? 'marker-icon selected-marker' : 'marker-icon'
+    if (newMarker) {
+      newMarker.setIcon(
+        L.divIcon({
+          className: markerClass,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        })
+      )
+    }
+  }
+})
 
 watch(mapCenter, (newCenter, oldCenter) => {
   if (newCenter.toString() === oldCenter.toString()) return
@@ -406,6 +466,8 @@ const removeWaypoint = (waypoint: Waypoint): void => {
   // @ts-ignore: Marker type is always a layer and thus can be deleted
   planningMap.value?.removeLayer(waypointMarkers.value[waypoint.id])
   delete waypointMarkers.value[waypoint.id]
+  reNumberWaypoints()
+  interfaceStore.configPanelVisible = false
 }
 
 const saveMissionToFile = async (): Promise<void> => {
@@ -922,8 +984,13 @@ watch([home, planningMap], async () => {
   justify-content: center;
 }
 .marker-icon {
-  background-color: rgb(0, 110, 255);
-  border-radius: 12px;
+  background-color: #1e498f;
+  border: 1px solid #ffffff55;
+  border-radius: 50%;
+}
+.selected-marker {
+  border: 2px solid #ffff0099;
+  border-radius: 50%;
 }
 .waypoint-tooltip {
   background-color: transparent;

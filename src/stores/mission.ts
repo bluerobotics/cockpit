@@ -89,6 +89,15 @@ export const useMissionStore = defineStore('mission', () => {
     { immediate: true }
   )
 
+  const clearWaypoints = (): void => {
+    currentPlanningWaypoints.splice(0)
+  }
+
+  const getWaypointNumber = (id: string): number | string => {
+    const waypointIndex = currentPlanningWaypoints.findIndex((wp) => wp.id === id)
+    return waypointIndex !== -1 ? waypointIndex + 1 : ''
+  }
+
   return {
     username,
     lastConnectedUser,
@@ -101,5 +110,7 @@ export const useMissionStore = defineStore('mission', () => {
     slideEventsCategoriesRequired,
     moveWaypoint,
     clearMission,
+    clearWaypoints,
+    getWaypointNumber,
   }
 })
