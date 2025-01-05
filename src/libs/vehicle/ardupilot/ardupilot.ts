@@ -89,7 +89,8 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
   _messages: MAVLinkMessageDictionary = new Map()
 
-  onMAVLinkMessage = new SignalTyped()
+  onIncomingMAVLinkMessage = new SignalTyped()
+  onOutgoingMAVLinkMessage = new SignalTyped()
   _flying = false
 
   protected currentSystemId = 1
@@ -278,10 +279,30 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
+   * Log outgoing messages
+   * @param {Uint8Array} message
+   */
+  onOutgoingMessage(message: Uint8Array): void {
+    const textDecoder = new TextDecoder()
+    let mavlink_message: Package
+    const text_message = textDecoder.decode(message)
+    try {
+      mavlink_message = JSON.parse(text_message) as Package
+      this.onOutgoingMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
+    } catch (error) {
+      const pattern = /Ok\((\d+)\)/
+      const match = pattern.exec(text_message)
+      if (match) return
+      console.error(`Failed to parse mavlink message: ${text_message}`)
+      return
+    }
+  }
+
+  /**
    *  Decode incoming message
    * @param {Uint8Array} message
    */
-  onMessage(message: Uint8Array): void {
+  onIncomingMessage(message: Uint8Array): void {
     const textDecoder = new TextDecoder()
     let mavlink_message: Package
     const text_message = textDecoder.decode(message)
@@ -381,7 +402,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
 
     // TODO: Maybe create a signal class to deal with MAVLink only
     // Where add will use the template argument type to define the lambda argument type
-    this.onMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
+    this.onIncomingMAVLinkMessage.emit_value(mavlink_message.message.type, mavlink_message)
 
     if (Object.keys(this._usedGenericVariablesdMessagePaths).includes(mavlink_message.message.type)) {
       this._usedGenericVariablesdMessagePaths[mavlink_message.message.type].forEach((path) => {

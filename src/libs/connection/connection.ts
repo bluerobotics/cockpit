@@ -64,6 +64,7 @@ export abstract class Abstract {
 
   // Signals
   public onRead = new Signal<Uint8Array>()
+  public onWrite = new Signal<Uint8Array>()
 
   /**
    * Return the connection uri
