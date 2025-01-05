@@ -44,7 +44,8 @@ export class VehicleFactory {
       return undefined
     }
 
-    ConnectionManager.onRead.add((message) => vehicle?.onMessage(message))
+    ConnectionManager.onRead.add((message) => vehicle?.onIncomingMessage(message))
+    ConnectionManager.onWrite.add((message) => vehicle?.onOutgoingMessage(message))
 
     VehicleFactory._vehicles.push(new WeakRef(vehicle))
     VehicleFactory.onVehicles.register_caller(this.vehicles)

@@ -169,7 +169,8 @@ export abstract class AbstractVehicle<Modes> {
     }
   }
 
-  abstract onMessage(message: Uint8Array): void
+  abstract onIncomingMessage(message: Uint8Array): void
+  abstract onOutgoingMessage(message: Uint8Array): void
 
   abstract arm(): Promise<void>
   abstract altitude(): Altitude
