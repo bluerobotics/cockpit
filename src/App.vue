@@ -313,10 +313,15 @@
     </v-main>
   </v-app>
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
-  <Tutorial :show-tutorial="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal :open-modal="interfaceStore.isVideoLibraryVisible" />
-  <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
-  <UpdateNotification v-if="isElectron()" />
+  <Teleport to="body">
+    <Tutorial />
+  </Teleport>
+
+  <!-- Startup dialogs queue -->
+  <div v-if="activeDialog">
+    <component :is="activeDialog.component" v-bind="activeDialog.props" :id="activeDialog.id" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -365,6 +370,7 @@ const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 
+const userHasSeenTutorial = useStorage('cockpit-user-has-seen-tutorial', false)
 const showAboutDialog = ref(false)
 const showConfigurationMenu = ref(false)
 const currentConfigMenuComponent = ref<ConfigComponent>(null)
@@ -374,6 +380,8 @@ const isMenuOpen = ref(false)
 const isSlidingOut = ref(false)
 const simplifiedMainMenu = ref(false)
 const windowHeight = ref(window.innerHeight)
+
+const activeDialog = computed(() => interfaceStore.activeDialog)
 
 const configMenu = [
   {
@@ -627,14 +635,10 @@ const menuLabelSize = computed(() => {
 
 const mainMenu = ref()
 onClickOutside(mainMenu, () => {
-  if (interfaceStore.mainMenuCurrentStep === 1 && !interfaceStore.isTutorialVisible) {
+  if (interfaceStore.mainMenuCurrentStep === 1) {
     closeMainMenu()
   }
-  if (
-    interfaceStore.mainMenuCurrentStep === 2 &&
-    currentConfigMenuComponent.value === null &&
-    !interfaceStore.isTutorialVisible
-  ) {
+  if (interfaceStore.mainMenuCurrentStep === 2 && currentConfigMenuComponent.value === null) {
     closeMainMenu()
   }
 })
@@ -726,17 +730,41 @@ onBeforeUnmount(() => {
 const currentTopBarHeightPixels = computed(() => `${widgetStore.currentTopBarHeightPixels}px`)
 const currentBottomBarHeightPixels = computed(() => `${widgetStore.currentBottomBarHeightPixels}px`)
 
-const showDiscoveryDialog = ref(false)
 const preventAutoSearch = useStorage('cockpit-prevent-auto-vehicle-discovery-dialog', false)
 
-onMounted(() => {
-  if (!isElectron() || preventAutoSearch.value) return
+onMounted(async () => {
+  if (!userHasSeenTutorial.value) {
+    interfaceStore.enqueueDialog({
+      id: 'Tutorial',
+      component: Tutorial,
+      props: { modelValue: true },
+    })
+  }
+  await runElectronStartup()
+})
 
-  // Wait 5 seconds to check if we're connected to a vehicle
-  setTimeout(() => {
-    if (vehicleStore.isVehicleOnline) return
-    showDiscoveryDialog.value = true
-  }, 5000)
+const runElectronStartup = async (): Promise<void> => {
+  if (isElectron()) {
+    interfaceStore.enqueueDialog({
+      id: 'UpdateNotification',
+      component: UpdateNotification,
+      props: {},
+    })
+    // Wait 5 seconds to check if we're connected to a vehicle
+    setTimeout(() => {
+      if (vehicleStore.isVehicleOnline) return
+      interfaceStore.enqueueDialog({
+        id: 'VehicleDiscoveryDialog',
+        component: VehicleDiscoveryDialog,
+        props: {},
+      })
+    }, 5000)
+  }
+  if (!isElectron() || preventAutoSearch.value) return
+}
+
+onBeforeUnmount(() => {
+  interfaceStore.dialogQueue = []
 })
 </script>
 

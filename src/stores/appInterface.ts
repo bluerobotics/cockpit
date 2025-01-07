@@ -4,6 +4,7 @@ import { watch } from 'vue'
 
 import { defaultDisplayUnitPreferences } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { DialogOnQueue } from '@/types/ui'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -28,6 +29,8 @@ export const useAppInterfaceStore = defineStore('responsive', {
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
     configPanelVisible: false,
+    dialogQueue: [] as DialogOnQueue[],
+    activeDialog: undefined as DialogOnQueue | undefined,
   }),
   actions: {
     updateWidth() {
@@ -40,6 +43,41 @@ export const useAppInterfaceStore = defineStore('responsive', {
         .toString(16)
         .padStart(2, '0')
       this.UIGlassEffect.bgColor = `#${hex}${alphaHex}`
+    },
+    enqueueDialog(dialog: DialogOnQueue) {
+      this.dialogQueue.push(dialog)
+
+      // Automatically open the first dialog in the queue
+      if (this.dialogQueue.length === 1 && !this.activeDialog) {
+        this.activeDialog = dialog
+        this.monitorDialogClosure()
+      }
+    },
+    openNextDialogOnQueue() {
+      if (this.dialogQueue.length > 0) {
+        this.activeDialog = this.dialogQueue[1]
+        this.dialogQueue.shift()
+        this.monitorDialogClosure()
+      } else {
+        this.activeDialog = undefined
+      }
+    },
+    monitorDialogClosure() {
+      if (!this.activeDialog?.id) return
+
+      const dialogId = this.activeDialog.id
+      const observer = new MutationObserver(() => {
+        const element = document.getElementById(dialogId)
+
+        // If it detects the element being removed from the DOM, switch to the next dialog
+        if (!element) {
+          observer.disconnect()
+          this.openNextDialogOnQueue()
+        }
+      })
+
+      // Keep observing the DOM
+      observer.observe(document.body, { childList: true, subtree: true })
     },
   },
   getters: {
