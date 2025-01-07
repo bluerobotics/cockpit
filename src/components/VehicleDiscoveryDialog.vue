@@ -69,13 +69,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
+  (e: 'close'): void
 }>()
 
 const { showSnackbar } = useSnackbar()
 const mainVehicleStore = useMainVehicleStore()
 const discoveryService = vehicleDiscover
 
-const isOpen = ref(props.modelValue)
+const isOpen = ref(false)
 const searching = ref(false)
 const searched = ref(false)
 const vehicles = ref<NetworkVehicle[]>([])
@@ -85,7 +86,7 @@ const originalActions = [
   {
     text: 'Close',
     action: () => {
-      isOpen.value = false
+      handleCloseDialog()
     },
   },
 ]
@@ -105,7 +106,6 @@ watch(
     isOpen.value = value
   }
 )
-
 watch(isOpen, (value) => {
   emit('update:modelValue', value)
 })
@@ -114,6 +114,8 @@ const searchVehicles = async (): Promise<void> => {
   searching.value = true
   disableButtons()
   vehicles.value = await discoveryService.findVehicles()
+
+  handleCloseDialog()
   searching.value = false
   enableButtons()
   searched.value = true
@@ -121,7 +123,8 @@ const searchVehicles = async (): Promise<void> => {
 
 const selectVehicle = async (address: string): Promise<void> => {
   mainVehicleStore.globalAddress = address
-  isOpen.value = false
+  handleCloseDialog()
+
   await reloadCockpit()
   showSnackbar({ message: 'Vehicle address updated', variant: 'success', duration: 5000 })
 }
@@ -130,8 +133,13 @@ const preventFutureAutoSearchs = (): void => {
   preventAutoSearch.value = true
   disableButtons()
   setTimeout(() => {
-    isOpen.value = false
+    handleCloseDialog()
   }, 5000)
+}
+
+const handleCloseDialog = (): void => {
+  isOpen.value = false
+  emit('close')
 }
 
 const disableButtons = (): void => {

@@ -88,23 +88,15 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 import GlassModal from './GlassModal.vue'
 
 const { showSnackbar } = useSnackbar()
+
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
-const props = defineProps<{
-  /**
-   *
-   */
-  showTutorial?: boolean
-}>()
-
-const emits = defineEmits(['update:showTutorial'])
-
-const showTutorial = ref(props.showTutorial || false)
+const userHasSeenTutorial = useBlueOsStorage('cockpit-has-seen-tutorial', false)
+const showTutorial = ref(false)
 const currentTutorialStep = ref(1)
 const isVehicleConnectedVisible = ref(false)
 const tallContent = ref(false)
-const userHasSeenTutorial = useBlueOsStorage('cockpit-has-seen-tutorial', false)
 
 const steps = [
   {
@@ -345,7 +337,6 @@ const handleStepChangeDown = (newStep: number): void => {
 const dontShowTutorialAgain = (): void => {
   userHasSeenTutorial.value = true
   showTutorial.value = false
-  emits('update:showTutorial', false)
   showSnackbar({
     message: 'This guide can be reopened via the Settings > General menu',
     variant: 'info',
@@ -356,8 +347,6 @@ const dontShowTutorialAgain = (): void => {
 
 const alwaysShowTutorialOnStartup = (): void => {
   userHasSeenTutorial.value = false
-  showTutorial.value = true
-  emits('update:showTutorial', true)
 }
 
 const nextTutorialStep = (): void => {
@@ -379,7 +368,7 @@ const closeTutorial = (): void => {
   showTutorial.value = false
   interfaceStore.componentToHighlight = 'none'
   currentTutorialStep.value = 1
-  emits('update:showTutorial', false)
+  interfaceStore.isTutorialVisible = false
 }
 
 const setVehicleConnectedVisible = (): void => {
@@ -403,6 +392,7 @@ const handleKeydown = (event: KeyboardEvent): void => {
 watch(
   () => interfaceStore.isTutorialVisible,
   (val) => {
+    console.log('🚀 ~ val:', val)
     showTutorial.value = val
   }
 )
@@ -435,6 +425,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
+  interfaceStore.isTutorialVisible = false
 })
 </script>
 <style>
