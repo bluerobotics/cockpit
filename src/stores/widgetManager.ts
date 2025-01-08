@@ -572,7 +572,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
 
     if (widget.component === WidgetType.CustomWidgetBase) {
-      widget.options = {
+      newWidget.options = {
         elementContainers: defaultCustomWidgetContainers,
         columns: 1,
         leftColumnWidth: 50,
