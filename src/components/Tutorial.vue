@@ -110,85 +110,89 @@ const steps = [
   {
     id: 1,
     title: 'Welcome to Cockpit!',
+    content: 'Thank you for trying our control station software - we hope you make it your own!',
     opposite:
-      "This guide will assist you in configuring your vehicle's main connections and customizing the user interface to suit your needs.",
+      'This guide will assist you in connecting to your vehicle, and walk you through the available menu pages.',
   },
   {
     id: 2,
     title: 'Main Menu',
-    content: `To open the main menu you can click on the highlighted tab to access
-      Cockpit's features and configurations.`,
-    opposite: `Give it a try! It's in the center-left part of the screen.`,
+    content: `Cockpit's configuration options and tools are accessed through its sidebar.`,
+    opposite: `Open it by clicking the highlighted tab on the left side of the screen.`,
   },
   {
     id: 3,
-    title: 'Vehicle Setup',
-    opposite: `In the 'Settings' menu item you will find what you need to setup your vehicle, its components and functions.`,
+    title: 'Connections and Behaviour',
+    opposite: `The 'Settings' menu allows configuring Cockpit's connections and behavior.`,
   },
   {
     id: 4,
     title: 'General Configuration',
-    content: `Your vehicle address settings are located within the 'General' submenu. Let's open it and take a look inside.`,
-    opposite: `In this panel, you will also find a user selection screen. Different users can have their own settings and can set up
-      personalized vehicle operation methods. This settings will be saved on the vehicle's operating system and will be accessible on
-      any Cockpit instance connected to it.`,
+    content: `The 'General' page allows switching the active user, and the vehicle connection settings.`,
+    opposite: `Each user can have their own settings, interface profiles, and joystick mappings, which can be
+      stored on and synchronized through the connected vehicle.`,
   },
   {
     id: 5,
     title: 'Vehicle Address',
-    content: `This setting is on the 'Vehicle network connection' panel. Look for the highlighted item on the left.`,
-    opposite: `If your vehicle isn't already connected, check where it's located inside your network, change the value on the panel and click 'apply'. Cockpit
-      will restart and you'll be redirected to this point of the guide so we can continue the config process.`,
+    content: `Cockpit connects to a vehicle's network using a global address.`,
+    opposite: `This is usually found automatically, but if necessary you can specify a custom domain to connect
+      to and search for the relevant vehicle components.`,
   },
   {
     id: 6,
     title: 'Interface Configuration',
-    opposite: `Here, you'll find some parameters that control the interface transparency and color; you can relocate the main menu
-      and switch between imperial and metric systems.`,
+    opposite: `Here, you'll find options to control the interface style, move the sidebar access point, and switch
+      the display units between imperial and metric, for widgets that support it.`,
   },
   {
     id: 7,
     title: 'Joystick Configuration',
-    content: `Connect a controller and move an axis or press any button. The panel should present a summary of functions you can
-      remap and personalize`,
-    opposite: `If you have a standard and supported joystick, Cockpit will present a specific setup screen for your model. If
-      you are using a custom model or a non standard controller, you can use the mapping table to associate your device's inputs with
-      the vehicle functions and actions.`,
+    content: `Connect a controller and move a joystick or press a button to see the current function mapping.`,
+    opposite: `Fully supported joysticks have a visual configuration interface available, but there's also a 
+      mapping table provided for custom or uncommon controllers. Actions can be related to vehicle functions,
+      can influence the display, or can run custom requests or code.`,
   },
   {
     id: 8,
     title: 'Video Configuration',
-    content: `If you already configured your video sources on BlueOS, they should be listed and available for setup here.`,
-    opposite: `You'll also find here the video library preferences, where you can set up the video processing and storage options.`,
+    content: `Video sources (from MAVLink Camera Manager / BlueOS) can be given custom names, and you can
+      configure Cockpit's receiver settings to improve performance.`,
+    opposite: `There are also preferences for the video recording library, to automatically process recorded chunks
+      into video files, and zip together files when downloading multiple videos or a video with telemetry subtitles.`,
   },
   {
     id: 9,
-    title: 'Telemetry Options',
-    opposite: `In this panel you can set up the telemetry data to display on your recorded videos. This overlay data is
-      recorded on a subtitle file and its contents can be configured here.`,
+    title: 'Telemetry Recording',
+    opposite: `Subtitle overlays of telemetry data can be recorded with videos. This panel allows choosing which
+      variables to include, where they appear on the screen, how the subtitles are styled, and the update rate.`,
   },
   {
     id: 10,
     title: 'Alerts Configuration',
-    opposite: `Voice alerts can be very useful when operating a vehicle. They can warn you about specific conditions during a
-      mission without the need of visual or interactive elements.`,
+    opposite: `Voice alerts can announce notifications and issues during operation, without covering the screen.
+      The voice and reported alert severities can be configured here.`,
   },
   {
     id: 11,
     title: 'Dev Settings',
-    opposite: `Here, you can access system logs and change some advanced parameters. We recommend keeping these settings as they are.`,
+    content: `This section includes settings and Cockpit logs to help with development and advanced troubleshooting.`,
+    opposite: `We recommend leaving the default values, but if you prefer to you can stop Cockpit from synchronizing
+      its settings with BlueOS vehicles, and/or disable sending the anonymous usage statistics and error messages that
+      help the development team to find performance issues and bugs.`,
   },
   {
     id: 12,
     title: 'Mission Configuration',
-    opposite: `In this config panel you'll be able to define which Cockpit and vehicle action will require confirmation.
-      Some actions like arming and disarming the vehicle can be mission-critical or a safety concern and may require confirmation to be applied.`,
+    opposite: `This panel allows selecting which vehicle commands require an extra confirmation step before sending,
+      to avoid triggering mission- or safety-critical functions accidentally.`,
   },
   {
     id: 13,
     title: 'Tutorial Completed',
-    content: 'This guide can be reopened via the Settings > General menu.',
-    opposite: "If you need further support, please reach out to us through the channels listed on the 'About' menu.",
+    content: `You're ready to go!`,
+    opposite: `If you want to see it again, this guide can be reopened through 'Settings' > 'General'.
+      For further support, please reach out through the channels listed in the 'About' section of the sidebar.`,
   },
 ]
 
@@ -216,7 +220,7 @@ const handleStepChangeUp = (newStep: number): void => {
         interfaceStore.mainMenuCurrentStep = 2
       }
       interfaceStore.configComponent = 0
-      tallContent.value = true
+      tallContent.value = false
       interfaceStore.componentToHighlight = 'vehicle-address'
       setVehicleConnectedVisible()
       localStorage.setItem('last-tutorial-step', '5')
@@ -234,7 +238,7 @@ const handleStepChangeUp = (newStep: number): void => {
       break
     case 8:
       interfaceStore.configComponent = 3
-      tallContent.value = false
+      tallContent.value = true
       interfaceStore.componentToHighlight = 'Video'
       break
     case 9:
@@ -251,7 +255,7 @@ const handleStepChangeUp = (newStep: number): void => {
       break
     case 11:
       interfaceStore.configComponent = 6
-      tallContent.value = false
+      tallContent.value = true
       interfaceStore.isGlassModalAlwaysOnTop = false
       interfaceStore.componentToHighlight = 'Dev'
       break
