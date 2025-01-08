@@ -1,7 +1,12 @@
 import { differenceInMilliseconds } from 'date-fns'
 import { unit } from 'mathjs'
 
-import { setDataLakeVariableData } from '@/libs/actions/data-lake'
+import {
+  createDataLakeVariable,
+  DataLakeVariable,
+  getDataLakeVariableInfo,
+  setDataLakeVariableData,
+} from '@/libs/actions/data-lake'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
@@ -301,13 +306,22 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     // Special handling for NAMED_VALUE_FLOAT messages
     if (messageType === 'NAMED_VALUE_FLOAT') {
       const name = (mavlink_message.message.name as string[]).join('').replace(/\0/g, '')
-      setDataLakeVariableData(`${messageType}/${name}`, mavlink_message.message.value)
+      const path = `${messageType}/${name}`
+      if (getDataLakeVariableInfo(path) === undefined) {
+        createDataLakeVariable(new DataLakeVariable(path, path, 'number'))
+      }
+      setDataLakeVariableData(path, mavlink_message.message.value)
       return
     }
 
     // For all other messages, use the flattener
     const flattened = flattenData(mavlink_message.message)
     flattened.forEach(({ path, value }) => {
+      if (value === null) return
+      if (typeof value !== 'string' && typeof value !== 'number') return
+      if (getDataLakeVariableInfo(path) === undefined) {
+        createDataLakeVariable(new DataLakeVariable(path, path, typeof value === 'string' ? 'string' : 'number'))
+      }
       setDataLakeVariableData(path, value)
     })
 
