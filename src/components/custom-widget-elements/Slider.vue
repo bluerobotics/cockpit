@@ -9,7 +9,11 @@
     @click="widgetStore.editingMode && widgetStore.showElementPropsDrawer(miniWidget.hash)"
   >
     <div :style="{ minWidth: miniWidget.options.layout?.labelWidth + 'px' }">
-      <p v-if="miniWidget.options.layout?.label !== ''" class="mr-3 mb-[3px]">
+      <p
+        v-if="miniWidget.options.layout?.label !== ''"
+        :style="{ color: miniWidget.options.layout?.coloredLabel ? miniWidget.options.layout?.color : '#FFFFFF' }"
+        class="mr-3 mb-[3px]"
+      >
         {{ miniWidget.options.layout?.label }}
       </p>
     </div>
@@ -88,6 +92,7 @@ onMounted(() => {
         maxValue: 100,
         showTooltip: true,
         color: '#FFFFFF',
+        coloredLabel: false,
         labelWidth: miniWidget.value.options.layout?.labelWidth || 0,
       },
       variableType: 'number',
