@@ -4,7 +4,7 @@
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title>Depth HUD config</v-card-title>
+      <v-card-title class="text-center">Depth HUD config</v-card-title>
       <v-card-text>
         <v-switch
           class="ma-1"
@@ -14,13 +14,13 @@
           hide-details
           @change="widget.options.showDepthValue = !widget.options.showDepthValue"
         />
-        <v-expansion-panels>
-          <v-expansion-panel class="bg-[#FFFFFF22] text-white">
+        <v-expansion-panels theme="dark">
+          <v-expansion-panel class="bg-[#FFFFFF11] text-white">
             <v-expansion-panel-title>Color</v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-color-picker
                 v-model="widget.options.hudColor"
-                class="ma-2 text-white bg-[#FFFFFF22]"
+                class="ma-2 text-white bg-[#FFFFFF11]"
                 :swatches="colorSwatches"
                 width="100%"
                 show-swatches

@@ -22,7 +22,7 @@
           hide-details
           @change="widget.options.useNegativeRange = !widget.options.useNegativeRange"
         />
-        <v-expansion-panels>
+        <v-expansion-panels theme="dark">
           <v-expansion-panel class="bg-[#FFFFFF11] text-white mt-2">
             <v-expansion-panel-title>Color</v-expansion-panel-title>
             <v-expansion-panel-text>
