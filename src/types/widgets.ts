@@ -487,6 +487,10 @@ export type CustomWidgetElementOptions = {
          */
         color: string
         /**
+         * Apply color to the label
+         */
+        coloredLabel: boolean
+        /**
          * The minimum value of the slider
          */
         minValue: number
