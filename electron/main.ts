@@ -7,6 +7,21 @@ import store from './services/config-store'
 import { setupNetworkService } from './services/network'
 import { setupFilesystemStorage } from './services/storage'
 
+// Enable hardware acceleration
+console.log('Electron GPU info:')
+console.log(app.getGPUFeatureStatus())
+app.getGPUInfo('complete').then((info) => {
+  console.log(info)
+})
+
+app.commandLine.appendSwitch('use-gl', 'egl')
+app.commandLine.appendSwitch('ignore-gpu-blocklist')
+app.commandLine.appendSwitch('enable-accelerated-video-decode')
+app.commandLine.appendSwitch('enable-zero-copy')
+app.commandLine.appendSwitch('enable-gpu-rasterization')
+app.commandLine.appendSwitch('enable-oop-rasterization')
+app.commandLine.appendSwitch('enable-pinch')
+
 // If the app is packaged, push logs to the system instead of the console
 if (app.isPackaged) {
   Object.assign(console, logger.functions)
