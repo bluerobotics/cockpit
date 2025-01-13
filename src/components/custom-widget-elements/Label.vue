@@ -19,15 +19,14 @@
         margin: '1px',
       }"
     >
-      {{ miniWidget.options.text || 'Label' }}
+      {{ miniWidget.options.layout?.text || 'Label' }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, toRefs, watch } from 'vue'
+import { onMounted, toRefs, watch } from 'vue'
 
-import { deleteDataLakeVariable, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -41,7 +40,6 @@ const props = defineProps<{
 }>()
 
 const miniWidget = toRefs(props).miniWidget
-let listenerId: string | undefined
 
 watch(
   () => widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen,
@@ -60,32 +58,16 @@ onMounted(() => {
   if (!props.miniWidget.options || Object.keys(props.miniWidget.options).length === 0) {
     miniWidget.value.isCustomElement = true
     widgetStore.updateElementOptions(props.miniWidget.hash, {
-      text: 'Label',
       layout: {
+        text: 'Label',
         textSize: 20,
         weight: 'normal',
         decoration: 'none',
         color: '#FFFFFF',
         align: 'center',
       },
-      variableType: 'string',
-      dataLakeVariable: undefined,
+      variableType: null,
     })
-  }
-  if (props.miniWidget.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(props.miniWidget.options.dataLakeVariable?.name, (value) => {
-      miniWidget.value.options.text = value as string
-    })
-    miniWidget.value.options.text = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as string
-  }
-})
-
-onUnmounted(() => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
-    if (listenerId) {
-      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, listenerId)
-    }
   }
 })
 </script>

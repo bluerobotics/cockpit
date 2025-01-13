@@ -186,19 +186,19 @@ export type CustomWidgetElementOptions = {
       /**
        * Variable type
        */
-      variableType: 'string' | 'boolean' | 'number'
+      variableType: DataLakeVariable | null
       /**
        * Action parameter
        */
       dataLakeVariable: DataLakeVariable
       /**
-       * The label text
-       */
-      text: string
-      /**
        * Layout options
        */
       layout: {
+        /**
+         * The label text
+         */
+        text: string
         /**
          * The size of the label's font (in pixels)
          */
@@ -245,7 +245,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Variable type
        */
-      variableType: 'string' | 'boolean' | 'number'
+      variableType: DataLakeVariable['type'] | null
       /**
        * Action parameter
        */
@@ -304,7 +304,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Variable type
        */
-      variableType: 'string' | 'boolean' | 'number'
+      variableType: DataLakeVariable['type'] | null
       /**
        * Action parameter
        */
@@ -351,7 +351,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Variable type
        */
-      variableType: 'string' | 'boolean' | 'number'
+      variableType: DataLakeVariable['type'] | null
       /**
        * Action parameter
        */
@@ -414,7 +414,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Variable type
        */
-      variableType: 'string' | 'boolean' | 'number'
+      variableType: DataLakeVariable['type'] | null
       /**
        * Action parameter
        */
@@ -465,7 +465,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Variable type
        */
-      variableType: 'string' | 'boolean' | 'number'
+      variableType: DataLakeVariable['type'] | null
       /**
        * Action parameter
        */
@@ -532,7 +532,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Variable type
        */
-      variableType: 'string' | 'boolean' | 'number'
+      variableType: DataLakeVariable['type'] | null
       /**
        * Action parameter
        */

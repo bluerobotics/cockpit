@@ -231,7 +231,7 @@
         </template>
       </ExpansiblePanel>
       <ExpansiblePanel
-        v-if="currentElement"
+        v-if="currentElement && currentElement.options.variableType"
         :key="currentElement.hash"
         no-bottom-divider
         no-top-divider
