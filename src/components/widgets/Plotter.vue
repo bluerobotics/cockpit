@@ -84,8 +84,19 @@
       <!-- Data points section -->
       <v-row>
         <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-2">Data Points</div>
+          <div class="text-subtitle-1 font-weight-medium mb-4">Data Points</div>
           <div class="ml-2 flex gap-x-8">
+            <v-text-field
+              v-model.number="widget.options.decimalPlaces"
+              type="number"
+              label="Decimal places"
+              variant="outlined"
+              density="comfortable"
+              :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
+              hint="Number of decimal places to be displayed"
+              width="160px"
+              class="ml-2"
+            />
             <v-checkbox v-model="widget.options.limitSamples" label="Limit number of samples" />
             <v-text-field
               v-model.number="widget.options.maxSamples"
@@ -142,16 +153,16 @@ let listenerId: string | undefined
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      lineColor: 'rgba(255, 0, 0, 1.0)',
-      dataLakeVariableId: undefined,
-      maxSamples: 1000,
-      limitSamples: true,
-      lineThickness: 1,
-    }
+  const defaultOptions = {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    lineColor: 'rgba(255, 0, 0, 1.0)',
+    dataLakeVariableId: undefined,
+    maxSamples: 1000,
+    limitSamples: true,
+    lineThickness: 1,
+    decimalPlaces: 2,
   }
+  widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 
 onMounted(() => {
@@ -272,9 +283,10 @@ const renderCanvas = (): void => {
     ctx.textBaseline = 'bottom'
 
     // Draw the values
-    drawText(ctx, `Current: ${Number(currentValue).toFixed(2)}`, 10, canvasHeight - 10)
-    drawText(ctx, `Min: ${Number(minValue).toFixed(2)}`, 10, canvasHeight - 30)
-    drawText(ctx, `Max: ${Number(maxValue).toFixed(2)}`, 10, canvasHeight - 50)
+    const decimalPlaces = widget.value.options.decimalPlaces
+    drawText(ctx, `Current: ${Number(currentValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 10)
+    drawText(ctx, `Min: ${Number(minValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 30)
+    drawText(ctx, `Max: ${Number(maxValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 50)
   } catch (error) {
     console.error('Error drawing graph:', error)
   }
