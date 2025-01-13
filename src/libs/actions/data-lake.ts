@@ -24,6 +24,7 @@ export class DataLakeVariable {
 const dataLakeVariableInfo: Record<string, DataLakeVariable> = {}
 export const dataLakeVariableData: Record<string, string | number | boolean | undefined> = {}
 const dataLakeVariableListeners: Record<string, Record<string, (value: string | number | boolean) => void>> = {}
+const dataLakeVariableInfoListeners: Record<string, (variables: Record<string, DataLakeVariable>) => void> = {}
 
 export const getAllDataLakeVariablesInfo = (): Record<string, DataLakeVariable> => {
   return dataLakeVariableInfo
@@ -39,6 +40,7 @@ export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?
   }
   dataLakeVariableInfo[variable.id] = variable
   dataLakeVariableData[variable.id] = initialValue
+  notifyDataLakeVariableInfoListeners()
 }
 
 export const updateDataLakeVariableInfo = (variable: DataLakeVariable): void => {
@@ -46,6 +48,7 @@ export const updateDataLakeVariableInfo = (variable: DataLakeVariable): void => 
     throw new Error(`Cockpit action variable with id '${variable.id}' does not exist. Create it first.`)
   }
   dataLakeVariableInfo[variable.id] = variable
+  notifyDataLakeVariableInfoListeners()
 }
 
 export const getDataLakeVariableData = (id: string): string | number | boolean | undefined => {
@@ -92,4 +95,21 @@ const notifyDataLakeVariableListeners = (id: string): void => {
     if (value === undefined) return
     Object.values(dataLakeVariableListeners[id]).forEach((listener) => listener(value))
   }
+}
+
+export const listenToDataLakeVariablesInfoChanges = (
+  listener: (variables: Record<string, DataLakeVariable>) => void
+): string => {
+  const listenerId = uuid()
+  dataLakeVariableInfoListeners[listenerId] = listener
+  return listenerId
+}
+
+export const unlistenToDataLakeVariablesInfoChanges = (listenerId: string): void => {
+  delete dataLakeVariableInfoListeners[listenerId]
+}
+
+const notifyDataLakeVariableInfoListeners = (): void => {
+  const updatedVariables = getAllDataLakeVariablesInfo()
+  Object.values(dataLakeVariableInfoListeners).forEach((listener) => listener(updatedVariables))
 }

@@ -21,7 +21,7 @@
           <div class="ml-2">
             <v-select
               v-model="widget.options.dataLakeVariableId"
-              :items="availableDataLakeVariables"
+              :items="availableDataLakeNumberVariables"
               item-title="name"
               item-value="id"
               label="Data Lake variable"
@@ -112,13 +112,15 @@
 
 <script setup lang="ts">
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
-import { computed, nextTick, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import {
   DataLakeVariable,
   getAllDataLakeVariablesInfo,
   listenDataLakeVariable,
+  listenToDataLakeVariablesInfoChanges,
   unlistenDataLakeVariable,
+  unlistenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
 import { resetCanvas } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -138,7 +140,8 @@ const props = defineProps<{
 }>()
 const widget = toRefs(props).widget
 const availableDataLakeVariables = ref<DataLakeVariable[]>([])
-let listenerId: string | undefined
+let dataLakeVariableListenerId: string | undefined
+let dataLakeVariableInfoListenerId: string | undefined
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
@@ -156,9 +159,23 @@ onBeforeMount(() => {
 
 onMounted(() => {
   changeDataLakeVariable(widget.value.options.dataLakeVariableId)
-  availableDataLakeVariables.value = Object.values(getAllDataLakeVariablesInfo()).filter(
-    (variable) => variable.type === 'number'
-  )
+  availableDataLakeVariables.value = Object.values(getAllDataLakeVariablesInfo())
+  dataLakeVariableInfoListenerId = listenToDataLakeVariablesInfoChanges((variables) => {
+    availableDataLakeVariables.value = Object.values(variables)
+  })
+})
+
+onUnmounted(() => {
+  if (dataLakeVariableInfoListenerId) {
+    unlistenToDataLakeVariablesInfoChanges(dataLakeVariableInfoListenerId)
+  }
+  if (dataLakeVariableListenerId) {
+    unlistenDataLakeVariable(widget.value.options.dataLakeVariableId, dataLakeVariableListenerId)
+  }
+})
+
+const availableDataLakeNumberVariables = computed(() => {
+  return availableDataLakeVariables.value.filter((variable) => variable.type === 'number')
 })
 
 // Remove the oldest sample if the number of samples is greater than the max samples
@@ -179,11 +196,11 @@ const changeDataLakeVariable = (newId: string, oldId?: string): void => {
     return
   }
 
-  if (oldId !== undefined && listenerId) {
-    unlistenDataLakeVariable(oldId, listenerId)
+  if (oldId !== undefined && dataLakeVariableListenerId) {
+    unlistenDataLakeVariable(oldId, dataLakeVariableListenerId)
   }
 
-  listenerId = listenDataLakeVariable(newId, (value) => {
+  dataLakeVariableListenerId = listenDataLakeVariable(newId, (value) => {
     valuesHistory.push(value as number)
 
     cutExtraSamples()
