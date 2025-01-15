@@ -1,6 +1,6 @@
 <template>
   <div class="w-[8.5rem] h-12 p-1 text-white relative">
-    <img src="@/assets/depth-icon.svg" class="h-[80%] left-[0.5rem] top-[13%] absolute" :draggable="false" />
+    <v-icon class="h-full left-[0.5rem] bottom-[7%] absolute text-[2.25rem]">mdi-wave-arrow-up</v-icon>
     <div class="absolute left-[3rem] flex flex-col items-start justify-center select-none">
       <div>
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ currentDepth.toFixed(precision) }}</span>
