@@ -50,7 +50,7 @@ if (enableSystemLogging === 'true') {
   console.log(`
     System logging is enabled.
     This means that all console logs will be saved to the database, and won't be displayed in the console.
-    To disable system logging go to "Configuration" -> "Development".
+    To disable system logging go to "Settings" -> "Dev".
   `)
   const oldConsoleFunction = {
     error: console.error,
