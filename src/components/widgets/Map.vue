@@ -56,6 +56,7 @@
   <div v-if="showContextMenu" class="context-menu" :style="{ top: menuPosition.top, left: menuPosition.left }">
     <ul @click.stop="">
       <li @click="onMenuOptionSelect('goto')">GoTo</li>
+      <li @click="onMenuOptionSelect('set-default-map-position')">Set default map position</li>
     </ul>
   </div>
 
@@ -128,8 +129,8 @@ const missionStore = useMissionStore()
 
 // Declare the general variables
 const map: Ref<Map | undefined> = ref()
-const zoom = ref(15)
-const mapCenter = ref<WaypointCoordinates>([-27.5935, -48.55854])
+const zoom = ref(missionStore.defaultMapZoom)
+const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = ref(false)
@@ -523,7 +524,9 @@ const onMenuOptionSelect = (option: string): void => {
       }
       break
 
-    // Add more cases for other options if needed in the future
+    case 'set-default-map-position':
+      missionStore.setDefaultMapPosition(mapCenter.value, zoom.value)
+      break
 
     default:
       console.warn('Unknown menu option selected:', option)

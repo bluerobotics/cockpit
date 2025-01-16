@@ -11,6 +11,10 @@ import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
 import { useMainVehicleStore } from './mainVehicle'
 
+// Default map position (centered on Florianópolis, Brazil)
+const DEFAULT_MAP_CENTER: WaypointCoordinates = [-27.5935, -48.55854]
+const DEFAULT_MAP_ZOOM = 15
+
 export const useMissionStore = defineStore('mission', () => {
   const username = useStorage<string>('cockpit-username', '')
   const lastConnectedUser = localStorage.getItem('cockpit-last-connected-user') || undefined
@@ -22,6 +26,8 @@ export const useMissionStore = defineStore('mission', () => {
   )
   const lastMissionName = useStorage('cockpit-last-mission-name', '')
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
+  const defaultMapCenter = useBlueOsStorage<WaypointCoordinates>('cockpit-default-map-center', DEFAULT_MAP_CENTER)
+  const defaultMapZoom = useBlueOsStorage<number>('cockpit-default-map-zoom', DEFAULT_MAP_ZOOM)
   const { showDialog } = useInteractionDialog()
 
   const mainVehicleStore = useMainVehicleStore()
@@ -72,6 +78,11 @@ export const useMissionStore = defineStore('mission', () => {
     await reloadCockpit()
   }
 
+  const setDefaultMapPosition = (center: WaypointCoordinates, zoom: number): void => {
+    defaultMapCenter.value = [Number(center[0].toFixed(8)), Number(center[1].toFixed(8))]
+    defaultMapZoom.value = zoom < 1 ? 1 : zoom > 19 ? 19 : zoom
+  }
+
   watch(
     () => mainVehicleStore.isVehicleOnline,
     async (newValue) => {
@@ -101,5 +112,8 @@ export const useMissionStore = defineStore('mission', () => {
     slideEventsCategoriesRequired,
     moveWaypoint,
     clearMission,
+    defaultMapCenter,
+    defaultMapZoom,
+    setDefaultMapPosition,
   }
 })
