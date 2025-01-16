@@ -51,6 +51,24 @@
           </template>
         </v-tooltip>
       </div>
+      <div v-if="enableUndo" id="button-3" class="orbit-button orbit-button-3">
+        <v-tooltip text="Edit survey's polygon">
+          <template #activator="{ props: tooltipProps2 }">
+            <v-btn
+              v-bind="tooltipProps2"
+              variant="elevated"
+              icon="mdi-pencil"
+              :style="{ backgroundColor: '#333333EE' }"
+              rounded="full"
+              :disabled="undoIsInProgress"
+              size="x-small"
+              color="#FFFFFF22"
+              class="text-[13px] rotate-[220deg]"
+              @click="handleUndoGenerateWaypoints"
+            ></v-btn>
+          </template>
+        </v-tooltip>
+      </div>
       <v-tooltip text="Delete survey">
         <template #activator="{ props: tooltipProps3 }">
           <div
@@ -118,6 +136,8 @@ const props = defineProps<{
   selectedSurveyId: string | null
   isCreatingSurvey: boolean
   isCreatingSimpleMission: boolean
+  undoIsInProgress: boolean
+  enableUndo: boolean
 }>()
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -126,6 +146,7 @@ const emit = defineEmits<{
   (event: 'toggleSurvey'): void
   (event: 'toggleSimpleMission'): void
   (event: 'deleteSelectedSurvey'): void
+  (event: 'undoGeneratedWaypoints'): void
   (event: 'surveyLinesAngle', angle: number): void
   (event: 'regenerateSurveyWaypoints', angle: number): void
 }>()
@@ -166,6 +187,10 @@ const handleToggleSurvey = (): void => {
 const handleToggleSimpleMission = (): void => {
   emit('toggleSimpleMission')
   emit('close')
+}
+
+const handleUndoGenerateWaypoints = (): void => {
+  emit('undoGeneratedWaypoints')
 }
 
 const handleDeleteSelectedSurvey = (): void => {
