@@ -303,10 +303,13 @@
     :is-creating-simple-mission="isCreatingSimpleMission"
     :surveys="surveys"
     :selected-survey-id="selectedSurveyId"
+    :undo-is-in-progress="undoIsInProgress"
+    :enable-undo="enableUndoForCurrentSurvey"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
     @toggle-survey="toggleSurvey"
     @toggle-simple-mission="toggleSimpleMission"
+    @undo-generated-waypoints="undoGenerateWaypoints"
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
     @survey-lines-angle="onSurveyLinesAngleChange"
   />
@@ -402,10 +405,21 @@ const selectedSurveyId = ref<string>('')
 const surveyPolygonLayers = ref<{ [key: string]: Polygon }>({})
 const lastSelectedSurveyId = ref('')
 const surveys = ref<Survey[]>([])
+const canUndo = ref<Record<string, boolean>>({})
+const undoIsInProgress = ref(false)
+const lastSurveyState = ref<Record<string, SurveyPolygon>>({})
 const isDragging = ref(false)
 let dragStartLatLng: L.LatLng | null = null
 let polygonLatLngsAtDragStart: L.LatLng[] = []
 let ignoreNextClick = false
+
+const enableUndoForCurrentSurvey = computed(() => {
+  return (
+    surveys.value.length > 0 &&
+    selectedSurveyId.value === surveys.value[surveys.value.length - 1].id &&
+    canUndo.value[selectedSurveyId.value]
+  )
+})
 
 const selectedSurvey = computed(() => {
   return surveys.value.find((survey) => survey.id === selectedSurveyId.value)
@@ -547,6 +561,8 @@ const toggleSurvey = (): void => {
   }
   if (isCreatingSurvey.value) {
     isCreatingSurvey.value = false
+    lastSurveyState.value = {}
+    canUndo.value = {}
     return
   }
   isCreatingSurvey.value = true
@@ -650,11 +666,18 @@ const handleKeyDown = (event: KeyboardEvent): void => {
   if (event.key === 'Delete' && selectedSurveyId.value) {
     deleteSelectedSurvey()
   }
+  if (event.ctrlKey && event.key.toLowerCase() === 'z' && enableUndoForCurrentSurvey.value && !undoIsInProgress.value) {
+    console.log('Undo In Progress')
+    undoGenerateWaypoints()
+    event.preventDefault()
+  }
 }
 
 const clearSurveyCreation = (): void => {
   clearSurveyPath()
   isCreatingSurvey.value = false
+  lastSurveyState.value = {}
+  canUndo.value = {}
 }
 
 const deleteSelectedSurvey = (): void => {
@@ -698,6 +721,12 @@ const deleteSelectedSurvey = (): void => {
 
   if (selectedSurveyId.value === surveyId) {
     selectedSurveyId.value = surveys.value.length > 0 ? surveys.value[0].id : ''
+  }
+  if (lastSurveyState.value[surveyId]) {
+    delete lastSurveyState.value[surveyId]
+  }
+  if (canUndo.value[surveyId]) {
+    delete canUndo.value[surveyId]
   }
 
   showSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
@@ -1089,11 +1118,16 @@ const generateWaypointsFromSurvey = (): void => {
   }
 
   const newSurveyId = uuid()
+  canUndo.value[newSurveyId] = true
 
   const polygonCoordinates: WaypointCoordinates[] = surveyPolygonVertexesPositions.value.map((latLng) => [
     latLng.lat,
     latLng.lng,
   ])
+
+  lastSurveyState.value[newSurveyId] = {
+    polygonPositions: polygonCoordinates,
+  }
 
   const adjustedAngle = 90 - surveyLinesAngle.value
   const continuousPath = generateSurveyPath(
@@ -1267,6 +1301,108 @@ const createSurveyVertexMarker = (
       const target = event.target as L.Marker
       onClick(target, event)
     })
+}
+
+const undoGenerateWaypoints = (): void => {
+  if (undoIsInProgress.value) return
+  contextMenuVisible.value = false
+  undoIsInProgress.value = true
+  const surveyId = selectedSurveyId.value
+
+  if (!surveyId || !canUndo.value[surveyId] || !lastSurveyState.value[surveyId]) {
+    showSnackbar({ variant: 'error', message: 'Nothing to undo.', duration: 2000 })
+    undoIsInProgress.value = false
+    return
+  }
+
+  if (selectedSurvey.value) {
+    selectedSurvey.value.waypoints.forEach((waypoint) => {
+      const index = missionStore.currentPlanningWaypoints.findIndex((wp) => wp.id === waypoint.id)
+      if (index !== -1) {
+        missionStore.currentPlanningWaypoints.splice(index, 1)
+      }
+      const marker = waypointMarkers.value[waypoint.id]
+      if (marker) {
+        planningMap.value?.removeLayer(marker)
+        delete waypointMarkers.value[waypoint.id]
+      }
+    })
+  }
+
+  planningMap.value?.eachLayer((layer) => {
+    if (layer instanceof L.Polyline && layer.options.className === 'waypoint-connection') {
+      planningMap.value?.removeLayer(layer)
+    }
+  })
+
+  const index = surveys.value.findIndex((survey) => survey.id === surveyId)
+  if (index !== -1) {
+    surveys.value.splice(index, 1)
+  }
+  selectedSurveyId.value = ''
+
+  const surveyState = lastSurveyState.value[surveyId]
+  surveyPolygonVertexesPositions.value = surveyState.polygonPositions.map(([lat, lng]) => L.latLng(lat, lng))
+
+  surveyPolygonVertexesMarkers.value.forEach((marker) => marker.remove())
+  surveyPolygonVertexesMarkers.value = []
+
+  surveyEdgeAddMarkers.forEach((marker) => marker.remove())
+  surveyEdgeAddMarkers.length = 0
+
+  if (surveyPolygonLayer.value) {
+    planningMap.value?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
+    surveyPolygonLayer.value = null
+  }
+  if (surveyPathLayer.value) {
+    planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
+    surveyPathLayer.value = null
+  }
+
+  surveyPolygonVertexesPositions.value.forEach((latLng) => {
+    const newMarker = createSurveyVertexMarker(
+      latLng,
+      // onClick callback
+      (marker) => {
+        const targetIndex = surveyPolygonVertexesMarkers.value.indexOf(marker)
+        if (targetIndex !== -1) {
+          surveyPolygonVertexesPositions.value.splice(targetIndex, 1)
+          surveyPolygonVertexesMarkers.value.splice(targetIndex, 1)
+          marker.remove()
+          updatePolygon()
+          updateSurveyEdgeAddMarkers()
+          createSurveyPath()
+        }
+      },
+      // onDrag callback
+      () => {
+        updatePolygon()
+        createSurveyPath()
+      }
+    ).addTo(planningMap.value!)
+
+    surveyPolygonVertexesMarkers.value.push(newMarker)
+  })
+
+  updateSurveyEdgeAddMarkers()
+
+  surveyPolygonLayer.value = L.polygon(surveyPolygonVertexesPositions.value, {
+    color: '#3B82F6',
+    fillColor: '#60A5FA',
+    fillOpacity: 0.2,
+    weight: 3,
+    className: 'survey-polygon',
+  }).addTo(planningMap.value!)
+
+  enablePolygonDragging()
+
+  delete lastSurveyState.value[surveyId]
+  delete canUndo.value[surveyId]
+  isCreatingSurvey.value = true
+
+  createSurveyPath()
+  showSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
+  undoIsInProgress.value = false
 }
 
 const addWaypointMarker = (waypoint: Waypoint): void => {
