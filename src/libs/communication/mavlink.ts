@@ -5,6 +5,8 @@ import { MavComponent, MAVLinkType } from '../connection/m2r/messages/mavlink2re
 import { type Message } from '../connection/m2r/messages/mavlink2rest-message'
 import { MavlinkManualControlState } from '../joystick/protocols/mavlink-manual-control'
 
+let lastTimeLoggedConnectionError = new Date(0)
+
 /**
  * Send a mavlink message
  * @param {MavMessage} message
@@ -22,7 +24,10 @@ export const sendMavlinkMessage = (message: MavMessage): void => {
   try {
     ConnectionManager.write(textEncoder.encode(JSON.stringify(pack)))
   } catch (error) {
+    // Don't log the error if it's too frequent
+    if (Date.now() < lastTimeLoggedConnectionError.getTime() + 10000) return
     console.error('Error sending MAVLink message:', error)
+    lastTimeLoggedConnectionError = new Date()
   }
 }
 
