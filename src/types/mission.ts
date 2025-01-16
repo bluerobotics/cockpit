@@ -79,6 +79,40 @@ export type CockpitMission = {
   waypoints: Waypoint[]
 }
 
+/**
+ * Survey object that contains the information about the survey to be performed.
+ */
+export interface Survey {
+  /**
+   * Unique identification for the survey.
+   */
+  id: string
+  /**
+   * Coordinates of the polygon that will be surveyed.
+   */
+  polygonCoordinates: WaypointCoordinates[]
+  /**
+   * Density of the scan.
+   */
+  distanceBetweenLines: number
+  /**
+   * Angle of the survey lines.
+   */
+  surveyLinesAngle: number
+  /**
+   * Executable mission waypoints.
+   */
+  waypoints: Waypoint[]
+}
+
+// TODO - Replace leaflet types with agnostic types
+export type SurveyPolygon = {
+  /**
+   * The coordinates of the polygon that will be converted into a survey.
+   */
+  polygonPositions: WaypointCoordinates[]
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const instanceOfCockpitMission = (maybeMission: any): maybeMission is CockpitMission => {
   const requiredKeys = ['version', 'settings', 'waypoints']
