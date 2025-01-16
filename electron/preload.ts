@@ -33,4 +33,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   openCockpitFolder: () => ipcRenderer.invoke('open-cockpit-folder'),
   openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
+  minimizeWindow: () => ipcRenderer.send('minimize-window'),
+  maximizeWindow: () => ipcRenderer.send('maximize-window'),
+  closeWindow: () => ipcRenderer.send('close-window'),
+  isMaximized: () => ipcRenderer.invoke('is-maximized'),
+  getPlatform: () => ipcRenderer.invoke('get-platform'),
 })
