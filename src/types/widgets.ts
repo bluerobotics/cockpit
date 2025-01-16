@@ -810,6 +810,41 @@ export type Profile = {
   name: string
 }
 
+export const isWidgetConfigurable: Record<WidgetType, boolean> = {
+  [WidgetType.Attitude]: true,
+  [WidgetType.Compass]: true,
+  [WidgetType.CompassHUD]: true,
+  [WidgetType.CustomWidgetBase]: true,
+  [WidgetType.DepthHUD]: true,
+  [WidgetType.IFrame]: true,
+  [WidgetType.ImageView]: true,
+  [WidgetType.Map]: true,
+  [WidgetType.MiniWidgetsBar]: false,
+  [WidgetType.Plotter]: true,
+  [WidgetType.URLVideoPlayer]: true,
+  [WidgetType.VideoPlayer]: true,
+  [WidgetType.VirtualHorizon]: false,
+}
+
+export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
+  [MiniWidgetType.Alerter]: false,
+  [MiniWidgetType.ArmerButton]: false,
+  [MiniWidgetType.BaseCommIndicator]: false,
+  [MiniWidgetType.BatteryIndicator]: true,
+  [MiniWidgetType.ChangeAltitudeCommander]: false,
+  [MiniWidgetType.Clock]: false,
+  [MiniWidgetType.DepthIndicator]: false,
+  [MiniWidgetType.MissionIdentifier]: true,
+  [MiniWidgetType.RelativeAltitudeIndicator]: false,
+  [MiniWidgetType.TakeoffLandCommander]: false,
+  [MiniWidgetType.VeryGenericIndicator]: true,
+  [MiniWidgetType.JoystickCommIndicator]: true,
+  [MiniWidgetType.MiniVideoRecorder]: true,
+  [MiniWidgetType.ModeSelector]: false,
+  [MiniWidgetType.SatelliteIndicator]: false,
+  [MiniWidgetType.ViewSelector]: false,
+}
+
 export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   if (maybeWidget.hash === undefined) throw new Error('Widget validation failed: property hash is missing.')
 
