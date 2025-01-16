@@ -304,9 +304,9 @@ const uploadMissionToVehicle = async (): Promise<void> => {
 }
 
 const planningMap: Ref<Map | undefined> = ref()
-const mapCenter = ref<WaypointCoordinates>([-27.5935, -48.55854])
+const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref(mapCenter.value)
-const zoom = ref(18)
+const zoom = ref(missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointType = ref<WaypointType>(WaypointType.PASS_BY)
 const currentWaypointAltitude = ref(0)
