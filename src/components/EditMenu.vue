@@ -652,6 +652,7 @@ import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
 import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
 import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { openSnackbar } from '@/composables/snackbar'
 import { getWidgetsFromBlueOS } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
@@ -992,7 +993,12 @@ const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
 useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidgetsContainerOptions)
 
 const getExternalWidgetSetupInfos = async (): Promise<void> => {
-  ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS()
+  try {
+    ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS()
+  } catch (error) {
+    const errorMessage = 'Error getting info around external widgets from BlueOS.'
+    openSnackbar({ message: errorMessage, variant: 'error', closeButton: true })
+  }
 }
 
 // @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
