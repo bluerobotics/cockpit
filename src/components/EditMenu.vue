@@ -526,7 +526,7 @@
         id="mini-widget-card"
         :ref="(el) => (miniWidgetContainers[miniWidget.component] = el as HTMLElement)"
         :key="miniWidget.hash"
-        class="flex flex-col items-center w-full justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip"
+        class="flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible"
         :draggable="false"
       >
         <div />
@@ -1037,19 +1037,15 @@ const widgetMode = ref('Regular')
 
 // Resize mini widgets so they fit the layout when the widget mode is set to mini widgets
 const miniWidgetContainers = ref<Record<string, HTMLElement>>({})
-watch(widgetMode, () => {
-  if (widgetMode.value !== 'Mini') return
-  nextTick(() => {
-    Object.values(miniWidgetContainers.value).forEach((element) => {
-      if (element.scrollWidth > element.clientWidth) {
-        let scale = 1
-        while (element.scrollWidth > element.clientWidth) {
-          scale -= 0.01
-          const actualElement = element.children[1] as HTMLElement
-          actualElement.style.scale = `${scale}`
-        }
-      }
-    })
+watch(widgetMode, async (newValue: string): Promise<void> => {
+  if (newValue !== 'Mini') return
+  await nextTick()
+  Object.values(miniWidgetContainers.value).forEach((element: HTMLElement) => {
+    if (element.scrollWidth > element.clientWidth) {
+      const ratio = element.clientWidth / element.scrollWidth
+      const actualElement = element.children[1] as HTMLElement
+      actualElement.style.transform = `scale(${ratio})`
+    }
   })
 })
 
