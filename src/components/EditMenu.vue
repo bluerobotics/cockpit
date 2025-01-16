@@ -294,6 +294,7 @@
                   />
                   <div
                     class="icon-btn mdi mdi-cog"
+                    :class="{ 'opacity-20 cursor-not-allowed': !isWidgetConfigurable[widget.component as WidgetType] }"
                     @click="store.widgetManagerVars(widget.hash).configMenuOpen = true"
                   />
                   <div class="icon-btn mdi mdi-trash-can" @click="store.deleteWidget(widget)" />
@@ -360,6 +361,7 @@
                     <v-divider vertical class="opacity-10 mr-1" />
                     <div
                       class="icon-btn mdi mdi-cog"
+                      :class="{ 'opacity-20 cursor-not-allowed': !isMiniWidgetConfigurable[widget.component as MiniWidgetType] }"
                       @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
                     />
                     <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
@@ -429,6 +431,7 @@
                     <v-divider vertical class="opacity-10 mr-1" />
                     <div
                       class="icon-btn mdi mdi-cog"
+                      :class="{ 'opacity-20 cursor-not-allowed': !isMiniWidgetConfigurable[widget.component as MiniWidgetType] }"
                       @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
                     />
                     <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
@@ -664,6 +667,8 @@ import {
   CustomWidgetElementType,
   ExternalWidgetSetupInfo,
   InternalWidgetSetupInfo,
+  isMiniWidgetConfigurable,
+  isWidgetConfigurable,
   MiniWidgetType,
   WidgetType,
 } from '@/types/widgets'
