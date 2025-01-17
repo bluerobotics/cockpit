@@ -136,7 +136,12 @@
       "icon": "public/pwa-512x512.png"
     },
     "win": {
+      "target": "nsis",
       "icon": "public/pwa-512x512.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "linux": {
       "icon": "public/pwa-512x512.png"
