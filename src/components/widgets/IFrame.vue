@@ -115,7 +115,7 @@ onBeforeMount((): void => {
     return
   }
   widget.value.options = {
-    source: defaultBlueOsAddress,
+    source: 'http://' + defaultBlueOsAddress,
   }
   inputURL.value = defaultBlueOsAddress
 })
