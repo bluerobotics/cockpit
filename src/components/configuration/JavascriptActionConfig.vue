@@ -109,7 +109,8 @@
 
           <div class="d-flex align-center justify-space-between mb-2">
             <h3 class="text-subtitle-2 font-weight-bold">JavaScript Code</h3>
-            <div class="text-caption">Use getVariable('variableId') to access data lake variables</div>
+            <!-- eslint-disable-next-line prettier/prettier -->
+            <div v-pre class="text-caption">Use {{ variable-id }} to access data lake variables</div>
           </div>
           <v-textarea
             v-model="newActionConfig.code"
