@@ -1,7 +1,6 @@
 name: Report bug
 description: Report a bug found
-title: "bug: "
-labels: ["bug", "ui"]
+type: "Bug"
 body:
   - type: markdown
     attributes:
