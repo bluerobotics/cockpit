@@ -234,6 +234,7 @@
       <div ref="routerSection" class="router-view">
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }" :style="connectionStatusFeedback">
           <div
+            v-show="showTopBarNow"
             id="mainTopBar"
             class="bar top-bar"
             :style="[
