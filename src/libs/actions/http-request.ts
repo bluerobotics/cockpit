@@ -120,6 +120,7 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
 
       let parsedBody = action.body
       const parsedUrlParams = { ...action.urlParams }
+      let parsedUrl = action.url
 
       // Parse body variables
       try {
@@ -211,9 +212,21 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
         console.error('Error parsing URL parameters:', error)
       }
 
+      // Parse the URL as well for any datalake variables
+      const cockpitInputsInUrl = parsedUrl.match(/{{\s*([^{}\s]+)\s*}}/g)
+      if (cockpitInputsInUrl) {
+        for (const input of cockpitInputsInUrl) {
+          const variableId = input.replace('{{', '').replace('}}', '').trim()
+          const inputData = getDataLakeVariableData(variableId)
+          if (inputData) {
+            parsedUrl = parsedUrl.replace(input, inputData.toString())
+          }
+        }
+      }
+
       // Make the request
       try {
-        const url = new URL(action.url)
+        const url = new URL(parsedUrl)
         url.search = new URLSearchParams(parsedUrlParams).toString()
 
         fetch(url, {
