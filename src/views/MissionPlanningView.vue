@@ -66,7 +66,7 @@
     >
       <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
         <button
-          v-if="!isCreatingSimpleMission"
+          v-if="!isCreatingSimplePath"
           :class="{ ' elevation-4': isCreatingSurvey }"
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSurvey"
@@ -80,14 +80,14 @@
           }}
         </button>
         <button
-          v-if="!isCreatingSurvey && !isCreatingSimpleMission"
-          :class="{ ' elevation-4': isCreatingSimpleMission }"
+          v-if="!isCreatingSurvey && !isCreatingSimplePath"
+          :class="{ ' elevation-4': isCreatingSimplePath }"
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          @click="toggleSimpleMission"
+          @click="toggleSimplePath"
         >
           {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
         </button>
-        <v-divider v-if="!isCreatingSimpleMission" class="my-2" />
+        <v-divider v-if="!isCreatingSimplePath" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
           <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
           <input
@@ -126,7 +126,7 @@
           </div>
         </div>
         <v-divider v-if="isCreatingSurvey" class="my-2" />
-        <div v-if="isCreatingSurvey || isCreatingSimpleMission" class="flex flex-col w-full h-full p-2">
+        <div v-if="isCreatingSurvey || isCreatingSimplePath" class="flex flex-col w-full h-full p-2">
           <p class="text-sm text-slate-200">Waypoint type</p>
           <select
             v-model="WaypointType.PASS_BY"
@@ -160,7 +160,7 @@
             :disabled="missionStore.currentPlanningWaypoints.length < 2"
             class="bg-[#FFFFFF33] hover:bg-[#FFFFFF44] text-[12px] mx-8 py-2 rounded-sm my-2"
             :class="{ 'bg-[#FFFFFF11] text-[#FFFFFF22]': missionStore.currentPlanningWaypoints.length < 2 }"
-            @click="toggleSimpleMission"
+            @click="toggleSimplePath"
           >
             ADD TO MISSION
           </button>
@@ -204,9 +204,9 @@
             </v-tooltip>
           </div>
         </div>
-        <v-divider v-if="isCreatingSimpleMission || isCreatingSurvey" class="my-2" />
+        <v-divider v-if="isCreatingSimplePath || isCreatingSurvey" class="my-2" />
         <button
-          v-if="isCreatingSimpleMission || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0"
+          v-if="isCreatingSimplePath || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0"
           :disabled="missionStore.currentPlanningWaypoints.length < 2"
           :class="{
             'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
@@ -300,7 +300,7 @@
     :visible="contextMenuVisible"
     :position="contextMenuPosition"
     :is-creating-survey="isCreatingSurvey"
-    :is-creating-simple-mission="isCreatingSimpleMission"
+    :is-creating-simple-path="isCreatingSimplePath"
     :surveys="surveys"
     :selected-survey-id="selectedSurveyId"
     :undo-is-in-progress="undoIsInProgress"
@@ -308,7 +308,7 @@
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
     @toggle-survey="toggleSurvey"
-    @toggle-simple-mission="toggleSimpleMission"
+    @toggle-simple-path="toggleSimplePath"
     @undo-generated-waypoints="undoGenerateWaypoints"
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
     @survey-lines-angle="onSurveyLinesAngleChange"
@@ -395,7 +395,7 @@ const currentWaypointAltitude = ref(0)
 const defaultCruiseSpeed = ref(1)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = ref<{ [id: string]: Marker }>({})
-const isCreatingSimpleMission = ref(false)
+const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
 const confirmButtonStyle = ref<Record<string, string>>({})
@@ -547,17 +547,17 @@ const hideContextMenu = (): void => {
   selectedSurveyId.value = ''
 }
 
-const toggleSimpleMission = (): void => {
-  if (isCreatingSimpleMission.value) {
-    isCreatingSimpleMission.value = false
+const toggleSimplePath = (): void => {
+  if (isCreatingSimplePath.value) {
+    isCreatingSimplePath.value = false
     return
   }
-  isCreatingSimpleMission.value = true
+  isCreatingSimplePath.value = true
 }
 
 const toggleSurvey = (): void => {
-  if (isCreatingSimpleMission.value) {
-    isCreatingSimpleMission.value = false
+  if (isCreatingSimplePath.value) {
+    isCreatingSimplePath.value = false
   }
   if (isCreatingSurvey.value) {
     isCreatingSurvey.value = false
@@ -600,14 +600,14 @@ const addSurveyPolygonToMap = (survey: Survey): void => {
   surveyPolygonLayers.value[survey.id] = surveyPolygonLayer
 
   surveyPolygonLayer.on('click', (event: LeafletMouseEvent) => {
-    if (isCreatingSimpleMission.value) return
+    if (isCreatingSimplePath.value) return
     selectedSurveyId.value = survey.id
     lastSelectedSurveyId.value = survey.id
     L.DomEvent.stopPropagation(event)
   })
 
   surveyPolygonLayer.on('contextmenu', (event: LeafletMouseEvent) => {
-    if (selectedSurveyId.value !== survey.id && !isCreatingSimpleMission.value) {
+    if (selectedSurveyId.value !== survey.id && !isCreatingSimplePath.value) {
       selectedSurveyId.value = survey.id
       lastSelectedSurveyId.value = survey.id
     }
@@ -622,7 +622,7 @@ const addSurveyPolygonToMap = (survey: Survey): void => {
   const LONG_PRESS_DURATION = 500
 
   const handleTouchStart = (event: TouchEvent): void => {
-    if (isCreatingSimpleMission.value) return
+    if (isCreatingSimplePath.value) return
 
     event.preventDefault()
 
@@ -1468,7 +1468,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
 
   if (isCreatingSurvey.value) {
     addSurveyPoint(e.latlng)
-  } else if (isCreatingSimpleMission.value) {
+  } else if (isCreatingSimplePath.value) {
     addWaypoint(
       [e.latlng.lat, e.latlng.lng],
       currentWaypointAltitude.value,
@@ -1611,7 +1611,7 @@ watch(
   () => interfaceStore.mainMenuCurrentStep,
   (step) => {
     if (step > 1) {
-      isCreatingSimpleMission.value = false
+      isCreatingSimplePath.value = false
       isCreatingSurvey.value = false
       return
     }

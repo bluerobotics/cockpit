@@ -46,7 +46,7 @@
               size="x-small"
               color="#FFFFFF22"
               class="text-[13px] rotate-[170deg]"
-              @click="handleToggleSimpleMission"
+              @click="handleToggleSimplePath"
             ></v-btn>
           </template>
         </v-tooltip>
@@ -99,7 +99,7 @@
         <span class="text-white text-sm ml-4">{{ surveyCreationButtonText }}</span>
       </v-list-item>
       <v-divider />
-      <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSimpleMission">
+      <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSimplePath">
         <v-icon
           variant="text"
           icon="mdi-vector-polyline"
@@ -135,7 +135,7 @@ const props = defineProps<{
   surveys: Survey[]
   selectedSurveyId: string | null
   isCreatingSurvey: boolean
-  isCreatingSimpleMission: boolean
+  isCreatingSimplePath: boolean
   undoIsInProgress: boolean
   enableUndo: boolean
 }>()
@@ -144,7 +144,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'close'): void
   (event: 'toggleSurvey'): void
-  (event: 'toggleSimpleMission'): void
+  (event: 'toggleSimplePath'): void
   (event: 'deleteSelectedSurvey'): void
   (event: 'undoGeneratedWaypoints'): void
   (event: 'surveyLinesAngle', angle: number): void
@@ -170,7 +170,7 @@ const surveyCreationButtonText = computed(() => {
 })
 
 const pathCreationButtonText = computed(() => {
-  if (props.isCreatingSimpleMission) {
+  if (props.isCreatingSimplePath) {
     return 'Close simple path creation'
   }
   if (props.surveys.length === 0) {
@@ -184,8 +184,8 @@ const handleToggleSurvey = (): void => {
   emit('close')
 }
 
-const handleToggleSimpleMission = (): void => {
-  emit('toggleSimpleMission')
+const handleToggleSimplePath = (): void => {
+  emit('toggleSimplePath')
   emit('close')
 }
 
