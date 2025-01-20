@@ -817,6 +817,7 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
   [WidgetType.CompassHUD]: true,
   [WidgetType.CustomWidgetBase]: true,
   [WidgetType.DepthHUD]: true,
+  [WidgetType.DoItYourself]: true,
   [WidgetType.IFrame]: true,
   [WidgetType.ImageView]: true,
   [WidgetType.Map]: true,
