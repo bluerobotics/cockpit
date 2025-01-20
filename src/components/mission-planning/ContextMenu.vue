@@ -4,7 +4,7 @@
     :style="{ top: `${position.y}px`, left: `${position.x}px` }"
     class="context-menu absolute flex justify-center items-center z-[1000] text-white rounded-lg w-auto h-auto"
   >
-    <div v-if="selectedSurveyId" class="relative orbit-container">
+    <div v-if="menuType === 'survey'" class="relative orbit-container">
       <div class="central-element flex justify-start items-start">
         <ScanDirectionDial
           :angle="angle"
@@ -16,7 +16,7 @@
       </div>
 
       <div id="button-1" class="orbit-button orbit-button-1">
-        <v-tooltip :text="isFirstWaypoints ? 'Create survey' : 'Add survey'">
+        <v-tooltip :text="'Create survey'">
           <template #activator="{ props: tooltipProps0 }">
             <v-btn
               v-bind="tooltipProps0"
@@ -35,7 +35,7 @@
       </div>
 
       <div id="button-2" class="orbit-button orbit-button-2">
-        <v-tooltip :text="isFirstWaypoints ? 'Create simple path' : 'Add simple path'">
+        <v-tooltip :text="'Add simple path'">
           <template #activator="{ props: tooltipProps1 }">
             <v-btn
               v-bind="tooltipProps1"
@@ -82,34 +82,90 @@
         </template>
       </v-tooltip>
     </div>
+    <div v-if="menuType === 'map'" class="flex bg-transparent">
+      <div
+        class="flex flex-col rounded-md"
+        :style="[interfaceStore.globalGlassMenuStyles, { background: '#333333EE', border: '1px solid #FFFFFF44' }]"
+      >
+        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSurvey">
+          <v-icon
+            variant="text"
+            icon="mdi-transit-connection-variant"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px]"
+          ></v-icon>
+          <span class="text-white text-sm ml-4">{{ surveyCreationButtonText }}</span>
+        </v-list-item>
+        <v-divider />
+        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSimplePath">
+          <v-icon
+            variant="text"
+            icon="mdi-vector-polyline"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px]"
+          ></v-icon>
+          <span class="text-white text-sm ml-4">{{ pathCreationButtonText }}</span>
+        </v-list-item>
+      </div>
+    </div>
+
     <div
-      v-else
-      class="flex flex-col rounded-md"
+      v-if="menuType === 'waypoint'"
+      class="flex flex-col rounded-md w-[221px]"
       :style="[interfaceStore.globalGlassMenuStyles, { background: '#333333EE', border: '1px solid #FFFFFF44' }]"
     >
-      <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSurvey">
-        <v-icon
-          variant="text"
-          icon="mdi-transit-connection-variant"
-          rounded="full"
-          size="x-small"
-          color="white"
-          class="text-[16px]"
-        ></v-icon>
-        <span class="text-white text-sm ml-4">{{ surveyCreationButtonText }}</span>
-      </v-list-item>
+      <div class="flex justify-between items-center pt-1 pb-2 px-2">
+        <p class="text-[14px]">Waypoint {{ missionStore.getWaypointNumber(selectedWaypoint?.id as string) }}</p>
+        <div>
+          <v-icon
+            v-tooltip="'Delete waypoint'"
+            variant="text"
+            icon="mdi-trash-can"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px] mr-3"
+            @click="handleRemoveWaypoint"
+          ></v-icon>
+          <v-icon
+            v-tooltip="'Edit waypoint'"
+            :disabled="interfaceStore.isConfigPanelVisible"
+            variant="text"
+            icon="mdi-pencil"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px] mr-[2px]"
+            :class="{ 'opacity-15': interfaceStore.isConfigPanelVisible }"
+            @click="handleOpenPanel"
+          ></v-icon>
+        </div>
+      </div>
+
       <v-divider />
-      <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSimplePath">
-        <v-icon
-          variant="text"
-          icon="mdi-vector-polyline"
-          rounded="full"
-          size="x-small"
-          color="white"
-          class="text-[16px]"
-        ></v-icon>
-        <span class="text-white text-sm ml-4">{{ pathCreationButtonText }}</span>
-      </v-list-item>
+
+      <div
+        class="flex flex-col justify-center w-full items-center py-1 px-2 bg-[#EEEEEE] text-black rounded-bl-md rounded-br-md"
+      >
+        <div class="flex w-full gap-x-4 justify-between text-[10px] py-[1px] text-center mb-[2px]">
+          <p>Lat.:</p>
+          <p>{{ waypointOnMissionStore?.coordinates[0].toFixed(7) }}</p>
+        </div>
+        <v-divider class="border-black w-full" />
+        <div class="flex w-full gap-x-4 justify-between text-[10px] py-[1px] text-center">
+          <p>Long.:</p>
+          <p>{{ waypointOnMissionStore?.coordinates[1].toFixed(7) }}</p>
+        </div>
+        <v-divider class="border-black w-full" />
+        <div class="flex w-full gap-x-4 justify-between text-[10px] py-[1px] text-center">
+          <p>Altitude:</p>
+          <p>{{ waypointOnMissionStore?.altitude }}</p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -120,7 +176,7 @@ import { computed, defineEmits, defineProps } from 'vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
-import { Survey } from '@/types/mission'
+import { ContextMenuTypes, Survey, Waypoint } from '@/types/mission'
 
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
@@ -138,6 +194,8 @@ const props = defineProps<{
   isCreatingSimplePath: boolean
   undoIsInProgress: boolean
   enableUndo: boolean
+  selectedWaypoint: Waypoint | undefined
+  menuType: ContextMenuTypes
 }>()
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -149,14 +207,16 @@ const emit = defineEmits<{
   (event: 'undoGeneratedWaypoints'): void
   (event: 'surveyLinesAngle', angle: number): void
   (event: 'regenerateSurveyWaypoints', angle: number): void
+  (event: 'removeWaypoint'): void
 }>()
 
-const selectedSurveyId = computed(() => props.selectedSurveyId)
-
+const menuType = computed(() => props.menuType)
+const selectedWaypoint = computed<Waypoint | undefined>(() => props.selectedWaypoint)
+const visible = computed(() => props.visible)
 const angle = computed(() => props.surveys.find((survey) => survey.id === props.selectedSurveyId)?.surveyLinesAngle)
 
-const isFirstWaypoints = computed(
-  () => props.surveys.length === 0 && missionStore.currentPlanningWaypoints.length === 0
+const waypointOnMissionStore = computed(() =>
+  missionStore.currentPlanningWaypoints.find((waypoint) => waypoint.id === selectedWaypoint.value?.id)
 )
 
 const surveyCreationButtonText = computed(() => {
@@ -179,6 +239,10 @@ const pathCreationButtonText = computed(() => {
   return 'Add simple path'
 })
 
+const handleClose = (): void => {
+  emit('close')
+}
+
 const handleToggleSurvey = (): void => {
   emit('toggleSurvey')
   emit('close')
@@ -197,6 +261,10 @@ const handleDeleteSelectedSurvey = (): void => {
   emit('deleteSelectedSurvey')
 }
 
+const handleRemoveWaypoint = (): void => {
+  emit('removeWaypoint')
+}
+
 const onRegenerateSurveyWaypoints = (newAngle: number): void => {
   emit('regenerateSurveyWaypoints', newAngle)
 }
@@ -204,8 +272,12 @@ const onRegenerateSurveyWaypoints = (newAngle: number): void => {
 const onSurveyLinesAngleChange = (newAngle: number): void => {
   emit('surveyLinesAngle', newAngle)
 }
-</script>
 
+const handleOpenPanel = (): void => {
+  interfaceStore.configPanelVisible = true
+  handleClose()
+}
+</script>
 <style scoped>
 .context-menu {
   transform-origin: center;

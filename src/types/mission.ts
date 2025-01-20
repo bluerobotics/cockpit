@@ -16,6 +16,8 @@ export enum AltitudeReferenceType {
 
 export type WaypointCoordinates = [number, number]
 
+export type ContextMenuTypes = 'survey' | 'waypoint' | 'map'
+
 export type Waypoint = {
   /**
    * Unique identification for the waypoint.
