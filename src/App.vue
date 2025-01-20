@@ -115,7 +115,7 @@
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
                   :width="buttonSize"
-                  :selected="showConfigurationMenu"
+                  :selected="showSubMenu"
                   class="mb-2"
                   :style="
                     interfaceStore.highlightedComponent === 'config-menu-item' && {
@@ -123,7 +123,30 @@
                       borderRadius: '10px',
                     }
                   "
-                  @click="interfaceStore.mainMenuCurrentStep = 2"
+                  @click="selectSubMenu('config')"
+                />
+                <GlassButton
+                  :label="simplifiedMainMenu ? '' : 'Tools'"
+                  :label-class="[menuLabelSize, '-mb-1']"
+                  icon="mdi-tools"
+                  :icon-size="simplifiedMainMenu ? 25 : undefined"
+                  :icon-class="
+                    interfaceStore.isOnSmallScreen
+                      ? 'scale-[100%] -mb-[1px] md:ml-[2px]'
+                      : 'scale-[90%]  lg:ml-[1px] -mr-[2px] xl:-mb-[4px]'
+                  "
+                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  :tooltip="simplifiedMainMenu ? 'Tools' : undefined"
+                  :width="buttonSize"
+                  :selected="showSubMenu"
+                  class="mb-2"
+                  :style="
+                    interfaceStore.highlightedComponent === 'config-menu-item' && {
+                      animation: 'highlightBackground 0.5s alternate 20',
+                      borderRadius: '10px',
+                    }
+                  "
+                  @click="selectSubMenu('tools')"
                 />
                 <GlassButton
                   :label="simplifiedMainMenu ? '' : isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
@@ -161,7 +184,7 @@
                   :tooltip="simplifiedMainMenu ? 'About' : undefined"
                   :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
                   :width="buttonSize"
-                  :selected="showConfigurationMenu"
+                  :selected="showSubMenu"
                   @click="openAboutDialog"
                 />
               </div>
@@ -172,13 +195,13 @@
                 :class="simplifiedMainMenu ? 'py-0 gap-y-0' : 'py-2 gap-y-1'"
               >
                 <GlassButton
-                  v-for="menuitem in configMenu"
+                  v-for="menuitem in currentSubMenu"
                   :key="menuitem.title"
                   :label="interfaceStore.isOnSmallScreen ? undefined : menuitem.title"
                   :label-class="menuLabelSize"
                   :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
                   :icon="menuitem.icon"
-                  :selected="currentConfigMenuComponent === menuitem.component"
+                  :selected="interfaceStore.subMenuComponentName === menuitem.title"
                   variant="uncontained"
                   :height="buttonSize * 0.45"
                   :icon-size="buttonSize * 0.5"
@@ -188,9 +211,9 @@
                       borderRadius: '4px',
                     }
                   "
-                  @click="toggleConfigComponent(menuitem.component)"
+                  @click="toggleSubMenuComponent(menuitem.component)"
                   ><template #content
-                    ><div v-if="currentConfigMenuComponent === menuitem.component" class="arrow-left"></div></template
+                    ><div v-if="currentSubMenuComponent === menuitem.component" class="arrow-left"></div></template
                 ></GlassButton>
                 <div class="flex flex-col justify-center align-center">
                   <v-divider width="70%" class="mb-3" />
@@ -205,7 +228,7 @@
                     @click="
                       () => {
                         interfaceStore.mainMenuCurrentStep = 1
-                        currentConfigMenuComponent = null
+                        currentSubMenuComponent = null
                       }
                     "
                   />
@@ -219,15 +242,15 @@
       <teleport to="body">
         <GlassModal
           :is-visible="
-            currentConfigMenuComponent !== null &&
+            currentSubMenuComponent !== null &&
             interfaceStore.mainMenuCurrentStep === 2 &&
             interfaceStore.isMainMenuVisible
           "
           position="menuitem"
           :class="interfaceStore.isVideoLibraryVisible ? 'opacity-0' : 'opacity-100'"
-          @close-modal="currentConfigMenuComponent = null"
+          @close-modal="currentSubMenuComponent = null"
         >
-          <component :is="currentConfigMenuComponent"></component>
+          <component :is="currentSubMenuComponent"></component>
         </GlassModal>
       </teleport>
 
@@ -348,18 +371,18 @@ import { useSnackbar } from './composables/snackbar'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
-import { ConfigComponent } from './types/general'
+import { SubMenuComponent } from './types/general'
 import ConfigurationActionsView from './views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from './views/ConfigurationAlertsView.vue'
-import ConfigurationDataLakeView from './views/ConfigurationDataLakeView.vue'
 import ConfigurationDevelopmentView from './views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from './views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from './views/ConfigurationJoystickView.vue'
 import ConfigurationTelemetryView from './views/ConfigurationLogsView.vue'
-import ConfigurationMAVLinkView from './views/ConfigurationMAVLinkView.vue'
 import ConfigurationMissionView from './views/ConfigurationMissionView.vue'
 import ConfigurationUIView from './views/ConfigurationUIView.vue'
 import ConfigurationVideoView from './views/ConfigurationVideoView.vue'
+import ToolsDataLakeView from './views/ToolsDataLakeView.vue'
+import ToolsMAVLinkView from './views/ToolsMAVLinkView.vue'
 
 const { showDialog, closeDialog } = useInteractionDialog()
 const { showSnackbar } = useSnackbar()
@@ -369,8 +392,9 @@ const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 
 const showAboutDialog = ref(false)
-const showConfigurationMenu = ref(false)
-const currentConfigMenuComponent = ref<ConfigComponent>(null)
+const showSubMenu = ref(false)
+const currentSubMenuName = ref<keyof typeof availableSubMenus | null>(null)
+const currentSubMenuComponent = ref<SubMenuComponent>(null)
 
 // Main menu
 const isMenuOpen = ref(false)
@@ -382,83 +406,98 @@ const configMenu = [
   {
     icon: 'mdi-view-dashboard-variant',
     title: 'General',
-    component: markRaw(ConfigurationGeneralView) as ConfigComponent,
+    component: markRaw(ConfigurationGeneralView) as SubMenuComponent,
   },
   {
     icon: 'mdi-monitor-cellphone',
     title: 'Interface',
-    component: markRaw(ConfigurationUIView) as ConfigComponent,
+    component: markRaw(ConfigurationUIView) as SubMenuComponent,
   },
   {
     icon: 'mdi-controller',
     title: 'Joystick',
-    component: markRaw(ConfigurationJoystickView) as ConfigComponent,
+    component: markRaw(ConfigurationJoystickView) as SubMenuComponent,
   },
   {
     icon: 'mdi-video',
     title: 'Video',
-    component: markRaw(ConfigurationVideoView) as ConfigComponent,
+    component: markRaw(ConfigurationVideoView) as SubMenuComponent,
   },
   {
     icon: 'mdi-subtitles-outline',
     title: 'Telemetry',
-    component: markRaw(ConfigurationTelemetryView) as ConfigComponent,
+    component: markRaw(ConfigurationTelemetryView) as SubMenuComponent,
   },
   {
     icon: 'mdi-alert-rhombus-outline',
     title: 'Alerts',
-    component: markRaw(ConfigurationAlertsView) as ConfigComponent,
+    component: markRaw(ConfigurationAlertsView) as SubMenuComponent,
   },
   {
     icon: 'mdi-dev-to',
     title: 'Dev',
-    component: markRaw(ConfigurationDevelopmentView) as ConfigComponent,
-  },
-  {
-    icon: 'mdi-protocol',
-    title: 'MAVLink',
-    component: markRaw(ConfigurationMAVLinkView) as ConfigComponent,
+    component: markRaw(ConfigurationDevelopmentView) as SubMenuComponent,
   },
   {
     icon: 'mdi-map-marker-path',
     title: 'Mission',
-    component: markRaw(ConfigurationMissionView) as ConfigComponent,
-  },
-  {
-    icon: 'mdi-database-outline',
-    title: 'Data-lake',
-    component: markRaw(ConfigurationDataLakeView) as ConfigComponent,
+    component: markRaw(ConfigurationMissionView) as SubMenuComponent,
   },
   {
     icon: 'mdi-run-fast',
     title: 'Actions',
-    component: markRaw(ConfigurationActionsView) as ConfigComponent,
+    component: markRaw(ConfigurationActionsView) as SubMenuComponent,
   },
 ]
 
+const toolsMenu = [
+  {
+    icon: 'mdi-protocol',
+    title: 'MAVLink',
+    component: markRaw(ToolsMAVLinkView) as SubMenuComponent,
+  },
+  {
+    icon: 'mdi-database-outline',
+    title: 'Data-lake',
+    component: markRaw(ToolsDataLakeView) as SubMenuComponent,
+  },
+]
+
+const availableSubMenus = {
+  config: configMenu,
+  tools: toolsMenu,
+}
+
+const currentSubMenu = computed(() => {
+  if (currentSubMenuName.value === null) return []
+  return availableSubMenus[currentSubMenuName.value]
+})
+
 watch(
-  () => interfaceStore.configComponent,
-  (component) => {
-    if (component < 0) {
-      currentConfigMenuComponent.value = null
-      return
-    }
-    currentConfigMenuComponent.value = configMenu[component].component
+  () => interfaceStore.subMenuComponentName,
+  (subMenuComponentName) => {
+    currentSubMenuComponent.value =
+      currentSubMenu.value.find((item) => item.title === subMenuComponentName)?.component || null
   }
 )
 
-const toggleConfigComponent = (component: ConfigComponent): void => {
-  if (currentConfigMenuComponent.value === null) {
-    currentConfigMenuComponent.value = component
+const selectSubMenu = (subMenuName: keyof typeof availableSubMenus): void => {
+  currentSubMenuName.value = subMenuName
+  interfaceStore.mainMenuCurrentStep = 2
+}
+
+const toggleSubMenuComponent = (component: SubMenuComponent): void => {
+  if (currentSubMenuComponent.value === null) {
+    currentSubMenuComponent.value = component
     interfaceStore.configModalVisibility = true
     return
   }
-  if (currentConfigMenuComponent.value === component) {
-    currentConfigMenuComponent.value = null
+  if (currentSubMenuComponent.value === component) {
+    currentSubMenuComponent.value = null
     interfaceStore.configModalVisibility = false
     return
   }
-  currentConfigMenuComponent.value = component
+  currentSubMenuComponent.value = component
   interfaceStore.configModalVisibility = true
 }
 
@@ -466,7 +505,7 @@ const isConfigModalVisible = computed(() => interfaceStore.isConfigModalVisible)
 
 watch(isConfigModalVisible, (newVal) => {
   if (newVal === false) {
-    currentConfigMenuComponent.value = null
+    currentSubMenuComponent.value = null
   }
 })
 
@@ -556,7 +595,7 @@ const closeMainMenu = (): void => {
     isSlidingOut.value = false
     isMenuOpen.value = false
     interfaceStore.mainMenuCurrentStep = 1
-    currentConfigMenuComponent.value = null
+    currentSubMenuComponent.value = null
   }, 20)
 }
 
@@ -645,7 +684,7 @@ onClickOutside(mainMenu, () => {
   }
   if (
     interfaceStore.mainMenuCurrentStep === 2 &&
-    currentConfigMenuComponent.value === null &&
+    currentSubMenuComponent.value === null &&
     !interfaceStore.isTutorialVisible
   ) {
     closeMainMenu()

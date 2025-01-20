@@ -24,7 +24,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     componentToHighlight: 'none',
     isMainMenuVisible: false,
     mainMenuCurrentStep: 1,
-    configComponent: -1,
+    subMenuComponentName: null,
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
     configPanelVisible: false,
