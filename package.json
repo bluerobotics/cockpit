@@ -113,7 +113,7 @@
     "vite-plugin-vuetify": "^1.0.0-alpha.16",
     "vitest": "^0.20.3",
     "vue-cli-plugin-vuetify": "~2.4.8",
-    "vue-tsc": "2.0.10",
+    "vue-tsc": "2.2.0",
     "vuetify-loader": "^2.0.0-alpha.0"
   },
   "prettier": {
