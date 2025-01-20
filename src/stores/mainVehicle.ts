@@ -7,6 +7,8 @@ import { computed, reactive, ref, watch } from 'vue'
 import { defaultGlobalAddress } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
+import { DataLakeVariable, setDataLakeVariableData } from '@/libs/actions/data-lake'
+import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { altitude_setpoint } from '@/libs/altitude-slider'
 import {
   getCpuTempCelsius,
@@ -153,6 +155,27 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     if (isOnline) return
     currentlyConnectedVehicleId.value = undefined
   })
+
+  watch(
+    globalAddress,
+    (newAddress) => {
+      if (newAddress === undefined) return
+
+      const vehicleAddressVariableId = 'vehicle-address'
+      if (!getDataLakeVariableInfo(vehicleAddressVariableId)) {
+        const vehicleAddressVariable = new DataLakeVariable(
+          vehicleAddressVariableId,
+          'Vehicle Address',
+          'string',
+          'The address of the vehicle, without protocol.'
+        )
+        createDataLakeVariable(vehicleAddressVariable)
+      }
+
+      setDataLakeVariableData(vehicleAddressVariableId, newAddress)
+    },
+    { immediate: true }
+  )
 
   const rtcConfiguration = computed(() => {
     const queryWebRtcConfiguration = new URLSearchParams(window.location.search).get('webRTCConfiguration')
