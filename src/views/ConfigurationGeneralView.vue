@@ -111,7 +111,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Autopilot telemetry connection (MAVLink2REST)</template>
+          <template #title>MAVLink2REST Websocket URI</template>
           <template #subtitle>
             Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
             Status:
@@ -133,8 +133,8 @@
                   :class="interfaceStore.isOnSmallScreen ? 'scale-80 w-[80%]' : 'scale-100 w-[76%]'"
                 >
                   <v-text-field
-                    v-model="mainConnectionURI"
-                    :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
+                    v-model="mavlink2RestWebsocketURI"
+                    :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                     variant="filled"
                     type="input"
                     density="compact"
@@ -145,7 +145,7 @@
                       <v-icon
                         v-tooltip.bottom="'Reset to default'"
                         color="white"
-                        :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
+                        :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                         @click="resetMainVehicleConnectionURI"
                       >
                         mdi-refresh
@@ -156,7 +156,7 @@
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
                   class="bg-transparent -mt-5 -ml-6"
-                  :disabled="!mainVehicleStore.customMainConnectionURI.enabled"
+                  :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                   variant="text"
                   type="submit"
                 >
@@ -169,14 +169,14 @@
                   :class="interfaceStore.isOnSmallScreen ? '-mt-3' : '-mt-5'"
                 >
                   <v-switch
-                    v-model="mainVehicleStore.customMainConnectionURI.enabled"
+                    v-model="mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                     v-tooltip.bottom="'Enable custom'"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customMainConnectionURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? 'Enabled' : 'Disabled' }}
                   </div>
                 </div>
               </div>
@@ -362,10 +362,10 @@ watch(
 
 const mainConnectionForm = ref()
 const mainConnectionFormValid = ref(false)
-const mainConnectionURI = ref(mainVehicleStore.mainConnectionURI)
+const mavlink2RestWebsocketURI = ref(mainVehicleStore.MAVLink2RestWebsocketURI)
 
 const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
-  mainConnectionURI.value = conn
+  mavlink2RestWebsocketURI.value = conn
   vehicleConnected.value = undefined
   setTimeout(() => (vehicleConnected.value ??= false), 5000)
   try {
@@ -379,9 +379,9 @@ const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
 }
 
 watch(
-  () => mainVehicleStore.mainConnectionURI,
+  () => mainVehicleStore.MAVLink2RestWebsocketURI,
   (val: Connection.URI) => {
-    if (val.toString() === mainConnectionURI.value.toString()) {
+    if (val.toString() === mavlink2RestWebsocketURI.value.toString()) {
       return
     }
 
@@ -396,18 +396,18 @@ const setMainVehicleConnectionURI = async (): Promise<void> => {
     return
   }
 
-  mainVehicleStore.customMainConnectionURI = {
-    data: mainConnectionURI.value.toString(),
+  mainVehicleStore.customMAVLink2RestWebsocketURI = {
+    data: mavlink2RestWebsocketURI.value.toString(),
     enabled: true,
   }
 
-  addNewVehicleConnection(mainConnectionURI.value)
+  addNewVehicleConnection(mavlink2RestWebsocketURI.value)
 }
 
 const resetMainVehicleConnectionURI = async (): Promise<void> => {
-  mainVehicleStore.customMainConnectionURI = {
+  mainVehicleStore.customMAVLink2RestWebsocketURI = {
     enabled: false,
-    data: mainVehicleStore.defaultMainConnectionURI.toString(),
+    data: mainVehicleStore.defaultMAVLink2RestWebsocketURI.toString(),
   }
 }
 
@@ -418,7 +418,7 @@ const webRTCSignallingURI = ref(mainVehicleStore.webRTCSignallingURI)
 const addWebRTCConnection = async (conn: Connection.URI): Promise<void> => {
   webRTCSignallingURI.value = conn
 
-  // This works as a reset for the custom URI, and its not needed in mainConnectionURI since on Add from
+  // This works as a reset for the custom URI, and its not needed in MAVLink2RestWebsocketURI since on Add from
   // ConnectionManager it will be set.
   if (!mainVehicleStore.customWebRTCSignallingURI.enabled) {
     mainVehicleStore.customWebRTCSignallingURI.data = conn.toString()
