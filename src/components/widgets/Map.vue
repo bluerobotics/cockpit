@@ -275,6 +275,7 @@ import type {
   WaypointCoordinates,
 } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
+import { useMapOverlays } from '@/composables/useMapOverlays'
 
 import ContextMenu from '../ContextMenu.vue'
 
@@ -558,18 +559,23 @@ const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
-const layerControl = L.control.layers(baseMaps, overlays)
+const layerControl = ref<L.Control.Layers>()
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
     map.value.addControl(zoomControl)
-    map.value.addControl(layerControl)
+    if (!layerControl.value) {
+      layerControl.value = L.control.layers(baseMaps, overlays)
+    }
+    map.value.addControl(layerControl.value)
     createScaleControl()
   } else {
     map.value.removeControl(zoomControl)
-    map.value.removeControl(layerControl)
+    if (layerControl.value) {
+      map.value.removeControl(layerControl.value)
+    }
     removeScaleControl()
   }
 })
@@ -665,6 +671,8 @@ const removeScaleControl = (): void => {
   }
 }
 
+const { setupMapOverlays } = useMapOverlays(map, layerControl)
+
 onMounted(async () => {
   reachedWaypoints.value = {}
   missionItemsInVehicle.value = []
@@ -677,7 +685,7 @@ onMounted(async () => {
 
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
-    layers: [initialBaseLayer, seamarks, marineProfile],
+    layers: [initialBaseLayer],
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
@@ -696,6 +704,14 @@ onMounted(async () => {
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
+
+  // Setup overlays with custom panes and fetch logic
+  setupMapOverlays(map.value)
+
+  // Add default overlays with proper pane (pane needs to exist before addTo for z-index to apply)
+  seamarks.options.pane = 'seamarks'
+  seamarks.addTo(map.value)
+  marineProfile.addTo(map.value)
 
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
