@@ -345,6 +345,7 @@ import {
   SurveyPolygon,
   WaypointType,
 } from '@/types/mission'
+import { useMapOverlays } from '@/composables/useMapOverlays'
 
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
@@ -1478,6 +1479,85 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   }
 }
 
+const mapBounds = ref<L.LatLngBounds>()
+const dynamicOverlays = ref<Record<string, L.Layer>>({})
+const layerControl = ref<L.Control.Layers>()
+const { setupMapOverlays } = useMapOverlays(planningMap, layerControl)
+
+interface Overlay {
+  id: string
+  title: string
+  description: string
+  url: string
+}
+
+const overlaysInView = ref<Overlay[]>([])
+
+const lastFetchTime = ref(0)
+const fetchDebounceTimeout = ref<number | null>(null)
+
+const fetchAndUpdateOverlays = async (): Promise<void> => {
+  if (!mapBounds.value) return
+
+  const now = Date.now()
+  const timeSinceLastFetch = now - lastFetchTime.value
+
+  if (timeSinceLastFetch < 1000) return
+
+  const bounds = mapBounds.value
+  const url = `https://map.galvanicloop.com/api/images/bounds/?min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lon=${bounds.getWest()}&max_lon=${bounds.getEast()}`
+
+  try {
+    lastFetchTime.value = now
+    const response = await fetch(url)
+    const data = await response.json()
+    overlaysInView.value = data.map((overlay: any) => ({
+      id: overlay.id,
+      title: overlay.title,
+      description: overlay.description,
+      url: `https://map.galvanicloop.com/api/images/${overlay.id}/tiles/{z}/{x}/{y}.png`,
+    }))
+    updateOverlays()
+  } catch (error) {
+    console.error('Failed to fetch overlays:', error)
+  }
+}
+
+const updateOverlays = (): void => {
+  if (!planningMap.value || !layerControl.value) return
+
+  // Keep track of current overlay IDs
+  const currentOverlayIds = new Set(Object.keys(dynamicOverlays.value))
+  const newOverlayIds = new Set(overlaysInView.value.map((o) => o.id.toString()))
+
+  // Remove overlays that are no longer in view
+  currentOverlayIds.forEach((id) => {
+    if (!newOverlayIds.has(id)) {
+      const layer = dynamicOverlays.value[id]
+      planningMap.value?.removeLayer(layer)
+      layerControl.value?.removeLayer(layer)
+      delete dynamicOverlays.value[id]
+    }
+  })
+
+  // Add new overlays
+  overlaysInView.value.forEach((overlay) => {
+    const id = overlay.id.toString()
+    // Skip if we already have this overlay
+    if (currentOverlayIds.has(id)) return
+
+    const tileLayer = L.tileLayer(overlay.url, {
+      maxZoom: 22,
+      minZoom: 1,
+      tileSize: 256,
+      attribution: `© ${overlay.title}`,
+    })
+
+    dynamicOverlays.value[id] = tileLayer
+    layerControl.value?.addOverlay(tileLayer, overlay.title)
+  })
+}
+
 onMounted(async () => {
   const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -1488,28 +1568,53 @@ onMounted(async () => {
     { maxZoom: 19, attribution: '© Esri World Imagery' }
   )
 
+  // Default overlays
+  const defaultOverlays = {
+    'Marine Profile': L.tileLayer.wms('https://geoserver.openseamap.org/geoserver/gwc/service/wms', {
+      layers: 'gebco2021:gebco_2021',
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.1',
+      attribution: '© GEBCO, OpenSeaMap',
+      tileSize: 256,
+      maxZoom: 19,
+    }),
+    'Seamarks': L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenSeaMap contributors',
+    })
+  }
+
   const baseMaps = {
     'OpenStreetMap': osm,
     'Esri World Imagery': esri,
   }
 
-  planningMap.value = L.map('planningMap', { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(planningMap.value)
+  // Initialize map with base layer
+  planningMap.value = L.map('planningMap', { layers: [osm] }).setView(mapCenter.value as LatLngTuple, zoom.value)
   planningMap.value.zoomControl.setPosition('bottomright')
 
+  // Initialize layer control and setup overlays
+  layerControl.value = L.control.layers(baseMaps, defaultOverlays)
+  planningMap.value.addControl(layerControl.value)
+
+  // Setup overlays with custom panes and fetch logic
+  setupMapOverlays(planningMap.value)
+
+  // Add default overlays with proper pane
+  defaultOverlays['Seamarks'].options.pane = 'seamarks'
+  Object.values(defaultOverlays).forEach(layer => layer.addTo(planningMap.value!))
+
+  // Set up map event handlers
   planningMap.value.on('moveend', () => {
-    if (planningMap.value === undefined) return
-    let { lat, lng } = planningMap.value.getCenter()
-    if (lat && lng) {
-      mapCenter.value = [lat, lng]
-    }
+    if (!planningMap.value) return
+    const center = planningMap.value.getCenter()
+    mapCenter.value = [center.lat, center.lng]
   })
+
   planningMap.value.on('zoomend', () => {
-    if (planningMap.value === undefined) return
-    zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
+    if (!planningMap.value) return
+    zoom.value = planningMap.value.getZoom()
   })
 
   await goHome()
@@ -1521,13 +1626,13 @@ onMounted(async () => {
     onMapClick(e)
   })
 
-  const layerControl = L.control.layers(baseMaps)
-  planningMap.value.addControl(layerControl)
-
   targetFollower.enableAutoUpdate()
 })
 
 onUnmounted(() => {
+  if (fetchDebounceTimeout.value !== null) {
+    window.clearTimeout(fetchDebounceTimeout.value)
+  }
   targetFollower.disableAutoUpdate()
   missionStore.clearMission()
 })
