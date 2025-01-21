@@ -47,6 +47,12 @@ class VehicleDiscover {
       const statusResponse = await ky.get(`http://${address}/status`, { timeout: 3000 })
       if (!statusResponse.ok) return null
 
+      // Check if the vehicle is a BlueOS vehicle
+      const beaconResponse = await ky.get(`http://${address}/beacon/`, { timeout: 5000 })
+      if (!beaconResponse.ok) return null
+      const beaconText = await beaconResponse.text()
+      if (!beaconText.toLowerCase().includes('beacon')) return null
+
       // Try to get the vehicle name
       const nameResponse = await ky.get(`http://${address}/beacon/v1.0/vehicle_name`, { timeout: 5000 })
       if (!nameResponse.ok) return null
