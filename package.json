@@ -7,6 +7,9 @@
   "scripts": {
     "build": "vite build",
     "build:serve": "bun run build && bun run serve",
+    "build:mobile": "vite build && npx cap sync",
+    "build:ios": "bun run build:mobile && npx cap open ios",
+    "build:android": "bun run build:mobile && npx cap open android",
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "ELECTRON=true electron-builder --dir",
     "deploy:electron": "ELECTRON=true electron-builder --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
