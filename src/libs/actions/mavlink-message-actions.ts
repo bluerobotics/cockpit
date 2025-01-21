@@ -9,6 +9,11 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
+import {
+  findDataLakeInputsInString,
+  getDataLakeVariableIdFromInput,
+  replaceDataLakeInputsInJsonString,
+} from '../utils-data-lake'
 import { getDataLakeVariableData } from './data-lake'
 
 const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
@@ -132,25 +137,26 @@ export const getMavlinkMessageActionCallback = (id: string): MavlinkMessageActio
 
 const processMessageConfig = (config: MavlinkMessageConfig): Record<string, any> => {
   let processedConfig: Record<string, any> = {}
-
   if (typeof config === 'string') {
-    const configWithDynamicValues = config.replace(/{{\s*([^{}\s]+)\s*}}/g, (match, p1) => {
-      const variableValue = getDataLakeVariableData(p1)
-      return variableValue ? variableValue.toString() : match
-    })
+    const configWithDynamicValues = replaceDataLakeInputsInJsonString(config)
     processedConfig = JSON.parse(configWithDynamicValues)
   } else {
     for (const [k, v] of Object.entries(config)) {
-      if (typeof v.value === 'string' && v.value.startsWith('{{') && v.value.endsWith('}}')) {
-        const variableName = v.value.slice(2, -2).trim()
-        const variableValue = getDataLakeVariableData(variableName)
-        processedConfig[k] = typeof variableValue === 'boolean' ? (variableValue ? 1 : 0) : variableValue
-      } else if (v.type === MessageFieldType.TYPE_STRUCT_ENUM) {
+      if (v.type === MessageFieldType.TYPE_STRUCT_ENUM) {
         processedConfig[k] = { type: v.value }
-      } else if (v.type === MessageFieldType.NUMBER) {
-        processedConfig[k] = Number(v.value)
       } else {
-        processedConfig[k] = v.value
+        const inputs = findDataLakeInputsInString(v.value)
+        if (inputs.length === 0) {
+          processedConfig[k] = v.value
+        } else {
+          const variableId = getDataLakeVariableIdFromInput(inputs[0])
+          if (!variableId) {
+            processedConfig[k] = v.value
+          } else {
+            const variableData = getDataLakeVariableData(variableId)
+            processedConfig[k] = variableData
+          }
+        }
       }
     }
   }
