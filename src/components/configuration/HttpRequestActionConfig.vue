@@ -35,7 +35,9 @@
               </td>
               <td>
                 <div :id="item.id" class="flex items-center justify-center rounded-xl mx-1 w-[200px]">
-                  <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">{{ item.url }}</p>
+                  <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">
+                    {{ replaceDataLakeInputsInString(item.url) }}
+                  </p>
                 </div>
               </td>
               <td class="w-[200px] text-right">
@@ -317,6 +319,7 @@ import {
   registerHttpRequestActionConfig,
 } from '@/libs/actions/http-request'
 import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
+import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 const interfaceStore = useAppInterfaceStore()
 
