@@ -6,7 +6,7 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
-import { getDataLakeVariableData, getDataLakeVariableInfo } from './data-lake'
+import { replaceDataLakeInputsInJsonString, replaceDataLakeInputsInString } from '../utils-data-lake'
 
 const httpRequestActionIdPrefix = 'http-request-action'
 
@@ -114,115 +114,19 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
   return () => {
     try {
       const action = getHttpRequestActionConfig(id)
-      if (!action) {
-        throw new Error(`Action with id ${id} not found.`)
-      }
+      if (!action) throw new Error(`Action with id ${id} not found.`)
 
-      let parsedBody = action.body
-      const parsedUrlParams = { ...action.urlParams }
-      let parsedUrl = action.url
+      // Parse the body variables
+      const parsedBody = replaceDataLakeInputsInJsonString(action.body)
 
-      // Parse body variables
-      try {
-        const cockpitInputsInBody = action.body.match(/{{\s*([^{}\s]+)\s*}}/g)
-        if (cockpitInputsInBody) {
-          for (const input of cockpitInputsInBody) {
-            try {
-              const parsedInput = input.replace('{{', '').replace('}}', '').trim()
-              const inputData = getDataLakeVariableData(parsedInput)
-              const variableInfo = getDataLakeVariableInfo(parsedInput)
-
-              if (inputData !== undefined) {
-                let valueToReplace: string
-
-                try {
-                  // Determine type either from variable info or by parsing the value
-                  const type =
-                    variableInfo?.type ||
-                    (() => {
-                      const strValue = inputData.toString().toLowerCase()
-                      // Check if it's a boolean
-                      if (strValue === 'true' || strValue === 'false') {
-                        return 'boolean'
-                      }
-                      // Check if it's a number
-                      if (!isNaN(Number(strValue)) && strValue !== '') {
-                        return 'number'
-                      }
-                      return 'string'
-                    })()
-
-                  // Cast the value based on the determined type
-                  switch (type) {
-                    case 'number':
-                    case 'boolean':
-                      valueToReplace = inputData.toString()
-                      // Remove quotes if they exist around the placeholder
-                      parsedBody = parsedBody.replace(`"${input}"`, valueToReplace)
-                      // If no quotes found, replace the placeholder directly
-                      if (parsedBody.includes(input)) {
-                        parsedBody = parsedBody.replace(input, valueToReplace)
-                      }
-                      break
-                    case 'string':
-                      valueToReplace = `"${inputData.toString()}"`
-                      // Replace the placeholder, maintaining the quotes if they exist
-                      parsedBody = parsedBody.replace(`"${input}"`, valueToReplace)
-                      // If no quotes found, replace and add them
-                      if (parsedBody.includes(input)) {
-                        parsedBody = parsedBody.replace(input, valueToReplace)
-                      }
-                      break
-                  }
-                } catch (error) {
-                  console.warn(`Error parsing value for ${input}, using as string:`, error)
-                  // Fallback to string if parsing fails
-                  valueToReplace = `"${inputData.toString()}"`
-                  parsedBody = parsedBody.replace(input, valueToReplace)
-                }
-              }
-            } catch (error) {
-              console.warn(`Error processing body variable ${input}:`, error)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing body variables:', error)
-      }
-
-      // Parse URL parameters
-      try {
-        const cockpitInputsInUrlParams = Object.entries(action.urlParams).filter(
-          ([, value]) => typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')
-        )
-        if (cockpitInputsInUrlParams) {
-          for (const [key, value] of cockpitInputsInUrlParams) {
-            try {
-              const parsedInput = value.replace('{{', '').replace('}}', '').trim()
-              const inputData = getDataLakeVariableData(parsedInput)
-              if (inputData) {
-                parsedUrlParams[key] = inputData.toString()
-              }
-            } catch (error) {
-              console.warn(`Error processing URL parameter ${key}:`, error)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing URL parameters:', error)
-      }
+      // Parse the URL parameters
+      const parsedUrlParams: Record<string, string> = {}
+      Object.entries(action.urlParams).forEach(([key, value]) => {
+        parsedUrlParams[key] = replaceDataLakeInputsInString(value)
+      })
 
       // Parse the URL as well for any datalake variables
-      const cockpitInputsInUrl = parsedUrl.match(/{{\s*([^{}\s]+)\s*}}/g)
-      if (cockpitInputsInUrl) {
-        for (const input of cockpitInputsInUrl) {
-          const variableId = input.replace('{{', '').replace('}}', '').trim()
-          const inputData = getDataLakeVariableData(variableId)
-          if (inputData) {
-            parsedUrl = parsedUrl.replace(input, inputData.toString())
-          }
-        }
-      }
+      const parsedUrl = replaceDataLakeInputsInString(action.url)
 
       // Make the request
       try {
