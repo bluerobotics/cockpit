@@ -1,6 +1,6 @@
 <template>
   <div class="mission-planning">
-    <div id="planningMap" ref="planningMap" class="relative" />
+    <div id="planningMap" class="relative" />
     <v-tooltip location="top" text="Generate waypoints">
       <template #activator="{ props }">
         <div
@@ -322,8 +322,7 @@ import { useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
-import type { Ref } from 'vue'
-import { computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
@@ -385,7 +384,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   }
 }
 
-const planningMap: Ref<Map | undefined> = ref()
+let planningMap: Map | undefined = undefined
 const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref(mapCenter.value)
 const zoom = ref(missionStore.defaultMapZoom)
@@ -451,12 +450,12 @@ const calculateBottomRightCorner = (points: L.LatLng[]): L.LatLng | null => {
 }
 
 const updateConfirmButtonPosition = (): void => {
-  if (!planningMap.value) return
+  if (!planningMap) return
 
   if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length >= 3) {
     const position = calculateBottomRightCorner(surveyPolygonVertexesPositions.value)
     if (position) {
-      const point = planningMap.value.latLngToContainerPoint(position)
+      const point = planningMap.latLngToContainerPoint(position)
 
       confirmButtonStyle.value = {
         left: `${point.x + 62}px`,
@@ -472,10 +471,10 @@ const onPolygonMouseDown = (event: L.LeafletMouseEvent): void => {
   isDragging.value = true
   dragStartLatLng = event.latlng
   polygonLatLngsAtDragStart = surveyPolygonVertexesPositions.value.map((latlng) => latlng.clone())
-  planningMap.value?.dragging.disable()
+  planningMap?.dragging.disable()
 
-  planningMap.value?.on('mousemove', onPolygonMouseMove)
-  planningMap.value?.on('mouseup', onPolygonMouseUp)
+  planningMap?.on('mousemove', onPolygonMouseMove)
+  planningMap?.on('mouseup', onPolygonMouseUp)
 
   L.DomEvent.stopPropagation(event.originalEvent)
   L.DomEvent.preventDefault(event.originalEvent)
@@ -485,10 +484,10 @@ const onPolygonMouseUp = (event: L.LeafletMouseEvent): void => {
   isDragging.value = false
   dragStartLatLng = null
   polygonLatLngsAtDragStart = []
-  planningMap.value?.dragging.enable()
+  planningMap?.dragging.enable()
 
-  planningMap.value?.off('mousemove', onPolygonMouseMove)
-  planningMap.value?.off('mouseup', onPolygonMouseUp)
+  planningMap?.off('mousemove', onPolygonMouseMove)
+  planningMap?.off('mouseup', onPolygonMouseUp)
 
   ignoreNextClick = true
 
@@ -577,14 +576,14 @@ targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.val
 targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
 
 const goHome = async (): Promise<void> => {
-  if (!home.value || !planningMap.value) return
+  if (!home.value || !planningMap) return
 
   targetFollower.goToTarget(WhoToFollow.HOME)
 }
 
 // Draws a polygon inside the surveys waypoints
 const addSurveyPolygonToMap = (survey: Survey): void => {
-  if (!planningMap.value) return
+  if (!planningMap) return
 
   const surveyPolygonLayer = L.polygon(
     survey.polygonCoordinates.map((coord) => [coord[0], coord[1]]),
@@ -595,7 +594,7 @@ const addSurveyPolygonToMap = (survey: Survey): void => {
       weight: 3,
       className: 'survey-polygon',
     }
-  ).addTo(planningMap.value)
+  ).addTo(planningMap)
 
   surveyPolygonLayers.value[survey.id] = surveyPolygonLayer
 
@@ -695,7 +694,7 @@ const deleteSelectedSurvey = (): void => {
 
   const polygonLayer = surveyPolygonLayers.value[surveyId]
   if (polygonLayer) {
-    planningMap.value?.removeLayer(polygonLayer)
+    planningMap?.removeLayer(polygonLayer)
     delete surveyPolygonLayers.value[surveyId]
   }
 
@@ -709,7 +708,7 @@ const deleteSelectedSurvey = (): void => {
     }
     const waypointMarker = waypointMarkers.value[waypoint.id]
     if (waypointMarker) {
-      planningMap.value?.removeLayer(waypointMarker)
+      planningMap?.removeLayer(waypointMarker)
       delete waypointMarkers.value[waypoint.id]
     }
   })
@@ -758,7 +757,7 @@ watch(
   (newSurveys) => {
     // Remove old polygons from the map
     Object.values(surveyPolygonLayers.value).forEach((layer) => {
-      planningMap.value?.removeLayer(layer)
+      planningMap?.removeLayer(layer)
     })
     surveyPolygonLayers.value = {}
 
@@ -780,11 +779,11 @@ watch(
 
 watch(mapCenter, (newCenter, oldCenter) => {
   if (newCenter.toString() === oldCenter.toString()) return
-  planningMap.value?.panTo(newCenter as LatLngTuple)
+  planningMap?.panTo(newCenter as LatLngTuple)
 })
 watch(zoom, (newZoom, oldZoom) => {
   if (newZoom === oldZoom) return
-  planningMap.value?.setZoom(zoom.value)
+  planningMap?.setZoom(zoom.value)
 })
 
 const addWaypoint = (
@@ -793,7 +792,7 @@ const addWaypoint = (
   type: WaypointType,
   altitudeReferenceType: AltitudeReferenceType
 ): void => {
-  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+  if (planningMap === undefined) throw new Error('Map not yet defined')
 
   const waypointId = uuid()
   const waypoint: Waypoint = { id: waypointId, coordinates, altitude, type, altitudeReferenceType }
@@ -823,7 +822,7 @@ const addWaypoint = (
     opacity: 1,
   })
   newMarker.bindTooltip(markerTooltip)
-  planningMap.value.addLayer(newMarker)
+  planningMap.addLayer(newMarker)
   waypointMarkers.value[waypointId] = newMarker
 
   const existingWaypointsCount = missionStore.currentPlanningWaypoints.length
@@ -838,7 +837,7 @@ const removeWaypoint = (waypoint: Waypoint): void => {
   const index = missionStore.currentPlanningWaypoints.indexOf(waypoint)
   missionStore.currentPlanningWaypoints.splice(index, 1)
   // @ts-ignore: Marker type is always a layer and thus can be deleted
-  planningMap.value?.removeLayer(waypointMarkers.value[waypoint.id])
+  planningMap?.removeLayer(waypointMarkers.value[waypoint.id])
   delete waypointMarkers.value[waypoint.id]
 }
 
@@ -921,12 +920,12 @@ const surveyPolygonLayer = ref<L.Polygon | null>(null)
 
 const clearSurveyPath = (): void => {
   if (surveyPathLayer.value) {
-    planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
+    planningMap?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     surveyPathLayer.value = null
   }
   if (surveyPolygonLayer.value) {
     disablePolygonDragging()
-    planningMap.value?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
+    planningMap?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
     surveyPolygonLayer.value = null
   }
   surveyPolygonVertexesMarkers.value.forEach((marker) => marker.remove())
@@ -938,8 +937,8 @@ const clearSurveyPath = (): void => {
 watch(isCreatingSurvey, (isCreatingNow) => {
   if (!isCreatingNow) clearSurveyPath()
 
-  if (planningMap.value) {
-    const mapContainer = planningMap.value.getContainer()
+  if (planningMap) {
+    const mapContainer = planningMap.getContainer()
     if (isCreatingNow) {
       mapContainer.classList.add('survey-cursor')
     } else {
@@ -967,7 +966,7 @@ const updatePolygon = (): void => {
       fillOpacity: 0.2,
       weight: 3,
       className: 'survey-polygon',
-    }).addTo(toRaw(planningMap.value)!)
+    }).addTo(planningMap!)
 
     enablePolygonDragging()
   }
@@ -976,7 +975,7 @@ const updatePolygon = (): void => {
 
 const checkAndRemoveSurveyPath = (): void => {
   if (surveyPolygonVertexesPositions.value.length >= 4 || !surveyPathLayer.value) return
-  planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
+  planningMap?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
   surveyPathLayer.value = null
 }
 
@@ -1004,7 +1003,7 @@ const createSurveyPath = (): void => {
     }
 
     if (surveyPathLayer.value) {
-      planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
+      planningMap?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     }
 
     surveyPathLayer.value = L.polyline(continuousPath, {
@@ -1012,7 +1011,7 @@ const createSurveyPath = (): void => {
       weight: 3,
       opacity: 0.8,
       className: 'survey-path',
-    }).addTo(toRaw(planningMap.value)!)
+    }).addTo(planningMap!)
   } catch (error) {
     showDialog({
       variant: 'error',
@@ -1054,7 +1053,7 @@ const updateSurveyEdgeAddMarkers = (): void => {
       })
 
       surveyEdgeAddMarker.on('click', (e: L.LeafletMouseEvent) => addSurveyPoint(e.latlng, i))
-      surveyEdgeAddMarker.addTo(toRaw(planningMap.value)!)
+      surveyEdgeAddMarker.addTo(planningMap!)
       surveyEdgeAddMarkers.push(surveyEdgeAddMarker)
     }
   }
@@ -1089,7 +1088,7 @@ const addSurveyPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefi
       updatePolygon()
       createSurveyPath()
     }
-  ).addTo(toRaw(planningMap.value)!)
+  ).addTo(planningMap!)
 
   if (edgeIndex === undefined) {
     surveyPolygonVertexesMarkers.value.push(newMarker)
@@ -1195,7 +1194,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     selectedSurvey.value?.waypoints.forEach((waypoint) => {
       const marker = waypointMarkers.value[waypoint.id]
       if (marker) {
-        planningMap.value?.removeLayer(marker)
+        planningMap?.removeLayer(marker)
         delete waypointMarkers.value[waypoint.id]
       }
     })
@@ -1266,8 +1265,8 @@ const createSurveyVertexMarker = (
           <div class="delete-popup" style="display: none;">
             <button class="delete-button">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2" 
-                      stroke="white" stroke-width="1.5" 
+                <path d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2"
+                      stroke="white" stroke-width="1.5"
                       stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
@@ -1323,15 +1322,15 @@ const undoGenerateWaypoints = (): void => {
       }
       const marker = waypointMarkers.value[waypoint.id]
       if (marker) {
-        planningMap.value?.removeLayer(marker)
+        planningMap?.removeLayer(marker)
         delete waypointMarkers.value[waypoint.id]
       }
     })
   }
 
-  planningMap.value?.eachLayer((layer) => {
+  planningMap?.eachLayer((layer) => {
     if (layer instanceof L.Polyline && layer.options.className === 'waypoint-connection') {
-      planningMap.value?.removeLayer(layer)
+      planningMap?.removeLayer(layer)
     }
   })
 
@@ -1351,11 +1350,11 @@ const undoGenerateWaypoints = (): void => {
   surveyEdgeAddMarkers.length = 0
 
   if (surveyPolygonLayer.value) {
-    planningMap.value?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
+    planningMap?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
     surveyPolygonLayer.value = null
   }
   if (surveyPathLayer.value) {
-    planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
+    planningMap?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     surveyPathLayer.value = null
   }
 
@@ -1379,7 +1378,7 @@ const undoGenerateWaypoints = (): void => {
         updatePolygon()
         createSurveyPath()
       }
-    ).addTo(planningMap.value!)
+    ).addTo(planningMap!)
 
     surveyPolygonVertexesMarkers.value.push(newMarker)
   })
@@ -1392,7 +1391,7 @@ const undoGenerateWaypoints = (): void => {
     fillOpacity: 0.2,
     weight: 3,
     className: 'survey-polygon',
-  }).addTo(planningMap.value!)
+  }).addTo(planningMap!)
 
   enablePolygonDragging()
 
@@ -1406,7 +1405,7 @@ const undoGenerateWaypoints = (): void => {
 }
 
 const addWaypointMarker = (waypoint: Waypoint): void => {
-  if (!planningMap.value) return
+  if (!planningMap) return
 
   const newMarker = L.marker(waypoint.coordinates, { draggable: true })
 
@@ -1440,7 +1439,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   })
   newMarker.bindTooltip(markerTooltip)
 
-  newMarker.addTo(planningMap.value)
+  newMarker.addTo(planningMap)
   waypointMarkers.value[waypoint.id] = newMarker
 }
 
@@ -1452,7 +1451,7 @@ const addWaypointConnection = (fromWaypoint: Waypoint, toWaypoint: Waypoint): vo
     opacity: 0.8,
     className: 'waypoint-connection',
   })
-  planningMap.value?.addLayer(polyline)
+  planningMap?.addLayer(polyline)
 }
 
 onMounted(() => {
@@ -1493,36 +1492,36 @@ onMounted(async () => {
     'Esri World Imagery': esri,
   }
 
-  planningMap.value = L.map('planningMap', { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value)
+  planningMap = L.map('planningMap', { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(planningMap.value)
-  planningMap.value.zoomControl.setPosition('bottomright')
+  }).addTo(planningMap)
+  planningMap.zoomControl.setPosition('bottomright')
 
-  planningMap.value.on('moveend', () => {
-    if (planningMap.value === undefined) return
-    let { lat, lng } = planningMap.value.getCenter()
+  planningMap.on('moveend', () => {
+    if (planningMap === undefined) return
+    let { lat, lng } = planningMap.getCenter()
     if (lat && lng) {
       mapCenter.value = [lat, lng]
     }
   })
-  planningMap.value.on('zoomend', () => {
-    if (planningMap.value === undefined) return
-    zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
+  planningMap.on('zoomend', () => {
+    if (planningMap === undefined) return
+    zoom.value = planningMap?.getZoom() ?? mapCenter.value
   })
 
   await goHome()
   await nextTick()
 
-  planningMap.value.on('contextmenu', showContextMenu)
-  planningMap.value.on('drag', updateConfirmButtonPosition)
-  planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
+  planningMap.on('contextmenu', showContextMenu)
+  planningMap.on('drag', updateConfirmButtonPosition)
+  planningMap.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
   })
 
   const layerControl = L.control.layers(baseMaps)
-  planningMap.value.addControl(layerControl)
+  planningMap.addControl(layerControl)
 
   targetFollower.enableAutoUpdate()
 })
@@ -1540,7 +1539,7 @@ const vehiclePosition = computed((): [number, number] | undefined =>
 
 const vehicleMarker = ref<L.Marker>()
 watch(vehicleStore.coordinates, () => {
-  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+  if (planningMap === undefined) throw new Error('Map not yet defined')
 
   if (vehiclePosition.value === undefined) return
 
@@ -1556,14 +1555,14 @@ watch(vehicleStore.coordinates, () => {
       opacity: 1,
     })
     vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
-    planningMap.value.addLayer(vehicleMarker.value)
+    planningMap.addLayer(vehicleMarker.value)
   }
   vehicleMarker.value.setLatLng(vehiclePosition.value)
 })
 
 const homeMarker = ref<L.Marker>()
 watch(home, () => {
-  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+  if (planningMap === undefined) throw new Error('Map not yet defined')
 
   const position = home.value
   if (position === undefined) return
@@ -1580,22 +1579,16 @@ watch(home, () => {
       opacity: 1,
     })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
-    planningMap.value.addLayer(homeMarker.value)
+    planningMap.addLayer(homeMarker.value)
   }
   homeMarker.value.setLatLng(home.value)
 })
 
-watch(planningMap, (newMap, oldMap) => {
-  if (planningMap.value !== undefined && newMap?.options === undefined) {
-    planningMap.value = oldMap
-  }
-})
-
 const missionWaypointsPolyline = ref()
 watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
-  if (planningMap.value === undefined) throw new Error('Map not yet defined')
+  if (planningMap === undefined) throw new Error('Map not yet defined')
   if (missionWaypointsPolyline.value === undefined) {
-    missionWaypointsPolyline.value = L.polyline(newWaypoints.map((w) => w.coordinates)).addTo(planningMap.value)
+    missionWaypointsPolyline.value = L.polyline(newWaypoints.map((w) => w.coordinates)).addTo(planningMap)
   }
   missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
 })
@@ -1621,7 +1614,7 @@ watch(
 // If home position is updated and map was not yet centered on it, center
 let mapNotYetCenteredInHome = true
 watch([home, planningMap], async () => {
-  if (home.value === mapCenter.value || !planningMap.value || !mapNotYetCenteredInHome) return
+  if (home.value === mapCenter.value || !planningMap || !mapNotYetCenteredInHome) return
   await goHome()
   mapNotYetCenteredInHome = false
 })

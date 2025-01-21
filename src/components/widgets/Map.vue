@@ -1,6 +1,6 @@
 <template>
   <div ref="mapBase" class="page-base" :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'">
-    <div :id="mapId" ref="map" class="map">
+    <div :id="mapId" class="map">
       <v-btn
         v-if="showButtons"
         v-tooltip="home ? 'Center map on home position.' : 'Home position is currently undefined.'"
@@ -97,7 +97,7 @@
 import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, Map } from 'leaflet'
-import { type Ref, computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
@@ -128,7 +128,7 @@ const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 
 // Declare the general variables
-const map: Ref<Map | undefined> = ref()
+let map: Map | undefined = undefined
 const zoom = ref(missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref()
@@ -196,13 +196,13 @@ const zoomControl = L.control.zoom({ position: 'bottomright' })
 const layerControl = L.control.layers(baseMaps, overlays)
 
 watch(showButtons, () => {
-  if (map.value === undefined) return
+  if (map === undefined) return
   if (showButtons.value) {
-    map.value.addControl(zoomControl)
-    map.value.addControl(layerControl)
+    map.addControl(zoomControl)
+    map.addControl(layerControl)
   } else {
-    map.value.removeControl(zoomControl)
-    map.value.removeControl(layerControl)
+    map.removeControl(zoomControl)
+    map.removeControl(layerControl)
   }
 })
 
@@ -212,37 +212,37 @@ watch(isMouseOver, () => {
 
 onMounted(async () => {
   // Bind leaflet instance to map element
-  map.value = L.map(mapId.value, {
+  map = L.map(mapId.value, {
     layers: [osm, esri, seamarks, marineProfile],
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Remove default zoom control
-  map.value.removeControl(map.value.zoomControl)
+  map.removeControl(map.zoomControl)
 
   // Update center value after panning
-  map.value.on('moveend', () => {
-    if (map.value === undefined) return
-    let { lat, lng } = map.value.getCenter()
+  map.on('moveend', () => {
+    if (map === undefined) return
+    let { lat, lng } = map.getCenter()
     if (lat && lng) {
       mapCenter.value = [lat, lng]
     }
   })
 
   // Update zoom value after zooming
-  map.value.on('zoomend', () => {
-    if (map.value === undefined) return
-    zoom.value = map.value?.getZoom() ?? mapCenter.value
+  map.on('zoomend', () => {
+    if (map === undefined) return
+    zoom.value = map?.getZoom() ?? mapCenter.value
   })
 
   // Add click event listener to the map
-  map.value.on('click', () => {
-    if (map.value === undefined) return
-    map.value.on('click', onMapClick)
+  map.on('click', () => {
+    if (map === undefined) return
+    map.on('click', onMapClick)
   })
 
   // Add context menu event listener to the map
-  map.value.on('contextmenu', () => {
+  map.on('contextmenu', () => {
     hideContextMenuAndMarker()
   })
 
@@ -266,38 +266,30 @@ onBeforeUnmount(() => {
   targetFollower.disableAutoUpdate()
   window.removeEventListener('keydown', onKeydown)
 
-  if (map.value) {
-    map.value.off('click', onMapClick)
-    map.value.off('contextmenu')
+  if (map) {
+    map.off('click', onMapClick)
+    map.off('contextmenu')
   }
 })
 
 // Pan when variables change
 watch(mapCenter, (newCenter, oldCenter) => {
   if (newCenter.toString() === oldCenter.toString()) return
-  map.value?.panTo(newCenter as LatLngTuple)
+  map?.panTo(newCenter as LatLngTuple)
 
   // Update the tooltip content of the home marker
   homeMarker.value?.getTooltip()?.setContent(`Home: ${newCenter[0].toFixed(6)}, ${newCenter[1].toFixed(6)}`)
 })
 
-// Keep map binded
-watch(map, (newMap, oldMap) => {
-  if (map.value === undefined) return
-  if (newMap?.options !== undefined) return
-
-  map.value = oldMap
-})
-
 // Zoom when the variable changes
 watch(zoom, (newZoom, oldZoom) => {
   if (newZoom === oldZoom) return
-  map.value?.setZoom(zoom.value)
+  map?.setZoom(zoom.value)
 })
 
 // Re-render the map when the widget changes
 watch(props.widget, () => {
-  map.value?.invalidateSize()
+  map?.invalidateSize()
 })
 
 // Allow following a given target
@@ -339,7 +331,7 @@ navigator?.geolocation?.watchPosition(
 // If home position is updated and map was not yet centered on it, center
 let mapNotYetCenteredInHome = true
 watch([home, map], async () => {
-  if (home.value === mapCenter.value || !map.value || !mapNotYetCenteredInHome) return
+  if (home.value === mapCenter.value || !map || !mapNotYetCenteredInHome) return
   targetFollower.goToTarget(WhoToFollow.HOME)
   mapNotYetCenteredInHome = false
 })
@@ -347,7 +339,7 @@ watch([home, map], async () => {
 // Create marker for the vehicle
 const vehicleMarker = ref<L.Marker>()
 watch(vehicleStore.coordinates, () => {
-  if (!map.value || !vehiclePosition.value) return
+  if (!map || !vehiclePosition.value) return
 
   if (vehicleMarker.value === undefined) {
     let vehicleIconUrl = genericVehicleMarkerImage
@@ -373,7 +365,7 @@ watch(vehicleStore.coordinates, () => {
       offset: [40, 0],
     })
     vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
-    map.value.addLayer(vehicleMarker.value)
+    map.addLayer(vehicleMarker.value)
   }
   vehicleMarker.value.setLatLng(vehiclePosition.value)
 })
@@ -406,7 +398,7 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
 // Create marker for the home position
 const homeMarker = ref<L.Marker>()
 watch(home, () => {
-  if (map.value === undefined) return
+  if (map === undefined) return
 
   const position = home.value
   if (position === undefined) return
@@ -417,7 +409,7 @@ watch(home, () => {
     homeMarker.value.setIcon(homeMarkerIcon)
     const homeMarkerTooltip = L.tooltip({ content: 'No data available', className: 'waypoint-tooltip' })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
-    map.value.addLayer(homeMarker.value)
+    map.addLayer(homeMarker.value)
   }
   homeMarker.value.setLatLng(home.value)
 })
@@ -425,10 +417,10 @@ watch(home, () => {
 // Create polyline for the vehicle path
 const missionWaypointsPolyline = ref()
 watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
-  if (map.value === undefined) return
+  if (map === undefined) return
   if (missionWaypointsPolyline.value === undefined) {
     const coordinates = newWaypoints.map((w) => w.coordinates)
-    missionWaypointsPolyline.value = L.polyline(coordinates, { color: '#358AC3' }).addTo(map.value)
+    missionWaypointsPolyline.value = L.polyline(coordinates, { color: '#358AC3' }).addTo(map)
   }
   missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
 
@@ -437,17 +429,17 @@ watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
     const marker = L.marker(waypoint.coordinates)
     const markerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16], html: `${idx}` })
     marker.setIcon(markerIcon)
-    map.value?.addLayer(marker)
+    map?.addLayer(marker)
   })
 })
 
 // Create polyline for the vehicle path
 const vehicleHistoryPolyline = ref<L.Polyline>()
 watch(vehiclePositionHistory, (newPoints) => {
-  if (map.value === undefined || newPoints === undefined) return
+  if (map === undefined || newPoints === undefined) return
 
   if (vehicleHistoryPolyline.value === undefined) {
-    vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
+    vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map)
   }
 
   const latLongHistory = newPoints.filter((posHis) => posHis.snapshot !== undefined).map((posHis) => posHis.snapshot)
@@ -462,8 +454,8 @@ const contextMenuMarker = ref<L.Marker>()
 
 // Handle map click event to show the context menu
 const onMapClick = (event: L.LeafletMouseEvent): void => {
-  if (contextMenuMarker.value !== undefined && map.value !== undefined) {
-    contextMenuMarker.value?.removeFrom(map.value)
+  if (contextMenuMarker.value !== undefined && map !== undefined) {
+    contextMenuMarker.value?.removeFrom(map)
   }
 
   // Check if event.latlng is defined and has the required properties
@@ -472,7 +464,7 @@ const onMapClick = (event: L.LeafletMouseEvent): void => {
     showContextMenu.value = true
 
     // Calculate and update menu position
-    const mapElement = map.value?.getContainer()
+    const mapElement = map?.getContainer()
     if (mapElement) {
       const { x, y } = mapElement.getBoundingClientRect()
       menuPosition.left = `${event.originalEvent.clientX - x}px`
@@ -483,11 +475,11 @@ const onMapClick = (event: L.LeafletMouseEvent): void => {
   }
 
   // Create marker for the clicked location
-  if (map.value !== undefined) {
+  if (map !== undefined) {
     contextMenuMarker.value = L.marker(clickedLocation.value as LatLngTuple)
     const markerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16] })
     contextMenuMarker.value.setIcon(markerIcon)
-    map.value.addLayer(contextMenuMarker.value)
+    map.addLayer(contextMenuMarker.value)
   }
 }
 
@@ -539,8 +531,8 @@ const onMenuOptionSelect = (option: string): void => {
 const hideContextMenuAndMarker = (): void => {
   showContextMenu.value = false
   clickedLocation.value = null
-  if (map.value !== undefined && contextMenuMarker.value !== undefined) {
-    map.value.removeLayer(contextMenuMarker.value)
+  if (map !== undefined && contextMenuMarker.value !== undefined) {
+    map.removeLayer(contextMenuMarker.value)
   }
 }
 
