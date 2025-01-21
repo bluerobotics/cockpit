@@ -72,10 +72,10 @@
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
                   :width="buttonSize"
-                  :selected="$route.name === 'Flight'"
+                  :selected="route.name === 'Flight'"
                   @click="
                     () => {
-                      $router.push('/')
+                      router.push('/')
                       closeMainMenu()
                     }
                   "
@@ -94,10 +94,10 @@
                   :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
                   :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
                   :width="buttonSize"
-                  :selected="$route.name === 'Mission planning'"
+                  :selected="route.name === 'Mission planning'"
                   @click="
                     () => {
-                      $router.push('/mission-planning')
+                      router.push('/mission-planning')
                       closeMainMenu()
                     }
                   "
@@ -323,7 +323,7 @@
 <script setup lang="ts">
 import { onClickOutside, useDebounceFn, useFullscreen, useStorage, useWindowSize } from '@vueuse/core'
 import { computed, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import GlassModal from '@/components/GlassModal.vue'
 import Tutorial from '@/components/Tutorial.vue'
@@ -658,6 +658,7 @@ const openAboutDialog = (): void => {
 }
 
 const route = useRoute()
+const router = useRouter()
 const routerSection = ref()
 
 // Full screen toggling
