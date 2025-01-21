@@ -35,8 +35,8 @@ const canvasRef = ref(null)
 const framerateData = ref([])
 const bitrateData = ref([])
 const packetLostData = ref([])
-let animationFrameId = null
-let intervalId = null
+let animationFrameId: ReturnType<typeof requestAnimationFrame> | null = null
+let intervalId: ReturnType<typeof setInterval> | null = null
 let bitrate = 0
 // cumulative values
 let packetsLost = 0

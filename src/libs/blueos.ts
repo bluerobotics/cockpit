@@ -3,6 +3,13 @@ import ky, { HTTPError } from 'ky'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 
+type BagOfHoldingError = {
+  /**
+   * The error message
+   */
+  detail: string
+}
+
 /**
  * Cockpits extra json format. Taken from extensions in BlueOS and (eventually) other places
  */
@@ -34,7 +41,7 @@ export const getBagOfHoldingFromVehicle = async (
     const options = { timeout: defaultTimeout, retry: 0 }
     return await ky.get(`http://${vehicleAddress}/bag/v1.0/get/${bagPath}`, options).json()
   } catch (error) {
-    const errorBody = await (error as HTTPError).response.json()
+    const errorBody = (await (error as HTTPError).response.json()) as BagOfHoldingError
     if (errorBody.detail === 'Invalid path') {
       const noPathError = new Error(`No data available in BlueOS storage for path '${bagPath}'.`)
       noPathError.name = NoPathInBlueOsErrorName
