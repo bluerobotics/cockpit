@@ -1,0 +1,42 @@
+{
+  "packageId": "com.williangalvani.cockpit",
+  "host": "https://cockpit.galvanicloop.com",
+  "name": "Cockpit GCS",
+  "launcherName": "Cockpit",
+  "display": "standalone",
+  "themeColor": "#FFFFFF",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#FFFFFF",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://cockpit.galvanicloop.com/favicon-32x32.png",
+  "maskableIconUrl": "https://cockpit.galvanicloop.com/favicon-32x32.png",
+  "appVersionName": "0",
+  "appVersionCode": 3,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://cockpit.galvanicloop.com/site.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://cockpit.galvanicloop.com/",
+  "minSdkVersion": 19,
+  "orientation": "landscape",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "appVersion": "0"
+}
