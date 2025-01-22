@@ -166,7 +166,7 @@
           v-for="view in store.currentProfile.views"
           :key="view.hash"
           size="sm"
-          :class="view === store.currentView ? 'bg-[#3B78A8]' : 'bg-transparent'"
+          :class="view === store.currentView ? 'bg-[#4FA483]' : 'bg-transparent'"
           class="wrapclass 2xl:w-[129px] xl:w-[108px] lg:w-[84px] 2xl:h-[85px] xl:h-[75px] lg:h-[65px] 2xl:text-[16px] xl:text-[14px] text-[11px] text-none overflow-x-hidden"
           @click="selectView(view)"
         >
@@ -251,7 +251,7 @@
             Main view area
             <v-badge
               :content="store.currentView.widgets.length"
-              color="#3B78A8"
+              color="#4FA483"
               rounded="md"
               class="ml-10 2xl:mb-1 opacity-90"
               :class="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? 'scale-75' : ''"
@@ -323,7 +323,7 @@
                   return count + (container.name.startsWith('Top') ? container.widgets.length : 0)
                 }, 0)
               "
-              color="#3B78A8"
+              color="#4FA483"
               rounded="md"
               class="ml-10 2xl:mb-1 opacity-90"
               :class="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? 'scale-75' : ''"
@@ -390,7 +390,7 @@
                   return count + (container.name.startsWith('Bottom') ? container.widgets.length : 0)
                 }, 0)
               "
-              color="#3B78A8"
+              color="#4FA483"
               rounded="md"
               class="ml-10 2xl:mb-1 opacity-90"
               :class="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? 'scale-75' : ''"
@@ -539,7 +539,7 @@
           </div>
         </div>
         <div
-          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B78A8] rounded-b-md text-white"
+          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#4FA483] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
@@ -567,7 +567,7 @@
           </div>
         </div>
         <div
-          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B78A8] rounded-b-md text-white"
+          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#4FA483] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
