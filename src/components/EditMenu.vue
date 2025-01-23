@@ -442,6 +442,63 @@
           </div>
         </template>
       </ExpansiblePanel>
+      <ExpansiblePanel
+        v-for="miniWidgetContainer in miniWidgetsBars"
+        :key="miniWidgetContainer.name"
+        :compact="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? true : false"
+        invert-chevron
+        hover-effect
+        elevation-effect
+        no-top-divider
+        :is-expanded="miniWidgetContainer?.widgets!.length > 0"
+      >
+        <template #title>
+          <div
+            class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
+          >
+            {{ miniWidgetContainer.name }}
+            <v-badge
+              :content="miniWidgetContainer.widgets?.length"
+              color="#4FA483"
+              rounded="md"
+              class="ml-10 2xl:mb-1 opacity-90"
+              :class="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? 'scale-75' : ''"
+            />
+          </div>
+        </template>
+        <template #content>
+          <div class="w-full mb-1">
+            <div class="flex flex-col items-center w-full 2xl:px-3 overflow-x-hidden grow">
+              <TransitionGroup name="fade">
+                <div v-if="miniWidgetContainer?.widgets?.isEmpty()" class="flex items-center justify-between w-full">
+                  ---
+                </div>
+                <div
+                  v-for="widget in miniWidgetContainer.widgets"
+                  :key="widget.hash"
+                  class="flex items-center justify-center w-full border-[1px] border-[#FFFFFF15] rounded-md 2xl:mx-2 my-[3px] 2xl:p-1 pl-1 pr-[2px] py-[2px] cursor-pointer"
+                  :class="store.miniWidgetManagerVars(widget.hash).highlighted ? 'bg-[#CBCBCB64]' : 'bg-[#CBCBCB2A]'"
+                  @mouseover="store.miniWidgetManagerVars(widget.hash).highlighted = true"
+                  @mouseleave="store.miniWidgetManagerVars(widget.hash).highlighted = false"
+                >
+                  <div class="flex items-center justify-start w-full overflow-auto">
+                    <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
+                      {{ widget.name || widget.component }}
+                    </p>
+                  </div>
+                  <v-divider vertical class="opacity-10 mr-1" />
+                  <div
+                    class="icon-btn mdi mdi-cog"
+                    :class="{ 'opacity-20 cursor-not-allowed': !isMiniWidgetConfigurable[widget.component as WidgetType] }"
+                    @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
+                  />
+                  <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
+                </div>
+              </TransitionGroup>
+            </div>
+          </div>
+        </template>
+      </ExpansiblePanel>
     </div>
   </div>
   <div class="flex items-center justify-between edit-panel bottom-panel" :class="{ active: editMode }">
@@ -666,11 +723,13 @@ import {
   type Profile,
   type View,
   type Widget,
+  CustomWidgetElementContainer,
   CustomWidgetElementType,
   ExternalWidgetSetupInfo,
   InternalWidgetSetupInfo,
   isMiniWidgetConfigurable,
   isWidgetConfigurable,
+  MiniWidgetContainer,
   MiniWidgetType,
   WidgetType,
 } from '@/types/widgets'
@@ -685,6 +744,32 @@ const { showDialog, closeDialog } = useInteractionDialog()
 
 const interfaceStore = useAppInterfaceStore()
 const store = useWidgetManagerStore()
+
+const miniWidgetsBars = computed(() => {
+  let regularContainers = store.miniWidgetContainersInCurrentView.filter(
+    (container) => !container.name.startsWith('Top') && !container.name.startsWith('Bottom')
+  )
+  let customContainers = getAllMiniWidgetFromCustomWidget()
+  return [...regularContainers, ...customContainers]
+})
+
+const getAllMiniWidgetFromCustomWidget = (): MiniWidgetContainer[] => {
+  const allCustomBases = store.currentProfile.views
+    .flatMap((view) => view.widgets)
+    .filter((widget) => widget.component === WidgetType.CustomWidgetBase)
+
+  return allCustomBases.map((base) => {
+    const baseName = base.name || 'Unnamed Custom Widget'
+    const miniWidgets = base.options.elementContainers.flatMap(
+      (container: CustomWidgetElementContainer) => container.elements
+    )
+
+    return {
+      name: baseName,
+      widgets: miniWidgets,
+    }
+  })
+}
 
 const trashList = ref<Widget[]>([])
 watch(trashList, () => {
@@ -721,9 +806,9 @@ const emit = defineEmits<{
 }>()
 
 watch(
-  () => store.elementToShowOnDrawer?.hash,
+  () => store.elementToShowOnDrawer,
   (newValue) => {
-    if (newValue) interfaceStore.configPanelVisible = true
+    if (newValue?.isCustomElement) interfaceStore.configPanelVisible = true
     if (!newValue) interfaceStore.configPanelVisible = false
   }
 )

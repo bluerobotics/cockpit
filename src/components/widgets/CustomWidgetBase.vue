@@ -415,6 +415,8 @@ const widgetAdded = (e: SortableEvent.SortableEvent, containerName: string): voi
     if (newWidget && e.pullMode === 'clone') {
       newWidget.hash = uuid()
       widgetStore.miniWidgetManagerVars(newWidget.hash).configMenuOpen = true
+      lastKnownHashes.value.set(containerName, currentHashes)
+      return
     }
     widgetStore.showElementPropsDrawer(newWidget.hash)
     lastKnownHashes.value.set(containerName, currentHashes)
