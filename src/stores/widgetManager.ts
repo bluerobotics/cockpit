@@ -70,6 +70,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const elementToShowOnDrawer = ref<CustomWidgetElement>()
   const widgetToEdit = ref<Widget>()
   const miniWidgetLastValues = useBlueOsStorage<Record<string, any>>('cockpit-mini-widget-last-values', {})
+  const floatingWidgetContainers = ref<MiniWidgetContainer[]>([])
 
   const editWidgetByHash = (hash: string): Widget | undefined => {
     widgetToEdit.value = currentProfile.value.views
@@ -272,11 +273,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const miniWidgetContainersInCurrentView = computed(() => {
     const fixedBarContainers = currentMiniWidgetsProfile.value.containers
     const viewBarContainers = currentView.value.miniWidgetContainers
-    const floatingWidgetContainers = currentView.value.widgets
+    floatingWidgetContainers.value = currentView.value.widgets
       .filter((w) => w.component === WidgetType.MiniWidgetsBar)
       .filter((w) => w.options && w.options.miniWidgetsContainer)
       .map((w) => w.options.miniWidgetsContainer)
-    return [...fixedBarContainers, ...viewBarContainers, ...floatingWidgetContainers]
+    return [...fixedBarContainers, ...viewBarContainers, ...floatingWidgetContainers.value]
   })
 
   /**
@@ -608,17 +609,33 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const container: MiniWidgetContainer | undefined = miniWidgetContainersInCurrentView.value.find((cont) => {
       return cont.widgets.includes(miniWidget)
     })
-    if (container === undefined) {
-      showDialog({ variant: 'error', message: 'Mini-widget container not found.' })
+    const customWidgetContainer = getElementByHash(miniWidget.hash)
+    if (container) {
+      const index = container.widgets.indexOf(miniWidget)
+      container.widgets.splice(index, 1)
+      // Remove miniWidget variable from the list of currently logged variables
+      CurrentlyLoggedVariables.removeVariable(miniWidget.options.displayName)
+      return
+    }
+    if (customWidgetContainer) {
+      removeElementFromCustomWidget(miniWidget.hash)
+      CurrentlyLoggedVariables.removeVariable(miniWidget.options.displayName)
       return
     }
 
-    const index = container.widgets.indexOf(miniWidget)
-    container.widgets.splice(index, 1)
-
-    // Remove miniWidget variable from the list of currently logged variables
-    CurrentlyLoggedVariables.removeVariable(miniWidget.options.displayName)
+    showDialog({ variant: 'error', message: 'Mini-widget container not found.' })
   }
+
+  const customWidgetContainers = computed<MiniWidgetContainer[]>(() =>
+    currentProfile.value.views
+      .flatMap((view) => view.widgets)
+      .filter((widget) => widget.component === WidgetType.CustomWidgetBase)
+      .flatMap((widget) => widget.options.elementContainers)
+      .map((container) => ({
+        name: '',
+        widgets: container.elements as unknown as MiniWidget[],
+      }))
+  )
 
   /**
    * States whether the given mini-widget is a real mini-widget
@@ -630,6 +647,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const allContainers = [
       ...savedProfiles.value.flatMap((profile) => profile.views.flatMap((view) => view.miniWidgetContainers)),
       ...currentMiniWidgetsProfile.value.containers,
+      ...floatingWidgetContainers.value,
+      ...customWidgetContainers.value,
     ]
 
     return allContainers.some((container) => container.widgets.some((widget) => widget.hash === miniWidgetHash))
