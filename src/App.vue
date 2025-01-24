@@ -351,6 +351,7 @@ import { useWidgetManagerStore } from './stores/widgetManager'
 import { ConfigComponent } from './types/general'
 import ConfigurationActionsView from './views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from './views/ConfigurationAlertsView.vue'
+import ConfigurationDataLakeView from './views/ConfigurationDataLakeView.vue'
 import ConfigurationDevelopmentView from './views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from './views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from './views/ConfigurationJoystickView.vue'
@@ -422,6 +423,11 @@ const configMenu = [
     icon: 'mdi-map-marker-path',
     title: 'Mission',
     component: markRaw(ConfigurationMissionView) as ConfigComponent,
+  },
+  {
+    icon: 'mdi-database-outline',
+    title: 'Data-lake',
+    component: markRaw(ConfigurationDataLakeView) as ConfigComponent,
   },
   {
     icon: 'mdi-run-fast',
