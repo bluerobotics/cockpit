@@ -64,19 +64,14 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   }, 250)
 
   // Routine to log the framerate of the application rendering
-  const appFrameRateHistory = ref<number[]>([])
   const appAverageFrameRateSampleDelay = 100
-  const appAverageFrameRateLogDelay = 10000
-  let lastAppAverageFpsLog = new Date()
-
-  // Log tab visibility changes so we don't warn about framerate drops when the tab was not visible in the last seconds
-  const windowVisibility = useDocumentVisibility()
-  let timeLastTabOpening = new Date()
-  watch(windowVisibility, (newVisibility, oldVisibility) => {
-    if (newVisibility === 'visible' && oldVisibility === 'hidden') {
-      timeLastTabOpening = new Date()
-    }
-  })
+  const cockpitAppFrameRateVariable = new DataLakeVariable(
+    'cockpit-app-frame-rate',
+    'Cockpit App Frame Rate',
+    'number',
+    'The framerate of the Cockpit application rendering in fps. This value is updated every 100ms.'
+  )
+  createDataLakeVariable(cockpitAppFrameRateVariable)
 
   const fpsMeter = (): void => {
     let prevTime = performance.now()
@@ -87,29 +82,9 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       frames++
       if (time > prevTime + appAverageFrameRateSampleDelay) {
         const currentFPS = Math.round((frames * 1000) / (time - prevTime))
+        setDataLakeVariableData(cockpitAppFrameRateVariable.id, currentFPS)
         prevTime = time
         frames = 0
-
-        appFrameRateHistory.value.push(currentFPS)
-        appFrameRateHistory.value.splice(0, appFrameRateHistory.value.length - 10)
-
-        const average = appFrameRateHistory.value.reduce((a, b) => a + b, 0) / appFrameRateHistory.value.length
-
-        // Warn about drops in the framerate of the application rendering
-        // The threshold is set to 80% of the average framerate by default
-        // We don't warn if the framerate is above 60 because it's an already very high value, and we don't want to spam the console on high-end monitors
-        // We also don't warn if the tab was not visible in the last second, since the application was not being rendered
-        const minThreshold = Math.min(60, 0.8 * average)
-        const msSinceLastTabOpening = new Date().getTime() - timeLastTabOpening.getTime()
-        if (currentFPS < minThreshold && msSinceLastTabOpening > 1000) {
-          console.warn(`Drop in the framerate detected for the application rendering: ${currentFPS.toFixed(2)} fps.`)
-        }
-
-        // Log the average framerate of the application rendering recursively
-        if (new Date().getTime() - lastAppAverageFpsLog.getTime() > appAverageFrameRateLogDelay) {
-          console.debug(`Average framerate for the application rendering: ${average.toFixed(2)} fps.`)
-          lastAppAverageFpsLog = new Date()
-        }
       }
 
       requestAnimationFrame(loop)
