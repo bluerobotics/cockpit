@@ -212,3 +212,15 @@ export const isNumber = (str: string): boolean => {
   // Convert string to number and check if it's valid
   return !isNaN(Number(str)) && isFinite(Number(str))
 }
+
+/**
+ * Humanize a string
+ * @param {string} str The string to humanize
+ * @returns {string} The humanized string
+ */
+export const humanizeString = (str: string): string => {
+  return str
+    .replace(/-/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (match) => match.toUpperCase())
+}
