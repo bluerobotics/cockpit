@@ -2,7 +2,17 @@
   <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
     <template #title>HTTP Request Actions</template>
     <template #info>
-      <p>View, manage, and create HTTP request actions.</p>
+      <li>View, manage, and create HTTP request actions.</li>
+      <li>Use these actions to call external APIs, like servers, vehicles, cameras, etc.</li>
+      <li>
+        You can use <code>&#123;&#123; variable-id &#125;&#125;</code> to refer to data-lake variables on the URL and
+        body. You can also use data-lake variables in the URL parameters by simply selecting them from the dropdown.
+      </li>
+      <li>
+        There are two very handy variables you can use in the URL: 'vehicle-address' and 'mavlink2rest-http-endpoint'.
+        The former is the address of the vehicle, without the protocol (http:// or https://) or port, while the latter
+        is the endpoint of the MAVLink2REST API.
+      </li>
     </template>
     <template #content>
       <div class="flex justify-center flex-col ml-2 mb-8 mt-2 w-[640px]">
@@ -30,12 +40,12 @@
             <tr>
               <td>
                 <div :id="item.id" class="flex items-center justify-left rounded-xl mx-1 w-[140px]">
-                  <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">{{ item.name }}</p>
+                  <p class="whitespace-nowrap overflow-hidden text-ellipsis">{{ item.name }}</p>
                 </div>
               </td>
               <td>
                 <div :id="item.id" class="flex items-center justify-center rounded-xl mx-1 w-[200px]">
-                  <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">
+                  <p class="whitespace-nowrap overflow-hidden text-ellipsis">
                     {{ replaceDataLakeInputsInString(item.url) }}
                   </p>
                 </div>
@@ -323,15 +333,19 @@ import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 const interfaceStore = useAppInterfaceStore()
 
-const actionsConfigs = reactive<Record<string, HttpRequestActionConfig>>({})
-const newActionConfig = ref<HttpRequestActionConfig>({
-  name: '',
-  method: HttpRequestMethod.GET,
-  url: '',
-  headers: {},
+const defaultActionConfig = {
+  name: 'New HTTP Action',
+  method: HttpRequestMethod.POST,
+  url: 'http://{{ vehicle-address }}',
+  headers: {
+    'Content-Type': 'application/json',
+  },
   urlParams: {},
   body: '',
-})
+}
+
+const actionsConfigs = reactive<Record<string, HttpRequestActionConfig>>({})
+const newActionConfig = ref<HttpRequestActionConfig>(defaultActionConfig)
 
 const bodyInputError = ref('')
 
@@ -551,14 +565,7 @@ const saveActionConfig = (): void => {
 }
 
 const resetNewAction = (): void => {
-  newActionConfig.value = {
-    name: '',
-    method: HttpRequestMethod.GET,
-    url: '',
-    headers: {},
-    urlParams: {},
-    body: '',
-  }
+  newActionConfig.value = JSON.parse(JSON.stringify(defaultActionConfig))
   bodyInputError.value = ''
   editMode.value = false
 }
