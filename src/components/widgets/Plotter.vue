@@ -282,15 +282,20 @@ const renderCanvas = (): void => {
 
     maxValue = Math.max(...valuesHistory)
     minValue = Math.min(...valuesHistory)
+
+    // Add a buffer to keep the plot neatly within bounds, and centered when there are no changes
+    const buffer = 0.05 * (maxValue != minValue ? maxValue - minValue : 1)
+    const maxY = maxValue + buffer
+    const minY = minValue - buffer
     const currentValue = valuesHistory[valuesHistory.length - 1]
 
     // Draw the graph
     ctx.beginPath()
-    ctx.moveTo(0, canvasHeight)
+    ctx.moveTo(0, canvasHeight / 2)
 
     valuesHistory.forEach((sample, index) => {
       const x = index * (canvasWidth / valuesHistory.length)
-      const y = canvasHeight - ((sample - minValue) / (maxValue - minValue)) * canvasHeight
+      const y = canvasHeight - ((sample - minY) / (maxY - minY)) * canvasHeight
       ctx.lineTo(x, y)
     })
     ctx.stroke()
@@ -333,7 +338,6 @@ watch(canvasVisible, (isVisible, wasVisible) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
   min-width: 150px;
   min-height: 200px;
 }
