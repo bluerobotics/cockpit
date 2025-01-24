@@ -7,9 +7,9 @@
     :leave-from-class="leaveFromClass"
     :leave-to-class="leaveToClass"
   >
-    <div v-if="visible" class="fixed shadow-lg" :class="panelPositionClass">
+    <div v-if="interfaceStore.isConfigPanelVisible" class="fixed shadow-lg" :class="panelPositionClass">
       <v-btn
-        v-if="hideButton"
+        v-if="!hideButton"
         icon
         size="x-small"
         variant="text"
@@ -40,8 +40,6 @@ const props = defineProps<{
    */
   hideButton?: boolean
 }>()
-
-const visible = computed(() => interfaceStore.configPanelVisible)
 
 const closePanel = (): void => {
   interfaceStore.configPanelVisible = false
