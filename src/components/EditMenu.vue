@@ -682,7 +682,7 @@
     </GlassModal>
   </teleport>
 
-  <SideConfigPanel position="right">
+  <SideConfigPanel position="right" hide-button>
     <ElementConfigPanel v-if="store.elementToShowOnDrawer?.hash" />
   </SideConfigPanel>
 </template>
