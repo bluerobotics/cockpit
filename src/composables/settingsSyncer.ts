@@ -13,12 +13,13 @@ import { useMissionStore } from '@/stores/mission'
 import { savedProfilesKey } from '@/stores/widgetManager'
 
 import { useInteractionDialog } from './interactionDialog'
+import { useSettingsConflictDialog } from './settingsConflictDialog'
 import { openSnackbar } from './snackbar'
 
 /**
  * Represents a setting that has a conflict between local and remote values
  */
-interface ConflictItem {
+export interface ConflictItem {
   /** The key of the setting with a conflict */
   key: string
 
@@ -33,6 +34,13 @@ interface ConflictItem {
 }
 
 /**
+ * Represents the user's choice for resolving conflicts
+ */
+export interface SettingsConflictResolution {
+  [key: string]: boolean
+}
+
+/**
  * Manages settings synchronization between local storage and BlueOS,
  * providing centralized conflict resolution.
  */
@@ -40,14 +48,14 @@ class SettingsSyncer {
   /** Singleton instance */
   private static instance: SettingsSyncer
 
-  /** List of pending conflicts to be resolved */
-  private conflicts: ConflictItem[] = []
+  /** List of conflicts that are on hold until the current conflict resolution dialog is closed */
+  private conflictsOnHold: ConflictItem[] = []
 
-  /** Flag to prevent multiple conflict resolution dialogs */
-  private isResolvingConflicts = false
+  /** Promise to resolve the current conflict resolution dialog */
+  private currentConflictDialogResolution: Promise<SettingsConflictResolution> | undefined = undefined
 
-  /** Dialog utility for user interaction */
-  private conflictDialog = useInteractionDialog()
+  /** Timeout to prevent multiple conflict resolution dialogs opened at the same time */
+  private conflictDialogOpenerTimeout: ReturnType<typeof setTimeout> | undefined = undefined
 
   /** Private constructor to enforce singleton pattern */
   private constructor() {
@@ -66,62 +74,52 @@ class SettingsSyncer {
   }
 
   /**
+   * Schedules the conflict resolution dialog to be opened after a delay
+   */
+  private async scheduleConflictResolution(): Promise<void> {
+    // If there's a conflict resolution dialog already open, wait for it to be closed before scheduling a new one
+    if (this.currentConflictDialogResolution !== undefined) {
+      await this.currentConflictDialogResolution
+    }
+
+    // Clear the current schesuler if it's already set, and schedule a new opening of the conflict resolution dialog
+    clearTimeout(this.conflictDialogOpenerTimeout)
+    this.conflictDialogOpenerTimeout = setTimeout(async () => {
+      await this.resolveConflicts()
+    }, 5000)
+  }
+
+  /**
    * Adds a new conflict to be resolved and triggers resolution if not already in progress
    * @param {ConflictItem} conflict The conflict to be resolved
    */
   public async addConflict(conflict: ConflictItem): Promise<void> {
-    this.conflicts.push(conflict)
-
-    if (!this.isResolvingConflicts) {
-      await this.resolveConflicts()
-    }
+    this.conflictsOnHold.push(conflict)
+    console.log(`Holding conflict for key: ${conflict.key}. Total conflicts on hold: ${this.conflictsOnHold.length}`)
+    await this.currentConflictDialogResolution
+    await this.scheduleConflictResolution()
   }
 
   /**
    * Resolves all pending conflicts with a single user interaction
    */
   private async resolveConflicts(): Promise<void> {
-    if (this.conflicts.length === 0) return
+    if (this.conflictsOnHold.length === 0) return
 
-    this.isResolvingConflicts = true
-    let useRemoteValues = true
+    // Get all conflicts that are on hold for resolution
+    const conflictsToResolve = [...this.conflictsOnHold]
+    this.conflictsOnHold = []
 
-    const preferRemote = (): void => {
-      useRemoteValues = true
+    try {
+      this.currentConflictDialogResolution = useSettingsConflictDialog(conflictsToResolve)
+      const resolutions = await this.currentConflictDialogResolution
+      console.debug('Resolutions:', resolutions)
+    } catch (error) {
+      const message = 'Error showing settings conflict dialog'
+      openSnackbar({ message, duration: 5000, variant: 'error', closeButton: true })
+    } finally {
+      this.currentConflictDialogResolution = undefined
     }
-
-    const preferLocal = (): void => {
-      useRemoteValues = false
-    }
-
-    const conflictList = this.conflicts.map((conflict) => `• ${conflict.key}`).join('\n')
-
-    await this.conflictDialog.showDialog({
-      maxWidth: 600,
-      title: 'Settings Conflicts with BlueOS',
-      message: `
-        The following settings differ between Cockpit and BlueOS:
-        ${conflictList}
-
-        What would you like to do with these settings?
-      `,
-      variant: 'warning',
-      actions: [
-        { text: 'Use values from BlueOS', action: preferRemote },
-        { text: "Keep Cockpit's values", action: preferLocal },
-      ],
-    })
-
-    this.conflictDialog.closeDialog()
-
-    const conflictsToResolve = [...this.conflicts]
-    this.conflicts = []
-
-    for (const conflict of conflictsToResolve) {
-      conflict.resolve(useRemoteValues)
-    }
-
-    this.isResolvingConflicts = false
   }
 }
 
