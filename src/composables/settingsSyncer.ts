@@ -15,6 +15,116 @@ import { savedProfilesKey } from '@/stores/widgetManager'
 import { useInteractionDialog } from './interactionDialog'
 import { openSnackbar } from './snackbar'
 
+/**
+ * Represents a setting that has a conflict between local and remote values
+ */
+interface ConflictItem {
+  /** The key of the setting with a conflict */
+  key: string
+
+  /** The current local value of the setting */
+  localValue: unknown
+
+  /** The value of the setting stored in BlueOS */
+  remoteValue: unknown
+
+  /** Callback function to resolve the conflict with the user's choice */
+  resolve: (useRemoteValue: boolean) => void
+}
+
+/**
+ * Manages settings synchronization between local storage and BlueOS,
+ * providing centralized conflict resolution.
+ */
+class SettingsSyncer {
+  /** Singleton instance */
+  private static instance: SettingsSyncer
+
+  /** List of pending conflicts to be resolved */
+  private conflicts: ConflictItem[] = []
+
+  /** Flag to prevent multiple conflict resolution dialogs */
+  private isResolvingConflicts = false
+
+  /** Dialog utility for user interaction */
+  private conflictDialog = useInteractionDialog()
+
+  /** Private constructor to enforce singleton pattern */
+  private constructor() {
+    // Singleton initialization
+  }
+
+  /**
+   * Gets the singleton instance of SettingsSyncer
+   * @returns {SettingsSyncer} The SettingsSyncer instance
+   */
+  public static getInstance(): SettingsSyncer {
+    if (!SettingsSyncer.instance) {
+      SettingsSyncer.instance = new SettingsSyncer()
+    }
+    return SettingsSyncer.instance
+  }
+
+  /**
+   * Adds a new conflict to be resolved and triggers resolution if not already in progress
+   * @param {ConflictItem} conflict The conflict to be resolved
+   */
+  public async addConflict(conflict: ConflictItem): Promise<void> {
+    this.conflicts.push(conflict)
+
+    if (!this.isResolvingConflicts) {
+      await this.resolveConflicts()
+    }
+  }
+
+  /**
+   * Resolves all pending conflicts with a single user interaction
+   */
+  private async resolveConflicts(): Promise<void> {
+    if (this.conflicts.length === 0) return
+
+    this.isResolvingConflicts = true
+    let useRemoteValues = true
+
+    const preferRemote = (): void => {
+      useRemoteValues = true
+    }
+
+    const preferLocal = (): void => {
+      useRemoteValues = false
+    }
+
+    const conflictList = this.conflicts.map((conflict) => `• ${conflict.key}`).join('\n')
+
+    await this.conflictDialog.showDialog({
+      maxWidth: 600,
+      title: 'Settings Conflicts with BlueOS',
+      message: `
+        The following settings differ between Cockpit and BlueOS:
+        ${conflictList}
+
+        What would you like to do with these settings?
+      `,
+      variant: 'warning',
+      actions: [
+        { text: 'Use values from BlueOS', action: preferRemote },
+        { text: "Keep Cockpit's values", action: preferLocal },
+      ],
+    })
+
+    this.conflictDialog.closeDialog()
+
+    const conflictsToResolve = [...this.conflicts]
+    this.conflicts = []
+
+    for (const conflict of conflictsToResolve) {
+      conflict.resolve(useRemoteValues)
+    }
+
+    this.isResolvingConflicts = false
+  }
+}
+
 export const resetJustMadeKey = 'cockpit-reset-just-made'
 const resetJustMade = useStorage(resetJustMadeKey, false)
 setTimeout(() => {
@@ -51,7 +161,7 @@ const getVehicleAddress = async (): Promise<string> => {
  * @returns { RemovableRef<T> }
  */
 export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): RemovableRef<T> {
-  const { showDialog, closeDialog } = useInteractionDialog()
+  const rebootDialog = useInteractionDialog()
 
   const primitiveDefaultValue = unref(defaultValue)
   const currentValue = useStorage(key, primitiveDefaultValue)
@@ -93,34 +203,16 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     return missoinStore.lastConnectedUser
   }
 
-  const askIfUserWantsToUseBlueOsValue = async (): Promise<boolean> => {
-    let useBlueOsValue = true
-
-    const preferBlueOs = (): void => {
-      useBlueOsValue = true
-    }
-
-    const preferCockpit = (): void => {
-      useBlueOsValue = false
-    }
-
-    await showDialog({
-      maxWidth: 600,
-      title: 'Conflict with BlueOS',
-      message: `
-        The value for '${key}' that is currently used in Cockpit differs from the one stored in BlueOS. What do you
-        want to do?
-      `,
-      variant: 'warning',
-      actions: [
-        { text: 'Use the value from BlueOS', action: preferBlueOs },
-        { text: "Keep Cockpit's value", action: preferCockpit },
-      ],
+  const askIfUserWantsToUseBlueOsValue = async (remoteValue: T): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const settingsSyncer = SettingsSyncer.getInstance()
+      settingsSyncer.addConflict({
+        key,
+        localValue: currentValue.value,
+        remoteValue,
+        resolve,
+      })
     })
-
-    closeDialog()
-
-    return useBlueOsValue
   }
 
   const updateValueOnBlueOS = async (newValue: T): Promise<void> => {
@@ -186,7 +278,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         useBlueOsValue = false
       } else if (lastConnectedUser === username && lastConnectedVehicleId === currentVehicleId) {
         console.debug(`Conflict with BlueOS for key '${key}'. Asking user what to do.`)
-        useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
+        useBlueOsValue = await askIfUserWantsToUseBlueOsValue(valueOnBlueOS as T)
       }
 
       if (useBlueOsValue) {
@@ -197,12 +289,12 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         // TODO: This is a workaround to make the profiles work after an import.
         // We need to find a better way to handle this, without reloading.
         if (key === savedProfilesKey) {
-          await showDialog({
+          await rebootDialog.showDialog({
             title: 'Widget profiles imported',
             message: `The widget profiles have been imported from the vehicle. We need to reload the page to apply the
             changes.`,
             variant: 'warning',
-            actions: [{ text: 'OK', action: closeDialog }],
+            actions: [{ text: 'OK', action: rebootDialog.closeDialog }],
             timer: 3000,
           })
           reloadCockpit()
