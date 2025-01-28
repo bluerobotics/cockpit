@@ -1,40 +1,54 @@
 <!-- A dialog that shows settings conflicts and allows individual resolution -->
 <template>
-  <v-dialog v-model="isOpen" :max-width="600" persistent>
-    <v-card>
-      <v-card-title class="text-h5">Settings Conflicts with BlueOS</v-card-title>
-      <v-card-text>
-        <p class="mb-4">The following settings differ between Cockpit and BlueOS:</p>
-        <v-list>
-          <v-list-item v-for="conflict in conflicts" :key="conflict.key">
-            <v-list-item-content>
-              <v-list-item-title>{{ conflict.key }}</v-list-item-title>
-              <v-list-item-subtitle class="mt-2">
-                <div class="text-sm mb-2">
-                  <div>Local value: {{ JSON.stringify(conflict.localValue) }}</div>
-                  <div>BlueOS value: {{ JSON.stringify(conflict.remoteValue) }}</div>
+  <InteractionDialog
+    variant="text-only"
+    :show-dialog="isOpen"
+    title="Settings Conflicts with BlueOS"
+    :actions="interactionDialogActions"
+    :max-width="700"
+  >
+    <template #content>
+      <div class="mb-6">
+        <p class="mb-4">The settings bellow differ between Cockpit and BlueOS.</p>
+        <p class="mb-4">Please select the value you want to keep on each of them and click "Sync".</p>
+        <div class="space-y-4">
+          <div v-for="conflict in conflicts" :key="conflict.key" class="p-4 border rounded">
+            <h3 class="text-lg font-medium text-center">{{ conflict.key }}</h3>
+            <div class="mt-2">
+              <v-radio-group v-model="resolutions[conflict.key]">
+                <div class="flex justify-between items-center">
+                  <v-radio :value="true">
+                    <template #label>
+                      <div class="flex flex-col gap-2">
+                        <div class="font-bold text-md">BlueOS value</div>
+                        <div class="text-sm">{{ JSON.stringify(conflict.remoteValue) }}</div>
+                      </div>
+                    </template>
+                  </v-radio>
+                  <v-radio :value="false">
+                    <template #label>
+                      <div class="flex flex-col gap-2">
+                        <div class="font-bold text-md">Cockpit value</div>
+                        <div class="text-sm">{{ JSON.stringify(conflict.localValue) }}</div>
+                      </div>
+                    </template>
+                  </v-radio>
                 </div>
-                <v-radio-group v-model="resolutions[conflict.key]" row>
-                  <v-radio label="Use BlueOS value" :value="true" />
-                  <v-radio label="Keep Cockpit value" :value="false" />
-                </v-radio-group>
-              </v-list-item-subtitle>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer />
-        <v-btn color="primary" @click="resolveAll">Apply</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+              </v-radio-group>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </InteractionDialog>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { type SettingsConflictResolution } from '@/composables/settingsConflictDialog'
+import { type SettingsConflictResolution } from '@/composables/settingsSyncer'
+
+import InteractionDialog from './InteractionDialog.vue'
 
 /**
  * Represents a setting that has a conflict between local and remote values
@@ -64,6 +78,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'confirmed', resolutions: SettingsConflictResolution): void
+  (e: 'dismissed'): void
 }>()
 
 const isOpen = computed({
@@ -95,9 +110,21 @@ const resolveAll = (): void => {
   emit('confirmed', resolutions.value)
 }
 
-onMounted(() => {
-  console.log('Mounted SettingsConflictDialog')
-})
+const interactionDialogActions = [
+  {
+    text: 'Decide later',
+    action: () => {
+      isOpen.value = false
+      emit('dismissed')
+    },
+  },
+  {
+    text: 'Sync',
+    action: () => {
+      resolveAll()
+    },
+  },
+]
 </script>
 
 <style scoped>
