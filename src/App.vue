@@ -197,7 +197,7 @@
                 <GlassButton
                   v-for="menuitem in currentSubMenu"
                   :key="menuitem.title"
-                  :label="interfaceStore.isOnSmallScreen ? undefined : menuitem.title"
+                  :label="simplifiedMainMenu ? undefined : menuitem.title"
                   :label-class="menuLabelSize"
                   :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
                   :icon="menuitem.icon"
@@ -395,12 +395,13 @@ const showAboutDialog = ref(false)
 const showSubMenu = ref(false)
 const currentSubMenuName = ref<keyof typeof availableSubMenus | null>(null)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
+const mainMenu = ref()
 
 // Main menu
 const isMenuOpen = ref(false)
 const isSlidingOut = ref(false)
-const simplifiedMainMenu = ref(false)
-const windowHeight = ref(window.innerHeight)
+
+const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 const configMenu = [
   {
@@ -509,26 +510,20 @@ watch(isConfigModalVisible, (newVal) => {
   }
 })
 
-watch(
-  () => windowHeight.value < 450,
-  (isSmall: boolean) => {
-    simplifiedMainMenu.value = isSmall
-  }
-)
-
-const updateWindowHeight = (): void => {
-  windowHeight.value = window.innerHeight
-}
-
-onMounted(() => {
-  window.addEventListener('resize', updateWindowHeight)
-  if (windowHeight.value < 450) {
-    simplifiedMainMenu.value = true
-  }
+const topBottomBarScale = computed(() => {
+  return windowWidth.value / originalBarWidth
 })
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateWindowHeight)
+const maxScreenHeightPixelsThatFitsLargeMenu = computed(() => {
+  const heightTopBar = widgetStore.currentTopBarHeightPixels * topBottomBarScale.value
+  const heightBottomBar = widgetStore.currentBottomBarHeightPixels * topBottomBarScale.value
+  const visibleAreaHeight = windowHeight.value - heightTopBar - heightBottomBar
+  return visibleAreaHeight
+})
+
+const simplifiedMainMenu = computed(() => {
+  const threshold = windowWidth.value > 1300 ? 860 : 680
+  return maxScreenHeightPixelsThatFitsLargeMenu.value < threshold
 })
 
 const mainMenuWidth = computed(() => {
@@ -677,7 +672,6 @@ const menuLabelSize = computed(() => {
   return 'text-[10px]'
 })
 
-const mainMenu = ref()
 onClickOutside(mainMenu, () => {
   if (interfaceStore.mainMenuCurrentStep === 1 && !interfaceStore.isTutorialVisible) {
     closeMainMenu()
@@ -719,23 +713,19 @@ const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscree
 
 const currentSelectedViewName = computed(() => widgetStore.currentView.name)
 
-const { width: windowWidth } = useWindowSize()
-
 const originalBarWidth = 1800
 
 const topBarScaleStyle = computed(() => {
-  const scale = windowWidth.value / originalBarWidth
   return {
-    transform: `scale(${scale})`,
+    transform: `scale(${topBottomBarScale.value})`,
     transformOrigin: 'top left',
     width: `${originalBarWidth}px`,
   }
 })
 
 const bottomBarScaleStyle = computed(() => {
-  const scale = windowWidth.value / originalBarWidth
   return {
-    transform: `scale(${scale})`,
+    transform: `scale(${topBottomBarScale.value})`,
     transformOrigin: 'bottom left',
     width: `${originalBarWidth}px`,
   }
