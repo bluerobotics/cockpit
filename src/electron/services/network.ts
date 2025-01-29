@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { networkInterfaces } from 'os'
 
-import { NetworkInfo } from '../../src/types/network'
+import { NetworkInfo } from '../../types/network'
 /**
  * Get the network information
  * @returns {NetworkInfo} The network information

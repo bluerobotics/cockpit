@@ -18,7 +18,7 @@ const baseConfig = {
     (isElectron || isBuilding) &&
       electron([
         {
-          entry: 'electron/main.ts',
+          entry: 'src/electron/main.ts',
           vite: {
             build: {
               outDir: 'dist/electron',
@@ -34,7 +34,7 @@ const baseConfig = {
           },
         },
         {
-          entry: 'electron/preload.ts',
+          entry: 'src/electron/preload.ts',
           vite: {
             build: {
               outDir: 'dist/electron',
