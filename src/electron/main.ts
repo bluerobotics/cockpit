@@ -36,7 +36,7 @@ function createWindow(): void {
     y: store.get('windowBounds')?.y ?? screen.getPrimaryDisplay().bounds.y,
   })
 
-  mainWindow.on('close', () => {
+  mainWindow.on('move', () => {
     const windowBounds = mainWindow!.getBounds()
     const { x, y, width, height } = windowBounds
     store.set('windowBounds', { x, y, width, height })
