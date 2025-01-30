@@ -577,7 +577,7 @@ const fileActionButtons = computed(() => [
     size: 28,
     tooltip: 'Download selected videos with logs',
     confirmAction: false,
-    show: true,
+    show: !isElectron(),
     disabled: showOnScreenProgress.value === true || isPreparingDownload.value === true,
     action: () => downloadVideoAndTelemetryFiles(),
   },
