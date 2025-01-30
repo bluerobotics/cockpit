@@ -20,7 +20,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
       blur: 25,
     }),
     displayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', defaultDisplayUnitPreferences),
-    mainMenuStyleTrigger: useBlueOsStorage('main-menu-style', 'center-left'),
+    mainMenuStyleTrigger: useBlueOsStorage('cockpit-main-menu-style', 'center-left'),
     componentToHighlight: 'none',
     isMainMenuVisible: false,
     mainMenuCurrentStep: 1,
