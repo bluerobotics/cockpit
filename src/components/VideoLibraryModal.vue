@@ -314,7 +314,7 @@
                 </div>
                 <div class="flex flex-row mt-2">
                   <button
-                    v-for="button in fileActionButtons"
+                    v-for="button in fileActionButtons.filter((b) => b.show)"
                     :key="button.name"
                     class="flex flex-col justify-center ml-6 align-center"
                     :disabled="button.disabled"
