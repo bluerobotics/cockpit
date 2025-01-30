@@ -338,7 +338,7 @@
   </v-app>
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
   <Tutorial :show-tutorial="interfaceStore.isTutorialVisible" />
-  <VideoLibraryModal :open-modal="interfaceStore.isVideoLibraryVisible" />
+  <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <UpdateNotification v-if="isElectron()" />
 </template>

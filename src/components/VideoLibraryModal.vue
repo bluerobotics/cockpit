@@ -500,11 +500,6 @@ const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
 const { showSnackbar } = useSnackbar()
 
-const props = defineProps({
-  openModal: Boolean,
-})
-const emits = defineEmits(['update:openModal'])
-
 const { showDialog, closeDialog } = useInteractionDialog()
 const { width: windowWidth } = useWindowSize()
 
@@ -520,7 +515,7 @@ interface HammerInstances {
 /* eslint-enable jsdoc/require-jsdoc  */
 const availableVideos = ref<VideoLibraryFile[]>([])
 const availableLogFiles = ref<VideoLibraryLogFile[]>([])
-const isVisible = ref(props.openModal)
+const isVisible = ref(true)
 const selectedVideos = ref<VideoLibraryFile[]>([])
 const videoPlayerRef = ref<HTMLVideoElement | null>(null)
 const currentTab = ref('videos')
@@ -611,7 +606,6 @@ const openVideoFolder = (): void => {
 
 const closeModal = (): void => {
   isVisible.value = false
-  emits('update:openModal', false)
   currentTab.value = 'videos'
   deselectAllVideos()
   lastSelectedVideo.value = null
@@ -973,7 +967,6 @@ watch(
 )
 
 watch(isVisible, (newValue) => {
-  emits('update:openModal', newValue)
   if (!newValue) {
     resetProgressBars()
     isMultipleSelectionMode.value = false
@@ -982,17 +975,6 @@ watch(isVisible, (newValue) => {
     interfaceStore.videoLibraryVisibility = false
   }
 })
-
-watch(
-  () => props.openModal,
-  async (newVal) => {
-    isVisible.value = newVal
-    if (newVal === true) {
-      await fetchVideosAndLogData()
-      showOnScreenProgress.value = false
-    }
-  }
-)
 
 const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => {
   loadingVideoBlob.value = true
@@ -1033,7 +1015,7 @@ watch(
       unloadVideoBlob()
     }
   },
-  { immediate: true, deep: true }
+  { deep: true }
 )
 
 // Keep last processed video selected after refresh
@@ -1116,8 +1098,11 @@ watch(
 )
 
 onMounted(async () => {
-  loadingData.value = true
   await fetchVideosAndLogData()
+  if (availableVideos.value.length > 0) {
+    await loadVideoBlobIntoPlayer(availableVideos.value[0].fileName)
+  }
+  showOnScreenProgress.value = false
 })
 
 onBeforeUnmount(() => {
