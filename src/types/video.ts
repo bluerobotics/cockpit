@@ -81,17 +81,11 @@ export interface UnprocessedVideoInfo extends CommonVideoInfo {
 }
 
 export interface VideoLibraryFile extends CommonVideoInfo {
-  size?: number
-  url: string
   hash?: string
   isProcessed: boolean
 }
 
-export interface VideoLibraryLogFile extends CommonVideoInfo {
-  size?: number
-  url?: string
-  hash?: string
-}
+export interface VideoLibraryLogFile extends CommonVideoInfo {}
 
 export interface VideoProgress {
   filename: string

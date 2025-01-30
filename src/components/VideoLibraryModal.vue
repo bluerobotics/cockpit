@@ -92,19 +92,18 @@
               <div class="flex flex-col w-full h-full px-4 overflow-auto align-center">
                 <div v-for="video in availableVideos" :key="video.fileName" class="mb-4 video-container">
                   <div class="relative video-wrapper">
-                    <video
-                      :id="`video-library-${video.fileName}`"
-                      class="border-4 border-white rounded-md cursor-pointer border-opacity-[0.1] hover:border-opacity-[0.4] transition duration-75 hover:ease-in"
+                    <div
+                      :id="`video-library-thumbnail-${video.fileName}`"
+                      class="border-4 border-white rounded-md cursor-pointer border-opacity-[0.1] hover:border-opacity-[0.4] transition duration-75 hover:ease-in aspect-video"
                       :class="
                         selectedVideos.find((v) => v.fileName === video.fileName)
                           ? ['border-opacity-[0.4]', 'w-[220px]']
                           : ['border-opacity-[0.1]', 'w-[190px]']
                       "
-                      preload="auto"
-                      :poster="!video.isProcessed ? video.thumbnail : undefined"
+                      :src="video.thumbnail ?? undefined"
                     >
-                      <source :src="video.url" />
-                    </video>
+                      <img v-if="video.thumbnail" :src="video.thumbnail" />
+                    </div>
                     <div
                       v-if="selectedVideos.find((v) => v.fileName === video.fileName) && !isMultipleSelectionMode"
                       class="play-button"
@@ -201,9 +200,16 @@
             <!-- Video Player -->
             <div v-if="availableVideos.length > 0" class="flex flex-col justify-between mt-5 align-center w-[720px]">
               <div>
+                <div v-if="loadingVideoBlob" class="text-center w-full aspect-video flex justify-center items-center">
+                  Loading video...
+                </div>
                 <video
-                  v-if="
-                    !isMultipleSelectionMode && selectedVideos.length === 1 && !isMultipleSelectionMode && !loadingData
+                  v-show="
+                    !isMultipleSelectionMode &&
+                    selectedVideos.length === 1 &&
+                    !isMultipleSelectionMode &&
+                    !loadingData &&
+                    !loadingVideoBlob
                   "
                   id="video-player"
                   ref="videoPlayerRef"
@@ -212,9 +218,7 @@
                   :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
                   :poster="selectedVideos[0]?.thumbnail || undefined"
                   class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
-                >
-                  <source :src="selectedVideos[0]?.url || undefined" />
-                </video>
+                ></video>
                 <v-btn
                   v-if="
                     !loadingData &&
@@ -504,9 +508,6 @@ const emits = defineEmits(['update:openModal'])
 const { showDialog, closeDialog } = useInteractionDialog()
 const { width: windowWidth } = useWindowSize()
 
-// Track the blob URLs to revoke them when the modal is closed
-const blobURLs = ref<string[]>([])
-
 /* eslint-disable jsdoc/require-jsdoc  */
 interface CustomHammerInstance {
   destroy(): void
@@ -546,6 +547,8 @@ const showOnScreenProgress = ref(false)
 const lastSelectedVideo = ref<VideoLibraryFile | null>(null)
 const errorProcessingVideos = ref(false)
 const deleteButtonLoading = ref(false)
+const videoBlobURL = ref<string | null>(null)
+const loadingVideoBlob = ref(false)
 
 const dialogStyle = computed(() => {
   const scale = interfaceStore.isOnSmallScreen ? windowWidth.value / 1100 : 1
@@ -610,8 +613,6 @@ const closeModal = (): void => {
   isVisible.value = false
   emits('update:openModal', false)
   currentTab.value = 'videos'
-  blobURLs.value.forEach((url) => URL.revokeObjectURL(url))
-  blobURLs.value = []
   deselectAllVideos()
   lastSelectedVideo.value = null
   isMultipleSelectionMode.value = false
@@ -635,9 +636,8 @@ const parseMissionAndDateFromTitle = (title: string): string => {
 const playVideo = (): void => {
   if (selectedVideos.value.length === 1 && !isMultipleSelectionMode.value) {
     const videoPlayer = document.getElementById(`video-player`) as HTMLVideoElement
-    if (videoPlayer) {
-      videoPlayer.play().catch((e: Error) => console.error('Error auto-playing video:', e))
-    }
+    if (!videoPlayer) return
+    videoPlayer.play().catch((e: Error) => console.error('Error auto-playing video:', e))
   }
 }
 
@@ -699,11 +699,12 @@ const processSingleVideo = async (): Promise<void> => {
   if (selectedVideos.value.length === 1 && !selectedVideos.value[0].isProcessed) {
     showOnScreenProgress.value = true
   }
-  processVideos()
+  await processVideos()
+  await loadVideoBlobIntoPlayer(selectedVideos.value[0].fileName)
 }
 
 // Process multiple videos with progress bars dialog
-const processMultipleVideosDialog = (): void => {
+const processMultipleVideosDialog = async (): Promise<void> => {
   numberOfFilesToProcess.value = selectedVideos.value.length
   progressInteractionDialogTitle.value = 'Processing Videos'
   progressInteractionDialogActions.value = [
@@ -716,7 +717,8 @@ const processMultipleVideosDialog = (): void => {
   ]
   showProcessingInteractionDialog.value = false
   showProgressInteractionDialog.value = true
-  processVideos()
+  await processVideos()
+  await loadVideoBlobIntoPlayer(selectedVideos.value[0].fileName)
 }
 
 const showProcessVideosWarningDialog = (): void => {
@@ -736,7 +738,7 @@ const showProcessVideosWarningDialog = (): void => {
       class: 'font-bold',
       action: async () => {
         showProcessingInteractionDialog.value = false
-        processMultipleVideosDialog()
+        await processMultipleVideosDialog()
       },
     },
   ]
@@ -916,44 +918,17 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   const keys = await videoStore.videoStorage.keys()
   for (const key of keys) {
     if (videoStore.isVideoFilename(key)) {
-      videoFilesOperations.push(
-        (async () => {
-          const videoBlob = await videoStore.videoStorage.getItem(key)
-          let url = ''
-          let isProcessed = true
-          if (videoBlob instanceof Blob) {
-            url = URL.createObjectURL(videoBlob)
-            blobURLs.value.push(url)
-          } else {
-            console.error('Video data is not a Blob:', videoBlob)
-          }
-          const size = (await videoStore.videoStorageFileSize(key)) ?? 0
-          return { fileName: key, size, url, isProcessed }
-        })()
-      )
+      videoFilesOperations.push({ fileName: key, isProcessed: true })
     }
     if (key.endsWith('.ass')) {
-      logFileOperations.push(
-        (async () => {
-          const videoBlob = await videoStore.videoStorage.getItem(key)
-          let url = ''
-          if (videoBlob instanceof Blob) {
-            url = URL.createObjectURL(videoBlob)
-            blobURLs.value.push(url)
-          } else {
-            console.error('Video data is not a Blob:', videoBlob)
-          }
-          const size = (await videoStore.videoStorageFileSize(key)) ?? 0
-          return { fileName: key, url, size }
-        })()
-      )
+      logFileOperations.push({ fileName: key })
     }
   }
 
   // Fetch unprocessed videos
   const unprocessedVideos = await videoStore.unprocessedVideos
   const unprocessedVideoOperations = Object.entries(unprocessedVideos).map(async ([hash, videoInfo]) => {
-    return { ...videoInfo, ...{ hash: hash, url: '', isProcessed: false } }
+    return { ...videoInfo, ...{ hash: hash, isProcessed: false } }
   })
 
   const videos = await Promise.all(videoFilesOperations)
@@ -1019,20 +994,43 @@ watch(
   }
 )
 
+const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => {
+  loadingVideoBlob.value = true
+
+  try {
+    const videoPlayer = document.getElementById(`video-player`) as HTMLVideoElement
+    const videoBlob = await videoStore.videoStorage.getItem(videoFileName)
+
+    if (videoBlob instanceof Blob && videoPlayer) {
+      videoBlobURL.value = URL.createObjectURL(videoBlob)
+      videoPlayer.src = videoBlobURL.value
+      videoPlayer.load()
+    }
+  } catch (error) {
+    const msg = 'Error loading video blob into player'
+    showSnackbar({ message: msg, duration: 3000, variant: 'error', closeButton: true })
+  } finally {
+    loadingVideoBlob.value = false
+  }
+}
+
+const unloadVideoBlob = (): void => {
+  if (!videoBlobURL.value) return
+  URL.revokeObjectURL(videoBlobURL.value)
+  videoBlobURL.value = null
+}
+
 watch(
   selectedVideos,
-  (newVal) => {
+  async (newVal) => {
     if (newVal.length === 1) {
+      lastSelectedVideo.value = newVal[0]
+      await loadVideoBlobIntoPlayer(newVal[0].fileName)
       if (errorProcessingVideos.value) {
         resetProgressBars()
       }
-      lastSelectedVideo.value = newVal[0]
-      const videoSrc = newVal[0].url
-      const videoPlayer = videoPlayerRef.value
-      if (videoPlayer) {
-        videoPlayer.src = videoSrc
-        videoPlayer.load()
-      }
+    } else {
+      unloadVideoBlob()
     }
   },
   { immediate: true, deep: true }
@@ -1067,11 +1065,11 @@ watch(
   async () => {
     await nextTick()
     availableVideos.value.forEach((video) => {
-      const videoElement = document.getElementById(`video-library-${video.fileName}`)
-      if (videoElement) {
+      const videoThumbnailElement = document.getElementById(`video-library-thumbnail-${video.fileName}`)
+      if (videoThumbnailElement) {
         hammerInstances.value[video.fileName]?.destroy()
 
-        const hammerManager = new Hammer.Manager(videoElement)
+        const hammerManager = new Hammer.Manager(videoThumbnailElement)
         hammerManager.add(new Hammer.Tap())
         hammerManager.add(new Hammer.Press({ time: 500 }))
 
@@ -1124,14 +1122,12 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   currentTab.value = 'videos'
-  // Revoke each blob URL
-  blobURLs.value.forEach((url) => URL.revokeObjectURL(url))
-  blobURLs.value = []
   // Properly destroy Hammer instances
   Object.values(hammerInstances.value).forEach((instance) => {
     instance.destroy()
   })
   interfaceStore.videoLibraryVisibility = false
+  unloadVideoBlob()
 })
 </script>
 
