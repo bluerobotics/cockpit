@@ -3,7 +3,7 @@
     :is-visible="showTutorial"
     class="pa-5 z-[1000000]"
     :draggable="true"
-    storage-key="tutorial-modal"
+    storage-key="cockpit-tutorial-modal"
     is-persistent
   >
     <div class="w-[600px]" :class="tallContent ? 'h-[350px]' : 'h-[280px]'">
@@ -77,6 +77,7 @@
 </template>
 
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import CockpitLogo from '@/assets/cockpit-logo-minimal.png'
@@ -105,6 +106,7 @@ const currentTutorialStep = ref(1)
 const isVehicleConnectedVisible = ref(false)
 const tallContent = ref(false)
 const userHasSeenTutorial = useBlueOsStorage('cockpit-has-seen-tutorial', false)
+const lastViewedTutorialStep = useStorage('cockpit-last-tutorial-step', 1)
 
 const steps = [
   {
@@ -149,7 +151,7 @@ const steps = [
     id: 7,
     title: 'Joystick Configuration',
     content: `Connect a controller and move a joystick or press a button to see the current function mapping.`,
-    opposite: `Fully supported joysticks have a visual configuration interface available, but there's also a 
+    opposite: `Fully supported joysticks have a visual configuration interface available, but there's also a
       mapping table provided for custom or uncommon controllers. Actions can be related to vehicle functions,
       can influence the display, or can run custom requests or code.`,
   },
@@ -209,7 +211,7 @@ const handleStepChangeUp = (newStep: number): void => {
       if (!interfaceStore.isMainMenuVisible) {
         interfaceStore.isMainMenuVisible = true
       }
-      localStorage.setItem('last-tutorial-step', '1')
+      lastViewedTutorialStep.value = 1
       interfaceStore.mainMenuCurrentStep = 2
       tallContent.value = true
       interfaceStore.componentToHighlight = 'General'
@@ -223,10 +225,10 @@ const handleStepChangeUp = (newStep: number): void => {
       tallContent.value = false
       interfaceStore.componentToHighlight = 'vehicle-address'
       setVehicleConnectedVisible()
-      localStorage.setItem('last-tutorial-step', '5')
+      lastViewedTutorialStep.value = 5
       break
     case 6:
-      localStorage.setItem('last-tutorial-step', '1')
+      lastViewedTutorialStep.value = 1
       tallContent.value = false
       interfaceStore.componentToHighlight = 'Interface'
       interfaceStore.configComponent = 1
@@ -295,7 +297,7 @@ const handleStepChangeDown = (newStep: number): void => {
       if (!interfaceStore.isMainMenuVisible) {
         interfaceStore.isMainMenuVisible = true
       }
-      localStorage.setItem('last-tutorial-step', '1')
+      lastViewedTutorialStep.value = 1
       interfaceStore.mainMenuCurrentStep = 1
       interfaceStore.configComponent = -1
       tallContent.value = true
@@ -421,13 +423,12 @@ watch(userHasSeenTutorial, (newVal) => {
 })
 
 const checkUserHasSeenTutorial = (): void => {
-  const lastViewedTutorialStep = localStorage.getItem('last-tutorial-step')
   setTimeout(() => {
     showTutorial.value = !userHasSeenTutorial.value
     interfaceStore.isTutorialVisible = !userHasSeenTutorial.value
-    if (lastViewedTutorialStep && showTutorial.value) {
-      currentTutorialStep.value = parseInt(lastViewedTutorialStep)
-      handleStepChangeUp(parseInt(lastViewedTutorialStep))
+    if (lastViewedTutorialStep.value && showTutorial.value) {
+      currentTutorialStep.value = lastViewedTutorialStep.value
+      handleStepChangeUp(lastViewedTutorialStep.value)
     }
   }, 5000)
 }
