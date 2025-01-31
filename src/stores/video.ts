@@ -457,8 +457,12 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const discardUnprocessedFilesFromVideoDB = async (hashes: string[]): Promise<void> => {
+    const allKeys = await tempVideoStorage.keys()
     for (const hash of hashes) {
-      await tempVideoStorage.removeItem(hash)
+      const keysToRemove = allKeys.filter((key) => key.includes(hash))
+      for (const key of keysToRemove) {
+        await tempVideoStorage.removeItem(key)
+      }
       delete unprocessedVideos.value[hash]
     }
   }
