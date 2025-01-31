@@ -203,13 +203,23 @@ export const useVideoStore = defineStore('video', () => {
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
 
+  const videoThumbnailFilename = (videoFileName: string): string => {
+    return `thumbnail_${videoFileName}.jpeg`
+  }
+
+  const getVideoThumbnail = async (videoFileNameOrHash: string, isProcessed: boolean): Promise<Blob | null> => {
+    const db = isProcessed ? videoStorage : tempVideoStorage
+    const thumbnail = await db.getItem(videoThumbnailFilename(videoFileNameOrHash))
+    return thumbnail || null
+  }
+
   /**
    * Extracts a thumbnail from the first frame of a video.
    * @param {Blob} firstChunkBlob
    * @returns {Promise<string>} A promise that resolves with the base64-encoded image data of the thumbnail.
    */
-  const extractThumbnailFromVideo = async (firstChunkBlob: Blob): Promise<string> => {
-    return new Promise<string>((resolve, reject) => {
+  const extractThumbnailFromVideo = async (firstChunkBlob: Blob): Promise<Blob> => {
+    return new Promise<Blob>((resolve, reject) => {
       const videoObjectUrl = URL.createObjectURL(firstChunkBlob)
       const video = document.createElement('video')
 
@@ -241,9 +251,15 @@ export const useVideoStore = defineStore('video', () => {
         video.currentTime = 0
         seekResolve = () => {
           context.drawImage(video, 0, 0, width, height)
-          const base64ImageData = canvas.toDataURL('image/jpeg', 0.6)
-          resolve(base64ImageData)
-          URL.revokeObjectURL(videoObjectUrl)
+          const blobCallback = (blob: Blob | null): void => {
+            if (!blob) {
+              reject('Failed to create blob')
+              return
+            }
+            resolve(blob)
+            URL.revokeObjectURL(videoObjectUrl)
+          }
+          canvas.toBlob(blobCallback, 'image/jpeg', 0.6)
         }
       })
     })
@@ -304,7 +320,6 @@ export const useVideoStore = defineStore('video', () => {
       fileName,
       vWidth,
       vHeight,
-      thumbnail: '',
     }
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
@@ -391,7 +406,8 @@ export const useVideoStore = defineStore('video', () => {
           if (videoChunk) {
             const firstChunkBlob = new Blob([videoChunk as Blob])
             const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
-            updatedInfo.thumbnail = thumbnail
+            // Save thumbnail in the storage
+            await tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail)
             unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
           }
         } catch (error) {
@@ -586,7 +602,7 @@ export const useVideoStore = defineStore('video', () => {
 
       debouncedUpdateFileProgress(info.fileName, 30, 'Grouping video chunks.')
       const keys = await tempVideoStorage.keys()
-      const filteredKeys = keys.filter((key) => key.includes(hash))
+      const filteredKeys = keys.filter((key) => key.includes(hash) && key !== videoThumbnailFilename(hash))
       for (const key of filteredKeys) {
         const blob = await tempVideoStorage.getItem(key)
         if (blob && blob.size > 0) {
@@ -628,7 +644,12 @@ export const useVideoStore = defineStore('video', () => {
       updateLastProcessingUpdate(hash)
 
       debouncedUpdateFileProgress(info.fileName, 75, `Saving video file.`)
-      await videoStorage.setItem(`${info.fileName}.${extensionContainer || 'webm'}`, durFixedBlob ?? mergedBlob)
+      const finalFileName = `${info.fileName}.${extensionContainer || 'webm'}`
+      await videoStorage.setItem(finalFileName, durFixedBlob ?? mergedBlob)
+
+      // Save thumbnail in the storage
+      const thumbnail = await extractThumbnailFromVideo(chunkBlobs[0])
+      await videoStorage.setItem(videoThumbnailFilename(finalFileName), thumbnail)
 
       updateLastProcessingUpdate(hash)
 
@@ -942,6 +963,8 @@ export const useVideoStore = defineStore('video', () => {
     overallProgress,
     processVideoChunksAndTelemetry,
     isVideoFilename,
+    getVideoThumbnail,
+    videoThumbnailFilename,
     activeStreams,
     renameStreamInternalNameById,
     lastRenamedStreamName,
