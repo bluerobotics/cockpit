@@ -100,9 +100,18 @@
                           ? ['border-opacity-[0.4]', 'w-[220px]']
                           : ['border-opacity-[0.1]', 'w-[190px]']
                       "
-                      :src="video.thumbnail ?? undefined"
                     >
-                      <img v-if="video.thumbnail" :src="video.thumbnail" />
+                      <img
+                        v-if="video.isProcessed && videoThumbnailURLs[video.fileName]"
+                        :src="videoThumbnailURLs[video.fileName]"
+                      />
+                      <img
+                        v-else-if="!video.isProcessed && videoThumbnailURLs[video.hash]"
+                        :src="videoThumbnailURLs[video.hash]"
+                      />
+                      <div v-else class="w-full h-full flex justify-center items-center bg-black">
+                        <v-icon size="60" class="text-white/30">mdi-video</v-icon>
+                      </div>
                     </div>
                     <div
                       v-if="selectedVideos.find((v) => v.fileName === video.fileName) && !isMultipleSelectionMode"
@@ -207,18 +216,21 @@
                   v-show="
                     !isMultipleSelectionMode &&
                     selectedVideos.length === 1 &&
-                    !isMultipleSelectionMode &&
                     !loadingData &&
-                    !loadingVideoBlob
+                    !loadingVideoBlob &&
+                    selectedVideos[0].isProcessed
                   "
                   id="video-player"
                   ref="videoPlayerRef"
                   width="660px"
                   :controls="selectedVideos[0].isProcessed ? true : false"
                   :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
-                  :poster="selectedVideos[0]?.thumbnail || undefined"
                   class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
                 ></video>
+                <div
+                  v-if="!isMultipleSelectionMode && selectedVideos.length === 1 && !selectedVideos[0].isProcessed"
+                  class="w-[660px] border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
+                />
                 <v-btn
                   v-if="
                     !loadingData &&
@@ -484,7 +496,7 @@
 import { useWindowSize } from '@vueuse/core'
 import * as Hammer from 'hammerjs'
 import { computed, nextTick, onBeforeUnmount, onMounted } from 'vue'
-import { ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
@@ -544,6 +556,7 @@ const errorProcessingVideos = ref(false)
 const deleteButtonLoading = ref(false)
 const videoBlobURL = ref<string | null>(null)
 const loadingVideoBlob = ref(false)
+const videoThumbnailURLs = reactive<Record<string, string | null>>({})
 
 const dialogStyle = computed(() => {
   const scale = interfaceStore.isOnSmallScreen ? windowWidth.value / 1100 : 1
@@ -875,7 +888,10 @@ const discardVideosAndUpdateDB = async (): Promise<void> => {
   let unprocessedVideosToDiscard: string[] = []
 
   await selectedVideos.value.forEach((video: VideoLibraryFile) => {
-    if (video.isProcessed) processedVideosToDiscard.push(video.fileName)
+    if (video.isProcessed) {
+      processedVideosToDiscard.push(video.fileName)
+      processedVideosToDiscard.push(videoStore.videoThumbnailFilename(video.fileName))
+    }
     if (!video.isProcessed && video.hash) unprocessedVideosToDiscard.push(video.hash)
   })
 
@@ -912,7 +928,9 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   const keys = await videoStore.videoStorage.keys()
   for (const key of keys) {
     if (videoStore.isVideoFilename(key)) {
-      videoFilesOperations.push({ fileName: key, isProcessed: true })
+      videoFilesOperations.push({ fileName: key, isProcessed: true, thumbnail: videoStore.videoStorage.getItem(key) })
+      const thumbnail = await videoStore.getVideoThumbnail(key, true)
+      videoThumbnailURLs[key] = thumbnail ? URL.createObjectURL(thumbnail) : null
     }
     if (key.endsWith('.ass')) {
       logFileOperations.push({ fileName: key })
@@ -922,6 +940,8 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   // Fetch unprocessed videos
   const unprocessedVideos = await videoStore.unprocessedVideos
   const unprocessedVideoOperations = Object.entries(unprocessedVideos).map(async ([hash, videoInfo]) => {
+    const thumbnail = await videoStore.getVideoThumbnail(hash, false)
+    videoThumbnailURLs[hash] = thumbnail ? URL.createObjectURL(thumbnail) : null
     return { ...videoInfo, ...{ hash: hash, isProcessed: false } }
   })
 

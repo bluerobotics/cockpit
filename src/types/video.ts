@@ -63,10 +63,6 @@ export interface CommonVideoInfo {
    *  The height of the video
    */
   vHeight?: number
-  /**
-   *  Screen capture from first chunk of the video
-   */
-  thumbnail?: string
 }
 
 /* eslint-disable jsdoc/require-jsdoc  */
