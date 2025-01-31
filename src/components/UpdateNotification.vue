@@ -27,6 +27,7 @@
         </template>
       </v-progress-linear>
     </template>
+    <template #actions> <v-btn variant="text" size="small" @click="showUpdateDialog = false">Close</v-btn> </template>
   </InteractionDialog>
 </template>
 
@@ -37,6 +38,9 @@ import { onBeforeMount, ref } from 'vue'
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
+
+const interfaceStore = useAppInterfaceStore()
 
 const showUpdateDialog = ref(false)
 const dialogTitle = ref('')
@@ -75,7 +79,10 @@ onBeforeMount(() => {
     dialogVariant.value = 'info'
     dialogActions.value = []
     showProgress.value = false
-    showUpdateDialog.value = true
+    if (interfaceStore.activeDialog?.id === 'UpdateNotification' || interfaceStore.activeDialog === undefined) {
+      showUpdateDialog.value = true
+      return
+    }
   })
 
   window.electronAPI.onUpdateNotAvailable(() => {
@@ -144,7 +151,9 @@ onBeforeMount(() => {
       return
     }
 
-    showUpdateDialog.value = true
+    if (interfaceStore.activeDialog?.id === 'UpdateNotification' || interfaceStore.activeDialog === undefined) {
+      showUpdateDialog.value = true
+    }
   })
 
   window.electronAPI.onDownloadProgress((progressInfo) => {
@@ -175,7 +184,9 @@ onBeforeMount(() => {
         },
       },
     ]
-    showUpdateDialog.value = true
+    if (interfaceStore.activeDialog?.id === 'UpdateNotification' || interfaceStore.activeDialog === undefined) {
+      showUpdateDialog.value = true
+    }
   })
 })
 </script>
