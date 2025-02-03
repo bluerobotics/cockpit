@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, protocol, screen } from 'electron'
 import logger from 'electron-log'
 import { join } from 'path'
 
@@ -30,6 +30,7 @@ function createWindow(): void {
       nodeIntegration: false,
     },
     autoHideMenuBar: true,
+    frame: false,
     width: store.get('windowBounds')?.width ?? screen.getPrimaryDisplay().workAreaSize.width,
     height: store.get('windowBounds')?.height ?? screen.getPrimaryDisplay().workAreaSize.height,
     x: store.get('windowBounds')?.x ?? screen.getPrimaryDisplay().bounds.x,
@@ -47,6 +48,31 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(ROOT_PATH.dist, 'index.html'))
   }
+
+  // Window control handlers
+  ipcMain.on('minimize-window', () => {
+    mainWindow?.minimize()
+  })
+
+  ipcMain.on('maximize-window', () => {
+    if (mainWindow && mainWindow.isMaximized()) {
+      mainWindow.unmaximize()
+    } else {
+      mainWindow?.maximize()
+    }
+  })
+
+  ipcMain.on('close-window', () => {
+    mainWindow?.close()
+  })
+
+  ipcMain.handle('is-maximized', () => {
+    return mainWindow?.isMaximized()
+  })
+
+  ipcMain.handle('get-platform', () => {
+    return process.platform
+  })
 }
 
 app.on('window-all-closed', () => {

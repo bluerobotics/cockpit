@@ -265,6 +265,7 @@
               interfaceStore.isOnSmallScreen && interfaceStore.isOnSmallScreen ? topBarScaleStyle : undefined,
             ]"
           >
+            <WindowControls v-if="isElectron()" />
             <button
               v-if="interfaceStore.mainMenuStyleTrigger === 'burger'"
               class="flex items-center justify-center h-full mr-2 aspect-square top-bar-hamburger"
@@ -279,7 +280,7 @@
                 align="start"
               />
             </div>
-            <div class="grow" />
+            <div class="grow window-dragger" />
             <div class="flex-1">
               <MiniWidgetContainer
                 :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
@@ -287,7 +288,7 @@
                 align="center"
               />
             </div>
-            <div class="grow" />
+            <div class="grow window-dragger" />
             <div class="flex-1">
               <MiniWidgetContainer
                 :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
@@ -353,6 +354,7 @@ import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import VideoLibraryModal from '@/components/VideoLibraryModal.vue'
+import WindowControls from '@/components/WindowControls.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
   availableCockpitActions,
@@ -903,5 +905,9 @@ body.hide-cursor {
 
 .top-bar-hamburger {
   outline: none;
+}
+
+.window-dragger {
+  -webkit-app-region: drag;
 }
 </style>

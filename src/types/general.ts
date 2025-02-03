@@ -64,3 +64,32 @@ export interface ElectronStorageDB {
    */
   keys: (subFolders?: string[]) => Promise<string[]>
 }
+
+/**
+ * Electron window control functions
+ */
+export interface ElectronWindowControlFunctions {
+  /**
+   * Minimize the window
+   */
+  minimizeWindow: () => void
+  /**
+   * Maximize the window
+   */
+  maximizeWindow: () => void
+  /**
+   * Close the window
+   */
+  closeWindow: () => void
+  /**
+   * Check if the window is maximized
+   */
+  isMaximized: () => Promise<boolean>
+}
+
+export interface ElectronGeneralFunctions {
+  /**
+   * Get the platform
+   */
+  getPlatform: () => Promise<string>
+}
