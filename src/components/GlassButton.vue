@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col items-center 2xl:gap-y-1 xl: gap-y-1 py-2"
+    class="flex flex-col items-center w-full 2xl:gap-y-1 xl: gap-y-1 py-2"
     :class="[
       isUncontained && !isSelected ? (isNoEffects ? '' : 'mark-on-hover') : '',
       isSelected === true ? 'frosted-button-selected' : '',
@@ -9,11 +9,12 @@
   >
     <button
       :disabled="isDisabled"
-      class="flex flex-col items-center justify-center"
+      class="flex flex-col items-center justify-center mt-3 -mb-2"
       :class="[
         isUncontained ? 'no-glass' : 'frosted-button',
         { 'frosted-button-disabled': isDisabled, 'rounded-full': isRound },
         buttonClass,
+        interfaceStore.isOnPhoneScreen ? '-mr-1' : '',
       ]"
       :style="{ width: buttonStyle.width.toString() + 'px', height: buttonStyle.height.toString() + 'px' }"
     >
@@ -22,14 +23,12 @@
           {{ tooltip }}
         </v-tooltip>
       </template>
-      <v-icon
-        v-if="isRound || isUncontained"
-        :size="props.iconSize || calculatedIconSize"
-        :class="iconClass"
-        class="opacity-90"
-      >
-        {{ icon }}
-      </v-icon>
+      <template v-if="isRound || isUncontained">
+        <slot v-if="$slots.default"></slot>
+        <v-icon :size="props.iconSize || calculatedIconSize" :class="iconClass" class="opacity-90">
+          {{ icon }}
+        </v-icon>
+      </template>
       <div v-else class="flex items-center align-center justify-center w-full h-full">
         <v-icon :size="props.iconSize || calculatedIconSize" :class="iconClass">{{ icon }}</v-icon>
         <div class="text-white select-none" :class="labelClass">
@@ -39,8 +38,8 @@
     </button>
     <div
       v-if="isRound || isUncontained"
-      class="flex justify-center align-center text-center select-none text-white px-4 font-semibold 2xl:mt-2 xl:mt-1 lg:mt-0 md:mt-0 sm:-mt-1 mt-1"
-      :class="labelClass"
+      class="flex justify-center align-center text-center select-none text-white px-4 font-semibold leading-[17px]"
+      :class="[labelClass, interfaceStore.isOnPhoneScreen ? 'mt-0' : 'mt-2']"
     >
       {{ label }}
     </div>
@@ -48,6 +47,10 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
+
+import { useAppInterfaceStore } from '@/stores/appInterface'
+
+const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps<{
   /**
