@@ -8,6 +8,7 @@ export enum JoystickProtocol {
   CockpitModifierKey = 'cockpit-modifier-key',
   MAVLinkManualControl = 'mavlink-manual-control',
   CockpitAction = 'cockpit-action',
+  DataLakeVariable = 'data-lake-variable',
   Other = 'other',
 }
 
