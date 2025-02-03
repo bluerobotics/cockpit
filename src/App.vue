@@ -38,19 +38,18 @@
                 class="relative flex flex-col h-full justify-between align-center items-center select-none"
                 :class="
                   interfaceStore.isOnSmallScreen
-                    ? 'gap-y-2 pt-2 pb-3 sm:gap-y-1 sm:py-0 sm:-ml-[3px] xs:gap-y-1 xs:py-0 xs:-ml-[3px]'
-                    : 'lg:gap-y-3 xl:gap-y-4 gap-y-5 py-5'
+                    ? 'gap-y-0 pt-2 pb-3 sm:sm:py-0 sm:-ml-[3px] xs:xs:py-0 xs:-ml-[3px]'
+                    : 'lg:gap-y-2 xl:gap-y-3 gap-y-4 py-4'
                 "
               >
                 <GlassButton
                   v-if="route.name === 'widgets-view'"
                   :label="simplifiedMainMenu ? '' : 'Edit Interface'"
                   :selected="widgetStore.editingMode"
-                  :label-class="[menuLabelSize, '-mb-0.5']"
-                  icon="mdi-pencil"
-                  :icon-class="interfaceStore.isOnSmallScreen ? 'scale-[90%] -mr-[2px]' : 'scale-[90%] -mr-[3px]'"
+                  :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                  :icon="simplifiedMainMenu ? 'mdi-pencil' : undefined"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  variant="uncontained"
                   :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
                   :width="buttonSize"
                   @click="
@@ -59,17 +58,15 @@
                       closeMainMenu()
                     }
                   "
-                />
+                  ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" alt="Edit Mode Icon" />
+                </GlassButton>
                 <GlassButton
                   v-if="route.name !== 'widgets-view'"
                   :label="simplifiedMainMenu ? '' : 'Flight'"
-                  :label-class="menuLabelSize"
-                  icon="mdi-send"
-                  :icon-class="
-                    interfaceStore.isOnSmallScreen ? '-mb-[1px] -mr-[3px] scale-90' : '-mb-[1px] -mr-[5px] scale-90'
-                  "
+                  :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                  :icon="simplifiedMainMenu ? 'mdi-send' : undefined"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  variant="uncontained"
                   :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
                   :width="buttonSize"
                   :selected="$route.name === 'Flight'"
@@ -79,19 +76,15 @@
                       closeMainMenu()
                     }
                   "
-                />
+                  ><img v-if="!simplifiedMainMenu" :src="FlightIcon" alt="Flight Icon" />
+                </GlassButton>
                 <GlassButton
                   v-if="route.name !== 'Mission planning'"
                   :label="simplifiedMainMenu ? '' : 'Mission Planning'"
-                  :label-class="menuLabelSize"
-                  icon="mdi-map-marker-radius-outline"
-                  :icon-class="
-                    interfaceStore.isOnSmallScreen
-                      ? 'scale-[95%] -mr-[2px] -mb-[1px]'
-                      : 'scale-[95%] ml-[2px] lg:-mr-[2px]'
-                  "
+                  :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                  :icon="simplifiedMainMenu ? 'mdi-map-marker-radius-outline' : undefined"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  variant="uncontained"
                   :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
                   :width="buttonSize"
                   :selected="$route.name === 'Mission planning'"
@@ -101,22 +94,18 @@
                       closeMainMenu()
                     }
                   "
-                />
+                  ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="MissionPlanning Icon"
+                /></GlassButton>
                 <GlassButton
                   :label="simplifiedMainMenu ? '' : 'Settings'"
-                  :label-class="[menuLabelSize, '-mb-1']"
-                  icon="mdi-cog"
+                  :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                  :icon="simplifiedMainMenu ? 'mdi-cog' : undefined"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :icon-class="
-                    interfaceStore.isOnSmallScreen
-                      ? 'scale-[100%] -mb-[1px] md:ml-[2px]'
-                      : 'scale-[97%]  lg:ml-[1px] -mr-[2px] xl:-mb-[4px]'
-                  "
-                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  variant="uncontained"
                   :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
                   :width="buttonSize"
                   :selected="showSubMenu"
-                  class="mb-2"
+                  class="mb-1"
                   :style="
                     interfaceStore.highlightedComponent === 'config-menu-item' && {
                       animation: 'highlightBackground 0.5s alternate 20',
@@ -124,22 +113,18 @@
                     }
                   "
                   @click="selectSubMenu('config')"
-                />
+                  ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="Settings Icon" />
+                </GlassButton>
                 <GlassButton
                   :label="simplifiedMainMenu ? '' : 'Tools'"
-                  :label-class="[menuLabelSize, '-mb-1']"
-                  icon="mdi-tools"
+                  :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                  :icon="simplifiedMainMenu ? 'mdi-tools' : undefined"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :icon-class="
-                    interfaceStore.isOnSmallScreen
-                      ? 'scale-[100%] -mb-[1px] md:ml-[2px]'
-                      : 'scale-[90%]  lg:ml-[1px] -mr-[2px] xl:-mb-[4px]'
-                  "
-                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  variant="uncontained"
                   :tooltip="simplifiedMainMenu ? 'Tools' : undefined"
                   :width="buttonSize"
                   :selected="showSubMenu"
-                  class="mb-2"
+                  class="mb-1"
                   :style="
                     interfaceStore.highlightedComponent === 'config-menu-item' && {
                       animation: 'highlightBackground 0.5s alternate 20',
@@ -147,18 +132,14 @@
                     }
                   "
                   @click="selectSubMenu('tools')"
-                />
+                  ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="Tools Icon" />
+                </GlassButton>
                 <GlassButton
                   :label="simplifiedMainMenu ? '' : isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
-                  :label-class="menuLabelSize"
-                  :icon="fullScreenToggleIcon"
+                  :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                  :icon="simplifiedMainMenu ? fullScreenToggleIcon : undefined"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :icon-class="
-                    interfaceStore.isOnSmallScreen
-                      ? '-mb-[1px] scale-90 -mr-[2px] md:ml-[1px] md:-mb-[2px]'
-                      : '2xl:-mb-[2px] xl:-mb-[2px] -mb-[1px] scale-90 -mr-[3px]'
-                  "
-                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  variant="uncontained"
                   :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
                   :button-class="simplifiedMainMenu ? '-mb-2' : ''"
                   :width="buttonSize"
@@ -169,31 +150,29 @@
                       closeMainMenu()
                     }
                   "
-                />
+                  ><img
+                    v-if="!simplifiedMainMenu"
+                    :src="isFullscreen ? ExitFullScreenIcon : FullScreenIcon"
+                    alt="Fullscreen Icon"
+                  />
+                </GlassButton>
                 <GlassButton
                   :label="simplifiedMainMenu ? '' : 'About'"
-                  :label-class="[menuLabelSize, '-mb-1']"
-                  icon="mdi-information-outline"
+                  :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                  :icon="simplifiedMainMenu ? 'mdi-information-outline' : undefined"
                   :icon-size="simplifiedMainMenu ? 25 : undefined"
-                  :icon-class="
-                    interfaceStore.isOnSmallScreen
-                      ? 'scale-[90%] mt-[15px] -mr-[4px] md:ml-[1px] md:-mb-[2px]'
-                      : 'scale-[95%] -mb-[2px] lg:-mr-[1px] -mr-[2px] xl:-mb-[2px]'
-                  "
-                  :variant="simplifiedMainMenu ? 'uncontained' : 'round'"
+                  variant="uncontained"
                   :tooltip="simplifiedMainMenu ? 'About' : undefined"
                   :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
                   :width="buttonSize"
                   :selected="showSubMenu"
                   @click="openAboutDialog"
-                />
+                  ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="Info Icon" />
+                </GlassButton>
               </div>
             </v-window-item>
             <v-window-item :value="2" class="h-full w-full">
-              <div
-                class="flex flex-col w-full h-full justify-between"
-                :class="simplifiedMainMenu ? 'py-0 gap-y-0' : 'py-2 gap-y-1'"
-              >
+              <div class="flex flex-col w-full h-full justify-between">
                 <GlassButton
                   v-for="menuitem in currentSubMenu"
                   :key="menuitem.title"
@@ -215,8 +194,8 @@
                   ><template #content
                     ><div v-if="currentSubMenuComponent === menuitem.component" class="arrow-left"></div></template
                 ></GlassButton>
-                <div class="flex flex-col justify-center align-center">
-                  <v-divider width="70%" class="mb-3" />
+                <div class="flex flex-col justify-center align-center pb-1">
+                  <v-divider width="70%" />
                   <GlassButton
                     :label-class="menuLabelSize"
                     icon="mdi-arrow-left"
@@ -348,6 +327,14 @@ import { onClickOutside, useDebounceFn, useFullscreen, useStorage, useWindowSize
 import { computed, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import EditModeIcon from '@/assets/icons/edit-mode.svg'
+import ExitFullScreenIcon from '@/assets/icons/exit-full-screen.svg'
+import FlightIcon from '@/assets/icons/flight.svg'
+import FullScreenIcon from '@/assets/icons/full-screen.svg'
+import InfoIcon from '@/assets/icons/info.svg'
+import MissionPlanningIcon from '@/assets/icons/mission-planning.svg'
+import SettingsIcon from '@/assets/icons/settings.svg'
+import ToolsIcon from '@/assets/icons/tools.svg'
 import GlassModal from '@/components/GlassModal.vue'
 import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
@@ -652,14 +639,14 @@ watch(
 )
 
 const buttonSize = computed(() => {
-  if (interfaceStore.is2xl) return 60
-  if (interfaceStore.isXl) return 55
-  if (interfaceStore.isLg) return 50
-  if (interfaceStore.isMd) return 45
-  if (interfaceStore.isSm && windowHeight.value > 700) return 50
-  if (interfaceStore.isSm && windowHeight.value < 700) return 40
-  if (interfaceStore.isXs && windowHeight.value >= 700) return 50
-  return 40
+  if (interfaceStore.is2xl) return 72
+  if (interfaceStore.isXl) return 66
+  if (interfaceStore.isLg) return 60
+  if (interfaceStore.isMd) return 54
+  if (interfaceStore.isSm && windowHeight.value > 700) return 60
+  if (interfaceStore.isSm && windowHeight.value < 700) return 48
+  if (interfaceStore.isXs && windowHeight.value >= 700) return 60
+  return 48
 })
 
 const menuLabelSize = computed(() => {
