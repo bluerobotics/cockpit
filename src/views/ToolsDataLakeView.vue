@@ -39,6 +39,7 @@
                   { title: 'Current Value', align: 'start', key: 'value', width: '220px', fixed: true },
                 ]"
                 :header-props="{ style: { backgroundColor: 'rgba(0, 0, 0, 0.1)' } }"
+                @update:current-items="(currentItems) => updateListOfActiveVariables(currentItems)"
               >
                 <template #item="{ item }">
                   <tr>
@@ -139,17 +140,19 @@ const currentValues = ref<Record<string, string | number | boolean | undefined>>
 const listeners = ref<Record<string, string>>({})
 let dataLakeVariableInfoListenerId: string | undefined
 
-const setupVariableListeners = (): void => {
+const setupVariableListeners = (idsVariablesToListen?: string[]): void => {
   cleanupVariableListeners()
 
-  availableDataLakeVariables.value.forEach((variable) => {
-    currentValues.value[variable.id] = getDataLakeVariableData(variable.id)
+  idsVariablesToListen = idsVariablesToListen ?? availableDataLakeVariables.value.map((v) => v.id)
 
-    const listenerId = listenDataLakeVariable(variable.id, (value) => {
-      currentValues.value[variable.id] = value
+  idsVariablesToListen.forEach((variableId) => {
+    currentValues.value[variableId] = getDataLakeVariableData(variableId)
+
+    const listenerId = listenDataLakeVariable(variableId, (value) => {
+      currentValues.value[variableId] = value
     })
 
-    listeners.value[variable.id] = listenerId
+    listeners.value[variableId] = listenerId
   })
 }
 
@@ -206,6 +209,12 @@ const filteredVariables = computed(() => {
   })
   return fuse.search(searchQuery.value).map((result) => result.item)
 })
+
+// Do not listen to variables that are not in the list, so we don't use unnecessary CPU/Memory resources
+const updateListOfActiveVariables = (currentItems: DataLakeVariable[]): void => {
+  const currentItemsIds = currentItems.map((v) => v.key)
+  setupVariableListeners(currentItemsIds)
+}
 </script>
 
 <style scoped>
