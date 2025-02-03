@@ -155,7 +155,6 @@ const setupVariableListeners = (): void => {
 
 const cleanupVariableListeners = (): void => {
   Object.entries(listeners.value).forEach(([id, listenerId]) => {
-    console.log(`Unlistening to ${id}.`)
     unlistenDataLakeVariable(id, listenerId)
   })
 }
