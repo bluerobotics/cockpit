@@ -17,6 +17,7 @@ import { app_version } from '@/libs/cosmos'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 
 import App from './App.vue'
+import { setupPostPiniaConnections } from './libs/post-pinia-connections'
 import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
 import router from './router'
@@ -54,3 +55,6 @@ app.mount('#app')
 
 // Initialize the logger store
 useOmniscientLoggerStore()
+
+// Post-pinia connections setup
+setupPostPiniaConnections()

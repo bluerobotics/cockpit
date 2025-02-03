@@ -639,7 +639,10 @@ watch(
 )
 
 const filteredProtocols = protocols.filter(
-  (protocol) => protocol === JoystickProtocol.MAVLinkManualControl || protocol === JoystickProtocol.CockpitAction
+  (protocol) =>
+    protocol === JoystickProtocol.MAVLinkManualControl ||
+    protocol === JoystickProtocol.CockpitAction ||
+    protocol === JoystickProtocol.DataLakeVariable
 )
 
 const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void> => {
