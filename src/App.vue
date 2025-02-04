@@ -316,7 +316,7 @@
     </v-main>
   </v-app>
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
-  <Tutorial :show-tutorial="interfaceStore.isTutorialVisible" />
+  <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <UpdateNotification v-if="isElectron()" />
@@ -759,13 +759,19 @@ const showDiscoveryDialog = ref(false)
 const preventAutoSearch = useStorage('cockpit-prevent-auto-vehicle-discovery-dialog', false)
 
 onMounted(() => {
-  if (!isElectron() || preventAutoSearch.value) return
+  if (isElectron() && !preventAutoSearch.value) {
+    // Wait 5 seconds to check if we're connected to a vehicle
+    setTimeout(() => {
+      if (vehicleStore.isVehicleOnline) return
+      showDiscoveryDialog.value = true
+    }, 5000)
+  }
 
-  // Wait 5 seconds to check if we're connected to a vehicle
-  setTimeout(() => {
-    if (vehicleStore.isVehicleOnline) return
-    showDiscoveryDialog.value = true
-  }, 5000)
+  if (!interfaceStore.userHasSeenTutorial) {
+    setTimeout(() => {
+      interfaceStore.isTutorialVisible = true
+    }, 6000)
+  }
 })
 </script>
 
