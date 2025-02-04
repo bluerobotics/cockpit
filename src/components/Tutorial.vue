@@ -398,11 +398,6 @@ watch(showTutorial, (newVal) => {
   interfaceStore.isTutorialVisible = newVal
 })
 
-watch(interfaceStore.userHasSeenTutorial, (newVal) => {
-  interfaceStore.isTutorialVisible = !newVal
-  showTutorial.value = !newVal
-})
-
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   handleStepChangeUp(currentTutorialStep.value)
