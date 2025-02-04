@@ -1,116 +1,4 @@
 <template>
-  <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-    <template #title>HTTP Request Actions</template>
-    <template #info>
-      <li>View, manage, and create HTTP request actions.</li>
-      <li>Use these actions to call external APIs, like servers, vehicles, cameras, etc.</li>
-      <li>
-        You can use <code>&#123;&#123; variable-id &#125;&#125;</code> to refer to data-lake variables on the URL and
-        body. You can also use data-lake variables in the URL parameters by simply selecting them from the dropdown.
-      </li>
-      <li>
-        There are two very handy variables you can use in the URL: 'vehicle-address' and 'mavlink2rest-http-endpoint'.
-        The former is the address of the vehicle, without the protocol (http:// or https://) or port, while the latter
-        is the endpoint of the MAVLink2REST API.
-      </li>
-    </template>
-    <template #content>
-      <div class="flex justify-center flex-col ml-2 mb-8 mt-2 w-[640px]">
-        <v-data-table
-          :items="allSavedActionConfigs"
-          items-per-page="10"
-          class="elevation-1 bg-transparent rounded-lg"
-          theme="dark"
-          :style="interfaceStore.globalGlassMenuStyles"
-        >
-          <template #headers>
-            <tr>
-              <th class="text-left">
-                <p class="text-[16px] font-bold">Name</p>
-              </th>
-              <th class="text-center">
-                <p class="text-[16px] font-bold">URL</p>
-              </th>
-              <th class="text-right">
-                <p class="text-[16px] font-bold">Actions</p>
-              </th>
-            </tr>
-          </template>
-          <template #item="{ item }">
-            <tr>
-              <td>
-                <div :id="item.id" class="flex items-center justify-left rounded-xl mx-1 w-[140px]">
-                  <p class="whitespace-nowrap overflow-hidden text-ellipsis">{{ item.name }}</p>
-                </div>
-              </td>
-              <td>
-                <div :id="item.id" class="flex items-center justify-center rounded-xl mx-1 w-[200px]">
-                  <p class="whitespace-nowrap overflow-hidden text-ellipsis">
-                    {{ replaceDataLakeInputsInString(item.url) }}
-                  </p>
-                </div>
-              </td>
-              <td class="w-[200px] text-right">
-                <div class="flex items-center justify-center">
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    icon="mdi-pencil"
-                    size="x-small"
-                    @click="openActionEditDialog(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    icon="mdi-play"
-                    size="x-small"
-                    @click="runAction(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1 pl-[3px] pt-[1px]"
-                    icon="mdi-export"
-                    size="x-small"
-                    @click="exportAction(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    color="error"
-                    icon="mdi-delete"
-                    size="x-small"
-                    @click="deleteActionConfig(item.id)"
-                  />
-                </div>
-              </td>
-            </tr>
-          </template>
-          <template #bottom>
-            <tr class="w-full">
-              <td colspan="3" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-2">
-                <v-btn variant="outlined" class="rounded-lg" @click="openNewActionDialog()">
-                  <v-icon start>mdi-plus</v-icon>
-                  New HTTP action
-                </v-btn>
-                <v-btn variant="outlined" class="rounded-lg" @click="importAction">
-                  <v-icon start>mdi-import</v-icon>
-                  Import action
-                </v-btn>
-              </td>
-            </tr>
-          </template>
-          <template #no-data>
-            <tr>
-              <td colspan="3" class="text-center flex items-center justify-center h-[50px] w-full">
-                <p class="text-[16px] ml-[170px] w-full">No HTTP request actions found</p>
-              </td>
-            </tr>
-          </template>
-        </v-data-table>
-      </div>
-    </template>
-  </ExpansiblePanel>
-
   <v-dialog v-model="actionDialog.show" max-width="500px">
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">{{
@@ -314,23 +202,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 
-import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import { openSnackbar } from '@/composables/snackbar'
 import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
 import {
   availableHttpRequestMethods,
   deleteHttpRequestActionConfig,
-  getAllHttpRequestActionConfigs,
   getHttpRequestActionConfig,
   HttpRequestActionConfig,
   HttpRequestMethod,
   registerHttpRequestActionConfig,
 } from '@/libs/actions/http-request'
-import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
-import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { ValidationFunctionReturn } from '@/types/general'
+
+const emit = defineEmits<{
+  (e: 'action-saved'): void
+  (e: 'action-deleted'): void
+}>()
+
 const interfaceStore = useAppInterfaceStore()
 
 const defaultActionConfig = {
@@ -344,7 +234,6 @@ const defaultActionConfig = {
   body: '',
 }
 
-const actionsConfigs = reactive<Record<string, HttpRequestActionConfig>>({})
 const newActionConfig = ref<HttpRequestActionConfig>(defaultActionConfig)
 
 const bodyInputError = ref('')
@@ -394,8 +283,7 @@ const isValidRequestConfig = (config: HttpRequestActionConfig): boolean => {
   )
 }
 
-// eslint-disable-next-line jsdoc/require-jsdoc
-const validateJsonTemplate = (template: string): { isValid: boolean; error: string } => {
+const validateJsonTemplate = (template: string): ValidationFunctionReturn => {
   if (!template.trim()) {
     return { isValid: true, error: '' }
   }
@@ -441,7 +329,7 @@ const isValidJsonTemplate = (template: string): boolean => {
 
 const validateJsonTemplateForDialog = (template: string): void => {
   const { isValid, error } = validateJsonTemplate(template)
-  bodyDialog.value.error = error
+  bodyDialog.value.error = error ?? ''
   bodyDialog.value.isValid = isValid
 }
 
@@ -455,8 +343,7 @@ const isValidUrlParams = (params: Record<string, string>): boolean => {
   })
 }
 
-// eslint-disable-next-line jsdoc/require-jsdoc
-const isValidHeaders = (headers: Record<string, string>): { isValid: boolean; error: string } => {
+const isValidHeaders = (headers: Record<string, string>): ValidationFunctionReturn => {
   for (const [key, value] of Object.entries(headers)) {
     // Header keys should be non-empty and contain valid characters
     const validKeyRegex = /^[a-zA-Z0-9!#$%&'*+-.^_`|~]+$/
@@ -547,15 +434,10 @@ const removeHeader = (key: string): void => {
 
 const editMode = ref(false)
 
-const editActionConfig = (id: string): void => {
-  editMode.value = true
-  newActionConfig.value = JSON.parse(JSON.stringify(actionsConfigs[id])) // Deep copy
-}
-
 const createActionConfig = (): void => {
   editMode.value = false
   registerHttpRequestActionConfig(newActionConfig.value)
-  loadSavedActions()
+  emit('action-saved')
   resetNewAction()
 }
 
@@ -568,24 +450,6 @@ const resetNewAction = (): void => {
   newActionConfig.value = JSON.parse(JSON.stringify(defaultActionConfig))
   bodyInputError.value = ''
   editMode.value = false
-}
-
-const allSavedActionConfigs = computed(() => {
-  return Object.entries(actionsConfigs).map(([id, action]) => ({ id, ...action }))
-})
-
-const deleteActionConfig = (id: string): void => {
-  delete actionsConfigs[id]
-  deleteHttpRequestActionConfig(id)
-  loadSavedActions()
-}
-
-const loadSavedActions = (): void => {
-  Object.assign(actionsConfigs, getAllHttpRequestActionConfigs())
-}
-
-const runAction = (id: string): void => {
-  executeActionCallback(id)
 }
 
 const exportAction = (id: string): void => {
@@ -607,33 +471,9 @@ const exportAction = (id: string): void => {
   a.remove()
 }
 
-const importAction = (): void => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'application/json'
-  input.onchange = (event) => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        try {
-          const json = JSON.parse(e.target?.result as string)
-
-          if (!isValidRequestConfig(json)) {
-            throw new Error('Invalid request configuration file.')
-          }
-
-          registerHttpRequestActionConfig(json as HttpRequestActionConfig)
-          loadSavedActions()
-        } catch (error) {
-          openSnackbar({ message: `Cannot import action. ${error}`, variant: 'error', duration: 5000 })
-        }
-      }
-      reader.readAsText(file)
-    }
-  }
-  input.click()
-  input.remove()
+const deleteAction = (id: string): void => {
+  deleteHttpRequestActionConfig(id)
+  emit('action-deleted')
 }
 
 const actionDialog = ref({
@@ -645,23 +485,25 @@ const closeActionDialog = (): void => {
   resetNewAction()
 }
 
-const openActionEditDialog = (id: string): void => {
-  editActionConfig(id)
-  actionDialog.value.show = true
+const openEditDialog = (id: string): void => {
+  const action = getHttpRequestActionConfig(id)
+  if (action) {
+    editMode.value = true
+    newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
+    actionDialog.value.show = true
+  }
 }
 
-const openNewActionDialog = (): void => {
+const openNewDialog = (): void => {
   resetNewAction()
   actionDialog.value.show = true
 }
 
-const saveUrlParameter = (): void => {
-  addUrlParameter()
-  closeUrlParamDialog()
-}
-
-onMounted(() => {
-  loadSavedActions()
+defineExpose({
+  openEditDialog,
+  openNewDialog,
+  exportAction,
+  deleteAction,
 })
 </script>
 

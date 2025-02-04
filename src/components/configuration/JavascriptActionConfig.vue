@@ -1,97 +1,4 @@
 <template>
-  <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-    <template #title>Vanilla JavaScript Actions</template>
-    <template #info>
-      <p>View, manage, and create vanilla JavaScript actions.</p>
-      <p>Take a look at <code>window.cockpit</code> to see available functions and variables.</p>
-    </template>
-    <template #content>
-      <div class="flex justify-center flex-col ml-2 mb-8 mt-2 w-[640px]">
-        <v-data-table
-          :items="allSavedActionConfigs"
-          items-per-page="10"
-          class="elevation-1 bg-transparent rounded-lg"
-          theme="dark"
-          :style="interfaceStore.globalGlassMenuStyles"
-        >
-          <template #headers>
-            <tr>
-              <th class="text-left">
-                <p class="text-[16px] font-bold">Name</p>
-              </th>
-              <th class="text-right">
-                <p class="text-[16px] font-bold">Actions</p>
-              </th>
-            </tr>
-          </template>
-          <template #item="{ item }">
-            <tr>
-              <td>
-                <div :id="item.id" class="flex items-center justify-left rounded-xl mx-1 w-[140px]">
-                  <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">{{ item.name }}</p>
-                </div>
-              </td>
-              <td class="w-[200px] text-right">
-                <div class="flex items-center justify-center">
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    icon="mdi-pencil"
-                    size="x-small"
-                    @click="openActionEditDialog(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    icon="mdi-play"
-                    size="x-small"
-                    @click="runAction(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1 pl-[3px] pt-[1px]"
-                    icon="mdi-export"
-                    size="x-small"
-                    @click="exportAction(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    color="error"
-                    icon="mdi-delete"
-                    size="x-small"
-                    @click="deleteActionConfig(item.id)"
-                  />
-                </div>
-              </td>
-            </tr>
-          </template>
-          <template #bottom>
-            <tr class="w-full">
-              <td colspan="2" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-2">
-                <v-btn variant="outlined" class="rounded-lg" @click="openNewActionDialog()">
-                  <v-icon start>mdi-plus</v-icon>
-                  New JavaScript action
-                </v-btn>
-                <v-btn variant="outlined" class="rounded-lg" @click="importAction">
-                  <v-icon start>mdi-import</v-icon>
-                  Import action
-                </v-btn>
-              </td>
-            </tr>
-          </template>
-          <template #no-data>
-            <tr>
-              <td colspan="2" class="text-center flex items-center justify-center h-[50px] w-full">
-                <p class="text-[16px] ml-[170px] w-full">No JavaScript actions found</p>
-              </td>
-            </tr>
-          </template>
-        </v-data-table>
-      </div>
-    </template>
-  </ExpansiblePanel>
-
   <v-dialog v-model="actionDialog.show" max-width="800px" persistent>
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">{{
@@ -141,24 +48,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 
-import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import { openSnackbar } from '@/composables/snackbar'
 import {
   deleteJavascriptActionConfig,
   executeActionCode,
-  getAllJavascriptActionConfigs,
   getJavascriptActionConfig,
   JavascriptActionConfig,
   registerJavascriptActionConfig,
 } from '@/libs/actions/free-javascript'
-import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+
+const emit = defineEmits<{
+  (e: 'action-saved'): void
+  (e: 'action-deleted'): void
+}>()
 
 const interfaceStore = useAppInterfaceStore()
 
-const actionsConfigs = reactive<Record<string, JavascriptActionConfig>>({})
 const newActionConfig = ref<JavascriptActionConfig>({
   name: '',
   code: '',
@@ -181,15 +88,10 @@ const validateCode = (code: string): void => {
   }
 }
 
-const editActionConfig = (id: string): void => {
-  editMode.value = true
-  newActionConfig.value = JSON.parse(JSON.stringify(actionsConfigs[id])) // Deep copy
-}
-
 const createActionConfig = (): void => {
   editMode.value = false
   registerJavascriptActionConfig(newActionConfig.value)
-  loadSavedActions()
+  emit('action-saved')
   resetNewAction()
 }
 
@@ -205,24 +107,6 @@ const resetNewAction = (): void => {
   }
   codeError.value = ''
   editMode.value = false
-}
-
-const allSavedActionConfigs = computed(() => {
-  return Object.entries(actionsConfigs).map(([id, action]) => ({ id, ...action }))
-})
-
-const deleteActionConfig = (id: string): void => {
-  delete actionsConfigs[id]
-  deleteJavascriptActionConfig(id)
-  loadSavedActions()
-}
-
-const loadSavedActions = (): void => {
-  Object.assign(actionsConfigs, getAllJavascriptActionConfigs())
-}
-
-const runAction = (id: string): void => {
-  executeActionCallback(id)
 }
 
 const testAction = (): void => {
@@ -248,34 +132,9 @@ const exportAction = (id: string): void => {
   a.remove()
 }
 
-const importAction = (): void => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'application/json'
-  input.onchange = (event) => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        try {
-          const json = JSON.parse(e.target?.result as string)
-          validateCode(json.code)
-
-          if (!json.name || !json.code || codeError.value) {
-            throw new Error('Invalid JavaScript action configuration file.')
-          }
-
-          registerJavascriptActionConfig(json as JavascriptActionConfig)
-          loadSavedActions()
-        } catch (error) {
-          openSnackbar({ message: `Cannot import action. ${error}`, variant: 'error', duration: 5000 })
-        }
-      }
-      reader.readAsText(file)
-    }
-  }
-  input.click()
-  input.remove()
+const deleteAction = (id: string): void => {
+  deleteJavascriptActionConfig(id)
+  emit('action-deleted')
 }
 
 const closeActionDialog = (): void => {
@@ -283,18 +142,25 @@ const closeActionDialog = (): void => {
   resetNewAction()
 }
 
-const openActionEditDialog = (id: string): void => {
-  editActionConfig(id)
-  actionDialog.value.show = true
+const openEditDialog = (id: string): void => {
+  const action = getJavascriptActionConfig(id)
+  if (action) {
+    editMode.value = true
+    newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
+    actionDialog.value.show = true
+  }
 }
 
-const openNewActionDialog = (): void => {
+const openNewDialog = (): void => {
   resetNewAction()
   actionDialog.value.show = true
 }
 
-onMounted(() => {
-  loadSavedActions()
+defineExpose({
+  openEditDialog,
+  openNewDialog,
+  exportAction,
+  deleteAction,
 })
 </script>
 
