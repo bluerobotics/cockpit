@@ -1,104 +1,4 @@
 <template>
-  <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-    <template #title>MAVLink Message Actions</template>
-    <template #info>
-      <p>View, manage, and create MAVLink message actions.</p>
-    </template>
-    <template #content>
-      <div class="flex justify-center flex-col ml-2 mb-8 mt-2 w-[640px]">
-        <v-data-table
-          :items="allActionsConfigs"
-          items-per-page="10"
-          class="elevation-1 bg-transparent rounded-lg"
-          theme="dark"
-          :style="interfaceStore.globalGlassMenuStyles"
-        >
-          <template #headers>
-            <tr>
-              <th class="text-left">
-                <p class="text-[16px] font-bold">Name</p>
-              </th>
-              <th class="text-center">
-                <p class="text-[16px] font-bold">Message Type</p>
-              </th>
-              <th class="text-right">
-                <p class="text-[16px] font-bold">Actions</p>
-              </th>
-            </tr>
-          </template>
-          <template #item="{ item }">
-            <tr>
-              <td>
-                <div :id="item.id" class="flex items-center justify-left rounded-xl mx-1 w-[140px]">
-                  <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">{{ item.name }}</p>
-                </div>
-              </td>
-              <td>
-                <div :id="item.id" class="flex items-center justify-center rounded-xl mx-1 w-[200px]">
-                  <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">{{ item.messageType }}</p>
-                </div>
-              </td>
-              <td class="w-[200px] text-right">
-                <div class="flex items-center justify-center">
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    icon="mdi-pencil"
-                    size="x-small"
-                    @click="openActionEditDialog(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    icon="mdi-play"
-                    size="x-small"
-                    @click="runAction(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1 pl-[3px] pt-[1px]"
-                    icon="mdi-export"
-                    size="x-small"
-                    @click="exportAction(item.id)"
-                  />
-                  <v-btn
-                    variant="outlined"
-                    class="rounded-full mx-1"
-                    color="error"
-                    icon="mdi-delete"
-                    size="x-small"
-                    @click="deleteActionConfig(item.id)"
-                  />
-                </div>
-              </td>
-            </tr>
-          </template>
-          <template #bottom>
-            <tr class="w-full">
-              <td colspan="3" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-2">
-                <v-btn variant="outlined" class="rounded-lg" @click="openNewActionDialog()">
-                  <v-icon start>mdi-plus</v-icon>
-                  New MAVLink action
-                </v-btn>
-                <v-btn variant="outlined" class="rounded-lg" @click="importAction">
-                  <v-icon start>mdi-import</v-icon>
-                  Import action
-                </v-btn>
-              </td>
-            </tr>
-          </template>
-          <template #no-data>
-            <tr>
-              <td colspan="3" class="text-center flex items-center justify-center h-[50px] w-full">
-                <p class="text-[16px] ml-[170px] w-full">No MAVLink message actions found</p>
-              </td>
-            </tr>
-          </template>
-        </v-data-table>
-      </div>
-    </template>
-  </ExpansiblePanel>
-
   <!-- Action Dialog -->
   <v-dialog v-model="actionDialog.show" max-width="500px">
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
@@ -169,21 +69,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 
-import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import { openSnackbar } from '@/composables/snackbar'
 import {
   type MavlinkMessageActionConfig,
   deleteMavlinkMessageActionConfig,
-  getAllMavlinkMessageActionConfigs,
   getMavlinkMessageActionConfig,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
 import { messageFieldDefinitions } from '@/libs/actions/mavlink-message-actions-message-definitions'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+
+const emit = defineEmits<{
+  (e: 'action-saved'): void
+  (e: 'action-deleted'): void
+}>()
 
 const interfaceStore = useAppInterfaceStore()
 
@@ -195,7 +96,6 @@ const defaultActionConfig = {
 }
 
 const actionDialog = ref({ show: false })
-const actionsConfigs = reactive<Record<string, MavlinkMessageActionConfig>>({})
 const editMode = ref(false)
 const newActionConfig = ref<MavlinkMessageActionConfig>(defaultActionConfig)
 
@@ -228,41 +128,6 @@ const isFormValid = computed(() => {
   })
 })
 
-const loadActionsConfigs = (): void => {
-  Object.assign(actionsConfigs, getAllMavlinkMessageActionConfigs())
-}
-
-const allActionsConfigs = computed(() => {
-  return Object.entries(actionsConfigs).map(([id, action]) => ({ id, ...action }))
-})
-
-const deleteActionConfig = (id: string): void => {
-  delete actionsConfigs[id]
-  deleteMavlinkMessageActionConfig(id)
-  loadActionsConfigs()
-}
-
-const openNewActionDialog = (): void => {
-  editMode.value = false
-  resetNewAction()
-  actionDialog.value.show = true
-}
-
-const editActionConfig = (id: string): void => {
-  editMode.value = true
-  newActionConfig.value = JSON.parse(JSON.stringify(actionsConfigs[id]))
-}
-
-const openActionEditDialog = (id: string): void => {
-  editActionConfig(id)
-  actionDialog.value.show = true
-}
-
-const closeActionDialog = (): void => {
-  actionDialog.value.show = false
-  resetNewAction()
-}
-
 const resetActionConfig = (messageType: MAVLinkType = defaultMessageType): void => {
   const exampleStringConfig = JSON.stringify(
     {
@@ -284,17 +149,13 @@ const resetNewAction = (): void => {
 const createActionConfig = (): void => {
   editMode.value = false
   registerMavlinkMessageActionConfig(newActionConfig.value)
-  loadActionsConfigs()
+  emit('action-saved')
   resetNewAction()
 }
 
 const saveActionConfig = (): void => {
   createActionConfig()
   closeActionDialog()
-}
-
-const runAction = (id: string): void => {
-  executeActionCallback(id)
 }
 
 const exportAction = (id: string): void => {
@@ -316,32 +177,35 @@ const exportAction = (id: string): void => {
   a.remove()
 }
 
-const importAction = (): void => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'application/json'
-  input.onchange = (event) => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        try {
-          const action = JSON.parse(e.target?.result as string) as MavlinkMessageActionConfig
-          registerMavlinkMessageActionConfig(action)
-          loadActionsConfigs()
-        } catch (error) {
-          openSnackbar({ message: `Cannot import action. ${error}`, variant: 'error', duration: 5000 })
-        }
-      }
-      reader.readAsText(file)
-    }
-  }
-  input.click()
-  input.remove()
+const deleteAction = (id: string): void => {
+  deleteMavlinkMessageActionConfig(id)
+  emit('action-deleted')
 }
 
-onMounted(() => {
-  loadActionsConfigs()
+const closeActionDialog = (): void => {
+  actionDialog.value.show = false
+  resetNewAction()
+}
+
+const openEditDialog = (id: string): void => {
+  const action = getMavlinkMessageActionConfig(id)
+  if (action) {
+    editMode.value = true
+    newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
+    actionDialog.value.show = true
+  }
+}
+
+const openNewDialog = (): void => {
+  resetNewAction()
+  actionDialog.value.show = true
+}
+
+defineExpose({
+  openEditDialog,
+  openNewDialog,
+  exportAction,
+  deleteAction,
 })
 </script>
 

@@ -64,3 +64,17 @@ export interface ElectronStorageDB {
    */
   keys: (subFolders?: string[]) => Promise<string[]>
 }
+
+/**
+ * Return of a validation function
+ */
+export interface ValidationFunctionReturn {
+  /**
+   * Whether the input is valid
+   */
+  isValid: boolean
+  /**
+   * Error message in case the input is not valid
+   */
+  error?: string
+}
