@@ -59,10 +59,10 @@
         variant="text"
         @click="
           () => {
-            userHasSeenTutorial ? alwaysShowTutorialOnStartup() : dontShowTutorialAgain()
+            interfaceStore.userHasSeenTutorial ? alwaysShowTutorialOnStartup() : dontShowTutorialAgain()
           }
         "
-        >{{ userHasSeenTutorial ? 'Show on startup' : `Don't show again` }}</v-btn
+        >{{ interfaceStore.userHasSeenTutorial ? 'Show on startup' : `Don't show again` }}</v-btn
       >
       <v-btn
         variant="flat"
@@ -81,7 +81,6 @@ import { useStorage } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import CockpitLogo from '@/assets/cockpit-logo-minimal.png'
-import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -92,20 +91,10 @@ const { showSnackbar } = useSnackbar()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
-const props = defineProps<{
-  /**
-   *
-   */
-  showTutorial?: boolean
-}>()
-
-const emits = defineEmits(['update:showTutorial'])
-
-const showTutorial = ref(props.showTutorial || false)
+const showTutorial = ref(true)
 const currentTutorialStep = ref(1)
 const isVehicleConnectedVisible = ref(false)
 const tallContent = ref(false)
-const userHasSeenTutorial = useBlueOsStorage('cockpit-has-seen-tutorial', false)
 const lastViewedTutorialStep = useStorage('cockpit-last-tutorial-step', 1)
 
 const steps = [
@@ -270,7 +259,7 @@ const handleStepChangeUp = (newStep: number): void => {
     case 13:
       interfaceStore.configComponent = -1
       interfaceStore.isMainMenuVisible = false
-      userHasSeenTutorial.value = true
+      interfaceStore.userHasSeenTutorial = true
       break
     default:
       break
@@ -349,9 +338,8 @@ const handleStepChangeDown = (newStep: number): void => {
 }
 
 const dontShowTutorialAgain = (): void => {
-  userHasSeenTutorial.value = true
+  interfaceStore.userHasSeenTutorial = true
   showTutorial.value = false
-  emits('update:showTutorial', false)
   showSnackbar({
     message: 'This guide can be reopened via the Settings > General menu',
     variant: 'info',
@@ -361,9 +349,8 @@ const dontShowTutorialAgain = (): void => {
 }
 
 const alwaysShowTutorialOnStartup = (): void => {
-  userHasSeenTutorial.value = false
+  interfaceStore.userHasSeenTutorial = false
   showTutorial.value = true
-  emits('update:showTutorial', true)
 }
 
 const nextTutorialStep = (): void => {
@@ -385,7 +372,6 @@ const closeTutorial = (): void => {
   showTutorial.value = false
   interfaceStore.componentToHighlight = 'none'
   currentTutorialStep.value = 1
-  emits('update:showTutorial', false)
 }
 
 const setVehicleConnectedVisible = (): void => {
@@ -417,24 +403,12 @@ watch(showTutorial, (newVal) => {
   interfaceStore.isTutorialVisible = newVal
 })
 
-watch(userHasSeenTutorial, (newVal) => {
+watch(interfaceStore.userHasSeenTutorial, (newVal) => {
   interfaceStore.isTutorialVisible = !newVal
   showTutorial.value = !newVal
 })
 
-const checkUserHasSeenTutorial = (): void => {
-  setTimeout(() => {
-    showTutorial.value = !userHasSeenTutorial.value
-    interfaceStore.isTutorialVisible = !userHasSeenTutorial.value
-    if (lastViewedTutorialStep.value && showTutorial.value) {
-      currentTutorialStep.value = lastViewedTutorialStep.value
-      handleStepChangeUp(lastViewedTutorialStep.value)
-    }
-  }, 5000)
-}
-
 onMounted(() => {
-  checkUserHasSeenTutorial()
   window.addEventListener('keydown', handleKeydown)
 })
 

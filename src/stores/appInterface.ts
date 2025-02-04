@@ -27,6 +27,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     subMenuComponentName: null,
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
+    userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
     configPanelVisible: false,
   }),
   actions: {
