@@ -55,8 +55,8 @@
     <div class="fixed bottom-0 flex justify-between w-full -ml-5 pa-4">
       <v-btn v-if="currentTutorialStep > 1" variant="text" @click="backTutorialStep">Previous</v-btn>
       <v-btn
-        v-if="currentTutorialStep === 1"
         variant="text"
+        :class="{ 'mr-11 opacity-[50%]': currentTutorialStep > 1 }"
         @click="
           () => {
             interfaceStore.userHasSeenTutorial ? alwaysShowTutorialOnStartup() : dontShowTutorialAgain()
@@ -92,10 +92,9 @@ const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
 const showTutorial = ref(true)
-const currentTutorialStep = ref(1)
+const currentTutorialStep = useStorage('cockpit-last-tutorial-step', 1)
 const isVehicleConnectedVisible = ref(false)
 const tallContent = ref(false)
-const lastViewedTutorialStep = useStorage('cockpit-last-tutorial-step', 1)
 
 const steps = [
   {
@@ -200,7 +199,6 @@ const handleStepChangeUp = (newStep: number): void => {
       if (!interfaceStore.isMainMenuVisible) {
         interfaceStore.isMainMenuVisible = true
       }
-      lastViewedTutorialStep.value = 1
       interfaceStore.mainMenuCurrentStep = 2
       tallContent.value = true
       interfaceStore.componentToHighlight = 'General'
@@ -214,10 +212,8 @@ const handleStepChangeUp = (newStep: number): void => {
       tallContent.value = false
       interfaceStore.componentToHighlight = 'vehicle-address'
       setVehicleConnectedVisible()
-      lastViewedTutorialStep.value = 5
       break
     case 6:
-      lastViewedTutorialStep.value = 1
       tallContent.value = false
       interfaceStore.componentToHighlight = 'Interface'
       interfaceStore.configComponent = 1
@@ -286,7 +282,6 @@ const handleStepChangeDown = (newStep: number): void => {
       if (!interfaceStore.isMainMenuVisible) {
         interfaceStore.isMainMenuVisible = true
       }
-      lastViewedTutorialStep.value = 1
       interfaceStore.mainMenuCurrentStep = 1
       interfaceStore.configComponent = -1
       tallContent.value = true
@@ -410,6 +405,7 @@ watch(interfaceStore.userHasSeenTutorial, (newVal) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  handleStepChangeUp(currentTutorialStep.value)
 })
 
 onBeforeUnmount(() => {
