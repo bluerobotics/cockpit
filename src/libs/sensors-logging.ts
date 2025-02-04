@@ -427,7 +427,26 @@ class DataLogger {
     const keysLogPointsInRange = availableLogsKeys.filter((key) => {
       const epochString = Number(key.split('=')[1])
       const logPointDate = new Date(epochString)
-      return logPointDate >= initialTime && logPointDate <= finalTime
+      // Consider logs that start a little before the initial time and end a little after the final time, so we don't
+      // miss data at the start or end of the recording.
+      const aLittleBitBeforeInitialTime = new Date(initialTime.getTime() - 10000)
+      const aLittleBitAfterFinalTime = new Date(finalTime.getTime() + 10000)
+      return logPointDate >= aLittleBitBeforeInitialTime && logPointDate <= aLittleBitAfterFinalTime
+    })
+
+    // Generate an object with the initial and final epoch of each log point
+    // The initial epoch is the name of the key, and the final epoch can be determined from the next point.
+    const infoLogPointsInRange = keysLogPointsInRange.map((key, index, array) => {
+      const epochString = Number(key.split('=')[1])
+      const initialDate = new Date(epochString)
+
+      let finalDate: Date | null = null
+      if (index !== array.length - 1) {
+        const nextEpochString = Number(array[index + 1].split('=')[1])
+        finalDate = new Date(nextEpochString)
+      }
+
+      return { key, initialDate, finalDate }
     })
 
     if (keysLogPointsInRange.length === 0) {
@@ -435,21 +454,26 @@ class DataLogger {
     }
 
     const logPointsInRange: CockpitStandardLogPoint[] = []
-    for (const key of keysLogPointsInRange) {
-      const log = (await this.cockpitTemporaryLogsDB.getItem(key)) as CockpitStandardLogPoint
+    for (const info of infoLogPointsInRange) {
+      const log = (await this.cockpitTemporaryLogsDB.getItem(info.key)) as CockpitStandardLogPoint
 
       // Only consider real log points(objects with an epoch and data property, and non-empty data)
       if (log.epoch === undefined || log.data === undefined || Object.keys(log.data).length === 0) continue
+
+      // Exclude those log points that end before the initial time or start after the final time
+      if ((info.finalDate && info.finalDate < initialTime) || info.initialDate > finalTime) continue
 
       logPointsInRange.push(log)
     }
 
     // Sort the log points by epoch, generate a final log file and put in in the local database
     const sortedLogPoints = logPointsInRange.sort((a, b) => a.epoch - b.epoch)
-    const finalLog = sortedLogPoints.map((logPoint) => ({
-      ...logPoint,
-      ...{ seconds: differenceInSeconds(new Date(logPoint.epoch), initialTime) },
-    }))
+    const finalLog = sortedLogPoints.map((logPoint) => {
+      // Calculate the seconds since the initial recording time. If the value is negative, it means the log point starts
+      // before the recording started, so we set it to start at 0 seconds in the recording.
+      const seconds = Math.max(0, differenceInSeconds(new Date(logPoint.epoch), initialTime))
+      return { ...logPoint, ...{ seconds } }
+    })
 
     await this.cockpitLogsDB.setItem(fileName, finalLog)
 
@@ -543,7 +567,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
       const roundedMillisThisPoint = differenceInSeconds(new Date(logPoint.epoch), new Date(videoStartEpoch)) * 1000
       const millisThisPoint = differenceInMilliseconds(new Date(logPoint.epoch), new Date(videoStartEpoch))
       const remainingMillisThisPoint = millisThisPoint - roundedMillisThisPoint
-      const remainingCentisThisPoint = Math.floor(remainingMillisThisPoint / 10).toString().padStart(2, '0')
+      const remainingCentisThisPoint = Math.max(0, Math.floor(remainingMillisThisPoint / 10)).toString().padStart(2, '0')
 
       const roundedMillisNextPoint = differenceInSeconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch)) * 1000
       const millisNextPoint = differenceInMilliseconds(new Date(log[index + 1].epoch), new Date(videoStartEpoch))
