@@ -195,3 +195,20 @@ export const copyToClipboard = async (text: string): Promise<void> => {
     throw new Error(`Failed to copy text. Error: ${error}`)
   }
 }
+
+/**
+ * Check if a string represents a valid number
+ * @param {string} str The string to check
+ * @returns {boolean} True if the string represents a valid number, false otherwise
+ */
+export const isNumber = (str: string): boolean => {
+  if (typeof str !== 'string') {
+    return false
+  }
+  // Handle empty strings
+  if (str.trim() === '') {
+    return false
+  }
+  // Convert string to number and check if it's valid
+  return !isNaN(Number(str)) && isFinite(Number(str))
+}
