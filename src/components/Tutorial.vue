@@ -50,7 +50,14 @@
       </v-window>
     </div>
     <div class="fixed top-1 right-1">
-      <v-btn icon="mdi-close" size="small" variant="text" class="text-lg" @click="closeTutorial"></v-btn>
+      <v-btn
+        v-if="currentTutorialStep !== steps.length"
+        icon="mdi-close"
+        size="small"
+        variant="text"
+        class="text-lg"
+        @click="closeTutorial"
+      ></v-btn>
     </div>
     <div class="fixed bottom-0 flex justify-between w-full -ml-5 pa-4">
       <v-btn v-if="currentTutorialStep > 1" variant="text" @click="backTutorialStep">Previous</v-btn>
@@ -82,7 +89,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import CockpitLogo from '@/assets/cockpit-logo-minimal.png'
 import { useSnackbar } from '@/composables/snackbar'
-import { useAppInterfaceStore } from '@/stores/appInterface'
+import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import GlassModal from './GlassModal.vue'
@@ -186,146 +193,120 @@ const steps = [
   },
 ]
 
-const handleStepChangeUp = (newStep: number): void => {
+const handleStepChange = (newStep: number): void => {
   switch (newStep) {
+    case 1:
+      interfaceStore.isMainMenuVisible = false
+      interfaceStore.mainMenuCurrentStep = 1
+      interfaceStore.componentToHighlight = 'none'
+      interfaceStore.currentSubMenuComponentName = null
+      interfaceStore.currentSubMenuName = null
+      break
     case 2:
+      interfaceStore.isMainMenuVisible = false
+      interfaceStore.mainMenuCurrentStep = 1
       interfaceStore.componentToHighlight = 'menu-trigger'
+      interfaceStore.currentSubMenuComponentName = null
+      interfaceStore.currentSubMenuName = null
+      interfaceStore.userHasSeenTutorial = false
       break
     case 3:
       interfaceStore.isMainMenuVisible = true
-      interfaceStore.componentToHighlight = 'config-menu-item'
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.componentToHighlight = 'settings-menu-item'
+      interfaceStore.currentSubMenuComponentName = null
+      interfaceStore.userHasSeenTutorial = false
       break
     case 4:
-      if (!interfaceStore.isMainMenuVisible) {
-        interfaceStore.isMainMenuVisible = true
-      }
+      interfaceStore.isMainMenuVisible = true
       interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsGeneral
       tallContent.value = true
+      interfaceStore.userHasSeenTutorial = false
       interfaceStore.componentToHighlight = 'General'
       break
     case 5:
-      if (!interfaceStore.isMainMenuVisible) {
-        interfaceStore.isMainMenuVisible = true
-        interfaceStore.mainMenuCurrentStep = 2
-      }
-      interfaceStore.configComponent = 0
+      interfaceStore.isMainMenuVisible = true
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsGeneral
+      interfaceStore.userHasSeenTutorial = false
       tallContent.value = false
       interfaceStore.componentToHighlight = 'vehicle-address'
       setVehicleConnectedVisible()
       break
     case 6:
+      interfaceStore.isMainMenuVisible = true
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsInterface
       tallContent.value = false
+      interfaceStore.userHasSeenTutorial = false
       interfaceStore.componentToHighlight = 'Interface'
-      interfaceStore.configComponent = 1
       break
     case 7:
-      interfaceStore.configComponent = 2
+      interfaceStore.isMainMenuVisible = true
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsJoystick
+      interfaceStore.userHasSeenTutorial = false
       tallContent.value = true
       interfaceStore.componentToHighlight = 'Joystick'
       break
     case 8:
-      interfaceStore.configComponent = 3
+      interfaceStore.isMainMenuVisible = true
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsVideo
+      interfaceStore.userHasSeenTutorial = false
       tallContent.value = true
       interfaceStore.componentToHighlight = 'Video'
       break
     case 9:
-      interfaceStore.configComponent = 4
+      interfaceStore.isMainMenuVisible = true
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsTelemetry
+      interfaceStore.userHasSeenTutorial = false
       tallContent.value = false
       interfaceStore.isGlassModalAlwaysOnTop = true
       interfaceStore.componentToHighlight = 'Telemetry'
       break
     case 10:
-      interfaceStore.configComponent = 5
+      interfaceStore.isMainMenuVisible = true
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsAlerts
+      interfaceStore.userHasSeenTutorial = false
       tallContent.value = false
       interfaceStore.isGlassModalAlwaysOnTop = false
       interfaceStore.componentToHighlight = 'Alerts'
       break
     case 11:
-      interfaceStore.configComponent = 6
+      interfaceStore.isMainMenuVisible = true
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsDev
+      interfaceStore.userHasSeenTutorial = false
       tallContent.value = true
       interfaceStore.isGlassModalAlwaysOnTop = false
       interfaceStore.componentToHighlight = 'Dev'
       break
     case 12:
-      interfaceStore.configComponent = 7
+      interfaceStore.isMainMenuVisible = true
+      interfaceStore.mainMenuCurrentStep = 2
+      interfaceStore.currentSubMenuName = SubMenuName.settings
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsMission
+      interfaceStore.userHasSeenTutorial = false
       tallContent.value = false
       interfaceStore.isGlassModalAlwaysOnTop = false
       interfaceStore.componentToHighlight = 'Mission'
       break
     case 13:
-      interfaceStore.configComponent = -1
-      interfaceStore.isMainMenuVisible = false
-      interfaceStore.userHasSeenTutorial = true
-      break
-    default:
-      break
-  }
-}
-
-const handleStepChangeDown = (newStep: number): void => {
-  switch (newStep) {
-    case 2:
-      interfaceStore.componentToHighlight = 'menu-trigger'
-      interfaceStore.isMainMenuVisible = false
-      break
-    case 3:
-      interfaceStore.componentToHighlight = 'config-menu-item'
-      if (!interfaceStore.isMainMenuVisible) {
-        interfaceStore.isMainMenuVisible = true
-      }
-      interfaceStore.mainMenuCurrentStep = 1
-      tallContent.value = false
-      break
-    case 4:
-      isVehicleConnectedVisible.value = false
-      interfaceStore.componentToHighlight = 'General'
-      if (!interfaceStore.isMainMenuVisible) {
-        interfaceStore.isMainMenuVisible = true
-      }
-      interfaceStore.mainMenuCurrentStep = 1
-      interfaceStore.configComponent = -1
-      tallContent.value = true
-      break
-    case 5:
-      interfaceStore.componentToHighlight = 'vehicle-address'
-      interfaceStore.configComponent = 0
-      tallContent.value = true
-      break
-    case 6:
-      interfaceStore.componentToHighlight = 'Interface'
-      interfaceStore.configComponent = 1
-      tallContent.value = false
-      break
-    case 7:
-      interfaceStore.componentToHighlight = 'Joystick'
-      interfaceStore.configComponent = 2
-      tallContent.value = true
-      break
-    case 8:
-      interfaceStore.componentToHighlight = 'Video'
-      interfaceStore.configComponent = 3
-      tallContent.value = true
-      break
-    case 9:
-      interfaceStore.componentToHighlight = 'Telemetry'
-      interfaceStore.configComponent = 4
-      tallContent.value = false
-      break
-    case 10:
-      interfaceStore.componentToHighlight = 'Alerts'
-      interfaceStore.configComponent = 5
-      tallContent.value = false
-      interfaceStore.isGlassModalAlwaysOnTop = true
-      break
-    case 11:
-      interfaceStore.componentToHighlight = 'Dev'
-      interfaceStore.configComponent = 6
-      tallContent.value = false
-      interfaceStore.isGlassModalAlwaysOnTop = true
-      break
-    case 12:
-      interfaceStore.componentToHighlight = 'Mission'
-      interfaceStore.isGlassModalAlwaysOnTop = true
+      interfaceStore.currentSubMenuComponentName = null
+      interfaceStore.componentToHighlight = 'none'
       break
     default:
       break
@@ -335,6 +316,7 @@ const handleStepChangeDown = (newStep: number): void => {
 const dontShowTutorialAgain = (): void => {
   interfaceStore.userHasSeenTutorial = true
   showTutorial.value = false
+  currentTutorialStep.value = 1
   showSnackbar({
     message: 'This guide can be reopened via the Settings > General menu',
     variant: 'info',
@@ -354,19 +336,20 @@ const nextTutorialStep = (): void => {
     closeTutorial()
     return
   }
-  handleStepChangeUp(currentTutorialStep.value + 1)
   currentTutorialStep.value++
+  handleStepChange(currentTutorialStep.value)
 }
 
 const backTutorialStep = (): void => {
-  handleStepChangeDown(currentTutorialStep.value - 1)
   currentTutorialStep.value--
+  handleStepChange(currentTutorialStep.value)
 }
 
 const closeTutorial = (): void => {
   showTutorial.value = false
   interfaceStore.componentToHighlight = 'none'
-  currentTutorialStep.value = 1
+  interfaceStore.userHasSeenTutorial = true
+  interfaceStore.isTutorialVisible = false
 }
 
 const setVehicleConnectedVisible = (): void => {
@@ -377,13 +360,7 @@ const setVehicleConnectedVisible = (): void => {
 
 const handleKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Enter' && showTutorial.value) {
-    if (currentTutorialStep.value !== 5) {
-      nextTutorialStep()
-      return
-    }
-    if (currentTutorialStep.value === 5 && vehicleStore.isVehicleOnline) {
-      nextTutorialStep()
-    }
+    nextTutorialStep()
   }
 }
 
@@ -400,7 +377,7 @@ watch(showTutorial, (newVal) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
-  handleStepChangeUp(currentTutorialStep.value)
+  handleStepChange(currentTutorialStep.value)
 })
 
 onBeforeUnmount(() => {

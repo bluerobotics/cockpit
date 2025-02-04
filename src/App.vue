@@ -107,12 +107,12 @@
                   :selected="showSubMenu"
                   class="mb-1"
                   :style="
-                    interfaceStore.highlightedComponent === 'config-menu-item' && {
+                    interfaceStore.highlightedComponent === 'settings-menu-item' && {
                       animation: 'highlightBackground 0.5s alternate 20',
                       borderRadius: '10px',
                     }
                   "
-                  @click="selectSubMenu('config')"
+                  @click="selectSubMenu(SubMenuName.settings)"
                   ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="Settings Icon" />
                 </GlassButton>
                 <GlassButton
@@ -125,13 +125,7 @@
                   :width="buttonSize"
                   :selected="showSubMenu"
                   class="mb-1"
-                  :style="
-                    interfaceStore.highlightedComponent === 'config-menu-item' && {
-                      animation: 'highlightBackground 0.5s alternate 20',
-                      borderRadius: '10px',
-                    }
-                  "
-                  @click="selectSubMenu('tools')"
+                  @click="selectSubMenu(SubMenuName.tools)"
                   ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="Tools Icon" />
                 </GlassButton>
                 <GlassButton
@@ -180,7 +174,7 @@
                   :label-class="menuLabelSize"
                   :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
                   :icon="menuitem.icon"
-                  :selected="interfaceStore.subMenuComponentName === menuitem.title"
+                  :selected="interfaceStore.currentSubMenuComponentName === menuitem.componentName"
                   variant="uncontained"
                   :height="buttonSize * 0.45"
                   :icon-size="buttonSize * 0.5"
@@ -355,7 +349,7 @@ import GlassButton from './components/GlassButton.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
 import { useSnackbar } from './composables/snackbar'
-import { useAppInterfaceStore } from './stores/appInterface'
+import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
 import { SubMenuComponent } from './types/general'
@@ -370,7 +364,6 @@ import ConfigurationUIView from './views/ConfigurationUIView.vue'
 import ConfigurationVideoView from './views/ConfigurationVideoView.vue'
 import ToolsDataLakeView from './views/ToolsDataLakeView.vue'
 import ToolsMAVLinkView from './views/ToolsMAVLinkView.vue'
-
 const { showDialog, closeDialog } = useInteractionDialog()
 const { showSnackbar } = useSnackbar()
 
@@ -380,7 +373,6 @@ const interfaceStore = useAppInterfaceStore()
 
 const showAboutDialog = ref(false)
 const showSubMenu = ref(false)
-const currentSubMenuName = ref<keyof typeof availableSubMenus | null>(null)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
 const mainMenu = ref()
 
@@ -394,46 +386,55 @@ const configMenu = [
   {
     icon: 'mdi-view-dashboard-variant',
     title: 'General',
+    componentName: SubMenuComponentName.SettingsGeneral,
     component: markRaw(ConfigurationGeneralView) as SubMenuComponent,
   },
   {
     icon: 'mdi-monitor-cellphone',
     title: 'Interface',
+    componentName: SubMenuComponentName.SettingsInterface,
     component: markRaw(ConfigurationUIView) as SubMenuComponent,
   },
   {
     icon: 'mdi-controller',
     title: 'Joystick',
+    componentName: SubMenuComponentName.SettingsJoystick,
     component: markRaw(ConfigurationJoystickView) as SubMenuComponent,
   },
   {
     icon: 'mdi-video',
     title: 'Video',
+    componentName: SubMenuComponentName.SettingsVideo,
     component: markRaw(ConfigurationVideoView) as SubMenuComponent,
   },
   {
     icon: 'mdi-subtitles-outline',
     title: 'Telemetry',
+    componentName: SubMenuComponentName.SettingsTelemetry,
     component: markRaw(ConfigurationTelemetryView) as SubMenuComponent,
   },
   {
     icon: 'mdi-alert-rhombus-outline',
     title: 'Alerts',
+    componentName: SubMenuComponentName.SettingsAlerts,
     component: markRaw(ConfigurationAlertsView) as SubMenuComponent,
   },
   {
     icon: 'mdi-dev-to',
     title: 'Dev',
+    componentName: SubMenuComponentName.SettingsDev,
     component: markRaw(ConfigurationDevelopmentView) as SubMenuComponent,
   },
   {
     icon: 'mdi-map-marker-path',
     title: 'Mission',
+    componentName: SubMenuComponentName.SettingsMission,
     component: markRaw(ConfigurationMissionView) as SubMenuComponent,
   },
   {
     icon: 'mdi-run-fast',
     title: 'Actions',
+    componentName: SubMenuComponentName.SettingsActions,
     component: markRaw(ConfigurationActionsView) as SubMenuComponent,
   },
 ]
@@ -442,35 +443,37 @@ const toolsMenu = [
   {
     icon: 'mdi-protocol',
     title: 'MAVLink',
+    componentName: SubMenuComponentName.ToolsMAVLink,
     component: markRaw(ToolsMAVLinkView) as SubMenuComponent,
   },
   {
     icon: 'mdi-database-outline',
     title: 'Data-lake',
+    componentName: SubMenuComponentName.ToolsDataLake,
     component: markRaw(ToolsDataLakeView) as SubMenuComponent,
   },
 ]
 
 const availableSubMenus = {
-  config: configMenu,
+  settings: configMenu,
   tools: toolsMenu,
 }
 
 const currentSubMenu = computed(() => {
-  if (currentSubMenuName.value === null) return []
-  return availableSubMenus[currentSubMenuName.value]
+  if (interfaceStore.currentSubMenuName === null) return []
+  return availableSubMenus[interfaceStore.currentSubMenuName]
 })
 
 watch(
-  () => interfaceStore.subMenuComponentName,
+  () => interfaceStore.currentSubMenuComponentName,
   (subMenuComponentName) => {
     currentSubMenuComponent.value =
-      currentSubMenu.value.find((item) => item.title === subMenuComponentName)?.component || null
+      currentSubMenu.value.find((item) => item.componentName === subMenuComponentName)?.component || null
   }
 )
 
-const selectSubMenu = (subMenuName: keyof typeof availableSubMenus): void => {
-  currentSubMenuName.value = subMenuName
+const selectSubMenu = (subMenuName: SubMenuName): void => {
+  interfaceStore.currentSubMenuName = subMenuName
   interfaceStore.mainMenuCurrentStep = 2
 }
 

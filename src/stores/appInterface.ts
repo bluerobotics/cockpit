@@ -1,11 +1,36 @@
 import { useWindowSize } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { defaultDisplayUnitPreferences } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
+
+/**
+ * Available sub menus names
+ */
+export enum SubMenuName {
+  settings = 'settings',
+  tools = 'tools',
+}
+
+/**
+ * Available sub menus names
+ */
+export enum SubMenuComponentName {
+  SettingsGeneral = 'settings-general',
+  SettingsInterface = 'settings-interface',
+  SettingsJoystick = 'settings-joystick',
+  SettingsVideo = 'settings-video',
+  SettingsTelemetry = 'settings-telemetry',
+  SettingsAlerts = 'settings-alerts',
+  SettingsDev = 'settings-dev',
+  SettingsMission = 'settings-mission',
+  SettingsActions = 'settings-actions',
+  ToolsMAVLink = 'tools-mavlink',
+  ToolsDataLake = 'tools-datalake',
+}
 
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({
@@ -24,7 +49,8 @@ export const useAppInterfaceStore = defineStore('responsive', {
     componentToHighlight: 'none',
     isMainMenuVisible: false,
     mainMenuCurrentStep: 1,
-    subMenuComponentName: null,
+    currentSubMenuName: ref<SubMenuName | null>(null),
+    currentSubMenuComponentName: ref<SubMenuComponentName | null>(null),
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
