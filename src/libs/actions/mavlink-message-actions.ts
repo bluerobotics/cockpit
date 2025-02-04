@@ -9,13 +9,13 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
+import { isNumber } from '../utils'
 import {
   findDataLakeInputsInString,
   getDataLakeVariableIdFromInput,
   replaceDataLakeInputsInJsonString,
 } from '../utils-data-lake'
 import { getDataLakeVariableData } from './data-lake'
-
 const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
 
 /**
@@ -146,12 +146,13 @@ const processMessageConfig = (config: MavlinkMessageConfig): Record<string, any>
         processedConfig[k] = { type: v.value }
       } else {
         const inputs = findDataLakeInputsInString(v.value)
+        const isNumberValue = isNumber(v.value)
         if (inputs.length === 0) {
-          processedConfig[k] = v.value
+          processedConfig[k] = isNumberValue ? Number(v.value) : v.value
         } else {
           const variableId = getDataLakeVariableIdFromInput(inputs[0])
           if (!variableId) {
-            processedConfig[k] = v.value
+            processedConfig[k] = isNumberValue ? Number(v.value) : v.value
           } else {
             const variableData = getDataLakeVariableData(variableId)
             processedConfig[k] = variableData
