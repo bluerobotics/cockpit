@@ -247,7 +247,7 @@
           <div class="flex flex-col items-center mb-4 -ml-[7px] w-[248px]">
             <template v-if="currentElement.component !== CustomWidgetElementType.Button">
               <div class="flex w-full justify-between items-center h-[40px] border-b-[1px] border-[#FFFFFF33]">
-                <p class="text-center w-full text-sm">Action URL parameter</p>
+                <p class="text-center w-full text-sm">Data-lake variable</p>
                 <v-btn
                   v-if="
                     openNewDataLakeVariableForm === false && currentElement.options.dataLakeVariable?.name === undefined
