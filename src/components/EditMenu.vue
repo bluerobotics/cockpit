@@ -361,7 +361,7 @@
                     <v-divider vertical class="opacity-10 mr-1" />
                     <div
                       class="icon-btn mdi mdi-cog"
-                      :class="{ 'opacity-20 cursor-not-allowed': !isMiniWidgetConfigurable[widget.component as MiniWidgetType] }"
+                      :class="{ 'opacity-20 cursor-not-allowed': !isCogIconEnabled(widget) }"
                       @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
                     />
                     <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
@@ -431,7 +431,7 @@
                     <v-divider vertical class="opacity-10 mr-1" />
                     <div
                       class="icon-btn mdi mdi-cog"
-                      :class="{ 'opacity-20 cursor-not-allowed': !isMiniWidgetConfigurable[widget.component as MiniWidgetType] }"
+                      :class="{ 'opacity-20 cursor-not-allowed': !isCogIconEnabled(widget) }"
                       @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
                     />
                     <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
@@ -489,7 +489,7 @@
                   <v-divider vertical class="opacity-10 mr-1" />
                   <div
                     class="icon-btn mdi mdi-cog"
-                    :class="{ 'opacity-20 cursor-not-allowed': !isMiniWidgetConfigurable[widget.component as WidgetType] }"
+                    :class="{ 'opacity-20 cursor-not-allowed': !isCogIconEnabled(widget) }"
                     @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
                   />
                   <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
@@ -729,6 +729,7 @@ import {
   InternalWidgetSetupInfo,
   isMiniWidgetConfigurable,
   isWidgetConfigurable,
+  MiniWidget,
   MiniWidgetContainer,
   MiniWidgetType,
   WidgetType,
@@ -812,6 +813,13 @@ watch(
     if (!newValue) interfaceStore.configPanelVisible = false
   }
 )
+
+const isCogIconEnabled = (widget: MiniWidget): boolean => {
+  return (
+    Object.values(CustomWidgetElementType).includes(widget.component as unknown as CustomWidgetElementType) ||
+    isMiniWidgetConfigurable[widget.component]
+  )
+}
 
 const findUniqueName = (name: string): string => {
   let newName = name
