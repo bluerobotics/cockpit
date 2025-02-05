@@ -728,6 +728,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     { deep: true }
   )
 
+  // Closes the side config panel on view change and edit mode exit
+  watch([editingMode, currentViewIndex], ([isInEditMode, newViewIdx], [, oldViewIdx]) => {
+    if (!isInEditMode || newViewIdx !== oldViewIdx) {
+      elementToShowOnDrawer.value = undefined
+    }
+  })
+
   const isFullScreen = (widget: Widget): boolean => {
     return isEqual(widget.position, fullScreenPosition) && isEqual(widget.size, fullScreenSize)
   }
