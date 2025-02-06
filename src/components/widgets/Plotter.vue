@@ -50,9 +50,7 @@
                   ></div>
                 </div>
               </template>
-              <v-card class="overflow-hidden" :style="interfaceStore.globalGlassMenuStyles">
-                <v-color-picker v-model="widget.options.backgroundColor" label="Background" hide-inputs />
-              </v-card>
+              <v-color-picker v-model="widget.options.backgroundColor" label="Background" hide-inputs theme="dark" />
             </v-menu>
             <v-menu :close-on-content-click="false">
               <template #activator="{ props: colorPickerActivatorProps }">
@@ -64,9 +62,7 @@
                   ></div>
                 </div>
               </template>
-              <v-card class="overflow-hidden" :style="interfaceStore.globalGlassMenuStyles">
-                <v-color-picker v-model="widget.options.lineColor" label="Line" hide-inputs />
-              </v-card>
+              <v-color-picker v-model="widget.options.lineColor" label="Line" hide-inputs theme="dark" />
             </v-menu>
             <v-text-field
               v-model.number="widget.options.lineThickness"
@@ -135,12 +131,10 @@ import {
   unlistenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
 import { resetCanvas } from '@/libs/utils'
-import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 import InteractionDialog from '../InteractionDialog.vue'
-const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()
 
