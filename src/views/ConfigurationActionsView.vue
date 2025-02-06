@@ -21,21 +21,9 @@
                 items-per-page="10"
                 class="elevation-1 bg-transparent rounded-lg mb-8"
                 theme="dark"
+                :headers="headers"
                 :style="interfaceStore.globalGlassMenuStyles"
               >
-                <template #headers>
-                  <tr>
-                    <th class="text-left">
-                      <p class="text-[16px] font-bold">Name</p>
-                    </th>
-                    <th class="text-center">
-                      <p class="text-[16px] font-bold">Type</p>
-                    </th>
-                    <th class="text-right">
-                      <p class="text-[16px] font-bold">Actions</p>
-                    </th>
-                  </tr>
-                </template>
                 <template #item="{ item }">
                   <tr>
                     <td>
@@ -249,6 +237,12 @@ const allActionConfigs = computed<ActionConfig[]>(() => {
 
   return configs
 })
+
+const headers = [
+  { title: 'Name', key: 'name', sortable: true, align: 'start' },
+  { title: 'Type', key: 'type', sortable: true, align: 'center' },
+  { title: 'Actions', key: 'actions', sortable: false, align: 'end' },
+]
 
 const loadAllActions = (): void => {
   // Update our reactive refs
