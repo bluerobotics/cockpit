@@ -39,12 +39,13 @@
         <v-col cols="12">
           <div class="text-subtitle-1 font-weight-medium mb-2">Appearance</div>
           <div class="ml-2 flex gap-x-8">
+            <v-checkbox v-model="widget.options.showTitle" label="Show title" hide-details class="-mt-1" />
             <v-menu :close-on-content-click="false">
               <template #activator="{ props: colorPickerActivatorProps }">
                 <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                  <span class="mt-1">Background color</span>
+                  <span class="mt-3">Background color</span>
                   <div
-                    class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2"
+                    class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
                     :style="{ backgroundColor: widget.options.backgroundColor }"
                   ></div>
                 </div>
@@ -56,9 +57,9 @@
             <v-menu :close-on-content-click="false">
               <template #activator="{ props: colorPickerActivatorProps }">
                 <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                  <span class="mt-1">Line color</span>
+                  <span class="mt-3">Line color</span>
                   <div
-                    class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2"
+                    class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
                     :style="{ backgroundColor: widget.options.lineColor }"
                   ></div>
                 </div>
@@ -164,6 +165,7 @@ onBeforeMount(() => {
     limitSamples: true,
     lineThickness: 1,
     decimalPlaces: 2,
+    showTitle: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
@@ -303,6 +305,16 @@ const renderCanvas = (): void => {
     // Setup text rendering
     ctx.font = '14px monospace'
     ctx.textBaseline = 'bottom'
+
+    // Draw the title if enabled
+    if (widget.value.options.showTitle && widget.value.options.dataLakeVariableId) {
+      const variable = availableDataLakeVariables.value.find((v) => v.id === widget.value.options.dataLakeVariableId)
+      if (variable) {
+        ctx.textBaseline = 'top'
+        drawText(ctx, variable.name, 10, 10)
+        ctx.textBaseline = 'bottom'
+      }
+    }
 
     // Draw the values
     const decimalPlaces = widget.value.options.decimalPlaces
