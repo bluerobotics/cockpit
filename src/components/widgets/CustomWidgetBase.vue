@@ -231,7 +231,7 @@ import MiniWidgetInstantiator from '../MiniWidgetInstantiator.vue'
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 const props = defineProps<{
   /**
@@ -300,7 +300,7 @@ const saveName = (): void => {
 const loadWidget = (event: Event): void => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) {
-    showSnackbar({ variant: 'error', message: 'No file selected.', duration: 3000 })
+    openSnackbar({ variant: 'error', message: 'No file selected.', duration: 3000 })
     return
   }
 
@@ -311,7 +311,7 @@ const loadWidget = (event: Event): void => {
       const hash = currentWidget.value.hash
       widgetStore.loadWidgetFromFile(hash, loadedWidget)
     } catch (error) {
-      showSnackbar({ variant: 'error', message: 'Invalid widget file format.', duration: 3000 })
+      openSnackbar({ variant: 'error', message: 'Invalid widget file format.', duration: 3000 })
     }
   }
 
@@ -448,7 +448,7 @@ const loadWidgetFromStore = (): void => {
       currentWidget.value = loadedWidget
     }
   } catch (error) {
-    showSnackbar({ variant: 'warning', message: 'Error reading widget file.', duration: 1000 })
+    openSnackbar({ variant: 'warning', message: 'Error reading widget file.', duration: 1000 })
   }
 }
 

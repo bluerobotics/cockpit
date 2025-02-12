@@ -66,7 +66,7 @@ const defaultRtcConfiguration = {
   iceServers: [],
 } as RTCConfiguration
 
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const controllerStore = useControllerStore()
@@ -356,7 +356,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function clearMissions(): Promise<void> {
     mainVehicle.value?.clearMissions()
-    showSnackbar({ message: 'Mission deleted from vehicle', variant: 'info' })
+    openSnackbar({ message: 'Mission deleted from vehicle', variant: 'info' })
   }
 
   /**

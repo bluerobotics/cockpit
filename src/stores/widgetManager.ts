@@ -45,7 +45,7 @@ import {
 } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 export const savedProfilesKey = 'cockpit-saved-profiles-v8'
 
@@ -102,7 +102,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const showElementPropsDrawer = (customWidgetElementHash: string): void => {
     const customWidgetElement = getElementByHash(customWidgetElementHash)
     if (!customWidgetElement) {
-      showSnackbar({ variant: 'error', message: 'Could not find element with the given hash.', duration: 3000 })
+      openSnackbar({ variant: 'error', message: 'Could not find element with the given hash.', duration: 3000 })
       return
     }
     elementToShowOnDrawer.value = customWidgetElement
@@ -145,7 +145,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const widgetIndex = currentViewWidgets.findIndex((widget) => widget.hash === widgetHash)
 
     if (widgetIndex === -1) {
-      showSnackbar({ variant: 'error', message: 'Widget not found with the given hash.', duration: 3000 })
+      openSnackbar({ variant: 'error', message: 'Widget not found with the given hash.', duration: 3000 })
       return
     }
 
@@ -156,7 +156,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     loadedWidget.position = currentPosition
     currentViewWidgets[widgetIndex] = loadedWidget
 
-    showSnackbar({ variant: 'success', message: 'Widget loaded successfully with new hash.', duration: 3000 })
+    openSnackbar({ variant: 'success', message: 'Widget loaded successfully with new hash.', duration: 3000 })
   }
 
   const reassignHashesToWidget = (widget: Widget): void => {

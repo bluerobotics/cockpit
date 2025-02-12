@@ -34,7 +34,7 @@ import {
 } from '@/types/video'
 
 import { useAlertStore } from './alert'
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
@@ -336,7 +336,7 @@ export const useVideoStore = defineStore('video', () => {
 
       console.error(chunkLossWarningMsg)
 
-      showSnackbar({
+      openSnackbar({
         message: 'Oops, looks like a video chunk could not be saved. Retrying...',
         duration: 2000,
         variant: 'info',
@@ -428,7 +428,7 @@ export const useVideoStore = defineStore('video', () => {
       if (autoProcessVideos.value) {
         try {
           await processVideoChunksAndTelemetry([recordingHash])
-          showSnackbar({
+          openSnackbar({
             message: 'Video processing completed.',
             duration: 2000,
             variant: 'success',
@@ -660,7 +660,7 @@ export const useVideoStore = defineStore('video', () => {
       try {
         telemetryLog = await datalogger.generateLog(dateStart, dateFinish)
       } catch (error) {
-        showSnackbar({ message: `Failed to generate telemetry file. ${error}`, variant: 'error', duration: 5000 })
+        openSnackbar({ message: `Failed to generate telemetry file. ${error}`, variant: 'error', duration: 5000 })
       }
 
       if (telemetryLog !== undefined) {
@@ -915,7 +915,7 @@ export const useVideoStore = defineStore('video', () => {
       console.log(`Stream internal name updated from '${oldInternalName}' to '${newInternalName}'.`)
     } else {
       console.warn(`Stream with ID '${streamID}' not found.`)
-      showSnackbar({
+      openSnackbar({
         variant: 'error',
         message: `Stream with ID '${streamID}' not found.`,
         duration: 3000,

@@ -336,7 +336,7 @@ const widgetStore = useWidgetManagerStore()
 const { height: windowHeight } = useWindowSize()
 
 const { showDialog } = useInteractionDialog()
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 const clearMissionOnVehicle = (): void => {
   vehicleStore.clearMissions()
@@ -704,13 +704,13 @@ const clearSurveyCreation = (): void => {
 const deleteSelectedSurvey = (): void => {
   const surveyId = selectedSurveyId.value
   if (!surveyId) {
-    showSnackbar({ variant: 'error', message: 'No survey selected to delete.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: 'No survey selected to delete.', duration: 2000 })
     return
   }
 
   const surveyIndex = surveys.value.findIndex((s) => s.id === surveyId)
   if (surveyIndex === -1) {
-    showSnackbar({ variant: 'error', message: 'Selected survey does not exist.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: 'Selected survey does not exist.', duration: 2000 })
     return
   }
 
@@ -750,7 +750,7 @@ const deleteSelectedSurvey = (): void => {
     delete canUndo.value[surveyId]
   }
 
-  showSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
+  openSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
   hideContextMenu()
   reNumberWaypoints()
 }
@@ -1298,7 +1298,7 @@ const generateWaypointsFromSurvey = (): void => {
   isCreatingSurvey.value = false
   reNumberWaypoints()
 
-  showSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
+  openSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
 }
 
 const reNumberWaypoints = (): void => {
@@ -1312,7 +1312,7 @@ const reNumberWaypoints = (): void => {
 
 const regenerateSurveyWaypoints = (angle?: number): void => {
   if (!selectedSurveyId.value) {
-    showSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
     return
   }
 
@@ -1333,7 +1333,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     )
 
     if (!continuousPath.length) {
-      showSnackbar({
+      openSnackbar({
         message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
         closeButton: true,
         duration: 2000,
@@ -1354,7 +1354,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     )
 
     if (firstOldWaypointIndex === -1) {
-      showSnackbar({ variant: 'error', message: 'Failed to find old waypoints.', duration: 2000 })
+      openSnackbar({ variant: 'error', message: 'Failed to find old waypoints.', duration: 2000 })
       return
     }
 
@@ -1446,7 +1446,7 @@ const undoGenerateWaypoints = (): void => {
   const surveyId = selectedSurveyId.value
 
   if (!surveyId || !canUndo.value[surveyId] || !lastSurveyState.value[surveyId]) {
-    showSnackbar({ variant: 'error', message: 'Nothing to undo.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: 'Nothing to undo.', duration: 2000 })
     undoIsInProgress.value = false
     return
   }
@@ -1537,7 +1537,7 @@ const undoGenerateWaypoints = (): void => {
   isCreatingSurvey.value = true
 
   createSurveyPath()
-  showSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
+  openSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
   undoIsInProgress.value = false
 }
 
