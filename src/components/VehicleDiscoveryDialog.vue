@@ -71,7 +71,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
 }>()
 
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 const mainVehicleStore = useMainVehicleStore()
 const discoveryService = vehicleDiscover
 
@@ -123,7 +123,7 @@ const selectVehicle = async (address: string): Promise<void> => {
   mainVehicleStore.globalAddress = address
   isOpen.value = false
   await reloadCockpit()
-  showSnackbar({ message: 'Vehicle address updated', variant: 'success', duration: 5000 })
+  openSnackbar({ message: 'Vehicle address updated', variant: 'success', duration: 5000 })
 }
 
 const preventFutureAutoSearchs = (): void => {

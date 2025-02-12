@@ -342,7 +342,7 @@ import { CustomWidgetElement, CustomWidgetElementType, DataLakeVariable } from '
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 const currentElement = ref<CustomWidgetElement | undefined>(widgetStore.elementToShowOnDrawer)
 const defaultDataLakeVariable: DataLakeVariable = {
@@ -381,7 +381,7 @@ const CloseConfigPanel = (): void => {
 }
 
 const showActionExistsError = (): void => {
-  showSnackbar({
+  openSnackbar({
     message: 'Variable name already exists',
     variant: 'error',
   })
@@ -395,12 +395,12 @@ const deleteParameterFromDataLake = async (): Promise<void> => {
   if (currentElement.value?.options.dataLakeVariable?.name) {
     try {
       await deleteDataLakeVariable(currentElement.value.options.dataLakeVariable)
-      showSnackbar({
+      openSnackbar({
         message: 'Action variable deleted',
         variant: 'success',
       })
     } catch (e) {
-      showSnackbar({
+      openSnackbar({
         message: 'Error deleting action variable',
         variant: 'error',
       })

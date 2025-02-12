@@ -318,7 +318,7 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
@@ -535,7 +535,7 @@ const openCockpitFolder = (): void => {
   if (isElectron() && window.electronAPI) {
     window.electronAPI?.openCockpitFolder()
   } else {
-    showSnackbar({
+    openSnackbar({
       message: 'This feature is only available in the desktop version of Cockpit.',
       duration: 3000,
       variant: 'error',

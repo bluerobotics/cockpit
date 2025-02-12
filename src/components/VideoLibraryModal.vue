@@ -510,7 +510,7 @@ import InteractionDialog from './InteractionDialog.vue'
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 const { showDialog, closeDialog } = useInteractionDialog()
 const { width: windowWidth } = useWindowSize()
@@ -608,7 +608,7 @@ const openVideoFolder = (): void => {
   if (isElectron() && window.electronAPI) {
     window.electronAPI?.openVideoFolder()
   } else {
-    showSnackbar({
+    openSnackbar({
       message: 'This feature is only available in the desktop version of Cockpit.',
       duration: 3000,
       variant: 'error',
@@ -684,7 +684,7 @@ const processVideos = async (): Promise<void> => {
     const errorMsg = `Video processing failed: ${(error as Error).message ?? error!.toString()}`
     console.error(errorMsg)
     snackbarMessage.value = errorMsg
-    showSnackbar({
+    openSnackbar({
       message: errorMsg,
       duration: 3000,
       variant: 'error',
@@ -773,7 +773,7 @@ const selectUnprocessedVideos = (): void => {
     isMultipleSelectionMode.value = true
   } else {
     snackbarMessage.value = 'No unprocessed videos found'
-    showSnackbar({
+    openSnackbar({
       message: snackbarMessage.value,
       duration: 3000,
       variant: 'info',
@@ -788,7 +788,7 @@ const selectProcessedVideos = (): void => {
     isMultipleSelectionMode.value = true
   } else {
     snackbarMessage.value = 'No processed videos found'
-    showSnackbar({
+    openSnackbar({
       message: snackbarMessage.value,
       duration: 3000,
       variant: 'info',
@@ -815,7 +815,7 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
     const progressPercentage = ((100 * progress) / total).toFixed(1)
     if (!initialMessageShown) return
     snackbarMessage.value = `Preparing download: ${progressPercentage}%.`
-    showSnackbar({
+    openSnackbar({
       message: snackbarMessage.value,
       duration: 15000,
       variant: 'info',
@@ -833,7 +833,7 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
     if (video.isProcessed) tempProcessedVideos.push(video.fileName)
     if (!video.isProcessed && video.hash) tempUnprocessedVideos.push(video.hash)
   })
-  showSnackbar({
+  openSnackbar({
     message: snackbarMessage.value,
     duration: 3000,
     variant: 'info',
@@ -906,7 +906,7 @@ const discardVideosAndUpdateDB = async (): Promise<void> => {
   }
 
   snackbarMessage.value = `${selectedVideoArraySize} video(s) discarded.`
-  showSnackbar({
+  openSnackbar({
     message: snackbarMessage.value,
     duration: 3000,
     variant: 'info',
@@ -1010,7 +1010,7 @@ const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => 
     }
   } catch (error) {
     const msg = 'Error loading video blob into player'
-    showSnackbar({ message: msg, duration: 3000, variant: 'error', closeButton: true })
+    openSnackbar({ message: msg, duration: 3000, variant: 'error', closeButton: true })
   } finally {
     loadingVideoBlob.value = false
   }

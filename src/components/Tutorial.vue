@@ -94,7 +94,7 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import GlassModal from './GlassModal.vue'
 
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
@@ -317,7 +317,7 @@ const dontShowTutorialAgain = (): void => {
   interfaceStore.userHasSeenTutorial = true
   showTutorial.value = false
   currentTutorialStep.value = 1
-  showSnackbar({
+  openSnackbar({
     message: 'This guide can be reopened via the Settings > General menu',
     variant: 'info',
     closeButton: true,
