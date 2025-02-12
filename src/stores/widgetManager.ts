@@ -870,6 +870,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     profile.hash = corrDefault?.hash ?? profile.hash
   })
 
+  const copyWidgetToView = (widget: Widget, viewName: string): void => {
+    const targetView = currentProfile.value.views.find((view) => view.name === viewName)
+    if (!targetView) {
+      throw new Error(`View with name "${viewName}" not found.`)
+    }
+    const newWidget = JSON.parse(JSON.stringify(widget))
+    newWidget.hash = uuid4()
+    targetView.widgets.unshift(newWidget)
+  }
+
   return {
     editingMode,
     snapToGrid,
@@ -923,5 +933,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     editWidgetByHash,
     setMiniWidgetLastValue,
     getMiniWidgetLastValue,
+    copyWidgetToView,
   }
 })

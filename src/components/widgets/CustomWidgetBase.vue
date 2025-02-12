@@ -57,6 +57,9 @@
               <v-list-item @click="handleOptionClick('load')">
                 <v-list-item-title>Load</v-list-item-title>
               </v-list-item>
+              <v-list-item @click="handleOptionClick('copy-to-view')">
+                <v-list-item-title>Clone to another view</v-list-item-title>
+              </v-list-item>
             </v-list>
           </v-menu>
         </div>
@@ -183,6 +186,7 @@
         </div>
       </v-card>
     </GlassModal>
+
     <Transition>
       <div
         v-if="showWidgetTrashArea"
@@ -210,6 +214,32 @@
         </div>
       </div>
     </Transition>
+
+    <GlassModal :is-visible="selectViewToShareDialog">
+      <v-card class="px-3 pb-6 pt-2 rounded-lg w-auto bg-transparent z-40">
+        <v-card-title class="flex justify-around -mt-1 w-full px-0">
+          <div />
+          <p class="mx-8">Clone widget to</p>
+          <v-icon class="cursor-pointer self-end" @click="selectViewToShareDialog = false">mdi-close</v-icon>
+        </v-card-title>
+        <div class="flex w-full justify-center items-center mt-4">
+          <select
+            v-model="selectedViewToShareWidget"
+            class="bg-[#50505022] dark:bg-gray-800 dark:text-white w-[180px] p-2 border border-gray-300 dark:border-gray-600 rounded appearance-none"
+            @change="handleCopyWidgetToView"
+          >
+            <option
+              v-for="view in widgetStore.currentProfile.views"
+              :key="view.name"
+              :value="view.name"
+              class="bg-gray-800 dark:bg-gray-800 dark:text-white"
+            >
+              {{ view.name }}
+            </option>
+          </select>
+        </div>
+      </v-card>
+    </GlassModal>
   </Teleport>
 </template>
 
@@ -255,6 +285,27 @@ const widgetBase = ref<HTMLElement | null>(null)
 const isWrapped = ref(false)
 const wrapDirection = ref<'left' | 'right'>('right')
 const trashList = ref<MiniWidget[] | CustomWidgetElement[]>([])
+const selectViewToShareDialog = ref(false)
+const selectedViewToShareWidget = ref<string>('')
+
+const handleCopyWidgetToView = (): void => {
+  if (selectedViewToShareWidget.value) {
+    try {
+      widgetStore.copyWidgetToView(currentWidget.value, selectedViewToShareWidget.value)
+      showSnackbar({
+        variant: 'success',
+        message: 'Widget cloned successfully.',
+      })
+    } catch (error: any) {
+      showSnackbar({
+        variant: 'error',
+        message: error.message || 'Error cloning widget.',
+      })
+    }
+    selectViewToShareDialog.value = false
+    selectedViewToShareWidget.value = ''
+  }
+}
 
 const updateWrapDirection = (): void => {
   if (widgetBase.value) {
@@ -341,6 +392,8 @@ const handleOptionClick = (option: string): void => {
     })
 
     input.click()
+  } else if (option === 'copy-to-view') {
+    selectViewToShareDialog.value = true
   }
 }
 
