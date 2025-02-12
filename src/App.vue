@@ -314,6 +314,7 @@
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <UpdateNotification v-if="isElectron()" />
+  <SnackbarContainer />
 </template>
 
 <script setup lang="ts">
@@ -330,6 +331,7 @@ import MissionPlanningIcon from '@/assets/icons/mission-planning.svg'
 import SettingsIcon from '@/assets/icons/settings.svg'
 import ToolsIcon from '@/assets/icons/tools.svg'
 import GlassModal from '@/components/GlassModal.vue'
+import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
@@ -365,7 +367,7 @@ import ConfigurationVideoView from './views/ConfigurationVideoView.vue'
 import ToolsDataLakeView from './views/ToolsDataLakeView.vue'
 import ToolsMAVLinkView from './views/ToolsMAVLinkView.vue'
 const { showDialog, closeDialog } = useInteractionDialog()
-const { showSnackbar } = useSnackbar()
+const { openSnackbar } = useSnackbar()
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
@@ -622,7 +624,7 @@ watch(
   () => vehicleStore.isVehicleOnline,
   (isOnline) => {
     if (!isOnline) {
-      showSnackbar({
+      openSnackbar({
         message: 'Vehicle connection lost: reestablishing',
         variant: 'error',
         duration: 3000,
@@ -634,7 +636,7 @@ watch(
       return
     }
 
-    showSnackbar({ message: 'Vehicle connected', variant: 'success', duration: 3000, closeButton: false })
+    openSnackbar({ message: 'Vehicle connected', variant: 'success', duration: 3000, closeButton: false })
     connectionStatusFeedback.value = { border: '3px solid green' }
 
     resetConnectionStatusFeedback()
