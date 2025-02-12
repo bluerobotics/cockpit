@@ -254,7 +254,7 @@ class JoystickManager {
    * @param {Gamepad} gamepad Object
    * @returns {'vendor_id: string | undefined, product_id: string | undefined'} VID and PID
    */
-  private getVidPid(gamepad: Gamepad): {
+  getVidPid(gamepad: Gamepad): {
     vendor_id: string | undefined // eslint-disable-line
     product_id: string | undefined // eslint-disable-line
   } {
@@ -281,44 +281,6 @@ class JoystickManager {
   }
 
   /**
-   * Request user for joystick HID access
-   * @param {Gamepad} gamepad object
-   */
-  private getHID(gamepad: Gamepad): void {
-    // The objective of this function is to get serial information and track the configuration
-    // for a specific joystick, including calibration.
-    // Electron API appears to be not working: https://www.electronjs.org/docs/latest/api/structures/hid-device
-    // W3C productName may help but it's not working: https://wicg.github.io/webhid/
-    // For both serialInformation is not available: https://github.com/w3c/gamepad/issues/73
-    const { vendor_id, product_id } = this.getVidPid(gamepad)
-
-    console.debug(`Joystick: ${gamepad.id} (${vendor_id}:${product_id})`)
-
-    if (vendor_id == undefined || product_id == undefined) {
-      return
-    }
-
-    // Enable joysticks to be used
-    // Needs to be more adopted by the browsers
-    /*
-    navigator.hid
-      .requestDevice({
-        filters: [
-          {
-            vendorId: parseInt(vendor_id, 16),
-            productID: parseInt(product_id, 16),
-          },
-        ],
-      })
-      .then((devices: Array<string>) => {
-        if (devices.length != 0) {
-          this.enabledJoysticks.push(joystick_information)
-        }
-      })
-    */
-  }
-
-  /**
    * Process joystick event internally
    * @param {JoystickConnectionEvent} event
    */
@@ -329,7 +291,6 @@ class JoystickManager {
       const gamepad = event.detail.gamepad
 
       if (!this.joysticks.has(index)) {
-        this.getHID(gamepad)
         this.enabledJoysticks.push(gamepad.id)
       }
       this.joysticks.set(index, gamepad)
