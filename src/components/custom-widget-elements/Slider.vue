@@ -74,6 +74,25 @@ watch(
   { immediate: true, deep: true }
 )
 
+watch(
+  () => miniWidget.value.options.dataLakeVariable?.name,
+  (newVal) => {
+    if (newVal) {
+      startListeningDataLakeVariable()
+    }
+  },
+  { immediate: true }
+)
+
+const startListeningDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
+      sliderValue.value = value as number
+    })
+    sliderValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as number
+  }
+}
+
 const handleSliderChange = (): void => {
   if (widgetStore.editingMode) return
   if (miniWidget.value.options.dataLakeVariable) {
@@ -99,12 +118,7 @@ onMounted(() => {
       dataLakeVariable: undefined,
     })
   }
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
-      sliderValue.value = value as number
-    })
-    sliderValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as number
-  }
+  startListeningDataLakeVariable()
 })
 
 onUnmounted(() => {

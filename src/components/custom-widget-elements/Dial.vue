@@ -89,6 +89,26 @@ const setDialValue = (value: number | string | undefined): void => {
   rotationAngle.value = ((numValue - miniWidget.value.options.layout?.minValue) / valueRange) * rotationRange - 150
 }
 
+watch(
+  () => miniWidget.value.options.dataLakeVariable?.name,
+  (newVal) => {
+    if (newVal) {
+      startListeningDataLakeVariable()
+    }
+  },
+  { immediate: true }
+)
+
+const startListeningDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
+      setDialValue(value as number)
+    })
+    const initialValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
+    setDialValue(initialValue)
+  }
+}
+
 onMounted(() => {
   if (!miniWidget.value.options || Object.keys(miniWidget.value.options).length === 0) {
     miniWidget.value.isCustomElement = true
@@ -106,13 +126,7 @@ onMounted(() => {
       dataLakeVariable: undefined,
     })
   }
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
-      setDialValue(value as number)
-    })
-    const initialValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
-    setDialValue(initialValue)
-  }
+  startListeningDataLakeVariable()
 })
 
 const sizeClass = computed(() => {
