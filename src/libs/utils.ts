@@ -238,3 +238,19 @@ export const machinizeString = (str: string): string => {
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
+
+/**
+ * Logs a message with the [systemName] prefix
+ * This should help us identify the source of the log message in debugs
+ * @param {string} systemName - The name of the system
+ * @returns {Record<string, (...args: any[]) => void>} A record of log functions
+ */
+export const systemLogger = (systemName: string): Record<string, (...args: any[]) => void> => {
+  return {
+    debug: (...args: any[]) => console.debug(`[${systemName}]`, ...args),
+    info: (...args: any[]) => console.info(`[${systemName}]`, ...args),
+    warn: (...args: any[]) => console.warn(`[${systemName}]`, ...args),
+    error: (...args: any[]) => console.error(`[${systemName}]`, ...args),
+    log: (...args: any[]) => console.log(`[${systemName}]`, ...args),
+  }
+}
