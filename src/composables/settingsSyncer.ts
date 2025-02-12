@@ -7,6 +7,7 @@ import {
   setKeyDataOnCockpitVehicleStorage,
 } from '@/libs/blueos'
 import { isEqual, reloadCockpit } from '@/libs/utils'
+import { systemLogger } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -14,6 +15,8 @@ import { savedProfilesKey } from '@/stores/widgetManager'
 
 import { useInteractionDialog } from './interactionDialog'
 import { openSnackbar } from './snackbar'
+
+const logger = systemLogger('SettingsSyncer')
 
 /**
  * Maps setting key to its last update timestamp, organized by user and vehicle ID
@@ -93,7 +96,7 @@ const getVehicleAddress = async (): Promise<string> => {
 
   // Wait until we have a global address
   while (vehicleStore.globalAddress === undefined) {
-    console.debug('Waiting for vehicle global address on BlueOS sync routine.')
+    logger.debug('Waiting for vehicle global address on BlueOS sync routine.')
     await new Promise((r) => setTimeout(r, 1000))
   }
 
@@ -131,7 +134,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
     // Wait until we have a username
     while (!missionStore.username) {
-      console.debug('Waiting for username on BlueOS sync routine.')
+      logger.debug('Waiting for username on BlueOS sync routine.')
       await new Promise((r) => setTimeout(r, 1000))
     }
 
@@ -143,7 +146,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
     // Wait until we have a vehicle ID
     while (!vehicleStore.currentlyConnectedVehicleId) {
-      console.debug('Waiting for vehicle ID on BlueOS sync routine.')
+      logger.debug('Waiting for vehicle ID on BlueOS sync routine.')
       await new Promise((r) => setTimeout(r, 1000))
     }
 
@@ -164,7 +167,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     const vehicleAddress = await getVehicleAddress()
     const username = await getUsername()
 
-    console.debug(`Updating '${key}' on BlueOS. New value:`, newValue, 'New epoch:', updateEpoch)
+    logger.debug(`Updating '${key}' on BlueOS.`)
 
     const tryToUpdateBlueOsValue = async (): Promise<void> => {
       // Clear update routine if there's one left, as we are going to start a new one
@@ -177,12 +180,12 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
         const message = `Success updating '${key}' on BlueOS.`
         openSnackbar({ message, duration: 3000, variant: 'success', closeButton: true })
-        console.info(message)
+        logger.info(message)
       } catch (fetchError) {
         const message = `Failed updating '${key}' on BlueOS. Will keep trying.`
         openSnackbar({ message, duration: 3000, variant: 'error', closeButton: true })
-        console.error(message)
-        console.error(fetchError)
+        logger.error(message)
+        logger.error(fetchError)
 
         // If we can't update the value on BlueOS, try again in 10 seconds
         blueOsUpdateTimeout = setTimeout(tryToUpdateBlueOsValue, 10000)
@@ -203,11 +206,11 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
     try {
       const valueOnBlueOS = await getSettingsValueOnVehicle(vehicleAddress, username, key)
-      console.debug(`Success getting value of '${key}' from BlueOS:`, valueOnBlueOS)
+      logger.debug(`Success getting value of '${key}' from BlueOS:`, valueOnBlueOS)
 
       // If the value on BlueOS is the same as the one we have locally, we don't need to do anything
       if (isEqual(currentValue.value, valueOnBlueOS)) {
-        console.debug(`Value for '${key}' on BlueOS is the same as the local one. No need to update.`)
+        logger.debug(`Value for '${key}' on BlueOS is the same as the local one. No need to update.`)
         finishedInitialFetch.value = true
         return
       }
@@ -221,21 +224,21 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
       // Do nothing if both values are undefined
       if (currentValue.value === undefined && valueOnBlueOS === undefined) {
-        console.debug(`Both local and remote values for '${key}' are undefined. No need to update.`)
+        logger.debug(`Both local and remote values for '${key}' are undefined. No need to update.`)
         finishedInitialFetch.value = true
         return
       } else if (currentValue.value === undefined) {
         // If only the local value is undefined, use the value from BlueOS
-        console.debug(`Local value for '${key}' is undefined. Using value from BlueOS.`)
+        logger.debug(`Local value for '${key}' is undefined. Using value from BlueOS.`)
         useBlueOsValue = true
       } else if (valueOnBlueOS === undefined) {
         // If only the remote value is undefined, use the value from local storage
-        console.debug(`Remote value for '${key}' is undefined. Using value from local storage.`)
+        logger.debug(`Remote value for '${key}' is undefined. Using value from local storage.`)
         useBlueOsValue = false
       }
 
       const msg = `Key: ${key} // Epochs: Remote: ${remoteEpoch}, Local: ${localEpoch} // Use BlueOS value: ${useBlueOsValue}`
-      console.debug(msg)
+      logger.debug(msg)
 
       // If the epochs are equal and the values are different, we use the value from BlueOS
       if (remoteEpoch === localEpoch && !isEqual(currentValue.value, valueOnBlueOS)) {
@@ -284,13 +287,13 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         openSnackbar({ message, duration: 3000, variant: 'success' })
       }
 
-      console.info(`Success syncing '${key}' with BlueOS.`)
+      logger.info(`Success syncing '${key}' with BlueOS.`)
 
       finishedInitialFetch.value = true
     } catch (initialSyncError) {
       // If the initial sync fails because there's no value for the key on BlueOS, we can just use the current value
       if ((initialSyncError as Error).name === NoPathInBlueOsErrorName) {
-        console.debug(`No value for '${key}' on BlueOS. Using current value. Will push it to BlueOS.`)
+        logger.debug(`No value for '${key}' on BlueOS. Using current value. Will push it to BlueOS.`)
         try {
           // Set initial epoch and push both value and epoch
           const localEpochOrNow = getLocalEpoch(username, currentVehicleId, key) ?? Date.now()
@@ -299,8 +302,8 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
           finishedInitialFetch.value = true
           return
         } catch (fetchError) {
-          console.error(`Not able to push current value of '${key}' to BlueOS. ${fetchError}`)
-          console.error(`Failed syncing '${key}' with BlueOS. Will keep trying.`)
+          logger.error(`Not able to push current value of '${key}' to BlueOS. ${fetchError}`)
+          logger.error(`Failed syncing '${key}' with BlueOS. Will keep trying.`)
 
           // If we can't update the value on BlueOS, try again in 10 seconds
           initialSyncTimeout = setTimeout(tryToDoInitialSync, 10000)
@@ -311,7 +314,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
       // If the initial sync fails because we can't connect to BlueOS, try again in 10 seconds
       initialSyncTimeout = setTimeout(tryToDoInitialSync, 10000)
 
-      console.error(`Failed syncing '${key}' with BlueOS. Will keep trying. Error: ${initialSyncError}`)
+      logger.error(`Failed syncing '${key}' with BlueOS. Will keep trying. Error: ${initialSyncError}`)
     }
   }
 
@@ -319,7 +322,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     const devStore = useDevelopmentStore()
     if (!devStore.enableBlueOsSettingsSync) return
 
-    console.debug(`Started syncing '${key}' with BlueOS.`)
+    logger.debug(`Started syncing '${key}' with BlueOS.`)
 
     // Start initial sync routine
     tryToDoInitialSync()
@@ -331,16 +334,16 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   let valueUpdateMethodTimeout: ReturnType<typeof setTimeout> | undefined = undefined
 
   const maybeUpdateValueOnBlueOs = async (newValue: T, oldValue: T, epoch: number): Promise<void> => {
-    console.debug(`Detected changes in the local value for key '${key}'. Updating BlueOS.`)
+    logger.debug(`Detected changes in the local value for key '${key}'. Updating BlueOS.`)
 
     // Don't update the value on BlueOS if we haven't finished the initial fetch, so we don't overwrite the value there without user consent
     if (!finishedInitialFetch.value) {
-      console.debug(`Value of '${key}' changed, but we haven't finished the initial fetch. Not updating BlueOS.`)
+      logger.debug(`Value of '${key}' changed, but we haven't finished the initial fetch. Not updating BlueOS.`)
       return
     }
 
     if (isEqual(newValue, oldValue)) {
-      console.debug(`Old value for key ${key} is equal to the new one. Aborting update on BlueOS.`)
+      logger.debug(`Old value for key ${key} is equal to the new one. Aborting update on BlueOS.`)
       return
     }
 
@@ -357,7 +360,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     const lastConnectedVehicleId = getLastConnectedVehicleId()
 
     if (lastConnectedUser === undefined || lastConnectedVehicleId === undefined) {
-      console.error('Not able to update epoch locally. Last connected user or vehicle ID not found.')
+      logger.error('Not able to update epoch locally. Last connected user or vehicle ID not found.')
       return
     }
 
