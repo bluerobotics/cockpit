@@ -136,8 +136,9 @@ export const useControllerStore = defineStore('controller', () => {
     for (const [index, joystick] of newMap) {
       if (joysticks.value.has(index)) continue
       joystick.model = joystickManager.getModel(joystick.gamepad)
+      const { product_id, vendor_id } = joystickManager.getVidPid(joystick.gamepad)
       joysticks.value.set(index, joystick)
-      console.info(`Joystick ${index} (${joystick.model}) connected.`)
+      console.info(`Joystick ${index} connected. Model: ${joystick.model} // VID: ${vendor_id} // PID: ${product_id}`)
       console.info('Enabling joystick forwarding.')
       enableForwarding.value = true
     }
