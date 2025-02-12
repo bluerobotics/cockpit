@@ -225,6 +225,8 @@ class JoystickManager {
   private enabledJoysticks: Array<string> = []
   private animationFrameId: number | null = null
   private previousGamepadState: Map<number, GamepadState> = new Map()
+  private lastTimeGamepadConnectionsPolled = 0
+  private currentGamepadsConnections: Array<Gamepad> = []
 
   /**
    * Singleton constructor
@@ -313,29 +315,24 @@ class JoystickManager {
   }
 
   /**
-   * Start listening for gamepad events
+   * Poll for gamepad connections and disconnection every 500ms, and activates polling the gamepad states.
+   * The polling for connections and disconnections is a workaround to get around the fact that the gamepad API events do not work the same way in all browsers.
+   * In Chrome, for example, the gamepadconnected event is sometimes not fired when a gamepad is connected after a long time since the page was loaded.
+   * This is a workaround to get around this issue.
    */
   private start(): void {
-    // Listen for gamepad connections
-    window.addEventListener('gamepadconnected', (event: GamepadEvent) => {
-      this.handleGamepadConnected(event)
-    })
+    // Start polling for gamepad connections and disconnections
+    this.updateGamepadsConnections()
 
-    // Listen for gamepad disconnections
-    window.addEventListener('gamepaddisconnected', (event: GamepadEvent) => {
-      this.handleGamepadDisconnected(event)
-    })
-
-    // Start the polling loop
-    this.pollGamepads()
+    // Start polling for gamepad states
+    this.pollGamepadsStates()
   }
 
   /**
    * Handle gamepad connection event
-   * @param {GamepadEvent} event - Gamepad connection event
+   * @param {Gamepad} gamepad - Gamepad connection event
    */
-  private handleGamepadConnected(event: GamepadEvent): void {
-    const gamepad = event.gamepad
+  private handleGamepadConnected(gamepad: Gamepad): void {
     const joystickEvent: JoystickConnectEvent = {
       type: EventType.Connected,
       detail: {
@@ -348,22 +345,50 @@ class JoystickManager {
 
   /**
    * Handle gamepad disconnection event
-   * @param {GamepadEvent} event - Gamepad disconnection event
+   * @param {Gamepad} gamepad - Gamepad disconnection event
    */
-  private handleGamepadDisconnected(event: GamepadEvent): void {
+  private handleGamepadDisconnected(gamepad: Gamepad): void {
     const joystickEvent: JoystickDisconnectEvent = {
       type: EventType.Disconnected,
       detail: {
-        index: event.gamepad.index,
+        index: gamepad.index,
       },
     }
     this.processJoystickConnectionUpdate(joystickEvent)
   }
 
   /**
+   * Update gamepad connections
+   */
+  private updateGamepadsConnections(): void {
+    // Poll for gamepad connections and disconnections every 500ms
+    if (Date.now() - this.lastTimeGamepadConnectionsPolled > 500) {
+      const gamepadConnectionsState = navigator.getGamepads()
+
+      // Add new gamepads to the list
+      for (const gamepad of gamepadConnectionsState) {
+        if (gamepad && !this.currentGamepadsConnections.map((g) => g.index).includes(gamepad.index)) {
+          this.currentGamepadsConnections.push(gamepad)
+          this.handleGamepadConnected(gamepad)
+        }
+      }
+
+      // Remove gamepads that are not connected anymore
+      for (const gamepad of this.currentGamepadsConnections) {
+        if (!gamepadConnectionsState.map((g) => g?.index).includes(gamepad.index)) {
+          this.currentGamepadsConnections.splice(this.currentGamepadsConnections.indexOf(gamepad), 1)
+          this.handleGamepadDisconnected(gamepad)
+        }
+      }
+      this.lastTimeGamepadConnectionsPolled = Date.now()
+    }
+    this.animationFrameId = requestAnimationFrame(() => this.updateGamepadsConnections())
+  }
+
+  /**
    * Poll for gamepad state changes
    */
-  private pollGamepads(): void {
+  private pollGamepadsStates(): void {
     const gamepads = navigator.getGamepads()
 
     for (const gamepad of gamepads) {
@@ -419,7 +444,7 @@ class JoystickManager {
     }
 
     // Continue polling
-    this.animationFrameId = requestAnimationFrame(() => this.pollGamepads())
+    this.animationFrameId = requestAnimationFrame(() => this.pollGamepadsStates())
   }
 
   /**
