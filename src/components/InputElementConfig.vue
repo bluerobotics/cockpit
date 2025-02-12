@@ -242,25 +242,66 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title>Cockpit actions</template>
+        <template #title>Actions</template>
         <template #content>
           <div class="flex flex-col items-center mb-4 -ml-[7px] w-[248px]">
             <template v-if="currentElement.component !== CustomWidgetElementType.Button">
-              <div class="flex w-full justify-between items-center h-[40px] border-b-[1px] border-[#FFFFFF33]">
+              <div class="flex w-full justify-between items-center h-auto border-b-[1px] border-[#FFFFFF33]">
                 <p class="text-center w-full text-sm">Data-lake variable</p>
-                <v-btn
-                  v-if="
-                    openNewDataLakeVariableForm === false && currentElement.options.dataLakeVariable?.name === undefined
-                  "
-                  variant="elevated"
-                  class="bg-[#3B78A8] mr-[13px]"
-                  size="x-small"
-                  @click="openNewDataLakeVariableForm = true"
-                  >create</v-btn
+                <div
+                  v-if="!openNewDataLakeVariableForm && !openDataLakeVariableSelector"
+                  class="flex flex-col justify-end items-center self-end h-auto mt-1"
                 >
+                  <v-btn
+                    v-if="
+                      openNewDataLakeVariableForm === false &&
+                      currentElement.options.dataLakeVariable?.name === undefined
+                    "
+                    variant="elevated"
+                    class="bg-[#3B78A8] mr-[13px] w-[60px]"
+                    size="x-small"
+                    @click="openNewDataLakeVariableForm = true"
+                    >new</v-btn
+                  >
+                  <v-btn
+                    v-if="!currentElement.options.dataLakeVariable?.name"
+                    variant="elevated"
+                    class="bg-[#FFFFFF22] mr-[13px] my-1"
+                    size="x-small"
+                    @click="openDataLakeVariableSelector = true"
+                    >existent</v-btn
+                  >
+                </div>
+                <template
+                  v-if="
+                    (openDataLakeVariableSelector || currentElement.options.dataLakeVariable?.name) &&
+                    !openNewDataLakeVariableForm
+                  "
+                >
+                  <div class="max-w-[120px]">
+                    <select v-model="currentElement.options.dataLakeVariable" class="p-2 bg-[#FFFFFF11] w-[120px]">
+                      <option
+                        v-for="variable in availableDataLakeVariables"
+                        :key="variable.name"
+                        :value="variable"
+                        class="bg-[#000000AA]"
+                      >
+                        {{ variable.name }}
+                      </option>
+                    </select>
+                  </div>
+                </template>
               </div>
+              <v-btn
+                v-if="openDataLakeVariableSelector"
+                variant="text"
+                class="self-start mt-[9px]"
+                size="x-small"
+                @click="handleResetVariable"
+                >{{ currentElement.options.dataLakeVariable?.name ? 'reset' : 'back' }}</v-btn
+              >
             </template>
-            <template v-if="openNewDataLakeVariableForm || currentElement.options.dataLakeVariable?.name">
+            <template v-if="openNewDataLakeVariableForm">
               <div
                 class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]"
                 :class="{
@@ -274,28 +315,39 @@
                 <p class="ml-1 text-[14px]">Description</p>
                 <input v-model="futureDataLakeVariable.description" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
               </div>
-              <div class="flex w-full justify-end">
+              <div class="flex w-full justify-between">
                 <v-btn
+                  v-if="openNewDataLakeVariableForm"
                   variant="text"
+                  class="self-start mt-[9px]"
                   size="x-small"
-                  class="mr-[15px] mt-2"
-                  :disabled="currentElement.options.dataLakeVariable === undefined"
-                  @click="deleteParameterFromDataLake"
-                  >delete</v-btn
+                  @click="handleResetVariable"
+                  >{{ currentElement.options.dataLakeVariable?.name ? 'reset' : 'back' }}</v-btn
                 >
-                <v-btn
-                  variant="elevated"
-                  size="x-small"
-                  class="bg-[#3B78A8] mr-1 mt-2"
-                  :class="{
-                    'opacity-10': futureDataLakeVariable.name === '',
-                  }"
-                  :disabled="futureDataLakeVariable.name === ''"
-                  @click="saveOrUpdateParameter"
-                  >{{ currentElement.options.dataLakeVariable === undefined ? 'save' : 'update' }}</v-btn
-                >
+                <div>
+                  <v-btn
+                    variant="text"
+                    size="x-small"
+                    class="mr-[15px] mt-2"
+                    :disabled="currentElement.options.dataLakeVariable === undefined"
+                    @click="deleteParameterFromDataLake"
+                    >delete</v-btn
+                  >
+                  <v-btn
+                    variant="elevated"
+                    size="x-small"
+                    class="bg-[#3B78A8] mr-1 mt-2"
+                    :class="{
+                      'opacity-10': futureDataLakeVariable.name === '',
+                    }"
+                    :disabled="futureDataLakeVariable.name === ''"
+                    @click="saveOrUpdateParameter"
+                    >{{ currentElement.options.dataLakeVariable === undefined ? 'save' : 'update' }}</v-btn
+                  >
+                </div>
               </div>
             </template>
+
             <template v-if="currentElement.component === CustomWidgetElementType.Button">
               <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
                 <p class="ml-1 text-[14px]">Action to trigger</p>
@@ -332,6 +384,7 @@ import { useSnackbar } from '@/composables/snackbar'
 import {
   createDataLakeVariable,
   deleteDataLakeVariable,
+  getAllDataLakeVariablesInfo,
   getDataLakeVariableInfo,
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
@@ -357,6 +410,7 @@ const futureDataLakeVariable = ref<DataLakeVariable>(defaultDataLakeVariable)
 const openNewDataLakeVariableForm = ref(false)
 const isOptionsMenuOpen = ref<{ [key: number]: boolean }>({})
 const dataLakeVariableError = ref<string[]>([])
+const openDataLakeVariableSelector = ref(false)
 
 watch(
   () => widgetStore.elementToShowOnDrawer,
@@ -374,6 +428,17 @@ watch(
     }
   }
 )
+
+const handleResetVariable = (): void => {
+  currentElement.value!.options.dataLakeVariable = undefined
+  futureDataLakeVariable.value = defaultDataLakeVariable
+  openNewDataLakeVariableForm.value = false
+  openDataLakeVariableSelector.value = false
+}
+
+const availableDataLakeVariables = computed(() => {
+  return getAllDataLakeVariablesInfo()
+})
 
 const CloseConfigPanel = (): void => {
   widgetStore.elementToShowOnDrawer = undefined
