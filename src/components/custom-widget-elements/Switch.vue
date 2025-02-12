@@ -60,6 +60,25 @@ watch(
   { immediate: true, deep: true }
 )
 
+watch(
+  () => miniWidget.value.options.dataLakeVariable?.name,
+  (newVal) => {
+    if (newVal) {
+      startListeningDataLakeVariable()
+    }
+  },
+  { immediate: true }
+)
+
+const startListeningDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
+      switchValue.value = value as boolean
+    })
+    switchValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
+  }
+}
+
 const handleToggleAction = (): void => {
   if (widgetStore.editingMode) return
   if (miniWidget.value.options.dataLakeVariable) {
@@ -83,12 +102,8 @@ onMounted(() => {
     })
 
     switchValue.value = true
-  } else if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
-      switchValue.value = value as boolean
-    })
-    switchValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
   }
+  startListeningDataLakeVariable()
 })
 
 onUnmounted(() => {
