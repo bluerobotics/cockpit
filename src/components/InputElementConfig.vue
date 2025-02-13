@@ -261,7 +261,7 @@
                     class="bg-[#3B78A8] mr-[13px] w-[60px]"
                     size="x-small"
                     @click="openNewDataLakeVariableForm = true"
-                    >new</v-btn
+                    >create</v-btn
                   >
                   <v-btn
                     v-if="!currentElement.options.dataLakeVariable?.name"
@@ -269,7 +269,7 @@
                     class="bg-[#FFFFFF22] mr-[13px] my-1"
                     size="x-small"
                     @click="openDataLakeVariableSelector = true"
-                    >existent</v-btn
+                    >select</v-btn
                   >
                 </div>
                 <template
