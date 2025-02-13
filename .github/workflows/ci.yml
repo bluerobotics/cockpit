@@ -33,6 +33,83 @@ jobs:
           bun run typecheck
           bun run build
 
+  deploy-mobile:
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: ios
+            build-command: bun run build:ios
+          - os: ubuntu-latest
+            platform: android
+            build-command: bun run build:android
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Set up JDK for Android
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        if: matrix.platform == 'android'
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools-version: '34.0.0'
+
+      - name: Install iOS dependencies
+        if: matrix.platform == 'ios'
+        run: |
+          gem install cocoapods
+          pod setup
+
+      - name: Build web assets
+        run: |
+          bun install --frozen-lockfile
+          bun run build:mobile
+
+      - name: Build Android App
+        if: matrix.platform == 'android'
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Build iOS App
+        if: matrix.platform == 'ios'
+        run: |
+          cd ios/App
+          pod install
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator build
+
+      - name: Upload Android artifact
+        if: matrix.platform == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-app
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload iOS artifact
+        if: matrix.platform == 'ios'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-debug-app
+          path: ios/App/build/Debug-iphonesimulator/App.app
+
   deploy-page:
     needs: test
     runs-on: ubuntu-latest

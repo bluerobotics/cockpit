@@ -7,6 +7,9 @@
   "scripts": {
     "build": "vite build",
     "build:serve": "bun run build && bun run serve",
+    "build:mobile": "vite build && npx cap sync",
+    "build:ios": "bun run build:mobile && npx cap open ios",
+    "build:android": "bun run build:mobile && npx cap open android",
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "ELECTRON=true electron-builder --dir",
     "deploy:electron": "ELECTRON=true electron-builder --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
@@ -23,6 +26,10 @@
     "build:lib": "BUILD_MODE=library vite build"
   },
   "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
     "@fortawesome/free-regular-svg-icons": "^6.4.0",
     "@fortawesome/free-solid-svg-icons": "^6.4.0",
