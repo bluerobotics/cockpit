@@ -31,3 +31,9 @@ declare module 'vue-draggable-resizable' {
   const component: DefineComponent<Record<string, never>>
   export default component
 }
+
+declare module '*.vue' {
+  import type { DefineComponent } from 'vue'
+  const component: DefineComponent<unknown, unknown, any>
+  export default component
+}

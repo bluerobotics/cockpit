@@ -88,6 +88,20 @@ declare global {
    */
   interface Window {
     /**
+     * Extended Performance interface with memory attribute
+     */
+    performance: {
+      /**
+       * The memory attribute of the Performance interface returns a MemoryInfo object that provides information about memory usage, including JS heap size limit, total and available JS heap size, and used JS heap size.
+       */
+      memory: {
+        /**
+         * The used JS heap size in bytes.
+         */
+        usedJSHeapSize: number
+      }
+    }
+    /**
      * Exposed Cockpit APIs
      * E.g. data-lake, cockpit actions, etc.
      */
