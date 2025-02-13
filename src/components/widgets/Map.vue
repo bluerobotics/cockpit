@@ -115,6 +115,7 @@ import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
+import { useMapOverlays } from '@/composables/useMapOverlays'
 
 // Define widget props
 // eslint-disable-next-line jsdoc/require-jsdoc
@@ -193,16 +194,21 @@ const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
-const layerControl = L.control.layers(baseMaps, overlays)
+const layerControl = ref<L.Control.Layers>()
 
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
     map.value.addControl(zoomControl)
-    map.value.addControl(layerControl)
+    if (!layerControl.value) {
+      layerControl.value = L.control.layers(baseMaps, overlays)
+    }
+    map.value.addControl(layerControl.value)
   } else {
     map.value.removeControl(zoomControl)
-    map.value.removeControl(layerControl)
+    if (layerControl.value) {
+      map.value.removeControl(layerControl.value)
+    }
   }
 })
 
@@ -210,15 +216,25 @@ watch(isMouseOver, () => {
   showButtons.value = isMouseOver.value
 })
 
+const { setupMapOverlays } = useMapOverlays(map, layerControl)
+
 onMounted(async () => {
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
-    layers: [osm, esri, seamarks, marineProfile],
+    layers: [osm, esri],
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
+
+  // Setup overlays with custom panes and fetch logic
+  setupMapOverlays(map.value)
+
+  // Add default overlays with proper pane
+  seamarks.options.pane = 'seamarks'
+  seamarks.addTo(map.value)
+  marineProfile.addTo(map.value)
 
   // Update center value after panning
   map.value.on('moveend', () => {
