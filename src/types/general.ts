@@ -78,3 +78,28 @@ export interface ValidationFunctionReturn {
    */
   error?: string
 }
+
+/**
+ * Cockpit settings object
+ */
+export interface Settings {
+  [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+/**
+ * Config item for Cockpit settings
+ */
+export interface SettingItem {
+  /**
+   *
+   */
+  setting: string
+  /**
+   *
+   */
+  originalKey: string
+  /**
+   *
+   */
+  changed?: boolean
+}
