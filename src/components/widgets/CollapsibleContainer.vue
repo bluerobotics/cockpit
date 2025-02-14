@@ -292,12 +292,12 @@ const handleCopyWidgetToView = (): void => {
   if (selectedViewToShareWidget.value) {
     try {
       widgetStore.copyWidgetToView(currentWidget.value, selectedViewToShareWidget.value)
-      showSnackbar({
+      openSnackbar({
         variant: 'success',
         message: 'Widget cloned successfully.',
       })
     } catch (error: any) {
-      showSnackbar({
+      openSnackbar({
         variant: 'error',
         message: error.message || 'Error cloning widget.',
       })
