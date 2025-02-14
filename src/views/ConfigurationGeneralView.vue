@@ -534,7 +534,6 @@ const tryToPrettifyRtcConfig = (): void => {
 
 const openTutorial = (): void => {
   interfaceStore.isMainMenuVisible = false
-  interfaceStore.configComponent = -1
   interfaceStore.isTutorialVisible = true
 }
 
