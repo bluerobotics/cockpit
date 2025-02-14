@@ -30,6 +30,7 @@ import {
 } from '@/types/joystick'
 
 import { useAlertStore } from './alert'
+import { useMainVehicleStore } from './mainVehicle'
 
 export type controllerUpdateCallback = (
   state: JoystickState,
@@ -44,6 +45,8 @@ const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
 
 export const useControllerStore = defineStore('controller', () => {
   const alertStore = useAlertStore()
+  const vehicleStore = useMainVehicleStore()
+
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
@@ -165,6 +168,11 @@ export const useControllerStore = defineStore('controller', () => {
 
     if (value === 'hidden') {
       console.warn('Window/tab hidden. Disabling joystick forwarding.')
+      if (vehicleStore.isArmed) {
+        const criticalMessage =
+          'Critical: Cockpit minimized while vehicle is armed. Joystick inputs will not work. Ensure vehicle safety.'
+        alertStore.pushAlert(new Alert(AlertLevel.Critical, criticalMessage))
+      }
       enableForwarding.value = false
     } else {
       console.info('Window/tab visible. Enabling joystick forwarding.')
