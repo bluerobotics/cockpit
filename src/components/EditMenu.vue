@@ -532,8 +532,8 @@
           <v-btn
             type="flat"
             class="bg-[#FFFFFF33] text-white w-[95%]"
-            @click="store.addWidget(makeNewWidget(WidgetType.CustomWidgetBase), store.currentView)"
-            >Add widget base
+            @click="store.addWidget(makeNewWidget(WidgetType.CollapsibleContainer), store.currentView)"
+            >Add new container
           </v-btn>
         </div>
       </div>
@@ -699,9 +699,9 @@ import BoatThumb from '@/assets/vehicles/BlueBoat_thumb.png'
 import BlueRoboticsLogo from '@/assets/vehicles/BlueRoboticsLogo.png'
 import RovThumb from '@/assets/vehicles/BlueROV_thumb.png'
 import AttitudeImg from '@/assets/widgets/Attitude.png'
+import CollapsibleContainerImg from '@/assets/widgets/CollapsibleContainer.png'
 import CompassImg from '@/assets/widgets/Compass.png'
 import CompassHUDImg from '@/assets/widgets/CompassHUD.png'
-import CustomWidgetBaseImg from '@/assets/widgets/CustomWidgetBase.png'
 import DepthHUDImg from '@/assets/widgets/DepthHUD.png'
 import DoItYourselfImg from '@/assets/widgets/DoItYourself.png'
 import IFrameImg from '@/assets/widgets/IFrame.png'
@@ -757,7 +757,7 @@ const miniWidgetsBars = computed(() => {
 const getAllMiniWidgetFromCustomWidget = (): MiniWidgetContainer[] => {
   const allCustomBases = store.currentProfile.views
     .flatMap((view) => view.widgets)
-    .filter((widget) => widget.component === WidgetType.CustomWidgetBase)
+    .filter((widget) => widget.component === WidgetType.CollapsibleContainer)
 
   return allCustomBases.map((base) => {
     const baseName = base.name || 'Unnamed Custom Widget'
@@ -902,7 +902,7 @@ const widgetImages = {
   Attitude: AttitudeImg,
   Compass: CompassImg,
   CompassHUD: CompassHUDImg,
-  CustomWidgetBase: CustomWidgetBaseImg,
+  CollapsibleContainer: CollapsibleContainerImg,
   DepthHUD: DepthHUDImg,
   DoItYourself: DoItYourselfImg,
   IFrame: IFrameImg,
