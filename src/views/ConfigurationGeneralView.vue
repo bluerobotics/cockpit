@@ -6,7 +6,7 @@
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
-        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>User settings</template>
           <template #info>
             <p class="max-w-[400px]">
@@ -16,34 +16,46 @@
           </template>
           <template #content>
             <div class="flex flex-col w-full items-start">
-              <div class="flex align-center w-full justify-between pr-2 mt-1 mb-6">
+              <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
                   <span class="mr-2">Current user:</span>
                   <span class="font-semibold text-2xl cursor-pointer" @click="missionStore.changeUsername">{{
                     missionStore.username
                   }}</span>
                 </div>
-                <v-btn
-                  id="select-profile"
-                  size="sm"
-                  icon="mdi-swap-horizontal"
-                  class="bg-transparent"
-                  variant="text"
-                  @click="missionStore.changeUsername"
-                />
+                <div class="flex justify-end">
+                  <v-btn
+                    id="select-profile"
+                    size="small"
+                    append-icon="mdi-swap-horizontal"
+                    class="bg-[#FFFFFF22] shadow-2 -mr-2"
+                    variant="flat"
+                    @click="missionStore.changeUsername"
+                    >switch user</v-btn
+                  >
+                </div>
               </div>
-              <div class="flex flex-row">
-                <v-btn size="x-small" class="bg-[#FFFFFF22] -mt-3 mb-4 shadow-2" variant="flat" @click="openTutorial">
+              <v-divider class="w-full opacity-[0.08]" />
+              <div class="flex flex-row w-full justify-between h-[46px] py-3">
+                <v-btn size="x-small" class="bg-[#FFFFFF22] mb-4 shadow-1" variant="flat" @click="openTutorial">
                   Show tutorial
                 </v-btn>
                 <v-btn
                   v-if="isElectron()"
                   size="x-small"
-                  class="bg-[#FFFFFF22] -mt-3 mb-4 ml-2 shadow-2"
+                  class="bg-[#FFFFFF22] mb-4 ml-2 shadow-1"
                   variant="flat"
                   @click="openCockpitFolder"
                 >
                   Open Cockpit folder
+                </v-btn>
+                <v-btn
+                  size="x-small"
+                  class="bg-[#FFFFFF22] mb-4 ml-2 shadow-1"
+                  variant="flat"
+                  @click="showCockpitSettingsDialog = true"
+                >
+                  Manage Cockpit settings
                 </v-btn>
               </div>
             </div>
@@ -295,12 +307,14 @@
     </template>
   </BaseConfigurationView>
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" />
+  <ManageCockpitSettings v-model:openConfigDialog="showCockpitSettingsDialog" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
+import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -323,6 +337,7 @@ const { openSnackbar } = useSnackbar()
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
 const newGlobalAddress = ref(mainVehicleStore.globalAddress)
+const showCockpitSettingsDialog = ref(false)
 
 const setGlobalAddress = async (): Promise<void> => {
   await globalAddressForm.value.validate()
