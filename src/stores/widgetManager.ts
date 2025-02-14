@@ -82,7 +82,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const getElementByHash = (hash: string): CustomWidgetElement | undefined => {
     let customWidgetElement = currentProfile.value.views
       .flatMap((view) => view.widgets)
-      .filter((widget) => widget.component === WidgetType.CustomWidgetBase)
+      .filter((widget) => widget.component === WidgetType.CollapsibleContainer)
       .flatMap((widget) => widget.options.elementContainers)
       .flatMap((container) => container.elements)
       .find((element) => element.hash === hash)
@@ -117,7 +117,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
     const customWidget = currentProfile.value.views
       .flatMap((view) => view.widgets)
-      .filter((widget) => widget.component === WidgetType.CustomWidgetBase)
+      .filter((widget) => widget.component === WidgetType.CollapsibleContainer)
       .find((widget) =>
         widget.options.elementContainers.some((container: CustomWidgetElementContainer) =>
           container.elements.includes(customWidgetElement)
@@ -572,7 +572,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       options: widget.options,
     }
 
-    if (widget.component === WidgetType.CustomWidgetBase) {
+    if (widget.component === WidgetType.CollapsibleContainer) {
       newWidget.options = {
         elementContainers: defaultCustomWidgetContainers,
         columns: 1,
@@ -629,7 +629,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const customWidgetContainers = computed<MiniWidgetContainer[]>(() =>
     currentProfile.value.views
       .flatMap((view) => view.widgets)
-      .filter((widget) => widget.component === WidgetType.CustomWidgetBase)
+      .filter((widget) => widget.component === WidgetType.CollapsibleContainer)
       .flatMap((widget) => widget.options.elementContainers)
       .map((container) => ({
         name: '',
@@ -870,6 +870,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     profile.hash = corrDefault?.hash ?? profile.hash
   })
 
+  const copyWidgetToView = (widget: Widget, viewName: string): void => {
+    const targetView = currentProfile.value.views.find((view) => view.name === viewName)
+    if (!targetView) {
+      throw new Error(`View with name "${viewName}" not found.`)
+    }
+    const newWidget = JSON.parse(JSON.stringify(widget))
+    newWidget.hash = uuid4()
+    targetView.widgets.unshift(newWidget)
+  }
+
   return {
     editingMode,
     snapToGrid,
@@ -923,5 +933,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     editWidgetByHash,
     setMiniWidgetLastValue,
     getMiniWidgetLastValue,
+    copyWidgetToView,
   }
 })
