@@ -20,7 +20,8 @@
             required
             variant="outlined"
             density="compact"
-          ></v-select>
+            theme="dark"
+          />
           <v-text-field
             v-model="newActionConfig.url"
             label="URL"
@@ -117,7 +118,8 @@
             required
             variant="outlined"
             density="compact"
-          ></v-select>
+            theme="dark"
+          />
           <v-text-field
             v-if="urlParamDialog.valueType === 'fixed'"
             v-model="urlParamDialog.fixedValue"
