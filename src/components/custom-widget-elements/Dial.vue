@@ -145,45 +145,39 @@ const startDrag = (event: MouseEvent): void => {
 
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
-
   const centerX = rect.left + rect.width / 2
   const centerY = rect.top + rect.height / 2
 
-  const dxStart = event.clientX - centerX
-  const dyStart = event.clientY - centerY
-  const initialMouseAngle = Math.atan2(dyStart, dxStart) * (180 / Math.PI)
-
-  const initialRotationAngle = rotationAngle.value
+  let lastMouseAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX) * (180 / Math.PI)
 
   const handleDrag = (moveEvent: MouseEvent): void => {
-    const dx = moveEvent.clientX - centerX
-    const dy = moveEvent.clientY - centerY
+    const currentMouseAngle = Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX) * (180 / Math.PI)
+    let angleDelta = currentMouseAngle - lastMouseAngle
 
-    const currentMouseAngle = Math.atan2(dy, dx) * (180 / Math.PI)
-
-    let angleDifference = currentMouseAngle - initialMouseAngle
-
-    if (angleDifference > 180) {
-      angleDifference -= 360
-    } else if (angleDifference < -180) {
-      angleDifference += 360
+    if (angleDelta > 180) {
+      angleDelta -= 360
+    } else if (angleDelta < -180) {
+      angleDelta += 360
     }
 
-    let newRotationAngle = initialRotationAngle + angleDifference
+    let newRotationAngle = rotationAngle.value + angleDelta
 
     newRotationAngle = Math.max(-150, Math.min(150, newRotationAngle))
-
     rotationAngle.value = newRotationAngle
 
+    lastMouseAngle = currentMouseAngle
+
     const rotationRange = 300
-    const valueRange = miniWidget.value.options.layout?.maxValue - miniWidget.value.options.layout?.minValue || 1
+    const valueRange =
+      (miniWidget.value.options.layout?.maxValue || 100) - (miniWidget.value.options.layout?.minValue || 0)
     potentiometerValue.value =
-      ((newRotationAngle + 150) / rotationRange) * valueRange + miniWidget.value.options.layout?.minValue
+      ((newRotationAngle + 150) / rotationRange) * valueRange + (miniWidget.value.options.layout?.minValue || 0)
 
     if (miniWidget.value.options.dataLakeVariable) {
       if (widgetStore.editingMode) return
-      widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, Math.round(potentiometerValue.value))
-      setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, Math.round(potentiometerValue.value))
+      const roundedValue = Math.round(potentiometerValue.value)
+      widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
+      setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, roundedValue)
     }
   }
 
