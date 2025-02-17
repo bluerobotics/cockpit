@@ -2,10 +2,7 @@
   <BaseConfigurationView>
     <template #title>Cockpit actions configuration</template>
     <template #content>
-      <div
-        class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px]"
-        :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[680px] max-h-[85vh]'"
-      >
+      <div class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px]">
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Actions</template>
           <template #info>
@@ -13,9 +10,14 @@
             <li>HTTP Request actions can be used to call external APIs, like servers, vehicles, cameras, etc.</li>
             <li>MAVLink Message actions allow you to send specific MAVLink messages to vehicles.</li>
             <li>JavaScript actions give you full flexibility by allowing you to write custom code.</li>
+            <li>
+              The link button can be used to link Actions to Data Lake variables, so that changes to the variable value
+              will automatically trigger the linked action.
+            </li>
+            <li>Actions can also be tested/run manually, using the play button.</li>
           </template>
           <template #content>
-            <div class="flex justify-center flex-col ml-2 mb-8 mt-2 w-[640px]">
+            <div class="flex justify-center flex-col ml-2 pr-4 mb-8 mt-2 w-full">
               <v-data-table
                 :items="allActionConfigs"
                 items-per-page="10"
@@ -27,18 +29,32 @@
                 <template #item="{ item }">
                   <tr>
                     <td>
-                      <div :id="item.id" class="flex items-center justify-left rounded-xl mx-1 w-[140px]">
-                        <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">{{ item.name }}</p>
+                      <div :id="item.id" class="flex items-center justify-left rounded-xl mx-1 w-[160px]">
+                        <p class="whitespace-nowrap overflow-hidden truncate">{{ item.name }}</p>
                       </div>
                     </td>
                     <td>
-                      <div :id="item.id" class="flex items-center justify-center rounded-xl mx-1 w-[200px]">
+                      <div :id="item.id" class="flex items-center justify-center rounded-xl mx-1 w-[120px]">
                         <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">
                           {{ customActionTypesNames[item.type] }}
                         </p>
                       </div>
                     </td>
-                    <td class="w-[200px] text-right">
+                    <td>
+                      <div :id="item.id" class="flex items-center justify-center rounded-xl mx-1 w-[70px]">
+                        <p class="whitespace-nowrap overflow-hidden text-overflow-ellipsis">
+                          {{ item.minInterval ?? 0 }} ms
+                        </p>
+                      </div>
+                    </td>
+                    <td>
+                      <div :id="item.id" class="flex items-center justify-center rounded-xl mx-1 my-1 w-[150px]">
+                        <p class="whitespace-nowrap overflow-hidden truncate">
+                          {{ item.linkedVariables?.join(' / ') ?? '--' }}
+                        </p>
+                      </div>
+                    </td>
+                    <td class="w-[220px] text-right">
                       <div class="flex items-center justify-center">
                         <v-btn
                           variant="outlined"
@@ -46,6 +62,13 @@
                           icon="mdi-pencil"
                           size="x-small"
                           @click="editAction(item)"
+                        />
+                        <v-btn
+                          variant="outlined"
+                          class="rounded-full mx-1"
+                          icon="mdi-link"
+                          size="x-small"
+                          @click="openLinkDialog(item)"
                         />
                         <v-btn
                           variant="outlined"
@@ -128,6 +151,8 @@
           </v-card>
         </v-dialog>
 
+        <ActionLinkConfig ref="linkConfig" />
+
         <!-- Action configuration components with their dialogs -->
         <HttpRequestActionConfig
           ref="httpRequestConfig"
@@ -152,10 +177,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import ActionLinkConfig from '@/components/configuration/ActionLinkConfig.vue'
 import HttpRequestActionConfig from '@/components/configuration/HttpRequestActionConfig.vue'
 import JavascriptActionConfig from '@/components/configuration/JavascriptActionConfig.vue'
 import MavlinkMessageActionConfig from '@/components/configuration/MavlinkMessageActionConfig.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { getActionLink } from '@/libs/actions/action-links'
 import { getAllJavascriptActionConfigs, registerJavascriptActionConfig } from '@/libs/actions/free-javascript'
 import { getAllHttpRequestActionConfigs, registerHttpRequestActionConfig } from '@/libs/actions/http-request'
 import {
@@ -164,6 +191,7 @@ import {
 } from '@/libs/actions/mavlink-message-actions'
 import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { ActionConfig, customActionTypes, customActionTypesNames } from '@/types/cockpit-actions'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
@@ -172,6 +200,7 @@ const interfaceStore = useAppInterfaceStore()
 const httpRequestConfig = ref()
 const mavlinkConfig = ref()
 const javascriptConfig = ref()
+const linkConfig = ref()
 
 // Add reactive refs for our action lists
 const httpRequestActions = ref(getAllHttpRequestActionConfigs())
@@ -179,47 +208,20 @@ const mavlinkMessageActions = ref(getAllMavlinkMessageActionConfigs())
 const javascriptActions = ref(getAllJavascriptActionConfigs())
 
 /**
- * Custom action types
+ * Extended action config with additional variable-link properties
  */
-enum customActionTypes {
-  httpRequest = 'http-request',
-  mavlinkMessage = 'mavlink-message',
-  javascript = 'javascript',
+interface LinkedActionConfig extends ActionConfig {
+  /**
+   * Minimum interval between auto-triggered executions
+   */
+  minInterval: number | undefined
+  /**
+   * Linked data-lake variables
+   */
+  linkedVariables: string[] | undefined
 }
 
-/**
- * Custom action types names
- */
-const customActionTypesNames: Record<customActionTypes, string> = {
-  [customActionTypes.httpRequest]: 'HTTP Request',
-  [customActionTypes.mavlinkMessage]: 'MAVLink Message',
-  [customActionTypes.javascript]: 'JavaScript',
-}
-
-/**
- * Action configuration interface
- */
-interface ActionConfig {
-  /**
-   * Action ID
-   */
-  id: string
-  /**
-   * Action name
-   */
-  name: string
-  /**
-   * Action type
-   */
-  type: customActionTypes
-  /**
-   * Action configuration
-   * Specific to the action type
-   */
-  config: any
-}
-
-const allActionConfigs = computed<ActionConfig[]>(() => {
+const allActionConfigs = computed<LinkedActionConfig[]>(() => {
   const configs: ActionConfig[] = []
 
   // Use the reactive refs instead of direct function calls
@@ -235,12 +237,21 @@ const allActionConfigs = computed<ActionConfig[]>(() => {
     configs.push({ id, name: config.name, type: customActionTypes.javascript, config })
   })
 
-  return configs
+  const extendedConfigs: LinkedActionConfig[] = []
+
+  configs.forEach((config) => {
+    const link = getActionLink(config.id)
+    extendedConfigs.push({ ...config, minInterval: link?.minInterval, linkedVariables: link?.variables })
+  })
+
+  return extendedConfigs
 })
 
 const headers = [
   { title: 'Name', key: 'name', sortable: true, align: 'start' },
   { title: 'Type', key: 'type', sortable: true, align: 'center' },
+  { title: 'Min Interval', key: 'minInterval', sortable: false, align: 'center' },
+  { title: 'Linked Variables', key: 'linkedVariables', sortable: false, align: 'center' },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end' },
 ]
 
@@ -390,6 +401,10 @@ const importAction = (): void => {
   }
   input.click()
   input.remove()
+}
+
+const openLinkDialog = (item: ActionConfig): void => {
+  linkConfig.value?.openDialog(item)
 }
 
 onMounted(() => {
