@@ -21,6 +21,7 @@
             required
             variant="outlined"
             density="compact"
+            theme="dark"
             @update:model-value="resetActionConfig(newActionConfig.messageType)"
           />
 
