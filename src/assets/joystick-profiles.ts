@@ -54,7 +54,7 @@ export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
         [JoystickButton.B14]: { action: availableMavlinkManualControlButtonFunctions['Lights1 dimmer'] },
         [JoystickButton.B15]: { action: availableMavlinkManualControlButtonFunctions['Lights1 brighter'] },
         [JoystickButton.B16]: { action: availableCockpitActions.toggle_bottom_bar },
-        [JoystickButton.B17]: { action: availableMavlinkManualControlButtonFunctions['Roll pitch toggle'] },
+        [JoystickButton.B17]: { action: otherAvailableActions.no_function },
       },
       [CockpitModifierKeyOption.shift]: {
         [JoystickButton.B0]: { action: otherAvailableActions.no_function },
