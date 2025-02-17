@@ -96,3 +96,7 @@ export const getJavascriptActionCallback = (id: string): JavascriptActionCallbac
 
 loadJavascriptActionConfigs()
 updateCockpitActions()
+
+Object.values(registeredJavascriptActionConfigs).forEach((action) => {
+  executeActionCode(action.code)
+})
