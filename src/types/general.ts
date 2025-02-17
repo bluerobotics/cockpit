@@ -32,7 +32,7 @@ export interface DialogActions {
   disabled?: boolean
 }
 
-export type SubMenuComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | null
+export type SubMenuComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | undefined
 
 export interface StorageDB {
   getItem: (key: string) => Promise<Blob | null | undefined>
@@ -77,4 +77,29 @@ export interface ValidationFunctionReturn {
    * Error message in case the input is not valid
    */
   error?: string
+}
+
+/**
+ * Cockpit settings object
+ */
+export interface Settings {
+  [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+/**
+ * Config item for Cockpit settings
+ */
+export interface SettingItem {
+  /**
+   *
+   */
+  setting: string
+  /**
+   *
+   */
+  originalKey: string
+  /**
+   *
+   */
+  changed?: boolean
 }
