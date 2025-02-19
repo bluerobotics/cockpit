@@ -74,6 +74,15 @@ watch(
   { immediate: true, deep: true }
 )
 
+const startListeningDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
+      sliderValue.value = value as number
+    })
+    sliderValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as number
+  }
+}
+
 watch(
   () => miniWidget.value.options.dataLakeVariable?.name,
   (newVal) => {
@@ -83,15 +92,6 @@ watch(
   },
   { immediate: true }
 )
-
-const startListeningDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
-      sliderValue.value = value as number
-    })
-    sliderValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as number
-  }
-}
 
 const handleSliderChange = (): void => {
   if (widgetStore.editingMode) return

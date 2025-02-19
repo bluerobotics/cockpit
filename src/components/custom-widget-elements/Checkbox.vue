@@ -70,6 +70,15 @@ watch(
   { immediate: true, deep: true }
 )
 
+const startListeningDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
+      isChecked.value = value as boolean
+    })
+    isChecked.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
+  }
+}
+
 watch(
   () => miniWidget.value.options.dataLakeVariable?.name,
   (newVal) => {
@@ -79,15 +88,6 @@ watch(
   },
   { immediate: true }
 )
-
-const startListeningDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
-      isChecked.value = value as boolean
-    })
-    isChecked.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
-  }
-}
 
 onMounted(() => {
   if (!miniWidget.value.options || Object.keys(miniWidget.value.options).length === 0) {
