@@ -99,6 +99,15 @@ const handleSelection = (value: string | number | boolean): void => {
   widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, selected.value)
 }
 
+const startListeningDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
+      selectedValue.value = value as string
+    })
+    selectedValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as string
+  }
+}
+
 watch(
   () => miniWidget.value.options.dataLakeVariable?.name,
   (newVal) => {
@@ -108,15 +117,6 @@ watch(
   },
   { immediate: true }
 )
-
-const startListeningDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
-      selectedValue.value = value as string
-    })
-    selectedValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as string
-  }
-}
 
 onMounted(() => {
   if (!miniWidget.value.options || Object.keys(miniWidget.value.options).length === 0) {

@@ -60,6 +60,15 @@ watch(
   { immediate: true, deep: true }
 )
 
+const startListeningDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
+      switchValue.value = value as boolean
+    })
+    switchValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
+  }
+}
+
 watch(
   () => miniWidget.value.options.dataLakeVariable?.name,
   (newVal) => {
@@ -69,15 +78,6 @@ watch(
   },
   { immediate: true }
 )
-
-const startListeningDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, (value) => {
-      switchValue.value = value as boolean
-    })
-    switchValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
-  }
-}
 
 const handleToggleAction = (): void => {
   if (widgetStore.editingMode) return
