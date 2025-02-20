@@ -304,8 +304,7 @@ const renderCanvas = (): void => {
     if (widget.value.options.showTitle && widget.value.options.dataLakeVariableId) {
       const variable = availableDataLakeVariables.value.find((v) => v.id === widget.value.options.dataLakeVariableId)
       if (variable) {
-        ctx.textBaseline = 'top'
-        drawText(ctx, variable.name, 10, 10)
+        drawText(ctx, variable.name, 10, 26)
         ctx.textBaseline = 'bottom'
       }
     }
