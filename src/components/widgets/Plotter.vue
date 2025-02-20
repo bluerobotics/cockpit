@@ -215,11 +215,6 @@ const changeDataLakeVariable = (newId: string, oldId?: string): void => {
   })
 }
 
-watch([widget.value.options.maxSamples, widget.value.options.limitSamples], () => {
-  cutExtraSamples()
-  renderCanvas()
-})
-
 watch(
   () => widget.value.options.dataLakeVariableId,
   (newId, oldId) => {
@@ -324,10 +319,15 @@ let maxValue = 0
 let minValue = 0
 
 // Update canvas whenever reference variables changes
-watch([canvasSize, widget.value.options], () => {
-  if (!widgetStore.isWidgetVisible(widget.value)) return
-  nextTick(() => renderCanvas())
-})
+watch(
+  [canvasSize, widget],
+  () => {
+    if (!widgetStore.isWidgetVisible(widget.value)) return
+    cutExtraSamples()
+    nextTick(() => renderCanvas())
+  },
+  { deep: true }
+)
 
 const canvasVisible = useElementVisibility(canvasRef)
 watch(canvasVisible, (isVisible, wasVisible) => {
