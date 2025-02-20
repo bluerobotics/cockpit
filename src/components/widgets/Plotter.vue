@@ -170,6 +170,7 @@ onMounted(() => {
   dataLakeVariableInfoListenerId = listenToDataLakeVariablesInfoChanges((variables) => {
     availableDataLakeVariables.value = Object.values(variables)
   })
+  renderCanvas()
 })
 
 onUnmounted(() => {
@@ -269,8 +270,6 @@ const renderCanvas = (): void => {
   ctx.lineWidth = Math.max(widget.value.options.lineThickness, 1)
 
   try {
-    if (valuesHistory.length === 0) return
-
     maxValue = Math.max(...valuesHistory)
     minValue = Math.min(...valuesHistory)
 
