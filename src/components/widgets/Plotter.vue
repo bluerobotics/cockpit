@@ -125,6 +125,7 @@ import { computed, nextTick, onBeforeMount, onMounted, onUnmounted, ref, toRefs,
 import {
   DataLakeVariable,
   getAllDataLakeVariablesInfo,
+  getDataLakeVariableData,
   listenDataLakeVariable,
   listenToDataLakeVariablesInfoChanges,
   unlistenDataLakeVariable,
@@ -170,7 +171,14 @@ onMounted(() => {
   dataLakeVariableInfoListenerId = listenToDataLakeVariablesInfoChanges((variables) => {
     availableDataLakeVariables.value = Object.values(variables)
   })
-  renderCanvas()
+
+  // Try to get an initial value for the data lake variable
+  if (valuesHistory.length === 0) {
+    const initialValue = getDataLakeVariableData(widget.value.options.dataLakeVariableId)
+    if (initialValue) {
+      pushNewValue(initialValue as number)
+    }
+  }
 })
 
 onUnmounted(() => {
@@ -198,6 +206,12 @@ const cutExtraSamples = (): void => {
   }
 }
 
+const pushNewValue = (value: number): void => {
+  valuesHistory.push(value)
+  cutExtraSamples()
+  renderCanvas()
+}
+
 const changeDataLakeVariable = (newId: string, oldId?: string): void => {
   if (newId === undefined) {
     console.error('No data lake variable ID provided!')
@@ -208,12 +222,7 @@ const changeDataLakeVariable = (newId: string, oldId?: string): void => {
     unlistenDataLakeVariable(oldId, dataLakeVariableListenerId)
   }
 
-  dataLakeVariableListenerId = listenDataLakeVariable(newId, (value) => {
-    valuesHistory.push(value as number)
-
-    cutExtraSamples()
-    renderCanvas()
-  })
+  dataLakeVariableListenerId = listenDataLakeVariable(newId, (value) => pushNewValue(value as number))
 }
 
 watch(
