@@ -291,12 +291,33 @@ const renderCanvas = (): void => {
     // Draw the graph
     ctx.beginPath()
     ctx.moveTo(0, canvasHeight / 2)
+    ctx.setLineDash([])
 
-    valuesHistory.forEach((sample, index) => {
-      const x = index * (canvasWidth / valuesHistory.length)
-      const y = canvasHeight - ((sample - minY) / (maxY - minY)) * canvasHeight
-      ctx.lineTo(x, y)
-    })
+    if (valuesHistory.length === 0) {
+      // Draw an open circle in the middle of the canvas indicating no value
+      ctx.beginPath()
+      ctx.arc(0, canvasHeight / 2, 7, 0, 2 * Math.PI)
+      ctx.stroke()
+    } else if (valuesHistory.length === 1) {
+      // Draw a filled circle in the middle of the canvas with a small dash line to the right indicating a single value
+      ctx.fillStyle = widget.value.options.lineColor
+      ctx.beginPath()
+      ctx.arc(0, canvasHeight / 2, 7, 0, 2 * Math.PI)
+      ctx.fill()
+
+      ctx.beginPath()
+      ctx.setLineDash([5, 5])
+      ctx.moveTo(0, canvasHeight / 2)
+      ctx.lineTo(0 + 50, canvasHeight / 2)
+      ctx.stroke()
+    } else {
+      ctx.setLineDash([])
+      valuesHistory.forEach((sample, index) => {
+        const x = index * (canvasWidth / valuesHistory.length)
+        const y = canvasHeight - ((sample - minY) / (maxY - minY)) * canvasHeight
+        ctx.lineTo(x, y)
+      })
+    }
     ctx.stroke()
 
     // Setup text rendering
