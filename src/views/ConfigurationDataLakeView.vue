@@ -112,15 +112,18 @@
                   :items="['string', 'number', 'boolean']"
                   :rules="[(v) => !!v || 'Type is required']"
                 />
-                <v-textarea
-                  v-model="newFunction.expression"
-                  label="Expression"
-                  variant="outlined"
-                  :rules="[(v) => !!v || 'Expression is required']"
-                  :placeholder="expressionPlaceholder"
-                  hint="Create complex transformations by combining existing Data Lake variables using JavaScript expressions.
-                    Return is optional, but should be included in complex expressions. Remember to set the type accordingly."
-                />
+                <div class="flex flex-col gap-2">
+                  <label class="text-sm">Expression</label>
+                  <div
+                    ref="expressionEditorContainer"
+                    class="h-[300px] border border-[#FFFFFF33] rounded-lg overflow-hidden"
+                  />
+                  <div class="text-xs text-gray-400">
+                    Create complex transformations by combining existing Data Lake variables using JavaScript
+                    expressions. Type '\{\{' to access available variables. Return is optional, but should be included
+                    in complex expressions. Remember to set the type accordingly.
+                  </div>
+                </div>
                 <v-textarea
                   v-model="newFunction.description"
                   label="Description"
@@ -128,32 +131,6 @@
                   placeholder="Optional description of what this transformation does"
                   rows="2"
                 />
-                <div>
-                  <v-text-field
-                    v-model="searchQuery"
-                    label="Search Variables"
-                    variant="outlined"
-                    append-icon="mdi-magnify"
-                    @update:focused="(focused) => (isVariableSearchInputFocused = focused)"
-                  />
-                  <div v-if="showVariableIdsList" class="mt-2" :style="interfaceStore.globalGlassMenuStyles">
-                    <v-list class="max-h-[200px] overflow-y-auto" :style="interfaceStore.globalGlassMenuStyles">
-                      <v-list-item
-                        v-for="[id, variable] in filteredVariables"
-                        :key="id"
-                        :title="variable.name"
-                        :subtitle="id"
-                        class="cursor-pointer bg-transparent hover:bg-transparent"
-                        @click="copyVariableId(id, variable.name)"
-                      >
-                        <template #append>
-                          <v-icon size="small"> mdi-content-copy </v-icon>
-                        </template>
-                      </v-list-item>
-                      <v-list-item v-if="filteredVariables.length === 0" title="No variables found" disabled />
-                    </v-list>
-                  </div>
-                </div>
               </div>
             </v-card-text>
             <v-divider class="mt-2 mx-10" />
@@ -171,7 +148,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import * as monaco from 'monaco-editor'
+// @ts-ignore: Worker imports
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
+// @ts-ignore: Worker imports
+import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
+import { computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -197,7 +179,6 @@ const interfaceStore = useAppInterfaceStore()
 const transformingFunctions = reactive<TransformingFunction[]>([])
 const showNewFunctionDialog = ref(false)
 const editingExistingFunction = ref(false)
-const isVariableSearchInputFocused = ref(false)
 
 const defaultValues = {
   name: '',
@@ -222,27 +203,8 @@ return {{ cockpit-memory-usage }} > 100
 
 const variablesMap = ref<Record<string, DataLakeVariable>>({})
 const { openSnackbar } = useSnackbar()
-const searchQuery = ref('')
 
 const availableVariables = computed(() => Object.entries(variablesMap.value))
-
-const filteredVariables = computed(() => {
-  if (!searchQuery.value) return availableVariables.value
-  const query = searchQuery.value.toLowerCase()
-  return availableVariables.value.filter(
-    ([id, variable]) => id.toLowerCase().includes(query) || variable.name.toLowerCase().includes(query)
-  )
-})
-
-const copyVariableId = (id: string, name: string): void => {
-  copyToClipboard(id)
-  openSnackbar({ message: `Variable ID for "${name}" copied to clipboard`, variant: 'success', duration: 2000 })
-  searchQuery.value = ''
-}
-
-const showVariableIdsList = computed(() => {
-  return searchQuery.value.length > 0 || isVariableSearchInputFocused.value
-})
 
 /**
  * Closes the new/edit function dialog and resets the form
@@ -311,6 +273,173 @@ const saveTransformingFunction = (): void => {
   updateTransformingFunctionsList()
   closeNewFunctionDialog()
 }
+
+const expressionEditorContainer = ref<HTMLElement | null>(null)
+let expressionEditor: monaco.editor.IStandaloneCodeEditor | null = null
+let completionProvider: monaco.IDisposable | null = null
+
+// Configure Monaco environment
+self.MonacoEnvironment = {
+  getWorker(_, label) {
+    if (label === 'typescript' || label === 'javascript') {
+      return new tsWorker()
+    }
+    return new editorWorker()
+  },
+}
+
+// Configure custom language for data lake expressions
+monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+  noSemanticValidation: true,
+  noSyntaxValidation: true,
+  diagnosticCodesToIgnore: [1005, 1128, 7027],
+})
+
+// Add custom tokens to JavaScript language
+monaco.languages.setMonarchTokensProvider('javascript', {
+  tokenizer: {
+    root: [
+      [/\{\{[^}]*\}\}/, { token: 'variable.name.data-lake' }],
+      [/[a-z_$][\w$]*/, 'identifier'],
+      [/[A-Z][\w$]*/, 'type.identifier'],
+      [/"([^"\\]|\\.)*$/, 'string.invalid'],
+      [/'([^'\\]|\\.)*$/, 'string.invalid'],
+      [/"/, 'string', '@string_double'],
+      [/'/, 'string', '@string_single'],
+      [/[0-9]+/, 'number'],
+      [/[,.]/, 'delimiter'],
+      [/[()]/, '@brackets'],
+      [/[{}]/, '@brackets'],
+      [/[[\]]/, '@brackets'],
+      [/[;]/, 'delimiter'],
+      [/[+\-*/=<>!&|^~?:]/, 'operator'],
+      [/@[a-zA-Z]+/, 'annotation'],
+      [/\s+/, 'white'],
+    ],
+    string_double: [
+      [/[^"]+/, 'string'],
+      [/"/, 'string', '@pop'],
+    ],
+    string_single: [
+      [/[^']+/, 'string'],
+      [/'/, 'string', '@pop'],
+    ],
+  },
+})
+
+// Create custom theme to style our data lake variables
+monaco.editor.defineTheme('data-lake-dark', {
+  base: 'vs-dark',
+  inherit: true,
+  rules: [{ token: 'variable.name.data-lake', foreground: '4EC9B0', fontStyle: 'italic' }],
+  colors: {},
+})
+
+// Create Monaco editor
+const createEditor = (container: HTMLElement, value: string): monaco.editor.IStandaloneCodeEditor => {
+  return monaco.editor.create(container, {
+    value,
+    language: 'javascript',
+    theme: 'data-lake-dark',
+    minimap: { enabled: false },
+    fontSize: 14,
+    lineNumbers: 'on',
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    tabSize: 2,
+    wordWrap: 'on',
+    padding: { top: 12, bottom: 12 },
+    autoClosingBrackets: 'never',
+    autoClosingQuotes: 'never',
+  })
+}
+
+// Initialize editor
+const initEditor = async (): Promise<void> => {
+  if (!expressionEditorContainer.value || expressionEditor) return
+  expressionEditor = createEditor(expressionEditorContainer.value, newFunction.value.expression)
+
+  // Dispose of previous completion provider if it exists
+  if (completionProvider) {
+    completionProvider.dispose()
+    completionProvider = null
+  }
+
+  // Configure auto-completion for data lake variables
+  completionProvider = monaco.languages.registerCompletionItemProvider('javascript', {
+    triggerCharacters: ['{'],
+    provideCompletionItems: (model, position) => {
+      const textUntilPosition = model.getValueInRange({
+        startLineNumber: position.lineNumber,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+      })
+
+      if (!textUntilPosition.endsWith('{{')) {
+        return { suggestions: [] }
+      }
+
+      const suggestions = Object.entries(variablesMap.value).map(([id, variable]) => ({
+        label: variable.name,
+        kind: monaco.languages.CompletionItemKind.Variable,
+        insertText: `${id}}}`,
+        detail: `${variable.type} - ${variable.description || 'No description'}`,
+        range: {
+          startLineNumber: position.lineNumber,
+          startColumn: position.column,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column,
+        },
+      }))
+
+      return { suggestions }
+    },
+  })
+
+  // Watch for changes
+  expressionEditor.onDidChangeModelContent(() => {
+    if (expressionEditor) {
+      newFunction.value.expression = expressionEditor.getValue()
+    }
+  })
+}
+
+// Clean up editor
+const finishEditor = (): void => {
+  if (expressionEditor) {
+    expressionEditor.dispose()
+    expressionEditor = null
+  }
+  if (completionProvider) {
+    completionProvider.dispose()
+    completionProvider = null
+  }
+}
+
+// Update editor when dialog opens/closes
+watch(showNewFunctionDialog, async (newValue) => {
+  if (newValue) {
+    await nextTick()
+    await initEditor()
+  } else {
+    finishEditor()
+  }
+})
+
+// Update editor when editing an existing function
+watch(
+  () => newFunction.value.expression,
+  (newValue) => {
+    if (expressionEditor && expressionEditor.getValue() !== newValue) {
+      expressionEditor.setValue(newValue)
+    }
+  }
+)
+
+onBeforeUnmount(() => {
+  finishEditor()
+})
 
 // Load available variables when mounted
 let variablesInfoListener: string | undefined = undefined
