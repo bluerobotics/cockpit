@@ -224,3 +224,17 @@ export const humanizeString = (str: string): string => {
     .trim()
     .replace(/\b\w/g, (match) => match.toUpperCase())
 }
+
+/**
+ * Convert a string to a machine-friendly version of it
+ * @param {string} str The string to convert
+ * @returns {string} The machine-friendly string
+ */
+export const machinizeString = (str: string): string => {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-zA-Z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
