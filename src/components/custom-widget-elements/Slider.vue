@@ -38,12 +38,7 @@
 import { toRefs } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
-import {
-  deleteDataLakeVariable,
-  listenDataLakeVariable,
-  setDataLakeVariableData,
-  unlistenDataLakeVariable,
-} from '@/libs/actions/data-lake'
+import { listenDataLakeVariable, setDataLakeVariableData, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -123,7 +118,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (miniWidget.value.options.dataLakeVariable) {
-    deleteDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
     if (listenerId) {
       unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, listenerId)
     }
