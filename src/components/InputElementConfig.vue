@@ -423,6 +423,7 @@ watch(
       description: '',
     }
     openNewDataLakeVariableForm.value = false
+    openDataLakeVariableSelector.value = false
     if (newValue && newValue.hash) {
       widgetStore.miniWidgetManagerVars(newValue.hash).configMenuOpen = false
     }
@@ -569,11 +570,9 @@ const deleteElement = (): void => {
     try {
       widgetStore.removeElementFromCustomWidget(currentElement.value.hash)
       widgetStore.elementToShowOnDrawer = undefined
-      deleteParameterFromDataLake()
     } catch (e) {
       widgetStore.deleteMiniWidget(currentElement.value as any) // eslint-disable-line
     }
-    deleteParameterFromDataLake()
   }
 }
 
