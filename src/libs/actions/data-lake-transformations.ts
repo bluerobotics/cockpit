@@ -33,24 +33,72 @@ const saveTransformingFunctions = (): void => {
 
 const getExpressionValue = (func: TransformingFunction): string | number | boolean => {
   const expressionWithValues = replaceDataLakeInputsInString(func.expression)
+
+  // If the expression contains a return statement, we can just evaluate it directly
   if (func.expression.includes('return')) {
     return eval(`(function() { ${expressionWithValues} })()`)
   }
-  return eval(`(function() { return ${expressionWithValues} })()`)
+
+  // If the expression doesn't contain comments, we can just add a return statement in the beggining and evaluate it
+  if (!expressionWithValues.includes('//') && !expressionWithValues.includes('/*')) {
+    return eval(`(function() { return ${expressionWithValues} })()`)
+  }
+
+  // If the expression contains comments, we need to remove the comment lines and add a return statement in the beggining
+  const lines = expressionWithValues.split('\n')
+  let multiLineCommentOngoing = false
+  for (const line of lines) {
+    if (line.trim().startsWith('/*') && line.trim().endsWith('*/')) {
+      continue
+    }
+    if (line.trim().startsWith('/*')) {
+      multiLineCommentOngoing = true
+      continue
+    }
+    if (line.trim().includes('*/')) {
+      multiLineCommentOngoing = false
+      continue
+    }
+    if (!line.trim().startsWith('//') && !multiLineCommentOngoing && line.trim().length > 0) {
+      return eval(`(function() { return ${line.trim()} })()`)
+    }
+  }
+
+  throw new Error('Function has no return statement and has comments on all lines.')
 }
 
 const variablesListeners: Record<string, Record<string, string[]>> = {}
 
 const nextDelayToEvaluateFaillingTransformingFunction: Record<string, number> = {}
 const lastTimeTriedToEvaluateFaillingTransformingFunction: Record<string, number> = {}
+const initialEvaluationTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
 
 const setupTransformingFunctionsListeners = (): void => {
   globalTransformingFunctions.forEach((func) => {
+    // This function is used to evaluate the transforming function when it's created.
+    // It's called when the transforming function is created and then every 1000ms until it succeeds, with a max of 10 tries.
+    const performInitialEvaluation = (timesTried = 0): void => {
+      try {
+        setDataLakeVariableData(func.id, getExpressionValue(func))
+        clearTimeout(initialEvaluationTimeouts[func.id])
+      } catch (error) {
+        console.error(`Error setting initial value for transforming function '${func.id}'. Error: ${error}`)
+        if (timesTried < 10) {
+          initialEvaluationTimeouts[func.id] = setTimeout(() => performInitialEvaluation(timesTried + 1), 1000)
+        } else {
+          console.error(`Failed to set initial value for transforming function '${func.id}'. Won't try again.`)
+        }
+      }
+    }
+    initialEvaluationTimeouts[func.id] = setTimeout(performInitialEvaluation, 1000)
+
     const dataLakeVariablesInExpression = getDataLakeVariableIdFromInput(func.expression)
     if (dataLakeVariablesInExpression) {
       const variableIds = findDataLakeVariablesIdsInString(func.expression)
       variableIds.forEach((variableId) => {
         const listenerId = listenDataLakeVariable(variableId, () => {
+          // If the variable changes, we don't need to perform the initial evaluation again
+          clearTimeout(initialEvaluationTimeouts[func.id])
           try {
             // If the function is failing, we don't want to evaluate it too often
             const currentDelay = nextDelayToEvaluateFaillingTransformingFunction[func.id] || 10
@@ -58,8 +106,7 @@ const setupTransformingFunctionsListeners = (): void => {
             if (currentDelay > 0 && lastTimeTried + currentDelay > Date.now()) {
               return
             } else {
-              const expressionValue = getExpressionValue(func)
-              setDataLakeVariableData(func.id, expressionValue)
+              setDataLakeVariableData(func.id, getExpressionValue(func))
             }
           } catch (error) {
             lastTimeTriedToEvaluateFaillingTransformingFunction[func.id] = Date.now()
