@@ -357,7 +357,6 @@ import { useWidgetManagerStore } from './stores/widgetManager'
 import { SubMenuComponent } from './types/general'
 import ConfigurationActionsView from './views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from './views/ConfigurationAlertsView.vue'
-import ConfigurationDataLakeView from './views/ConfigurationDataLakeView.vue'
 import ConfigurationDevelopmentView from './views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from './views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from './views/ConfigurationJoystickView.vue'
@@ -439,12 +438,6 @@ const configMenu = [
     title: 'Actions',
     componentName: SubMenuComponentName.SettingsActions,
     component: markRaw(ConfigurationActionsView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-database-outline',
-    title: 'Data Lake',
-    componentName: SubMenuComponentName.SettingsDataLake,
-    component: markRaw(ConfigurationDataLakeView) as SubMenuComponent,
   },
 ]
 

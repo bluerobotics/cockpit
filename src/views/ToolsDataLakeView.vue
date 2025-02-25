@@ -24,6 +24,10 @@
                     @click="searchQuery = ''"
                   />
                 </div>
+                <v-btn variant="text" class="rounded-md" @click="openNewFunctionDialog">
+                  <v-icon start>mdi-plus</v-icon>
+                  Add compound variable
+                </v-btn>
               </div>
               <v-data-table
                 :items="filteredVariables"
@@ -32,25 +36,14 @@
                 class="w-full h-full rounded-md bg-[#FFFFFF11] elevation-1"
                 theme="dark"
                 :style="interfaceStore.globalGlassMenuStyles"
-                :headers="[
-                  { title: 'Name', align: 'start', key: 'name', width: '220px', fixed: true },
-                  { title: 'ID', align: 'start', key: 'id', width: '200px', fixed: true },
-                  { title: 'Type', align: 'center', key: 'type', width: '100px', fixed: true },
-                  { title: 'Current Value', align: 'start', key: 'value', width: '220px', fixed: true },
-                ]"
+                :headers="tableHeaders"
                 :header-props="{ style: { backgroundColor: 'rgba(0, 0, 0, 0.1)' } }"
                 @update:current-items="(currentItems) => updateListOfActiveVariables(currentItems)"
               >
                 <template #item="{ item }">
                   <tr>
                     <td>
-                      <div class="flex items-center justify-left rounded-xl mx-1 w-[220px]">
-                        <p class="w-full whitespace-nowrap overflow-hidden text-ellipsis">{{ item.name }}</p>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="flex items-center justify-start gap-2 rounded-xl mx-1">
-                        <p class="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis">{{ item.id }}</p>
+                      <div class="flex items-center justify-left gap-2 rounded-xl m-1">
                         <button
                           :class="[
                             'transition-colors',
@@ -65,11 +58,13 @@
                           <span class="mdi mdi-content-copy" />
                           <div
                             v-if="copiedId === item.id"
-                            class="absolute -top-7 left-1/2 -translate-x-1/2 bg-green-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-10"
+                            class="absolute -top-5 left-1/2 translate-x-2 bg-green-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-10"
                           >
                             Variable ID copied!
                           </div>
                         </button>
+
+                        <p class="w-[180px] whitespace-nowrap overflow-hidden text-ellipsis">{{ item.name }}</p>
                       </div>
                     </td>
                     <td>
@@ -80,17 +75,45 @@
                       </div>
                     </td>
                     <td>
+                      <div class="flex items-center justify-center rounded-xl mx-1">
+                        <p class="w-[120px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                          {{ item.source }}
+                        </p>
+                      </div>
+                    </td>
+                    <td>
                       <div class="flex items-center justify-start rounded-xl mx-1">
                         <p class="w-[220px] whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono">
                           {{ parsedCurrentValue(item.id) }}
                         </p>
                       </div>
                     </td>
+                    <td>
+                      <div class="flex items-center justify-end h-[42px] -mr-2">
+                        <v-btn
+                          v-if="isCompoundVariable(item.id)"
+                          variant="outlined"
+                          class="rounded-full mx-1"
+                          icon="mdi-pencil"
+                          size="x-small"
+                          @click="editCompoundVariable(item.id)"
+                        />
+                        <v-btn
+                          v-if="isCompoundVariable(item.id)"
+                          variant="outlined"
+                          color="error"
+                          class="rounded-full mx-1"
+                          icon="mdi-delete"
+                          size="x-small"
+                          @click="deleteCompoundVariable(item.id)"
+                        />
+                      </div>
+                    </td>
                   </tr>
                 </template>
                 <template #no-data>
                   <tr>
-                    <td colspan="4" class="text-center flex items-center justify-center h-[50px] w-full">
+                    <td colspan="5" class="text-center flex items-center justify-center h-[50px] w-full">
                       <p class="text-[16px] ml-[170px] w-full">No data lake variables found</p>
                     </td>
                   </tr>
@@ -102,6 +125,12 @@
       </div>
     </template>
   </BaseConfigurationView>
+
+  <TransformingFunctionDialog
+    v-model="showNewFunctionDialog"
+    :edit-function="functionBeingEdited"
+    @saved="handleFunctionSaved"
+  />
 </template>
 
 <script setup lang="ts">
@@ -109,6 +138,7 @@ import Fuse from 'fuse.js'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import TransformingFunctionDialog from '@/components/TransformingFunctionDialog.vue'
 import {
   DataLakeVariable,
   getAllDataLakeVariablesInfo,
@@ -118,12 +148,25 @@ import {
   unlistenDataLakeVariable,
   unlistenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
+import {
+  deleteTransformingFunction,
+  getAllTransformingFunctions,
+  TransformingFunction,
+} from '@/libs/actions/data-lake-transformations'
 import { copyToClipboard } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
+
+const tableHeaders = [
+  { title: 'Name', align: 'start', key: 'name', width: '220px', fixed: true, headerProps: { class: 'pl-10' } },
+  { title: 'Type', align: 'center', key: 'type', width: '100px', fixed: true },
+  { title: 'Source', align: 'center', key: 'source', width: '120px', fixed: true },
+  { title: 'Current Value', align: 'start', key: 'value', width: '220px', fixed: true },
+  { title: 'Actions', align: 'end', key: 'actions', width: '100px', fixed: true },
+]
 
 const copiedId = ref<string | null>(null)
 const handleCopy = async (id: string): Promise<void> => {
@@ -201,19 +244,62 @@ const searchQuery = ref('')
  * Uses Fuse.js for fuzzy search on variable names and descriptions
  */
 const filteredVariables = computed(() => {
-  if (!searchQuery.value) return availableDataLakeVariables.value
+  const variables = availableDataLakeVariables.value.map((v) => ({
+    ...v,
+    source: isCompoundVariable(v.id) ? 'Compound' : 'Cockpit internal',
+  }))
 
-  const fuse = new Fuse<DataLakeVariable>(availableDataLakeVariables.value, {
-    keys: ['name', 'description'],
+  if (!searchQuery.value) return variables
+
+  const fuse = new Fuse<DataLakeVariable>(variables, {
+    keys: ['name', 'description', 'id', 'source'],
     threshold: 0.3,
   })
   return fuse.search(searchQuery.value).map((result) => result.item)
 })
 
 // Do not listen to variables that are not in the list, so we don't use unnecessary CPU/Memory resources
-const updateListOfActiveVariables = (currentItems: DataLakeVariable[]): void => {
+// eslint-disable-next-line jsdoc/require-jsdoc
+const updateListOfActiveVariables = (currentItems: { key: string }[]): void => {
   const currentItemsIds = currentItems.map((v) => v.key)
   setupVariableListeners(currentItemsIds)
+}
+
+// Compound variables functionality
+const showNewFunctionDialog = ref(false)
+const functionBeingEdited = ref<TransformingFunction | undefined>(undefined)
+
+const isCompoundVariable = (id: string): boolean => {
+  return getAllTransformingFunctions().some((func) => func.id === id)
+}
+
+const editCompoundVariable = (id: string): void => {
+  const func = getAllTransformingFunctions().find((f) => f.id === id)
+  if (func) {
+    functionBeingEdited.value = func
+    showNewFunctionDialog.value = true
+  }
+}
+
+const openNewFunctionDialog = (): void => {
+  functionBeingEdited.value = undefined
+  showNewFunctionDialog.value = true
+}
+
+const handleFunctionSaved = (): void => {
+  showNewFunctionDialog.value = false
+}
+
+watch(showNewFunctionDialog, (show) => {
+  if (show) return
+  functionBeingEdited.value = undefined
+})
+
+const deleteCompoundVariable = (id: string): void => {
+  const func = getAllTransformingFunctions().find((f) => f.id === id)
+  if (func) {
+    deleteTransformingFunction(func)
+  }
 }
 </script>
 
