@@ -32,7 +32,11 @@ export const getBagOfHoldingFromVehicle = async (
 ): Promise<Record<string, any> | any> => {
   try {
     const options = { timeout: defaultTimeout, retry: 0 }
-    return await ky.get(`http://${vehicleAddress}/bag/v1.0/get/${bagPath}`, options).json()
+    const res = await ky.get(`http://${vehicleAddress}/bag/v1.0/get/${bagPath}`, options)
+    if (res === undefined || !res.ok) {
+      throw new Error(`Could not get bag of holdings for ${bagPath}. ${res?.statusText}`)
+    }
+    return await res.json()
   } catch (error) {
     const errorBody = await (error as HTTPError).response.json()
     if (errorBody.detail === 'Invalid path') {
