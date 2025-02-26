@@ -70,6 +70,16 @@ export const replaceDataLakeInputsInString = (input: string, replaceFunction?: (
   return input.toString().replace(dataLakeInputRegex, (match) => replaceFunctionToUse(match))
 }
 
+/**
+ * Find all data lake variable ids in a string.
+ * @param {string} input The string to search for data lake variable ids
+ * @returns {string[]} An array of data lake variable ids
+ */
+export const findDataLakeVariablesIdsInString = (input: string): string[] => {
+  const inputs = findDataLakeInputsInString(input)
+  return inputs.map((i) => getDataLakeVariableIdFromInput(i)).filter((id) => id !== null)
+}
+
 export const replaceDataLakeInputsInJsonString = (jsonString: string): string => {
   let parsedJson = jsonString
 

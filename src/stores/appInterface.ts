@@ -28,6 +28,7 @@ export enum SubMenuComponentName {
   SettingsDev = 'settings-dev',
   SettingsMission = 'settings-mission',
   SettingsActions = 'settings-actions',
+  SettingsDataLake = 'settings-datalake',
   ToolsMAVLink = 'tools-mavlink',
   ToolsDataLake = 'tools-datalake',
 }
