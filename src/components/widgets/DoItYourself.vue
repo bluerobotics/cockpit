@@ -62,7 +62,15 @@
         <v-card-actions>
           <div class="flex justify-between items-center px-4 w-full h-full">
             <v-btn class="text-white/60" variant="text" @click="closeDialog">Close</v-btn>
-            <div class="flex gap-x-10">
+            <div class="flex gap-x-3">
+              <v-btn class="text-white/60" variant="text" title="Export configuration" @click="exportConfig">
+                <v-icon class="mr-1 mt-[2px]">mdi-download</v-icon>
+                Export
+              </v-btn>
+              <v-btn class="text-white/60 mr-10" variant="text" title="Import configuration" @click="importConfig">
+                <v-icon class="mr-1 mt-[2px]">mdi-upload</v-icon>
+                Import
+              </v-btn>
               <v-btn class="text-white/60" variant="text" @click="resetChanges">Reset</v-btn>
               <v-btn class="text-white" variant="text" @click="applyChanges">Apply</v-btn>
             </div>
@@ -272,6 +280,84 @@ const finishEditor = (): void => {
 const closeDialog = (): void => {
   widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen = false
   finishEditor()
+}
+
+// Function to export configuration as a JSON file
+const exportConfig = (): void => {
+  if (!htmlEditor || !cssEditor || !jsEditor) return
+
+  // Create configuration object
+  const config = {
+    html: htmlEditor.getValue(),
+    css: cssEditor.getValue(),
+    js: jsEditor.getValue(),
+  }
+
+  // Create file content as JSON string
+  const fileContent = JSON.stringify(config, null, 2)
+
+  // Create blob with JSON content
+  const blob = new Blob([fileContent], { type: 'application/json' })
+
+  // Create URL for the blob
+  const url = URL.createObjectURL(blob)
+
+  // Create a temporary link element to trigger download
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'diy-widget-config.json'
+  document.body.appendChild(link)
+  link.click()
+
+  // Clean up
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+// Function to import configuration from a JSON file
+const importConfig = (): void => {
+  // Create a temporary file input element
+  const input = document.createElement('input')
+  input.type = 'file'
+
+  // Handle file selection
+  input.onchange = (event) => {
+    const target = event.target as HTMLInputElement
+    if (!target.files || !target.files[0] || !htmlEditor || !cssEditor || !jsEditor) return
+
+    const file = target.files[0]
+    const reader = new FileReader()
+
+    reader.onload = (e) => {
+      try {
+        const result = e.target?.result as string
+        const config = JSON.parse(result)
+
+        // Validate the imported configuration
+        if (!config.html || !config.css || !config.js) {
+          throw new Error('Invalid configuration file')
+        }
+
+        // Update the editors with the imported values
+        if (htmlEditor) htmlEditor.setValue(config.html)
+        if (cssEditor) cssEditor.setValue(config.css)
+        if (jsEditor) jsEditor.setValue(config.js)
+
+        // Apply changes
+        applyChanges()
+      } catch (error) {
+        console.error('Error importing configuration:', error)
+        alert('Invalid configuration file')
+      }
+    }
+
+    reader.readAsText(file)
+  }
+
+  // Trigger file input dialog
+  document.body.appendChild(input)
+  input.click()
+  document.body.removeChild(input)
 }
 
 // Add computed property for editor heights
