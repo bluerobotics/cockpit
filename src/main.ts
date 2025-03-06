@@ -18,6 +18,7 @@ import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { runMigrations } from '@/utils/migrations'
 
 import App from './App.vue'
+import { setupPredefinedLakeAndActionResources } from './libs/joystick/protocols/predefined-resources'
 import { setupPostPiniaConnections } from './libs/post-pinia-connections'
 import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
@@ -62,3 +63,6 @@ useOmniscientLoggerStore()
 
 // Post-pinia connections setup
 setupPostPiniaConnections()
+
+// Setup predefined data-lake variables, Cockpit actions, transforming functions and action-links
+setupPredefinedLakeAndActionResources()
