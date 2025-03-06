@@ -18,6 +18,7 @@ import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { runMigrations } from '@/utils/migrations'
 
 import App from './App.vue'
+import { contextMenu } from './directives/contextMenu'
 import { setupPostPiniaConnections } from './libs/post-pinia-connections'
 import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
@@ -54,6 +55,7 @@ if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry') && 
 
 app.component('FontAwesomeIcon', FontAwesomeIcon)
 app.component('VueDraggableResizable', VueDraggableResizable)
+app.directive('contextmenu', contextMenu)
 app.use(router).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
 app.mount('#app')
 
