@@ -6,6 +6,28 @@ import { v4 as uuid } from 'uuid'
 export type DataLakeVariableType = 'string' | 'number' | 'boolean'
 
 /**
+ * A configuration for a Data Lake variable
+ */
+export interface DataLakeVariableConfig {
+  /**
+   * The id of the variable
+   */
+  id: string
+  /**
+   * The name of the variable
+   */
+  name: string
+  /**
+   * The type of the variable
+   */
+  type: DataLakeVariableType
+  /**
+   * What the variable does or means
+   */
+  description?: string
+}
+
+/**
  * A variable to be used on a Cockpit action
  * @param { string } id - The id of the variable
  * @param { string } name - The name of the variable
@@ -14,7 +36,7 @@ export type DataLakeVariableType = 'string' | 'number' | 'boolean'
  * @param { boolean } persistent - Whether the variable should be persisted between boots
  * @param { boolean } persistValue - Whether the variable's value should be persisted between boots
  */
-export class DataLakeVariable {
+export class DataLakeVariable implements DataLakeVariableConfig {
   id: string
   name: string
   type: DataLakeVariableType
