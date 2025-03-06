@@ -17,7 +17,6 @@ import { miniWidgetsProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { resetJustMadeKey, useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
-import { useSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import * as Words from '@/libs/funny-name/words'
 import {
@@ -45,7 +44,6 @@ import {
 } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
-const { openSnackbar } = useSnackbar()
 
 export const savedProfilesKey = 'cockpit-saved-profiles-v8'
 
