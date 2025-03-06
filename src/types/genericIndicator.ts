@@ -88,4 +88,11 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     variableUnit: '',
     variableMultiplier: 1,
   },
+  {
+    displayName: 'Altitude',
+    variableName: 'RANGEFINDER/distance',
+    iconName: 'mdi-arrow-collapse-down',
+    variableUnit: 'm',
+    variableMultiplier: 1,
+  },
 ]
