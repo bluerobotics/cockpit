@@ -1,6 +1,7 @@
 <template>
   <div
-    class="flex fixed w-[250px] h-[78vh] right-0 top-0 border-l-[1px] border-[#FFFFFF44] text-white elevation-5 bg-[#051e2d]"
+    class="flex fixed w-[250px] right-0 top-0 border-l-[1px] border-[#FFFFFF44] text-white elevation-5 bg-[#051e2d]"
+    :style="getMarginsFromBarsHeight"
   >
     <div class="flex flex-col text-center">
       <v-btn
@@ -429,6 +430,15 @@ watch(
     }
   }
 )
+
+const getMarginsFromBarsHeight = computed(() => {
+  return {
+    marginTop: widgetStore.currentTopBarHeightPixels + 'px',
+    marginBottom: widgetStore.currentBottomBarHeightPixels + 'px',
+    height:
+      window.innerHeight - widgetStore.currentTopBarHeightPixels - widgetStore.currentBottomBarHeightPixels - 1 + 'px',
+  }
+})
 
 const handleResetVariable = (): void => {
   currentElement.value!.options.dataLakeVariable = undefined
