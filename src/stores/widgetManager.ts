@@ -71,6 +71,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const widgetToEdit = ref<Widget>()
   const miniWidgetLastValues = useBlueOsStorage<Record<string, any>>('cockpit-mini-widget-last-values', {})
   const floatingWidgetContainers = ref<MiniWidgetContainer[]>([])
+  const currentContextMenu = ref<any | null>(null)
 
   const editWidgetByHash = (hash: string): Widget | undefined => {
     widgetToEdit.value = currentProfile.value.views
@@ -934,5 +935,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     setMiniWidgetLastValue,
     getMiniWidgetLastValue,
     copyWidgetToView,
+    currentContextMenu,
   }
 })
