@@ -21,11 +21,12 @@ export type JavascriptActionConfig = {
 
 let registeredJavascriptActionConfigs: Record<string, JavascriptActionConfig> = {}
 
-export const registerJavascriptActionConfig = (action: JavascriptActionConfig): void => {
+export const registerJavascriptActionConfig = (action: JavascriptActionConfig): string => {
   const id = `${javascriptActionIdPrefix} (${action.name})`
   registeredJavascriptActionConfigs[id] = action
   saveJavascriptActionConfigs()
   updateCockpitActions()
+  return id
 }
 
 export const getJavascriptActionConfig = (id: string): JavascriptActionConfig | undefined => {

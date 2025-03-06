@@ -59,11 +59,12 @@ export type MavlinkMessageActionConfig = {
 
 let registeredMavlinkMessageActionConfigs: Record<string, MavlinkMessageActionConfig> = {}
 
-export const registerMavlinkMessageActionConfig = (action: MavlinkMessageActionConfig): void => {
+export const registerMavlinkMessageActionConfig = (action: MavlinkMessageActionConfig): string => {
   const id = `${mavlinkMessageActionIdPrefix} (${action.name})`
   registeredMavlinkMessageActionConfigs[id] = action
   saveMavlinkMessageActionConfigs()
   updateCockpitActions()
+  return id
 }
 
 export const getMavlinkMessageActionConfig = (id: string): MavlinkMessageActionConfig | undefined => {

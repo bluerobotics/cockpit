@@ -51,11 +51,12 @@ export type HttpRequestActionConfig = {
 
 let registeredHttpRequestActionConfigs: Record<string, HttpRequestActionConfig> = {}
 
-export const registerHttpRequestActionConfig = (action: HttpRequestActionConfig): void => {
+export const registerHttpRequestActionConfig = (action: HttpRequestActionConfig): string => {
   const id = `${httpRequestActionIdPrefix} (${action.name})`
   registeredHttpRequestActionConfigs[id] = action
   saveHttpRequestActionConfigs()
   updateCockpitActions()
+  return id
 }
 
 export const getHttpRequestActionConfig = (id: string): HttpRequestActionConfig | undefined => {
