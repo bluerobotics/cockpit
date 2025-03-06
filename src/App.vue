@@ -313,6 +313,7 @@
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
+  <ActionDiscoveryModal auto-check-on-mount />
   <UpdateNotification v-if="isElectron()" />
   <SnackbarContainer />
 </template>
@@ -330,6 +331,7 @@ import InfoIcon from '@/assets/icons/info.svg'
 import MissionPlanningIcon from '@/assets/icons/mission-planning.svg'
 import SettingsIcon from '@/assets/icons/settings.svg'
 import ToolsIcon from '@/assets/icons/tools.svg'
+import ActionDiscoveryModal from '@/components/ActionDiscoveryModal.vue'
 import GlassModal from '@/components/GlassModal.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'
