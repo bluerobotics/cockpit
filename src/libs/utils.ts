@@ -238,3 +238,40 @@ export const machinizeString = (str: string): string => {
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
+
+/**
+ * Get an unindented string
+ * Trims all lines by the same amount of whitespace, so that the string is not indented
+ * @param {string} str The string to unindent
+ * @returns {string} The unindented string
+ */
+export const getUnindentedString = (str: string): string => {
+  const originalLines = str.split('\n')
+
+  // Calculate the minimum indentation between all non-empty lines
+  let minIndentation = Infinity
+  for (const line of originalLines) {
+    if (line.trim() === '') {
+      // Do not consider empty lines for calculating the minimum indentation
+      continue
+    } else if (!line.startsWith(' ')) {
+      // If there's an unindented non-empty line, there's no general minimum indentation
+      minIndentation = 0
+      break
+    } else {
+      const indentation = line.match(/^\s*/)?.[0].length || 0
+      minIndentation = Math.min(minIndentation, indentation)
+    }
+  }
+
+  // Unindent all lines
+  const unindentedLines = []
+  for (const [index, line] of originalLines.entries()) {
+    if (index === 0 && line.trim() === '') {
+      continue
+    }
+    unindentedLines.push(line.slice(minIndentation))
+  }
+
+  return unindentedLines.join('\n')
+}
