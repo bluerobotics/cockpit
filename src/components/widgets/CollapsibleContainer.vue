@@ -153,93 +153,102 @@
   </div>
 
   <Teleport to="body">
-    <GlassModal :is-visible="widgetStore.widgetManagerVars(widget.hash).configMenuOpen">
-      <v-card class="px-8 pb-6 pt-2 rounded-lg w-[400px] bg-transparent">
-        <v-card-title class="text-center -mt-1">Custom Widget options</v-card-title>
-        <v-btn
-          class="absolute top-3 right-0 text-lg rounded-full"
-          variant="text"
-          size="small"
-          @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false"
+    <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" persistent>
+      <GlassModal :is-visible="widgetStore.widgetManagerVars(widget.hash).configMenuOpen">
+        <v-card class="px-8 pb-6 pt-2 rounded-lg w-[400px] bg-transparent">
+          <v-card-title class="text-center -mt-1">Custom Widget options</v-card-title>
+          <v-btn
+            class="absolute top-3 right-0 text-lg rounded-full"
+            variant="text"
+            size="small"
+            @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+          <div class="flex flex-col justify-start items-start gap-x-4 mt-3 w-full">
+            <p class="text-start">Name:</p>
+            <v-text-field ref="nameInput" v-model="widget.name" density="compact" class="w-3/4" />
+            <p class="text-start">Columns:</p>
+            <v-text-field
+              ref="nameInput"
+              v-model="widget.options.columns"
+              min="1"
+              max="2"
+              type="number"
+              density="compact"
+              class="w-1/4"
+            />
+            <p class="mt-1">Background color</p>
+            <input v-model="widget.options.backgroundColor" type="color" class="p-0 w-20 mr-4" />
+            <p class="mt-3">Background opacity:</p>
+            <v-slider
+              v-model="widget.options.backgroundOpacity"
+              min="0"
+              max="1"
+              color="white"
+              thumb-label
+              width="250"
+            />
+            <p class="mt-3">Background blur:</p>
+            <v-slider v-model="widget.options.backgroundBlur" min="0" max="100" color="white" thumb-label width="250" />
+          </div>
+        </v-card>
+      </GlassModal>
+
+      <Transition>
+        <div
+          v-if="showWidgetTrashArea"
+          ref="widgetTrashArea"
+          class="absolute w-32 h-32 -translate-x-32 -translate-y-32 bottom-[20%] left-1/3 bg-[#FF000055] z-[65] rounded-xl flex items-center justify-center hover:bg-slate-200/50 transition-all"
         >
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-        <div class="flex flex-col justify-start items-start gap-x-4 mt-3 w-full">
-          <p class="text-start">Name:</p>
-          <v-text-field ref="nameInput" v-model="widget.name" density="compact" class="w-3/4" />
-          <p class="text-start">Columns:</p>
-          <v-text-field
-            ref="nameInput"
-            v-model="widget.options.columns"
-            min="1"
-            max="2"
-            type="number"
-            density="compact"
-            class="w-1/4"
-          />
-          <p class="mt-1">Background color</p>
-          <input v-model="widget.options.backgroundColor" type="color" class="p-0 w-20 mr-4" />
-          <p class="mt-3">Background opacity:</p>
-          <v-slider v-model="widget.options.backgroundOpacity" min="0" max="1" color="white" thumb-label width="250" />
-          <p class="mt-3">Background blur:</p>
-          <v-slider v-model="widget.options.backgroundBlur" min="0" max="100" color="white" thumb-label width="250" />
-        </div>
-      </v-card>
-    </GlassModal>
-
-    <Transition>
-      <div
-        v-if="showWidgetTrashArea"
-        ref="widgetTrashArea"
-        class="absolute w-32 h-32 -translate-x-32 -translate-y-32 bottom-[20%] left-1/3 bg-[#FF000055] z-[65] rounded-xl flex items-center justify-center hover:bg-slate-200/50 transition-all"
-      >
-        <div class="relative flex justify-center items-center w-full h-full">
-          <FontAwesomeIcon
-            icon="fa-solid fa-trash"
-            class="absolute h-16 transition-all -translate-x-7 -translate-y-8 top-1/2 left-1/2 text-white"
-          />
-          <VueDraggable
-            v-model="trashList"
-            :animation="150"
-            group="generalGroup"
-            class="flex flex-wrap items-center justify-center w-full h-full gap-2"
-            @add="handleDeleteWidget"
-          >
-            <div v-for="miniWidget in trashList" :key="miniWidget.hash">
-              <div class="select-none">
-                <MiniWidgetInstantiator :mini-widget="miniWidget" />
-              </div>
-            </div>
-          </VueDraggable>
-        </div>
-      </div>
-    </Transition>
-
-    <GlassModal :is-visible="selectViewToShareDialog">
-      <v-card class="px-3 pb-6 pt-2 rounded-lg w-auto bg-transparent z-40">
-        <v-card-title class="flex justify-around -mt-1 w-full px-0">
-          <div />
-          <p class="mx-8">Clone widget to</p>
-          <v-icon class="cursor-pointer self-end" @click="selectViewToShareDialog = false">mdi-close</v-icon>
-        </v-card-title>
-        <div class="flex w-full justify-center items-center mt-4">
-          <select
-            v-model="selectedViewToShareWidget"
-            class="bg-[#50505022] dark:bg-gray-800 dark:text-white w-[180px] p-2 border border-gray-300 dark:border-gray-600 rounded appearance-none"
-            @change="handleCopyWidgetToView"
-          >
-            <option
-              v-for="view in widgetStore.currentProfile.views"
-              :key="view.name"
-              :value="view.name"
-              class="bg-gray-800 dark:bg-gray-800 dark:text-white"
+          <div class="relative flex justify-center items-center w-full h-full">
+            <FontAwesomeIcon
+              icon="fa-solid fa-trash"
+              class="absolute h-16 transition-all -translate-x-7 -translate-y-8 top-1/2 left-1/2 text-white"
+            />
+            <VueDraggable
+              v-model="trashList"
+              :animation="150"
+              group="generalGroup"
+              class="flex flex-wrap items-center justify-center w-full h-full gap-2"
+              @add="handleDeleteWidget"
             >
-              {{ view.name }}
-            </option>
-          </select>
+              <div v-for="miniWidget in trashList" :key="miniWidget.hash">
+                <div class="select-none">
+                  <MiniWidgetInstantiator :mini-widget="miniWidget" />
+                </div>
+              </div>
+            </VueDraggable>
+          </div>
         </div>
-      </v-card>
-    </GlassModal>
+      </Transition>
+
+      <GlassModal :is-visible="selectViewToShareDialog">
+        <v-card class="px-3 pb-6 pt-2 rounded-lg w-auto bg-transparent z-40">
+          <v-card-title class="flex justify-around -mt-1 w-full px-0">
+            <div />
+            <p class="mx-8">Clone widget to</p>
+            <v-icon class="cursor-pointer self-end" @click="selectViewToShareDialog = false">mdi-close</v-icon>
+          </v-card-title>
+          <div class="flex w-full justify-center items-center mt-4">
+            <select
+              v-model="selectedViewToShareWidget"
+              class="bg-[#50505022] dark:bg-gray-800 dark:text-white w-[180px] p-2 border border-gray-300 dark:border-gray-600 rounded appearance-none"
+              @change="handleCopyWidgetToView"
+            >
+              <option
+                v-for="view in widgetStore.currentProfile.views"
+                :key="view.name"
+                :value="view.name"
+                class="bg-gray-800 dark:bg-gray-800 dark:text-white"
+              >
+                {{ view.name }}
+              </option>
+            </select>
+          </div>
+        </v-card>
+      </GlassModal>
+    </v-dialog>
   </Teleport>
 </template>
 
