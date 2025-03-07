@@ -219,7 +219,7 @@
         </button>
       </div>
     </div>
-    <v-tooltip location="top center" text="Home position is currently undefined" :disabled="Boolean(home)">
+    <v-tooltip location="top center" :text="centerHomeButtonTooltipText">
       <template #activator="{ props: tooltipProps }">
         <v-btn
           class="absolute m-3 rounded-sm shadow-sm bottom-14 bg-slate-50"
@@ -234,11 +234,7 @@
         />
       </template>
     </v-tooltip>
-    <v-tooltip
-      location="top center"
-      text="Vehicle position is currently undefined"
-      :disabled="Boolean(vehiclePosition)"
-    >
+    <v-tooltip location="top center" :text="centerVehicleButtonTooltipText">
       <template #activator="{ props: tooltipProps }">
         <v-btn
           class="absolute m-3 rounded-sm shadow-sm bottom-14 bg-slate-50"
@@ -1853,6 +1849,18 @@ watch([home, planningMap], async () => {
   if (home.value === mapCenter.value || !planningMap.value || !mapNotYetCenteredInHome) return
   await goHome()
   mapNotYetCenteredInHome = false
+})
+
+const centerHomeButtonTooltipText = computed(() => {
+  if (home.value === undefined) return 'Home position is currently undefined'
+  if (targetFollower.getCurrentTarget() === WhoToFollow.HOME) return 'Tracking home position'
+  return 'Click once to center on home or twice to track it'
+})
+
+const centerVehicleButtonTooltipText = computed(() => {
+  if (vehiclePosition.value === undefined) return 'Vehicle position is currently undefined'
+  if (targetFollower.getCurrentTarget() === WhoToFollow.VEHICLE) return 'Tracking vehicle position'
+  return 'Click once to center on vehicle or twice to track it'
 })
 </script>
 
