@@ -129,3 +129,35 @@ export const executeActionCallback = (id: string): void => {
 }
 
 export const availableCockpitActions = cockpitActionsManager.availableActions
+
+/**
+ * Action configuration interface
+ */
+export interface ActionConfig {
+  /**
+   * Action ID
+   */
+  id: string
+  /**
+   * Action name
+   */
+  name: string
+  /**
+   * Action type
+   */
+  type: customActionTypes
+  /**
+   * Action configuration
+   * Specific to the action type
+   */
+  config: any
+}
+
+/**
+ * Custom action types
+ */
+export enum customActionTypes {
+  httpRequest = 'http-request',
+  mavlinkMessage = 'mavlink-message',
+  javascript = 'javascript',
+}
