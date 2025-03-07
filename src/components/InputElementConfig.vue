@@ -76,9 +76,10 @@
               <template v-if="typeof currentElement.options.layout[optionKey] === 'number'">
                 <div class="max-w-[120px]">
                   <input
-                    v-model="currentElement.options.layout[optionKey]"
+                    v-model.number="currentElement.options.layout[optionKey]"
                     type="number"
                     class="p-2 bg-[#FFFFFF11] w-[128px]"
+                    @blur="validateNumber(optionKey)"
                   />
                 </div>
               </template>
@@ -435,6 +436,21 @@ const handleResetVariable = (): void => {
   futureDataLakeVariable.value = defaultDataLakeVariable
   openNewDataLakeVariableForm.value = false
   openDataLakeVariableSelector.value = false
+}
+
+const validateNumber = (optionKey: string): void => {
+  if (!currentElement.value) return
+
+  const value = currentElement.value.options.layout[optionKey]
+  if (value === '' || isNaN(Number(value))) {
+    if (optionKey === 'minValue') {
+      currentElement.value.options.layout[optionKey] = 0
+    } else if (optionKey === 'maxValue') {
+      currentElement.value.options.layout[optionKey] = currentElement.value.options.layout['minValue'] + 1
+    } else {
+      currentElement.value.options.layout[optionKey] = 0
+    }
+  }
 }
 
 const availableDataLakeVariables = computed(() => {
