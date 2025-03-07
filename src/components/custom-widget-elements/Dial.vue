@@ -192,6 +192,14 @@ const sizeClass = computed(() => {
 let lastMouseAngle = 0
 let lastUnwrappedAngle = 0
 
+const updateDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable && !widgetStore.editingMode) {
+    const roundedValue = Math.round(potentiometerValue.value)
+    widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
+    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, roundedValue)
+  }
+}
+
 const startDrag = (event: MouseEvent): void => {
   event.preventDefault()
 
@@ -235,10 +243,7 @@ const startDrag = (event: MouseEvent): void => {
     potentiometerValue.value = ((newRotationAngle + 150) / rotationRange) * valueRange + minVal
 
     if (miniWidget.value.options.dataLakeVariable) {
-      if (widgetStore.editingMode) return
-      const roundedValue = Math.round(potentiometerValue.value)
-      widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
-      setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, roundedValue)
+      updateDataLakeVariable()
     }
   }
 
@@ -255,6 +260,7 @@ const addDialValue = (): void => {
   const maxVal = miniWidget.value.options.layout?.maxValue || 100
   if (potentiometerValue.value < maxVal) {
     setDialValue(potentiometerValue.value + 1)
+    updateDataLakeVariable()
   }
 }
 
@@ -262,6 +268,7 @@ const subtractDialValue = (): void => {
   const minVal = miniWidget.value.options.layout?.minValue || 0
   if (potentiometerValue.value > minVal) {
     setDialValue(potentiometerValue.value - 1)
+    updateDataLakeVariable()
   }
 }
 
