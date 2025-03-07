@@ -161,6 +161,14 @@ export class TargetFollower {
     this.target = undefined
     this.onTargetChange(this.target)
   }
+
+  /**
+   * Returns the current target ref to follow.
+   * @returns {WhoToFollow | undefined} The current target ref to follow.
+   */
+  public getCurrentTarget(): WhoToFollow | undefined {
+    return this.target
+  }
 }
 
 /**
