@@ -755,9 +755,9 @@ const miniWidgetsBars = computed(() => {
 })
 
 const getAllMiniWidgetFromCustomWidget = (): MiniWidgetContainer[] => {
-  const allCustomBases = store.currentProfile.views
-    .flatMap((view) => view.widgets)
-    .filter((widget) => widget.component === WidgetType.CollapsibleContainer)
+  const allCustomBases = store.currentView.widgets.filter(
+    (widget) => widget.component === WidgetType.CollapsibleContainer
+  )
 
   return allCustomBases.map((base) => {
     const baseName = base.name || 'Unnamed Custom Widget'
