@@ -114,7 +114,7 @@ watch(
 const setDialValue = (value: number | string | undefined): void => {
   let numValue: number
   if (value === undefined || value === null || isNaN(Number(value))) {
-    numValue = miniWidget.value.options.layout?.minValue || 0
+    numValue = Number(miniWidget.value.options.layout?.minValue) || 0
   } else {
     numValue = Number(value)
   }
@@ -122,8 +122,8 @@ const setDialValue = (value: number | string | undefined): void => {
   potentiometerValue.value = numValue
 
   const rotationRange = 300
-  const minVal = miniWidget.value.options.layout?.minValue || 0
-  const maxVal = miniWidget.value.options.layout?.maxValue || 100
+  const minVal = Number(miniWidget.value.options.layout?.minValue) || 0
+  const maxVal = Number(miniWidget.value.options.layout?.maxValue) || 100
   const valueRange = maxVal - minVal
 
   rotationAngle.value = ((numValue - minVal) / valueRange) * rotationRange - 150
@@ -150,9 +150,12 @@ watch(
 )
 
 watch(
-  () => [miniWidget.value.options.layout?.minValue, miniWidget.value.options.layout?.maxValue],
-  () => {
-    potentiometerValue.value = miniWidget.value.options.layout?.minValue || 0
+  () => [
+    Number(miniWidget.value.options.layout?.minValue) || 0,
+    Number(miniWidget.value.options.layout?.maxValue) || 100,
+  ],
+  ([minVal]) => {
+    potentiometerValue.value = minVal
     setDialValue(potentiometerValue.value)
   },
   { immediate: true }
