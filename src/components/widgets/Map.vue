@@ -33,6 +33,7 @@
 
       <v-btn
         v-if="showButtons"
+        v-tooltip="'Download the mission that is stored in the vehicle.'"
         class="absolute m-3 bottom-button left-20 bg-slate-50"
         elevation="2"
         style="z-index: 1002; border-radius: 0px"
@@ -43,6 +44,7 @@
 
       <v-btn
         v-if="showButtons"
+        v-tooltip="'Execute the mission that is stored in the vehicle.'"
         class="absolute mb-3 ml-1 bottom-button left-32 bg-slate-50"
         elevation="2"
         style="z-index: 1002; border-radius: 0px"
