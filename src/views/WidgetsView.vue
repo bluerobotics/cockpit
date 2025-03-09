@@ -14,7 +14,7 @@
       <SnappingGrid v-if="store.snapToGrid && store.editingMode" :grid-interval="store.gridInterval" />
       <template v-for="widget in view.widgets.slice().reverse()" :key="widget.hash">
         <WidgetHugger
-          v-if="Object.values(WidgetType).includes(widget.component)"
+          v-if="componentExists(widget.component)"
           :widget="widget"
           :allow-moving="store.widgetManagerVars(widget.hash).allowMoving"
           :allow-resizing="store.editingMode"
@@ -37,14 +37,28 @@ import WidgetHugger from '../components/WidgetHugger.vue'
 
 const store = useWidgetManagerStore()
 
+// TODO: Remove this non-migration implementation once we have a better solution that doesn't cause sync conflicts
+const mappedComponentType = (componentName: string): WidgetType => {
+  const mappingWidgetComponentName = {
+    CustomWidgetBase: 'CollapsibleContainer',
+  }
+  return (mappingWidgetComponentName[componentName] || componentName) as WidgetType
+}
+
 const componentCache: Record<string, AsyncComponentLoader> = {}
 
-const componentFromType = (componentType: WidgetType): AsyncComponentLoader => {
+const componentFromType = (componentName: string): AsyncComponentLoader => {
+  const componentType = mappedComponentType(componentName)
+
   if (componentCache[componentType] === undefined) {
     componentCache[componentType] = defineAsyncComponent(() => import(`../components/widgets/${componentType}.vue`))
   }
 
   return componentCache[componentType]
+}
+
+const componentExists = (componentName: string): boolean => {
+  return Object.values(WidgetType).includes(mappedComponentType(componentName))
 }
 </script>
 
