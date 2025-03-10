@@ -1,57 +1,78 @@
 <template>
   <div ref="mapBase" class="page-base" :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'">
     <div :id="mapId" ref="map" class="map">
-      <v-btn
-        v-if="showButtons"
-        v-tooltip="home ? 'Center map on home position.' : 'Home position is currently undefined.'"
-        class="absolute left-0 m-3 bottom-button bg-slate-50"
-        :class="!home ? 'active-events-on-disabled' : ''"
-        :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-        elevation="2"
-        style="z-index: 1002; border-radius: 0px"
-        icon="mdi-home-map-marker"
-        size="x-small"
-        :disabled="!home"
-        @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-        @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-      />
+      <v-tooltip
+        location="top"
+        :text="home ? 'Center map on home position.' : 'Cannot center map on home (home position undefined).'"
+      >
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-if="showButtons"
+            v-bind="tooltipProps"
+            class="absolute left-0 m-3 bottom-button bg-slate-50"
+            :class="!home ? 'active-events-on-disabled' : ''"
+            :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+            elevation="2"
+            style="z-index: 1002; border-radius: 0px"
+            icon="mdi-home-map-marker"
+            size="x-small"
+            :disabled="!home"
+            @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+            @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+          />
+        </template>
+      </v-tooltip>
 
-      <v-btn
-        v-if="showButtons"
-        v-tooltip="vehiclePosition ? 'Center map on vehicle position.' : 'Vehicle position is currently undefined.'"
-        class="absolute m-3 bottom-button left-10 bg-slate-50"
-        :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
-        :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-        elevation="2"
-        style="z-index: 1002; border-radius: 0px"
-        icon="mdi-airplane-marker"
-        size="x-small"
-        :disabled="!vehiclePosition"
-        @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-        @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-      />
+      <v-tooltip
+        location="top"
+        :text="vehiclePosition ? 'Center map on vehicle position.' : 'Cannot center map on vehicle (vehicle offline).'"
+      >
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-if="showButtons"
+            v-bind="tooltipProps"
+            class="absolute m-3 bottom-button left-10 bg-slate-50"
+            :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
+            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+            elevation="2"
+            style="z-index: 1002; border-radius: 0px"
+            icon="mdi-airplane-marker"
+            size="x-small"
+            :disabled="!vehiclePosition"
+            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+          />
+        </template>
+      </v-tooltip>
 
-      <v-btn
-        v-if="showButtons"
-        v-tooltip="'Download the mission that is stored in the vehicle.'"
-        class="absolute m-3 bottom-button left-20 bg-slate-50"
-        elevation="2"
-        style="z-index: 1002; border-radius: 0px"
-        icon="mdi-download"
-        size="x-small"
-        @click.stop="downloadMissionFromVehicle"
-      />
-
-      <v-btn
-        v-if="showButtons"
-        v-tooltip="'Execute the mission that is stored in the vehicle.'"
-        class="absolute mb-3 ml-1 bottom-button left-32 bg-slate-50"
-        elevation="2"
-        style="z-index: 1002; border-radius: 0px"
-        icon="mdi-play"
-        size="x-small"
-        @click.stop="executeMissionOnVehicle"
-      />
+      <v-tooltip location="top" text="Download the mission that is stored in the vehicle.">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-if="showButtons"
+            v-bind="tooltipProps"
+            class="absolute m-3 bottom-button left-20 bg-slate-50"
+            elevation="2"
+            style="z-index: 1002; border-radius: 0px"
+            icon="mdi-download"
+            size="x-small"
+            @click.stop="downloadMissionFromVehicle"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top" text="Execute the mission that is stored in the vehicle.">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-if="showButtons"
+            v-bind="tooltipProps"
+            class="absolute mb-3 ml-1 bottom-button left-32 bg-slate-50"
+            elevation="2"
+            style="z-index: 1002; border-radius: 0px"
+            icon="mdi-play"
+            size="x-small"
+            @click.stop="executeMissionOnVehicle"
+          />
+        </template>
+      </v-tooltip>
     </div>
   </div>
 
