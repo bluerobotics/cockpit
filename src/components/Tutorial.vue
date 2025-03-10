@@ -98,7 +98,18 @@ const { openSnackbar } = useSnackbar()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
-const showTutorial = ref(true)
+const props = defineProps<{
+  /**
+   * Parent-controlled trigger for showing the dialog.
+   */
+  modelValue: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+}>()
+
+const showTutorial = ref(false || props.modelValue)
 const currentTutorialStep = useStorage('cockpit-last-tutorial-step', 1)
 const isVehicleConnectedVisible = ref(false)
 const tallContent = ref(false)
@@ -316,6 +327,7 @@ const handleStepChange = (newStep: number): void => {
 const dontShowTutorialAgain = (): void => {
   interfaceStore.userHasSeenTutorial = true
   showTutorial.value = false
+  emit('update:modelValue', false)
   currentTutorialStep.value = 1
   openSnackbar({
     message: 'This guide can be reopened via the Settings > General menu',
@@ -348,8 +360,8 @@ const backTutorialStep = (): void => {
 const closeTutorial = (): void => {
   showTutorial.value = false
   interfaceStore.componentToHighlight = 'none'
-  interfaceStore.userHasSeenTutorial = true
   interfaceStore.isTutorialVisible = false
+  emit('update:modelValue', false)
 }
 
 const setVehicleConnectedVisible = (): void => {
