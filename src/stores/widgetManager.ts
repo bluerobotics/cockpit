@@ -17,7 +17,6 @@ import { miniWidgetsProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { resetJustMadeKey, useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
-import { useSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import * as Words from '@/libs/funny-name/words'
 import {
@@ -45,7 +44,6 @@ import {
 } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
-const { openSnackbar } = useSnackbar()
 
 export const savedProfilesKey = 'cockpit-saved-profiles-v8'
 
@@ -71,6 +69,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const widgetToEdit = ref<Widget>()
   const miniWidgetLastValues = useBlueOsStorage<Record<string, any>>('cockpit-mini-widget-last-values', {})
   const floatingWidgetContainers = ref<MiniWidgetContainer[]>([])
+  const currentContextMenu = ref<any | null>(null)
 
   const editWidgetByHash = (hash: string): Widget | undefined => {
     widgetToEdit.value = currentProfile.value.views
@@ -934,5 +933,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     setMiniWidgetLastValue,
     getMiniWidgetLastValue,
     copyWidgetToView,
+    currentContextMenu,
   }
 })
