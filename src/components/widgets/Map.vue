@@ -45,12 +45,14 @@
         </template>
       </v-tooltip>
 
-      <v-tooltip location="top" text="Download the mission that is stored in the vehicle.">
+      <v-tooltip location="top" :text="vehicleDownloadMissionButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
             class="absolute m-3 bottom-button left-20 bg-slate-50"
+            :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
+            :disabled="!vehicleStore.isVehicleOnline"
             elevation="2"
             style="z-index: 1002; border-radius: 0px"
             icon="mdi-download"
@@ -59,12 +61,14 @@
           />
         </template>
       </v-tooltip>
-      <v-tooltip location="top" text="Execute the mission that is stored in the vehicle.">
+      <v-tooltip location="top" :text="vehicleExecuteMissionButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
             class="absolute mb-3 ml-1 bottom-button left-32 bg-slate-50"
+            :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
+            :disabled="!vehicleStore.isVehicleOnline"
             elevation="2"
             style="z-index: 1002; border-radius: 0px"
             icon="mdi-play"
@@ -615,6 +619,18 @@ const bottomButtonsDisplacement = computed(() => {
 
 const topProgressBarDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
+})
+
+const vehicleDownloadMissionButtonTooltipText = computed(() => {
+  return vehicleStore.isVehicleOnline
+    ? 'Download the mission that is stored in the vehicle.'
+    : 'Vehicle offline (cannot download mission).'
+})
+
+const vehicleExecuteMissionButtonTooltipText = computed(() => {
+  return vehicleStore.isVehicleOnline
+    ? 'Execute the mission that is stored in the vehicle.'
+    : 'Vehicle offline (cannot execute mission).'
 })
 </script>
 
