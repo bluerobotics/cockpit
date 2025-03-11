@@ -11,7 +11,7 @@
         <div
           id="menu-trigger"
           class="menu-trigger border-4 flex items-center justify-center w-[30px] px-0 py-2 cursor-pointer overflow-hidden rounded-r-lg rounded-br-lg -ml-[1px]"
-          :class="[interfaceStore.isOnSmallScreen ? 'top-[30%]' : 'top-[50%]']"
+          :class="[interfaceStore.isOnSmallScreen ? 'top-[20%] scale-75 -ml-[3px]' : 'top-[50%]']"
           :style="
             interfaceStore.highlightedComponent === 'menu-trigger'
               ? interfaceStore.globalGlassMenuHighlightStyles
