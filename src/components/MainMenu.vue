@@ -6,10 +6,10 @@
       class="left-menu slide-in"
       :style="[glassMenuStyles, simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth]"
     >
-      <v-window v-model="interfaceStore.mainMenuCurrentStep" class="h-full w-full">
+      <v-window v-model="interfaceStore.mainMenuCurrentStep" class="h-full w-full py-1">
         <v-window-item :value="1" class="h-full">
           <div
-            class="relative flex flex-col h-full justify-between align-center items-center select-none"
+            class="relative flex flex-col max-h-[95vh] justify-between align-center items-center select-none overflow-y-auto scrollbar-hide"
             :class="
               interfaceStore.isOnSmallScreen
                 ? 'gap-y-0 pt-2 pb-3 sm:sm:py-0 sm:-ml-[3px] xs:xs:py-0 xs:-ml-[3px]'
@@ -140,7 +140,7 @@
           </div>
         </v-window-item>
         <v-window-item :value="2" class="h-full w-full">
-          <div class="flex flex-col w-full h-full justify-between">
+          <div class="flex flex-col w-full max-h-[95vh] justify-between overflow-y-auto scrollbar-hide">
             <GlassButton
               v-for="menuitem in currentSubMenu"
               :key="menuitem.title"
@@ -223,15 +223,15 @@ import ToolsMAVLinkView from '@/views/ToolsMAVLinkView.vue'
 const route = useRoute()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
-const { width: windowWidth, height: windowHeight } = useWindowSize()
+const { height: windowHeight } = useWindowSize()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 
 /**
- *
+ * Props to control the current sub-menu
  */
 interface Props {
   /**
-   *
+   * The current sub-menu component
    */
   currentSubMenuComponent: SubMenuComponent | null
 }
@@ -344,23 +344,17 @@ const toggleSubMenuComponent = (component: SubMenuComponent): void => {
 }
 
 const simplifiedMainMenu = computed(() => {
-  const threshold = windowWidth.value > 1300 ? 860 : 680
-  return maxScreenHeightPixelsThatFitsLargeMenu.value < threshold
+  if (interfaceStore.isLg || interfaceStore.isMd) return true
+  if (interfaceStore.isXs || interfaceStore.isSm) return true
+  if (windowHeight.value < 700) return true
+  return false
 })
-
 const mainMenuWidth = computed(() => {
   const width =
     interfaceStore.isOnSmallScreen && interfaceStore.mainMenuCurrentStep === 2
       ? '60px'
       : `${interfaceStore.mainMenuWidth}px`
   return { width }
-})
-
-const maxScreenHeightPixelsThatFitsLargeMenu = computed(() => {
-  const heightTopBar = widgetStore.currentTopBarHeightPixels * topBottomBarScale.value
-  const heightBottomBar = widgetStore.currentBottomBarHeightPixels * topBottomBarScale.value
-  const visibleAreaHeight = windowHeight.value - heightTopBar - heightBottomBar
-  return visibleAreaHeight
 })
 
 const buttonSize = computed(() => {
@@ -405,12 +399,6 @@ const fullScreenCallbackId = registerActionCallback(
   availableCockpitActions.toggle_full_screen,
   debouncedToggleFullScreen
 )
-
-const originalBarWidth = 1800
-
-const topBottomBarScale = computed(() => {
-  return windowWidth.value / originalBarWidth
-})
 
 const availableSubMenus = {
   settings: configMenu,
