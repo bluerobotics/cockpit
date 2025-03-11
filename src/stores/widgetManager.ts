@@ -93,8 +93,16 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
     customWidgetElement = currentProfile.value.views
       .flatMap((view) => view.miniWidgetContainers || [])
-      .flatMap((container) => container.widgets) // Get all widgets in mini-widget containers
+      .flatMap((container) => container.widgets)
       .find((miniWidget) => miniWidget.hash === hash)
+
+    if (customWidgetElement) {
+      return customWidgetElement
+    }
+
+    customWidgetElement = currentMiniWidgetsProfile.value.containers
+      .flatMap((container) => container.widgets)
+      .find((widget) => widget.hash === hash)
 
     return customWidgetElement
   }
