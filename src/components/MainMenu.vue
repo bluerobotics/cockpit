@@ -1,5 +1,5 @@
 <template>
-  <transition name="slide-in-left">
+  <transition name="slide-in-left" @after-enter="attachScrollListener">
     <div
       v-if="interfaceStore.isMainMenuVisible"
       ref="mainMenu"
@@ -9,138 +9,146 @@
       <v-window v-model="interfaceStore.mainMenuCurrentStep" class="h-full w-full">
         <v-window-item :value="1" class="h-full">
           <div
-            class="relative flex flex-col h-full justify-between align-center items-center select-none"
-            :class="
-              interfaceStore.isOnSmallScreen
-                ? 'gap-y-0 pt-2 pb-3 sm:sm:py-0 sm:-ml-[3px] xs:xs:py-0 xs:-ml-[3px]'
-                : 'lg:gap-y-2 xl:gap-y-3 gap-y-4 py-4'
-            "
+            ref="scrollContainerRef"
+            class="relative flex flex-col max-h-[95vh] w-full overflow-y-auto scrollbar-hide"
           >
-            <GlassButton
-              v-if="route.name === 'widgets-view'"
-              :label="simplifiedMainMenu ? '' : 'Edit Interface'"
-              :selected="widgetStore.editingMode"
-              :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
-              :icon="simplifiedMainMenu ? 'mdi-pencil' : undefined"
-              :icon-size="simplifiedMainMenu ? 25 : undefined"
-              variant="uncontained"
-              :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
-              :width="buttonSize"
-              @click="
-                () => {
-                  widgetStore.editingMode = !widgetStore.editingMode
-                  handleCloseMainMenu()
-                }
+            <div
+              class="h-full justify-between align-center items-center select-none"
+              :class="
+                interfaceStore.isOnSmallScreen
+                  ? 'gap-y-0 pt-2 pb-3 sm:sm:py-0 sm:-ml-[3px] xs:xs:py-0 xs:-ml-[3px]'
+                  : 'lg:gap-y-2 xl:gap-y-3 gap-y-4 py-4'
               "
-              ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" alt="Edit Mode Icon" />
-            </GlassButton>
-            <GlassButton
-              v-if="route.name !== 'widgets-view'"
-              :label="simplifiedMainMenu ? '' : 'Flight'"
-              :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
-              :icon="simplifiedMainMenu ? 'mdi-send' : undefined"
-              :icon-size="simplifiedMainMenu ? 25 : undefined"
-              variant="uncontained"
-              :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
-              :width="buttonSize"
-              :selected="$route.name === 'Flight'"
-              @click="
-                () => {
-                  $router.push('/')
-                  handleCloseMainMenu()
-                }
-              "
-              ><img v-if="!simplifiedMainMenu" :src="FlightIcon" alt="Flight Icon" />
-            </GlassButton>
-            <GlassButton
-              v-if="route.name !== 'Mission planning'"
-              :label="simplifiedMainMenu ? '' : 'Mission Planning'"
-              :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
-              :icon="simplifiedMainMenu ? 'mdi-map-marker-radius-outline' : undefined"
-              :icon-size="simplifiedMainMenu ? 25 : undefined"
-              variant="uncontained"
-              :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
-              :width="buttonSize"
-              :selected="$route.name === 'Mission planning'"
-              @click="
-                () => {
-                  $router.push('/mission-planning')
-                  handleCloseMainMenu()
-                }
-              "
-              ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="MissionPlanning Icon"
-            /></GlassButton>
-            <GlassButton
-              :label="simplifiedMainMenu ? '' : 'Settings'"
-              :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
-              :icon="simplifiedMainMenu ? 'mdi-cog' : undefined"
-              :icon-size="simplifiedMainMenu ? 25 : undefined"
-              variant="uncontained"
-              :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
-              :width="buttonSize"
-              :selected="showSubMenu"
-              class="mb-1"
-              :style="
-                interfaceStore.highlightedComponent === 'settings-menu-item' && {
-                  animation: 'highlightBackground 0.5s alternate 20',
-                  borderRadius: '10px',
-                }
-              "
-              @click="selectSubMenu(SubMenuName.settings)"
-              ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="Settings Icon" />
-            </GlassButton>
-            <GlassButton
-              :label="simplifiedMainMenu ? '' : 'Tools'"
-              :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
-              :icon="simplifiedMainMenu ? 'mdi-tools' : undefined"
-              :icon-size="simplifiedMainMenu ? 25 : undefined"
-              variant="uncontained"
-              :tooltip="simplifiedMainMenu ? 'Tools' : undefined"
-              :width="buttonSize"
-              :selected="showSubMenu"
-              class="mb-1"
-              @click="selectSubMenu(SubMenuName.tools)"
-              ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="Tools Icon" />
-            </GlassButton>
-            <GlassButton
-              :label="simplifiedMainMenu ? '' : isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
-              :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
-              :icon="simplifiedMainMenu ? fullScreenToggleIcon : undefined"
-              :icon-size="simplifiedMainMenu ? 25 : undefined"
-              variant="uncontained"
-              :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
-              :button-class="simplifiedMainMenu ? '-mb-2' : ''"
-              :width="buttonSize"
-              :selected="false"
-              @click="
-                () => {
-                  toggleFullscreen()
-                  handleCloseMainMenu()
-                }
-              "
-              ><img
-                v-if="!simplifiedMainMenu"
-                :src="isFullscreen ? ExitFullScreenIcon : FullScreenIcon"
-                alt="Fullscreen Icon"
-              />
-            </GlassButton>
-            <GlassButton
-              :label="simplifiedMainMenu ? '' : 'About'"
-              :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
-              :icon="simplifiedMainMenu ? 'mdi-information-outline' : undefined"
-              :icon-size="simplifiedMainMenu ? 25 : undefined"
-              variant="uncontained"
-              :tooltip="simplifiedMainMenu ? 'About' : undefined"
-              :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
-              :width="buttonSize"
-              :selected="showSubMenu"
-              @click="openAboutDialog"
-              ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="Info Icon" />
-            </GlassButton>
+            >
+              <GlassButton
+                v-if="route.name === 'widgets-view'"
+                :label="simplifiedMainMenu ? '' : 'Edit Interface'"
+                :selected="widgetStore.editingMode"
+                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :icon="simplifiedMainMenu ? 'mdi-pencil' : undefined"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                variant="uncontained"
+                :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
+                :width="buttonSize"
+                @click="
+                  () => {
+                    widgetStore.editingMode = !widgetStore.editingMode
+                    handleCloseMainMenu()
+                  }
+                "
+                ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" alt="Edit Mode Icon" />
+              </GlassButton>
+              <GlassButton
+                v-if="route.name !== 'widgets-view'"
+                :label="simplifiedMainMenu ? '' : 'Flight'"
+                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :icon="simplifiedMainMenu ? 'mdi-send' : undefined"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                variant="uncontained"
+                :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
+                :width="buttonSize"
+                :selected="$route.name === 'Flight'"
+                @click="
+                  () => {
+                    $router.push('/')
+                    handleCloseMainMenu()
+                  }
+                "
+                ><img v-if="!simplifiedMainMenu" :src="FlightIcon" alt="Flight Icon" />
+              </GlassButton>
+              <GlassButton
+                v-if="route.name !== 'Mission planning'"
+                :label="simplifiedMainMenu ? '' : 'Mission Planning'"
+                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :icon="simplifiedMainMenu ? 'mdi-map-marker-radius-outline' : undefined"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                variant="uncontained"
+                :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
+                :width="buttonSize"
+                :selected="$route.name === 'Mission planning'"
+                @click="
+                  () => {
+                    $router.push('/mission-planning')
+                    handleCloseMainMenu()
+                  }
+                "
+                ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="MissionPlanning Icon" />
+              </GlassButton>
+              <GlassButton
+                :label="simplifiedMainMenu ? '' : 'Settings'"
+                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :icon="simplifiedMainMenu ? 'mdi-cog' : undefined"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                variant="uncontained"
+                :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
+                :width="buttonSize"
+                :selected="showSubMenu"
+                class="mb-1"
+                :style="
+                  interfaceStore.highlightedComponent === 'settings-menu-item' && {
+                    animation: 'highlightBackground 0.5s alternate 20',
+                    borderRadius: '10px',
+                  }
+                "
+                @click="selectSubMenu(SubMenuName.settings)"
+                ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="Settings Icon" />
+              </GlassButton>
+              <GlassButton
+                :label="simplifiedMainMenu ? '' : 'Tools'"
+                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :icon="simplifiedMainMenu ? 'mdi-tools' : undefined"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                variant="uncontained"
+                :tooltip="simplifiedMainMenu ? 'Tools' : undefined"
+                :width="buttonSize"
+                :selected="showSubMenu"
+                class="mb-1"
+                @click="selectSubMenu(SubMenuName.tools)"
+                ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="Tools Icon" />
+              </GlassButton>
+              <GlassButton
+                :label="simplifiedMainMenu ? '' : isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :icon="simplifiedMainMenu ? fullScreenToggleIcon : undefined"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                variant="uncontained"
+                :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
+                :button-class="simplifiedMainMenu ? '-mb-2' : ''"
+                :width="buttonSize"
+                :selected="false"
+                @click="
+                  () => {
+                    toggleFullscreen()
+                    handleCloseMainMenu()
+                  }
+                "
+                ><img
+                  v-if="!simplifiedMainMenu"
+                  :src="isFullscreen ? ExitFullScreenIcon : FullScreenIcon"
+                  alt="Fullscreen Icon"
+                />
+              </GlassButton>
+              <GlassButton
+                :label="simplifiedMainMenu ? '' : 'About'"
+                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :icon="simplifiedMainMenu ? 'mdi-information-outline' : undefined"
+                :icon-size="simplifiedMainMenu ? 25 : undefined"
+                variant="uncontained"
+                :tooltip="simplifiedMainMenu ? 'About' : undefined"
+                :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
+                :width="buttonSize"
+                :selected="showSubMenu"
+                @click="openAboutDialog"
+                ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="Info Icon" />
+              </GlassButton>
+            </div>
           </div>
         </v-window-item>
         <v-window-item :value="2" class="h-full w-full">
-          <div class="flex flex-col w-full h-full justify-between">
+          <div
+            ref="subMenuScrollContainerRef"
+            class="flex flex-col w-full max-h-[95vh] justify-between overflow-y-auto scrollbar-hide"
+          >
             <GlassButton
               v-for="menuitem in currentSubMenu"
               :key="menuitem.title"
@@ -159,9 +167,10 @@
                 }
               "
               @click="toggleSubMenuComponent(menuitem.component)"
-              ><template #content
-                ><div v-if="currentSubMenuComponent === menuitem.component" class="arrow-left"></div></template
-            ></GlassButton>
+              ><template #content>
+                <div v-if="currentSubMenuComponent === menuitem.component" class="arrow-left"></div>
+              </template>
+            </GlassButton>
             <div class="flex flex-col justify-center align-center pb-1">
               <v-divider width="70%" />
               <GlassButton
@@ -183,12 +192,20 @@
           </div>
         </v-window-item>
       </v-window>
+      <div v-if="hasOverflow" class="overflow-indicator">
+        <v-icon class="overflow-icon -mt-[11px]" :style="{ opacity: isScrolledToTop ? 0 : 1 }">
+          mdi-arrow-up-bold
+        </v-icon>
+        <v-icon class="overflow-icon -mb-[11px]" :style="{ opacity: isScrolledToBottom ? 0 : 1 }">
+          mdi-arrow-down-bold
+        </v-icon>
+      </div>
     </div>
   </transition>
 </template>
 <script setup lang="ts">
-import { onClickOutside, useDebounceFn, useFullscreen, useWindowSize } from '@vueuse/core'
-import { computed, markRaw, onBeforeUnmount, ref, watch } from 'vue'
+import { onClickOutside, useDebounceFn, useFullscreen, useResizeObserver, useWindowSize } from '@vueuse/core'
+import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 
 import EditModeIcon from '@/assets/icons/edit-mode.svg'
@@ -227,11 +244,11 @@ const { width: windowWidth, height: windowHeight } = useWindowSize()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 
 /**
- *
+ * Main menu component
  */
 interface Props {
   /**
-   *
+   * The current sub-menu component to be displayed.
    */
   currentSubMenuComponent: SubMenuComponent | null
 }
@@ -249,7 +266,90 @@ const currentSubMenuComponentRef = computed({
 })
 
 const showSubMenu = ref(false)
-const mainMenu = ref()
+const mainMenu = ref<HTMLElement | null>(null)
+const scrollContainerRef = ref<HTMLElement | null>(null)
+const subMenuScrollContainerRef = ref<HTMLElement | null>(null)
+
+const containerRectMain = ref({ width: 0, height: 0 })
+const containerRectSub = ref({ width: 0, height: 0 })
+const isScrolledToTop = ref(true)
+const isScrolledToBottom = ref(false)
+
+const originalBarWidth = 1800
+const LOWER_RATIO = 1.4
+const UPPER_RATIO = 1.2
+
+const simplifiedMainMenu = ref(false)
+
+const mainMenuHasOverflow = computed(() => {
+  let height
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  height = windowHeight.value
+  if (scrollContainerRef.value) {
+    return scrollContainerRef.value.scrollHeight > scrollContainerRef.value.clientHeight
+  }
+  return false
+})
+
+const subMenuHasOverflow = computed(() => {
+  let height
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  height = windowHeight.value
+  if (subMenuScrollContainerRef.value) {
+    return subMenuScrollContainerRef.value.scrollHeight > subMenuScrollContainerRef.value.clientHeight
+  }
+  return false
+})
+
+const hasOverflow = computed(() => {
+  return interfaceStore.mainMenuCurrentStep === 1 ? mainMenuHasOverflow.value : subMenuHasOverflow.value
+})
+
+useResizeObserver(scrollContainerRef, (entries) => {
+  if (entries.length) {
+    containerRectMain.value = {
+      width: entries[0].contentRect.width,
+      height: entries[0].contentRect.height,
+    }
+  }
+})
+
+useResizeObserver(subMenuScrollContainerRef, (entries) => {
+  if (entries.length) {
+    containerRectSub.value = {
+      width: entries[0].contentRect.width,
+      height: entries[0].contentRect.height,
+    }
+  }
+})
+
+const activeContainerRect = computed(() => {
+  return interfaceStore.mainMenuCurrentStep === 1 ? containerRectMain.value : containerRectSub.value
+})
+
+const topBottomBarScale = computed(() => {
+  return windowWidth.value / originalBarWidth
+})
+
+const maxScreenHeightPixelsThatFitsLargeMenu = computed(() => {
+  const heightTopBar = widgetStore.currentTopBarHeightPixels * topBottomBarScale.value
+  const heightBottomBar = widgetStore.currentBottomBarHeightPixels * topBottomBarScale.value
+  const visibleAreaHeight = windowHeight.value - heightTopBar - heightBottomBar
+  return visibleAreaHeight
+})
+
+const shouldSimplifyMainMEnu = computed(() => {
+  return maxScreenHeightPixelsThatFitsLargeMenu.value > activeContainerRect.value.height
+})
+
+watchEffect(() => {
+  const ratio = (activeContainerRect.value.height * 2) / maxScreenHeightPixelsThatFitsLargeMenu.value
+  if (!shouldSimplifyMainMEnu.value && ratio > LOWER_RATIO) {
+    simplifiedMainMenu.value = true
+  } else if (shouldSimplifyMainMEnu.value && ratio * 0.8 < UPPER_RATIO) {
+    simplifiedMainMenu.value = false
+  }
+})
 
 const configMenu = [
   {
@@ -343,24 +443,12 @@ const toggleSubMenuComponent = (component: SubMenuComponent): void => {
   interfaceStore.configModalVisibility = true
 }
 
-const simplifiedMainMenu = computed(() => {
-  const threshold = windowWidth.value > 1300 ? 860 : 680
-  return maxScreenHeightPixelsThatFitsLargeMenu.value < threshold
-})
-
 const mainMenuWidth = computed(() => {
   const width =
     interfaceStore.isOnSmallScreen && interfaceStore.mainMenuCurrentStep === 2
       ? '60px'
       : `${interfaceStore.mainMenuWidth}px`
   return { width }
-})
-
-const maxScreenHeightPixelsThatFitsLargeMenu = computed(() => {
-  const heightTopBar = widgetStore.currentTopBarHeightPixels * topBottomBarScale.value
-  const heightBottomBar = widgetStore.currentBottomBarHeightPixels * topBottomBarScale.value
-  const visibleAreaHeight = windowHeight.value - heightTopBar - heightBottomBar
-  return visibleAreaHeight
 })
 
 const buttonSize = computed(() => {
@@ -390,6 +478,50 @@ const glassMenuStyles = computed(() => ({
   backdropFilter: `blur(${interfaceStore.UIGlassEffect.blur}px)`,
 }))
 
+const handleScroll = (): void => {
+  const scrollContainer =
+    interfaceStore.mainMenuCurrentStep === 1 ? scrollContainerRef.value : subMenuScrollContainerRef.value
+  if (scrollContainer) {
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainer
+    isScrolledToTop.value = scrollTop === 0
+    isScrolledToBottom.value = scrollTop + clientHeight >= scrollHeight
+  }
+}
+
+const attachScrollListener = (): void => {
+  nextTick(() => {
+    if (scrollContainerRef.value) {
+      scrollContainerRef.value.removeEventListener('scroll', handleScroll)
+    }
+    if (subMenuScrollContainerRef.value) {
+      subMenuScrollContainerRef.value.removeEventListener('scroll', handleScroll)
+    }
+    const activeContainer =
+      interfaceStore.mainMenuCurrentStep === 1 ? scrollContainerRef.value : subMenuScrollContainerRef.value
+    if (activeContainer) {
+      activeContainer.addEventListener('scroll', handleScroll)
+      handleScroll()
+    }
+  })
+}
+
+onMounted(() => {
+  attachScrollListener()
+})
+
+watch(windowHeight, () => {
+  nextTick(() => {
+    handleScroll()
+  })
+})
+
+watch(
+  () => interfaceStore.mainMenuCurrentStep,
+  () => {
+    attachScrollListener()
+  }
+)
+
 const handleCloseMainMenu = (): void => {
   emit('closeMainMenu')
 }
@@ -405,12 +537,6 @@ const fullScreenCallbackId = registerActionCallback(
   availableCockpitActions.toggle_full_screen,
   debouncedToggleFullScreen
 )
-
-const originalBarWidth = 1800
-
-const topBottomBarScale = computed(() => {
-  return windowWidth.value / originalBarWidth
-})
 
 const availableSubMenus = {
   settings: configMenu,
@@ -443,7 +569,26 @@ watch(
   }
 )
 
-onBeforeUnmount(() => unregisterActionCallback(fullScreenCallbackId))
+onBeforeUnmount(() => {
+  unregisterActionCallback(fullScreenCallbackId)
+  if (scrollContainerRef.value) {
+    scrollContainerRef.value.removeEventListener('scroll', handleScroll)
+  }
+  if (subMenuScrollContainerRef.value) {
+    subMenuScrollContainerRef.value.removeEventListener('scroll', handleScroll)
+  }
+})
+
+onMounted(() => {
+  if (scrollContainerRef.value) {
+    scrollContainerRef.value.addEventListener('scroll', handleScroll)
+    handleScroll()
+  }
+  if (subMenuScrollContainerRef.value) {
+    subMenuScrollContainerRef.value.addEventListener('scroll', handleScroll)
+    handleScroll()
+  }
+})
 
 const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscreen-exit' : 'mdi-overscan'))
 </script>
@@ -461,6 +606,25 @@ const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscree
   transform: translateY(-50%);
   box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.3), 0px 8px 12px 6px rgba(0, 0, 0, 0.15);
   z-index: 1000;
+}
+
+.overflow-indicator {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  width: 1px;
+  bottom: 0;
+  opacity: 0.9;
+  z-index: 9999;
+  margin-left: 40px;
+}
+
+.overflow-icon {
+  color: white;
+  font-size: 18px;
+  margin-left: -30px;
 }
 
 @keyframes slideInLeft {
