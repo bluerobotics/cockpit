@@ -1,21 +1,27 @@
 <template>
-  <div v-tooltip="'Battery information'" class="flex items-center w-[5.5rem] h-12 text-white justify-center">
-    <span class="relative w-[1.5rem] mdi battery-icon" :class="[batteryIconClass]">
-      <span class="absolute text-sm text-yellow-400 -bottom-[2px] -right-[7px] mdi mdi-alert-circle"></span>
+  <div v-tooltip="'Battery information'" class="flex items-center w-[95px] h-12 text-white justify-center">
+    <span class="relative w-[1.5rem] mdi battery-icon left-0 mr-3" :class="[batteryIconClass]">
+      <span class="absolute text-sm text-yellow-400 -bottom-[3px] left-[4px] mdi mdi-alert-circle"></span>
     </span>
-    <div class="flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end">
+    <div class="relative right-0 flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end -mr-2">
       <div class="w-full">
-        <span class="font-mono">{{ voltageDisplayValue }}</span>
-        <span> V</span>
+        <div class="flex justify-end gap-x-1 items-center">
+          <span class="font-mono">{{ voltageDisplayValue }}</span>
+          <div class="w-[15px] mr-[1px] -ml-[1px]">V</div>
+        </div>
       </div>
       <div class="w-full">
         <template v-if="showCurrent">
-          <span class="font-mono">{{ currentDisplayValue }}</span>
-          <span> A</span>
+          <div class="flex justify-end gap-x-1 items-center">
+            <span class="font-mono mt-[2px]">{{ currentDisplayValue }}</span>
+            <div class="w-[15px]">A</div>
+          </div>
         </template>
         <template v-else>
-          <span class="font-mono">{{ instantaneousWattsDisplayValue }}</span>
-          <span> W</span>
+          <div class="flex justify-end gap-x-1 items-center text-yellow-100">
+            <span class="font-mono mt-[2px]">{{ instantaneousWattsDisplayValue }}</span>
+            <div class="w-[15px]">W</div>
+          </div>
         </template>
       </div>
     </div>
@@ -80,21 +86,21 @@ const errorMessageTimeout = ref<ReturnType<typeof setTimeout> | undefined>(undef
 const userSetToggleInterval = ref(miniWidget.value.options.toggleInterval ?? defaultOptions.toggleInterval)
 
 const voltageDisplayValue = computed(() => {
-  if (store?.powerSupply?.voltage === undefined) return NaN
+  if (store?.powerSupply?.voltage === undefined) return '--'
   return Math.abs(store.powerSupply.voltage) >= 100
     ? store.powerSupply.voltage.toFixed(0)
     : store.powerSupply.voltage.toFixed(1)
 })
 
 const currentDisplayValue = computed(() => {
-  if (store?.powerSupply?.current === undefined) return NaN
+  if (store?.powerSupply?.current === undefined) return '--'
   return Math.abs(store.powerSupply.current) >= 100
     ? store.powerSupply.current.toFixed(0)
     : store.powerSupply.current.toFixed(1)
 })
 
 const instantaneousWattsDisplayValue = computed(() => {
-  return store.instantaneousWatts !== undefined ? store.instantaneousWatts.toFixed(1) : NaN
+  return store.instantaneousWatts !== undefined ? store.instantaneousWatts.toFixed(1) : '--'
 })
 
 const batteryIconClass = computed(() => {
