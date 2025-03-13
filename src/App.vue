@@ -315,6 +315,7 @@
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <UpdateNotification v-if="isElectron()" />
   <SnackbarContainer />
+  <AutoRecordVideoDialog v-model:showDialog="showAutoRecordVideoDialog" @close="handleCloseAutoRecordVideoDialog" />
 </template>
 
 <script setup lang="ts">
@@ -346,6 +347,7 @@ import { isElectron } from '@/libs/utils'
 
 import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
+import AutoRecordVideoDialog from './components/AutoRecordVideoDialog.vue'
 import EditMenu from './components/EditMenu.vue'
 import GlassButton from './components/GlassButton.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
@@ -373,6 +375,7 @@ const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 
+const showAutoRecordVideoDialog = ref(false)
 const showAboutDialog = ref(false)
 const showSubMenu = ref(false)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
@@ -640,6 +643,25 @@ watch(
     connectionStatusFeedback.value = { border: '3px solid green' }
 
     resetConnectionStatusFeedback()
+  }
+)
+
+const handleCloseAutoRecordVideoDialog = (): void => {
+  openSnackbar({
+    message: 'You can find this settings again at: Main menu -> Settings -> Video -> Auto Record Streams',
+    variant: 'info',
+    duration: 4000,
+  })
+  showAutoRecordVideoDialog.value = false
+}
+
+watch(
+  () => vehicleStore.isArmed,
+  (isArmed) => {
+    const hasAutoRecordSettings = localStorage.getItem('cockpit-auto-record-streams')
+    if (isArmed && !hasAutoRecordSettings) {
+      showAutoRecordVideoDialog.value = true
+    }
   }
 )
 
