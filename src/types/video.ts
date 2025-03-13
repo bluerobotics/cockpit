@@ -182,3 +182,11 @@ export type VideoStreamCorrespondency = {
   name: string
   externalId: string
 }
+
+export type AutoRecordVideoStreams = {
+  autoRecordOption: 'all' | 'none' | 'selected' | undefined
+  stopRecordingOnDisarm: boolean
+  showReminder: boolean
+  reminderDelay: number
+  selectedStreams: VideoStreamCorrespondency[]
+}

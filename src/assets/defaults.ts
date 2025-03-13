@@ -901,3 +901,11 @@ export const defaultSensorDataloggerProfile: OverlayGrid = {
 export const defaultDisplayUnitPreferences = {
   distance: DistanceDisplayUnit.Meters,
 }
+
+export const defaultAutoRecordingOptions = {
+  autoRecordOption: undefined,
+  showReminder: false,
+  reminderDelay: 0,
+  selectedStreams: [],
+  stopRecordingOnDisarm: false,
+}
