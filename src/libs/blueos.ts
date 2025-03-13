@@ -1,5 +1,6 @@
 import ky, { HTTPError } from 'ky'
 
+import { type ActionConfig } from '@/libs/joystick/protocols/cockpit-actions'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 
@@ -19,6 +20,42 @@ interface ExtrasJson {
    *  A list of widgets that the extra json contains. src/types/widgets.ts
    */
   widgets: ExternalWidgetSetupInfo[]
+  /**
+   * A list of available cockpit actions offered by the extension.
+   */
+  actions: ActionConfig[]
+}
+
+/**
+ * Service object from BlueOS
+ */
+interface Service {
+  /**
+   * Metadata of the service
+   */
+  metadata?: {
+    /**
+     * Extras of the service
+     */
+    extras?: {
+      /**
+       * Cockpit extra json url
+       */
+      cockpit?: string
+    }
+    /**
+     * Works in relative paths
+     */
+    works_in_relative_paths?: boolean
+    /**
+     * Sanitized name of the service
+     */
+    sanitized_name?: string
+  }
+  /**
+   * Port of the service
+   */
+  port?: number
 }
 
 export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
@@ -51,6 +88,35 @@ export const getKeyDataFromCockpitVehicleStorage = async (
   return await getBagOfHoldingFromVehicle(vehicleAddress, `cockpit/${storageKey}`)
 }
 
+const blueOsServiceUrl = (vehicleAddress: string, service: Service): string => {
+  const worksInRelativePaths = service.metadata?.works_in_relative_paths
+  const sanitizedName = service.metadata?.sanitized_name
+  const port = service.port
+  return worksInRelativePaths
+    ? `http://${vehicleAddress}/extensionv2/${sanitizedName}`
+    : `http://${vehicleAddress}:${port}`
+}
+
+const getServicesFromBlueOS = async (vehicleAddress: string): Promise<Service[]> => {
+  const options = { timeout: defaultTimeout, retry: 0 }
+  const services = (await ky.get(`http://${vehicleAddress}/helper/v1.0/web_services`, options).json()) as Service[]
+  return services
+}
+
+export const getExtrasJsonFromBlueOsService = async (
+  vehicleAddress: string,
+  service: Service
+): Promise<ExtrasJson | null> => {
+  const options = { timeout: defaultTimeout, retry: 0 }
+  if (service.metadata?.extras?.cockpit === undefined) {
+    return null
+  }
+  const baseUrl = blueOsServiceUrl(vehicleAddress, service)
+  const fullUrl = baseUrl + service.metadata?.extras?.cockpit
+  const extraJson: ExtrasJson = await ky.get(fullUrl, options).json()
+  return extraJson
+}
+
 export const getWidgetsFromBlueOS = async (): Promise<ExternalWidgetSetupInfo[]> => {
   const vehicleStore = useMainVehicleStore()
 
@@ -58,37 +124,54 @@ export const getWidgetsFromBlueOS = async (): Promise<ExternalWidgetSetupInfo[]>
   while (vehicleStore.globalAddress === undefined) {
     await new Promise((r) => setTimeout(r, 1000))
   }
-  const options = { timeout: defaultTimeout, retry: 0 }
-  const services = (await ky
-    .get(`http://${vehicleStore.globalAddress}/helper/v1.0/web_services`, options)
-    .json()) as Record<string, any>
-  // first we gather all the extra jsons with the cockpit key
-  const extraWidgets = await services.reduce(
-    async (accPromise: Promise<ExternalWidgetSetupInfo[]>, service: Record<string, any>) => {
-      const acc = await accPromise
-      const worksInRelativePaths = service.metadata?.works_in_relative_paths
-      if (service.metadata?.extras?.cockpit === undefined) {
-        return acc
-      }
-      const baseUrl = worksInRelativePaths
-        ? `http://${vehicleStore.globalAddress}/extensionv2/${service.metadata.sanitized_name}`
-        : `http://${vehicleStore.globalAddress}:${service.port}`
-      const fullUrl = baseUrl + service.metadata?.extras?.cockpit
 
-      const extraJson: ExtrasJson = await ky.get(fullUrl, options).json()
-      const widgets: ExternalWidgetSetupInfo[] = extraJson.widgets.map((widget) => {
-        return {
-          ...widget,
-          iframe_url: baseUrl + widget.iframe_url,
-          iframe_icon: baseUrl + widget.iframe_icon,
-        }
-      })
-      return acc.concat(widgets)
-    },
-    Promise.resolve([] as ExternalWidgetSetupInfo[])
+  const services = await getServicesFromBlueOS(vehicleStore.globalAddress)
+  const widgets: ExternalWidgetSetupInfo[] = []
+  await Promise.all(
+    services.map(async (service) => {
+      const extraJson = await getExtrasJsonFromBlueOsService(vehicleStore.globalAddress, service)
+      const baseUrl = blueOsServiceUrl(vehicleStore.globalAddress, service)
+      if (extraJson !== null) {
+        widgets.push(
+          ...extraJson.widgets.map((widget) => {
+            return {
+              ...widget,
+              iframe_url: baseUrl + widget.iframe_url,
+              iframe_icon: baseUrl + widget.iframe_icon,
+            }
+          })
+        )
+      }
+    })
   )
 
-  return extraWidgets
+  return widgets
+}
+
+export const getActionsFromBlueOS = async (): Promise<ActionConfig[]> => {
+  const vehicleStore = useMainVehicleStore()
+
+  // Wait until we have a global address
+  while (vehicleStore.globalAddress === undefined) {
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+
+  const services = await getServicesFromBlueOS(vehicleStore.globalAddress)
+  const actions: ActionConfig[] = []
+  await Promise.all(
+    services.map(async (service) => {
+      try {
+        const extraJson = await getExtrasJsonFromBlueOsService(vehicleStore.globalAddress, service)
+        if (extraJson !== null) {
+          actions.push(...extraJson.actions)
+        }
+      } catch (error) {
+        console.error(`Could not get actions from BlueOS service ${service.metadata?.sanitized_name}. ${error}`)
+      }
+    })
+  )
+
+  return actions
 }
 
 export const setBagOfHoldingOnVehicle = async (
