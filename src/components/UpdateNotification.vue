@@ -1,6 +1,6 @@
 <template>
   <InteractionDialog
-    v-model="showUpdateDialog"
+    :show-dialog="showUpdateDialog"
     :title="dialogTitle"
     :message="dialogMessage"
     :variant="dialogVariant"
@@ -27,17 +27,34 @@
         </template>
       </v-progress-linear>
     </template>
+    <template #actions>
+      <v-btn variant="text" size="small" @click="handleCloseDialog">Close</v-btn>
+    </template>
   </InteractionDialog>
 </template>
 
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
-import { onBeforeMount, ref } from 'vue'
+import { onBeforeMount, onMounted, ref } from 'vue'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
+import { openSnackbar } from '@/composables/snackbar'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
 
+defineProps<{
+  /**
+   * Parent-controlled trigger for showing the dialog.
+   */
+  // eslint-disable-next-line vue/no-unused-properties
+  modelValue: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+}>()
+
+const updateAvailable = ref(false)
 const showUpdateDialog = ref(false)
 const dialogTitle = ref('')
 const dialogMessage = ref('')
@@ -51,6 +68,23 @@ const updateInfo = ref({
   releaseNotes: '',
 })
 const ignoredUpdateVersions = useStorage<string[]>('cockpit-ignored-update-versions', [])
+
+// Wait for 2 seconds for updates. If no updates are available, show a message and emit close.
+onMounted(() => {
+  setTimeout(() => {
+    if (updateAvailable.value) {
+      showUpdateDialog.value = true
+    } else {
+      openSnackbar({ message: 'No updates available.', variant: 'success' })
+      emit('update:modelValue', false)
+    }
+  }, 2000)
+})
+
+const handleCloseDialog = (): void => {
+  emit('update:modelValue', false)
+  showUpdateDialog.value = false
+}
 
 const formatDate = (date: string): string => {
   return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -75,7 +109,7 @@ onBeforeMount(() => {
     dialogVariant.value = 'info'
     dialogActions.value = []
     showProgress.value = false
-    showUpdateDialog.value = true
+    updateAvailable.value = true
   })
 
   window.electronAPI.onUpdateNotAvailable(() => {
@@ -87,11 +121,12 @@ onBeforeMount(() => {
       {
         text: 'OK',
         action: () => {
-          showUpdateDialog.value = false
+          handleCloseDialog()
         },
       },
     ]
     showProgress.value = false
+    updateAvailable.value = false
   })
 
   window.electronAPI.onUpdateAvailable((info) => {
@@ -107,7 +142,7 @@ onBeforeMount(() => {
           console.log(`User chose to ignore version ${updateInfo.value.version}`)
           ignoredUpdateVersions.value.push(updateInfo.value.version)
           window.electronAPI!.cancelUpdate()
-          showUpdateDialog.value = false
+          handleCloseDialog()
         },
       },
       {
@@ -121,7 +156,7 @@ onBeforeMount(() => {
               action: () => {
                 console.log('User chose to cancel the update for the Electron app.')
                 window.electronAPI!.cancelUpdate()
-                showUpdateDialog.value = false
+                handleCloseDialog()
                 dialogMessage.value = 'Downloading update...'
               },
             },
@@ -132,7 +167,7 @@ onBeforeMount(() => {
         text: 'Not Now',
         action: () => {
           window.electronAPI!.cancelUpdate()
-          showUpdateDialog.value = false
+          handleCloseDialog()
         },
       },
     ]
@@ -140,11 +175,12 @@ onBeforeMount(() => {
     // Check if this version is in the ignored list
     if (ignoredUpdateVersions.value.includes(info.version)) {
       console.log(`Skipping ignored version ${info.version}.`)
-      showUpdateDialog.value = false
+
+      handleCloseDialog()
       return
     }
 
-    showUpdateDialog.value = true
+    updateAvailable.value = true
   })
 
   window.electronAPI.onDownloadProgress((progressInfo) => {
@@ -171,11 +207,11 @@ onBeforeMount(() => {
         text: 'Later',
         action: () => {
           console.log('User chose to install the update for the Electron app later.')
-          showUpdateDialog.value = false
+          handleCloseDialog()
         },
       },
     ]
-    showUpdateDialog.value = true
+    updateAvailable.value = true
   })
 })
 </script>
