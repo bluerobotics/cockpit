@@ -74,6 +74,14 @@
             persistent-hint
             hide-details
           />
+          <v-checkbox
+            v-model="variable.persistValue"
+            label="Keep Value Between Boots"
+            hint="If checked, the variable's value will be saved and restored when Cockpit restarts"
+            persistent-hint
+            hide-details
+            :disabled="!variable.persistent"
+          />
         </div>
       </v-card-text>
       <v-divider class="mx-10" />
@@ -146,6 +154,7 @@ const resetForm = (): void => {
   variable.type = 'number'
   variable.description = ''
   variable.persistent = true
+  variable.persistValue = true
   initialValue.value = ''
   valueError.value = ''
   isManualIdEnabled.value = false
@@ -173,6 +182,18 @@ watch(
 )
 
 /**
+ * Set persistValue to false when persistent is set to false
+ */
+watch(
+  () => variable.persistent,
+  (isPersistent) => {
+    if (!isPersistent) {
+      variable.persistValue = false
+    }
+  }
+)
+
+/**
  * Watch for changes to editVariable prop
  * If a variable is provided for editing, populate the form with its values
  * Otherwise, reset the form
@@ -186,6 +207,7 @@ watch(
       variable.type = newValue.type
       variable.description = newValue.description || ''
       variable.persistent = newValue.persistent
+      variable.persistValue = newValue.persistValue || false
     } else {
       resetForm()
     }
