@@ -318,7 +318,7 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useDebounceFn, useFullscreen, useStorage, useWindowSize } from '@vueuse/core'
+import { onClickOutside, useFullscreen, useStorage, useWindowSize } from '@vueuse/core'
 import { computed, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -694,11 +694,7 @@ const routerSection = ref()
 // Full screen toggling
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 
-const debouncedToggleFullScreen = useDebounceFn(() => toggleFullscreen(), 10)
-const fullScreenCallbackId = registerActionCallback(
-  availableCockpitActions.toggle_full_screen,
-  debouncedToggleFullScreen
-)
+const fullScreenCallbackId = registerActionCallback(availableCockpitActions.toggle_full_screen, toggleFullscreen)
 onBeforeUnmount(() => unregisterActionCallback(fullScreenCallbackId))
 
 const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscreen-exit' : 'mdi-overscan'))
@@ -744,13 +740,14 @@ const showTopBarNow = ref(true)
 watch([() => widgetStore.currentView, () => widgetStore.currentView.showBottomBarOnBoot], () => {
   showBottomBarNow.value = widgetStore.currentView.showBottomBarOnBoot
 })
-const debouncedToggleBottomBar = useDebounceFn(() => (showBottomBarNow.value = !showBottomBarNow.value), 25)
 const bottomBarToggleCallbackId = registerActionCallback(
   availableCockpitActions.toggle_bottom_bar,
-  debouncedToggleBottomBar
+  () => (showBottomBarNow.value = !showBottomBarNow.value)
 )
-const debouncedToggleTopBar = useDebounceFn(() => (showTopBarNow.value = !showTopBarNow.value), 25)
-const topBarToggleCallbackId = registerActionCallback(availableCockpitActions.toggle_top_bar, debouncedToggleTopBar)
+const topBarToggleCallbackId = registerActionCallback(
+  availableCockpitActions.toggle_top_bar,
+  () => (showTopBarNow.value = !showTopBarNow.value)
+)
 onBeforeUnmount(() => {
   unregisterActionCallback(bottomBarToggleCallbackId)
   unregisterActionCallback(topBarToggleCallbackId)

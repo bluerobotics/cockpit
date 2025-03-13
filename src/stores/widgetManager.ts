@@ -1,6 +1,6 @@
 import '@/libs/cosmos'
 
-import { useDebounceFn, useStorage, useWindowSize } from '@vueuse/core'
+import { useStorage, useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
@@ -781,18 +781,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     loadProfile(defaultProfile)
   }
 
-  const debouncedSelectNextView = useDebounceFn(() => selectNextView(), 10)
-  const selectNextViewCallbackId = registerActionCallback(
-    availableCockpitActions.go_to_next_view,
-    debouncedSelectNextView
-  )
+  const selectNextViewCallbackId = registerActionCallback(availableCockpitActions.go_to_next_view, selectNextView)
   onBeforeUnmount(() => unregisterActionCallback(selectNextViewCallbackId))
 
-  const debouncedSelectPreviousView = useDebounceFn(() => selectPreviousView(), 10)
-  const selectPrevViewCBId = registerActionCallback(
-    availableCockpitActions.go_to_previous_view,
-    debouncedSelectPreviousView
-  )
+  const selectPrevViewCBId = registerActionCallback(availableCockpitActions.go_to_previous_view, selectPreviousView)
   onBeforeUnmount(() => unregisterActionCallback(selectPrevViewCBId))
 
   // Profile migrations
