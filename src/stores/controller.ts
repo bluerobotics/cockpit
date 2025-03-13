@@ -384,6 +384,10 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
+  // Track previous button states to detect rising edges (button press transitions)
+  // Format: Map<actionId, wasActive>
+  const previousActionStates = ref<Map<string, boolean>>(new Map())
+
   registerControllerUpdateCallback((joystickState, actionsMapping, activeActions, actionsConfirmRequired) => {
     if (!joystickState || !actionsMapping || !activeActions || !actionsConfirmRequired) {
       return
@@ -391,10 +395,35 @@ export const useControllerStore = defineStore('controller', () => {
 
     actionsToCallFromJoystick.value = []
 
-    const actionsToCallback = activeActions.filter((a) => a.protocol === JoystickProtocol.CockpitAction)
-    Object.values(actionsToCallback).forEach((a) => {
-      const callback = (): void => addActionToCallFromJoystick(a.id as CockpitActionsFunction)
-      slideToConfirm(callback, { command: a.name }, !actionsConfirmRequired[a.id])
+    // Get list of active actions for this joystick state
+    const currentActiveActions = activeActions.filter((action) => action.protocol === JoystickProtocol.CockpitAction)
+
+    // Process each active cockpit action
+    currentActiveActions.forEach((action) => {
+      // Create a unique key for this action
+      const actionStateKey = `action_${action.id}`
+
+      // Check if this action was active in the previous state
+      const wasActive = previousActionStates.value.get(actionStateKey) || false
+
+      // Store current state for next time
+      previousActionStates.value.set(actionStateKey, true)
+
+      // Only trigger action on rising edge (button was just pressed)
+      if (!wasActive) {
+        const callback = (): void => addActionToCallFromJoystick(action.id as CockpitActionsFunction)
+        slideToConfirm(callback, { command: action.name }, !actionsConfirmRequired[action.id])
+      }
+    })
+
+    // Reset inactive actions' states
+    Array.from(previousActionStates.value.keys()).forEach((actionStateKey) => {
+      const actionId = actionStateKey.replace('action_', '')
+      const isCurrentlyActive = currentActiveActions.some((action) => action.id === actionId)
+
+      if (!isCurrentlyActive) {
+        previousActionStates.value.set(actionStateKey, false)
+      }
     })
 
     if (enableForwarding.value) {
