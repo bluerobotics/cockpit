@@ -28,6 +28,7 @@ import {
   type StreamData,
   type UnprocessedVideoInfo,
   type VideoProcessingDetails,
+  AutoRecordVideoStreams,
   getBlobExtensionContainer,
   VideoExtensionContainer,
   VideoStreamCorrespondency,
@@ -57,7 +58,14 @@ export const useVideoStore = defineStore('video', () => {
   const timeNow = useTimestamp({ interval: 500 })
   const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
   const lastRenamedStreamName = ref('')
-
+  const cockpitAutoRecordStreams = useBlueOsStorage<AutoRecordVideoStreams>('cockpit-auto-record-streams', {
+    autoRecordOption: 'none',
+    selectedStreams: [],
+  })
+  const currentAutoRecordOptions = ref(
+    cockpitAutoRecordStreams.value || { autoRecordOption: 'none', selectedStreams: [] }
+  )
+  const vehicleStore = useMainVehicleStore()
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
   const namessAvailableAbstractedStreams = computed(() => {
@@ -932,6 +940,45 @@ export const useVideoStore = defineStore('video', () => {
     useThrottleFn(stopRecordingAllStreams, 3000)
   )
 
+  // Auto-record streams when vehicle is armed
+  watch(
+    () => vehicleStore.isArmed,
+    (isArmed) => {
+      if (isArmed) {
+        if (currentAutoRecordOptions.value.autoRecordOption === 'all') {
+          startRecordingAllStreams()
+          openSnackbar({
+            message: 'Started recording all available streams.',
+            variant: 'info',
+            duration: 2000,
+          })
+        }
+        if (currentAutoRecordOptions.value.autoRecordOption === 'selected') {
+          currentAutoRecordOptions.value.selectedStreams.forEach((streamInternalName) => {
+            const streamEntry = streamsCorrespondency.value.find((stream) => stream.name === streamInternalName.name)
+            if (streamEntry) {
+              startRecording(streamEntry.externalId)
+              openSnackbar({
+                message: `Started recording stream ${streamEntry.name}.`,
+                variant: 'info',
+                duration: 2000,
+              })
+            }
+          })
+        }
+      }
+      if (!isArmed) {
+        stopRecordingAllStreams()
+        openSnackbar({
+          message: 'Stopped recording all streams.',
+          variant: 'info',
+          duration: 2000,
+        })
+      }
+    },
+    { immediate: true }
+  )
+
   return {
     autoProcessVideos,
     availableIceIps,
@@ -973,5 +1020,6 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams,
     renameStreamInternalNameById,
     lastRenamedStreamName,
+    currentAutoRecordOptions,
   }
 })
