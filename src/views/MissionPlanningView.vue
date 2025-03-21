@@ -277,6 +277,7 @@
     :enable-undo="enableUndoForCurrentSurvey"
     :selected-waypoint="selectedWaypoint"
     :menu-type="contextMenuType"
+    @set-home-position="setHomePosition"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
     @toggle-survey="toggleSurvey"
@@ -306,6 +307,7 @@ import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.v
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
@@ -377,6 +379,8 @@ const waypointMarkers = ref<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
+const currentGeoCoordinates = ref<[number, number] | null>(null)
+const lastHomePosition = useBlueOsStorage<WaypointCoordinates | null>('cockpit-last-home-position', null)
 const confirmButtonStyle = ref<Record<string, string>>({})
 const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
 const isCreatingSurvey = ref(false)
@@ -530,6 +534,17 @@ const hideContextMenu = (): void => {
   contextMenuVisible.value = false
   selectedSurveyId.value = ''
 }
+const setHomePosition = (): void => {
+  if (!currentGeoCoordinates.value) return
+  const newHome: [number, number] = [currentGeoCoordinates.value[0], currentGeoCoordinates.value[1]]
+  home.value = newHome
+  if (planningMap.value) {
+    planningMap.value.setView(newHome, zoom.value)
+  }
+  lastHomePosition.value = newHome
+  mapCenter.value = newHome
+  missionStore.defaultMapCenter = newHome
+}
 
 const toggleSimplePath = (): void => {
   if (isCreatingSimplePath.value) {
@@ -606,7 +621,7 @@ const addSurveyPolygonToMap = (survey: Survey): void => {
 
     L.DomEvent.stopPropagation(event.originalEvent)
     L.DomEvent.preventDefault(event.originalEvent)
-
+    currentGeoCoordinates.value = [event.latlng.lat, event.latlng.lng]
     showContextMenu(event)
   })
 
@@ -855,6 +870,7 @@ const addWaypoint = (
   newMarker.on('contextmenu', (e: L.LeafletMouseEvent) => {
     selectedWaypoint.value = waypoint
     contextMenuType.value = 'waypoint'
+    currentGeoCoordinates.value = [e.latlng.lat, e.latlng.lng]
     showContextMenu(e)
   })
 
@@ -1331,7 +1347,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     if (!continuousPath.length) {
       openSnackbar({
         message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
-        closeButton: true,
+        variant: 'error',
         duration: 2000,
       })
       return
@@ -1559,6 +1575,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     selectedWaypoint.value = waypoint
     selectedSurveyId.value = ''
     interfaceStore.configPanelVisible = false
+    currentGeoCoordinates.value = [event.latlng.lat, event.latlng.lng]
     showContextMenu(event)
   })
 
@@ -1737,6 +1754,7 @@ onMounted(async () => {
     if (isCreatingSurvey.value) return
     selectedWaypoint.value = undefined
     contextMenuType.value = selectedSurveyId.value === '' ? 'map' : contextMenuType.value
+    currentGeoCoordinates.value = [e.latlng.lat, e.latlng.lng]
     showContextMenu(e)
   })
 
@@ -1793,12 +1811,12 @@ watch(home, () => {
   const position = home.value
   if (position === undefined) return
 
-  if (homeMarker.value === undefined) {
-    homeMarker.value = L.marker(position as LatLngTuple)
-    const homeMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
-    homeMarker.value.setIcon(homeMarkerIcon)
+  if (!homeMarker.value) {
+    homeMarker.value = L.marker(position as LatLngTuple, {
+      icon: L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] }),
+    })
     const homeMarkerTooltip = L.tooltip({
-      content: 'H',
+      content: '<i class="mdi mdi-home-map-marker text-[18px]"></i>',
       permanent: true,
       direction: 'center',
       className: 'waypoint-tooltip',
@@ -1806,6 +1824,8 @@ watch(home, () => {
     })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
     planningMap.value.addLayer(homeMarker.value)
+  } else {
+    homeMarker.value.setLatLng(position as LatLngTuple)
   }
   homeMarker.value.setLatLng(home.value)
 })
@@ -1826,11 +1846,11 @@ watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
 })
 
 // Try to update home position based on browser geolocation
-navigator?.geolocation?.watchPosition(
-  (position) => (home.value = [position.coords.latitude, position.coords.longitude]),
-  (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
-  { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-)
+// navigator?.geolocation?.watchPosition(
+//   (position) => (home.value = [position.coords.latitude, position.coords.longitude]),
+//   (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
+//   { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+// )
 
 watch(
   () => interfaceStore.mainMenuCurrentStep,
