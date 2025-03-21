@@ -206,6 +206,14 @@
         </div>
         <v-divider v-if="isCreatingSimplePath || isCreatingSurvey" class="my-2" />
         <button
+          :disabled="loading"
+          class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+          @click="downloadMissionFromVehicle"
+        >
+          <v-progress-circular v-if="loading" size="20" class="py-4" />
+          <p v-else>'DOWNLOAD MISSION FROM VEHICLE'</p>
+        </button>
+        <button
           v-if="isCreatingSimplePath || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0"
           :disabled="missionStore.currentPlanningWaypoints.length < 2"
           :class="{
@@ -277,6 +285,7 @@
     :enable-undo="enableUndoForCurrentSurvey"
     :selected-waypoint="selectedWaypoint"
     :menu-type="contextMenuType"
+    @set-home-position="setHomePosition"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
     @toggle-survey="toggleSurvey"
@@ -289,6 +298,23 @@
   <SideConfigPanel position="right" style="z-index: 600; pointer-events: auto">
     <WaypointConfigPanel :selected-waypoint="selectedWaypoint" @remove-waypoint="removeWaypoint" />
   </SideConfigPanel>
+
+  <v-progress-linear
+    v-if="fetchingMission"
+    :model-value="missionFetchProgress"
+    height="10"
+    absolute
+    bottom
+    color="white"
+    :style="{ top: '48px' }"
+  />
+  <p
+    v-if="fetchingMission"
+    :style="{ top: '48px' }"
+    class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
+  >
+    Loading mission...
+  </p>
 </template>
 
 <script setup lang="ts">
@@ -306,9 +332,11 @@ import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.v
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
+import { Coordinates } from '@/libs/vehicle/types'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -355,12 +383,46 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionStore.currentPlanningWaypoints, loadingCallback)
+    // saveHomeWaypoint()
     const message = `Mission upload succeed! Open the Map widget in Flight Mode and click the "play" button to start the mission.`
     showDialog({ variant: 'success', message, timer: 6000 })
   } catch (error) {
     showDialog({ variant: 'error', title: 'Mission upload failed', message: error as string, timer: 5000 })
   } finally {
     uploadingMission.value = false
+  }
+}
+
+// Allow fetching missions
+const downloadMissionFromVehicle = async (): Promise<void> => {
+  loading.value = true
+  fetchingMission.value = true
+
+  const loadingCallback = async (loadingPerc: number): Promise<void> => {
+    missionFetchProgress.value = loadingPerc
+  }
+  try {
+    const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
+    missionItemsInVehicle.forEach((wp: Waypoint) => {
+      missionStore.currentPlanningWaypoints.push(wp)
+      addWaypointMarker(wp)
+    })
+    reNumberWaypoints()
+
+    const homeWp = await vehicleStore.fetchHomeWaypoint()
+    if (homeWp?.coordinates) {
+      missionStore.missionHome = homeWp.coordinates
+      home.value = homeWp.coordinates
+      currentGeoCoordinates.value = homeWp.coordinates
+      setHomePosition()
+    }
+
+    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
+  } catch (error) {
+    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
+  } finally {
+    loading.value = false
+    fetchingMission.value = false
   }
 }
 
@@ -377,6 +439,8 @@ const waypointMarkers = ref<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
+const currentGeoCoordinates = ref<[number, number] | null>(null)
+const lastHomePosition = useBlueOsStorage<WaypointCoordinates | null>('cockpit-last-home-position', null)
 const confirmButtonStyle = ref<Record<string, string>>({})
 const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
 const isCreatingSurvey = ref(false)
@@ -396,6 +460,17 @@ const cursorCoordinates = ref<[number, number] | null>(null)
 const accessingSurveyContextMenu = ref(false)
 const isDraggingPolygon = ref(false)
 const isDraggingMarker = ref(false)
+const fetchingMission = ref(false)
+const missionFetchProgress = ref(0)
+const loading = ref(false)
+const vehicleHeading = ref(vehicleStore.attitude.yaw)
+
+const saveHomeWaypoint = async (): Promise<void> => {
+  if (missionStore.missionHome) {
+    console.log('🚀 ~ Setting Home WP:', missionStore.missionHome, missionStore.missionHomeAltitude)
+    await vehicleStore.setHomeWaypoint(missionStore.missionHome, missionStore.missionHomeAltitude)
+  }
+}
 
 const enableUndoForCurrentSurvey = computed(() => {
   return (
@@ -530,6 +605,18 @@ const hideContextMenu = (): void => {
   contextMenuVisible.value = false
   selectedSurveyId.value = ''
 }
+const setHomePosition = (): void => {
+  if (!currentGeoCoordinates.value) return
+  const newHome: [number, number] = [currentGeoCoordinates.value[0], currentGeoCoordinates.value[1]]
+  home.value = newHome
+  missionStore.missionHome = newHome
+  if (planningMap.value) {
+    planningMap.value.setView(newHome, zoom.value)
+  }
+  lastHomePosition.value = newHome
+  mapCenter.value = newHome
+  saveHomeWaypoint()
+}
 
 const toggleSimplePath = (): void => {
   if (isCreatingSimplePath.value) {
@@ -606,7 +693,7 @@ const addSurveyPolygonToMap = (survey: Survey): void => {
 
     L.DomEvent.stopPropagation(event.originalEvent)
     L.DomEvent.preventDefault(event.originalEvent)
-
+    currentGeoCoordinates.value = [event.latlng.lat, event.latlng.lng]
     showContextMenu(event)
   })
 
@@ -855,6 +942,7 @@ const addWaypoint = (
   newMarker.on('contextmenu', (e: L.LeafletMouseEvent) => {
     selectedWaypoint.value = waypoint
     contextMenuType.value = 'waypoint'
+    currentGeoCoordinates.value = [e.latlng.lat, e.latlng.lng]
     showContextMenu(e)
   })
 
@@ -1331,7 +1419,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     if (!continuousPath.length) {
       openSnackbar({
         message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
-        closeButton: true,
+        variant: 'error',
         duration: 2000,
       })
       return
@@ -1559,6 +1647,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     selectedWaypoint.value = waypoint
     selectedSurveyId.value = ''
     interfaceStore.configPanelVisible = false
+    currentGeoCoordinates.value = [event.latlng.lat, event.latlng.lng]
     showContextMenu(event)
   })
 
@@ -1737,6 +1826,7 @@ onMounted(async () => {
     if (isCreatingSurvey.value) return
     selectedWaypoint.value = undefined
     contextMenuType.value = selectedSurveyId.value === '' ? 'map' : contextMenuType.value
+    currentGeoCoordinates.value = [e.latlng.lat, e.latlng.lng]
     showContextMenu(e)
   })
 
@@ -1771,10 +1861,10 @@ watch(vehicleStore.coordinates, () => {
 
   if (vehicleMarker.value === undefined) {
     vehicleMarker.value = L.marker(vehiclePosition.value)
-    const vehicleMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
+    const vehicleMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] })
     vehicleMarker.value.setIcon(vehicleMarkerIcon)
     const vehicleMarkerTooltip = L.tooltip({
-      content: 'V',
+      content: '<i class="mdi mdi-send-circle-outline text-[30px]"></i>',
       permanent: true,
       direction: 'center',
       className: 'waypoint-tooltip',
@@ -1787,27 +1877,36 @@ watch(vehicleStore.coordinates, () => {
 })
 
 const homeMarker = ref<L.Marker>()
+
 watch(home, () => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
 
   const position = home.value
   if (position === undefined) return
 
-  if (homeMarker.value === undefined) {
-    homeMarker.value = L.marker(position as LatLngTuple)
-    const homeMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [16, 16], iconAnchor: [8, 8] })
-    homeMarker.value.setIcon(homeMarkerIcon)
+  if (!homeMarker.value) {
+    homeMarker.value = L.marker(position as LatLngTuple, {
+      icon: L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] }),
+      draggable: true,
+    })
     const homeMarkerTooltip = L.tooltip({
-      content: 'H',
+      content: '<i class="mdi mdi-home-map-marker text-[18px]"></i>',
       permanent: true,
       direction: 'center',
       className: 'waypoint-tooltip',
       opacity: 1,
     })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
+    homeMarker.value.on('dragend', (e: L.DragEndEvent) => {
+      const marker = e.target as L.Marker
+      const latlng = marker.getLatLng()
+      currentGeoCoordinates.value = [latlng.lat, latlng.lng]
+      setHomePosition()
+    })
     planningMap.value.addLayer(homeMarker.value)
+  } else {
+    homeMarker.value.setLatLng(position as LatLngTuple)
   }
-  homeMarker.value.setLatLng(home.value)
 })
 
 watch(planningMap, (newMap, oldMap) => {
@@ -1818,19 +1917,21 @@ watch(planningMap, (newMap, oldMap) => {
 
 const missionWaypointsPolyline = ref()
 watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
-  if (planningMap.value === undefined) throw new Error('Map not yet defined')
-  if (missionWaypointsPolyline.value === undefined) {
-    missionWaypointsPolyline.value = L.polyline(newWaypoints.map((w) => w.coordinates)).addTo(planningMap.value)
+  if (!planningMap.value) throw new Error('Map not yet defined')
+  const filteredWaypoints = newWaypoints.filter((w) => w.type !== WaypointType.HOME)
+  if (!missionWaypointsPolyline.value) {
+    missionWaypointsPolyline.value = L.polyline(filteredWaypoints.map((w) => w.coordinates)).addTo(planningMap.value)
+  } else {
+    missionWaypointsPolyline.value.setLatLngs(filteredWaypoints.map((w) => w.coordinates))
   }
-  missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
 })
 
 // Try to update home position based on browser geolocation
-navigator?.geolocation?.watchPosition(
-  (position) => (home.value = [position.coords.latitude, position.coords.longitude]),
-  (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
-  { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-)
+// navigator?.geolocation?.watchPosition(
+//   (position) => (home.value = [position.coords.latitude, position.coords.longitude]),
+//   (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
+//   { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+// )
 
 watch(
   () => interfaceStore.mainMenuCurrentStep,

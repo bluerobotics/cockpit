@@ -28,6 +28,9 @@ export const useMissionStore = defineStore('mission', () => {
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
   const defaultMapCenter = useBlueOsStorage<WaypointCoordinates>('cockpit-default-map-center', DEFAULT_MAP_CENTER)
   const defaultMapZoom = useBlueOsStorage<number>('cockpit-default-map-zoom', DEFAULT_MAP_ZOOM)
+  const missionHome = ref<WaypointCoordinates | undefined>(undefined)
+  const missionHomeAltitude = ref(66)
+
   const { showDialog } = useInteractionDialog()
 
   const mainVehicleStore = useMainVehicleStore()
@@ -121,5 +124,7 @@ export const useMissionStore = defineStore('mission', () => {
     defaultMapZoom,
     setDefaultMapPosition,
     getWaypointNumber,
+    missionHome,
+    missionHomeAltitude,
   }
 })

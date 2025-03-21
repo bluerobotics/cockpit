@@ -433,18 +433,26 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
 // Create marker for the home position
 const homeMarker = ref<L.Marker>()
 watch(home, () => {
-  if (map.value === undefined) return
+  if (map.value === undefined) throw new Error('Map not yet defined')
 
   const position = home.value
   if (position === undefined) return
 
-  if (homeMarker.value === undefined) {
-    homeMarker.value = L.marker(position as LatLngTuple)
-    const homeMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16], html: 'H' })
-    homeMarker.value.setIcon(homeMarkerIcon)
-    const homeMarkerTooltip = L.tooltip({ content: 'No data available', className: 'waypoint-tooltip' })
+  if (!homeMarker.value) {
+    homeMarker.value = L.marker(position as LatLngTuple, {
+      icon: L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] }),
+    })
+    const homeMarkerTooltip = L.tooltip({
+      content: '<i class="mdi mdi-home-map-marker text-[18px]"></i>',
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
     map.value.addLayer(homeMarker.value)
+  } else {
+    homeMarker.value.setLatLng(position as LatLngTuple)
   }
   homeMarker.value.setLatLng(home.value)
 })
@@ -462,8 +470,20 @@ watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
   // Add a marker for each point
   newWaypoints.forEach((waypoint, idx) => {
     const marker = L.marker(waypoint.coordinates)
-    const markerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16], html: `${idx}` })
+    const markerIcon = L.divIcon({
+      className: 'marker-icon',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    })
     marker.setIcon(markerIcon)
+    const markerTooltip = L.tooltip({
+      content: idx.toString(),
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
+    marker.bindTooltip(markerTooltip)
     map.value?.addLayer(marker)
   })
 })
@@ -650,13 +670,9 @@ const vehicleExecuteMissionButtonTooltipText = computed(() => {
 }
 
 .marker-icon {
-  color: white;
-  background-color: #358ac3;
-  padding: 0.75rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: 800;
+  background-color: #1e498f;
+  border: 1px solid #ffffff55;
+  border-radius: 50%;
 }
 
 .waypoint-tooltip {

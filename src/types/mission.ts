@@ -3,6 +3,7 @@
  */
 export enum WaypointType {
   PASS_BY = 'Pass by',
+  HOME = 'Home',
 }
 
 /**

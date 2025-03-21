@@ -4,7 +4,7 @@
       <span class="absolute text-sm text-yellow-400 -bottom-[2px] -right-[7px] mdi mdi-alert-circle"></span>
     </span>
     <div class="flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end">
-      <div class="w-full">
+      <div class="w-full items-center">
         <span class="font-mono">{{ voltageDisplayValue }}</span>
         <span> V</span>
       </div>
@@ -21,11 +21,15 @@
     </div>
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
-    <v-card class="pa-4 text-white w-[20rem]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
+    <v-card
+      class="pa-4 pb-3 text-white w-[20rem]"
+      style="border-radius: 15px"
+      :style="interfaceStore.globalGlassMenuStyles"
+    >
       <v-card-title class="text-center">Battery Indicator Config</v-card-title>
-      <v-card-text class="flex flex-col gap-y-4">
+      <v-card-text class="flex flex-col gap-y-2">
         <v-checkbox v-model="miniWidget.options.showCurrent" label="Show Current" hide-details />
-        <v-checkbox v-model="miniWidget.options.showPower" label="Show Power" hide-details />
+        <v-checkbox v-model="miniWidget.options.showPower" label="Show Power" hide-details class="mt-[-15px]" />
         <v-text-field
           v-model.number="userSetToggleInterval"
           label="Toggle Interval (ms)"
@@ -37,7 +41,28 @@
           :disabled="!miniWidget.options.showCurrent || !miniWidget.options.showPower"
         />
         <p class="text-red-500 text-center text-sm w-[full]">{{ errorMessage }}</p>
+        <v-checkbox v-model="shouldWarnVoltage" hide-details label="Warn if battery voltage drops under:" />
+        <div class="flex items-center">
+          <v-text-field
+            v-model="miniWidget.options.warningVoltage"
+            variant="outlined"
+            hide-details
+            density="compact"
+            type="number"
+            step="0.1"
+            width="30px"
+            :disabled="!shouldWarnVoltage"
+            :class="{ 'opacity-50': !shouldWarnVoltage }"
+          />
+          <p class="w-8 text-center">V</p>
+        </div>
       </v-card-text>
+      <v-divider class="w-4/5 self-center mb-2" />
+      <div class="flex w-full justify-end my-0">
+        <v-btn variant="text" @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
+          >Close</v-btn
+        >
+      </div>
     </v-card>
   </v-dialog>
 </template>
@@ -45,11 +70,14 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
+
+const { showDialog } = useInteractionDialog()
 
 /**
  * Props for the BatteryIndicator component
@@ -78,6 +106,11 @@ const minInterval = 500
 const errorMessage = ref('')
 const errorMessageTimeout = ref<ReturnType<typeof setTimeout> | undefined>(undefined)
 const userSetToggleInterval = ref(miniWidget.value.options.toggleInterval ?? defaultOptions.toggleInterval)
+const shouldWarnVoltage = ref(miniWidget.value.options.warningVoltage !== undefined)
+const warningVoltage = ref(miniWidget.value.options.warningVoltage ?? 0)
+const voltageWarningTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const dialogOpen = ref(false)
+const dialogDismissed = ref(false)
 
 const voltageDisplayValue = computed(() => {
   if (store?.powerSupply?.voltage === undefined) return NaN
@@ -139,6 +172,39 @@ const setupToggleInterval = (): void => {
 }
 
 watch([() => miniWidget.value.options, userSetToggleInterval], setupToggleInterval, { deep: true })
+
+watch(
+  () => voltageDisplayValue.value,
+  (voltage) => {
+    const numericVoltage = Number(voltage)
+    if (
+      shouldWarnVoltage.value &&
+      warningVoltage.value &&
+      numericVoltage < warningVoltage.value &&
+      !dialogDismissed.value
+    ) {
+      if (!voltageWarningTimer.value && !dialogOpen.value) {
+        voltageWarningTimer.value = setTimeout(() => {
+          dialogOpen.value = true
+          showDialog({
+            title: 'Battery Warning',
+            message: `Voltage is below ${warningVoltage.value}V!`,
+            variant: 'error',
+          }).finally(() => {
+            dialogOpen.value = false
+            dialogDismissed.value = true
+          })
+          voltageWarningTimer.value = null
+        }, 5000)
+      }
+    } else {
+      if (voltageWarningTimer.value) {
+        clearTimeout(voltageWarningTimer.value)
+        voltageWarningTimer.value = null
+      }
+    }
+  }
+)
 
 onBeforeMount(() => {
   miniWidget.value.options = Object.assign({}, defaultOptions, miniWidget.value.options)
