@@ -98,7 +98,18 @@ const { openSnackbar } = useSnackbar()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
-const showTutorial = ref(true)
+const props = defineProps<{
+  /**
+   * Parent-controlled trigger for showing the dialog.
+   */
+  modelValue: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+}>()
+
+const showTutorial = ref(false || props.modelValue)
 const currentTutorialStep = useStorage('cockpit-last-tutorial-step', 1)
 const isVehicleConnectedVisible = ref(false)
 const tallContent = ref(false)
@@ -199,14 +210,14 @@ const handleStepChange = (newStep: number): void => {
       interfaceStore.isMainMenuVisible = false
       interfaceStore.mainMenuCurrentStep = 1
       interfaceStore.componentToHighlight = 'none'
-      interfaceStore.currentSubMenuComponentName = null
+      interfaceStore.currentSubMenuComponentName = undefined
       interfaceStore.currentSubMenuName = null
       break
     case 2:
       interfaceStore.isMainMenuVisible = false
       interfaceStore.mainMenuCurrentStep = 1
       interfaceStore.componentToHighlight = 'menu-trigger'
-      interfaceStore.currentSubMenuComponentName = null
+      interfaceStore.currentSubMenuComponentName = undefined
       interfaceStore.currentSubMenuName = null
       interfaceStore.userHasSeenTutorial = false
       break
@@ -215,7 +226,7 @@ const handleStepChange = (newStep: number): void => {
       interfaceStore.mainMenuCurrentStep = 2
       interfaceStore.currentSubMenuName = SubMenuName.settings
       interfaceStore.componentToHighlight = 'settings-menu-item'
-      interfaceStore.currentSubMenuComponentName = null
+      interfaceStore.currentSubMenuComponentName = SubMenuComponentName.None
       interfaceStore.userHasSeenTutorial = false
       break
     case 4:
@@ -316,6 +327,7 @@ const handleStepChange = (newStep: number): void => {
 const dontShowTutorialAgain = (): void => {
   interfaceStore.userHasSeenTutorial = true
   showTutorial.value = false
+  emit('update:modelValue', false)
   currentTutorialStep.value = 1
   openSnackbar({
     message: 'This guide can be reopened via the Settings > General menu',
@@ -348,8 +360,8 @@ const backTutorialStep = (): void => {
 const closeTutorial = (): void => {
   showTutorial.value = false
   interfaceStore.componentToHighlight = 'none'
-  interfaceStore.userHasSeenTutorial = true
   interfaceStore.isTutorialVisible = false
+  emit('update:modelValue', false)
 }
 
 const setVehicleConnectedVisible = (): void => {

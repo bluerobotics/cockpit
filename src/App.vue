@@ -310,10 +310,11 @@
     </v-main>
   </v-app>
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
-  <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
-  <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
-  <UpdateNotification v-if="isElectron()" />
+  <Tutorial :model-value="interfaceStore.isTutorialVisible" />
+  <div v-if="WrappedDialog">
+    <component :is="WrappedDialog" />
+  </div>
   <SnackbarContainer />
 </template>
 
@@ -336,6 +337,7 @@ import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import VideoLibraryModal from '@/components/VideoLibraryModal.vue'
+import { useDialogQueue } from '@/composables/dialogQueue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
   availableCockpitActions,
@@ -366,6 +368,8 @@ import ConfigurationUIView from './views/ConfigurationUIView.vue'
 import ConfigurationVideoView from './views/ConfigurationVideoView.vue'
 import ToolsDataLakeView from './views/ToolsDataLakeView.vue'
 import ToolsMAVLinkView from './views/ToolsMAVLinkView.vue'
+
+const { enqueueDialog, WrappedDialog } = useDialogQueue()
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
 
@@ -757,22 +761,26 @@ onBeforeUnmount(() => {
 const currentTopBarHeightPixels = computed(() => `${widgetStore.currentTopBarHeightPixels}px`)
 const currentBottomBarHeightPixels = computed(() => `${widgetStore.currentBottomBarHeightPixels}px`)
 
-const showDiscoveryDialog = ref(false)
 const preventAutoSearch = useStorage('cockpit-prevent-auto-vehicle-discovery-dialog', false)
 
 onMounted(() => {
-  if (isElectron() && !preventAutoSearch.value) {
+  if (!interfaceStore.userHasSeenTutorial) {
+    enqueueDialog({
+      component: Tutorial,
+    })
+  }
+  if (isElectron()) {
+    enqueueDialog({
+      component: UpdateNotification,
+    })
     // Wait 5 seconds to check if we're connected to a vehicle
     setTimeout(() => {
-      if (vehicleStore.isVehicleOnline) return
-      showDiscoveryDialog.value = true
+      if (vehicleStore.isVehicleOnline || preventAutoSearch.value) return
+      enqueueDialog({
+        component: VehicleDiscoveryDialog,
+        props: { showAutoSearchOption: true },
+      })
     }, 5000)
-  }
-
-  if (!interfaceStore.userHasSeenTutorial) {
-    setTimeout(() => {
-      interfaceStore.isTutorialVisible = true
-    }, 6000)
   }
 })
 </script>
