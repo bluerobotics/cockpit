@@ -69,10 +69,10 @@
                   variant="uncontained"
                   :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
                   :width="buttonSize"
-                  :selected="$route.name === 'Flight'"
+                  :selected="route.name === 'Flight'"
                   @click="
                     () => {
-                      $router.push('/')
+                      router.push('/')
                       closeMainMenu()
                     }
                   "
@@ -87,10 +87,10 @@
                   variant="uncontained"
                   :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
                   :width="buttonSize"
-                  :selected="$route.name === 'Mission planning'"
+                  :selected="route.name === 'Mission planning'"
                   @click="
                     () => {
-                      $router.push('/mission-planning')
+                      router.push('/mission-planning')
                       closeMainMenu()
                     }
                   "
@@ -313,6 +313,7 @@
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
+  <ActionDiscoveryModal auto-check-on-mount />
   <UpdateNotification v-if="isElectron()" />
   <SnackbarContainer />
 </template>
@@ -320,7 +321,7 @@
 <script setup lang="ts">
 import { onClickOutside, useFullscreen, useStorage, useWindowSize } from '@vueuse/core'
 import { computed, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import EditModeIcon from '@/assets/icons/edit-mode.svg'
 import ExitFullScreenIcon from '@/assets/icons/exit-full-screen.svg'
@@ -330,6 +331,7 @@ import InfoIcon from '@/assets/icons/info.svg'
 import MissionPlanningIcon from '@/assets/icons/mission-planning.svg'
 import SettingsIcon from '@/assets/icons/settings.svg'
 import ToolsIcon from '@/assets/icons/tools.svg'
+import ActionDiscoveryModal from '@/components/ActionDiscoveryModal.vue'
 import GlassModal from '@/components/GlassModal.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'
@@ -689,6 +691,7 @@ const openAboutDialog = (): void => {
 }
 
 const route = useRoute()
+const router = useRouter()
 const routerSection = ref()
 
 // Full screen toggling
