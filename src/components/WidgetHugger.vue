@@ -15,7 +15,13 @@
     :class="{ allowMoving, draggingWidget, hoveringWidgetOrOverlay, highlighted }"
   />
   <div ref="outerWidgetRef" class="outerWidget">
-    <div ref="innerWidgetRef" class="innerWidget" :class="{ 'overflow-hidden': hideOverflow }">
+    <div
+      ref="innerWidgetRef"
+      v-contextmenu="handleContextMenu"
+      class="innerWidget"
+      :class="{ 'overflow-hidden': hideOverflow }"
+      :style="{ opacity: widget.options.opacity ?? 1 }"
+    >
       <slot></slot>
     </div>
     <div class="resize-handle top-left" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
@@ -27,6 +33,29 @@
     <div class="resize-handle top" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
     <div class="resize-handle bottom" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
   </div>
+  <ContextMenu
+    ref="contextMenuRef"
+    :visible="contextMenuVisible"
+    :menu-items="contextMenuItems"
+    width="200px"
+    @close="contextMenuVisible = false"
+  >
+    <template #default>
+      <div class="flex justify-between items-center pr-4 h-10 hover:bg-[#FFFFFF11] text-[14px]">
+        <div class="w-full -ml-1">
+          <v-slider
+            v-model="opacitySlider"
+            color="white"
+            min="0.2"
+            max="1"
+            step="0.01"
+            class="scale-75 h-[32px] opacity-75"
+          />
+        </div>
+        <v-icon icon="mdi-circle-opacity" size="16" class="text-[#FFFFFF88] rotate-180" />
+      </div>
+    </template>
+  </ContextMenu>
 </template>
 
 <script setup lang="ts">
@@ -37,7 +66,9 @@ import { constrain, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D } from '@/types/general'
-import type { Widget } from '@/types/widgets'
+import { type Widget, isWidgetConfigurable, WidgetType } from '@/types/widgets'
+
+import ContextMenu from './ContextMenu.vue'
 
 /**
  * Props for the WidgetHugger component
@@ -75,6 +106,39 @@ const outerWidgetRef = ref<HTMLElement | undefined>()
 const innerWidgetRef = ref<HTMLElement | undefined>()
 const widgetView = computed(() => outerWidgetRef.value?.parentElement)
 const widgetResizeHandles = computed(() => outerWidgetRef.value?.getElementsByClassName('resize-handle'))
+const contextMenuRef = ref()
+const contextMenuVisible = ref(false)
+
+const opacitySlider = computed({
+  get() {
+    return widget.value.options?.opacity ?? 1
+  },
+  set(newValue) {
+    if (widget.value.options) {
+      widget.value.options.opacity = newValue
+    }
+  },
+})
+
+const handleContextMenu = {
+  open: (event: MouseEvent | TouchEvent) => {
+    contextMenuRef.value.openAt(event)
+    contextMenuVisible.value = true
+  },
+  close: () => {
+    contextMenuVisible.value = false
+  },
+}
+
+const openWidgetConfig = (): void => {
+  widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen = true
+}
+
+const contextMenuItems = computed(() =>
+  isWidgetConfigurable[widget.value.component as WidgetType]
+    ? [{ item: 'Options', action: openWidgetConfig, icon: 'mdi-cog' }]
+    : []
+)
 
 const devStore = useDevelopmentStore()
 
