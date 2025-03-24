@@ -166,7 +166,7 @@ const tableHeaders = [
   { title: 'Source', align: 'center', key: 'source', width: '120px', fixed: true },
   { title: 'Current Value', align: 'start', key: 'value', width: '220px', fixed: true },
   { title: 'Actions', align: 'end', key: 'actions', width: '100px', fixed: true },
-]
+] as const
 
 const copiedId = ref<string | null>(null)
 const handleCopy = async (id: string): Promise<void> => {
@@ -239,11 +239,18 @@ const parsedCurrentValue = (id: string): string => {
  */
 const searchQuery = ref('')
 
+type ExtendedDataLakeVariable = DataLakeVariable & {
+  /**
+   * The source of the variable
+   */
+  source: string
+}
+
 /**
  * Computed property that returns filtered variables based on the search query
  * Uses Fuse.js for fuzzy search on variable names and descriptions
  */
-const filteredVariables = computed(() => {
+const filteredVariables = computed<ExtendedDataLakeVariable[]>(() => {
   const variables = availableDataLakeVariables.value.map((v) => ({
     ...v,
     source: isCompoundVariable(v.id) ? 'Compound' : 'Cockpit internal',
@@ -251,7 +258,7 @@ const filteredVariables = computed(() => {
 
   if (!searchQuery.value) return variables
 
-  const fuse = new Fuse<DataLakeVariable>(variables, {
+  const fuse = new Fuse<ExtendedDataLakeVariable>(variables, {
     keys: ['name', 'description', 'id', 'source'],
     threshold: 0.3,
   })
