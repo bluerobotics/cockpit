@@ -24,8 +24,12 @@
                     @click="searchQuery = ''"
                   />
                 </div>
-                <v-btn variant="text" class="rounded-md" @click="openNewFunctionDialog">
+                <v-btn variant="text" class="rounded-md" @click="openNewVariableDialog">
                   <v-icon start>mdi-plus</v-icon>
+                  Add variable
+                </v-btn>
+                <v-btn variant="text" class="rounded-md" @click="openNewFunctionDialog">
+                  <v-icon start>mdi-function-variant</v-icon>
                   Add compound variable
                 </v-btn>
               </div>
@@ -100,13 +104,21 @@
                           @click="editCompoundVariable(item.id)"
                         />
                         <v-btn
-                          v-if="isCompoundVariable(item.id)"
+                          v-if="isUserDefinedVariable(item.id)"
+                          variant="outlined"
+                          class="rounded-full mx-1"
+                          icon="mdi-pencil"
+                          size="x-small"
+                          @click="editUserDefinedVariable(item.id)"
+                        />
+                        <v-btn
+                          v-if="isCompoundVariable(item.id) || isUserDefinedVariable(item.id)"
                           variant="outlined"
                           color="error"
                           class="rounded-full mx-1"
                           icon="mdi-delete"
                           size="x-small"
-                          @click="deleteCompoundVariable(item.id)"
+                          @click="deleteVariable(item.id)"
                         />
                       </div>
                     </td>
@@ -132,16 +144,25 @@
     :edit-function="functionBeingEdited"
     @saved="handleFunctionSaved"
   />
+
+  <DataLakeVariableDialog
+    v-model="showVariableDialog"
+    :id-variable-being-edited="idVariableBeingEdited"
+    @saved="handleVariableSaved"
+  />
 </template>
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
 import { computed, onBeforeMount, onUnmounted, ref, watch } from 'vue'
 
+import DataLakeVariableDialog from '@/components/DataLakeVariableDialog.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import TransformingFunctionDialog from '@/components/TransformingFunctionDialog.vue'
+import { openSnackbar } from '@/composables/snackbar'
 import {
   DataLakeVariable,
+  deleteDataLakeVariable,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableData,
   listenDataLakeVariable,
@@ -160,6 +181,18 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
+
+type VariableSource = 'Compound' | 'Cockpit internal' | 'User defined'
+
+/**
+ * DataLakeVariable with source type
+ */
+interface DataLakeVariableWithSource extends DataLakeVariable {
+  /**
+   * Source type
+   */
+  source: VariableSource
+}
 
 const tableHeaders = [
   { title: 'Name', align: 'start', key: 'name', width: '220px', fixed: true, headerProps: { class: 'pl-10' } },
@@ -237,26 +270,36 @@ const parsedCurrentValue = (id: string): string => {
  */
 const searchQuery = ref('')
 
-type ExtendedDataLakeVariable = DataLakeVariable & {
-  /**
-   * The source of the variable
-   */
-  source: string
+/**
+ * Gets the source type for a data lake variable
+ * @param {string} id Variable ID
+ * @returns {VariableSource} Source type
+ */
+const getVariableSource = (id: string): VariableSource => {
+  if (isCompoundVariable(id)) {
+    return 'Compound'
+  }
+
+  if (isUserDefinedVariable(id)) {
+    return 'User defined'
+  }
+
+  return 'Cockpit internal'
 }
 
 /**
  * Computed property that returns filtered variables based on the search query
  * Uses Fuse.js for fuzzy search on variable names and descriptions
  */
-const filteredVariables = computed<ExtendedDataLakeVariable[]>(() => {
+const filteredVariables = computed<DataLakeVariableWithSource[]>(() => {
   const variables = availableDataLakeVariables.value.map((v) => ({
     ...v,
-    source: isCompoundVariable(v.id) ? 'Compound' : 'Cockpit internal',
+    source: getVariableSource(v.id),
   }))
 
   if (!searchQuery.value) return variables
 
-  const fuse = new Fuse<ExtendedDataLakeVariable>(variables, {
+  const fuse = new Fuse<DataLakeVariableWithSource>(variables, {
     keys: ['name', 'description', 'id', 'source'],
     threshold: 0.3,
   })
@@ -265,7 +308,7 @@ const filteredVariables = computed<ExtendedDataLakeVariable[]>(() => {
 
 // Do not listen to variables that are not in the list, so we don't use unnecessary CPU/Memory resources
 // eslint-disable-next-line jsdoc/require-jsdoc
-const updateListOfActiveVariables = (currentItems: { raw: ExtendedDataLakeVariable }[]): void => {
+const updateListOfActiveVariables = (currentItems: { raw: DataLakeVariableWithSource }[]): void => {
   const currentItemsIds = currentItems.map((v) => v.raw.id)
   dataLakeVariablesCurrentlyBeingShown = currentItemsIds
   setupVariableListeners()
@@ -278,12 +321,68 @@ const updateTableOptions = (options: any): void => {
   }
 }
 
+// Variable management
+const showVariableDialog = ref(false)
+let idVariableBeingEdited: string | undefined
+
+/**
+ * Opens the dialog to create a new variable
+ */
+const openNewVariableDialog = (): void => {
+  idVariableBeingEdited = undefined
+  showVariableDialog.value = true
+}
+
+/**
+ * Opens the dialog to edit an existing variable
+ * @param {string} variableId The ID of the variable to edit
+ */
+const editUserDefinedVariable = (variableId: string): void => {
+  const variable = availableDataLakeVariables.value.find((v) => v.id === variableId)
+  if (variable && isUserDefinedVariable(variableId)) {
+    idVariableBeingEdited = variableId
+    showVariableDialog.value = true
+  } else if (variable && !isUserDefinedVariable(variableId)) {
+    openSnackbar({ message: `Variable with ID ${variableId} is not editable`, variant: 'error' })
+  } else {
+    openSnackbar({ message: `Variable with ID ${variableId} not found`, variant: 'error' })
+  }
+}
+
+/**
+ * Handles variable save event
+ */
+const handleVariableSaved = (): void => {
+  showVariableDialog.value = false
+}
+
+/**
+ * Deletes a variable (either compound or regular)
+ * @param {string} id Variable ID
+ */
+const deleteVariable = (id: string): void => {
+  if (isCompoundVariable(id)) {
+    const func = getAllTransformingFunctions().find((f) => f.id === id)
+    if (func) {
+      deleteTransformingFunction(func)
+    }
+  } else if (isUserDefinedVariable(id)) {
+    deleteDataLakeVariable(id)
+  } else {
+    openSnackbar({ message: `Variable with ID ${id} cannot be deleted`, variant: 'error' })
+  }
+}
+
 // Compound variables functionality
 const showNewFunctionDialog = ref(false)
 const functionBeingEdited = ref<TransformingFunction | undefined>(undefined)
 
 const isCompoundVariable = (id: string): boolean => {
   return getAllTransformingFunctions().some((func) => func.id === id)
+}
+
+const isUserDefinedVariable = (id: string): boolean => {
+  return availableDataLakeVariables.value.find((v) => v.id === id)?.persistent ?? false
 }
 
 const editCompoundVariable = (id: string): void => {
@@ -307,13 +406,6 @@ watch(showNewFunctionDialog, (show) => {
   if (show) return
   functionBeingEdited.value = undefined
 })
-
-const deleteCompoundVariable = (id: string): void => {
-  const func = getAllTransformingFunctions().find((f) => f.id === id)
-  if (func) {
-    deleteTransformingFunction(func)
-  }
-}
 </script>
 
 <style scoped>
