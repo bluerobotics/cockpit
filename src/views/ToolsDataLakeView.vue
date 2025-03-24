@@ -38,6 +38,7 @@
                 :style="interfaceStore.globalGlassMenuStyles"
                 :headers="tableHeaders"
                 :header-props="{ style: { backgroundColor: 'rgba(0, 0, 0, 0.1)' } }"
+                @update:options="(options) => updateTableOptions(options)"
                 @update:current-items="(currentItems) => updateListOfActiveVariables(currentItems)"
               >
                 <template #item="{ item }">
@@ -135,7 +136,7 @@
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onBeforeMount, onUnmounted, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import TransformingFunctionDialog from '@/components/TransformingFunctionDialog.vue'
@@ -178,40 +179,39 @@ const handleCopy = async (id: string): Promise<void> => {
 }
 
 const availableDataLakeVariables = ref<DataLakeVariable[]>([])
+let dataLakeVariablesCurrentlyBeingShown: string[] = []
 const currentValues = ref<Record<string, string | number | boolean | undefined>>({})
+let initialVariablesSetupRun = false
 
-const listeners = ref<Record<string, string>>({})
+const listeners: Record<string, string> = {}
 let dataLakeVariableInfoListenerId: string | undefined
 
-const setupVariableListeners = (idsVariablesToListen?: string[]): void => {
+const setupVariableListeners = (): void => {
   cleanupVariableListeners()
 
-  idsVariablesToListen = idsVariablesToListen ?? availableDataLakeVariables.value.map((v) => v.id)
-
-  idsVariablesToListen.forEach((variableId) => {
+  dataLakeVariablesCurrentlyBeingShown.forEach((variableId) => {
     currentValues.value[variableId] = getDataLakeVariableData(variableId)
 
     const listenerId = listenDataLakeVariable(variableId, (value) => {
       currentValues.value[variableId] = value
     })
 
-    listeners.value[variableId] = listenerId
+    listeners[variableId] = listenerId
   })
 }
 
 const cleanupVariableListeners = (): void => {
-  Object.entries(listeners.value).forEach(([id, listenerId]) => {
-    unlistenDataLakeVariable(id, listenerId)
+  Object.entries(listeners).forEach(([variableId, listenerId]) => {
+    unlistenDataLakeVariable(variableId, listenerId)
+    delete listeners[variableId]
   })
 }
 
-onMounted(() => {
+onBeforeMount(() => {
   availableDataLakeVariables.value = Object.values(getAllDataLakeVariablesInfo())
   dataLakeVariableInfoListenerId = listenToDataLakeVariablesInfoChanges((variables) => {
     availableDataLakeVariables.value = Object.values(variables)
   })
-
-  setupVariableListeners()
 })
 
 onUnmounted(() => {
@@ -221,8 +221,6 @@ onUnmounted(() => {
     unlistenToDataLakeVariablesInfoChanges(dataLakeVariableInfoListenerId)
   }
 })
-
-watch(availableDataLakeVariables, () => setupVariableListeners())
 
 const parsedCurrentValue = (id: string): string => {
   if (currentValues.value[id] === undefined) return ''
@@ -267,9 +265,17 @@ const filteredVariables = computed<ExtendedDataLakeVariable[]>(() => {
 
 // Do not listen to variables that are not in the list, so we don't use unnecessary CPU/Memory resources
 // eslint-disable-next-line jsdoc/require-jsdoc
-const updateListOfActiveVariables = (currentItems: { key: string }[]): void => {
-  const currentItemsIds = currentItems.map((v) => v.key)
-  setupVariableListeners(currentItemsIds)
+const updateListOfActiveVariables = (currentItems: { raw: ExtendedDataLakeVariable }[]): void => {
+  const currentItemsIds = currentItems.map((v) => v.raw.id)
+  dataLakeVariablesCurrentlyBeingShown = currentItemsIds
+  setupVariableListeners()
+}
+
+const updateTableOptions = (options: any): void => {
+  if (!initialVariablesSetupRun) {
+    initialVariablesSetupRun = true
+    updateListOfActiveVariables(filteredVariables.value.slice(0, options.itemsPerPage).map((v) => ({ raw: v })))
+  }
 }
 
 // Compound variables functionality
