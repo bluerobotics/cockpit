@@ -134,7 +134,7 @@ const saveLinksToPersistentStorage = (): void => {
           actionId: link.actionId,
           actionType: link.actionType,
           variables: link.variables,
-          minInterval: link.minInterval,
+          minInterval: Number(link.minInterval),
         },
       }),
       {}
