@@ -1,102 +1,68 @@
 <template>
-  <v-dialog v-model="actionDialog.show" max-width="500px">
-    <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-h6 font-weight-bold py-4 text-center">{{
-        editMode ? 'Edit action' : 'Create new action'
-      }}</v-card-title>
-      <v-card-text class="px-8">
-        <v-form class="d-flex flex-column gap-2" @submit.prevent="createActionConfig">
-          <v-text-field
-            v-model="newActionConfig.name"
-            label="Action Name"
-            required
-            variant="outlined"
-            density="compact"
-          ></v-text-field>
-          <v-select
-            v-model="newActionConfig.method"
-            :items="availableHttpRequestMethods"
-            label="Request Type"
-            required
-            variant="outlined"
-            density="compact"
-            theme="dark"
-          />
-          <v-text-field
-            v-model="newActionConfig.url"
-            label="URL"
-            required
-            variant="outlined"
-            density="compact"
-          ></v-text-field>
+  <v-form class="d-flex flex-column gap-2">
+    <v-select
+      v-model="newActionConfig.method"
+      :items="availableHttpRequestMethods"
+      label="Request Type"
+      required
+      variant="outlined"
+      density="compact"
+      theme="dark"
+    />
+    <v-text-field v-model="newActionConfig.url" label="URL" required variant="outlined" density="compact" />
 
-          <div class="d-flex align-center justify-space-between">
-            <h3 class="text-subtitle-2 font-weight-bold">URL Parameters</h3>
-            <v-btn variant="text" class="px-2 py-1" density="compact" @click="openUrlParamDialog">
-              <v-icon size="small">mdi-plus</v-icon>
-              Add
-            </v-btn>
-          </div>
-          <div v-if="Object.keys(newActionConfig.urlParams).length > 0" class="mb-2">
-            <v-chip-group>
-              <v-chip
-                v-for="(param, index) in Object.entries(newActionConfig.urlParams)"
-                :key="`param-${index}`"
-                closable
-                size="x-small"
-                class="m-1"
-                @click:close="removeUrlParam(param[0])"
-              >
-                {{ param[0] }}: {{ param[1] }}
-              </v-chip>
-            </v-chip-group>
-          </div>
+    <div class="d-flex align-center justify-space-between">
+      <h3 class="text-subtitle-2 font-weight-bold">URL Parameters</h3>
+      <v-btn variant="text" class="px-2 py-1" density="compact" @click="openUrlParamDialog">
+        <v-icon size="small">mdi-plus</v-icon>
+        Add
+      </v-btn>
+    </div>
+    <div v-if="Object.keys(newActionConfig.urlParams).length > 0" class="mb-2">
+      <v-chip-group>
+        <v-chip
+          v-for="(param, index) in Object.entries(newActionConfig.urlParams)"
+          :key="`param-${index}`"
+          closable
+          size="x-small"
+          class="m-1"
+          @click:close="removeUrlParam(param[0])"
+        >
+          {{ param[0] }}: {{ param[1] }}
+        </v-chip>
+      </v-chip-group>
+    </div>
 
-          <div class="d-flex align-center justify-space-between">
-            <h3 class="text-subtitle-2 font-weight-bold">Headers</h3>
-            <v-btn variant="text" class="px-2 py-1" density="compact" @click="openHeaderDialog">
-              <v-icon size="small">mdi-plus</v-icon>
-              Add
-            </v-btn>
-          </div>
-          <div v-if="Object.keys(newActionConfig.headers).length > 0" class="mb-2">
-            <v-chip-group>
-              <v-chip
-                v-for="(header, index) in Object.entries(newActionConfig.headers)"
-                :key="`header-${index}`"
-                closable
-                size="x-small"
-                class="m-1"
-                @click:close="removeHeader(header[0])"
-              >
-                {{ header[0] }}: {{ header[1] }}
-              </v-chip>
-            </v-chip-group>
-          </div>
+    <div class="d-flex align-center justify-space-between">
+      <h3 class="text-subtitle-2 font-weight-bold">Headers</h3>
+      <v-btn variant="text" class="px-2 py-1" density="compact" @click="openHeaderDialog">
+        <v-icon size="small">mdi-plus</v-icon>
+        Add
+      </v-btn>
+    </div>
+    <div v-if="Object.keys(newActionConfig.headers).length > 0" class="mb-2">
+      <v-chip-group>
+        <v-chip
+          v-for="(header, index) in Object.entries(newActionConfig.headers)"
+          :key="`header-${index}`"
+          closable
+          size="x-small"
+          class="m-1"
+          @click:close="removeHeader(header[0])"
+        >
+          {{ header[0] }}: {{ header[1] }}
+        </v-chip>
+      </v-chip-group>
+    </div>
 
-          <div class="d-flex align-center justify-space-between">
-            <h3 class="text-subtitle-2 font-weight-bold">JSON Body</h3>
-            <v-btn variant="text" class="px-2 py-1" density="compact" @click="openJsonDialog">
-              <v-icon size="small">mdi-code-json</v-icon>
-              Edit
-            </v-btn>
-          </div>
-        </v-form>
-      </v-card-text>
-      <v-divider class="mt-2 mx-10" />
-      <v-card-actions>
-        <div class="flex justify-between items-center pa-2 w-full h-full">
-          <v-btn color="white" variant="text" @click="closeActionDialog">Cancel</v-btn>
-          <div class="flex gap-x-10">
-            <v-btn variant="text" @click="resetNewAction">Reset</v-btn>
-            <v-btn color="primary" :disabled="!isFormValid" variant="text" @click="saveActionConfig">
-              {{ editMode ? 'Save' : 'Create' }}
-            </v-btn>
-          </div>
-        </div>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <div class="d-flex align-center justify-space-between">
+      <h3 class="text-subtitle-2 font-weight-bold">JSON Body</h3>
+      <v-btn variant="text" class="px-2 py-1" density="compact" @click="openJsonDialog">
+        <v-icon size="small">mdi-code-json</v-icon>
+        Edit
+      </v-btn>
+    </div>
+  </v-form>
 
   <!-- URL Parameter Dialog -->
   <v-dialog v-model="urlParamDialog.show" max-width="400px">
@@ -110,7 +76,7 @@
             required
             variant="outlined"
             density="compact"
-          ></v-text-field>
+          />
           <v-select
             v-model="urlParamDialog.valueType"
             :items="paramValueOptions"
@@ -128,14 +94,14 @@
             variant="outlined"
             density="compact"
             placeholder="Non-dynamic value."
-          ></v-text-field>
+          />
         </v-form>
       </v-card-text>
       <v-divider class="m-2" />
       <v-card-actions class="pa-2 -mb-1">
         <div class="flex w-full justify-between">
           <v-btn color="white" variant="text" size="small" @click="closeUrlParamDialog">Cancel</v-btn>
-          <v-btn color="white" size="small" @click="saveUrlParameter()"> Save </v-btn>
+          <v-btn color="white" size="small" @click="addUrlParameter"> Save </v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -144,8 +110,8 @@
   <!-- Header Dialog -->
   <v-dialog v-model="headerDialog.show" max-width="400px">
     <v-card class="rounded-lg p-3" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-h6 font-weight-bold pb-4 text-center">Add header</v-card-title>
-      <v-card-text class="pa-4">
+      <v-card-title class="text-h6 font-weight-bold pa-2 text-center">Add header</v-card-title>
+      <v-card-text class="px-6">
         <v-form class="d-flex flex-column gap-2" @submit.prevent="addHeader">
           <v-text-field
             v-model="headerDialog.key"
@@ -154,20 +120,15 @@
             variant="outlined"
             :error-messages="headerDialog.error"
             density="compact"
-          ></v-text-field>
-          <v-text-field
-            v-model="headerDialog.value"
-            label="Header Value"
-            variant="outlined"
-            density="compact"
-          ></v-text-field>
+          />
+          <v-text-field v-model="headerDialog.value" label="Header Value" variant="outlined" density="compact" />
         </v-form>
       </v-card-text>
       <v-divider class="m-2" />
       <v-card-actions class="pa-2 -mb-1">
         <div class="flex w-full justify-between">
-          <v-btn color="white" variant="text" size="small" @click="closeHeaderDialog">Cancel</v-btn>
-          <v-btn color="white" size="small" @click="addHeader">Save</v-btn>
+          <v-btn color="white" variant="text" @click="closeHeaderDialog">Cancel</v-btn>
+          <v-btn color="white" @click="addHeader">Save</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -189,7 +150,7 @@
             variant="outlined"
             density="compact"
             @update:model-value="validateJsonTemplateForDialog"
-          ></v-textarea>
+          />
         </v-form>
       </v-card-text>
       <v-divider class="m-2" />
@@ -204,23 +165,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
-import {
-  availableHttpRequestMethods,
-  deleteHttpRequestActionConfig,
-  getHttpRequestActionConfig,
-  HttpRequestActionConfig,
-  HttpRequestMethod,
-  registerHttpRequestActionConfig,
-} from '@/libs/actions/http-request'
+import { availableHttpRequestMethods, HttpRequestActionConfig, HttpRequestMethod } from '@/libs/actions/http-request'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { ValidationFunctionReturn } from '@/types/general'
 
+/**
+ * Props for the HttpRequestActionConfig component
+ */
+const props = defineProps<{
+  /** The configuration for the HTTP request action */
+  actionConfig: HttpRequestActionConfig
+}>()
+
+/**
+ * Emits for the HttpRequestActionConfig component
+ */
 const emit = defineEmits<{
-  (e: 'action-saved'): void
-  (e: 'action-deleted'): void
+  /** Emitted when the action configuration is updated */
+  'update:action-config': [config: HttpRequestActionConfig]
 }>()
 
 const interfaceStore = useAppInterfaceStore()
@@ -270,13 +235,12 @@ const paramValueOptions = computed(() => {
   return options
 })
 
-const isFormValid = computed(() => {
+const isValid = computed(() => {
   return isValidRequestConfig(newActionConfig.value)
 })
 
 const isValidRequestConfig = (config: HttpRequestActionConfig): boolean => {
   return (
-    !!config.name &&
     !!config.method &&
     !!config.url &&
     isValidUrlParams(config.urlParams) &&
@@ -325,14 +289,14 @@ const validateJsonTemplate = (template: string): ValidationFunctionReturn => {
 }
 
 const isValidJsonTemplate = (template: string): boolean => {
-  const { isValid } = validateJsonTemplate(template)
-  return isValid
+  const { isValid: templateIsValid } = validateJsonTemplate(template)
+  return templateIsValid
 }
 
 const validateJsonTemplateForDialog = (template: string): void => {
-  const { isValid, error } = validateJsonTemplate(template)
+  const { isValid: templateIsValid, error } = validateJsonTemplate(template)
   bodyDialog.value.error = error ?? ''
-  bodyDialog.value.isValid = isValid
+  bodyDialog.value.isValid = templateIsValid
 }
 
 const isValidUrlParams = (params: Record<string, string>): boolean => {
@@ -380,6 +344,7 @@ const addUrlParameter = (): void => {
   const value = urlParamDialog.value.valueType === 'fixed' ? urlParamDialog.value.fixedValue : parsedValue
   newActionConfig.value.urlParams[urlParamDialog.value.key] = value
   closeUrlParamDialog()
+  emit('update:action-config', newActionConfig.value)
 }
 
 const openJsonDialog = (): void => {
@@ -399,11 +364,13 @@ const saveJsonBody = (): void => {
   if (bodyDialog.value.isValid) {
     newActionConfig.value.body = bodyDialog.value.bodyText
     closeJsonDialog()
+    emit('update:action-config', newActionConfig.value)
   }
 }
 
 const removeUrlParam = (key: string): void => {
   delete newActionConfig.value.urlParams[key]
+  emit('update:action-config', newActionConfig.value)
 }
 
 const openHeaderDialog = (): void => {
@@ -421,91 +388,52 @@ const closeHeaderDialog = (): void => {
 }
 
 const addHeader = (): void => {
-  const { isValid, error } = isValidHeaders({ [headerDialog.value.key]: headerDialog.value.value })
-  if (isValid) {
+  const { isValid: headerIsValid, error: headerError } = isValidHeaders({
+    [headerDialog.value.key]: headerDialog.value.value,
+  })
+  if (headerIsValid) {
     newActionConfig.value.headers[headerDialog.value.key] = headerDialog.value.value
     closeHeaderDialog()
+    emit('update:action-config', newActionConfig.value)
   } else {
-    headerDialog.value.error = error
+    headerDialog.value.error = headerError || ''
   }
 }
 
 const removeHeader = (key: string): void => {
   delete newActionConfig.value.headers[key]
+  emit('update:action-config', newActionConfig.value)
 }
 
-const editMode = ref(false)
-
-const createActionConfig = (): void => {
-  editMode.value = false
-  registerHttpRequestActionConfig(newActionConfig.value)
-  emit('action-saved')
-  resetNewAction()
-}
-
-const saveActionConfig = (): void => {
-  createActionConfig()
-  closeActionDialog()
-}
-
-const resetNewAction = (): void => {
+const reset = (): void => {
   newActionConfig.value = JSON.parse(JSON.stringify(defaultActionConfig))
   bodyInputError.value = ''
-  editMode.value = false
+  emit('update:action-config', newActionConfig.value)
 }
 
-const exportAction = (id: string): void => {
-  const action = getHttpRequestActionConfig(id)
-  if (!action) {
-    console.error('Action not found')
-    return
-  }
-  const json = JSON.stringify(action, null, 2)
-  const blob = new Blob([json], { type: 'application/json' })
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.style.display = 'none'
-  a.href = url
-  a.download = `${id}.json`
-  document.body.appendChild(a)
-  a.click()
-  window.URL.revokeObjectURL(url)
-  a.remove()
-}
+// Watch for changes in the parent's actionConfig
+watch(
+  () => props.actionConfig,
+  (newConfig) => {
+    if (newConfig) {
+      newActionConfig.value = { ...newConfig }
+    }
+  },
+  { immediate: true }
+)
 
-const deleteAction = (id: string): void => {
-  deleteHttpRequestActionConfig(id)
-  emit('action-deleted')
-}
-
-const actionDialog = ref({
-  show: false,
-})
-
-const closeActionDialog = (): void => {
-  actionDialog.value.show = false
-  resetNewAction()
-}
-
-const openEditDialog = (id: string): void => {
-  const action = getHttpRequestActionConfig(id)
-  if (action) {
-    editMode.value = true
-    newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
-    actionDialog.value.show = true
-  }
-}
-
-const openNewDialog = (): void => {
-  resetNewAction()
-  actionDialog.value.show = true
-}
+// Watch for local changes to emit updates
+watch(
+  newActionConfig,
+  (newValue) => {
+    emit('update:action-config', newValue)
+  },
+  { deep: true }
+)
 
 defineExpose({
-  openEditDialog,
-  openNewDialog,
-  exportAction,
-  deleteAction,
+  isValid,
+  reset,
 })
 </script>
 
