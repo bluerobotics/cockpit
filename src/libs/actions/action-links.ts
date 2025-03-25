@@ -19,6 +19,7 @@ interface ActionLink {
 
 const actionLinks: Record<string, ActionLink> = {}
 const listenerIds: Record<string, string[]> = {}
+const pendingExecutions: Record<string, ReturnType<typeof setTimeout>> = {}
 
 /**
  * Save a new action link configuration and set up the watchers
@@ -94,9 +95,18 @@ const executeLinkedAction = (actionId: string): void => {
   if (!link) return
 
   const now = Date.now()
-  if (now - link.lastExecutionTime >= link.minInterval) {
+  const timeSinceLastExecution = now - link.lastExecutionTime
+  if (timeSinceLastExecution >= link.minInterval) {
     link.lastExecutionTime = now
+    clearTimeout(pendingExecutions[actionId])
     executeActionCallback(actionId)
+  } else {
+    if (pendingExecutions[actionId]) {
+      clearTimeout(pendingExecutions[actionId])
+    }
+    pendingExecutions[actionId] = setTimeout(() => {
+      executeActionCallback(actionId)
+    }, link.minInterval - timeSinceLastExecution)
   }
 }
 
