@@ -1,4 +1,4 @@
-import { useStorage, useTimestamp, watchThrottled } from '@vueuse/core'
+import { useStorage, useTimestamp } from '@vueuse/core'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
@@ -7,7 +7,12 @@ import { computed, reactive, ref, watch } from 'vue'
 import { defaultGlobalAddress } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
-import { DataLakeVariable, getDataLakeVariableInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
+import {
+  DataLakeVariable,
+  getAllDataLakeVariablesInfo,
+  getDataLakeVariableInfo,
+  setDataLakeVariableData,
+} from '@/libs/actions/data-lake'
 import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { altitude_setpoint } from '@/libs/altitude-slider'
 import {
@@ -126,9 +131,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const timeNow = useTimestamp({ interval: 100 })
   const statusText: StatusText = reactive({} as StatusText)
   const statusGPS: StatusGPS = reactive({} as StatusGPS)
-  const genericVariables: Record<string, unknown> = reactive({})
-  const availableGenericVariables = ref<string[]>([])
-  const usedGenericVariables = ref<string[]>([])
   const vehicleArmingTime = ref<Date | undefined>(undefined)
 
   const mode = ref<string | undefined>(undefined)
@@ -389,21 +391,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   }
 
-  const registerUsageOfGenericVariable = (variable: string): void => {
-    if (usedGenericVariables.value.includes(variable)) return
-    usedGenericVariables.value.push(variable)
-  }
-
-  watchThrottled(usedGenericVariables, () => registerGenericVariablesUsageOnVehicle(), { throttle: 1000, deep: true })
-
-  const registerGenericVariablesUsageOnVehicle = (): void => {
-    if (!mainVehicle.value) return
-
-    usedGenericVariables.value.forEach((variable) => {
-      mainVehicle.value?.registerUsageOfMessageType(variable)
-    })
-  }
-
   ConnectionManager.onMainConnection.add(() => {
     const newMainConnection = ConnectionManager.mainConnection()
     console.log('Main connection changed:', newMainConnection?.uri().toString())
@@ -424,7 +411,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     modes.value = mainVehicle.value.modesAvailable()
     icon.value = mainVehicle.value.icon()
     configurationPages.value = mainVehicle.value.configurationPages()
-    registerGenericVariablesUsageOnVehicle()
 
     mainVehicle.value.onAltitude.add((newAltitude: Altitude) => {
       Object.assign(altitude, newAltitude)
@@ -473,10 +459,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onStatusGPS.add((newStatusGPS: StatusGPS) => {
       Object.assign(statusGPS, newStatusGPS)
     })
-    mainVehicle.value.onGenericVariables.add((newGenericVariablesState: Record<string, unknown>) => {
-      Object.assign(genericVariables, newGenericVariablesState)
-      availableGenericVariables.value = mainVehicle.value?._availableGenericVariablesdMessagePaths ?? []
-    })
 
     // Get the ID for the currently connected vehicle, or create one if it does not exist
     // Try this every 5 seconds until we have an ID
@@ -507,6 +489,18 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     updateVehicleId()
 
+    const blueOsVariables = {
+      cpuTemp: { id: 'blueos/cpu/tempC', name: 'CPU Temperature', type: 'number' },
+    }
+
+    // Register BlueOS variables in the data lake
+    Object.values(blueOsVariables).forEach((variable) => {
+      if (!Object.values(getAllDataLakeVariablesInfo()).find((v) => v.id === variable.id)) {
+        // @ts-ignore: The type is right, only being incorrectly inferred by TS
+        createDataLakeVariable({ ...variable, persistent: false, persistValue: false })
+      }
+    })
+
     setInterval(async () => {
       try {
         const blueosStatus = await getStatus(globalAddress.value)
@@ -518,23 +512,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         return
       }
 
-      const blueosVariablesAddresses = {
-        cpuTemp: 'blueos/cpu/tempC',
-      }
-
-      Object.values(blueosVariablesAddresses).forEach((address) => {
-        if (!availableGenericVariables.value.includes(address)) {
-          availableGenericVariables.value.push(address)
-        }
-      })
-
-      if (usedGenericVariables.value.includes(blueosVariablesAddresses.cpuTemp)) {
-        try {
-          const temp = await getCpuTempCelsius(globalAddress.value)
-          Object.assign(genericVariables, { ...genericVariables, ...{ [blueosVariablesAddresses.cpuTemp]: temp } })
-        } catch (error) {
-          console.error(error)
-        }
+      // Update CPU temperature in the data lake
+      try {
+        const temp = await getCpuTempCelsius(globalAddress.value)
+        setDataLakeVariableData(blueOsVariables.cpuTemp.id, temp)
+      } catch (error) {
+        console.error(`Failed to update CPU temperature in data lake: ${error}`)
       }
     }, 1000)
 
@@ -672,9 +655,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     configurationPages,
     rtcConfiguration,
     customWebRTCConfiguration,
-    genericVariables,
-    availableGenericVariables,
-    registerUsageOfGenericVariable,
     listenToIncomingMessages,
     listenToOutgoingMessages,
   }
