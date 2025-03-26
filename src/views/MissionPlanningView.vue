@@ -1852,15 +1852,26 @@ watch([home, planningMap], async () => {
 })
 
 const centerHomeButtonTooltipText = computed(() => {
-  if (home.value === undefined) return 'Home position is currently undefined'
-  if (targetFollower.getCurrentTarget() === WhoToFollow.HOME) return 'Tracking home position'
-  return 'Click once to center on home or twice to track it'
+  if (home.value === undefined) {
+    return 'Cannot center map on home (home position undefined).'
+  }
+  if (followerTarget.value === WhoToFollow.HOME) {
+    return 'Tracking home position. Click to stop tracking.'
+  }
+  return 'Click once to center on home or twice to track it.'
 })
 
 const centerVehicleButtonTooltipText = computed(() => {
-  if (vehiclePosition.value === undefined) return 'Vehicle position is currently undefined'
-  if (targetFollower.getCurrentTarget() === WhoToFollow.VEHICLE) return 'Tracking vehicle position'
-  return 'Click once to center on vehicle or twice to track it'
+  if (!vehicleStore.isVehicleOnline) {
+    return 'Cannot center map on vehicle (vehicle offline).'
+  }
+  if (vehiclePosition.value === undefined) {
+    return 'Cannot center map on vehicle (vehicle position undefined).'
+  }
+  if (followerTarget.value === WhoToFollow.VEHICLE) {
+    return 'Tracking vehicle position. Click to stop tracking.'
+  }
+  return 'Click once to center on vehicle or twice to track it.'
 })
 </script>
 
