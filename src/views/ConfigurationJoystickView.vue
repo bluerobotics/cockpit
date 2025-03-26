@@ -558,6 +558,7 @@ import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
+import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { JoystickModel } from '@/libs/joystick/manager'
@@ -794,7 +795,16 @@ const axisRemappingText = computed(() => {
 })
 
 const buttonActionsToShow = computed(() =>
-  controllerStore.availableButtonActions.filter((a) => JSON.stringify(a) !== JSON.stringify(modifierKeyActions.regular))
+  controllerStore.availableButtonActions.filter((a) => {
+    // Do not show the action to the regular modifier key, as it's the default behavior when not pressing any modifier key
+    const isNotRegularAction = JSON.stringify(a) !== JSON.stringify(modifierKeyActions.regular)
+
+    // Do not show transforming functions, as they are calculated, not to be injected
+    const transformingFunctions = getAllTransformingFunctions()
+    const isNotTransformingFunction = !transformingFunctions.some((v) => v.id === a.id)
+
+    return isNotRegularAction && isNotTransformingFunction
+  })
 )
 
 const availableVehicleTypes = computed(() => Object.keys(MavType))
