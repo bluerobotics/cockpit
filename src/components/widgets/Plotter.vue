@@ -19,9 +19,22 @@
         <v-col cols="12">
           <div class="text-subtitle-1 font-weight-medium mb-4">Data Source</div>
           <div class="ml-2">
+            <v-text-field
+              v-model="searchTerm"
+              density="compact"
+              variant="filled"
+              theme="dark"
+              type="text"
+              placeholder="Search variables..."
+              class="mb-4"
+              clearable
+              @update:model-value="menuOpen = true"
+              @click:clear="menuOpen = false"
+              @update:focused="(isFocused: boolean) => (menuOpen = isFocused)"
+            />
             <v-select
               v-model="widget.options.dataLakeVariableId"
-              :items="availableDataLakeNumberVariables"
+              :items="filteredDataLakeNumberVariables"
               item-title="name"
               item-value="id"
               label="Data Lake variable"
@@ -29,6 +42,8 @@
               persistent-hint
               variant="outlined"
               density="comfortable"
+              :menu-props="{ modelValue: menuOpen }"
+              @click="menuOpen = !menuOpen"
             />
           </div>
         </v-col>
@@ -192,6 +207,19 @@ onUnmounted(() => {
 
 const availableDataLakeNumberVariables = computed(() => {
   return availableDataLakeVariables.value.filter((variable) => variable.type === 'number')
+})
+
+const searchTerm = ref('')
+const menuOpen = ref(false)
+
+watch(
+  () => widget.value.options.dataLakeVariableId,
+  () => (menuOpen.value = false)
+)
+
+const filteredDataLakeNumberVariables = computed(() => {
+  const search = (searchTerm.value || '').toLowerCase()
+  return availableDataLakeNumberVariables.value.filter((variable) => variable.name.toLowerCase().includes(search))
 })
 
 // Remove the oldest sample if the number of samples is greater than the max samples
