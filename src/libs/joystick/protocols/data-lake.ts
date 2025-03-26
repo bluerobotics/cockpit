@@ -49,14 +49,24 @@ setupPostPiniaConnection(() => {
     if (!joystickState || !actionsMapping) return
 
     const useShift = activeActions.map((a) => a.id).includes(modifierKeyActions.shift.id)
-    const modifierKeyId = useShift ? CockpitModifierKeyOption.shift : CockpitModifierKeyOption.regular
 
     joystickState.buttons
       .map((btnState, idx) => ({ id: idx, value: btnState }))
       .forEach((btn) => {
-        const btnMapping = actionsMapping.buttonsCorrespondencies[modifierKeyId as CockpitModifierKeyOption][btn.id]
-        if (btnMapping && btnMapping.action && btnMapping.action.protocol === JoystickProtocol.DataLakeVariable) {
-          setDataLakeVariableData(btnMapping.action.id, Number(btn.value))
+        // Check both regular and shift mappings
+        const regularMapping = actionsMapping.buttonsCorrespondencies[CockpitModifierKeyOption.regular][btn.id]
+        const shiftMapping = actionsMapping.buttonsCorrespondencies[CockpitModifierKeyOption.shift][btn.id]
+
+        // Handle regular button press
+        if (regularMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
+          const shouldBeActive = btn.value && !useShift
+          setDataLakeVariableData(regularMapping.action.id, shouldBeActive ? Number(btn.value) : 0)
+        }
+
+        // Handle shift+button press
+        if (shiftMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
+          const shouldBeActive = btn.value && useShift
+          setDataLakeVariableData(shiftMapping.action.id, shouldBeActive ? Number(btn.value) : 0)
         }
       })
   })
