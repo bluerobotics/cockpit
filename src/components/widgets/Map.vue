@@ -1,10 +1,7 @@
 <template>
   <div ref="mapBase" class="page-base" :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'">
     <div :id="mapId" ref="map" class="map">
-      <v-tooltip
-        location="top"
-        :text="home ? 'Center map on home position.' : 'Cannot center map on home (home position undefined).'"
-      >
+      <v-tooltip location="top" :text="centerHomeButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
@@ -23,10 +20,7 @@
         </template>
       </v-tooltip>
 
-      <v-tooltip
-        location="top"
-        :text="vehiclePosition ? 'Center map on vehicle position.' : 'Cannot center map on vehicle (vehicle offline).'"
-      >
+      <v-tooltip location="top" :text="centerVehicleButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
@@ -624,13 +618,36 @@ const topProgressBarDisplacement = computed(() => {
 const vehicleDownloadMissionButtonTooltipText = computed(() => {
   return vehicleStore.isVehicleOnline
     ? 'Download the mission that is stored in the vehicle.'
-    : 'Vehicle offline (cannot download mission).'
+    : 'Cannot download mission (vehicle offline).'
 })
 
 const vehicleExecuteMissionButtonTooltipText = computed(() => {
   return vehicleStore.isVehicleOnline
     ? 'Execute the mission that is stored in the vehicle.'
-    : 'Vehicle offline (cannot execute mission).'
+    : 'Cannot execute mission (vehicle offline).'
+})
+
+const centerHomeButtonTooltipText = computed(() => {
+  if (home.value === undefined) {
+    return 'Cannot center map on home (home position undefined).'
+  }
+  if (followerTarget.value === WhoToFollow.HOME) {
+    return 'Tracking home position. Click to stop tracking.'
+  }
+  return 'Click once to center on home or twice to track it.'
+})
+
+const centerVehicleButtonTooltipText = computed(() => {
+  if (!vehicleStore.isVehicleOnline) {
+    return 'Cannot center map on vehicle (vehicle offline).'
+  }
+  if (vehiclePosition.value === undefined) {
+    return 'Cannot center map on vehicle (vehicle position undefined).'
+  }
+  if (followerTarget.value === WhoToFollow.VEHICLE) {
+    return 'Tracking vehicle position. Click to stop tracking.'
+  }
+  return 'Click once to center on vehicle or twice to track it.'
 })
 </script>
 
