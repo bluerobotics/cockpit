@@ -6,7 +6,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute left-0 m-3 bottom-button bg-slate-50"
+            class="absolute right-[166px] m-3 bottom-button bg-slate-50"
             :class="!home ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
             elevation="2"
@@ -25,7 +25,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute m-3 bottom-button left-10 bg-slate-50"
+            class="absolute m-3 bottom-button right-[124px] bg-slate-50"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
             elevation="2"
@@ -44,7 +44,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute m-3 bottom-button left-20 bg-slate-50"
+            class="absolute m-3 bottom-button right-[82px] bg-slate-50"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
             :disabled="!vehicleStore.isVehicleOnline"
             elevation="2"
@@ -60,7 +60,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute mb-3 ml-1 bottom-button left-32 bg-slate-50"
+            class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
             :disabled="!vehicleStore.isVehicleOnline"
             elevation="2"
