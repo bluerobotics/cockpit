@@ -222,8 +222,8 @@
     <v-tooltip location="top center" :text="centerHomeButtonTooltipText">
       <template #activator="{ props: tooltipProps }">
         <v-btn
-          class="absolute m-3 rounded-sm shadow-sm bottom-14 bg-slate-50"
-          :class="[!home ? 'active-events-on-disabled' : '', isCreatingSurvey ? 'left-[320px]' : 'left-6']"
+          class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[88px]"
+          :class="[!home ? 'active-events-on-disabled' : '']"
           :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
           icon="mdi-home-map-marker"
           size="x-small"
@@ -237,8 +237,8 @@
     <v-tooltip location="top center" :text="centerVehicleButtonTooltipText">
       <template #activator="{ props: tooltipProps }">
         <v-btn
-          class="absolute m-3 rounded-sm shadow-sm bottom-14 bg-slate-50"
-          :class="[!vehiclePosition ? 'active-events-on-disabled' : '', isCreatingSurvey ? 'left-[360px]' : 'left-16']"
+          class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[44px]"
+          :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
           :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
           icon="mdi-airplane-marker"
           size="x-small"
@@ -1398,8 +1398,8 @@ const createSurveyVertexMarker = (
           <div class="delete-popup" style="display: none;">
             <button class="delete-button">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2" 
-                      stroke="white" stroke-width="1.5" 
+                <path d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2"
+                      stroke="white" stroke-width="1.5"
                       stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
