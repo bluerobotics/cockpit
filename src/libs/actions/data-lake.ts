@@ -1,6 +1,11 @@
 import { v4 as uuid } from 'uuid'
 
 /**
+ * The type of a variable in the data lake
+ */
+export type DataLakeVariableType = 'string' | 'number' | 'boolean'
+
+/**
  * A variable to be used on a Cockpit action
  * @param { string } id - The id of the variable
  * @param { string } name - The name of the variable
@@ -12,7 +17,7 @@ import { v4 as uuid } from 'uuid'
 export class DataLakeVariable {
   id: string
   name: string
-  type: 'string' | 'number' | 'boolean'
+  type: DataLakeVariableType
   description?: string
   persistent: boolean
   persistValue: boolean
@@ -20,7 +25,7 @@ export class DataLakeVariable {
   constructor(
     id: string,
     name: string,
-    type: 'string' | 'number' | 'boolean',
+    type: DataLakeVariableType,
     description?: string,
     persistent = false,
     persistValue = false
