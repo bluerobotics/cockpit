@@ -31,6 +31,7 @@ export enum SubMenuComponentName {
   SettingsDataLake = 'settings-datalake',
   ToolsMAVLink = 'tools-mavlink',
   ToolsDataLake = 'tools-datalake',
+  None = 'none',
 }
 
 export const useAppInterfaceStore = defineStore('responsive', {
@@ -51,7 +52,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     isMainMenuVisible: false,
     mainMenuCurrentStep: 1,
     currentSubMenuName: ref<SubMenuName | null>(null),
-    currentSubMenuComponentName: ref<SubMenuComponentName | null>(null),
+    currentSubMenuComponentName: ref<SubMenuComponentName | undefined>(undefined),
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
