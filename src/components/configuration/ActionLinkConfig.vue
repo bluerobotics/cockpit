@@ -76,6 +76,10 @@ const interfaceStore = useAppInterfaceStore()
 const searchQuery = ref('')
 const menuOpen = ref(false)
 
+const emit = defineEmits<{
+  (e: 'save', action: ActionConfig, variables: string[], minInterval: number): void
+}>()
+
 const defaultDialogConfig = {
   show: false,
   action: null as ActionConfig | null,
@@ -135,6 +139,7 @@ const saveConfig = (): void => {
     )
   }
 
+  emit('save', dialog.value.action, dialog.value.selectedVariables, dialog.value.minInterval)
   closeDialog()
 }
 

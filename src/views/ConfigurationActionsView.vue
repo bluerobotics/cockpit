@@ -151,7 +151,7 @@
           </v-card>
         </v-dialog>
 
-        <ActionLinkConfig ref="linkConfig" />
+        <ActionLinkConfig ref="linkConfig" @save="handleLinkSaved" />
 
         <!-- Action configuration components with their dialogs -->
         <HttpRequestActionConfig
@@ -263,6 +263,10 @@ const loadAllActions = (): void => {
 }
 
 const handleActionSaved = (): void => {
+  loadAllActions()
+}
+
+const handleLinkSaved = (): void => {
   loadAllActions()
 }
 
