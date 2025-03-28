@@ -1,93 +1,67 @@
 <template>
-  <!-- Action Dialog -->
-  <v-dialog v-model="actionDialog.show" max-width="500px">
-    <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-h6 font-weight-bold py-4 text-center">
-        {{ editMode ? 'Edit action' : 'Create new action' }}
-      </v-card-title>
-      <v-card-text class="px-8">
-        <v-form class="d-flex flex-column gap-2" @submit.prevent="saveActionConfig">
-          <v-text-field
-            v-model="newActionConfig.name"
-            label="Action Name"
-            required
-            variant="outlined"
-            density="compact"
-          />
-          <v-select
-            v-model="newActionConfig.messageType"
-            :items="availableMessageTypes"
-            label="Message Type"
-            required
-            variant="outlined"
-            density="compact"
-            theme="dark"
-            @update:model-value="resetActionConfig(newActionConfig.messageType)"
-          />
+  <v-form class="d-flex flex-column gap-2">
+    <v-select
+      v-model="newActionConfig.messageType"
+      :items="availableMessageTypes"
+      label="Message Type"
+      required
+      variant="outlined"
+      density="compact"
+      theme="dark"
+      @update:model-value="resetActionConfig(newActionConfig.messageType)"
+    />
 
-          <div v-if="newActionConfig.messageType" class="mt-4">
-            <h3 class="text-subtitle-1 font-weight-bold mb-2">Message Configuration</h3>
-            <div v-if="typeof messageFields !== 'string' && Object.keys(messageFields).length > 0">
-              <div v-for="(field, key) in messageFields" :key="key" class="mb-1">
-                <v-text-field
-                  v-model.trim="newActionConfig.messageConfig[key].value"
-                  :label="field.description + (field.units ? ` (${field.units})` : '')"
-                  :placeholder="field.type"
-                  variant="outlined"
-                  density="compact"
-                  :rules="[field.required ? (v) => !!v || 'This field is required' : () => true]"
-                />
-              </div>
-            </div>
-            <div v-else>
-              <v-textarea
-                v-model="newActionConfig.messageConfig"
-                label="Message fields object"
-                variant="outlined"
-                density="compact"
-                hint="Insert a JSON object with the message fields here. Use {{ data_lake_key }} for dynamic values. Use { type: 'ENUM_VALUE' } for enum values (e.g.: MAV_CMD_COMPONENT_ARM_DISARM)."
-                persistent-hint
-                rows="12"
-              />
-            </div>
-          </div>
-        </v-form>
-      </v-card-text>
-      <v-divider class="mt-2 mx-10" />
-      <v-card-actions>
-        <div class="flex justify-between items-center pa-2 w-full h-full" style="color: rgba(255, 255, 255, 0.5)">
-          <v-btn @click="closeActionDialog">Cancel</v-btn>
-          <div class="flex gap-x-10">
-            <v-btn @click="resetNewAction">Reset</v-btn>
-            <v-btn :disabled="!isFormValid" class="text-white" @click="saveActionConfig">
-              {{ editMode ? 'Save' : 'Create' }}
-            </v-btn>
-          </div>
+    <div v-if="newActionConfig.messageType" class="mt-4">
+      <h3 class="text-subtitle-1 font-weight-bold mb-2">Message Configuration</h3>
+      <div v-if="typeof messageFields !== 'string' && Object.keys(messageFields).length > 0">
+        <div v-for="(field, key) in messageFields" :key="key" class="mb-1">
+          <v-text-field
+            v-model.trim="newActionConfig.messageConfig[key].value"
+            :label="field.description + (field.units ? ` (${field.units})` : '')"
+            :placeholder="field.type"
+            variant="outlined"
+            density="compact"
+            :rules="[field.required ? (v) => !!v || 'This field is required' : () => true]"
+          />
         </div>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </div>
+      <div v-else>
+        <v-textarea
+          v-model="newActionConfig.messageConfig"
+          label="Message fields object"
+          variant="outlined"
+          density="compact"
+          hint="Insert a JSON object with the message fields here. Use {{ data_lake_key }} for dynamic values. Use { type: 'ENUM_VALUE' } for enum values (e.g.: MAV_CMD_COMPONENT_ARM_DISARM)."
+          persistent-hint
+          rows="12"
+        />
+      </div>
+    </div>
+  </v-form>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import {
-  type MavlinkMessageActionConfig,
-  deleteMavlinkMessageActionConfig,
-  getMavlinkMessageActionConfig,
-  registerMavlinkMessageActionConfig,
-} from '@/libs/actions/mavlink-message-actions'
+import { type MavlinkMessageActionConfig } from '@/libs/actions/mavlink-message-actions'
 import { messageFieldDefinitions } from '@/libs/actions/mavlink-message-actions-message-definitions'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { useAppInterfaceStore } from '@/stores/appInterface'
 
-const emit = defineEmits<{
-  (e: 'action-saved'): void
-  (e: 'action-deleted'): void
+/**
+ * Props for the MavlinkMessageActionConfig component
+ */
+const props = defineProps<{
+  /** The configuration for the MAVLink message action */
+  actionConfig: MavlinkMessageActionConfig
 }>()
 
-const interfaceStore = useAppInterfaceStore()
+/**
+ * Emits for the MavlinkMessageActionConfig component
+ */
+const emit = defineEmits<{
+  /** Emitted when the action configuration is updated */
+  (e: 'update:action-config', config: MavlinkMessageActionConfig): void
+}>()
 
 const defaultMessageType = MAVLinkType.COMMAND_LONG
 const defaultActionConfig = {
@@ -95,9 +69,6 @@ const defaultActionConfig = {
   messageType: defaultMessageType,
   messageConfig: messageFieldDefinitions[defaultMessageType] || '',
 }
-
-const actionDialog = ref({ show: false })
-const editMode = ref(false)
 const newActionConfig = ref<MavlinkMessageActionConfig>(defaultActionConfig)
 
 const availableMessageTypes = Object.values(MAVLinkType)
@@ -107,8 +78,8 @@ const messageFields = computed(() => {
   return messageFieldDefinitions[selectedType] || ''
 })
 
-const isFormValid = computed(() => {
-  if (!newActionConfig.value.name || !newActionConfig.value.messageType) {
+const isValid = computed(() => {
+  if (!newActionConfig.value.messageType) {
     return false
   }
 
@@ -141,72 +112,41 @@ const resetActionConfig = (messageType: MAVLinkType = defaultMessageType): void 
     2
   )
   newActionConfig.value.messageConfig = messageFieldDefinitions[messageType] || exampleStringConfig
+  emit('update:action-config', newActionConfig.value)
 }
 
-const resetNewAction = (): void => {
-  newActionConfig.value = { ...defaultActionConfig }
-}
-
-const createActionConfig = (): void => {
-  editMode.value = false
-  registerMavlinkMessageActionConfig(newActionConfig.value)
-  emit('action-saved')
-  resetNewAction()
-}
-
-const saveActionConfig = (): void => {
-  createActionConfig()
-  closeActionDialog()
-}
-
-const exportAction = (id: string): void => {
-  const action = getMavlinkMessageActionConfig(id)
-  if (!action) {
-    console.error('Action not found')
-    return
+const reset = (): void => {
+  newActionConfig.value = {
+    name: '',
+    messageType: defaultMessageType,
+    messageConfig: messageFieldDefinitions[defaultMessageType] || '',
   }
-  const json = JSON.stringify(action, null, 2)
-  const blob = new Blob([json], { type: 'application/json' })
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.style.display = 'none'
-  a.href = url
-  a.download = `${id}.json`
-  document.body.appendChild(a)
-  a.click()
-  window.URL.revokeObjectURL(url)
-  a.remove()
+  emit('update:action-config', newActionConfig.value)
 }
 
-const deleteAction = (id: string): void => {
-  deleteMavlinkMessageActionConfig(id)
-  emit('action-deleted')
-}
+// Watch for changes in the parent's actionConfig
+watch(
+  () => props.actionConfig,
+  (newConfig) => {
+    if (newConfig) {
+      newActionConfig.value = { ...newConfig }
+    }
+  },
+  { immediate: true }
+)
 
-const closeActionDialog = (): void => {
-  actionDialog.value.show = false
-  resetNewAction()
-}
-
-const openEditDialog = (id: string): void => {
-  const action = getMavlinkMessageActionConfig(id)
-  if (action) {
-    editMode.value = true
-    newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
-    actionDialog.value.show = true
-  }
-}
-
-const openNewDialog = (): void => {
-  resetNewAction()
-  actionDialog.value.show = true
-}
+// Watch for local changes to emit updates
+watch(
+  newActionConfig,
+  (newValue) => {
+    emit('update:action-config', newValue)
+  },
+  { deep: true }
+)
 
 defineExpose({
-  openEditDialog,
-  openNewDialog,
-  exportAction,
-  deleteAction,
+  isValid,
+  reset,
 })
 </script>
 
