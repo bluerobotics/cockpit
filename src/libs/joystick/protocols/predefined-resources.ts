@@ -1,8 +1,12 @@
-import { saveActionLink } from '@/libs/actions/action-links'
+import { getAllActionLinks, saveActionLink } from '@/libs/actions/action-links'
 import { DataLakeVariable } from '@/libs/actions/data-lake'
 import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
-import { MessageFieldType, registerMavlinkMessageActionConfig } from '@/libs/actions/mavlink-message-actions'
+import {
+  getAllMavlinkMessageActionConfigs,
+  MessageFieldType,
+  registerMavlinkMessageActionConfig,
+} from '@/libs/actions/mavlink-message-actions'
 import { MavCmd, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { getUnindentedString } from '@/libs/utils'
 import { customActionTypes } from '@/types/cockpit-actions'
@@ -54,8 +58,10 @@ export const setupMavlinkCameraResources = (): void => {
     console.error('Error creating camera focus transforming function:', error)
   }
 
-  // Create MAVLink message action for camera zoom
-  const cameraZoomActionId = registerMavlinkMessageActionConfig({
+  const existingActions = getAllMavlinkMessageActionConfigs()
+
+  // Create MAVLink message action for camera zoom (if not already registered)
+  const cameraZoomAction = {
     name: 'Camera Zoom (MAVLink)',
     messageType: MAVLinkType.COMMAND_LONG,
     messageConfig: {
@@ -71,10 +77,18 @@ export const setupMavlinkCameraResources = (): void => {
       param6: { value: 0, type: MessageFieldType.NUMBER }, // Unused
       param7: { value: 0, type: MessageFieldType.NUMBER }, // Unused
     },
-  })
+  }
 
-  // Create MAVLink message action for camera focus
-  const cameraFocusActionId = registerMavlinkMessageActionConfig({
+  let cameraZoomActionId = undefined
+  const existingCameraZoomAction = Object.entries(existingActions).find(([, a]) => a.name === cameraZoomAction.name)
+  if (existingCameraZoomAction) {
+    cameraZoomActionId = existingCameraZoomAction[0]
+  } else {
+    cameraZoomActionId = registerMavlinkMessageActionConfig(cameraZoomAction)
+  }
+
+  // Create MAVLink message action for camera focus (if not already registered)
+  const cameraFocusAction = {
     name: 'Camera Focus (MAVLink)',
     messageType: MAVLinkType.COMMAND_LONG,
     messageConfig: {
@@ -90,11 +104,24 @@ export const setupMavlinkCameraResources = (): void => {
       param6: { value: 0, type: MessageFieldType.NUMBER }, // Unused
       param7: { value: 0, type: MessageFieldType.NUMBER }, // Unused
     },
-  })
+  }
 
-  // Link the camera zoom and focus actions to the camera zoom and focus variables
-  saveActionLink(cameraZoomActionId, customActionTypes.mavlinkMessage, ['camera-zoom'], 10)
-  saveActionLink(cameraFocusActionId, customActionTypes.mavlinkMessage, ['camera-focus'], 10)
+  let cameraFocusActionId = undefined
+  const existingCameraFocusAction = Object.entries(existingActions).find(([, a]) => a.name === cameraFocusAction.name)
+  if (existingCameraFocusAction) {
+    cameraFocusActionId = existingCameraFocusAction[0]
+  } else {
+    cameraFocusActionId = registerMavlinkMessageActionConfig(cameraFocusAction)
+  }
+
+  // Link the camera zoom and focus actions to the camera zoom and focus variables (if not already linked)
+  const existingLinks = getAllActionLinks()
+  if (cameraZoomActionId && !existingLinks[cameraZoomActionId]) {
+    saveActionLink(cameraZoomActionId, customActionTypes.mavlinkMessage, ['camera-zoom'], 10)
+  }
+  if (cameraFocusActionId && !existingLinks[cameraFocusActionId]) {
+    saveActionLink(cameraFocusActionId, customActionTypes.mavlinkMessage, ['camera-focus'], 10)
+  }
 }
 
 export const setupPredefinedLakeAndActionResources = (): void => {
