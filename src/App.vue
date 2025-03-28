@@ -315,6 +315,8 @@
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <UpdateNotification v-if="isElectron()" />
   <SnackbarContainer />
+  <AutoRecordVideoDialog v-model:showDialog="showAutoRecordVideoDialog" @close="handleCloseAutoRecordVideoDialog" />
+  <RecordingReminder v-if="showRecordingReminder" @close="showRecordingReminder = false" />
 </template>
 
 <script setup lang="ts">
@@ -331,6 +333,7 @@ import MissionPlanningIcon from '@/assets/icons/mission-planning.svg'
 import SettingsIcon from '@/assets/icons/settings.svg'
 import ToolsIcon from '@/assets/icons/tools.svg'
 import GlassModal from '@/components/GlassModal.vue'
+import RecordingReminder from '@/components/RecordingReminder.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
@@ -346,6 +349,7 @@ import { isElectron } from '@/libs/utils'
 
 import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
+import AutoRecordVideoDialog from './components/AutoRecordVideoDialog.vue'
 import EditMenu from './components/EditMenu.vue'
 import GlassButton from './components/GlassButton.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
@@ -353,8 +357,10 @@ import SlideToConfirm from './components/SlideToConfirm.vue'
 import { useSnackbar } from './composables/snackbar'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
+import { useVideoStore } from './stores/video'
 import { useWidgetManagerStore } from './stores/widgetManager'
 import { SubMenuComponent } from './types/general'
+import { AutoRecordVideoStreams } from './types/video'
 import ConfigurationActionsView from './views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from './views/ConfigurationAlertsView.vue'
 import ConfigurationDevelopmentView from './views/ConfigurationDevelopmentView.vue'
@@ -372,11 +378,14 @@ const { openSnackbar } = useSnackbar()
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
+const videoStore = useVideoStore()
 
+const showAutoRecordVideoDialog = ref(false)
 const showAboutDialog = ref(false)
 const showSubMenu = ref(false)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
 const mainMenu = ref()
+const showRecordingReminder = ref(false)
 
 // Main menu
 const isMenuOpen = ref(false)
@@ -642,6 +651,45 @@ watch(
     resetConnectionStatusFeedback()
   }
 )
+
+const handleCloseAutoRecordVideoDialog = (): void => {
+  openSnackbar({
+    message: 'You can find this settings again at: Main menu -> Settings -> Video -> Auto Record Streams',
+    variant: 'info',
+    duration: 4000,
+  })
+  showAutoRecordVideoDialog.value = false
+}
+
+const checkAutoRecordingStreams = (): void => {
+  const rawSettings = localStorage.getItem('cockpit-auto-record-streams')
+  const autoRecordingSettings: AutoRecordVideoStreams | null = rawSettings ? JSON.parse(rawSettings) : null
+  const isVideoStreamAvailable = videoStore.streamsCorrespondency.length > 0
+
+  if (vehicleStore.isArmed && autoRecordingSettings && !autoRecordingSettings.autoRecordOption) {
+    showAutoRecordVideoDialog.value = true
+  }
+  if (
+    vehicleStore.isArmed &&
+    autoRecordingSettings &&
+    isVideoStreamAvailable &&
+    autoRecordingSettings.showReminder === true
+  ) {
+    setTimeout(() => {
+      showRecordingReminder.value = true
+    }, autoRecordingSettings.reminderDelay * 1000)
+  }
+}
+
+// Auto record video dialog and recording reminder
+watch(
+  () => vehicleStore.isArmed,
+  () => checkAutoRecordingStreams()
+)
+
+onMounted(() => {
+  checkAutoRecordingStreams()
+})
 
 const buttonSize = computed(() => {
   if (interfaceStore.is2xl) return 72
