@@ -138,6 +138,9 @@ export const useAlertStore = defineStore('alert', () => {
   watch(alerts, () => {
     const lastAlert = alerts.slice(-1)[0]
     const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === lastAlert.level)
+    if (lastAlert.level === AlertLevel.Critical && alertLevelEnabled !== undefined && alertLevelEnabled.enabled) {
+      speak(lastAlert.message)
+    }
     if (
       !enableVoiceAlerts.value ||
       ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !lastAlert.message.startsWith('#'))
