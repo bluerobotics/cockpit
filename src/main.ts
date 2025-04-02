@@ -13,14 +13,15 @@ import { createApp } from 'vue'
 import VueDraggableResizable from 'vue-draggable-resizable'
 import VueVirtualScroller from 'vue-virtual-scroller'
 
+import { initializeActionAutoRun } from '@/libs/actions/auto-run'
 import { app_version } from '@/libs/cosmos'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
+import { setupPredefinedLakeAndActionResources } from '@/libs/joystick/protocols/predefined-resources'
+import { setupPostPiniaConnections } from '@/libs/post-pinia-connections'
 import { runMigrations } from '@/utils/migrations'
 
 import App from './App.vue'
 import { contextMenu } from './directives/contextMenu'
-import { setupPredefinedLakeAndActionResources } from './libs/joystick/protocols/predefined-resources'
-import { setupPostPiniaConnections } from './libs/post-pinia-connections'
 import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
 import router from './router'
@@ -68,3 +69,6 @@ setupPostPiniaConnections()
 
 // Setup predefined data-lake variables, Cockpit actions, transforming functions and action-links
 setupPredefinedLakeAndActionResources()
+
+// Initialize auto-run for actions
+initializeActionAutoRun()

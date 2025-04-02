@@ -46,6 +46,37 @@
         />
 
         <div class="mt-4">
+          <p class="text-subtitle-1 font-weight-bold mb-2">Auto-Run Options</p>
+          <v-radio-group v-model="dialog.autoRunType" class="mt-2">
+            <v-radio value="none" label="Do not run automatically"></v-radio>
+            <v-radio value="once" label="Run automatically once"></v-radio>
+            <v-radio value="interval" label="Run automatically frequently"></v-radio>
+          </v-radio-group>
+
+          <v-text-field
+            v-if="dialog.autoRunType === 'once'"
+            v-model="dialog.startupDelay"
+            label="Delay after startup (ms)"
+            type="number"
+            min="0"
+            variant="outlined"
+            density="compact"
+            class="mt-2"
+          />
+
+          <v-text-field
+            v-if="dialog.autoRunType === 'interval'"
+            v-model="dialog.runFrequency"
+            label="Run every (ms)"
+            type="number"
+            min="0"
+            variant="outlined"
+            density="compact"
+            class="mt-2"
+          />
+        </div>
+
+        <div class="mt-4">
           <p class="text-caption">
             The action will be called whenever any of the selected variables change, respecting the minimum interval
             between consecutive calls.
@@ -67,6 +98,7 @@
 import { computed, ref } from 'vue'
 
 import { getActionLink, removeActionLink, saveActionLink } from '@/libs/actions/action-links'
+import { getAutoRunConfig, removeAutoRunConfig, saveAutoRunConfig } from '@/libs/actions/auto-run'
 import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
 import { humanizeString } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -85,6 +117,9 @@ const defaultDialogConfig = {
   action: null as ActionConfig | null,
   selectedVariables: [] as string[],
   minInterval: 1000,
+  autoRunType: 'none' as 'none' | 'once' | 'interval',
+  startupDelay: 1000,
+  runFrequency: 5000,
 }
 
 const dialog = ref(defaultDialogConfig)
@@ -106,16 +141,26 @@ const filteredDataLakeVariables = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return dialog.value.action && dialog.value.minInterval >= 0
+  return (
+    dialog.value.action &&
+    dialog.value.minInterval >= 0 &&
+    (dialog.value.autoRunType !== 'once' || dialog.value.startupDelay >= 0) &&
+    (dialog.value.autoRunType !== 'interval' || dialog.value.runFrequency >= 0)
+  )
 })
 
 const openDialog = (item: ActionConfig): void => {
   const existingLink = getActionLink(item.id)
+  const autoRunConfig = getAutoRunConfig(item.id)
+
   dialog.value = {
     show: true,
     action: item,
     selectedVariables: existingLink?.variables || [],
     minInterval: existingLink?.minInterval || 1000,
+    autoRunType: autoRunConfig?.type || 'none',
+    startupDelay: autoRunConfig?.type === 'once' ? autoRunConfig.delay : 1000,
+    runFrequency: autoRunConfig?.type === 'interval' ? autoRunConfig.frequency : 5000,
   }
 }
 
@@ -137,6 +182,21 @@ const saveConfig = (): void => {
       dialog.value.selectedVariables,
       dialog.value.minInterval
     )
+  }
+
+  // Handle auto-run configuration
+  removeAutoRunConfig(dialog.value.action.id)
+
+  if (dialog.value.autoRunType === 'once') {
+    saveAutoRunConfig(dialog.value.action.id, {
+      type: 'once',
+      delay: parseInt(dialog.value.startupDelay as unknown as string, 10),
+    })
+  } else if (dialog.value.autoRunType === 'interval') {
+    saveAutoRunConfig(dialog.value.action.id, {
+      type: 'interval',
+      frequency: parseInt(dialog.value.runFrequency as unknown as string, 10),
+    })
   }
 
   emit('save', dialog.value.action, dialog.value.selectedVariables, dialog.value.minInterval)
