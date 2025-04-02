@@ -32,7 +32,7 @@ export interface DialogActions {
   disabled?: boolean
 }
 
-export type SubMenuComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | null
+export type SubMenuComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | undefined
 
 export interface StorageDB {
   getItem: (key: string) => Promise<Blob | null | undefined>
