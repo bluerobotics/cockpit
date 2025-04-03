@@ -353,6 +353,7 @@ import GlassButton from './components/GlassButton.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
 import { useSnackbar } from './composables/snackbar'
+import { useAlertStore } from './stores/alert'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from './stores/appInterface'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
@@ -374,6 +375,7 @@ const { openSnackbar } = useSnackbar()
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
+const alertStore = useAlertStore()
 
 const showAboutDialog = ref(false)
 const showSubMenu = ref(false)
@@ -385,6 +387,9 @@ const isMenuOpen = ref(false)
 const isSlidingOut = ref(false)
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
+
+// User preference for armed menu warning session only
+const skipArmedMenuWarningThisSession = ref(false)
 
 const configMenu = [
   {
@@ -538,9 +543,18 @@ const toggleMainMenu = (): void => {
 
 const openMainMenu = (): void => {
   if (vehicleStore.isArmed) {
+    // Skip warning if user has chosen to never show it again or skip for this session
+    if (alertStore.neverShowArmedMenuWarning || skipArmedMenuWarningThisSession.value) {
+      // Show a snackbar warning instead
+      openSnackbar({ message: 'Take care, your vehicle is armed', variant: 'warning' })
+      interfaceStore.isMainMenuVisible = true
+      isMenuOpen.value = true
+      return
+    }
+
     showDialog({
       title: 'Be careful',
-      maxWidth: '650px',
+      maxWidth: '920px',
       message: 'The vehicle is currently armed and it is not recommended to open the main menu.',
       actions: [
         {
@@ -549,6 +563,31 @@ const openMainMenu = (): void => {
             interfaceStore.isMainMenuVisible = true
             isMenuOpen.value = true
             closeDialog()
+          },
+        },
+        {
+          text: 'Do not ask again in this session',
+          action: () => {
+            skipArmedMenuWarningThisSession.value = true
+            interfaceStore.isMainMenuVisible = true
+            isMenuOpen.value = true
+            closeDialog()
+          },
+        },
+        {
+          text: 'Never ask again',
+          action: () => {
+            alertStore.neverShowArmedMenuWarning = true
+            interfaceStore.isMainMenuVisible = true
+            isMenuOpen.value = true
+            closeDialog()
+            // Show snackbar about re-enabling
+            openSnackbar({
+              message: 'Armed menu warning disabled. You can re-enable it in the Settings > Alerts menu.',
+              variant: 'info',
+              duration: 10000,
+              closeButton: true,
+            })
           },
         },
         {
