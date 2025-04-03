@@ -43,6 +43,15 @@
           value-key="value"
           class="max-w-[350px] my-2 ml-2"
         />
+        <!-- Armed Menu Warning Toggle -->
+        <v-switch
+          :model-value="!alertStore.neverShowArmedMenuWarning"
+          label="Show warning when opening menu with armed vehicle"
+          color="white"
+          class="mt-3 mb-2 ml-3"
+          hide-details
+          @update:model-value="alertStore.neverShowArmedMenuWarning = !$event"
+        />
       </div>
     </template>
   </BaseConfigurationView>
