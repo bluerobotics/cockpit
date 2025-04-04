@@ -45,16 +45,19 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import MAVLinkInspector from '@/components/development/MAVLinkInspector.vue'
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import {
-  closeFloatingMAVLinkInspector,
-  isFloatingMAVLinkInspectorOpen,
-  openFloatingMAVLinkInspector
-} from '@/composables/useFloatingMAVLinkInspector'
+  closeFloatingComponent,
+  isFloatingComponentOpen,
+  openFloatingComponent,
+} from '@/composables/useFloatingComponent'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
+
+// Unique ID for the MAVLink inspector floating component
+const MAVLINK_INSPECTOR_ID = 'mavlink-inspector'
 
 const interfaceStore = useAppInterfaceStore()
 
@@ -63,7 +66,7 @@ const isInspectorDetached = ref(false)
 
 // Check if the inspector is already detached when the component is mounted
 onMounted(() => {
-  isInspectorDetached.value = isFloatingMAVLinkInspectorOpen()
+  isInspectorDetached.value = isFloatingComponentOpen(MAVLINK_INSPECTOR_ID)
 })
 
 /**
@@ -73,11 +76,19 @@ const detachInspector = (): void => {
   console.log('Detaching MAVLink inspector...')
   try {
     // Pass a callback to handle when the floating window is closed directly
-    const closeFunction = openFloatingMAVLinkInspector(() => {
-      // This will be called when the window is closed using the X button
-      isInspectorDetached.value = false
-      console.log('MAVLink inspector was closed, reattached to tools menu')
-    })
+    openFloatingComponent(
+      MAVLINK_INSPECTOR_ID,
+      MAVLinkInspector,
+      {}, // No special props needed
+      {
+        title: 'MAVLink Inspector',
+        onClose: () => {
+          // This will be called when the window is closed using the X button
+          isInspectorDetached.value = false
+          console.log('MAVLink inspector was closed, reattached to tools menu')
+        },
+      }
+    )
     isInspectorDetached.value = true
     console.log('MAVLink inspector detached successfully')
   } catch (error) {
@@ -89,7 +100,7 @@ const detachInspector = (): void => {
  * Reattaches the floating MAVLink inspector
  */
 const reattachInspector = (): void => {
-  closeFloatingMAVLinkInspector()
+  closeFloatingComponent(MAVLINK_INSPECTOR_ID)
   isInspectorDetached.value = false
 }
 </script>
