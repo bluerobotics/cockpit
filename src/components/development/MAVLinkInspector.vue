@@ -29,7 +29,16 @@
         <div class="text-lg mb-2">Message Values</div>
         <div class="bg-[#FFFFFF11] rounded-md p-2 w-[24rem] overflow-y-auto">
           <div v-for="type in trackedMessageTypes" :key="type" class="mb-4">
-            <div class="font-bold mb-2">{{ type }}</div>
+            <div class="font-bold mb-2 flex items-center justify-between">
+              <span>{{ type }}</span>
+              <button
+                class="ml-2 text-gray-400 hover:text-white p-1 rounded-full hover:bg-[#FFFFFF22]"
+                title="Stop tracking this message"
+                @click="removeMessageTracking(type)"
+              >
+                <span class="text-sm">✕</span>
+              </button>
+            </div>
             <div class="ml-1 text-xs text-gray-400 mb-1">Incoming Messages:</div>
             <div v-if="messageValues.has(`in:${type}`)" class="ml-2 text-sm whitespace-pre-wrap">
               <div class="text-xs text-blue-300">Received at: {{ messageValues.get(`in:${type}`)?.timestamp }}</div>
@@ -91,12 +100,9 @@ const messageValues = ref<Map<string, MessageData>>(new Map())
 
 const toggleMessageTracking = (type: MAVLinkType): void => {
   if (trackedMessageTypes.value.has(type)) {
-    trackedMessageTypes.value.delete(type)
-    messageValues.value.delete(`in:${type}`)
-    messageValues.value.delete(`out:${type}`)
+    removeMessageTracking(type)
   } else {
-    trackedMessageTypes.value.add(type)
-    setupMessageListeners(type)
+    addMessageTracking(type)
   }
 }
 
@@ -122,6 +128,17 @@ const setupMessageListeners = (type: MAVLinkType): void => {
 const resetTrackedMessageTypes = (): void => {
   trackedMessageTypes.value.clear()
   messageValues.value.clear()
+}
+
+const addMessageTracking = (type: MAVLinkType): void => {
+  trackedMessageTypes.value.add(type)
+  setupMessageListeners(type)
+}
+
+const removeMessageTracking = (type: MAVLinkType): void => {
+  trackedMessageTypes.value.delete(type)
+  messageValues.value.delete(`in:${type}`)
+  messageValues.value.delete(`out:${type}`)
 }
 
 // Set up listeners for any already tracked message types
