@@ -32,12 +32,14 @@
             <div class="font-bold mb-2">{{ type }}</div>
             <div class="ml-1 text-xs text-gray-400 mb-1">Incoming Messages:</div>
             <div v-if="messageValues.has(`in:${type}`)" class="ml-2 text-sm whitespace-pre-wrap">
-              <pre>{{ JSON.stringify(messageValues.get(`in:${type}`), null, 2) }}</pre>
+              <div class="text-xs text-blue-300">Received at: {{ messageValues.get(`in:${type}`)?.timestamp }}</div>
+              <pre>{{ JSON.stringify(messageValues.get(`in:${type}`)?.message, null, 2) }}</pre>
             </div>
             <div v-else class="ml-2 text-sm text-gray-400">No incoming messages</div>
             <div class="ml-1 text-xs text-gray-400 mt-2 mb-1">Outgoing Messages:</div>
             <div v-if="messageValues.has(`out:${type}`)" class="ml-2 text-sm whitespace-pre-wrap">
-              <pre>{{ JSON.stringify(messageValues.get(`out:${type}`), null, 2) }}</pre>
+              <div class="text-xs text-green-300">Sent at: {{ messageValues.get(`out:${type}`)?.timestamp }}</div>
+              <pre>{{ JSON.stringify(messageValues.get(`out:${type}`)?.message, null, 2) }}</pre>
             </div>
             <div v-else class="ml-2 text-sm text-gray-400">No outgoing messages</div>
           </div>
@@ -54,6 +56,23 @@ import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
+/**
+ * Interface representing a MAVLink message with timestamp information
+ * @interface MessageData
+ * @property {string} timestamp - ISO timestamp when the message was received/sent
+ * @property {unknown} message - The actual message content
+ */
+interface MessageData {
+  /**
+   * ISO timestamp when the message was received/sent
+   */
+  timestamp: string
+  /**
+   * The actual message content
+   */
+  message: unknown
+}
+
 const mainVehicleStore = useMainVehicleStore()
 const searchQuery = ref('')
 
@@ -68,7 +87,7 @@ const filteredMessageTypes = computed(() => {
 })
 
 const trackedMessageTypes = ref<Set<MAVLinkType>>(new Set())
-const messageValues = ref<Map<string, unknown>>(new Map())
+const messageValues = ref<Map<string, MessageData>>(new Map())
 
 const toggleMessageTracking = (type: MAVLinkType): void => {
   if (trackedMessageTypes.value.has(type)) {
@@ -84,10 +103,16 @@ const toggleMessageTracking = (type: MAVLinkType): void => {
 const setupMessageListeners = (type: MAVLinkType): void => {
   try {
     mainVehicleStore.listenToIncomingMessages(type, (pack: Package) => {
-      messageValues.value.set(`in:${type}`, pack.message)
+      messageValues.value.set(`in:${type}`, {
+        timestamp: new Date().toISOString(),
+        message: pack.message,
+      })
     })
     mainVehicleStore.listenToOutgoingMessages(type, (pack: Package) => {
-      messageValues.value.set(`out:${type}`, pack.message)
+      messageValues.value.set(`out:${type}`, {
+        timestamp: new Date().toISOString(),
+        message: pack.message,
+      })
     })
   } catch (error) {
     console.error(`Failed to setup message listeners for type ${type}:`, error)
