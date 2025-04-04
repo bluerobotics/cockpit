@@ -5,7 +5,7 @@
     <template #content>
       <div class="flex-col h-full ml-[1vw] max-w-[540px] max-h-[85vh] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Streams mapping</template>
+          <template #title>Streams setup</template>
           <template #info>
             Here you can map your external video streams to internal names. This allows you to easily switch between
             different video sources in Cockpit, without having to reconfigure every widget that uses the video stream.
@@ -13,7 +13,7 @@
             internal name, so if you need to change the external one, you only need to do it here.
           </template>
           <template #content>
-            <div class="flex justify-center flex-col w-[90%] ml-2 mb-8 mt-2">
+            <div class="flex justify-center flex-col w-[90%] ml-2 mb-4 mt-2">
               <v-data-table
                 :items="videoStore.streamsCorrespondency"
                 items-per-page="10"
@@ -87,10 +87,19 @@
                 <template #bottom></template>
               </v-data-table>
             </div>
+            <div class="flex w-full justify-end pr-[42px] pb-4">
+              <v-btn
+                class="bg-[#FFFFFF11] elevation-1"
+                prepend-icon="mdi-video-check"
+                @click="showAutoStreamRecordingDialog = true"
+              >
+                Auto record video streams
+              </v-btn>
+            </div>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Allowed WebRTC remote IP Addresses</template>
+          <template #title>Allowed WebRTC remote IP addresses</template>
           <template #info>
             Select the IP addresses to allow connecting to for WebRTC video streaming. For best performance it is
             recommended to only use the most reliable interfaces - e.g. avoid wireless interfaces if there is a
@@ -226,12 +235,17 @@
       </div>
     </template>
   </BaseConfigurationView>
+  <AutoRecordVideoDialog
+    v-model:showDialog="showAutoStreamRecordingDialog"
+    @close="showAutoStreamRecordingDialog = false"
+  />
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 
+import AutoRecordVideoDialog from '@/components/AutoRecordVideoDialog.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
@@ -250,6 +264,7 @@ const interfaceStore = useAppInterfaceStore()
 const editingStreamId = ref<string | null>(null)
 const editingStreamName = ref('')
 const hoveredStreamId = ref<string | null>(null)
+const showAutoStreamRecordingDialog = ref(false)
 
 const editStreamName = (item: VideoStreamCorrespondency): void => {
   editingStreamId.value = item.externalId

@@ -919,3 +919,11 @@ export const defaultJoystickCalibration: JoystickCalibration = {
     },
   },
 }
+
+export const defaultAutoRecordingOptions = {
+  autoRecordMode: undefined,
+  showReminder: false,
+  reminderDelay: 0,
+  selectedStreams: [],
+  stopRecordingOnDisarm: false,
+}
