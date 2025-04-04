@@ -98,7 +98,9 @@ export class ConnectionManager {
    * @returns {boolean}
    */
   static write(data: Uint8Array): boolean {
+    console.log('Writing data to main connection:', data)
     ConnectionManager.mainConnection()?.write(data)
+    console.log('Data written to main connection:', data)
     ConnectionManager.onWrite.emit_value(data)
     return true
   }
