@@ -34,8 +34,10 @@
         />
 
         <v-text-field
-          v-model="dialog.minInterval"
-          label="With a minimum gap of (milliseconds)"
+          v-model="frequencyHz"
+          label="No faster than"
+          suffix="changes/s"
+          theme="dark"
           type="number"
           min="0"
           variant="outlined"
@@ -122,6 +124,15 @@ const runDelaySeconds = computed({
   },
   set: (value: number) => {
     dialog.value.delayMs = Math.round(value * 1000)
+  },
+})
+
+const frequencyHz = computed({
+  get: () => {
+    return dialog.value.minInterval > 0 ? 1000 / dialog.value.minInterval : 0
+  },
+  set: (value: number) => {
+    dialog.value.minInterval = value > 0 ? 1000 / value : 0
   },
 })
 
