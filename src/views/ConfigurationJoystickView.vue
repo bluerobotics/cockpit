@@ -749,28 +749,12 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
   setTimeout(() => (showButtonFunctionAssignmentFeedback.value = false), 5000)
 }
 
-// Automatically change between modifier key tabs/layouts when they are pressed
+// Automatically set the current joystick when it changes for the first time
 watch(controllerStore.joysticks, () => {
   if (currentJoystick.value === undefined) {
     if (controllerStore.joysticks.size <= 0) return
     currentJoystick.value = controllerStore.joysticks.entries().next().value[1]
   }
-
-  const modifierKeysIds = Object.values(modifierKeyActions).map((v) => v.id)
-  const regularLayout = controllerStore.protocolMapping.buttonsCorrespondencies[CockpitModifierKeyOption.regular]
-  const activeModKeys = Object.entries(regularLayout)
-    .filter((v) => currentJoystick.value?.state.buttons[Number(v[0]) as JoystickButton])
-    .map((v) => v[1].action)
-    .filter((v) => v.protocol === JoystickProtocol.CockpitModifierKey)
-    .filter((v) => modifierKeysIds.includes(v.id))
-    .filter((v) => v !== modifierKeyActions.regular)
-
-  if (activeModKeys.isEmpty()) return
-  if (currentModifierKey.value.id === activeModKeys[0].id) {
-    changeModifierKeyTab(modifierKeyActions.regular.id as CockpitModifierKeyOption)
-    return
-  }
-  changeModifierKeyTab(activeModKeys[0].id as CockpitModifierKeyOption)
 })
 
 let lastModTabChange = new Date().getTime()
