@@ -1697,13 +1697,18 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
 }
 
 onMounted(async () => {
-  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 23,
+    maxNativeZoom: 19,
     attribution: '© OpenStreetMap',
   })
   const esri = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 19, attribution: '© Esri World Imagery' }
+    {
+      maxZoom: 23,
+      maxNativeZoom: 19,
+      attribution: '© Esri World Imagery',
+    }
   )
 
   const baseMaps = {
