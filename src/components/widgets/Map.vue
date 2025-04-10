@@ -174,13 +174,18 @@ onBeforeMount(() => {
 
 // Configure the available map tile providers
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
+  maxZoom: 23,
+  maxNativeZoom: 19,
   attribution: '© OpenStreetMap',
 })
 
 const esri = L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 19, attribution: '© Esri World Imagery' }
+  {
+    maxZoom: 23,
+    maxNativeZoom: 19,
+    attribution: '© Esri World Imagery',
+  }
 )
 
 // Overlays
