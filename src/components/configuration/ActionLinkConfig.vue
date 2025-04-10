@@ -6,22 +6,9 @@
       <v-card-text class="px-8">
         <p class="text-subtitle-1 font-weight-bold mb-2">When variable(s) change:</p>
 
-        <v-text-field
-          v-model="searchQuery"
-          label="Search variables"
-          variant="outlined"
-          density="compact"
-          prepend-inner-icon="mdi-magnify"
-          class="mb-2"
-          clearable
-          @update:model-value="menuOpen = true"
-          @click:clear="menuOpen = false"
-          @update:focused="(isFocused: boolean) => (menuOpen = isFocused)"
-        />
-
-        <v-select
+        <v-autocomplete
           v-model="dialog.selectedVariables"
-          :items="filteredDataLakeVariables"
+          :items="availableDataLakeVariables"
           label="Data Lake Variables"
           multiple
           chips
@@ -29,8 +16,8 @@
           density="compact"
           theme="dark"
           closable-chips
-          :menu-props="{ modelValue: menuOpen }"
-          @update:menu="menuOpen = $event"
+          clearable
+          prepend-inner-icon="mdi-magnify"
         />
 
         <v-text-field
@@ -99,8 +86,6 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { ActionConfig } from '@/types/cockpit-actions'
 
 const interfaceStore = useAppInterfaceStore()
-const searchQuery = ref('')
-const menuOpen = ref(false)
 const { openSnackbar } = useSnackbar()
 
 const emit = defineEmits<{
@@ -142,14 +127,6 @@ const availableDataLakeVariables = computed(() => {
     title: variable.id,
     value: variable.id,
   }))
-})
-
-const filteredDataLakeVariables = computed(() => {
-  const variables = availableDataLakeVariables.value
-  if (!searchQuery.value) return variables
-
-  const query = searchQuery.value.toLowerCase()
-  return variables.filter((variable) => variable.title.toLowerCase().includes(query))
 })
 
 const isFormValid = computed(() => {
