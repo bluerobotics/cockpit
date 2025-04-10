@@ -60,6 +60,7 @@ export type ArduPilot = ArduPilotVehicle<any>
 
 const preDefinedDataLakeVariables = {
   cameraTilt: { id: 'cameraTiltDeg', name: 'Camera Tilt Degrees', type: 'number' },
+  ardupilotSystemId: { id: 'ardupilotSystemId', name: 'ArduPilot System ID', type: 'number' },
 }
 
 /**
@@ -118,17 +119,20 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   /**
    * Construct a new generic ArduPilot type
    * @param {Vehicle.Type} type
-   * @param {number} system_id
+   * @param {number} systemId
    */
-  constructor(type: Vehicle.Type, system_id: number) {
+  constructor(type: Vehicle.Type, systemId: number) {
     super(Vehicle.Firmware.ArduPilot, type)
-    this.currentSystemId = system_id
+    this.currentSystemId = systemId
 
     // Request vehicle to stream a pre-defined list of messages so the GCS can receive them
     this.requestDefaultMessages()
 
     // Create data-lake variables for the vehicle
     this.createPredefinedDataLakeVariables()
+
+    // Set the system ID in the data-lake
+    setDataLakeVariableData(preDefinedDataLakeVariables.ardupilotSystemId.id, systemId)
   }
 
   /**
