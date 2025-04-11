@@ -27,7 +27,7 @@ import {
 import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
-import { degrees, round, sleep } from '@/libs/utils'
+import { degrees, machinizeString, round, sleep } from '@/libs/utils'
 import {
   type ArduPilotParameterSetData,
   alertLevelFromMavSeverity,
@@ -60,6 +60,7 @@ export type ArduPilot = ArduPilotVehicle<any>
 
 const preDefinedDataLakeVariables = {
   cameraTilt: { id: 'cameraTiltDeg', name: 'Camera Tilt Degrees', type: 'number' },
+  ardupilotSystemId: { id: 'ardupilotSystemId', name: 'ArduPilot System ID', type: 'number' },
 }
 
 /**
@@ -118,17 +119,20 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   /**
    * Construct a new generic ArduPilot type
    * @param {Vehicle.Type} type
-   * @param {number} system_id
+   * @param {number} systemId
    */
-  constructor(type: Vehicle.Type, system_id: number) {
+  constructor(type: Vehicle.Type, systemId: number) {
     super(Vehicle.Firmware.ArduPilot, type)
-    this.currentSystemId = system_id
+    this.currentSystemId = systemId
 
     // Request vehicle to stream a pre-defined list of messages so the GCS can receive them
     this.requestDefaultMessages()
 
     // Create data-lake variables for the vehicle
     this.createPredefinedDataLakeVariables()
+
+    // Set the system ID in the data-lake
+    setDataLakeVariableData(preDefinedDataLakeVariables.ardupilotSystemId.id, systemId)
   }
 
   /**
@@ -307,39 +311,12 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const { system_id, component_id } = mavlink_message.header
 
     if (system_id !== this.currentSystemId || component_id !== 1) {
+      this.addPackageVariablesToDataLake(mavlink_message, `system=${system_id}/component=${component_id}`)
       return
     }
 
-    const messageType = mavlink_message.message.type
-
     // Inject variables from the MAVLink messages into the DataLake
-    if (['NAMED_VALUE_FLOAT', 'NAMED_VALUE_INT'].includes(messageType)) {
-      // Special handling for NAMED_VALUE_FLOAT/NAMED_VALUE_INT messages
-      const name = (mavlink_message.message.name as string[]).join('').replace(/\0/g, '')
-      const path = `${messageType}/${name}`
-      if (getDataLakeVariableInfo(path) === undefined) {
-        createDataLakeVariable(new DataLakeVariable(path, path, 'number'))
-      }
-      setDataLakeVariableData(path, mavlink_message.message.value)
-
-      // Create duplicated variables for legacy purposes (that was how they were stored in the old generic-variables system)
-      const oldVariablePath = mavlink_message.message.name.join('').replaceAll('\x00', '')
-      if (getDataLakeVariableInfo(oldVariablePath) === undefined) {
-        createDataLakeVariable(new DataLakeVariable(oldVariablePath, oldVariablePath, 'number'))
-      }
-      setDataLakeVariableData(oldVariablePath, mavlink_message.message.value)
-    } else {
-      // For all other messages, use the flattener
-      const flattened = flattenData(mavlink_message.message)
-      flattened.forEach(({ path, value }) => {
-        if (value === null) return
-        if (typeof value !== 'string' && typeof value !== 'number') return
-        if (getDataLakeVariableInfo(path) === undefined) {
-          createDataLakeVariable(new DataLakeVariable(path, path, typeof value === 'string' ? 'string' : 'number'))
-        }
-        setDataLakeVariableData(path, value)
-      })
-    }
+    this.addPackageVariablesToDataLake(mavlink_message)
 
     // Update our internal messages
     this._messages.set(mavlink_message.message.type, { ...mavlink_message.message, epoch: new Date().getTime() })
@@ -521,7 +498,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const gotoMessage: Message.SetPositionTargetLocalNed = {
       time_boot_ms: 0,
       type: MAVLinkType.SET_POSITION_TARGET_LOCAL_NED,
-      target_system: 1,
+      target_system: this.currentSystemId,
       target_component: 1,
       coordinate_frame: { type: MavFrame.MAV_FRAME_LOCAL_OFFSET_NED },
       type_mask: { bits: 0b0000111111111000 },
@@ -782,7 +759,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   requestParametersList(): void {
     const paramRequestMessage: Message.ParamRequestList = {
       type: MAVLinkType.PARAM_REQUEST_LIST,
-      target_system: 0,
+      target_system: this.currentSystemId,
       target_component: 0,
     }
     sendMavlinkMessage(paramRequestMessage)
@@ -878,7 +855,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   requestMissionItem(seq: number, missionType: MavMissionType): void {
     const message: Message.MissionRequestInt = {
       type: MAVLinkType.MISSION_REQUEST_INT,
-      target_system: 0,
+      target_system: this.currentSystemId,
       target_component: 0,
       seq: seq,
       mission_type: { type: missionType },
@@ -895,7 +872,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   sendMissionAck(success: boolean, missionType: MavMissionType): void {
     const message: Message.MissionAck = {
       type: MAVLinkType.MISSION_ACK,
-      target_system: 0,
+      target_system: this.currentSystemId,
       target_component: 0,
       mavtype: { type: success ? MavMissionResult.MAV_MISSION_ACCEPTED : MavMissionResult.MAV_MISSION_DENIED },
       mission_type: { type: missionType },
@@ -1136,5 +1113,47 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         createDataLakeVariable({ ...variable, persistent: false, persistValue: false })
       }
     })
+  }
+
+  /**
+   * Inject variable(s) from the MAVLink package into the DataLake
+   * @param { Package } mavlinkPackage
+   * @param { string } sourcePrefix Source of the variables, to be used as the prefix of the variable path
+   */
+  private addPackageVariablesToDataLake(mavlinkPackage: Package, sourcePrefix?: string): void {
+    const messageType = mavlinkPackage.message.type
+    let prefix = sourcePrefix ? `${machinizeString(sourcePrefix)}` : ''
+    if (prefix && !prefix.endsWith('/')) {
+      prefix = `${prefix}/`
+    }
+
+    // Inject variables from the MAVLink messages into the DataLake
+    if (['NAMED_VALUE_FLOAT', 'NAMED_VALUE_INT'].includes(messageType)) {
+      // Special handling for NAMED_VALUE_FLOAT/NAMED_VALUE_INT messages
+      const name = (mavlinkPackage.message.name as string[]).join('').replace(/\0/g, '')
+      const path = `${prefix}${messageType}/${name}`
+      if (getDataLakeVariableInfo(path) === undefined) {
+        createDataLakeVariable(new DataLakeVariable(path, path, 'number'))
+      }
+      setDataLakeVariableData(path, mavlinkPackage.message.value)
+
+      // Create duplicated variables for legacy purposes (that was how they were stored in the old generic-variables system)
+      const oldVariablePath = `${prefix}${mavlinkPackage.message.name.join('').replaceAll('\x00', '')}`
+      if (getDataLakeVariableInfo(oldVariablePath) === undefined) {
+        createDataLakeVariable(new DataLakeVariable(oldVariablePath, oldVariablePath, 'number'))
+      }
+      setDataLakeVariableData(oldVariablePath, mavlinkPackage.message.value)
+    } else {
+      // For all other messages, use the flattener
+      const flattened = flattenData(mavlinkPackage.message)
+      flattened.forEach(({ path, value }) => {
+        if (value === null) return
+        if (typeof value !== 'string' && typeof value !== 'number') return
+        if (getDataLakeVariableInfo(path) === undefined) {
+          createDataLakeVariable(new DataLakeVariable(path, path, typeof value === 'string' ? 'string' : 'number'))
+        }
+        setDataLakeVariableData(path, value)
+      })
+    }
   }
 }
