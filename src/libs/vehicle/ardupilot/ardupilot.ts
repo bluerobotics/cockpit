@@ -60,6 +60,7 @@ export type ArduPilot = ArduPilotVehicle<any>
 
 const preDefinedDataLakeVariables = {
   cameraTilt: { id: 'cameraTiltDeg', name: 'Camera Tilt Degrees', type: 'number' },
+  ardupilotSystemId: { id: 'ardupilotSystemId', name: 'ArduPilot System ID', type: 'number' },
 }
 
 /**
@@ -118,17 +119,20 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   /**
    * Construct a new generic ArduPilot type
    * @param {Vehicle.Type} type
-   * @param {number} system_id
+   * @param {number} systemId
    */
-  constructor(type: Vehicle.Type, system_id: number) {
+  constructor(type: Vehicle.Type, systemId: number) {
     super(Vehicle.Firmware.ArduPilot, type)
-    this.currentSystemId = system_id
+    this.currentSystemId = systemId
 
     // Request vehicle to stream a pre-defined list of messages so the GCS can receive them
     this.requestDefaultMessages()
 
     // Create data-lake variables for the vehicle
     this.createPredefinedDataLakeVariables()
+
+    // Set the system ID in the data-lake
+    setDataLakeVariableData(preDefinedDataLakeVariables.ardupilotSystemId.id, systemId)
   }
 
   /**
@@ -521,7 +525,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const gotoMessage: Message.SetPositionTargetLocalNed = {
       time_boot_ms: 0,
       type: MAVLinkType.SET_POSITION_TARGET_LOCAL_NED,
-      target_system: 1,
+      target_system: this.currentSystemId,
       target_component: 1,
       coordinate_frame: { type: MavFrame.MAV_FRAME_LOCAL_OFFSET_NED },
       type_mask: { bits: 0b0000111111111000 },
@@ -782,7 +786,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   requestParametersList(): void {
     const paramRequestMessage: Message.ParamRequestList = {
       type: MAVLinkType.PARAM_REQUEST_LIST,
-      target_system: 0,
+      target_system: this.currentSystemId,
       target_component: 0,
     }
     sendMavlinkMessage(paramRequestMessage)
@@ -878,7 +882,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   requestMissionItem(seq: number, missionType: MavMissionType): void {
     const message: Message.MissionRequestInt = {
       type: MAVLinkType.MISSION_REQUEST_INT,
-      target_system: 0,
+      target_system: this.currentSystemId,
       target_component: 0,
       seq: seq,
       mission_type: { type: missionType },
@@ -895,7 +899,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   sendMissionAck(success: boolean, missionType: MavMissionType): void {
     const message: Message.MissionAck = {
       type: MAVLinkType.MISSION_ACK,
-      target_system: 0,
+      target_system: this.currentSystemId,
       target_component: 0,
       mavtype: { type: success ? MavMissionResult.MAV_MISSION_ACCEPTED : MavMissionResult.MAV_MISSION_DENIED },
       mission_type: { type: missionType },
