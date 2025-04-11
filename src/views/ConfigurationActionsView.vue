@@ -66,13 +66,6 @@
                         <v-btn
                           variant="outlined"
                           class="rounded-full mx-1"
-                          icon="mdi-link"
-                          size="x-small"
-                          @click="openLinkDialog(item)"
-                        />
-                        <v-btn
-                          variant="outlined"
-                          class="rounded-full mx-1"
                           icon="mdi-play"
                           size="x-small"
                           @click="runAction(item)"
@@ -169,23 +162,35 @@
           @action-saved="handleActionSaved"
           @action-deleted="handleActionDeleted"
         />
+        <ActionConfigDialog
+          ref="actionConfigDialog"
+          @action-saved="handleActionSaved"
+          @action-deleted="handleActionDeleted"
+        />
       </div>
     </template>
   </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
+import { v4 as uuidv4 } from 'uuid'
 import { computed, onMounted, ref } from 'vue'
 
-import ActionLinkConfig from '@/components/configuration/ActionLinkConfig.vue'
-import HttpRequestActionConfig from '@/components/configuration/HttpRequestActionConfig.vue'
-import JavascriptActionConfig from '@/components/configuration/JavascriptActionConfig.vue'
-import MavlinkMessageActionConfig from '@/components/configuration/MavlinkMessageActionConfig.vue'
+import ActionConfigDialog from '@/components/configuration/ActionConfigDialog.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { getActionLink } from '@/libs/actions/action-links'
-import { getAllJavascriptActionConfigs, registerJavascriptActionConfig } from '@/libs/actions/free-javascript'
-import { getAllHttpRequestActionConfigs, registerHttpRequestActionConfig } from '@/libs/actions/http-request'
 import {
+  deleteJavascriptActionConfig,
+  getAllJavascriptActionConfigs,
+  registerJavascriptActionConfig,
+} from '@/libs/actions/free-javascript'
+import {
+  deleteHttpRequestActionConfig,
+  getAllHttpRequestActionConfigs,
+  registerHttpRequestActionConfig,
+} from '@/libs/actions/http-request'
+import {
+  deleteMavlinkMessageActionConfig,
   getAllMavlinkMessageActionConfigs,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
@@ -194,13 +199,9 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { ActionConfig, customActionTypes, customActionTypesNames } from '@/types/cockpit-actions'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
-
 const interfaceStore = useAppInterfaceStore()
 
-const httpRequestConfig = ref()
-const mavlinkConfig = ref()
-const javascriptConfig = ref()
-const linkConfig = ref()
+const actionConfigDialog = ref()
 
 // Add reactive refs for our action lists
 const httpRequestActions = ref(getAllHttpRequestActionConfigs())
@@ -248,11 +249,11 @@ const allActionConfigs = computed<LinkedActionConfig[]>(() => {
 })
 
 const headers = [
-  { title: 'Name', key: 'name', sortable: true, align: 'start' },
-  { title: 'Type', key: 'type', sortable: true, align: 'center' },
-  { title: 'Min Interval', key: 'minInterval', sortable: false, align: 'center' },
-  { title: 'Linked Variables', key: 'linkedVariables', sortable: false, align: 'center' },
-  { title: 'Actions', key: 'actions', sortable: false, align: 'end' },
+  { title: 'Name', key: 'name', sortable: true, align: 'start' as const },
+  { title: 'Type', key: 'type', sortable: true, align: 'center' as const },
+  { title: 'Min Interval', key: 'minInterval', sortable: false, align: 'center' as const },
+  { title: 'Linked Variables', key: 'linkedVariables', sortable: false, align: 'center' as const },
+  { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const },
 ]
 
 const loadAllActions = (): void => {
@@ -275,17 +276,7 @@ const handleActionDeleted = (): void => {
 }
 
 const editAction = (item: ActionConfig): void => {
-  switch (item.type) {
-    case customActionTypes.httpRequest:
-      httpRequestConfig.value?.openEditDialog(item.id)
-      break
-    case customActionTypes.mavlinkMessage:
-      mavlinkConfig.value?.openEditDialog(item.id)
-      break
-    case customActionTypes.javascript:
-      javascriptConfig.value?.openEditDialog(item.id)
-      break
-  }
+  actionConfigDialog.value?.openDialog(item)
 }
 
 const runAction = (item: ActionConfig): void => {
@@ -293,45 +284,54 @@ const runAction = (item: ActionConfig): void => {
 }
 
 const exportAction = (item: ActionConfig): void => {
-  switch (item.type) {
-    case customActionTypes.httpRequest:
-      httpRequestConfig.value?.exportAction(item.id)
-      break
-    case customActionTypes.mavlinkMessage:
-      mavlinkConfig.value?.exportAction(item.id)
-      break
-    case customActionTypes.javascript:
-      javascriptConfig.value?.exportAction(item.id)
-      break
+  const action =
+    item.type === customActionTypes.httpRequest
+      ? getAllHttpRequestActionConfigs()[item.id]
+      : item.type === customActionTypes.mavlinkMessage
+      ? getAllMavlinkMessageActionConfigs()[item.id]
+      : getAllJavascriptActionConfigs()[item.id]
+
+  if (!action) {
+    console.error('Action not found')
+    return
   }
+
+  const json = JSON.stringify(action, null, 2)
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.style.display = 'none'
+  a.href = url
+  a.download = `${item.id}.json`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  a.remove()
 }
 
 const deleteAction = (item: ActionConfig): void => {
   switch (item.type) {
     case customActionTypes.httpRequest:
-      httpRequestConfig.value?.deleteAction(item.id)
+      deleteHttpRequestActionConfig(item.id)
       break
     case customActionTypes.mavlinkMessage:
-      mavlinkConfig.value?.deleteAction(item.id)
+      deleteMavlinkMessageActionConfig(item.id)
       break
     case customActionTypes.javascript:
-      javascriptConfig.value?.deleteAction(item.id)
+      deleteJavascriptActionConfig(item.id)
       break
   }
+  loadAllActions()
 }
 
 const openNewActionDialog = (type: customActionTypes): void => {
-  switch (type) {
-    case customActionTypes.httpRequest:
-      httpRequestConfig.value?.openNewDialog()
-      break
-    case customActionTypes.mavlinkMessage:
-      mavlinkConfig.value?.openNewDialog()
-      break
-    case customActionTypes.javascript:
-      javascriptConfig.value?.openNewDialog()
-      break
+  const newAction: ActionConfig = {
+    id: uuidv4(),
+    name: '',
+    type,
+    config: {},
   }
+  actionConfigDialog.value?.openDialog(newAction)
 }
 
 const actionTypeDialog = ref({ show: false })
@@ -373,29 +373,18 @@ const importAction = (): void => {
       reader.onload = (e) => {
         try {
           const json = JSON.parse(e.target?.result as string)
+          const id = uuidv4()
 
-          // Determine the action type based on the content and register it
           if ('messageType' in json) {
-            registerMavlinkMessageActionConfig(json)
-            loadAllActions()
-            const configs = getAllMavlinkMessageActionConfigs()
-            const id = Object.keys(configs).find((key) => configs[key].name === json.name)
-            if (id) mavlinkConfig.value?.openEditDialog(id)
+            registerMavlinkMessageActionConfig({ ...json, id })
           } else if ('method' in json) {
-            registerHttpRequestActionConfig(json)
-            loadAllActions()
-            const configs = getAllHttpRequestActionConfigs()
-            const id = Object.keys(configs).find((key) => configs[key].name === json.name)
-            if (id) httpRequestConfig.value?.openEditDialog(id)
+            registerHttpRequestActionConfig({ ...json, id })
           } else if ('code' in json) {
-            registerJavascriptActionConfig(json)
-            loadAllActions()
-            const configs = getAllJavascriptActionConfigs()
-            const id = Object.keys(configs).find((key) => configs[key].name === json.name)
-            if (id) javascriptConfig.value?.openEditDialog(id)
+            registerJavascriptActionConfig({ ...json, id })
           } else {
             throw new Error('Unknown action type')
           }
+          loadAllActions()
         } catch (error) {
           console.error('Cannot import action:', error)
         }
@@ -405,10 +394,6 @@ const importAction = (): void => {
   }
   input.click()
   input.remove()
-}
-
-const openLinkDialog = (item: ActionConfig): void => {
-  linkConfig.value?.openDialog(item)
 }
 
 onMounted(() => {
