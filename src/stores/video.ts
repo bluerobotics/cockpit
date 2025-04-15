@@ -63,7 +63,6 @@ export const useVideoStore = defineStore('video', () => {
   const namessAvailableAbstractedStreams = computed(() => {
     return streamsCorrespondency.value.map((stream) => stream.name)
   })
-
   const externalStreamId = (internalName: string): string | undefined => {
     const corr = streamsCorrespondency.value.find((stream) => stream.name === internalName)
     return corr ? corr.externalId : undefined
@@ -222,26 +221,19 @@ export const useVideoStore = defineStore('video', () => {
     return new Promise<Blob>((resolve, reject) => {
       const videoObjectUrl = URL.createObjectURL(firstChunkBlob)
       const video = document.createElement('video')
-
-      let seekResolve: (() => void) | null = null
-      video.addEventListener('seeked', function () {
-        if (seekResolve) seekResolve()
-      })
+      video.src = videoObjectUrl
 
       video.addEventListener('error', () => {
         URL.revokeObjectURL(videoObjectUrl)
         reject('Error loading video')
       })
 
-      video.src = videoObjectUrl
-
       video.addEventListener('loadedmetadata', () => {
         const canvas = document.createElement('canvas')
         const context = canvas.getContext('2d')
         if (!context) {
           URL.revokeObjectURL(videoObjectUrl)
-          reject('2D context not available.')
-          return
+          return reject('2D context not available.')
         }
 
         const [width, height] = [660, 370]
@@ -249,18 +241,62 @@ export const useVideoStore = defineStore('video', () => {
         canvas.height = height
 
         video.currentTime = 0
-        seekResolve = () => {
-          context.drawImage(video, 0, 0, width, height)
-          const blobCallback = (blob: Blob | null): void => {
-            if (!blob) {
-              reject('Failed to create blob')
-              return
+        const tryExtractFrame = (time: number): Promise<Blob> => {
+          return new Promise((resolveFrame, rejectFrame) => {
+            const onSeeked = (): void => {
+              try {
+                context.drawImage(video, 0, 0, width, height)
+                canvas.toBlob(
+                  (blob: Blob | null) => {
+                    video.removeEventListener('seeked', onSeeked)
+                    if (blob) {
+                      resolveFrame(blob)
+                    } else {
+                      rejectFrame('Failed to create blob')
+                    }
+                    URL.revokeObjectURL(videoObjectUrl)
+                  },
+                  'image/jpeg',
+                  0.6
+                )
+              } catch (err) {
+                video.removeEventListener('seeked', onSeeked)
+                URL.revokeObjectURL(videoObjectUrl)
+                rejectFrame(err)
+              }
             }
-            resolve(blob)
-            URL.revokeObjectURL(videoObjectUrl)
-          }
-          canvas.toBlob(blobCallback, 'image/jpeg', 0.6)
+            video.addEventListener('seeked', onSeeked)
+            video.currentTime = time
+          })
         }
+
+        // First try extracting at time 0
+        tryExtractFrame(0)
+          .then(resolve)
+          .catch((err) => {
+            console.warn('Failed to extract thumbnail at t=0, trying at t=1:', err)
+            // If that fails, try at 1 second.
+            tryExtractFrame(1)
+              .then(resolve)
+              .catch((err2) => {
+                console.warn('Failed to extract thumbnail at t=1, using fallback thumbnail:', err2)
+                // Create a fallback thumbnail (a blank black image).
+                context.fillStyle = '#000'
+                context.fillRect(0, 0, width, height)
+                canvas.toBlob(
+                  (fallbackBlob: Blob | null) => {
+                    if (fallbackBlob) {
+                      resolve(fallbackBlob)
+                    } else {
+                      resolve(new Blob())
+                    }
+                    URL.revokeObjectURL(videoObjectUrl)
+                  },
+                  'image/jpeg',
+                  0.6
+                )
+              })
+          })
       })
     })
   }
@@ -397,20 +433,20 @@ export const useVideoStore = defineStore('video', () => {
       updatedInfo.dateLastRecordingUpdate = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
 
-      // Gets the thumbnail from the first chunk
+      // Gets the thumbnail from the first chunk without blocking the main processing flow
       if (chunksCount === 0) {
-        try {
+        ;(async () => {
           const videoChunk = await tempVideoStorage.getItem(chunkName)
-          if (videoChunk) {
-            const firstChunkBlob = new Blob([videoChunk as Blob])
-            const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
-            // Save thumbnail in the storage
-            await tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail)
-            unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
-          }
-        } catch (error) {
-          console.error('Failed to extract thumbnail:', error)
-        }
+          if (!videoChunk) return
+          const firstChunkBlob = new Blob([videoChunk as Blob])
+          extractThumbnailFromVideo(firstChunkBlob)
+            .then((thumbnail) => tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail))
+            .catch((error) => {
+              console.warn('Failed to extract thumbnail:', error)
+            })
+        })().catch((error) => {
+          console.error('Unexpected error extracting thumbnail:', error)
+        })
       }
 
       // If the chunk was saved, remove it from the unsaved list
@@ -633,7 +669,7 @@ export const useVideoStore = defineStore('video', () => {
       const extensionContainer = getBlobExtensionContainer(chunkBlobs[0])
       debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
 
-      const mergedBlob = new Blob([...chunkBlobs])
+      const mergedBlob = new Blob([...chunkBlobs], { type: chunkBlobs[0].type })
 
       let durFixedBlob: Blob | undefined = undefined
       try {
