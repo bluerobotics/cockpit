@@ -63,7 +63,6 @@ export const useVideoStore = defineStore('video', () => {
   const namessAvailableAbstractedStreams = computed(() => {
     return streamsCorrespondency.value.map((stream) => stream.name)
   })
-
   const externalStreamId = (internalName: string): string | undefined => {
     const corr = streamsCorrespondency.value.find((stream) => stream.name === internalName)
     return corr ? corr.externalId : undefined
@@ -223,11 +222,6 @@ export const useVideoStore = defineStore('video', () => {
       const videoObjectUrl = URL.createObjectURL(firstChunkBlob)
       const video = document.createElement('video')
 
-      let seekResolve: (() => void) | null = null
-      video.addEventListener('seeked', function () {
-        if (seekResolve) seekResolve()
-      })
-
       video.addEventListener('error', () => {
         URL.revokeObjectURL(videoObjectUrl)
         reject('Error loading video')
@@ -240,27 +234,48 @@ export const useVideoStore = defineStore('video', () => {
         const context = canvas.getContext('2d')
         if (!context) {
           URL.revokeObjectURL(videoObjectUrl)
-          reject('2D context not available.')
-          return
+          return reject('2D context not available.')
         }
 
         const [width, height] = [660, 370]
         canvas.width = width
         canvas.height = height
 
-        video.currentTime = 0
-        seekResolve = () => {
+        const waitForSeek = (): Promise<void> =>
+          new Promise((resolveSeek) => {
+            const handler = (): void => resolveSeek()
+            video.addEventListener('seeked', handler, { once: true })
+          })
+
+        const canvasToBlob = (): Promise<Blob> =>
+          new Promise((res, rej) =>
+            canvas.toBlob((b) => (b ? res(b) : rej(new Error('Failed to create blob'))), 'image/jpeg', 0.6)
+          )
+
+        const grabThumbFromFrame = async (t: number): Promise<Blob> => {
+          video.currentTime = t
+          await waitForSeek()
           context.drawImage(video, 0, 0, width, height)
-          const blobCallback = (blob: Blob | null): void => {
-            if (!blob) {
-              reject('Failed to create blob')
-              return
+          return canvasToBlob()
+        }
+
+        ;(async () => {
+          let thumbnail: Blob
+          try {
+            thumbnail = await grabThumbFromFrame(0)
+          } catch {
+            try {
+              thumbnail = await grabThumbFromFrame(1)
+            } catch {
+              context.fillStyle = '#000'
+              context.fillRect(0, 0, width, height)
+              thumbnail = await canvasToBlob().catch(() => new Blob())
             }
-            resolve(blob)
+          } finally {
             URL.revokeObjectURL(videoObjectUrl)
           }
-          canvas.toBlob(blobCallback, 'image/jpeg', 0.6)
-        }
+          resolve(thumbnail)
+        })().catch(reject)
       })
     })
   }
@@ -397,20 +412,20 @@ export const useVideoStore = defineStore('video', () => {
       updatedInfo.dateLastRecordingUpdate = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
 
-      // Gets the thumbnail from the first chunk
+      // Gets the thumbnail from the first chunk without blocking the main processing flow
       if (chunksCount === 0) {
-        try {
+        ;(async () => {
           const videoChunk = await tempVideoStorage.getItem(chunkName)
-          if (videoChunk) {
-            const firstChunkBlob = new Blob([videoChunk as Blob])
-            const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
-            // Save thumbnail in the storage
-            await tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail)
-            unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
-          }
-        } catch (error) {
-          console.error('Failed to extract thumbnail:', error)
-        }
+          if (!videoChunk) return
+          const firstChunkBlob = new Blob([videoChunk as Blob])
+          extractThumbnailFromVideo(firstChunkBlob)
+            .then((thumbnail) => tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail))
+            .catch((error) => {
+              console.warn('Failed to extract thumbnail:', error)
+            })
+        })().catch((error) => {
+          console.error('Unexpected error extracting thumbnail:', error)
+        })
       }
 
       // If the chunk was saved, remove it from the unsaved list
@@ -633,7 +648,7 @@ export const useVideoStore = defineStore('video', () => {
       const extensionContainer = getBlobExtensionContainer(chunkBlobs[0])
       debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
 
-      const mergedBlob = new Blob([...chunkBlobs])
+      const mergedBlob = new Blob([...chunkBlobs], { type: chunkBlobs[0].type })
 
       let durFixedBlob: Blob | undefined = undefined
       try {
