@@ -244,14 +244,7 @@
                           <AxisVisualization
                             v-if="item.type === 'axis' && joystick.state.axes"
                             :raw-value="joystick.state.axes[item.id as JoystickAxis] || 0"
-                            :processed-value="Math.abs(
-                                    ((joystick.state.axes[item.id as JoystickAxis]?.toFixed(2) as any) || 0.0) *
-                                      (joystick.state.axes[item.id as JoystickAxis]! > 0
-                                        ? controllerStore.protocolMapping.axesCorrespondencies[item.id as JoystickAxis]
-                                            ?.min
-                                        : controllerStore.protocolMapping.axesCorrespondencies[item.id as JoystickAxis]
-                                            ?.max)
-                                  )"
+                            :processed-value="scaledAxisValue(joystick, item.id as JoystickAxis)"
                           />
                         </td>
                         <td class="w-[50px] text-center">
@@ -552,6 +545,7 @@ import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
+import { scale } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -814,5 +808,12 @@ const reactToPanelExpansion = (isExpanded: boolean, protocol: JoystickProtocol):
 const closeInputMappingDialog = (): void => {
   inputClickedDialog.value = false
   protocolToExpand.value = undefined
+}
+
+const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
+  const rawValue = joystick.state.axes[axisId] || 0
+  const min = controllerStore.protocolMapping.axesCorrespondencies[axisId]?.min ?? -1
+  const max = controllerStore.protocolMapping.axesCorrespondencies[axisId]?.max ?? +1
+  return scale(rawValue, -1, 1, min, max)
 }
 </script>
