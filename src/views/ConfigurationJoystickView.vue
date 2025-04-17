@@ -241,37 +241,18 @@
                           </div>
                         </td>
                         <td class="w-[120px] text-center">
-                          <div class="flex justify-between h-[20px]">
-                            <div class="w-[50px]">
-                              <div
-                                v-if="item.type === 'axis' && joystick.state.axes[item.id as JoystickAxis]! < 0"
-                                class="w-full h-full bg-[#2c99ce] origin-right"
-                                :style="`transform: scaleX(${joystick.state.axes[item.id as JoystickAxis]! * -1})`"
-                              ></div>
-                            </div>
-                            <div class="flex flex-col w-[50px] -mt-2">
-                              <p>{{ joystick.state.axes[item.id as JoystickAxis]?.toFixed(2) || 0.0 }}</p>
-                              <p class="text-[10px]">
-                                {{
-                                  Math.abs(
+                          <AxisVisualization
+                            v-if="item.type === 'axis' && joystick.state.axes"
+                            :raw-value="joystick.state.axes[item.id as JoystickAxis] || 0"
+                            :processed-value="Math.abs(
                                     ((joystick.state.axes[item.id as JoystickAxis]?.toFixed(2) as any) || 0.0) *
                                       (joystick.state.axes[item.id as JoystickAxis]! > 0
                                         ? controllerStore.protocolMapping.axesCorrespondencies[item.id as JoystickAxis]
                                             ?.min
                                         : controllerStore.protocolMapping.axesCorrespondencies[item.id as JoystickAxis]
                                             ?.max)
-                                  )
-                                }}
-                              </p>
-                            </div>
-                            <div class="w-[50px]">
-                              <div
-                                v-if="item.type === 'axis' && joystick.state.axes[item.id  as JoystickAxis]! > 0"
-                                class="w-full h-full bg-[#2c99ce] origin-left"
-                                :style="`transform: scaleX(${joystick.state.axes[item.id  as JoystickAxis]})`"
-                              ></div>
-                            </div>
-                          </div>
+                                  )"
+                          />
                         </td>
                         <td class="w-[50px] text-center">
                           <v-icon v-if="item.type === 'axis'">
@@ -564,6 +545,7 @@ import { type Ref, computed, nextTick, onMounted, onUnmounted, reactive, ref, wa
 import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
+import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
