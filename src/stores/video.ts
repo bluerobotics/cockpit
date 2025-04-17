@@ -61,6 +61,97 @@ export const useVideoStore = defineStore('video', () => {
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
+  const getRecorderOptions = async (streamData: StreamData): Promise<MediaRecorderOptions> => {
+    // Check on WebRTCManager to exposed RTCPeerConnection details.
+    const until = Date.now() + 1500
+    let peerConnection: RTCPeerConnection | null = null
+    let detectedMime: string | null = null
+
+    while (Date.now() < until) {
+      peerConnection =
+        (streamData.webRtcManager as any).peerConnection ?? (streamData.webRtcManager as any).session?.peerConnection
+      if (peerConnection) break
+      await sleep(80)
+    }
+
+    if (peerConnection?.getStats) {
+      const stats = await peerConnection.getStats()
+      stats.forEach((r) => {
+        if (r.type === 'inbound-rtp' && r.kind === 'video' && r.codecId) {
+          const codec = stats.get(r.codecId)
+          if (codec?.mimeType) detectedMime = codec.mimeType.toLowerCase()
+        }
+      })
+      if (detectedMime) console.debug('[Recorder] Detected codec via getStats →', detectedMime)
+    }
+
+    // SDP fallback – If getStats doesn't expose the codec, try to extract it from the SDP.
+    if (!detectedMime && peerConnection?.remoteDescription) {
+      const sdp = peerConnection.remoteDescription.sdp
+      // Finds the video media line, which typically starts with "m=video"
+      const match = sdp.match(/^m=video .+$/m)
+      if (match) {
+        // Splits the line on spaces and ignore the first three items (m=video, port, protocol)
+        const pts = match[0].split(' ').slice(3)
+        for (const pt of pts) {
+          // Looks for an "a=rtpmap" line for the given payload type, which maps to a codec
+          const rp = new RegExp(`a=rtpmap:${pt} ([A-Za-z0-9]+)/`).exec(sdp)
+          if (rp) {
+            // Write down the mime type in lower case from the codec name
+            detectedMime = `video/${rp[1].toLowerCase()}`
+            console.debug('[Recorder] Detected codec via SDP →', detectedMime)
+            break
+          }
+        }
+      }
+    }
+
+    // Check support for detected mimeType
+    if (detectedMime) {
+      if (MediaRecorder.isTypeSupported(detectedMime)) {
+        console.debug('[Recorder] Using detected codec.')
+        return { mimeType: detectedMime }
+      }
+
+      // Swaps the container from "video/h264" to 'video/webm' to make "video/webm; codecs="h264"
+      const codecOnly = detectedMime.replace(/^video\//, '')
+      const webmCandidate = `video/webm; codecs="${codecOnly}"`
+      console.debug('[Recorder] Trying container‑swapped codec →', webmCandidate)
+      if (MediaRecorder.isTypeSupported(webmCandidate)) {
+        console.debug('[Recorder] Using container‑swapped codec.')
+        return { mimeType: webmCandidate }
+      }
+    }
+
+    console.debug('[Recorder] No usable detected codec, using fallback list.')
+
+    // If no codec was retrieved from webRTC, try to test the stream for a probable match
+    const codecCandidates = [
+      'video/webm; codecs="h264"',
+      'video/webm; codecs="h265"',
+      'video/webm; codecs="vp9"',
+      'video/webm',
+    ] as const
+
+    for (const candidate of codecCandidates) {
+      console.debug('[Recorder] Trying fallback →', candidate)
+      if (MediaRecorder.isTypeSupported(candidate)) {
+        console.debug('[Recorder] Using fallback codec →', candidate)
+        return { mimeType: candidate }
+      }
+    }
+
+    // If everything fails, force H-264 WebM
+    const fallback = 'video/webm; codecs="h264"'
+    console.debug('[Recorder] Forcing last-resort codec →', fallback)
+
+    // Attach high bit-rate
+    return {
+      mimeType: detectedMime ?? fallback,
+      videoBitsPerSecond: 60_000_000, // 60 Mb/s to support Rad Cam 4k 30/60 fps
+    }
+  }
+
   const namessAvailableAbstractedStreams = computed(() => {
     return streamsCorrespondency.value.map((stream) => stream.name)
   })
@@ -320,7 +411,10 @@ export const useVideoStore = defineStore('video', () => {
 
     const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
     const fileName = `${missionStore.missionName || 'Cockpit'} (${timeRecordingStartString}) #${recordingHash}`
-    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
+    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(
+      streamData.mediaStream!,
+      await getRecorderOptions(streamData)
+    )
 
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
