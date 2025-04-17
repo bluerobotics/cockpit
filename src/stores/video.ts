@@ -57,6 +57,7 @@ export const useVideoStore = defineStore('video', () => {
   const timeNow = useTimestamp({ interval: 500 })
   const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
   const lastRenamedStreamName = ref('')
+  const streamsPreparingToRecord = ref<string[]>([])
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
@@ -285,6 +286,7 @@ export const useVideoStore = defineStore('video', () => {
    * @param {string} streamName - Name of the stream
    */
   const startRecording = async (streamName: string): Promise<void> => {
+    streamsPreparingToRecord.value = [...streamsPreparingToRecord.value, streamName]
     eventTracker.capture('Video recording start', { streamName: streamName })
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
@@ -417,7 +419,10 @@ export const useVideoStore = defineStore('video', () => {
         ;(async () => {
           const videoChunk = await tempVideoStorage.getItem(chunkName)
           if (!videoChunk) return
+          activeStreams.value[streamName]!.timeRecordingStart = new Date()
+          streamsPreparingToRecord.value = streamsPreparingToRecord.value.filter((name) => name !== streamName)
           const firstChunkBlob = new Blob([videoChunk as Blob])
+
           extractThumbnailFromVideo(firstChunkBlob)
             .then((thumbnail) => tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail))
             .catch((error) => {
@@ -988,5 +993,6 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams,
     renameStreamInternalNameById,
     lastRenamedStreamName,
+    streamsPreparingToRecord,
   }
 })
