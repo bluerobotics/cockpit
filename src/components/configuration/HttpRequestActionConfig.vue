@@ -89,7 +89,7 @@
           <v-btn color="white" variant="text" @click="closeActionDialog">Cancel</v-btn>
           <div class="flex gap-x-10">
             <v-btn variant="text" @click="resetNewAction">Reset</v-btn>
-            <v-btn color="primary" :disabled="!isFormValid" variant="text" @click="saveActionConfig">
+            <v-btn :disabled="!isFormValid" variant="text" @click="saveActionConfig">
               {{ editMode ? 'Save' : 'Create' }}
             </v-btn>
           </div>
