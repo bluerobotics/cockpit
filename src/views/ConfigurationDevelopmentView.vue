@@ -93,12 +93,13 @@
 // @ts-nocheck
 // TODO:  As of now Vuetify does not export the necessary types for VDataTable, so we can't fix the type error.
 
+import { parse } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { onBeforeMount } from 'vue'
 import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import { type SystemLog, cockpitSytemLogsDB } from '@/libs/system-logging'
+import { type SystemLog, cockpitSytemLogsDB, systemLogDateTimeFormat } from '@/libs/system-logging'
 import { reloadCockpit } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
@@ -127,14 +128,24 @@ const headers = [
 ]
 
 onBeforeMount(async () => {
+  const logs = []
   await cockpitSytemLogsDB.iterate((log: SystemLog, logName) => {
-    systemLogsData.value.push({
+    logs.push({
       name: logName,
       initialTime: log.initialTime,
       initialDate: log.initialDate,
       nEvents: log.events.length,
     })
   })
+  logs.sort((a, b) => {
+    const dateTimeFormatWithoutOffset = systemLogDateTimeFormat.replace(' O', '')
+    const stringDateTimeA = a.name.split('(')[1].split(' GMT')[0]
+    const stringDateTimeB = b.name.split('(')[1].split(' GMT')[0]
+    const dateTimeA = parse(stringDateTimeA, dateTimeFormatWithoutOffset, new Date())
+    const dateTimeB = parse(stringDateTimeB, dateTimeFormatWithoutOffset, new Date())
+    return dateTimeB.getTime() - dateTimeA.getTime()
+  })
+  systemLogsData.value = logs
 })
 
 const downloadLog = async (logName: string): Promise<void> => {

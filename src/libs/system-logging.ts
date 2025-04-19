@@ -4,6 +4,10 @@ import localforage from 'localforage'
 
 import { systemLoggingEnablingKey } from '@/stores/development'
 
+export const systemLogDateFormat = 'LLL dd, yyyy'
+export const systemLogTimeFormat = 'HH꞉mm꞉ss O'
+export const systemLogDateTimeFormat = `${systemLogDateFormat} - ${systemLogTimeFormat}`
+
 export const cockpitSytemLogsDB = localforage.createInstance({
   driver: localforage.INDEXEDDB,
   name: 'Cockpit - System Logs',
@@ -13,7 +17,7 @@ export const cockpitSytemLogsDB = localforage.createInstance({
 })
 
 const initialTime = new Date()
-const fileName = `Cockpit (${format(initialTime, 'LLL dd, yyyy - HH꞉mm꞉ss O')}).syslog`
+const fileName = `Cockpit (${format(initialTime, systemLogDateTimeFormat)}).syslog`
 
 /* eslint-disable jsdoc/require-jsdoc */
 type LogEvent = {
@@ -30,8 +34,8 @@ export interface SystemLog {
 }
 
 const currentSystemLog: SystemLog = {
-  initialDate: format(initialDatetime, 'LLL dd, yyyy'),
-  initialTime: format(initialDatetime, 'HH꞉mm꞉ss O'),
+  initialDate: format(initialDatetime, systemLogDateFormat),
+  initialTime: format(initialDatetime, systemLogTimeFormat),
   events: [],
 }
 /* eslint-enable jsdoc/require-jsdoc */
