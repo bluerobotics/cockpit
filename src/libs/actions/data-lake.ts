@@ -25,6 +25,14 @@ export interface DataLakeVariableConfig {
    * What the variable does or means
    */
   description?: string
+  /**
+   * Whether the variable existance should be persisted between boots
+   */
+  persistent: boolean
+  /**
+   * Whether the variable's value should be persisted between boots
+   */
+  persistValue: boolean
 }
 
 /**
