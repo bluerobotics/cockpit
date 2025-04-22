@@ -7,12 +7,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { defaultGlobalAddress } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
-import {
-  DataLakeVariable,
-  getAllDataLakeVariablesInfo,
-  getDataLakeVariableInfo,
-  setDataLakeVariableData,
-} from '@/libs/actions/data-lake'
+import { getAllDataLakeVariablesInfo, getDataLakeVariableInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { altitude_setpoint } from '@/libs/altitude-slider'
 import {
@@ -172,24 +167,22 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       // Register vehicle address variables if they don't exist
       const vehicleAddressVariableId = 'vehicle-address'
       if (!getDataLakeVariableInfo(vehicleAddressVariableId)) {
-        const vehicleAddressVariable = new DataLakeVariable(
-          vehicleAddressVariableId,
-          'Vehicle Address',
-          'string',
-          'The address of the vehicle, without protocol.'
-        )
-        createDataLakeVariable(vehicleAddressVariable)
+        createDataLakeVariable({
+          id: vehicleAddressVariableId,
+          name: 'Vehicle Address',
+          type: 'string',
+          description: 'The address of the vehicle, without protocol.',
+        })
       }
 
       const vehicleMavlink2RestHttpEndpointVariableId = 'mavlink2rest-http-endpoint'
       if (!getDataLakeVariableInfo(vehicleMavlink2RestHttpEndpointVariableId)) {
-        const vehicleMavlink2RestHttpEndpointVariable = new DataLakeVariable(
-          vehicleMavlink2RestHttpEndpointVariableId,
-          'MAVLink2REST HTTP Endpoint',
-          'string',
-          'The HTTP endpoint of the vehicle MAVLink2REST service.'
-        )
-        createDataLakeVariable(vehicleMavlink2RestHttpEndpointVariable)
+        createDataLakeVariable({
+          id: vehicleMavlink2RestHttpEndpointVariableId,
+          name: 'MAVLink2REST HTTP Endpoint',
+          type: 'string',
+          description: 'The HTTP endpoint of the vehicle MAVLink2REST service.',
+        })
       }
 
       // Update the variables with the new address

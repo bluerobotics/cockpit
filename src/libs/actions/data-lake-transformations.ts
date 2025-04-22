@@ -5,7 +5,7 @@ import {
 } from '../utils-data-lake'
 import {
   createDataLakeVariable,
-  DataLakeVariable,
+  DataLakeVariableType,
   deleteDataLakeVariable,
   listenDataLakeVariable,
   setDataLakeVariableData,
@@ -154,7 +154,7 @@ const deleteAllTransformingFunctionsVariables = (): void => {
 const setupAllTransformingFunctionsVariables = (): void => {
   globalTransformingFunctions.forEach((func) => {
     try {
-      createDataLakeVariable(new DataLakeVariable(func.id, func.name, func.type, func.description))
+      createDataLakeVariable({ ...func })
     } catch (createError) {
       const msg = `Could not create data lake variable info for transforming function ${func.id}. Error: ${createError}`
       console.error(msg)
@@ -198,13 +198,13 @@ export interface TransformingFunction {
 export const createTransformingFunction = (
   id: string,
   name: string,
-  type: 'string' | 'number' | 'boolean',
+  type: DataLakeVariableType,
   expression: string,
   description?: string
 ): void => {
   const transformingFunction: TransformingFunction = { name, id, type, expression, description }
   globalTransformingFunctions.push(transformingFunction)
-  createDataLakeVariable(new DataLakeVariable(id, name, type, description))
+  createDataLakeVariable({ id, name, type, description })
   saveTransformingFunctions()
 }
 

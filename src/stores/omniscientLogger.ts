@@ -18,12 +18,12 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   const videoStore = useVideoStore()
 
   // Routine to log the memory usage of the application
-  const cockpitMemoryUsageVariable = new DataLakeVariable(
-    'cockpit-memory-usage',
-    'Cockpit Memory Usage',
-    'number',
-    'The memory usage of the Cockpit application in MB. This value is updated every 100ms.'
-  )
+  const cockpitMemoryUsageVariable = {
+    id: 'cockpit-memory-usage',
+    name: 'Cockpit Memory Usage',
+    type: 'number',
+    description: 'The memory usage of the Cockpit application in MB. This value is updated every 100ms.',
+  } as DataLakeVariable
   createDataLakeVariable(cockpitMemoryUsageVariable)
 
   setInterval(() => {
@@ -33,12 +33,12 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
 
   // Routine to log the framerate of the application rendering
   const appAverageFrameRateSampleDelay = 100
-  const cockpitAppFrameRateVariable = new DataLakeVariable(
-    'cockpit-app-frame-rate',
-    'Cockpit App Frame Rate',
-    'number',
-    'The framerate of the Cockpit application rendering in fps. This value is updated every 100ms.'
-  )
+  const cockpitAppFrameRateVariable = {
+    id: 'cockpit-app-frame-rate',
+    name: 'Cockpit App Frame Rate',
+    type: 'number',
+    description: 'The framerate of the Cockpit application rendering in fps. This value is updated every 100ms.',
+  } as DataLakeVariable
   createDataLakeVariable(cockpitAppFrameRateVariable)
 
   const fpsMeter = (): void => {
@@ -89,12 +89,12 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
 
       storedKeys.forEach((key) => {
         if (getDataLakeVariableInfo(streamRateVariableId(streamName, key)) === undefined) {
-          const streamVariable = new DataLakeVariable(
-            streamRateVariableId(streamName, key),
-            `Stream '${streamName}' - ${key}`,
-            'number',
-            `WebRTC stat '${key}' of the '${streamName}' video stream.`
-          )
+          const streamVariable = {
+            id: streamRateVariableId(streamName, key),
+            name: `Stream '${streamName}' - ${key}`,
+            type: 'number',
+            description: `WebRTC stat '${key}' of the '${streamName}' video stream.`,
+          } as DataLakeVariable
           createDataLakeVariable(streamVariable)
         }
       })
