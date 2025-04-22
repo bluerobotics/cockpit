@@ -33,6 +33,10 @@ export interface DataLakeVariable {
    * Whether the variable's value should be persisted between boots
    */
   persistValue?: boolean
+  /**
+   * Whether the variable's value should be allowed to be changed by the user
+   */
+  allowUserToChangeValue?: boolean
 }
 
 const persistentVariablesKey = 'cockpit-persistent-data-lake-variables'

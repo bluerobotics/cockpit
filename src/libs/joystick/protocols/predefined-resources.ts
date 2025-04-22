@@ -1,5 +1,5 @@
 import { getAllActionLinks, saveActionLink } from '@/libs/actions/action-links'
-import { createDataLakeVariable } from '@/libs/actions/data-lake'
+import { createDataLakeVariable, DataLakeVariableType } from '@/libs/actions/data-lake'
 import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import {
   getAllMavlinkMessageActionConfigs,
@@ -11,13 +11,14 @@ import { getUnindentedString } from '@/libs/utils'
 import { customActionTypes } from '@/types/cockpit-actions'
 
 export const setupMavlinkCameraResources = (): void => {
+  const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
   // Initialize camera zoom variables
-  createDataLakeVariable({ id: 'camera-zoom-decrease', name: 'Camera Zoom Decrease', type: 'number' }, 0)
-  createDataLakeVariable({ id: 'camera-zoom-increase', name: 'Camera Zoom Increase', type: 'number' }, 0)
+  createDataLakeVariable({ id: 'camera-zoom-decrease', name: 'Camera Zoom Decrease', ...commonVariableConfig }, 0)
+  createDataLakeVariable({ id: 'camera-zoom-increase', name: 'Camera Zoom Increase', ...commonVariableConfig }, 0)
 
   // Initialize camera focus variables
-  createDataLakeVariable({ id: 'camera-focus-decrease', name: 'Camera Focus Decrease', type: 'number' }, 0)
-  createDataLakeVariable({ id: 'camera-focus-increase', name: 'Camera Focus Increase', type: 'number' }, 0)
+  createDataLakeVariable({ id: 'camera-focus-decrease', name: 'Camera Focus Decrease', ...commonVariableConfig }, 0)
+  createDataLakeVariable({ id: 'camera-focus-increase', name: 'Camera Focus Increase', ...commonVariableConfig }, 0)
 
   // Initialize camera zoom transforming function
   try {

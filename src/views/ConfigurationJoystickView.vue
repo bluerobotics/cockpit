@@ -540,6 +540,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
+import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -647,6 +648,11 @@ const sortJoystickActions = (protocol: string): JoystickAction[] => {
   const searchTerm = searchTermsJoy[protocol].toLowerCase() || ''
   return buttonActionsToShow.value
     .filter((action: JoystickAction) => action.protocol === protocol && action.name.toLowerCase().includes(searchTerm))
+    .filter((action: JoystickAction) => {
+      const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
+      if (!dataLakeVariableInfo) return true
+      return dataLakeVariableInfo.allowUserToChangeValue
+    })
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 }
 
