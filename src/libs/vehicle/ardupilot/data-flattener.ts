@@ -1,3 +1,5 @@
+import { DataLakeVariableType } from '@/libs/actions/data-lake'
+
 /**
  * Result of flattening a data structure
  */
@@ -18,7 +20,7 @@ export type FlattenedPair = {
    * The type of the flattened value
    * Used to create the appropriate DataLakeVariable
    */
-  type: 'string' | 'number' | 'boolean'
+  type: DataLakeVariableType
 }
 
 /**

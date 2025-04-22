@@ -3,7 +3,6 @@ import { unit } from 'mathjs'
 
 import {
   createDataLakeVariable,
-  DataLakeVariable,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableInfo,
   setDataLakeVariableData,
@@ -322,14 +321,14 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       const name = (mavlink_message.message.name as string[]).join('').replace(/\0/g, '')
       const path = `${messageType}/${name}`
       if (getDataLakeVariableInfo(path) === undefined) {
-        createDataLakeVariable(new DataLakeVariable(path, path, 'number'))
+        createDataLakeVariable({ id: path, name: path, type: 'number' })
       }
       setDataLakeVariableData(path, mavlink_message.message.value)
 
       // Create duplicated variables for legacy purposes (that was how they were stored in the old generic-variables system)
       const oldVariablePath = mavlink_message.message.name.join('').replaceAll('\x00', '')
       if (getDataLakeVariableInfo(oldVariablePath) === undefined) {
-        createDataLakeVariable(new DataLakeVariable(oldVariablePath, oldVariablePath, 'number'))
+        createDataLakeVariable({ id: oldVariablePath, name: oldVariablePath, type: 'number' })
       }
       setDataLakeVariableData(oldVariablePath, mavlink_message.message.value)
     } else {
@@ -339,7 +338,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         if (value === null) return
         if (typeof value !== 'string' && typeof value !== 'number') return
         if (getDataLakeVariableInfo(path) === undefined) {
-          createDataLakeVariable(new DataLakeVariable(path, path, typeof value === 'string' ? 'string' : 'number'))
+          createDataLakeVariable({ id: path, name: path, type: typeof value === 'string' ? 'string' : 'number' })
         }
         setDataLakeVariableData(path, value)
       })

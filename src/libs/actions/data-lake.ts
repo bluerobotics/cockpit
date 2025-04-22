@@ -8,7 +8,7 @@ export type DataLakeVariableType = 'string' | 'number' | 'boolean'
 /**
  * A configuration for a Data Lake variable
  */
-export interface DataLakeVariableConfig {
+export interface DataLakeVariable {
   /**
    * The id of the variable
    */
@@ -28,45 +28,11 @@ export interface DataLakeVariableConfig {
   /**
    * Whether the variable existance should be persisted between boots
    */
-  persistent: boolean
+  persistent?: boolean
   /**
    * Whether the variable's value should be persisted between boots
    */
-  persistValue: boolean
-}
-
-/**
- * A variable to be used on a Cockpit action
- * @param { string } id - The id of the variable
- * @param { string } name - The name of the variable
- * @param { 'string' | 'number' | 'boolean' } type - The type of the variable (string, number or boolean)
- * @param { string } description - What the variable does or means
- * @param { boolean } persistent - Whether the variable should be persisted between boots
- * @param { boolean } persistValue - Whether the variable's value should be persisted between boots
- */
-export class DataLakeVariable implements DataLakeVariableConfig {
-  id: string
-  name: string
-  type: DataLakeVariableType
-  description?: string
-  persistent: boolean
-  persistValue: boolean
-  // eslint-disable-next-line jsdoc/require-jsdoc
-  constructor(
-    id: string,
-    name: string,
-    type: DataLakeVariableType,
-    description?: string,
-    persistent = false,
-    persistValue = false
-  ) {
-    this.id = id
-    this.name = name
-    this.type = type
-    this.description = description
-    this.persistent = persistent
-    this.persistValue = persistValue
-  }
+  persistValue?: boolean
 }
 
 const persistentVariablesKey = 'cockpit-persistent-data-lake-variables'
