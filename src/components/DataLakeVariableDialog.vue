@@ -289,7 +289,7 @@ const saveVariable = (): void => {
     }
   }
 
-  const newVariable = { ...variable }
+  const newVariable = { ...variable, allowUserToChangeValue: true }
 
   if (editMode.value) {
     updateDataLakeVariableInfo(newVariable)

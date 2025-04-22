@@ -38,7 +38,12 @@
 import { toRefs } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { listenDataLakeVariable, setDataLakeVariableData, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
+import {
+  listenDataLakeVariable,
+  setDataLakeVariableData,
+  unlistenDataLakeVariable,
+  updateDataLakeVariableInfo,
+} from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -113,6 +118,11 @@ onMounted(() => {
       dataLakeVariable: undefined,
     })
   }
+
+  if (miniWidget.value.options.dataLakeVariable && !miniWidget.value.options.dataLakeVariable.allowUserToChangeValue) {
+    updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
+  }
+
   startListeningDataLakeVariable()
 })
 

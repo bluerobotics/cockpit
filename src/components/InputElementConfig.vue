@@ -520,13 +520,13 @@ const saveOrUpdateParameter = (): void => {
       showActionExistsError()
       return
     }
-    createDataLakeVariable(newDataLakeVariable)
+    createDataLakeVariable({ ...newDataLakeVariable, allowUserToChangeValue: true })
     currentElement.value.options.dataLakeVariable = newDataLakeVariable
     return
   }
   if (futureDataLakeVariable.value && currentElement.value?.options.dataLakeVariable?.name) {
     newDataLakeVariable.id = currentElement.value.options.dataLakeVariable.id
-    updateDataLakeVariableInfo(newDataLakeVariable)
+    updateDataLakeVariableInfo({ ...newDataLakeVariable, allowUserToChangeValue: true })
     currentElement.value.options.dataLakeVariable = newDataLakeVariable
   }
 }
