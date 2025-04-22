@@ -87,8 +87,7 @@
                         <v-btn
                           variant="outlined"
                           class="rounded-full mx-1"
-                          color="error"
-                          icon="mdi-delete"
+                          icon="mdi-trash-can-outline"
                           size="x-small"
                           @click="deleteAction(item)"
                         />
