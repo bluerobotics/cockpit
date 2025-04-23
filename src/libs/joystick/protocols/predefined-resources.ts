@@ -115,12 +115,13 @@ export const setupMavlinkCameraResources = (): void => {
   }
 
   // Link the camera zoom and focus actions to the camera zoom and focus variables (if not already linked)
+  // Enforce a minimum interval of 100ms between consecutive executions so we don't overload the autopilot
   const existingLinks = getAllActionLinks()
-  if (cameraZoomActionId && !existingLinks[cameraZoomActionId]) {
-    saveActionLink(cameraZoomActionId, customActionTypes.mavlinkMessage, ['camera-zoom'], 10)
+  if (!existingLinks[cameraZoomActionId] || existingLinks[cameraZoomActionId].minInterval < 100) {
+    saveActionLink(cameraZoomActionId, customActionTypes.mavlinkMessage, ['camera-zoom'], 100)
   }
-  if (cameraFocusActionId && !existingLinks[cameraFocusActionId]) {
-    saveActionLink(cameraFocusActionId, customActionTypes.mavlinkMessage, ['camera-focus'], 10)
+  if (!existingLinks[cameraFocusActionId] || existingLinks[cameraFocusActionId].minInterval < 100) {
+    saveActionLink(cameraFocusActionId, customActionTypes.mavlinkMessage, ['camera-focus'], 100)
   }
 }
 
