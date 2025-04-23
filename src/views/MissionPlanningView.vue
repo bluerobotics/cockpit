@@ -206,13 +206,6 @@
         </div>
         <v-divider v-if="isCreatingSimplePath || isCreatingSurvey" class="my-2" />
         <button
-          v-if="missionStore.currentPlanningWaypoints.length > 0"
-          class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-          @click="clearCurrentMission"
-        >
-          <p>CLEAR CURRENT MISSION</p>
-        </button>
-        <button
           v-if="isCreatingSimplePath || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0"
           :disabled="missionStore.currentPlanningWaypoints.length < 2"
           :class="{
@@ -223,6 +216,23 @@
           @click="uploadMissionToVehicle"
         >
           UPLOAD MISSION TO VEHICLE
+        </button>
+        <button
+          v-if="missionStore.currentPlanningWaypoints.length > 0"
+          :disabled="loading"
+          class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+          @click="clearCurrentMission"
+        >
+          <v-progress-circular v-if="loading" size="20" class="py-4" />
+          <p v-else>CLEAR CURRENT MISSION</p>
+        </button>
+        <button
+          :disabled="loading"
+          class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+          @click="downloadMissionFromVehicle"
+        >
+          <v-progress-circular v-if="loading" size="20" class="py-4" />
+          <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
         </button>
       </div>
     </div>
@@ -298,18 +308,39 @@
     <WaypointConfigPanel :selected-waypoint="selectedWaypoint" @remove-waypoint="removeWaypoint" />
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
+
+  <v-progress-linear
+    v-if="fetchingMission"
+    :model-value="missionFetchProgress"
+    height="10"
+    absolute
+    bottom
+    color="white"
+    :style="{ top: '48px' }"
+  />
+  <p
+    v-if="fetchingMission"
+    :style="{ top: '48px' }"
+    class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
+  >
+    Loading mission...
+  </p>
 </template>
 
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
 import { useWindowSize } from '@vueuse/core'
+import { formatDistanceToNow } from 'date-fns'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
 import type { Ref } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
+import blueboatMarkerImage from '@/assets/blueboat-marker.png'
+import brov2MarkerImage from '@/assets/brov2-marker.png'
+import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
@@ -317,6 +348,8 @@ import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPan
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -394,6 +427,39 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   }
 }
 
+// Allow fetching missions
+const downloadMissionFromVehicle = async (): Promise<void> => {
+  clearCurrentMission()
+  loading.value = true
+  fetchingMission.value = true
+
+  const loadingCallback = async (loadingPerc: number): Promise<void> => {
+    missionFetchProgress.value = loadingPerc
+  }
+  try {
+    const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
+    missionItemsInVehicle.forEach((wp: Waypoint, index) => {
+      if (index === 0) {
+        home.value = wp.coordinates
+        currentCursorGeoCoordinates.value = wp.coordinates
+        setHomePosition()
+      }
+      if (index > 0) {
+        missionStore.currentPlanningWaypoints.push(wp)
+        addWaypointMarker(wp)
+      }
+    })
+    reNumberWaypoints()
+
+    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
+  } catch (error) {
+    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
+  } finally {
+    loading.value = false
+    fetchingMission.value = false
+  }
+}
+
 const planningMap: Ref<Map | undefined> = ref()
 const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref<WaypointCoordinates | undefined>(undefined)
@@ -428,18 +494,21 @@ const accessingSurveyContextMenu = ref(false)
 const isDraggingPolygon = ref(false)
 const isDraggingMarker = ref(false)
 const showHomePositionNotSetDialog = ref(false)
+const fetchingMission = ref(false)
+const missionFetchProgress = ref(0)
+const loading = ref(false)
 
 const clearCurrentMission = (): void => {
   missionStore.clearMission()
+
   Object.values(waypointMarkers.value).forEach((marker) => {
     planningMap.value?.removeLayer(marker)
   })
   waypointMarkers.value = {}
 
-  if (missionWaypointsPolyline.value) {
-    planningMap.value?.removeLayer(missionWaypointsPolyline.value)
-    missionWaypointsPolyline.value = null
-  }
+  const style = missionWaypointsPolyline.value?.options
+  if (missionWaypointsPolyline.value) planningMap.value?.removeLayer(missionWaypointsPolyline.value)
+  missionWaypointsPolyline.value = L.polyline([], style).addTo(planningMap.value!)
 }
 
 const enableUndoForCurrentSurvey = computed(() => {
@@ -1865,35 +1934,65 @@ const vehiclePosition = computed((): [number, number] | undefined =>
     : undefined
 )
 
+// Create marker for the vehicle
 const vehicleMarker = ref<L.Marker>()
-watch(vehicleStore.coordinates, (coords, prevCoords) => {
-  if (!planningMap.value || vehiclePosition.value === undefined) return
+watch(vehicleStore.coordinates, () => {
+  if (!planningMap.value || !vehiclePosition.value) return
 
   if (vehicleMarker.value === undefined) {
-    vehicleMarker.value = L.marker(vehiclePosition.value)
+    let vehicleIconUrl = genericVehicleMarkerImage
+
+    if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) {
+      vehicleIconUrl = blueboatMarkerImage
+    } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
+      vehicleIconUrl = brov2MarkerImage
+    }
 
     const vehicleMarkerIcon = L.divIcon({
-      className: 'marker-icon',
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
+      className: 'vehicle-marker',
+      html: `<img src="${vehicleIconUrl}" style="width: 64px; height: 64px;">`,
+      iconSize: [64, 64],
+      iconAnchor: [32, 32],
     })
-    vehicleMarker.value.setIcon(vehicleMarkerIcon)
+
+    vehicleMarker.value = L.marker(vehiclePosition.value, { icon: vehicleMarkerIcon })
 
     const vehicleMarkerTooltip = L.tooltip({
-      content: '<i class="mdi mdi-send-circle-outline text-[30px]"></i>',
-      permanent: true,
-      direction: 'center',
+      content: 'No data available',
       className: 'waypoint-tooltip',
-      opacity: 1,
+      offset: [40, 0],
     })
     vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
     planningMap.value.addLayer(vehicleMarker.value)
   }
-
   vehicleMarker.value.setLatLng(vehiclePosition.value)
+})
 
-  if (followerTarget.value !== WhoToFollow.VEHICLE && prevCoords === undefined) {
-    targetFollower.follow(WhoToFollow.VEHICLE)
+// Calculate live vehicle heading
+const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw) : 0))
+
+// Calculate time since last vehicle heartbeat
+const timeAgoSeenText = computed(() => {
+  const lastBeat = vehicleStore.lastHeartbeat
+  return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
+})
+
+// Dinamically update data of the vehicle tooltip
+watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isArmed], () => {
+  if (vehicleMarker.value === undefined) return
+
+  vehicleMarker.value.getTooltip()?.setContent(`
+    <p>Coordinates: ${vehiclePosition.value?.[0].toFixed(6)}, ${vehiclePosition.value?.[1].toFixed(6)}</p>
+    <p>Velocity: ${vehicleStore.velocity.ground?.toFixed(2) ?? 'N/A'} m/s</p>
+    <p>Heading: ${vehicleHeading.value.toFixed(2)}°</p>
+    <p>${vehicleStore.isArmed ? 'Armed' : 'Disarmed'}</p>
+    <p>Last seen: ${timeAgoSeenText.value}</p>
+  `)
+
+  // Update the rotation
+  const iconElement = vehicleMarker.value.getElement()?.querySelector('img')
+  if (iconElement) {
+    iconElement.style.transform = `rotate(${vehicleHeading.value}deg)`
   }
 })
 
