@@ -426,30 +426,32 @@
             >
           </div>
           <div class="flex flex-col w-[300px] justify-evenly">
-            <div class="max-h-[40vh] p-1 overflow-y-auto">
+            <div class="max-h-[40vh] p-1">
               <v-text-field
                 v-model="searchText"
                 density="compact"
-                variant="filled"
+                variant="outlined"
                 theme="dark"
                 type="text"
                 placeholder="Search actions..."
-                class="-mb-4"
+                hide-details
               />
-              <Button
-                v-for="action in filteredAndSortedJoystickActions()"
-                :key="action.name"
-                class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col pt-2"
-                :class="{
-                  'bg-slate-700': currentButtonActions[input.id].action.id == action.id,
-                }"
-                @click="updateButtonAction(input, action as ProtocolAction)"
-              >
-                <p class="text-center text-sm" :class="{ 'text-xs': action.name.length > 28 }">
-                  {{ action.name }}
-                </p>
-                <p class="text-[0.6rem] text-gray-500">({{ action.protocol }})</p>
-              </Button>
+              <div class="max-h-[36vh] p-1 overflow-y-auto">
+                <Button
+                  v-for="action in filteredAndSortedJoystickActions()"
+                  :key="action.name"
+                  class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col pt-2"
+                  :class="{
+                    'bg-slate-700': currentButtonActions[input.id].action.id == action.id,
+                  }"
+                  @click="updateButtonAction(input, action as ProtocolAction)"
+                >
+                  <p class="text-center text-sm" :class="{ 'text-xs': action.name.length > 28 }">
+                    {{ action.name }}
+                  </p>
+                  <p class="text-[0.6rem] text-gray-500">({{ action.protocol }})</p>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
