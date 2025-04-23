@@ -134,7 +134,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type { WaypointCoordinates } from '@/types/mission'
+import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 // Define widget props
@@ -302,9 +302,6 @@ onBeforeUnmount(() => {
 watch(mapCenter, (newCenter, oldCenter) => {
   if (newCenter.toString() === oldCenter.toString()) return
   map.value?.panTo(newCenter as LatLngTuple)
-
-  // Update the tooltip content of the home marker
-  homeMarker.value?.getTooltip()?.setContent(`Home: ${newCenter[0].toFixed(6)}, ${newCenter[1].toFixed(6)}`)
 })
 
 // Keep map binded
@@ -437,15 +434,28 @@ watch(home, () => {
   const position = home.value
   if (position === undefined) return
 
-  if (homeMarker.value === undefined) {
-    homeMarker.value = L.marker(position as LatLngTuple)
-    const homeMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16], html: 'H' })
-    homeMarker.value.setIcon(homeMarkerIcon)
-    const homeMarkerTooltip = L.tooltip({ content: 'No data available', className: 'waypoint-tooltip' })
+  if (!homeMarker.value) {
+    homeMarker.value = L.marker(position as LatLngTuple, {
+      icon: L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] }),
+      draggable: true,
+    })
+    const homeMarkerTooltip = L.tooltip({
+      content: '<i class="mdi mdi-home-map-marker text-[18px]"></i>',
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
+    homeMarker.value.on('dragend', (e: L.DragEndEvent) => {
+      const marker = e.target as L.Marker
+      const latlng = marker.getLatLng()
+      setHomePosition([latlng.lat, latlng.lng])
+    })
     map.value.addLayer(homeMarker.value)
+  } else {
+    homeMarker.value.setLatLng(position as LatLngTuple)
   }
-  homeMarker.value.setLatLng(home.value)
 })
 
 // Create polyline for the vehicle path
@@ -461,8 +471,20 @@ watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
   // Add a marker for each point
   newWaypoints.forEach((waypoint, idx) => {
     const marker = L.marker(waypoint.coordinates)
-    const markerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16], html: `${idx}` })
+    const markerIcon = L.divIcon({
+      className: 'marker-icon',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    })
     marker.setIcon(markerIcon)
+    const markerTooltip = L.tooltip({
+      content: idx.toString(),
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
+    marker.bindTooltip(markerTooltip)
     map.value?.addLayer(marker)
   })
 })
@@ -579,26 +601,44 @@ const onKeydown = (event: KeyboardEvent): void => {
 // Allow fetching missions
 const fetchingMission = ref(false)
 const missionFetchProgress = ref(0)
+
+// Allow fetching missions
 const downloadMissionFromVehicle = async (): Promise<void> => {
   fetchingMission.value = true
-  missionFetchProgress.value = 0
-  while (missionStore.currentPlanningWaypoints.length > 0) {
-    missionStore.currentPlanningWaypoints.pop()
-  }
+
   const loadingCallback = async (loadingPerc: number): Promise<void> => {
     missionFetchProgress.value = loadingPerc
   }
+
+  missionStore.clearMission()
   try {
     const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
-    missionItemsInVehicle.forEach((w) => {
-      missionStore.currentPlanningWaypoints.push(w)
+    missionItemsInVehicle.forEach((wp: Waypoint, index) => {
+      if (index === 0) {
+        home.value = wp.coordinates
+        setHomePosition(wp.coordinates)
+      }
+      if (index > 0) {
+        missionStore.currentPlanningWaypoints.push(wp)
+      }
     })
-    openSnackbar({ variant: 'success', message: 'Mission download succeed!', duration: 3000 })
+
+    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
     showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
   } finally {
     fetchingMission.value = false
   }
+}
+
+const setHomePosition = async (homePosition: [number, number]): Promise<void> => {
+  const newHome: [number, number] = [homePosition[0], homePosition[1]]
+  home.value = newHome
+  if (map.value) {
+    map.value.setView(newHome, zoom.value)
+  }
+  mapCenter.value = newHome
+  await vehicleStore.setHomeWaypoint(newHome, 0)
 }
 
 // Allow executing missions
@@ -672,13 +712,9 @@ const centerVehicleButtonTooltipText = computed(() => {
 }
 
 .marker-icon {
-  color: white;
-  background-color: #358ac3;
-  padding: 0.75rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: 800;
+  background-color: #1e498f;
+  border: 1px solid #ffffff55;
+  border-radius: 50%;
 }
 
 .waypoint-tooltip {
