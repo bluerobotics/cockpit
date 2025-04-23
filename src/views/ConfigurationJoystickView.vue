@@ -434,6 +434,7 @@
                 theme="dark"
                 type="text"
                 placeholder="Search actions..."
+                class="mb-1"
                 hide-details
               />
               <div class="max-h-[36vh] p-1 overflow-y-auto">
@@ -533,6 +534,7 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
+import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
@@ -596,7 +598,12 @@ const shiftFunction = {
   name: 'Shift',
 }
 
-const idsExcludedJoystickActions = [MAVLinkButtonFunction.arm, MAVLinkButtonFunction.disarm]
+const idsExcludedJoystickActions = [
+  MAVLinkButtonFunction.arm,
+  MAVLinkButtonFunction.disarm,
+  mavlinkCameraZoomActionId,
+  mavlinkCameraFocusActionId,
+]
 
 watch(
   () => currentJoystick.value?.model,

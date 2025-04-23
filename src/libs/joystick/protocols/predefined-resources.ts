@@ -10,6 +10,9 @@ import { MavCmd, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest
 import { getUnindentedString } from '@/libs/utils'
 import { customActionTypes } from '@/types/cockpit-actions'
 
+export let mavlinkCameraZoomActionId: string | undefined = undefined
+export let mavlinkCameraFocusActionId: string | undefined = undefined
+
 export const setupMavlinkCameraResources = (): void => {
   const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
   // Initialize camera zoom variables
@@ -79,12 +82,11 @@ export const setupMavlinkCameraResources = (): void => {
     },
   }
 
-  let cameraZoomActionId = undefined
   const existingCameraZoomAction = Object.entries(existingActions).find(([, a]) => a.name === cameraZoomAction.name)
   if (existingCameraZoomAction) {
-    cameraZoomActionId = existingCameraZoomAction[0]
+    mavlinkCameraZoomActionId = existingCameraZoomAction[0]
   } else {
-    cameraZoomActionId = registerMavlinkMessageActionConfig(cameraZoomAction)
+    mavlinkCameraZoomActionId = registerMavlinkMessageActionConfig(cameraZoomAction)
   }
 
   // Create MAVLink message action for camera focus (if not already registered)
@@ -106,22 +108,21 @@ export const setupMavlinkCameraResources = (): void => {
     },
   }
 
-  let cameraFocusActionId = undefined
   const existingCameraFocusAction = Object.entries(existingActions).find(([, a]) => a.name === cameraFocusAction.name)
   if (existingCameraFocusAction) {
-    cameraFocusActionId = existingCameraFocusAction[0]
+    mavlinkCameraFocusActionId = existingCameraFocusAction[0]
   } else {
-    cameraFocusActionId = registerMavlinkMessageActionConfig(cameraFocusAction)
+    mavlinkCameraFocusActionId = registerMavlinkMessageActionConfig(cameraFocusAction)
   }
 
   // Link the camera zoom and focus actions to the camera zoom and focus variables (if not already linked)
   // Enforce a minimum interval of 100ms between consecutive executions so we don't overload the autopilot
   const existingLinks = getAllActionLinks()
-  if (!existingLinks[cameraZoomActionId] || existingLinks[cameraZoomActionId].minInterval < 100) {
-    saveActionLink(cameraZoomActionId, customActionTypes.mavlinkMessage, ['camera-zoom'], 100)
+  if (!existingLinks[mavlinkCameraZoomActionId] || existingLinks[mavlinkCameraZoomActionId].minInterval < 100) {
+    saveActionLink(mavlinkCameraZoomActionId, customActionTypes.mavlinkMessage, ['camera-zoom'], 100)
   }
-  if (!existingLinks[cameraFocusActionId] || existingLinks[cameraFocusActionId].minInterval < 100) {
-    saveActionLink(cameraFocusActionId, customActionTypes.mavlinkMessage, ['camera-focus'], 100)
+  if (!existingLinks[mavlinkCameraFocusActionId] || existingLinks[mavlinkCameraFocusActionId].minInterval < 100) {
+    saveActionLink(mavlinkCameraFocusActionId, customActionTypes.mavlinkMessage, ['camera-focus'], 100)
   }
 }
 
