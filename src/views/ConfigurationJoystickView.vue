@@ -651,7 +651,7 @@ const sortJoystickActions = (protocol: string): JoystickAction[] => {
     .filter((action: JoystickAction) => {
       const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
       if (!dataLakeVariableInfo) return true
-      return dataLakeVariableInfo.allowUserToChangeValue
+      return dataLakeVariableInfo.allowUserToChangeValue && dataLakeVariableInfo.type !== 'string'
     })
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 }
