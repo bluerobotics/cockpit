@@ -426,47 +426,31 @@
             >
           </div>
           <div class="flex flex-col w-[300px] justify-evenly">
-            <ExpansiblePanel
-              v-for="protocol in filteredProtocols"
-              :key="protocol"
-              compact
-              mark-expanded
-              darken-content
-              hover-effect
-              :is-expanded="protocol === protocolToExpand"
-              @update:is-expanded="(isExpanded: boolean) => reactToPanelExpansion(isExpanded, protocol)"
-            >
-              <template #title>
-                {{ protocol }}
-              </template>
-              <template #content>
-                <div class="max-h-[60vh] p-1 overflow-y-auto">
-                  <v-text-field
-                    v-if="buttonActionsToShow.filter((a) => a.protocol === protocol).length > 12"
-                    v-model="searchTermsJoy[protocol]"
-                    density="compact"
-                    variant="filled"
-                    theme="dark"
-                    type="text"
-                    placeholder="Search actions..."
-                    class="-mb-4"
-                  />
-                  <Button
-                    v-for="action in sortJoystickActions(protocol)"
-                    :key="action.name"
-                    class="w-full my-1 text-sm hover:bg-slate-700"
-                    :class="{
-                      'bg-slate-700':
-                        currentButtonActions[input.id].action.protocol == action.protocol &&
-                        currentButtonActions[input.id].action.id == action.id,
-                    }"
-                    @click="updateButtonAction(input, action as ProtocolAction)"
-                  >
-                    {{ action.name }}
-                  </Button>
-                </div>
-              </template>
-            </ExpansiblePanel>
+            <div class="max-h-[40vh] p-1 overflow-y-auto">
+              <v-text-field
+                v-model="searchText"
+                density="compact"
+                variant="filled"
+                theme="dark"
+                type="text"
+                placeholder="Search actions..."
+                class="-mb-4"
+              />
+              <Button
+                v-for="action in filteredAndSortedJoystickActions()"
+                :key="action.name"
+                class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col pt-2"
+                :class="{
+                  'bg-slate-700': currentButtonActions[input.id].action.id == action.id,
+                }"
+                @click="updateButtonAction(input, action as ProtocolAction)"
+              >
+                <p class="text-center text-sm" :class="{ 'text-xs': action.name.length > 28 }">
+                  {{ action.name }}
+                </p>
+                <p class="text-[0.6rem] text-gray-500">({{ action.protocol }})</p>
+              </Button>
+            </div>
           </div>
         </div>
         <Transition>
@@ -533,7 +517,7 @@
 
 <script setup lang="ts">
 import semver from 'semver'
-import { type Ref, computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -572,6 +556,7 @@ const { globalAddress } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 
 const showJoystickWarningMessage = ref(false)
+const searchText = ref('')
 
 onMounted(async () => {
   controllerStore.enableForwarding = false
@@ -602,10 +587,6 @@ const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
 
 const protocols = Object.values(JoystickProtocol).filter((value) => typeof value === 'string')
-
-type SearchTerms = {
-  [key: string]: string
-}
 
 const shiftFunction = {
   protocol: 'cockpit-modifier-key',
@@ -647,10 +628,10 @@ const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void
   }
 }
 
-const sortJoystickActions = (protocol: string): JoystickAction[] => {
-  const searchTerm = searchTermsJoy[protocol].toLowerCase() || ''
+const filteredAndSortedJoystickActions = (): JoystickAction[] => {
   return buttonActionsToShow.value
-    .filter((action: JoystickAction) => action.protocol === protocol && action.name.toLowerCase().includes(searchTerm))
+    .filter((action: JoystickAction) => action.name.toLowerCase().includes(searchText.value))
+    .filter((action: JoystickAction) => filteredProtocols.includes(action.protocol))
     .filter((action: JoystickAction) => {
       const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
       if (!dataLakeVariableInfo) return true
@@ -659,13 +640,6 @@ const sortJoystickActions = (protocol: string): JoystickAction[] => {
     .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 }
-
-const searchTermsJoy = reactive(
-  protocols.reduce((acc: SearchTerms, protocol: string) => {
-    acc[protocol] = ''
-    return acc
-  }, {} as SearchTerms)
-)
 
 const headers = ref([
   { text: 'Type', value: 'type' },
@@ -808,16 +782,8 @@ const vehicleTypesAssignedToCurrentProfile = computed({
   },
 })
 
-const protocolToExpand = ref<JoystickProtocol | undefined>(undefined)
-
-const reactToPanelExpansion = (isExpanded: boolean, protocol: JoystickProtocol): void => {
-  console.log(`${protocol} is expanded: ${isExpanded}`)
-  protocolToExpand.value = isExpanded ? protocol : undefined
-}
-
 const closeInputMappingDialog = (): void => {
   inputClickedDialog.value = false
-  protocolToExpand.value = undefined
 }
 
 const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
