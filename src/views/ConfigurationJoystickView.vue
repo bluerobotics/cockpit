@@ -545,6 +545,7 @@ import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transforma
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { JoystickModel } from '@/libs/joystick/manager'
+import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { scale } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -612,6 +613,8 @@ const shiftFunction = {
   name: 'Shift',
 }
 
+const idsExcludedJoystickActions = [MAVLinkButtonFunction.arm, MAVLinkButtonFunction.disarm]
+
 watch(
   () => currentJoystick.value?.model,
   (newModel) => {
@@ -653,6 +656,7 @@ const sortJoystickActions = (protocol: string): JoystickAction[] => {
       if (!dataLakeVariableInfo) return true
       return dataLakeVariableInfo.allowUserToChangeValue && dataLakeVariableInfo.type !== 'string'
     })
+    .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 }
 
