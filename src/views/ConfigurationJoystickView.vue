@@ -414,18 +414,33 @@
           :key="input.id"
           class="flex flex-row justify-between w-full h-full align-center gap-x-16"
         >
-          <div class="flex flex-col w-[30%] h-[100px] justify-around">
+          <div class="flex flex-col w-[30%] justify-around gap-y-2">
             <v-btn
               variant="elevated"
               class="bg-[#FFFFFF33]"
               @click="updateButtonAction(input, shiftFunction as ProtocolAction)"
-              >Assign as Shift</v-btn
             >
-            <v-btn variant="elevated" class="bg-[#FFFFFF33]" @click="unbindCurrentInput(input as JoystickButtonInput)"
-              >Unmap Input</v-btn
-            >
+              Assign as Shift
+            </v-btn>
+            <v-btn variant="elevated" class="bg-[#FFFFFF33]" @click="unbindCurrentInput(input as JoystickButtonInput)">
+              Unmap Input
+            </v-btn>
+            <div class="absolute bottom-[76px] flex flex-col items-start mt-4 text-sm font-semibold gap-y-1">
+              <div class="flex items-center">
+                <img src="@/assets/cockpit-logo.png" class="w-4 h-4 mr-2" alt="Cockpit" />
+                <span>Cockpit Action</span>
+              </div>
+              <div class="flex items-center">
+                <img src="@/assets/mavlink-logo.png" class="w-4 h-4 mr-2 ml-[1px] mt-[4px]" alt="MAVLink" />
+                <span>MAVLink Manual Control</span>
+              </div>
+              <div class="flex items-center">
+                <v-icon icon="mdi-database" size="small" class="mr-2" />
+                <span>Data Lake Variable</span>
+              </div>
+            </div>
           </div>
-          <div class="flex flex-col w-[300px] justify-evenly">
+          <div class="flex flex-col w-[320px] justify-evenly">
             <div class="max-h-[40vh] p-1">
               <v-text-field
                 v-model="searchText"
@@ -441,26 +456,39 @@
                 <Button
                   v-for="action in filteredAndSortedJoystickActions()"
                   :key="action.name"
-                  class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col pt-2"
+                  class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col py-2 relative"
                   :class="{
                     'bg-slate-700': currentButtonActions[input.id].action.id == action.id,
                   }"
                   @click="updateButtonAction(input, action as ProtocolAction)"
                 >
-                  <p class="text-center text-sm" :class="{ 'text-xs': action.name.length > 28 }">
+                  <div class="absolute left-3 top-1/2 -translate-y-1/2">
+                    <img
+                      v-if="action.protocol === JoystickProtocol.CockpitAction"
+                      src="@/assets/cockpit-logo.png"
+                      class="w-4 h-4"
+                      alt="Cockpit"
+                    />
+                    <img
+                      v-else-if="action.protocol === JoystickProtocol.MAVLinkManualControl"
+                      src="@/assets/mavlink-logo.png"
+                      class="w-4 h-4 ml-[2px] mt-[3px]"
+                      alt="MAVLink"
+                    />
+                    <v-icon
+                      v-else-if="action.protocol === JoystickProtocol.DataLakeVariable"
+                      icon="mdi-database"
+                      size="small"
+                    />
+                  </div>
+                  <p class="text-center text-sm px-8" :class="{ 'text-xs': action.name.length > 14 }">
                     {{ action.name }}
                   </p>
-                  <p class="text-[0.6rem] text-gray-500">({{ action.protocol }})</p>
                 </Button>
               </div>
             </div>
           </div>
         </div>
-        <Transition>
-          <p v-if="showButtonFunctionAssignmentFeedback" class="text-lg font-medium mt-4">
-            {{ buttonFunctionAssignmentFeedback }}
-          </p>
-        </Transition>
         <template v-if="currentAxisInputs.length > 0">
           <p class="flex items-center justify-center w-full text-lg font-semibold mt-8">Axis mapping</p>
         </template>
@@ -527,6 +555,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
+import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
@@ -558,6 +587,7 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const controllerStore = useControllerStore()
 const { globalAddress } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
+const { openSnackbar } = useSnackbar()
 
 const showJoystickWarningMessage = ref(false)
 const searchText = ref('')
@@ -580,8 +610,6 @@ const currentAxisInputs = ref<JoystickAxisInput[]>([])
 const remappingAxisInput = ref<false | JoystickAxis>(false)
 const remapAxisTimeProgress = ref()
 const showAxisRemappingText = ref(false)
-const buttonFunctionAssignmentFeedback = ref('')
-const showButtonFunctionAssignmentFeedback = ref(false)
 const justRemappedInput = ref<boolean>()
 const justRemappedAxisInput = ref<boolean>()
 const inputClickedDialog = ref(false)
@@ -720,9 +748,7 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
     showJoystickLayout.value = false
     nextTick(() => (showJoystickLayout.value = true))
   }, 1000)
-  buttonFunctionAssignmentFeedback.value = `Button ${input.id} remapped to function '${action.name}'.`
-  showButtonFunctionAssignmentFeedback.value = true
-  setTimeout(() => (showButtonFunctionAssignmentFeedback.value = false), 5000)
+  openSnackbar({ message: `Button ${input.id} remapped to function '${action.name}'.`, variant: 'success' })
 }
 
 // Automatically set the current joystick when it changes for the first time
