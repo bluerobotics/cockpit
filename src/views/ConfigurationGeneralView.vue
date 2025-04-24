@@ -27,11 +27,11 @@
                   <v-btn
                     id="select-profile"
                     size="small"
-                    append-icon="mdi-swap-horizontal"
+                    append-icon="mdi-account"
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
                     @click="missionStore.changeUsername"
-                    >switch user</v-btn
+                    >Manage users</v-btn
                   >
                 </div>
               </div>
