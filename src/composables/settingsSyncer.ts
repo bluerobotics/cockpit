@@ -281,9 +281,3 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
   return currentValue
 }
-
-export const getSettingsUsernamesFromBlueOS = async (): Promise<string[]> => {
-  const vehicleAddress = await getVehicleAddress()
-  const usernames = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, 'settings')
-  return Object.keys(usernames as string[])
-}
