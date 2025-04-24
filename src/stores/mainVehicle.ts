@@ -14,6 +14,7 @@ import {
   getCpuTempCelsius,
   getKeyDataFromCockpitVehicleStorage,
   getStatus,
+  getVehicleName,
   setKeyDataOnCockpitVehicleStorage,
 } from '@/libs/blueos'
 import * as Connection from '@/libs/connection/connection'
@@ -127,6 +128,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const statusText: StatusText = reactive({} as StatusText)
   const statusGPS: StatusGPS = reactive({} as StatusGPS)
   const vehicleArmingTime = ref<Date | undefined>(undefined)
+  const currentVehicleName = ref<string | undefined>(undefined)
 
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -603,6 +605,15 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
 
+  const getCurrentVehicleName = async (): Promise<string | undefined> => {
+    if (currentVehicleName.value) return currentVehicleName.value
+    if (currentVehicleName.value === undefined) {
+      const vehicleNameResponse = await (await getVehicleName(globalAddress.value)).json()
+      currentVehicleName.value = vehicleNameResponse
+    }
+    return currentVehicleName.value
+  }
+
   return {
     arm,
     takeoff,
@@ -618,6 +629,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     uploadMission,
     clearMissions,
     startMission,
+    getCurrentVehicleName,
     globalAddress,
     MAVLink2RestWebsocketURI,
     customMAVLink2RestWebsocketURI,
