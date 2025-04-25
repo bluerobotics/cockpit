@@ -83,6 +83,7 @@
               hint="Your identification username."
               class="w-[50%] m-4"
               :error-messages="validationError"
+              @keyup.enter="saveUserName"
             />
           </div>
         </div>
@@ -243,6 +244,19 @@ const validateUsername = (username: string): true | string => {
   return true
 }
 
+const saveUserName = (): void => {
+  const slugifiedUsername = slugify(newUsername.value, { lower: true })
+  const usernameValidation = validateUsername(slugifiedUsername)
+  if (usernameValidation !== true) {
+    validationError.value = usernameValidation
+    openSnackbar({ message: usernameValidation, variant: 'error', duration: 5000 })
+    return
+  }
+  newUsername.value = slugifiedUsername
+  closeDialog()
+  emit('confirmed', newUsername.value)
+}
+
 const inputDialogActions = [
   {
     text: 'Cancel',
@@ -253,18 +267,7 @@ const inputDialogActions = [
   },
   {
     text: 'Save',
-    action: () => {
-      const slugifiedUsername = slugify(newUsername.value, { lower: true })
-      const usernameValidation = validateUsername(slugifiedUsername)
-      if (usernameValidation !== true) {
-        validationError.value = usernameValidation
-        openSnackbar({ message: usernameValidation, variant: 'error', duration: 5000 })
-        return
-      }
-      newUsername.value = slugifiedUsername
-      showUserDialog.value = false
-      emit('confirmed', newUsername.value)
-    },
+    action: saveUserName,
   },
 ]
 
