@@ -19,6 +19,6 @@ const { snackbars } = useSnackbar()
   display: flex;
   flex-direction: column;
   gap: 35px;
-  z-index: 9999;
+  z-index: 800;
 }
 </style>
