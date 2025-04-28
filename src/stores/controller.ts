@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
+import { defaultJoystickCalibration } from '@/assets/defaults'
 import {
   availableGamepadToCockpitMaps,
   cockpitStandardToProtocols,
@@ -12,7 +13,7 @@ import {
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { joystickManager, JoystickModel, JoysticksMap, JoystickStateEvent } from '@/libs/joystick/manager'
+import { joystickCalibrationOptionsKey, joystickManager, JoystickModel, JoysticksMap } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
@@ -26,6 +27,8 @@ import {
   Joystick,
   JoystickAxis,
   JoystickButton,
+  JoystickCalibration,
+  JoystickCalibrationOptions,
   JoystickProtocol,
 } from '@/types/joystick'
 
@@ -57,6 +60,12 @@ export const useControllerStore = defineStore('controller', () => {
     'cockpit-default-vehicle-type-protocol-mappings',
     defaultProtocolMappingVehicleCorrespondency
   )
+  const joystickCalibrationOptions = useBlueOsStorage<JoystickCalibrationOptions>(joystickCalibrationOptionsKey, {
+    [JoystickModel.Unknown]: defaultJoystickCalibration,
+  })
+
+  const currentMainJoystick = ref<Joystick | undefined>(undefined)
+
   // Confirmation per joystick action required currently is only available for cockpit actions
   const actionsJoystickConfirmRequired = useBlueOsStorage(
     'cockpit-actions-joystick-confirm-required',
@@ -127,7 +136,9 @@ export const useControllerStore = defineStore('controller', () => {
   }
 
   joystickManager.onJoystickConnectionUpdate((event) => processJoystickConnectionEvent(event))
-  joystickManager.onJoystickStateUpdate((event) => processJoystickStateEvent(event))
+  joystickManager.onJoystickStateUpdate((gamepadIndex, currentState, gamepad) =>
+    processJoystickStateEvent(gamepadIndex, currentState, gamepad)
+  )
 
   const processJoystickConnectionEvent = (event: JoysticksMap): void => {
     const newMap = new Map(Array.from(event).map(([index, gamepad]) => [index, new Joystick(gamepad)]))
@@ -154,6 +165,31 @@ export const useControllerStore = defineStore('controller', () => {
         enableForwarding.value = false
       }
     }
+
+    // If there's at least one joystick connected, set it as the current main joystick
+    if (joysticks.value.size >= 1) {
+      currentMainJoystick.value = Array.from(joysticks.value.values())[0]
+
+      // If there's no calibration options for the current main joystick, use the default calibration
+      if (joystickCalibrationOptions.value[currentMainJoystick.value.model] === undefined) {
+        console.info('No calibration options found for joystick model. Using default calibration.')
+        const newCalibration = {
+          deadband: { enabled: false, thresholds: { axes: [], buttons: [] } },
+          exponential: { enabled: false, factors: { axes: [], buttons: [] } },
+        } as JoystickCalibration
+        currentMainJoystick.value.gamepad.axes.forEach((_, index) => {
+          newCalibration.deadband.thresholds.axes[index] = defaultJoystickCalibration.deadband.thresholds.axes[index]
+          newCalibration.exponential.factors.axes[index] = defaultJoystickCalibration.exponential.factors.axes[index]
+        })
+        currentMainJoystick.value.gamepad.buttons.forEach((_, index) => {
+          newCalibration.deadband.thresholds.buttons[index] =
+            defaultJoystickCalibration.deadband.thresholds.buttons[index]
+          newCalibration.exponential.factors.buttons[index] =
+            defaultJoystickCalibration.exponential.factors.buttons[index]
+        })
+        joystickCalibrationOptions.value[currentMainJoystick.value.model] = newCalibration
+      }
+    }
   }
 
   // Disable joystick forwarding if the window/tab is not visible (using VueUse)
@@ -174,10 +210,10 @@ export const useControllerStore = defineStore('controller', () => {
 
   const { showDialog } = useInteractionDialog()
 
-  const processJoystickStateEvent = (event: JoystickStateEvent): void => {
-    const joystick = joysticks.value.get(event.detail.index)
+  const processJoystickStateEvent = (gamepadIndex: number, currentState: JoystickState, gamepad: Gamepad): void => {
+    const joystick = joysticks.value.get(gamepadIndex)
     if (joystick === undefined) return
-    joystick.gamepad = event.detail.gamepad
+    joystick.gamepad = gamepad
 
     const joystickModel = joystick.model || JoystickModel.Unknown
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
@@ -185,9 +221,9 @@ export const useControllerStore = defineStore('controller', () => {
     for (const callback of updateCallbacks.value) {
       try {
         callback(
-          joystick.state,
+          currentState,
           protocolMapping.value,
-          activeButtonActions(joystick.state, protocolMapping.value),
+          activeButtonActions(currentState, protocolMapping.value),
           actionsJoystickConfirmRequired.value
         )
       } catch (error) {
@@ -454,5 +490,7 @@ export const useControllerStore = defineStore('controller', () => {
     exportFunctionsMapping,
     importFunctionsMapping,
     loadDefaultProtocolMappingForVehicle,
+    joystickCalibrationOptions,
+    currentMainJoystick,
   }
 })
