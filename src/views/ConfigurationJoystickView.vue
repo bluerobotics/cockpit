@@ -393,6 +393,23 @@
               </div>
             </template>
           </ExpansiblePanel>
+          <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
+            <template #title>Axis Calibration</template>
+            <template #info>
+              <div class="flex flex-col items-start px-5 font-medium">
+                <li>Calibrate your joystick to ensure accurate axis inputs.</li>
+                <li>
+                  Click the button to open the calibration dialog, then follow the instructions to calibrate your
+                  joystick axes.
+                </li>
+              </div>
+            </template>
+            <template #content>
+              <div class="mb-6">
+                <JoystickCalibration />
+              </div>
+            </template>
+          </ExpansiblePanel>
         </div>
       </div>
     </template>
@@ -566,6 +583,7 @@ import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
+import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
