@@ -1,6 +1,7 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { OverlayGrid } from '@/libs/sensors-logging'
 import { DistanceDisplayUnit } from '@/libs/units'
+import { JoystickCalibration } from '@/types/joystick'
 import {
   type MiniWidgetProfile,
   type Profile,
@@ -900,4 +901,21 @@ export const defaultSensorDataloggerProfile: OverlayGrid = {
 
 export const defaultDisplayUnitPreferences = {
   distance: DistanceDisplayUnit.Meters,
+}
+
+export const defaultJoystickCalibration: JoystickCalibration = {
+  deadband: {
+    enabled: false,
+    thresholds: {
+      axes: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      buttons: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    },
+  },
+  exponential: {
+    enabled: false,
+    factors: {
+      axes: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      buttons: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    },
+  },
 }
