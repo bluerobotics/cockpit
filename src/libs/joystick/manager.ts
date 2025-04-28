@@ -1,3 +1,10 @@
+import { defaultJoystickCalibration } from '@/assets/defaults'
+import { type JoystickCalibration, type JoystickState } from '@/types/joystick'
+
+import { applyCalibration } from './calibration'
+
+export const joystickCalibrationOptionsKey = 'cockpit-joystick-calibration-options'
+
 /**
  * Possible events from GamepadListener
  * https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API
@@ -193,23 +200,12 @@ export type JoystickDisconnectEvent = {
   }
 }
 
-export type GamepadState = {
-  /**
-   * Gamepad axes state
-   */
-  axes: number[]
-  /**
-   * Gamepad buttons state
-   */
-  buttons: GamepadButton[]
-}
-
 export type JoysticksMap = Map<number, Gamepad>
 
 export type JoystickConnectionEvent = JoystickConnectEvent | JoystickDisconnectEvent
 export type JoystickStateEvent = JoystickAxisEvent | JoystickButtonEvent
 
-type CallbackJoystickStateEventType = (event: JoystickStateEvent) => void
+type CallbackJoystickStateEventType = (gamepadIndex: number, currentState: JoystickState, gamepad: Gamepad) => void
 type CallbackJoystickConnectionEventType = (event: JoysticksMap) => void
 
 /**
@@ -222,11 +218,12 @@ class JoystickManager {
   private callbacksJoystickConnection: Array<CallbackJoystickConnectionEventType> = []
   private callbacksJoystickState: Array<CallbackJoystickStateEventType> = []
   private joysticks: JoysticksMap = new Map()
-  private enabledJoysticks: Array<string> = []
+  private enabledJoysticks: Array<number> = []
   private animationFrameId: number | null = null
-  private previousGamepadState: Map<number, GamepadState> = new Map()
+  private previousGamepadState: Map<number, JoystickState> = new Map()
   private lastTimeGamepadConnectionsPolled = 0
   private currentGamepadsConnections: Array<Gamepad> = []
+  private calibrationOptions: Map<JoystickModel, JoystickCalibration> = new Map()
 
   /**
    * Singleton constructor
@@ -293,7 +290,7 @@ class JoystickManager {
       const gamepad = event.detail.gamepad
 
       if (!this.joysticks.has(index)) {
-        this.enabledJoysticks.push(gamepad.id)
+        this.enabledJoysticks.push(gamepad.index)
       }
       this.joysticks.set(index, gamepad)
     } else {
@@ -326,6 +323,19 @@ class JoystickManager {
 
     // Start polling for gamepad states
     this.pollGamepadsStates()
+
+    // Check calibration settings every second
+    this.updateCalibrationSettings()
+  }
+
+  /**
+   * Update calibration settings
+   */
+  private updateCalibrationSettings(): void {
+    this.loadCalibrationSettings()
+    setTimeout(() => {
+      this.updateCalibrationSettings()
+    }, 1000)
   }
 
   /**
@@ -386,6 +396,49 @@ class JoystickManager {
   }
 
   /**
+   * Load calibration settings from localStorage
+   */
+  private loadCalibrationSettings(): void {
+    try {
+      const stored = localStorage.getItem(joystickCalibrationOptionsKey)
+      if (stored) {
+        const options = JSON.parse(stored) as Record<JoystickModel, JoystickCalibration>
+        this.calibrationOptions = new Map(Object.entries(options).map(([key, value]) => [key as JoystickModel, value]))
+      }
+    } catch (error) {
+      console.error('Failed to load joystick calibration settings:', error)
+    }
+  }
+
+  /**
+   * Get calibration settings for a joystick model
+   * @param {JoystickModel} model The joystick model
+   * @returns {JoystickCalibration} The calibration settings
+   */
+  private getCalibrationSettings(model: JoystickModel): JoystickCalibration {
+    return this.calibrationOptions.get(model) ?? defaultJoystickCalibration
+  }
+
+  /**
+   * Apply calibration to a joystick value
+   * @param {string} inputType The type of input ('button' or 'axis')
+   * @param {number} inputIndex The index of the input
+   * @param {number} originalValue The original value of the input
+   * @param {Gamepad} gamepad The gamepad object
+   * @returns {number} The calibrated value
+   */
+  private applyCalibrationToValue(
+    inputType: 'button' | 'axis',
+    inputIndex: number,
+    originalValue: number,
+    gamepad: Gamepad
+  ): number {
+    const model = this.getModel(gamepad)
+    const calibration = this.getCalibrationSettings(model)
+    return applyCalibration(inputType, inputIndex, originalValue, calibration)
+  }
+
+  /**
    * Poll for gamepad state changes
    */
   private pollGamepadsStates(): void {
@@ -396,51 +449,34 @@ class JoystickManager {
 
       const previousState = this.previousGamepadState.get(gamepad.index)
 
+      const newState: JoystickState = {
+        axes: [...gamepad.axes],
+        buttons: [...(gamepad.buttons.map((button) => button.value) as number[])],
+      }
+
       // Check axes
       if (previousState) {
         // Check for axis changes
         gamepad.axes.forEach((value, index) => {
           if (previousState.axes[index] !== value) {
-            const stick = Math.floor(index / 2)
-            const axis = index % 2
-            const joystickEvent: JoystickAxisEvent = {
-              type: EventType.Axis,
-              detail: {
-                index: gamepad.index,
-                gamepad: gamepad,
-                stick: stick as JoystickDetail.Stick,
-                axis: axis as JoystickDetail.Axis,
-                value: value,
-              },
-            }
-            this.emitStateEvent(joystickEvent)
+            const calibratedValue = this.applyCalibrationToValue('axis', index, value, gamepad)
+            newState.axes[index] = calibratedValue
           }
         })
 
         // Check for button changes
         gamepad.buttons.forEach((button, index) => {
           const previousButton = previousState.buttons[index]
-          if (previousButton.pressed !== button.pressed || previousButton.value !== button.value) {
-            const joystickEvent: JoystickButtonEvent = {
-              type: EventType.Button,
-              detail: {
-                index: gamepad.index,
-                gamepad: gamepad,
-                button: index,
-                pressed: button.pressed,
-                value: button.value,
-              },
-            }
-            this.emitStateEvent(joystickEvent)
+          if (previousButton !== button.value) {
+            newState.buttons[index] = button.value
           }
         })
       }
 
       // Update previous state
-      this.previousGamepadState.set(gamepad.index, {
-        axes: [...gamepad.axes],
-        buttons: [...gamepad.buttons],
-      })
+      this.previousGamepadState.set(gamepad.index, newState)
+
+      this.emitStateEvent(gamepad.index, newState, gamepad)
     }
 
     // Continue polling
@@ -449,13 +485,15 @@ class JoystickManager {
 
   /**
    * Emit state event to registered callbacks
-   * @param {JoystickStateEvent} joystickEvent - The event to emit
+   * @param {number} gamepadIndex - The gamepad index
+   * @param {JoystickState} gamepadState - The gamepad state
+   * @param {Gamepad} gamepad - The gamepad object
    */
-  private emitStateEvent(joystickEvent: JoystickStateEvent): void {
-    if (!this.enabledJoysticks.includes(joystickEvent.detail.gamepad.id)) return
+  private emitStateEvent(gamepadIndex: number, gamepadState: JoystickState, gamepad: Gamepad): void {
+    if (!this.enabledJoysticks.includes(gamepadIndex)) return
 
     for (const callback of this.callbacksJoystickState) {
-      callback(joystickEvent)
+      callback(gamepadIndex, gamepadState, gamepad)
     }
   }
 
