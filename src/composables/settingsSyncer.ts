@@ -3,6 +3,7 @@ import { type MaybeRef, onMounted, ref, toRaw, unref, watch } from 'vue'
 
 import {
   getKeyDataFromCockpitVehicleStorage,
+  getVehicleAddress,
   NoPathInBlueOsErrorName,
   setKeyDataOnCockpitVehicleStorage,
 } from '@/libs/blueos'
@@ -20,18 +21,6 @@ const resetJustMade = useStorage(resetJustMadeKey, false)
 setTimeout(() => {
   resetJustMade.value = false
 }, 10000)
-
-const getVehicleAddress = async (): Promise<string> => {
-  const vehicleStore = useMainVehicleStore()
-
-  // Wait until we have a global address
-  while (vehicleStore.globalAddress === undefined) {
-    console.debug('Waiting for vehicle global address on BlueOS sync routine.')
-    await new Promise((r) => setTimeout(r, 1000))
-  }
-
-  return vehicleStore.globalAddress
-}
 
 /**
  * This composable will keep a setting in sync between the browser's local storage and BlueOS.
