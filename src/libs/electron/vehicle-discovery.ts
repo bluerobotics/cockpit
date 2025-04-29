@@ -1,7 +1,6 @@
-import ky from 'ky'
-
 import { NetworkInfo } from '@/types/network'
 
+import { getBeaconInfo, getStatus, getVehicleName } from '../blueos'
 import { isElectron } from '../utils'
 
 /**
@@ -44,17 +43,17 @@ class VehicleDiscover {
   private async checkAddress(address: string): Promise<NetworkVehicle | null> {
     try {
       // First check if the vehicle is online
-      const statusResponse = await ky.get(`http://${address}/status`, { timeout: 3000 })
-      if (!statusResponse.ok) return null
+      const statusResponse: boolean = await getStatus(address)
+      if (!statusResponse) return null
 
       // Check if the vehicle is a BlueOS vehicle
-      const beaconResponse = await ky.get(`http://${address}/beacon/`, { timeout: 5000 })
+      const beaconResponse = await getBeaconInfo(address)
       if (!beaconResponse.ok) return null
       const beaconText = await beaconResponse.text()
       if (!beaconText.toLowerCase().includes('beacon')) return null
 
       // Try to get the vehicle name
-      const nameResponse = await ky.get(`http://${address}/beacon/v1.0/vehicle_name`, { timeout: 5000 })
+      const nameResponse = await getVehicleName(address)
       if (!nameResponse.ok) return null
       const name = await nameResponse.text()
       return { address, name }
