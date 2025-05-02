@@ -6,7 +6,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute right-[166px] m-3 bottom-button bg-slate-50"
+            class="absolute right-[166px] m-3 bottom-button bg-slate-50 text-[14px]"
             :class="!home ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
             elevation="2"
@@ -25,7 +25,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute m-3 bottom-button right-[124px] bg-slate-50"
+            class="absolute m-3 bottom-button right-[124px] bg-slate-50 text-[14px]"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
             elevation="2"
@@ -44,7 +44,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute m-3 bottom-button right-[82px] bg-slate-50"
+            class="absolute m-3 bottom-button right-[82px] bg-slate-50 text-[14px]"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
             :disabled="!vehicleStore.isVehicleOnline"
             elevation="2"
@@ -60,7 +60,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50"
+            class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50 text-[14px]"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
             :disabled="!vehicleStore.isVehicleOnline"
             elevation="2"
@@ -155,6 +155,8 @@ const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = ref(false)
+const mapReady = ref(false)
+const mapWaypoints = ref<Waypoint[]>([])
 
 // Register the usage of the coordinate variables for logging
 datalogger.registerUsage(DatalogVariable.latitude)
@@ -283,7 +285,49 @@ onMounted(async () => {
   } else {
     targetFollower.goToTarget(WhoToFollow.HOME)
   }
+
+  // If vehicle is offline and a mission have been uploaded recently, draw it
+  if (!vehicleStore.isVehicleOnline && missionStore.vehicleMission.length) {
+    drawMission(missionStore.vehicleMission)
+  }
+
+  mapReady.value = true
+  await refreshMission()
 })
+
+const clearMapDrawing = (): void => {
+  map.value?.eachLayer((l) => {
+    if (l instanceof L.Marker || (l instanceof L.Polyline && l.options.color === '#358AC3')) {
+      map.value!.removeLayer(l)
+    }
+  })
+  mapWaypoints.value = [] // ← just clear the local array
+}
+
+const refreshMission = async (): Promise<void> => {
+  if (!mapReady.value) return
+  clearMapDrawing()
+
+  if (vehicleStore.isVehicleOnline) {
+    await downloadMissionFromVehicle()
+  } else if (missionStore.vehicleMission.length) {
+    drawMission(missionStore.vehicleMission)
+  }
+}
+
+watch(
+  () => vehicleStore.isVehicleOnline,
+  () => {
+    refreshMission()
+  }
+)
+
+watch(
+  () => missionStore.vehicleMissionRevision,
+  () => {
+    refreshMission()
+  }
+)
 
 // Before unmounting:
 // - disable auto update for target follower
@@ -354,7 +398,11 @@ const { history: vehiclePositionHistory } = useRefHistory(vehiclePosition)
 // Update home position when location is available
 // Try to update home position based on browser geolocation
 navigator?.geolocation?.watchPosition(
-  (position) => (home.value = [position.coords.latitude, position.coords.longitude]),
+  (position) => {
+    if (!home.value) {
+      home.value = [position.coords.latitude, position.coords.longitude]
+    }
+  },
   (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
   { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
 )
@@ -459,35 +507,43 @@ watch(home, () => {
 })
 
 // Create polyline for the vehicle path
-const missionWaypointsPolyline = ref()
-watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
-  if (map.value === undefined) return
-  if (missionWaypointsPolyline.value === undefined) {
-    const coordinates = newWaypoints.map((w) => w.coordinates)
-    missionWaypointsPolyline.value = L.polyline(coordinates, { color: '#358AC3' }).addTo(map.value)
-  }
-  missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+const missionWaypointsPolyline = ref<L.Polyline>()
+watch(
+  mapWaypoints,
+  (newWaypoints) => {
+    if (!map.value) return
 
-  // Add a marker for each point
-  newWaypoints.forEach((waypoint, idx) => {
-    const marker = L.marker(waypoint.coordinates)
-    const markerIcon = L.divIcon({
-      className: 'marker-icon',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
+    if (!missionWaypointsPolyline.value) {
+      missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3' }).addTo(map.value)
+    }
+    missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+
+    // Add a marker for each point
+    newWaypoints.forEach((waypoint, idx) => {
+      const marker = L.marker(waypoint.coordinates)
+
+      marker.setIcon(
+        L.divIcon({
+          className: 'marker-icon',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        })
+      )
+
+      const markerTooltip = L.tooltip({
+        content: idx.toString(),
+        permanent: true,
+        direction: 'center',
+        className: 'waypoint-tooltip',
+        opacity: 1,
+      })
+
+      marker.bindTooltip(markerTooltip)
+      map.value?.addLayer(marker)
     })
-    marker.setIcon(markerIcon)
-    const markerTooltip = L.tooltip({
-      content: idx.toString(),
-      permanent: true,
-      direction: 'center',
-      className: 'waypoint-tooltip',
-      opacity: 1,
-    })
-    marker.bindTooltip(markerTooltip)
-    map.value?.addLayer(marker)
-  })
-})
+  },
+  { deep: true }
+)
 
 // Create polyline for the vehicle path
 const vehicleHistoryPolyline = ref<L.Polyline>()
@@ -598,6 +654,17 @@ const onKeydown = (event: KeyboardEvent): void => {
   }
 }
 
+const drawMission = (missionItems: Waypoint[]): void => {
+  missionItems.forEach((wp, idx) => {
+    if (idx === 0) {
+      home.value = wp.coordinates
+      setHomePosition(wp.coordinates)
+    } else {
+      mapWaypoints.value.push(wp)
+    }
+  })
+}
+
 // Allow fetching missions
 const fetchingMission = ref(false)
 const missionFetchProgress = ref(0)
@@ -610,18 +677,9 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     missionFetchProgress.value = loadingPerc
   }
 
-  missionStore.clearMission()
   try {
     const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
-    missionItemsInVehicle.forEach((wp: Waypoint, index) => {
-      if (index === 0) {
-        home.value = wp.coordinates
-        setHomePosition(wp.coordinates)
-      }
-      if (index > 0) {
-        missionStore.currentPlanningWaypoints.push(wp)
-      }
-    })
+    drawMission(missionItemsInVehicle)
 
     openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
