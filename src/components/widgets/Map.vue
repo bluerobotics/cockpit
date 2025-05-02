@@ -797,6 +797,7 @@ const missionFetchProgress = ref(0)
 // Allow fetching missions
 const downloadMissionFromVehicle = async (): Promise<void> => {
   fetchingMission.value = true
+  clearMapDrawing()
 
   const loadingCallback = async (loadingPerc: number): Promise<void> => {
     missionFetchProgress.value = loadingPerc
