@@ -1,5 +1,10 @@
 <template>
-  <div ref="mapBase" class="page-base" :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'">
+  <div
+    ref="mapBase"
+    v-contextmenu="handleContextMenu"
+    class="page-base"
+    :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
+  >
     <div :id="mapId" ref="map" class="map">
       <v-tooltip location="top" :text="centerHomeButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
@@ -11,7 +16,7 @@
             :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
             elevation="2"
             style="z-index: 1002; border-radius: 0px"
-            icon="mdi-home-map-marker"
+            icon="mdi-home-search"
             size="x-small"
             :disabled="!home"
             @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
@@ -73,13 +78,14 @@
       </v-tooltip>
     </div>
   </div>
-
-  <div v-if="showContextMenu" class="context-menu" :style="{ top: menuPosition.top, left: menuPosition.left }">
-    <ul @click.stop="">
-      <li @click="onMenuOptionSelect('goto')">GoTo</li>
-      <li @click="onMenuOptionSelect('set-default-map-position')">Set default map position</li>
-    </ul>
-  </div>
+  <ContextMenu
+    ref="contextMenuRef"
+    :visible="showContextMenu"
+    :width="'260px'"
+    :menu-items="menuItems"
+    @close="hideContextMenuAndMarker"
+  >
+  </ContextMenu>
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
@@ -127,7 +133,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
+import { canByPassCategory, EventCategory, showSlideToConfirm, slideToConfirm } from '@/libs/slide-to-confirm'
 import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -136,6 +142,8 @@ import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
+
+import ContextMenu from '../ContextMenu.vue'
 
 // Define widget props
 // eslint-disable-next-line jsdoc/require-jsdoc
@@ -157,6 +165,7 @@ const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = ref(false)
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
+const contextMenuRef = ref()
 
 // Register the usage of the coordinate variables for logging
 datalogger.registerUsage(DatalogVariable.latitude)
@@ -263,15 +272,10 @@ onMounted(async () => {
     zoom.value = map.value?.getZoom() ?? mapCenter.value
   })
 
-  // Add click event listener to the map
-  map.value.on('click', () => {
-    if (map.value === undefined) return
-    map.value.on('click', onMapClick)
-  })
-
-  // Add context menu event listener to the map
-  map.value.on('contextmenu', () => {
-    hideContextMenuAndMarker()
+  map.value.on('contextmenu', (event: L.LeafletMouseEvent) => {
+    if (event?.latlng?.lat != null && event?.latlng?.lng != null) {
+      clickedLocation.value = [event.latlng.lat, event.latlng.lng]
+    }
   })
 
   // Enable auto update for target follower
@@ -294,6 +298,19 @@ onMounted(async () => {
   mapReady.value = true
   await refreshMission()
 })
+
+const handleContextMenu = {
+  open: (evt: MouseEvent) => {
+    evt.preventDefault()
+    if (!map.value) return
+
+    contextMenuRef.value.openAt(evt)
+    showContextMenu.value = true
+  },
+  close: () => {
+    hideContextMenuAndMarker()
+  },
+}
 
 const clearMapDrawing = (): void => {
   map.value?.eachLayer((l) => {
@@ -335,11 +352,6 @@ watch(
 onBeforeUnmount(() => {
   targetFollower.disableAutoUpdate()
   window.removeEventListener('keydown', onKeydown)
-
-  if (map.value) {
-    map.value.off('click', onMapClick)
-    map.value.off('contextmenu')
-  }
 })
 
 // Pan when variables change
@@ -561,88 +573,158 @@ watch(vehiclePositionHistory, (newPoints) => {
 // Handle context menu toggling and selection
 const showContextMenu = ref(false)
 const clickedLocation = ref<[number, number] | null>(null)
-const menuPosition = reactive({ top: '0px', left: '0px' })
 const contextMenuMarker = ref<L.Marker>()
 
-// Handle map click event to show the context menu
-const onMapClick = (event: L.LeafletMouseEvent): void => {
-  if (contextMenuMarker.value !== undefined && map.value !== undefined) {
-    contextMenuMarker.value?.removeFrom(map.value)
+const menuItems = reactive([
+  {
+    item: 'Set home waypoint',
+    action: () => onMenuOptionSelect('set-home-waypoint'),
+    icon: 'mdi-home-map-marker',
+  },
+  { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-send-variant' },
+  {
+    item: 'Set default map position',
+    action: () => onMenuOptionSelect('set-default-map-position'),
+    icon: 'mdi-map-check',
+  },
+])
+
+const gotoMarker = ref<L.Marker>()
+let didGoToMarker = false
+
+const setDefaultMapPosition = async (): Promise<void> => {
+  if (!map.value || !clickedLocation.value) return
+
+  try {
+    await missionStore.setDefaultMapPosition(clickedLocation.value, zoom.value)
+    openSnackbar({ message: 'Default map position set', variant: 'success' })
+
+    const tempMarker = L.marker(clickedLocation.value as LatLngTuple, {
+      icon: L.divIcon({
+        className: 'marker-icon',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      }),
+    }).addTo(map.value)
+
+    const tempTooltip = L.tooltip({
+      content: '<i class="mdi mdi-crosshairs-gps text-[18px]"></i>',
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
+    tempMarker.bindTooltip(tempTooltip).openTooltip()
+
+    const markerEl = tempMarker.getElement() as HTMLElement | null
+    const tooltipEl = tempMarker.getTooltip()?.getElement() as HTMLElement | null
+
+    ;[markerEl, tooltipEl].forEach((el) => {
+      if (el) {
+        el.style.transition = 'opacity 1s'
+        el.style.opacity = '1'
+      }
+    })
+
+    setTimeout(() => {
+      ;[markerEl, tooltipEl].forEach((el) => {
+        if (el) el.style.opacity = '0'
+      })
+      setTimeout(() => {
+        map.value?.removeLayer(tempMarker)
+      }, 1000)
+    }, 1500)
+  } catch (error) {
+    console.error(error)
+    openSnackbar({ message: 'Failed to set default map position', variant: 'error' })
+  }
+}
+
+const executeGoToOption = (): void => {
+  if (!clickedLocation.value || !map.value) return
+
+  if (gotoMarker.value) {
+    map.value.removeLayer(gotoMarker.value)
+    gotoMarker.value = undefined
   }
 
-  // Check if event.latlng is defined and has the required properties
-  if (event?.latlng?.lat != null && event?.latlng?.lng != null) {
-    clickedLocation.value = [event.latlng.lat, event.latlng.lng]
-    showContextMenu.value = true
+  gotoMarker.value = L.marker(clickedLocation.value as LatLngTuple, {
+    icon: L.divIcon({
+      className: 'marker-icon',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    }),
+  }).addTo(map.value)
 
-    // Calculate and update menu position
-    const mapElement = map.value?.getContainer()
-    if (mapElement) {
-      const { x, y } = mapElement.getBoundingClientRect()
-      menuPosition.left = `${event.originalEvent.clientX - x}px`
-      menuPosition.top = `${event.originalEvent.clientY - y}px`
+  const gotoTooltip = L.tooltip({
+    content: '<i class="mdi mdi-map-marker text-[18px]"></i>',
+    permanent: true,
+    direction: 'center',
+    className: 'waypoint-tooltip',
+    opacity: 1,
+  })
+  gotoMarker.value.bindTooltip(gotoTooltip)
+
+  didGoToMarker = false
+  Promise.resolve(
+    slideToConfirm(
+      async () => {
+        didGoToMarker = true
+        const [lat, lng] = clickedLocation.value!
+        const alt = vehicleStore.coordinates.altitude ?? 0
+        try {
+          await vehicleStore.goTo(0, 0, 0, 0, lat, lng, alt)
+        } catch (err) {
+          openSnackbar({ message: `${err}`, variant: 'error' })
+        }
+      },
+      { command: 'GoTo' },
+      canByPassCategory(EventCategory.GOTO)
+    )
+  ).catch(() => {
+    if (gotoMarker.value && map.value) {
+      map.value.removeLayer(gotoMarker.value)
+      gotoMarker.value = undefined
     }
-  } else {
-    console.error('Invalid event structure:', event)
-  }
-
-  // Create marker for the clicked location
-  if (map.value !== undefined) {
-    contextMenuMarker.value = L.marker(clickedLocation.value as LatLngTuple)
-    const markerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16] })
-    contextMenuMarker.value.setIcon(markerIcon)
-    map.value.addLayer(contextMenuMarker.value)
-  }
+  })
 }
 
 const onMenuOptionSelect = (option: string): void => {
   switch (option) {
-    case 'goto':
-      if (clickedLocation.value) {
-        // Define default values
-        const hold = 0
-        const acceptanceRadius = 0
-        const passRadius = 0
-        const yaw = 0
-        const altitude = vehicleStore.coordinates.altitude ?? 0
-
-        const latitude = clickedLocation.value[0]
-        const longitude = clickedLocation.value[1]
-
-        slideToConfirm(
-          async () => {
-            try {
-              await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
-            } catch (error) {
-              openSnackbar({
-                message: error as string,
-                variant: 'error',
-              })
-            }
-          },
-          {
-            command: 'GoTo',
-          },
-          canByPassCategory(EventCategory.GOTO)
-        )
-      }
+    case 'goto': {
+      executeGoToOption()
       break
+    }
 
     case 'set-default-map-position':
-      missionStore.setDefaultMapPosition(mapCenter.value, zoom.value)
+      setDefaultMapPosition()
       break
 
+    case 'set-home-waypoint':
+      if (clickedLocation.value) {
+        setHomePosition(clickedLocation.value as [number, number])
+      }
+      break
     default:
       console.warn('Unknown menu option selected:', option)
   }
 
-  // hide the context menu after an option is selected
   showContextMenu.value = false
 }
 
+watch(showSlideToConfirm, (nowVisible, wasVisible) => {
+  if (wasVisible && !nowVisible) {
+    if (!didGoToMarker && gotoMarker.value && map.value) {
+      map.value.removeLayer(gotoMarker.value)
+      gotoMarker.value = undefined
+    }
+
+    didGoToMarker = false
+  }
+})
+
 const hideContextMenuAndMarker = (): void => {
   showContextMenu.value = false
-  clickedLocation.value = null
   if (map.value !== undefined && contextMenuMarker.value !== undefined) {
     map.value.removeLayer(contextMenuMarker.value)
   }
@@ -692,11 +774,11 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 const setHomePosition = async (homePosition: [number, number]): Promise<void> => {
   const newHome: [number, number] = [homePosition[0], homePosition[1]]
   home.value = newHome
-  if (map.value) {
-    map.value.setView(newHome, zoom.value)
-  }
-  mapCenter.value = newHome
+
   await vehicleStore.setHomeWaypoint(newHome, 0)
+  if (showContextMenu.value) {
+    showContextMenu.value = false
+  }
 }
 
 // Allow executing missions
@@ -790,10 +872,6 @@ const centerVehicleButtonTooltipText = computed(() => {
 .context-menu {
   position: absolute;
   z-index: 1003;
-  background-color: rgba(255, 255, 255, 0.9);
-  /* White with slight transparency */
-  border: 1px solid #ccc;
-  /* Optional: adds a subtle border */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   /* Optional: adds a slight shadow for depth */
   border-radius: 4px;
