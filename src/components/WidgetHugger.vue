@@ -26,7 +26,7 @@
     <div
       v-else
       ref="innerWidgetRef"
-      v-contextmenu="handleContextMenu"
+      :v-contextmenu="widget.options.blockGenericContextMenu ? null : handleContextMenu"
       class="innerWidget"
       :class="{ 'overflow-hidden': hideOverflow }"
       :style="{ opacity: widget.options.opacity ?? 1 }"
