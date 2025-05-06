@@ -409,132 +409,144 @@
         <div class="flex justify-center w-full font-bold mt-1">Input mapping</div>
       </template>
       <template #content>
-        <div
-          v-for="input in currentButtonInputs"
-          :key="input.id"
-          class="flex flex-row justify-between w-full h-full align-center gap-x-16"
-        >
-          <div class="flex flex-col w-[30%] justify-around gap-y-2">
-            <v-btn
-              variant="elevated"
-              class="bg-[#FFFFFF33]"
-              @click="updateButtonAction(input, shiftFunction as ProtocolAction)"
-            >
-              Assign as Shift
-            </v-btn>
-            <v-btn variant="elevated" class="bg-[#FFFFFF33]" @click="unbindCurrentInput(input as JoystickButtonInput)">
-              Unmap Input
-            </v-btn>
-            <div class="absolute bottom-[76px] flex flex-col items-start mt-4 text-sm font-semibold gap-y-1">
-              <div class="flex items-center">
-                <img src="@/assets/cockpit-logo.png" class="w-4 h-4 mr-2" alt="Cockpit" />
-                <span>Cockpit Action</span>
-              </div>
-              <div class="flex items-center">
-                <img src="@/assets/mavlink-logo.png" class="w-4 h-4 mr-2 ml-[1px] mt-[4px]" alt="MAVLink" />
-                <span>MAVLink Manual Control</span>
-              </div>
-              <div class="flex items-center">
-                <v-icon icon="mdi-database" size="small" class="mr-2" />
-                <span>Data Lake Variable</span>
-              </div>
-            </div>
-          </div>
-          <div class="flex flex-col w-[320px] justify-evenly">
-            <div class="max-h-[40vh] p-1">
-              <v-text-field
-                v-model="searchText"
-                density="compact"
-                variant="outlined"
-                theme="dark"
-                type="text"
-                placeholder="Search actions..."
-                class="mb-1"
-                hide-details
-              />
-              <div class="max-h-[36vh] p-1 overflow-y-auto">
-                <Button
-                  v-for="action in filteredAndSortedJoystickActions()"
-                  :key="action.name"
-                  class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col py-2 relative"
-                  :class="{
-                    'bg-slate-700': currentButtonActions[input.id].action.id == action.id,
-                  }"
-                  @click="updateButtonAction(input, action as ProtocolAction)"
+        <div class="flex flex-col mb-3" :class="currentAxisInputs.length > 0 ? 'h-[600px]' : 'h-[430px]'">
+          <div
+            v-for="input in currentButtonInputs"
+            :key="input.id"
+            class="flex flex-row justify-between w-full h-full align-center gap-x-16"
+          >
+            <div class="flex flex-col w-[30%] h-full">
+              <div class="flex-1"></div>
+              <div class="flex-1"></div>
+              <div class="flex-1"></div>
+              <div class="flex flex-col gap-y-2">
+                <v-btn
+                  variant="elevated"
+                  class="bg-[#FFFFFF33]"
+                  @click="updateButtonAction(input, shiftFunction as ProtocolAction)"
                 >
-                  <div class="absolute left-3 top-1/2 -translate-y-1/2">
-                    <img
-                      v-if="action.protocol === JoystickProtocol.CockpitAction"
-                      src="@/assets/cockpit-logo.png"
-                      class="w-4 h-4"
-                      alt="Cockpit"
-                    />
-                    <img
-                      v-else-if="action.protocol === JoystickProtocol.MAVLinkManualControl"
-                      src="@/assets/mavlink-logo.png"
-                      class="w-4 h-4 ml-[2px] mt-[3px]"
-                      alt="MAVLink"
-                    />
-                    <v-icon
-                      v-else-if="action.protocol === JoystickProtocol.DataLakeVariable"
-                      icon="mdi-database"
-                      size="small"
-                    />
-                  </div>
-                  <p class="text-center text-sm px-8" :class="{ 'text-xs': action.name.length > 14 }">
-                    {{ action.name }}
-                  </p>
-                </Button>
+                  Assign as Shift
+                </v-btn>
+                <v-btn
+                  variant="elevated"
+                  class="bg-[#FFFFFF33]"
+                  @click="unbindCurrentInput(input as JoystickButtonInput)"
+                >
+                  Unmap Input
+                </v-btn>
+              </div>
+              <div class="flex-1"></div>
+              <div class="flex flex-col items-start text-sm font-semibold gap-y-1">
+                <div class="flex items-center">
+                  <img src="@/assets/cockpit-logo.png" class="w-4 h-4 mr-2" alt="Cockpit" />
+                  <span>Cockpit Action</span>
+                </div>
+                <div class="flex items-center">
+                  <img src="@/assets/mavlink-logo.png" class="w-4 h-4 mr-2 ml-[1px] mt-[4px]" alt="MAVLink" />
+                  <span>MAVLink Manual Control</span>
+                </div>
+                <div class="flex items-center">
+                  <v-icon icon="mdi-database" size="small" class="mr-2" />
+                  <span>Data Lake Variable</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col w-[320px] justify-evenly">
+              <div class="p-1">
+                <v-text-field
+                  v-model="searchText"
+                  density="compact"
+                  variant="outlined"
+                  theme="dark"
+                  type="text"
+                  placeholder="Search actions..."
+                  class="mb-1"
+                  hide-details
+                />
+                <div class="h-[360px] p-1 overflow-y-auto">
+                  <Button
+                    v-for="action in filteredAndSortedJoystickActions()"
+                    :key="action.name"
+                    class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col py-2 relative align-center"
+                    :class="{ 'bg-slate-700': currentButtonActions[input.id].action.id == action.id }"
+                    @click="updateButtonAction(input, action as ProtocolAction)"
+                  >
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2">
+                      <img
+                        v-if="action.protocol === JoystickProtocol.CockpitAction"
+                        src="@/assets/cockpit-logo.png"
+                        class="w-4 h-4"
+                        alt="Cockpit"
+                      />
+                      <img
+                        v-else-if="action.protocol === JoystickProtocol.MAVLinkManualControl"
+                        src="@/assets/mavlink-logo.png"
+                        class="w-4 h-4 ml-[2px] mt-[3px]"
+                        alt="MAVLink"
+                      />
+                      <v-icon
+                        v-else-if="action.protocol === JoystickProtocol.DataLakeVariable"
+                        icon="mdi-database"
+                        size="small"
+                      />
+                    </div>
+                    <p class="text-center text-sm px-8" :class="{ 'text-xs': action.name.length > 14 }">
+                      {{ action.name }}
+                    </p>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <template v-if="currentAxisInputs.length > 0">
-          <p class="flex items-center justify-center w-full text-lg font-semibold mt-8">Axis mapping</p>
-        </template>
-        <div class="flex flex-col items-center justify-between my-2">
-          <Transition>
-            <p v-if="showAxisRemappingText" class="font-medium">{{ axisRemappingText }}</p>
-          </Transition>
-          <Transition>
-            <v-progress-linear v-if="remappingAxisInput" v-model="remapAxisTimeProgress" />
-          </Transition>
-        </div>
-        <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2 mb-1">
-          <v-icon class="mr-3">
-            {{
-              [JoystickAxis.A0, JoystickAxis.A2].includes(Number(input.id)) ? 'mdi-pan-horizontal' : 'mdi-pan-vertical'
-            }}
-          </v-icon>
-          <v-text-field
-            v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
-            class="bg-transparent w-[110px]"
-            label="Min"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <v-select
-            v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].action"
-            :items="controllerStore.availableAxesActions"
-            item-title="name"
-            hide-details
-            density="compact"
-            variant="outlined"
-            class="bg-transparent w-[120px] mx-2"
-            theme="dark"
-            return-object
-          />
-          <v-text-field
-            v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
-            class="bg-transparent w-[110px]"
-            label="Max"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
+          <template v-if="currentAxisInputs.length > 0">
+            <p class="flex items-center justify-center w-full text-lg font-semibold mt-8">Axis mapping</p>
+          </template>
+          <div class="flex flex-col items-center justify-between my-2">
+            <Transition>
+              <p v-if="showAxisRemappingText" class="font-medium">{{ axisRemappingText }}</p>
+            </Transition>
+            <Transition>
+              <v-progress-linear v-if="remappingAxisInput" v-model="remapAxisTimeProgress" />
+            </Transition>
+          </div>
+          <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2 mb-1">
+            <v-icon class="mr-3">
+              {{
+                [JoystickAxis.A0, JoystickAxis.A2].includes(Number(input.id))
+                  ? 'mdi-pan-horizontal'
+                  : 'mdi-pan-vertical'
+              }}
+            </v-icon>
+            <v-text-field
+              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
+              class="bg-transparent w-[110px]"
+              label="Min"
+              type="number"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+            <v-select
+              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].action"
+              :items="controllerStore.availableAxesActions"
+              item-title="name"
+              hide-details
+              density="compact"
+              variant="outlined"
+              class="bg-transparent w-[120px] mx-2"
+              theme="dark"
+              return-object
+            />
+            <v-text-field
+              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
+              class="bg-transparent w-[110px]"
+              label="Max"
+              type="number"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+          </div>
         </div>
       </template>
       <template #actions>
