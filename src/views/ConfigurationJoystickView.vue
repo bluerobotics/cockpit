@@ -490,7 +490,7 @@
                         size="small"
                       />
                     </div>
-                    <p class="text-center text-sm px-8" :class="{ 'text-xs': action.name.length > 14 }">
+                    <p class="text-center text-xs px-8">
                       {{ action.name }}
                     </p>
                   </Button>
