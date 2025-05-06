@@ -667,7 +667,7 @@ const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void
 
 const filteredAndSortedJoystickActions = (): JoystickAction[] => {
   return buttonActionsToShow.value
-    .filter((action: JoystickAction) => action.name.toLowerCase().includes(searchText.value))
+    .filter((action: JoystickAction) => action.name.toLowerCase().includes(searchText.value.toLowerCase()))
     .filter((action: JoystickAction) => filteredProtocols.includes(action.protocol))
     .filter((action: JoystickAction) => {
       const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
