@@ -379,7 +379,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -390,7 +390,7 @@ import {
   getDataLakeVariableInfo,
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
-import { getAllHttpRequestActionConfigs, HttpRequestActionConfig } from '@/libs/actions/http-request'
+import { availableCockpitActions } from '@/libs/joystick/protocols/cockpit-actions'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElement, CustomWidgetElementType, DataLakeVariable } from '@/types/widgets'
@@ -407,7 +407,6 @@ const defaultDataLakeVariable: DataLakeVariable = {
   description: '',
 }
 
-const availableCockpitActions = reactive<Record<string, HttpRequestActionConfig>>({})
 const futureDataLakeVariable = ref<DataLakeVariable>(defaultDataLakeVariable)
 const openNewDataLakeVariableForm = ref(false)
 const isOptionsMenuOpen = ref<{ [key: number]: boolean }>({})
@@ -602,15 +601,10 @@ const deleteElement = (): void => {
   }
 }
 
-const loadSavedActions = (): void => {
-  Object.assign(availableCockpitActions, getAllHttpRequestActionConfigs())
-}
-
 onMounted(() => {
   if (currentElement.value?.options.dataLakeVariable?.name) {
     futureDataLakeVariable.value = currentElement.value?.options.dataLakeVariable
   }
-  loadSavedActions()
 })
 </script>
 

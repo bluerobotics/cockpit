@@ -48,7 +48,7 @@ const miniWidget = toRefs(props).miniWidget
 
 const handleClick = (): void => {
   if (widgetStore.editingMode) return
-  executeActionCallback(`http-request-action (${miniWidget.value.options.cockpitAction.name})`)
+  executeActionCallback(miniWidget.value.options.cockpitAction.id)
 }
 
 watch(
