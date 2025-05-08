@@ -17,6 +17,7 @@ import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { slideToConfirm } from '@/libs/slide-to-confirm'
+import { isElectron } from '@/libs/utils'
 import { Alert, AlertLevel } from '@/types/alert'
 import {
   type JoystickProtocolActionsMapping,
@@ -156,12 +157,14 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
-  // Disable joystick forwarding if the window/tab is not visible (using VueUse)
+  // Disable joystick forwarding if the window/tab is not visible (except on Electron)
   const windowVisibility = useDocumentVisibility()
   watch(windowVisibility, (value) => {
     // Disable this failcheck if the user explicitly wants to hold the last input when the window is hidden
     // This can be considered unsafe, as the user might not be aware of the joystick input being forwarded to the vehicle
     if (holdLastInputWhenWindowHidden.value) return
+
+    if (isElectron()) return
 
     if (value === 'hidden') {
       console.warn('Window/tab hidden. Disabling joystick forwarding.')
@@ -175,9 +178,9 @@ export const useControllerStore = defineStore('controller', () => {
   const { showDialog } = useInteractionDialog()
 
   const processJoystickStateEvent = (event: JoystickStateEvent): void => {
-    const joystick = joysticks.value.get(event.detail.index)
+    const joystick = joysticks.value.get(event.index)
     if (joystick === undefined) return
-    joystick.gamepad = event.detail.gamepad
+    joystick.gamepad = event.gamepad
 
     const joystickModel = joystick.model || JoystickModel.Unknown
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
