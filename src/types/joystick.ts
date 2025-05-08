@@ -329,3 +329,60 @@ export class JoystickAxisInput implements JoystickInput {
    */
   constructor(public id: JoystickAxis) {}
 }
+
+/**
+ * Joystick calibration options
+ * @description The calibration options for each joystick model. They help ensuring the joystick behaves as the user expects.
+ */
+export type JoystickCalibration = {
+  /**
+   * Deadband calibration
+   * @description This will help eliminate small unwanted movements around the center position.
+   */
+  deadband: {
+    /**
+     * Whether the deadband is enabled
+     */
+    enabled: boolean
+    /**
+     * The thresholds for each axis
+     */
+    thresholds: {
+      /**
+       * The thresholds for each axis
+       */
+      axes: number[]
+      /**
+       * The thresholds for each button
+       */
+      buttons: number[]
+    }
+  }
+  /**
+   * Exponential scaling calibration
+   * @description This will help adjust the sensitivity curve of your joystick.
+   */
+  exponential: {
+    /**
+     * Whether the exponential scaling is enabled
+     */
+    enabled: boolean
+    /**
+     * The exponential factors for each axis
+     */
+    factors: {
+      /**
+       * The exponential factors for each axis
+       */
+      axes: number[]
+      /**
+       * The exponential factors for each button
+       */
+      buttons: number[]
+    }
+  }
+}
+
+export type JoystickCalibrationOptions = {
+  [joystickModel in string]: JoystickCalibration
+}
