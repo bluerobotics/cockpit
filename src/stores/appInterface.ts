@@ -19,18 +19,18 @@ export enum SubMenuName {
  * Available sub menus names
  */
 export enum SubMenuComponentName {
-  SettingsGeneral = 'settings-general',
-  SettingsInterface = 'settings-interface',
-  SettingsJoystick = 'settings-joystick',
-  SettingsVideo = 'settings-video',
-  SettingsTelemetry = 'settings-telemetry',
-  SettingsAlerts = 'settings-alerts',
-  SettingsDev = 'settings-dev',
-  SettingsMission = 'settings-mission',
-  SettingsActions = 'settings-actions',
-  SettingsDataLake = 'settings-datalake',
-  ToolsMAVLink = 'tools-mavlink',
-  ToolsDataLake = 'tools-datalake',
+  SettingsGeneral = 'SettingsGeneral',
+  SettingsInterface = 'SettingsInterface',
+  SettingsJoystick = 'SettingsJoystick',
+  SettingsVideo = 'SettingsVideo',
+  SettingsTelemetry = 'SettingsTelemetry',
+  SettingsAlerts = 'SettingsAlerts',
+  SettingsDev = 'SettingsDev',
+  SettingsMission = 'SettingsMission',
+  SettingsActions = 'SettingsActions',
+  SettingsMAVLink = 'SettingsMAVLink',
+  ToolsMAVLink = 'ToolsMAVLink',
+  ToolsDataLake = 'ToolsDataLake',
 }
 
 export const useAppInterfaceStore = defineStore('responsive', {

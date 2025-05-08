@@ -275,3 +275,12 @@ export const getUnindentedString = (str: string): string => {
 
   return unindentedLines.join('\n')
 }
+
+/**
+ * Convert a frequency in Hz to an interval in microseconds
+ * @param {number} frequencyHz The frequency in Hz
+ * @returns {number} The interval in microseconds
+ */
+export const frequencyHzToIntervalUs = (frequencyHz: number): number => {
+  return 1000000 / frequencyHz
+}
