@@ -61,6 +61,8 @@ interface Service {
 export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
 
 const defaultTimeout = 10000
+const quickStatusTimeout = 3000
+const beaconTimeout = 5000
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const getBagOfHoldingFromVehicle = async (
@@ -243,10 +245,30 @@ export const getArdupilotVersion = async (vehicleAddress: string): Promise<strin
 export const getStatus = async (vehicleAddress: string): Promise<boolean> => {
   try {
     const url = `http://${vehicleAddress}/status`
-    const result = await ky.get(url, { timeout: defaultTimeout })
-    return result.ok
+    const statusResponse = await ky.get(url, { timeout: quickStatusTimeout })
+    return statusResponse.ok
   } catch (error) {
     throw new Error(`Could not get BlueOS status. ${error}`)
+  }
+}
+
+export const getBeaconInfo = async (vehicleAddress: string): Promise<Record<string, any>> => {
+  try {
+    const url = `http://${vehicleAddress}/beacon/v1.0/`
+    const beaconInfoResponse = await ky.get(url, { timeout: beaconTimeout })
+    return beaconInfoResponse
+  } catch (error) {
+    throw new Error(`Could not fetch beacon info. ${error}`)
+  }
+}
+
+export const getVehicleName = async (vehicleAddress: string): Promise<Response> => {
+  try {
+    const url = `http://${vehicleAddress}/beacon/v1.0/vehicle_name`
+    const vehicleNameResponse = await ky.get(url, { timeout: beaconTimeout, retry: 0 })
+    return vehicleNameResponse
+  } catch (error) {
+    throw new Error(`Could not fetch vehicle name from beacon. ${error}`)
   }
 }
 
@@ -261,4 +283,38 @@ export const getCpuTempCelsius = async (vehicleAddress: string): Promise<number>
   } catch (error) {
     throw new Error(`Could not get temperature of the BlueOS CPU. ${error}`)
   }
+}
+
+export const getVehicleAddress = async (): Promise<string> => {
+  const vehicleStore = useMainVehicleStore()
+
+  // Wait until we have a global address
+  while (vehicleStore.globalAddress === undefined) {
+    console.debug('Waiting for vehicle global address on BlueOS sync routine.')
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+
+  return vehicleStore.globalAddress
+}
+
+export const getSettingsUsernamesFromBlueOS = async (): Promise<string[]> => {
+  const vehicleAddress = await getVehicleAddress()
+  const usernames = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, 'settings')
+  return Object.keys(usernames as string[])
+}
+
+export const deleteUsernameOnBlueOS = async (username: string): Promise<void> => {
+  const vehicleAddress = await getVehicleAddress()
+  let allSettings: Record<string, any> = {}
+  try {
+    allSettings = (await getKeyDataFromCockpitVehicleStorage(vehicleAddress, 'settings')) as Record<string, any>
+  } catch (err) {
+    if ((err as Error).name === NoPathInBlueOsErrorName) return
+    throw err
+  }
+
+  if (!(username in allSettings)) return
+  delete allSettings[username]
+
+  await setKeyDataOnCockpitVehicleStorage(vehicleAddress, 'settings', allSettings)
 }
