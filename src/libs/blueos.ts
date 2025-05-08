@@ -62,6 +62,8 @@ export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
 
 const defaultTimeout = 10000
 
+const protocol = window.location.protocol
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const getBagOfHoldingFromVehicle = async (
   vehicleAddress: string,
@@ -69,7 +71,7 @@ export const getBagOfHoldingFromVehicle = async (
 ): Promise<Record<string, any> | any> => {
   try {
     const options = { timeout: defaultTimeout, retry: 0 }
-    return await ky.get(`http://${vehicleAddress}/bag/v1.0/get/${bagPath}`, options).json()
+    return await ky.get(`${protocol}//${vehicleAddress}/bag/v1.0/get/${bagPath}`, options).json()
   } catch (error) {
     const errorBody = await (error as HTTPError).response.json()
     if (errorBody.detail === 'Invalid path') {
@@ -93,13 +95,15 @@ const blueOsServiceUrl = (vehicleAddress: string, service: Service): string => {
   const sanitizedName = service.metadata?.sanitized_name
   const port = service.port
   return worksInRelativePaths
-    ? `http://${vehicleAddress}/extensionv2/${sanitizedName}`
-    : `http://${vehicleAddress}:${port}`
+    ? `${protocol}//${vehicleAddress}/extensionv2/${sanitizedName}`
+    : `${protocol}//${vehicleAddress}:${port}`
 }
 
 const getServicesFromBlueOS = async (vehicleAddress: string): Promise<Service[]> => {
   const options = { timeout: defaultTimeout, retry: 0 }
-  const services = (await ky.get(`http://${vehicleAddress}/helper/v1.0/web_services`, options).json()) as Service[]
+  const services = (await ky
+    .get(`${protocol}//${vehicleAddress}/helper/v1.0/web_services`, options)
+    .json()) as Service[]
   return services
 }
 
@@ -180,7 +184,7 @@ export const setBagOfHoldingOnVehicle = async (
   bagData: Record<string, any> | any
 ): Promise<void> => {
   try {
-    await ky.post(`http://${vehicleAddress}/bag/v1.0/set/${bagName}`, { json: bagData, timeout: defaultTimeout })
+    await ky.post(`${protocol}//${vehicleAddress}/bag/v1.0/set/${bagName}`, { json: bagData, timeout: defaultTimeout })
   } catch (error) {
     throw new Error(`Could not set bag of holdings for ${bagName}. ${error}`)
   }
@@ -201,7 +205,7 @@ type IpInfo = { ipv4Address: string; interfaceType: string }
 
 export const getIpsInformationFromVehicle = async (vehicleAddress: string): Promise<IpInfo[]> => {
   try {
-    const url = `http://${vehicleAddress}/beacon/v1.0/services`
+    const url = `${protocol}//${vehicleAddress}/beacon/v1.0/services`
     const rawIpsInfo: RawIpInfo[] = await ky.get(url, { timeout: defaultTimeout }).json()
     return rawIpsInfo
       .filter((ipInfo) => ipInfo['service_type'] === '_http')
@@ -218,7 +222,7 @@ type RawM2rInfo = { version: number; service: RawM2rServiceInfo }
 
 export const getMavlink2RestVersion = async (vehicleAddress: string): Promise<string> => {
   try {
-    const url = `http://${vehicleAddress}/mavlink2rest/info`
+    const url = `${protocol}//${vehicleAddress}/mavlink2rest/info`
     const m2rRawInfo: RawM2rInfo = await ky.get(url, { timeout: defaultTimeout }).json()
     return m2rRawInfo.service.version
   } catch (error) {
@@ -232,7 +236,7 @@ type RawArdupilotFirmwareInfo = { version: string; type: string }
 
 export const getArdupilotVersion = async (vehicleAddress: string): Promise<string> => {
   try {
-    const url = `http://${vehicleAddress}/ardupilot-manager/v1.0/firmware_info`
+    const url = `${protocol}//${vehicleAddress}/ardupilot-manager/v1.0/firmware_info`
     const ardupilotFirmwareRawInfo: RawArdupilotFirmwareInfo = await ky.get(url, { timeout: defaultTimeout }).json()
     return ardupilotFirmwareRawInfo.version
   } catch (error) {
@@ -242,7 +246,7 @@ export const getArdupilotVersion = async (vehicleAddress: string): Promise<strin
 
 export const getStatus = async (vehicleAddress: string): Promise<boolean> => {
   try {
-    const url = `http://${vehicleAddress}/status`
+    const url = `${protocol}//${vehicleAddress}/status`
     const result = await ky.get(url, { timeout: defaultTimeout })
     return result.ok
   } catch (error) {
@@ -255,7 +259,7 @@ type RawCpuTempInfo = { name: string; temperature: number; maximum_temperature: 
 
 export const getCpuTempCelsius = async (vehicleAddress: string): Promise<number> => {
   try {
-    const url = `http://${vehicleAddress}/system-information/system/temperature`
+    const url = `${protocol}//${vehicleAddress}/system-information/system/temperature`
     const cpuTempRawInfo: RawCpuTempInfo[] = await ky.get(url, { timeout: defaultTimeout }).json()
     return cpuTempRawInfo[0].temperature
   } catch (error) {
