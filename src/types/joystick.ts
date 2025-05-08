@@ -1,5 +1,7 @@
 import { JoystickModel } from '@/libs/joystick/manager'
 
+import { SDLControllerState } from './sdl'
+
 /**
  * Available joystick protocols.
  * Each protocol is expected to have it's own way of doing thing, including mapping, limiting, communicating, etc.
@@ -328,4 +330,97 @@ export class JoystickAxisInput implements JoystickInput {
    * @param {JoystickAxis} id Axis identification
    */
   constructor(public id: JoystickAxis) {}
+}
+
+/**
+ * Data for the event of a new state of a joystick on the Electron side
+ */
+export interface ElectronSDLControllerStateEventData {
+  /**
+   * Joystick device id
+   */
+  deviceId: number
+  /**
+   * Joystick device name
+   */
+  deviceName: string
+  /**
+   * Joystick product id
+   */
+  productId: string
+  /**
+   * Joystick vendor id
+   */
+  vendorId: string
+  /**
+   * Joystick state
+   */
+  state: SDLControllerState
+}
+
+export type JoystickSdlStandardToGamepadStandard = {
+  /**
+   * SDL button index as key to Gamepad button index as value
+   */
+  buttons: {
+    [key: number]: number
+  }
+  /**
+   * SDL axis index as key to Gamepad axis index as value
+   */
+  axes: {
+    [key: number]:
+      | number
+      | {
+          /**
+           * Gamepad axis index
+           */
+          axis: number
+          /**
+           * Gamepad button index (if the axis should also be mapped as a button)
+           */
+          button: number
+        }
+  }
+}
+
+/**
+ * Convert SDL controller state to Gamepad state, using the default mapping for both
+ * @param {SDLControllerState} sdlState - SDL controller state
+ * @returns {JoystickState} Gamepad state
+ */
+export const convertSDLControllerStateToGamepadState = (sdlState: SDLControllerState): JoystickState => {
+  return {
+    buttons: [
+      sdlState.buttons.a ? 1 : 0,
+      sdlState.buttons.b ? 1 : 0,
+      sdlState.buttons.x ? 1 : 0,
+      sdlState.buttons.y ? 1 : 0,
+      sdlState.buttons.leftShoulder ? 1 : 0,
+      sdlState.buttons.rightShoulder ? 1 : 0,
+      sdlState.axes.leftTrigger,
+      sdlState.axes.rightTrigger,
+      sdlState.buttons.back ? 1 : 0,
+      sdlState.buttons.start ? 1 : 0,
+      sdlState.buttons.leftStick ? 1 : 0,
+      sdlState.buttons.rightStick ? 1 : 0,
+      sdlState.buttons.dpadUp ? 1 : 0,
+      sdlState.buttons.dpadDown ? 1 : 0,
+      sdlState.buttons.dpadLeft ? 1 : 0,
+      sdlState.buttons.dpadRight ? 1 : 0,
+      sdlState.buttons.guide ? 1 : 0,
+      sdlState.buttons.paddle1 ? 1 : 0,
+      sdlState.buttons.paddle2 ? 1 : 0,
+      sdlState.buttons.paddle3 ? 1 : 0,
+      sdlState.buttons.paddle4 ? 1 : 0,
+    ],
+    axes: [
+      sdlState.axes.leftStickX,
+      sdlState.axes.leftStickY,
+      sdlState.axes.rightStickX,
+      sdlState.axes.rightStickY,
+      sdlState.axes.leftTrigger,
+      sdlState.axes.rightTrigger,
+    ],
+  }
 }
