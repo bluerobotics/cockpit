@@ -51,7 +51,7 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     variableName: 'TetherTrn',
     iconName: 'mdi-horizontal-rotate-clockwise',
     variableUnit: 'x',
-    variableMultiplier: 100,
+    variableMultiplier: 1,
   },
   {
     displayName: 'Lights (1)',
