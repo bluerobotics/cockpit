@@ -10,6 +10,7 @@
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "ELECTRON=true electron-builder --dir",
     "deploy:electron": "ELECTRON=true electron-builder --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
+    "deploy:electron:windows": "powershell -Command \"$v = ((git describe --tags --abbrev=0) -replace '^v','').Trim(); electron-builder --win --publish=never --config.extraMetadata.version=$v\"",
     "deploy:flatpak": "ELECTRON=true electron-builder --linux flatpak --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
     "dev": "vite --host",
     "dev:electron": "ELECTRON=true vite --host",
@@ -28,6 +29,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.4.0",
     "@fortawesome/vue-fontawesome": "^3.0.3",
     "@j2only/slide-unlock": "^0.5.5",
+    "@kmamal/sdl": "0.11.7",
     "@mdi/font": "^7.4.47",
     "@mdi/js": "^7.4.47",
     "@peermetrics/webrtc-stats": "^5.7.1",
@@ -94,7 +96,7 @@
     "autoprefixer": "^10.4.13",
     "c8": "^7.11.3",
     "electron": "^29.2.0",
-    "electron-builder": "^25.1.8",
+    "electron-builder": "25.1.8",
     "eslint": "^8.5.0",
     "eslint-plugin-jsdoc": "^43.1.1",
     "eslint-plugin-simple-import-sort": "^7.0.0",
@@ -165,6 +167,8 @@
       "runtime": "org.freedesktop.Platform",
       "runtimeVersion": "22.08",
       "sdk": "org.freedesktop.Sdk"
-    }
+    },
+    "buildDependenciesFromSource": false,
+    "npmRebuild": false
   }
 }
