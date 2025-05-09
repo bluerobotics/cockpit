@@ -1,3 +1,8 @@
+import { type ElectronSDLControllerStateEventData, convertSDLControllerStateToGamepadState } from '@/types/joystick'
+import { type SDLControllerState } from '@/types/sdl'
+
+import { isElectron } from '../utils'
+
 /**
  * Possible events from GamepadListener
  * https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API
@@ -125,36 +130,19 @@ export type JoystickAxisEvent = {
   }
 }
 
-export type JoystickButtonEvent = {
+export type JoystickStateEvent = {
   /**
-   * Event type
+   * Joystick index
    */
-  type: EventType.Button
+  index: number
   /**
-   * Detail information about the event
+   * Gamepad object
    */
-  detail: {
-    /**
-     * Joystick index
-     */
-    index: number
-    /**
-     * Gamepad object
-     */
-    gamepad: Gamepad
-    /**
-     * Button number
-     */
-    button: number
-    /**
-     * Pressing state
-     */
-    pressed: boolean
-    /**
-     * Axis value
-     */
-    value: number
-  }
+  gamepad: Gamepad
+  /**
+   * Raw joystick state from Electron (SDL)
+   */
+  rawState?: SDLControllerState
 }
 
 export type JoystickConnectEvent = {
@@ -207,14 +195,13 @@ export type GamepadState = {
 export type JoysticksMap = Map<number, Gamepad>
 
 export type JoystickConnectionEvent = JoystickConnectEvent | JoystickDisconnectEvent
-export type JoystickStateEvent = JoystickAxisEvent | JoystickButtonEvent
 
 type CallbackJoystickStateEventType = (event: JoystickStateEvent) => void
 type CallbackJoystickConnectionEventType = (event: JoysticksMap) => void
 
 /**
  * Joystick Manager
- * Abstraction over Gamepad API
+ * Abstraction over Gamepad API and SDL
  */
 class JoystickManager {
   private static instance = new JoystickManager()
@@ -222,17 +209,44 @@ class JoystickManager {
   private callbacksJoystickConnection: Array<CallbackJoystickConnectionEventType> = []
   private callbacksJoystickState: Array<CallbackJoystickStateEventType> = []
   private joysticks: JoysticksMap = new Map()
-  private enabledJoysticks: Array<string> = []
   private animationFrameId: number | null = null
   private previousGamepadState: Map<number, GamepadState> = new Map()
   private lastTimeGamepadConnectionsPolled = 0
-  private currentGamepadsConnections: Array<Gamepad> = []
 
   /**
    * Singleton constructor
    */
   private constructor() {
-    this.start()
+    console.log('Starting JoystickManager...')
+
+    if (isElectron()) {
+      // Also check SDL status directly after a short delay
+      setTimeout(async () => {
+        try {
+          if (!window.electronAPI) {
+            console.error('Electron API not available.')
+            this.startGamepadApiMonitoringRoutine()
+            return
+          }
+          const status = await window.electronAPI.checkSDLLoadStatus()
+
+          if (!status.loaded) {
+            console.error('SDL not loaded according to status check, falling back to Gamepad API.')
+            this.startGamepadApiMonitoringRoutine()
+          } else {
+            console.log('SDL loaded successfully, using SDL for controllers.')
+            this.startElectronSdlJoystickMonitoringRoutine()
+          }
+        } catch (error) {
+          console.error('Error checking SDL status, falling back to Gamepad API:', error)
+          this.startGamepadApiMonitoringRoutine()
+        }
+      }, 3000)
+    } else {
+      // In browser or if electronAPI is not available, use the Gamepad API
+      console.log('Not in Electron or Electron API not available, using Gamepad API.')
+      this.startGamepadApiMonitoringRoutine()
+    }
   }
 
   /**
@@ -283,30 +297,6 @@ class JoystickManager {
   }
 
   /**
-   * Process joystick event internally
-   * @param {JoystickConnectionEvent} event
-   */
-  private processJoystickConnectionUpdate(event: JoystickConnectionEvent): void {
-    const index = event.detail.index
-
-    if (event.type == EventType.Connected) {
-      const gamepad = event.detail.gamepad
-
-      if (!this.joysticks.has(index)) {
-        this.enabledJoysticks.push(gamepad.id)
-      }
-      this.joysticks.set(index, gamepad)
-    } else {
-      // Disconnect
-      this.joysticks.delete(index)
-    }
-
-    for (const callback of this.callbacksJoystickConnection) {
-      callback(this.joysticks)
-    }
-  }
-
-  /**
    * Register joystick event callback
    * @param {callbackJoystickStateEventType} callback
    */
@@ -315,46 +305,72 @@ class JoystickManager {
   }
 
   /**
+   * Set up joystick monitoring in Electron environment
+   * This method sets up listeners for joystick events from the main process
+   * and converts them to the same format as the Gamepad API events
+   */
+  private startElectronSdlJoystickMonitoringRoutine(): void {
+    if (!window.electronAPI) {
+      console.error('Electron API not available.')
+      return
+    }
+
+    /**
+     * Listen for joystick state updates from the main process
+     * Converts SDL joystick state to Gamepad API format
+     * @param data The joystick state data from the main process
+     */
+    window.electronAPI.onElectronSDLControllerStateChange((data: ElectronSDLControllerStateEventData) => {
+      // Convert SDL joystick state to our event format
+
+      const gamepadState = convertSDLControllerStateToGamepadState(data.state)
+      const joystickEvent: JoystickStateEvent = {
+        index: data.deviceId,
+        gamepad: {
+          id: `${data.deviceName} (SDL STANDARD JOYSTICK .5ndor: ${data.vendorId} Product: ${data.productId})`,
+          index: data.deviceId,
+          connected: true,
+          timestamp: Date.now(),
+          mapping: 'standard',
+          axes: gamepadState.axes.map((value) => value ?? 0),
+          buttons: gamepadState.buttons.map((value) => ({
+            pressed: (value ?? 0) > 0.5,
+            value: value ?? 0,
+            touched: false,
+          })),
+          vibrationActuator: {
+            playEffect: async () => 'complete' as const,
+            reset: async () => 'complete' as const,
+          },
+        },
+        rawState: data.state,
+      }
+
+      // Add joystick to the list of joysticks if it is not already there
+      if (!this.joysticks.has(data.deviceId)) {
+        this.joysticks.set(data.deviceId, joystickEvent.gamepad)
+      }
+
+      // Emit joystick state update
+      this.emitJoystickStateUpdate(joystickEvent)
+
+      // Emit joystick connection update
+      this.emitJoystickConnectionUpdate()
+    })
+  }
+
+  /**
    * Poll for gamepad connections and disconnection every 500ms, and activates polling the gamepad states.
    * The polling for connections and disconnections is a workaround to get around the fact that the gamepad API events do not work the same way in all browsers.
    * In Chrome, for example, the gamepadconnected event is sometimes not fired when a gamepad is connected after a long time since the page was loaded.
    * This is a workaround to get around this issue.
    */
-  private start(): void {
+  private startGamepadApiMonitoringRoutine(): void {
     // Start polling for gamepad connections and disconnections
     this.updateGamepadsConnections()
 
     // Start polling for gamepad states
     this.pollGamepadsStates()
-  }
-
-  /**
-   * Handle gamepad connection event
-   * @param {Gamepad} gamepad - Gamepad connection event
-   */
-  private handleGamepadConnected(gamepad: Gamepad): void {
-    const joystickEvent: JoystickConnectEvent = {
-      type: EventType.Connected,
-      detail: {
-        index: gamepad.index,
-        gamepad: gamepad,
-      },
-    }
-    this.processJoystickConnectionUpdate(joystickEvent)
-  }
-
-  /**
-   * Handle gamepad disconnection event
-   * @param {Gamepad} gamepad - Gamepad disconnection event
-   */
-  private handleGamepadDisconnected(gamepad: Gamepad): void {
-    const joystickEvent: JoystickDisconnectEvent = {
-      type: EventType.Disconnected,
-      detail: {
-        index: gamepad.index,
-      },
-    }
-    this.processJoystickConnectionUpdate(joystickEvent)
   }
 
   /**
@@ -365,21 +381,31 @@ class JoystickManager {
     if (Date.now() - this.lastTimeGamepadConnectionsPolled > 500) {
       const gamepadConnectionsState = navigator.getGamepads()
 
+      let joystickConnectionsChanged = false
+
       // Add new gamepads to the list
       for (const gamepad of gamepadConnectionsState) {
-        if (gamepad && !this.currentGamepadsConnections.map((g) => g.index).includes(gamepad.index)) {
-          this.currentGamepadsConnections.push(gamepad)
-          this.handleGamepadConnected(gamepad)
+        if (gamepad && !this.joysticks.has(gamepad.index)) {
+          this.joysticks.set(gamepad.index, gamepad)
+          console.log(`Joystick ${gamepad.index} connected`)
+          console.log(gamepad)
+          joystickConnectionsChanged = true
         }
       }
 
       // Remove gamepads that are not connected anymore
-      for (const gamepad of this.currentGamepadsConnections) {
+      for (const gamepad of this.joysticks.values()) {
         if (!gamepadConnectionsState.map((g) => g?.index).includes(gamepad.index)) {
-          this.currentGamepadsConnections.splice(this.currentGamepadsConnections.indexOf(gamepad), 1)
-          this.handleGamepadDisconnected(gamepad)
+          this.joysticks.delete(gamepad.index)
+          joystickConnectionsChanged = true
         }
       }
+
+      // Emit the updated list of joysticks for all listeners if there were any changes
+      if (joystickConnectionsChanged) {
+        this.emitJoystickConnectionUpdate()
+      }
+
       this.lastTimeGamepadConnectionsPolled = Date.now()
     }
     this.animationFrameId = requestAnimationFrame(() => this.updateGamepadsConnections())
@@ -396,42 +422,24 @@ class JoystickManager {
 
       const previousState = this.previousGamepadState.get(gamepad.index)
 
+      let shouldEmitStateEvent = false
+
       // Check axes
       if (previousState) {
         // Check for axis changes
         gamepad.axes.forEach((value, index) => {
           if (previousState.axes[index] !== value) {
-            const stick = Math.floor(index / 2)
-            const axis = index % 2
-            const joystickEvent: JoystickAxisEvent = {
-              type: EventType.Axis,
-              detail: {
-                index: gamepad.index,
-                gamepad: gamepad,
-                stick: stick as JoystickDetail.Stick,
-                axis: axis as JoystickDetail.Axis,
-                value: value,
-              },
-            }
-            this.emitStateEvent(joystickEvent)
+            shouldEmitStateEvent = true
           }
         })
 
         // Check for button changes
         gamepad.buttons.forEach((button, index) => {
-          const previousButton = previousState.buttons[index]
-          if (previousButton.pressed !== button.pressed || previousButton.value !== button.value) {
-            const joystickEvent: JoystickButtonEvent = {
-              type: EventType.Button,
-              detail: {
-                index: gamepad.index,
-                gamepad: gamepad,
-                button: index,
-                pressed: button.pressed,
-                value: button.value,
-              },
-            }
-            this.emitStateEvent(joystickEvent)
+          if (
+            previousState.buttons[index].pressed !== button.pressed ||
+            previousState.buttons[index].value !== button.value
+          ) {
+            shouldEmitStateEvent = true
           }
         })
       }
@@ -441,6 +449,14 @@ class JoystickManager {
         axes: [...gamepad.axes],
         buttons: [...gamepad.buttons],
       })
+
+      if (shouldEmitStateEvent) {
+        const joystickEvent: JoystickStateEvent = {
+          index: gamepad.index,
+          gamepad: gamepad,
+        }
+        this.emitJoystickStateUpdate(joystickEvent)
+      }
     }
 
     // Continue polling
@@ -448,14 +464,21 @@ class JoystickManager {
   }
 
   /**
-   * Emit state event to registered callbacks
-   * @param {JoystickStateEvent} joystickEvent - The event to emit
+   * Emit joystick state updates to registered callbacks
+   * @param {JoystickStateEvent} state - The state event to emit
    */
-  private emitStateEvent(joystickEvent: JoystickStateEvent): void {
-    if (!this.enabledJoysticks.includes(joystickEvent.detail.gamepad.id)) return
-
+  private emitJoystickStateUpdate(state: JoystickStateEvent): void {
     for (const callback of this.callbacksJoystickState) {
-      callback(joystickEvent)
+      callback(state)
+    }
+  }
+
+  /**
+   * Emit joystick connection updates to registered callbacks
+   */
+  private emitJoystickConnectionUpdate(): void {
+    for (const callback of this.callbacksJoystickConnection) {
+      callback(this.joysticks)
     }
   }
 
