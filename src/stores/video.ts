@@ -878,7 +878,8 @@ export const useVideoStore = defineStore('video', () => {
       alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
       return
     }
-    alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording streams: ${streamsThatStarted.join(', ')}.`))
+    const msg = `Started recording all ${streamsThatStarted.length} streams: ${streamsThatStarted.join(', ')}.`
+    alertStore.pushAlert(new Alert(AlertLevel.Success, msg))
   }
 
   const stopRecordingAllStreams = (): void => {
@@ -896,7 +897,8 @@ export const useVideoStore = defineStore('video', () => {
       alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams were being recorded.'))
       return
     }
-    alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording streams: ${streamsThatStopped.join(', ')}.`))
+    const msg = `Stopped recording all ${streamsThatStopped.length} streams: ${streamsThatStopped.join(', ')}.`
+    alertStore.pushAlert(new Alert(AlertLevel.Success, msg))
   }
 
   const toggleRecordingAllStreams = (): void => {
