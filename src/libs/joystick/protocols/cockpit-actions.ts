@@ -16,6 +16,7 @@ export enum CockpitActionsFunction {
   toggle_top_bar = 'toggle_top_bar',
   start_recording_all_streams = 'start_recording_all_streams',
   stop_recording_all_streams = 'stop_recording_all_streams',
+  toggle_recording_all_streams = 'toggle_recording_all_streams',
   hold_to_confirm = 'hold_to_confirm',
 }
 
@@ -45,6 +46,7 @@ export const predefinedCockpitActions: { [key in CockpitActionsFunction]: Cockpi
   [CockpitActionsFunction.toggle_top_bar]: new CockpitAction(CockpitActionsFunction.toggle_top_bar, 'Toggle top bar'),
   [CockpitActionsFunction.start_recording_all_streams]: new CockpitAction(CockpitActionsFunction.start_recording_all_streams, 'Start recording all streams'),
   [CockpitActionsFunction.stop_recording_all_streams]: new CockpitAction(CockpitActionsFunction.stop_recording_all_streams, 'Stop recording all streams'),
+  [CockpitActionsFunction.toggle_recording_all_streams]: new CockpitAction(CockpitActionsFunction.toggle_recording_all_streams, 'Toggle recording all streams'),
   [CockpitActionsFunction.hold_to_confirm]: new CockpitAction(CockpitActionsFunction.hold_to_confirm, 'Hold to confirm'),
 }
 
