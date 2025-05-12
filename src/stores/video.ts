@@ -57,6 +57,7 @@ export const useVideoStore = defineStore('video', () => {
   const timeNow = useTimestamp({ interval: 500 })
   const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
   const lastRenamedStreamName = ref('')
+  const isRecordingAllStreams = ref(false)
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
@@ -864,6 +865,7 @@ export const useVideoStore = defineStore('video', () => {
   // Video recording actions
   const startRecordingAllStreams = (): void => {
     const streamsThatStarted: string[] = []
+    isRecordingAllStreams.value = true
 
     namesAvailableStreams.value.forEach((streamName) => {
       if (!isRecording(streamName)) {
@@ -894,6 +896,14 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording streams: ${streamsThatStopped.join(', ')}.`))
+  }
+
+  const toggleRecordingAllStreams = (): void => {
+    if (isRecordingAllStreams.value) {
+      stopRecordingAllStreams()
+    } else {
+      startRecordingAllStreams()
+    }
   }
 
   const renameStreamInternalNameById = (streamID: string, newInternalName: string): void => {
@@ -930,6 +940,10 @@ export const useVideoStore = defineStore('video', () => {
   registerActionCallback(
     availableCockpitActions.stop_recording_all_streams,
     useThrottleFn(stopRecordingAllStreams, 3000)
+  )
+  registerActionCallback(
+    availableCockpitActions.toggle_recording_all_streams,
+    useThrottleFn(toggleRecordingAllStreams, 3000)
   )
 
   return {
