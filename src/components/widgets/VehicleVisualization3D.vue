@@ -9,7 +9,6 @@
       <v-icon color="red">mdi-alert-circle</v-icon>
       <span class="error-text">{{ loadError }}</span>
     </div>
-    <div ref="controlsContainer" class="controls-panel"></div>
   </div>
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
@@ -44,68 +43,58 @@
           thumb-label
           class="mb-4"
         />
-        <v-slider
-          v-model="frustumSize"
-          label="Zoom (Frustum Size)"
-          min="1"
-          max="50"
-          step="1"
-          thumb-label
-          class="mb-4"
-        />
-
-        <v-switch v-model="autoRotate" label="Auto Rotate" class="mb-4" />
 
         <v-switch v-model="showGrid" label="Show Grid Helper" class="mb-4" />
 
-        <v-expansion-panels theme="dark">
-          <v-expansion-panel class="bg-[#FFFFFF11] text-white mt-2">
-            <v-expansion-panel-title>Lighting & Environment</v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <v-slider
-                v-model="ambientLightIntensity"
-                label="Ambient Light"
-                min="0"
-                max="5"
-                step="0.1"
-                thumb-label
+        <div class="color-controls">
+          <h4 class="mb-3">Motor Colors</h4>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field
+                v-model="positiveMotorColor"
+                label="Positive Color (>1500)"
+                type="color"
                 class="mb-2"
+                hide-details
               />
-              <v-slider
-                v-model="directionalLightIntensity"
-                label="Directional Light"
-                min="0"
-                max="5"
-                step="0.1"
-                thumb-label
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                v-model="negativeMotorColor"
+                label="Negative Color (<1500)"
+                type="color"
                 class="mb-2"
+                hide-details
               />
-              <v-color-picker
-                v-model="backgroundColor"
-                theme="dark"
-                class="ma-1 bg-[#FFFFFF11] text-white"
-                width="100%"
-                show-swatches
-              />
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
+            </v-col>
+          </v-row>
+
+          <h4 class="mb-3 mt-4">Light Color</h4>
+          <v-text-field
+            v-model="lightColor"
+            label="Light Color (100% intensity)"
+            type="color"
+            class="mb-2"
+            hide-details
+          />
+        </div>
       </v-card-text>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { useElementVisibility, useWindowSize } from '@vueuse/core'
+import { useElementVisibility, useResizeObserver, useWindowSize } from '@vueuse/core'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { computed, nextTick, onBeforeMount, onMounted, onUnmounted, ref, shallowRef, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import {
   getDataLakeVariableData,
   listenDataLakeVariable,
+  setDataLakeVariableData,
   unlistenDataLakeVariable,
 } from '@/libs/actions/data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -124,60 +113,67 @@ const { widget: widgetRef } = toRefs(props) // Use widgetRef to access widget pr
 // Computed properties with getters and setters to avoid prop mutation warnings
 const modelPath = computed({
   get: () => widgetRef.value.options.modelPath,
-  set: (value) => { widgetRef.value.options.modelPath = value }
+  set: (value) => {
+    widgetRef.value.options.modelPath = value
+  },
 })
 
 const cameraHeight = computed({
   get: () => widgetRef.value.options.cameraHeight,
-  set: (value) => { widgetRef.value.options.cameraHeight = value }
+  set: (value) => {
+    widgetRef.value.options.cameraHeight = value
+  },
 })
 
 const cameraDistance = computed({
   get: () => widgetRef.value.options.cameraDistance,
-  set: (value) => { widgetRef.value.options.cameraDistance = value }
-})
-
-const frustumSize = computed({
-  get: () => widgetRef.value.options.frustumSize,
-  set: (value) => { widgetRef.value.options.frustumSize = value }
-})
-
-const autoRotate = computed({
-  get: () => widgetRef.value.options.autoRotate,
-  set: (value) => { widgetRef.value.options.autoRotate = value }
+  set: (value) => {
+    widgetRef.value.options.cameraDistance = value
+  },
 })
 
 const showGrid = computed({
   get: () => widgetRef.value.options.showGrid,
-  set: (value) => { widgetRef.value.options.showGrid = value }
+  set: (value) => {
+    widgetRef.value.options.showGrid = value
+  },
 })
 
-const ambientLightIntensity = computed({
-  get: () => widgetRef.value.options.ambientLightIntensity,
-  set: (value) => { widgetRef.value.options.ambientLightIntensity = value }
+const positiveMotorColor = computed({
+  get: () => widgetRef.value.options.positiveMotorColor,
+  set: (value) => {
+    widgetRef.value.options.positiveMotorColor = value
+  },
 })
 
-const directionalLightIntensity = computed({
-  get: () => widgetRef.value.options.directionalLightIntensity,
-  set: (value) => { widgetRef.value.options.directionalLightIntensity = value }
+const negativeMotorColor = computed({
+  get: () => widgetRef.value.options.negativeMotorColor,
+  set: (value) => {
+    widgetRef.value.options.negativeMotorColor = value
+  },
 })
 
-const backgroundColor = computed({
-  get: () => widgetRef.value.options.backgroundColor,
-  set: (value) => { widgetRef.value.options.backgroundColor = value }
+const lightColor = computed({
+  get: () => widgetRef.value.options.lightColor,
+  set: (value) => {
+    widgetRef.value.options.lightColor = value
+  },
 })
+
+// User-selected colors as THREE.Color objects
+const positiveColor = computed(() => new THREE.Color(widgetRef.value.options.positiveMotorColor || '#00ff00'))
+const negativeColor = computed(() => new THREE.Color(widgetRef.value.options.negativeMotorColor || '#ff0000'))
+const userLightColor = computed(() => new THREE.Color(widgetRef.value.options.lightColor || '#00ff00'))
 
 // Default options
 const defaultOptions = {
   modelPath: 'brov2_heavy.glb', // Default model
-  cameraHeight: 10,
-  cameraDistance: 10,
-  frustumSize: 10,
-  autoRotate: false,
-  showGrid: true,
-  ambientLightIntensity: 0.5,
-  directionalLightIntensity: 0.8,
-  backgroundColor: '#cccccc',
+  cameraHeight: 10, // Higher for better top-down view
+  cameraDistance: 15, // Not used for positioning in top-down view, but kept for UI
+  showGrid: false, // Grid disabled by default
+  positiveMotorColor: '#00ff00', // Green for positive values
+  negativeMotorColor: '#ff0000', // Red for negative values
+  lightColor: '#00ff00', // Green for light color
 }
 
 // Initialize widget options with defaults if not present
@@ -191,9 +187,11 @@ onBeforeMount(() => {
 })
 
 const canvasContainer = ref<HTMLElement | null>(null)
-const controlsContainer = ref<HTMLElement | null>(null) // For material sliders
 const modelLoaded = ref(false)
 const loadError = ref<string | null>(null)
+
+// Internal frustum size - automatically calculated based on model dimensions
+const calculatedFrustumSize = ref(10) // Default value
 
 let scene: THREE.Scene | null = null
 let camera: THREE.OrthographicCamera | null = null
@@ -246,6 +244,21 @@ const motorMaterials = ref<
 const colorRed = new THREE.Color(0xff0000)
 const colorGreen = new THREE.Color(0x00ff00)
 
+// Color transition system
+/** Duration for color transitions in milliseconds */
+const transitionDuration = 300 // milliseconds
+/** Map tracking active color transitions for materials */
+const activeTransitions = ref<Map<THREE.MeshStandardMaterial, {
+  /** Starting color of the transition */
+  startColor: THREE.Color
+  /** Target color of the transition */
+  targetColor: THREE.Color
+  /** Timestamp when transition started */
+  startTime: number
+  /** Duration of the transition in milliseconds */
+  duration: number
+}>>(new Map())
+
 // Track servo listeners for cleanup
 const servoListeners = ref<Record<number, string>>({})
 
@@ -269,7 +282,23 @@ interface LightMaterialInfo {
 // Store all light materials for datalake control
 const allLightMaterials = ref<LightMaterialInfo[]>([])
 
-const { width, height } = useWindowSize() // For responsive canvas, might need adjustment if canvasContainer has its own size
+const canvasVisibility = canvasContainer.value ? useElementVisibility(canvasContainer) : ref(true)
+
+// Track canvas container dimensions
+const containerWidth = ref(0)
+const containerHeight = ref(0)
+
+// Watch for canvas container size changes
+useResizeObserver(canvasContainer, (entries) => {
+  if (entries.length > 0) {
+    const entry = entries[0]
+    containerWidth.value = entry.contentRect.width
+    containerHeight.value = entry.contentRect.height
+
+    // Trigger resize handling when container dimensions change
+    onWindowResize()
+  }
+})
 
 /** Initializes the Three.js scene, camera, renderer, and controls. */
 function initThree(): void {
@@ -280,39 +309,50 @@ function initThree(): void {
 
   // Scene
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(widgetRef.value.options.backgroundColor)
 
   // Camera
   const aspect = canvasContainer.value.clientWidth / canvasContainer.value.clientHeight
   camera = new THREE.OrthographicCamera(
-    (widgetRef.value.options.frustumSize * aspect) / -2,
-    (widgetRef.value.options.frustumSize * aspect) / 2,
-    widgetRef.value.options.frustumSize / 2,
-    widgetRef.value.options.frustumSize / -2,
+    (calculatedFrustumSize.value * aspect) / -2,
+    (calculatedFrustumSize.value * aspect) / 2,
+    calculatedFrustumSize.value / 2,
+    calculatedFrustumSize.value / -2,
     0.1,
     1000
   )
-  camera.position.set(0, widgetRef.value.options.cameraHeight, widgetRef.value.options.cameraDistance)
+
+  // Set top-down view position (directly above the vehicle)
+  camera.position.set(0, widgetRef.value.options.cameraHeight, 0)
   camera.lookAt(0, 0, 0)
 
   // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   renderer.setSize(canvasContainer.value.clientWidth, canvasContainer.value.clientHeight)
   renderer.setPixelRatio(window.devicePixelRatio)
+  renderer.outputColorSpace = THREE.SRGBColorSpace
+  renderer.domElement.style.display = 'block' // Ensure no inline spacing issues
+  renderer.domElement.style.width = '100%'
+  renderer.domElement.style.height = '100%'
   canvasContainer.value.appendChild(renderer.domElement)
 
+  // Set background to always be transparent
+  scene.background = null // Transparent background
+  renderer.setClearColor(0x000000, 0) // Fully transparent
+
   // Lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, widgetRef.value.options.ambientLightIntensity)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.0) // Fixed ambient light intensity
   scene.add(ambientLight)
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, widgetRef.value.options.directionalLightIntensity)
-  directionalLight.position.set(5, 10, 7.5)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0) // Fixed directional light intensity
+  directionalLight.position.set(10, 10, 7.5)
   scene.add(directionalLight)
 
   // Controls
   controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.05
+  controls.enableRotate = false // Disable rotation
+  controls.enablePan = false // Disable panning
   controls.screenSpacePanning = false // Keep as false for orthographic usually
   controls.target.set(0, 0, 0) // Adjust target if model is offset
   controls.update()
@@ -352,9 +392,6 @@ function loadModel(): void {
   }
   interactiveMaterials.value = []
   motorMaterials.value = []
-  if (controlsContainer.value) {
-    controlsContainer.value.innerHTML = '' // Clear old sliders
-  }
 
   const loader = new GLTFLoader()
   const dracoLoader = new DRACOLoader()
@@ -378,14 +415,45 @@ function loadModel(): void {
       const size = box.getSize(new THREE.Vector3())
       const maxDim = Math.max(size.x, size.y, size.z)
       if (maxDim > 0) {
-        // Avoid division by zero if model is empty or flat
-        const scale = widgetRef.value.options.frustumSize / maxDim / 2 // Adjust scale to fit view
-        loadedModel.scale.set(scale, scale, scale)
+        // Calculate optimal frustum size based on model dimensions and canvas aspect ratio
+        const aspect = canvasContainer.value
+          ? canvasContainer.value.clientWidth / canvasContainer.value.clientHeight
+          : 1
+
+        // Add 20% padding around the model
+        const padding = 1.2
+
+        // For top-down view, we primarily care about X and Z dimensions
+        const horizontalSize = Math.max(size.x, size.z)
+
+        // Calculate frustum size considering aspect ratio
+        // The frustum needs to show the horizontal size, accounting for aspect ratio
+        if (aspect >= 1) {
+          // Wide canvas: frustum height determines what we see
+          calculatedFrustumSize.value = horizontalSize * padding
+        } else {
+          // Tall canvas: frustum width determines what we see
+          calculatedFrustumSize.value = (horizontalSize * padding) / aspect
+        }
+
+        // Don't scale the model anymore - let the frustum size handle the view
+        // The model stays at its original size
+
+        // Update camera with new frustum size
+        if (camera && canvasContainer.value) {
+          const newAspect = canvasContainer.value.clientWidth / canvasContainer.value.clientHeight
+          camera.left = (calculatedFrustumSize.value * newAspect) / -2
+          camera.right = (calculatedFrustumSize.value * newAspect) / 2
+          camera.top = calculatedFrustumSize.value / 2
+          camera.bottom = calculatedFrustumSize.value / -2
+          camera.updateProjectionMatrix()
+        }
       }
 
       scene?.add(loadedModel)
       modelLoaded.value = true
       console.log('Model loaded successfully:', currentModelPath)
+      console.log('Calculated frustum size:', calculatedFrustumSize.value)
 
       // Reset camera target to the center of the newly loaded model if needed
       if (controls) {
@@ -393,6 +461,7 @@ function loadModel(): void {
         controls.target.set(0, 0, 0)
         controls.update()
       }
+      console.log('About to extract interactive materials')
       extractInteractiveMaterials()
     },
     (xhr) => {
@@ -409,12 +478,13 @@ function loadModel(): void {
 
 /** Extracts materials from the loaded model to create interactive controls. */
 function extractInteractiveMaterials(): void {
-  if (!loadedModel || !controlsContainer.value) return
+  if (!loadedModel) return
+
+  console.log('Extracting interactive materials from loaded model')
 
   interactiveMaterials.value = [] // Clear previous light materials
   motorMaterials.value = [] // Clear previous motor materials
   allLightMaterials.value = [] // Clear previous light materials for datalake control
-  controlsContainer.value.innerHTML = '' // Clear old sliders
 
   let materialIdCounter = 0
   loadedModel.traverse((child) => {
@@ -438,8 +508,10 @@ function extractInteractiveMaterials(): void {
           if (motorNumMatch && motorNumMatch[0]) {
             motorNumber = parseInt(motorNumMatch[0], 10)
           }
+          console.log('Found motor material:', matStandard.name, 'Motor number:', motorNumber)
         } else if (matNameLower.includes('lights')) {
           materialType = 'Light'
+          console.log('Found light material:', matStandard.name)
         }
 
         if (
@@ -458,7 +530,6 @@ function extractInteractiveMaterials(): void {
 
           // Add to the lights array for datalake control
           allLightMaterials.value.push(materialInfo)
-
         } else if (
           materialType === 'Motor' &&
           matStandard.color &&
@@ -479,9 +550,59 @@ function extractInteractiveMaterials(): void {
     }
   })
 
+  console.log(
+    'Found',
+    motorMaterials.value.length,
+    'motor materials and',
+    allLightMaterials.value.length,
+    'light materials'
+  )
+
   // Set up servo and lights listeners after processing all materials
+  console.log('About to call setupServoListeners and setupLightsListener')
   setupServoListeners()
   setupLightsListener()
+  console.log('Finished setting up listeners')
+
+  // Manual test after 2 seconds
+  setTimeout(() => {
+    console.log('=== MANUAL DATALAKE TEST ===')
+
+    // Test setting a test variable
+    try {
+      setDataLakeVariableData('test-variable', 999)
+      console.log('Set test-variable to 999')
+    } catch (error) {
+      console.error('Error setting test variable:', error)
+    }
+
+    // Test reading servo variables
+    for (let i = 1; i <= 8; i++) {
+      const servoVar = `SERVO_OUTPUT_RAW/servo${i}_raw`
+      const value = getDataLakeVariableData(servoVar)
+      console.log(`${servoVar}:`, value)
+    }
+
+    // Test reading lights variable
+    const lightsValue = getDataLakeVariableData('Lights1')
+    console.log('Lights1:', lightsValue)
+
+    // Test manual servo update
+    try {
+      setDataLakeVariableData('SERVO_OUTPUT_RAW/servo1_raw', 1600)
+      console.log('Manually set servo1_raw to 1600')
+    } catch (error) {
+      console.error('Error setting servo variable:', error)
+    }
+
+    // Test manual lights update
+    try {
+      setDataLakeVariableData('Lights1', 0.5)
+      console.log('Manually set Lights1 to 0.5')
+    } catch (error) {
+      console.error('Error setting lights variable:', error)
+    }
+  }, 2000)
 }
 
 /** Reloads the model, typically called when model path changes. */
@@ -495,12 +616,89 @@ function onWindowResize(): void {
   if (!camera || !renderer || !canvasContainer.value) return
 
   const aspect = canvasContainer.value.clientWidth / canvasContainer.value.clientHeight
-  camera.left = (widgetRef.value.options.frustumSize * aspect) / -2
-  camera.right = (widgetRef.value.options.frustumSize * aspect) / 2
-  camera.top = widgetRef.value.options.frustumSize / 2
-  camera.bottom = widgetRef.value.options.frustumSize / -2
+  camera.left = (calculatedFrustumSize.value * aspect) / -2
+  camera.right = (calculatedFrustumSize.value * aspect) / 2
+  camera.top = calculatedFrustumSize.value / 2
+  camera.bottom = calculatedFrustumSize.value / -2
   camera.updateProjectionMatrix()
   renderer.setSize(canvasContainer.value.clientWidth, canvasContainer.value.clientHeight)
+
+  // If we have a loaded model, recalculate the frustum size for the new aspect ratio
+  if (loadedModel) {
+    const box = new THREE.Box3().setFromObject(loadedModel)
+    const size = box.getSize(new THREE.Vector3())
+    const horizontalSize = Math.max(size.x, size.z)
+
+    if (horizontalSize > 0) {
+      const padding = 1.2
+
+      if (aspect >= 1) {
+        // Wide canvas: frustum height determines what we see
+        calculatedFrustumSize.value = horizontalSize * padding
+      } else {
+        // Tall canvas: frustum width determines what we see
+        calculatedFrustumSize.value = (horizontalSize * padding) / aspect
+      }
+
+      // Update camera again with the new frustum size
+      camera.left = (calculatedFrustumSize.value * aspect) / -2
+      camera.right = (calculatedFrustumSize.value * aspect) / 2
+      camera.top = calculatedFrustumSize.value / 2
+      camera.bottom = calculatedFrustumSize.value / -2
+      camera.updateProjectionMatrix()
+    }
+  }
+}
+
+/**
+ * Starts a smooth color transition for a material
+ * @param material - The material to transition
+ * @param targetColor - The target color to transition to
+ * @param duration - Duration of the transition in milliseconds (optional)
+ */
+function startColorTransition(
+  material: THREE.MeshStandardMaterial,
+  targetColor: THREE.Color,
+  duration: number = transitionDuration
+): void {
+  const currentColor = material.color.clone()
+  const now = Date.now()
+
+  activeTransitions.value.set(material, {
+    startColor: currentColor,
+    targetColor: targetColor.clone(),
+    startTime: now,
+    duration: duration,
+  })
+}
+
+/**
+ * Updates all active color transitions
+ */
+function updateTransitions(): void {
+  const now = Date.now()
+  const completedTransitions: THREE.MeshStandardMaterial[] = []
+
+  activeTransitions.value.forEach((transition, material) => {
+    const elapsed = now - transition.startTime
+    const progress = Math.min(elapsed / transition.duration, 1)
+
+    // Use smooth easing function (ease-out)
+    const easedProgress = 1 - Math.pow(1 - progress, 3)
+
+    // Interpolate between start and target colors
+    material.color.copy(transition.startColor).lerp(transition.targetColor, easedProgress)
+
+    // Mark transition as complete if we've reached the end
+    if (progress >= 1) {
+      completedTransitions.push(material)
+    }
+  })
+
+  // Remove completed transitions
+  completedTransitions.forEach((material) => {
+    activeTransitions.value.delete(material)
+  })
 }
 
 /** Animation loop for rendering the scene. */
@@ -508,9 +706,8 @@ function animate(): void {
   if (!renderer || !scene || !camera) return
   animationFrameId = requestAnimationFrame(animate)
 
-  if (widgetRef.value.options.autoRotate && loadedModel) {
-    loadedModel.rotation.y += 0.005
-  }
+  // Update color transitions
+  updateTransitions()
 
   controls?.update()
   renderer.render(scene, camera)
@@ -525,6 +722,9 @@ function cleanupThree(): void {
   // Clean up servo and lights listeners
   cleanupServoListeners()
   cleanupLightsListener()
+
+  // Clear active transitions
+  activeTransitions.value.clear()
 
   if (renderer) {
     renderer.dispose()
@@ -550,10 +750,6 @@ function cleanupThree(): void {
     if (im.material) im.material.dispose()
   })
   interactiveMaterials.value = []
-
-  if (controlsContainer.value) {
-    controlsContainer.value.innerHTML = ''
-  }
 
   scene?.traverse((object) => {
     if (!objectIsLoadedModelOrDescendant(object, loadedModel) && (object as any).geometry) {
@@ -592,52 +788,19 @@ function objectIsLoadedModelOrDescendant(object: THREE.Object3D, model: THREE.Gr
   return object === model
 }
 
-const canvasVisibility = canvasContainer.value ? useElementVisibility(canvasContainer) : ref(true)
-
 /** Sets up watchers for reactive properties. */
 function setupWatchers(): void {
   // Watch for changes in widget options and update the scene accordingly
-  watch(
-    () => widgetRef.value.options.backgroundColor,
-    (newColor) => {
-      if (scene) scene.background = new THREE.Color(newColor)
-    }
-  )
-
-  watch(
-    () => widgetRef.value.options.ambientLightIntensity,
-    (intensity) => {
-      scene?.children.forEach((child) => {
-        if (child instanceof THREE.AmbientLight) child.intensity = intensity
-      })
-    }
-  )
-
-  watch(
-    () => widgetRef.value.options.directionalLightIntensity,
-    (intensity) => {
-      scene?.children.forEach((child) => {
-        if (child instanceof THREE.DirectionalLight) child.intensity = intensity
-      })
-    }
-  )
 
   watch(
     () => [widgetRef.value.options.cameraHeight, widgetRef.value.options.cameraDistance],
-    ([y, z]) => {
+    ([y, distance]) => {
       if (camera) {
-        camera.position.y = y
-        camera.position.z = z
+        // Maintain top-down view position (directly above)
+        camera.position.set(0, y, 0)
         camera.lookAt(0, 0, 0) // Ensure it keeps looking at the origin
         controls?.update()
       }
-    }
-  )
-
-  watch(
-    () => widgetRef.value.options.frustumSize,
-    () => {
-      onWindowResize() // Recalculates camera projection
     }
   )
 
@@ -656,9 +819,6 @@ function setupWatchers(): void {
       }
     }
   )
-
-  watch(width, onWindowResize)
-  watch(height, onWindowResize)
 
   // Re-initialize if canvas becomes visible after being hidden
   watch(canvasVisibility, (isVisible) => {
@@ -679,36 +839,50 @@ function setupServoListeners(): void {
   // Clean up existing listeners first
   cleanupServoListeners()
 
+  console.log('Setting up servo listeners for motors:', motorMaterials.value.length)
+
   motorMaterials.value.forEach((motorInfo) => {
     if (motorInfo.motorNumber === null || motorInfo.motorNumber < 1 || motorInfo.motorNumber > 8) {
+      console.log('Skipping motor with invalid number:', motorInfo.motorNumber)
       return
     }
 
+    console.log(`Setting up listener for motor ${motorInfo.motorNumber}...`)
+
     const servoChannel = motorInfo.motorNumber
     const dataLakeVariableId = `SERVO_OUTPUT_RAW/servo${servoChannel}_raw`
+
+    console.log('Setting up listener for:', dataLakeVariableId)
 
     // Set up listener for this specific servo channel
     const listenerId = listenDataLakeVariable(dataLakeVariableId, (value) => {
       updateMotorColor(motorInfo, value as number)
     })
 
+    console.log('Listener ID for', dataLakeVariableId, ':', listenerId)
+
     // Track the listener for cleanup
     servoListeners.value[servoChannel] = listenerId
 
     // Get initial value
     const initialValue = getDataLakeVariableData(dataLakeVariableId)
+    console.log(`Initial value for ${dataLakeVariableId}:`, initialValue)
     if (typeof initialValue === 'number') {
       updateMotorColor(motorInfo, initialValue)
     }
   })
+
+  console.log('Current servo listeners:', servoListeners.value)
 }
 
 /**
  * Updates motor color based on servo value
+ * @param motorInfo
+ * @param servoRawValue
  */
 function updateMotorColor(motorInfo: any, servoRawValue: number): void {
   if (typeof servoRawValue !== 'number') {
-    motorInfo.material.color.copy(motorInfo.originalColor)
+    startColorTransition(motorInfo.material, motorInfo.originalColor)
     return
   }
 
@@ -716,20 +890,22 @@ function updateMotorColor(motorInfo: any, servoRawValue: number): void {
   let targetColor: THREE.Color | null = null
 
   if (servoRawValue === 1500) {
-    motorInfo.material.color.copy(motorInfo.originalColor)
+    startColorTransition(motorInfo.material, motorInfo.originalColor)
     return
   } else if (servoRawValue > 1500) {
     t = Math.min(1, (servoRawValue - 1500) / 500)
-    targetColor = colorGreen
+    targetColor = positiveColor.value
   } else {
     t = Math.min(1, (1500 - servoRawValue) / 500)
-    targetColor = colorRed
+    targetColor = negativeColor.value
   }
 
   if (targetColor) {
-    motorInfo.material.color.copy(motorInfo.originalColor).lerp(targetColor, t)
+    // Create the target color by blending original with red/green
+    const blendedColor = motorInfo.originalColor.clone().lerp(targetColor, t)
+    startColorTransition(motorInfo.material, blendedColor)
   } else {
-    motorInfo.material.color.copy(motorInfo.originalColor)
+    startColorTransition(motorInfo.material, motorInfo.originalColor)
   }
 }
 
@@ -737,8 +913,10 @@ function updateMotorColor(motorInfo: any, servoRawValue: number): void {
  * Cleans up servo listeners
  */
 function cleanupServoListeners(): void {
+  console.log('Cleaning up servo listeners:', servoListeners.value)
   Object.entries(servoListeners.value).forEach(([servoChannel, listenerId]) => {
     const dataLakeVariableId = `SERVO_OUTPUT_RAW/servo${servoChannel}_raw`
+    console.log('Unlisten from', dataLakeVariableId, 'with ID:', listenerId)
     unlistenDataLakeVariable(dataLakeVariableId, listenerId)
   })
   servoListeners.value = {}
@@ -751,7 +929,12 @@ function setupLightsListener(): void {
   // Clean up existing listener first
   cleanupLightsListener()
 
-  if (allLightMaterials.value.length === 0) return
+  if (allLightMaterials.value.length === 0) {
+    console.log('No light materials found, skipping lights listener setup')
+    return
+  }
+
+  console.log('Setting up lights listener for', allLightMaterials.value.length, 'light materials')
 
   const dataLakeVariableId = 'Lights1'
 
@@ -762,6 +945,7 @@ function setupLightsListener(): void {
 
   // Get initial value
   const initialValue = getDataLakeVariableData(dataLakeVariableId)
+  console.log(`Initial value for ${dataLakeVariableId}:`, initialValue)
   if (typeof initialValue === 'number') {
     updateAllLightsColor(initialValue)
   }
@@ -770,12 +954,13 @@ function setupLightsListener(): void {
 /**
  * Updates all light materials based on the Lights1 datalake value
  * Expected range: 0 to 1 (0 = original color, 1 = full green intensity)
+ * @param value
  */
 function updateAllLightsColor(value: number): void {
   if (typeof value !== 'number') {
     // Reset to original colors if value is invalid
     allLightMaterials.value.forEach((materialInfo) => {
-      materialInfo.material.color.copy(materialInfo.originalColor)
+      startColorTransition(materialInfo.material, materialInfo.originalColor)
     })
     return
   }
@@ -786,10 +971,11 @@ function updateAllLightsColor(value: number): void {
   allLightMaterials.value.forEach((materialInfo) => {
     if (clampedValue === 0) {
       // 0% - Original color
-      materialInfo.material.color.copy(materialInfo.originalColor)
+      startColorTransition(materialInfo.material, materialInfo.originalColor)
     } else {
       // 1% to 100% - Blend toward green based on intensity
-      materialInfo.material.color.copy(materialInfo.originalColor).lerp(colorGreen, clampedValue)
+      const blendedColor = materialInfo.originalColor.clone().lerp(userLightColor.value, clampedValue)
+      startColorTransition(materialInfo.material, blendedColor)
     }
   })
 }
@@ -798,6 +984,7 @@ function updateAllLightsColor(value: number): void {
  * Cleans up lights listener
  */
 function cleanupLightsListener(): void {
+  console.log('Cleaning up lights listener:', lightsListenerId)
   if (lightsListenerId) {
     unlistenDataLakeVariable('Lights1', lightsListenerId)
     lightsListenerId = undefined
@@ -824,15 +1011,8 @@ onUnmounted(() => {
 .main {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   position: relative;
-  min-width: 300px;
-  min-height: 200px;
-  background: #1a1a1a; /* Fallback, will be overridden by widget option */
-  border-radius: 8px;
+  background: transparent; /* Fully transparent background */
   overflow: hidden;
 }
 
@@ -840,6 +1020,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   position: relative;
+  background-color: transparent;
 }
 
 .loading-overlay,
@@ -870,33 +1051,15 @@ onUnmounted(() => {
   color: #ff8a80; /* Softer red for dark themes */
 }
 
-.controls-panel {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  max-height: calc(90vh - 20px); /* Adjust based on needs */
-  max-width: 250px;
-  overflow-y: auto;
-  z-index: 5; /* Ensure it's above the canvas but below modals */
+.color-controls {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.controls-panel .control-item {
-  margin-bottom: 10px;
-}
-
-.controls-panel .control-item label {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 0.9em;
-}
-
-.controls-panel .control-item input[type='range'] {
-  width: calc(100% - 10px); /* Adjust for padding or borders */
-  display: block;
+.color-controls h4 {
+  color: rgba(255, 255, 255, 0.87);
+  font-weight: 500;
 }
 
 /* Style for v-progress-circular and text inside overlays for better visibility */

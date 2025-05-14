@@ -26,7 +26,7 @@ import {
 import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
-import { degrees, round, sleep } from '@/libs/utils'
+import { degrees, frequencyHzToIntervalUs, round, sleep } from '@/libs/utils'
 import {
   type ArduPilotParameterSetData,
   alertLevelFromMavSeverity,
@@ -53,6 +53,8 @@ import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } fr
 import * as Vehicle from '../vehicle'
 import { flattenData } from './data-flattener'
 import { defaultMessageFrequency } from './defaults'
+
+export const MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY = 'cockpit-mavlink-message-intervals'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ArduPilot = ArduPilotVehicle<any>
@@ -814,20 +816,48 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
+   * Set the interval for a specific message type
+   * @param { MAVLinkType } messageType
+   * @param { number } frequencyHz
+   */
+  async setMessageInterval(messageType: MAVLinkType, frequencyHz: number): Promise<void> {
+    if (frequencyHz <= 0) {
+      throw new Error('Cannot set a non-positive frequency for a message interval.')
+    }
+    const intervalUs = round(frequencyHzToIntervalUs(frequencyHz), 0)
+    await this.sendCommandLong(MavCmd.MAV_CMD_SET_MESSAGE_INTERVAL, getMAVLinkMessageId(messageType), intervalUs)
+  }
+  /**
+   * Set the interval for a specific message type
+   * @param { MAVLinkType } messageType
+   * @param { number } frequencyHz
+   */
+  async setMessageInterval(messageType: MAVLinkType, frequencyHz: number): Promise<void> {
+    if (frequencyHz <= 0) {
+      throw new Error('Cannot set a non-positive frequency for a message interval.')
+    }
+    const intervalUs = round(frequencyHzToIntervalUs(frequencyHz), 0)
+    await this.sendCommandLong(MavCmd.MAV_CMD_SET_MESSAGE_INTERVAL, getMAVLinkMessageId(messageType), intervalUs)
+  }
+
+  /**
    * Request the vehicle to send a pre-defined list of messages, on it's data stream
    * Those are messages usually used by any Ardupilot vehicle
    */
   async requestDefaultMessages(): Promise<void> {
-    const frequencyHzToIntervalUs = (frequencyHz: number): number => {
-      return 1000000 / frequencyHz
+    // Get custom message intervals from BlueOS storage, fallback to defaults if not available
+    const customMessageIntervalsStoredString = window.localStorage.getItem(MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY)
+    let customMessageIntervals = defaultMessageFrequency
+    if (customMessageIntervalsStoredString !== null) {
+      customMessageIntervals = JSON.parse(customMessageIntervalsStoredString)
     }
 
-    const messagesWithIntervals = Object.entries(defaultMessageFrequency).map(([messageType, frequencyHz]) => {
-      return { id: getMAVLinkMessageId(messageType as MAVLinkType), intervalUs: frequencyHzToIntervalUs(frequencyHz) }
+    const messagesWithIntervals = Object.entries(customMessageIntervals).map(([messageType, frequencyHz]) => {
+      return { messageType: messageType as MAVLinkType, frequencyHz }
     })
 
     const commandPromises = messagesWithIntervals.map((message) => {
-      return this.sendCommandLong(MavCmd.MAV_CMD_SET_MESSAGE_INTERVAL, message.id, message.intervalUs)
+      return this.setMessageInterval(message.messageType, message.frequencyHz)
     })
 
     const results = await Promise.allSettled(commandPromises)

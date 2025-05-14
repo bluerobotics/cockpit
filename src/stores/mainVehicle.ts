@@ -27,8 +27,10 @@ import { availableCockpitActions, registerActionCallback } from '@/libs/joystick
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
+import { MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
-import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
+import { defaultMessageFrequency } from '@/libs/vehicle/ardupilot/defaults'
+import type { ArduPilotParameterSetData, MessageIntervalOptions } from '@/libs/vehicle/ardupilot/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
   Altitude,
@@ -134,6 +136,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const modes = ref<Map<string, any>>()
+
+  // Store custom message intervals in BlueOS storage
+  const customMessageIntervals = useBlueOsStorage(MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY, {
+    data: defaultMessageFrequency,
+    enabled: true,
+  })
 
   const MAVLink2RestWebsocketURI = computed(() => {
     const queryURI = new URLSearchParams(window.location.search).get('MAVLink2RestWebsocketURI')
@@ -521,6 +529,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       }
     })
 
+    setTimeout(async () => {
+      await (mainVehicle.value as ArduPilot).setMessageInterval(MAVLinkType.SERVO_OUTPUT_RAW, 3)
+      await (mainVehicle.value as ArduPilot).setMessageInterval(MAVLinkType.NAMED_VALUE_FLOAT, 3)
+    }, 3000)
+
     setInterval(async () => {
       try {
         const blueosStatus = await getStatus(globalAddress.value)
@@ -639,6 +652,39 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return currentVehicleName.value
   }
 
+  /**
+   * Updates the message interval for a specific message type
+   * @param {string} messageType - The type of message to update
+   * @param {MessageIntervalOptions} options - Options for the message interval
+   */
+  async function updateMessageInterval(messageType: string, options: MessageIntervalOptions): Promise<void> {
+    if (!isVehicleOnline.value) {
+      throw new Error('No vehicle available to update message interval.')
+    }
+
+    // TODO: We need to store the interval as well as the type in the storage
+
+    // Update the storage first
+    customMessageIntervals.value.data[messageType as keyof typeof defaultMessageFrequency] = interval
+
+    // Schedule the actual update to the vehicle
+    await (mainVehicle.value as ArduPilot).setMessageInterval(messageType as MAVLinkType, interval)
+  }
+
+  /**
+   * Resets all message intervals to their default values
+   */
+  async function resetMessageIntervals(): Promise<void> {
+    if (!isVehicleOnline.value) {
+      throw new Error('No vehicle available to reset message intervals.')
+    }
+
+    // Reset storage to defaults
+    customMessageIntervals.value.data = { ...defaultMessageFrequency }
+
+    await (mainVehicle.value as ArduPilot).requestDefaultMessages()
+  }
+
   return {
     arm,
     takeoff,
@@ -687,5 +733,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     customWebRTCConfiguration,
     listenToIncomingMessages,
     listenToOutgoingMessages,
+    customMessageIntervals,
+    updateMessageInterval,
+    resetMessageIntervals,
   }
 })
