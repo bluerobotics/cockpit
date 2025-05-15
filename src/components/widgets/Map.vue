@@ -127,7 +127,6 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -517,7 +516,7 @@ const onMapClick = (event: L.LeafletMouseEvent): void => {
   }
 }
 
-const onMenuOptionSelect = (option: string): void => {
+const onMenuOptionSelect = async (option: string): Promise<void> => {
   switch (option) {
     case 'goto':
       if (clickedLocation.value) {
@@ -531,22 +530,11 @@ const onMenuOptionSelect = (option: string): void => {
         const latitude = clickedLocation.value[0]
         const longitude = clickedLocation.value[1]
 
-        slideToConfirm(
-          async () => {
-            try {
-              await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
-            } catch (error) {
-              openSnackbar({
-                message: error as string,
-                variant: 'error',
-              })
-            }
-          },
-          {
-            command: 'GoTo',
-          },
-          canByPassCategory(EventCategory.GOTO)
-        )
+        try {
+          await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
+        } catch (error) {
+          openSnackbar({ message: `GoTo request failed: ${(error as Error).message}`, variant: 'error' })
+        }
       }
       break
 
