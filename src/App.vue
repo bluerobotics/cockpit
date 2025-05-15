@@ -151,7 +151,6 @@ import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import VideoLibraryModal from '@/components/VideoLibraryModal.vue'
-import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
   availableCockpitActions,
   registerActionCallback,
@@ -166,22 +165,19 @@ import MainMenu from './components/MainMenu.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
 import SplashScreen from './components/SplashScreen.vue'
+import { openMainMenuIfSafeOrDesired } from './composables/armSafetyDialog'
 import { useSnackbar } from './composables/snackbar'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
-import { useAlertStore } from './stores/alert'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useDevelopmentStore } from './stores/development'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
 import { SubMenuComponent } from './types/general'
-
-const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
-const alertStore = useAlertStore()
 const devStore = useDevelopmentStore()
 
 const showAboutDialog = ref(false)
@@ -192,13 +188,9 @@ const handleShowAboutDialog = (): void => {
 }
 
 // Main menu
-const isMenuOpen = ref(false)
 const isSlidingOut = ref(false)
 
 const { width: windowWidth } = useWindowSize()
-
-// User preference for armed menu warning session only
-const skipArmedMenuWarningThisSession = ref(false)
 
 const isConfigModalVisible = computed(() => interfaceStore.isConfigModalVisible)
 
@@ -240,84 +232,10 @@ const topBottomBarScale = computed(() => {
 })
 
 const toggleMainMenu = (): void => {
-  if (isMenuOpen.value === true) {
+  if (interfaceStore.isMainMenuVisible) {
     closeMainMenu()
   } else {
-    openMainMenu()
-  }
-}
-
-const openMainMenu = (): void => {
-  if (vehicleStore.isArmed) {
-    // Skip warning if user has chosen to never show it again or skip for this session
-    if (alertStore.neverShowArmedMenuWarning || skipArmedMenuWarningThisSession.value) {
-      // Show a snackbar warning instead
-      openSnackbar({ message: 'Take care, your vehicle is armed', variant: 'warning' })
-      interfaceStore.isMainMenuVisible = true
-      isMenuOpen.value = true
-      return
-    }
-
-    showDialog({
-      title: 'Be careful',
-      maxWidth: '920px',
-      message: 'The vehicle is currently armed and it is not recommended to open the main menu.',
-      actions: [
-        {
-          text: 'Continue anyway',
-          action: () => {
-            interfaceStore.isMainMenuVisible = true
-            isMenuOpen.value = true
-            closeDialog()
-          },
-        },
-        {
-          text: 'Do not ask again in this session',
-          action: () => {
-            skipArmedMenuWarningThisSession.value = true
-            interfaceStore.isMainMenuVisible = true
-            isMenuOpen.value = true
-            closeDialog()
-          },
-        },
-        {
-          text: 'Never ask again',
-          action: () => {
-            alertStore.neverShowArmedMenuWarning = true
-            interfaceStore.isMainMenuVisible = true
-            isMenuOpen.value = true
-            closeDialog()
-            // Show snackbar about re-enabling
-            openSnackbar({
-              message: 'Armed menu warning disabled. You can re-enable it in the Settings > Alerts menu.',
-              variant: 'info',
-              duration: 10000,
-              closeButton: true,
-            })
-          },
-        },
-        {
-          text: 'Disarm vehicle',
-          action: () => {
-            disarmVehicle()
-          },
-        },
-      ],
-      variant: 'warning',
-    }).then((result) => {
-      if (result.isConfirmed && vehicleStore.isArmed) {
-        vehicleStore.disarm().then(() => {
-          interfaceStore.isMainMenuVisible = true
-          isMenuOpen.value = true
-        })
-      } else {
-        interfaceStore.isMainMenuVisible = true
-        isMenuOpen.value = true
-      }
-    })
-  } else {
-    interfaceStore.isMainMenuVisible = true
-    isMenuOpen.value = true
+    openMainMenuIfSafeOrDesired()
   }
 }
 
@@ -327,17 +245,9 @@ const closeMainMenu = (): void => {
   setTimeout(() => {
     interfaceStore.isMainMenuVisible = false
     isSlidingOut.value = false
-    isMenuOpen.value = false
     interfaceStore.mainMenuCurrentStep = 1
     currentSubMenuComponent.value = null
   }, 20)
-}
-
-const disarmVehicle = (): void => {
-  vehicleStore.disarm().then(() => {
-    interfaceStore.isMainMenuVisible = true
-  })
-  closeDialog()
 }
 
 const handleEscKey = (event: KeyboardEvent): void => {
