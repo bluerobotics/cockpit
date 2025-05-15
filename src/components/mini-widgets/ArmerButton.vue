@@ -21,21 +21,30 @@
 </template>
 
 <script setup lang="ts">
+import { useSnackbar } from '@/composables/snackbar'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
-import { tryOrAlert } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 
 const vehicleStore = useMainVehicleStore()
 const widgetStore = useWidgetManagerStore()
+const { openSnackbar } = useSnackbar()
 
-const arm = (): void => {
-  const tryToArm = async (): Promise<void> => tryOrAlert(vehicleStore.arm)
-  slideToConfirm(tryToArm, { command: 'Arm' }, canByPassCategory(EventCategory.ARM))
+const arm = async (): Promise<void> => {
+  try {
+    await slideToConfirm({ command: 'Arm' }, canByPassCategory(EventCategory.ARM))
+    await vehicleStore.arm()
+  } catch (error) {
+    openSnackbar({ message: `Arm request failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+  }
 }
 
-const disarm = (): void => {
-  const tryToDisarm = async (): Promise<void> => tryOrAlert(vehicleStore.disarm)
-  slideToConfirm(tryToDisarm, { command: 'Disarm' }, canByPassCategory(EventCategory.DISARM))
+const disarm = async (): Promise<void> => {
+  try {
+    await slideToConfirm({ command: 'Disarm' }, canByPassCategory(EventCategory.DISARM))
+    await vehicleStore.disarm()
+  } catch (error) {
+    openSnackbar({ message: `Disarm request failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+  }
 }
 </script>
