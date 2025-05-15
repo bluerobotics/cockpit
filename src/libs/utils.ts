@@ -127,19 +127,6 @@ export const sleep = (delay: number): Promise<void> => {
 }
 
 /**
- * Try to run the given function and alert the user if an error occurs
- * @param {() => Promise<void>} tryFunction The time to sleep in milliseconds
- * @returns {Promise<void>} A promise that resolves after the specified delay
- */
-export const tryOrAlert = async (tryFunction: () => Promise<void>): Promise<void> => {
-  try {
-    await tryFunction()
-  } catch (error) {
-    showDialog({ message: error as string, variant: 'error' })
-  }
-}
-
-/**
  * Wait till the next tick to reload Cockpit
  * @param {number} timeout The time to wait before reloading, in milliseconds. Default value is 500 ms.
  */
