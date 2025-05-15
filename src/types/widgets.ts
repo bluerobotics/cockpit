@@ -88,6 +88,7 @@ export enum MiniWidgetType {
   EkfStateIndicator = 'EkfStateIndicator',
   SatelliteIndicator = 'SatelliteIndicator',
   ViewSelector = 'ViewSelector',
+  SnapshotTool = 'SnapshotTool',
 }
 
 /**
@@ -851,6 +852,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.ModeSelector]: false,
   [MiniWidgetType.SatelliteIndicator]: false,
   [MiniWidgetType.ViewSelector]: false,
+  [MiniWidgetType.SnapshotTool]: true,
 }
 
 export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
