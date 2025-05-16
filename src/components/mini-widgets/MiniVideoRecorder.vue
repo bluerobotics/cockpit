@@ -1,12 +1,12 @@
 <template>
   <div
     ref="recorderWidget"
-    class="flex justify-around px-2 py-1 text-center rounded-lg w-40 h-9 align-center bg-slate-800/60"
+    class="flex justify-around px-1 py-1 text-center rounded-lg w-40 h-9 align-center bg-slate-800/60"
   >
     <div
       v-if="!isProcessingVideo"
       :class="{
-        'blob red w-5 opacity-100 rounded-sm': isRecording,
+        'blob red w-5 opacity-100 rounded-sm mr-[6px]': isRecording || isPreparingToRecord,
         'opacity-30 bg-red-400': isOutside && !isRecording,
       }"
       class="w-6 transition-all duration-500 rounded-full aspect-square bg-red-lighten-1 hover:cursor-pointer opacity-70 hover:opacity-90"
@@ -21,12 +21,15 @@
         class="flex flex-col max-w-[50%] scroll-container transition-all border-blur cursor-pointer"
         @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = true"
       >
-        <div class="text-xs text-white select-none scroll-text">{{ nameSelectedStream }}</div>
+        <div class="text-xs text-white select-none scroll-text">
+          {{ nameSelectedStream }}
+        </div>
       </div>
       <FontAwesomeIcon v-else icon="fa-solid fa-video" class="h-6 text-slate-100" />
     </template>
-    <div v-if="isRecording && !isProcessingVideo" class="w-16 text-justify text-slate-100">
-      {{ timePassedString }}
+    <div v-if="isRecording && !isProcessingVideo" class="w-13 text-justify text-slate-100">
+      <p v-if="isPreparingToRecord" class="text-justify text-slate-100 text-xs -ml-2">Starting...</p>
+      <p v-else class="-ml-1">{{ timePassedString }}</p>
     </div>
     <div v-else-if="isProcessingVideo" class="w-16 text-justify text-slate-100">
       <div class="text-xs text-center text-white select-none flex-nowrap">Processing video...</div>
@@ -140,6 +143,10 @@ watch(
   () => (mediaStream.value = undefined),
   { deep: true }
 )
+
+const isPreparingToRecord = computed(() => {
+  return selectedExternalId.value ? videoStore.streamsPreparingToRecord.includes(selectedExternalId.value) : false
+})
 
 onMounted(async () => {
   await fetchNumberOfTempVideos()
