@@ -168,6 +168,14 @@
                   class="w-[95%] h-full flex-centered flex-column position-relative"
                 >
                   <p class="text-md font-semibold">{{ joystick.model }} controller</p>
+                  <div class="flex items-center gap-2 mb-2">
+                    <v-switch
+                      v-model="controllerStore.disabledJoysticks[joystick.model]"
+                      :label="controllerStore.disabledJoysticks[joystick.model] ? 'Disabled' : 'Enabled'"
+                      hide-details
+                      class="-mt-2"
+                    />
+                  </div>
                   <div
                     v-if="showJoystickLayout"
                     class="flex flex-col items-center justify-center"
@@ -393,6 +401,19 @@
               </div>
             </template>
           </ExpansiblePanel>
+          <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
+            <template #title>Calibration</template>
+            <template #info>
+              <div class="flex flex-col items-start px-5 font-medium">
+                <li>Calibrate your joystick to ensure accurate input.</li>
+              </div>
+            </template>
+            <template #content>
+              <div class="mb-6">
+                <JoystickCalibration />
+              </div>
+            </template>
+          </ExpansiblePanel>
         </div>
       </div>
     </template>
@@ -566,6 +587,7 @@ import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
+import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
