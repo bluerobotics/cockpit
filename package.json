@@ -134,7 +134,8 @@
     "artifactName": "${productName}-${os}-${arch}-${version}.${ext}",
     "mac": {
       "category": "public.app-category.utilities",
-      "icon": "public/pwa-512x512.png"
+      "icon": "public/pwa-512x512.png",
+      "hardenedRuntime": true
     },
     "win": {
       "target": "nsis",
