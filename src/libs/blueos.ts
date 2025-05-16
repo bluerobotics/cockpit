@@ -2,6 +2,7 @@ import ky, { HTTPError } from 'ky'
 
 import { type ActionConfig } from '@/libs/joystick/protocols/cockpit-actions'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 
 /**
@@ -283,6 +284,36 @@ export const getCpuTempCelsius = async (vehicleAddress: string): Promise<number>
   } catch (error) {
     throw new Error(`Could not get temperature of the BlueOS CPU. ${error}`)
   }
+}
+
+// Checks for similarity between all 'cockpit-*' keys stored in BlueOS and the data in localStorage
+export const checkBlueOsUserDataSimilarity = async (vehicleAddress: string): Promise<boolean> => {
+  const missionStore = useMissionStore()
+
+  const storedSettings: Record<string, any> = Object.keys(localStorage)
+    .filter((key) => key.startsWith('cockpit-'))
+    .reduce((acc: Record<string, any>, key: string) => {
+      const value = localStorage.getItem(key)
+      try {
+        acc[key] = value ? JSON.parse(value) : null
+      } catch {
+        acc[key] = value
+      }
+      return acc
+    }, {})
+
+  const blueOsData =
+    (await getKeyDataFromCockpitVehicleStorage(vehicleAddress, `settings/${missionStore.username}`)) ?? {}
+
+  const keysInCommon = Object.keys(storedSettings).filter((key) => key in blueOsData)
+
+  for (const key of keysInCommon) {
+    if (JSON.stringify(storedSettings[key]) !== JSON.stringify(blueOsData[key])) {
+      return false
+    }
+  }
+
+  return true
 }
 
 export const getVehicleAddress = async (): Promise<string> => {
