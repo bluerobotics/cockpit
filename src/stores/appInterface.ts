@@ -56,6 +56,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     isTutorialVisible: false,
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
     configPanelVisible: false,
+    showSplashScreen: true,
   }),
   actions: {
     updateWidth() {

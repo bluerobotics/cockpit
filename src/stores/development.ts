@@ -7,6 +7,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 export const systemLoggingEnablingKey = 'cockpit-enable-system-logging'
 export const blueOsSettingsSyncEnablingKey = 'cockpit-enable-blueos-settings-sync'
 export const enableUsageStatisticsTelemetryKey = 'cockpit-enable-usage-statistics-telemetry'
+export const showSplashScreenOnStartupKey = 'cockpit-show-splash-screen-on-startup'
 
 export const useDevelopmentStore = defineStore('development', () => {
   const developmentMode = ref(false)
@@ -14,6 +15,7 @@ export const useDevelopmentStore = defineStore('development', () => {
   const enableSystemLogging = useBlueOsStorage(systemLoggingEnablingKey, true)
   const enableBlueOsSettingsSync = useStorage(blueOsSettingsSyncEnablingKey, true)
   const enableUsageStatisticsTelemetry = useStorage(enableUsageStatisticsTelemetryKey, true)
+  const showSplashScreenOnStartup = useStorage(showSplashScreenOnStartupKey, true)
 
   return {
     developmentMode,
@@ -21,5 +23,6 @@ export const useDevelopmentStore = defineStore('development', () => {
     enableSystemLogging,
     enableBlueOsSettingsSync,
     enableUsageStatisticsTelemetry,
+    showSplashScreenOnStartup,
   }
 })

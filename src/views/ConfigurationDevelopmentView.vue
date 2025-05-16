@@ -43,6 +43,15 @@
               @update:model-value="reloadCockpit"
             />
           </div>
+          <div class="flex flex-row w-full justify-start gap-x-[40px]">
+            <v-switch
+              v-model="devStore.showSplashScreenOnStartup"
+              label="Show splashscreen on startup"
+              color="white"
+              hide-details
+              class="min-w-[155px]"
+            />
+          </div>
           <v-slider
             v-model="devStore.widgetDevInfoBlurLevel"
             label="Dev info blur level"
