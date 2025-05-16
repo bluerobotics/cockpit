@@ -25,6 +25,7 @@ import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-messag
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
+import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
 import type { ArduPilotParameterSetData } from '@/libs/vehicle/ardupilot/types'
@@ -299,10 +300,34 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('Go to command is not supported by this vehicle.')
     }
 
-    console.log(mainVehicle.value.type())
-    console.log(mainVehicle.value.mode())
+    const askArmConfirm = !mainVehicle.value.isArmed() && !canByPassCategory(EventCategory.ARM)
+    const askGoToConfirm = !canByPassCategory(EventCategory.GOTO)
+
+    if (askArmConfirm || askGoToConfirm) {
+      const command = askArmConfirm && askGoToConfirm ? 'Arm and GoTo' : askArmConfirm ? 'Arm' : 'GoTo'
+      try {
+        await slideToConfirm({ command })
+      } catch (error) {
+        throw new Error(`${command} command ignored or cancelled by the user.`)
+      }
+    }
+
+    if (!mainVehicle.value.isArmed()) {
+      try {
+        console.log('GoTo command requested while vehicle was not armed. Arming vehicle...')
+        await mainVehicle.value.arm()
+      } catch (error) {
+        throw new Error('Arm command ignored or cancelled by the user.')
+      }
+    }
+
     if (mainVehicle.value.type() === Vehicle.Type.Rover && mainVehicle.value.mode() !== CustomMode.GUIDED) {
-      throw new Error('Vehicle should be in GUIDED mode to execute "go to" commands.')
+      console.log('GoTo command requested while vehicle was not in GUIDED mode. Setting vehicle to GUIDED mode...')
+      try {
+        await mainVehicle.value.setMode(CustomMode.GUIDED)
+      } catch (error) {
+        throw new Error(`Could not set vehicle to GUIDED mode. Error: ${(error as Error).message}`)
+      }
     }
 
     const waypoint = new Coordinates()

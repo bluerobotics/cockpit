@@ -10,23 +10,28 @@
 </template>
 
 <script setup lang="ts">
-import { showAltitudeSlider } from '@/libs/altitude-slider'
+import { useSnackbar } from '@/composables/snackbar'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
-import { tryOrAlert } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const vehicleStore = useMainVehicleStore()
+const { openSnackbar } = useSnackbar()
 
 const takeoff = async (): Promise<void> => {
-  showAltitudeSlider.value = true
-  const tryToTakeOff = async (): Promise<void> => tryOrAlert(vehicleStore.takeoff)
-  await slideToConfirm(tryToTakeOff, { command: 'Takeoff' }, canByPassCategory(EventCategory.TAKEOFF))
-  showAltitudeSlider.value = false
+  try {
+    await slideToConfirm({ command: 'Takeoff' }, canByPassCategory(EventCategory.TAKEOFF))
+    await vehicleStore.takeoff()
+  } catch (error) {
+    openSnackbar({ message: `Takeoff request failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+  }
 }
 
-const land = (): void => {
-  const tryToLand = async (): Promise<void> => tryOrAlert(vehicleStore.land)
-  slideToConfirm(tryToLand, { command: 'Land' }, canByPassCategory(EventCategory.LAND))
-  showAltitudeSlider.value = false
+const land = async (): Promise<void> => {
+  try {
+    await slideToConfirm({ command: 'Land' }, canByPassCategory(EventCategory.LAND))
+    await vehicleStore.land()
+  } catch (error) {
+    openSnackbar({ message: `Land request failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+  }
 }
 </script>

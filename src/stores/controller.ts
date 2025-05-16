@@ -16,7 +16,6 @@ import { joystickManager, JoystickModel, JoysticksMap, JoystickStateEvent } from
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
-import { slideToConfirm } from '@/libs/slide-to-confirm'
 import { Alert, AlertLevel } from '@/types/alert'
 import {
   type JoystickProtocolActionsMapping,
@@ -388,7 +387,7 @@ export const useControllerStore = defineStore('controller', () => {
   // Format: Map<actionId, wasActive>
   const previousActionStates = ref<Map<string, boolean>>(new Map())
 
-  registerControllerUpdateCallback((joystickState, actionsMapping, activeActions, actionsConfirmRequired) => {
+  registerControllerUpdateCallback(async (joystickState, actionsMapping, activeActions, actionsConfirmRequired) => {
     if (!joystickState || !actionsMapping || !activeActions || !actionsConfirmRequired) {
       return
     }
@@ -411,8 +410,11 @@ export const useControllerStore = defineStore('controller', () => {
 
       // Only trigger action on rising edge (button was just pressed)
       if (!wasActive) {
-        const callback = (): void => addActionToCallFromJoystick(action.id as CockpitActionsFunction)
-        slideToConfirm(callback, { command: action.name }, !actionsConfirmRequired[action.id])
+        try {
+          addActionToCallFromJoystick(action.id as CockpitActionsFunction)
+        } catch (error) {
+          console.error(error)
+        }
       }
     })
 

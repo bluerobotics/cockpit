@@ -12,24 +12,23 @@
 </template>
 
 <script setup lang="ts">
+import { useSnackbar } from '@/composables/snackbar'
 import { showAltitudeSlider } from '@/libs/altitude-slider'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const vehicleStore = useMainVehicleStore()
+const { openSnackbar } = useSnackbar()
 
-const changeAlt = (): void => {
+const changeAlt = async (): Promise<void> => {
   showAltitudeSlider.value = true
 
-  slideToConfirm(
-    () => {
-      showAltitudeSlider.value = false
-      vehicleStore.changeAlt()
-    },
-    {
-      command: 'Altitude Change',
-    },
-    canByPassCategory(EventCategory.ALT_CHANGE)
-  )
+  try {
+    await slideToConfirm({ command: 'Altitude Change' }, canByPassCategory(EventCategory.ALT_CHANGE))
+    showAltitudeSlider.value = false
+    vehicleStore.changeAlt()
+  } catch (error) {
+    openSnackbar({ message: (error as Error).message, variant: 'error', duration: 3000 })
+  }
 }
 </script>

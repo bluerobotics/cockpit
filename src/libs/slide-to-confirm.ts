@@ -146,42 +146,42 @@ const registerHoldToConfirm = (): string => {
 
 /**
  * Wraps a callback and wait for the user confirmation by a popup to call it
- * @param {ConfirmCallback} callback The callback to call after the user confirms the action
  * @param {ConfirmContent} content The content of the confirmation slider
  * @param {boolean} byPass If true, the action is confirmed without waiting for the user to slide
  * @returns {void | Promise<void>}
  */
-export function slideToConfirm(
-  callback: ConfirmCallback,
-  content: ConfirmContent,
-  byPass = false
-): void | Promise<void> {
+export function slideToConfirm(content: ConfirmContent, byPass = false): Promise<void> {
   // Early return if the action is already confirmed or doesn't require confirmation
   if (byPass) {
-    return callback()
+    return Promise.resolve()
   }
 
   /** If there is already some confirmation step, deny the action */
   if (showSlideToConfirm.value) {
-    return
+    return Promise.reject(new Error(`Cannot confirm ${content.command}. Another confirmation is already in progress.`))
   }
 
   // Register the hold to confirm action for joystick listening
   const holdToConfirmCallbackId = registerHoldToConfirm()
 
-  // Register the callback to call the action
-  onAction.value = (confirmed: boolean) => {
-    // Call the callback
-    confirmed && callback()
-    // Unregister the hold to confirm action callback
-    unregisterActionCallback(holdToConfirmCallbackId)
-  }
-
+  // Setup and show the slide to confirm component
   sliderText.value = content.text ?? `Confirm ${content.command}`
   confirmationSliderText.value = content.confirmedText ?? `${content.command} confirmed`
   deniedText.value = content.deniedText ?? `${content.command} denied`
   expiredText.value = content.expiredText ?? `${content.command} expired`
-
-  // Show the slide to confirm
   showSlideToConfirm.value = true
+
+  // Register the callback to call the action
+  return new Promise((resolve, reject) => {
+    onAction.value = (confirmed: boolean) => {
+      // Unregister the hold to confirm action callback
+      unregisterActionCallback(holdToConfirmCallbackId)
+
+      if (confirmed) {
+        return resolve()
+      }
+
+      return reject(new Error(`Confirmation of '${content.command}' command ignored or denied by the user.`))
+    }
+  })
 }

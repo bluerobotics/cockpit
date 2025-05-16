@@ -180,7 +180,7 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       return
     }
 
-    throw new Error(`Command failed with result: ${commandAck.result.type}`)
+    throw new Error(`Command '${commandAck.command.type}' failed with result '${commandAck.result.type}'.`)
   }
 
   /**
