@@ -48,7 +48,7 @@ export const useControllerStore = defineStore('controller', () => {
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
   const protocolMappingIndex = useBlueOsStorage(protocolMappingIndexKey, 0)
-  const cockpitStdMappings = useBlueOsStorage(cockpitStdMappingsKey, availableGamepadToCockpitMaps)
+  const userCustomCockpitStdMappings = useBlueOsStorage(cockpitStdMappingsKey, {})
   const availableAxesActions = ref(allAvailableAxes())
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
@@ -57,6 +57,19 @@ export const useControllerStore = defineStore('controller', () => {
     'cockpit-default-vehicle-type-protocol-mappings',
     defaultProtocolMappingVehicleCorrespondency
   )
+
+  const cockpitStdMappings = computed<typeof availableGamepadToCockpitMaps>(() => {
+    const mappings = {} as typeof availableGamepadToCockpitMaps
+    Object.entries(userCustomCockpitStdMappings.value).forEach(([key, value]) => {
+      mappings[key as JoystickModel] = value
+    })
+    // Always use (and override with) mappings from our database if available
+    Object.entries(availableGamepadToCockpitMaps).forEach(([key, value]) => {
+      mappings[key as JoystickModel] = value
+    })
+    return mappings
+  })
+
   // Confirmation per joystick action required currently is only available for cockpit actions
   const actionsJoystickConfirmRequired = useBlueOsStorage(
     'cockpit-actions-joystick-confirm-required',
@@ -290,13 +303,6 @@ export const useControllerStore = defineStore('controller', () => {
       protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action = otherAvailableActions.no_function
     })
   }, 500)
-
-  // If there's a mapping in our database that is not on the user storage, add it to the user
-  // This will happen whenever a new joystick profile is added to Cockpit's database
-  Object.entries(availableGamepadToCockpitMaps).forEach(([k, v]) => {
-    if (Object.keys(cockpitStdMappings.value).includes(k)) return
-    cockpitStdMappings.value[k as JoystickModel] = v
-  })
 
   const exportJoystickMapping = (joystick: Joystick): void => {
     const blob = new Blob([JSON.stringify(joystick.gamepadToCockpitMap)], { type: 'text/plain;charset=utf-8' })
