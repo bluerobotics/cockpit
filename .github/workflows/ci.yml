@@ -22,16 +22,17 @@ jobs:
         run: |
           sudo apt install -y xvfb
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
 
-      - name: Run bun
+      - name: Run yarn
         run: |
-          bun install --frozen-lockfile
-          bun run lint
-          bun run typecheck
-          bun run build
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn lint
+          yarn typecheck
+          yarn build
 
   deploy-page:
     needs: test
@@ -42,14 +43,15 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
 
-      - name: Run bun
+      - name: Run yarn
         run: |
-          bun install --frozen-lockfile
-          bun run build
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.5
@@ -103,9 +105,10 @@ jobs:
           sudo apt install -y --fix-missing snapd
           sudo snap install snapcraft --classic
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
 
       - name: Set version as environment variable (Windows)
         if: matrix.os == 'windows-latest'
@@ -115,20 +118,25 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $GITHUB_ENV
 
-      - name: Bun build
+      - name: Yarn build
         run: |
-          bun install --frozen-lockfile
-          bun run build
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
 
-      - name: Bun deploy (arm)
+      - name: Yarn deploy (arm)
         if: matrix.os == 'ubuntu-24-arm'
         run: |
-          SNAPCRAFT_BUILD_ENVIRONMENT="host" bun run deploy:electron
+          SNAPCRAFT_BUILD_ENVIRONMENT="host" yarn deploy:electron
 
-      - name: Bun deploy (others)
-        if: matrix.os != 'ubuntu-24-arm'
+      - name: Yarn deploy (windows)
+        if: matrix.os == 'windows-latest'
         run: |
-          bun run deploy:electron
+          yarn deploy:electron:windows
+
+      - name: Yarn deploy (others)
+        if: matrix.os != 'windows-latest' && matrix.os != 'ubuntu-24-arm'
+        run: |
+          yarn deploy:electron
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -209,9 +217,10 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
 
       - name: Install flatpak
         run: |
@@ -226,16 +235,16 @@ jobs:
       - name: Build electron (arm)
         if: matrix.os == 'ubuntu-24-arm'
         run: |
-          bun install --frozen-lockfile
-          bun run build
-          env DEBUG="@malept/flatpak-bundler" bun run deploy:flatpak --arm64
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
+          env DEBUG="@malept/flatpak-bundler" yarn deploy:flatpak --arm64
 
       - name: Build electron (x86_64)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          bun install --frozen-lockfile
-          bun run build
-          env DEBUG="@malept/flatpak-bundler" bun run deploy:flatpak --x64
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
+          env DEBUG="@malept/flatpak-bundler" yarn deploy:flatpak --x64
 
       - name: Rename 'aarch64' to 'arm64'
         if: matrix.os == 'ubuntu-24-arm'
@@ -280,14 +289,15 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
 
       - name: Build cockpit
         run: |
-          bun install --frozen-lockfile
-          bun run build
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
 
       - name: Prepare
         id: prepare
