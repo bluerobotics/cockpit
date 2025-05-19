@@ -35,18 +35,18 @@ To start, clone the repository and its submodules. The submodules are required c
 git clone --recurse-submodules git@github.com:bluerobotics/cockpit.git
 ```
 
-Next, [install bun](https://bun.sh/docs/installation). Following their documented instructions is strongly recommended - we have received reports that installing `bun` from alternatives like Snap did not work properly.
+Next, [install yarn classic](https://classic.yarnpkg.com/en/docs/install).
 
-With `bun` installed, you can enter the repository folder and follow the steps below:
+With `yarn` installed, you can enter the repository folder and follow the steps below:
 
 ```
-bun install
+yarn install
 ```
 
 and then run the server locally with:
 
 ```
-bun run dev --host
+yarn run dev --host
 ```
 
 Then you should see a prompt with the local IP and port that can be accessed through a browser, such as `localhost:5173`.
@@ -83,4 +83,4 @@ Cockpit provides a simulation environments in a docker compose file. There is an
 docker-compose -f sim.yml --profile ardusub up
 ```
 
-Assuming you have run the `bun run dev --host` command, you can access the simulation environment by opening the browser and accessing `localhost:5173`.
+Assuming you have run the `yarn run dev --host` command, you can access the simulation environment by opening the browser and accessing `localhost:5173`.

@@ -10,7 +10,7 @@
           class="flex flex-col justify-between items-center w-full"
           :class="interfaceStore.isOnSmallScreen ? 'scale-[80%] mt-0 -mb-3' : 'scale-95 mt-4'"
         >
-          <div class="flex flex-row gap-x-[40px]">
+          <div class="flex flex-row gap-x-[40px] flex-wrap">
             <v-switch
               v-model="devStore.developmentMode"
               label="Development mode"
@@ -41,6 +41,13 @@
               hide-details
               class="min-w-[155px]"
               @update:model-value="reloadCockpit"
+            />
+            <v-switch
+              v-model="showJoystickTest"
+              label="Show Joystick Test"
+              color="white"
+              hide-details
+              class="min-w-[155px]"
             />
           </div>
           <div class="flex flex-row w-full justify-start gap-x-[40px]">
@@ -96,6 +103,7 @@
       </div>
     </template>
   </BaseConfigurationView>
+  <JoystickTest v-if="showJoystickTest" @close="showJoystickTest = false" />
 </template>
 
 <script setup lang="ts">
@@ -108,6 +116,7 @@ import { onBeforeMount } from 'vue'
 import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import JoystickTest from '@/components/JoystickTest.vue'
 import { type SystemLog, cockpitSytemLogsDB, systemLogDateTimeFormat } from '@/libs/system-logging'
 import { reloadCockpit } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -116,6 +125,7 @@ import { useDevelopmentStore } from '@/stores/development'
 import BaseConfigurationView from './BaseConfigurationView.vue'
 const devStore = useDevelopmentStore()
 const interfaceStore = useAppInterfaceStore()
+const showJoystickTest = ref(false)
 
 /* eslint-disable jsdoc/require-jsdoc */
 interface SystemLogsData {

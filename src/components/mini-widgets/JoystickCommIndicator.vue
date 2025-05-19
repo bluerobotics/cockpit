@@ -48,7 +48,7 @@
 import { computed, onMounted, ref, toRefs } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
-import { joystickManager, JoysticksMap } from '@/libs/joystick/manager'
+import { GamepadsMap, joystickManager } from '@/libs/joystick/manager'
 import { useControllerStore } from '@/stores/controller'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
@@ -74,7 +74,7 @@ onMounted(() => {
   })
 })
 
-const processJoystickConnectionEvent = (event: JoysticksMap): void => {
+const processJoystickConnectionEvent = (event: GamepadsMap): void => {
   joystickConnected.value = event.size !== 0
 }
 
