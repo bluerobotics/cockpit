@@ -16,7 +16,7 @@
         <slot name="title"></slot>
       </v-card-title>
       <v-card-text class="pb-2">
-        <div class="flex justify-center align-center w-full mb-3">
+        <div class="flex justify-center align-center w-full mb-6">
           <v-icon v-if="variant !== 'text-only'" size="46" :color="iconColor" class="mr-8 ml-2">{{ iconType }}</v-icon>
           <div
             v-if="isArrayMessage"

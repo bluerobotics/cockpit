@@ -87,6 +87,68 @@
         >
           {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
         </button>
+        <div
+          v-if="showMissionCreationTips && !isCreatingSurvey && !isCreatingSimplePath"
+          class="flex flex-col px-4 py-3 gap-y-2 ma-2 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#00000022]"
+        >
+          <div class="flex justify-between my-[1px]">
+            <p class="self-center text-sm font-bold -mt-1 text-start">New mission checklist</p>
+            <v-icon class="text-sm -mr-[5px] cursor-pointer -mt-[1px]" @click="showMissionCreationTips = false"
+              >mdi-close</v-icon
+            >
+          </div>
+          <v-divider />
+          <div class="text-sm flex justify-start items-center mt-1">
+            <v-icon v-if="home === undefined" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
+            <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
+            <p :class="{ 'cursor-pointer hover:underline': home === undefined }" @click="handleAddHomeWaypointByClick">
+              Set home waypoint
+            </p>
+          </div>
+          <div class="text-sm flex justify-start items-center">
+            <v-icon v-if="missionStore.currentPlanningWaypoints.length === 0" class="text-sm mr-4 text-red-500"
+              >mdi-close-circle</v-icon
+            >
+            <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
+            <p
+              :class="{ 'cursor-pointer hover:underline': missionStore.currentPlanningWaypoints.length === 0 }"
+              @click="missionStore.currentPlanningWaypoints.length === 0 ? toggleSimplePath() : undefined"
+            >
+              Create mission path
+            </p>
+          </div>
+          <div class="text-sm flex justify-start items-center">
+            <v-icon v-if="!hasUploadedMission" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
+            <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
+            <p
+              :class="{ 'cursor-pointer hover:underline': !hasUploadedMission }"
+              @click="!hasUploadedMission ? uploadMissionToVehicle() : undefined"
+            >
+              Upload to the vehicle
+            </p>
+          </div>
+        </div>
+        <div
+          v-if="countdownToHideTips !== undefined"
+          class="flex flex-row justify-between px-3 py-1 my-2 mx-6 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#ffad4322] cursor-pointer opacity-60 elevation-4"
+          @click="handleDoNotShowTipsAgain"
+        >
+          <p class="text-sm">Don't show again</p>
+          <p class="text-sm">{{ countdownToHideTips }}</p>
+        </div>
+        <div
+          v-if="home === undefined && !isSettingHomeWaypoint"
+          class="flex justify-end ma-2"
+          @click="handleAddHomeWaypointByClick"
+          @dragstart="handleAddHomeWaypointByClick"
+        >
+          <p
+            class="text-sm flex justify-start items-center bg-[#1e498f] rounded-full pl-3 pr-1 py-1 border-[1px] border-[#FFFFFF44] elevation-2 cursor-pointer"
+          >
+            <span>Set home waypoint</span>
+            <v-icon class="text-md ml-2">mdi-home-circle</v-icon>
+          </p>
+        </div>
         <v-divider v-if="!isCreatingSimplePath" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
           <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
@@ -158,11 +220,11 @@
           <v-divider class="my-2" />
           <button
             :disabled="missionStore.currentPlanningWaypoints.length < 2"
-            class="bg-[#FFFFFF33] hover:bg-[#FFFFFF44] text-[12px] mx-8 py-2 rounded-sm my-2"
+            class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
             :class="{ 'bg-[#FFFFFF11] text-[#FFFFFF22]': missionStore.currentPlanningWaypoints.length < 2 }"
             @click="toggleSimplePath"
           >
-            Close
+            END SIMPLE PATH
           </button>
         </div>
 
@@ -202,6 +264,19 @@
                 />
               </template>
             </v-tooltip>
+            <v-divider vertical />
+            <v-tooltip location="top" text="Mission Settings">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon="mdi-cog"
+                  variant="text"
+                  size="24"
+                  class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                  @click="handleOpenMissionSettings"
+                />
+              </template>
+            </v-tooltip>
           </div>
         </div>
         <v-divider v-if="isCreatingSimplePath || isCreatingSurvey" class="my-2" />
@@ -225,6 +300,14 @@
         >
           <v-progress-circular v-if="loading" size="20" class="py-4" />
           <p v-else>CLEAR CURRENT MISSION</p>
+        </button>
+        <button
+          :disabled="loading"
+          class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+          @click="downloadMissionFromVehicle"
+        >
+          <v-progress-circular v-if="loading" size="20" class="py-4" />
+          <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
         </button>
       </div>
     </div>
@@ -323,10 +406,12 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
-import { useAppInterfaceStore } from '@/stores/appInterface'
+import router from '@/router'
+import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import { DialogActions } from '@/types/general'
 import {
   type CockpitMission,
   type Waypoint,
@@ -359,6 +444,7 @@ const calculatedHeight = computed(() => {
 
 const uploadingMission = ref(false)
 const missionUploadProgress = ref(0)
+const hasUploadedMission = ref(false)
 
 const uploadMissionToVehicle = async (): Promise<void> => {
   if (!home.value) {
@@ -388,12 +474,64 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
-    const message = `Mission upload succeed! Open the Map widget in Flight Mode and click the "play" button to start the mission.`
-    showDialog({ variant: 'success', title: 'Success', message, timer: 3000 })
+    const message = 'Go to Flight Mode and click the “play” button to start the mission.'
+
+    if (missionStore.alwaysSwitchToFlightMode) {
+      router.push('/')
+      missionStore.bumpVehicleMissionRevision(missionItemsToUpload)
+      missionStore.clearDraft()
+      return
+    }
+    showDialog({
+      variant: 'success',
+      title: 'Mission upload succeeded',
+      message,
+      persistent: false,
+      timer: undefined,
+      maxWidth: '750px',
+      actions: [
+        {
+          text: 'Close',
+          color: 'white',
+          action: closeDialog,
+        },
+
+        {
+          text: 'Always switch to Flight Mode',
+          color: 'white',
+          action: () => {
+            missionStore.alwaysSwitchToFlightMode = true
+            openSnackbar({
+              variant: 'info',
+              message:
+                'You will be switched to Flight Mode automatically in the future. To change this, go to Mission Planning settings.',
+              duration: 5000,
+            })
+            router.push('/')
+          },
+        },
+
+        {
+          text: 'Switch to Flight Mode',
+          color: 'white',
+          action: () => {
+            router.push('/')
+          },
+        },
+      ] as DialogActions[],
+    })
+    hasUploadedMission.value = true
     missionStore.bumpVehicleMissionRevision(missionItemsToUpload)
     missionStore.clearDraft()
   } catch (error) {
-    showDialog({ variant: 'error', title: 'Mission upload failed', message: error as string, timer: 3000 })
+    showDialog({
+      variant: 'error',
+      title: 'Mission upload failed',
+      message: error as string,
+      timer: 3000,
+      persistent: false,
+    })
+    hasUploadedMission.value = false
   } finally {
     uploadingMission.value = false
   }
@@ -433,6 +571,56 @@ const accessingSurveyContextMenu = ref(false)
 const isDraggingPolygon = ref(false)
 const isDraggingMarker = ref(false)
 const showHomePositionNotSetDialog = ref(false)
+const fetchingMission = ref(false)
+const missionFetchProgress = ref(0)
+const loading = ref(false)
+const showMissionCreationTips = ref(missionStore.showMissionCreationTips)
+const countdownToHideTips = ref<number | undefined>(undefined)
+const isSettingHomeWaypoint = ref(false)
+
+let setHomeOnFirstClick: ((e: L.LeafletMouseEvent) => void) | null = null
+
+watch(showMissionCreationTips, (newVal) => {
+  if (!newVal) {
+    countdownToHideTips.value = 10
+    const interval = setInterval(() => {
+      if (countdownToHideTips.value && countdownToHideTips.value > 0) {
+        countdownToHideTips.value--
+      }
+      if (countdownToHideTips.value === 0) {
+        clearInterval(interval)
+        countdownToHideTips.value = undefined
+      }
+    }, 1000)
+  }
+})
+
+const handleDoNotShowTipsAgain = (): void => {
+  countdownToHideTips.value = undefined
+  missionStore.showMissionCreationTips = false
+  openSnackbar({
+    variant: 'info',
+    message: 'Mission checklist will not be shown again. You can enable them back in the settings.',
+    duration: 5000,
+  })
+}
+
+const handleAddHomeWaypointByClick = (): void => {
+  if (home.value !== undefined) return
+  isSettingHomeWaypoint.value = true
+  openSnackbar({
+    variant: 'info',
+    message: 'Click anywhere on the map to set the home position',
+    duration: 5000,
+  })
+}
+
+const handleOpenMissionSettings = (): void => {
+  interfaceStore.isMainMenuVisible = true
+  interfaceStore.mainMenuCurrentStep = 2
+  interfaceStore.currentSubMenuName = SubMenuName.settings
+  interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsMission
+}
 
 const poiManagerRef = ref<InstanceType<typeof PoiManager> | null>(null)
 const planningPoiMarkers = ref<{ [id: string]: L.Marker }>({})
@@ -840,6 +1028,42 @@ const deleteSelectedSurvey = (): void => {
   hideContextMenu()
   reNumberWaypoints()
 }
+
+const homeWaypointCursor =
+  'url("data:image/svg+xml;utf8,' +
+  "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>" +
+  "<circle cx='12' cy='12' r='11' fill='%231e498f' stroke='%23ffffff55' stroke-width='1'/>" +
+  // scale path to 90 % and re-center ( (24 − 24×0.9) / 2 = 1.2 )
+  "<g transform='translate(4 3) scale(0.7)'>" +
+  "<path fill='%23ffffff' d='M12,3L2,12H5V20H19V12H22L12,3M12,7.7C14.1,7.7 15.8,9.4 15.8,11.5C15.8,14.5 " +
+  '12,18 12,18C12,18 8.2,14.5 8.2,11.5C8.2,9.4 9.9,7.7 12,7.7M12,10A1.5,1.5 0 0,0 10.5,11.5A1.5,1.5 ' +
+  "0 0,0 12,13A1.5,1.5 0 0,0 13.5,11.5A1.5,1.5 0 0,0 12,10Z'/>" +
+  '</g>' +
+  '</svg>") 12 12, crosshair'
+
+// Set home WP with a click
+watch(isSettingHomeWaypoint, (active) => {
+  if (!planningMap.value) return
+  const mapContainer = planningMap.value.getContainer()
+
+  if (active) {
+    mapContainer.style.cursor = homeWaypointCursor
+    setHomeOnFirstClick = (evt: L.LeafletMouseEvent): void => {
+      currentCursorGeoCoordinates.value = [evt.latlng.lat, evt.latlng.lng]
+      setHomePosition()
+      planningMap.value?.off('click', setHomeOnFirstClick!)
+      setHomeOnFirstClick = null
+      isSettingHomeWaypoint.value = false
+    }
+    planningMap.value.on('click', setHomeOnFirstClick)
+  } else {
+    mapContainer.style.cursor = ''
+    if (setHomeOnFirstClick) {
+      planningMap.value?.off('click', setHomeOnFirstClick)
+      setHomeOnFirstClick = null
+    }
+  }
+})
 
 // Keep an eye on the existent surveys and highlight the selected one
 watch(selectedSurveyId, (newId, oldId) => {
@@ -2233,6 +2457,11 @@ watch(
   border: 0;
   box-shadow: none;
   color: white;
+}
+.set-home-cursor {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%231e498f' stroke='%23ffffff55' stroke-width='2'/%3E%3Cpath d='M12 2c5 0 9 4 9 9 0 3.73-2.63 7.43-8.03 13.2a1 1 0 0 1-1.42 0C5.63 18.43 3 14.73 3 11a9 9 0 0 1 9-9z' fill='white'/%3E%3Cpath d='M8.5 10L12 6.5 15.5 10h-2.5v3h-2v-3H8.5z' fill='%231e498f'/%3E%3C/svg%3E")
+      12 12,
+    crosshair;
 }
 .leaflet-top {
   margin-top: 50px;
