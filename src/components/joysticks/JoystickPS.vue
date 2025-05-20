@@ -1,5 +1,5 @@
 <template>
-  <object :class="component_name" type="image/svg+xml" :data="joystick_svg_path" />
+  <object :class="[component_name, { 'opacity-50': disabled }]" type="image/svg+xml" :data="joystick_svg_path" />
 </template>
 
 <script setup lang="ts">
@@ -82,6 +82,7 @@ const axisPath = computed((): { [key in JoystickAxis]: string } => {
 /* eslint-disable  */
 const props = defineProps<{
   model: string // Joystick model
+  disabled?: boolean // Whether the joystick is disabled
   b0?: number // State of the B0 button as a floating point number, between 0 and 1
   b1?: number // State of the B1 button as a floating point number, between 0 and 1
   b2?: number // State of the B2 button as a floating point number, between 0 and 1
