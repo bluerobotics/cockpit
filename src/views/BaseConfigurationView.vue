@@ -45,7 +45,9 @@ const props = defineProps<{
 const hasNoCloseIcon = ref(props.noCloseIcon || false)
 
 const closeModal = (): void => {
+  interfaceStore.currentSubMenuComponentName = null
   interfaceStore.configModalVisibility = false
-  interfaceStore.configComponent = -1
+  interfaceStore.mainMenuCurrentStep = 0
+  interfaceStore.isMainMenuVisible = false
 }
 </script>
