@@ -120,13 +120,64 @@ jobs:
           bun install --frozen-lockfile
           bun run build
 
+      - name: Import Apple Certificate and Setup Keychain
+        if: matrix.os == 'macos-13' && github.event_name != 'pull_request'
+        env:
+          MAC_CERTIFICATE_BASE64: ${{ secrets.MAC_CERTIFICATE_BASE64 }}
+          MAC_CERTIFICATE_PWD: ${{ secrets.MAC_CERTIFICATE_PWD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+          CERT_PATH="certificate.p12"
+
+          echo "Decoding certificate..."
+          echo "${MAC_CERTIFICATE_BASE64}" | base64 --decode > "${CERT_PATH}"
+
+          echo "Creating keychain ${KEYCHAIN_NAME}..."
+          security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_NAME}"
+          # Make the new keychain the default
+          security default-keychain -s "${KEYCHAIN_NAME}"
+          # Unlock the keychain
+          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_NAME}"
+
+          echo "Importing certificate into ${KEYCHAIN_NAME}..."
+          # Import the certificate and allow codesign and productbuild to use it
+          security import "${CERT_PATH}" -k "${KEYCHAIN_NAME}" -P "${MAC_CERTIFICATE_PWD}" -T /usr/bin/codesign -T /usr/bin/productbuild
+
+          echo "Setting key partition list for the imported key to allow access in CI..."
+          security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_NAME}"
+
+          rm "${CERT_PATH}"
+
+          # Make keychain name available to electron-builder
+          echo "CSC_KEYCHAIN_NAME=${KEYCHAIN_NAME}" >> $GITHUB_ENV
+
       - name: Bun deploy (arm)
         if: matrix.os == 'ubuntu-24-arm'
         run: |
           SNAPCRAFT_BUILD_ENVIRONMENT="host" bun run deploy:electron
 
-      - name: Bun deploy (others)
-        if: matrix.os != 'ubuntu-24-arm'
+      - name: Bun deploy (macOS - Release Build)
+        if: matrix.os == 'macos-13' && github.event_name != 'pull_request'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # CSC_KEYCHAIN_NAME is set by the 'Import Apple Certificate...' step
+        run: |
+          echo "INFO: Building macOS for Release (non-PR). Signing and notarization will be attempted."
+          bun run deploy:electron
+
+      - name: Bun deploy (macOS - PR Build)
+        if: matrix.os == 'macos-13' && github.event_name == 'pull_request'
+        # No Apple ID env vars here, and 'Import Apple Certificate...' step was skipped, so no CSC_KEYCHAIN_NAME
+        run: |
+          echo "INFO: Building macOS for Pull Request. Signing and notarization will be skipped."
+          bun run deploy:electron
+
+      - name: Bun deploy (Windows / Linux non-arm)
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
+        # No Apple specific env vars needed here as electron-builder ignores them on these platforms
         run: |
           bun run deploy:electron
 
