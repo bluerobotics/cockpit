@@ -168,6 +168,15 @@
                   class="w-[95%] h-full flex-centered flex-column position-relative"
                 >
                   <p class="text-md font-semibold">{{ joystick.model }} controller</p>
+                  <div class="flex items-center gap-2 -mb-4">
+                    <v-switch
+                      :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
+                      :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
+                      hide-details
+                      class="-mt-2"
+                      @update:model-value="toggleJoystickEnabling(joystick.model)"
+                    />
+                  </div>
                   <div
                     v-if="showJoystickLayout"
                     class="flex flex-col items-center justify-center"
@@ -176,6 +185,7 @@
                     <JoystickPS
                       class="w-[100%]"
                       :model="joystick.model"
+                      :disabled="controllerStore.disabledJoysticks.includes(joystick.model)"
                       :left-axis-horiz="joystick.state.axes[0]"
                       :left-axis-vert="joystick.state.axes[1]"
                       :right-axis-horiz="joystick.state.axes[2]"
@@ -210,6 +220,15 @@
                   :key="key"
                   class="w-full flex-centered flex-column position-relative"
                 >
+                  <div class="flex items-center gap-2 -mb-4">
+                    <v-switch
+                      :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
+                      :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
+                      hide-details
+                      class="-mt-2"
+                      @update:model-value="toggleJoystickEnabling(joystick.model)"
+                    />
+                  </div>
                   <p class="text-start text-sm font-bold w-[93%]">Axis</p>
                   <v-data-table
                     v-if="controllerStore.joysticks && controllerStore.joysticks.size"
@@ -856,5 +875,13 @@ const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
   const min = controllerStore.protocolMapping.axesCorrespondencies[axisId]?.min ?? -1
   const max = controllerStore.protocolMapping.axesCorrespondencies[axisId]?.max ?? +1
   return scale(rawValue, -1, 1, min, max)
+}
+
+const toggleJoystickEnabling = (joystickModel: string): void => {
+  if (controllerStore.disabledJoysticks.includes(joystickModel)) {
+    controllerStore.disabledJoysticks = controllerStore.disabledJoysticks.filter((model) => model !== joystickModel)
+  } else {
+    controllerStore.disabledJoysticks.push(joystickModel)
+  }
 }
 </script>
