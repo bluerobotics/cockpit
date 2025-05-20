@@ -76,6 +76,8 @@ export const useControllerStore = defineStore('controller', () => {
     [JoystickModel.Unknown]: defaultJoystickCalibration,
   })
 
+  const disabledJoysticks = useBlueOsStorage<string[]>('cockpit-disabled-joystick-models', [])
+
   const currentMainJoystick = ref<Joystick | undefined>(undefined)
 
   // Confirmation per joystick action required currently is only available for cockpit actions
@@ -500,5 +502,6 @@ export const useControllerStore = defineStore('controller', () => {
     loadDefaultProtocolMappingForVehicle,
     joystickCalibrationOptions,
     currentMainJoystick,
+    disabledJoysticks,
   }
 })

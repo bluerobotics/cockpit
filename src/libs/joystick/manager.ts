@@ -492,6 +492,11 @@ class JoystickManager {
   private emitStateEvent(gamepadIndex: number, gamepadState: JoystickState, gamepad: Gamepad): void {
     if (!this.enabledJoysticks.includes(gamepadIndex)) return
 
+    // Get the joystick model to check if it's disabled
+    const model = this.getModel(gamepad)
+    const disabledJoystickModels = JSON.parse(localStorage.getItem('cockpit-disabled-joystick-models') || '[]')
+    if (disabledJoystickModels.includes(model)) return
+
     for (const callback of this.callbacksJoystickState) {
       callback(gamepadIndex, gamepadState, gamepad)
     }
