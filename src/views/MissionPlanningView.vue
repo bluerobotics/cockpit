@@ -285,10 +285,13 @@
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
     @survey-lines-angle="onSurveyLinesAngleChange"
     @remove-waypoint="removeSelectedWaypoint"
+    @place-point-of-interest="openPoiDialog"
   />
   <SideConfigPanel position="right" style="z-index: 600; pointer-events: auto">
     <WaypointConfigPanel :selected-waypoint="selectedWaypoint" @remove-waypoint="removeWaypoint" />
   </SideConfigPanel>
+
+  <PoiManager ref="poiManagerRef" />
 </template>
 
 <script setup lang="ts">
@@ -298,12 +301,12 @@ import { useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
-import type { Ref } from 'vue'
-import { computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
+import { type InstanceType, type Ref, computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
+import PoiManager from '@/components/poi/PoiManager.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
@@ -320,6 +323,7 @@ import {
   AltitudeReferenceType,
   ContextMenuTypes,
   instanceOfCockpitMission,
+  PointOfInterest,
   Survey,
   SurveyPolygon,
   WaypointType,
@@ -397,6 +401,9 @@ const accessingSurveyContextMenu = ref(false)
 const isDraggingPolygon = ref(false)
 const isDraggingMarker = ref(false)
 
+const poiManagerRef = ref<InstanceType<typeof PoiManager> | null>(null)
+const planningPoiMarkers = ref<{ [id: string]: L.Marker }>({})
+
 const enableUndoForCurrentSurvey = computed(() => {
   return (
     surveys.value.length > 0 &&
@@ -473,8 +480,6 @@ const onPolygonMouseUp = (event: L.LeafletMouseEvent): void => {
 
   planningMap.value?.off('mousemove', onPolygonMouseMove)
   planningMap.value?.off('mouseup', onPolygonMouseUp)
-
-  ignoreNextClick = true
 
   L.DomEvent.stopPropagation(event.originalEvent)
   L.DomEvent.preventDefault(event.originalEvent)
@@ -1878,6 +1883,157 @@ const centerVehicleButtonTooltipText = computed(() => {
   }
   return 'Click once to center on vehicle or twice to track it.'
 })
+
+const openPoiDialog = (): void => {
+  if (cursorCoordinates.value && poiManagerRef.value) {
+    poiManagerRef.value.openDialog(cursorCoordinates.value)
+  } else if (!cursorCoordinates.value) {
+    showDialog({ variant: 'error', title: 'Error', message: 'Cannot place Point of Interest without map coordinates.' })
+    console.error('Cannot open POI dialog without click coordinates for new POI')
+  } else if (!poiManagerRef.value) {
+    showDialog({ variant: 'error', title: 'Error', message: 'POI Manager is not available.' })
+    console.error('Cannot open POI dialog, POI Manager ref is not set.')
+  }
+  hideContextMenu()
+}
+
+// POI Marker Management Functions for MissionPlanningView
+const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
+  const poiIconHtml = `
+    <div class="poi-marker-container">
+      <div class="poi-marker-background" style="background-color: ${poi.color}80;"></div>
+      <i class="v-icon notranslate mdi ${poi.icon}" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
+    </div>
+  `
+
+  return {
+    html: poiIconHtml,
+    className: 'poi-marker-icon',
+    iconSize: [32, 32], // Match the actual container size
+    iconAnchor: [16, 32], // Center horizontally, bottom vertically (like a pin)
+  }
+}
+
+// POI Marker Management Functions for MissionPlanningView
+const addPoiMarkerToPlanningMap = (poi: PointOfInterest): void => {
+  if (!planningMap.value || !planningMap.value.getContainer()) return
+
+  const poiMarkerIcon = L.divIcon(poiIconConfig(poi))
+
+  const marker = L.marker(poi.coordinates as LatLngTuple, { icon: poiMarkerIcon, draggable: true }).addTo(
+    planningMap.value
+  )
+
+  const tooltipContent = `
+    <strong>${poi.name}</strong><br>
+    ${poi.description ? poi.description + '<br>' : ''}
+    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
+  `
+  const tooltipConfig = { permanent: false, direction: 'top', offset: [-14, -64], className: 'poi-tooltip' }
+  marker.bindTooltip(tooltipContent, tooltipConfig)
+
+  marker.on('drag', (event) => {
+    const newCoords = event.target.getLatLng()
+    const updatedTooltipContent = `
+      <strong>${poi.name}</strong><br>
+      ${poi.description ? poi.description + '<br>' : ''}
+      Lat: ${newCoords.lat.toFixed(8)}, Lng: ${newCoords.lng.toFixed(8)}
+    `
+    marker.getTooltip()?.setContent(updatedTooltipContent)
+  })
+
+  marker.on('dragend', (event) => {
+    const newCoords = event.target.getLatLng()
+    missionStore.movePointOfInterest(poi.id, [newCoords.lat, newCoords.lng])
+  })
+
+  marker.on('click', (event) => {
+    L.DomEvent.stopPropagation(event)
+    if (poiManagerRef.value) {
+      poiManagerRef.value.openDialog(undefined, poi)
+    }
+  })
+
+  planningPoiMarkers.value[poi.id] = marker
+}
+
+const updatePoiMarkerOnPlanningMap = (poi: PointOfInterest): void => {
+  if (!planningMap.value || !planningMap.value.getContainer() || !planningPoiMarkers.value[poi.id]) return
+
+  const marker = planningPoiMarkers.value[poi.id]
+  marker.setLatLng(poi.coordinates as LatLngTuple)
+
+  marker.setIcon(L.divIcon(poiIconConfig(poi)))
+
+  const updatedTooltipContent = `
+    <strong>${poi.name}</strong><br>
+    ${poi.description ? poi.description + '<br>' : ''}
+    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
+  `
+  marker.getTooltip()?.setContent(updatedTooltipContent)
+}
+
+const removePoiMarkerFromPlanningMap = (poiId: string): void => {
+  if (!planningMap.value || !planningPoiMarkers.value[poiId]) return
+
+  planningPoiMarkers.value[poiId].remove()
+  delete planningPoiMarkers.value[poiId]
+}
+
+// Watch for changes in POIs from the store and update markers
+watch(
+  () => missionStore.pointsOfInterest,
+  async (newPois) => {
+    if (!planningMap.value || !planningMap.value.getContainer()) {
+      // Defer if map not ready, try again on next tick or when map becomes available
+      await nextTick()
+      if (!planningMap.value || !planningMap.value.getContainer()) {
+        console.warn('MissionPlanningView: POI watcher - planningMap not ready after nextTick.')
+        return
+      }
+    }
+
+    const newPoiIds = new Set(newPois.map((p) => p.id))
+
+    // Remove markers for POIs that no longer exist
+    Object.keys(planningPoiMarkers.value).forEach((poiId) => {
+      if (!newPoiIds.has(poiId)) {
+        removePoiMarkerFromPlanningMap(poiId)
+      }
+    })
+
+    // Add or update markers
+    newPois.forEach((poi) => {
+      if (planningPoiMarkers.value[poi.id]) {
+        updatePoiMarkerOnPlanningMap(poi)
+      } else {
+        addPoiMarkerToPlanningMap(poi)
+      }
+    })
+  },
+  { deep: true, immediate: true }
+)
+
+// Ensure POIs are drawn when the map becomes available, if not already handled by immediate watcher
+watch(
+  planningMap,
+  (currentMap) => {
+    if (currentMap && currentMap.getContainer()) {
+      // Map is ready, ensure all POIs from the store are drawn
+      // This helps if POIs loaded from store before mapInstance was fully initialized
+      // or if the immediate watcher for pointsOfInterest ran too early.
+      missionStore.pointsOfInterest.forEach((poi) => {
+        if (!planningPoiMarkers.value[poi.id]) {
+          addPoiMarkerToPlanningMap(poi)
+        } else {
+          // Potentially update if details changed while map was not ready
+          updatePoiMarkerOnPlanningMap(poi)
+        }
+      })
+    }
+  },
+  { immediate: true }
+) // Immediate to catch initial map state
 </script>
 
 <style>
@@ -2006,5 +2162,42 @@ const centerVehicleButtonTooltipText = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.poi-marker-icon {
+  /* Style for POI markers, if needed, e.g., cursor */
+  cursor: pointer;
+  background: none;
+  color: white;
+  border: none;
+}
+
+.poi-marker-container {
+  font-size: 20px;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poi-marker-background {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  z-index: 1;
+}
+
+.poi-tooltip {
+  /* Style for POI tooltips */
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 8px;
 }
 </style>

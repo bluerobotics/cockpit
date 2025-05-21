@@ -138,3 +138,51 @@ export type MissionLoadingCallback = (loadingPercentage: number) => Promise<void
 export const defaultLoadingCallback: MissionLoadingCallback = async (): Promise<void> => {
   return
 }
+
+/**
+ * Geographical coordinates for a Point of Interest, in the format [latitude, longitude].
+ */
+export type PointOfInterestCoordinates = WaypointCoordinates
+
+// For now, let's use string for icon and color. We can refine this later.
+/**
+ * Represents the icon for a Point of Interest.
+ * For now, this is a string (e.g., mdi-icon-name or URL), but can be an enum later.
+ */
+export type PointOfInterestIcon = string
+/**
+ * Represents the color for a Point of Interest (e.g., hex code or color name).
+ */
+export type PointOfInterestColor = string
+
+/**
+ * Interface representing a Point of Interest (POI) on the map.
+ */
+export interface PointOfInterest {
+  /**
+   * Unique identification for the POI.
+   */
+  id: string
+  /**
+   * Name of the POI.
+   */
+  name: string
+  /**
+   * Description of the POI.
+   */
+  description: string
+  /**
+   * Geographical coordinates of the POI.
+   */
+  coordinates: PointOfInterestCoordinates
+  /**
+   * Icon representing the POI.
+   */
+  icon: PointOfInterestIcon
+  /**
+   * Color of the POI marker/icon.
+   */
+  color: PointOfInterestColor
+  /** Timestamp of creation or last update */
+  timestamp: number
+}
