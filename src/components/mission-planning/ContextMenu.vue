@@ -110,6 +110,18 @@
           ></v-icon>
           <span class="text-white text-sm ml-4">{{ pathCreationButtonText }}</span>
         </v-list-item>
+        <v-divider />
+        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handlePlacePointOfInterest">
+          <v-icon
+            variant="text"
+            icon="mdi-map-marker-plus"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px]"
+          ></v-icon>
+          <span class="text-white text-sm ml-4">Place point of interest</span>
+        </v-list-item>
       </div>
     </div>
 
@@ -208,6 +220,7 @@ const emit = defineEmits<{
   (event: 'surveyLinesAngle', angle: number): void
   (event: 'regenerateSurveyWaypoints', angle: number): void
   (event: 'removeWaypoint'): void
+  (event: 'placePointOfInterest'): void
 }>()
 
 const menuType = computed(() => props.menuType)
@@ -250,6 +263,11 @@ const handleToggleSurvey = (): void => {
 
 const handleToggleSimplePath = (): void => {
   emit('toggleSimplePath')
+  emit('close')
+}
+
+const handlePlacePointOfInterest = (): void => {
+  emit('placePointOfInterest')
   emit('close')
 }
 
