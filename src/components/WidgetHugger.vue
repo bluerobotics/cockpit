@@ -16,6 +16,15 @@
   />
   <div ref="outerWidgetRef" class="outerWidget">
     <div
+      v-if="widget.options?.blockGenericContextMenu === true"
+      class="innerWidget"
+      :class="{ 'overflow-hidden': hideOverflow }"
+      :style="{ opacity: widget.options.opacity ?? 1 }"
+    >
+      <slot></slot>
+    </div>
+    <div
+      v-else
       ref="innerWidgetRef"
       v-contextmenu="handleContextMenu"
       class="innerWidget"
@@ -122,6 +131,8 @@ const opacitySlider = computed({
 
 const handleContextMenu = {
   open: (event: MouseEvent | TouchEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
     contextMenuRef.value.openAt(event)
     contextMenuVisible.value = true
   },
