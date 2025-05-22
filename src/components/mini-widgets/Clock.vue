@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-center m-2 text-sm font-bold text-center text-white select-none min-w-[80px]">
+  <div class="flex items-center justify-center m-2 text-sm font-bold text-center text-white select-none min-w-[90px]">
     {{ format(timeNow, 'E LLL do HH:mm') }}
   </div>
 </template>
