@@ -1,17 +1,22 @@
 <template>
-  <div ref="mapBase" class="page-base" :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'">
+  <div
+    ref="mapBase"
+    v-contextmenu="handleContextMenu"
+    class="page-base"
+    :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
+  >
     <div :id="mapId" ref="map" class="map">
       <v-tooltip location="top" :text="centerHomeButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute right-[166px] m-3 bottom-button bg-slate-50"
+            class="absolute right-[166px] m-3 bottom-button bg-slate-50 text-[14px]"
             :class="!home ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
             elevation="2"
             style="z-index: 1002; border-radius: 0px"
-            icon="mdi-home-map-marker"
+            icon="mdi-home-search"
             size="x-small"
             :disabled="!home"
             @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
@@ -25,7 +30,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute m-3 bottom-button right-[124px] bg-slate-50"
+            class="absolute m-3 bottom-button right-[124px] bg-slate-50 text-[14px]"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
             elevation="2"
@@ -44,7 +49,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute m-3 bottom-button right-[82px] bg-slate-50"
+            class="absolute m-3 bottom-button right-[82px] bg-slate-50 text-[14px]"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
             :disabled="!vehicleStore.isVehicleOnline"
             elevation="2"
@@ -60,7 +65,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50"
+            class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50 text-[14px]"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
             :disabled="!vehicleStore.isVehicleOnline"
             elevation="2"
@@ -74,13 +79,14 @@
     </div>
   </div>
 
-  <div v-if="showContextMenu" class="context-menu" :style="{ top: menuPosition.top, left: menuPosition.left }">
-    <ul @click.stop="">
-      <li @click="onMenuOptionSelect('goto')">GoTo</li>
-      <li @click="onMenuOptionSelect('set-default-map-position')">Set default map position</li>
-      <li @click="onMenuOptionSelect('place-poi')">Place point of interest</li>
-    </ul>
-  </div>
+  <ContextMenu
+    ref="contextMenuRef"
+    :visible="contextMenuVisible"
+    :width="'260px'"
+    :menu-items="menuItems"
+    @close="hideContextMenuAndMarker"
+  >
+  </ContextMenu>
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
@@ -120,7 +126,7 @@
 <script setup lang="ts">
 import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
-import L, { type LatLngTuple, Map } from 'leaflet'
+import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
 import {
   type InstanceType,
   type Ref,
@@ -149,8 +155,10 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type { PointOfInterest, WaypointCoordinates } from '@/types/mission'
+import type { PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
+
+import ContextMenu from '../ContextMenu.vue'
 
 // Define widget props
 // eslint-disable-next-line jsdoc/require-jsdoc
@@ -170,6 +178,26 @@ const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = ref(false)
+const mapReady = ref(false)
+const mapWaypoints = ref<Waypoint[]>([])
+const contextMenuRef = ref()
+const isDragging = ref(false)
+const isPinching = ref(false)
+let pinchTimeout: number | undefined
+
+const onTouchStart = (e: TouchEvent): void => {
+  if (e.touches.length > 1) {
+    isPinching.value = true
+    if (contextMenuVisible.value) hideContextMenuAndMarker()
+    clearTimeout(pinchTimeout)
+  }
+}
+
+const onTouchEnd = (e: TouchEvent): void => {
+  if (e.touches.length <= 1) {
+    pinchTimeout = window.setTimeout(() => (isPinching.value = false), 300)
+  }
+}
 
 const poiManagerMapWidgetRef = ref<InstanceType<typeof PoiManager> | null>(null)
 const mapWidgetPoiMarkers = ref<{ [id: string]: L.Marker }>({})
@@ -255,6 +283,9 @@ watch(isMouseOver, () => {
 })
 
 onMounted(async () => {
+  mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
+  mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
+
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
     layers: [osm, esri, seamarks, marineProfile],
@@ -263,6 +294,10 @@ onMounted(async () => {
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
+
+  map.value.on('click', (event: LeafletMouseEvent) => {
+    clickedLocation.value = [event.latlng.lat, event.latlng.lng]
+  })
 
   // Update center value after panning
   map.value.on('moveend', () => {
@@ -273,23 +308,24 @@ onMounted(async () => {
     }
   })
 
+  map.value.on('dragstart', () => {
+    isDragging.value = true
+  })
+
+  map.value.on('dragend', () => {
+    setTimeout(() => (isDragging.value = false), 200)
+  })
+
   // Update zoom value after zooming
   map.value.on('zoomend', () => {
+    contextMenuVisible.value = false
     if (map.value === undefined) return
     zoom.value = map.value?.getZoom() ?? mapCenter.value
   })
 
-  // Add click event listener to the map
-  map.value.on('click', () => {
-    if (map.value === undefined) return
-    map.value.on('click', onMapClick)
+  map.value.on('contextmenu', (event: LeafletMouseEvent) => {
+    clickedLocation.value = [event.latlng.lat, event.latlng.lng]
   })
-
-  // Add context menu event listener to the map
-  map.value.on('contextmenu', () => {
-    hideContextMenuAndMarker()
-  })
-
   // Enable auto update for target follower
   targetFollower.enableAutoUpdate()
 
@@ -301,9 +337,73 @@ onMounted(async () => {
   } else {
     targetFollower.goToTarget(WhoToFollow.HOME)
   }
+
+  // If vehicle is offline and a mission have been uploaded recently, draw it
+  if (!vehicleStore.isVehicleOnline && missionStore.vehicleMission.length) {
+    drawMission(missionStore.vehicleMission)
+  }
+
+  mapReady.value = true
+  await refreshMission()
 })
 
-// Before unmounting:
+const handleContextMenu = {
+  open: (event: MouseEvent): void => {
+    if (!map.value || isPinching.value || isDragging.value) return
+    event.preventDefault()
+    event.stopPropagation()
+
+    const pt = map.value.mouseEventToContainerPoint(event)
+    const ll = map.value.containerPointToLatLng(pt)
+    clickedLocation.value = [ll.lat, ll.lng]
+
+    contextMenuRef.value.openAt(event)
+    contextMenuVisible.value = true
+  },
+  close: () => {
+    hideContextMenuAndMarker()
+  },
+}
+
+const clearMapDrawing = (): void => {
+  map.value?.eachLayer((l) => {
+    if (l instanceof L.Marker || (l instanceof L.Polyline && l.options.color === '#358AC3')) {
+      map.value!.removeLayer(l)
+    }
+  })
+
+  mapWaypoints.value = []
+
+  missionWaypointsPolyline.value = undefined
+  homeMarker.value = undefined
+  gotoMarker.value = undefined
+}
+
+const refreshMission = async (): Promise<void> => {
+  if (!mapReady.value) return
+  clearMapDrawing()
+
+  if (vehicleStore.isVehicleOnline) {
+    await downloadMissionFromVehicle()
+  } else if (missionStore.vehicleMission.length) {
+    drawMission(missionStore.vehicleMission)
+  }
+}
+
+watch(
+  () => vehicleStore.isVehicleOnline,
+  () => {
+    refreshMission()
+  }
+)
+
+watch(
+  () => missionStore.vehicleMissionRevision,
+  () => {
+    refreshMission()
+  }
+)
+
 // - disable auto update for target follower
 // - remove event listeners
 onBeforeUnmount(() => {
@@ -311,21 +411,20 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
 
   if (map.value) {
-    map.value.off('click', onMapClick)
     map.value.off('contextmenu')
     // Clean up POI markers
     Object.values(mapWidgetPoiMarkers.value).forEach((marker) => marker.remove())
     mapWidgetPoiMarkers.value = {}
   }
+
+  mapBase.value?.removeEventListener('touchstart', onTouchStart)
+  mapBase.value?.removeEventListener('touchend', onTouchEnd)
 })
 
 // Pan when variables change
 watch(mapCenter, (newCenter, oldCenter) => {
   if (newCenter.toString() === oldCenter.toString()) return
   map.value?.panTo(newCenter as LatLngTuple)
-
-  // Update the tooltip content of the home marker
-  homeMarker.value?.getTooltip()?.setContent(`Home: ${newCenter[0].toFixed(6)}, ${newCenter[1].toFixed(6)}`)
 })
 
 // Keep map binded
@@ -339,6 +438,7 @@ watch(map, (newMap, oldMap) => {
 // Zoom when the variable changes
 watch(zoom, (newZoom, oldZoom) => {
   if (newZoom === oldZoom) return
+  contextMenuVisible.value = false
   map.value?.setZoom(zoom.value)
 })
 
@@ -378,7 +478,11 @@ const { history: vehiclePositionHistory } = useRefHistory(vehiclePosition)
 // Update home position when location is available
 // Try to update home position based on browser geolocation
 navigator?.geolocation?.watchPosition(
-  (position) => (home.value = [position.coords.latitude, position.coords.longitude]),
+  (position) => {
+    if (!home.value) {
+      home.value = [position.coords.latitude, position.coords.longitude]
+    }
+  },
   (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
   { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
 )
@@ -458,35 +562,68 @@ watch(home, () => {
   const position = home.value
   if (position === undefined) return
 
-  if (homeMarker.value === undefined) {
-    homeMarker.value = L.marker(position as LatLngTuple)
-    const homeMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16], html: 'H' })
-    homeMarker.value.setIcon(homeMarkerIcon)
-    const homeMarkerTooltip = L.tooltip({ content: 'No data available', className: 'waypoint-tooltip' })
+  if (!homeMarker.value) {
+    homeMarker.value = L.marker(position as LatLngTuple, {
+      icon: L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] }),
+      draggable: true,
+    })
+    const homeMarkerTooltip = L.tooltip({
+      content: '<i class="mdi mdi-home-map-marker text-[18px] "></i>',
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
+    homeMarker.value.on('dragend', (e: L.DragEndEvent) => {
+      const marker = e.target as L.Marker
+      const latlng = marker.getLatLng()
+      setHomePosition([latlng.lat, latlng.lng])
+    })
     map.value.addLayer(homeMarker.value)
+  } else {
+    homeMarker.value.setLatLng(position as LatLngTuple)
   }
-  homeMarker.value.setLatLng(home.value)
 })
 
 // Create polyline for the vehicle path
-const missionWaypointsPolyline = ref()
-watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
-  if (map.value === undefined) return
-  if (missionWaypointsPolyline.value === undefined) {
-    const coordinates = newWaypoints.map((w) => w.coordinates)
-    missionWaypointsPolyline.value = L.polyline(coordinates, { color: '#358AC3' }).addTo(map.value)
-  }
-  missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+const missionWaypointsPolyline = ref<L.Polyline>()
+watch(
+  mapWaypoints,
+  (newWaypoints) => {
+    if (!map.value) return
 
-  // Add a marker for each point
-  newWaypoints.forEach((waypoint, idx) => {
-    const marker = L.marker(waypoint.coordinates)
-    const markerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16], html: `${idx}` })
-    marker.setIcon(markerIcon)
-    map.value?.addLayer(marker)
-  })
-})
+    if (!missionWaypointsPolyline.value) {
+      missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3' }).addTo(map.value)
+    }
+    missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+
+    // Add a marker for each point
+    newWaypoints.forEach((waypoint, idx) => {
+      const marker = L.marker(waypoint.coordinates)
+
+      marker.setIcon(
+        L.divIcon({
+          className: 'marker-icon',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        })
+      )
+
+      const markerTooltip = L.tooltip({
+        content: idx.toString(),
+        permanent: true,
+        direction: 'center',
+        className: 'waypoint-tooltip',
+        opacity: 1,
+      })
+
+      marker.bindTooltip(markerTooltip)
+      map.value?.addLayer(marker)
+    })
+  },
+  { deep: true }
+)
 
 // Create polyline for the vehicle path
 const vehicleHistoryPolyline = ref<L.Polyline>()
@@ -502,37 +639,106 @@ watch(vehiclePositionHistory, (newPoints) => {
 })
 
 // Handle context menu toggling and selection
-const showContextMenu = ref(false)
+const contextMenuVisible = ref(false)
 const clickedLocation = ref<[number, number] | null>(null)
-const menuPosition = reactive({ top: '0px', left: '0px' })
 const contextMenuMarker = ref<L.Marker>()
 
-// Handle map click event to show the context menu
-const onMapClick = (event: L.LeafletMouseEvent): void => {
-  if (contextMenuMarker.value !== undefined && map.value !== undefined) {
-    contextMenuMarker.value?.removeFrom(map.value)
-  }
+const menuItems = reactive([
+  {
+    item: 'Set home waypoint',
+    action: () => onMenuOptionSelect('set-home-waypoint'),
+    icon: 'mdi-home-map-marker',
+  },
+  {
+    item: 'Place Point of Interest',
+    action: () => onMenuOptionSelect('place-poi'),
+    icon: 'mdi-map-marker-plus',
+  },
+  { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
+  {
+    item: 'Set default map position',
+    action: () => onMenuOptionSelect('set-default-map-position'),
+    icon: 'mdi-map-check',
+  },
+])
 
-  // Check if event.latlng is defined and has the required properties
-  if (event?.latlng?.lat != null && event?.latlng?.lng != null) {
-    clickedLocation.value = [event.latlng.lat, event.latlng.lng]
-    showContextMenu.value = true
+const gotoMarker = ref<L.Marker>()
 
-    // Calculate and update menu position
-    const mapElement = map.value?.getContainer()
-    if (mapElement) {
-      const { x, y } = mapElement.getBoundingClientRect()
-      menuPosition.left = `${event.originalEvent.clientX - x}px`
-      menuPosition.top = `${event.originalEvent.clientY - y}px`
-    }
-  } else {
-    console.error('Invalid event structure:', event)
+const setDefaultMapPosition = async (): Promise<void> => {
+  if (!map.value || !clickedLocation.value) return
+
+  try {
+    await missionStore.setDefaultMapPosition(clickedLocation.value, zoom.value)
+    openSnackbar({ message: 'Default map position set', variant: 'success' })
+
+    const tempMarker = L.marker(clickedLocation.value as LatLngTuple, {
+      icon: L.divIcon({
+        className: 'marker-icon',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      }),
+    }).addTo(map.value)
+
+    const tempTooltip = L.tooltip({
+      content: '<i class="mdi mdi-map-check text-[18px] border-[1px] rounded-full px-[2px] py-[1px]"></i>',
+      permanent: true,
+      direction: 'center',
+      className: 'waypoint-tooltip',
+      opacity: 1,
+    })
+    tempMarker.bindTooltip(tempTooltip).openTooltip()
+
+    const markerEl = tempMarker.getElement() as HTMLElement | null
+    const tooltipEl = tempMarker.getTooltip()?.getElement() as HTMLElement | null
+
+    ;[markerEl, tooltipEl].forEach((el) => {
+      if (el) {
+        el.style.transition = 'opacity 1s'
+        el.style.opacity = '1'
+      }
+    })
+
+    setTimeout(() => {
+      ;[markerEl, tooltipEl].forEach((el) => {
+        if (el) el.style.opacity = '0'
+      })
+      setTimeout(() => {
+        map.value?.removeLayer(tempMarker)
+      }, 1000)
+    }, 1500)
+  } catch (error) {
+    console.error(error)
+    openSnackbar({ message: 'Failed to set default map position', variant: 'error' })
   }
 }
 
 const onMenuOptionSelect = async (option: string): Promise<void> => {
   switch (option) {
-    case 'goto':
+    case 'goto': {
+      if (!clickedLocation.value || !map.value) return
+
+      if (gotoMarker.value) {
+        map.value.removeLayer(gotoMarker.value)
+        gotoMarker.value = undefined
+      }
+
+      gotoMarker.value = L.marker(clickedLocation.value as LatLngTuple, {
+        icon: L.divIcon({
+          className: 'marker-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        }),
+      }).addTo(map.value)
+
+      const gotoTooltip = L.tooltip({
+        content: '<i class="mdi mdi-crosshairs-gps border-[1px] rounded-full text-[18px] px-[2px] pt-[1px] "></i>',
+        permanent: true,
+        direction: 'center',
+        className: 'waypoint-tooltip',
+        opacity: 1,
+      })
+      gotoMarker.value.bindTooltip(gotoTooltip)
+
       if (clickedLocation.value) {
         // Define default values
         const hold = 0
@@ -551,9 +757,10 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
         }
       }
       break
+    }
 
     case 'set-default-map-position':
-      missionStore.setDefaultMapPosition(mapCenter.value, zoom.value)
+      setDefaultMapPosition()
       break
 
     case 'place-poi':
@@ -568,17 +775,20 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       }
       break
 
+    case 'set-home-waypoint':
+      if (clickedLocation.value) {
+        setHomePosition(clickedLocation.value as [number, number])
+      }
+      break
     default:
       console.warn('Unknown menu option selected:', option)
   }
 
-  // hide the context menu after an option is selected
-  showContextMenu.value = false
+  contextMenuVisible.value = false
 }
 
 const hideContextMenuAndMarker = (): void => {
-  showContextMenu.value = false
-  clickedLocation.value = null
+  contextMenuVisible.value = false
   if (map.value !== undefined && contextMenuMarker.value !== undefined) {
     map.value.removeLayer(contextMenuMarker.value)
   }
@@ -590,28 +800,49 @@ const onKeydown = (event: KeyboardEvent): void => {
   }
 }
 
+const drawMission = (missionItems: Waypoint[]): void => {
+  missionItems.forEach((wp, idx) => {
+    if (idx === 0) {
+      home.value = wp.coordinates
+      setHomePosition(wp.coordinates)
+    } else {
+      mapWaypoints.value.push(wp)
+    }
+  })
+}
+
 // Allow fetching missions
 const fetchingMission = ref(false)
 const missionFetchProgress = ref(0)
+
+// Allow fetching missions
 const downloadMissionFromVehicle = async (): Promise<void> => {
   fetchingMission.value = true
-  missionFetchProgress.value = 0
-  while (missionStore.currentPlanningWaypoints.length > 0) {
-    missionStore.currentPlanningWaypoints.pop()
-  }
+  clearMapDrawing()
+
   const loadingCallback = async (loadingPerc: number): Promise<void> => {
     missionFetchProgress.value = loadingPerc
   }
+
   try {
     const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
-    missionItemsInVehicle.forEach((w) => {
-      missionStore.currentPlanningWaypoints.push(w)
-    })
-    openSnackbar({ variant: 'success', message: 'Mission download succeed!', duration: 3000 })
+    drawMission(missionItemsInVehicle)
+
+    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
     showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
   } finally {
     fetchingMission.value = false
+  }
+}
+
+const setHomePosition = async (homePosition: [number, number]): Promise<void> => {
+  const newHome: [number, number] = [homePosition[0], homePosition[1]]
+  home.value = newHome
+
+  await vehicleStore.setHomeWaypoint(newHome, 0)
+  if (contextMenuVisible.value) {
+    contextMenuVisible.value = false
   }
 }
 
@@ -820,13 +1051,9 @@ watch(
 }
 
 .marker-icon {
-  color: white;
-  background-color: #358ac3;
-  padding: 0.75rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: 800;
+  background-color: #1e498f;
+  border: 1px solid #ffffff55;
+  border-radius: 50%;
 }
 
 .waypoint-tooltip {
@@ -844,10 +1071,6 @@ watch(
 .context-menu {
   position: absolute;
   z-index: 1003;
-  background-color: rgba(255, 255, 255, 0.9);
-  /* White with slight transparency */
-  border: 1px solid #ccc;
-  /* Optional: adds a subtle border */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   /* Optional: adds a slight shadow for depth */
   border-radius: 4px;
