@@ -22,6 +22,7 @@ import {
   type JoystickProtocolActionsMapping,
   type JoystickState,
   type ProtocolAction,
+  type GamepadToCockpitStdMapping,
   CockpitModifierKeyOption,
   Joystick,
   JoystickAxis,
@@ -50,7 +51,7 @@ export const useControllerStore = defineStore('controller', () => {
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
   const protocolMappingIndex = useBlueOsStorage(protocolMappingIndexKey, 0)
-  const userCustomCockpitStdMappings = useBlueOsStorage(cockpitStdMappingsKey, {})
+  const userCustomCockpitStdMappings = useBlueOsStorage<{ [key in JoystickModel]?: GamepadToCockpitStdMapping }>(cockpitStdMappingsKey, {})
   const availableAxesActions = ref(allAvailableAxes())
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
