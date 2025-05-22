@@ -59,6 +59,7 @@ export const useControllerStore = defineStore('controller', () => {
   const availableAxesActions = ref(allAvailableAxes())
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
+  const preventJoystickForwarding = ref(false)
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
   const vehicleTypeProtocolMappingCorrespondency = useBlueOsStorage<typeof defaultProtocolMappingVehicleCorrespondency>(
     'cockpit-default-vehicle-type-protocol-mappings',
@@ -183,6 +184,7 @@ export const useControllerStore = defineStore('controller', () => {
       if (otherSourceDetected) {
         console.warn('Other GCS sending MANUAL_CONTROL messages detected. Disabling joystick forwarding.')
         enableForwarding.value = false
+        preventJoystickForwarding.value = true
 
         showDialog({
           title: 'Multiple joystick controllers detected',
@@ -252,7 +254,7 @@ export const useControllerStore = defineStore('controller', () => {
       enableForwarding.value = false
     } else {
       console.info('Window/tab visible. Enabling joystick forwarding.')
-      enableForwarding.value = true
+      enableJoystickForwardingIfSafe()
     }
   })
 
@@ -459,6 +461,14 @@ export const useControllerStore = defineStore('controller', () => {
     if (!actionsToCallFromJoystick.value.includes(actionId)) {
       actionsToCallFromJoystick.value.push(actionId)
     }
+  }
+
+  const enableJoystickForwardingIfSafe = (): void => {
+    if (preventJoystickForwarding.value) {
+      console.warn('Joystick forwarding is being prevented explicitly. Not enabling.')
+      return
+    }
+    enableForwarding.value = true
   }
 
   // Track previous button states to detect rising edges (button press transitions)
