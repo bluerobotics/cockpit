@@ -851,6 +851,23 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.ViewSelector]: false,
 }
 
+export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
+  [WidgetType.Attitude]: false,
+  [WidgetType.Compass]: false,
+  [WidgetType.CompassHUD]: false,
+  [WidgetType.CollapsibleContainer]: false,
+  [WidgetType.DepthHUD]: false,
+  [WidgetType.DoItYourself]: false,
+  [WidgetType.IFrame]: false,
+  [WidgetType.ImageView]: false,
+  [WidgetType.Map]: true,
+  [WidgetType.MiniWidgetsBar]: false,
+  [WidgetType.Plotter]: false,
+  [WidgetType.URLVideoPlayer]: false,
+  [WidgetType.VideoPlayer]: false,
+  [WidgetType.VirtualHorizon]: false,
+}
+
 export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   if (maybeWidget.hash === undefined) throw new Error('Widget validation failed: property hash is missing.')
 

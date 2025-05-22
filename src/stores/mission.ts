@@ -7,7 +7,14 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
-import type { PointOfInterest, PointOfInterestCoordinates, Waypoint, WaypointCoordinates } from '@/types/mission'
+import {
+  AltitudeReferenceType,
+  PointOfInterest,
+  PointOfInterestCoordinates,
+  Waypoint,
+  WaypointCoordinates,
+  WaypointType,
+} from '@/types/mission'
 
 import { useMainVehicleStore } from './mainVehicle'
 
