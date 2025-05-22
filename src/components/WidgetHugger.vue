@@ -16,6 +16,15 @@
   />
   <div ref="outerWidgetRef" class="outerWidget">
     <div
+      v-if="widgetHasOwnContextMenu[widget.component as WidgetType]"
+      class="innerWidget"
+      :class="{ 'overflow-hidden': hideOverflow }"
+      :style="{ opacity: widget.options.opacity ?? 1 }"
+    >
+      <slot></slot>
+    </div>
+    <div
+      v-else
       ref="innerWidgetRef"
       v-contextmenu="handleContextMenu"
       class="innerWidget"
@@ -66,7 +75,7 @@ import { constrain, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D } from '@/types/general'
-import { type Widget, isWidgetConfigurable, WidgetType } from '@/types/widgets'
+import { type Widget, isWidgetConfigurable, widgetHasOwnContextMenu, WidgetType } from '@/types/widgets'
 
 import ContextMenu from './ContextMenu.vue'
 
@@ -122,6 +131,8 @@ const opacitySlider = computed({
 
 const handleContextMenu = {
   open: (event: MouseEvent | TouchEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
     contextMenuRef.value.openAt(event)
     contextMenuVisible.value = true
   },

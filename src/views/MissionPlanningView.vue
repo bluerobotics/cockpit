@@ -385,17 +385,38 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
+
+  <v-progress-linear
+    v-if="fetchingMission"
+    :model-value="missionFetchProgress"
+    height="10"
+    absolute
+    bottom
+    color="white"
+    :style="{ top: '48px' }"
+  />
+  <p
+    v-if="fetchingMission"
+    :style="{ top: '48px' }"
+    class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
+  >
+    Loading mission...
+  </p>
 </template>
 
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
 import { useWindowSize } from '@vueuse/core'
+import { formatDistanceToNow } from 'date-fns'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, type Ref, computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
+import blueboatMarkerImage from '@/assets/blueboat-marker.png'
+import brov2MarkerImage from '@/assets/brov2-marker.png'
+import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
@@ -404,6 +425,8 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
 import router from '@/router'
@@ -534,6 +557,39 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     hasUploadedMission.value = false
   } finally {
     uploadingMission.value = false
+  }
+}
+
+// Allow fetching missions
+const downloadMissionFromVehicle = async (): Promise<void> => {
+  clearCurrentMission()
+  loading.value = true
+  fetchingMission.value = true
+
+  const loadingCallback = async (loadingPerc: number): Promise<void> => {
+    missionFetchProgress.value = loadingPerc
+  }
+  try {
+    const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
+    missionItemsInVehicle.forEach((wp: Waypoint, index) => {
+      if (index === 0) {
+        home.value = wp.coordinates
+        currentCursorGeoCoordinates.value = wp.coordinates
+        setHomePosition()
+      }
+      if (index > 0) {
+        missionStore.currentPlanningWaypoints.push(wp)
+        addWaypointMarker(wp)
+      }
+    })
+    reNumberWaypoints()
+
+    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
+  } catch (error) {
+    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
+  } finally {
+    loading.value = false
+    fetchingMission.value = false
   }
 }
 
@@ -2126,31 +2182,65 @@ const vehiclePosition = computed((): [number, number] | undefined =>
     : undefined
 )
 
+// Create marker for the vehicle
 const vehicleMarker = ref<L.Marker>()
 watch(vehicleStore.coordinates, () => {
   if (!planningMap.value || !vehiclePosition.value) return
 
   if (vehicleMarker.value === undefined) {
-    vehicleMarker.value = L.marker(vehiclePosition.value)
+    let vehicleIconUrl = genericVehicleMarkerImage
 
-    const vehicleMarkerIcon = L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] })
-    vehicleMarker.value.setIcon(vehicleMarkerIcon)
+    if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) {
+      vehicleIconUrl = blueboatMarkerImage
+    } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
+      vehicleIconUrl = brov2MarkerImage
+    }
+
+    const vehicleMarkerIcon = L.divIcon({
+      className: 'vehicle-marker',
+      html: `<img src="${vehicleIconUrl}" style="width: 64px; height: 64px;">`,
+      iconSize: [64, 64],
+      iconAnchor: [32, 32],
+    })
+
+    vehicleMarker.value = L.marker(vehiclePosition.value, { icon: vehicleMarkerIcon })
 
     const vehicleMarkerTooltip = L.tooltip({
-      content: '<i class="mdi mdi-send-circle-outline text-[30px]"></i>',
-      permanent: true,
-      direction: 'center',
+      content: 'No data available',
       className: 'waypoint-tooltip',
-      opacity: 1,
+      offset: [40, 0],
     })
     vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
     planningMap.value.addLayer(vehicleMarker.value)
   }
-
   vehicleMarker.value.setLatLng(vehiclePosition.value)
+})
 
-  if (followerTarget.value !== WhoToFollow.VEHICLE) {
-    targetFollower.follow(WhoToFollow.VEHICLE)
+// Calculate live vehicle heading
+const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw) : 0))
+
+// Calculate time since last vehicle heartbeat
+const timeAgoSeenText = computed(() => {
+  const lastBeat = vehicleStore.lastHeartbeat
+  return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
+})
+
+// Dinamically update data of the vehicle tooltip
+watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isArmed], () => {
+  if (vehicleMarker.value === undefined) return
+
+  vehicleMarker.value.getTooltip()?.setContent(`
+    <p>Coordinates: ${vehiclePosition.value?.[0].toFixed(6)}, ${vehiclePosition.value?.[1].toFixed(6)}</p>
+    <p>Velocity: ${vehicleStore.velocity.ground?.toFixed(2) ?? 'N/A'} m/s</p>
+    <p>Heading: ${vehicleHeading.value.toFixed(2)}°</p>
+    <p>${vehicleStore.isArmed ? 'Armed' : 'Disarmed'}</p>
+    <p>Last seen: ${timeAgoSeenText.value}</p>
+  `)
+
+  // Update the rotation
+  const iconElement = vehicleMarker.value.getElement()?.querySelector('img')
+  if (iconElement) {
+    iconElement.style.transform = `rotate(${vehicleHeading.value}deg)`
   }
 })
 
