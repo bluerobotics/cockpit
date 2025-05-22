@@ -7,7 +7,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
-import type { Waypoint, WaypointCoordinates } from '@/types/mission'
+import { type Waypoint, type WaypointCoordinates, AltitudeReferenceType, WaypointType } from '@/types/mission'
 
 import { useMainVehicleStore } from './mainVehicle'
 
