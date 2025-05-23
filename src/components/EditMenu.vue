@@ -710,6 +710,7 @@ import MapImg from '@/assets/widgets/Map.png'
 import MiniWidgetsBarImg from '@/assets/widgets/MiniWidgetsBar.png'
 import PlotterImg from '@/assets/widgets/Plotter.png'
 import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
+import VehicleVisualization3DImg from '@/assets/widgets/VehicleVisualization3D.png'
 import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
 import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -911,6 +912,7 @@ const widgetImages = {
   MiniWidgetsBar: MiniWidgetsBarImg,
   Plotter: PlotterImg,
   URLVideoPlayer: URLVideoPlayerImg,
+  VehicleVisualization3D: VehicleVisualization3DImg,
   VideoPlayer: VideoPlayerImg,
   VirtualHorizon: VirtualHorizonImg,
 }
