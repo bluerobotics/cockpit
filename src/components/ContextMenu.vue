@@ -1,6 +1,13 @@
 <template>
   <teleport to="body">
-    <Transition name="fade">
+    <Transition
+      enter-active-class="transition-opacity duration-150"
+      leave-active-class="transition-opacity duration-150"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
       <div v-if="isContextMenuOpen" class="fixed z-[99999]" :style="positionStyles" @click.stop>
         <div
           class="flex flex-col rounded-md shadow-lg"
@@ -11,16 +18,17 @@
           ]"
         >
           <template v-if="menuItems">
-            <div
-              v-for="(item, index) in menuItems"
-              :key="index"
-              class="flex justify-between items-center px-4 h-10 hover:bg-[#FFFFFF11] cursor-pointer text-[14px]"
-              @click="handleItemClick(item)"
-            >
-              <p class="mb-1">{{ item.item }}</p>
-              <v-icon v-if="item.icon" :icon="item.icon" size="16" class="text-[#FFFFFF88] ml-4" />
+            <div>
+              <div
+                v-for="(item, index) in menuItems"
+                :key="index"
+                class="flex justify-between items-center px-4 h-10 hover:bg-[#FFFFFF11] cursor-pointer text-[14px] border-b-[1px] border-[#FFFFFF11]"
+                @click="handleItemClick(item)"
+              >
+                <p>{{ item.item }}</p>
+                <v-icon v-if="item.icon" :icon="item.icon" size="16" class="text-[#FFFFFF88] ml-4" />
+              </div>
             </div>
-            <v-divider v-if="menuItems.length > 1 || ($slots.default && menuItems.length === 1)" />
           </template>
           <template v-if="$slots.default">
             <slot :close="handleClose" />
@@ -52,15 +60,15 @@ import { ContextMenuItem } from '@/types/user-interface'
 
 const props = defineProps<{
   /**
-   *
+   * Whether the context menu is visible or not.
    */
   visible: boolean
   /**
-   *
+   * The items to be displayed in the context menu.
    */
   menuItems?: ContextMenuItem[]
   /**
-   *
+   * The width of the context menu.
    */
   width?: string
 }>()
@@ -152,14 +160,3 @@ const openAt = (event: MouseEvent | TouchEvent): void => {
 
 defineExpose({ openAt, handleClose })
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
