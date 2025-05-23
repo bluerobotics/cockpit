@@ -11,18 +11,19 @@
       <div class="flex items-center justify-center mb-6">
         <v-icon class="text-yellow text-[60px] mx-8">mdi-alert-rhombus</v-icon>
         <p class="w-[560px] text-balance">
-          The vehicle is currently armed and the main-menu contains configurations and tools that can cause unsafe
-          situations. Take care if you still decide to proceed, by choosing one of the options below.
+          The vehicle is currently armed, and the main-menu contains configurations and tools that can cause unsafe
+          situations.
         </p>
+        <p class="w-[560px] text-balance">Come back later, or proceed carefully with one of the following options:</p>
       </div>
     </template>
     <template #actions>
       <div class="flex items-center justify-between gap-8 w-full text-md">
-        <button class="option-button" @click="continueAnyway">Continue anyway</button>
+        <button class="option-button" @click="neverAskAgain">Continue and never warn again</button>
         <button class="option-button" @click="doNotAskAgainInThisSession">
           Continue and don't warn again during this session
         </button>
-        <button class="option-button" @click="neverAskAgain">Continue and never warn again</button>
+        <button class="option-button" @click="continueAnyway">Continue anyway</button>
         <button class="option-button" @click="disarmVehicle">Disarm vehicle and continue</button>
       </div>
     </template>
