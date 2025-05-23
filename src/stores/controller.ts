@@ -12,6 +12,7 @@ import {
 } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { checkForOtherManualControlSources } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { joystickCalibrationOptionsKey, joystickManager, JoystickModel, JoysticksMap } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
@@ -19,6 +20,7 @@ import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/p
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { Alert, AlertLevel } from '@/types/alert'
 import {
+  type GamepadToCockpitStdMapping,
   type JoystickProtocolActionsMapping,
   type JoystickState,
   type ProtocolAction,
@@ -50,10 +52,14 @@ export const useControllerStore = defineStore('controller', () => {
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
   const protocolMappingIndex = useBlueOsStorage(protocolMappingIndexKey, 0)
-  const userCustomCockpitStdMappings = useBlueOsStorage(cockpitStdMappingsKey, {})
+  const userCustomCockpitStdMappings = useBlueOsStorage<{ [key in JoystickModel]?: GamepadToCockpitStdMapping }>(
+    cockpitStdMappingsKey,
+    {}
+  )
   const availableAxesActions = ref(allAvailableAxes())
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
+  const preventJoystickForwarding = ref(false)
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
   const vehicleTypeProtocolMappingCorrespondency = useBlueOsStorage<typeof defaultProtocolMappingVehicleCorrespondency>(
     'cockpit-default-vehicle-type-protocol-mappings',
@@ -152,8 +158,10 @@ export const useControllerStore = defineStore('controller', () => {
     processJoystickStateEvent(gamepadIndex, currentState, gamepad)
   )
 
-  const processJoystickConnectionEvent = (event: JoysticksMap): void => {
+  const processJoystickConnectionEvent = async (event: JoysticksMap): Promise<void> => {
     const newMap = new Map(Array.from(event).map(([index, gamepad]) => [index, new Joystick(gamepad)]))
+
+    const thereWereJoysticksBefore = joysticks.value.size > 0
 
     // Add new joysticks
     for (const [index, joystick] of newMap) {
@@ -162,8 +170,34 @@ export const useControllerStore = defineStore('controller', () => {
       const { product_id, vendor_id } = joystickManager.getVidPid(joystick.gamepad)
       joysticks.value.set(index, joystick)
       console.info(`Joystick ${index} connected. Model: ${joystick.model} // VID: ${vendor_id} // PID: ${product_id}`)
-      console.info('Enabling joystick forwarding.')
-      enableForwarding.value = true
+
+      if (thereWereJoysticksBefore && enableForwarding.value) {
+        console.warn('There are joysticks connected and forwarding already. Skipping joystick conflict check.')
+        return
+      }
+
+      // Check if other GCS is sending MANUAL_CONTROL messages
+      const otherSourceDetected = await checkForOtherManualControlSources()
+
+      if (otherSourceDetected) {
+        console.warn('Other GCS sending MANUAL_CONTROL messages detected. Disabling joystick forwarding.')
+        enableForwarding.value = false
+        preventJoystickForwarding.value = true
+
+        showDialog({
+          title: 'Multiple joystick controllers detected',
+          message: `Another ground control station is already sending joystick commands to this vehicle. Using multiple
+            joysticks simultaneously can cause unpredictable behavior. If you still want to use this joystick, click the
+            top-right joystick widget and enable forwarding. You can disable the joystick forwarding on the other
+            Cockpit instance.`,
+          variant: 'warning',
+          maxWidth: 720,
+          persistent: false,
+        })
+      } else {
+        console.info('No other sources of joystick commands detected. Enabling joystick forwarding.')
+        enableForwarding.value = true
+      }
     }
 
     // Remove joysticks that doesn't not exist anymore
@@ -216,7 +250,7 @@ export const useControllerStore = defineStore('controller', () => {
       enableForwarding.value = false
     } else {
       console.info('Window/tab visible. Enabling joystick forwarding.')
-      enableForwarding.value = true
+      enableJoystickForwardingIfSafe()
     }
   })
 
@@ -425,6 +459,14 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
+  const enableJoystickForwardingIfSafe = (): void => {
+    if (preventJoystickForwarding.value) {
+      console.warn('Joystick forwarding is being prevented explicitly. Not enabling.')
+      return
+    }
+    enableForwarding.value = true
+  }
+
   // Track previous button states to detect rising edges (button press transitions)
   // Format: Map<actionId, wasActive>
   const previousActionStates = ref<Map<string, boolean>>(new Map())
@@ -500,5 +542,6 @@ export const useControllerStore = defineStore('controller', () => {
     loadDefaultProtocolMappingForVehicle,
     joystickCalibrationOptions,
     currentMainJoystick,
+    checkForOtherManualControlSources,
   }
 })
