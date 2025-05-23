@@ -57,13 +57,104 @@ export const useVideoStore = defineStore('video', () => {
   const timeNow = useTimestamp({ interval: 500 })
   const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
   const lastRenamedStreamName = ref('')
+  const streamsPreparingToRecord = ref<string[]>([])
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
+
+  const getRecorderOptions = async (streamData: StreamData): Promise<MediaRecorderOptions> => {
+    // Check on WebRTCManager to exposed RTCPeerConnection details.
+    const until = Date.now() + 1500
+    let peerConnection: RTCPeerConnection | null = null
+    let detectedMime: string | null = null
+
+    while (Date.now() < until) {
+      peerConnection =
+        (streamData.webRtcManager as any).peerConnection ?? (streamData.webRtcManager as any).session?.peerConnection
+      if (peerConnection) break
+      await sleep(80)
+    }
+
+    if (peerConnection?.getStats) {
+      const stats = await peerConnection.getStats()
+      stats.forEach((r) => {
+        if (r.type === 'inbound-rtp' && r.kind === 'video' && r.codecId) {
+          const codec = stats.get(r.codecId)
+          if (codec?.mimeType) detectedMime = codec.mimeType.toLowerCase()
+        }
+      })
+      if (detectedMime) console.debug('[Recorder] Detected codec via getStats →', detectedMime)
+    }
+
+    // SDP fallback – If getStats doesn't expose the codec, try to extract it from the SDP.
+    if (!detectedMime && peerConnection?.remoteDescription) {
+      const sdp = peerConnection.remoteDescription.sdp
+      // Finds the video media line, which typically starts with "m=video"
+      const match = sdp.match(/^m=video .+$/m)
+      if (match) {
+        // Splits the line on spaces and ignore the first three items (m=video, port, protocol)
+        const pts = match[0].split(' ').slice(3)
+        for (const pt of pts) {
+          // Looks for an "a=rtpmap" line for the given payload type, which maps to a codec
+          const rp = new RegExp(`a=rtpmap:${pt} ([A-Za-z0-9]+)/`).exec(sdp)
+          if (rp) {
+            // Write down the mime type in lower case from the codec name
+            detectedMime = `video/${rp[1].toLowerCase()}`
+            console.debug('[Recorder] Detected codec via SDP →', detectedMime)
+            break
+          }
+        }
+      }
+    }
+
+    // Check support for detected mimeType
+    if (detectedMime) {
+      if (MediaRecorder.isTypeSupported(detectedMime)) {
+        console.debug('[Recorder] Using detected codec.')
+        return { mimeType: detectedMime }
+      }
+
+      // Swaps the container from "video/h264" to 'video/webm' to make "video/webm; codecs="h264"
+      const codecOnly = detectedMime.replace(/^video\//, '')
+      const webmCandidate = `video/webm; codecs="${codecOnly}"`
+      console.debug('[Recorder] Trying container‑swapped codec →', webmCandidate)
+      if (MediaRecorder.isTypeSupported(webmCandidate)) {
+        console.debug('[Recorder] Using container‑swapped codec.')
+        return { mimeType: webmCandidate }
+      }
+    }
+
+    console.debug('[Recorder] No usable detected codec, using fallback list.')
+
+    // If no codec was retrieved from webRTC, try to test the stream for a probable match
+    const codecCandidates = [
+      'video/webm; codecs="h264"',
+      'video/webm; codecs="h265"',
+      'video/webm; codecs="vp9"',
+      'video/webm',
+    ] as const
+
+    for (const candidate of codecCandidates) {
+      console.debug('[Recorder] Trying fallback →', candidate)
+      if (MediaRecorder.isTypeSupported(candidate)) {
+        console.debug('[Recorder] Using fallback codec →', candidate)
+        return { mimeType: candidate }
+      }
+    }
+
+    // If everything fails, force H-264 WebM
+    const fallback = 'video/webm; codecs="h264"'
+    console.debug('[Recorder] Forcing last-resort codec →', fallback)
+
+    // Attach high bit-rate
+    return {
+      mimeType: detectedMime ?? fallback,
+      videoBitsPerSecond: 60_000_000, // 60 Mb/s to support Rad Cam 4k 30/60 fps
+    }
+  }
 
   const namessAvailableAbstractedStreams = computed(() => {
     return streamsCorrespondency.value.map((stream) => stream.name)
   })
-
   const externalStreamId = (internalName: string): string | undefined => {
     const corr = streamsCorrespondency.value.find((stream) => stream.name === internalName)
     return corr ? corr.externalId : undefined
@@ -223,11 +314,6 @@ export const useVideoStore = defineStore('video', () => {
       const videoObjectUrl = URL.createObjectURL(firstChunkBlob)
       const video = document.createElement('video')
 
-      let seekResolve: (() => void) | null = null
-      video.addEventListener('seeked', function () {
-        if (seekResolve) seekResolve()
-      })
-
       video.addEventListener('error', () => {
         URL.revokeObjectURL(videoObjectUrl)
         reject('Error loading video')
@@ -240,27 +326,48 @@ export const useVideoStore = defineStore('video', () => {
         const context = canvas.getContext('2d')
         if (!context) {
           URL.revokeObjectURL(videoObjectUrl)
-          reject('2D context not available.')
-          return
+          return reject('2D context not available.')
         }
 
         const [width, height] = [660, 370]
         canvas.width = width
         canvas.height = height
 
-        video.currentTime = 0
-        seekResolve = () => {
+        const waitForSeek = (): Promise<void> =>
+          new Promise((resolveSeek) => {
+            const handler = (): void => resolveSeek()
+            video.addEventListener('seeked', handler, { once: true })
+          })
+
+        const canvasToBlob = (): Promise<Blob> =>
+          new Promise((res, rej) =>
+            canvas.toBlob((b) => (b ? res(b) : rej(new Error('Failed to create blob'))), 'image/jpeg', 0.6)
+          )
+
+        const grabThumbFromFrame = async (t: number): Promise<Blob> => {
+          video.currentTime = t
+          await waitForSeek()
           context.drawImage(video, 0, 0, width, height)
-          const blobCallback = (blob: Blob | null): void => {
-            if (!blob) {
-              reject('Failed to create blob')
-              return
+          return canvasToBlob()
+        }
+
+        ;(async () => {
+          let thumbnail: Blob
+          try {
+            thumbnail = await grabThumbFromFrame(0)
+          } catch {
+            try {
+              thumbnail = await grabThumbFromFrame(1)
+            } catch {
+              context.fillStyle = '#000'
+              context.fillRect(0, 0, width, height)
+              thumbnail = await canvasToBlob().catch(() => new Blob())
             }
-            resolve(blob)
+          } finally {
             URL.revokeObjectURL(videoObjectUrl)
           }
-          canvas.toBlob(blobCallback, 'image/jpeg', 0.6)
-        }
+          resolve(thumbnail)
+        })().catch(reject)
       })
     })
   }
@@ -270,6 +377,7 @@ export const useVideoStore = defineStore('video', () => {
    * @param {string} streamName - Name of the stream
    */
   const startRecording = async (streamName: string): Promise<void> => {
+    streamsPreparingToRecord.value = [...streamsPreparingToRecord.value, streamName]
     eventTracker.capture('Video recording start', { streamName: streamName })
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
@@ -303,7 +411,10 @@ export const useVideoStore = defineStore('video', () => {
 
     const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
     const fileName = `${missionStore.missionName || 'Cockpit'} (${timeRecordingStartString}) #${recordingHash}`
-    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
+    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(
+      streamData.mediaStream!,
+      await getRecorderOptions(streamData)
+    )
 
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
@@ -397,20 +508,23 @@ export const useVideoStore = defineStore('video', () => {
       updatedInfo.dateLastRecordingUpdate = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
 
-      // Gets the thumbnail from the first chunk
+      // Gets the thumbnail from the first chunk without blocking the main processing flow
       if (chunksCount === 0) {
-        try {
+        ;(async () => {
           const videoChunk = await tempVideoStorage.getItem(chunkName)
-          if (videoChunk) {
-            const firstChunkBlob = new Blob([videoChunk as Blob])
-            const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
-            // Save thumbnail in the storage
-            await tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail)
-            unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
-          }
-        } catch (error) {
-          console.error('Failed to extract thumbnail:', error)
-        }
+          if (!videoChunk) return
+          activeStreams.value[streamName]!.timeRecordingStart = new Date()
+          streamsPreparingToRecord.value = streamsPreparingToRecord.value.filter((name) => name !== streamName)
+          const firstChunkBlob = new Blob([videoChunk as Blob])
+
+          extractThumbnailFromVideo(firstChunkBlob)
+            .then((thumbnail) => tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail))
+            .catch((error) => {
+              console.warn('Failed to extract thumbnail:', error)
+            })
+        })().catch((error) => {
+          console.error('Unexpected error extracting thumbnail:', error)
+        })
       }
 
       // If the chunk was saved, remove it from the unsaved list
@@ -633,7 +747,7 @@ export const useVideoStore = defineStore('video', () => {
       const extensionContainer = getBlobExtensionContainer(chunkBlobs[0])
       debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
 
-      const mergedBlob = new Blob([...chunkBlobs])
+      const mergedBlob = new Blob([...chunkBlobs], { type: chunkBlobs[0].type })
 
       let durFixedBlob: Blob | undefined = undefined
       try {
@@ -973,5 +1087,6 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams,
     renameStreamInternalNameById,
     lastRenamedStreamName,
+    streamsPreparingToRecord,
   }
 })
