@@ -7,7 +7,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
-import type { Waypoint, WaypointCoordinates } from '@/types/mission'
+import type { PointOfInterest, PointOfInterestCoordinates, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 import { useMainVehicleStore } from './mainVehicle'
 
@@ -32,6 +32,8 @@ export const useMissionStore = defineStore('mission', () => {
 
   const mainVehicleStore = useMainVehicleStore()
 
+  const pointsOfInterest = useBlueOsStorage<PointOfInterest[]>('cockpit-points-of-interest', [])
+
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
@@ -45,6 +47,32 @@ export const useMissionStore = defineStore('mission', () => {
       currentPlanningWaypoints,
       currentPlanningWaypoints.map((w) => (w.id === id ? { ...w, ...{ coordinates: newCoordinates } } : w))
     )
+  }
+
+  const addPointOfInterest = (poi: PointOfInterest): void => {
+    pointsOfInterest.value.push(poi)
+  }
+
+  const updatePointOfInterest = (id: string, poiUpdate: Partial<PointOfInterest>): void => {
+    const index = pointsOfInterest.value.findIndex((p) => p.id === id)
+    if (index !== -1) {
+      pointsOfInterest.value[index] = { ...pointsOfInterest.value[index], ...poiUpdate, timestamp: Date.now() }
+    }
+  }
+
+  const removePointOfInterest = (id: string): void => {
+    const index = pointsOfInterest.value.findIndex((p) => p.id === id)
+    if (index !== -1) {
+      pointsOfInterest.value.splice(index, 1)
+    }
+  }
+
+  const movePointOfInterest = (id: string, newCoordinates: PointOfInterestCoordinates): void => {
+    const poi = pointsOfInterest.value.find((p) => p.id === id)
+    if (poi === undefined) {
+      throw Error(`Could not move Point of Interest. No POI with id ${id} was found.`)
+    }
+    updatePointOfInterest(id, { coordinates: newCoordinates })
   }
 
   const clearMission = (): void => {
@@ -121,5 +149,10 @@ export const useMissionStore = defineStore('mission', () => {
     defaultMapZoom,
     setDefaultMapPosition,
     getWaypointNumber,
+    pointsOfInterest,
+    addPointOfInterest,
+    updatePointOfInterest,
+    removePointOfInterest,
+    movePointOfInterest,
   }
 })
