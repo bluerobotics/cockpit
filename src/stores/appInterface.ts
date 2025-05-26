@@ -31,6 +31,7 @@ export enum SubMenuComponentName {
   SettingsDataLake = 'settings-datalake',
   ToolsMAVLink = 'tools-mavlink',
   ToolsDataLake = 'tools-datalake',
+  ToolsStats = 'tools-stats',
 }
 
 export const useAppInterfaceStore = defineStore('responsive', {
