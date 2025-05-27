@@ -110,6 +110,18 @@
           ></v-icon>
           <span class="text-white text-sm ml-4">{{ pathCreationButtonText }}</span>
         </v-list-item>
+        <v-divider />
+        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
+          <v-icon
+            variant="text"
+            icon="mdi-home-map-marker"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px]"
+          ></v-icon>
+          <span class="text-white text-sm ml-4">Set home waypoint</span>
+        </v-list-item>
       </div>
     </div>
 
@@ -121,6 +133,16 @@
       <div class="flex justify-between items-center pt-1 pb-2 px-2">
         <p class="text-[14px]">Waypoint {{ missionStore.getWaypointNumber(selectedWaypoint?.id as string) }}</p>
         <div>
+          <v-icon
+            v-tooltip="'Set home waypoint'"
+            variant="text"
+            icon="mdi-home-map-marker"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[18px] mr-3"
+            @click="handleSetHomePosition"
+          ></v-icon>
           <v-icon
             v-tooltip="'Delete waypoint'"
             variant="text"
@@ -208,6 +230,7 @@ const emit = defineEmits<{
   (event: 'surveyLinesAngle', angle: number): void
   (event: 'regenerateSurveyWaypoints', angle: number): void
   (event: 'removeWaypoint'): void
+  (event: 'setHomePosition'): void
 }>()
 
 const menuType = computed(() => props.menuType)
@@ -263,6 +286,11 @@ const handleDeleteSelectedSurvey = (): void => {
 
 const handleRemoveWaypoint = (): void => {
   emit('removeWaypoint')
+}
+
+const handleSetHomePosition = (): void => {
+  emit('setHomePosition')
+  emit('close')
 }
 
 const onRegenerateSurveyWaypoints = (newAngle: number): void => {
