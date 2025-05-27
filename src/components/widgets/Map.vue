@@ -528,14 +528,6 @@ const onMapClick = (event: L.LeafletMouseEvent): void => {
   } else {
     console.error('Invalid event structure:', event)
   }
-
-  // Create marker for the clicked location
-  if (map.value !== undefined) {
-    contextMenuMarker.value = L.marker(clickedLocation.value as LatLngTuple)
-    const markerIcon = L.divIcon({ className: 'marker-icon', iconSize: [32, 32], iconAnchor: [16, 16] })
-    contextMenuMarker.value.setIcon(markerIcon)
-    map.value.addLayer(contextMenuMarker.value)
-  }
 }
 
 const onMenuOptionSelect = async (option: string): Promise<void> => {
