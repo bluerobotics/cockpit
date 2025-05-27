@@ -220,16 +220,17 @@
                   :key="key"
                   class="w-full flex-centered flex-column position-relative"
                 >
+                  <span class="text-lg font-bold w-full text-center">{{ joystick.model }} controller</span>
                   <div class="flex items-center gap-2 -mb-4">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
                       :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
                       hide-details
-                      class="-mt-2"
+                      class="-mt-2 -mb-1"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
                     />
                   </div>
-                  <p class="text-start text-sm font-bold w-[93%]">Axis</p>
+                  <p class="text-start text-sm font-bold w-[93%] mb-1">Axes</p>
                   <v-data-table
                     v-if="controllerStore.joysticks && controllerStore.joysticks.size"
                     :items="tableItems"
@@ -329,12 +330,13 @@
                     ></template>
                   </v-data-table>
 
+                  <p class="text-start text-sm font-bold w-[93%] mb-1">Buttons</p>
                   <v-data-table
                     v-if="currentJoystick && currentJoystick?.gamepadToCockpitMap?.buttons"
                     :headers="headers"
                     :items="tableItems"
                     :items-per-page="64"
-                    class="elevation-1 bg-transparent rounded-lg mt-[5px]"
+                    class="elevation-1 bg-transparent rounded-lg mt-2 mb-10"
                     theme="dark"
                     :style="interfaceStore.globalGlassMenuStyles"
                   >
