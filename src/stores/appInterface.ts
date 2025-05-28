@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 
 import { defaultDisplayUnitPreferences } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -35,6 +36,8 @@ export enum SubMenuComponentName {
 
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({
+    pirateMode: useBlueOsStorage('cockpit-pirate-mode', false),
+    showSkullAnimation: false,
     width: windowWidth.value,
     height: windowHeight.value,
     configModalVisibility: false,
@@ -69,6 +72,12 @@ export const useAppInterfaceStore = defineStore('responsive', {
         .toString(16)
         .padStart(2, '0')
       this.UIGlassEffect.bgColor = `#${hex}${alphaHex}`
+    },
+    triggerSkullAnimation() {
+      this.showSkullAnimation = true
+    },
+    hideSkullAnimation() {
+      this.showSkullAnimation = false
     },
   },
   getters: {
@@ -126,4 +135,22 @@ export const useAppInterfaceStore = defineStore('responsive', {
 watch(windowWidth, () => {
   const store = useAppInterfaceStore()
   store.updateWidth()
+})
+
+// Watch for pirate mode changes and trigger skull animation
+setupPostPiniaConnection(() => {
+  const store = useAppInterfaceStore()
+  watch(
+    () => {
+      return store.pirateMode
+    },
+    (newValue, oldValue) => {
+      const pirateModeEnabled = newValue === true && oldValue === false
+      // Only trigger animation when pirate mode changes from false to true
+      if (pirateModeEnabled) {
+        console.log('Pirate mode enabled.')
+        store.triggerSkullAnimation()
+      }
+    }
+  )
 })

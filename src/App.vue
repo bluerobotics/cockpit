@@ -132,6 +132,10 @@
   <ActionDiscoveryModal auto-check-on-mount />
   <UpdateNotification v-if="isElectron()" />
   <SnackbarContainer />
+  <SkullAnimation
+    :is-visible="interfaceStore.showSkullAnimation"
+    @animation-complete="interfaceStore.hideSkullAnimation"
+  />
   <Transition
     leave-active-class="transition-opacity duration-500 ease-in-out"
     leave-from-class="opacity-100"
@@ -146,6 +150,7 @@ import { useStorage, useWindowSize } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import GlassModal from '@/components/GlassModal.vue'
+import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
