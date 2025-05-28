@@ -110,3 +110,33 @@ export interface ArduPilotParameterSetData extends VehicleConfigurationSettings 
    */
   type?: MavParamType
 }
+
+/**
+ * Options for setting a message interval to default or disabled
+ */
+export interface MessageIntervalDefaultOrDisabledOrDontTouch {
+  /**
+   * Type of interval to be set
+   * 'default' - Use the default interval (as configured by vehicle/other GCS)
+   * 'disabled' - Disable the message transmission (set interval to -1)
+   * 'dontTouch' - Don't send any request to the vehicle to change the interval (leave as it is)
+   */
+  intervalType: 'default' | 'disabled' | 'dontTouch'
+}
+
+/**
+ * Options for setting a message interval
+ */
+export interface MessageIntervalCustom {
+  /**
+   * Type of interval to be set
+   * 'custom' - Set a custom interval in Hz
+   */
+  intervalType: 'custom'
+  /**
+   * Frequency in Hz. Only used if intervalType is 'custom'
+   */
+  frequencyHz?: number
+}
+
+export type MessageIntervalOptions = MessageIntervalDefaultOrDisabledOrDontTouch | MessageIntervalCustom
