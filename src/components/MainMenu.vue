@@ -231,6 +231,7 @@ import ConfigurationDevelopmentView from '@/views/ConfigurationDevelopmentView.v
 import ConfigurationGeneralView from '@/views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
 import ConfigurationTelemetryView from '@/views/ConfigurationLogsView.vue'
+import ConfigurationMAVLinkView from '@/views/ConfigurationMAVLinkView.vue'
 import ConfigurationMissionView from '@/views/ConfigurationMissionView.vue'
 import ConfigurationUIView from '@/views/ConfigurationUIView.vue'
 import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
@@ -410,7 +411,12 @@ const configMenu = computed(() => {
   ]
 
   if (interfaceStore.pirateMode) {
-    // Pirate-mode specific menus should be added here
+    menusToShow.push({
+      icon: 'mdi-protocol',
+      title: 'MAVLink',
+      componentName: SubMenuComponentName.SettingsMAVLink,
+      component: markRaw(ConfigurationMAVLinkView) as SubMenuComponent,
+    })
   }
   return menusToShow
 })
