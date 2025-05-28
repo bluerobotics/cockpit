@@ -35,6 +35,7 @@ export enum SubMenuComponentName {
 
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({
+    pirateMode: useBlueOsStorage('cockpit-pirate-mode', false),
     width: windowWidth.value,
     height: windowHeight.value,
     configModalVisibility: false,
