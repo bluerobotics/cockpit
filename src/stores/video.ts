@@ -320,7 +320,10 @@ export const useVideoStore = defineStore('video', () => {
 
     const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
     const fileName = `${missionStore.missionName || 'Cockpit'} (${timeRecordingStartString}) #${recordingHash}`
-    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
+    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!, {
+      mimeType: 'video/webm; codecs="h264"',
+      videoBitsPerSecond: 8_000_000,
+    })
 
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
