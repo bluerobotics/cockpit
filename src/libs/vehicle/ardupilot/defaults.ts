@@ -1,5 +1,7 @@
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 
+import { MessageIntervalOptions } from './types'
+
 /**
  * The default frequency in Hertz used for each message type.
  * When initially connecting to the vehicle, the GCS will usually request each of these messages at the specified frequency.
@@ -42,3 +44,10 @@ export const defaultMessageFrequency = {
   [MAVLinkType.VIBRATION]: 3,
   [MAVLinkType.PARAM_VALUE]: 2,
 }
+
+export const defaultMessageIntervalsOptions: Record<string, MessageIntervalOptions> = Object.fromEntries(
+  Object.entries(defaultMessageFrequency).map(([messageType, frequencyHz]) => [
+    messageType,
+    { intervalType: 'custom', frequencyHz },
+  ])
+)

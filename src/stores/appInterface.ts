@@ -29,12 +29,14 @@ export enum SubMenuComponentName {
   SettingsMission = 'settings-mission',
   SettingsActions = 'settings-actions',
   SettingsDataLake = 'settings-datalake',
+  SettingsMAVLink = 'settings-mavlink',
   ToolsMAVLink = 'tools-mavlink',
   ToolsDataLake = 'tools-datalake',
 }
 
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({
+    pirateMode: useBlueOsStorage('cockpit-pirate-mode', false),
     width: windowWidth.value,
     height: windowHeight.value,
     configModalVisibility: false,
