@@ -351,77 +351,92 @@ watchEffect(() => {
   }
 })
 
-const configMenu = [
-  {
-    icon: 'mdi-view-dashboard-variant',
-    title: 'General',
-    componentName: SubMenuComponentName.SettingsGeneral,
-    component: markRaw(ConfigurationGeneralView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-monitor-cellphone',
-    title: 'Interface',
-    componentName: SubMenuComponentName.SettingsInterface,
-    component: markRaw(ConfigurationUIView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-controller',
-    title: 'Joystick',
-    componentName: SubMenuComponentName.SettingsJoystick,
-    component: markRaw(ConfigurationJoystickView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-video',
-    title: 'Video',
-    componentName: SubMenuComponentName.SettingsVideo,
-    component: markRaw(ConfigurationVideoView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-subtitles-outline',
-    title: 'Telemetry',
-    componentName: SubMenuComponentName.SettingsTelemetry,
-    component: markRaw(ConfigurationTelemetryView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-alert-rhombus-outline',
-    title: 'Alerts',
-    componentName: SubMenuComponentName.SettingsAlerts,
-    component: markRaw(ConfigurationAlertsView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-dev-to',
-    title: 'Dev',
-    componentName: SubMenuComponentName.SettingsDev,
-    component: markRaw(ConfigurationDevelopmentView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-map-marker-path',
-    title: 'Mission',
-    componentName: SubMenuComponentName.SettingsMission,
-    component: markRaw(ConfigurationMissionView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-run-fast',
-    title: 'Actions',
-    componentName: SubMenuComponentName.SettingsActions,
-    component: markRaw(ConfigurationActionsView) as SubMenuComponent,
-  },
-]
+const configMenu = computed(() => {
+  const menusToShow = [
+    {
+      icon: 'mdi-view-dashboard-variant',
+      title: 'General',
+      componentName: SubMenuComponentName.SettingsGeneral,
+      component: markRaw(ConfigurationGeneralView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-monitor-cellphone',
+      title: 'Interface',
+      componentName: SubMenuComponentName.SettingsInterface,
+      component: markRaw(ConfigurationUIView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-controller',
+      title: 'Joystick',
+      componentName: SubMenuComponentName.SettingsJoystick,
+      component: markRaw(ConfigurationJoystickView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-video',
+      title: 'Video',
+      componentName: SubMenuComponentName.SettingsVideo,
+      component: markRaw(ConfigurationVideoView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-subtitles-outline',
+      title: 'Telemetry',
+      componentName: SubMenuComponentName.SettingsTelemetry,
+      component: markRaw(ConfigurationTelemetryView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-alert-rhombus-outline',
+      title: 'Alerts',
+      componentName: SubMenuComponentName.SettingsAlerts,
+      component: markRaw(ConfigurationAlertsView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-dev-to',
+      title: 'Dev',
+      componentName: SubMenuComponentName.SettingsDev,
+      component: markRaw(ConfigurationDevelopmentView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-map-marker-path',
+      title: 'Mission',
+      componentName: SubMenuComponentName.SettingsMission,
+      component: markRaw(ConfigurationMissionView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-run-fast',
+      title: 'Actions',
+      componentName: SubMenuComponentName.SettingsActions,
+      component: markRaw(ConfigurationActionsView) as SubMenuComponent,
+    },
+  ]
 
-const toolsMenu = [
-  {
-    icon: 'mdi-protocol',
-    title: 'MAVLink',
-    componentName: SubMenuComponentName.ToolsMAVLink,
-    component: markRaw(ToolsMAVLinkView) as SubMenuComponent,
-  },
-  {
-    icon: 'mdi-database-outline',
-    title: 'Data-lake',
-    componentName: SubMenuComponentName.ToolsDataLake,
-    component: markRaw(ToolsDataLakeView) as SubMenuComponent,
-  },
-]
+  if (interfaceStore.pirateMode) {
+    // Pirate-mode specific menus should be added here
+  }
+  return menusToShow
+})
+
+const toolsMenu = computed(() => {
+  const menusToShow = [
+    {
+      icon: 'mdi-protocol',
+      title: 'MAVLink',
+      componentName: SubMenuComponentName.ToolsMAVLink,
+      component: markRaw(ToolsMAVLinkView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-database-outline',
+      title: 'Data-lake',
+      componentName: SubMenuComponentName.ToolsDataLake,
+      component: markRaw(ToolsDataLakeView) as SubMenuComponent,
+    },
+  ]
+
+  if (interfaceStore.pirateMode) {
+    // Add pirate-mode specific tools here
+  }
+
+  return menusToShow
+})
 
 const selectSubMenu = (subMenuName: SubMenuName): void => {
   interfaceStore.currentSubMenuName = subMenuName
@@ -538,14 +553,16 @@ const fullScreenCallbackId = registerActionCallback(
   debouncedToggleFullScreen
 )
 
-const availableSubMenus = {
-  settings: configMenu,
-  tools: toolsMenu,
-}
+const availableSubMenus = computed(() => {
+  return {
+    settings: configMenu.value,
+    tools: toolsMenu.value,
+  }
+})
 
 const currentSubMenu = computed(() => {
   if (interfaceStore.currentSubMenuName === null) return []
-  return availableSubMenus[interfaceStore.currentSubMenuName]
+  return availableSubMenus.value[interfaceStore.currentSubMenuName]
 })
 
 onClickOutside(mainMenu, () => {

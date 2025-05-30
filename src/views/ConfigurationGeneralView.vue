@@ -9,9 +9,13 @@
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>User settings</template>
           <template #info>
-            <p class="max-w-[400px]">
+            <p class="w-full">
               User related configuration. Here you can set the user that is currently set for this device as well as
               create a new user account.
+              <br />
+              <br />
+              <span class="font-semibold">Pirate mode</span> allows Cockpit to expose advanced features, like setting
+              the frequency of MAVLink messages. Take care when enabling this mode.
             </p>
           </template>
           <template #content>
@@ -36,14 +40,14 @@
                 </div>
               </div>
               <v-divider class="w-full opacity-[0.08]" />
-              <div class="flex flex-row w-full justify-between h-[46px] py-3">
-                <v-btn size="x-small" class="bg-[#FFFFFF22] mb-4 shadow-1" variant="flat" @click="openTutorial">
+              <div class="flex flex-row w-full items-center justify-between py-5 gap-x-2">
+                <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
                   Show tutorial
                 </v-btn>
                 <v-btn
                   v-if="isElectron()"
                   size="x-small"
-                  class="bg-[#FFFFFF22] mb-4 ml-2 shadow-1"
+                  class="bg-[#FFFFFF22] shadow-1"
                   variant="flat"
                   @click="openCockpitFolder"
                 >
@@ -51,11 +55,19 @@
                 </v-btn>
                 <v-btn
                   size="x-small"
-                  class="bg-[#FFFFFF22] mb-4 ml-2 shadow-1"
+                  class="bg-[#FFFFFF22] shadow-1"
                   variant="flat"
                   @click="showCockpitSettingsDialog = true"
                 >
                   Manage Cockpit settings
+                </v-btn>
+                <v-btn
+                  size="x-small"
+                  class="bg-[#FFFFFF22] shadow-1"
+                  variant="flat"
+                  @click="interfaceStore.pirateMode = !interfaceStore.pirateMode"
+                >
+                  {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
                 </v-btn>
               </div>
             </div>
