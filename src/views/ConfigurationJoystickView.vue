@@ -161,7 +161,7 @@
                   </v-tabs>
                 </div>
               </div>
-              <div v-show="currentTabVIew === 'svg'" class="flex flex-col justify-between mt-5">
+              <div v-if="currentTabVIew === 'svg'" class="flex flex-col justify-between mt-5">
                 <div
                   v-for="[key, joystick] in controllerStore.joysticks"
                   :key="key"
@@ -214,7 +214,7 @@
                   </div>
                 </div>
               </div>
-              <div v-show="currentTabVIew === 'table'" class="flex flex-col justify-between mt-5">
+              <div v-if="currentTabVIew === 'table'" class="flex flex-col justify-between mt-5">
                 <div
                   v-for="[key, joystick] in controllerStore.joysticks"
                   :key="key"
