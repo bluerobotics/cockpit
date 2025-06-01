@@ -193,6 +193,16 @@ declare global {
        */
       getInfoOnSubnets: () => Promise<NetworkInfo[]>
       /**
+       * Get memory usage information from the main process
+       * @returns Promise containing memory usage data
+       */
+      getResourceUsage: () => Promise<{
+        /**
+         * The total memory usage of the application in MB
+         */
+        totalMemoryMB: number
+      }>
+      /**
        * Register callback for update available event
        */
       onUpdateAvailable: (callback: (info: any) => void) => void
