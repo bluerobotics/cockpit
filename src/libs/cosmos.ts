@@ -203,6 +203,22 @@ declare global {
          * The total memory usage of the application in MB
          */
         totalMemoryMB: number
+        /**
+         * The main process memory usage in MB
+         */
+        mainMemoryMB: number
+        /**
+         * The total renderer processes memory usage in MB
+         */
+        renderersMemoryMB: number
+        /**
+         * The GPU process memory usage in MB
+         */
+        gpuMemoryMB: number
+        /**
+         * The CPU usage percentage
+         */
+        cpuUsagePercent: number
       }>
       /**
        * Register callback for update available event
