@@ -4,6 +4,7 @@ import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
+import { setupMemoryService } from './services/memory'
 import { setupNetworkService } from './services/network'
 import { setupFilesystemStorage } from './services/storage'
 
@@ -75,6 +76,7 @@ protocol.registerSchemesAsPrivileged([
 
 setupFilesystemStorage()
 setupNetworkService()
+setupMemoryService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')

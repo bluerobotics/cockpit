@@ -10,6 +10,7 @@ import {
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
+import { isElectron } from '@/libs/utils'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useVideoStore } from './video'
@@ -26,8 +27,29 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   } as DataLakeVariable
   createDataLakeVariable(cockpitMemoryUsageVariable)
 
-  setInterval(() => {
-    const currentMemoryUsage = window.performance.memory.usedJSHeapSize / 1024 / 1024
+  // Function to get memory usage based on the environment
+  const getMemoryUsage = async (): Promise<number> => {
+    if (isElectron() && window.electronAPI?.getResourceUsage) {
+      try {
+        const resourceUsage = await window.electronAPI.getResourceUsage()
+        return resourceUsage.totalMemoryMB
+      } catch (error) {
+        console.warn('Failed to get Electron memory usage, falling back to performance API:', error)
+      }
+    }
+
+    // Fallback for browsers or when Electron API fails
+    if (window.performance && (window.performance as any).memory) {
+      return (window.performance as any).memory.usedJSHeapSize / 1024 / 1024
+    }
+
+    // If no memory API is available, return 0
+    console.warn('No memory usage API available')
+    return 0
+  }
+
+  setInterval(async () => {
+    const currentMemoryUsage = await getMemoryUsage()
     setDataLakeVariableData(cockpitMemoryUsageVariable.id, currentMemoryUsage)
   }, 100)
 

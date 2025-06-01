@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
+  getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
   onUpdateAvailable: (callback: (info: any) => void) =>
     ipcRenderer.on('update-available', (_event, info) => callback(info)),
   onUpdateDownloaded: (callback: (info: any) => void) =>
