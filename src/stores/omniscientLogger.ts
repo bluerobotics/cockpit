@@ -27,6 +27,52 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   } as DataLakeVariable
   createDataLakeVariable(cockpitMemoryUsageVariable)
 
+  // Electron-specific memory and CPU metrics (only available in Electron)
+  let cockpitMainMemoryVariable: DataLakeVariable | undefined
+  let cockpitRenderersMemoryVariable: DataLakeVariable | undefined
+  let cockpitGpuMemoryVariable: DataLakeVariable | undefined
+  let cockpitCpuUsageVariable: DataLakeVariable | undefined
+
+  if (isElectron()) {
+    // Separate memory metrics for different process types
+    cockpitMainMemoryVariable = {
+      id: 'cockpit-main-memory',
+      name: 'Cockpit Main Memory (Electron)',
+      type: 'number',
+      description:
+        'The memory usage of the main process in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
+    } as DataLakeVariable
+    createDataLakeVariable(cockpitMainMemoryVariable)
+
+    cockpitRenderersMemoryVariable = {
+      id: 'cockpit-renderers-memory',
+      name: 'Cockpit Renderers Memory (Electron)',
+      type: 'number',
+      description:
+        'The total memory usage of the renderer processes in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
+    } as DataLakeVariable
+    createDataLakeVariable(cockpitRenderersMemoryVariable)
+
+    cockpitGpuMemoryVariable = {
+      id: 'cockpit-gpu-memory',
+      name: 'Cockpit GPU Memory (Electron)',
+      type: 'number',
+      description:
+        'The memory usage of the GPU in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
+    } as DataLakeVariable
+    createDataLakeVariable(cockpitGpuMemoryVariable)
+
+    // CPU usage tracking
+    cockpitCpuUsageVariable = {
+      id: 'cockpit-cpu-usage',
+      name: 'Cockpit CPU Usage (Electron)',
+      type: 'number',
+      description:
+        'The CPU usage of the standalone Cockpit application as a percentage. This value is updated every 100ms. Only available in Electron.',
+    } as DataLakeVariable
+    createDataLakeVariable(cockpitCpuUsageVariable)
+  }
+
   // Function to get memory usage based on the environment
   const getMemoryUsage = async (): Promise<number> => {
     if (isElectron() && window.electronAPI?.getResourceUsage) {
@@ -48,9 +94,57 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     return 0
   }
 
+  // Function to get all resource usage metrics
+  const getResourceUsage = async (): Promise<{
+    /** Total memory usage in MB */
+    totalMemoryMB: number
+    /** Main process memory usage in MB */
+    mainMemoryMB: number
+    /** Renderer processes memory usage in MB */
+    renderersMemoryMB: number
+    /** GPU process memory usage in MB */
+    gpuMemoryMB: number
+    /** CPU usage percentage */
+    cpuUsagePercent: number
+  }> => {
+    if (isElectron() && window.electronAPI?.getResourceUsage) {
+      try {
+        const resourceUsage = await window.electronAPI.getResourceUsage()
+        return resourceUsage
+      } catch (error) {
+        console.warn('Failed to get Electron resource usage:', error)
+      }
+    }
+
+    // Fallback for browsers or when Electron API fails
+    const fallbackMemory = (window.performance as any)?.memory?.usedJSHeapSize / 1024 / 1024 || 0
+    return {
+      totalMemoryMB: fallbackMemory,
+      mainMemoryMB: fallbackMemory,
+      renderersMemoryMB: 0,
+      gpuMemoryMB: 0,
+      cpuUsagePercent: 0,
+    }
+  }
+
   setInterval(async () => {
     const currentMemoryUsage = await getMemoryUsage()
     setDataLakeVariableData(cockpitMemoryUsageVariable.id, currentMemoryUsage)
+
+    // Get detailed resource usage for separate metrics (Electron only)
+    if (
+      isElectron() &&
+      cockpitMainMemoryVariable &&
+      cockpitRenderersMemoryVariable &&
+      cockpitGpuMemoryVariable &&
+      cockpitCpuUsageVariable
+    ) {
+      const resourceUsage = await getResourceUsage()
+      setDataLakeVariableData(cockpitMainMemoryVariable.id, resourceUsage.mainMemoryMB)
+      setDataLakeVariableData(cockpitRenderersMemoryVariable.id, resourceUsage.renderersMemoryMB)
+      setDataLakeVariableData(cockpitGpuMemoryVariable.id, resourceUsage.gpuMemoryMB)
+      setDataLakeVariableData(cockpitCpuUsageVariable.id, resourceUsage.cpuUsagePercent)
+    }
   }, 100)
 
   // Routine to log the framerate of the application rendering
