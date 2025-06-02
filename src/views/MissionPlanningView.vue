@@ -1929,7 +1929,7 @@ const addPoiMarkerToPlanningMap = (poi: PointOfInterest): void => {
     ${poi.description ? poi.description + '<br>' : ''}
     Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
   `
-  const tooltipConfig = { permanent: false, direction: 'top', offset: [-14, -64], className: 'poi-tooltip' }
+  const tooltipConfig = { permanent: false, direction: 'top', offset: [0, -40], className: 'poi-tooltip' }
   marker.bindTooltip(tooltipContent, tooltipConfig)
 
   marker.on('drag', (event) => {
