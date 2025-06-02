@@ -397,22 +397,6 @@ export const useVideoStore = defineStore('video', () => {
       updatedInfo.dateLastRecordingUpdate = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
 
-      // Gets the thumbnail from the first chunk
-      if (chunksCount === 0) {
-        try {
-          const videoChunk = await tempVideoStorage.getItem(chunkName)
-          if (videoChunk) {
-            const firstChunkBlob = new Blob([videoChunk as Blob])
-            const thumbnail = await extractThumbnailFromVideo(firstChunkBlob)
-            // Save thumbnail in the storage
-            await tempVideoStorage.setItem(videoThumbnailFilename(recordingHash), thumbnail)
-            unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
-          }
-        } catch (error) {
-          console.error('Failed to extract thumbnail:', error)
-        }
-      }
-
       // If the chunk was saved, remove it from the unsaved list
       clearTimeout(unsavedChunkAlerts[chunkName])
       delete unsavedChunkAlerts[chunkName]
