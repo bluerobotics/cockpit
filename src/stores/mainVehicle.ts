@@ -382,6 +382,33 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Fetch home waypoint from vehicle
+   * @returns { Promise<Waypoint> } Home waypoint
+   */
+  async function fetchHomeWaypoint(): Promise<Waypoint> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to fetch home waypoint.')
+    }
+    if (mainVehicle.value.firmware() !== Vehicle.Firmware.ArduPilot) {
+      throw new Error('Home waypoint retrieval is only supported for ArduPilot vehicles.')
+    }
+    return await mainVehicle.value.fetchHomeWaypoint()
+  }
+
+  /**
+   * Set home waypoint on vehicle
+   * @param { [ number, number ] } coordinate of the home waypoint
+   * @param { number } height of the home waypoint
+   * @returns { Promise<void> }
+   */
+  async function setHomeWaypoint(coordinate: [number, number], height: number): Promise<void> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to set home waypoint.')
+    }
+    await mainVehicle.value.setHomeWaypoint(coordinate, height)
+  }
+
+  /**
    * Clear all missions that are on the vehicle
    */
   async function clearMissions(): Promise<void> {
@@ -730,5 +757,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mavlinkMessageIntervalOptions,
     updateMessageInterval,
     resetMessageIntervalsToCockpitDefault,
+    fetchHomeWaypoint,
+    setHomeWaypoint,
   }
 })
