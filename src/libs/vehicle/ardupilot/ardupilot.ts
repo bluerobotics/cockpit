@@ -1080,6 +1080,54 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   }
 
   /**
+   * Set home waypoint on the vehicle
+   * @param { [number, number] } coordinates Coordinates of the home waypoint
+   * @param { number } altitude Altitude of the home waypoint
+   */
+  async setHomeWaypoint(coordinates: [number, number], altitude: number): Promise<void> {
+    await this.sendCommandLong(MavCmd.MAV_CMD_DO_SET_HOME, 0, 0, 0, 0, coordinates[0], coordinates[1], altitude)
+  }
+
+  /**
+   * Fetch the home waypoint from the vehicle
+   * and converts the message into a Waypoint.
+   * @returns {Promise<Waypoint>} The home waypoint.
+   */
+  async fetchHomeWaypoint(): Promise<Waypoint> {
+    await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_MESSAGE, getMAVLinkMessageId(MAVLinkType.HOME_POSITION))
+    const startTime = new Date().getTime()
+    let homePosition: Message.HomePosition | undefined = undefined
+    while (!homePosition && new Date().getTime() - startTime < 5000) {
+      await sleep(100)
+      homePosition = this._messages.get(MAVLinkType.HOME_POSITION) as Message.HomePosition
+    }
+    if (!homePosition) {
+      throw new Error('Home position not received from vehicle.')
+    }
+    const homeMissionItem: Message.MissionItemInt = {
+      type: MAVLinkType.MISSION_ITEM_INT,
+      target_system: this.currentSystemId,
+      target_component: 1,
+      seq: 0,
+      frame: { type: MavFrame.MAV_FRAME_GLOBAL_RELATIVE_ALT },
+      command: { type: MavCmd.MAV_CMD_GET_HOME_POSITION },
+      current: 1,
+      autocontinue: 1,
+      param1: 0,
+      param2: 0,
+      param3: 0,
+      param4: 0,
+      x: homePosition.latitude,
+      y: homePosition.longitude,
+      z: homePosition.altitude,
+      mission_type: { type: MavMissionType.MAV_MISSION_TYPE_MISSION },
+    }
+
+    const waypoints = convertMavlinkWaypointsToCockpit([homeMissionItem])
+    return waypoints[0]
+  }
+
+  /**
    * Clear mission that is on the vehicle
    */
   async clearMissions(): Promise<void> {
