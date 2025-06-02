@@ -266,6 +266,76 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Generates a fake placeholder thumbnail for videos.
+   * @param {Date} dateStart - The date the video started recording
+   * @returns {Promise<Blob>} A promise that resolves with a placeholder thumbnail blob.
+   */
+  const generatePlaceholderThumbnail = async (dateStart: Date): Promise<Blob> => {
+    return new Promise<Blob>((resolve, reject) => {
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+      if (!context) {
+        reject('2D context not available.')
+        return
+      }
+
+      const [width, height] = [660, 370]
+      canvas.width = width
+      canvas.height = height
+
+      // Create gradient background
+      const gradient = context.createLinearGradient(0, 0, width, height)
+      gradient.addColorStop(0, '#4fa483') // Cockpit green
+      gradient.addColorStop(1, '#77bda2') // Cockpit green slightly lighter
+      context.fillStyle = gradient
+      context.fillRect(0, 0, width, height)
+
+      // Add video icon
+      context.fillStyle = '#ffffff'
+      context.font = 'bold 128px Arial'
+      context.textAlign = 'center'
+      context.fillText('▶', width / 2, height / 2 + 10)
+
+      // Add file name
+      context.fillStyle = '#e5e7eb' // Gray-200
+      context.font = '48px Arial'
+      context.textAlign = 'center'
+
+      // Truncate filename if too long
+      // @ts-ignore: replaceAll is available in any modern browser
+      const parsedFilename = dateStart.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      const maxLength = 50
+      const displayName =
+        parsedFilename.length > maxLength ? parsedFilename.substring(0, maxLength) + '...' : parsedFilename
+      context.fillText(displayName, width / 2, height / 2 + 120)
+
+      // Add "Video Thumbnail" text
+      context.fillStyle = '#9ca3af' // Gray-400
+      context.font = '14px Arial'
+
+      // Add border
+      context.strokeStyle = '#374151' // Gray-700
+      context.lineWidth = 2
+      context.strokeRect(1, 1, width - 2, height - 2)
+
+      const blobCallback = (blob: Blob | null): void => {
+        if (!blob) {
+          reject('Failed to create placeholder thumbnail blob')
+          return
+        }
+        resolve(blob)
+      }
+      canvas.toBlob(blobCallback, 'image/jpeg', 0.8)
+    })
+  }
+
+  /**
    * Start recording the stream
    * @param {string} streamName - Name of the stream
    */
@@ -634,7 +704,23 @@ export const useVideoStore = defineStore('video', () => {
       await videoStorage.setItem(finalFileName, durFixedBlob ?? mergedBlob)
 
       // Save thumbnail in the storage
-      const thumbnail = await extractThumbnailFromVideo(chunkBlobs[0])
+      // Try to extract the thumbnail from the first 10 chunks, if it fails, generate a placeholder
+      let thumbnail: Blob | undefined = undefined
+      for (let i = 0; i < chunkBlobs.length; i++) {
+        if (i > 10) {
+          console.warn('Reached maximum thumbnail extraction attempts.')
+          break
+        }
+        try {
+          thumbnail = await extractThumbnailFromVideo(chunkBlobs[i])
+        } catch (error) {
+          console.warn(`Failed to extract thumbnail from chunk ${i}. Error: ${error}`)
+        }
+      }
+      if (!thumbnail) {
+        console.warn('Failed to extract thumbnail from video. Generating placeholder thumbnail.')
+        thumbnail = await generatePlaceholderThumbnail(dateStart)
+      }
       await videoStorage.setItem(videoThumbnailFilename(finalFileName), thumbnail)
 
       updateLastProcessingUpdate(hash)
