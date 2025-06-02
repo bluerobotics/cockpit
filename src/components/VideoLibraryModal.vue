@@ -218,6 +218,7 @@
                     selectedVideos.length === 1 &&
                     !loadingData &&
                     !loadingVideoBlob &&
+                    !videoLoadError &&
                     selectedVideos[0].isProcessed
                   "
                   id="video-player"
@@ -228,26 +229,34 @@
                   class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
                 ></video>
                 <div
-                  v-if="!isMultipleSelectionMode && selectedVideos.length === 1 && !selectedVideos[0].isProcessed"
-                  class="w-[660px] border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
-                />
-                <v-btn
                   v-if="
-                    !loadingData &&
-                    selectedVideos.length === 1 &&
-                    !selectedVideos[0].isProcessed &&
                     !isMultipleSelectionMode &&
-                    !errorProcessingVideos
+                    selectedVideos.length === 1 &&
+                    !loadingData &&
+                    !loadingVideoBlob &&
+                    ((selectedVideos[0].isProcessed && videoLoadError) ||
+                      (!selectedVideos[0].isProcessed && !videoLoadError))
                   "
-                  :variant="showOnScreenProgress ? 'text' : 'outlined'"
-                  color="white"
-                  size="large"
-                  :disabled="showOnScreenProgress"
-                  class="process-button"
-                  @click="processSingleVideo"
+                  class="w-[660px] border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video flex justify-center items-center bg-black"
                 >
-                  {{ showOnScreenProgress ? 'Processing...' : 'Process video' }}
-                </v-btn>
+                  <div v-if="videoLoadError && selectedVideos[0].isProcessed" class="text-white/70 text-center">
+                    <v-icon size="60" class="text-white/30 mb-4">mdi-video</v-icon>
+                    <p>This video was processed but cannot be played here.</p>
+                    <p>This usually happens with videos of higher resolutions, like 4K.</p>
+                    <p>Try downloading it and playing it in your computer.</p>
+                  </div>
+                  <v-btn
+                    v-if="!videoLoadError && !selectedVideos[0].isProcessed"
+                    :variant="showOnScreenProgress ? 'text' : 'outlined'"
+                    color="white"
+                    size="large"
+                    :disabled="showOnScreenProgress"
+                    class="process-button"
+                    @click="processSingleVideo"
+                  >
+                    {{ showOnScreenProgress ? 'Processing...' : 'Process video' }}
+                  </v-btn>
+                </div>
                 <div class="processing-bar">
                   <v-progress-linear
                     v-if="showOnScreenProgress && !showProgressInteractionDialog"
@@ -556,6 +565,7 @@ const errorProcessingVideos = ref(false)
 const deleteButtonLoading = ref(false)
 const videoBlobURL = ref<string | null>(null)
 const loadingVideoBlob = ref(false)
+const videoLoadError = ref(false)
 const videoThumbnailURLs = reactive<Record<string, string | null>>({})
 
 const dialogStyle = computed(() => {
@@ -998,6 +1008,7 @@ watch(isVisible, (newValue) => {
 
 const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => {
   loadingVideoBlob.value = true
+  videoLoadError.value = false
 
   try {
     const videoPlayer = document.getElementById(`video-player`) as HTMLVideoElement
@@ -1006,11 +1017,45 @@ const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => 
     if (videoBlob instanceof Blob && videoPlayer) {
       videoBlobURL.value = URL.createObjectURL(videoBlob)
       videoPlayer.src = videoBlobURL.value
+
+      // Set up load error detection
+      let loadTimeout: number
+      let hasLoaded = false
+
+      const onCanPlay = (): void => {
+        hasLoaded = true
+        clearTimeout(loadTimeout)
+        videoPlayer.removeEventListener('canplay', onCanPlay)
+        videoPlayer.removeEventListener('error', onError)
+      }
+
+      const onError = (): void => {
+        if (!hasLoaded) {
+          videoLoadError.value = true
+          clearTimeout(loadTimeout)
+          videoPlayer.removeEventListener('canplay', onCanPlay)
+          videoPlayer.removeEventListener('error', onError)
+        }
+      }
+
+      videoPlayer.addEventListener('canplay', onCanPlay)
+      videoPlayer.addEventListener('error', onError)
+
+      // 3-second timeout
+      loadTimeout = setTimeout(() => {
+        if (!hasLoaded) {
+          videoLoadError.value = true
+          videoPlayer.removeEventListener('canplay', onCanPlay)
+          videoPlayer.removeEventListener('error', onError)
+        }
+      }, 3000)
+
       videoPlayer.load()
     }
   } catch (error) {
     const msg = 'Error loading video blob into player'
     openSnackbar({ message: msg, duration: 3000, variant: 'error', closeButton: true })
+    videoLoadError.value = true
   } finally {
     loadingVideoBlob.value = false
   }
@@ -1020,6 +1065,7 @@ const unloadVideoBlob = (): void => {
   if (!videoBlobURL.value) return
   URL.revokeObjectURL(videoBlobURL.value)
   videoBlobURL.value = null
+  videoLoadError.value = false
 }
 
 watch(
