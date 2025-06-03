@@ -66,7 +66,7 @@ const defaultTimeout = 10000
 const quickStatusTimeout = 3000
 const beaconTimeout = 5000
 
-const protocol = window.location.protocol
+const protocol = window.location.protocol.includes('file') ? 'http' : window.location.protocol
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const getBagOfHoldingFromVehicle = async (
