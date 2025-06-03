@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue'
 import fixWebmDuration from 'webm-duration-fix'
 import adapter from 'webrtc-adapter'
 
+import { defaultAutoRecordingOptions } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
@@ -28,6 +29,7 @@ import {
   type StreamData,
   type UnprocessedVideoInfo,
   type VideoProcessingDetails,
+  AutoRecordVideoStreams,
   getBlobExtensionContainer,
   VideoExtensionContainer,
   VideoStreamCorrespondency,
@@ -57,7 +59,14 @@ export const useVideoStore = defineStore('video', () => {
   const timeNow = useTimestamp({ interval: 500 })
   const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
   const lastRenamedStreamName = ref('')
-
+  const persistentAutoRecordOptions = useBlueOsStorage<AutoRecordVideoStreams>(
+    'cockpit-auto-record-streams',
+    defaultAutoRecordingOptions
+  )
+  const momentaryAutoRecordOptions = ref(
+    persistentAutoRecordOptions.value || { autoRecordMode: undefined, selectedStreams: [] }
+  )
+  const vehicleStore = useMainVehicleStore()
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
   const namessAvailableAbstractedStreams = computed(() => {
@@ -1002,6 +1011,69 @@ export const useVideoStore = defineStore('video', () => {
     useThrottleFn(stopRecordingAllStreams, 3000)
   )
 
+  const handleAutoRecording = (autoRecordMode: string, selectedStreams: { name: string }[]): void => {
+    switch (autoRecordMode) {
+      case 'all':
+        startRecordingAllStreams()
+        openSnackbar({ message: 'Started recording all available streams.', variant: 'info', duration: 2000 })
+        break
+      case 'selected':
+        selectedStreams.forEach(({ name }) => {
+          const streamEntry = streamsCorrespondency.value.find((stream) => stream.name === name)
+          if (streamEntry) {
+            startRecording(streamEntry.externalId)
+            openSnackbar({ message: `Started recording stream ${streamEntry.name}.`, variant: 'info', duration: 2000 })
+          }
+        })
+        break
+    }
+  }
+
+  // Auto-record streams when vehicle is armed
+  const autoRecordVideoStreams = (): void => {
+    const { autoRecordMode, selectedStreams, stopRecordingOnDisarm } = momentaryAutoRecordOptions.value
+    console.table(momentaryAutoRecordOptions.value)
+    const hasStreams = streamsCorrespondency.value.length > 0
+
+    if (vehicleStore.isArmed && hasStreams && autoRecordMode) {
+      handleAutoRecording(autoRecordMode, selectedStreams)
+    }
+
+    if (!vehicleStore.isArmed && stopRecordingOnDisarm) {
+      stopRecordingAllStreams()
+      openSnackbar({ message: 'Stopped recording all streams.', variant: 'info', duration: 2000 })
+    }
+  }
+
+  watch(
+    () => vehicleStore.isArmed,
+    (isArmed, oldVal) => {
+      if (oldVal !== undefined && oldVal && !isArmed && momentaryAutoRecordOptions.value.stopRecordingOnDisarm) {
+        stopRecordingAllStreams()
+        openSnackbar({ message: 'Stopped recording all streams.', variant: 'info', duration: 2000 })
+      }
+
+      if (!isArmed) return
+
+      if (oldVal === undefined) {
+        if (momentaryAutoRecordOptions.value.autoRecordMode !== 'none') {
+          openSnackbar({
+            message: 'Vehicle already armed on boot. Resuming recording of video streams.',
+            variant: 'info',
+            duration: 5000,
+          })
+        }
+        setTimeout(autoRecordVideoStreams, 5000)
+        return
+      }
+
+      if (!oldVal) {
+        autoRecordVideoStreams()
+      }
+    },
+    { immediate: true }
+  )
+
   return {
     autoProcessVideos,
     availableIceIps,
@@ -1043,5 +1115,7 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams,
     renameStreamInternalNameById,
     lastRenamedStreamName,
+    momentaryAutoRecordOptions,
+    persistentAutoRecordOptions,
   }
 })

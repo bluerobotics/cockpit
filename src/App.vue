@@ -139,6 +139,8 @@
   >
     <SplashScreen v-if="interfaceStore.showSplashScreen" />
   </Transition>
+  <AutoRecordVideoDialog v-model:showDialog="showAutoRecordVideoDialog" @close="handleCloseAutoRecordVideoDialog" />
+  <RecordingReminder v-if="showRecordingReminder" @close="showRecordingReminder = false" />
 </template>
 
 <script setup lang="ts">
@@ -146,6 +148,7 @@ import { useStorage, useWindowSize } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import GlassModal from '@/components/GlassModal.vue'
+import RecordingReminder from '@/components/RecordingReminder.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
@@ -160,6 +163,7 @@ import { isElectron, sleep } from '@/libs/utils'
 
 import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
+import AutoRecordVideoDialog from './components/AutoRecordVideoDialog.vue'
 import EditMenu from './components/EditMenu.vue'
 import MainMenu from './components/MainMenu.vue'
 import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
@@ -171,17 +175,22 @@ import { checkBlueOsUserDataSimilarity } from './libs/blueos'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useDevelopmentStore } from './stores/development'
 import { useMainVehicleStore } from './stores/mainVehicle'
+import { useVideoStore } from './stores/video'
 import { useWidgetManagerStore } from './stores/widgetManager'
 import { SubMenuComponent } from './types/general'
+import { AutoRecordVideoStreams } from './types/video'
 const { openSnackbar } = useSnackbar()
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const devStore = useDevelopmentStore()
+const videoStore = useVideoStore()
 
+const showAutoRecordVideoDialog = ref(false)
 const showAboutDialog = ref(false)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
+const showRecordingReminder = ref(false)
 
 const handleShowAboutDialog = (): void => {
   showAboutDialog.value = true
@@ -299,6 +308,45 @@ watch(
     resetConnectionStatusFeedback()
   }
 )
+
+const handleCloseAutoRecordVideoDialog = (): void => {
+  openSnackbar({
+    message: 'You can find this settings again at: Main menu -> Settings -> Video -> Auto Record Streams',
+    variant: 'info',
+    duration: 4000,
+  })
+  showAutoRecordVideoDialog.value = false
+}
+
+const checkAutoRecordingStreams = (): void => {
+  const rawSettings = localStorage.getItem('cockpit-auto-record-streams')
+  const autoRecordingSettings: AutoRecordVideoStreams | null = rawSettings ? JSON.parse(rawSettings) : null
+  const isVideoStreamAvailable = videoStore.streamsCorrespondency.length > 0
+
+  if (vehicleStore.isArmed && autoRecordingSettings && !autoRecordingSettings.autoRecordMode) {
+    showAutoRecordVideoDialog.value = true
+  }
+  if (
+    vehicleStore.isArmed &&
+    autoRecordingSettings &&
+    isVideoStreamAvailable &&
+    autoRecordingSettings.showReminder === true
+  ) {
+    setTimeout(() => {
+      showRecordingReminder.value = true
+    }, autoRecordingSettings.reminderDelay * 1000)
+  }
+}
+
+// Auto record video dialog and recording reminder
+watch(
+  () => vehicleStore.isArmed,
+  () => checkAutoRecordingStreams()
+)
+
+onMounted(() => {
+  checkAutoRecordingStreams()
+})
 
 const routerSection = ref()
 const currentSelectedViewName = computed(() => widgetStore.currentView.name)
