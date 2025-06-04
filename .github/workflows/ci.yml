@@ -172,14 +172,22 @@ jobs:
           # CSC_KEYCHAIN_NAME is set by the 'Import Apple Certificate...' step
         run: |
           echo "INFO: Building macOS for Release (non-PR). Signing and notarization will be attempted."
-          bun run deploy:electron
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            bun run deploy:electron:mac:x64
+          else
+            bun run deploy:electron:mac:arm64
+          fi
 
       - name: Bun deploy (macOS - PR Build)
         if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name == 'pull_request'
         # No Apple ID env vars here, and 'Import Apple Certificate...' step was skipped, so no CSC_KEYCHAIN_NAME
         run: |
           echo "INFO: Building macOS for Pull Request. Signing and notarization will be skipped."
-          bun run deploy:electron
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            bun run deploy:electron:mac:x64
+          else
+            bun run deploy:electron:mac:arm64
+          fi
 
       - name: Bun deploy (Windows / Linux non-arm)
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
