@@ -143,7 +143,11 @@
       ],
       "category": "public.app-category.utilities",
       "icon": "public/pwa-512x512.png",
-      "hardenedRuntime": true
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "notarize": {
+        "teamId": "${APPLE_TEAM_ID}"
+      }
     },
     "win": {
       "target": "nsis",
