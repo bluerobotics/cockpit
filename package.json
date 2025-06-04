@@ -133,6 +133,14 @@
     },
     "artifactName": "${productName}-${os}-${arch}-${version}.${ext}",
     "mac": {
+      "target": [
+        {
+          "target": "dmg"
+        },
+        {
+          "target": "zip"
+        }
+      ],
       "category": "public.app-category.utilities",
       "icon": "public/pwa-512x512.png",
       "hardenedRuntime": true
