@@ -262,3 +262,15 @@ export const getUnindentedString = (str: string): string => {
 
   return unindentedLines.join('\n')
 }
+
+/**
+ * Convert a frequency in Hz to an interval in microseconds
+ * @param {number} frequencyHz The frequency in Hz. Must be positive.
+ * @returns {number} The interval in microseconds
+ */
+export const frequencyHzToIntervalUs = (frequencyHz: number): number => {
+  if (frequencyHz <= 0) {
+    throw new Error('Cannot convert a non-positive frequency to an interval in microseconds.')
+  }
+  return 1000000 / frequencyHz
+}
