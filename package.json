@@ -10,6 +10,8 @@
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "ELECTRON=true electron-builder --dir",
     "deploy:electron": "ELECTRON=true electron-builder --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
+    "deploy:electron:mac:x64": "ELECTRON=true electron-builder --mac --x64 --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
+    "deploy:electron:mac:arm64": "ELECTRON=true electron-builder --mac --arm64 --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
     "deploy:flatpak": "ELECTRON=true electron-builder --linux flatpak --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
     "dev": "vite --host",
     "dev:electron": "ELECTRON=true vite --host",
@@ -42,7 +44,7 @@
     "date-fns": "^2.29.3",
     "electron-log": "^5.2.0",
     "electron-store": "^10.0.0",
-    "electron-updater": "^6.3.9",
+    "electron-updater": "^6.6.2",
     "file-saver": "^2.0.5",
     "floating-vue": "^5.0.3",
     "flowbite": "^2.2.1",
@@ -135,7 +137,12 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "public/pwa-512x512.png",
-      "hardenedRuntime": true
+      "hardenedRuntime": true,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "notarize": {
+        "teamId": "${APPLE_TEAM_ID}"
+      }
     },
     "win": {
       "target": "nsis",
