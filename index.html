@@ -33,24 +33,44 @@
             <p class="text-md my-4">
                 If you just tried a hard refresh, it probably means something is wrong with your Cockpit configuration
                 (e.g. the settings file may be somehow broken/malformed). If you need to maintain your widget layouts,
-                joystick mappings, custom Actions, etc, then please download your settings and reach out for support.
+                joystick mappings, custom Actions, etc, then please download your settings and logs and <a href="https://blueos.cloud/cockpit/docs/latest/usage/overview/#discussions-and-support" target="_blank" style="color: #4a9eff; text-decoration: underline;">reach out for support</a>.
                 If you need a fix right now, you can try importing a settings file, or reset Cockpit to its default configuration
                 and profiles.
             </p>
 
-            <button id="clear-settings-btn">Reset Cockpit settings</button>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                <button id="download-logs-btn">Download logs</button>
+                <button id="backup-settings-btn">Download settings</button>
+                <button id="import-settings-btn">Import settings</button>
+                <button id="clear-settings-btn">Reset settings</button>
+            </div>
         </div>
     </div>
-    <!-- <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script> -->
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
     <link rel="stylesheet" href="/src/styles/global.css">
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", async function() {
+            // Import utility functions (console capture starts automatically)
+            const {
+                backupSettings,
+                importSettings,
+                downloadLogs,
+                resetSettings,
+                monitorElementAndStopCapture
+            } = await import('./src/libs/index-utils.js');
+
+            // Start monitoring the fallback element to stop capture when app loads
+            monitorElementAndStopCapture('underlying-fallback');
+
             const overlay = document.getElementById('browser-overlay')
             const content = document.getElementById('app')
             const proceedButton = document.getElementById('proceed-browser-overlay');
             const underlyingFallback = document.getElementById('underlying-fallback');
+            const backupSettingsButton = document.getElementById('backup-settings-btn');
+            const importSettingsButton = document.getElementById('import-settings-btn');
+            const downloadLogsButton = document.getElementById('download-logs-btn');
             const clearSettingsButton = document.getElementById('clear-settings-btn');
 
             const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
@@ -69,18 +89,32 @@
                 underlyingFallback.style.display = 'flex';
             });
 
-            clearSettingsButton.addEventListener('click', async function() {
-                if (!confirm("Are you sure you want to reset Cockpit settings?")) {
-                    return;
+            // Button event handlers using utility functions
+            backupSettingsButton.addEventListener('click', async function() {
+                const result = await backupSettings();
+                if (!result.success) {
+                    alert(result.message);
                 }
+            });
 
-                localStorage.clear();
-                // We are also going to clear the cache to ensure a fresh access to all files as well
-                if (caches) {
-                    const keys = await caches.keys();
-                    await Promise.allSettled(keys.map((key) => caches.delete(key)));
+            importSettingsButton.addEventListener('click', async function() {
+                const result = await importSettings();
+                if (!result.success && !result.message.includes('cancelled')) {
+                    alert(result.message);
                 }
                 location.reload();
+            });
+
+            downloadLogsButton.addEventListener('click', async function() {
+                const result = await downloadLogs();
+                alert(result.message);
+            });
+
+            clearSettingsButton.addEventListener('click', async function() {
+                const result = await resetSettings();
+                if (!result.success && !result.message.includes('cancelled')) {
+                    alert(result.message);
+                }
             });
         })
     </script>
@@ -141,6 +175,18 @@
 
         #clear-settings-btn {
             background-color: #a12626 !important;
+        }
+
+        #backup-settings-btn {
+            background-color: #26a159 !important;
+        }
+
+        #import-settings-btn {
+            background-color: #2563eb !important;
+        }
+
+        #download-logs-btn {
+            background-color: #ea580c !important;
         }
     </style>
 </body>
