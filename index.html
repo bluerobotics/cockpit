@@ -23,12 +23,26 @@
             <button id="proceed-browser-overlay">Proceed Anyway</button>
         </div>
         <div id="underlying-fallback">
-            <p>It looks like something went wrong while loading Cockpit. Resetting the settings can solve the problem.</p>
+            <p class="text-3xl">It looks like something went wrong while loading Cockpit.</p>
+
+            <p class="text-lg my-4">
+                This can happen, for example, if you just updated Cockpit's version, and the server cache is still serving
+                old files. In this and other cases, <strong>doing a hard refresh (Ctrl/Cmd+Shift+R) should solve the problem.</strong>
+            </p>
+
+            <p class="text-md my-4">
+                If you just tried a hard refresh, it probably means something is wrong with your Cockpit configuration
+                (e.g. the settings file may be somehow broken/malformed). If you need to maintain your widget layouts,
+                joystick mappings, custom Actions, etc, then please download your settings and reach out for support.
+                If you need a fix right now, you can try importing a settings file, or reset Cockpit to its default configuration
+                and profiles.
+            </p>
+
             <button id="clear-settings-btn">Reset Cockpit settings</button>
         </div>
     </div>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <!-- <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script> -->
     <link rel="stylesheet" href="/src/styles/global.css">
 
     <script>
@@ -108,7 +122,8 @@
             border: #fff solid 1px;
             border-radius: 5px;
             margin: 1.5rem;
-            padding: 1.5rem;
+            padding: 3rem;
+            max-width: 65%;
         }
         #non-app-main button {
             background-color: #0486aa;
