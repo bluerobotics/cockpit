@@ -55,6 +55,13 @@ export class URI extends URL {
   type(): Type {
     return Type.fromProtocol(this.protocol)
   }
+  /**
+   * Return the entries of the URL search params
+   * @returns {Map<string, string>}
+   */
+  entries(): Map<string, string> {
+    return new Map(new URLSearchParams(this.search).entries())
+  }
 }
 
 /* c8 ignore start */
