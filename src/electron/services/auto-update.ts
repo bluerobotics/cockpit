@@ -10,6 +10,20 @@ export const setupAutoUpdater = (mainWindow: BrowserWindow): void => {
   autoUpdater.logger = console
   autoUpdater.autoDownload = false // Prevent automatic downloads
 
+  // Configure architecture-specific feed for macOS
+  if (process.platform === 'darwin') {
+    const arch = process.arch === 'arm64' ? 'arm64' : 'x64'
+    const feedURL = `https://github.com/bluerobotics/cockpit/releases/latest/download/latest-mac-${arch}.yml`
+
+    console.log(`Setting up auto-updater for macOS ${arch} architecture`)
+    console.log(`Feed URL: ${feedURL}`)
+
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: feedURL,
+    })
+  }
+
   autoUpdater
     .checkForUpdates()
     .then((e) => console.info(e))
