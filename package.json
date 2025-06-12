@@ -62,6 +62,7 @@
     "leaflet": "1.9.3",
     "localforage": "^1.10.0",
     "mathjs": "^13.0.3",
+    "mavlink2rest-wasm": "patrickelectric/mavlink2rest-wasm#dbeaf75fbf120a49d8cc4f0b2f7ee67199fc5b28",
     "monaco-editor": "^0.52.0",
     "piexifjs": "^1.0.6",
     "pinia": "^2.0.13",
