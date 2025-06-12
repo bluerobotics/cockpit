@@ -77,8 +77,8 @@ export const getBagOfHoldingFromVehicle = async (
     const options = { timeout: defaultTimeout, retry: 0 }
     return await ky.get(`${protocol}//${vehicleAddress}/bag/v1.0/get/${bagPath}`, options).json()
   } catch (error) {
-    const errorBody = await (error as HTTPError).response.json()
-    if (errorBody.detail === 'Invalid path') {
+    const errorBody = await (error as HTTPError).response?.json()
+    if (errorBody?.detail === 'Invalid path') {
       const noPathError = new Error(`No data available in BlueOS storage for path '${bagPath}'.`)
       noPathError.name = NoPathInBlueOsErrorName
       throw noPathError
