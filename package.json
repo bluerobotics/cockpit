@@ -76,6 +76,7 @@
     "webrtc-adapter": "^8.2.0"
   },
   "devDependencies": {
+    "@electron/notarize": "^3.0.1",
     "@pinia/testing": "^0.0.12",
     "@rushstack/eslint-patch": "^1.1.0",
     "@types/electron-store": "^3.2.2",
