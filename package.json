@@ -1,5 +1,6 @@
 {
   "name": "cockpit",
+  "author": "Blue Robotics",
   "version": "0.0.0",
   "private": true,
   "main": "dist/electron/main.js",
