@@ -7,7 +7,14 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
-import type { PointOfInterest, PointOfInterestCoordinates, Waypoint, WaypointCoordinates } from '@/types/mission'
+import {
+  AltitudeReferenceType,
+  PointOfInterest,
+  PointOfInterestCoordinates,
+  Waypoint,
+  WaypointCoordinates,
+  WaypointType,
+} from '@/types/mission'
 
 import { useMainVehicleStore } from './mainVehicle'
 
@@ -28,6 +35,12 @@ export const useMissionStore = defineStore('mission', () => {
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
   const defaultMapCenter = useBlueOsStorage<WaypointCoordinates>('cockpit-default-map-center', DEFAULT_MAP_CENTER)
   const defaultMapZoom = useBlueOsStorage<number>('cockpit-default-map-zoom', DEFAULT_MAP_ZOOM)
+  const draftMission = useBlueOsStorage('cockpit-draft-mission', {})
+  const vehicleMission = useBlueOsStorage<Waypoint[]>('cockpit-vehicle-mission', [])
+  const vehicleMissionRevision = useBlueOsStorage<number>('cockpit-vehicle-rev', 0)
+  const alwaysSwitchToFlightMode = useBlueOsStorage('cockpit-always-switch-to-flight-mode', false)
+  const showMissionCreationTips = useBlueOsStorage('cockpit-show-mission-creation-tips', true)
+
   const { showDialog } = useInteractionDialog()
 
   const mainVehicleStore = useMainVehicleStore()
@@ -133,6 +146,36 @@ export const useMissionStore = defineStore('mission', () => {
     return waypointIndex !== -1 ? waypointIndex + 1 : ''
   }
 
+  const persistDraft = (waypoints: Waypoint[]): void => {
+    draftMission.value = {
+      version: 0,
+      settings: {
+        mapCenter: defaultMapCenter.value,
+        zoom: defaultMapZoom.value,
+        currentWaypointType: waypoints[0]?.type || WaypointType.PASS_BY,
+        currentWaypointAltitude: waypoints[0]?.altitude || 0,
+        currentWaypointAltitudeRefType: waypoints[0]?.altitudeReferenceType || AltitudeReferenceType.RELATIVE_TO_HOME,
+        defaultCruiseSpeed: 0,
+      },
+      waypoints,
+    }
+  }
+
+  const clearDraft = (): void => {
+    draftMission.value = null
+  }
+
+  const bumpVehicleMissionRevision = (wps: Waypoint[]): void => {
+    vehicleMission.value = wps
+    vehicleMissionRevision.value += 1
+  }
+
+  watch(
+    () => [...currentPlanningWaypoints],
+    (wps) => persistDraft(wps),
+    { deep: true }
+  )
+
   return {
     username,
     lastConnectedUser,
@@ -154,5 +197,13 @@ export const useMissionStore = defineStore('mission', () => {
     updatePointOfInterest,
     removePointOfInterest,
     movePointOfInterest,
+    persistDraft,
+    clearDraft,
+    bumpVehicleMissionRevision,
+    draftMission,
+    vehicleMission,
+    vehicleMissionRevision,
+    alwaysSwitchToFlightMode,
+    showMissionCreationTips,
   }
 })
