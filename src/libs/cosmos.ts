@@ -1,7 +1,9 @@
 import { isBrowser } from 'browser-or-node'
 
 import { ElectronStorageDB } from '@/types/general'
+import type { ElectronSDLControllerStateEventData } from '@/types/joystick'
 import { NetworkInfo } from '@/types/network'
+import { SDLStatus } from '@/types/sdl'
 
 import {
   createDataLakeVariable,
@@ -234,6 +236,15 @@ declare global {
        * Register callback for download progress event
        */
       onDownloadProgress: (callback: (info: any) => void) => void
+      /**
+       * Register callback for joystick state updates
+       */
+      onElectronSDLControllerStateChange: (callback: (data: ElectronSDLControllerStateEventData) => void) => void
+      /**
+       * Check if SDL was loaded successfully
+       * @returns Promise with SDL load status
+       */
+      checkSDLStatus: () => Promise<SDLStatus>
       /**
        * Open cockpit folder
        */
