@@ -14,10 +14,17 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { joystickCalibrationOptionsKey, joystickManager, JoystickModel, JoysticksMap } from '@/libs/joystick/manager'
+import {
+  joystickCalibrationOptionsKey,
+  joystickManager,
+  JoystickModel,
+  JoysticksMap,
+  JoystickStateEvent,
+} from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import { isElectron } from '@/libs/utils'
 import { Alert, AlertLevel } from '@/types/alert'
 import {
   type GamepadToCockpitStdMapping,
@@ -156,9 +163,7 @@ export const useControllerStore = defineStore('controller', () => {
   }
 
   joystickManager.onJoystickConnectionUpdate((event) => processJoystickConnectionEvent(event))
-  joystickManager.onJoystickStateUpdate((gamepadIndex, currentState, gamepad) =>
-    processJoystickStateEvent(gamepadIndex, currentState, gamepad)
-  )
+  joystickManager.onJoystickStateUpdate((event) => processJoystickStateEvent(event))
 
   const processJoystickConnectionEvent = async (event: JoysticksMap): Promise<void> => {
     const newMap = new Map(Array.from(event).map(([index, gamepad]) => [index, new Joystick(gamepad)]))
@@ -242,12 +247,14 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
-  // Disable joystick forwarding if the window/tab is not visible (using VueUse)
+  // Disable joystick forwarding if the window/tab is not visible (except on Electron)
   const windowVisibility = useDocumentVisibility()
   watch(windowVisibility, (value) => {
     // Disable this failcheck if the user explicitly wants to hold the last input when the window is hidden
     // This can be considered unsafe, as the user might not be aware of the joystick input being forwarded to the vehicle
     if (holdLastInputWhenWindowHidden.value) return
+
+    if (isElectron()) return
 
     if (value === 'hidden') {
       console.warn('Window/tab hidden. Disabling joystick forwarding.')
@@ -260,13 +267,17 @@ export const useControllerStore = defineStore('controller', () => {
 
   const { showDialog } = useInteractionDialog()
 
-  const processJoystickStateEvent = (gamepadIndex: number, currentState: JoystickState, gamepad: Gamepad): void => {
-    const joystick = joysticks.value.get(gamepadIndex)
+  const processJoystickStateEvent = (event: JoystickStateEvent): void => {
+    const joystick = joysticks.value.get(event.index)
     if (joystick === undefined) return
-    joystick.gamepad = gamepad
+    joystick.gamepad = event.gamepad
 
     const joystickModel = joystick.model || JoystickModel.Unknown
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
+    const currentState = {
+      axes: [...event.gamepad.axes],
+      buttons: [...event.gamepad.buttons.map((button) => button.value)],
+    }
 
     // If joystick forwarding is disabled, disable the callback processing
     if (!enableForwarding.value) return
