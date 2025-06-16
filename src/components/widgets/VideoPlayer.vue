@@ -265,6 +265,7 @@ const streamStatus = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  transform: v-bind('transformStyle');
 }
 video {
   height: 100%;
@@ -273,7 +274,6 @@ video {
   top: 0;
   left: 0;
   object-fit: v-bind('widget.options.videoFitStyle');
-  transform: v-bind('transformStyle');
 }
 .no-video-alert {
   width: 100%;
