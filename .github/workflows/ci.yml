@@ -72,6 +72,13 @@ jobs:
           latestMetadataName: latest-mac.yml
           deployCommand: deploy:electron:mac:x64
 
+        - os: macos-14
+          suffix: mac
+          arch: arm64
+          extension: dmg
+          latestMetadataName: latest-mac.yml
+          deployCommand: deploy:electron:mac:arm64
+
         - os: ubuntu-latest
           suffix: linux
           arch: x86_64
@@ -125,7 +132,7 @@ jobs:
           bun run build
 
       - name: Import Apple Certificate and Setup Keychain
-        if: matrix.os == 'macos-13' && github.event_name != 'pull_request'
+        if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name != 'pull_request'
         env:
           MAC_CERTIFICATE_BASE64: ${{ secrets.MAC_CERTIFICATE_BASE64 }}
           MAC_CERTIFICATE_PWD: ${{ secrets.MAC_CERTIFICATE_PWD }}
@@ -162,7 +169,7 @@ jobs:
           SNAPCRAFT_BUILD_ENVIRONMENT="host" bun run ${{ matrix.deployCommand }}
 
       - name: Bun deploy (macOS - Release Build)
-        if: matrix.os == 'macos-13' && github.event_name != 'pull_request'
+        if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name != 'pull_request'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
@@ -173,7 +180,7 @@ jobs:
           bun run ${{ matrix.deployCommand }}
 
       - name: Bun deploy (macOS - PR Build)
-        if: matrix.os == 'macos-13' && github.event_name == 'pull_request'
+        if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name == 'pull_request'
         # No Apple ID env vars here, and 'Import Apple Certificate...' step was skipped, so no CSC_KEYCHAIN_NAME
         run: |
           echo "INFO: Building macOS for Pull Request. Signing and notarization will be skipped."
@@ -193,7 +200,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload diff artifact (mac-only)
-        if: matrix.os == 'macos-13'
+        if: matrix.os == 'macos-13' || matrix.os == 'macos-14'
         uses: actions/upload-artifact@v4
         with:
           name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.zip
@@ -220,7 +227,7 @@ jobs:
 
       - name: Upload diff release (mac-only)
         uses: svenstaro/upload-release-action@v2
-        if: startsWith(github.ref, 'refs/tags/') && success() && matrix.os == 'macos-13'
+        if: startsWith(github.ref, 'refs/tags/') && success() && (matrix.os == 'macos-13' || matrix.os == 'macos-14')
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.zip
