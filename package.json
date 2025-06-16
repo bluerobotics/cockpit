@@ -11,6 +11,8 @@
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "ELECTRON=true electron-builder --dir",
     "deploy:electron": "ELECTRON=true electron-builder --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
+    "deploy:electron:mac:x64": "ELECTRON=true electron-builder --mac --x64 --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
+    "deploy:electron:mac:x64:pr": "ELECTRON=true CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --x64 --publish=never -c.mac.identity=null -c.afterSign=scripts/notarize-noop.mjs -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
     "deploy:flatpak": "ELECTRON=true electron-builder --linux flatpak --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
     "dev": "vite --host",
     "dev:electron": "ELECTRON=true vite --host",
@@ -138,8 +140,11 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "public/pwa-512x512.png",
-      "hardenedRuntime": true
+      "hardenedRuntime": true,
+      "entitlements": "./src/assets/entitlements.mac.plist",
+      "entitlementsInherit": "./src/assets/entitlements.mac.plist"
     },
+    "afterSign": "scripts/notarize.mjs",
     "win": {
       "target": "nsis",
       "icon": "public/pwa-512x512.png"
