@@ -18,20 +18,21 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt install -y xvfb
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22.13.0'
 
-      - name: Run bun
+      - name: Install, lint, typecheck, and build
         run: |
-          bun install --frozen-lockfile
-          bun run lint
-          bun run typecheck
-          bun run build
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn lint
+          yarn typecheck
+          yarn build
 
   deploy-page:
     needs: test
@@ -42,14 +43,15 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22.13.0'
 
-      - name: Run bun
+      - name: Install and build
         run: |
-          bun install --frozen-lockfile
-          bun run build
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.5
@@ -98,7 +100,7 @@ jobs:
           arch: x64
           extension: exe
           latestMetadataName: latest.yml
-          deployCommand: deploy:electron
+          deployCommand: deploy:electron:windows
 
     steps:
       - name: Checkout
@@ -114,9 +116,10 @@ jobs:
           sudo apt install -y --fix-missing snapd
           sudo snap install snapcraft --classic
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22.13.0'
 
       - name: Set version as environment variable (Windows)
         if: matrix.os == 'windows-latest'
@@ -126,10 +129,10 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $GITHUB_ENV
 
-      - name: Bun build
+      - name: Install and build
         run: |
-          bun install --frozen-lockfile
-          bun run build
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
 
       - name: Import Apple Certificate and Setup Keychain
         if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name != 'pull_request'
@@ -163,12 +166,12 @@ jobs:
           # Make keychain name available to electron-builder
           echo "CSC_KEYCHAIN_NAME=${KEYCHAIN_NAME}" >> $GITHUB_ENV
 
-      - name: Bun deploy (arm)
+      - name: Deploy (arm)
         if: matrix.os == 'ubuntu-24-arm'
         run: |
-          SNAPCRAFT_BUILD_ENVIRONMENT="host" bun run ${{ matrix.deployCommand }}
+          SNAPCRAFT_BUILD_ENVIRONMENT="host" yarn ${{ matrix.deployCommand }}
 
-      - name: Bun deploy (macOS - Release Build)
+      - name: Deploy (macOS - Release Build)
         if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name != 'pull_request'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -177,20 +180,20 @@ jobs:
           # CSC_KEYCHAIN_NAME is set by the 'Import Apple Certificate...' step
         run: |
           echo "INFO: Building macOS for Release (non-PR). Signing and notarization will be attempted."
-          bun run ${{ matrix.deployCommand }}
+          yarn ${{ matrix.deployCommand }}
 
-      - name: Bun deploy (macOS - PR Build)
+      - name: Deploy (macOS - PR Build)
         if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name == 'pull_request'
         # No Apple ID env vars here, and 'Import Apple Certificate...' step was skipped, so no CSC_KEYCHAIN_NAME
         run: |
           echo "INFO: Building macOS for Pull Request. Signing and notarization will be skipped."
-          bun run ${{ matrix.deployCommand }}:pr
+          yarn ${{ matrix.deployCommand }}:pr
 
-      - name: Bun deploy (Windows / Linux non-arm)
+      - name: Deploy (Windows / Linux non-arm)
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
         # No Apple specific env vars needed here as electron-builder ignores them on these platforms
         run: |
-          bun run ${{ matrix.deployCommand }}
+          yarn ${{ matrix.deployCommand }}
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -271,9 +274,10 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22.13.0'
 
       - name: Install flatpak
         run: |
@@ -288,16 +292,16 @@ jobs:
       - name: Build electron (arm)
         if: matrix.os == 'ubuntu-24-arm'
         run: |
-          bun install --frozen-lockfile
-          bun run build
-          env DEBUG="@malept/flatpak-bundler" bun run deploy:flatpak --arm64
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
+          env DEBUG="@malept/flatpak-bundler" yarn deploy:flatpak --arm64
 
       - name: Build electron (x86_64)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          bun install --frozen-lockfile
-          bun run build
-          env DEBUG="@malept/flatpak-bundler" bun run deploy:flatpak --x64
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
+          env DEBUG="@malept/flatpak-bundler" yarn deploy:flatpak --x64
 
       - name: Rename 'aarch64' to 'arm64'
         if: matrix.os == 'ubuntu-24-arm'
@@ -342,14 +346,15 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22.13.0'
 
       - name: Build cockpit
         run: |
-          bun install --frozen-lockfile
-          bun run build
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
 
       - name: Prepare
         id: prepare

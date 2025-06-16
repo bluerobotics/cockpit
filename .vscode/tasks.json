@@ -4,7 +4,7 @@
         {
             "label": "🏗️ Build Docker Container",
             "type": "shell",
-            "command": "echo 'Building Docker container...' && docker build -t bun-cockpit-container .devcontainer/ && echo '✅ Container built successfully!'",
+            "command": "echo 'Building Docker container...' && docker build -t yarn-cockpit-container .devcontainer/ && echo '✅ Container built successfully!'",
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
@@ -25,7 +25,7 @@
         {
             "label": "🚀 Start Dev Server",
             "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -it -v ${workspaceFolder}:/workspace -p 5173:5173 bun-cockpit-container dev; else bun dev --host 0.0.0.0; fi",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -it -v ${workspaceFolder}:/workspace -p 5173:5173 yarn-cockpit-container dev; else yarn dev --host 0.0.0.0; fi",
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
@@ -42,7 +42,7 @@
         {
             "label": "📦 Install Dependencies",
             "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace bun-cockpit-container install; else bun install; fi",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container install; else yarn install; fi",
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
@@ -54,7 +54,7 @@
         {
             "label": "🧪 Run Tests",
             "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace bun-cockpit-container test; else bun test; fi",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container test; else yarn test; fi",
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
@@ -66,7 +66,7 @@
         {
             "label": "🔨 Build",
             "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace bun-cockpit-container run build; else bun run build; fi",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container run build; else yarn run build; fi",
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
@@ -78,7 +78,7 @@
         {
             "label": "🧹 Clean Install",
             "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace bun-cockpit-container bash -c \"rm -rf node_modules bun.lockb && bun install\"; else rm -rf node_modules bun.lockb && bun install; fi",
+            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container bash -c \"rm -rf node_modules yarn.lock && yarn install\"; else rm -rf node_modules yarn.lock && yarn install; fi",
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
