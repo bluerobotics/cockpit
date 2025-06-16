@@ -268,6 +268,9 @@ export const useControllerStore = defineStore('controller', () => {
     const joystickModel = joystick.model || JoystickModel.Unknown
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
 
+    // If joystick forwarding is disabled, disable the callback processing
+    if (!enableForwarding.value) return
+
     for (const callback of updateCallbacks.value) {
       try {
         callback(
