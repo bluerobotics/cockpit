@@ -24,7 +24,7 @@
     }
   },
   "forwardPorts": [5173],
-  "postCreateCommand": "git submodule update --init --recursive && bun install && exit 0",
+  "postCreateCommand": "git submodule update --init --recursive && yarn install && exit 0",
   "remoteUser": "dev",
   "updateRemoteUserUID": true
 }

@@ -7,7 +7,7 @@
   "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
   "scripts": {
     "build": "vite build",
-    "build:serve": "bun run build && bun run serve",
+    "build:serve": "vite build && vite preview",
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "ELECTRON=true electron-builder --dir",
     "deploy:electron": "ELECTRON=true electron-builder --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
