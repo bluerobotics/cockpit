@@ -38,12 +38,11 @@ RUN mkdir -p /usr/local/nvm \
 ENV NODE_PATH=/usr/local/nvm/versions/node/$NODE_VERSION/bin
 ENV PATH=$NODE_PATH:$PATH
 
-# Set up Bun
+# Set up Yarn
 USER $USERNAME
 WORKDIR /home/$USERNAME
-RUN curl -fsSL https://bun.sh/install | bash
-ENV BUN_PATH=/home/$USERNAME/.bun
-ENV PATH=$BUN_PATH/bin:$PATH
+RUN curl -fsSL https://classic.yarnpkg.com/install.sh | bash
+ENV PATH=/home/$USERNAME/.yarn/bin:$PATH
 
 # Set up bash
 RUN echo 'export PS1="\[\e[01;32m\]\u\[\e[m\]:\[\e[01;34m\]\w\[\e[m\]\$ "' >> ~/.bashrc \
@@ -61,10 +60,10 @@ COPY <<-"EOF" /usr/local/bin/entrypoint.sh
 #!/bin/bash
 if [ "$1" = "dev" ]; then
     # If first argument is "dev", start the dev server with host binding
-    . ~/.bashrc && exec bun dev --host 0.0.0.0
+    . ~/.bashrc && exec yarn dev --host 0.0.0.0
 else
-    # Otherwise, forward all arguments to bun
-    . ~/.bashrc && exec bun "$@"
+    # Otherwise, forward all arguments to yarn
+    . ~/.bashrc && exec yarn "$@"
 fi
 EOF
 
@@ -75,7 +74,7 @@ WORKDIR /workspace
 ENV CONTAINER=true
 
 # Verify installations
-RUN . ~/.bashrc && bun --version && node --version
+RUN . ~/.bashrc && yarn --version && node --version
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["dev"]

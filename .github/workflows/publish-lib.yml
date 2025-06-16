@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       # Setup Node.js environment
       - uses: actions/setup-node@v4
         with:
@@ -22,11 +22,6 @@ jobs:
       - name: Extract API version
         run: echo "API_VERSION=${GITHUB_REF_NAME#API-v}" >> $GITHUB_ENV
 
-      # Setup Bun
-      - uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
-
       # Update version in source code
       - name: Update API version constant
         run: |
@@ -34,14 +29,14 @@ jobs:
 
       # Install dependencies
       - name: Install dependencies
-        run: bun install --frozen-lockfile
-      
+        run: yarn install --frozen-lockfile
+
       # Build library
       - name: Build library
-        run: bun run build:lib
+        run: yarn build:lib
         working-directory: .
-      
-      # Create package.json for distribution
+
+        # Create package.json for distribution
       - name: Create package.json for library
         run: |
           cd dist/lib
@@ -56,7 +51,7 @@ jobs:
               }
             }'
           } > package.json
-      
+
       # Publish to NPM
       - name: Publish to NPM
         run: npm publish
