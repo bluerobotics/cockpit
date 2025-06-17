@@ -72,3 +72,6 @@ setupPredefinedLakeAndActionResources()
 
 // Initialize auto-run for actions
 initializeActionAutoRun()
+
+// If the app has successfully loaded, announce that so the console capture can be stopped
+window.dispatchEvent(new CustomEvent('cockpit-app-loaded'))
