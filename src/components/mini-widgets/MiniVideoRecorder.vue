@@ -132,6 +132,7 @@ const selectedExternalId = ref<string | undefined>()
 const externalStreamId = computed(() => selectedExternalId.value)
 
 const openVideoLibraryModal = (): void => {
+  interfaceStore.videoLibraryMode = 'videos'
   interfaceStore.videoLibraryVisibility = true
 }
 
