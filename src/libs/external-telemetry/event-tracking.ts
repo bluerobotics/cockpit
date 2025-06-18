@@ -27,7 +27,7 @@ class EventTracker {
   static postHogApiUrl = 'https://us.i.posthog.com'
   static postHogApiKey = 'phc_SfqVeZcpYHmhUn9NRizThxFxiI9fKqvjRjmBDB8ToRs'
   static posthog: ReturnType<typeof posthog.init> | undefined = undefined
-  eventTrackingQueue: LocalForage
+  eventTrackingQueue: LocalForage | undefined = undefined
 
   /**
    * Initialize the event tracking system
@@ -69,7 +69,7 @@ class EventTracker {
    * @param {Record<string, unknown>} eventProperties - The properties of the event
    */
   async capture(eventName: string, eventProperties?: Record<string, unknown>): Promise<void> {
-    if (!EventTracker.enableEventTracking) return
+    if (!EventTracker.enableEventTracking || !this.eventTrackingQueue) return
 
     const eventId = `${eventName}-${Date.now()}`
     const eventPayload: EventPayload = {
@@ -85,6 +85,8 @@ class EventTracker {
    * Send all events in the queue to the event tracking system
    */
   async sendEvents(): Promise<void> {
+    if (!this.eventTrackingQueue) return
+
     const queuedEventsKeys = await this.eventTrackingQueue.keys()
     const successfullySentEventsKeys: string[] = []
 
