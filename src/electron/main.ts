@@ -7,6 +7,7 @@ import store from './services/config-store'
 import { setupMemoryService } from './services/memory'
 import { setupNetworkService } from './services/network'
 import { setupFilesystemStorage } from './services/storage'
+import { setupWorkspaceService } from './services/workspace'
 
 // If the app is packaged, push logs to the system instead of the console
 if (app.isPackaged) {
@@ -77,6 +78,7 @@ protocol.registerSchemesAsPrivileged([
 setupFilesystemStorage()
 setupNetworkService()
 setupMemoryService()
+setupWorkspaceService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
