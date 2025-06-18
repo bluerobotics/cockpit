@@ -173,8 +173,30 @@ export interface PointOfInterest {
   description: string
   /**
    * Geographical coordinates of the POI.
+   * Can be static coordinates [lat, lng] or dynamic expressions using data-lake syntax.
    */
   coordinates: PointOfInterestCoordinates
+  /**
+   * Latitude expression - can be a number or data-lake syntax like "{{ mavlink/buoy/latitude }}"
+   */
+  latitudeExpression?: string | number
+  /**
+   * Longitude expression - can be a number or data-lake syntax like "{{ mavlink/buoy/longitude }}"
+   */
+  longitudeExpression?: string | number
+  /**
+   * Last known position when using dynamic coordinates.
+   * Used to show POI when dynamic data is not available.
+   */
+  lastKnownCoordinates?: PointOfInterestCoordinates
+  /**
+   * Indicates if this POI uses dynamic positioning (data-lake expressions)
+   */
+  isDynamic?: boolean
+  /**
+   * Indicates if the POI currently has valid position data
+   */
+  hasValidPosition?: boolean
   /**
    * Icon representing the POI.
    */
