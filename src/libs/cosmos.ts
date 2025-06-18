@@ -242,6 +242,10 @@ declare global {
        * Open video folder
        */
       openVideoFolder: () => void
+      /**
+       * Capture the workspace area of the application
+       */
+      captureWorkspace(rect?: Electron.Rectangle): Promise<Uint8Array>
     }
   }
 }
