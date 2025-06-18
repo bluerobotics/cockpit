@@ -99,11 +99,11 @@ class EventTracker {
           api_key: EventTracker.postHogApiKey,
           event: eventPayload.eventName,
           properties: eventPayload.properties,
-          timestamp: eventPayload.timestamp,
+          timestamp: new Date(eventPayload.timestamp).toISOString(),
           distinct_id: EventTracker.posthog?.get_distinct_id(),
         }
 
-        await ky.post(`${EventTracker.postHogApiUrl}/capture/`, { json: body, mode: 'no-cors', throwHttpErrors: false })
+        await ky.post(`${EventTracker.postHogApiUrl}/i/v0/e`, { json: body, timeout: 5000 })
         successfullySentEventsKeys.push(eventId)
         console.log('Event sent successfully:', eventId)
       } catch (error) {
