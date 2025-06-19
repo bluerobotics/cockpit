@@ -85,6 +85,7 @@ export enum MiniWidgetType {
   JoystickCommIndicator = 'JoystickCommIndicator',
   MiniVideoRecorder = 'MiniVideoRecorder',
   ModeSelector = 'ModeSelector',
+  EkfStateIndicator = 'EkfStateIndicator',
   SatelliteIndicator = 'SatelliteIndicator',
   ViewSelector = 'ViewSelector',
 }
@@ -838,6 +839,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.ChangeAltitudeCommander]: false,
   [MiniWidgetType.Clock]: false,
   [MiniWidgetType.GoFullScreen]: false,
+  [MiniWidgetType.EkfStateIndicator]: false,
   [MiniWidgetType.EnterEditMode]: false,
   [MiniWidgetType.DepthIndicator]: false,
   [MiniWidgetType.MissionIdentifier]: true,
