@@ -364,7 +364,7 @@
                           <div
                             class="flex items-center justify-center gap-x-4 rounded-xl"
                             :class="
-                                item.type === 'button' && joystick.state.buttons[item.id as JoystickButton] ? 'bg-[#2c99ce]' : 'bg-transparent'
+                                item.type === 'button' && (joystick.state.buttons[item.id as JoystickButton] ?? 0) > 0.5 ? 'bg-[#2c99ce]' : 'bg-transparent'
                               "
                           >
                             <p>{{ item.type }}</p>
