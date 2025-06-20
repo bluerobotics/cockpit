@@ -82,6 +82,15 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
           },
         ]
       }
+      if (typeof value === 'object' && value !== null && 'bits' in value) {
+        return [
+          {
+            path: `${messageName}/${key}`,
+            type: typeof (value as any).bits as 'number',
+            value: (value as any).bits,
+          },
+        ]
+      }
       if (Array.isArray(value)) {
         if (value.length === 0) return []
         if (isNumberArray(value)) {
