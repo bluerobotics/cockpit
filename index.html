@@ -51,18 +51,22 @@
     <link rel="stylesheet" href="/src/styles/global.css">
 
     <script>
+        // Start console capture
+        const {
+            backupSettings,
+            importSettings,
+            downloadLogs,
+            resetSettings,
+        } = import('./src/libs/index-utils.js');
+
         document.addEventListener("DOMContentLoaded", async function() {
-            // Import utility functions (console capture starts automatically)
+            // Import utility functions
             const {
                 backupSettings,
                 importSettings,
                 downloadLogs,
                 resetSettings,
-                monitorElementAndStopCapture
             } = await import('./src/libs/index-utils.js');
-
-            // Start monitoring the fallback element to stop capture when app loads
-            monitorElementAndStopCapture('underlying-fallback');
 
             const overlay = document.getElementById('browser-overlay')
             const content = document.getElementById('app')

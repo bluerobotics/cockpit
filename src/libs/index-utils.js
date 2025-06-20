@@ -41,6 +41,13 @@ const originalConsole = {
           })
           .join(' '),
       })
+    } else {
+      // Restore original console methods
+      console.log = originalConsole.log
+      console.warn = originalConsole.warn
+      console.error = originalConsole.error
+      console.info = originalConsole.info
+      console.debug = originalConsole.debug
     }
 
     // Always call original console method to display in console
@@ -70,17 +77,13 @@ window.addEventListener('unhandledrejection', function (event) {
   }
 })
 
-// Test that console capture is working
-console.log('Cockpit index-utils loaded - console capture active')
-
-/**
- * Stop console capture and restore original console methods
- * @returns {void}
- */
-export function stopConsoleCapture() {
+window.addEventListener('cockpit-app-loaded', function () {
   isCapturing = false
   console.log('Console capture stopped - app loaded successfully')
-}
+})
+
+// Test that console capture is working
+console.log('Cockpit index-utils loaded - console capture active')
 
 /**
  * Check if console capture is currently active
@@ -88,50 +91,6 @@ export function stopConsoleCapture() {
  */
 export function isConsoleCaptureActive() {
   return isCapturing
-}
-
-/**
- * Monitor element visibility and stop capture when hidden
- * @param {string} elementId - ID of element to monitor
- * @returns {void}
- */
-export function monitorElementAndStopCapture(elementId) {
-  const element = document.getElementById(elementId)
-  if (!element) {
-    console.warn(`Element with ID "${elementId}" not found`)
-    return
-  }
-
-  // Create a MutationObserver to watch for style changes
-  const observer = new MutationObserver(() => {
-    if (isCapturing && element.style.display === 'none') {
-      stopConsoleCapture()
-      observer.disconnect() // Stop observing once we've stopped capture
-    }
-  })
-
-  // Start observing the element for attribute changes (style changes)
-  observer.observe(element, {
-    attributes: true,
-    attributeFilter: ['style'],
-  })
-
-  // Also check computed style in case CSS classes change visibility
-  const styleObserver = new MutationObserver(() => {
-    if (isCapturing) {
-      const computedStyle = window.getComputedStyle(element)
-      if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
-        stopConsoleCapture()
-        styleObserver.disconnect()
-      }
-    }
-  })
-
-  styleObserver.observe(document.body, {
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['class', 'style'],
-  })
 }
 
 /**
