@@ -6,13 +6,26 @@
         class="flex flex-col justify-between items-start ml-[1vw] max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
-        <v-switch
-          v-model="missionStore.slideEventsEnabled"
-          label="Enable slide to confirm"
-          color="white"
-          class="mt-2 -mb-2 ml-3"
-        />
-
+        <div class="flex justify-start items-center gap-x-4">
+          <v-switch
+            v-model="missionStore.slideEventsEnabled"
+            label="Enable slide to confirm"
+            color="white"
+            class="mt-2 -mb-2 ml-3"
+          />
+          <v-switch
+            v-model="missionStore.alwaysSwitchToFlightMode"
+            label="Auto switch to flight mode on mission upload"
+            color="white"
+            class="mt-2 -mb-2 ml-3"
+          />
+          <v-switch
+            v-model="missionStore.showMissionCreationTips"
+            label="Show mission creation checklist"
+            color="white"
+            class="mt-2 -mb-2 ml-3"
+          />
+        </div>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Enable confirmation on specific categories:</template>
           <template #info>
