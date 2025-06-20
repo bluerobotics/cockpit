@@ -27,7 +27,9 @@ class EventTracker {
   static postHogApiUrl = 'https://us.i.posthog.com'
   static postHogApiKey = 'phc_SfqVeZcpYHmhUn9NRizThxFxiI9fKqvjRjmBDB8ToRs'
   static posthog: ReturnType<typeof posthog.init> | undefined = undefined
-  eventTrackingQueue: LocalForage
+  static eventTrackingInterval = 30000
+  static eventTrackingTimeoutId: ReturnType<typeof setTimeout> | undefined = undefined
+  eventTrackingQueue: LocalForage | undefined = undefined
 
   /**
    * Initialize the event tracking system
@@ -60,7 +62,12 @@ class EventTracker {
       })
     }
 
-    this.sendEvents()
+    if (!EventTracker.eventTrackingTimeoutId) {
+      EventTracker.eventTrackingTimeoutId = setTimeout(
+        async () => await this.sendEvents(),
+        EventTracker.eventTrackingInterval
+      )
+    }
   }
 
   /**
@@ -69,7 +76,7 @@ class EventTracker {
    * @param {Record<string, unknown>} eventProperties - The properties of the event
    */
   async capture(eventName: string, eventProperties?: Record<string, unknown>): Promise<void> {
-    if (!EventTracker.enableEventTracking) return
+    if (!EventTracker.enableEventTracking || !this.eventTrackingQueue) return
 
     const eventId = `${eventName}-${Date.now()}`
     const eventPayload: EventPayload = {
@@ -78,13 +85,14 @@ class EventTracker {
       properties: eventProperties,
     }
     await this.eventTrackingQueue.setItem(eventId, eventPayload)
-    await this.sendEvents()
   }
 
   /**
    * Send all events in the queue to the event tracking system
    */
   async sendEvents(): Promise<void> {
+    if (!this.eventTrackingQueue) return
+
     const queuedEventsKeys = await this.eventTrackingQueue.keys()
     const successfullySentEventsKeys: string[] = []
 
@@ -97,22 +105,26 @@ class EventTracker {
           api_key: EventTracker.postHogApiKey,
           event: eventPayload.eventName,
           properties: eventPayload.properties,
-          timestamp: eventPayload.timestamp,
+          timestamp: new Date(eventPayload.timestamp).toISOString(),
           distinct_id: EventTracker.posthog?.get_distinct_id(),
         }
 
-        await ky.post(`${EventTracker.postHogApiUrl}/capture/`, { json: body, mode: 'no-cors', throwHttpErrors: false })
+        await ky.post(`${EventTracker.postHogApiUrl}/i/v0/e`, { json: body, timeout: 5000 })
         successfullySentEventsKeys.push(eventId)
-        console.log('Event sent successfully:', eventId)
+        console.log(`Tracking event '${eventId}' sent successfully.`)
       } catch (error) {
-        console.error('Error sending event to PostHog:', error)
-        break
+        console.error(`Error sending event '${eventId}' to PostHog:`, error)
       }
     }
 
     for (const eventId of successfullySentEventsKeys) {
       await this.eventTrackingQueue.removeItem(eventId)
     }
+
+    EventTracker.eventTrackingTimeoutId = setTimeout(
+      async () => await this.sendEvents(),
+      EventTracker.eventTrackingInterval
+    )
   }
 }
 
