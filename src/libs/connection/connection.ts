@@ -10,6 +10,7 @@ import * as Protocol from '@/libs/vehicle/protocol/protocol'
 export enum Type {
   Http = 'http',
   WebSocket = 'ws',
+  Serial = 'serial',
   None = 'none',
 }
 
@@ -43,7 +44,9 @@ export class URI extends URL {
    * @returns {boolean}
    */
   isSecure(): boolean {
-    return ![Type.Http + 's:', Type.WebSocket + 's:'].filter((item) => this.protocol.startsWith(item)).isEmpty()
+    return ![Type.Http + 's:', Type.WebSocket + 's:', Type.Serial]
+      .filter((item) => this.protocol.startsWith(item))
+      .isEmpty()
   }
   /**
    * Return connection type from URL string
@@ -51,6 +54,13 @@ export class URI extends URL {
    */
   type(): Type {
     return Type.fromProtocol(this.protocol)
+  }
+  /**
+   * Return the entries of the URL search params
+   * @returns {Map<string, string>}
+   */
+  entries(): Map<string, string> {
+    return new Map(new URLSearchParams(this.search).entries())
   }
 }
 
