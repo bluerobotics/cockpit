@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+import type { ElectronSDLControllerStateEventData } from '@/types/joystick'
+
 contextBridge.exposeInMainWorld('electronAPI', {
   getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
   getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
@@ -12,6 +14,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('update-not-available', (_event, info) => callback(info)),
   onDownloadProgress: (callback: (info: any) => void) =>
     ipcRenderer.on('download-progress', (_event, info) => callback(info)),
+  onElectronSDLControllerStateChange: (callback: (data: ElectronSDLControllerStateEventData) => void) =>
+    ipcRenderer.on('sdl-controller-state', (_event, data) => callback(data)),
+  checkSDLStatus: () => ipcRenderer.invoke('check-sdl-status'),
   downloadUpdate: () => ipcRenderer.send('download-update'),
   installUpdate: () => ipcRenderer.send('install-update'),
   cancelUpdate: () => ipcRenderer.send('cancel-update'),

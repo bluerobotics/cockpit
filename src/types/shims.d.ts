@@ -5,6 +5,7 @@ declare module 'vuetify'
 declare module 'vuetify/lib/components'
 declare module 'vuetify/lib/directives'
 declare module '@peermetrics/webrtc-stats'
+declare module '@kmamal/sdl'
 
 declare module 'vue-virtual-scroller' {
   import Vue, { ComponentOptions, PluginObject, Component } from 'vue'
