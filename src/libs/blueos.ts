@@ -260,7 +260,7 @@ export const getStatus = async (vehicleAddress: string): Promise<boolean> => {
 
 export const getBeaconInfo = async (vehicleAddress: string): Promise<Record<string, any>> => {
   try {
-    const url = `http://${vehicleAddress}/beacon/v1.0/`
+    const url = `http://${vehicleAddress}/beacon/`
     const beaconInfoResponse = await ky.get(url, { timeout: beaconTimeout })
     return beaconInfoResponse
   } catch (error) {
