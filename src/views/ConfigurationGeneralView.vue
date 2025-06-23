@@ -135,7 +135,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>MAVLink2REST Websocket URI</template>
+          <template #title>MAVLink2REST URI</template>
           <template #subtitle>
             Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
             Status:
@@ -162,7 +162,7 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a Mavlink2Rest web-socket"
+                    hint="URI of a Mavlink2Rest"
                     :rules="[isValidSocketConnectionURI]"
                   >
                     <template #append-inner>
@@ -511,8 +511,8 @@ const isValidConnectionURI = (value: string): boolean | string => {
 const isValidSocketConnectionURI = (value: string): boolean | string => {
   try {
     const conn = new Connection.URI(value)
-    if (conn.type() !== Connection.Type.WebSocket) {
-      throw new Error('URI should be of type WebSocket')
+    if (conn.type() !== Connection.Type.WebSocket && conn.type() !== Connection.Type.Serial) {
+      throw new Error('URI should be of type WebSocket or Serial')
     }
   } catch (error) {
     return `Invalid connection URI. ${error}.`
