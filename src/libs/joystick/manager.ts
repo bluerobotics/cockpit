@@ -30,6 +30,8 @@ export enum JoystickModel {
   XboxController_360 = 'Xbox 360 controller',
   LogitechExtreme3DPro = 'Logitech Extreme 3D Pro',
   IpegaPG9023 = 'Ipega PG-9023',
+  SteamDeckLCD = 'Steam Deck LCD',
+  SteamDeckOLED = 'Steam Deck OLED',
   Unknown = 'Unknown',
 }
 
@@ -44,6 +46,8 @@ const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   ['28de:11ff', JoystickModel.XboxController_360],
   ['046d:c215', JoystickModel.LogitechExtreme3DPro],
   ['1949:0402', JoystickModel.IpegaPG9023],
+  ['28de:11ff', JoystickModel.SteamDeckLCD],
+  ['28de:1205', JoystickModel.SteamDeckOLED],
 ])
 
 // Necessary to add functions
