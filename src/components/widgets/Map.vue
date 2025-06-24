@@ -712,50 +712,54 @@ const setDefaultMapPosition = async (): Promise<void> => {
   }
 }
 
+const executeGoToOption = async (): Promise<void> => {
+  if (!clickedLocation.value || !map.value) return
+
+  if (gotoMarker.value) {
+    map.value.removeLayer(gotoMarker.value)
+    gotoMarker.value = undefined
+  }
+
+  gotoMarker.value = L.marker(clickedLocation.value as LatLngTuple, {
+    icon: L.divIcon({
+      className: 'marker-icon',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    }),
+  }).addTo(map.value)
+
+  const gotoTooltip = L.tooltip({
+    content: '<i class="mdi mdi-crosshairs-gps border-[1px] rounded-full text-[18px] px-[2px] pt-[1px] "></i>',
+    permanent: true,
+    direction: 'center',
+    className: 'waypoint-tooltip',
+    opacity: 1,
+  })
+  gotoMarker.value.bindTooltip(gotoTooltip)
+
+  if (clickedLocation.value) {
+    // Define default values
+    const hold = 0
+    const acceptanceRadius = 0
+    const passRadius = 0
+    const yaw = 0
+    const altitude = vehicleStore.coordinates.altitude ?? 0
+
+    const latitude = clickedLocation.value[0]
+    const longitude = clickedLocation.value[1]
+
+    try {
+      await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
+    } catch (error) {
+      openSnackbar({ message: `GoTo request failed: ${(error as Error).message}`, variant: 'error' })
+    }
+  }
+}
+
 const onMenuOptionSelect = async (option: string): Promise<void> => {
   switch (option) {
     case 'goto': {
-      if (!clickedLocation.value || !map.value) return
-
-      if (gotoMarker.value) {
-        map.value.removeLayer(gotoMarker.value)
-        gotoMarker.value = undefined
-      }
-
-      gotoMarker.value = L.marker(clickedLocation.value as LatLngTuple, {
-        icon: L.divIcon({
-          className: 'marker-icon',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        }),
-      }).addTo(map.value)
-
-      const gotoTooltip = L.tooltip({
-        content: '<i class="mdi mdi-crosshairs-gps border-[1px] rounded-full text-[18px] px-[2px] pt-[1px] "></i>',
-        permanent: true,
-        direction: 'center',
-        className: 'waypoint-tooltip',
-        opacity: 1,
-      })
-      gotoMarker.value.bindTooltip(gotoTooltip)
-
-      if (clickedLocation.value) {
-        // Define default values
-        const hold = 0
-        const acceptanceRadius = 0
-        const passRadius = 0
-        const yaw = 0
-        const altitude = vehicleStore.coordinates.altitude ?? 0
-
-        const latitude = clickedLocation.value[0]
-        const longitude = clickedLocation.value[1]
-
-        try {
-          await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
-        } catch (error) {
-          openSnackbar({ message: `GoTo request failed: ${(error as Error).message}`, variant: 'error' })
-        }
-      }
+      executeGoToOption()
       break
     }
 
