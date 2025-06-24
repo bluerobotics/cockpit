@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Cockpit</title>
     <meta name="description" content="An intuitive and customizable cross-platform ground control station for remote vehicles of all types.">
-  <script type="module" crossorigin src="./assets/index-XgtPmYL6.js"></script>
+  <script type="module" crossorigin src="./assets/index-Bx8oUu3c.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-DHuCJDVI.css">
 <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
@@ -51,18 +51,22 @@
     <div id="app"></div>
 
     <script>
+        // Start console capture
+        const {
+            backupSettings,
+            importSettings,
+            downloadLogs,
+            resetSettings,
+        } = import('./assets/index-utils-B-_zn4O6.js');
+
         document.addEventListener("DOMContentLoaded", async function() {
-            // Import utility functions (console capture starts automatically)
+            // Import utility functions
             const {
                 backupSettings,
                 importSettings,
                 downloadLogs,
                 resetSettings,
-                monitorElementAndStopCapture
-            } = await import('./assets/index-utils-C_JJBvCW.js');
-
-            // Start monitoring the fallback element to stop capture when app loads
-            monitorElementAndStopCapture('underlying-fallback');
+            } = await import('./assets/index-utils-B-_zn4O6.js');
 
             const overlay = document.getElementById('browser-overlay')
             const content = document.getElementById('app')
