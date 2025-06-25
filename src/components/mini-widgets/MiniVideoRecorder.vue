@@ -301,7 +301,7 @@ if (widgetStore.isRealMiniWidget(miniWidget.value.hash)) {
 
     // If the stream name is defined, try to connect the widget to the MediaStream
     if (externalStreamId.value !== undefined) {
-      const updatedMediaStream = videoStore.getMediaStream(miniWidget.value.options.internalStreamName)
+      const updatedMediaStream = videoStore.getMediaStream(externalStreamId.value)
       // If the widget is not connected to the MediaStream, try to connect it
       if (!isEqual(updatedMediaStream, mediaStream.value)) {
         mediaStream.value = updatedMediaStream
