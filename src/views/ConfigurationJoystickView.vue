@@ -100,7 +100,7 @@
                     class="w-full h-full my-3 rounded-lg elevation-2 bg-[#FFFFFF23]"
                     theme="dark"
                   >
-                    <v-tab value="svg" :disabled="currentJoystick?.model === JoystickModel.Unknown">Visual</v-tab>
+                    <v-tab value="svg">Visual</v-tab>
                     <v-tab value="table">Table</v-tab>
                     <div class="flex w-full h-[46px] justify-end align-center mr-[5px]">
                       <div />
