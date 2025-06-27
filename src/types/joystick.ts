@@ -400,6 +400,10 @@ export interface JoystickMapSuggestion {
    */
   actionName: string
   /**
+   * Unique identifier for the action to be mapped
+   */
+  actionId: string
+  /**
    * The button number (in Cockpit standard mapping) to map the action to
    */
   button: number
