@@ -129,7 +129,7 @@
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
-  <ActionDiscoveryModal auto-check-on-mount />
+  <ExternalFeaturesDiscoveryModal auto-check-on-mount />
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
   <SnackbarContainer />
@@ -150,8 +150,8 @@
 import { useStorage, useWindowSize } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import ActionDiscoveryModal from '@/components/ActionDiscoveryModal.vue'
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
+import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import GlassModal from '@/components/GlassModal.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
