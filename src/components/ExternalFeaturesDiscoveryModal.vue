@@ -48,6 +48,9 @@
                       </v-btn>
                       <v-btn variant="text" prepend-icon="mdi-close" @click="ignoreAction(action)"> Ignore </v-btn>
                     </div>
+                    <v-card-subtitle class="text-grey-lighten-1 text-center mt-3">
+                      from {{ action.extensionName }}
+                    </v-card-subtitle>
                   </v-card-item>
                 </v-card>
               </v-list-item>
@@ -228,7 +231,7 @@ import {
   getAllMavlinkMessageActionConfigs,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
-import { getActionsFromBlueOS, getJoystickSuggestionsFromBlueOS } from '@/libs/blueos'
+import { ActionWithExtensionName, getActionsFromBlueOS, getJoystickSuggestionsFromBlueOS } from '@/libs/blueos'
 import { allAvailableButtons } from '@/libs/joystick/protocols'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
@@ -295,7 +298,7 @@ const activeTab = ref('actions')
 /**
  * Store discovered actions from BlueOS
  */
-const discoveredActions = ref<ActionConfig[]>([])
+const discoveredActions = ref<ActionWithExtensionName[]>([])
 
 /**
  * Store discovered joystick suggestions from BlueOS
@@ -601,8 +604,8 @@ const checkForBlueOSActions = async (): Promise<void> => {
       const actionsToDisplay = actions.filter((action) => !existingActionNames.has(action.name))
 
       if (actionsToDisplay.length > 0) {
-        // Actions already have extension information attached from getActionsFromBlueOS
-        discoveredActions.value = actionsToDisplay
+        // Actions now include extension names from the getActionsFromBlueOS function
+        discoveredActions.value = actionsToDisplay as ActionWithExtensionName[]
       }
     }
   } catch (error) {

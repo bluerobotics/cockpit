@@ -161,7 +161,14 @@ export const getWidgetsFromBlueOS = async (): Promise<ExternalWidgetSetupInfo[]>
   return widgets
 }
 
-export const getActionsFromBlueOS = async (): Promise<ActionConfig[]> => {
+export type ActionWithExtensionName = ActionConfig & {
+  /**
+   * The name of the extension that the action belongs to
+   */
+  extensionName: string
+}
+
+export const getActionsFromBlueOS = async (): Promise<ActionWithExtensionName[]> => {
   const vehicleStore = useMainVehicleStore()
 
   // Wait until we have a global address
@@ -170,13 +177,17 @@ export const getActionsFromBlueOS = async (): Promise<ActionConfig[]> => {
   }
 
   const services = await getServicesFromBlueOS(vehicleStore.globalAddress)
-  const actions: ActionConfig[] = []
+  const actions: ActionWithExtensionName[] = []
   await Promise.all(
     services.map(async (service) => {
       try {
         const extraJson = await getExtrasJsonFromBlueOsService(vehicleStore.globalAddress, service)
-        if (extraJson !== null) {
-          actions.push(...extraJson.actions)
+        if (extraJson !== null && extraJson.actions) {
+          const extensionName = service.metadata?.sanitized_name || 'Unknown Extension'
+
+          extraJson.actions.forEach((action) => {
+            actions.push({ ...action, extensionName })
+          })
         }
       } catch (error) {
         console.error(`Could not get actions from BlueOS service ${service.metadata?.sanitized_name}. ${error}`)
