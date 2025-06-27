@@ -30,25 +30,25 @@
                   <v-card-item>
                     <template #prepend>
                       <div class="action-icon-container m-2">
-                        <v-icon size="30" :color="getActionTypeColor(action.type)">
+                        <v-icon size="60" :color="getActionTypeColor(action.type)">
                           {{ getActionTypeIcon(action.type) }}
                         </v-icon>
                       </div>
                     </template>
-                    <v-card-title class="font-medium pb-0">{{ action.name }}</v-card-title>
-                    <v-card-subtitle class="text-grey-lighten-1">
+                    <v-card-title class="font-medium pb-0 text-center">{{ action.name }}</v-card-title>
+                    <v-card-subtitle class="text-grey-lighten-1 text-center">
                       {{ getActionTypeName(action.type) }}
                     </v-card-subtitle>
-                    <v-card-text v-if="getActionDescription(action)" class="pt-2 text-sm">
+                    <v-card-text v-if="getActionDescription(action)" class="pt-2 text-sm text-center">
                       {{ getActionDescription(action) }}
                     </v-card-text>
+                    <div class="flex flex-col gap-1 mt-4">
+                      <v-btn variant="tonal" prepend-icon="mdi-plus-circle-outline" @click="addAction(action)">
+                        Add Action
+                      </v-btn>
+                      <v-btn variant="text" prepend-icon="mdi-close" @click="ignoreAction(action)"> Ignore </v-btn>
+                    </div>
                   </v-card-item>
-                  <v-card-actions class="pt-0 pb-2 px-4">
-                    <v-spacer></v-spacer>
-                    <v-btn variant="tonal" prepend-icon="mdi-plus-circle-outline" @click="addAction(action)">
-                      Add Action
-                    </v-btn>
-                  </v-card-actions>
                 </v-card>
               </v-list-item>
             </v-list>
@@ -70,7 +70,7 @@
                 <v-card variant="outlined" class="w-full action-card">
                   <v-card-item>
                     <template #prepend>
-                      <div class="mr-3 action-icon-container">
+                      <div class="mr-3 joystick-svg-container">
                         <JoystickButtonIndicator :button-number="suggestion.button" :modifier="suggestion.modifier" />
                       </div>
                     </template>
@@ -255,9 +255,12 @@ const props = defineProps<{
 const emit = defineEmits(['close', 'action-added'])
 
 /**
- * Track which actions have been added by the user
+ * Track which actions have been handled (applied or ignored) - persistent
  */
-const addedActionIds = ref<string[]>([])
+const handledActions = useBlueOsStorage('cockpit-handled-actions', {
+  applied: [] as string[],
+  ignored: [] as string[],
+})
 
 /**
  * Track which joystick suggestions have been handled (applied or ignored) - persistent
@@ -266,6 +269,12 @@ const handledSuggestions = useBlueOsStorage('cockpit-handled-joystick-suggestion
   applied: [] as string[],
   ignored: [] as string[],
 })
+
+/**
+ * Computed refs for easier access to applied and ignored actions
+ */
+const appliedActionIds = computed(() => handledActions.value.applied)
+const ignoredActionIds = computed(() => handledActions.value.ignored)
 
 /**
  * Computed refs for easier access to applied and ignored suggestions
@@ -330,10 +339,12 @@ const allProfilesSelected = computed(() => {
 })
 
 /**
- * Filter out actions that have already been added
+ * Filter out actions that have already been applied or ignored
  */
 const filteredActions = computed(() => {
-  return discoveredActions.value.filter((action) => !addedActionIds.value.includes(action.id))
+  return discoveredActions.value.filter(
+    (action) => !appliedActionIds.value.includes(action.id) && !ignoredActionIds.value.includes(action.id)
+  )
 })
 
 /**
@@ -523,8 +534,8 @@ const addAction = (action: ActionConfig): void => {
       break
   }
 
-  // Mark the action as added
-  addedActionIds.value.push(action.id)
+  // Mark the action as applied
+  handledActions.value.applied.push(action.id)
 
   // Notify parent component
   emit('action-added', action)
@@ -533,6 +544,18 @@ const addAction = (action: ActionConfig): void => {
   openSnackbar({
     message: `Action "${action.name}" added successfully!`,
     variant: 'success',
+  })
+}
+
+/**
+ * Ignore an action
+ * @param {ActionConfig} action - The action to ignore
+ */
+const ignoreAction = (action: ActionConfig): void => {
+  handledActions.value.ignored.push(action.id)
+  openSnackbar({
+    message: `Action "${action.name}" has been ignored.`,
+    variant: 'info',
   })
 }
 
@@ -640,6 +663,16 @@ onMounted(() => {
 }
 
 .action-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 150px;
+  height: 150px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.joystick-svg-container {
   display: flex;
   align-items: center;
   justify-content: center;
