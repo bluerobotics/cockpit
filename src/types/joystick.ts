@@ -530,3 +530,47 @@ export const convertSDLJoystickStateToGamepadState = (sdlState: SDLJoystickState
     axes: sdlState.axes,
   }
 }
+
+/**
+ * Joystick map suggestion from BlueOS extensions
+ */
+export interface JoystickMapSuggestion {
+  /**
+   * Unique identifier for this suggestion
+   */
+  id: string
+  /**
+   * Human-readable name of the action to be mapped
+   */
+  actionName: string
+  /**
+   * Unique identifier for the action to be mapped
+   */
+  actionId: string
+  /**
+   * The button number (in Cockpit standard mapping) to map the action to
+   */
+  button: number
+  /**
+   * The modifier key for this suggestion (regular or shift)
+   */
+  modifier: CockpitModifierKeyOption
+  /**
+   * Optional description of what the action does
+   */
+  description?: string
+}
+
+/**
+ * Joystick map suggestions grouped by extension
+ */
+export interface JoystickMapSuggestionsFromExtension {
+  /**
+   * Name of the extension offering these suggestions
+   */
+  extensionName: string
+  /**
+   * Array of suggestions from this extension
+   */
+  suggestions: JoystickMapSuggestion[]
+}
