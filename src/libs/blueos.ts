@@ -5,6 +5,7 @@ import { type ActionConfig } from '@/libs/joystick/protocols/cockpit-actions'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { type RawCpuLoadInfo, type RawCpuTempInfo, type RawNetworkInfo } from '@/types/blueos'
+import { JoystickMapSuggestion, JoystickMapSuggestionsFromExtension } from '@/types/joystick'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 
 /**
@@ -27,6 +28,10 @@ interface ExtrasJson {
    * A list of available cockpit actions offered by the extension.
    */
   actions: ActionConfig[]
+  /**
+   * A list of joystick map suggestions offered by the extension.
+   */
+  joystick_suggestions?: JoystickMapSuggestion[]
 }
 
 /**
@@ -191,6 +196,45 @@ export const getActionsFromBlueOS = async (): Promise<ActionConfig[]> => {
   )
 
   return actions
+}
+
+export const getJoystickSuggestionsFromBlueOS = async (): Promise<JoystickMapSuggestionsFromExtension[]> => {
+  const vehicleStore = useMainVehicleStore()
+
+  // Wait until we have a global address
+  while (vehicleStore.globalAddress === undefined) {
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+
+  const services = await getServicesFromBlueOS(vehicleStore.globalAddress)
+  const suggestionsMap = new Map<string, JoystickMapSuggestionsFromExtension>()
+
+  await Promise.all(
+    services.map(async (service) => {
+      try {
+        const extraJson = await getExtrasJsonFromBlueOsService(vehicleStore.globalAddress, service)
+        if (extraJson !== null && extraJson.joystick_suggestions) {
+          const extensionName = service.metadata?.sanitized_name || 'Unknown Extension'
+
+          const suggestions: JoystickMapSuggestion[] = extraJson.joystick_suggestions.map((suggestion, index) => ({
+            ...suggestion,
+            id: `${extensionName}-${index}-${suggestion.actionName.replace(/\s+/g, '-').toLowerCase()}`,
+          }))
+
+          suggestionsMap.set(extensionName, {
+            extensionName,
+            suggestions,
+          })
+        }
+      } catch (error) {
+        console.error(
+          `Could not get joystick suggestions from BlueOS service ${service.metadata?.sanitized_name}. ${error}`
+        )
+      }
+    })
+  )
+
+  return Array.from(suggestionsMap.values())
 }
 
 export const setBagOfHoldingOnVehicle = async (
