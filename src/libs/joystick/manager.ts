@@ -31,6 +31,7 @@ export enum JoystickModel {
   DualSense = 'DualSense (PS5)',
   DualShock4 = 'DualShock (PS4)',
   XboxOne_Wireless = 'Xbox One Wireless Controller',
+  XboxOne_Wired = 'Xbox One Wired Controller',
   XboxOneS_Bluetooth = 'Xbox One S (bluetooth)',
   XboxController_Bluetooth = 'Xbox controller (bluetooth)',
   XboxController_Wired = 'Xbox controller (wired)',
@@ -46,6 +47,7 @@ const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   // Sony
   ['054c:0ce6', JoystickModel.DualSense],
   ['054c:09cc', JoystickModel.DualShock4],
+  ['045e:02ea', JoystickModel.XboxOne_Wired],
   ['045e:02e0', JoystickModel.XboxOne_Wireless],
   ['045e:02fd', JoystickModel.XboxOneS_Bluetooth],
   ['045e:0b13', JoystickModel.XboxController_Bluetooth],
