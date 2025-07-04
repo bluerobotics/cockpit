@@ -63,6 +63,7 @@
     "localforage": "^1.10.0",
     "mathjs": "^13.0.3",
     "monaco-editor": "^0.52.0",
+    "piexifjs": "^1.0.6",
     "pinia": "^2.0.13",
     "posthog-js": "^1.194.3",
     "roboto-fontface": "*",

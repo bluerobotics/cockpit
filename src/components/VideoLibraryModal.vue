@@ -83,6 +83,106 @@
           </div>
           <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
           <!-- Right Content -->
+          <template v-if="currentTab === 'snapshots'">
+            <div v-if="availablePictures.length > 0" class="flex flex-col justify-start py-6 px-4 flex-1 h-full">
+              <div
+                class="grid gap-4 overflow-y-auto w-full h-full px-2 content-start"
+                style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr))"
+              >
+                <div
+                  v-for="picture in availablePictures"
+                  :key="picture.filename"
+                  class="relative"
+                  @click="onPictureClick(picture.filename)"
+                >
+                  <div
+                    :class="[
+                      'w-[178px] aspect-video overflow-hidden',
+                      'border-4 border-white rounded-md cursor-pointer transition duration-75 ease-in',
+                      selectedPicSet.has(picture.filename) ? 'border-opacity-40' : 'border-opacity-10',
+                    ]"
+                  >
+                    <img v-if="picture.blob" :src="createObjectURL(picture.blob)" class="w-full h-full object-cover" />
+                    alt="Picture thumbnail" />
+                    <div reactive class="fullscreen-button" @click="openPicInFullScreen(picture)">
+                      <v-icon size="40" class="text-white"> mdi-fullscreen </v-icon>
+                    </div>
+                    <div reactive class="delete-button" @click="handleDeletePictures(picture)">
+                      <v-icon size="16" class="text-white"> mdi-delete </v-icon>
+                    </div>
+                    <div reactive class="download-button" @click="downloadPictures(picture.filename)">
+                      <v-icon size="16" class="text-white"> mdi-download </v-icon>
+                    </div>
+                    <div
+                      v-if="isMultipleSelectionMode"
+                      class="checkmark-button"
+                      :class="selectedPicSet.has(picture.filename) ? 'bg-green' : 'bg-white'"
+                      @click.stop="togglePictureIntoSelectionArray(picture.filename)"
+                    >
+                      <v-icon size="15" class="text-white">
+                        {{ selectedPicSet.has(picture.filename) ? 'mdi-check-circle-outline' : 'mdi-radiobox-blank' }}
+                      </v-icon>
+                    </div>
+                  </div>
+                  <div class="flex justify-center mt-1 text-xs text-white/80 truncate">
+                    <v-tooltip open-delay="300" activator="parent" location="top">
+                      {{ picture.filename }}
+                    </v-tooltip>
+                    {{ picture.filename }}
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="availablePictures.length > 1"
+                class="flex flex-row align-center justify-between h-[40px] w-full mb-[-19px] border-t-[1px] border-t-[#ffffff06]"
+              >
+                <div>
+                  <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
+                    <v-tooltip open-delay="500" activator="parent" location="bottom">
+                      Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
+                    </v-tooltip>
+                    {{ isMultipleSelectionMode ? 'Single selection' : 'Multi selection' }}
+                  </v-btn>
+                  <v-btn
+                    variant="text"
+                    size="small"
+                    class="mt-[5px]"
+                    @click="
+                      selectedPicSet.size === availablePictures.length ? deselectAllPictures() : selectAllPictures()
+                    "
+                  >
+                    <v-tooltip open-delay="500" activator="parent" location="bottom">
+                      Select {{ selectedPicSet.size === availablePictures.length ? 'none' : 'all files' }}
+                    </v-tooltip>
+                    {{ selectedPicSet.size === availablePictures.length ? 'None' : 'All' }}
+                  </v-btn>
+                </div>
+                <div>
+                  <v-btn
+                    variant="text"
+                    size="small"
+                    class="mt-[5px]"
+                    :disabled="selectedPictures.length === 0"
+                    @click="downloadPictures()"
+                  >
+                    Download
+                  </v-btn>
+                  <v-btn
+                    variant="text"
+                    size="small"
+                    class="mt-[5px] ml-2"
+                    :disabled="selectedPictures.length === 0"
+                    @click="handleDeletePictures()"
+                  >
+                    Delete
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+            <div v-else class="flex justify-center items-center w-full h-full text-xl text-center">
+              {{ loadingData ? 'Loading' : 'No pictures found' }}
+            </div>
+          </template>
           <template v-if="currentTab === 'videos'">
             <!-- Available Videos -->
             <div
@@ -499,26 +599,85 @@
       </div>
     </template>
   </InteractionDialog>
+  <v-dialog
+    v-if="showFullScreenPictureModal"
+    :model-value="showFullScreenPictureModal"
+    :persistent="false"
+    @update:model-value="showFullScreenPictureModal = $event"
+    @keydown.left.prevent="previousPicture"
+    @keydown.right.prevent="nextPicture"
+  >
+    <div class="flex flex-col justify-center items-center w-full h-full">
+      <div class="relative inline-block">
+        <img
+          v-if="fullScreenPicture"
+          :src="fullScreenPicture.blob ? createObjectURL(fullScreenPicture.blob) : ''"
+          class="block object-contain max-w-full h-[90vh]"
+          alt="Full Screen Picture"
+        />
+        <v-btn
+          class="absolute top-2 right-2 p-1 bg-[#00000055] text-white"
+          size="sm"
+          icon
+          @click="showFullScreenPictureModal = false"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+        <v-btn
+          class="absolute top-1/2 left-2 transform -translate-y-1/2 bg-[#00000055] text-white p-2 rounded-full"
+          size="sm"
+          icon
+          @click="previousPicture"
+        >
+          <v-icon>mdi-chevron-left</v-icon>
+        </v-btn>
+        <v-btn
+          class="absolute top-1/2 right-2 transform -translate-y-1/2 bg-[#00000055] text-white p-2 rounded-full"
+          size="sm"
+          icon
+          @click="nextPicture"
+        >
+          <v-icon>mdi-chevron-right</v-icon>
+        </v-btn>
+        <div class="absolute bottom-2 right-2 flex gap-2 z-[1000]">
+          <v-btn icon class="bg-[#00000055] text-white" @click="downloadPictures(fullScreenPicture?.filename)">
+            <v-icon>mdi-download</v-icon>
+          </v-btn>
+          <v-btn icon class="bg-[#00000055] text-white" @click="deletePictures(fullScreenPicture?.filename)">
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+        </div>
+        <div class="absolute top-2 left-2 px-2 py-1 bg-[#00000055] rounded z-[1000]">
+          <p class="text-2xl text-white">
+            {{ parseDateFromTitle(fullScreenPicture?.filename as string) }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
 import * as Hammer from 'hammerjs'
-import { computed, nextTick, onBeforeUnmount, onMounted } from 'vue'
+import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, shallowRef } from 'vue'
 import { reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
 import { DialogActions } from '@/types/general'
+import { SnapshotLibraryFile } from '@/types/snapshot'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
 
 import InteractionDialog from './InteractionDialog.vue'
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
+const snapshotStore = useSnapshotStore()
 const { openSnackbar } = useSnackbar()
 
 const { showDialog, closeDialog } = useInteractionDialog()
@@ -539,7 +698,7 @@ const availableLogFiles = ref<VideoLibraryLogFile[]>([])
 const isVisible = ref(true)
 const selectedVideos = ref<VideoLibraryFile[]>([])
 const videoPlayerRef = ref<HTMLVideoElement | null>(null)
-const currentTab = ref('videos')
+const currentTab = ref(interfaceStore.videoLibraryMode || 'videos')
 const snackbarMessage = ref('')
 const isMultipleSelectionMode = ref(false)
 const longPressSelected = ref(false)
@@ -567,6 +726,24 @@ const videoBlobURL = ref<string | null>(null)
 const loadingVideoBlob = ref(false)
 const videoLoadError = ref(false)
 const videoThumbnailURLs = reactive<Record<string, string | null>>({})
+const availablePictures = ref<SnapshotLibraryFile[]>([])
+const showFullScreenPictureModal = ref(false)
+const fullScreenPicture = ref<SnapshotLibraryFile | null>(null)
+const selectedPicSet = shallowRef<Set<string>>(new Set())
+
+const selectedPictures = computed({
+  get: () => [...selectedPicSet.value],
+  set: (arr: string[]) => {
+    selectedPicSet.value.clear()
+    arr.forEach((f) => selectedPicSet.value.add(f))
+  },
+})
+
+const setSelectedPics = (files: string[]): void => {
+  selectedPicSet.value = new Set(files) // ← one reactive hit
+}
+
+const createObjectURL = (blob: Blob): string => URL.createObjectURL(blob)
 
 const dialogStyle = computed(() => {
   const scale = interfaceStore.isOnSmallScreen ? windowWidth.value / 1100 : 1
@@ -578,7 +755,7 @@ const dialogStyle = computed(() => {
 
 const menuButtons = [
   { name: 'Videos', icon: 'mdi-video-outline', selected: true, disabled: false, tooltip: '' },
-  { name: 'Pictures', icon: 'mdi-image-outline', selected: false, disabled: true, tooltip: 'Coming soon' },
+  { name: 'Snapshots', icon: 'mdi-image-outline', selected: false, disabled: false, tooltip: '' },
 ]
 
 const fileActionButtons = computed(() => [
@@ -620,6 +797,81 @@ const openVideoFolder = (): void => {
   } else {
     openSnackbar({
       message: 'This feature is only available in the desktop version of Cockpit.',
+      duration: 3000,
+      variant: 'error',
+      closeButton: true,
+    })
+  }
+}
+
+const openPicInFullScreen = (picture: SnapshotLibraryFile): void => {
+  fullScreenPicture.value = picture
+  showFullScreenPictureModal.value = true
+}
+
+const deletePictures = async (pictureFileName?: string): Promise<void> => {
+  try {
+    deleteButtonLoading.value = true
+    await snapshotStore.deleteSnapshotFiles(pictureFileName ? [pictureFileName] : selectedPictures.value)
+    openSnackbar({
+      message: 'Snapshots deleted successfully.',
+      duration: 3000,
+      variant: 'success',
+      closeButton: true,
+    })
+    showFullScreenPictureModal.value = false
+    deselectAllPictures()
+    await fetchPictures()
+  } catch (error) {
+    const errorMsg = `Error deleting picture: ${(error as Error).message ?? error!.toString()}`
+    console.error(errorMsg)
+    openSnackbar({
+      message: errorMsg,
+      duration: 3000,
+      variant: 'error',
+      closeButton: true,
+    })
+  } finally {
+    deleteButtonLoading.value = false
+  }
+}
+
+const handleDeletePictures = (picture?: SnapshotLibraryFile): void => {
+  showDialog({
+    variant: 'warning',
+    message: `Delete ${picture ? picture.filename : selectedPictures.value.length} picture(s)?`,
+    actions: [
+      {
+        text: 'Cancel',
+        size: 'small',
+        action: closeDialog,
+      },
+      {
+        text: 'Delete',
+        size: 'small',
+        action: () => {
+          deletePictures(picture ? picture.filename : undefined)
+          closeDialog()
+        },
+      },
+    ],
+  })
+}
+
+const downloadPictures = async (pictureFileName?: string): Promise<void> => {
+  try {
+    await snapshotStore.downloadFilesFromSnapshotDB(pictureFileName ? [pictureFileName] : selectedPictures.value)
+    openSnackbar({
+      message: 'Pictures downloaded successfully.',
+      duration: 3000,
+      variant: 'success',
+      closeButton: true,
+    })
+  } catch (error) {
+    const errorMsg = `Error downloading picture: ${(error as Error).message ?? error!.toString()}`
+    console.error(errorMsg)
+    openSnackbar({
+      message: errorMsg,
       duration: 3000,
       variant: 'error',
       closeButton: true,
@@ -675,6 +927,24 @@ const toggleVideoIntoSelectionArray = (video: VideoLibraryFile): void => {
   } else {
     selectedVideos.value.push(video)
     isMultipleSelectionMode.value = true
+  }
+}
+
+const togglePictureIntoSelectionArray = (filename: string): void => {
+  const next = new Set(selectedPicSet.value)
+  if (next.has(filename)) {
+    if (next.size > 1) next.delete(filename)
+  } else {
+    next.add(filename)
+  }
+  selectedPicSet.value = next
+}
+
+const onPictureClick = (filename: string): void => {
+  if (isMultipleSelectionMode.value) {
+    togglePictureIntoSelectionArray(filename)
+  } else {
+    setSelectedPics([filename])
   }
 }
 
@@ -940,7 +1210,7 @@ const fetchVideosAndLogData = async (): Promise<void> => {
     if (videoStore.isVideoFilename(key)) {
       videoFilesOperations.push({ fileName: key, isProcessed: true, thumbnail: videoStore.videoStorage.getItem(key) })
       const thumbnail = await videoStore.getVideoThumbnail(key, true)
-      videoThumbnailURLs[key] = thumbnail ? URL.createObjectURL(thumbnail) : null
+      videoThumbnailURLs[key] = thumbnail ? createObjectURL(thumbnail) : null
     }
     if (key.endsWith('.ass')) {
       logFileOperations.push({ fileName: key })
@@ -951,7 +1221,7 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   const unprocessedVideos = await videoStore.unprocessedVideos
   const unprocessedVideoOperations = Object.entries(unprocessedVideos).map(async ([hash, videoInfo]) => {
     const thumbnail = await videoStore.getVideoThumbnail(hash, false)
-    videoThumbnailURLs[hash] = thumbnail ? URL.createObjectURL(thumbnail) : null
+    videoThumbnailURLs[hash] = thumbnail ? createObjectURL(thumbnail) : null
     return { ...videoInfo, ...{ hash: hash, isProcessed: false } }
   })
 
@@ -968,6 +1238,55 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   availableLogFiles.value = logFiles
 
   loadingData.value = false
+}
+
+const fetchPictures = async (): Promise<void> => {
+  loadingData.value = true
+  const keys = await snapshotStore.snapshotStorage.keys()
+  const pics: SnapshotLibraryFile[] = []
+
+  for (const key of keys) {
+    const blob = (await snapshotStore.snapshotStorage.getItem(key)) as Blob | null
+    const entry: SnapshotLibraryFile = {
+      filename: key,
+      type: 'stream',
+      streamName: '',
+      date: new Date(),
+      url: '',
+      blob: new Blob(),
+    }
+    if (blob) {
+      entry.blob = markRaw(blob)
+      entry.url = URL.createObjectURL(blob)
+    }
+    pics.push(entry)
+  }
+  availablePictures.value = pics
+  loadingData.value = false
+}
+
+const nextPicture = (): void => {
+  if (!fullScreenPicture.value) return
+  const currentIndex = availablePictures.value.findIndex((pic) => pic.filename === fullScreenPicture.value!.filename)
+  const nextIndex = (currentIndex + 1) % availablePictures.value.length
+  fullScreenPicture.value = availablePictures.value[nextIndex]
+}
+
+const previousPicture = (): void => {
+  if (!fullScreenPicture.value) return
+  const currentIndex = availablePictures.value.findIndex((pic) => pic.filename === fullScreenPicture.value!.filename)
+  const previousIndex = (currentIndex - 1 + availablePictures.value.length) % availablePictures.value.length
+  fullScreenPicture.value = availablePictures.value[previousIndex]
+}
+
+const selectAllPictures = (): void => {
+  setSelectedPics(availablePictures.value.map((p) => p.filename))
+  isMultipleSelectionMode.value = true
+}
+
+const deselectAllPictures = (): void => {
+  setSelectedPics([])
+  isMultipleSelectionMode.value = false
 }
 
 watch(
@@ -1015,7 +1334,7 @@ const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => 
     const videoBlob = await videoStore.videoStorage.getItem(videoFileName)
 
     if (videoBlob instanceof Blob && videoPlayer) {
-      videoBlobURL.value = URL.createObjectURL(videoBlob)
+      videoBlobURL.value = createObjectURL(videoBlob)
       videoPlayer.src = videoBlobURL.value
 
       // Set up load error detection
@@ -1165,6 +1484,7 @@ watch(
 
 onMounted(async () => {
   await fetchVideosAndLogData()
+  await fetchPictures()
   if (availableVideos.value.length > 0) {
     await loadVideoBlobIntoPlayer(availableVideos.value[0].fileName)
   }
@@ -1178,6 +1498,7 @@ onBeforeUnmount(() => {
     instance.destroy()
   })
   interfaceStore.videoLibraryVisibility = false
+  availablePictures.value.forEach((pic) => pic.url && URL.revokeObjectURL(pic.url))
   unloadVideoBlob()
 })
 </script>
@@ -1298,6 +1619,70 @@ onBeforeUnmount(() => {
 
 .play-button:hover {
   opacity: 0.8;
+  transition: all;
+  transition-duration: 0.4s;
+}
+
+.fullscreen-button {
+  position: absolute;
+  display: flex;
+  justify-content: end;
+  align-items: end;
+  top: 32px;
+  right: 65px;
+  border-radius: 6px;
+  background: #00000044;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.fullscreen-button:hover {
+  background: #00000055;
+  opacity: 1;
+  transition: all;
+  transition-duration: 0.4s;
+}
+
+.download-button {
+  position: absolute;
+  display: flex;
+  justify-content: end;
+  align-items: end;
+  top: 75px;
+  right: 3%;
+  padding: 3px;
+  border-radius: 8px;
+  background: #00000044;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.download-button:hover {
+  background: #00000055;
+  opacity: 1;
+  transition: all;
+  transition-duration: 0.4s;
+}
+
+.delete-button {
+  position: absolute;
+  display: flex;
+  justify-content: end;
+  align-items: end;
+  top: 5%;
+  right: 3%;
+  padding: 3px;
+  padding-bottom: 4px;
+  border-radius: 8px;
+  background: #00000044;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.delete-button:hover {
+  background: #00000055;
+  color: red;
+  opacity: 1;
   transition: all;
   transition-duration: 0.4s;
 }

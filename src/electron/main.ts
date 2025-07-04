@@ -8,6 +8,7 @@ import { setupJoystickMonitoring } from './services/joystick'
 import { setupMemoryService } from './services/memory'
 import { setupNetworkService } from './services/network'
 import { setupFilesystemStorage } from './services/storage'
+import { setupWorkspaceService } from './services/workspace'
 
 // If the app is packaged, push logs to the system instead of the console
 if (app.isPackaged) {
@@ -78,6 +79,7 @@ protocol.registerSchemesAsPrivileged([
 setupFilesystemStorage()
 setupNetworkService()
 setupMemoryService()
+setupWorkspaceService()
 setupJoystickMonitoring()
 
 app.whenReady().then(async () => {
