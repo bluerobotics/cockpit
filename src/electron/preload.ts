@@ -39,4 +39,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   openCockpitFolder: () => ipcRenderer.invoke('open-cockpit-folder'),
   openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
+  captureWorkspace: (rect?: Electron.Rectangle) => ipcRenderer.invoke('capture-workspace', rect),
 })
