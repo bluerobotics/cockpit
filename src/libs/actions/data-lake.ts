@@ -142,6 +142,11 @@ export const getDataLakeVariableData = (id: string): string | number | boolean |
 }
 
 export const setDataLakeVariableData = (id: string, data: string | number | boolean): void => {
+  // If the value is not changing, skip the "update"
+  if (dataLakeVariableData[id] === data) {
+    return
+  }
+
   dataLakeVariableData[id] = data
 
   // If this variable has persistValue enabled, save the value to localStorage
