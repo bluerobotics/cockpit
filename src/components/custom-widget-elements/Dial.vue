@@ -202,9 +202,6 @@ const sizeClass = computed(() => {
   }
 })
 
-let lastMouseAngle = 0
-let lastUnwrappedAngle = 0
-
 const updateDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable && !widgetStore.editingMode) {
     const roundedValue = Math.round(potentiometerValue.value)
@@ -213,6 +210,8 @@ const updateDataLakeVariable = (): void => {
   }
 }
 
+let lastKnobAngle = 0
+
 const startDrag = (event: MouseEvent): void => {
   event.preventDefault()
 
@@ -220,40 +219,29 @@ const startDrag = (event: MouseEvent): void => {
   const rect = target.getBoundingClientRect()
   const centerX = rect.left + rect.width / 2
   const centerY = rect.top + rect.height / 2
-
-  const initialMouseAngle = (Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180) / Math.PI
-
-  lastMouseAngle = initialMouseAngle
-  lastUnwrappedAngle = initialMouseAngle
-
-  const initialKnobAngle = rotationAngle.value
-
-  const offsetAngle = initialKnobAngle - initialMouseAngle
-
+  const rotationRange = 300
+  const rotationLimit = rotationRange / 2
+ 
   const handleDrag = (moveEvent: MouseEvent): void => {
-    const rawAngle = (Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX) * 180) / Math.PI
+    // Calculate clockwise angle from top of dial (positive Y is downwards)
+    const rawAngle = (Math.atan2(moveEvent.clientX - centerX, centerY - moveEvent.clientY) * 180) / Math.PI
 
-    let angleDiff = rawAngle - lastMouseAngle
-    if (angleDiff > 180) angleDiff -= 360
-    else if (angleDiff < -180) angleDiff += 360
+    // "Break" the limit endstop if the knob is dragged past it, all the way to the top (to avoid spool-up)
+    if (Math.abs(rawAngle - lastKnobAngle) > rotationLimit) {
+      return
+    }
 
-    const unwrappedAngle = lastUnwrappedAngle + angleDiff
-
-    lastMouseAngle = rawAngle
-    lastUnwrappedAngle = unwrappedAngle
-
-    let newRotationAngle = unwrappedAngle + offsetAngle
-
-    newRotationAngle = Math.max(-150, Math.min(150, newRotationAngle))
-
+    // Apply start and end limits, for visual clarity
+    let newRotationAngle = Math.max(-rotationLimit, Math.min(rotationLimit, rawAngle))
     rotationAngle.value = newRotationAngle
+    lastKnobAngle = newRotationAngle
 
-    const rotationRange = 300
+    // Convert dial angle input to output value range
     const minVal = miniWidget.value.options.layout?.minValue || 0
     const maxVal = miniWidget.value.options.layout?.maxValue || 100
     const valueRange = maxVal - minVal
 
-    potentiometerValue.value = ((newRotationAngle + 150) / rotationRange) * valueRange + minVal
+    potentiometerValue.value = ((newRotationAngle + rotationLimit) / rotationRange) * valueRange + minVal
 
     if (miniWidget.value.options.dataLakeVariable) {
       updateDataLakeVariable()
