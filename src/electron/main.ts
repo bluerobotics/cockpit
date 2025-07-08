@@ -4,6 +4,7 @@ import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
+import { setupElectronLogService } from './services/electron-log'
 import { setupJoystickMonitoring } from './services/joystick'
 import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
@@ -87,6 +88,7 @@ setupNetworkService()
 setupResourceMonitoringService()
 setupWorkspaceService()
 setupJoystickMonitoring()
+setupElectronLogService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
