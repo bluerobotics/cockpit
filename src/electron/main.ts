@@ -14,6 +14,9 @@ import { setupWorkspaceService } from './services/workspace'
 // If the app is packaged, push logs to the system instead of the console
 if (app.isPackaged) {
   Object.assign(console, logger.functions)
+
+  // Log Electron low-level events
+  logger.eventLogger.startLogging()
 }
 
 export const ROOT_PATH = {
