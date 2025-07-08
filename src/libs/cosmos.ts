@@ -1,5 +1,6 @@
 import { isBrowser } from 'browser-or-node'
 
+import { type ElectronLog } from '@/types/electron-general'
 import { ElectronStorageDB } from '@/types/general'
 import type { ElectronSDLControllerStateEventData } from '@/types/joystick'
 import { NetworkInfo } from '@/types/network'
@@ -257,6 +258,10 @@ declare global {
        * Capture the workspace area of the application
        */
       captureWorkspace(rect?: Electron.Rectangle): Promise<Uint8Array>
+      /**
+       * Get electron log content
+       */
+      getElectronLog: () => Promise<ElectronLog>
     }
   }
 }
