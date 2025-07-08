@@ -5,7 +5,7 @@ import * as os from 'os'
  * Setup memory usage monitoring
  * Exposes IPC handler for getting real-time memory usage information
  */
-export const setupMemoryService = (): void => {
+export const setupResourceMonitoringService = (): void => {
   ipcMain.handle('get-resource-usage', async () => {
     try {
       const memoryInfo = await app.getAppMetrics()

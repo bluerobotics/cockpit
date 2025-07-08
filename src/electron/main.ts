@@ -5,8 +5,8 @@ import { join } from 'path'
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupJoystickMonitoring } from './services/joystick'
-import { setupMemoryService } from './services/memory'
 import { setupNetworkService } from './services/network'
+import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
 import { setupWorkspaceService } from './services/workspace'
 
@@ -78,7 +78,7 @@ protocol.registerSchemesAsPrivileged([
 
 setupFilesystemStorage()
 setupNetworkService()
-setupMemoryService()
+setupResourceMonitoringService()
 setupWorkspaceService()
 setupJoystickMonitoring()
 
