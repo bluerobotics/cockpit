@@ -49,4 +49,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onSerialData: (callback: (data: { path: string; data: number[] }) => void) => {
     ipcRenderer.on('serial-data', (_event, data) => callback(data))
   },
+  systemLog: (level: string, message: string) => ipcRenderer.send('system-log', { level, message }),
 })

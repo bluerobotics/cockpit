@@ -300,6 +300,12 @@ declare global {
        * Register callback for serial data events
        */
       onSerialData: (callback: (data: SerialData) => void) => void
+      /**
+       * Send a log message to electron-log
+       * @param level - The log level (error, warn, info, debug, trace, log)
+       * @param message - The message to log
+       */
+      systemLog: (level: string, message: string) => void
     }
   }
 }

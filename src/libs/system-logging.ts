@@ -4,6 +4,8 @@ import localforage from 'localforage'
 
 import { systemLoggingEnablingKey } from '@/stores/development'
 
+import { isElectron } from './utils'
+
 export const systemLogDateFormat = 'LLL dd, yyyy'
 export const systemLogTimeFormat = 'HH꞉mm꞉ss O'
 export const systemLogDateTimeFormat = `${systemLogDateFormat} - ${systemLogTimeFormat}`
@@ -49,13 +51,27 @@ const saveLogEventInDB = (event: LogEvent): void => {
   }
 }
 
+const sendLogToElectron = (level: string, message: string): void => {
+  try {
+    if (window.electronAPI?.systemLog) {
+      window.electronAPI.systemLog(level, message)
+    }
+  } catch (error) {
+    // We do not want to log this error, as it would create an infinite loop
+  }
+}
+
 const enableSystemLogging = localStorage.getItem(systemLoggingEnablingKey)
 if (enableSystemLogging === 'true') {
+  const isRunningInElectron = isElectron()
+
   console.log(`
     System logging is enabled.
-    This means that all console logs will be saved to the database, and won't be displayed in the console.
+    This means that all console logs will be saved ${isRunningInElectron ? 'to electron-log' : 'to the database'}, and
+    won't be displayed in the console.
     To disable system logging go to "Settings" -> "Dev".
   `)
+
   const oldConsoleFunction = {
     error: console.error,
     warn: console.warn,
@@ -80,7 +96,12 @@ if (enableSystemLogging === 'true') {
           wholeMessage += msg
         }
       })
-      saveLogEventInDB({ epoch: new Date().getTime(), level: level, msg: wholeMessage })
+
+      if (isRunningInElectron) {
+        sendLogToElectron(level, wholeMessage)
+      } else {
+        saveLogEventInDB({ epoch: new Date().getTime(), level: level, msg: wholeMessage })
+      }
     }
   })
 }
