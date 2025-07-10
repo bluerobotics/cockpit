@@ -1,5 +1,6 @@
 import { isBrowser } from 'browser-or-node'
 
+import { type ElectronLog } from '@/types/electron-general'
 import { ElectronStorageDB } from '@/types/general'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
 import { NetworkInfo } from '@/types/network'
@@ -306,6 +307,24 @@ declare global {
        * @param message - The message to log
        */
       systemLog: (level: string, message: string) => void
+      /**
+       * Get a list of all electron logs
+       */
+      getElectronLogs: () => Promise<ElectronLog[]>
+      /**
+       * Get specific electron log content
+       * @param logName - The name of the log file
+       */
+      getElectronLogContent: (logName: string) => Promise<string>
+      /**
+       * Delete a specific electron log
+       * @param logName - The name of the log file to delete
+       */
+      deleteElectronLog: (logName: string) => Promise<boolean>
+      /**
+       * Delete old electron logs (older than 1 day)
+       */
+      deleteOldElectronLogs: () => Promise<string[]>
     }
   }
 }
