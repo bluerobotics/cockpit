@@ -172,6 +172,7 @@
         "--device=all",
         "--socket=pulseaudio",
         "--filesystem=/run/udev:ro",
+        "--filesystem=~/Cockpit:create",
         "--share=network",
         "--talk-name=org.freedesktop.Notifications"
       ],
