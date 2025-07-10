@@ -192,7 +192,7 @@
               </template>
             </v-text-field>
             <v-divider vertical class="mr-6 my-2" />
-            <v-tooltip location="top" text="Upload and aplly config file">
+            <v-tooltip location="top" text="Upload and apply config file">
               <template #activator="{ props: tooltipProps }">
                 <v-btn icon variant="text" class="bg-transparent" v-bind="tooltipProps" @click="uploadConfigFile">
                   <v-icon>mdi-upload-outline</v-icon>
@@ -212,7 +212,7 @@
 
       <v-card-actions>
         <div class="flex justify-between items-center p-2 w-full h-full text-[rgba(255,255,255,0.5)]">
-          <v-btn @click="resetAllCockpitSettings">Reset Cockpit's browser settings to defaults</v-btn>
+          <v-btn @click="resetAllCockpitSettings">Reset to defaults</v-btn>
           <v-btn class="text-white" @click="closeConfigDialog">Close</v-btn>
         </div>
       </v-card-actions>
@@ -407,9 +407,9 @@ const uploadConfigFile = (): void => {
 const resetAllCockpitSettings = (): void => {
   showDialog({
     message:
-      "Are you sure you want to reset Cockpit's browser stored settings to defaults? " +
-      'Settings on the vehicle will not be affected. ' +
-      'Once you connect back to the vehicle, the settings will be restored.',
+      "Are you sure you want to reset Cockpit's stored browser settings to defaults? " +
+      'Settings on the vehicle will not be affected - ' +
+      'once you connect back to the vehicle, the settings will be restored.',
     variant: 'warning',
     maxWidth: 800,
     actions: [
@@ -421,7 +421,7 @@ const resetAllCockpitSettings = (): void => {
         text: 'Reset settings',
         action: () => {
           localStorage.clear()
-          openSnackbar({ message: 'All settings have been reset to default.', variant: 'success' })
+          openSnackbar({ message: 'All settings have been reset to default values.', variant: 'success' })
           closeDialog()
           reloadCockpit(3000)
         },
