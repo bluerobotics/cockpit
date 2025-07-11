@@ -48,6 +48,9 @@
                       </v-btn>
                       <v-btn variant="text" prepend-icon="mdi-close" @click="ignoreAction(action)"> Ignore </v-btn>
                     </div>
+                    <v-card-subtitle class="text-grey-lighten-1 text-center mt-3">
+                      from {{ action.extensionName }}
+                    </v-card-subtitle>
                   </v-card-item>
                 </v-card>
               </v-list-item>
@@ -293,9 +296,19 @@ const isVisible = ref(false)
 const activeTab = ref('actions')
 
 /**
+ * Action with extension name
+ */
+type ActionWithExtensionName = ActionConfig & {
+  /**
+   * Name of the extension that offered the action
+   */
+  extensionName: string
+}
+
+/**
  * Store discovered actions from BlueOS
  */
-const discoveredActions = ref<ActionConfig[]>([])
+const discoveredActions = ref<ActionWithExtensionName[]>([])
 
 /**
  * Store discovered joystick suggestions from BlueOS
@@ -572,7 +585,14 @@ const closeModal = (): void => {
  */
 const checkForBlueOSActions = async (): Promise<void> => {
   try {
-    const actions = await getActionsFromBlueOS()
+    const actionsFromExtensions = await getActionsFromBlueOS()
+
+    const actions = actionsFromExtensions.flatMap((extension) =>
+      extension.actionConfigs.map((action) => ({
+        extensionName: extension.extensionName,
+        ...action,
+      }))
+    )
 
     if (actions.length > 0) {
       // Get all existing actions from the app
@@ -591,7 +611,7 @@ const checkForBlueOSActions = async (): Promise<void> => {
       const actionsToDisplay = actions.filter((action) => !existingActionNames.has(action.name))
 
       if (actionsToDisplay.length > 0) {
-        // Actions already have extension information attached from getActionsFromBlueOS
+        // Actions now include extension names from the getActionsFromBlueOS function
         discoveredActions.value = actionsToDisplay
       }
     }
