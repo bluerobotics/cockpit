@@ -81,6 +81,43 @@
               Edit
             </v-btn>
           </div>
+
+          <!-- Data Lake Configuration (GET requests only) -->
+          <div v-if="newActionConfig.method === HttpRequestMethod.GET" class="mt-4">
+            <v-divider class="mb-4" />
+            <h3 class="text-subtitle-2 font-weight-bold mb-3">Data Lake Integration</h3>
+
+            <v-checkbox
+              v-model="newActionConfig.populateDataLake"
+              label="Populate Data Lake Variable"
+              density="compact"
+              hide-details
+              class="mb-2"
+            />
+
+            <div v-if="newActionConfig.populateDataLake" class="ml-6">
+              <v-select
+                v-model="newActionConfig.dataLakeVariableId"
+                :items="dataLakeVariableOptions"
+                label="Data Lake Variable"
+                hint="Select the variable to populate with the response data"
+                persistent-hint
+                variant="outlined"
+                density="compact"
+                class="mb-2"
+              />
+
+              <v-text-field
+                v-model="newActionConfig.responseParser"
+                label="Response Parser (optional)"
+                hint="JSON path to extract data (e.g., 'response.coco' or 'response.xixi[2]'). Leave empty to use full response."
+                persistent-hint
+                variant="outlined"
+                density="compact"
+                placeholder="response.propertyName"
+              />
+            </div>
+          </div>
         </v-form>
       </v-card-text>
       <v-divider class="mt-2 mx-10" />
@@ -234,6 +271,9 @@ const defaultActionConfig = {
   },
   urlParams: {},
   body: '',
+  populateDataLake: false,
+  dataLakeVariableId: '',
+  responseParser: '',
 }
 
 const newActionConfig = ref<HttpRequestActionConfig>(defaultActionConfig)
@@ -270,12 +310,20 @@ const paramValueOptions = computed(() => {
   return options
 })
 
+const dataLakeVariableOptions = computed(() => {
+  const availableVariables = getAllDataLakeVariablesInfo()
+  return Object.values(availableVariables).map((variable) => ({
+    title: `${variable.name} (${variable.id})`,
+    value: variable.id,
+  }))
+})
+
 const isFormValid = computed(() => {
   return isValidRequestConfig(newActionConfig.value)
 })
 
 const isValidRequestConfig = (config: HttpRequestActionConfig): boolean => {
-  return (
+  const basicValidation = (
     !!config.name &&
     !!config.method &&
     !!config.url &&
@@ -283,6 +331,13 @@ const isValidRequestConfig = (config: HttpRequestActionConfig): boolean => {
     isValidHeaders(config.headers).isValid &&
     isValidJsonTemplate(config.body)
   )
+
+  // Additional validation for data lake configuration
+  if (config.populateDataLake && config.method === HttpRequestMethod.GET) {
+    return basicValidation && !!config.dataLakeVariableId
+  }
+
+  return basicValidation
 }
 
 const validateJsonTemplate = (template: string): ValidationFunctionReturn => {
@@ -491,7 +546,20 @@ const openEditDialog = (id: string): void => {
   const action = getHttpRequestActionConfig(id)
   if (action) {
     editMode.value = true
-    newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
+    const actionCopy = JSON.parse(JSON.stringify(action)) // Deep copy
+
+    // Ensure backward compatibility with existing configs
+    if (actionCopy.populateDataLake === undefined) {
+      actionCopy.populateDataLake = false
+    }
+    if (actionCopy.dataLakeVariableId === undefined) {
+      actionCopy.dataLakeVariableId = ''
+    }
+    if (actionCopy.responseParser === undefined) {
+      actionCopy.responseParser = ''
+    }
+
+    newActionConfig.value = actionCopy
     actionDialog.value.show = true
   }
 }
