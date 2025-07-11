@@ -165,15 +165,28 @@ export const getWidgetsFromBlueOS = async (vehicleAddress: string): Promise<Exte
   return widgets
 }
 
-export const getActionsFromBlueOS = async (vehicleAddress: string): Promise<ActionConfig[]> => {
+export type ActionsFromExtension = {
+  /**
+   * The name of the extension that is offering the actions
+   */
+  extensionName: string
+  /**
+   * The action configs from the extension
+   */
+  actionConfigs: ActionConfig[]
+}
+
+export const getActionsFromBlueOS = async (vehicleAddress: string): Promise<ActionsFromExtension[]> => {
   const services = await getServicesFromBlueOS(vehicleAddress)
-  const actions: ActionConfig[] = []
+  const actionsFromExtensions: ActionsFromExtension[] = []
+
   await Promise.all(
     services.map(async (service) => {
       try {
         const extraJson = await getExtrasJsonFromBlueOsService(vehicleAddress, service)
-        if (extraJson !== null) {
-          actions.push(...extraJson.actions)
+        if (extraJson !== null && extraJson.actions) {
+          const extensionName = service.metadata?.sanitized_name || 'Unknown Extension'
+          actionsFromExtensions.push({ extensionName, actionConfigs: extraJson.actions })
         }
       } catch (error) {
         console.error(`Could not get actions from BlueOS service ${service.metadata?.sanitized_name}. ${error}`)
@@ -181,24 +194,17 @@ export const getActionsFromBlueOS = async (vehicleAddress: string): Promise<Acti
     })
   )
 
-  return actions
+  return actionsFromExtensions
 }
 
-export const getJoystickSuggestionsFromBlueOS = async (): Promise<JoystickMapSuggestionsFromExtension[]> => {
-  const vehicleStore = useMainVehicleStore()
-
-  // Wait until we have a global address
-  while (vehicleStore.globalAddress === undefined) {
-    await new Promise((r) => setTimeout(r, 1000))
-  }
-
-  const services = await getServicesFromBlueOS(vehicleStore.globalAddress)
+export const getJoystickSuggestionsFromBlueOS = async (vehicleAddress: string): Promise<JoystickMapSuggestionsFromExtension[]> => {
+  const services = await getServicesFromBlueOS(vehicleAddress)
   const suggestionsMap = new Map<string, JoystickMapSuggestionsFromExtension>()
 
   await Promise.all(
     services.map(async (service) => {
       try {
-        const extraJson = await getExtrasJsonFromBlueOsService(vehicleStore.globalAddress, service)
+        const extraJson = await getExtrasJsonFromBlueOsService(vehicleAddress, service)
         if (extraJson !== null && extraJson.joystick_suggestions) {
           const extensionName = service.metadata?.sanitized_name || 'Unknown Extension'
 
