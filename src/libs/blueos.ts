@@ -172,7 +172,18 @@ export const getWidgetsFromBlueOS = async (): Promise<ExternalWidgetSetupInfo[]>
   return widgets
 }
 
-export const getActionsFromBlueOS = async (): Promise<ActionConfig[]> => {
+export type ActionsFromExtension = {
+  /**
+   * The name of the extension that is offering the actions
+   */
+  extensionName: string
+  /**
+   * The action configs from the extension
+   */
+  actionConfigs: ActionConfig[]
+}
+
+export const getActionsFromBlueOS = async (): Promise<ActionsFromExtension[]> => {
   const vehicleStore = useMainVehicleStore()
 
   // Wait until we have a global address
@@ -181,13 +192,15 @@ export const getActionsFromBlueOS = async (): Promise<ActionConfig[]> => {
   }
 
   const services = await getServicesFromBlueOS(vehicleStore.globalAddress)
-  const actions: ActionConfig[] = []
+  const actionsFromExtensions: ActionsFromExtension[] = []
   await Promise.all(
     services.map(async (service) => {
       try {
         const extraJson = await getExtrasJsonFromBlueOsService(vehicleStore.globalAddress, service)
-        if (extraJson !== null) {
-          actions.push(...extraJson.actions)
+        if (extraJson !== null && extraJson.actions) {
+          const extensionName = service.metadata?.sanitized_name || 'Unknown Extension'
+
+          actionsFromExtensions.push({ extensionName, actionConfigs: extraJson.actions })
         }
       } catch (error) {
         console.error(`Could not get actions from BlueOS service ${service.metadata?.sanitized_name}. ${error}`)
@@ -195,7 +208,7 @@ export const getActionsFromBlueOS = async (): Promise<ActionConfig[]> => {
     })
   )
 
-  return actions
+  return actionsFromExtensions
 }
 
 export const getJoystickSuggestionsFromBlueOS = async (): Promise<JoystickMapSuggestionsFromExtension[]> => {
