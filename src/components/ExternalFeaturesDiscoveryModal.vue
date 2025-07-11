@@ -60,46 +60,259 @@
 
         <!-- Joystick Suggestions Tab -->
         <v-tabs-window-item value="joystick-suggestions">
-          <div v-if="filteredJoystickSuggestions.length === 0" class="text-center py-8">
+          <div
+            v-if="
+              filteredJoystickSuggestionsByExtension.length === 0 &&
+              appliedJoystickSuggestionsByExtension.length === 0 &&
+              ignoredJoystickSuggestionsByExtension.length === 0
+            "
+            class="text-center py-8"
+          >
             <v-icon size="50" color="grey" class="mb-3">mdi-gamepad-variant-outline</v-icon>
             <p class="text-grey-lighten-1">No joystick mapping suggestions available.</p>
           </div>
 
           <div v-else class="actions-container">
-            <p class="mb-4">The following joystick mappings are suggested by BlueOS extensions:</p>
+            <!-- New Suggestions Section -->
+            <div v-if="filteredJoystickSuggestionsByExtension.length > 0" class="mb-8">
+              <div class="flex items-center gap-2 mb-4">
+                <v-icon size="24" color="blue">mdi-gamepad-variant-outline</v-icon>
+                <h2 class="text-xl font-semibold">New Suggestions</h2>
+              </div>
+              <p class="mb-4 text-grey-lighten-1">
+                The following joystick mappings are suggested by BlueOS extensions:
+              </p>
 
-            <v-list class="bg-transparent">
-              <v-list-item v-for="suggestion in filteredJoystickSuggestions" :key="suggestion.id" class="mb-3 p-0">
-                <v-card variant="outlined" class="w-full action-card">
-                  <v-card-item>
-                    <template #prepend>
-                      <div class="mr-3 joystick-svg-container">
-                        <JoystickButtonIndicator :button-number="suggestion.button" :modifier="suggestion.modifier" />
-                      </div>
-                    </template>
-                    <v-card-title class="font-medium pb-0 text-center">{{ suggestion.actionName }}</v-card-title>
-                    <v-card-subtitle class="text-grey-lighten-1 text-center"
-                      >{{ suggestion.description }}
-                    </v-card-subtitle>
-                    <div class="flex flex-col gap-1 mt-4">
-                      <v-btn
-                        variant="tonal"
-                        prepend-icon="mdi-plus-circle-outline"
-                        @click="openJoystickSuggestionDialog(suggestion)"
-                      >
-                        Apply Suggestion
-                      </v-btn>
-                      <v-btn variant="text" prepend-icon="mdi-close" @click="ignoreSuggestion(suggestion)">
-                        Ignore
-                      </v-btn>
+              <!-- Group suggestions by extension -->
+              <div
+                v-for="extensionGroup in filteredJoystickSuggestionsByExtension"
+                :key="extensionGroup.extensionName"
+                class="mb-6"
+              >
+                <!-- Extension container -->
+                <v-card variant="outlined" class="extension-container">
+                  <!-- Extension header with accept all button -->
+                  <div class="flex items-center justify-between mb-4 p-4 bg-slate-700/30 rounded-t-lg">
+                    <div class="flex items-center gap-2">
+                      <v-icon size="20" color="blue">mdi-puzzle-outline</v-icon>
+                      <h3 class="text-lg font-semibold">{{ extensionGroup.extensionName }}</h3>
+                      <v-chip size="small" variant="outlined" color="blue">
+                        {{ extensionGroup.suggestions.length }} suggestion{{
+                          extensionGroup.suggestions.length !== 1 ? 's' : ''
+                        }}
+                      </v-chip>
                     </div>
-                    <v-card-subtitle class="text-grey-lighten-1 text-center mt-3">
-                      from {{ suggestion.extensionName }}
-                    </v-card-subtitle>
-                  </v-card-item>
+                    <v-btn
+                      variant="tonal"
+                      color="green"
+                      prepend-icon="mdi-check-all"
+                      size="small"
+                      @click="acceptAllSuggestions(extensionGroup.extensionName)"
+                    >
+                      Accept All
+                    </v-btn>
+                  </div>
+
+                  <!-- Suggestions grid from this extension -->
+                  <div class="p-4 pt-0">
+                    <div class="flex flex-wrap gap-4 justify-start">
+                      <div
+                        v-for="suggestion in extensionGroup.suggestions"
+                        :key="suggestion.id"
+                        class="suggestion-item-compact p-4 border border-gray-600 rounded-lg bg-gray-800/20 hover:bg-gray-700/30 transition-colors"
+                      >
+                        <!-- Title and description above SVG -->
+                        <div class="text-center mb-3">
+                          <h4 class="font-medium text-white mb-1">{{ suggestion.actionName }}</h4>
+                          <p v-if="suggestion.description" class="text-sm text-grey-lighten-1">
+                            {{ suggestion.description }}
+                          </p>
+                        </div>
+
+                        <!-- Joystick SVG (reduced by 20%) -->
+                        <div class="flex justify-center mb-3">
+                          <div class="joystick-svg-container-small">
+                            <JoystickButtonIndicator
+                              :button-number="suggestion.button"
+                              :modifier="suggestion.modifier"
+                            />
+                          </div>
+                        </div>
+
+                        <!-- Buttons underneath -->
+                        <div class="flex flex-col gap-2">
+                          <v-btn
+                            variant="tonal"
+                            prepend-icon="mdi-plus-circle-outline"
+                            size="small"
+                            @click="openJoystickSuggestionDialog(suggestion, extensionGroup.extensionName)"
+                          >
+                            Apply
+                          </v-btn>
+                          <v-btn
+                            variant="text"
+                            prepend-icon="mdi-close"
+                            size="small"
+                            @click="ignoreSuggestion(suggestion)"
+                          >
+                            Ignore
+                          </v-btn>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </v-card>
-              </v-list-item>
-            </v-list>
+              </div>
+            </div>
+
+            <!-- Applied Suggestions Section -->
+            <div v-if="appliedJoystickSuggestionsByExtension.length > 0" class="mb-8">
+              <div class="flex items-center gap-2 mb-4">
+                <v-icon size="24" color="green">mdi-check-circle</v-icon>
+                <h2 class="text-xl font-semibold">Applied Mappings</h2>
+              </div>
+              <p class="mb-4 text-grey-lighten-1">These joystick mappings have been applied from BlueOS extensions:</p>
+
+              <!-- Group applied suggestions by extension -->
+              <div
+                v-for="extensionGroup in appliedJoystickSuggestionsByExtension"
+                :key="extensionGroup.extensionName"
+                class="mb-6"
+              >
+                <!-- Extension container -->
+                <v-card variant="outlined" class="extension-container border-green-500/30">
+                  <!-- Extension header -->
+                  <div
+                    class="flex items-center justify-between mb-4 p-4 bg-green-900/20 rounded-t-lg border-b border-green-500/30"
+                  >
+                    <div class="flex items-center gap-2">
+                      <v-icon size="20" color="green">mdi-check-circle</v-icon>
+                      <h3 class="text-lg font-semibold">{{ extensionGroup.extensionName }}</h3>
+                      <v-chip size="small" variant="outlined" color="green">
+                        {{ extensionGroup.suggestions.length }} applied
+                      </v-chip>
+                    </div>
+                  </div>
+
+                  <!-- Applied suggestions grid from this extension -->
+                  <div class="p-4 pt-0">
+                    <div class="flex flex-wrap gap-4 justify-start">
+                      <div
+                        v-for="suggestion in extensionGroup.suggestions"
+                        :key="suggestion.id"
+                        class="suggestion-item-compact p-4 border border-green-500/30 rounded-lg bg-green-900/10"
+                      >
+                        <!-- Title and description above SVG -->
+                        <div class="text-center mb-3">
+                          <h4 class="font-medium text-white mb-1">{{ suggestion.actionName }}</h4>
+                          <p v-if="suggestion.description" class="text-sm text-grey-lighten-1">
+                            {{ suggestion.description }}
+                          </p>
+                        </div>
+
+                        <!-- Joystick SVG (reduced by 20%) -->
+                        <div class="flex justify-center mb-3">
+                          <div class="joystick-svg-container-small">
+                            <JoystickButtonIndicator
+                              :button-number="suggestion.button"
+                              :modifier="suggestion.modifier"
+                            />
+                          </div>
+                        </div>
+
+                        <!-- Applied status -->
+                        <div class="flex justify-center">
+                          <v-chip color="green" variant="tonal" prepend-icon="mdi-check" size="small"> Applied </v-chip>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </v-card>
+              </div>
+            </div>
+
+            <!-- Ignored Suggestions Section -->
+            <div v-if="ignoredJoystickSuggestionsByExtension.length > 0" class="mb-8">
+              <div class="flex items-center gap-2 mb-4">
+                <v-icon size="24" color="orange">mdi-close-circle</v-icon>
+                <h2 class="text-xl font-semibold">Ignored Mappings</h2>
+              </div>
+              <p class="mb-4 text-grey-lighten-1">These joystick mappings have been ignored:</p>
+
+              <!-- Group ignored suggestions by extension -->
+              <div
+                v-for="extensionGroup in ignoredJoystickSuggestionsByExtension"
+                :key="extensionGroup.extensionName"
+                class="mb-6"
+              >
+                <!-- Extension container -->
+                <v-card variant="outlined" class="extension-container border-orange-500/30">
+                  <!-- Extension header -->
+                  <div
+                    class="flex items-center justify-between mb-4 p-4 bg-orange-900/20 rounded-t-lg border-b border-orange-500/30"
+                  >
+                    <div class="flex items-center gap-2">
+                      <v-icon size="20" color="orange">mdi-close-circle</v-icon>
+                      <h3 class="text-lg font-semibold">{{ extensionGroup.extensionName }}</h3>
+                      <v-chip size="small" variant="outlined" color="orange">
+                        {{ extensionGroup.suggestions.length }} ignored
+                      </v-chip>
+                    </div>
+                    <v-btn
+                      variant="tonal"
+                      color="blue"
+                      prepend-icon="mdi-restore"
+                      size="small"
+                      @click="restoreAllIgnoredSuggestions(extensionGroup.extensionName)"
+                    >
+                      Restore All
+                    </v-btn>
+                  </div>
+
+                  <!-- Ignored suggestions grid from this extension -->
+                  <div class="p-4 pt-0">
+                    <div class="flex flex-wrap gap-4 justify-start">
+                      <div
+                        v-for="suggestion in extensionGroup.suggestions"
+                        :key="suggestion.id"
+                        class="suggestion-item-compact p-4 border border-orange-500/30 rounded-lg bg-orange-900/10"
+                      >
+                        <!-- Title and description above SVG -->
+                        <div class="text-center mb-3">
+                          <h4 class="font-medium text-white mb-1">{{ suggestion.actionName }}</h4>
+                          <p v-if="suggestion.description" class="text-sm text-grey-lighten-1">
+                            {{ suggestion.description }}
+                          </p>
+                        </div>
+
+                        <!-- Joystick SVG (reduced by 20%) -->
+                        <div class="flex justify-center mb-3">
+                          <div class="joystick-svg-container-small">
+                            <JoystickButtonIndicator
+                              :button-number="suggestion.button"
+                              :modifier="suggestion.modifier"
+                            />
+                          </div>
+                        </div>
+
+                        <!-- Restore button -->
+                        <div class="flex justify-center">
+                          <v-btn
+                            variant="tonal"
+                            color="blue"
+                            prepend-icon="mdi-restore"
+                            size="small"
+                            @click="restoreIgnoredSuggestion(suggestion)"
+                          >
+                            Restore
+                          </v-btn>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </v-card>
+              </div>
+            </div>
           </div>
         </v-tabs-window-item>
       </v-tabs-window>
@@ -214,6 +427,86 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- Accept All Suggestions Dialog -->
+      <v-dialog v-model="acceptAllDialog" max-width="500px">
+        <v-card v-if="acceptAllExtensionName" class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
+          <v-card-title class="text-center pt-4 pb-2">
+            <h2 class="text-xl font-semibold">Accept All Suggestions</h2>
+          </v-card-title>
+          <v-btn
+            icon="mdi-close"
+            size="small"
+            variant="text"
+            class="absolute top-2 right-2 text-lg"
+            @click="acceptAllDialog = false"
+          ></v-btn>
+
+          <v-card-text class="px-6 pb-4">
+            <div class="mb-4">
+              <p class="text-center text-sm text-gray-300 mb-4">
+                Accept all {{ getExtensionSuggestionCount(acceptAllExtensionName) }} suggestions from
+                <strong>{{ acceptAllExtensionName }}</strong
+                >?
+              </p>
+              <p class="text-center text-xs text-gray-400 mb-4">
+                This will apply all suggested joystick mappings to your selected profiles.
+              </p>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex justify-center items-center gap-4 mb-4">
+                <h4 class="font-medium">Select profiles to update:</h4>
+                <v-btn variant="text" size="small" class="text-xs" @click="toggleSelectAll">
+                  {{ allProfilesSelected ? 'Deselect All' : 'Select All' }}
+                </v-btn>
+              </div>
+
+              <div
+                v-for="profile in availableProfiles"
+                :key="profile.hash"
+                class="flex items-center justify-between p-3 rounded-lg border transition-all duration-200"
+                :class="{
+                  'border-gray-600 bg-gray-800/20': !selectedProfiles.includes(profile.hash),
+                  'border-green-500 bg-green-900/20': selectedProfiles.includes(profile.hash),
+                }"
+              >
+                <div class="flex items-center gap-3">
+                  <v-checkbox
+                    v-model="selectedProfiles"
+                    :value="profile.hash"
+                    color="green"
+                    hide-details
+                    class="flex-shrink-0"
+                  ></v-checkbox>
+
+                  <span
+                    class="font-medium"
+                    :class="{
+                      'text-gray-400': !selectedProfiles.includes(profile.hash),
+                      'text-white': selectedProfiles.includes(profile.hash),
+                    }"
+                  >
+                    {{ profile.name }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </v-card-text>
+
+          <div class="flex justify-center w-full px-6 pb-2">
+            <v-divider class="opacity-10 border-[#fafafa]"></v-divider>
+          </div>
+
+          <v-card-actions class="px-6 pb-4">
+            <v-spacer></v-spacer>
+            <v-btn variant="text" @click="acceptAllDialog = false">Cancel</v-btn>
+            <v-btn :disabled="selectedProfiles.length === 0" @click="applyAllSuggestions">
+              Apply All to {{ selectedProfiles.length }} Profile{{ selectedProfiles.length !== 1 ? 's' : '' }}
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </div>
   </GlassModal>
 </template>
@@ -320,6 +613,16 @@ const discoveredJoystickSuggestions = ref<JoystickMapSuggestionsFromExtension[]>
  */
 const joystickSuggestionDialog = ref(false)
 
+/**
+ * Dialog visibility for accepting all suggestions
+ */
+const acceptAllDialog = ref(false)
+
+/**
+ * Extension name for accept all dialog
+ */
+const acceptAllExtensionName = ref<string | null>(null)
+
 export type JoystickSuggestionWithExtensionName = JoystickMapSuggestion & {
   /**
    * Name of the extension that suggested the suggestion
@@ -361,23 +664,46 @@ const filteredActions = computed(() => {
 })
 
 /**
- * Filter out joystick suggestions that have already been applied or ignored and flatten them
+ * Filter out joystick suggestions that have already been applied or ignored and group them by extension
  */
-const filteredJoystickSuggestions = computed(() => {
-  const allSuggestions: JoystickSuggestionWithExtensionName[] = []
+const filteredJoystickSuggestionsByExtension = computed(() => {
+  return discoveredJoystickSuggestions.value
+    .map((extensionGroup) => ({
+      extensionName: extensionGroup.extensionName,
+      suggestions: extensionGroup.suggestions.filter(
+        (suggestion) =>
+          !appliedSuggestionIds.value.includes(suggestion.id) && !ignoredSuggestionIds.value.includes(suggestion.id)
+      ),
+    }))
+    .filter((group) => group.suggestions.length > 0)
+})
 
-  discoveredJoystickSuggestions.value.forEach((extensionGroup) => {
-    extensionGroup.suggestions.forEach((suggestion) => {
-      if (!appliedSuggestionIds.value.includes(suggestion.id) && !ignoredSuggestionIds.value.includes(suggestion.id)) {
-        allSuggestions.push({
-          ...suggestion,
-          extensionName: extensionGroup.extensionName,
-        })
-      }
-    })
-  })
+/**
+ * Get applied joystick suggestions grouped by extension
+ */
+const appliedJoystickSuggestionsByExtension = computed(() => {
+  return discoveredJoystickSuggestions.value
+    .map((extensionGroup) => ({
+      extensionName: extensionGroup.extensionName,
+      suggestions: extensionGroup.suggestions.filter((suggestion) =>
+        appliedSuggestionIds.value.includes(suggestion.id)
+      ),
+    }))
+    .filter((group) => group.suggestions.length > 0)
+})
 
-  return allSuggestions
+/**
+ * Get ignored joystick suggestions grouped by extension
+ */
+const ignoredJoystickSuggestionsByExtension = computed(() => {
+  return discoveredJoystickSuggestions.value
+    .map((extensionGroup) => ({
+      extensionName: extensionGroup.extensionName,
+      suggestions: extensionGroup.suggestions.filter((suggestion) =>
+        ignoredSuggestionIds.value.includes(suggestion.id)
+      ),
+    }))
+    .filter((group) => group.suggestions.length > 0)
 })
 
 /**
@@ -456,6 +782,18 @@ const getCurrentButtonAction = (
 }
 
 /**
+ * Get the count of suggestions for an extension
+ * @param {string} extensionName - Extension name
+ * @returns {number} Number of suggestions
+ */
+const getExtensionSuggestionCount = (extensionName: string): number => {
+  const extensionGroup = filteredJoystickSuggestionsByExtension.value.find(
+    (group) => group.extensionName === extensionName
+  )
+  return extensionGroup?.suggestions.length || 0
+}
+
+/**
  * Toggle select all profiles
  */
 const toggleSelectAll = (): void => {
@@ -468,9 +806,9 @@ const toggleSelectAll = (): void => {
 
 /**
  * Ignore a joystick suggestion
- * @param {JoystickSuggestionWithExtensionName} suggestion - The suggestion to ignore
+ * @param {JoystickMapSuggestion} suggestion - The suggestion to ignore
  */
-const ignoreSuggestion = (suggestion: JoystickSuggestionWithExtensionName): void => {
+const ignoreSuggestion = (suggestion: JoystickMapSuggestion): void => {
   handledSuggestions.value.ignored.push(suggestion.id)
   openSnackbar({
     message: `Suggestion "${suggestion.actionName}" has been ignored.`,
@@ -479,11 +817,70 @@ const ignoreSuggestion = (suggestion: JoystickSuggestionWithExtensionName): void
 }
 
 /**
- * Open the joystick suggestion dialog
- * @param {JoystickMapSuggestionWithExtensionName} suggestion - The suggestion to apply
+ * Open the accept all suggestions dialog
+ * @param {string} extensionName - Extension name
  */
-const openJoystickSuggestionDialog = (suggestion: JoystickSuggestionWithExtensionName): void => {
-  selectedSuggestion.value = suggestion
+const acceptAllSuggestions = (extensionName: string): void => {
+  acceptAllExtensionName.value = extensionName
+  selectedProfiles.value = []
+  acceptAllDialog.value = true
+}
+
+/**
+ * Apply all suggestions from an extension
+ */
+const applyAllSuggestions = (): void => {
+  if (!acceptAllExtensionName.value || selectedProfiles.value.length === 0) return
+
+  const extensionGroup = filteredJoystickSuggestionsByExtension.value.find(
+    (group) => group.extensionName === acceptAllExtensionName.value
+  )
+  if (!extensionGroup) return
+
+  const availableActions = allAvailableButtons()
+  let appliedCount = 0
+
+  // Apply each suggestion
+  extensionGroup.suggestions.forEach((suggestion) => {
+    const matchingAction = availableActions.find((action) => action.id === suggestion.actionId)
+    if (matchingAction) {
+      // Apply to selected profiles
+      selectedProfiles.value.forEach((profileHash) => {
+        const profile = controllerStore.protocolMappings.find((p) => p.hash === profileHash)
+        if (profile) {
+          const buttonKey = suggestion.button as number
+          const modifier = suggestion.modifier
+          profile.buttonsCorrespondencies[modifier][buttonKey] = {
+            action: matchingAction,
+          }
+        }
+      })
+
+      // Mark suggestion as applied
+      handledSuggestions.value.applied.push(suggestion.id)
+      appliedCount++
+    }
+  })
+
+  // Close dialog and show success message
+  acceptAllDialog.value = false
+  acceptAllExtensionName.value = null
+  openSnackbar({
+    message: `Applied ${appliedCount} joystick mappings from ${extensionGroup.extensionName} to ${selectedProfiles.value.length} profile(s)!`,
+    variant: 'success',
+  })
+}
+
+/**
+ * Open the joystick suggestion dialog
+ * @param {JoystickMapSuggestion} suggestion - The suggestion to apply
+ * @param {string} extensionName - Extension name
+ */
+const openJoystickSuggestionDialog = (suggestion: JoystickMapSuggestion, extensionName: string): void => {
+  selectedSuggestion.value = {
+    ...suggestion,
+    extensionName,
+  }
   selectedProfiles.value = []
   joystickSuggestionDialog.value = true
 }
@@ -534,30 +931,39 @@ const applyJoystickSuggestion = (): void => {
  * @param {ActionConfig} action - The action to add
  */
 const addAction = (action: ActionConfig): void => {
-  // Handle action by type
-  switch (action.type) {
-    case customActionTypes.httpRequest:
-      registerHttpRequestActionConfig(action.config)
-      break
-    case customActionTypes.mavlinkMessage:
-      registerMavlinkMessageActionConfig(action.config)
-      break
-    case customActionTypes.javascript:
-      registerJavascriptActionConfig(action.config)
-      break
+  try {
+    switch (action.type) {
+      case customActionTypes.httpRequest:
+        registerHttpRequestActionConfig(action.config)
+        break
+      case customActionTypes.mavlinkMessage:
+        registerMavlinkMessageActionConfig(action.config)
+        break
+      case customActionTypes.javascript:
+        registerJavascriptActionConfig(action.config)
+        break
+      default:
+        openSnackbar({
+          message: `Unknown action type: ${action.type}`,
+          variant: 'error',
+        })
+        return
+    }
+
+    // Mark action as applied
+    handledActions.value.applied.push(action.id)
+
+    emit('action-added', action)
+    openSnackbar({
+      message: `Action "${action.name}" has been added successfully!`,
+      variant: 'success',
+    })
+  } catch (error) {
+    openSnackbar({
+      message: `Failed to add action "${action.name}": ${error}`,
+      variant: 'error',
+    })
   }
-
-  // Mark the action as applied
-  handledActions.value.applied.push(action.id)
-
-  // Notify parent component
-  emit('action-added', action)
-
-  // Show success notification
-  openSnackbar({
-    message: `Action "${action.name}" added successfully!`,
-    variant: 'success',
-  })
 }
 
 /**
@@ -570,6 +976,65 @@ const ignoreAction = (action: ActionConfig): void => {
     message: `Action "${action.name}" has been ignored.`,
     variant: 'info',
   })
+}
+
+/**
+ * Restore all ignored suggestions from an extension
+ * @param {string} extensionName - Extension name
+ */
+const restoreAllIgnoredSuggestions = (extensionName: string): void => {
+  const extensionGroup = ignoredJoystickSuggestionsByExtension.value.find(
+    (group) => group.extensionName === extensionName
+  )
+  if (!extensionGroup) return
+
+  const suggestionsToRestore = extensionGroup.suggestions
+
+  if (suggestionsToRestore.length === 0) {
+    openSnackbar({
+      message: `No ignored suggestions found for ${extensionName}.`,
+      variant: 'info',
+    })
+    return
+  }
+
+  const confirmed = confirm(
+    `Are you sure you want to restore all ${suggestionsToRestore.length} ignored joystick mappings from ${extensionName}? They will appear in the New Suggestions section.`
+  )
+
+  if (confirmed) {
+    suggestionsToRestore.forEach((suggestion) => {
+      handledSuggestions.value.ignored = handledSuggestions.value.ignored.filter((id) => id !== suggestion.id)
+    })
+    openSnackbar({
+      message: `Restored ${suggestionsToRestore.length} ignored joystick mappings from ${extensionName}.`,
+      variant: 'success',
+    })
+  }
+}
+
+/**
+ * Restore a single ignored suggestion
+ * @param {JoystickMapSuggestion} suggestion - The suggestion to restore
+ */
+const restoreIgnoredSuggestion = (suggestion: JoystickMapSuggestion): void => {
+  // Find the extension name from the grouped data
+  const extensionGroup = ignoredJoystickSuggestionsByExtension.value.find((group) =>
+    group.suggestions.some((s) => s.id === suggestion.id)
+  )
+  const extensionName = extensionGroup?.extensionName || 'Unknown Extension'
+
+  const confirmed = confirm(
+    `Are you sure you want to restore the ignored joystick mapping "${suggestion.actionName}" from ${extensionName}? It will appear in the New Suggestions section.`
+  )
+
+  if (confirmed) {
+    handledSuggestions.value.ignored = handledSuggestions.value.ignored.filter((id) => id !== suggestion.id)
+    openSnackbar({
+      message: `Restored ignored joystick mapping "${suggestion.actionName}" from ${extensionName}.`,
+      variant: 'success',
+    })
+  }
 }
 
 /**
@@ -639,10 +1104,10 @@ const checkForBlueOSFeatures = async (): Promise<void> => {
   await Promise.all([checkForBlueOSActions(), checkForBlueOSJoystickSuggestions()])
 
   // Show modal if there are any features available
-  if (filteredActions.value.length > 0 || filteredJoystickSuggestions.value.length > 0) {
+  if (filteredActions.value.length > 0 || filteredJoystickSuggestionsByExtension.value.length > 0) {
     isVisible.value = true
     // Set active tab based on what's available
-    if (filteredJoystickSuggestions.value.length > 0 && filteredActions.value.length === 0) {
+    if (filteredJoystickSuggestionsByExtension.value.length > 0 && filteredActions.value.length === 0) {
       activeTab.value = 'joystick-suggestions'
     }
   }
@@ -700,5 +1165,66 @@ onMounted(() => {
   height: 220px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.joystick-svg-container-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 288px; /* 20% smaller than 360px */
+  height: 176px; /* 20% smaller than 220px */
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.extension-container {
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.suggestion-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 280px;
+  transition: all 0.2s ease;
+}
+
+.suggestion-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.suggestion-item-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: fit-content;
+  min-width: 320px;
+  max-width: 380px;
+  transition: all 0.2s ease;
+}
+
+.suggestion-item-compact:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.suggestion-item-compact .text-center {
+  width: 100%;
+  max-width: 300px;
+}
+
+.suggestion-item-compact .text-center h4 {
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+.suggestion-item-compact .text-center p {
+  word-wrap: break-word;
+  hyphens: auto;
 }
 </style>
