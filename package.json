@@ -34,7 +34,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.4.0",
     "@fortawesome/vue-fontawesome": "^3.0.3",
     "@j2only/slide-unlock": "^0.5.5",
-    "@kmamal/sdl": "0.11.7",
+    "@kmamal/sdl": "0.11.8",
     "@mdi/font": "^7.4.47",
     "@mdi/js": "^7.4.47",
     "@peermetrics/webrtc-stats": "^5.7.1",

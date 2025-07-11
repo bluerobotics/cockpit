@@ -364,7 +364,7 @@
                           <div
                             class="flex items-center justify-center gap-x-4 rounded-xl"
                             :class="
-                                item.type === 'button' && (joystick.state.buttons[item.id as JoystickButton] ?? 0) > 0.5 ? 'bg-[#2c99ce]' : 'bg-transparent'
+                                item.type === 'button' && isButtonPressed(item.id as JoystickButton) ? 'bg-[#2c99ce]' : 'bg-transparent'
                               "
                           >
                             <p>{{ item.type }}</p>
@@ -670,6 +670,29 @@ const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
 
 const protocols = Object.values(JoystickProtocol).filter((value) => typeof value === 'string')
+
+// Throttled button states implementation for performance optimization
+const throttledButtonStates = ref<Record<number, number | undefined>>({})
+const lastButtonUpdateTime = ref(0)
+const BUTTON_UPDATE_THROTTLE_MS = 100 // Update visual feedback at most every 100ms
+
+watch(
+  () => currentJoystick.value?.state.buttons,
+  (newButtonStates) => {
+    if (!newButtonStates) return
+
+    const now = Date.now()
+    if (now - lastButtonUpdateTime.value > BUTTON_UPDATE_THROTTLE_MS) {
+      throttledButtonStates.value = { ...newButtonStates }
+      lastButtonUpdateTime.value = now
+    }
+  },
+  { deep: true }
+)
+
+const isButtonPressed = (buttonId: JoystickButton): boolean => {
+  return (throttledButtonStates.value[buttonId] ?? 0) > 0.5
+}
 
 const shiftFunction = {
   protocol: 'cockpit-modifier-key',
