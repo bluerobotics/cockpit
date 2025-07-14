@@ -57,18 +57,23 @@ export class Joystick {
    * @returns {JoystickState}
    */
   get state(): JoystickState {
-    return {
-      buttons:
-        this.gamepadToCockpitMap?.buttons.map((idx) => {
-          if (idx === null || this.gamepad.buttons[idx] === undefined) return undefined
-          return this.gamepad.buttons[idx].value
-        }) || [],
-      axes:
-        this.gamepadToCockpitMap?.axes.map((idx) => {
-          if (idx === null || this.gamepad.axes[idx] === undefined) return undefined
-          return this.gamepad.axes[idx]
-        }) || [],
-    }
+    let buttons =
+      this.gamepadToCockpitMap?.buttons.map((idx) => {
+        if (idx === null || this.gamepad.buttons[idx] === undefined) return undefined
+        return this.gamepad.buttons[idx].value
+      }) || []
+
+    buttons = buttons.filter((button) => button !== undefined)
+
+    let axes =
+      this.gamepadToCockpitMap?.axes.map((idx) => {
+        if (idx === null || this.gamepad.axes[idx] === undefined) return undefined
+        return this.gamepad.axes[idx]
+      }) || []
+
+    axes = axes.filter((axis) => axis !== undefined)
+
+    return { buttons, axes }
   }
 }
 
