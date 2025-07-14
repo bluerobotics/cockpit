@@ -773,13 +773,11 @@ const tableItems = computed(() => {
     return []
   }
 
-  const originalAxes = currentJoystick.value.gamepadToCockpitMap?.axes || []
-  const axesItems = originalAxes.slice(0, 31).map((axis) => ({ type: 'axis', id: axis }))
+  const originalAxes = currentJoystick.value.state.axes
+  const axesItems = originalAxes.slice(0, 31).map((_, index) => ({ type: 'axis', id: index }))
 
-  const originalButtons = currentJoystick.value.gamepadToCockpitMap?.buttons || []
-  const buttonItems = originalButtons
-    .map((button, index) => ({ type: 'button', id: button, index: index }))
-    .filter((button) => button.index >= 0 && button.index <= 31)
+  const originalButtons = currentJoystick.value.state.buttons
+  const buttonItems = originalButtons.slice(0, 31).map((_, index) => ({ type: 'button', id: index }))
 
   return [...axesItems, ...buttonItems]
 })
