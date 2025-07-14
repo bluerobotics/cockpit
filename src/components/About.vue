@@ -53,7 +53,7 @@
               icon="mdi-file-document-outline"
               size="xs"
               target="_blank"
-              href="https://docs.bluerobotics.com/ardusub-zola/software/control-station/Cockpit-1.0/overview"
+              href="https://blueos.cloud/cockpit/docs"
             />
           </div>
         </div>
