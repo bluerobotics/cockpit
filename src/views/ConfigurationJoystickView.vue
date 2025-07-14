@@ -503,7 +503,7 @@
                 />
                 <div class="h-[360px] p-1 overflow-y-auto">
                   <Button
-                    v-for="action in filteredAndSortedJoystickActions()"
+                    v-for="action in filteredAndSortedJoystickActions"
                     :key="action.name"
                     class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col py-2 relative align-center"
                     :class="{ 'bg-slate-700': currentButtonActions[input.id].action.id == action.id }"
@@ -669,8 +669,6 @@ const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions
 const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
 
-const protocols = Object.values(JoystickProtocol).filter((value) => typeof value === 'string')
-
 // Throttled button states implementation for performance optimization
 const throttledButtonStates = ref<Record<number, number | undefined>>({})
 const lastButtonUpdateTime = ref(0)
@@ -728,13 +726,6 @@ watch(
   }
 )
 
-const filteredProtocols = protocols.filter(
-  (protocol) =>
-    protocol === JoystickProtocol.MAVLinkManualControl ||
-    protocol === JoystickProtocol.CockpitAction ||
-    protocol === JoystickProtocol.DataLakeVariable
-)
-
 const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void> => {
   try {
     const m2rVersion = await getMavlink2RestVersion(globalAddress)
@@ -749,10 +740,16 @@ const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void
   }
 }
 
-const filteredAndSortedJoystickActions = (): JoystickAction[] => {
+const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
+  const allowedProtocols = [
+    JoystickProtocol.MAVLinkManualControl,
+    JoystickProtocol.CockpitAction,
+    JoystickProtocol.DataLakeVariable,
+  ]
+
   return buttonActionsToShow.value
     .filter((action: JoystickAction) => action.name.toLowerCase().includes(searchText.value.toLowerCase()))
-    .filter((action: JoystickAction) => filteredProtocols.includes(action.protocol))
+    .filter((action: JoystickAction) => allowedProtocols.includes(action.protocol as JoystickProtocol))
     .filter((action: JoystickAction) => {
       const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
       if (!dataLakeVariableInfo) return true
@@ -760,7 +757,7 @@ const filteredAndSortedJoystickActions = (): JoystickAction[] => {
     })
     .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
-}
+})
 
 const headers = ref([
   { text: 'Type', value: 'type' },
