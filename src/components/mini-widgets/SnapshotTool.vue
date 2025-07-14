@@ -166,7 +166,7 @@ const recorderWidget = ref()
 const snapshotTypeIcon = ref<'mdi-video-image' | 'mdi-timer-outline'>('mdi-video-image')
 const snapshotTriggerType = ref<'single' | 'timed'>('single')
 const isSnapshotMenuOpen = ref<boolean>(false)
-const timedSnapshotInterval = useBlueOsStorage('cockpit-snapshotTimedInterval', 5)
+const timedSnapshotInterval = useBlueOsStorage('cockpit-snapshot-timed-interval', 5)
 const isTakingTimedSnapshot = ref<boolean>(false)
 const timerProgress = ref<number>(50)
 
