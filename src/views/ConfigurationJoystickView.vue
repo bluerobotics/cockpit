@@ -765,18 +765,50 @@ const headers = ref([
   { text: 'Actions', value: 'actions', sortable: false },
 ])
 
+/**
+ * Cache for table items to avoid recreating objects
+ */
+const tableItemsCache = ref<{
+  /**
+   * The key of the cache
+   */
+  key: string
+  /**
+   * The items of the cache
+   */
+  items: any[]
+} | null>(null)
+
+/**
+ * Optimized table items with memoization to reduce object creation
+ */
 const tableItems = computed(() => {
   if (currentJoystick.value === undefined) {
     return []
   }
 
-  const originalAxes = currentJoystick.value.state.axes
-  const axesItems = originalAxes.slice(0, 31).map((_, index) => ({ type: 'axis', id: index }))
+  const axesLength = currentJoystick.value.state.axes.length
+  const buttonsLength = currentJoystick.value.state.buttons.length
+  const cacheKey = `${axesLength}-${buttonsLength}`
 
-  const originalButtons = currentJoystick.value.state.buttons
-  const buttonItems = originalButtons.slice(0, 31).map((_, index) => ({ type: 'button', id: index }))
+  // Check if we can use cached items
+  if (tableItemsCache.value?.key === cacheKey) {
+    return tableItemsCache.value.items
+  }
 
-  return [...axesItems, ...buttonItems]
+  // Create new items if cache is not defined yet
+  const axesItems = Array.from({ length: Math.min(31, axesLength) }, (_, index) => ({ type: 'axis', id: index }))
+
+  const buttonItems = Array.from({ length: Math.min(31, buttonsLength) }, (_, index) => ({ type: 'button', id: index }))
+
+  const items = [...axesItems, ...buttonItems]
+
+  // Update cache outside of computed (in nextTick to avoid side effects)
+  nextTick(() => {
+    tableItemsCache.value = { key: cacheKey, items }
+  })
+
+  return items
 })
 
 onUnmounted(() => {
