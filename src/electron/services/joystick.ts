@@ -4,9 +4,9 @@ import { ipcMain } from 'electron'
 import {
   SDLControllerDevice,
   SDLControllerInstance,
-  SDLControllerState,
   SDLJoystickDevice,
   SDLJoystickInstance,
+  SDLJoystickState,
   SDLModule,
   SDLStatus,
 } from '@/types/sdl'
@@ -151,47 +151,33 @@ export const checkJoystickState = (deviceId: number): void => {
     throw new Error(`Joystick with id '${deviceId}' is closed.`)
   }
 
-  const currentStateAsController: SDLControllerState = {
-    buttons: {
-      dpadLeft: instance.buttons[0] === 1,
-      dpadRight: instance.buttons[1] === 1,
-      dpadUp: instance.buttons[2] === 1,
-      dpadDown: instance.buttons[3] === 1,
-      a: instance.buttons[4] === 1,
-      b: instance.buttons[5] === 1,
-      x: instance.buttons[6] === 1,
-      y: instance.buttons[7] === 1,
-      guide: instance.buttons[8] === 1,
-      back: instance.buttons[9] === 1,
-      start: instance.buttons[10] === 1,
-      leftStick: instance.buttons[11] === 1,
-      rightStick: instance.buttons[12] === 1,
-      leftShoulder: instance.buttons[13] === 1,
-      rightShoulder: instance.buttons[14] === 1,
-      extra: instance.buttons[15] === 1,
-      paddle1: instance.buttons[16] === 1,
-      paddle2: instance.buttons[17] === 1,
-      paddle3: instance.buttons[18] === 1,
-      paddle4: instance.buttons[19] === 1,
-    },
-    axes: {
-      leftStickX: instance.axes[0],
-      leftStickY: instance.axes[1],
-      rightStickX: instance.axes[2],
-      rightStickY: instance.axes[3],
-      leftTrigger: instance.axes[4],
-      rightTrigger: instance.axes[5],
-    },
+  const buttonsWithHatsMerged = structuredClone(instance.buttons)
+  instance.hats.forEach((hat) => {
+    buttonsWithHatsMerged.push(
+      ...[
+        hat === 'centered',
+        hat === 'up' || hat === 'rightup' || hat === 'leftup',
+        hat === 'right' || hat === 'rightup' || hat === 'rightdown',
+        hat === 'down' || hat === 'rightdown' || hat === 'leftdown',
+        hat === 'left' || hat === 'leftup' || hat === 'leftdown',
+      ]
+    )
+  })
+
+  const currentState: SDLJoystickState = {
+    buttons: buttonsWithHatsMerged,
+    axes: instance.axes,
   }
 
   // Send joystick state to renderer
   BrowserWindow.getAllWindows().forEach((window) => {
-    window.webContents.send('sdl-controller-state', {
+    window.webContents.send('sdl-controller-joystick-state', {
       deviceId: device.id,
       deviceName: device.name,
       productId: decimalToHex(device.product),
       vendorId: decimalToHex(device.vendor),
-      state: currentStateAsController,
+      type: 'joystick',
+      state: currentState,
     })
   })
 }
@@ -216,11 +202,12 @@ export const checkControllerState = (deviceId: number): void => {
 
   // Send joystick state to renderer
   BrowserWindow.getAllWindows().forEach((window) => {
-    window.webContents.send('sdl-controller-state', {
+    window.webContents.send('sdl-controller-joystick-state', {
       deviceId: device.id,
       deviceName: device.name,
       productId: decimalToHex(device.product),
       vendorId: decimalToHex(device.vendor),
+      type: 'controller',
       state,
     })
   })
@@ -277,6 +264,9 @@ export const setupJoystickMonitoring = (): void => {
   // Set up IPC handler to check SDL load status
   ipcMain.handle('check-sdl-status', () => {
     const connectedControllers: SDLStatus['connectedControllers'] = new Map()
+    const connectedJoysticks: SDLStatus['connectedJoysticks'] = new Map()
+
+    // Include opened controllers
     openedControllers.forEach((controller) => {
       connectedControllers.set(controller.device.id, {
         deviceId: controller.device.id,
@@ -284,9 +274,18 @@ export const setupJoystickMonitoring = (): void => {
       })
     })
 
+    // Include opened joysticks (they should also be reported as connected)
+    openedJoysticks.forEach((joystick) => {
+      connectedJoysticks.set(joystick.device.id, {
+        deviceId: joystick.device.id,
+        deviceName: joystick.device.name,
+      })
+    })
+
     return {
       loaded: sdlSuccessfullyLoaded,
       connectedControllers,
+      connectedJoysticks,
     }
   })
 
