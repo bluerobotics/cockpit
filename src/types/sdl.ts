@@ -1,5 +1,10 @@
 /* eslint-disable jsdoc/require-jsdoc */
 
+export interface SDLJoystickState {
+  buttons: boolean[]
+  axes: number[]
+}
+
 /**
  * SDL joystick instance type
  */
@@ -7,11 +12,18 @@ export interface SDLJoystickInstance {
   /**
    * State of the joystick buttons
    */
-  buttons: number[]
+  buttons: boolean[]
   /**
    * State of the joystick axes
    */
   axes: number[]
+  /**
+   * State of the joystick hats
+   */
+  hats: string[]
+  /**
+   * Number of axes
+   */
   /**
    * Whether the joystick is disabled or not
    */
@@ -209,6 +221,19 @@ export interface SDLStatus {
       deviceId: number
       /**
        * The name of the controller
+       */
+      deviceName: string
+    }
+  >
+  connectedJoysticks: Map<
+    number,
+    {
+      /**
+       * The ID of the joystick
+       */
+      deviceId: number
+      /**
+       * The name of the joystick
        */
       deviceName: string
     }
