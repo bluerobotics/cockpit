@@ -7,6 +7,7 @@ import store from './services/config-store'
 import { setupJoystickMonitoring } from './services/joystick'
 import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
+import { serialService } from './services/serial'
 import { setupFilesystemStorage } from './services/storage'
 import { setupWorkspaceService } from './services/workspace'
 
@@ -38,6 +39,8 @@ function createWindow(): void {
     x: store.get('windowBounds')?.x ?? screen.getPrimaryDisplay().bounds.x,
     y: store.get('windowBounds')?.y ?? screen.getPrimaryDisplay().bounds.y,
   })
+
+  serialService.setMainWindow(mainWindow)
 
   mainWindow.on('move', () => {
     const windowBounds = mainWindow!.getBounds()

@@ -40,4 +40,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openCockpitFolder: () => ipcRenderer.invoke('open-cockpit-folder'),
   openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
   captureWorkspace: (rect?: Electron.Rectangle) => ipcRenderer.invoke('capture-workspace', rect),
+  serialListPorts: () => ipcRenderer.invoke('serial-list-ports'),
+  serialOpen: (path: string, baudRate?: number) => ipcRenderer.invoke('serial-open', { path, baudRate }),
+  serialWrite: (path: string, data: Uint8Array) => ipcRenderer.invoke('serial-write', { path, data }),
+  serialClose: (path: string) => ipcRenderer.invoke('serial-close', { path }),
+  serialIsOpen: (path: string) => ipcRenderer.invoke('serial-is-open', { path }),
+  /* eslint-disable jsdoc/require-jsdoc */
+  onSerialData: (callback: (data: { path: string; data: number[] }) => void) => {
+    ipcRenderer.on('serial-data', (_event, data) => callback(data))
+  },
 })
