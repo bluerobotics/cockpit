@@ -1,9 +1,10 @@
 import { defaultJoystickCalibration } from '@/assets/defaults'
 import {
-  type ElectronSDLControllerStateEventData,
+  type ElectronSDLJoystickControllerStateEventData as ElectronSDLControllerStateEventData,
   type JoystickCalibration,
   type JoystickState,
   convertSDLControllerStateToGamepadState,
+  convertSDLJoystickStateToGamepadState,
 } from '@/types/joystick'
 
 import { applyCalibration } from './calibration'
@@ -343,7 +344,7 @@ class JoystickManager {
     // Remove any joysticks that are not in the status.connectedControllers map
     let joystickConnectionsChanged = false
     for (const [, gamepad] of this.joysticks) {
-      if (!status.connectedControllers.has(gamepad.index)) {
+      if (!status.connectedControllers.has(gamepad.index) && !status.connectedJoysticks.has(gamepad.index)) {
         this.joysticks.delete(gamepad.index)
         joystickConnectionsChanged = true
       }
@@ -375,10 +376,14 @@ class JoystickManager {
      * Converts SDL joystick state to Gamepad API format
      * @param data The joystick state data from the main process
      */
-    window.electronAPI.onElectronSDLControllerStateChange((data: ElectronSDLControllerStateEventData) => {
+    window.electronAPI.onElectronSDLControllerJoystickStateChange((data: ElectronSDLControllerStateEventData) => {
       // Convert SDL joystick state to our event format
 
-      const gamepadState = convertSDLControllerStateToGamepadState(data.state)
+      const gamepadState =
+        data.type === 'joystick'
+          ? convertSDLJoystickStateToGamepadState(data.state)
+          : convertSDLControllerStateToGamepadState(data.state)
+
       const joystickEvent: JoystickStateEvent = {
         index: data.deviceId,
         gamepad: {
