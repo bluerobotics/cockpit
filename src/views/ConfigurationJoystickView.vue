@@ -364,7 +364,7 @@
                           <div
                             class="flex items-center justify-center gap-x-4 rounded-xl"
                             :class="
-                                item.type === 'button' && (joystick.state.buttons[item.id as JoystickButton] ?? 0) > 0.5 ? 'bg-[#2c99ce]' : 'bg-transparent'
+                                item.type === 'button' && isButtonPressed(item.id as JoystickButton) ? 'bg-[#2c99ce]' : 'bg-transparent'
                               "
                           >
                             <p>{{ item.type }}</p>
@@ -503,7 +503,7 @@
                 />
                 <div class="h-[360px] p-1 overflow-y-auto">
                   <Button
-                    v-for="action in filteredAndSortedJoystickActions()"
+                    v-for="action in filteredAndSortedJoystickActions"
                     :key="action.name"
                     class="w-full my-1 text-sm hover:bg-slate-700 flex flex-col py-2 relative align-center"
                     :class="{ 'bg-slate-700': currentButtonActions[input.id].action.id == action.id }"
@@ -669,7 +669,38 @@ const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions
 const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
 
-const protocols = Object.values(JoystickProtocol).filter((value) => typeof value === 'string')
+// Throttled button states implementation for performance optimization
+const throttledButtonStates = ref<Record<number, number | undefined>>({})
+const lastButtonUpdateTime = ref(0)
+const BUTTON_UPDATE_THROTTLE_MS = 30
+
+// Optimized shallow watcher instead of deep watcher
+let buttonUpdateScheduled = false
+watch(
+  () => currentJoystick.value?.state.buttons,
+  (newButtonStates) => {
+    if (!newButtonStates || buttonUpdateScheduled) return
+
+    buttonUpdateScheduled = true
+    requestAnimationFrame(() => {
+      const now = Date.now()
+      if (now - lastButtonUpdateTime.value > BUTTON_UPDATE_THROTTLE_MS) {
+        // Only update changed buttons instead of copying entire object
+        for (const [buttonId, value] of Object.entries(newButtonStates)) {
+          if (throttledButtonStates.value[Number(buttonId)] !== value) {
+            throttledButtonStates.value[Number(buttonId)] = value
+          }
+        }
+        lastButtonUpdateTime.value = now
+      }
+      buttonUpdateScheduled = false
+    })
+  }
+)
+
+const isButtonPressed = (buttonId: JoystickButton): boolean => {
+  return (throttledButtonStates.value[buttonId] ?? 0) > 0.5
+}
 
 const shiftFunction = {
   protocol: 'cockpit-modifier-key',
@@ -695,13 +726,6 @@ watch(
   }
 )
 
-const filteredProtocols = protocols.filter(
-  (protocol) =>
-    protocol === JoystickProtocol.MAVLinkManualControl ||
-    protocol === JoystickProtocol.CockpitAction ||
-    protocol === JoystickProtocol.DataLakeVariable
-)
-
 const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void> => {
   try {
     const m2rVersion = await getMavlink2RestVersion(globalAddress)
@@ -716,10 +740,16 @@ const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void
   }
 }
 
-const filteredAndSortedJoystickActions = (): JoystickAction[] => {
+const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
+  const allowedProtocols = [
+    JoystickProtocol.MAVLinkManualControl,
+    JoystickProtocol.CockpitAction,
+    JoystickProtocol.DataLakeVariable,
+  ]
+
   return buttonActionsToShow.value
     .filter((action: JoystickAction) => action.name.toLowerCase().includes(searchText.value.toLowerCase()))
-    .filter((action: JoystickAction) => filteredProtocols.includes(action.protocol))
+    .filter((action: JoystickAction) => allowedProtocols.includes(action.protocol as JoystickProtocol))
     .filter((action: JoystickAction) => {
       const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
       if (!dataLakeVariableInfo) return true
@@ -727,7 +757,7 @@ const filteredAndSortedJoystickActions = (): JoystickAction[] => {
     })
     .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
-}
+})
 
 const headers = ref([
   { text: 'Type', value: 'type' },
@@ -735,20 +765,50 @@ const headers = ref([
   { text: 'Actions', value: 'actions', sortable: false },
 ])
 
+/**
+ * Cache for table items to avoid recreating objects
+ */
+const tableItemsCache = ref<{
+  /**
+   * The key of the cache
+   */
+  key: string
+  /**
+   * The items of the cache
+   */
+  items: any[]
+} | null>(null)
+
+/**
+ * Optimized table items with memoization to reduce object creation
+ */
 const tableItems = computed(() => {
   if (currentJoystick.value === undefined) {
     return []
   }
 
-  const originalAxes = currentJoystick.value.gamepadToCockpitMap?.axes || []
-  const axesItems = originalAxes.slice(0, 31).map((axis) => ({ type: 'axis', id: axis }))
+  const axesLength = currentJoystick.value.state.axes.length
+  const buttonsLength = currentJoystick.value.state.buttons.length
+  const cacheKey = `${axesLength}-${buttonsLength}`
 
-  const originalButtons = currentJoystick.value.gamepadToCockpitMap?.buttons || []
-  const buttonItems = originalButtons
-    .map((button, index) => ({ type: 'button', id: button, index: index }))
-    .filter((button) => button.index >= 0 && button.index <= 31)
+  // Check if we can use cached items
+  if (tableItemsCache.value?.key === cacheKey) {
+    return tableItemsCache.value.items
+  }
 
-  return [...axesItems, ...buttonItems]
+  // Create new items if cache is not defined yet
+  const axesItems = Array.from({ length: Math.min(31, axesLength) }, (_, index) => ({ type: 'axis', id: index }))
+
+  const buttonItems = Array.from({ length: Math.min(31, buttonsLength) }, (_, index) => ({ type: 'button', id: index }))
+
+  const items = [...axesItems, ...buttonItems]
+
+  // Update cache outside of computed (in nextTick to avoid side effects)
+  nextTick(() => {
+    tableItemsCache.value = { key: cacheKey, items }
+  })
+
+  return items
 })
 
 onUnmounted(() => {
