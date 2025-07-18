@@ -109,7 +109,7 @@ import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { type SystemLog, cockpitSytemLogsDB, systemLogDateTimeFormat } from '@/libs/system-logging'
-import { reloadCockpit } from '@/libs/utils'
+import { isElectron, reloadCockpit } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
 
@@ -127,6 +127,7 @@ interface SystemLogsData {
 /* eslint-enable jsdoc/require-jsdoc */
 
 const systemLogsData = ref<SystemLogsData[]>([])
+const isRunningInElectron = isElectron()
 
 const headers = [
   { title: 'Name', value: 'name' },
@@ -137,6 +138,31 @@ const headers = [
 ]
 
 onBeforeMount(async () => {
+  if (isRunningInElectron) {
+    await loadElectronLogs()
+  } else {
+    await loadIndexedDBLogs()
+  }
+})
+
+const loadElectronLogs = async (): Promise<void> => {
+  try {
+    const electronLogs = await window.electronAPI?.getElectronLogs()
+    if (electronLogs) {
+      const logs = electronLogs.map((log) => ({
+        name: log.path,
+        initialTime: log.initialTime,
+        initialDate: log.initialDate,
+        nEvents: log.content.split('\n').filter((line) => line.trim()).length,
+      }))
+      systemLogsData.value = getSortedLogs(logs)
+    }
+  } catch (error) {
+    console.error('Error loading electron logs:', error)
+  }
+}
+
+const loadIndexedDBLogs = async (): Promise<void> => {
   const logs = []
   await cockpitSytemLogsDB.iterate((log: SystemLog, logName) => {
     logs.push({
@@ -146,7 +172,11 @@ onBeforeMount(async () => {
       nEvents: log.events.length,
     })
   })
-  logs.sort((a, b) => {
+  systemLogsData.value = getSortedLogs(logs)
+}
+
+const getSortedLogs = (logs: SystemLogsData[]): SystemLogsData[] => {
+  return logs.sort((a, b) => {
     const dateTimeFormatWithoutOffset = systemLogDateTimeFormat.replace(' O', '')
     const stringDateTimeA = a.name.split('(')[1].split(' GMT')[0]
     const stringDateTimeB = b.name.split('(')[1].split(' GMT')[0]
@@ -154,10 +184,36 @@ onBeforeMount(async () => {
     const dateTimeB = parse(stringDateTimeB, dateTimeFormatWithoutOffset, new Date())
     return dateTimeB.getTime() - dateTimeA.getTime()
   })
-  systemLogsData.value = logs
-})
+}
 
 const downloadLog = async (logName: string): Promise<void> => {
+  try {
+    if (isRunningInElectron) {
+      await downloadLogFromElectron(logName)
+    } else {
+      await downloadLogFromDB(logName)
+    }
+  } catch (error) {
+    console.error('Error downloading log:', error)
+  }
+}
+
+const downloadLogFromElectron = async (logName: string): Promise<void> => {
+  try {
+    const content = await window.electronAPI?.getElectronLogContent(logName)
+    if (!content) {
+      throw new Error('Failed to get electron log content')
+    }
+
+    const logBlob = new Blob([content], { type: 'text/plain' })
+    saveAs(logBlob, logName)
+  } catch (error) {
+    console.error('Error downloading electron log:', error)
+    throw error
+  }
+}
+
+const downloadLogFromDB = async (logName: string): Promise<void> => {
   const log = await cockpitSytemLogsDB.getItem(logName)
   const logParts = JSON.stringify(log, null, 2)
   const logBlob = new Blob([logParts], { type: 'application/json' })
@@ -165,11 +221,38 @@ const downloadLog = async (logName: string): Promise<void> => {
 }
 
 const deleteLog = async (logName: string): Promise<void> => {
-  await cockpitSytemLogsDB.removeItem(logName)
-  systemLogsData.value = systemLogsData.value.filter((log) => log.name !== logName)
+  try {
+    if (isRunningInElectron) {
+      // Delete from electron-log
+      await window.electronAPI?.deleteElectronLog(logName)
+      systemLogsData.value = systemLogsData.value.filter((log) => log.name !== logName)
+    } else {
+      // Delete from IndexedDB
+      await cockpitSytemLogsDB.removeItem(logName)
+      systemLogsData.value = systemLogsData.value.filter((log) => log.name !== logName)
+    }
+  } catch (error) {
+    console.error('Error deleting log:', error)
+  }
 }
 
 const deleteOldLogs = async (): Promise<void> => {
+  try {
+    if (isRunningInElectron) {
+      // Delete old logs from electron-log
+      const deletedFiles = await window.electronAPI?.deleteOldElectronLogs()
+      if (deletedFiles) {
+        systemLogsData.value = systemLogsData.value.filter((log) => !deletedFiles.includes(log.name))
+      }
+    } else {
+      await deleteOldLogsFromDB()
+    }
+  } catch (error) {
+    console.error('Error deleting old logs:', error)
+  }
+}
+
+const deleteOldLogsFromDB = async (): Promise<void> => {
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
 

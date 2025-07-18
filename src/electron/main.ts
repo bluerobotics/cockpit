@@ -4,6 +4,7 @@ import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
+import { setupElectronLogService } from './services/electron-log'
 import { setupJoystickMonitoring } from './services/joystick'
 import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
@@ -13,6 +14,9 @@ import { setupWorkspaceService } from './services/workspace'
 // If the app is packaged, push logs to the system instead of the console
 if (app.isPackaged) {
   Object.assign(console, logger.functions)
+
+  // Log Electron low-level events
+  logger.eventLogger.startLogging()
 }
 
 export const ROOT_PATH = {
@@ -81,6 +85,7 @@ setupNetworkService()
 setupResourceMonitoringService()
 setupWorkspaceService()
 setupJoystickMonitoring()
+setupElectronLogService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')

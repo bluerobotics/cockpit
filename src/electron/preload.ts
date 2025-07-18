@@ -40,4 +40,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openCockpitFolder: () => ipcRenderer.invoke('open-cockpit-folder'),
   openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
   captureWorkspace: (rect?: Electron.Rectangle) => ipcRenderer.invoke('capture-workspace', rect),
+  systemLog: (level: string, message: string) => ipcRenderer.send('system-log', { level, message }),
+  getElectronLogs: () => ipcRenderer.invoke('get-electron-logs'),
+  getElectronLogContent: (logName: string) => ipcRenderer.invoke('get-electron-log-content', logName),
+  deleteElectronLog: (logName: string) => ipcRenderer.invoke('delete-electron-log', logName),
+  deleteOldElectronLogs: () => ipcRenderer.invoke('delete-old-electron-logs'),
 })
