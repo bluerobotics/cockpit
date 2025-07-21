@@ -40,6 +40,36 @@ export const setupElectronLogService = (): void => {
   logger.transports.file.maxSize = 10 * 1024 * 1024 // 10MB max file size
   logger.transports.file.archiveLog = (file) => file + '.old' // Archive old logs
 
+  // Override logger functions to add [Main] tag for native Electron logs
+  const originalLoggerFunctions = {
+    log: logger.log,
+    info: logger.info,
+    warn: logger.warn,
+    error: logger.error,
+    debug: logger.debug,
+  }
+
+  const tagLog = (...args: any[]): string => `[Main] ${args.join(' ')}`
+
+  const taggedLoggerFunctions = {
+    log: (...args: any[]) => originalLoggerFunctions.log(tagLog(...args)),
+    info: (...args: any[]) => originalLoggerFunctions.info(tagLog(...args)),
+    warn: (...args: any[]) => originalLoggerFunctions.warn(tagLog(...args)),
+    error: (...args: any[]) => originalLoggerFunctions.error(tagLog(...args)),
+    debug: (...args: any[]) => originalLoggerFunctions.debug(tagLog(...args)),
+  }
+
+  // If the app is packaged, push logs to the system instead of the console
+  if (app.isPackaged) {
+    Object.assign(console, taggedLoggerFunctions)
+
+    // Log Electron low-level events
+    logger.eventLogger.startLogging()
+  } else {
+    // In development, still redirect console to logger for consistent tagging
+    Object.assign(console, logger.functions)
+  }
+
   // Get all electron logs
   ipcMain.handle('get-electron-logs', async (): Promise<ElectronLog[]> => {
     try {
@@ -126,25 +156,29 @@ export const setupElectronLogService = (): void => {
 
   // Set up system logging IPC handler
   ipcMain.on('system-log', (_event, { level, message }) => {
+    // Add [Renderer] tag to distinguish from native Electron events
+    const taggedMessage = `[Renderer] ${message}`
+
+    // Use original logger functions to avoid double tagging
     switch (level) {
       case 'error':
-        logger.error(message)
+        originalLoggerFunctions.error(taggedMessage)
         break
       case 'warn':
-        logger.warn(message)
+        originalLoggerFunctions.warn(taggedMessage)
         break
       case 'info':
-        logger.info(message)
+        originalLoggerFunctions.info(taggedMessage)
         break
       case 'debug':
-        logger.debug(message)
+        originalLoggerFunctions.debug(taggedMessage)
         break
       case 'trace':
-        logger.verbose(message) // electron-log uses verbose instead of trace
+        logger.verbose(taggedMessage) // electron-log uses verbose instead of trace
         break
       case 'log':
       default:
-        logger.log(message)
+        originalLoggerFunctions.log(taggedMessage)
         break
     }
   })
