@@ -87,7 +87,11 @@ if (enableSystemLogging === 'true') {
       o.forEach((m) => {
         let msg = m
         try {
-          msg = m.toString()
+          if (typeof m === 'object' && m !== null) {
+            msg = JSON.stringify(m)
+          } else {
+            msg = m.toString()
+          }
         } catch {
           msg = ''
         }

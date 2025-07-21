@@ -49,7 +49,26 @@ export const setupElectronLogService = (): void => {
     debug: logger.debug,
   }
 
-  const tagLog = (...args: any[]): string => `[Main] ${args.join(' ')}`
+  const tagLog = (...args: any[]): string => {
+    let wholeMessage = ''
+    args.forEach((m) => {
+      let msg = m
+      try {
+        if (typeof m === 'object' && m !== null) {
+          msg = JSON.stringify(m)
+        } else {
+          msg = m.toString()
+        }
+      } catch {
+        msg = ''
+      }
+      if (msg !== '') {
+        wholeMessage += ' '
+        wholeMessage += msg
+      }
+    })
+    return `[Main]${wholeMessage}`
+  }
 
   const taggedLoggerFunctions = {
     log: (...args: any[]) => originalLoggerFunctions.log(tagLog(...args)),
@@ -151,8 +170,18 @@ export const setupElectronLogService = (): void => {
 
   // Set up system logging IPC handler
   ipcMain.on('system-log', (_event, { level, message }) => {
-    // Add [Renderer] tag to distinguish from native Electron events
-    const taggedMessage = `[Renderer] ${message}`
+    // Add [Renderer] tag and handle objects properly
+    let processedMessage = ''
+    try {
+      if (typeof message === 'object' && message !== null) {
+        processedMessage = JSON.stringify(message)
+      } else {
+        processedMessage = message.toString()
+      }
+    } catch {
+      processedMessage = ''
+    }
+    const taggedMessage = `[Renderer]${processedMessage !== '' ? ' ' + processedMessage : ''}`
 
     // Use original logger functions to avoid double tagging
     switch (level) {
