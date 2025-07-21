@@ -59,16 +59,11 @@ export const setupElectronLogService = (): void => {
     debug: (...args: any[]) => originalLoggerFunctions.debug(tagLog(...args)),
   }
 
-  // If the app is packaged, push logs to the system instead of the console
-  if (app.isPackaged) {
-    Object.assign(console, taggedLoggerFunctions)
+  // Override console functions to add [Main] tag for native Electron logs
+  Object.assign(console, taggedLoggerFunctions)
 
-    // Log Electron low-level events
-    logger.eventLogger.startLogging()
-  } else {
-    // In development, still redirect console to logger for consistent tagging
-    Object.assign(console, logger.functions)
-  }
+  // Log Electron low-level events
+  logger.eventLogger.startLogging()
 
   // Get all electron logs
   ipcMain.handle('get-electron-logs', async (): Promise<ElectronLog[]> => {
