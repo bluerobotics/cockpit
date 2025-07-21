@@ -22,6 +22,9 @@ setTimeout(() => {
   resetJustMade.value = false
 }, 10000)
 
+let lastUsernameWaitingLogDate: Date = new Date()
+let lastVehicleIdWaitingLogDate: Date = new Date()
+
 /**
  * This composable will keep a setting in sync between the browser's local storage and BlueOS.
  *
@@ -53,7 +56,11 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
     // Wait until we have a username
     while (!missionStore.username) {
-      console.debug('Waiting for username on BlueOS sync routine.')
+      if (new Date().getTime() - lastUsernameWaitingLogDate.getTime() > 1000) {
+        console.debug('Waiting for username on BlueOS sync routine.')
+        lastUsernameWaitingLogDate = new Date()
+      }
+
       await new Promise((r) => setTimeout(r, 1000))
     }
 
@@ -65,7 +72,11 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
 
     // Wait until we have a vehicle ID
     while (!vehicleStore.currentlyConnectedVehicleId) {
-      console.debug('Waiting for vehicle ID on BlueOS sync routine.')
+      if (new Date().getTime() - lastVehicleIdWaitingLogDate.getTime() > 1000) {
+        console.debug('Waiting for vehicle ID on BlueOS sync routine.')
+        lastVehicleIdWaitingLogDate = new Date()
+      }
+
       await new Promise((r) => setTimeout(r, 1000))
     }
 
