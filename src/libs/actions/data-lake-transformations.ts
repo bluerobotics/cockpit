@@ -12,7 +12,7 @@ import {
   unlistenDataLakeVariable,
 } from './data-lake'
 
-const transformingFunctionsKey = 'cockpit-transforming-functions'
+export const transformingFunctionsKey = 'cockpit-transforming-functions'
 
 let globalTransformingFunctions: TransformingFunction[] = []
 
