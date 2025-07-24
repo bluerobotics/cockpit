@@ -264,6 +264,43 @@ export const getUnindentedString = (str: string): string => {
 }
 
 /**
+ * Download data as a file
+ * @param {any} data The data to download
+ * @param {string} filename The filename to use for the downloaded file
+ * @param {string} mimeType The MIME type of the file (default: 'application/json')
+ * @param {boolean} stringifyData Whether to JSON.stringify the data (default: true for objects, false for strings)
+ * @returns {void}
+ */
+export const exportFile = (
+  data: any,
+  filename: string,
+  mimeType = 'application/json',
+  stringifyData?: boolean
+): void => {
+  // Determine if we should stringify the data
+  const shouldStringify = stringifyData !== undefined ? stringifyData : typeof data === 'object' && data !== null
+
+  // Convert data to string if needed
+  const dataStr = shouldStringify ? JSON.stringify(data, null, 2) : data
+
+  // Create blob and download
+  const blob = new Blob([dataStr], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+
+  a.href = url
+  a.download = filename
+  a.style.display = 'none'
+
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+
+  // Clean up the URL object
+  URL.revokeObjectURL(url)
+}
+
+/**
  * Convert a frequency in Hz to an interval in microseconds
  * @param {number} frequencyHz The frequency in Hz. Must be positive.
  * @returns {number} The interval in microseconds
