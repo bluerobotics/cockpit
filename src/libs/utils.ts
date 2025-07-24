@@ -301,6 +301,91 @@ export const exportFile = (
 }
 
 /**
+ * Interface for a validator function for the importFile function
+ * @template T The type of the data to import
+ */
+export interface ImportFileValidator {
+  /**
+   * Whether the data is valid
+   */
+  isValid: boolean
+  /**
+   * Error message if the data is invalid
+   */
+  error?: string
+}
+
+/**
+ * Import data from a file with user selection dialog
+ * @param {string} accept The file types to accept (default: 'application/json')
+ * @param {boolean} parseJson Whether to automatically parse JSON (default: true)
+ * @param {(data: any) => ImportFileValidator} validator Optional validation function for the imported data
+ * @returns {Promise<T>} Promise that resolves with the imported data
+ */
+export const importFile = <T = any>(
+  accept = 'application/json',
+  parseJson = true,
+  validator?: (data: any) => ImportFileValidator
+): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = accept
+    input.style.display = 'none'
+
+    input.onchange = (event: Event) => {
+      const file = (event.target as HTMLInputElement).files?.[0]
+      if (!file) {
+        reject(new Error('No file selected'))
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        try {
+          const text = e.target?.result as string
+          let data: any = text
+
+          // Parse JSON if requested
+          if (parseJson) {
+            try {
+              data = JSON.parse(text)
+            } catch (parseError) {
+              reject(new Error(`Invalid JSON format: ${(parseError as Error).message}`))
+              return
+            }
+          }
+
+          // Run validation if provided
+          if (validator) {
+            const validation = validator(data)
+            if (!validation.isValid) {
+              reject(new Error(validation.error || 'Validation failed'))
+              return
+            }
+          }
+
+          resolve(data as T)
+        } catch (error) {
+          reject(new Error(`Error reading file: ${(error as Error).message}`))
+        }
+      }
+
+      reader.onerror = () => {
+        reject(new Error('Error reading file'))
+      }
+
+      reader.readAsText(file)
+    }
+
+    // Trigger file selection
+    document.body.appendChild(input)
+    input.click()
+    document.body.removeChild(input)
+  })
+}
+
+/**
  * Convert a frequency in Hz to an interval in microseconds
  * @param {number} frequencyHz The frequency in Hz. Must be positive.
  * @returns {number} The interval in microseconds
