@@ -225,7 +225,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
-import { reloadCockpit } from '@/libs/utils'
+import { exportFile, reloadCockpit } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import { SettingItem, Settings } from '@/types/general'
@@ -353,18 +353,9 @@ const cancelJsonEditing = (): void => {
 }
 
 const downloadConfigFile = (): void => {
-  const dataStr = JSON.stringify(userSettings.value, null, 2)
-  const blob = new Blob([dataStr], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
   const username = missionStore.username !== 'null' ? missionStore.username : 'unnamed'
   const filename = `${username}_config.json`
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  exportFile(userSettings.value, filename)
 }
 
 const uploadConfigFile = (): void => {

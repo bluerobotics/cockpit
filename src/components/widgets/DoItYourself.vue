@@ -104,6 +104,7 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { exportFile } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -331,25 +332,7 @@ const exportConfig = (): void => {
     inheritCockpitStyles: widget.value.options.inheritCockpitStyles || false,
   }
 
-  // Create file content as JSON string
-  const fileContent = JSON.stringify(config, null, 2)
-
-  // Create blob with JSON content
-  const blob = new Blob([fileContent], { type: 'application/json' })
-
-  // Create URL for the blob
-  const url = URL.createObjectURL(blob)
-
-  // Create a temporary link element to trigger download
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'diy-widget-config.json'
-  document.body.appendChild(link)
-  link.click()
-
-  // Clean up
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  exportFile(config, 'diy-widget-config.json')
 }
 
 // Function to import configuration from a JSON file
