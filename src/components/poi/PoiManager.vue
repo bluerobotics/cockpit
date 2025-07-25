@@ -17,14 +17,44 @@
         <v-text-field v-model="newPoiDescription" label="Description" variant="outlined"></v-text-field>
 
         <div class="grid grid-cols-2 gap-x-4">
-          <v-text-field v-model.number="newPoiLat" label="Latitude" variant="outlined" type="number" step="0.0000001" />
           <v-text-field
-            v-model.number="newPoiLng"
+            v-model="newPoiLatExpression"
+            label="Latitude"
+            variant="outlined"
+            :placeholder="isDynamicMode ? 'e.g., {{ mavlink/buoy/latitude }}' : '0.0000000'"
+            :hint="isDynamicMode ? 'Use {{ variable_name }} for dynamic values' : 'Enter static coordinate'"
+            persistent-hint
+          />
+          <v-text-field
+            v-model="newPoiLngExpression"
             label="Longitude"
             variant="outlined"
-            type="number"
-            step="0.0000001"
+            :placeholder="isDynamicMode ? 'e.g., {{ mavlink/buoy/longitude }}' : '0.0000000'"
+            :hint="isDynamicMode ? 'Use {{ variable_name }} for dynamic values' : 'Enter static coordinate'"
+            persistent-hint
           />
+        </div>
+
+        <div class="flex items-center gap-x-2 mb-4">
+          <v-switch
+            v-model="isDynamicMode"
+            label="Dynamic positioning (data-lake syntax)"
+            color="primary"
+            hide-details
+          />
+          <v-tooltip location="top">
+            <template #activator="{ props }">
+              <v-icon v-bind="props" size="20" color="grey">mdi-help-circle-outline</v-icon>
+            </template>
+            <div class="max-w-xs">
+              <p class="text-sm mb-2">
+                <strong>Static:</strong> Fixed coordinates that don't change
+              </p>
+              <p class="text-sm">
+                <strong>Dynamic:</strong> Coordinates from data-lake variables like "{{ mavlink/buoy/latitude }}"
+              </p>
+            </div>
+          </v-tooltip>
         </div>
 
         <div class="mb-4">
@@ -95,6 +125,7 @@ import { defineExpose, ref, watch } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { evaluateCoordinateExpression, isDataLakeExpression } from '@/libs/utils-poi'
 import { useMissionStore } from '@/stores/mission'
 import type { PointOfInterest, PointOfInterestCoordinates } from '@/types/mission'
 
@@ -107,11 +138,12 @@ const newPoiDescription = ref('')
 const newPoiIcon = ref('mdi-map-marker')
 const newPoiColor = ref('#FF0000')
 const editingPoiId = ref<string | null>(null)
-const newPoiLat = ref<number | null>(null)
-const newPoiLng = ref<number | null>(null)
+const newPoiLatExpression = ref('')
+const newPoiLngExpression = ref('')
 const isIconPickerOpen = ref(false)
 const iconSearchQuery = ref('')
 const isColorPickerOpen = ref(false)
+const isDynamicMode = ref(false)
 
 // Store original values for reverting changes if user cancels
 const originalPoiValues = ref<{
@@ -119,10 +151,10 @@ const originalPoiValues = ref<{
   name: string
   /** Original POI description */
   description: string
-  /** Original POI latitude */
-  lat: number
-  /** Original POI longitude */
-  lng: number
+  /** Original POI latitude expression */
+  latExpression: string
+  /** Original POI longitude expression */
+  lngExpression: string
   /** Original POI icon */
   icon: string
   /** Original POI color */
@@ -227,9 +259,28 @@ const searchIcons = (): void => {
   )
 }
 
+// Watch for changes in dynamic mode to update field validation
+watch(isDynamicMode, (newMode) => {
+  if (newMode) {
+    // Convert static values to expressions if switching to dynamic mode
+    if (newPoiLatExpression.value && !isDataLakeExpression(newPoiLatExpression.value)) {
+      const numLat = parseFloat(newPoiLatExpression.value)
+      if (!isNaN(numLat)) {
+        // Keep the number as is, user can modify it to an expression
+      }
+    }
+    if (newPoiLngExpression.value && !isDataLakeExpression(newPoiLngExpression.value)) {
+      const numLng = parseFloat(newPoiLngExpression.value)
+      if (!isNaN(numLng)) {
+        // Keep the number as is, user can modify it to an expression
+      }
+    }
+  }
+})
+
 // Live preview functionality - update POI in store when form values change
 watch(
-  [newPoiName, newPoiDescription, newPoiLat, newPoiLng, newPoiIcon, newPoiColor],
+  [newPoiName, newPoiDescription, newPoiLatExpression, newPoiLngExpression, newPoiIcon, newPoiColor, isDynamicMode],
   (newValues, oldValues) => {
     // Only apply live preview for existing POIs being edited and not during initialization
     if (!editingPoiId.value || isInitializingDialog.value) return
@@ -238,17 +289,38 @@ watch(
     const currentPoi = missionStore.pointsOfInterest.find((poi) => poi.id === editingPoiId.value)
     if (!currentPoi) return
 
-    const [newName, newDesc, newLat, newLng, newIcon, newColor] = newValues
-    const [oldName, oldDesc, oldLat, oldLng, oldIcon, oldColor] = oldValues || []
+    const [newName, newDesc, newLatExpr, newLngExpr, newIcon, newColor, newDynamicMode] = newValues
+    const [oldName, oldDesc, oldLatExpr, oldLngExpr, oldIcon, oldColor, oldDynamicMode] = oldValues || []
 
     // Build update object with only changed fields
     const updatedPoi: Partial<PointOfInterest> = {
       timestamp: Date.now(),
     }
 
-    // Only update coordinates if they actually changed in the form
-    if (newLat !== oldLat || newLng !== oldLng) {
-      updatedPoi.coordinates = [newLat ?? 0, newLng ?? 0] as PointOfInterestCoordinates
+    // Handle coordinate expressions
+    if (newLatExpr !== oldLatExpr || newLngExpr !== oldLngExpr || newDynamicMode !== oldDynamicMode) {
+      if (isDynamicMode.value) {
+        // Dynamic mode: store expressions and evaluate coordinates
+        updatedPoi.latitudeExpression = newLatExpr
+        updatedPoi.longitudeExpression = newLngExpr
+
+        const evalLat = evaluateCoordinateExpression(newLatExpr)
+        const evalLng = evaluateCoordinateExpression(newLngExpr)
+
+        if (evalLat !== undefined && evalLng !== undefined) {
+          updatedPoi.coordinates = [evalLat, evalLng] as PointOfInterestCoordinates
+        }
+      } else {
+        // Static mode: parse as numbers and store coordinates
+        const lat = parseFloat(newLatExpr)
+        const lng = parseFloat(newLngExpr)
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+          updatedPoi.coordinates = [lat, lng] as PointOfInterestCoordinates
+          updatedPoi.latitudeExpression = undefined
+          updatedPoi.longitudeExpression = undefined
+        }
+      }
     }
 
     // Update other fields if they changed
@@ -296,12 +368,16 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
 
     editingPoiId.value = freshPoi.id
 
+    // Determine if this POI uses dynamic coordinates
+    const hasDynamicCoords = freshPoi.latitudeExpression !== undefined || freshPoi.longitudeExpression !== undefined
+    isDynamicMode.value = hasDynamicCoords
+
     // Store original values for potential reversion (use current store values, not form values)
     originalPoiValues.value = {
       name: freshPoi.name,
       description: freshPoi.description,
-      lat: Number(freshPoi.coordinates[0].toFixed(7)),
-      lng: Number(freshPoi.coordinates[1].toFixed(7)),
+      latExpression: hasDynamicCoords ? (freshPoi.latitudeExpression?.toString() || '') : freshPoi.coordinates[0].toString(),
+      lngExpression: hasDynamicCoords ? (freshPoi.longitudeExpression?.toString() || '') : freshPoi.coordinates[1].toString(),
       icon: freshPoi.icon,
       color: freshPoi.color,
     }
@@ -309,38 +385,52 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
     // Set form values using fresh data from store
     newPoiName.value = freshPoi.name
     newPoiDescription.value = freshPoi.description
-    newPoiLat.value = Number(freshPoi.coordinates[0].toFixed(7))
-    newPoiLng.value = Number(freshPoi.coordinates[1].toFixed(7))
+
+    if (hasDynamicCoords) {
+      newPoiLatExpression.value = freshPoi.latitudeExpression?.toString() || ''
+      newPoiLngExpression.value = freshPoi.longitudeExpression?.toString() || ''
+    } else {
+      newPoiLatExpression.value = freshPoi.coordinates[0].toString()
+      newPoiLngExpression.value = freshPoi.coordinates[1].toString()
+    }
+
     newPoiIcon.value = freshPoi.icon
     newPoiColor.value = freshPoi.color
     dialogInitialCoordinates.value = null // Not needed for editing, and clear it
   } else if (coordinates) {
+    // Creating a new POI at the specified coordinates
     editingPoiId.value = null
-    originalPoiValues.value = null // Clear for new POIs
+    originalPoiValues.value = null // Clear any previous values
+    isDynamicMode.value = false // Default to static mode for new POIs
+
     newPoiName.value = ''
     newPoiDescription.value = ''
     newPoiIcon.value = getRandomIcon()
     newPoiColor.value = getRandomColor()
-    newPoiLat.value = coordinates[0] // Still useful to pre-fill for potential direct edit
-    newPoiLng.value = coordinates[1] // Still useful to pre-fill for potential direct edit
+    newPoiLatExpression.value = coordinates[0].toString()
+    newPoiLngExpression.value = coordinates[1].toString()
     dialogInitialCoordinates.value = [...coordinates] // Store for saving a new POI
   } else {
-    showDialog({
-      variant: 'error',
-      title: 'Error',
-      message: 'Cannot open POI dialog without coordinates for a new POI or POI data for editing.',
-    })
-    console.error('POI Dialog: Insufficient data to open.')
-    isInitializingDialog.value = false
-    return
+    // Creating a new POI without coordinates (shouldn't happen in normal flow)
+    editingPoiId.value = null
+    originalPoiValues.value = null
+    isDynamicMode.value = false
+
+    newPoiName.value = ''
+    newPoiDescription.value = ''
+    newPoiLatExpression.value = ''
+    newPoiLngExpression.value = ''
+    newPoiIcon.value = getRandomIcon()
+    newPoiColor.value = getRandomColor()
+    dialogInitialCoordinates.value = null
   }
 
-  poiDialogVisible.value = true
-
-  // Clear initialization flag after a short delay to allow form to settle
+  // Clear initialization flag after a short delay to allow Vue to process the changes
   setTimeout(() => {
     isInitializingDialog.value = false
-  }, 50)
+  }, 100)
+
+  poiDialogVisible.value = true
 }
 
 const closeDialog = (): void => {
@@ -349,7 +439,8 @@ const closeDialog = (): void => {
     const revertedPoi: Partial<PointOfInterest> = {
       name: originalPoiValues.value.name,
       description: originalPoiValues.value.description,
-      coordinates: [originalPoiValues.value.lat, originalPoiValues.value.lng] as PointOfInterestCoordinates,
+      latitudeExpression: originalPoiValues.value.latExpression,
+      longitudeExpression: originalPoiValues.value.lngExpression,
       icon: originalPoiValues.value.icon,
       color: originalPoiValues.value.color,
       timestamp: Date.now(),
@@ -365,8 +456,8 @@ const closeDialog = (): void => {
   // Reset form fields to ensure clean state next time
   newPoiName.value = ''
   newPoiDescription.value = ''
-  newPoiLat.value = null
-  newPoiLng.value = null
+  newPoiLatExpression.value = ''
+  newPoiLngExpression.value = ''
   newPoiIcon.value = getRandomIcon()
   newPoiColor.value = getRandomColor()
   isIconPickerOpen.value = false
@@ -379,17 +470,55 @@ const savePoi = (): void => {
     return
   }
 
-  if (newPoiLat.value === null || newPoiLng.value === null || isNaN(newPoiLat.value) || isNaN(newPoiLng.value)) {
+  if (newPoiLatExpression.value === '' || newPoiLngExpression.value === '') {
     showDialog({
       title: 'Invalid Coordinates',
-      message: 'Latitude and Longitude must be valid numbers.',
+      message: 'Latitude and Longitude must be provided.',
       variant: 'error',
     })
     return
   }
 
+  let coordinates: PointOfInterestCoordinates
+  let latitudeExpression: string | number | undefined
+  let longitudeExpression: string | number | undefined
+
+  if (isDynamicMode.value) {
+    // Dynamic mode: store expressions and try to evaluate coordinates
+    latitudeExpression = newPoiLatExpression.value
+    longitudeExpression = newPoiLngExpression.value
+
+    const evalLat = evaluateCoordinateExpression(newPoiLatExpression.value)
+    const evalLng = evaluateCoordinateExpression(newPoiLngExpression.value)
+
+    if (evalLat !== undefined && evalLng !== undefined) {
+      coordinates = [evalLat, evalLng]
+    } else {
+      // If we can't evaluate now, use [0, 0] as placeholder but store expressions
+      coordinates = [0, 0]
+      console.warn('Could not evaluate dynamic coordinates, using placeholder [0, 0]')
+    }
+  } else {
+    // Static mode: parse as numbers
+    const lat = parseFloat(newPoiLatExpression.value)
+    const lng = parseFloat(newPoiLngExpression.value)
+
+    if (isNaN(lat) || isNaN(lng)) {
+      showDialog({
+        title: 'Invalid Coordinates',
+        message: 'Latitude and Longitude must be valid numbers in static mode.',
+        variant: 'error',
+      })
+      return
+    }
+
+    coordinates = [lat, lng]
+    latitudeExpression = undefined
+    longitudeExpression = undefined
+  }
+
   if (editingPoiId.value) {
-    // Get the current POI from store to preserve current coordinates
+    // Editing existing POI
     const currentPoi = missionStore.pointsOfInterest.find((poi) => poi.id === editingPoiId.value)
     if (!currentPoi) {
       showDialog({ variant: 'error', title: 'Error', message: 'POI not found in store.' })
@@ -398,7 +527,7 @@ const savePoi = (): void => {
 
     // Check if coordinates were actually changed in the form by comparing with original values
     const coordinatesChanged = originalPoiValues.value
-      ? newPoiLat.value !== originalPoiValues.value.lat || newPoiLng.value !== originalPoiValues.value.lng
+      ? newPoiLatExpression.value !== originalPoiValues.value.latExpression || newPoiLngExpression.value !== originalPoiValues.value.lngExpression
       : false
 
     // Clear original values since we're saving the changes
@@ -407,29 +536,24 @@ const savePoi = (): void => {
     const poiUpdate: Partial<PointOfInterest> = {
       name: newPoiName.value,
       description: newPoiDescription.value,
-      // Use current store coordinates unless user specifically changed them in the form
-      coordinates: coordinatesChanged
-        ? ([newPoiLat.value, newPoiLng.value] as PointOfInterestCoordinates)
-        : currentPoi.coordinates,
+      coordinates: coordinatesChanged ? coordinates : currentPoi.coordinates,
+      latitudeExpression: isDynamicMode.value ? latitudeExpression : undefined,
+      longitudeExpression: isDynamicMode.value ? longitudeExpression : undefined,
       icon: newPoiIcon.value,
       color: newPoiColor.value,
       timestamp: Date.now(),
     }
     missionStore.updatePointOfInterest(editingPoiId.value, poiUpdate)
   } else {
-    // For new POIs, prioritize dialogInitialCoordinates if they exist (meaning they were passed on openDialog)
-    // Otherwise, use the (potentially user-modified) coordinates from the form.
-    const coordinatesToSave =
-      dialogInitialCoordinates.value ?? ([newPoiLat.value, newPoiLng.value] as PointOfInterestCoordinates)
+    // Creating new POI
+    const coordinatesToSave = dialogInitialCoordinates.value ?? coordinates
 
     if (!coordinatesToSave) {
-      // This case should ideally not be reached if openDialog is called correctly with coordinates for new POIs.
-      showDialog({ variant: 'error', title: 'Error', message: 'Cannot save Point of Interest without coordinates.' })
       console.error(
-        'Cannot save new POI: coordinatesToSave is null. dialogInitialCoordinates:',
+        'POI Dialog: No coordinates available for saving new POI. dialogInitialCoordinates.value:',
         dialogInitialCoordinates.value,
         'currentFormCoordinates:',
-        [newPoiLat.value, newPoiLng.value]
+        coordinates
       )
       return
     }
@@ -439,12 +563,15 @@ const savePoi = (): void => {
       name: newPoiName.value,
       description: newPoiDescription.value,
       coordinates: coordinatesToSave,
+      latitudeExpression: isDynamicMode.value ? latitudeExpression : undefined,
+      longitudeExpression: isDynamicMode.value ? longitudeExpression : undefined,
       icon: newPoiIcon.value,
       color: newPoiColor.value,
       timestamp: Date.now(),
     }
     missionStore.addPointOfInterest(newPoi)
   }
+
   closeDialog()
 }
 
