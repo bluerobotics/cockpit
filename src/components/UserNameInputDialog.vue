@@ -4,7 +4,7 @@
     persistent
     :show-dialog="showUserDialog"
     :title="`Manage users on: ${currentVehicleName}`"
-    :actions="showNewUsernamePrompt ? inputDialogActions : regularDialogActions"
+    :actions="showNewUsernamePrompt || isUsernamesEmpty ? inputDialogActions : regularDialogActions"
     :max-width="700"
   >
     <template #content>
