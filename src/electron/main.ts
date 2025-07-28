@@ -14,6 +14,11 @@ import { setupWorkspaceService } from './services/workspace'
 // Setup the logger service as soon as possible to avoid different behaviors across runtime
 setupElectronLogService()
 
+// Ensure consistent userData directory for localStorage persistence
+if (process.env.NODE_ENV === 'development') {
+  app.setPath('userData', join(app.getPath('userData'), 'dev'))
+}
+
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
 }
@@ -30,6 +35,8 @@ function createWindow(): void {
       preload: join(ROOT_PATH.dist, 'electron/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Add partition to ensure localStorage persistence
+      partition: 'persist:cockpit',
     },
     autoHideMenuBar: true,
     width: store.get('windowBounds')?.width ?? screen.getPrimaryDisplay().workAreaSize.width,
