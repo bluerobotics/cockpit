@@ -124,15 +124,22 @@ export const useMissionStore = defineStore('mission', () => {
     defaultMapZoom.value = zoom < 1 ? 1 : zoom > 19 ? 19 : zoom
   }
 
+  let idLastConnectedVehicle: string | undefined = undefined
   watch(
-    () => mainVehicleStore.isVehicleOnline,
-    async (newValue) => {
-      if (newValue) {
+    () => mainVehicleStore.currentlyConnectedVehicleId,
+    async (newVehicleId) => {
+      if (newVehicleId) {
         // If there's a username saved, assign it as the last connected user
         localStorage.setItem('cockpit-last-connected-user', username.value)
-        console.log(`Last connected user set to ${username.value}.`)
+        if (username.value) {
+          console.log(`Last connected user set to '${username.value}'.`)
+        } else {
+          console.log('No username set. Will not set last connected user.')
+        }
 
-        if (!username.value) {
+        const vehicleChanged = idLastConnectedVehicle !== newVehicleId
+        idLastConnectedVehicle = newVehicleId
+        if (!username.value && (idLastConnectedVehicle === undefined || vehicleChanged)) {
           // If no username is set and vehicle is connected, ask the user to enter one
           await changeUsername()
         }
