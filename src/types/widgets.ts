@@ -60,6 +60,7 @@ export enum WidgetType {
   MiniWidgetsBar = 'MiniWidgetsBar',
   Plotter = 'Plotter',
   URLVideoPlayer = 'URLVideoPlayer',
+  VehicleVisualization3D = 'VehicleVisualization3D',
   VideoPlayer = 'VideoPlayer',
   VirtualHorizon = 'VirtualHorizon',
 }
@@ -828,6 +829,7 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
   [WidgetType.MiniWidgetsBar]: false,
   [WidgetType.Plotter]: true,
   [WidgetType.URLVideoPlayer]: true,
+  [WidgetType.VehicleVisualization3D]: true,
   [WidgetType.VideoPlayer]: true,
   [WidgetType.VirtualHorizon]: false,
 }
