@@ -55,7 +55,7 @@ export const convertCockpitWaypointsToMavlink = (
       param4: 999,
       x: round(cockpitWaypoint.coordinates[0] * Math.pow(10, 7)),
       y: round(cockpitWaypoint.coordinates[1] * Math.pow(10, 7)),
-      z: cockpitWaypoint.altitude,
+      z: Number(cockpitWaypoint.altitude),
       mission_type: { type: MavMissionType.MAV_MISSION_TYPE_MISSION },
     }
   })
