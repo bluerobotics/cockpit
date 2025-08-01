@@ -90,6 +90,7 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
+import { exportFile, importFile, ImportFileValidator } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -293,71 +294,37 @@ const exportConfig = (): void => {
     js: jsEditor.getValue(),
   }
 
-  // Create file content as JSON string
-  const fileContent = JSON.stringify(config, null, 2)
+  exportFile(config, 'diy-widget-config.json')
+}
 
-  // Create blob with JSON content
-  const blob = new Blob([fileContent], { type: 'application/json' })
-
-  // Create URL for the blob
-  const url = URL.createObjectURL(blob)
-
-  // Create a temporary link element to trigger download
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'diy-widget-config.json'
-  document.body.appendChild(link)
-  link.click()
-
-  // Clean up
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+const validateConfigFile = (data: any): ImportFileValidator => {
+  if (!data || typeof data !== 'object') {
+    return { isValid: false, error: 'Invalid configuration file: content is not an object.' }
+  }
+  if (!data.html || !data.css || !data.js) {
+    return { isValid: false, error: 'Invalid configuration file: missing html, css, or js fields' }
+  }
+  return { isValid: true }
 }
 
 // Function to import configuration from a JSON file
-const importConfig = (): void => {
-  // Create a temporary file input element
-  const input = document.createElement('input')
-  input.type = 'file'
+const importConfig = async (): Promise<void> => {
+  try {
+    const config = await importFile('application/json', true, validateConfigFile)
 
-  // Handle file selection
-  input.onchange = (event) => {
-    const target = event.target as HTMLInputElement
-    if (!target.files || !target.files[0] || !htmlEditor || !cssEditor || !jsEditor) return
+    if (!htmlEditor || !cssEditor || !jsEditor) return
 
-    const file = target.files[0]
-    const reader = new FileReader()
+    // Update the editors with the imported values
+    htmlEditor.setValue(config.html)
+    cssEditor.setValue(config.css)
+    jsEditor.setValue(config.js)
 
-    reader.onload = (e) => {
-      try {
-        const result = e.target?.result as string
-        const config = JSON.parse(result)
-
-        // Validate the imported configuration
-        if (!config.html || !config.css || !config.js) {
-          throw new Error('Invalid configuration file')
-        }
-
-        // Update the editors with the imported values
-        if (htmlEditor) htmlEditor.setValue(config.html)
-        if (cssEditor) cssEditor.setValue(config.css)
-        if (jsEditor) jsEditor.setValue(config.js)
-
-        // Apply changes
-        applyChanges()
-      } catch (error) {
-        console.error('Error importing configuration:', error)
-        alert('Invalid configuration file')
-      }
-    }
-
-    reader.readAsText(file)
+    // Apply changes
+    applyChanges()
+  } catch (error: any) {
+    console.error('Error importing configuration:', error)
+    alert(error.message || 'Failed to import configuration file')
   }
-
-  // Trigger file input dialog
-  document.body.appendChild(input)
-  input.click()
-  document.body.removeChild(input)
 }
 
 // Add computed property for editor heights
