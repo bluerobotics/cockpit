@@ -1,69 +1,73 @@
 <template>
-  <div
-    v-tooltip="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue + '%'}`"
-    class="flex items-center w-[95px] h-12 text-white justify-center"
-  >
-    <div v-if="remainingDisplayValue >= 0" class="relative w-[1.5rem] battery-icon">
-      <i class="mdi mdi-battery-outline"></i>
+  <v-tooltip :text="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue + '%'}`">
+    <template #activator="{ props: tooltipProps }">
+      <div v-bind="tooltipProps" class="flex items-center w-[95px] h-12 text-white justify-center">
+        <div v-if="remainingDisplayValue >= 0" class="relative w-[1.5rem] battery-icon">
+          <i class="mdi mdi-battery-outline"></i>
 
-      <i
-        class="mdi mdi-battery absolute inset-0 bottom-0 -right-1 text-transparent bg-clip-text"
-        :style="{
-          backgroundImage: `linear-gradient(to top, white ${remainingDisplayValue}%, transparent ${remainingDisplayValue}%)`,
-        }"
-      />
-      <span
-        v-if="remainingDisplayValue < 0"
-        class="absolute text-sm text-white -bottom-[3px] left-[4px] mdi mdi-circle"
-      ></span>
-      <span
-        v-if="remainingDisplayValue < 0"
-        class="absolute text-sm text-yellow-400 -bottom-[3px] left-[4px] mdi mdi-alert-circle"
-      ></span>
-    </div>
+          <i
+            class="mdi mdi-battery absolute inset-0 bottom-0 -right-1 text-transparent bg-clip-text"
+            :style="{
+              backgroundImage: `linear-gradient(to top, white ${remainingDisplayValue}%, transparent ${remainingDisplayValue}%)`,
+            }"
+          />
+          <span
+            v-if="remainingDisplayValue < 0"
+            class="absolute text-sm text-white -bottom-[3px] left-[4px] mdi mdi-circle"
+          ></span>
+          <span
+            v-if="remainingDisplayValue < 0"
+            class="absolute text-sm text-yellow-400 -bottom-[3px] left-[4px] mdi mdi-alert-circle"
+          ></span>
+        </div>
 
-    <div v-else class="relative flex flex-col justify-center items-center h-full w-[1.5rem] battery-icon">
-      <i
-        class="absolute mdi mdi-battery"
-        :style="{ color: miniWidget.options.useVoltageToColor ? currentBatteryColor : 'transparent' }"
-      ></i>
-      <i
-        v-if="currentBatteryLevel === 'critical' && miniWidget.options.useVoltageToColor"
-        class="absolute mdi mdi-battery animate-ping"
-        :style="{ color: currentBatteryColor }"
-      ></i>
-      <i class="absolute mdi mdi-battery-outline text-[#CCCCCC88]"></i>
+        <div v-else class="relative flex flex-col justify-center items-center h-full w-[1.5rem] battery-icon">
+          <i
+            class="absolute mdi mdi-battery"
+            :style="{ color: miniWidget.options.useVoltageToColor ? currentBatteryColor : 'transparent' }"
+          ></i>
+          <i
+            v-if="currentBatteryLevel === 'critical' && miniWidget.options.useVoltageToColor"
+            class="absolute mdi mdi-battery animate-ping"
+            :style="{ color: currentBatteryColor }"
+          ></i>
+          <i class="absolute mdi mdi-battery-outline text-[#CCCCCC88]"></i>
 
-      <span v-if="remainingDisplayValue < 0" class="absolute text-sm text-white bottom-0 left-0 mdi mdi-circle"></span>
-      <span
-        v-if="remainingDisplayValue < 0"
-        class="absolute text-sm text-yellow-400 bottom-0 left-0 mdi mdi-alert-circle"
-      ></span>
-    </div>
+          <span
+            v-if="remainingDisplayValue < 0"
+            class="absolute text-sm text-white bottom-0 left-0 mdi mdi-circle"
+          ></span>
+          <span
+            v-if="remainingDisplayValue < 0"
+            class="absolute text-sm text-yellow-400 bottom-0 left-0 mdi mdi-alert-circle"
+          ></span>
+        </div>
 
-    <div class="relative right-0 flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end -mr-2">
-      <div class="w-full">
-        <div class="flex justify-end gap-x-1 items-center">
-          <span class="font-mono">{{ voltageDisplayValue }}</span>
-          <div class="w-[15px] mr-[1px] -ml-[1px]">V</div>
+        <div class="relative right-0 flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end -mr-2">
+          <div class="w-full">
+            <div class="flex justify-end gap-x-1 items-center">
+              <span class="font-mono">{{ voltageDisplayValue }}</span>
+              <div class="w-[15px] mr-[1px] -ml-[1px]">V</div>
+            </div>
+          </div>
+          <div class="w-full">
+            <template v-if="showCurrent">
+              <div class="flex justify-end gap-x-1 items-center">
+                <span class="font-mono mt-[2px]">{{ currentDisplayValue }}</span>
+                <div class="w-[15px]">A</div>
+              </div>
+            </template>
+            <template v-else>
+              <div class="flex justify-end gap-x-1 items-center text-yellow-100">
+                <span class="font-mono mt-[2px]">{{ instantaneousWattsDisplayValue }}</span>
+                <div class="w-[15px]">W</div>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
-      <div class="w-full">
-        <template v-if="showCurrent">
-          <div class="flex justify-end gap-x-1 items-center">
-            <span class="font-mono mt-[2px]">{{ currentDisplayValue }}</span>
-            <div class="w-[15px]">A</div>
-          </div>
-        </template>
-        <template v-else>
-          <div class="flex justify-end gap-x-1 items-center text-yellow-100">
-            <span class="font-mono mt-[2px]">{{ instantaneousWattsDisplayValue }}</span>
-            <div class="w-[15px]">W</div>
-          </div>
-        </template>
-      </div>
-    </div>
-  </div>
+    </template>
+  </v-tooltip>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white w-[400px]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">Battery Indicator Config</v-card-title>
