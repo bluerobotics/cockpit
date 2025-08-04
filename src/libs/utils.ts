@@ -300,3 +300,16 @@ export const formatDate = (date: Date): string => {
     second: '2-digit',
   }).format(date)
 }
+
+/**
+ * Deserialize a serialized string
+ * @param {string} serialized The serialized string to deserialize
+ * @returns {any} The deserialized string
+ */
+export const deserialize = (serialized: string): any => {
+  try {
+    return JSON.parse(serialized)
+  } catch (error) {
+    return serialized
+  }
+}
