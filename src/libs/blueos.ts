@@ -101,7 +101,7 @@ export const getBagOfHoldingFromVehicle = async (
 export const getKeyDataFromCockpitVehicleStorage = async (
   vehicleAddress: string,
   storageKey: string
-): Promise<Record<string, any> | undefined> => {
+): Promise<any | undefined> => {
   return await getBagOfHoldingFromVehicle(vehicleAddress, `cockpit/${storageKey}`)
 }
 
