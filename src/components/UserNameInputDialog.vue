@@ -157,7 +157,7 @@ const deleteUser = async (username: string): Promise<void> => {
             usernamesStoredOnBlueOS.value = (usernamesStoredOnBlueOS.value ?? []).filter((u) => u !== username)
           } catch (err) {
             try {
-              await loadUsernames()
+              await loadUsernamesFromBlueOS()
               openSnackbar({
                 message: `Failed deleting '${username}'. The list was refreshed. Please try again.`,
                 variant: 'error',
@@ -183,17 +183,16 @@ const setNewUsername = (username: string): void => {
   emit('confirmed', username)
 }
 
-const loadUsernames = async (): Promise<void> => {
+const loadUsernamesFromBlueOS = async (): Promise<void> => {
+  isLoading.value = true
+
   try {
-    const usernames = await getSettingsUsernamesFromBlueOS()
-    if (!usernames?.length) {
-      usernamesStoredOnBlueOS.value = []
-      return
+    const blueOSUsernames = await getSettingsUsernamesFromBlueOS()
+    if (blueOSUsernames && blueOSUsernames.length) {
+      usernamesStoredOnBlueOS.value = [...new Set([...(usernamesStoredOnBlueOS.value ?? []), ...blueOSUsernames])]
     }
-    usernamesStoredOnBlueOS.value = usernames
   } catch (error) {
-    usernamesStoredOnBlueOS.value = []
-    console.error('Failed to load usernames.')
+    console.error('Failed to load usernames from BlueOS.')
   } finally {
     isLoading.value = false
   }
@@ -219,7 +218,7 @@ const handleEsc = (e: KeyboardEvent): void => {
 onMounted(() => {
   window.addEventListener('keydown', handleEsc)
   if (mainVehicleStore.isVehicleOnline) {
-    loadUsernames()
+    loadUsernamesFromBlueOS()
     getVehicleName()
   } else {
     isLoading.value = false
