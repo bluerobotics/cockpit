@@ -49,6 +49,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onSerialData: (callback: (data: { path: string; data: number[] }) => void) => {
     ipcRenderer.on('serial-data', (_event, data) => callback(data))
   },
+  linkOpen: (path: string) => ipcRenderer.invoke('link-open', { path }),
+  linkWrite: (path: string, data: Uint8Array) => ipcRenderer.invoke('link-write', { path, data }),
+  linkClose: (path: string) => ipcRenderer.invoke('link-close', { path }),
+  onLinkData: (callback: (data: { path: string; data: number[] }) => void) => {
+    ipcRenderer.on('link-data', (_event, data) => callback(data))
+  },
   systemLog: (level: string, message: string) => ipcRenderer.send('system-log', { level, message }),
   getElectronLogs: () => ipcRenderer.invoke('get-electron-logs'),
   getElectronLogContent: (logName: string) => ipcRenderer.invoke('get-electron-log-content', logName),
