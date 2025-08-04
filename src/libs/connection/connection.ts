@@ -11,6 +11,12 @@ export enum Type {
   Http = 'http',
   WebSocket = 'ws',
   Serial = 'serial',
+  // Protocols Supported in Desktop Version
+  UdpIn = 'udpin',
+  UdpOut = 'udpout',
+  UdpBroadcast = 'udpbcast',
+  TcpIn = 'tcpin',
+  TcpOut = 'tcpout',
   None = 'none',
 }
 
