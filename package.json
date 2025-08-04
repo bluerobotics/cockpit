@@ -69,6 +69,7 @@
     "piexifjs": "^1.0.6",
     "pinia": "^2.0.13",
     "posthog-js": "^1.194.3",
+    "pretty-format": "^29.7.0",
     "roboto-fontface": "*",
     "semver": "^7.5.4",
     "serialport": "^13.0.0",
