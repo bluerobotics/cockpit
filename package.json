@@ -59,6 +59,7 @@
     "gsap": "^3.11.3",
     "hammerjs": "^2.0.8",
     "haversine-distance": "^1.2.1",
+    "jest-diff": "^29.7.0",
     "ky": "^1.2.0",
     "leaflet": "1.9.3",
     "localforage": "^1.10.0",
