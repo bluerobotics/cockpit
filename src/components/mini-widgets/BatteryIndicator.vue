@@ -1,31 +1,35 @@
 <template>
-  <div v-tooltip="'Battery information'" class="flex items-center w-[95px] h-12 text-white justify-center">
-    <span class="relative w-[1.5rem] mdi battery-icon left-0 mr-3" :class="[batteryIconClass]">
-      <span class="absolute text-sm text-yellow-400 -bottom-[3px] left-[4px] mdi mdi-alert-circle"></span>
-    </span>
-    <div class="relative right-0 flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end -mr-2">
-      <div class="w-full">
-        <div class="flex justify-end gap-x-1 items-center">
-          <span class="font-mono">{{ voltageDisplayValue }}</span>
-          <div class="w-[15px] mr-[1px] -ml-[1px]">V</div>
+  <v-tooltip :text="store.isVehicleOnline ? 'Vehicle connected' : 'Vehicle disconnected'" location="top">
+    <template #activator="{ props: tooltipProps }">
+      <div class="flex items-center w-[95px] h-12 text-white justify-center" v-bind="tooltipProps">
+        <span class="relative w-[1.5rem] mdi battery-icon left-0 mr-3" :class="[batteryIconClass]">
+          <span class="absolute text-sm text-yellow-400 -bottom-[3px] left-[4px] mdi mdi-alert-circle"></span>
+        </span>
+        <div class="relative right-0 flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end -mr-2">
+          <div class="w-full">
+            <div class="flex justify-end gap-x-1 items-center">
+              <span class="font-mono">{{ voltageDisplayValue }}</span>
+              <div class="w-[15px] mr-[1px] -ml-[1px]">V</div>
+            </div>
+          </div>
+          <div class="w-full">
+            <template v-if="showCurrent">
+              <div class="flex justify-end gap-x-1 items-center">
+                <span class="font-mono mt-[2px]">{{ currentDisplayValue }}</span>
+                <div class="w-[15px]">A</div>
+              </div>
+            </template>
+            <template v-else>
+              <div class="flex justify-end gap-x-1 items-center text-yellow-100">
+                <span class="font-mono mt-[2px]">{{ instantaneousWattsDisplayValue }}</span>
+                <div class="w-[15px]">W</div>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
-      <div class="w-full">
-        <template v-if="showCurrent">
-          <div class="flex justify-end gap-x-1 items-center">
-            <span class="font-mono mt-[2px]">{{ currentDisplayValue }}</span>
-            <div class="w-[15px]">A</div>
-          </div>
-        </template>
-        <template v-else>
-          <div class="flex justify-end gap-x-1 items-center text-yellow-100">
-            <span class="font-mono mt-[2px]">{{ instantaneousWattsDisplayValue }}</span>
-            <div class="w-[15px]">W</div>
-          </div>
-        </template>
-      </div>
-    </div>
-  </div>
+    </template>
+  </v-tooltip>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white w-[20rem]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">Battery Indicator Config</v-card-title>
