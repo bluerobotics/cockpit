@@ -274,3 +274,11 @@ export const frequencyHzToIntervalUs = (frequencyHz: number): number => {
   }
   return 1000000 / frequencyHz
 }
+
+export const deserialize = (serialized: string): any => {
+  try {
+    return JSON.parse(serialized)
+  } catch (error) {
+    return serialized
+  }
+}
