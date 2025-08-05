@@ -163,6 +163,7 @@ import {
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { isElectron, sleep } from '@/libs/utils'
+import { useMissionStore } from '@/stores/mission'
 
 import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
@@ -185,6 +186,7 @@ const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const devStore = useDevelopmentStore()
+const missionStore = useMissionStore()
 
 const showAboutDialog = ref(false)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
@@ -217,7 +219,7 @@ onBeforeMount(async () => {
   }, maxSplashDuration)
 
   while (!isBlueOSUserDataSimilar) {
-    isBlueOSUserDataSimilar = await checkBlueOsUserDataSimilarity(vehicleStore.globalAddress)
+    isBlueOSUserDataSimilar = await checkBlueOsUserDataSimilarity(vehicleStore.globalAddress, missionStore.username)
     if (!isBlueOSUserDataSimilar) await sleep(1000)
   }
 
