@@ -27,7 +27,7 @@ import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { settingsManager } from '@/libs/settings-management'
 import { SignalTyped } from '@/libs/signal'
-import { degrees, frequencyHzToIntervalUs, round, sleep } from '@/libs/utils'
+import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
 import {
   type ArduPilotParameterSetData,
   type MessageIntervalOptions,
@@ -876,7 +876,13 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
       const customMessageIntervals = storedCustomMessageIntervals as Record<string, MessageIntervalOptions>
       toBeSetIntervals = { ...cockpitDefaultMessageIntervals, ...customMessageIntervals }
     }
-    settingsManager.setKeyValue(MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY, toBeSetIntervals)
+
+    if (isEqual(storedCustomMessageIntervals, toBeSetIntervals)) {
+      console.log('No changes to message intervals. Skipping request.')
+    } else {
+      console.log('Message intervals changed. Updating settings.')
+      settingsManager.setKeyValue(MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY, toBeSetIntervals)
+    }
 
     // Remove any message that was configured to not be touched
     Object.entries(toBeSetIntervals).forEach(([messageType, options]) => {
