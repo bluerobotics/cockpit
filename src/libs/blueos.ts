@@ -80,16 +80,14 @@ const protocol = window.location.protocol.includes('file') ? 'http:' : window.lo
 export const getBagOfHoldingFromVehicle = async (
   vehicleAddress: string,
   bagPath: string
-): Promise<Record<string, any> | any> => {
+): Promise<Record<string, any> | any | undefined> => {
   try {
     const options = { timeout: defaultTimeout, retry: 0 }
     return await ky.get(`${protocol}//${vehicleAddress}/bag/v1.0/get/${bagPath}`, options).json()
   } catch (error) {
     const errorBody = (await (error as HTTPError).response?.json()) as BagOfHoldingsError
     if (errorBody?.detail === 'Invalid path') {
-      const noPathError = new Error(`No data available in BlueOS storage for path '${bagPath}'.`)
-      noPathError.name = NoPathInBlueOsErrorName
-      throw noPathError
+      return undefined
     }
     throw new Error(`Could not get bag of holdings for ${bagPath}. ${error}`)
   }
