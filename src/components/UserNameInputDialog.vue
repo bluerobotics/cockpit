@@ -99,6 +99,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { deleteUsernameOnBlueOS, getSettingsUsernamesFromBlueOS } from '@/libs/blueos'
+import { settingsManager } from '@/libs/settings-management'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
@@ -184,6 +185,13 @@ const setNewUsername = (username: string): void => {
   emit('confirmed', username)
 }
 
+const loadLocalUsernames = (): void => {
+  const locallyStoredUsernames = Object.keys(settingsManager.getLocalSettings())
+  if (locallyStoredUsernames.length) {
+    usernamesStoredOnBlueOS.value = [...new Set([...(usernamesStoredOnBlueOS.value ?? []), ...locallyStoredUsernames])]
+  }
+}
+
 const loadUsernamesFromBlueOS = async (): Promise<void> => {
   isLoading.value = true
 
@@ -218,6 +226,7 @@ const handleEsc = (e: KeyboardEvent): void => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleEsc)
+  loadLocalUsernames()
   if (mainVehicleStore.isVehicleOnline) {
     loadUsernamesFromBlueOS()
     getVehicleName()
