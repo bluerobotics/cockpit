@@ -27,12 +27,14 @@ const pendingExecutions: Record<string, ReturnType<typeof setTimeout>> = {}
  * @param {string} actionType The type of the action
  * @param {string[]} variables Array of data-lake variable IDs to watch
  * @param {number} minInterval Minimum time (in ms) between consecutive action executions
+ * @param {boolean} bypassPersistentStorage If true, the link will not be saved to persistent storage
  */
 export const saveActionLink = (
   actionId: string,
   actionType: string,
   variables: string[],
-  minInterval: number
+  minInterval: number,
+  bypassPersistentStorage = false
 ): void => {
   // Remove any existing link for this action
   removeActionLink(actionId)
@@ -53,7 +55,9 @@ export const saveActionLink = (
     })
   )
 
-  saveLinksToPersistentStorage()
+  if (!bypassPersistentStorage) {
+    saveLinksToPersistentStorage()
+  }
 }
 
 /**
@@ -125,7 +129,7 @@ const loadSavedLinks = (): void => {
     if (savedLinks) {
       const links = JSON.parse(savedLinks) as Record<string, Omit<ActionLink, 'lastExecutionTime'>>
       Object.entries(links).forEach(([actionId, link]) => {
-        saveActionLink(actionId, link.actionType, link.variables, link.minInterval)
+        saveActionLink(actionId, link.actionType, link.variables, link.minInterval, true)
       })
     }
   } catch (error) {
