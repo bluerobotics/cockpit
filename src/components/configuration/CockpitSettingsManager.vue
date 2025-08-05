@@ -225,7 +225,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
-import { reloadCockpit } from '@/libs/utils'
+import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import { SettingItem, Settings } from '@/types/general'
@@ -423,7 +423,7 @@ const resetAllCockpitSettings = (): void => {
           localStorage.clear()
           openSnackbar({ message: 'All settings have been reset to default values.', variant: 'success' })
           closeDialog()
-          reloadCockpit(3000)
+          reloadCockpitAndWarnUser(3000)
         },
       },
     ],
