@@ -2,6 +2,7 @@
 import { format } from 'date-fns'
 import localforage from 'localforage'
 
+import { settingsManager } from '@/libs/settings-management'
 import { systemLoggingEnablingKey } from '@/stores/development'
 
 import { isElectron } from './utils'
@@ -61,7 +62,8 @@ const sendLogToElectron = (level: string, message: string): void => {
   }
 }
 
-const enableSystemLogging = localStorage.getItem(systemLoggingEnablingKey)
+const enableSystemLogging = settingsManager.getKeyValue(systemLoggingEnablingKey)
+
 if (enableSystemLogging === 'true') {
   const isRunningInElectron = isElectron()
 
