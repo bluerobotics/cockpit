@@ -874,7 +874,10 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
 watch(controllerStore.joysticks, () => {
   if (currentJoystick.value === undefined) {
     if (controllerStore.joysticks.size <= 0) return
-    currentJoystick.value = controllerStore.joysticks.entries().next().value[1]
+    const firstEntry = controllerStore.joysticks.entries().next().value
+    if (firstEntry) {
+      currentJoystick.value = firstEntry[1]
+    }
   }
 })
 
