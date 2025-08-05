@@ -61,7 +61,10 @@ import {
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
 import { getActionsFromBlueOS } from '@/libs/blueos'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { ActionConfig, customActionTypes, customActionTypesNames } from '@/types/cockpit-actions'
+
+const mainVehicleStore = useMainVehicleStore()
 
 const { openSnackbar } = useSnackbar()
 
@@ -201,7 +204,8 @@ const closeModal = (): void => {
  */
 const checkForBlueOSActions = async (): Promise<void> => {
   try {
-    const actions = await getActionsFromBlueOS()
+    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+    const actions = await getActionsFromBlueOS(vehicleAddress)
 
     if (actions.length > 0) {
       // Get all existing actions from the app
