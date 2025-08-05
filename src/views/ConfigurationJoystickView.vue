@@ -44,7 +44,7 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[200px] overflow-auto">
+              <div class="flex flex-col items-center h-[280px] overflow-auto">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
@@ -79,19 +79,59 @@
                       class="scale-[85%] -mb-4"
                     />
                   </div>
+
                   <div class="flex w-full justify-center mb-2">
-                    <v-btn
+                    <div
                       v-for="functionMapping in controllerStore.protocolMappings"
                       :key="functionMapping.name"
-                      class="m-1 text-md bg-[#FFFFFF23]"
-                      :class="{
-                        'bg-[#FFFFFF43]': controllerStore.protocolMapping.name === functionMapping.name,
-                        'text-sm': interfaceStore.isOnSmallScreen,
-                      }"
-                      @click="controllerStore.loadProtocolMapping(functionMapping)"
+                      class="relative mx-2"
                     >
-                      {{ functionMapping.name }}
-                    </v-btn>
+                      <!-- Container for active profile -->
+                      <div
+                        v-if="activeProfileName === functionMapping.name"
+                        class="flex flex-col items-center bg-[#FFFFFF15] rounded-lg p-2 border border-[#FFFFFF30]"
+                      >
+                        <v-btn
+                          class="text-md bg-[#FFFFFF23]"
+                          :class="{
+                            'bg-[#FFFFFF43]': selectedProfile.name === functionMapping.name,
+                            'text-sm': interfaceStore.isOnSmallScreen,
+                          }"
+                          @click="selectProfile(functionMapping)"
+                        >
+                          {{ functionMapping.name }}
+                        </v-btn>
+                        <span class="text-xs text-gray-300 mt-1">Currently Active Profile</span>
+                      </div>
+
+                      <!-- Regular profile button -->
+                      <div v-else class="relative mt-2">
+                        <v-btn
+                          class="text-md bg-[#FFFFFF23] px-6"
+                          :class="{
+                            'bg-[#FFFFFF43]': selectedProfile.name === functionMapping.name,
+                            'text-sm': interfaceStore.isOnSmallScreen,
+                          }"
+                          @click="selectProfile(functionMapping)"
+                        >
+                          {{ functionMapping.name }}
+                        </v-btn>
+
+                        <!-- Small switch button for selected non-active profile -->
+                        <v-btn
+                          v-if="selectedProfile.name === functionMapping.name && isSelectedProfileDifferentFromActive"
+                          icon
+                          size="x-small"
+                          class="absolute top-3 -right-3 text-white bg-[#51565B] rounded-full"
+                          @click.stop="switchToSelectedProfile"
+                        >
+                          <v-icon size="14">mdi-swap-horizontal</v-icon>
+                          <v-tooltip activator="parent" location="top">
+                            Switch to "{{ selectedProfile.name }}" profile
+                          </v-tooltip>
+                        </v-btn>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="flex w-full h-[47px]">
@@ -279,8 +319,7 @@
                         <td class="w-[110px] text-center">
                           <v-text-field
                             v-if="item.type === 'axis'"
-                            v-model.number="controllerStore
-                              .protocolMapping.axesCorrespondencies[item.id as JoystickAxis].min"
+                            v-model.number="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].min"
                             type="number"
                             density="compact"
                             variant="plain"
@@ -291,8 +330,7 @@
                         <td class="w-[120px] text-center">
                           <v-select
                             v-if="item.type === 'axis'"
-                            v-model="controllerStore
-                              .protocolMapping.axesCorrespondencies[item.id as JoystickAxis].action"
+                            v-model="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].action"
                             :items="controllerStore.availableAxesActions"
                             item-title="name"
                             hide-details
@@ -306,8 +344,7 @@
                         <td class="w-[110px] text-center">
                           <v-text-field
                             v-if="item.type === 'axis'"
-                            v-model.number="controllerStore
-                              .protocolMapping.axesCorrespondencies[item.id as JoystickAxis].max"
+                            v-model.number="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].max"
                             type="number"
                             density="compact"
                             variant="plain"
@@ -380,8 +417,7 @@
                         </td>
                         <td class="w-[150px]">
                           <v-text-field
-                            v-model="controllerStore.protocolMapping
-                              .buttonsCorrespondencies
+                            v-model="selectedProfileButtonsCorrespondencies
                               [currentModifierKey.id as CockpitModifierKeyOption][item.id as JoystickButton].label"
                             dense
                             variant="plain"
@@ -556,7 +592,7 @@
               }}
             </v-icon>
             <v-text-field
-              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].min"
+              v-model.number="selectedProfileAxesCorrespondencies[input.id].min"
               class="bg-transparent w-[110px]"
               label="Min"
               type="number"
@@ -565,7 +601,7 @@
               hide-details
             />
             <v-select
-              v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].action"
+              v-model="selectedProfileAxesCorrespondencies[input.id].action"
               :items="controllerStore.availableAxesActions"
               item-title="name"
               hide-details
@@ -576,7 +612,7 @@
               return-object
             />
             <v-text-field
-              v-model.number="controllerStore.protocolMapping.axesCorrespondencies[input.id].max"
+              v-model.number="selectedProfileAxesCorrespondencies[input.id].max"
               class="bg-transparent w-[110px]"
               label="Max"
               type="number"
@@ -668,6 +704,9 @@ const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
 const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
 const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
+
+// Track the currently selected profile (for viewing) vs the active profile (for actual joystick control)
+const selectedProfileIndex = ref(0)
 
 // Throttled button states implementation for performance optimization
 const throttledButtonStates = ref<Record<number, number | undefined>>({})
@@ -839,7 +878,7 @@ const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => 
 }
 
 const currentButtonActions = computed(
-  () => controllerStore.protocolMapping.buttonsCorrespondencies[currentModifierKey.value.id as CockpitModifierKeyOption]
+  () => selectedProfileButtonsCorrespondencies.value[currentModifierKey.value.id as CockpitModifierKeyOption]
 )
 
 const unbindCurrentInput = (input: JoystickButtonInput): void => {
@@ -852,7 +891,7 @@ const unbindCurrentInput = (input: JoystickButtonInput): void => {
 }
 
 const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction): void => {
-  controllerStore.protocolMapping.buttonsCorrespondencies[currentModifierKey.value.id as CockpitModifierKeyOption][
+  selectedProfileButtonsCorrespondencies.value[currentModifierKey.value.id as CockpitModifierKeyOption][
     input.id
   ].action = action
   setTimeout(() => {
@@ -909,23 +948,45 @@ const buttonActionsToShow = computed(() =>
 
 const availableVehicleTypes = computed(() => Object.keys(MavType))
 
+// Get the currently selected profile for viewing (not necessarily the active one)
+const selectedProfile = computed(() => controllerStore.protocolMappings[selectedProfileIndex.value])
+
+// Get the currently active profile name
+const activeProfileName = computed(() => controllerStore.protocolMapping.name)
+
+// Check if the selected profile is different from the active one
+const isSelectedProfileDifferentFromActive = computed(() => selectedProfile.value.name !== activeProfileName.value)
+
+// Initialize selected profile to match active profile
+watch(
+  () => controllerStore.protocolMappingIndex,
+  (newIndex) => {
+    selectedProfileIndex.value = newIndex
+  },
+  { immediate: true }
+)
+
+// Computed properties for the selected profile data
+const selectedProfileAxesCorrespondencies = computed(() => selectedProfile.value.axesCorrespondencies)
+const selectedProfileButtonsCorrespondencies = computed(() => selectedProfile.value.buttonsCorrespondencies)
+
 const vehicleTypesAssignedToCurrentProfile = computed({
   get() {
     return Object.keys(controllerStore.vehicleTypeProtocolMappingCorrespondency).filter((vType) => {
       // @ts-ignore: Enums in TS such
-      return controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === controllerStore.protocolMapping.hash
+      return controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === selectedProfile.value.hash
     })
   },
   set(selectedVehicleTypes: string[]) {
     availableVehicleTypes.value.forEach((vType) => {
       // @ts-ignore: Enums in TS such
-      if (controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === controllerStore.protocolMapping.hash) {
+      if (controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === selectedProfile.value.hash) {
         // @ts-ignore: Enums in TS such
         controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] = undefined
       }
       if (selectedVehicleTypes.includes(vType)) {
         // @ts-ignore: Enums in TS such
-        controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] = controllerStore.protocolMapping.hash
+        controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] = selectedProfile.value.hash
       }
     })
   },
@@ -937,8 +998,8 @@ const closeInputMappingDialog = (): void => {
 
 const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
   const rawValue = joystick.state.axes[axisId] || 0
-  const min = controllerStore.protocolMapping.axesCorrespondencies[axisId]?.min ?? -1
-  const max = controllerStore.protocolMapping.axesCorrespondencies[axisId]?.max ?? +1
+  const min = selectedProfileAxesCorrespondencies.value[axisId]?.min ?? -1
+  const max = selectedProfileAxesCorrespondencies.value[axisId]?.max ?? +1
   return scale(rawValue, -1, 1, min, max)
 }
 
@@ -948,5 +1009,19 @@ const toggleJoystickEnabling = (joystickModel: string): void => {
   } else {
     controllerStore.disabledJoysticks.push(joystickModel)
   }
+}
+
+// Select a profile for viewing without activating it
+const selectProfile = (functionMapping: any): void => {
+  const mappingIndex = controllerStore.protocolMappings.findIndex((p) => p.name === functionMapping.name)
+  if (mappingIndex !== -1) {
+    selectedProfileIndex.value = mappingIndex
+  }
+}
+
+// Switch to the currently selected profile
+const switchToSelectedProfile = (): void => {
+  controllerStore.loadProtocolMapping(selectedProfile.value)
+  openSnackbar({ message: `Switched to profile '${selectedProfile.value.name}'.`, variant: 'success' })
 }
 </script>
