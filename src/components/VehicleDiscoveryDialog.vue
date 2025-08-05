@@ -51,7 +51,7 @@ import { ref, watch } from 'vue'
 
 import { useSnackbar } from '@/composables/snackbar'
 import vehicleDiscover, { NetworkVehicle } from '@/libs/electron/vehicle-discovery'
-import { reloadCockpit } from '@/libs/utils'
+import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import InteractionDialog, { Action } from './InteractionDialog.vue'
@@ -122,7 +122,7 @@ const searchVehicles = async (): Promise<void> => {
 const selectVehicle = async (address: string): Promise<void> => {
   mainVehicleStore.globalAddress = address
   isOpen.value = false
-  await reloadCockpit()
+  await reloadCockpitAndWarnUser()
   openSnackbar({ message: 'Vehicle address updated', variant: 'success', duration: 5000 })
 }
 
