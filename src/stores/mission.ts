@@ -5,6 +5,7 @@ import { reactive, ref, watch } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
+import { cockpitLastConnectedUserKey, fallbackUsername } from '@/libs/settings-management'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
 import {
@@ -23,8 +24,8 @@ const DEFAULT_MAP_CENTER: WaypointCoordinates = [-27.5935, -48.55854]
 const DEFAULT_MAP_ZOOM = 15
 
 export const useMissionStore = defineStore('mission', () => {
-  const username = useStorage<string>('cockpit-username', '')
-  const lastConnectedUser = localStorage.getItem('cockpit-last-connected-user') || undefined
+  const username = useStorage<string>('cockpit-username', fallbackUsername)
+  const lastConnectedUser = localStorage.getItem(cockpitLastConnectedUserKey) || undefined
   const missionName = ref('')
   const slideEventsEnabled = useBlueOsStorage('cockpit-slide-events-enabled', true)
   const slideEventsCategoriesRequired = useBlueOsStorage(
@@ -182,6 +183,8 @@ export const useMissionStore = defineStore('mission', () => {
     (wps) => persistDraft(wps),
     { deep: true }
   )
+
+  watch(username, () => window.dispatchEvent(new CustomEvent('user-changed', { detail: { username: username.value } })))
 
   return {
     username,
