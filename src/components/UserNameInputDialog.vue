@@ -203,8 +203,7 @@ const loadUsernamesFromBlueOS = async (): Promise<void> => {
 const getVehicleName = async (): Promise<void> => {
   if (mainVehicleStore.isVehicleOnline) {
     try {
-      const response = await mainVehicleStore.getCurrentVehicleName()
-      currentVehicleName.value = response
+      currentVehicleName.value = await mainVehicleStore.getCurrentVehicleName()
     } catch (error) {
       console.error('Failed to get vehicle name:', error)
     }
