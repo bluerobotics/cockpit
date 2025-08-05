@@ -1,7 +1,11 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="main">
-    <div class="w-full h-full" v-html="compiledCode" />
+    <div
+      class="w-full h-full"
+      :style="widget.options.inheritCockpitStyles ? interfaceStore.globalGlassMenuStyles : {}"
+      v-html="compiledCode"
+    />
   </div>
   <v-dialog
     v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen"
@@ -58,6 +62,12 @@
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>
+          <v-checkbox
+            v-model="widget.options.inheritCockpitStyles"
+            label="Inherit Cockpit interface styles"
+            class="mt-2"
+            density="compact"
+          />
         </v-card-text>
         <v-card-actions>
           <div class="flex justify-between items-center px-4 w-full h-full">
@@ -143,7 +153,6 @@ const defaultOptions = {
   width: 100%;
   height: 100%;
   padding: 1rem;
-  background-color: white;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -157,6 +166,7 @@ const defaultOptions = {
 document.addEventListener('DOMContentLoaded', () => {
   // Your code here
 });`,
+  inheritCockpitStyles: true,
 }
 
 /* eslint-disable no-useless-escape */
@@ -291,6 +301,7 @@ const exportConfig = (): void => {
     html: htmlEditor.getValue(),
     css: cssEditor.getValue(),
     js: jsEditor.getValue(),
+    inheritCockpitStyles: widget.value.options.inheritCockpitStyles || false,
   }
 
   // Create file content as JSON string
@@ -342,6 +353,9 @@ const importConfig = (): void => {
         if (htmlEditor) htmlEditor.setValue(config.html)
         if (cssEditor) cssEditor.setValue(config.css)
         if (jsEditor) jsEditor.setValue(config.js)
+
+        // Update the inheritCockpitStyles option if present (defaults to false for backwards compatibility)
+        widget.value.options.inheritCockpitStyles = config.inheritCockpitStyles || false
 
         // Apply changes
         applyChanges()
