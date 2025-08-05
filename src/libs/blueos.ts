@@ -309,11 +309,14 @@ export const getBeaconInfo = async (vehicleAddress: string): Promise<Record<stri
   }
 }
 
-export const getVehicleName = async (vehicleAddress: string): Promise<Response> => {
+export const getVehicleName = async (vehicleAddress: string): Promise<string> => {
   try {
     const url = `http://${vehicleAddress}/beacon/v1.0/vehicle_name`
     const vehicleNameResponse = await ky.get(url, { timeout: beaconTimeout, retry: 0 })
-    return vehicleNameResponse
+    if (!vehicleNameResponse.ok) {
+      throw new Error(`Could not fetch vehicle name from beacon. ${vehicleNameResponse.status}`)
+    }
+    return vehicleNameResponse.text()
   } catch (error) {
     throw new Error(`Could not fetch vehicle name from beacon. ${error}`)
   }
