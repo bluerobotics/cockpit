@@ -53,9 +53,7 @@ class VehicleDiscover {
       if (!beaconText.toLowerCase().includes('beacon')) return null
 
       // Try to get the vehicle name
-      const nameResponse = await getVehicleName(address)
-      if (!nameResponse.ok) return null
-      const name = await nameResponse.text()
+      const name = await getVehicleName(address)
       return { address, name }
     } catch {
       // If we can't get the name, it's because it's not a vehicle (or maybe BlueOS's Beacon service is not running)
