@@ -2,6 +2,8 @@ import ky from 'ky'
 import localforage from 'localforage'
 import posthog from 'posthog-js'
 
+import { settingsManager } from '../settings-management'
+
 const cockpitTelemetryEnabledKey = 'cockpit-enable-usage-statistics-telemetry'
 
 type EventPayload = {
@@ -37,7 +39,7 @@ class EventTracker {
   constructor() {
     // Only track usage statistics if the user has not opted out and the app is not in development mode
     const isRunningInProduction = import.meta.env.PROD
-    const userHasExternalTelemetryEnabled = window.localStorage.getItem(cockpitTelemetryEnabledKey) === 'true'
+    const userHasExternalTelemetryEnabled = settingsManager.getKeyValue(cockpitTelemetryEnabledKey)
     EventTracker.enableEventTracking = isRunningInProduction && userHasExternalTelemetryEnabled
 
     if (!EventTracker.enableEventTracking) {
