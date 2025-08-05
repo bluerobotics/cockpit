@@ -7,7 +7,6 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { cockpitLastConnectedUserKey, fallbackUsername } from '@/libs/settings-management'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
-import { reloadCockpit } from '@/libs/utils'
 import {
   AltitudeReferenceType,
   MapTileProvider,
@@ -136,7 +135,6 @@ export const useMissionStore = defineStore('mission', () => {
     }
 
     username.value = newUsername
-    await reloadCockpit()
   }
 
   const setDefaultMapPosition = (center: WaypointCoordinates, zoom: number): void => {
