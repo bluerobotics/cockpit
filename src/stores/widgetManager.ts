@@ -15,7 +15,7 @@ import {
 } from '@/assets/defaults'
 import { miniWidgetsProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { resetJustMadeKey, useBlueOsStorage } from '@/composables/settingsSyncer'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import * as Words from '@/libs/funny-name/words'
@@ -25,7 +25,7 @@ import {
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
-import { isEqual, reloadCockpit, sequentialArray } from '@/libs/utils'
+import { isEqual, sequentialArray } from '@/libs/utils'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import {
   type MiniWidget,
@@ -377,11 +377,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * Reset saved profiles to original state
    */
   function resetSavedProfiles(): void {
-    localStorage.setItem(resetJustMadeKey, 'true')
     savedProfiles.value = widgetProfiles
     currentProfileIndex.value = 0
     currentViewIndex.value = 0
-    reloadCockpit(3000)
   }
 
   const exportProfile = (profile: Profile): void => {
@@ -708,7 +706,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       savedProfiles.value.push(userProfile)
     })
     loadProfile(savedProfiles.value[0])
-    reloadCockpit()
   }
 
   // Make sure the interface is not booting with a profile or view that does not exist
