@@ -820,8 +820,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const getCurrentVehicleName = async (): Promise<string | undefined> => {
     if (currentVehicleName.value) return currentVehicleName.value
     if (currentVehicleName.value === undefined) {
-      const vehicleNameResponse = await (await getVehicleName(globalAddress.value)).json()
-      currentVehicleName.value = vehicleNameResponse
+      currentVehicleName.value = await getVehicleName(globalAddress.value)
     }
     return currentVehicleName.value
   }
