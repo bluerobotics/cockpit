@@ -1,7 +1,6 @@
 import { useStorage, useTimestamp } from '@vueuse/core'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
-import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
@@ -112,7 +111,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     enabled: false,
   })
 
-  const lastConnectedVehicleId = localStorage.getItem('cockpit-last-connected-vehicle-id') || undefined
   const currentlyConnectedVehicleId = ref<string | undefined>()
 
   const lastHeartbeat = ref<Date>()
@@ -168,6 +166,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   watch(isVehicleOnline, (isOnline) => {
+    if (isOnline) {
+      dispatchEvent(new CustomEvent('vehicle-online', { detail: { vehicleAddress: globalAddress.value } }))
+    } else {
+      dispatchEvent(new CustomEvent('vehicle-offline'))
+    }
     if (isOnline) return
     currentlyConnectedVehicleId.value = undefined
   })
@@ -880,7 +883,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     webRTCSignallingURI,
     customWebRTCSignallingURI,
     defaultWebRTCSignallingURI,
-    lastConnectedVehicleId,
     currentlyConnectedVehicleId,
     cpuLoad,
     lastHeartbeat,
