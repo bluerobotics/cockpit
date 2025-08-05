@@ -147,7 +147,8 @@ const deleteUser = async (username: string): Promise<void> => {
         text: 'Delete',
         action: async () => {
           try {
-            await deleteUsernameOnBlueOS(username)
+            const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+            await deleteUsernameOnBlueOS(vehicleAddress, username)
             openSnackbar({ message: `User '${username}' deleted`, variant: 'success' })
 
             if (missionStore.username === username) {
@@ -187,7 +188,8 @@ const loadUsernamesFromBlueOS = async (): Promise<void> => {
   isLoading.value = true
 
   try {
-    const blueOSUsernames = await getSettingsUsernamesFromBlueOS()
+    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+    const blueOSUsernames = await getSettingsUsernamesFromBlueOS(vehicleAddress)
     if (blueOSUsernames && blueOSUsernames.length) {
       usernamesStoredOnBlueOS.value = [...new Set([...(usernamesStoredOnBlueOS.value ?? []), ...blueOSUsernames])]
     }
