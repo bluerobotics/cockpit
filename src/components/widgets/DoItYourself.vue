@@ -19,7 +19,7 @@
         <v-icon class="absolute top-[12px] right-[12px] cursor-pointer" @click="showHelp = !showHelp">
           mdi-help-circle-outline
         </v-icon>
-        <v-card-title class="w-full text-center mt-2 mb-2">DIY widget configuration</v-card-title>
+        <v-card-title class="w-full text-center mt-2">DIY widget configuration</v-card-title>
         <v-card-text class="mx-2 flex flex-col gap-y-3">
           <v-expand-transition>
             <div v-if="showHelp" class="help-panel mb-4 p-4 rounded bg-white/5">
@@ -42,21 +42,21 @@
 
           <v-expansion-panels v-model="expandedPanel" class="editors-container" multiple>
             <v-expansion-panel value="html">
-              <v-expansion-panel-title static height="36px" class="text-white/60"> HTML </v-expansion-panel-title>
+              <v-expansion-panel-title static height="30px" class="text-white/60"> HTML </v-expansion-panel-title>
               <v-expansion-panel-text eager>
                 <div ref="htmlEditorContainer" class="editor-container" :style="{ height: editorHeight }" />
               </v-expansion-panel-text>
             </v-expansion-panel>
 
             <v-expansion-panel value="js">
-              <v-expansion-panel-title static height="36px" class="text-white/60"> JS </v-expansion-panel-title>
+              <v-expansion-panel-title static height="30px" class="text-white/60"> JS </v-expansion-panel-title>
               <v-expansion-panel-text eager>
                 <div ref="jsEditorContainer" class="editor-container" :style="{ height: editorHeight }" />
               </v-expansion-panel-text>
             </v-expansion-panel>
 
             <v-expansion-panel value="css">
-              <v-expansion-panel-title static height="36px" class="text-white/60"> CSS </v-expansion-panel-title>
+              <v-expansion-panel-title static height="30px" class="text-white/60"> CSS </v-expansion-panel-title>
               <v-expansion-panel-text eager>
                 <div ref="cssEditorContainer" class="editor-container" :style="{ height: editorHeight }" />
               </v-expansion-panel-text>
@@ -65,8 +65,9 @@
           <v-checkbox
             v-model="widget.options.inheritCockpitStyles"
             label="Inherit Cockpit interface styles"
-            class="mt-2"
             density="compact"
+            class="-mb-2"
+            hide-details
           />
         </v-card-text>
         <v-card-actions>
