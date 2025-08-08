@@ -144,7 +144,8 @@ const resetActionConfig = (messageType: MAVLinkType = defaultMessageType): void 
 }
 
 const resetNewAction = (): void => {
-  newActionConfig.value = { ...defaultActionConfig }
+  // Deep copy, to avoid sharing config between Actions
+  newActionConfig.value = structuredClone(defaultActionConfig)
 }
 
 const createActionConfig = (): void => {
