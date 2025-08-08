@@ -44,7 +44,7 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[200px] overflow-auto">
+              <div class="flex flex-col items-center h-[200px] overflow-hidden">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
@@ -83,6 +83,7 @@
                     <v-btn
                       v-for="functionMapping in controllerStore.protocolMappings"
                       :key="functionMapping.name"
+                      size="small"
                       class="m-1 text-md bg-[#FFFFFF23]"
                       :class="{
                         'bg-[#FFFFFF43]': controllerStore.protocolMapping.name === functionMapping.name,
@@ -176,6 +177,17 @@
                       class="-mt-2"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
                     />
+                    <div v-if="showWizardButton" class="fixed right-7 mb-2">
+                      <v-btn
+                        variant="elevated"
+                        size="small"
+                        class="bg-[#FFFFFF22] text-white pt-[2px] pl-4"
+                        prepend-icon="mdi-gamepad-up"
+                        @click="interfaceStore.isJoystickWizardVisible = true"
+                      >
+                        Joystick config wizard
+                      </v-btn>
+                    </div>
                   </div>
                   <div
                     v-if="showJoystickLayout"
@@ -229,6 +241,17 @@
                       class="-mt-2 -mb-1"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
                     />
+                    <div v-if="showWizardButton" class="fixed right-[32px] mb-2">
+                      <v-btn
+                        variant="elevated"
+                        size="small"
+                        class="bg-[#FFFFFF22] text-white pt-[2px] pl-4"
+                        prepend-icon="mdi-gamepad-up"
+                        @click="interfaceStore.isJoystickWizardVisible = true"
+                      >
+                        Joystick config wizard
+                      </v-btn>
+                    </div>
                   </div>
                   <p class="text-start text-sm font-bold w-[93%] mb-1">Axes</p>
                   <v-data-table
@@ -636,7 +659,7 @@ import {
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
-const { globalAddress } = useMainVehicleStore()
+const { globalAddress, vehicleType } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
 
@@ -673,6 +696,10 @@ const currentTabVIew = ref('table')
 const throttledButtonStates = ref<Record<number, number | undefined>>({})
 const lastButtonUpdateTime = ref(0)
 const buttonUpdateThrottleMs = 30
+
+const showWizardButton = computed(() => {
+  return vehicleType === 'MAV_TYPE_SUBMARINE'
+})
 
 // Optimized shallow watcher instead of deep watcher
 let buttonUpdateScheduled = false
