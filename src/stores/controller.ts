@@ -547,6 +547,7 @@ export const useControllerStore = defineStore('controller', () => {
     joysticks,
     protocolMapping,
     protocolMappings,
+    protocolMappingIndex,
     cockpitStdMappings,
     availableAxesActions,
     availableButtonActions,
