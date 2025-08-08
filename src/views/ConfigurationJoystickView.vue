@@ -630,6 +630,46 @@
       </template>
     </InteractionDialog>
   </teleport>
+
+  <!-- Profile Switch Confirmation Dialog -->
+  <InteractionDialog
+    v-model:show-dialog="showProfileSwitchDialog"
+    title="Confirm Profile Switch"
+    variant="text-only"
+    :max-width="700"
+    :persistent="true"
+  >
+    <template #content>
+      <div class="flex items-center justify-center">
+        <v-icon icon="mdi-alert-rhombus" size="60px" color="yellow" class="mx-4" />
+        <div class="flex flex-col items-start px-5 font-medium gap-y-3 mb-6">
+          <p>Switching to a different joystick profile is a potentially dangerous action!</p>
+          <p>
+            If the profile you are switching to has different axis mappings than the current profile, the vehicle motors
+            could start spinning immediately when you close this configuration page.
+          </p>
+          <p>
+            You are currently using profile: "{{ activeProfileName }}", which is configured for:
+            <span class="font-bold">{{ getVehicleTypesForProfile(activeProfileHash).join(', ') }}</span>
+          </p>
+          <p>
+            You are about to switch to profile: "{{ selectedProfile.name }}", which is configured for:
+            <span class="font-bold">{{ getVehicleTypesForProfile(selectedProfile.hash).join(', ') }}</span>
+          </p>
+          <p>
+            Your vehicle is of type: <span class="font-bold">{{ vehicleType }}</span>
+          </p>
+          <p>Are you sure you want to switch to this profile?</p>
+        </div>
+      </div>
+    </template>
+    <template #actions>
+      <div class="flex justify-between w-full">
+        <v-btn variant="text" class="m-1" @click="cancelProfileSwitch"> Cancel </v-btn>
+        <v-btn variant="text" class="m-1" @click="confirmProfileSwitch"> Switch </v-btn>
+      </div>
+    </template>
+  </InteractionDialog>
 </template>
 
 <script setup lang="ts">
@@ -672,12 +712,14 @@ import {
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
-const { globalAddress } = useMainVehicleStore()
+const { globalAddress, vehicleType } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
 
 const showJoystickWarningMessage = ref(false)
 const searchText = ref('')
+
+const showProfileSwitchDialog = ref(false)
 
 onMounted(async () => {
   controllerStore.enableForwarding = false
@@ -951,8 +993,10 @@ const availableVehicleTypes = computed(() => Object.keys(MavType))
 // Get the currently selected profile for viewing (not necessarily the active one)
 const selectedProfile = computed(() => controllerStore.protocolMappings[selectedProfileIndex.value])
 
-// Get the currently active profile name
+// Get the currently active profile name and hash
 const activeProfileName = computed(() => controllerStore.protocolMapping.name)
+const activeProfileHash = computed(() => controllerStore.protocolMapping.hash)
+
 
 // Check if the selected profile is different from the active one
 const isSelectedProfileDifferentFromActive = computed(() => selectedProfile.value.name !== activeProfileName.value)
@@ -1019,9 +1063,24 @@ const selectProfile = (functionMapping: any): void => {
   }
 }
 
-// Switch to the currently selected profile
+const getVehicleTypesForProfile = (profileHash: string): string[] => {
+  return Object.keys(controllerStore.vehicleTypeProtocolMappingCorrespondency).filter((vType) => {
+    // @ts-ignore: Enums in TS such
+    return controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === profileHash
+  })
+}
+
 const switchToSelectedProfile = (): void => {
+  showProfileSwitchDialog.value = true
+}
+
+const confirmProfileSwitch = (): void => {
   controllerStore.loadProtocolMapping(selectedProfile.value)
   openSnackbar({ message: `Switched to profile '${selectedProfile.value.name}'.`, variant: 'success' })
+  showProfileSwitchDialog.value = false
+}
+
+const cancelProfileSwitch = (): void => {
+  showProfileSwitchDialog.value = false
 }
 </script>
