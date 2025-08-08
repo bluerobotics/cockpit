@@ -225,7 +225,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
-import { reloadCockpit } from '@/libs/utils'
+import { exportFile, importFile, ImportFileValidator, reloadCockpit } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import { SettingItem, Settings } from '@/types/general'
@@ -353,55 +353,33 @@ const cancelJsonEditing = (): void => {
 }
 
 const downloadConfigFile = (): void => {
-  const dataStr = JSON.stringify(userSettings.value, null, 2)
-  const blob = new Blob([dataStr], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
   const username = missionStore.username !== 'null' ? missionStore.username : 'unnamed'
   const filename = `${username}_config.json`
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  exportFile(userSettings.value, filename)
 }
 
-const uploadConfigFile = (): void => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'application/json'
-  input.onchange = (event: Event) => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (e: ProgressEvent<FileReader>) => {
-      try {
-        const text = e.target?.result as string
-        const json = JSON.parse(text)
-        if (!json || typeof json !== 'object') {
-          openSnackbar({
-            message: 'Invalid configuration file: content is not an object.',
-            variant: 'warning',
-            duration: 5000,
-          })
-          return
-        }
-        Object.assign(editedValues, json)
-        userSettings.value = json
-        openSnackbar({ message: 'Configuration file applied successfully.', variant: 'success', duration: 5000 })
-      } catch (error: any) {
-        console.error('Error parsing configuration file: ' + error.message)
-        openSnackbar({
-          message: 'Error parsing configuration file: ' + error.message,
-          variant: 'error',
-          duration: 5000,
-        })
-      }
-    }
-    reader.readAsText(file)
+const validateConfigFile = (data: any): ImportFileValidator => {
+  if (!data || typeof data !== 'object') {
+    return { isValid: false, error: 'Invalid configuration file: content is not an object.' }
   }
-  input.click()
+  return { isValid: true }
+}
+
+const uploadConfigFile = async (): Promise<void> => {
+  try {
+    const json = await importFile('application/json', true, validateConfigFile)
+
+    Object.assign(editedValues, json)
+    userSettings.value = json
+    openSnackbar({ message: 'Configuration file applied successfully.', variant: 'success', duration: 5000 })
+  } catch (error: any) {
+    console.error('Error importing configuration file: ' + error.message)
+    openSnackbar({
+      message: error.message || 'Error importing configuration file',
+      variant: 'error',
+      duration: 5000,
+    })
+  }
 }
 
 const resetAllCockpitSettings = (): void => {
