@@ -209,21 +209,6 @@ jobs:
           path: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
           if-no-files-found: error
 
-      - name: Upload diff artifact (mac-only)
-        if: matrix.os == 'macos-13' || matrix.os == 'macos-14'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.zip
-          path: dist/Cockpit*.zip
-          if-no-files-found: error
-
-      - name: Upload latest metadata artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.latestMetadataName }}-${{ matrix.arch }}
-          path: dist/latest*.yml
-          if-no-files-found: error
-
       - name: Upload binary release
         uses: svenstaro/upload-release-action@v2
         if: startsWith(github.ref, 'refs/tags/') && success()
