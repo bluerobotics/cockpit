@@ -78,7 +78,7 @@ jobs:
           suffix: mac
           arch: arm64
           extension: dmg
-          latestMetadataName: latest-mac.yml
+          latestMetadataName: latest-mac-arm64.yml
           deployCommand: deploy:electron:mac:arm64
 
         - os: ubuntu-latest
@@ -194,6 +194,13 @@ jobs:
         # No Apple specific env vars needed here as electron-builder ignores them on these platforms
         run: |
           yarn ${{ matrix.deployCommand }}
+
+      - name: Rename macOS arm64 latest metadata
+        if: matrix.os == 'macos-14'
+        run: |
+          # In some environments the file may already be generated with the arm64 suffix.
+          # Only rename if the generic name exists.
+          if [ -f dist/latest-mac.yml ]; then mv dist/latest-mac.yml dist/latest-mac-arm64.yml; fi
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
