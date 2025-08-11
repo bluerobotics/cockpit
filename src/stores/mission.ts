@@ -62,6 +62,17 @@ export const useMissionStore = defineStore('mission', () => {
     )
   }
 
+  const updateWaypointType = (id: string, newType: WaypointType): void => {
+    const waypoint = currentPlanningWaypoints.find((w) => w.id === id)
+    if (waypoint === undefined) {
+      throw Error(`Could not update waypoint type. No waypoint with id ${id} was found.`)
+    }
+    Object.assign(
+      currentPlanningWaypoints,
+      currentPlanningWaypoints.map((w) => (w.id === id ? { ...w, type: newType } : w))
+    )
+  }
+
   const addPointOfInterest = (poi: PointOfInterest): void => {
     pointsOfInterest.value.push(poi)
   }
@@ -194,6 +205,7 @@ export const useMissionStore = defineStore('mission', () => {
     slideEventsEnabled,
     slideEventsCategoriesRequired,
     moveWaypoint,
+    updateWaypointType,
     clearMission,
     defaultMapCenter,
     defaultMapZoom,

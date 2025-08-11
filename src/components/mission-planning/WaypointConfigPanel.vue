@@ -74,6 +74,107 @@
               variant="plain"
             ></v-select>
           </div>
+          <v-divider class="border-black w-full" />
+          <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
+            <p class="w-[80px] mt-1 text-start">Type:</p>
+            <v-select
+              v-model="selectedWaypointType"
+              :items="availableWaypointTypes"
+              item-title="name"
+              item-value="value"
+              hide-details
+              attach
+              class="mb-2 spaced-number right-aligned-input"
+              density="compact"
+              theme="dark"
+              variant="plain"
+              @update:model-value="handleWaypointTypeChange"
+            ></v-select>
+          </div>
+
+          <!-- MAVLink Parameters - only show for generic waypoints -->
+          <template v-if="selectedWaypointType === WaypointType.MAVLINK_GENERIC">
+            <v-divider class="border-black w-full" />
+            <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
+              <p class="w-[80px] mt-1 text-start">Command:</p>
+              <div class="flex w-full pr-2 h-[35px] items-center">
+                <v-text-field
+                  v-model="commandValue"
+                  type="text"
+                  density="compact"
+                  variant="plain"
+                  hide-details
+                  placeholder="MAV_CMD_NAV_WAYPOINT"
+                  class="spaced-number right-aligned-input w-[120px] text-right -mr-3"
+                  @input="updateParameter('command', $event.target.value)"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <v-divider class="border-black w-full" />
+            <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
+              <p class="w-[132px] mt-1 text-start">Parameter 1:</p>
+              <div class="flex w-full pr-2 h-[35px] items-center">
+                <v-text-field
+                  v-model="param1Value"
+                  type="text"
+                  density="compact"
+                  variant="plain"
+                  hide-details
+                  class="spaced-number right-aligned-input w-[60px] text-right -mr-3"
+                  @input="updateParameter('param1', $event.target.value)"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <v-divider class="border-black w-full" />
+            <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
+              <p class="w-[132px] mt-1 text-start">Parameter 2:</p>
+              <div class="flex w-full pr-2 h-[35px] items-center">
+                <v-text-field
+                  v-model="param2Value"
+                  type="text"
+                  density="compact"
+                  variant="plain"
+                  hide-details
+                  class="spaced-number right-aligned-input w-[60px] text-right -mr-3"
+                  @input="updateParameter('param2', $event.target.value)"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <v-divider class="border-black w-full" />
+            <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
+              <p class="w-[132px] mt-1 text-start">Parameter 3:</p>
+              <div class="flex w-full pr-2 h-[35px] items-center">
+                <v-text-field
+                  v-model="param3Value"
+                  type="text"
+                  density="compact"
+                  variant="plain"
+                  hide-details
+                  class="spaced-number right-aligned-input w-[60px] text-right -mr-3"
+                  @input="updateParameter('param3', $event.target.value)"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <v-divider class="border-black w-full" />
+            <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
+              <p class="w-[132px] mt-1 text-start">Parameter 4:</p>
+              <div class="flex w-full pr-2 h-[35px] items-center">
+                <v-text-field
+                  v-model="param4Value"
+                  type="text"
+                  density="compact"
+                  variant="plain"
+                  hide-details
+                  class="spaced-number right-aligned-input w-[60px] text-right -mr-3"
+                  @input="updateParameter('param4', $event.target.value)"
+                ></v-text-field>
+              </div>
+            </div>
+          </template>
         </div>
       </template>
     </ExpansiblePanel>
@@ -94,7 +195,9 @@ import { computed, ref, watch } from 'vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
-import { AltitudeReferenceType, Waypoint, WaypointCoordinates } from '@/types/mission'
+import { AltitudeReferenceType, Waypoint, WaypointCoordinates, WaypointType } from '@/types/mission'
+
+const { currentPlanningWaypoints } = useMissionStore()
 
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
@@ -121,6 +224,14 @@ const editableLng = ref<string>(selectedWaypoint.value.coordinates[1].toString()
 const editableAltitudeRefType = ref<AltitudeReferenceType>(
   waypointOnMissionStore.value?.altitudeReferenceType || AltitudeReferenceType.RELATIVE_TO_HOME
 )
+const selectedWaypointType = ref<WaypointType>(waypointOnMissionStore.value?.type || WaypointType.PASS_BY)
+
+// Parameter values for generic MAVLink waypoints
+const commandValue = ref<string>('MAV_CMD_NAV_WAYPOINT')
+const param1Value = ref<string>('0')
+const param2Value = ref<string>('0')
+const param3Value = ref<string>('0')
+const param4Value = ref<string>('0')
 
 watch(editableAltitudeRefType, (newType) => {
   if (waypointOnMissionStore.value) {
@@ -136,6 +247,37 @@ const availableFrames = Object.values(AltitudeReferenceType).map((value: Altitud
   name: value,
   value,
 }))
+
+const availableWaypointTypes = Object.values(WaypointType).map((value: WaypointType) => ({
+  name: value,
+  value,
+}))
+
+const handleWaypointTypeChange = (newType: WaypointType): void => {
+  if (waypointOnMissionStore.value) {
+    missionStore.updateWaypointType(selectedWaypoint.value.id, newType)
+
+    // If switching to generic type, ensure parameters are set
+    if (newType === WaypointType.MAVLINK_GENERIC) {
+      updateParameter('command', commandValue.value)
+      updateParameter('param1', param1Value.value)
+      updateParameter('param2', param2Value.value)
+      updateParameter('param3', param3Value.value)
+      updateParameter('param4', param4Value.value)
+    }
+  }
+}
+
+const updateParameter = (paramName: 'command' | 'param1' | 'param2' | 'param3' | 'param4', value: string): void => {
+  console.log('updateParameter:')
+  console.log(paramName)
+  console.log(value)
+  console.log('------------------------------------')
+  const waypoint = currentPlanningWaypoints.find((w) => w.id === selectedWaypoint.value.id)
+  if (waypoint) {
+    waypoint[paramName] = value
+  }
+}
 
 const onLatInput = (event: Event): void => {
   const input = event.target as HTMLInputElement
@@ -165,6 +307,14 @@ watch(
     selectedWaypoint.value = newWaypoint
     editableLat.value = newWaypoint.coordinates[0].toString()
     editableLng.value = newWaypoint.coordinates[1].toString()
+    selectedWaypointType.value = newWaypoint.type
+
+    // Update parameter values
+    commandValue.value = newWaypoint.command || 'MAV_CMD_NAV_WAYPOINT'
+    param1Value.value = newWaypoint.param1 || '0'
+    param2Value.value = newWaypoint.param2 || '0'
+    param3Value.value = newWaypoint.param3 || '0'
+    param4Value.value = newWaypoint.param4 || '0'
   }
 )
 
@@ -176,6 +326,34 @@ watch(
       editableLat.value = newCoords[0].toString()
       editableLng.value = newCoords[1].toString()
     }
+  }
+)
+
+// Update waypoint type when it changes in the store
+watch(
+  () => waypointOnMissionStore.value?.type,
+  (newType) => {
+    if (newType) {
+      selectedWaypointType.value = newType
+    }
+  }
+)
+
+// Update parameter values when they change in the store
+watch(
+  () => [
+    waypointOnMissionStore.value?.command,
+    waypointOnMissionStore.value?.param1,
+    waypointOnMissionStore.value?.param2,
+    waypointOnMissionStore.value?.param3,
+    waypointOnMissionStore.value?.param4,
+  ],
+  ([command, param1, param2, param3, param4]) => {
+    commandValue.value = command || 'MAV_CMD_NAV_WAYPOINT'
+    param1Value.value = param1 || '0'
+    param2Value.value = param2 || '0'
+    param3Value.value = param3 || '0'
+    param4Value.value = param4 || '0'
   }
 )
 </script>
