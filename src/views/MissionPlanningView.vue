@@ -189,15 +189,6 @@
         </div>
         <v-divider v-if="isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSurvey || isCreatingSimplePath" class="flex flex-col w-full h-full p-2">
-          <p class="text-sm text-slate-200">Waypoint type</p>
-          <select
-            v-model="WaypointType.PASS_BY"
-            class="h-auto py-2 px-2 my-2 mx-5 font-medium text-sm rounded-sm bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          >
-            <option :value="WaypointType.PASS_BY">Pass-by</option>
-          </select>
-
-          <v-divider class="my-2" />
           <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
           <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
           <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
@@ -1162,6 +1153,9 @@ watch(
   [surveyPolygonVertexesPositions, isCreatingSurvey],
   () => {
     updateConfirmButtonPosition()
+    if (isCreatingSurvey.value) {
+      currentWaypointType.value = WaypointType.PASS_BY
+    }
   },
   { immediate: true, deep: true }
 )
