@@ -71,19 +71,40 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const initializeStreamsCorrespondency = (): void => {
-    if (streamsCorrespondency.value.length >= namesAvailableStreams.value.length) return
+    // Get list of external streams that are already mapped
+    const alreadyMappedExternalIds = streamsCorrespondency.value.map((corr) => corr.externalId)
 
-    // If there are more external streams available than the ones in the correspondency, add the extra ones
-    const newCorrespondency: VideoStreamCorrespondency[] = []
+    // Find external streams that don't have a mapping yet
+    const unmappedExternalStreams = namesAvailableStreams.value.filter(
+      (streamName) => !alreadyMappedExternalIds.includes(streamName)
+    )
+
+    // If there are no unmapped streams, no need to add any new correspondences
+    if (unmappedExternalStreams.length === 0) return
+
+    // Generate internal names for new streams, making sure they don't conflict with existing ones
+    const existingInternalNames = streamsCorrespondency.value.map((corr) => corr.name)
+    const newCorrespondencies: VideoStreamCorrespondency[] = []
+
     let i = 1
-    namesAvailableStreams.value.forEach((streamName) => {
-      newCorrespondency.push({
-        name: `Stream ${i}`,
+    unmappedExternalStreams.forEach((streamName) => {
+      // Find the next available internal name (Stream 1, Stream 2, etc.)
+      let internalName = `Stream ${i}`
+      while (existingInternalNames.includes(internalName)) {
+        i++
+        internalName = `Stream ${i}`
+      }
+
+      newCorrespondencies.push({
+        name: internalName,
         externalId: streamName,
       })
+      existingInternalNames.push(internalName) // Track this name to avoid duplicates
       i++
     })
-    streamsCorrespondency.value = newCorrespondency
+
+    // Add new correspondences to the existing ones instead of replacing them
+    streamsCorrespondency.value = [...streamsCorrespondency.value, ...newCorrespondencies]
   }
 
   watch(namesAvailableStreams, () => {
