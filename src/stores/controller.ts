@@ -316,7 +316,7 @@ export const useControllerStore = defineStore('controller', () => {
 
     const activeActions = joystickState.buttons
       .map((btnState, idx) => ({ id: idx, value: btnState }))
-      .filter((btn) => btn.value ?? 0 > 0.5)
+      .filter((btn) => (btn.value ?? 0) > 0.5)
       .map((btn) => {
         const btnMapping = mapping.buttonsCorrespondencies[modifierKeyId as CockpitModifierKeyOption][btn.id]
         if (btnMapping && btnMapping.action) {
