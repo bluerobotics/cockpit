@@ -41,6 +41,7 @@ import {
 } from '@/types/joystick'
 
 import { useAlertStore } from './alert'
+import { useMainVehicleStore } from './mainVehicle'
 
 export type controllerUpdateCallback = (
   state: JoystickState,
@@ -55,6 +56,7 @@ const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
 
 export const useControllerStore = defineStore('controller', () => {
   const alertStore = useAlertStore()
+  const mainVehicleStore = useMainVehicleStore()
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
@@ -184,7 +186,8 @@ export const useControllerStore = defineStore('controller', () => {
       }
 
       // Check if other GCS is sending MANUAL_CONTROL messages
-      const otherSourceDetected = await checkForOtherManualControlSources()
+      const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+      const otherSourceDetected = await checkForOtherManualControlSources(vehicleAddress)
 
       if (otherSourceDetected) {
         console.warn('Other GCS sending MANUAL_CONTROL messages detected. Disabling joystick forwarding.')

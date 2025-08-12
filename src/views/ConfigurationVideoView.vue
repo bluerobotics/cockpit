@@ -263,6 +263,7 @@ const editStreamName = (item: VideoStreamCorrespondency): void => {
 const saveStreamName = (item: VideoStreamCorrespondency): void => {
   item.name = editingStreamName.value
   editingStreamId.value = null
+  videoStore.renameStreamInternalNameById(item.externalId, editingStreamName.value)
 }
 
 onMounted(() => {
