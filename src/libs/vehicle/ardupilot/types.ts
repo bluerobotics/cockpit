@@ -36,6 +36,14 @@ export const convertCockpitWaypointsToMavlink = (
   system_id: number
 ): Message.MissionItemInt[] => {
   return cockpitWaypoints.map((cockpitWaypoint, i) => {
+    // Use custom parameters and command for generic MAVLink waypoints, otherwise use defaults
+    const isGenericWaypoint = cockpitWaypoint.type === WaypointType.MAVLINK_GENERIC
+
+    // Get the command type - use custom command for generic waypoints, default for others
+    const commandType = isGenericWaypoint && cockpitWaypoint.command
+      ? cockpitWaypoint.command as keyof typeof MavCmd
+      : 'MAV_CMD_NAV_WAYPOINT'
+
     return {
       target_system: system_id,
       target_component: 1,
@@ -46,13 +54,13 @@ export const convertCockpitWaypointsToMavlink = (
           mavlinkFrameFromCockpitAltRef(cockpitWaypoint.altitudeReferenceType) ||
           MavFrame.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
       },
-      command: { type: MavCmd.MAV_CMD_NAV_WAYPOINT },
+      command: { type: MavCmd[commandType] || MavCmd.MAV_CMD_NAV_WAYPOINT },
       current: 0,
       autocontinue: 1,
-      param1: 0,
-      param2: 5,
-      param3: 0,
-      param4: 999,
+      param1: isGenericWaypoint ? parseFloat(cockpitWaypoint.param1 || '0') : 0.0,
+      param2: isGenericWaypoint ? parseFloat(cockpitWaypoint.param2 || '0') : 5.0,
+      param3: isGenericWaypoint ? parseFloat(cockpitWaypoint.param3 || '0') : 0.0,
+      param4: isGenericWaypoint ? parseFloat(cockpitWaypoint.param4 || '0') : 999.0,
       x: round(cockpitWaypoint.coordinates[0] * Math.pow(10, 7)),
       y: round(cockpitWaypoint.coordinates[1] * Math.pow(10, 7)),
       z: Number(cockpitWaypoint.altitude),
@@ -63,14 +71,27 @@ export const convertCockpitWaypointsToMavlink = (
 
 export const convertMavlinkWaypointsToCockpit = (mavlinkWaypoints: Message.MissionItemInt[]): Waypoint[] => {
   return mavlinkWaypoints.map((mavlinkWaypoint) => {
-    return {
+    const isBasicWaypoint = mavlinkWaypoint.command.type === MavCmd.MAV_CMD_NAV_WAYPOINT
+
+    const waypoint: Waypoint = {
       id: uuid(),
       coordinates: [mavlinkWaypoint.x / Math.pow(10, 7), mavlinkWaypoint.y / Math.pow(10, 7)],
       altitude: mavlinkWaypoint.z,
       altitudeReferenceType:
         cockpitAltRefFromMavlinkFrame(mavlinkWaypoint.frame.type) || AltitudeReferenceType.RELATIVE_TO_HOME,
-      type: WaypointType.PASS_BY,
+      type: isBasicWaypoint ? WaypointType.PASS_BY : WaypointType.MAVLINK_GENERIC,
     }
+
+    // Add command and parameters for generic waypoints
+    if (!isBasicWaypoint) {
+      waypoint.command = mavlinkWaypoint.command.type
+      waypoint.param1 = mavlinkWaypoint.param1.toFixed(6)
+      waypoint.param2 = mavlinkWaypoint.param2.toFixed(6)
+      waypoint.param3 = mavlinkWaypoint.param3.toFixed(6)
+      waypoint.param4 = mavlinkWaypoint.param4.toFixed(6)
+    }
+
+    return waypoint
   })
 }
 

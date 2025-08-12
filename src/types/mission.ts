@@ -3,6 +3,7 @@
  */
 export enum WaypointType {
   PASS_BY = 'Pass by',
+  MAVLINK_GENERIC = 'MAVLink Generic Waypoint',
 }
 
 /**
@@ -39,6 +40,26 @@ export type Waypoint = {
    * The type of the waypoint. Usually used to decide what function should the waypoint perform.
    */
   type: WaypointType
+  /**
+   * MAVLink parameter 1. Used for generic MAVLink waypoints.
+   */
+  param1?: string
+  /**
+   * MAVLink parameter 2. Used for generic MAVLink waypoints.
+   */
+  param2?: string
+  /**
+   * MAVLink parameter 3. Used for generic MAVLink waypoints.
+   */
+  param3?: string
+  /**
+   * MAVLink parameter 4. Used for generic MAVLink waypoints.
+   */
+  param4?: string
+  /**
+   * MAVLink command. Used for generic MAVLink waypoints.
+   */
+  command?: string
 }
 
 export type CockpitMission = {
