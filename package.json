@@ -128,6 +128,9 @@
     "vue-tsc": "2.0.10",
     "vuetify-loader": "^2.0.0-alpha.0"
   },
+    "resolutions": {
+    "strip-ansi": "6.0.1"
+  },
   "prettier": {
     "semi": false,
     "singleQuote": true,
