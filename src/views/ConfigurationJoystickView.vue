@@ -293,7 +293,7 @@
                             v-if="item.type === 'axis'"
                             v-model="controllerStore
                               .protocolMapping.axesCorrespondencies[item.id as JoystickAxis].action"
-                            :items="controllerStore.availableAxesActions"
+                            :items="filteredAndSortedAxisActions"
                             item-title="name"
                             hide-details
                             class="mb-2"
@@ -566,7 +566,7 @@
             />
             <v-select
               v-model="controllerStore.protocolMapping.axesCorrespondencies[input.id].action"
-              :items="controllerStore.availableAxesActions"
+              :items="filteredAndSortedAxisActions"
               item-title="name"
               hide-details
               density="compact"
@@ -757,6 +757,14 @@ const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
     })
     .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
+})
+
+const filteredAndSortedAxisActions = computed((): JoystickAction[] => {
+  return controllerStore.availableAxesActions.filter((action: JoystickAction) => {
+    const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
+    if (!dataLakeVariableInfo) return true
+    return dataLakeVariableInfo.allowUserToChangeValue && dataLakeVariableInfo.type === 'number'
+  })
 })
 
 const headers = ref([
