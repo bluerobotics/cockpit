@@ -1,42 +1,110 @@
 <template>
   <div class="w-full h-full">
-    <teleport to=".widgets-view">
-      <iframe
-        v-show="iframe_loaded"
-        ref="iframe"
-        :src="widget.options.source"
-        :style="iframeStyle"
-        frameborder="0"
-        @load="loadFinished"
-      />
-    </teleport>
-    <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
+    <div
+      v-if="widget.options.isCollapsible"
+      ref="iframe-container"
+      class="w-full rounded-lg overflow-hidden -mt-2"
+      :class="[isWrapped ? 'h-[42px]' : 'h-full']"
+      :width="canvasSize.width"
+      :height="canvasSize.height"
+      :style="interfaceStore.globalGlassMenuStyles"
+    >
+      <div class="flex flex-col justify-start items-center h-auto pt-2 cursor-pointer">
+        <div class="flex justify-between w-full h-[25px] px-2">
+          <v-icon class="cursor-grab opacity-40" @mousedown="enableMovingOnDrag" @mouseup="disableMovingOnDrag">
+            mdi-drag
+          </v-icon>
+          <div class="select-none">
+            {{ widget.options.containerName || 'iframe' }}
+          </div>
+          <v-btn
+            :icon="isWrapped ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+            variant="text"
+            size="36"
+            class="mt-[-6px] opacity-60"
+            @click="toggleWrapContainer"
+          />
+        </div>
+        <div v-show="!isWrapped" class="pt-2">
+          <iframe
+            v-show="iframe_loaded"
+            ref="iframe"
+            :src="widget.options.source"
+            :style="iframeStyle"
+            frameborder="0"
+            @load="loadFinished"
+          />
+        </div>
+      </div>
+    </div>
+    <div v-else>
+      <teleport to=".widgets-view">
+        <iframe
+          v-show="iframe_loaded"
+          ref="iframe"
+          :src="widget.options.source"
+          :style="[iframeStyle, { position: 'absolute' }]"
+          frameborder="0"
+          @load="loadFinished"
+        />
+      </teleport>
+    </div>
+    <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="600" max-width="45%">
       <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
         <v-card-title class="text-center">Settings</v-card-title>
         <v-card-text>
-          <p>Iframe Source</p>
-          <div class="flex items-center justify-between">
-            <v-text-field
-              v-model="inputURL"
-              variant="filled"
-              outlined
-              :rules="[validateURL]"
-              @keydown.enter="updateURL"
-            />
-            <v-btn
-              v-tooltip.bottom="'Set'"
-              icon="mdi-check"
-              class="mx-1 mb-5 bg-[#FFFFFF22]"
-              rounded="lg"
-              flat
-              @click="updateURL"
-            />
+          <div>
+            <p>Iframe Source</p>
+            <div class="flex items-center justify-between">
+              <v-text-field
+                v-model="inputURL"
+                variant="filled"
+                outlined
+                :rules="[validateURL]"
+                @keydown.enter="updateURL"
+              />
+              <v-btn
+                v-tooltip.bottom="'Set'"
+                icon="mdi-check"
+                class="mx-1 mb-5 bg-[#FFFFFF22]"
+                rounded="lg"
+                flat
+                @click="updateURL"
+              />
+            </div>
           </div>
+          <div class="mt-2 mb-2 w-[95%]">
+            <v-slider v-model="transparency" label="Transparency" color="white" :min="0" :max="90" />
+          </div>
+          <ExpansiblePanel compact :is-expanded="true" no-bottom-divider no-top-divider>
+            <template #title>Advanced options</template>
+            <template #content>
+              <div class="flex justify-between">
+                <v-switch
+                  v-model="widget.options.isCollapsible"
+                  label="Collapsible container"
+                  color="white"
+                  class="ml-2"
+                />
+                <div v-if="widget.options.isCollapsible">
+                  <v-text-field
+                    v-model="widget.options.containerName"
+                    label="Container name"
+                    item-title="name"
+                    density="compact"
+                    variant="outlined"
+                    no-data-text="iframe"
+                    hide-details
+                    theme="dark"
+                    class="w-[300px] mt-2"
+                  />
+                </div>
+              </div>
+            </template>
+          </ExpansiblePanel>
         </v-card-text>
-        <v-card-text>
-          <v-slider v-model="transparency" label="Transparency" color="white" :min="0" :max="90" />
-        </v-card-text>
-        <v-card-actions class="flex justify-end">
+        <v-divider width="80%" inset />
+        <v-card-actions class="flex justify-end mt-2">
           <v-btn color="white" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
             Close
           </v-btn>
@@ -64,6 +132,8 @@ import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+
+import ExpansiblePanel from '../ExpansiblePanel.vue'
 const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()
@@ -81,6 +151,28 @@ const transparency = ref(0)
 const inputURL = ref(widget.value.options.source)
 const openSnackbar = ref(false)
 const snackbarMessage = ref('')
+const isWrapped = ref(false)
+
+const toggleWrapContainer = (): void => {
+  isWrapped.value = !isWrapped.value
+}
+
+const enableMovingOnDrag = (): void => {
+  widgetStore.allowMovingAndResizing(widget.value.hash, true)
+  window.addEventListener('mouseup', disableMovingOnDrag)
+  window.addEventListener('dragend', disableMovingOnDrag)
+}
+
+const disableMovingOnDrag = (): void => {
+  widgetStore.allowMovingAndResizing(widget.value.hash, false)
+  window.removeEventListener('mouseup', disableMovingOnDrag)
+  window.removeEventListener('dragend', disableMovingOnDrag)
+}
+
+const canvasSize = computed(() => ({
+  width: widget.value.size.width * windowWidth.value,
+  height: widget.value.size.height * windowWidth.value,
+}))
 
 const validateURL = (url: string): true | string => {
   return isValidURL(url) ? true : 'URL is not valid.'
@@ -129,7 +221,6 @@ const { width: windowWidth, height: windowHeight } = useWindowSize()
 const iframeStyle = computed<string>(() => {
   let newStyle = ''
 
-  newStyle = newStyle.concat(' ', 'position: absolute;')
   newStyle = newStyle.concat(' ', `left: ${widget.value.position.x * windowWidth.value}px;`)
   newStyle = newStyle.concat(' ', `top: ${widget.value.position.y * windowHeight.value}px;`)
   newStyle = newStyle.concat(' ', `width: ${widget.value.size.width * windowWidth.value}px;`)
