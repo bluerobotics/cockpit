@@ -1,5 +1,6 @@
 import { type DataLakeVariable, getAllDataLakeVariablesInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
+import { scale } from '@/libs/utils'
 import { useControllerStore } from '@/stores/controller'
 import { type ProtocolAction, CockpitModifierKeyOption, JoystickProtocol } from '@/types/joystick'
 
@@ -42,7 +43,7 @@ export const availableDataLakeActions = (): Record<string, DataLakeVariableActio
   return actions
 }
 
-// Update data lake variables when joystick buttons are pressed
+// Update data lake variables when joystick buttons or axes are used
 setupPostPiniaConnection(() => {
   const controllerStore = useControllerStore()
   controllerStore.registerControllerUpdateCallback((joystickState, actionsMapping, activeActions) => {
@@ -50,6 +51,7 @@ setupPostPiniaConnection(() => {
 
     const useShift = activeActions.map((a) => a.id).includes(modifierKeyActions.shift.id)
 
+    // Handle button mappings
     joystickState.buttons
       .map((btnState, idx) => ({ id: idx, value: btnState }))
       .forEach((btn) => {
@@ -67,6 +69,22 @@ setupPostPiniaConnection(() => {
         if (shiftMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
           const shouldBeActive = btn.value && useShift
           setDataLakeVariableData(shiftMapping.action.id, shouldBeActive ? Number(btn.value) : 0)
+        }
+      })
+
+    // Handle axes mappings
+    joystickState.axes
+      .map((axisState, idx) => ({ id: idx, value: axisState }))
+      .forEach((axis) => {
+        if (axis.value === undefined) return
+
+        const axisMapping = actionsMapping.axesCorrespondencies[axis.id]
+
+        // Handle axis mapped to data lake variable
+        if (axisMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
+          // Scale the axis value from [-1, 1] to the configured [min, max] range
+          const scaledValue = scale(axis.value, -1, 1, axisMapping.min, axisMapping.max)
+          setDataLakeVariableData(axisMapping.action.id, scaledValue)
         }
       })
   })

@@ -9,7 +9,11 @@ import {
 import { modifierKeyActions, otherAvailableActions } from './protocols/other'
 
 export const allAvailableAxes = (): ProtocolAction[] => {
-  return [...Object.values(mavlinkManualControlAxes), otherAvailableActions.no_function]
+  return [
+    ...Object.values(mavlinkManualControlAxes),
+    ...Object.values(availableDataLakeActions()),
+    otherAvailableActions.no_function,
+  ]
 }
 
 export const allAvailableButtons = (): ProtocolAction[] => {
