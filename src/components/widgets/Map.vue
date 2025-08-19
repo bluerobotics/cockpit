@@ -72,7 +72,7 @@
             style="z-index: 1002; border-radius: 0px"
             icon="mdi-play"
             size="x-small"
-            @click.stop="executeMissionOnVehicle"
+            @click.stop="tryToStartMission"
           />
         </template>
       </v-tooltip>
@@ -121,6 +121,11 @@
   </p>
 
   <PoiManager ref="poiManagerMapWidgetRef" />
+  <MissionChecklist
+    :model-value="isMissionChecklistOpen"
+    @confirmed="executeMissionOnVehicle"
+    @update:model-value="isMissionChecklistOpen = $event"
+  />
 </template>
 
 <script setup lang="ts">
@@ -144,6 +149,7 @@ import {
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
+import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
@@ -183,6 +189,8 @@ const mapWaypoints = ref<Waypoint[]>([])
 const contextMenuRef = ref()
 const isDragging = ref(false)
 const isPinching = ref(false)
+const isMissionChecklistOpen = ref(false)
+
 let pinchTimeout: number | undefined
 
 const onTouchStart = (e: TouchEvent): void => {
@@ -857,6 +865,15 @@ const executeMissionOnVehicle = async (): Promise<void> => {
   } catch (error) {
     openSnackbar({ message: 'Failed to start mission.', variant: 'error' })
   }
+  return
+}
+
+const tryToStartMission = async (): Promise<void> => {
+  if (missionStore.showChecklistBeforeArm) {
+    isMissionChecklistOpen.value = true
+    return
+  }
+  executeMissionOnVehicle()
 }
 
 // Set dynamic styles for correct displacement of the bottom buttons when the widget is below the bottom bar

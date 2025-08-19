@@ -6,23 +6,37 @@
         class="flex flex-col justify-between items-start ml-[1vw] max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
-        <div class="flex justify-start items-center gap-x-4">
+        <div class="grid grid-cols-3 gap-x-4 mb-4">
+          <v-switch
+            v-model="missionStore.showChecklistBeforeArm"
+            label="Enable pre-arm checklist"
+            color="white"
+            hide-details
+            base-color="#FFFFFF33"
+            class="mt-2 -mb-2 ml-3"
+          />
           <v-switch
             v-model="missionStore.slideEventsEnabled"
             label="Enable slide to confirm"
             color="white"
+            hide-details
+            base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
           />
           <v-switch
             v-model="missionStore.alwaysSwitchToFlightMode"
             label="Auto switch to flight mode on mission upload"
             color="white"
+            hide-details
+            base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
           />
           <v-switch
             v-model="missionStore.showMissionCreationTips"
             label="Show mission creation checklist"
             color="white"
+            hide-details
+            base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
           />
         </div>
