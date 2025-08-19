@@ -1174,7 +1174,13 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * Clear mission that is on the vehicle
    */
   async clearMissions(): Promise<void> {
-    await this.uploadMission([])
+    const message: Message.MissionClearAll = {
+      type: MAVLinkType.MISSION_CLEAR_ALL,
+      target_system: this.currentSystemId,
+      target_component: 1,
+      mission_type: { type: MavMissionType.MAV_MISSION_TYPE_MISSION },
+    }
+    sendMavlinkMessage(message)
   }
 
   /**
