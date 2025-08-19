@@ -5,6 +5,7 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
+import { settingsManager } from '../settings-management'
 
 const javascriptActionIdPrefix = 'javascript-action'
 
@@ -63,14 +64,14 @@ export const updateCockpitActions = (): void => {
 }
 
 export const loadJavascriptActionConfigs = (): void => {
-  const savedActions = localStorage.getItem('cockpit-javascript-actions')
-  if (savedActions) {
-    registeredJavascriptActionConfigs = JSON.parse(savedActions)
+  const savedActions = settingsManager.getKeyValue('cockpit-javascript-actions')
+  if (savedActions !== undefined) {
+    registeredJavascriptActionConfigs = savedActions as Record<string, JavascriptActionConfig>
   }
 }
 
 export const saveJavascriptActionConfigs = (): void => {
-  localStorage.setItem('cockpit-javascript-actions', JSON.stringify(registeredJavascriptActionConfigs))
+  settingsManager.setKeyValue('cockpit-javascript-actions', registeredJavascriptActionConfigs)
 }
 
 export type JavascriptActionCallback = () => void

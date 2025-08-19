@@ -6,6 +6,7 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
+import { settingsManager } from '../settings-management'
 import { replaceDataLakeInputsInJsonString, replaceDataLakeInputsInString } from '../utils-data-lake'
 
 const httpRequestActionIdPrefix = 'http-request-action'
@@ -99,14 +100,14 @@ export const updateCockpitActions = (): void => {
 }
 
 export const loadHttpRequestActionConfigs = (): void => {
-  const savedActions = localStorage.getItem('cockpit-http-request-actions')
-  if (savedActions) {
-    registeredHttpRequestActionConfigs = JSON.parse(savedActions)
+  const savedActions = settingsManager.getKeyValue('cockpit-http-request-actions')
+  if (savedActions !== undefined) {
+    registeredHttpRequestActionConfigs = savedActions as Record<string, HttpRequestActionConfig>
   }
 }
 
 export const saveHttpRequestActionConfigs = (): void => {
-  localStorage.setItem('cockpit-http-request-actions', JSON.stringify(registeredHttpRequestActionConfigs))
+  settingsManager.setKeyValue('cockpit-http-request-actions', registeredHttpRequestActionConfigs)
 }
 
 export type HttpRequestActionCallback = () => void

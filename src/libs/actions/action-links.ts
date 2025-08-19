@@ -1,6 +1,8 @@
 import { listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 
+import { settingsManager } from '../settings-management'
+
 /**
  * Interface representing a link between an action and data-lake variables
  */
@@ -125,9 +127,9 @@ export const getAllActionLinks = (): Record<string, ActionLink> => {
 // Load saved links from localStorage on startup
 const loadSavedLinks = (): void => {
   try {
-    const savedLinks = localStorage.getItem('cockpit-action-links')
-    if (savedLinks) {
-      const links = JSON.parse(savedLinks) as Record<string, Omit<ActionLink, 'lastExecutionTime'>>
+    const savedLinks = settingsManager.getKeyValue('cockpit-action-links')
+    if (savedLinks !== undefined) {
+      const links = savedLinks as Record<string, Omit<ActionLink, 'lastExecutionTime'>>
       Object.entries(links).forEach(([actionId, link]) => {
         saveActionLink(actionId, link.actionType, link.variables, link.minInterval, true)
       })
@@ -153,7 +155,7 @@ const saveLinksToPersistentStorage = (): void => {
       }),
       {}
     )
-    localStorage.setItem('cockpit-action-links', JSON.stringify(linksToSave))
+    settingsManager.setKeyValue('cockpit-action-links', linksToSave)
   } catch (error) {
     console.error('Failed to save action links:', error)
   }
