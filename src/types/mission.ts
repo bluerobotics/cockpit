@@ -117,6 +117,10 @@ export type SurveyPolygon = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const instanceOfCockpitMission = (maybeMission: any): maybeMission is CockpitMission => {
+  if (!maybeMission || typeof maybeMission !== 'object') {
+    return false
+  }
+
   const requiredKeys = ['version', 'settings', 'waypoints']
   const requiredSettingsKeys = [
     'mapCenter',
