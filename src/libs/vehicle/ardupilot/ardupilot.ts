@@ -85,7 +85,6 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   _powerSupply = new PowerSupply()
   _lastParameter = new Parameter()
   _totalParametersCount: number | undefined = undefined
-  _currentCockpitMissionItemsOnPlanning: Waypoint[] = []
   _currentMavlinkMissionItemsOnVehicle: Message.MissionItemInt[] = []
   _statusText = new StatusText()
   _statusGPS = new StatusGPS()
@@ -1235,58 +1234,107 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
    * Upload mission items to vehicle
    * @param { Waypoint[] } items Mission items that will be sent
    * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
+   * @param { number } timeoutBetweenItems Timeout between mission items in milliseconds
    */
   async uploadMission(
     items: Waypoint[],
-    loadingCallback: MissionLoadingCallback = defaultLoadingCallback
+    loadingCallback: MissionLoadingCallback = defaultLoadingCallback,
+    timeoutBetweenItems = 3000
   ): Promise<void> {
     // Convert from Cockpit waypoints to MAVLink waypoints
-    this._currentCockpitMissionItemsOnPlanning = items
     const mavlinkWaypoints = convertCockpitWaypointsToMavlink(items, this.currentSystemId)
+
+    console.debug(`[Mission upload] Cockpit waypoints: ${JSON.stringify(items, null, 2)}`)
+    console.debug(`[Mission upload] MAVLink waypoints: ${JSON.stringify(mavlinkWaypoints, null, 2)}`)
 
     // Only deal with regular mission items for now
     const missionType = MavMissionType.MAV_MISSION_TYPE_MISSION
 
     // Say to the vehicle how many mission items we are going to send
     this.sendMissionCount(mavlinkWaypoints.length, missionType)
+    console.debug(`[Mission upload] Sending ${mavlinkWaypoints.length} mission items.`)
 
     // Send the mission items one by one, only sending the next when explicitly requested by the vehicle
     let missionAck: MavMissionResult | undefined = undefined
     const initTimeUpload = new Date().getTime()
-    let timeoutReachedUpload = false
+    let timeoutEpoch = new Date().getTime()
     let epochLastRequestAnswered = -1
-    let lastSeqRequested = -1
-    while (missionAck === undefined && !timeoutReachedUpload) {
-      await sleep(10)
-      timeoutReachedUpload = new Date().getTime() - initTimeUpload > 50000
+    while (missionAck === undefined) {
+      await sleep(1)
+
+      // Check if the upload timeout has been reached
+      const timeSinceLastTimeout = new Date().getTime() - timeoutEpoch
+      console.debug(`[Mission upload] --------------------------------`)
+      console.debug(`[Mission upload] Time since last timeout: ${timeSinceLastTimeout / 1000}s`)
+      if (timeSinceLastTimeout > timeoutBetweenItems) {
+        console.error('[Mission upload] Timeout reached while uploading mission.')
+        throw Error(`Timeout reached while uploading mission.`)
+      }
+
+      // Check if the vehicle has requested a mission item
       const lastMissionItemRequestMessage =
         this._messages.get(MAVLinkType.MISSION_REQUEST) || this._messages.get(MAVLinkType.MISSION_REQUEST_INT)
-      if (lastMissionItemRequestMessage === undefined) continue
+      if (lastMissionItemRequestMessage === undefined) {
+        console.debug(`[Mission upload] No mission item request message received.`)
+        continue
+      } else {
+        console.debug(`[Mission upload] Received a request for mission item #${lastMissionItemRequestMessage.seq}.`)
+      }
+
+      // Check if the request is from another upload
       const requestFromOtherUpload = lastMissionItemRequestMessage.epoch < initTimeUpload
+      if (requestFromOtherUpload) {
+        console.debug(`[Mission upload] Request was from another upload. Skipping...`)
+        continue
+      }
+
       const requestAlreadyAnswered = epochLastRequestAnswered === lastMissionItemRequestMessage.epoch
-      const lastItemRequested = lastSeqRequested === mavlinkWaypoints.length - 1
-      if ((requestFromOtherUpload || requestAlreadyAnswered) && !lastItemRequested) continue
+      if (requestAlreadyAnswered && new Date().getTime() - lastMissionItemRequestMessage.epoch < 250) {
+        console.debug(`[Mission upload] Request was already answered. Skipping...`)
+        continue
+      } else if (requestAlreadyAnswered) {
+        console.debug(`[Mission upload] Didn't receive the mission item in time. Will send it again.`)
+      } else {
+        timeoutEpoch = new Date().getTime()
+      }
+
+      // If none of the above conditions are met, send the mission item
+      console.debug(`[Mission upload] Sending mission item #${lastMissionItemRequestMessage.seq}`)
       sendMavlinkMessage(mavlinkWaypoints[lastMissionItemRequestMessage.seq])
+
+      const percentageCompleted = Math.round((100 * (lastMissionItemRequestMessage.seq + 1)) / mavlinkWaypoints.length)
+      console.debug(`[Mission upload] Progress: ${percentageCompleted}%.`)
+      loadingCallback(percentageCompleted)
+
+      // Update the epoch of the last request answered so we can check if the request was already answered
       epochLastRequestAnswered = lastMissionItemRequestMessage.epoch
-      lastSeqRequested = lastMissionItemRequestMessage.seq
 
       // Stop when the vehicle send a acknowledgement stating that all waypoints were successfully received or that the upload failed
       const lastMissionAckMessage = this._messages.get(MAVLinkType.MISSION_ACK)
       const ackReceived = lastMissionAckMessage !== undefined && lastMissionAckMessage.epoch > initTimeUpload
       if (ackReceived) {
-        missionAck = lastMissionAckMessage.mavtype.type
+        console.debug(`[Mission upload] Acknowledgment received: ${lastMissionAckMessage.mavtype.type}`)
+        const missionUploadSucceeded = lastMissionAckMessage.mavtype.type === MavMissionResult.MAV_MISSION_ACCEPTED
+        if (missionUploadSucceeded) {
+          console.debug(`[Mission upload] Mission upload succeeded.`)
+          missionAck = lastMissionAckMessage.mavtype.type
+        } else {
+          console.warn(`[Mission upload] Mission upload failed. Will continue trying until a timeout is reached.`)
+          continue
+        }
       }
-      loadingCallback((100 * lastMissionItemRequestMessage.seq) / mavlinkWaypoints.length)
     }
 
     if (missionAck === undefined) {
+      console.error('[Mission upload] Mission acknowledgment is undefined. Upload failed.')
       throw Error('Did not receive acknowledgment of mission upload.')
     } else if (missionAck !== MavMissionResult.MAV_MISSION_ACCEPTED) {
+      console.error('[Mission upload] Mission acknowledgment is not MAV_MISSION_ACCEPTED. Upload failed.')
       throw Error(`Failed uploading mission. Result received: ${missionAck}.`)
     }
 
     loadingCallback(100)
-    console.debug('Successfully sent all mission items.')
+    console.debug('[Mission upload] Successfully sent all mission items.')
   }
 
   /**
