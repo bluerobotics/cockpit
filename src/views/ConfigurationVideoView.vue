@@ -7,45 +7,55 @@
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Streams mapping</template>
           <template #info>
-            Here you can map your external video streams to internal names. This allows you to easily switch between
-            different video sources in Cockpit, without having to reconfigure every widget that uses the video stream.
-            The widgets will be connected to the internal names, and the external video stream will be mapped to the
-            internal name, so if you need to change the external one, you only need to do it here.
+            Here you can map your external video streams to internal names and manage ignored streams. Active streams
+            allow you to easily switch between different video sources in Cockpit. The widgets will be connected to the
+            internal names, and the external video stream will be mapped to the internal name. Ignored streams (shown
+            with "--" as internal name) can be restored by clicking the restore button.
           </template>
           <template #content>
-            <div class="flex justify-center flex-col w-[90%] ml-2 mb-8 mt-2">
+            <div class="flex justify-center flex-col w-[98%] ml-2 mt-2">
               <v-data-table
-                :items="videoStore.streamsCorrespondency"
+                :items="streamsToShow"
                 items-per-page="10"
-                class="elevation-1 bg-transparent rounded-lg"
+                class="elevation-1 bg-transparent rounded-lg mb-2"
                 theme="dark"
                 :style="interfaceStore.globalGlassMenuStyles"
               >
                 <template #headers>
                   <tr>
-                    <th class="text-center">
+                    <th class="text-center" style="width: 25%">
                       <p class="text-[16px] font-bold">Internal name</p>
                     </th>
-                    <th class="text-center">
+                    <th class="text-center" style="width: 60%">
                       <p class="text-[16px] font-bold">External name</p>
+                    </th>
+                    <th class="text-center" style="width: 15%">
+                      <p class="text-[16px] font-bold">Actions</p>
                     </th>
                   </tr>
                 </template>
                 <template #item="{ item }">
                   <tr>
-                    <td>
+                    <td style="width: 25%">
                       <div
                         :id="`internal-name-${item.externalId}`"
-                        class="flex items-center justify-center rounded-xl mx-3"
+                        class="flex items-center justify-center rounded-xl mx-1"
                         @mouseover="hoveredStreamId = item.externalId"
                         @mouseleave="hoveredStreamId = null"
                       >
+                        <div v-if="item.isIgnored" class="flex justify-center items-center w-[120px] h-[30px]">
+                          <p
+                            class="w-[120px] overflow-hidden text-ellipsis text-center whitespace-nowrap text-gray-400"
+                          >
+                            {{ item.name }}
+                          </p>
+                        </div>
                         <div
-                          v-if="editingStreamId !== item.externalId"
-                          class="flex justify-between items-center cursor-pointer w-[160px] h-[30px]"
+                          v-else-if="editingStreamId !== item.externalId"
+                          class="flex justify-between items-center cursor-pointer w-[120px] h-[30px]"
                           @dblclick="editStreamName(item)"
                         >
-                          <p class="w-[160px] overflow-hidden text-ellipsis text-center whitespace-nowrap">
+                          <p class="w-[120px] overflow-hidden text-ellipsis text-center whitespace-nowrap">
                             {{ item.name }}
                           </p>
                           <v-btn
@@ -69,23 +79,48 @@
                         />
                       </div>
                     </td>
-                    <td>
-                      <div class="flex items-center justify-center rounded-xl mx-3">
-                        <v-select
-                          v-model="item.externalId"
-                          :items="videoStore.namesAvailableStreams"
-                          hide-details
-                          class="mb-2"
-                          density="compact"
-                          variant="plain"
-                          theme="dark"
-                        />
+                    <td style="width: 60%">
+                      <div class="flex items-center justify-center rounded-xl mx-1">
+                        <div class="w-full text-center py-2">
+                          <p
+                            :class="item.isIgnored ? 'text-gray-400' : 'text-gray-300'"
+                            class="overflow-hidden text-ellipsis whitespace-nowrap"
+                          >
+                            {{ item.externalId }}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="width: 15%">
+                      <div class="flex items-center justify-center rounded-xl mx-1">
+                        <v-btn
+                          v-if="item.isIgnored"
+                          icon
+                          variant="text"
+                          size="small"
+                          class="text-gray-400"
+                          @click="restoreIgnoredStream(item.externalId)"
+                        >
+                          <v-icon>mdi-eye-refresh</v-icon>
+                        </v-btn>
+                        <v-btn v-else icon variant="text" size="small" @click="deleteStream(item)">
+                          <v-icon>mdi-eye-remove</v-icon>
+                        </v-btn>
                       </div>
                     </td>
                   </tr>
                 </template>
+                <template #no-data>
+                  <div class="text-gray-400 py-4 w-[200px] text-end">No available streams found.</div>
+                </template>
                 <template #bottom></template>
               </v-data-table>
+              <div class="flex items-center justify-start">
+                <v-checkbox v-model="showIgnoredStreams" label="Show ignored streams" hide-details class="text-sm" />
+                <span v-if="ignoredStreamExternalIds.length > 0" class="text-gray-400 text-sm ml-2">
+                  ({{ ignoredStreamExternalIds.length }} ignored)
+                </span>
+              </div>
             </div>
           </template>
         </ExpansiblePanel>
@@ -230,7 +265,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -250,6 +285,16 @@ const interfaceStore = useAppInterfaceStore()
 const editingStreamId = ref<string | null>(null)
 const editingStreamName = ref('')
 const hoveredStreamId = ref<string | null>(null)
+const showIgnoredStreams = ref(false)
+
+const streamsToShow = computed(() => {
+  return [
+    ...videoStore.streamsCorrespondency.map((item) => ({ ...item, isIgnored: false })),
+    ...(showIgnoredStreams.value
+      ? ignoredStreamExternalIds.value.map((id) => ({ name: '--', externalId: id, isIgnored: true }))
+      : []),
+  ].filter((item) => item.name !== '')
+})
 
 const editStreamName = (item: VideoStreamCorrespondency): void => {
   editingStreamId.value = item.externalId
@@ -263,6 +308,14 @@ const editStreamName = (item: VideoStreamCorrespondency): void => {
 const saveStreamName = (item: VideoStreamCorrespondency): void => {
   item.name = editingStreamName.value
   editingStreamId.value = null
+}
+
+const deleteStream = (item: VideoStreamCorrespondency): void => {
+  videoStore.deleteStreamCorrespondency(item.externalId)
+}
+
+const restoreIgnoredStream = (externalId: string): void => {
+  videoStore.restoreIgnoredStream(externalId)
 }
 
 onMounted(() => {
@@ -290,7 +343,8 @@ const jitterBufferTargetRules = [
   (value: number | '') => value === '' || value <= 4000 || 'Must be <= 4000',
 ]
 
-const { allowedIceIps, allowedIceProtocols, availableIceIps, jitterBufferTarget } = storeToRefs(videoStore)
+const { allowedIceIps, allowedIceProtocols, availableIceIps, jitterBufferTarget, ignoredStreamExternalIds } =
+  storeToRefs(videoStore)
 </script>
 <style scoped>
 .uri-input {
