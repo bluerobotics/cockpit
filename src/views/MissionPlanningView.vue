@@ -400,6 +400,7 @@ import 'leaflet/dist/leaflet.css'
 
 import { useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
+import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
@@ -1298,7 +1299,8 @@ const saveMissionToFile = async (): Promise<void> => {
   const blob = new Blob([JSON.stringify(cockpitMissionFile, null, 2)], {
     type: 'application/json',
   })
-  saveAs(blob, 'mission_plan.cmp')
+  const date = format(new Date(), 'LLL_dd_yyyy_HH_mm_ss')
+  saveAs(blob, `cockpit_mission_plan_${date}.cmp`)
 }
 
 const loadMissionFromFile = async (e: Event): Promise<void> => {
