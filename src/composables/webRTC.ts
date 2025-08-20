@@ -261,6 +261,15 @@ export class WebRTCManager {
   }
 
   /**
+   * Terminates the RTCPeerConnection but preserves the signaller for reconnects
+   */
+  public endAllSessions(): void {
+    if (this.session) {
+      this.session.end()
+    }
+  }
+
+  /**
    *
    * @param {Stream} stream
    * @param {string} consumerId
