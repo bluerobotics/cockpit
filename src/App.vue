@@ -143,6 +143,7 @@
   >
     <SplashScreen v-if="interfaceStore.showSplashScreen" />
   </Transition>
+  <JoystickWizard v-if="interfaceStore.isJoystickWizardVisible" />
 </template>
 
 <script setup lang="ts">
@@ -151,6 +152,7 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 
 
 import ActionDiscoveryModal from '@/components/ActionDiscoveryModal.vue'
 import GlassModal from '@/components/GlassModal.vue'
+import JoystickWizard from '@/components/joysticks/JoystickWizard.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'

@@ -438,6 +438,18 @@ export const useControllerStore = defineStore('controller', () => {
     reader.readAsText(e.target.files[0])
   }
 
+  const mergeFunctionsMapping = (mapping: JoystickProtocolActionsMapping): void => {
+    const existingIndex = protocolMappings.value.findIndex((m) => m.hash === mapping.hash || m.name === mapping.name)
+
+    if (existingIndex !== -1) {
+      protocolMappings.value[existingIndex] = mapping
+      protocolMappingIndex.value = existingIndex
+    } else {
+      protocolMappings.value.push(mapping)
+      protocolMappingIndex.value = protocolMappings.value.length - 1
+    }
+  }
+
   // Add hash on mappings that don't have it - TODO: Remove for 1.0.0 release
   Object.values(protocolMappings.value).forEach((mapping) => {
     if (mapping.hash !== undefined) return
@@ -563,5 +575,6 @@ export const useControllerStore = defineStore('controller', () => {
     currentMainJoystick,
     disabledJoysticks,
     checkForOtherManualControlSources,
+    mergeFunctionsMapping,
   }
 })
