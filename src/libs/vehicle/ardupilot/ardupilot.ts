@@ -1021,59 +1021,114 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
   /**
    * Fetch mission items from the vehicle
    * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
+   * @param { number } timeoutBetweenItems Timeout between mission items in milliseconds
    * @returns { Promise<Waypoint[]> } Mission items that were on the vehicle
    */
-  async fetchMission(loadingCallback: MissionLoadingCallback = defaultLoadingCallback): Promise<Waypoint[]> {
+  async fetchMission(
+    loadingCallback: MissionLoadingCallback = defaultLoadingCallback,
+    timeoutBetweenItems = 10000
+  ): Promise<Waypoint[]> {
     // Only deal with regular mission items for now
     const missionType = MavMissionType.MAV_MISSION_TYPE_MISSION
 
     // Get number of mission items to be downloaded
     const initTimeCount = new Date().getTime()
-    let timeoutReachedCount = false
+    let timeoutEpoch = new Date().getTime()
+
+    // First of all, request the number of mission items to be downloaded
+    console.debug('[Mission download] Requesting number of mission items to be downloaded...')
     let itemsCount: number | undefined = undefined
     this.requestMissionItemsList(missionType)
-    while (itemsCount === undefined && !timeoutReachedCount) {
+    while (itemsCount === undefined) {
+      await sleep(250)
+      const timeSinceLastTimeout = new Date().getTime() - timeoutEpoch
+      if (timeSinceLastTimeout > timeoutBetweenItems) {
+        const msg = `[Mission download] Timeout reached while fetching mission count.`
+        console.error(msg)
+        throw Error(msg)
+      }
+
       const lastMissionCountMessage = this._messages.get(MAVLinkType.MISSION_COUNT)
       if (lastMissionCountMessage !== undefined && lastMissionCountMessage.epoch > initTimeCount) {
         itemsCount = lastMissionCountMessage.count
+        console.debug(`[Mission download] Mission count received! ${itemsCount} items to be downloaded.`)
+
+        // Reset the timeout epoch when the items count is received
+        timeoutEpoch = new Date().getTime()
+
         break
       }
-      await sleep(100)
-      timeoutReachedCount = new Date().getTime() - initTimeCount > 10000
+
+      console.debug(`[Mission download] Mission count not received yet. Waiting for it...`)
     }
+
+    // If the items count is not received, throw an error
     if (itemsCount === undefined) {
-      throw Error('Did not receive number of mission items from vehicle.')
+      const msg = '[Mission download] Did not receive number of mission items from vehicle.'
+      console.error(msg)
+      throw Error(msg)
+    }
+
+    if (itemsCount === 0) {
+      console.debug('[Mission download] No mission items to download.')
     }
 
     // Download all mission items from the vehicle
+    console.debug(`[Mission download] Downloading ${itemsCount} mission items from vehicle...`)
     const missionItems: Message.MissionItemInt[] = []
-    let allItemsDownloaded = false
+    let allItemsDownloaded = itemsCount === 0
     let itemToDownload = 0
-    const initTimeDown = new Date().getTime()
-    let timeoutReachedDownload = false
-    while (!allItemsDownloaded && !timeoutReachedDownload) {
-      await sleep(10)
-      timeoutReachedDownload = new Date().getTime() - initTimeDown > 10000
-      loadingCallback((100 * itemToDownload) / itemsCount)
+    let lastItemRequested = -1
+    let epochLastItemRequested = -1
+    const initTimeDownload = new Date().getTime()
+    timeoutEpoch = new Date().getTime()
+    while (!allItemsDownloaded) {
+      await sleep(1)
+      const timeSinceLastTimeout = new Date().getTime() - timeoutEpoch
+      if (timeSinceLastTimeout > timeoutBetweenItems) {
+        const msg = `[Mission download] Timeout reached while downloading mission items.`
+        console.error(msg)
+        throw Error(msg)
+      }
+
+      loadingCallback((100 * (itemToDownload + 1)) / itemsCount)
+
+      // If the last item requested is the same as the current one, and the last request was made less than 250ms ago, wait for the item to be received
+      if (lastItemRequested === itemToDownload && new Date().getTime() - epochLastItemRequested < 250) {
+        continue
+      } else if (lastItemRequested === itemToDownload) {
+        console.debug(`[Mission download] Did not receive #${itemToDownload} in time. Requesting again...`)
+      }
 
       // Request the next mission item (starting at 0)
+      console.debug(`[Mission download] Requesting mission item #${itemToDownload}...`)
       this.requestMissionItem(itemToDownload, missionType)
+      lastItemRequested = itemToDownload
+      epochLastItemRequested = new Date().getTime()
 
       // Check if the last mission item received belongs to this fetch or is from an old fetch
       const lastMissionItemMessage = this._messages.get(MAVLinkType.MISSION_ITEM_INT)
-      if (lastMissionItemMessage === undefined || lastMissionItemMessage.epoch < initTimeDown) continue
+      if (lastMissionItemMessage === undefined || lastMissionItemMessage.epoch < initTimeDownload) continue
       if (lastMissionItemMessage.seq === itemToDownload) {
+        console.debug(`[Mission download] Mission item #${itemToDownload} received!`)
         const { ['epoch']: _, ...lastMissionItem } = lastMissionItemMessage // eslint-disable-line @typescript-eslint/no-unused-vars
         missionItems.push(lastMissionItem as Message.MissionItemInt)
+
+        // Reset the timeout epoch when the last mission item is received
+        timeoutEpoch = new Date().getTime()
+
         // Only request the next mission item if the previous one was already received
         itemToDownload += 1
         if (itemToDownload === itemsCount) {
           allItemsDownloaded = true
-          console.debug('Successfully dowloaded all mission items.')
+          console.debug('[Mission download] Successfully dowloaded all mission items.')
           loadingCallback(100)
+          break
         }
       }
     }
+
+    console.debug('[Mission download] Sending mission acknowledgment to vehicle...')
     this.sendMissionAck(allItemsDownloaded, missionType)
     this._currentMavlinkMissionItemsOnVehicle = missionItems
     return convertMavlinkWaypointsToCockpit(missionItems)
