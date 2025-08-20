@@ -128,6 +128,15 @@ export const useVideoStore = defineStore('video', () => {
       availableIceIps.value = [...availableIceIps.value, ...newIps]
 
       const updatedStream = mainWebRTCManager.availableStreams.value.find((s) => s.name === streamName)
+
+      // Checks if the stream has changed, and if so, it will close the old connections
+      if (isEqual(updatedStream, activeStreams.value[streamName]!.stream)) return
+      const oldStreamData = activeStreams.value[streamName]
+      if (oldStreamData && oldStreamData.webRtcManager) {
+        console.log(`[FIX] Stream '${streamName}' has changed. Closing the old connection.`)
+        oldStreamData.webRtcManager.endAllSessions()
+      }
+
       if (isEqual(updatedStream, activeStreams.value[streamName]!.stream)) return
 
       // Whenever the stream is to be updated we first reset it's variables (activateStream method), so
