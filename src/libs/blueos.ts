@@ -4,7 +4,7 @@ import { getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { type ActionConfig } from '@/libs/joystick/protocols/cockpit-actions'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
-import { type RawCpuLoadInfo, type RawCpuTempInfo } from '@/types/blueos'
+import { type RawCpuLoadInfo, type RawCpuTempInfo, type RawNetworkInfo } from '@/types/blueos'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 
 /**
@@ -296,6 +296,18 @@ export const getCpusInfo = async (vehicleAddress: string): Promise<RawCpuLoadInf
     return cpuLoadRawInfo
   } catch (error) {
     throw new Error(`Could not get load of the BlueOS CPU. ${error}`)
+  }
+}
+
+export const getNetworkInfo = async (vehicleAddress: string): Promise<RawNetworkInfo[]> => {
+  try {
+    const url = `${protocol}//${vehicleAddress}/system-information/system/network`
+    const networkRawInfo: RawNetworkInfo[] = await ky.get(url, { timeout: defaultTimeout }).json()
+    return networkRawInfo.filter((network) => {
+      return (network.name.includes('wlan') || network.name.includes('eth')) && !network.name.startsWith('v')
+    })
+  } catch (error) {
+    throw new Error(`Could not get network information from BlueOS. ${error}`)
   }
 }
 

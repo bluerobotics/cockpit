@@ -14,6 +14,7 @@ import {
   getCpusInfo,
   getCpuTempCelsius,
   getKeyDataFromCockpitVehicleStorage,
+  getNetworkInfo,
   getStatus,
   getVehicleName,
   setKeyDataOnCockpitVehicleStorage,
@@ -559,6 +560,21 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     const cpuUsageVariableId = (cpuName: string): string => `blueos/${cpuName}/usage`
     const cpuFrequencyVariableId = (cpuName: string): string => `blueos/${cpuName}/frequency`
 
+    // Network variable ID functions
+    const networkTotalReceivedMBVariableId = (interfaceName: string): string =>
+      `blueos/network/${interfaceName}/totalReceivedMB`
+    const networkTotalTransmittedMBVariableId = (interfaceName: string): string =>
+      `blueos/network/${interfaceName}/totalTransmittedMB`
+    const networkUploadSpeedMbpsVariableId = (interfaceName: string): string =>
+      `blueos/network/${interfaceName}/uploadSpeedMbps`
+    const networkDownloadSpeedMbpsVariableId = (interfaceName: string): string =>
+      `blueos/network/${interfaceName}/downloadSpeedMbps`
+
+    // Store previous network readings for speed calculation
+
+    // eslint-disable-next-line jsdoc/require-jsdoc, prettier/prettier
+    const previousNetworkReadings: Map<string, { bytesReceived: number; bytesTransmitted: number; timestamp: number }> = new Map()
+
     const cpusInfos = await getCpusInfo(globalAddress.value)
     cpusInfos.forEach((cpu) => {
       Object.assign(blueOsVariables, {
@@ -572,6 +588,33 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         [`${cpu.name}_frequency`]: {
           id: cpuFrequencyVariableId(cpu.name),
           name: `BlueOS CPU '${cpu.name}' frequency`,
+          type: 'number',
+        },
+      })
+    })
+
+    // Register network variables for each interface
+    const networkInfos = await getNetworkInfo(globalAddress.value)
+    networkInfos.forEach((networkInterface) => {
+      Object.assign(blueOsVariables, {
+        [`${networkInterface.name}_totalReceivedMB`]: {
+          id: networkTotalReceivedMBVariableId(networkInterface.name),
+          name: `BlueOS network '${networkInterface.name}' total received (MB)`,
+          type: 'number',
+        },
+        [`${networkInterface.name}_totalTransmittedMB`]: {
+          id: networkTotalTransmittedMBVariableId(networkInterface.name),
+          name: `BlueOS network '${networkInterface.name}' total transmitted (MB)`,
+          type: 'number',
+        },
+        [`${networkInterface.name}_uploadSpeedMbps`]: {
+          id: networkUploadSpeedMbpsVariableId(networkInterface.name),
+          name: `BlueOS network '${networkInterface.name}' upload speed (Mbps)`,
+          type: 'number',
+        },
+        [`${networkInterface.name}_downloadSpeedMbps`]: {
+          id: networkDownloadSpeedMbpsVariableId(networkInterface.name),
+          name: `BlueOS network '${networkInterface.name}' download speed (Mbps)`,
           type: 'number',
         },
       })
@@ -616,6 +659,58 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         setDataLakeVariableData(blueOsVariables.cpuFrequencyAverage.id, averageFrequency)
       } catch (error) {
         console.error(`Failed to update CPU load in data lake: ${error}`)
+      }
+
+      // Update network information in the data lake
+      try {
+        const updatedNetworkInfos = await getNetworkInfo(globalAddress.value)
+        const currentTimestamp = Date.now()
+
+        updatedNetworkInfos.forEach((networkInterface) => {
+          // Convert total bytes to megabytes (MB)
+          const totalReceivedMB = networkInterface.total_received_B / (1024 * 1024)
+          const totalTransmittedMB = networkInterface.total_transmitted_B / (1024 * 1024)
+
+          // Update total values in MB
+          setDataLakeVariableData(networkTotalReceivedMBVariableId(networkInterface.name), totalReceivedMB)
+          setDataLakeVariableData(networkTotalTransmittedMBVariableId(networkInterface.name), totalTransmittedMB)
+
+          // Calculate and update speeds
+          const previousReading = previousNetworkReadings.get(networkInterface.name)
+          if (previousReading) {
+            const timeDeltaSeconds = (currentTimestamp - previousReading.timestamp) / 1000
+            if (timeDeltaSeconds > 0) {
+              // Calculate speed in bytes per second
+              const downloadSpeedBytesPerSec =
+                (networkInterface.total_received_B - previousReading.bytesReceived) / timeDeltaSeconds
+              const uploadSpeedBytesPerSec =
+                (networkInterface.total_transmitted_B - previousReading.bytesTransmitted) / timeDeltaSeconds
+
+              // Convert to megabits per second (Mbps): bytes/s * 8 bits/byte / (1024 * 1024) = Mbps
+              const downloadSpeedMbps = (downloadSpeedBytesPerSec * 8) / (1024 * 1024)
+              const uploadSpeedMbps = (uploadSpeedBytesPerSec * 8) / (1024 * 1024)
+
+              // Set speeds (ensure they're not negative due to counter resets)
+              setDataLakeVariableData(
+                networkDownloadSpeedMbpsVariableId(networkInterface.name),
+                Math.max(0, downloadSpeedMbps)
+              )
+              setDataLakeVariableData(
+                networkUploadSpeedMbpsVariableId(networkInterface.name),
+                Math.max(0, uploadSpeedMbps)
+              )
+            }
+          }
+
+          // Store current reading for next calculation
+          previousNetworkReadings.set(networkInterface.name, {
+            bytesReceived: networkInterface.total_received_B,
+            bytesTransmitted: networkInterface.total_transmitted_B,
+            timestamp: currentTimestamp,
+          })
+        })
+      } catch (error) {
+        console.error(`Failed to update network information in data lake: ${error}`)
       }
     }, 1000)
 
