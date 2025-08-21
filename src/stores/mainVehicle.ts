@@ -11,6 +11,7 @@ import { getAllDataLakeVariablesInfo, getDataLakeVariableInfo, setDataLakeVariab
 import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { altitude_setpoint } from '@/libs/altitude-slider'
 import {
+  getCpusInfo,
   getCpuTempCelsius,
   getKeyDataFromCockpitVehicleStorage,
   getStatus,
@@ -544,11 +545,38 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     updateVehicleId()
 
+    // Register BlueOS variables in the data lake
     const blueOsVariables = {
       cpuTemp: { id: 'blueos/cpu/tempC', name: 'CPU Temperature', type: 'number' },
+      cpuUsageAverage: { id: 'blueos/cpu/usageAverage', name: 'BlueOS CPU Usage (average)', type: 'number' },
+      cpuFrequencyAverage: {
+        id: 'blueos/cpu/frequencyAverage',
+        name: 'BlueOS CPU Frequency (average)',
+        type: 'number',
+      },
     }
 
-    // Register BlueOS variables in the data lake
+    const cpuUsageVariableId = (cpuName: string): string => `blueos/${cpuName}/usage`
+    const cpuFrequencyVariableId = (cpuName: string): string => `blueos/${cpuName}/frequency`
+
+    const cpusInfos = await getCpusInfo(globalAddress.value)
+    cpusInfos.forEach((cpu) => {
+      Object.assign(blueOsVariables, {
+        [`${cpu.name}_usage`]: {
+          id: cpuUsageVariableId(cpu.name),
+          name: `BlueOS CPU '${cpu.name}' usage`,
+          type: 'number',
+        },
+      })
+      Object.assign(blueOsVariables, {
+        [`${cpu.name}_frequency`]: {
+          id: cpuFrequencyVariableId(cpu.name),
+          name: `BlueOS CPU '${cpu.name}' frequency`,
+          type: 'number',
+        },
+      })
+    })
+
     Object.values(blueOsVariables).forEach((variable) => {
       if (!Object.values(getAllDataLakeVariablesInfo()).find((v) => v.id === variable.id)) {
         // @ts-ignore: The type is right, only being incorrectly inferred by TS
@@ -573,6 +601,21 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         setDataLakeVariableData(blueOsVariables.cpuTemp.id, temp)
       } catch (error) {
         console.error(`Failed to update CPU temperature in data lake: ${error}`)
+      }
+
+      // Update information about the CPU cores in the data lake
+      try {
+        const updatedCpusInfos = await getCpusInfo(globalAddress.value)
+        updatedCpusInfos.forEach((cpu) => {
+          setDataLakeVariableData(cpuUsageVariableId(cpu.name), cpu.usage)
+          setDataLakeVariableData(cpuFrequencyVariableId(cpu.name), cpu.frequency)
+        })
+        const averageUsage = updatedCpusInfos.reduce((acc, cpu) => acc + cpu.usage, 0) / updatedCpusInfos.length
+        const averageFrequency = updatedCpusInfos.reduce((acc, cpu) => acc + cpu.frequency, 0) / updatedCpusInfos.length
+        setDataLakeVariableData(blueOsVariables.cpuUsageAverage.id, averageUsage)
+        setDataLakeVariableData(blueOsVariables.cpuFrequencyAverage.id, averageFrequency)
+      } catch (error) {
+        console.error(`Failed to update CPU load in data lake: ${error}`)
       }
     }, 1000)
 

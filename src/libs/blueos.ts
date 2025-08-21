@@ -4,6 +4,7 @@ import { getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { type ActionConfig } from '@/libs/joystick/protocols/cockpit-actions'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import { type RawCpuLoadInfo, type RawCpuTempInfo } from '@/types/blueos'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 
 /**
@@ -278,9 +279,6 @@ export const getVehicleName = async (vehicleAddress: string): Promise<Response> 
   }
 }
 
-// eslint-disable-next-line jsdoc/require-jsdoc
-type RawCpuTempInfo = { name: string; temperature: number; maximum_temperature: number; critical_temperature: number }
-
 export const getCpuTempCelsius = async (vehicleAddress: string): Promise<number> => {
   try {
     const url = `${protocol}//${vehicleAddress}/system-information/system/temperature`
@@ -288,6 +286,16 @@ export const getCpuTempCelsius = async (vehicleAddress: string): Promise<number>
     return cpuTempRawInfo[0].temperature
   } catch (error) {
     throw new Error(`Could not get temperature of the BlueOS CPU. ${error}`)
+  }
+}
+
+export const getCpusInfo = async (vehicleAddress: string): Promise<RawCpuLoadInfo[]> => {
+  try {
+    const url = `${protocol}//${vehicleAddress}/system-information/system/cpu`
+    const cpuLoadRawInfo: RawCpuLoadInfo[] = await ky.get(url, { timeout: defaultTimeout }).json()
+    return cpuLoadRawInfo
+  } catch (error) {
+    throw new Error(`Could not get load of the BlueOS CPU. ${error}`)
   }
 }
 
