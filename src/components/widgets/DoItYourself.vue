@@ -62,14 +62,8 @@
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>
-          
-          <v-checkbox
-            v-model="autoSave"
-            label="Auto Save"
-            density="compact"
-            class="-mb-2"
-            hide-details
-          />
+
+          <v-checkbox v-model="autoSave" label="Auto Save" density="compact" class="-mb-2" hide-details />
           <v-checkbox
             v-model="widget.options.inheritCockpitStyles"
             label="Inherit Cockpit interface styles"
@@ -109,9 +103,9 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import type { Widget } from '@/types/widgets'
 
 const autoSave = useBlueOsStorage('diy-widget-auto-save', false)
@@ -233,8 +227,8 @@ const addKeyboardShortcuts = (editor: monaco.editor.IStandaloneCodeEditor): void
 
 const addChangeListener = (editor: monaco.editor.IStandaloneCodeEditor): void => {
   editor.onDidChangeModelContent(() => {
-    onAutoSave();
-  });
+    onAutoSave()
+  })
 }
 
 const initEditor = async (): Promise<void> => {
@@ -247,7 +241,7 @@ const initEditor = async (): Promise<void> => {
   cssEditor = createEditor(cssEditorContainer.value, 'css', widget.value.options.css || defaultOptions.css)
 
   // Add keyboard shortcuts and change listener to all editors
-  if (htmlEditor) { 
+  if (htmlEditor) {
     addKeyboardShortcuts(htmlEditor)
     addChangeListener(htmlEditor)
   }
@@ -255,15 +249,14 @@ const initEditor = async (): Promise<void> => {
     addKeyboardShortcuts(jsEditor)
     addChangeListener(jsEditor)
   }
-  if (cssEditor) { 
+  if (cssEditor) {
     addKeyboardShortcuts(cssEditor)
     addChangeListener(cssEditor)
   }
-
 }
 
-const onAutoSave = () => {
-  if(!autoSave.value) return
+const onAutoSave = (): void => {
+  if (!autoSave.value) return
   applyChanges()
 }
 
@@ -322,8 +315,7 @@ const finishEditor = (): void => {
 
 const closeDialog = (): void => {
   widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen = false
-  if(autoSave.value)
-    applyChanges()
+  if (autoSave.value) applyChanges()
   finishEditor()
 }
 
