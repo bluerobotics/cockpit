@@ -63,6 +63,16 @@ interface Service {
 
 export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
 
+/**
+ * Error returned by BlueOS when a bag of holdings is not found
+ */
+export interface BagOfHoldingsError extends Error {
+  /**
+   * Details about the error
+   */
+  detail: string
+}
+
 const defaultTimeout = 10000
 const quickStatusTimeout = 3000
 const beaconTimeout = 5000
@@ -78,7 +88,7 @@ export const getBagOfHoldingFromVehicle = async (
     const options = { timeout: defaultTimeout, retry: 0 }
     return await ky.get(`${protocol}//${vehicleAddress}/bag/v1.0/get/${bagPath}`, options).json()
   } catch (error) {
-    const errorBody = await (error as HTTPError).response?.json()
+    const errorBody = (await (error as HTTPError).response?.json()) as BagOfHoldingsError
     if (errorBody?.detail === 'Invalid path') {
       const noPathError = new Error(`No data available in BlueOS storage for path '${bagPath}'.`)
       noPathError.name = NoPathInBlueOsErrorName
