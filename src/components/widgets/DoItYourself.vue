@@ -111,9 +111,10 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import type { Widget } from '@/types/widgets'
 
-const autoSave = ref(false)
+const autoSave = useBlueOsStorage('diy-widget-auto-save', false)
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
