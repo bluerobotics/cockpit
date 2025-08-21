@@ -8,7 +8,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
-import { snapshotStorage } from '@/libs/videoStorage'
+import { snapshotStorage, snapshotThumbStorage } from '@/libs/videoStorage'
 import { StorageDB } from '@/types/general'
 import { EIXFType, SnapshotExif, SnapshotFileDescriptor } from '@/types/snapshot'
 import { DownloadProgressCallback, FileDescriptor } from '@/types/video'
@@ -145,6 +145,37 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     return `(${timestamp})_Cockpit_${streamName}.jpeg`
   }
 
+  const createThumbnail = (blob: Blob, width: number, height: number): Promise<Blob> => {
+    const img = document.createElement('img')
+    img.src = URL.createObjectURL(blob)
+    img.width = width
+    img.height = height
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Could not get 2D context')
+
+    return new Promise<Blob>((resolve, reject) => {
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (thumbnailBlob) => {
+            if (thumbnailBlob) {
+              resolve(thumbnailBlob)
+            } else {
+              reject(new Error('Canvas toBlob failed'))
+            }
+          },
+          'image/jpeg',
+          0.9
+        )
+      }
+      img.onerror = () => reject(new Error('Image load failed'))
+    })
+  }
+
   const takeSnapshot = async (streamNames: string[], captureWorkspace?: boolean): Promise<void> => {
     const { yaw, pitch, roll } = vehicleStore.attitude
     const { latitude, longitude } = vehicleStore.coordinates
@@ -176,10 +207,15 @@ export const useSnapshotStore = defineStore('snapshot', () => {
       for (const streamName of streamNames) {
         try {
           let stBlob = await captureStreamFrame(streamName)
+          const thumbBlob = await createThumbnail(stBlob, 200, 113)
           const { width, height } = videoStore.getMediaStream(streamName)?.getVideoTracks()[0].getSettings() || {}
           const stExif = buildExif({ latitude, longitude, yaw, pitch, roll, width, height })
           stBlob = await maybeEmbedExif(stBlob, stExif)
-          await snapshotStorage.setItem(snapshotFilename(streamName || 'workspace'), stBlob)
+          const filename = snapshotFilename(streamName || 'workspace')
+          const thumbFilename = snapshotFilename(streamName || 'workspace') + '-thumb'
+
+          await snapshotStorage.setItem(filename, stBlob)
+          await snapshotThumbStorage.setItem(thumbFilename, thumbBlob)
         } catch (err) {
           throw err as Error
         }
@@ -246,7 +282,15 @@ export const useSnapshotStore = defineStore('snapshot', () => {
 
   const deleteSnapshotFiles = async (fileNames: string[]): Promise<void> => {
     await Promise.all(fileNames.map((fileName) => snapshotStorage.removeItem(fileName)))
+    await Promise.all(fileNames.map((fileName) => snapshotThumbStorage.removeItem(fileName + '-thumb')))
   }
 
-  return { snapshotStorage, downloadFilesFromSnapshotDB, snapshotFilename, takeSnapshot, deleteSnapshotFiles }
+  return {
+    snapshotStorage,
+    snapshotThumbStorage,
+    downloadFilesFromSnapshotDB,
+    snapshotFilename,
+    takeSnapshot,
+    deleteSnapshotFiles,
+  }
 })

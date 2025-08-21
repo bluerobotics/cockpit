@@ -102,8 +102,12 @@
                       selectedPicSet.has(picture.filename) ? 'border-opacity-40' : 'border-opacity-10',
                     ]"
                   >
-                    <img v-if="picture.blob" :src="createObjectURL(picture.blob)" class="w-full h-full object-cover" />
-                    alt="Picture thumbnail" />
+                    <img
+                      v-if="picture.thumbnail"
+                      :src="(picture as any).thumbUrl"
+                      class="w-full h-full object-cover"
+                      alt="Picture thumbnail"
+                    />
                     <div reactive class="fullscreen-button" @click="openPicInFullScreen(picture)">
                       <v-icon size="40" class="text-white"> mdi-fullscreen </v-icon>
                     </div>
@@ -727,6 +731,7 @@ const loadingVideoBlob = ref(false)
 const videoLoadError = ref(false)
 const videoThumbnailURLs = reactive<Record<string, string | null>>({})
 const availablePictures = ref<SnapshotLibraryFile[]>([])
+const thumbUrlCache = new Map<string, string>()
 const showFullScreenPictureModal = ref(false)
 const fullScreenPicture = ref<SnapshotLibraryFile | null>(null)
 const selectedPicSet = shallowRef<Set<string>>(new Set())
@@ -804,8 +809,8 @@ const openVideoFolder = (): void => {
   }
 }
 
-const openPicInFullScreen = (picture: SnapshotLibraryFile): void => {
-  fullScreenPicture.value = picture
+const openPicInFullScreen = async (picture: SnapshotLibraryFile): Promise<void> => {
+  await loadAndSetFullScreenPicture(picture)
   showFullScreenPictureModal.value = true
 }
 
@@ -1242,41 +1247,74 @@ const fetchVideosAndLogData = async (): Promise<void> => {
 
 const fetchPictures = async (): Promise<void> => {
   loadingData.value = true
-  const keys = await snapshotStore.snapshotStorage.keys()
-  const pics: SnapshotLibraryFile[] = []
+  // Fetches only thumb keys for now
+  const thumbKeys = (await snapshotStore.snapshotThumbStorage.keys()).filter((k) => /-thumb$/i.test(k))
+  const entries: SnapshotLibraryFile[] = []
+  const chunkSize = 16
 
-  for (const key of keys) {
-    const blob = (await snapshotStore.snapshotStorage.getItem(key)) as Blob | null
-    const entry: SnapshotLibraryFile = {
-      filename: key,
-      type: 'stream',
-      streamName: '',
-      date: new Date(),
-      url: '',
-      blob: new Blob(),
-    }
-    if (blob) {
-      entry.blob = markRaw(blob)
-      entry.url = URL.createObjectURL(blob)
-    }
-    pics.push(entry)
+  for (let i = 0; i < thumbKeys.length; i += chunkSize) {
+    const batch = thumbKeys.slice(i, i + chunkSize)
+    const batchEntries = await Promise.all(
+      batch.map(async (thumbKey) => {
+        const filename = thumbKey.replace(/-thumb$/i, '')
+        const thumbBlob = (await snapshotStore.snapshotThumbStorage.getItem(thumbKey)) as Blob | null
+        const entry: SnapshotLibraryFile = {
+          filename,
+          streamName: '',
+          date: new Date(),
+          url: '',
+          blob: new Blob(),
+          thumbnail: new Blob(),
+        }
+        if (thumbBlob) {
+          entry.thumbnail = markRaw(thumbBlob)
+          let tUrl = thumbUrlCache.get(filename)
+          if (!tUrl) {
+            tUrl = URL.createObjectURL(thumbBlob)
+            thumbUrlCache.set(filename, tUrl)
+          }
+          ;(entry as any).thumbUrl = tUrl
+        }
+        return entry
+      })
+    )
+    entries.push(...batchEntries)
+    await nextTick()
   }
-  availablePictures.value = pics
+  // Sorts entries by date (on the filename) in descending order
+  availablePictures.value = entries.sort((a, b) => b.filename.localeCompare(a.filename))
   loadingData.value = false
 }
 
-const nextPicture = (): void => {
+const loadAndSetFullScreenPicture = async (picture: SnapshotLibraryFile): Promise<void> => {
+  try {
+    if (picture.blob.size === 0) {
+      const fullBlob = (await snapshotStore.snapshotStorage.getItem(picture.filename)) as Blob | null
+      if (fullBlob) {
+        picture.blob = markRaw(fullBlob)
+      }
+    }
+    fullScreenPicture.value = picture
+  } catch (e) {
+    console.error('Failed to load full-size snapshot', e)
+    fullScreenPicture.value = picture
+  }
+}
+
+const nextPicture = async (): Promise<void> => {
   if (!fullScreenPicture.value) return
   const currentIndex = availablePictures.value.findIndex((pic) => pic.filename === fullScreenPicture.value!.filename)
   const nextIndex = (currentIndex + 1) % availablePictures.value.length
-  fullScreenPicture.value = availablePictures.value[nextIndex]
+  const nextPic = availablePictures.value[nextIndex]
+  await loadAndSetFullScreenPicture(nextPic)
 }
 
-const previousPicture = (): void => {
+const previousPicture = async (): Promise<void> => {
   if (!fullScreenPicture.value) return
   const currentIndex = availablePictures.value.findIndex((pic) => pic.filename === fullScreenPicture.value!.filename)
   const previousIndex = (currentIndex - 1 + availablePictures.value.length) % availablePictures.value.length
-  fullScreenPicture.value = availablePictures.value[previousIndex]
+  const prevPic = availablePictures.value[previousIndex]
+  await loadAndSetFullScreenPicture(prevPic)
 }
 
 const selectAllPictures = (): void => {
@@ -1500,6 +1538,8 @@ onBeforeUnmount(() => {
   interfaceStore.videoLibraryVisibility = false
   availablePictures.value.forEach((pic) => pic.url && URL.revokeObjectURL(pic.url))
   unloadVideoBlob()
+  for (const url of thumbUrlCache.values()) URL.revokeObjectURL(url)
+  thumbUrlCache.clear()
 })
 </script>
 
