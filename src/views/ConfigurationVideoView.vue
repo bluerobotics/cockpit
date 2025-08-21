@@ -3,7 +3,7 @@
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div class="flex-col h-full ml-[1vw] max-w-[540px] max-h-[85vh] overflow-y-auto pr-3">
+      <div class="flex-col h-full ml-[1vw] w-[760px] max-h-[85vh] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Streams mapping</template>
           <template #info>
@@ -13,7 +13,7 @@
             with "--" as internal name) can be restored by clicking the restore button.
           </template>
           <template #content>
-            <div class="flex justify-center flex-col w-[98%] ml-2 mt-2">
+            <div class="flex justify-center flex-col w-full ml-2 mt-2">
               <v-data-table
                 :items="streamsToShow"
                 items-per-page="10"
@@ -23,39 +23,46 @@
               >
                 <template #headers>
                   <tr>
-                    <th class="text-center" style="width: 25%">
+                    <th class="text-center">
                       <p class="text-[16px] font-bold">Internal name</p>
                     </th>
-                    <th class="text-center" style="width: 60%">
+                    <th class="text-center">
                       <p class="text-[16px] font-bold">External name</p>
                     </th>
-                    <th class="text-center" style="width: 15%">
+                    <th class="text-center">
+                      <p class="text-[16px] font-bold">Video source</p>
+                    </th>
+                    <th class="text-center">
+                      <p class="text-[16px] font-bold">Resolution</p>
+                    </th>
+                    <th class="text-center">
+                      <p class="text-[16px] font-bold">Status</p>
+                    </th>
+                    <th class="text-center">
                       <p class="text-[16px] font-bold">Actions</p>
                     </th>
                   </tr>
                 </template>
                 <template #item="{ item }">
                   <tr>
-                    <td style="width: 25%">
+                    <td style="width: 18%">
                       <div
                         :id="`internal-name-${item.externalId}`"
                         class="flex items-center justify-center rounded-xl mx-1"
                         @mouseover="hoveredStreamId = item.externalId"
                         @mouseleave="hoveredStreamId = null"
                       >
-                        <div v-if="item.isIgnored" class="flex justify-center items-center w-[120px] h-[30px]">
-                          <p
-                            class="w-[120px] overflow-hidden text-ellipsis text-center whitespace-nowrap text-gray-400"
-                          >
+                        <div v-if="item.isIgnored" class="flex justify-center items-center w-full h-[30px]">
+                          <p class="w-full overflow-hidden text-ellipsis text-center whitespace-nowrap text-gray-400">
                             {{ item.name }}
                           </p>
                         </div>
                         <div
                           v-else-if="editingStreamId !== item.externalId"
-                          class="flex justify-between items-center cursor-pointer w-[120px] h-[30px]"
+                          class="flex justify-between items-center cursor-pointer w-full h-[30px]"
                           @dblclick="editStreamName(item)"
                         >
-                          <p class="w-[120px] overflow-hidden text-ellipsis text-center whitespace-nowrap">
+                          <p class="flex-1 overflow-hidden text-ellipsis text-center whitespace-nowrap">
                             {{ item.name }}
                           </p>
                           <v-btn
@@ -63,7 +70,7 @@
                             icon
                             variant="text"
                             size="x-small"
-                            class="-mr-8"
+                            class="ml-1"
                             @click="editStreamName(item)"
                           >
                             <v-icon>mdi-pencil</v-icon>
@@ -73,26 +80,64 @@
                           v-else
                           :id="`edit-input-${item.externalId}`"
                           v-model="editingStreamName"
-                          class="px-2 py-1 border rounded-sm"
+                          class="px-2 py-1 border rounded-sm w-full"
                           @blur="saveStreamName(item)"
                           @keyup.enter="saveStreamName(item)"
                         />
                       </div>
                     </td>
-                    <td style="width: 60%">
-                      <div class="flex items-center justify-center rounded-xl mx-1">
-                        <div class="w-full text-center py-2">
-                          <p
-                            :class="item.isIgnored ? 'text-gray-400' : 'text-gray-300'"
-                            class="overflow-hidden text-ellipsis whitespace-nowrap"
-                          >
-                            {{ item.externalId }}
+                    <td>
+                      <div class="flex items-center justify-center">
+                        <ScrollingText :text="item.externalId" max-width="120px" class="text-sm text-gray-300" />
+                      </div>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-center">
+                        <ScrollingText
+                          :text="getStreamInfo(item.externalId)?.sourceName || 'Unknown'"
+                          max-width="120px"
+                          class="text-sm text-gray-300"
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-center">
+                        <div class="text-center">
+                          <p class="text-sm text-gray-300 leading-tight">
+                            {{
+                              getStreamInfo(item.externalId)
+                                ? `${getStreamInfo(item.externalId)?.width}x${getStreamInfo(item.externalId)?.height}`
+                                : 'Unknown'
+                            }}
+                          </p>
+                          <p class="text-xs text-gray-400 leading-tight">
+                            {{ getStreamInfo(item.externalId) ? `@ ${getStreamInfo(item.externalId)?.fps}fps` : '' }}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td style="width: 15%">
-                      <div class="flex items-center justify-center rounded-xl mx-1">
+                    <td>
+                      <div class="flex items-center justify-center">
+                        <div class="flex items-center justify-center border-[1px] border-[#ffffff44] rounded-md">
+                          <div
+                            class="flex items-center rounded-md p-1 text-[#ffffffa5]"
+                            :style="{ backgroundColor: getStreamStatus(item.externalId).color }"
+                          >
+                            <v-icon size="small">
+                              {{ getStreamStatus(item.externalId).icon }}
+                            </v-icon>
+                            <span class="text-xs ml-1">
+                              {{ getStreamStatus(item.externalId).status }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-center">
+                        <v-btn v-if="!item.isIgnored" icon variant="text" size="small" @click="openEditDialog(item)">
+                          <v-icon>mdi-pencil</v-icon>
+                        </v-btn>
                         <v-btn
                           v-if="item.isIgnored"
                           icon
@@ -261,14 +306,50 @@
       </div>
     </template>
   </BaseConfigurationView>
+  <!-- Unavailable Stream Confirmation Dialog -->
+  <InteractionDialog
+    v-model:show-dialog="showUnavailableStreamDialog"
+    title="Stream is not available"
+    variant="text-only"
+    :persistent="true"
+    max-width="520px"
+    :actions="[
+      { text: 'KEEP IGNORED', size: 'small', action: closeUnavailableStreamDialog },
+      { text: 'DELETE PERMANENTLY', size: 'small', action: deleteStreamPermanently },
+    ]"
+  >
+    <template #content>
+      <div class="flex flex-col gap-4 px-4 mb-6">
+        <p class="text-sm text-gray-300">
+          The stream <span class="text-gray-100 font-medium">'{{ unavailableStreamId }}'</span> you're trying to restore
+          is not available anymore.
+        </p>
+        <p class="text-sm text-gray-300">You have two options:</p>
+        <ul class="text-sm text-gray-300 ml-4 space-y-1">
+          <li>
+            • <strong>Keep it ignored:</strong> Maintain it in the ignored list so it won't be mapped automatically if
+            it becomes available again
+          </li>
+          <li>
+            • <strong>Delete it permanently:</strong> Remove it from the ignored list, so if it becomes available again
+            it will be mapped automatically.
+          </li>
+        </ul>
+      </div>
+    </template>
+  </InteractionDialog>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import InteractionDialog from '@/components/InteractionDialog.vue'
+import ScrollingText from '@/components/ScrollingText.vue'
+import { type ProcessedStreamInfo, getStreamInformationFromVehicle } from '@/libs/blueos'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useVideoStore } from '@/stores/video'
 import { VideoStreamCorrespondency } from '@/types/video'
 
@@ -282,10 +363,14 @@ const availableICEProtocols = ['udp', 'tcp']
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
-const editingStreamId = ref<string | null>(null)
-const editingStreamName = ref('')
-const hoveredStreamId = ref<string | null>(null)
+const mainVehicleStore = useMainVehicleStore()
+// Unavailable stream dialog state
+const showUnavailableStreamDialog = ref(false)
+const unavailableStreamId = ref('')
+
 const showIgnoredStreams = ref(false)
+const streamInformation = ref<ProcessedStreamInfo[]>([])
+let fetchInterval: ReturnType<typeof setInterval> | null = null
 
 const streamsToShow = computed(() => {
   return [
@@ -315,13 +400,91 @@ const deleteStream = (item: VideoStreamCorrespondency): void => {
 }
 
 const restoreIgnoredStream = (externalId: string): void => {
-  videoStore.restoreIgnoredStream(externalId)
+  const isStreamAvailable = videoStore.namesAvailableStreams.includes(externalId)
+
+  // If the stream is available, restore normally, otherwise ask the user to confirm they want to delete it permanently
+  if (isStreamAvailable) {
+    videoStore.restoreIgnoredStream(externalId)
+  } else {
+    // Stream is not available, show confirmation dialog
+    unavailableStreamId.value = externalId
+    showUnavailableStreamDialog.value = true
+  }
 }
 
-onMounted(() => {
+const closeUnavailableStreamDialog = (): void => {
+  showUnavailableStreamDialog.value = false
+  unavailableStreamId.value = ''
+}
+
+const deleteStreamPermanently = (): void => {
+  videoStore.restoreIgnoredStream(unavailableStreamId.value)
+  closeUnavailableStreamDialog()
+}
+
+const fetchStreamInformation = async (): Promise<void> => {
+  if (!mainVehicleStore.globalAddress) return
+
+  try {
+    streamInformation.value = await getStreamInformationFromVehicle(mainVehicleStore.globalAddress)
+  } catch (error) {
+    console.error('Failed to fetch stream information:', error)
+    streamInformation.value = []
+  }
+}
+
+const startStreamInfoFetching = (): void => {
+  // Clear any existing interval
+  if (fetchInterval) {
+    clearInterval(fetchInterval)
+  }
+
+  // Fetch immediately
+  fetchStreamInformation()
+
+  // Set up interval to fetch every 5 seconds
+  fetchInterval = setInterval(() => {
+    fetchStreamInformation()
+  }, 5000)
+}
+
+const stopStreamInfoFetching = (): void => {
+  if (fetchInterval) {
+    clearInterval(fetchInterval)
+    fetchInterval = null
+  }
+}
+
+const getStreamInfo = (externalId: string): ProcessedStreamInfo | undefined => {
+  return streamInformation.value.find((info) => info.name === externalId)
+}
+
+// eslint-disable-next-line
+const getStreamStatus = (externalId: string): { status: 'Available' | 'Unavailable' | 'Offline' | 'Unknown'; icon: string; color: string } => {
+  const isInAvailableList = videoStore.namesAvailableStreams.includes(externalId)
+  const streamInfo = getStreamInfo(externalId)
+  const isRunning = streamInfo?.running ?? false
+
+  if (isInAvailableList && isRunning) {
+    return { status: 'Available', icon: 'mdi-check-circle', color: '#297e1944' }
+  } else if (!isInAvailableList) {
+    return { status: 'Unavailable', icon: 'mdi-close-circle', color: '#ff000044' }
+  } else if (isInAvailableList && !isRunning) {
+    return { status: 'Offline', icon: 'mdi-pause-circle', color: '#ffa50044' }
+  } else {
+    return { status: 'Unknown', icon: 'mdi-help-circle', color: '#80808044' }
+  }
+}
+
+onMounted(async () => {
   if (allowedIceProtocols.value.length === 0) {
     allowedIceProtocols.value = availableICEProtocols
   }
+  startStreamInfoFetching()
+})
+
+onUnmounted(() => {
+  stopStreamInfoFetching()
 })
 
 const openVideoLibrary = (): void => {
