@@ -216,6 +216,50 @@ export const setKeyDataOnCockpitVehicleStorage = async (
 /* eslint-disable jsdoc/require-jsdoc */
 type RawIpInfo = { ip: string; service_type: string; interface_type: string }
 type IpInfo = { ipv4Address: string; interfaceType: string }
+
+type StreamConfiguration = {
+  type: string
+  encode: string
+  height: number
+  width: number
+  frame_interval: {
+    numerator: number
+    denominator: number
+  }
+}
+
+type VideoSource = {
+  [key: string]: {
+    name: string
+    source?: any
+    device_path?: string
+    type?: any
+  }
+}
+
+type StreamInfo = {
+  id: string
+  running: boolean
+  error: string | null
+  video_and_stream: {
+    name: string
+    stream_information: {
+      endpoints: string[]
+      configuration: StreamConfiguration
+      extended_configuration: any
+    }
+    video_source: VideoSource
+  }
+}
+
+export type ProcessedStreamInfo = {
+  name: string
+  sourceName: string
+  width: number
+  height: number
+  fps: number
+  running: boolean
+}
 /* eslint-enable jsdoc/require-jsdoc */
 
 export const getIpsInformationFromVehicle = async (vehicleAddress: string): Promise<IpInfo[]> => {
@@ -437,5 +481,44 @@ export const checkForOtherManualControlSources = async (): Promise<boolean> => {
   } catch (error) {
     console.error('Error checking for other MANUAL_CONTROL sources:', error)
     return false
+  }
+}
+
+export const getStreamInformationFromVehicle = async (vehicleAddress: string): Promise<ProcessedStreamInfo[]> => {
+  try {
+    const url = `${protocol}//${vehicleAddress}:6020/streams`
+    const options = { timeout: defaultTimeout, retry: 0 }
+    const rawStreamsInfo: StreamInfo[] = await ky.get(url, options).json()
+
+    return rawStreamsInfo.map((stream) => {
+      const config = stream.video_and_stream.stream_information.configuration
+      const videoSource = stream.video_and_stream.video_source
+
+      // Extract source name from the video source object
+      let sourceName = 'Unknown'
+      const sourceKeys = Object.keys(videoSource)
+      if (sourceKeys.length > 0) {
+        const sourceType = videoSource[sourceKeys[0]]
+        sourceName = sourceType.name || 'Unknown'
+      }
+
+      // Calculate FPS from frame_interval
+      let fps = 0
+      if (config.frame_interval) {
+        fps = config.frame_interval.denominator / config.frame_interval.numerator
+      }
+
+      return {
+        name: stream.video_and_stream.name,
+        sourceName,
+        width: config.width,
+        height: config.height,
+        fps,
+        running: stream.running,
+      }
+    })
+  } catch (error) {
+    console.error('Could not get stream information from vehicle:', error)
+    return []
   }
 }
