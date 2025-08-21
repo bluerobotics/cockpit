@@ -28,6 +28,10 @@ export interface SnapshotLibraryFile extends SnapshotFileDescriptor {
    * URL to access the snapshot file
    */
   url: string
+  /**
+   * Thumbnail of the snapshot
+   */
+  thumbnail: Blob // optional, used for displaying in the library
 }
 
 /**
