@@ -120,6 +120,13 @@ const videoStoringIndexedDB: StorageDB = new LocalForageStorage(
   'Cockpit video recordings and their corresponding telemetry subtitles.'
 )
 
+const snapshotThumbnailsIndexedDB: StorageDB = new LocalForageStorage(
+  'Cockpit - Snapshot Thumbnails',
+  'cockpit-snapshot-thumbnails-db',
+  1.0,
+  'Cockpit snapshot thumbnails.'
+)
+
 const snapshotsIndexedDB: StorageDB = new LocalForageStorage(
   'Cockpit - Snapshots',
   'cockpit-snapshots-db',
@@ -130,7 +137,9 @@ const snapshotsIndexedDB: StorageDB = new LocalForageStorage(
 const electronVideoStorage = new ElectronStorage(['videos'])
 const temporaryElectronVideoStorage = new ElectronStorage(['videos', 'temporary-video-chunks'])
 const electronSnapshotStorage = new ElectronStorage(['snapshots'])
+const snapshotThumbnailsStorage = new ElectronStorage(['snapshots', 'thumbs'])
 
 export const videoStorage = isElectron() ? electronVideoStorage : videoStoringIndexedDB
 export const tempVideoStorage = isElectron() ? temporaryElectronVideoStorage : tempVideoChunksIndexdedDB
 export const snapshotStorage = isElectron() ? electronSnapshotStorage : snapshotsIndexedDB
+export const snapshotThumbStorage = isElectron() ? snapshotThumbnailsStorage : snapshotThumbnailsIndexedDB
