@@ -114,7 +114,16 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y --fix-missing snapd
-          sudo snap install snapcraft --classic
+          for i in {1..10}; do
+            if sudo snap install snapcraft --classic; then
+              break
+            elif [ $i -eq 10 ]; then
+              exit 1
+            else
+              echo "Retry $i failed, waiting 30s..."
+              sleep 30
+            fi
+          done
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
