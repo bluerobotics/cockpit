@@ -1,5 +1,5 @@
 <template>
-  <div class="draggable-container" @dragover.prevent="handleDragOver">
+  <div id="draggable-container" @dragover.prevent="handleDragOver">
     <BaseConfigurationView>
       <template #help-icon>
         <GlassButton
@@ -42,7 +42,7 @@
                           >Font size</span
                         >
                         <v-text-field
-                          v-model="datalogger.telemetryDisplayOptions.value.fontSize"
+                          v-model="telemetryDisplayOptions.fontSize"
                           density="compact"
                           :class="interfaceStore.isOnSmallScreen ? 'w-[50px]' : 'w-[75px]'"
                         />
@@ -54,7 +54,7 @@
                           >Shadow size</span
                         >
                         <v-text-field
-                          v-model="datalogger.telemetryDisplayOptions.value.fontShadowSize"
+                          v-model="telemetryDisplayOptions.fontShadowSize"
                           density="compact"
                           min="1"
                           max="5"
@@ -81,13 +81,11 @@
                               <div
                                 v-bind="props"
                                 class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full cursor-pointer"
-                                :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontColor }"
+                                :style="{ backgroundColor: telemetryDisplayOptions.fontColor }"
                               ></div>
                             </template>
                             <v-card class="overflow-hidden"
-                              ><v-color-picker
-                                v-model="datalogger.telemetryDisplayOptions.value.fontColor"
-                                width="400px"
+                              ><v-color-picker v-model="telemetryDisplayOptions.fontColor" width="400px"
                             /></v-card>
                           </v-menu>
                         </div>
@@ -108,13 +106,11 @@
                               <div
                                 v-bind="props"
                                 class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full cursor-pointer"
-                                :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontOutlineColor }"
+                                :style="{ backgroundColor: telemetryDisplayOptions.fontOutlineColor }"
                               ></div>
                             </template>
                             <v-card class="overflow-hidden"
-                              ><v-color-picker
-                                v-model="datalogger.telemetryDisplayOptions.value.fontOutlineColor"
-                                width="400px"
+                              ><v-color-picker v-model="telemetryDisplayOptions.fontOutlineColor" width="400px"
                             /></v-card>
                           </v-menu>
                         </div>
@@ -134,13 +130,11 @@
                               <div
                                 v-bind="props"
                                 class="w-[20px] h-[20px] border-2 border-slate-600 rounded-full cursor-pointer"
-                                :style="{ backgroundColor: datalogger.telemetryDisplayOptions.value.fontShadowColor }"
+                                :style="{ backgroundColor: telemetryDisplayOptions.fontShadowColor }"
                               ></div>
                             </template>
                             <v-card class="overflow-hidden"
-                              ><v-color-picker
-                                v-model="datalogger.telemetryDisplayOptions.value.fontShadowColor"
-                                width="400px"
+                              ><v-color-picker v-model="telemetryDisplayOptions.fontShadowColor" width="400px"
                             /></v-card>
                           </v-menu>
                         </div>
@@ -150,7 +144,7 @@
                           class="flex flex-row justify-start align-center -ml-2"
                           :class="interfaceStore.isOnSmallScreen ? 'h-[40px] mt-[20px]' : 'h-[50px] mt-[30px]'"
                         >
-                          <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontBold" />
+                          <v-checkbox v-model="telemetryDisplayOptions.fontBold" />
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
@@ -161,7 +155,7 @@
                           class="flex flex-row justify-start align-center -ml-2"
                           :class="interfaceStore.isOnSmallScreen ? 'h-[40px]' : 'h-[50px]'"
                         >
-                          <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontItalic" />
+                          <v-checkbox v-model="telemetryDisplayOptions.fontItalic" />
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
@@ -172,7 +166,7 @@
                           class="flex flex-row justify-start align-center -ml-2"
                           :class="interfaceStore.isOnSmallScreen ? 'h-[40px]' : 'h-[50px]'"
                         >
-                          <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontUnderline" />
+                          <v-checkbox v-model="telemetryDisplayOptions.fontUnderline" />
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
@@ -183,7 +177,7 @@
                           class="flex flex-row justify-start align-center -ml-2"
                           :class="interfaceStore.isOnSmallScreen ? 'h-[30px]' : 'h-[50px]'"
                         >
-                          <v-checkbox v-model="datalogger.telemetryDisplayOptions.value.fontStrikeout" />
+                          <v-checkbox v-model="telemetryDisplayOptions.fontStrikeout" />
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
@@ -368,12 +362,12 @@
                 }"
               >
                 <VueDraggable
-                  v-model="datalogger.telemetryDisplayData.value[config.key]"
+                  v-model="telemetryDisplayData[config.key]"
                   group="availableDataElements"
                   class="flex flex-col items-start h-full w-full"
                   :class="getClassForConfig(config.key)"
                 >
-                  <div v-for="variable in datalogger.telemetryDisplayData.value[config.key]" :key="variable">
+                  <div v-for="variable in telemetryDisplayData[config.key]" :key="variable">
                     <v-chip
                       close
                       label
@@ -403,7 +397,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -428,13 +422,29 @@ const updateVariables = (): void => {
 
   const allTelemetryValues: Set<string> = new Set()
 
-  Object.values(datalogger.telemetryDisplayData.value).forEach((displayGridArray) => {
+  Object.values(telemetryDisplayData).forEach((displayGridArray) => {
     displayGridArray.forEach((variable) => allTelemetryValues.add(variable))
   })
   // Filter variables that are already in the telemetry display grid
   loggedVariables.value = loggedVariables.value.filter((variable) => !allTelemetryValues.has(variable))
   otherLoggingElements.value = otherLoggingElements.value.filter((element) => !allTelemetryValues.has(element))
 }
+
+const telemetryDisplayData = reactive(datalogger.telemetryDisplayData)
+
+watch(telemetryDisplayData, (newVal) => {
+  console.log(`Updating telemetry display data to ${JSON.stringify(newVal)}`)
+  datalogger.telemetryDisplayData = newVal
+  updateVariables()
+})
+
+const telemetryDisplayOptions = reactive(datalogger.telemetryDisplayOptions)
+
+watch(telemetryDisplayOptions, (newVal) => {
+  console.log(`Updating telemetry display options to ${JSON.stringify(newVal)}`)
+  datalogger.telemetryDisplayOptions = newVal
+  updateVariables()
+})
 
 onMounted(updateVariables)
 
@@ -444,7 +454,7 @@ const loggedVariables = ref<string[]>([])
 const originalLoggedVariables = ref<string[]>([])
 const otherLoggingElements = ref(otherAvailableLoggingElements)
 const originalOtherLoggingElements = ref(otherAvailableLoggingElements)
-const newFrequency = ref(1000 / datalogger.logInterval.value)
+const newFrequency = ref(datalogger.frequency)
 const customMessageElements = ref<string[]>([])
 const newMessage = ref('')
 const dragPosition = ref(0)
@@ -519,9 +529,9 @@ function handleDragOver(event: DragEvent): void {
 }
 
 const removeChipFromGrid = (quadrantKey: string, chip: string): void => {
-  const index = datalogger.telemetryDisplayData.value[quadrantKey].indexOf(chip)
+  const index = telemetryDisplayData[quadrantKey].indexOf(chip)
   if (index !== -1) {
-    datalogger.telemetryDisplayData.value[quadrantKey].splice(index, 1)
+    telemetryDisplayData[quadrantKey].splice(index, 1)
 
     if (originalLoggedVariables.value.includes(chip)) {
       loggedVariables.value.push(chip)
@@ -549,14 +559,14 @@ const resetAllChips = (): void => {
   otherLoggingElements.value = []
 
   const customMessageElementsBackup: string[] = []
-  Object.values(datalogger.telemetryDisplayData.value).forEach((displayGridArray) => {
+  Object.values(telemetryDisplayData).forEach((displayGridArray) => {
     displayGridArray.forEach((variable) => {
       if (CurrentlyLoggedVariables.getAllVariables().includes(variable)) return
       customMessageElementsBackup.push(variable)
     })
   })
 
-  datalogger.telemetryDisplayData.value = {
+  Object.assign(telemetryDisplayData, {
     LeftTop: [],
     CenterTop: [],
     RightTop: [],
@@ -566,7 +576,7 @@ const resetAllChips = (): void => {
     LeftBottom: [],
     CenterBottom: [],
     RightBottom: [],
-  }
+  })
 
   otherLoggingElements.value = otherAvailableLoggingElements
   customMessageElements.value = [...customMessageElementsBackup, ...customMessageElements.value]
@@ -574,7 +584,7 @@ const resetAllChips = (): void => {
 }
 
 watch(newFrequency, (newVal) => {
-  datalogger.setFrequency(newVal)
+  datalogger.frequency = newVal
 })
 
 const newFrequencyString = computed({
