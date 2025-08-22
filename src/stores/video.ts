@@ -1032,14 +1032,8 @@ export const useVideoStore = defineStore('video', () => {
         delete activeStreams.value[oldInternalName]
       }
       lastRenamedStreamName.value = newInternalName
-      console.log(`Stream internal name updated from '${oldInternalName}' to '${newInternalName}'.`)
     } else {
-      console.warn(`Stream with ID '${streamID}' not found.`)
-      openSnackbar({
-        variant: 'error',
-        message: `Stream with ID '${streamID}' not found.`,
-        duration: 3000,
-      })
+      throw new Error(`Stream with ID '${streamID}' not found.`)
     }
   }
 
