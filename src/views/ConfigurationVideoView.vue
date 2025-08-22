@@ -3,7 +3,7 @@
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div class="flex-col h-full ml-[1vw] w-[760px] max-h-[85vh] overflow-y-auto pr-3">
+      <div class="flex-col h-full ml-[1vw] w-[840px] max-h-[85vh] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Streams mapping</template>
           <template #info>
@@ -45,45 +45,9 @@
                 </template>
                 <template #item="{ item }">
                   <tr>
-                    <td style="width: 18%">
-                      <div
-                        :id="`internal-name-${item.externalId}`"
-                        class="flex items-center justify-center rounded-xl mx-1"
-                        @mouseover="hoveredStreamId = item.externalId"
-                        @mouseleave="hoveredStreamId = null"
-                      >
-                        <div v-if="item.isIgnored" class="flex justify-center items-center w-full h-[30px]">
-                          <p class="w-full overflow-hidden text-ellipsis text-center whitespace-nowrap text-gray-400">
-                            {{ item.name }}
-                          </p>
-                        </div>
-                        <div
-                          v-else-if="editingStreamId !== item.externalId"
-                          class="flex justify-between items-center cursor-pointer w-full h-[30px]"
-                          @dblclick="editStreamName(item)"
-                        >
-                          <p class="flex-1 overflow-hidden text-ellipsis text-center whitespace-nowrap">
-                            {{ item.name }}
-                          </p>
-                          <v-btn
-                            v-if="hoveredStreamId === item.externalId"
-                            icon
-                            variant="text"
-                            size="x-small"
-                            class="ml-1"
-                            @click="editStreamName(item)"
-                          >
-                            <v-icon>mdi-pencil</v-icon>
-                          </v-btn>
-                        </div>
-                        <input
-                          v-else
-                          :id="`edit-input-${item.externalId}`"
-                          v-model="editingStreamName"
-                          class="px-2 py-1 border rounded-sm w-full"
-                          @blur="saveStreamName(item)"
-                          @keyup.enter="saveStreamName(item)"
-                        />
+                    <td>
+                      <div class="flex items-center justify-center">
+                        <ScrollingText :text="item.name" max-width="120px" class="text-sm text-gray-300" />
                       </div>
                     </td>
                     <td>
@@ -306,6 +270,44 @@
       </div>
     </template>
   </BaseConfigurationView>
+
+  <!-- Edit Stream Name Dialog -->
+  <InteractionDialog
+    v-model:show-dialog="showEditDialog"
+    title="Edit stream"
+    variant="text-only"
+    :persistent="true"
+    :actions="[
+      { text: 'Cancel', size: 'small', action: cancelEditDialog },
+      { text: 'Save', size: 'small', disabled: !newStreamName.trim(), action: saveStreamNameFromDialog },
+    ]"
+  >
+    <template #content>
+      <div class="flex flex-col gap-6 px-4 mb-6">
+        <div class="text-sm text-gray-400">
+          <span>External stream name: </span>
+          <span class="text-gray-200">{{ editingStream?.externalId }}</span>
+        </div>
+        <v-text-field
+          v-model="newStreamName"
+          label="Internal stream name"
+          variant="outlined"
+          density="compact"
+          hide-details
+          autofocus
+          @keyup.enter="saveStreamNameFromDialog"
+          @input="editDialogError = ''"
+        />
+        <div v-if="editDialogError" class="text-red-400 text-sm bg-red-900/20 border border-red-400/30 rounded-md p-3">
+          <div class="flex items-center gap-2">
+            <v-icon size="small" color="red-400">mdi-alert-circle</v-icon>
+            <span>{{ editDialogError }}</span>
+          </div>
+        </div>
+      </div>
+    </template>
+  </InteractionDialog>
+
   <!-- Unavailable Stream Confirmation Dialog -->
   <InteractionDialog
     v-model:show-dialog="showUnavailableStreamDialog"
@@ -364,6 +366,13 @@ const availableICEProtocols = ['udp', 'tcp']
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
 const mainVehicleStore = useMainVehicleStore()
+
+// Edit dialog state
+const showEditDialog = ref(false)
+const editingStream = ref<VideoStreamCorrespondency | null>(null)
+const newStreamName = ref('')
+const editDialogError = ref('')
+
 // Unavailable stream dialog state
 const showUnavailableStreamDialog = ref(false)
 const unavailableStreamId = ref('')
@@ -381,18 +390,30 @@ const streamsToShow = computed(() => {
   ].filter((item) => item.name !== '')
 })
 
-const editStreamName = (item: VideoStreamCorrespondency): void => {
-  editingStreamId.value = item.externalId
-  editingStreamName.value = item.name
-  setTimeout(() => {
-    const inputElement = document.getElementById(`edit-input-${item.externalId}`)
-    inputElement?.focus()
-  }, 0)
+const openEditDialog = (item: VideoStreamCorrespondency): void => {
+  editingStream.value = item
+  newStreamName.value = item.name
+  editDialogError.value = ''
+  showEditDialog.value = true
 }
 
-const saveStreamName = (item: VideoStreamCorrespondency): void => {
-  item.name = editingStreamName.value
-  editingStreamId.value = null
+const saveStreamNameFromDialog = (): void => {
+  if (editingStream.value && newStreamName.value.trim()) {
+    try {
+      editDialogError.value = ''
+      videoStore.renameStreamInternalNameById(editingStream.value.externalId, newStreamName.value.trim())
+      cancelEditDialog()
+    } catch (error) {
+      editDialogError.value = (error as Error).message
+    }
+  }
+}
+
+const cancelEditDialog = (): void => {
+  showEditDialog.value = false
+  editingStream.value = null
+  newStreamName.value = ''
+  editDialogError.value = ''
 }
 
 const deleteStream = (item: VideoStreamCorrespondency): void => {
