@@ -2378,10 +2378,13 @@ const openPoiDialog = (): void => {
 }
 
 // POI Marker Management Functions for MissionPlanningView
-const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
+const poiIconConfig = async (poi: PointOfInterest): Promise<L.DivIconOptions> => {
+  const { getPoiMarkerColor } = await import('@/libs/utils-poi')
+  const markerColor = getPoiMarkerColor(poi, poi.color)
+
   const poiIconHtml = `
     <div class="poi-marker-container">
-      <div class="poi-marker-background" style="background-color: ${poi.color}80;"></div>
+      <div class="poi-marker-background" style="background-color: ${markerColor}80;"></div>
       <i class="v-icon notranslate mdi ${poi.icon}" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
     </div>
   `
@@ -2395,28 +2398,32 @@ const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
 }
 
 // POI Marker Management Functions for MissionPlanningView
-const addPoiMarkerToPlanningMap = (poi: PointOfInterest): void => {
+const addPoiMarkerToPlanningMap = async (poi: PointOfInterest): Promise<void> => {
   if (!planningMap.value || !planningMap.value.getContainer()) return
 
-  const poiMarkerIcon = L.divIcon(poiIconConfig(poi))
+  const { getPoiStatusText } = await import('@/libs/utils-poi')
+  const poiMarkerIcon = L.divIcon(await poiIconConfig(poi))
 
   const marker = L.marker(poi.coordinates as LatLngTuple, { icon: poiMarkerIcon, draggable: true }).addTo(
     planningMap.value
   )
 
+  const statusText = getPoiStatusText(poi)
   const tooltipContent = `
     <strong>${poi.name}</strong><br>
     ${poi.description ? poi.description + '<br>' : ''}
+    ${statusText ? `<em>${statusText}</em><br>` : ''}
     Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
   `
   const tooltipConfig = { permanent: false, direction: 'top', offset: [0, -40], className: 'poi-tooltip' }
   marker.bindTooltip(tooltipContent, tooltipConfig)
 
-  marker.on('drag', (event) => {
+  marker.on('drag', async (event) => {
     const newCoords = event.target.getLatLng()
     const updatedTooltipContent = `
       <strong>${poi.name}</strong><br>
       ${poi.description ? poi.description + '<br>' : ''}
+      ${statusText ? `<em>${statusText}</em><br>` : ''}
       Lat: ${newCoords.lat.toFixed(8)}, Lng: ${newCoords.lng.toFixed(8)}
     `
     marker.getTooltip()?.setContent(updatedTooltipContent)
@@ -2437,17 +2444,20 @@ const addPoiMarkerToPlanningMap = (poi: PointOfInterest): void => {
   planningPoiMarkers.value[poi.id] = marker
 }
 
-const updatePoiMarkerOnPlanningMap = (poi: PointOfInterest): void => {
+const updatePoiMarkerOnPlanningMap = async (poi: PointOfInterest): Promise<void> => {
   if (!planningMap.value || !planningMap.value.getContainer() || !planningPoiMarkers.value[poi.id]) return
 
+  const { getPoiStatusText } = await import('@/libs/utils-poi')
   const marker = planningPoiMarkers.value[poi.id]
   marker.setLatLng(poi.coordinates as LatLngTuple)
 
-  marker.setIcon(L.divIcon(poiIconConfig(poi)))
+  marker.setIcon(L.divIcon(await poiIconConfig(poi)))
 
+  const statusText = getPoiStatusText(poi)
   const updatedTooltipContent = `
     <strong>${poi.name}</strong><br>
     ${poi.description ? poi.description + '<br>' : ''}
+    ${statusText ? `<em>${statusText}</em><br>` : ''}
     Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
   `
   marker.getTooltip()?.setContent(updatedTooltipContent)
@@ -2483,13 +2493,13 @@ watch(
     })
 
     // Add or update markers
-    newPois.forEach((poi) => {
+    for (const poi of newPois) {
       if (planningPoiMarkers.value[poi.id]) {
-        updatePoiMarkerOnPlanningMap(poi)
+        await updatePoiMarkerOnPlanningMap(poi)
       } else {
-        addPoiMarkerToPlanningMap(poi)
+        await addPoiMarkerToPlanningMap(poi)
       }
-    })
+    }
   },
   { deep: true, immediate: true }
 )
@@ -2497,23 +2507,19 @@ watch(
 // Ensure POIs are drawn when the map becomes available, if not already handled by immediate watcher
 watch(
   planningMap,
-  (currentMap) => {
-    if (currentMap && currentMap.getContainer()) {
-      // Map is ready, ensure all POIs from the store are drawn
-      // This helps if POIs loaded from store before mapInstance was fully initialized
-      // or if the immediate watcher for pointsOfInterest ran too early.
-      missionStore.pointsOfInterest.forEach((poi) => {
+  async (currentMapInstance) => {
+    if (currentMapInstance && currentMapInstance.getContainer()) {
+      for (const poi of missionStore.pointsOfInterest) {
         if (!planningPoiMarkers.value[poi.id]) {
-          addPoiMarkerToPlanningMap(poi)
+          await addPoiMarkerToPlanningMap(poi)
         } else {
-          // Potentially update if details changed while map was not ready
-          updatePoiMarkerOnPlanningMap(poi)
+          await updatePoiMarkerOnPlanningMap(poi) // Update if already exists, in case details changed
         }
-      })
+      }
     }
   },
   { immediate: true }
-) // Immediate to catch initial map state
+)
 </script>
 
 <style>
