@@ -1011,6 +1011,12 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const renameStreamInternalNameById = (streamID: string, newInternalName: string): void => {
+    // Check if the new internal name is already taken
+    const isNameTaken = streamsCorrespondency.value.some((stream) => stream.name === newInternalName)
+    if (isNameTaken) {
+      throw new Error(`The internal name '${newInternalName}' is already taken.`)
+    }
+
     const streamCorr = streamsCorrespondency.value.find((stream) => stream.externalId === streamID)
 
     if (streamCorr) {
