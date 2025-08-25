@@ -118,16 +118,16 @@ export class SerialLink extends Link {
 
   /**
    * Write data to the serial link
-   * @param {Buffer} data - The data to write to the serial link
+   * @param {Uint8Array} data - The data to write to the serial link
    * @returns {Promise<void>}
    * @description This method should send data over the serial link.
    * It should handle the data format and ensure it is sent correctly.
    * @throws {Error} If the method is not implemented
    * @example
-   * const data = new Buffer([0x01, 0x02, 0x03])
+   * const data = new Uint8Array([0x01, 0x02, 0x03])
    * serialLink.write(data)
    */
-  async write(data: Buffer): Promise<void> {
+  async write(data: Uint8Array): Promise<void> {
     if (!this.isOpen) {
       console.warn(`Serial link on path ${this.path} is already closed.`)
       return
