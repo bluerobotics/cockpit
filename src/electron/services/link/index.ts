@@ -1,9 +1,9 @@
 import { BrowserWindow, ipcMain } from 'electron'
 
 import { Link } from './link'
-import { SerialLink } from './serial-link'
-import { TcpLink } from './tcp-link'
-import { UdpLink } from './udp-link'
+import { SerialLink } from './serial'
+import { TcpLink } from './tcp'
+import { UdpLink } from './udp'
 
 /**
  * Serial service for electron

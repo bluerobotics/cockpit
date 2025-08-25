@@ -116,14 +116,13 @@ export class UdpLink extends Link {
 
   /**
    * Write data to the UDP link
-   * @param {Buffer} data - The data to write to the UDP link
+   * @param {Uint8Array} data - The data to write to the UDP link
    * @returns {Promise<void>}
    * @description This method should send data over the UDP link.
    * It should handle the data format and ensure it is sent to the correct host and port.
-   * @throws {Error} If the method is not implemented
    * @example
    */
-  write(data: Buffer): Promise<void> {
+  write(data: Uint8Array): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.socket) {
         reject(Error('UDP socket is not defined'))
