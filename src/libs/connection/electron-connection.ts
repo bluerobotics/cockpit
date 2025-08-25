@@ -24,6 +24,8 @@ class ElectronConnectionIPC {
 
     // Fix the path to be compatible with WHATWG URL standard
     // otherwise URL won't separate port from ip address
+    // eg. (udpin:) -> (udpin://), (udpin://) -> (udpin://)
+    // would not work with: (udpin:/), (:0.0.0.0)
     this.path = uri.toString().replace(/^([^:]+):(\/\/)?/, '$1://')
   }
 
