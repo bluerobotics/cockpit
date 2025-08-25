@@ -96,7 +96,7 @@ class LinkService {
       }
 
       try {
-        await link.write(Buffer.from(data))
+        await link.write(data)
         return true
       } catch (error) {
         console.error(`Failed to write to link ${path}:`, error)
