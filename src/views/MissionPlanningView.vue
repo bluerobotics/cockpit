@@ -2174,7 +2174,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
 }
 
 onMounted(async () => {
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© OpenStreetMap',

@@ -6,6 +6,27 @@
     :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
   >
     <div :id="mapId" ref="map" class="map">
+      <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
+        <template #activator="{ props: menuProps }">
+          <v-btn
+            v-show="showButtons"
+            v-bind="menuProps"
+            class="absolute right-[209px] m-3 bottom-button bg-slate-50 text-[14px]"
+            elevation="2"
+            size="x-small"
+            style="z-index: 1002; border-radius: 0px"
+            icon="mdi-download-multiple"
+          />
+        </template>
+
+        <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
+          <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+          <v-divider />
+          <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+          <v-divider />
+          <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
+        </v-list>
+      </v-menu>
       <v-tooltip location="top" :text="centerHomeButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
           <v-btn
@@ -126,12 +147,24 @@
     @confirmed="executeMissionOnVehicle"
     @update:model-value="isMissionChecklistOpen = $event"
   />
+  <div
+    v-if="isSavingOfflineTiles"
+    class="absolute top-14 left-2 flex justify-start items-center text-white text-md py-2 px-4 rounded-lg"
+    :style="interfaceStore.globalGlassMenuStyles"
+  >
+    <p>
+      Saving offline map content
+      <span v-if="savingLayerName">({{ savingLayerName }})</span>:&nbsp;
+      {{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%
+    </p>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
+import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import {
   type InstanceType,
   type Ref,
@@ -161,6 +194,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import { DialogActions } from '@/types/general'
 import type { PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
@@ -171,8 +205,7 @@ import ContextMenu from '../ContextMenu.vue'
 const props = defineProps<{ widget: Widget }>()
 const widget = toRefs(props).widget
 const interfaceStore = useAppInterfaceStore()
-const { showDialog } = useInteractionDialog()
-
+const { showDialog, closeDialog } = useInteractionDialog()
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
@@ -183,13 +216,34 @@ const zoom = ref(missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
-const showButtons = ref(false)
+const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
 const contextMenuRef = ref()
 const isDragging = ref(false)
 const isPinching = ref(false)
 const isMissionChecklistOpen = ref(false)
+const isSavingOfflineTiles = ref(false)
+const tilesSaved = ref(0)
+const tilesTotal = ref(0)
+const savingLayerName = ref<string>('')
+let esriSaveBtn: HTMLAnchorElement | undefined
+let osmSaveBtn: HTMLAnchorElement | undefined
+let seamarksSaveBtn: HTMLAnchorElement | undefined
+const downloadMenuOpen = ref(false)
+
+const saveEsri = (): void => {
+  esriSaveBtn?.click()
+  downloadMenuOpen.value = false
+}
+const saveOSM = (): void => {
+  osmSaveBtn?.click()
+  downloadMenuOpen.value = false
+}
+const saveSeamarks = (): void => {
+  seamarksSaveBtn?.click()
+  downloadMenuOpen.value = false
+}
 
 let pinchTimeout: number | undefined
 
@@ -227,13 +281,13 @@ onBeforeMount(() => {
 })
 
 // Configure the available map tile providers
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 23,
   maxNativeZoom: 19,
   attribution: '© OpenStreetMap',
 })
 
-const esri = L.tileLayer(
+const esri = tileLayerOffline(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {
     maxZoom: 23,
@@ -243,7 +297,7 @@ const esri = L.tileLayer(
 )
 
 // Overlays
-const seamarks = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+const seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
   maxZoom: 18,
   attribution: '© OpenSeaMap contributors',
 })
@@ -316,6 +370,48 @@ onMounted(async () => {
     }
   })
 
+  // Builds map layers offline content controls
+  const saveCtlEsri = downloadOfflineMapTiles(esri, 'Esri', 19)
+  const saveCtlOSM = downloadOfflineMapTiles(osm, 'OSM', 19)
+  const saveCtlSeamarks = downloadOfflineMapTiles(seamarks, 'Seamarks', 18)
+
+  if (map.value) {
+    saveCtlEsri.addTo(map.value)
+    saveCtlOSM.addTo(map.value)
+    saveCtlSeamarks.addTo(map.value)
+  }
+
+  // Hide native UI for offline map download controls
+  const hideCtl = (ctl: any): void => {
+    const el = (ctl.getContainer?.() ?? ctl._container) as HTMLElement | undefined
+    if (!el) return
+    el.classList.add('hidden-savetiles')
+    el.style.display = 'none'
+  }
+
+  hideCtl(saveCtlEsri)
+  hideCtl(saveCtlOSM)
+  hideCtl(saveCtlSeamarks)
+
+  await nextTick()
+
+  const getBtns = (ctl: any): HTMLAnchorElement[] => {
+    const container = (ctl.getContainer?.() ?? ctl._container) as HTMLElement | undefined
+    return Array.from(container?.querySelectorAll('a') ?? []) as HTMLAnchorElement[]
+  }
+
+  const [esriSave] = getBtns(saveCtlEsri)
+  const [osmSave] = getBtns(saveCtlOSM)
+  const [seaSave] = getBtns(saveCtlSeamarks)
+
+  esriSaveBtn = esriSave
+  osmSaveBtn = osmSave
+  seamarksSaveBtn = seaSave
+
+  attachOfflineProgress(esri, 'Esri')
+  attachOfflineProgress(osm, 'OSM')
+  attachOfflineProgress(seamarks, 'Seamarks')
+
   map.value.on('dragstart', () => {
     isDragging.value = true
   })
@@ -354,6 +450,86 @@ onMounted(async () => {
   mapReady.value = true
   await refreshMission()
 })
+
+const confirmDownloadDialog =
+  (layerLabel: string) =>
+  (status: SaveStatus, ok: () => void): void => {
+    showDialog({
+      variant: 'info',
+      message: `Save ${status._tilesforSave.length} ${layerLabel} tiles for offline use?`,
+      persistent: false,
+      maxWidth: '450px',
+      actions: [
+        { text: 'Cancel', color: 'white', action: closeDialog },
+        {
+          text: 'Save tiles',
+          color: 'white',
+          action: () => {
+            ok()
+            closeDialog()
+          },
+        },
+      ] as DialogActions[],
+    })
+  }
+
+const deleteDownloadedTilesDialog =
+  (layerLabel: string) =>
+  (_status: SaveStatus, ok: () => void): void => {
+    showDialog({
+      variant: 'warning',
+      message: `Remove all saved ${layerLabel} tiles for this layer?`,
+      persistent: false,
+      maxWidth: '450px',
+      actions: [
+        { text: 'Cancel', color: 'white', action: closeDialog },
+        {
+          text: 'Remove tiles',
+          color: 'white',
+          action: () => {
+            ok()
+            closeDialog()
+            openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
+          },
+        },
+      ] as DialogActions[],
+    })
+  }
+
+const downloadOfflineMapTiles = (layer: any, layerLabel: string, maxZoom: number): L.Control => {
+  return savetiles(layer, {
+    saveWhatYouSee: true,
+    maxZoom,
+    alwaysDownload: false,
+    position: 'topright',
+    parallel: 20,
+    confirm: confirmDownloadDialog(layerLabel),
+    confirmRemoval: deleteDownloadedTilesDialog(layerLabel),
+    saveText: `<i class="mdi mdi-download" title="Save ${layerLabel} tiles"></i>`,
+    rmText: `<i class="mdi mdi-trash-can" title="Remove ${layerLabel} tiles"></i>`,
+  })
+}
+
+const attachOfflineProgress = (layer: any, layerName: string): void => {
+  layer.on('savestart', (e: any) => {
+    tilesSaved.value = 0
+    tilesTotal.value = e?._tilesforSave?.length ?? 0
+    savingLayerName.value = layerName
+    isSavingOfflineTiles.value = true
+    openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
+  })
+
+  layer.on('loadtileend', () => {
+    tilesSaved.value += 1
+    if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
+      openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
+      isSavingOfflineTiles.value = false
+      savingLayerName.value = ''
+      tilesSaved.value = 0
+      tilesTotal.value = 0
+    }
+  })
+}
 
 const handleContextMenu = {
   open: (event: MouseEvent): void => {
@@ -1164,5 +1340,10 @@ watch(
   border: none;
   border-radius: 4px;
   padding: 5px 8px;
+}
+
+:deep(.leaflet-control-savetiles),
+:deep(.hidden-savetiles) {
+  display: none !important;
 }
 </style>
