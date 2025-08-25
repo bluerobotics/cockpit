@@ -4,7 +4,7 @@ import type { MavParamType } from '@/libs/connection/m2r/dialects/ardupilotmega/
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { round } from '@/libs/utils'
 import { AlertLevel } from '@/types/alert'
-import { type Waypoint, AltitudeReferenceType, WaypointType } from '@/types/mission'
+import { type Waypoint, AltitudeReferenceType, MissionCommandType } from '@/types/mission'
 
 import {
   MavCmd,
@@ -35,43 +35,74 @@ export const convertCockpitWaypointsToMavlink = (
   cockpitWaypoints: Waypoint[],
   system_id: number
 ): Message.MissionItemInt[] => {
-  return cockpitWaypoints.map((cockpitWaypoint, i) => {
-    return {
-      target_system: system_id,
-      target_component: 1,
-      type: MAVLinkType.MISSION_ITEM_INT,
-      seq: i,
-      frame: {
-        type:
-          mavlinkFrameFromCockpitAltRef(cockpitWaypoint.altitudeReferenceType) ||
-          MavFrame.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-      },
-      command: { type: MavCmd.MAV_CMD_NAV_WAYPOINT },
-      current: 0,
-      autocontinue: 1,
-      param1: 0,
-      param2: 5,
-      param3: 0,
-      param4: 999,
-      x: round(cockpitWaypoint.coordinates[0] * Math.pow(10, 7)),
-      y: round(cockpitWaypoint.coordinates[1] * Math.pow(10, 7)),
-      z: Number(cockpitWaypoint.altitude),
-      mission_type: { type: MavMissionType.MAV_MISSION_TYPE_MISSION },
-    }
+  const mavlinkWaypoints: Message.MissionItemInt[] = []
+  cockpitWaypoints.forEach((cockpitWaypoint, i) => {
+    cockpitWaypoint.commands.forEach((waypointCommand) => {
+      if ([MissionCommandType.MAVLINK_NAV_COMMAND, MissionCommandType.MAVLINK_NON_NAV_COMMAND].includes(waypointCommand.type)) {
+        const frameType = mavlinkFrameFromCockpitAltRef(cockpitWaypoint.altitudeReferenceType) || MavFrame.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        const x = waypointCommand.type === MissionCommandType.MAVLINK_NAV_COMMAND ? round(cockpitWaypoint.coordinates[0] * Math.pow(10, 7)) : waypointCommand.x
+        const y = waypointCommand.type === MissionCommandType.MAVLINK_NAV_COMMAND ? round(cockpitWaypoint.coordinates[1] * Math.pow(10, 7)) : waypointCommand.y
+        const z = waypointCommand.type === MissionCommandType.MAVLINK_NAV_COMMAND ? Number(cockpitWaypoint.altitude) : waypointCommand.z
+        mavlinkWaypoints.push({
+          target_system: system_id,
+          target_component: 1,
+          type: MAVLinkType.MISSION_ITEM_INT,
+          seq: mavlinkWaypoints.length,
+          frame: { type: frameType },
+          command: { type: waypointCommand.command },
+          current: 0,
+          autocontinue: 1,
+          param1: waypointCommand.param1,
+          param2: waypointCommand.param2,
+          param3: waypointCommand.param3,
+          param4: waypointCommand.param4,
+          x,
+          y,
+          z,
+          mission_type: { type: MavMissionType.MAV_MISSION_TYPE_MISSION },
+        })
+      }
+    })
   })
+
+  return mavlinkWaypoints
 }
 
 export const convertMavlinkWaypointsToCockpit = (mavlinkWaypoints: Message.MissionItemInt[]): Waypoint[] => {
-  return mavlinkWaypoints.map((mavlinkWaypoint) => {
-    return {
-      id: uuid(),
-      coordinates: [mavlinkWaypoint.x / Math.pow(10, 7), mavlinkWaypoint.y / Math.pow(10, 7)],
-      altitude: mavlinkWaypoint.z,
-      altitudeReferenceType:
-        cockpitAltRefFromMavlinkFrame(mavlinkWaypoint.frame.type) || AltitudeReferenceType.RELATIVE_TO_HOME,
-      type: WaypointType.PASS_BY,
+  const cockpitWaypoints: Waypoint[] = []
+  mavlinkWaypoints.forEach((mavlinkWaypoint) => {
+    if (mavlinkWaypoint.command.type.includes('MAV_CMD_NAV')) {
+      const altitudeReferenceType = cockpitAltRefFromMavlinkFrame(mavlinkWaypoint.frame.type) || AltitudeReferenceType.RELATIVE_TO_HOME
+      cockpitWaypoints.push({
+        id: uuid(),
+        coordinates: [mavlinkWaypoint.x / Math.pow(10, 7), mavlinkWaypoint.y / Math.pow(10, 7)],
+        altitude: mavlinkWaypoint.z,
+        altitudeReferenceType,
+        commands: [{
+          type: MissionCommandType.MAVLINK_NAV_COMMAND,
+          command: mavlinkWaypoint.command.type,
+          param1: mavlinkWaypoint.param1,
+          param2: mavlinkWaypoint.param2,
+          param3: mavlinkWaypoint.param3,
+          param4: mavlinkWaypoint.param4,
+        }],
+      })
+    } else if (cockpitWaypoints.length > 0) {
+      cockpitWaypoints[cockpitWaypoints.length - 1].commands.push({
+        type: MissionCommandType.MAVLINK_NON_NAV_COMMAND,
+        command: mavlinkWaypoint.command.type,
+        param1: mavlinkWaypoint.param1,
+        param2: mavlinkWaypoint.param2,
+        param3: mavlinkWaypoint.param3,
+        param4: mavlinkWaypoint.param4,
+        x: mavlinkWaypoint.x,
+        y: mavlinkWaypoint.y,
+        z: mavlinkWaypoint.z,
+      })
     }
   })
+
+  return cockpitWaypoints
 }
 
 export const alertLevelFromMavSeverity = {

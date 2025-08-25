@@ -1,9 +1,35 @@
+import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+
 /**
- * Possible types for waypoints. Usually used to decide what function should the waypoint perform.
+ * Possible types for mission commands.
  */
-export enum WaypointType {
-  PASS_BY = 'Pass by',
+export enum MissionCommandType {
+  MAVLINK_NAV_COMMAND = 'MAVLINK_NAV_COMMAND',
+  MAVLINK_NON_NAV_COMMAND = 'MAVLINK_NON_NAV_COMMAND',
 }
+
+export type MavlinkNavCommand = {
+  type: MissionCommandType.MAVLINK_NAV_COMMAND
+  command: MavCmd
+  param1: number
+  param2: number
+  param3: number
+  param4: number
+}
+
+export type MavlinkNonNavCommand = {
+  type: MissionCommandType.MAVLINK_NON_NAV_COMMAND
+  command: MavCmd
+  param1: number
+  param2: number
+  param3: number
+  param4: number
+  x: number
+  y: number
+  z: number
+}
+
+export type MissionCommand = MavlinkNavCommand | MavlinkNonNavCommand
 
 /**
  * Possible types for waypoints. Usually used to decide what function should the waypoint perform.
@@ -36,9 +62,9 @@ export type Waypoint = {
    */
   altitudeReferenceType: AltitudeReferenceType
   /**
-   * The type of the waypoint. Usually used to decide what function should the waypoint perform.
+   * The commands to be executed by the waypoint, in sequence.
    */
-  type: WaypointType
+  commands: MissionCommand[]
 }
 
 export type CockpitMission = {
@@ -58,10 +84,6 @@ export type CockpitMission = {
      * The zoom of the map when the user saved the file
      */
     zoom: number
-    /**
-     * The type to be used for the next placed waypoint
-     */
-    currentWaypointType: WaypointType
     /**
      * The altitude to be used for the next placed waypoint
      */
@@ -117,11 +139,14 @@ export type SurveyPolygon = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const instanceOfCockpitMission = (maybeMission: any): maybeMission is CockpitMission => {
+  if (!maybeMission || typeof maybeMission !== 'object') {
+    return false
+  }
+
   const requiredKeys = ['version', 'settings', 'waypoints']
   const requiredSettingsKeys = [
     'mapCenter',
     'zoom',
-    'currentWaypointType',
     'currentWaypointAltitude',
     'currentWaypointAltitudeRefType',
     'defaultCruiseSpeed',
