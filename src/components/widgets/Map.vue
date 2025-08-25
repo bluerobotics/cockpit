@@ -126,12 +126,20 @@
     @confirmed="executeMissionOnVehicle"
     @update:model-value="isMissionChecklistOpen = $event"
   />
+  <div
+    v-if="isSavingOfflineTiles"
+    class="absolute top-14 left-2 flex justify-start items-center text-white text-md py-2 px-4 rounded-lg"
+    :style="interfaceStore.globalGlassMenuStyles"
+  >
+    <p>Saving offline map content:&nbsp;{{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%</p>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
+import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import {
   type InstanceType,
   type Ref,
@@ -161,6 +169,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import { DialogActions } from '@/types/general'
 import type { PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
@@ -171,8 +180,7 @@ import ContextMenu from '../ContextMenu.vue'
 const props = defineProps<{ widget: Widget }>()
 const widget = toRefs(props).widget
 const interfaceStore = useAppInterfaceStore()
-const { showDialog } = useInteractionDialog()
-
+const { showDialog, closeDialog } = useInteractionDialog()
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
@@ -190,6 +198,9 @@ const contextMenuRef = ref()
 const isDragging = ref(false)
 const isPinching = ref(false)
 const isMissionChecklistOpen = ref(false)
+const isSavingOfflineTiles = ref(false)
+const tilesSaved = ref(0)
+const tilesTotal = ref(0)
 
 let pinchTimeout: number | undefined
 
@@ -233,7 +244,7 @@ const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap',
 })
 
-const esri = L.tileLayer(
+const esri = tileLayerOffline(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {
     maxZoom: 23,
@@ -243,7 +254,7 @@ const esri = L.tileLayer(
 )
 
 // Overlays
-const seamarks = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+const seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
   maxZoom: 18,
   attribution: '© OpenSeaMap contributors',
 })
@@ -313,6 +324,75 @@ onMounted(async () => {
     let { lat, lng } = map.value.getCenter()
     if (lat && lng) {
       mapCenter.value = [lat, lng]
+    }
+  })
+
+  const saveCtl = savetiles(esri, {
+    saveWhatYouSee: true,
+    maxZoom: 19,
+    alwaysDownload: false,
+    position: 'topright',
+    parallel: 20,
+    confirm(status: SaveStatus, ok: () => void) {
+      showDialog({
+        variant: 'info',
+        message: `Save ${status._tilesforSave.length} tiles for offline use?`,
+        persistent: false,
+        timer: undefined,
+        maxWidth: '450px',
+        actions: [
+          { text: 'Cancel', color: 'white', action: closeDialog },
+          {
+            text: 'Save tiles',
+            color: 'white',
+            action: () => {
+              ok()
+              closeDialog()
+            },
+          },
+        ] as DialogActions[],
+      })
+    },
+    confirmRemoval(_status: SaveStatus, ok: () => void) {
+      showDialog({
+        variant: 'warning',
+        message: 'Remove all saved tiles for this layer?',
+        persistent: false,
+        timer: undefined,
+        maxWidth: '450px',
+        actions: [
+          { text: 'Cancel', color: 'white', action: closeDialog },
+          {
+            text: 'Remove tiles',
+            color: 'white',
+            action: () => {
+              ok()
+              closeDialog()
+              openSnackbar({ message: 'Offline tiles removed', variant: 'info', duration: 3000 })
+            },
+          },
+        ] as DialogActions[],
+      })
+    },
+    saveText: '<i class="mdi mdi-download" title="Save tiles"></i>',
+    rmText: '<i class="mdi mdi-trash-can" title="Remove tiles"></i>',
+  })
+
+  if (map.value) {
+    saveCtl.addTo(map.value)
+  }
+
+  esri.on('savestart', (e: any) => {
+    tilesSaved.value = 0
+    tilesTotal.value = e._tilesforSave?.length ?? 0
+    openSnackbar({ message: `Saving ${tilesTotal.value} tiles...`, variant: 'info', duration: 2000 })
+    isSavingOfflineTiles.value = true
+  })
+  esri.on('loadtileend', () => {
+    tilesSaved.value += 1
+    if (tilesSaved.value === tilesTotal.value && tilesTotal.value > 0) {
+      openSnackbar({ message: 'Offline tiles saved!', variant: 'success', duration: 3000 })
+      isSavingOfflineTiles.value = false
     }
   })
 
