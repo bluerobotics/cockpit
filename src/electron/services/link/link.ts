@@ -48,12 +48,12 @@ export abstract class Link extends EventEmitter {
 
   /**
    * Write data to the link
-   * @param {Buffer} data - The data to write to the link
+   * @param {Uint8Array} data - The data to write to the link
    * @returns {Promise<void>}
    * @description This method should send data over the link.
    * It should handle the data format and ensure it is sent to the correct destination.
    * @throws {Error} If the method is not implemented
    * @abstract
    */
-  abstract write(data: Buffer): Promise<void>
+  abstract write(data: Uint8Array): Promise<void>
 }
