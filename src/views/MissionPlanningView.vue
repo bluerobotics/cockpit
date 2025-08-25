@@ -402,6 +402,13 @@
   >
     Loading mission...
   </p>
+  <div
+    v-if="isSavingOfflineTiles"
+    class="absolute top-14 left-2 flex justify-start items-center text-white text-md py-2 px-4 rounded-lg"
+    :style="interfaceStore.globalGlassMenuStyles"
+  >
+    <p>Saving offline map content:&nbsp;{{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%</p>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -411,6 +418,7 @@ import { useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
+import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, type Ref, computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
@@ -633,6 +641,9 @@ const loading = ref(false)
 const showMissionCreationTips = ref(missionStore.showMissionCreationTips)
 const countdownToHideTips = ref<number | undefined>(undefined)
 const isSettingHomeWaypoint = ref(false)
+const isSavingOfflineTiles = ref(false)
+const tilesSaved = ref(0)
+const tilesTotal = ref(0)
 
 let setHomeOnFirstClick: ((e: L.LeafletMouseEvent) => void) | null = null
 
@@ -2112,7 +2123,7 @@ onMounted(async () => {
     maxNativeZoom: 19,
     attribution: '© OpenStreetMap',
   })
-  const esri = L.tileLayer(
+  const esri = tileLayerOffline(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     {
       maxZoom: 23,
@@ -2143,6 +2154,75 @@ onMounted(async () => {
   planningMap.value.on('zoomend', () => {
     if (planningMap.value === undefined) return
     zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
+  })
+
+  const saveCtl = savetiles(esri, {
+    saveWhatYouSee: true,
+    maxZoom: 19,
+    alwaysDownload: false,
+    position: 'topright',
+    parallel: 20,
+    confirm(status: SaveStatus, ok: () => void) {
+      showDialog({
+        variant: 'info',
+        message: `Save ${status._tilesforSave.length} tiles for offline use?`,
+        persistent: false,
+        timer: undefined,
+        maxWidth: '450px',
+        actions: [
+          { text: 'Cancel', color: 'white', action: closeDialog },
+          {
+            text: 'Save tiles',
+            color: 'white',
+            action: () => {
+              ok()
+              closeDialog()
+            },
+          },
+        ] as DialogActions[],
+      })
+    },
+    confirmRemoval(_status: SaveStatus, ok: () => void) {
+      showDialog({
+        variant: 'warning',
+        message: 'Remove all saved tiles for this layer?',
+        persistent: false,
+        timer: undefined,
+        maxWidth: '450px',
+        actions: [
+          { text: 'Cancel', color: 'white', action: closeDialog },
+          {
+            text: 'Remove tiles',
+            color: 'white',
+            action: () => {
+              ok()
+              closeDialog()
+              openSnackbar({ message: 'Offline tiles removed', variant: 'info', duration: 3000 })
+            },
+          },
+        ] as DialogActions[],
+      })
+    },
+    saveText: '<i class="mdi mdi-download" title="Save tiles"></i>',
+    rmText: '<i class="mdi mdi-trash-can" title="Remove tiles"></i>',
+  })
+
+  if (planningMap.value) {
+    saveCtl.addTo(planningMap.value)
+  }
+
+  esri.on('savestart', (e: any) => {
+    tilesSaved.value = 0
+    tilesTotal.value = e._tilesforSave?.length ?? 0
+    openSnackbar({ message: `Saving ${tilesTotal.value} tiles...`, variant: 'info', duration: 2000 })
+    isSavingOfflineTiles.value = true
+  })
+  esri.on('loadtileend', () => {
+    tilesSaved.value += 1
+    if (tilesSaved.value === tilesTotal.value && tilesTotal.value > 0) {
+      openSnackbar({ message: 'Offline tiles saved!', variant: 'success', duration: 3000 })
+      isSavingOfflineTiles.value = false
+    }
   })
 
   await nextTick()
