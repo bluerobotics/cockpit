@@ -302,6 +302,23 @@
         </button>
       </div>
     </div>
+    <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
+      <template #activator="{ props: menuProps }">
+        <v-btn
+          v-bind="menuProps"
+          class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[133px] text-[14px]"
+          size="x-small"
+          style="z-index: 1002; border-radius: 0px"
+          icon="mdi-download-multiple"
+        />
+      </template>
+
+      <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
+        <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+        <v-divider />
+        <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+      </v-list>
+    </v-menu>
     <v-tooltip location="top center" :text="centerHomeButtonTooltipText">
       <template #activator="{ props: tooltipProps }">
         <v-btn
@@ -397,6 +414,13 @@
   >
     Loading mission...
   </p>
+  <div
+    v-if="isSavingOfflineTiles"
+    class="absolute top-14 left-2 flex justify-start items-center text-white text-md py-2 px-4 rounded-lg"
+    :style="interfaceStore.globalGlassMenuStyles"
+  >
+    <p>Saving offline map content:&nbsp;{{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%</p>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -407,6 +431,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
+import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, type Ref, computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
@@ -639,6 +664,22 @@ const loading = ref(false)
 const showMissionCreationTips = ref(missionStore.showMissionCreationTips)
 const countdownToHideTips = ref<number | undefined>(undefined)
 const isSettingHomeWaypoint = ref(false)
+const isSavingOfflineTiles = ref(false)
+const tilesSaved = ref(0)
+const tilesTotal = ref(0)
+const savingLayerName = ref<string>('')
+const downloadMenuOpen = ref(false)
+let esriSaveBtn: HTMLAnchorElement | undefined
+let osmSaveBtn: HTMLAnchorElement | undefined
+
+const saveEsri = (): void => {
+  esriSaveBtn?.click()
+  downloadMenuOpen.value = false
+}
+const saveOSM = (): void => {
+  osmSaveBtn?.click()
+  downloadMenuOpen.value = false
+}
 
 let setHomeOnFirstClick: ((e: L.LeafletMouseEvent) => void) | null = null
 
@@ -2173,13 +2214,93 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   }
 }
 
+const confirmDownloadDialog =
+  (layerLabel: string) =>
+  (status: SaveStatus, ok: () => void): void => {
+    showDialog({
+      variant: 'info',
+      message: `Save ${status._tilesforSave.length} ${layerLabel} tiles for offline use?`,
+      persistent: false,
+      maxWidth: '450px',
+      actions: [
+        { text: 'Cancel', color: 'white', action: closeDialog },
+        {
+          text: 'Save tiles',
+          color: 'white',
+          action: () => {
+            ok()
+            closeDialog()
+          },
+        },
+      ] as DialogActions[],
+    })
+  }
+
+const deleteDownloadedTilesDialog =
+  (layerLabel: string) =>
+  (_status: SaveStatus, ok: () => void): void => {
+    showDialog({
+      variant: 'warning',
+      message: `Remove all saved ${layerLabel} tiles for this layer?`,
+      persistent: false,
+      maxWidth: '450px',
+      actions: [
+        { text: 'Cancel', color: 'white', action: closeDialog },
+        {
+          text: 'Remove tiles',
+          color: 'white',
+          action: () => {
+            ok()
+            closeDialog()
+            openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
+          },
+        },
+      ] as DialogActions[],
+    })
+  }
+
+const downloadOfflineMapTiles = (layer: any, layerLabel: string, maxZoom: number): L.Control => {
+  return savetiles(layer, {
+    saveWhatYouSee: true,
+    maxZoom,
+    alwaysDownload: false,
+    position: 'topright',
+    parallel: 20,
+    confirm: confirmDownloadDialog(layerLabel),
+    confirmRemoval: deleteDownloadedTilesDialog(layerLabel),
+    saveText: `<i class="mdi mdi-download" title="Save ${layerLabel} tiles"></i>`,
+    rmText: `<i class="mdi mdi-trash-can" title="Remove ${layerLabel} tiles"></i>`,
+  })
+}
+
+const attachOfflineProgress = (layer: any, layerName: string): void => {
+  layer.on('savestart', (e: any) => {
+    tilesSaved.value = 0
+    tilesTotal.value = e?._tilesforSave?.length ?? 0
+    savingLayerName.value = layerName
+    isSavingOfflineTiles.value = true
+    openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
+  })
+
+  layer.on('loadtileend', () => {
+    tilesSaved.value += 1
+    if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
+      openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
+      isSavingOfflineTiles.value = false
+      savingLayerName.value = ''
+      tilesSaved.value = 0
+      tilesTotal.value = 0
+    }
+  })
+}
+
 onMounted(async () => {
   const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© OpenStreetMap',
   })
-  const esri = L.tileLayer(
+  const esri = tileLayerOffline(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     {
       maxZoom: 23,
@@ -2211,6 +2332,36 @@ onMounted(async () => {
     if (planningMap.value === undefined) return
     zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
   })
+
+  const saveCtlEsri = downloadOfflineMapTiles(esri, 'Esri', 19)
+  const saveCtlOSM = downloadOfflineMapTiles(osm, 'OSM', 19)
+
+  if (planningMap.value) {
+    saveCtlEsri.addTo(planningMap.value)
+    saveCtlOSM.addTo(planningMap.value)
+  }
+
+  // Hide native UI for offline map download controls
+  const hideCtl = (ctl: any): void => {
+    const el = (ctl.getContainer?.() ?? ctl._container) as HTMLElement | undefined
+    if (!el) return
+    el.classList.add('hidden-savetiles')
+    el.style.display = 'none'
+  }
+  hideCtl(saveCtlEsri)
+  hideCtl(saveCtlOSM)
+
+  await nextTick()
+  const getBtns = (ctl: any): HTMLAnchorElement[] => {
+    const el = (ctl.getContainer?.() ?? ctl._container) as HTMLElement | undefined
+    return Array.from(el?.querySelectorAll('a') ?? []) as HTMLAnchorElement[]
+  }
+  ;[esriSaveBtn] = getBtns(saveCtlEsri) // [0]=save, [1]=remove
+  ;[osmSaveBtn] = getBtns(saveCtlOSM)
+
+  // Download progress hooks
+  attachOfflineProgress(esri, 'Esri')
+  attachOfflineProgress(osm, 'OSM')
 
   await nextTick()
 
