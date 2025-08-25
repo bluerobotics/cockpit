@@ -511,8 +511,20 @@ const isValidConnectionURI = (value: string): boolean | string => {
 const isValidSocketConnectionURI = (value: string): boolean | string => {
   try {
     const conn = new Connection.URI(value)
-    if (conn.type() !== Connection.Type.WebSocket && conn.type() !== Connection.Type.Serial) {
+    if (!isElectron() && conn.type() !== Connection.Type.WebSocket && conn.type() !== Connection.Type.Serial) {
       throw new Error('URI should be of type WebSocket or Serial')
+    }
+    if (
+      isElectron() &&
+      conn.type() !== Connection.Type.WebSocket &&
+      conn.type() !== Connection.Type.Serial &&
+      conn.type() !== Connection.Type.UdpIn &&
+      conn.type() !== Connection.Type.UdpOut &&
+      conn.type() !== Connection.Type.UdpBroadcast &&
+      conn.type() !== Connection.Type.TcpIn &&
+      conn.type() !== Connection.Type.TcpOut
+    ) {
+      throw new Error('URI should be of type WebSocket, Serial, Udp or Tcp.')
     }
   } catch (error) {
     return `Invalid connection URI. ${error}.`

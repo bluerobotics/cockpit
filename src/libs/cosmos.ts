@@ -302,6 +302,22 @@ declare global {
        */
       onSerialData: (callback: (data: SerialData) => void) => void
       /**
+       * Open a link connection
+       */
+      linkOpen: (path: string) => Promise<boolean>
+      /**
+       * Write data to a link connection
+       */
+      linkWrite: (path: string, data: Uint8Array) => Promise<boolean>
+      /**
+       * Close a link connection
+       */
+      linkClose: (path: string) => Promise<boolean>
+      /**
+       * Register callback for link data events
+       */
+      onLinkData: (callback: (data: SerialData) => void) => void
+      /**
        * Send a log message to electron-log
        * @param level - The log level (error, warn, info, debug, trace, log)
        * @param message - The message to log

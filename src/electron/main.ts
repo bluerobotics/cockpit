@@ -5,6 +5,7 @@ import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupJoystickMonitoring } from './services/joystick'
+import { linkService } from './services/link'
 import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { serialService } from './services/serial'
@@ -38,6 +39,7 @@ function createWindow(): void {
     y: store.get('windowBounds')?.y ?? screen.getPrimaryDisplay().bounds.y,
   })
 
+  linkService.setMainWindow(mainWindow)
   serialService.setMainWindow(mainWindow)
 
   mainWindow.on('move', () => {
