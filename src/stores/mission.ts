@@ -41,6 +41,21 @@ export const useMissionStore = defineStore('mission', () => {
   const alwaysSwitchToFlightMode = useBlueOsStorage('cockpit-mission-always-switch-to-flight-mode', false)
   const showMissionCreationTips = useBlueOsStorage('cockpit-show-mission-creation-tips', true)
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
+  const surveyAreaM2ById = ref<Record<string, number>>({})
+
+  const setSurveyAreaM2 = (id: string, areaM2: number): void => {
+    surveyAreaM2ById.value = { ...surveyAreaM2ById.value, [id]: areaM2 }
+  }
+
+  const removeSurveyAreaM2 = (id: string): void => {
+    const next = { ...surveyAreaM2ById.value }
+    delete next[id]
+    surveyAreaM2ById.value = next
+  }
+
+  const clearAllSurveyAreas = (): void => {
+    surveyAreaM2ById.value = {}
+  }
 
   const { showDialog } = useInteractionDialog()
 
@@ -214,5 +229,9 @@ export const useMissionStore = defineStore('mission', () => {
     alwaysSwitchToFlightMode,
     showMissionCreationTips,
     showChecklistBeforeArm,
+    surveyAreaM2ById,
+    setSurveyAreaM2,
+    removeSurveyAreaM2,
+    clearAllSurveyAreas,
   }
 })
