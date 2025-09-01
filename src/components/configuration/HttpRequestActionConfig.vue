@@ -135,7 +135,7 @@
       <v-card-actions class="pa-2 -mb-1">
         <div class="flex w-full justify-between">
           <v-btn color="white" variant="text" size="small" @click="closeUrlParamDialog">Cancel</v-btn>
-          <v-btn color="white" size="small" @click="saveUrlParameter()"> Save </v-btn>
+          <v-btn color="white" size="small" @click="addUrlParameter()"> Save </v-btn>
         </div>
       </v-card-actions>
     </v-card>
