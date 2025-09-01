@@ -132,7 +132,17 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
       // Make the request
       try {
         const url = new URL(parsedUrl)
-        url.search = new URLSearchParams(parsedUrlParams).toString()
+
+        // Preserve existing query parameters and merge with new ones
+        const existingParams = new URLSearchParams(url.search)
+        const newParams = new URLSearchParams(parsedUrlParams)
+
+        // Add new parameters to existing ones (new params will override existing ones with same key)
+        for (const [key, value] of newParams) {
+          existingParams.set(key, value)
+        }
+
+        url.search = existingParams.toString()
 
         fetch(url, {
           method: action.method,
