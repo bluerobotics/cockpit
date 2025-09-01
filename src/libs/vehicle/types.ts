@@ -280,3 +280,8 @@ export interface PageDescription {
  * Base interface for settings package used to configure a vehicle
  */
 export interface VehicleConfigurationSettings {}
+
+/**
+ * Battery chemistry types
+ */
+export type BatteryChemistry = 'li-ion' | 'li-po' | 'lifepo4'
