@@ -135,7 +135,7 @@
       <v-card-actions class="pa-2 -mb-1">
         <div class="flex w-full justify-between">
           <v-btn color="white" variant="text" size="small" @click="closeUrlParamDialog">Cancel</v-btn>
-          <v-btn color="white" size="small" @click="saveUrlParameter()"> Save </v-btn>
+          <v-btn color="white" size="small" @click="addUrlParameter()"> Save </v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -161,6 +161,20 @@
             variant="outlined"
             density="compact"
           ></v-text-field>
+          <!-- User-Agent header note -->
+          <v-alert
+            v-if="headerDialog.key.toLowerCase() === 'user-agent'"
+            type="info"
+            variant="tonal"
+            density="compact"
+            color="white"
+            class="mt-2"
+          >
+            <div class="text-body-2">
+              <strong>Note:</strong> Specifying the User-Agent header only works in the standalone Electron version of
+              the application, not in the browser/extension version.
+            </div>
+          </v-alert>
         </v-form>
       </v-card-text>
       <v-divider class="m-2" />
@@ -426,7 +440,7 @@ const addHeader = (): void => {
     newActionConfig.value.headers[headerDialog.value.key] = headerDialog.value.value
     closeHeaderDialog()
   } else {
-    headerDialog.value.error = error
+    headerDialog.value.error = error ?? ''
   }
 }
 

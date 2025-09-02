@@ -325,6 +325,20 @@ declare global {
        * Delete old electron logs (older than 1 day)
        */
       deleteOldElectronLogs: () => Promise<string[]>
+      /**
+       * Set a custom User-Agent for HTTP requests
+       * @param userAgent - The custom User-Agent string
+       */
+      setUserAgent: (userAgent: string) => void
+      /**
+       * Restore the original User-Agent
+       */
+      restoreUserAgent: () => void
+      /**
+       * Get the current User-Agent
+       * @returns The current User-Agent string
+       */
+      getCurrentUserAgent: () => string
     }
   }
 }

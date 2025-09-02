@@ -9,6 +9,7 @@ import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { serialService } from './services/serial'
 import { setupFilesystemStorage } from './services/storage'
+import { setupUserAgentService } from './services/user-agent'
 import { setupWorkspaceService } from './services/workspace'
 
 // Setup the logger service as soon as possible to avoid different behaviors across runtime
@@ -80,6 +81,7 @@ protocol.registerSchemesAsPrivileged([
 setupFilesystemStorage()
 setupNetworkService()
 setupResourceMonitoringService()
+setupUserAgentService()
 setupWorkspaceService()
 setupJoystickMonitoring()
 
