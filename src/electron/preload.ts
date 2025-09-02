@@ -54,4 +54,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getElectronLogContent: (logName: string) => ipcRenderer.invoke('get-electron-log-content', logName),
   deleteElectronLog: (logName: string) => ipcRenderer.invoke('delete-electron-log', logName),
   deleteOldElectronLogs: () => ipcRenderer.invoke('delete-old-electron-logs'),
+  setUserAgent: (userAgent: string) => ipcRenderer.invoke('set-user-agent', userAgent),
+  restoreUserAgent: () => ipcRenderer.invoke('restore-user-agent'),
+  getCurrentUserAgent: () => ipcRenderer.invoke('get-current-user-agent'),
 })

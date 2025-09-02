@@ -6,6 +6,7 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
+import { isElectron } from '../utils'
 import { replaceDataLakeInputsInJsonString, replaceDataLakeInputsInString } from '../utils-data-lake'
 
 const httpRequestActionIdPrefix = 'http-request-action'
@@ -109,10 +110,10 @@ export const saveHttpRequestActionConfigs = (): void => {
   localStorage.setItem('cockpit-http-request-actions', JSON.stringify(registeredHttpRequestActionConfigs))
 }
 
-export type HttpRequestActionCallback = () => void
+export type HttpRequestActionCallback = () => Promise<void>
 
 export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallback => {
-  return () => {
+  return async () => {
     try {
       const action = getHttpRequestActionConfig(id)
       if (!action) throw new Error(`Action with id ${id} not found.`)
@@ -129,6 +130,11 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
       // Parse the URL as well for any datalake variables
       const parsedUrl = replaceDataLakeInputsInString(action.url)
 
+      // Find custom User-Agent header (case-insensitive)
+      const userAgentEntry = Object.entries(action.headers).find(([key]) => key.toLowerCase() === 'user-agent')
+      const customUserAgent = userAgentEntry?.[1]
+      let userAgentChanged = false
+
       // Make the request
       try {
         const url = new URL(parsedUrl)
@@ -144,15 +150,40 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
 
         url.search = existingParams.toString()
 
-        fetch(url, {
+        // Set custom User-Agent in Electron if specified
+        if (customUserAgent && isElectron() && window.electronAPI?.setUserAgent) {
+          try {
+            window.electronAPI.setUserAgent(customUserAgent)
+            userAgentChanged = true
+          } catch (error) {
+            console.warn('Failed to set custom User-Agent:', error)
+          }
+        }
+
+        // Prepare headers (remove User-Agent if we set it globally in Electron)
+        const fetchHeaders = { ...action.headers }
+        if (userAgentChanged && userAgentEntry) {
+          delete fetchHeaders[userAgentEntry[0]]
+        }
+
+        const response = await fetch(url, {
           method: action.method,
-          headers: action.headers,
+          headers: fetchHeaders,
           body: action.method === HttpRequestMethod.GET ? undefined : parsedBody,
-        }).catch((error) => {
-          console.error('Fetch request failed:', error)
         })
+
+        console.log(`HTTP ${action.method} request completed: ${response.status} ${response.statusText}`)
       } catch (error) {
-        console.error('Error making HTTP request:', error)
+        console.error(`HTTP ${action.method} request failed:`, error)
+      } finally {
+        // Always restore the original User-Agent
+        if (userAgentChanged && window.electronAPI?.restoreUserAgent) {
+          try {
+            window.electronAPI.restoreUserAgent()
+          } catch (error) {
+            console.warn('Failed to restore User-Agent:', error)
+          }
+        }
       }
     } catch (error) {
       console.error('Error executing HTTP request action:', error)
