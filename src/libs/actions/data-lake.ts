@@ -103,7 +103,7 @@ export const getDataLakeVariableInfo = (id: string): DataLakeVariable | undefine
 
 export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?: string | number | boolean): void => {
   if (dataLakeVariableInfo[variable.id]) {
-    throw new Error(`Cockpit action variable with id '${variable.id}' already exists. Update it instead.`)
+    console.warn(`Cockpit action variable with id '${variable.id}' already exists. Updating it.`)
   }
   dataLakeVariableInfo[variable.id] = variable
   dataLakeVariableData[variable.id] = initialValue
