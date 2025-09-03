@@ -447,7 +447,7 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
-import { centroidLatLng, formatArea, polygonAreaM2 } from '@/composables/useMissionStatistics'
+import { centroidLatLng, formatArea, formatMetersShort, polygonAreaM2 } from '@/composables/useMissionStatistics'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
@@ -732,6 +732,51 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
   measureSvgEl = null
   measureLineEl = null
   measureTextEl = null
+}
+
+const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
+  const el = evt.originalEvent?.target as HTMLElement | null
+  if (!el) return false
+  return !!el.closest('.custom-div-icon, .edge-marker, .delete-popup, .delete-button')
+}
+
+const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
+  if (!planningMap.value) return
+
+  const anchor = currentMeasureAnchor()
+  const measuring = !!anchor && (isCreatingSimplePath.value || isCreatingSurvey.value)
+  if (!measuring) {
+    destroyMeasureOverlay(planningMap.value)
+    return
+  }
+
+  const map = planningMap.value
+  ensureMeasureOverlay(map)
+
+  // NEW: hide/show the live pill when hovering survey nodes/add/delete UI
+  if (measureTextEl) {
+    measureTextEl.style.display = isOverSurveyHandle(e) ? 'none' : 'block'
+  }
+
+  const a = map.latLngToContainerPoint(anchor!)
+  const b = map.latLngToContainerPoint(e.latlng)
+
+  if (measureLineEl) {
+    measureLineEl.setAttribute('x1', String(a.x))
+    measureLineEl.setAttribute('y1', String(a.y))
+    measureLineEl.setAttribute('x2', String(b.x))
+    measureLineEl.setAttribute('y2', String(b.y))
+  }
+
+  const midX = (a.x + b.x) / 2
+  const midY = (a.y + b.y) / 2
+  const dist = anchor!.distanceTo(e.latlng)
+  const text = formatMetersShort(dist)
+  if (measureTextEl) {
+    measureTextEl.textContent = text
+    measureTextEl.style.left = `${midX}px`
+    measureTextEl.style.top = `${midY}px`
+  }
 }
 
 const toggleMissionStatistics = (): void => {
@@ -1192,6 +1237,7 @@ const clearSurveyCreation = (): void => {
   isCreatingSurvey.value = false
   lastSurveyState.value = {}
   canUndo.value = {}
+  clearLiveMeasure()
 }
 
 const deleteSelectedSurvey = (): void => {
@@ -1561,6 +1607,7 @@ const clearSurveyPath = (): void => {
 
 watch([isCreatingSurvey, isCreatingSimplePath], (isCreatingNow) => {
   if (!isCreatingNow) clearSurveyPath()
+  clearLiveMeasure()
 
   if (planningMap.value) {
     const mapContainer = planningMap.value.getContainer()
@@ -2083,6 +2130,7 @@ const undoGenerateWaypoints = (): void => {
   createSurveyPath()
   openSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
   undoIsInProgress.value = false
+  missionStore.removeSurveyAreaM2(surveyId)
 }
 
 const addWaypointMarker = (waypoint: Waypoint): void => {
@@ -2250,6 +2298,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
 
   if (isCreatingSurvey.value) {
     addSurveyPoint(e.latlng)
+    clearLiveMeasure()
   }
 
   if (planningMap.value) {
@@ -2284,6 +2333,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
         currentWaypointAltitudeRefType.value
       )
     }
+    clearLiveMeasure()
   }
 }
 
@@ -2314,6 +2364,12 @@ onMounted(async () => {
   }).addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
 
+  const pane = planningMap.value!.createPane('measurePane')
+  pane.style.zIndex = '640'
+  pane.style.pointerEvents = 'none'
+  measureRenderer = L.canvas({ pane: 'measurePane', padding: 0.5 })
+  measureLayer.value = L.layerGroup().addTo(planningMap.value!)
+
   planningMap.value.on('moveend', () => {
     if (planningMap.value === undefined) return
     let { lat, lng } = planningMap.value.getCenter()
@@ -2321,6 +2377,7 @@ onMounted(async () => {
       mapCenter.value = [lat, lng]
     }
   })
+  planningMap.value.on('zoomstart', clearLiveMeasure)
   planningMap.value.on('zoomend', () => {
     if (planningMap.value === undefined) return
     zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
@@ -2337,7 +2394,7 @@ onMounted(async () => {
   })
 
   planningMap.value.on('drag', updateConfirmButtonPosition)
-
+  planningMap.value.on('mousemove', handleMapMouseMove)
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
   })
@@ -2356,6 +2413,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   targetFollower.disableAutoUpdate()
+  planningMap.value?.off('mousemove', handleMapMouseMove)
+  clearLiveMeasure()
 })
 
 const vehiclePosition = computed((): [number, number] | undefined =>
