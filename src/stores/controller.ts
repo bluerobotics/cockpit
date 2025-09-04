@@ -173,8 +173,8 @@ export const useControllerStore = defineStore('controller', () => {
     // Add new joysticks
     for (const [index, joystick] of newMap) {
       if (joysticks.value.has(index)) continue
-      joystick.model = joystickManager.getModel(joystick.gamepad)
-      const { product_id, vendor_id } = joystickManager.getVidPid(joystick.gamepad)
+      joystick.model = joystickManager.getModel(joystick.gamepad.id)
+      const { product_id, vendor_id } = joystickManager.getVidPid(joystick.gamepad.id)
       joysticks.value.set(index, joystick)
       console.info(`Joystick ${index} connected. Model: ${joystick.model} // VID: ${vendor_id} // PID: ${product_id}`)
 
