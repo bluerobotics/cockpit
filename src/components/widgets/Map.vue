@@ -385,6 +385,7 @@ const clearMapDrawing = (): void => {
   missionWaypointsPolyline.value = undefined
   homeMarker.value = undefined
   gotoMarker.value = undefined
+  vehicleMarker.value = undefined
 }
 
 const refreshMission = async (): Promise<void> => {
