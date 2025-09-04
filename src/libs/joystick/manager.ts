@@ -367,6 +367,9 @@ class JoystickManager {
       return
     }
 
+    // Check calibration settings every second
+    this.updateCalibrationSettings()
+
     // Start checking SDL status
     this.startSDLStatusCheckRoutine()
 
@@ -383,16 +386,29 @@ class JoystickManager {
           ? convertSDLJoystickStateToGamepadState(data.state)
           : convertSDLControllerStateToGamepadState(data.state)
 
+      const gamepadId = `${data.deviceName} (SDL STANDARD JOYSTICK Vendor: ${data.vendorId} Product: ${data.productId})`
+      const gamepadModel = this.getModel(gamepadId)
+
+      const newState: JoystickState = {
+        axes: [...gamepadState.axes],
+        buttons: [...gamepadState.buttons],
+      }
+
+      gamepadState.axes.forEach((value, index) => {
+        const calibratedValue = this.applyCalibrationToValue('axis', index, value ?? 0, gamepadModel)
+        newState.axes[index] = calibratedValue
+      })
+
       const joystickEvent: JoystickStateEvent = {
         index: data.deviceId,
         gamepad: {
-          id: `${data.deviceName} (SDL STANDARD JOYSTICK Vendor: ${data.vendorId} Product: ${data.productId})`,
+          id: gamepadId,
           index: data.deviceId,
           connected: true,
           timestamp: Date.now(),
           mapping: 'standard',
-          axes: gamepadState.axes.map((value) => value ?? 0),
-          buttons: gamepadState.buttons.map((value) => ({
+          axes: newState.axes.map((value) => value ?? 0),
+          buttons: newState.buttons.map((value) => ({
             pressed: (value ?? 0) > 0.5,
             value: value ?? 0,
             touched: false,
@@ -499,30 +515,20 @@ class JoystickManager {
   }
 
   /**
-   * Get calibration settings for a joystick model
-   * @param {JoystickModel} model The joystick model
-   * @returns {JoystickCalibration} The calibration settings
-   */
-  private getCalibrationSettings(model: JoystickModel): JoystickCalibration {
-    return this.calibrationOptions.get(model) ?? defaultJoystickCalibration
-  }
-
-  /**
    * Apply calibration to a joystick value
    * @param {string} inputType The type of input ('button' or 'axis')
    * @param {number} inputIndex The index of the input
    * @param {number} originalValue The original value of the input
-   * @param {Gamepad} gamepad The gamepad object
+   * @param {JoystickModel} joystickModel The joystick model
    * @returns {number} The calibrated value
    */
   private applyCalibrationToValue(
     inputType: 'button' | 'axis',
     inputIndex: number,
     originalValue: number,
-    gamepad: Gamepad
+    joystickModel: JoystickModel
   ): number {
-    const model = this.getModel(gamepad)
-    const calibration = this.getCalibrationSettings(model)
+    const calibration = this.calibrationOptions.get(joystickModel) ?? defaultJoystickCalibration
     return applyCalibration(inputType, inputIndex, originalValue, calibration)
   }
 
@@ -553,7 +559,7 @@ class JoystickManager {
         // Check for axis changes
         gamepad.axes.forEach((value, index) => {
           if (previousState.axes[index] !== value) {
-            const calibratedValue = this.applyCalibrationToValue('axis', index, value, gamepad)
+            const calibratedValue = this.applyCalibrationToValue('axis', index, value, joystickModel)
             newState.axes[index] = calibratedValue
           }
           if (previousState.axes[index] !== value) {
