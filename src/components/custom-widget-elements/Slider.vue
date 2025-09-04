@@ -61,6 +61,7 @@ const miniWidget = toRefs(props).miniWidget
 const sliderValue = ref(0)
 let listenerId: string | undefined
 let currentlyTrackedVariableName: string | undefined = undefined
+let lastUpdateListenedValue: Date | undefined = undefined
 
 const setSliderValue = (value: number | string | undefined): void => {
   let numValue: number
@@ -102,6 +103,10 @@ const startListeningDataLakeVariable = (variableName: string): void => {
   stopListeningDataLakeVariable()
 
   listenerId = listenDataLakeVariable(variableName, (value) => {
+    // Ignore updates that happen within 100ms of the last update
+    if (lastUpdateListenedValue && new Date().getTime() - lastUpdateListenedValue.getTime() < 100) return
+    lastUpdateListenedValue = new Date()
+
     setSliderValue(value as number | string | undefined)
   })
   currentlyTrackedVariableName = variableName
