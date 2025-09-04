@@ -289,28 +289,27 @@ class JoystickManager {
 
   /**
    * Get Vendor ID and Product ID from joystick
-   * @param {Gamepad} gamepad Object
+   * @param {string} gamepadId Id of the gamepad
    * @returns {'vendor_id: string | undefined, product_id: string | undefined'} VID and PID
    */
-  getVidPid(gamepad: Gamepad): {
+  getVidPid(gamepadId: string): {
     vendor_id: string | undefined // eslint-disable-line
     product_id: string | undefined // eslint-disable-line
   } {
-    const joystick_information = gamepad.id
     const vendor_regex = new RegExp('Vendor: (?<vendor_id>[0-9a-f]{4})')
     const product_regex = new RegExp('Product: (?<product_id>[0-9a-f]{4})')
-    const vendor_id = vendor_regex.exec(joystick_information)?.groups?.vendor_id
-    const product_id = product_regex.exec(joystick_information)?.groups?.product_id
+    const vendor_id = vendor_regex.exec(gamepadId)?.groups?.vendor_id
+    const product_id = product_regex.exec(gamepadId)?.groups?.product_id
     return { vendor_id, product_id }
   }
 
   /**
    * Get joystick model
-   * @param {Gamepad} gamepad Object
+   * @param {string} gamepadId Id of the gamepad
    * @returns {JoystickModel} Joystick model
    */
-  getModel(gamepad: Gamepad): JoystickModel {
-    const { vendor_id, product_id } = this.getVidPid(gamepad)
+  getModel(gamepadId: string): JoystickModel {
+    const { vendor_id, product_id } = this.getVidPid(gamepadId)
 
     if (vendor_id == undefined || product_id == undefined) {
       return JoystickModel.Unknown
@@ -539,6 +538,8 @@ class JoystickManager {
     for (const gamepad of gamepads) {
       if (!gamepad) continue
 
+      const joystickModel = this.getModel(gamepad.id)
+
       const previousState = this.previousGamepadState.get(gamepad.index)
 
       const newState: JoystickState = {
@@ -592,7 +593,7 @@ class JoystickManager {
     if (!this.enabledJoysticks.includes(joystickEvent.index)) return
 
     // Get the joystick model to check if it's disabled
-    const model = this.getModel(joystickEvent.gamepad)
+    const model = this.getModel(joystickEvent.gamepad.id)
     const disabledJoystickModels = JSON.parse(localStorage.getItem('cockpit-disabled-joystick-models') || '[]')
     if (disabledJoystickModels.includes(model)) return
 
