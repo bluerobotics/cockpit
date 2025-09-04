@@ -18,7 +18,7 @@
       </p>
     </div>
     <v-slider
-      v-model="sliderValue"
+      :model-value="sliderValue"
       :min="miniWidget.options.layout?.minValue"
       :max="miniWidget.options.layout?.maxValue"
       :thumb-label="miniWidget.options.layout?.showTooltip"
@@ -29,7 +29,7 @@
         'pointer-events-none': widgetStore.editingMode,
         'scale-75': miniWidget.options.layout?.size === 'small',
       }"
-      @update:model-value="handleSliderChange"
+      @update:model-value="(v) => handleSliderInput(v)"
     ></v-slider>
   </div>
 </template>
@@ -60,6 +60,18 @@ const miniWidget = toRefs(props).miniWidget
 
 const sliderValue = ref(0)
 let listenerId: string | undefined
+let currentlyTrackedVariableName: string | undefined = undefined
+
+const setSliderValue = (value: number | string | undefined): void => {
+  let numValue: number
+  if (value === undefined || value === null || isNaN(Number(value))) {
+    numValue = miniWidget.value.options.layout?.minValue || 0
+  } else {
+    numValue = Number(value)
+  }
+
+  sliderValue.value = numValue
+}
 
 watch(
   () => widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen,
@@ -74,30 +86,41 @@ watch(
   { immediate: true, deep: true }
 )
 
-const startListeningDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
-      sliderValue.value = value as number
-    })
-    sliderValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as number
+const stopListeningDataLakeVariable = (): void => {
+  if (listenerId && currentlyTrackedVariableName) {
+    console.debug(`Will stop listening to variable ${currentlyTrackedVariableName}.`)
+    unlistenDataLakeVariable(currentlyTrackedVariableName, listenerId)
   }
+}
+
+const startListeningDataLakeVariable = (variableName: string): void => {
+  console.debug(`Will start listening to variable ${variableName}.`)
+  const initialValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
+  setSliderValue(initialValue)
+
+  // Stop listening to the data lake variable before starting to listen to a new one
+  stopListeningDataLakeVariable()
+
+  listenerId = listenDataLakeVariable(variableName, (value) => {
+    setSliderValue(value as number | string | undefined)
+  })
+  currentlyTrackedVariableName = variableName
 }
 
 watch(
   () => miniWidget.value.options.dataLakeVariable?.name,
   (newVal) => {
-    if (newVal) {
-      startListeningDataLakeVariable()
-    }
-  },
-  { immediate: true }
+    if (!newVal) return
+    startListeningDataLakeVariable(newVal)
+  }
 )
 
-const handleSliderChange = (): void => {
+const handleSliderInput = (value: number): void => {
   if (widgetStore.editingMode) return
   if (miniWidget.value.options.dataLakeVariable) {
-    widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, sliderValue.value.toFixed(1))
-    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, sliderValue.value.toFixed(1))
+    const roundedValue = Number(value.toFixed(1))
+    widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
+    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, roundedValue)
   }
 }
 
@@ -123,15 +146,13 @@ onMounted(() => {
     updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
   }
 
-  startListeningDataLakeVariable()
+  if (miniWidget.value.options.dataLakeVariable?.name) {
+    startListeningDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
+  }
 })
 
 onUnmounted(() => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    if (listenerId) {
-      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, listenerId)
-    }
-  }
+  stopListeningDataLakeVariable()
 })
 </script>
 
