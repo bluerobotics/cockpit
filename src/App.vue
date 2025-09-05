@@ -131,6 +131,7 @@
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <ActionDiscoveryModal auto-check-on-mount />
   <UpdateNotification v-if="isElectron()" />
+  <ArchitectureWarning v-if="isElectron()" />
   <SnackbarContainer />
   <SkullAnimation
     :is-visible="interfaceStore.showSkullAnimation"
@@ -150,6 +151,7 @@ import { useStorage, useWindowSize } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ActionDiscoveryModal from '@/components/ActionDiscoveryModal.vue'
+import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
 import GlassModal from '@/components/GlassModal.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
