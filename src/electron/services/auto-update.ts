@@ -1,11 +1,22 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import electronUpdater, { type AppUpdater } from 'electron-updater'
 
+import { PlatformUtils } from '../../types/platform'
+import { getSystemInfo } from './system-info'
+
 /**
  * Setup auto updater
  * @param {BrowserWindow} mainWindow - The main Electron window
  */
 export const setupAutoUpdater = (mainWindow: BrowserWindow): void => {
+  const systemInfo = getSystemInfo()
+
+  // Skip auto-updates for ARM64 Macs to prevent downloading wrong architecture
+  if (PlatformUtils.isArm64Mac(systemInfo.platform, systemInfo.arch)) {
+    console.log('Skipping auto-updater setup on ARM64 Mac to prevent architecture mismatch issues')
+    return
+  }
+
   const autoUpdater: AppUpdater = electronUpdater.autoUpdater
   autoUpdater.logger = console
   autoUpdater.autoDownload = false // Prevent automatic downloads
