@@ -516,6 +516,42 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onStatusGPS.add((newStatusGPS: StatusGPS) => {
       Object.assign(statusGPS, newStatusGPS)
     })
+    mainVehicle.value.onIncomingMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
+      if (pack.header.component_id != 1) {
+        return
+      }
+
+      const heartbeat = pack.message as Message.Heartbeat
+      firmwareType.value = heartbeat.autopilot.type
+      const oldVehicleType = vehicleType.value
+      vehicleType.value = heartbeat.mavtype.type
+      lastHeartbeat.value = new Date()
+
+      if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
+        console.log('Vehicle type changed to', vehicleType.value)
+
+        try {
+          controllerStore.loadDefaultProtocolMappingForVehicle(vehicleType.value)
+          console.info(`Loaded default joystick protocol mapping for vehicle type ${vehicleType.value}.`)
+        } catch (error) {
+          console.error(`Could not load default protocol mapping for vehicle type ${vehicleType.value}: ${error}`)
+        }
+
+        try {
+          widgetStore.loadDefaultProfileForVehicle(vehicleType.value)
+          console.info(`Loaded default profile for vehicle type ${vehicleType.value}.`)
+        } catch (error) {
+          console.error(`Could not load default profile for vehicle type ${vehicleType.value}: ${error}`)
+        }
+      }
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getAutoPilot(vehicles).onMode.add((vehicleMode: any) => {
+      mode.value = [...(modes.value?.entries() ?? [])]
+        .filter(([, value]) => value === vehicleMode)
+        .map(([key]) => key)
+        .first()
+    })
 
     // Get the ID for the currently connected vehicle, or create one if it does not exist
     // Try this every 5 seconds until we have an ID
@@ -713,43 +749,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         console.error(`Failed to update network information in data lake: ${error}`)
       }
     }, 1000)
-
-    mainVehicle.value.onIncomingMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
-      if (pack.header.component_id != 1) {
-        return
-      }
-
-      const heartbeat = pack.message as Message.Heartbeat
-      firmwareType.value = heartbeat.autopilot.type
-      const oldVehicleType = vehicleType.value
-      vehicleType.value = heartbeat.mavtype.type
-      lastHeartbeat.value = new Date()
-
-      if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
-        console.log('Vehicle type changed to', vehicleType.value)
-
-        try {
-          controllerStore.loadDefaultProtocolMappingForVehicle(vehicleType.value)
-          console.info(`Loaded default joystick protocol mapping for vehicle type ${vehicleType.value}.`)
-        } catch (error) {
-          console.error(`Could not load default protocol mapping for vehicle type ${vehicleType.value}: ${error}`)
-        }
-
-        try {
-          widgetStore.loadDefaultProfileForVehicle(vehicleType.value)
-          console.info(`Loaded default profile for vehicle type ${vehicleType.value}.`)
-        } catch (error) {
-          console.error(`Could not load default profile for vehicle type ${vehicleType.value}: ${error}`)
-        }
-      }
-    })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getAutoPilot(vehicles).onMode.add((vehicleMode: any) => {
-      mode.value = [...(modes.value?.entries() ?? [])]
-        .filter(([, value]) => value === vehicleMode)
-        .map(([key]) => key)
-        .first()
-    })
   })
 
   const listenToIncomingMessages = (messageType: string, callback: (pack: Package) => void): void => {
