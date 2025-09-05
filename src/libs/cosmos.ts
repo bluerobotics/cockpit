@@ -339,6 +339,24 @@ declare global {
        * @returns The current User-Agent string
        */
       getCurrentUserAgent: () => string
+      /**
+       * Get system information including platform and architecture
+       * @returns Promise containing system information
+       */
+      getSystemInfo: () => Promise<{
+        /**
+         * The platform of the system. Possibilities can be found in the Platform enum.
+         */
+        platform: string
+        /**
+         * The architecture of the system. Possibilities can be found in the Architecture enum.
+         */
+        arch: string
+        /**
+         * The architecture of the process. Possibilities can be found in the Architecture enum.
+         */
+        processArch: string
+      }>
     }
   }
 }
