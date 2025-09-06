@@ -1,3 +1,6 @@
+// eslint-disable-next-line simple-import-sort/imports -- The settings manager must be imported before any other system, as they can depend on it
+import { settingsManager } from '@/libs/settings-management'
+
 import 'floating-vue/dist/style.css'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import '@/libs/system-logging'
@@ -39,7 +42,8 @@ eventTracker.capture('App started')
 
 // Initialize Sentry for error tracking
 // Only track usage statistics if the user has not opted out and the app is not in development mode
-if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry') && import.meta.env.DEV === false) {
+// @ts-ignore: import.meta.env does not exist in the types
+if (settingsManager.getKeyValue('cockpit-enable-usage-statistics-telemetry') && !import.meta.env.DEV) {
   console.log('Initializing Sentry telemetry...')
   Sentry.init({
     app,
