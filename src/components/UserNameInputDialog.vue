@@ -99,6 +99,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { deleteUsernameOnBlueOS, getSettingsUsernamesFromBlueOS } from '@/libs/blueos'
+import { settingsManager } from '@/libs/settings-management'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
@@ -147,7 +148,8 @@ const deleteUser = async (username: string): Promise<void> => {
         text: 'Delete',
         action: async () => {
           try {
-            await deleteUsernameOnBlueOS(username)
+            const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+            await deleteUsernameOnBlueOS(vehicleAddress, username)
             openSnackbar({ message: `User '${username}' deleted`, variant: 'success' })
 
             if (missionStore.username === username) {
@@ -157,7 +159,7 @@ const deleteUser = async (username: string): Promise<void> => {
             usernamesStoredOnBlueOS.value = (usernamesStoredOnBlueOS.value ?? []).filter((u) => u !== username)
           } catch (err) {
             try {
-              await loadUsernames()
+              await loadUsernamesFromBlueOS()
               openSnackbar({
                 message: `Failed deleting '${username}'. The list was refreshed. Please try again.`,
                 variant: 'error',
@@ -183,17 +185,24 @@ const setNewUsername = (username: string): void => {
   emit('confirmed', username)
 }
 
-const loadUsernames = async (): Promise<void> => {
+const loadLocalUsernames = (): void => {
+  const locallyStoredUsernames = Object.keys(settingsManager.getLocalSettings())
+  if (locallyStoredUsernames.length) {
+    usernamesStoredOnBlueOS.value = [...new Set([...(usernamesStoredOnBlueOS.value ?? []), ...locallyStoredUsernames])]
+  }
+}
+
+const loadUsernamesFromBlueOS = async (): Promise<void> => {
+  isLoading.value = true
+
   try {
-    const usernames = await getSettingsUsernamesFromBlueOS()
-    if (!usernames?.length) {
-      usernamesStoredOnBlueOS.value = []
-      return
+    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+    const blueOSUsernames = await getSettingsUsernamesFromBlueOS(vehicleAddress)
+    if (blueOSUsernames && blueOSUsernames.length) {
+      usernamesStoredOnBlueOS.value = [...new Set([...(usernamesStoredOnBlueOS.value ?? []), ...blueOSUsernames])]
     }
-    usernamesStoredOnBlueOS.value = usernames
   } catch (error) {
-    usernamesStoredOnBlueOS.value = []
-    console.error('Failed to load usernames.')
+    console.error('Failed to load usernames from BlueOS.')
   } finally {
     isLoading.value = false
   }
@@ -202,8 +211,7 @@ const loadUsernames = async (): Promise<void> => {
 const getVehicleName = async (): Promise<void> => {
   if (mainVehicleStore.isVehicleOnline) {
     try {
-      const response = await mainVehicleStore.getCurrentVehicleName()
-      currentVehicleName.value = response
+      currentVehicleName.value = await mainVehicleStore.getCurrentVehicleName()
     } catch (error) {
       console.error('Failed to get vehicle name:', error)
     }
@@ -218,8 +226,9 @@ const handleEsc = (e: KeyboardEvent): void => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleEsc)
+  loadLocalUsernames()
   if (mainVehicleStore.isVehicleOnline) {
-    loadUsernames()
+    loadUsernamesFromBlueOS()
     getVehicleName()
   } else {
     isLoading.value = false
@@ -232,7 +241,13 @@ onBeforeUnmount(() => {
 const isUsernamesEmpty = computed(() => !usernamesStoredOnBlueOS.value || usernamesStoredOnBlueOS.value.length === 0)
 
 const validateUsername = (username: string): true | string => {
-  if (username.length < 3) {
+  if (username.includes(' ')) {
+    return 'Username cannot contain spaces.'
+  } else if (username.toLowerCase().includes('cockpit')) {
+    return 'Username cannot contain "cockpit" as it is reserved for internal use.'
+  } else if (username.toLowerCase().includes('fallback')) {
+    return 'Username cannot contain "fallback" as it is reserved for internal use.'
+  } else if (username.length < 3) {
     return 'Username must be at least 3 characters long.'
   } else if (username.length > 16) {
     return 'Username must be at most 16 characters long.'

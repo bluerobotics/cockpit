@@ -1,6 +1,8 @@
 import { listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 
+import { settingsManager } from '../settings-management'
+
 /**
  * Interface representing a link between an action and data-lake variables
  */
@@ -27,12 +29,14 @@ const pendingExecutions: Record<string, ReturnType<typeof setTimeout>> = {}
  * @param {string} actionType The type of the action
  * @param {string[]} variables Array of data-lake variable IDs to watch
  * @param {number} minInterval Minimum time (in ms) between consecutive action executions
+ * @param {boolean} bypassPersistentStorage If true, the link will not be saved to persistent storage
  */
 export const saveActionLink = (
   actionId: string,
   actionType: string,
   variables: string[],
-  minInterval: number
+  minInterval: number,
+  bypassPersistentStorage = false
 ): void => {
   // Remove any existing link for this action
   removeActionLink(actionId)
@@ -53,7 +57,9 @@ export const saveActionLink = (
     })
   )
 
-  saveLinksToPersistentStorage()
+  if (!bypassPersistentStorage) {
+    saveLinksToPersistentStorage()
+  }
 }
 
 /**
@@ -121,11 +127,11 @@ export const getAllActionLinks = (): Record<string, ActionLink> => {
 // Load saved links from localStorage on startup
 const loadSavedLinks = (): void => {
   try {
-    const savedLinks = localStorage.getItem('cockpit-action-links')
-    if (savedLinks) {
-      const links = JSON.parse(savedLinks) as Record<string, Omit<ActionLink, 'lastExecutionTime'>>
+    const savedLinks = settingsManager.getKeyValue('cockpit-action-links')
+    if (savedLinks !== undefined) {
+      const links = savedLinks as Record<string, Omit<ActionLink, 'lastExecutionTime'>>
       Object.entries(links).forEach(([actionId, link]) => {
-        saveActionLink(actionId, link.actionType, link.variables, link.minInterval)
+        saveActionLink(actionId, link.actionType, link.variables, link.minInterval, true)
       })
     }
   } catch (error) {
@@ -149,7 +155,7 @@ const saveLinksToPersistentStorage = (): void => {
       }),
       {}
     )
-    localStorage.setItem('cockpit-action-links', JSON.stringify(linksToSave))
+    settingsManager.setKeyValue('cockpit-action-links', linksToSave)
   } catch (error) {
     console.error('Failed to save action links:', error)
   }
