@@ -317,39 +317,13 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
     const { system_id, component_id } = mavlink_message.header
 
     if (system_id !== this.currentSystemId || component_id !== 1) {
+      const sourcePaths = ['mavlink', 'ardupilot', `system=${system_id}`, `component=${component_id}`]
+      this.addPackageVariablesToDataLake(mavlink_message, sourcePaths)
       return
     }
 
-    const messageType = mavlink_message.message.type
-
     // Inject variables from the MAVLink messages into the DataLake
-    if (['NAMED_VALUE_FLOAT', 'NAMED_VALUE_INT'].includes(messageType)) {
-      // Special handling for NAMED_VALUE_FLOAT/NAMED_VALUE_INT messages
-      const name = (mavlink_message.message.name as string[]).join('').replace(/\0/g, '')
-      const path = `${messageType}/${name}`
-      if (getDataLakeVariableInfo(path) === undefined) {
-        createDataLakeVariable({ id: path, name: path, type: 'number' })
-      }
-      setDataLakeVariableData(path, mavlink_message.message.value)
-
-      // Create duplicated variables for legacy purposes (that was how they were stored in the old generic-variables system)
-      const oldVariablePath = mavlink_message.message.name.join('').replaceAll('\x00', '')
-      if (getDataLakeVariableInfo(oldVariablePath) === undefined) {
-        createDataLakeVariable({ id: oldVariablePath, name: oldVariablePath, type: 'number' })
-      }
-      setDataLakeVariableData(oldVariablePath, mavlink_message.message.value)
-    } else {
-      // For all other messages, use the flattener
-      const flattened = flattenData(mavlink_message.message)
-      flattened.forEach(({ path, value }) => {
-        if (value === null) return
-        if (typeof value !== 'string' && typeof value !== 'number') return
-        if (getDataLakeVariableInfo(path) === undefined) {
-          createDataLakeVariable({ id: path, name: path, type: typeof value === 'string' ? 'string' : 'number' })
-        }
-        setDataLakeVariableData(path, value)
-      })
-    }
+    this.addPackageVariablesToDataLake(mavlink_message)
 
     // Update our internal messages
     this._messages.set(mavlink_message.message.type, { ...mavlink_message.message, epoch: new Date().getTime() })
@@ -1348,5 +1322,44 @@ export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Mo
         createDataLakeVariable({ ...variable, persistent: false, persistValue: false })
       }
     })
+  }
+
+  /**
+   * Inject variable(s) from the MAVLink package into the DataLake
+   * @param { Package } mavlinkPackage
+   * @param { string[] } sourcePaths Array of sequential path strings that will be joined to form the prefix of the variable path
+   */
+  private addPackageVariablesToDataLake(mavlinkPackage: Package, sourcePaths?: string[]): void {
+    const messageType = mavlinkPackage.message.type
+    const prefix = sourcePaths ? `${sourcePaths.join('/')}/` : ''
+
+    // Inject variables from the MAVLink messages into the DataLake
+    if (['NAMED_VALUE_FLOAT', 'NAMED_VALUE_INT'].includes(messageType)) {
+      // Special handling for NAMED_VALUE_FLOAT/NAMED_VALUE_INT messages
+      const name = (mavlinkPackage.message.name as string[]).join('').replace(/\0/g, '')
+      const path = `${prefix}${messageType}/${name}`
+      if (getDataLakeVariableInfo(path) === undefined) {
+        createDataLakeVariable({ id: path, name: path, type: 'number' })
+      }
+      setDataLakeVariableData(path, mavlinkPackage.message.value)
+
+      // Create duplicated variables for legacy purposes (that was how they were stored in the old generic-variables system)
+      const oldVariablePath = `${prefix}${mavlinkPackage.message.name.join('').replaceAll('\x00', '')}`
+      if (getDataLakeVariableInfo(oldVariablePath) === undefined) {
+        createDataLakeVariable({ id: oldVariablePath, name: oldVariablePath, type: 'number' })
+      }
+      setDataLakeVariableData(oldVariablePath, mavlinkPackage.message.value)
+    } else {
+      // For all other messages, use the flattener
+      const flattened = flattenData(mavlinkPackage.message)
+      flattened.forEach(({ path, value }) => {
+        if (value === null) return
+        if (typeof value !== 'string' && typeof value !== 'number') return
+        if (getDataLakeVariableInfo(path) === undefined) {
+          createDataLakeVariable({ id: path, name: path, type: typeof value === 'string' ? 'string' : 'number' })
+        }
+        setDataLakeVariableData(path, value)
+      })
+    }
   }
 }
