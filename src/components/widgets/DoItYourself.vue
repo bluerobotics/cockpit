@@ -231,6 +231,39 @@ const addChangeListener = (editor: monaco.editor.IStandaloneCodeEditor): void =>
   })
 }
 
+// Autocomplete provider for cockpit data lake variables
+monaco.languages.registerCompletionItemProvider('javascript', {
+  triggerCharacters: ['('],
+
+  provideCompletionItems: (model, position) => {
+    // Get current word and define replacement range
+    const word = model.getWordUntilPosition(position)
+    const range: monaco.IRange = {
+      startLineNumber: position.lineNumber,
+      startColumn: word.startColumn,
+      endLineNumber: position.lineNumber,
+      endColumn: word.endColumn,
+    }
+
+    // Create suggestions from cockpit data variables
+    const suggestions: monaco.languages.CompletionItem[] = Object.entries(window.cockpit.dataLakeVariableData).map(
+      ([key, value]) => {
+        return {
+          label: key,
+          kind: monaco.languages.CompletionItemKind.Variable,
+          documentation: `${key}: ${value} (${typeof value})`,
+          insertText: `window.cockpit.dataLakeVariableData['${key}']`,
+          range: range,
+        }
+      }
+    )
+
+    return {
+      suggestions,
+    }
+  },
+})
+
 const initEditor = async (): Promise<void> => {
   if (htmlEditor || !htmlEditorContainer.value) return
   if (jsEditor || !jsEditorContainer.value) return
