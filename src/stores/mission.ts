@@ -9,11 +9,11 @@ import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
 import {
   AltitudeReferenceType,
+  MissionCommand,
   PointOfInterest,
   PointOfInterestCoordinates,
   Waypoint,
   WaypointCoordinates,
-  WaypointType,
 } from '@/types/mission'
 
 import { useMainVehicleStore } from './mainVehicle'
@@ -60,6 +60,17 @@ export const useMissionStore = defineStore('mission', () => {
     Object.assign(
       currentPlanningWaypoints,
       currentPlanningWaypoints.map((w) => (w.id === id ? { ...w, ...{ coordinates: newCoordinates } } : w))
+    )
+  }
+
+  const updateWaypoint = (id: string, newWaypoint: Waypoint): void => {
+    const waypoint = currentPlanningWaypoints.find((w) => w.id === id)
+    if (waypoint === undefined) {
+      throw Error(`Could not update waypoint type. No waypoint with id ${id} was found.`)
+    }
+    Object.assign(
+      currentPlanningWaypoints,
+      currentPlanningWaypoints.map((w) => (w.id === id ? { ...w, ...newWaypoint } : w))
     )
   }
 
@@ -160,7 +171,6 @@ export const useMissionStore = defineStore('mission', () => {
       settings: {
         mapCenter: defaultMapCenter.value,
         zoom: defaultMapZoom.value,
-        currentWaypointType: waypoints[0]?.type || WaypointType.PASS_BY,
         currentWaypointAltitude: waypoints[0]?.altitude || 0,
         currentWaypointAltitudeRefType: waypoints[0]?.altitudeReferenceType || AltitudeReferenceType.RELATIVE_TO_HOME,
         defaultCruiseSpeed: 0,
@@ -176,6 +186,36 @@ export const useMissionStore = defineStore('mission', () => {
   const bumpVehicleMissionRevision = (wps: Waypoint[]): void => {
     vehicleMission.value = wps
     vehicleMissionRevision.value += 1
+  }
+
+  const addCommandToWaypoint = (waypointId: string, command: MissionCommand): void => {
+    const waypoint = currentPlanningWaypoints.find((w) => w.id === waypointId)
+    if (waypoint === undefined) {
+      throw Error(`Could not add command to waypoint. No waypoint with id ${waypointId} was found.`)
+    }
+    waypoint.commands.push(command)
+  }
+
+  const removeCommandFromWaypoint = (waypointId: string, commandIndex: number): void => {
+    const waypoint = currentPlanningWaypoints.find((w) => w.id === waypointId)
+    if (waypoint === undefined) {
+      throw Error(`Could not remove command from waypoint. No waypoint with id ${waypointId} was found.`)
+    }
+    if (commandIndex < 0 || commandIndex >= waypoint.commands.length) {
+      throw Error(`Invalid command index ${commandIndex} for waypoint ${waypointId}.`)
+    }
+    waypoint.commands.splice(commandIndex, 1)
+  }
+
+  const updateWaypointCommand = (waypointId: string, commandIndex: number, updatedCommand: MissionCommand): void => {
+    const waypoint = currentPlanningWaypoints.find((w) => w.id === waypointId)
+    if (waypoint === undefined) {
+      throw Error(`Could not update command in waypoint. No waypoint with id ${waypointId} was found.`)
+    }
+    if (commandIndex < 0 || commandIndex >= waypoint.commands.length) {
+      throw Error(`Invalid command index ${commandIndex} for waypoint ${waypointId}.`)
+    }
+    waypoint.commands[commandIndex] = updatedCommand
   }
 
   watch(
@@ -195,6 +235,7 @@ export const useMissionStore = defineStore('mission', () => {
     slideEventsEnabled,
     slideEventsCategoriesRequired,
     moveWaypoint,
+    updateWaypoint,
     clearMission,
     defaultMapCenter,
     defaultMapZoom,
@@ -214,5 +255,8 @@ export const useMissionStore = defineStore('mission', () => {
     alwaysSwitchToFlightMode,
     showMissionCreationTips,
     showChecklistBeforeArm,
+    addCommandToWaypoint,
+    removeCommandFromWaypoint,
+    updateWaypointCommand,
   }
 })
