@@ -9,6 +9,7 @@ import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { serialService } from './services/serial'
 import { setupFilesystemStorage } from './services/storage'
+import { setupSystemInfoService } from './services/system-info'
 import { setupUserAgentService } from './services/user-agent'
 import { setupWorkspaceService } from './services/workspace'
 
@@ -81,6 +82,7 @@ protocol.registerSchemesAsPrivileged([
 setupFilesystemStorage()
 setupNetworkService()
 setupResourceMonitoringService()
+setupSystemInfoService()
 setupUserAgentService()
 setupWorkspaceService()
 setupJoystickMonitoring()
