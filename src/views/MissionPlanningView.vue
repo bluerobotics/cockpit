@@ -371,8 +371,12 @@
     @remove-waypoint="removeSelectedWaypoint"
     @place-point-of-interest="openPoiDialog"
   />
-  <SideConfigPanel position="right" style="z-index: 600; pointer-events: auto">
-    <WaypointConfigPanel :selected-waypoint="selectedWaypoint" @remove-waypoint="removeWaypoint" />
+  <SideConfigPanel position="right" style="z-index: 600; pointer-events: auto" class="w-[320px]">
+    <WaypointConfigPanel
+      :selected-waypoint="selectedWaypoint"
+      @remove-waypoint="removeWaypoint"
+      @should-update-waypoints="handleShouldUpdateWaypoints"
+    />
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
@@ -418,6 +422,7 @@ import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
@@ -434,10 +439,11 @@ import {
   AltitudeReferenceType,
   ContextMenuTypes,
   instanceOfCockpitMission,
+  MissionCommand,
+  MissionCommandType,
   PointOfInterest,
   Survey,
   SurveyPolygon,
-  WaypointType,
 } from '@/types/mission'
 
 const missionStore = useMissionStore()
@@ -479,8 +485,17 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     id: uuid(),
     coordinates: home.value,
     altitude: 0,
-    type: WaypointType.PASS_BY,
     altitudeReferenceType: currentWaypointAltitudeRefType.value,
+    commands: [
+      {
+        type: MissionCommandType.MAVLINK_NAV_COMMAND,
+        command: MavCmd.MAV_CMD_NAV_WAYPOINT,
+        param1: 0,
+        param2: 5,
+        param3: 0,
+        param4: 999,
+      },
+    ],
   }
   missionItemsToUpload.unshift(homeWaypoint)
 
@@ -590,7 +605,6 @@ const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref<WaypointCoordinates | undefined>(undefined)
 const zoom = ref(missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
-const currentWaypointType = ref<WaypointType>(WaypointType.PASS_BY)
 const currentWaypointAltitude = ref(0)
 const defaultCruiseSpeed = ref(1)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
@@ -1154,9 +1168,6 @@ watch(
   [surveyPolygonVertexesPositions, isCreatingSurvey],
   () => {
     updateConfirmButtonPosition()
-    if (isCreatingSurvey.value) {
-      currentWaypointType.value = WaypointType.PASS_BY
-    }
   },
   { immediate: true, deep: true }
 )
@@ -1168,22 +1179,23 @@ watch(selectedWaypoint, (newWaypoint, oldWaypoint) => {
     if (oldMarker) {
       oldMarker.setIcon(
         L.divIcon({
-          className: 'marker-icon',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          className: 'waypoint-marker-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         })
       )
     }
   }
   if (newWaypoint) {
     const newMarker = waypointMarkers.value[newWaypoint.id]
-    const markerClass = newWaypoint.id === selectedWaypoint.value?.id ? 'marker-icon selected-marker' : 'marker-icon'
     if (newMarker) {
       newMarker.setIcon(
         L.divIcon({
-          className: markerClass,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          html: createWaypointMarkerHtml(newWaypoint.commands.length, true),
+          className: 'waypoint-marker-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         })
       )
     }
@@ -1198,20 +1210,44 @@ watch(zoom, (newZoom, oldZoom) => {
 const addWaypoint = (
   coordinates: WaypointCoordinates,
   altitude: number,
-  type: WaypointType,
-  altitudeReferenceType: AltitudeReferenceType
+  altitudeReferenceType: AltitudeReferenceType,
+  commands?: MissionCommand[]
 ): void => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
 
   const waypointId = uuid()
-  const waypoint: Waypoint = { id: waypointId, coordinates, altitude, type, altitudeReferenceType }
+  const defaultCommands: MissionCommand[] = [
+    {
+      type: MissionCommandType.MAVLINK_NAV_COMMAND,
+      command: MavCmd.MAV_CMD_NAV_WAYPOINT,
+      param1: 0,
+      param2: 5,
+      param3: 0,
+      param4: 999,
+    },
+  ]
+  const waypoint: Waypoint = {
+    id: waypointId,
+    coordinates,
+    altitude,
+    altitudeReferenceType,
+    commands: !commands || commands.length === 0 ? defaultCommands : commands,
+  }
 
   missionStore.currentPlanningWaypoints.push(waypoint)
 
   const newMarker = L.marker(coordinates, { draggable: true })
   // @ts-ignore - onMove is a valid LeafletMouseEvent
-  newMarker.on('move', (e: L.LeafletMouseEvent) => {
-    missionStore.moveWaypoint(waypointId, [e.latlng.lat, e.latlng.lng])
+  newMarker.on('drag', () => {
+    const latlng = newMarker.getLatLng()
+    missionStore.moveWaypoint(waypointId, [latlng.lat, latlng.lng])
+    isDraggingMarker.value = true
+  })
+
+  newMarker.on('dragend', () => {
+    const latlng = newMarker.getLatLng()
+    missionStore.moveWaypoint(waypointId, [latlng.lat, latlng.lng])
+    isDraggingMarker.value = false
   })
   newMarker.on('contextmenu', (e: L.LeafletMouseEvent) => {
     selectedWaypoint.value = waypoint
@@ -1221,13 +1257,14 @@ const addWaypoint = (
   })
 
   const markerIcon = L.divIcon({
-    className: 'marker-icon',
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
+    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    className: 'waypoint-marker-icon',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
   })
   newMarker.setIcon(markerIcon)
   const markerTooltip = L.tooltip({
-    content: `${missionStore.currentPlanningWaypoints.length}`,
+    content: '',
     permanent: true,
     direction: 'center',
     className: 'waypoint-tooltip',
@@ -1236,6 +1273,9 @@ const addWaypoint = (
   newMarker.bindTooltip(markerTooltip)
   planningMap.value.addLayer(newMarker)
   waypointMarkers.value[waypointId] = newMarker
+
+  // Update waypoint numbering to account for command counts
+  reNumberWaypoints()
 }
 
 const removeWaypoint = (waypoint: Waypoint): void => {
@@ -1283,13 +1323,16 @@ const removeSelectedWaypoint = (): void => {
   hideContextMenu()
 }
 
+const handleShouldUpdateWaypoints = (): void => {
+  reNumberWaypoints()
+}
+
 const saveMissionToFile = async (): Promise<void> => {
   const cockpitMissionFile: CockpitMission = {
     version: 0,
     settings: {
       mapCenter: mapCenter.value,
       zoom: zoom.value,
-      currentWaypointType: currentWaypointType.value,
       currentWaypointAltitude: currentWaypointAltitude.value,
       currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
       defaultCruiseSpeed: defaultCruiseSpeed.value,
@@ -1315,12 +1358,11 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     }
     mapCenter.value = maybeMission['settings']['mapCenter']
     zoom.value = maybeMission['settings']['zoom']
-    currentWaypointType.value = maybeMission['settings']['currentWaypointType']
     currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
     currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
     defaultCruiseSpeed.value = maybeMission['settings']['defaultCruiseSpeed']
     maybeMission['waypoints'].forEach((w: Waypoint) => {
-      addWaypoint(w.coordinates, w.altitude, w.type, w.altitudeReferenceType)
+      addWaypoint(w.coordinates, w.altitude, w.altitudeReferenceType, w.commands)
     })
   }
   // @ts-ignore: We know the event type and need refactor of the event typing
@@ -1521,8 +1563,8 @@ const updateSurveyEdgeAddMarkers = (): void => {
             </svg>
           `,
           className: 'edge-marker',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10],
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         }),
       })
 
@@ -1622,13 +1664,21 @@ const generateWaypointsFromSurvey = (): void => {
     id: uuid(),
     coordinates: [latLng.lat, latLng.lng],
     altitude: currentWaypointAltitude.value,
-    type: currentWaypointType.value,
     altitudeReferenceType: currentWaypointAltitudeRefType.value,
+    commands: [
+      {
+        type: MissionCommandType.MAVLINK_NAV_COMMAND,
+        command: MavCmd.MAV_CMD_NAV_WAYPOINT,
+        param1: 0,
+        param2: 5,
+        param3: 0,
+        param4: 999,
+      },
+    ],
   }))
 
-  const insertionIndex = missionStore.currentPlanningWaypoints.length
-
-  missionStore.currentPlanningWaypoints.splice(insertionIndex, 0, ...newSurveyWaypoints)
+  const newWaypoints = [...missionStore.currentPlanningWaypoints, ...newSurveyWaypoints]
+  Object.assign(missionStore.currentPlanningWaypoints, newWaypoints)
 
   const newSurvey: Survey = {
     id: newSurveyId,
@@ -1660,12 +1710,38 @@ const generateWaypointsFromSurvey = (): void => {
   openSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
 }
 
+// Helper function to create waypoint marker HTML with command count indicator
+const createWaypointMarkerHtml = (commandCount: number, isSelected = false): string => {
+  const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
+  return `
+    <div class="waypoint-marker-container">
+      <div class="${baseClass} waypoint-main-marker"></div>
+      ${commandCount > 1 ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
+    </div>
+  `
+}
+
 const reNumberWaypoints = (): void => {
-  missionStore.currentPlanningWaypoints.forEach((wp, index) => {
+  let cumulativeCommandCount = 1 // Start numbering from 1
+
+  missionStore.currentPlanningWaypoints.forEach((wp) => {
     const marker = waypointMarkers.value[wp.id]
     if (marker) {
-      marker.getTooltip()?.setContent(`${index + 1}`)
+      marker.getTooltip()?.setContent(`${cumulativeCommandCount}`)
+
+      // Update marker icon to show command count
+      const isSelected = selectedWaypoint.value?.id === wp.id
+      marker.setIcon(
+        L.divIcon({
+          html: createWaypointMarkerHtml(wp.commands.length, isSelected),
+          className: 'waypoint-marker-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        })
+      )
     }
+    // Add the number of commands this waypoint has for the next waypoint's number
+    cumulativeCommandCount += wp.commands.length
   })
 }
 
@@ -1704,8 +1780,8 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
       id: uuid(),
       coordinates: [latLng.lat, latLng.lng],
       altitude: currentWaypointAltitude.value,
-      type: currentWaypointType.value,
       altitudeReferenceType: currentWaypointAltitudeRefType.value,
+      commands: [],
     }))
 
     const firstOldWaypointIndex = missionStore.currentPlanningWaypoints.findIndex(
@@ -1936,9 +2012,10 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   })
 
   const markerIcon = L.divIcon({
-    className: 'marker-icon',
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
+    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    className: 'waypoint-marker-icon',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
   })
   newMarker.setIcon(markerIcon)
 
@@ -1960,12 +2037,12 @@ watch(selectedWaypoint, (newWaypoint, oldWaypoint) => {
   if (oldWaypoint) {
     const oldMarker = waypointMarkers.value[oldWaypoint.id]
     if (oldMarker) {
-      const markerClass = 'marker-icon'
       oldMarker.setIcon(
         L.divIcon({
-          className: markerClass,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          className: 'waypoint-marker-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         })
       )
       const oldSurvey = surveys.value.find((s) => s.waypoints.some((w) => w.id === oldWaypoint.id))
@@ -1979,12 +2056,12 @@ watch(selectedWaypoint, (newWaypoint, oldWaypoint) => {
   if (newWaypoint) {
     const newMarker = waypointMarkers.value[newWaypoint.id]
     if (newMarker) {
-      const markerClass = 'selected-marker'
       newMarker.setIcon(
         L.divIcon({
-          className: markerClass,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          html: createWaypointMarkerHtml(newWaypoint.commands.length, true),
+          className: 'waypoint-marker-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         })
       )
       const newSurvey = surveys.value.find((s) => s.waypoints.some((w) => w.id === newWaypoint.id))
@@ -2028,13 +2105,12 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
   try {
     mapCenter.value = mission.settings.mapCenter
     zoom.value = mission.settings.zoom
-    currentWaypointType.value = mission.settings.currentWaypointType
     currentWaypointAltitude.value = mission.settings.currentWaypointAltitude
     currentWaypointAltitudeRefType.value = mission.settings.currentWaypointAltitudeRefType
     defaultCruiseSpeed.value = mission.settings.defaultCruiseSpeed
 
     mission.waypoints.forEach((wp) => {
-      addWaypoint(wp.coordinates, wp.altitude, wp.type, wp.altitudeReferenceType)
+      addWaypoint(wp.coordinates, wp.altitude, wp.altitudeReferenceType, wp.commands)
     })
     if (!home.value) {
       await tryFetchHome()
@@ -2092,12 +2168,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       !interfaceStore.configPanelVisible &&
       isCreatingSimplePath.value
     ) {
-      addWaypoint(
-        [e.latlng.lat, e.latlng.lng],
-        currentWaypointAltitude.value,
-        currentWaypointType.value,
-        currentWaypointAltitudeRefType.value
-      )
+      addWaypoint([e.latlng.lat, e.latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
     }
   }
 }
@@ -2280,12 +2351,16 @@ watch(planningMap, (newMap, oldMap) => {
 })
 
 const missionWaypointsPolyline = ref()
-watch(missionStore.currentPlanningWaypoints, (newWaypoints) => {
+watch(missionStore.currentPlanningWaypoints, (newWaypoints, oldWaypoints) => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
   if (missionWaypointsPolyline.value === undefined) {
     missionWaypointsPolyline.value = L.polyline(newWaypoints.map((w) => w.coordinates)).addTo(planningMap.value)
   }
   missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+
+  if (newWaypoints.length !== oldWaypoints.length) {
+    reNumberWaypoints()
+  }
 })
 
 // Try to update map center position based on browser geolocation
@@ -2525,24 +2600,69 @@ watch(
   align-items: center;
   justify-content: center;
 }
+.waypoint-marker-icon {
+  background: none;
+  border: none;
+}
+
+.waypoint-marker-container {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+
+.waypoint-main-marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+}
+
 .marker-icon {
   background-color: #1e498f;
   border: 1px solid #ffffff55;
   border-radius: 50%;
+  z-index: 100 !important;
 }
+
 .selected-marker {
   border: 2px solid #ffff0099;
   background-color: #1e498f;
-  border-radius: 50%;
 }
+
 .green-marker {
   background-color: #034103aa;
+}
+
+.command-count-indicator {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: #ff6b35;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  z-index: 200 !important;
 }
 .waypoint-tooltip {
   background-color: transparent;
   border: 0;
   box-shadow: none;
   color: white;
+}
+
+.vehicle-marker {
+  z-index: 300 !important;
 }
 .set-home-cursor {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%231e498f' stroke='%23ffffff55' stroke-width='2'/%3E%3Cpath d='M12 2c5 0 9 4 9 9 0 3.73-2.63 7.43-8.03 13.2a1 1 0 0 1-1.42 0C5.63 18.43 3 14.73 3 11a9 9 0 0 1 9-9z' fill='white'/%3E%3Cpath d='M8.5 10L12 6.5 15.5 10h-2.5v3h-2v-3H8.5z' fill='%231e498f'/%3E%3C/svg%3E")
