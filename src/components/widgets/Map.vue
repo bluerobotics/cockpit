@@ -1084,6 +1084,11 @@ watch(
   border: 1rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   color: black;
+  z-index: 100;
+}
+
+.vehicle-marker {
+  z-index: 200 !important;
 }
 
 .leaflet-control-zoom {
