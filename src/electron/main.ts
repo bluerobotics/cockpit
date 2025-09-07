@@ -8,7 +8,6 @@ import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
 import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
-import { serialService } from './services/serial'
 import { setupFilesystemStorage } from './services/storage'
 import { setupSystemInfoService } from './services/system-info'
 import { setupUserAgentService } from './services/user-agent'
@@ -42,7 +41,6 @@ function createWindow(): void {
   })
 
   linkService.setMainWindow(mainWindow)
-  serialService.setMainWindow(mainWindow)
 
   mainWindow.on('move', () => {
     const windowBounds = mainWindow!.getBounds()

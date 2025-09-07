@@ -278,30 +278,6 @@ declare global {
        */
       captureWorkspace(rect?: Electron.Rectangle): Promise<Uint8Array>
       /**
-       * List available serial ports
-       */
-      serialListPorts: () => Promise<any[]>
-      /**
-       * Open a serial port
-       */
-      serialOpen: (path: string, baudRate?: number) => Promise<boolean>
-      /**
-       * Write data to a serial port
-       */
-      serialWrite: (path: string, data: Uint8Array) => Promise<boolean>
-      /**
-       * Close a serial port
-       */
-      serialClose: (path: string) => Promise<boolean>
-      /**
-       * Check if a serial port is open
-       */
-      serialIsOpen: (path: string) => Promise<boolean>
-      /**
-       * Register callback for serial data events
-       */
-      onSerialData: (callback: (data: SerialData) => void) => void
-      /**
        * Open a link connection
        */
       linkOpen: (path: string) => Promise<boolean>
