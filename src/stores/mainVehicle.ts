@@ -31,8 +31,8 @@ import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-t
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
-import { defaultMessageIntervalsOptions } from '@/libs/vehicle/ardupilot/defaults'
-import type { ArduPilotParameterSetData, MessageIntervalOptions } from '@/libs/vehicle/ardupilot/types'
+import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
+import type { ArduPilotParameterSetData, MessageIntervalOptions } from '@/libs/vehicle/mavlink/types'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
   Altitude,
