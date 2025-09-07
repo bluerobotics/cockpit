@@ -246,17 +246,17 @@ monaco.languages.registerCompletionItemProvider('javascript', {
     }
 
     // Create suggestions from cockpit data variables
-    const suggestions: monaco.languages.CompletionItem[] = Object.entries(window.cockpit.getAllDataLakeVariablesInfo()).map(
-      ([key, value]) => {
-        return {
-          label: key,
-          kind: monaco.languages.CompletionItemKind.Variable,
-          documentation: `${key}: ${value} (${typeof value})`,
-          insertText: `window.cockpit.getDataLakeVariableData('${key}')`,
-          range: range,
-        }
+    const suggestions: monaco.languages.CompletionItem[] = Object.entries(
+      window.cockpit.getAllDataLakeVariablesInfo()
+    ).map(([key, value]) => {
+      return {
+        label: key,
+        kind: monaco.languages.CompletionItemKind.Variable,
+        documentation: `${key}: ${value} (${typeof value})`,
+        insertText: `window.cockpit.getDataLakeVariableData('${key}')`,
+        range: range,
       }
-    )
+    })
 
     return {
       suggestions,
