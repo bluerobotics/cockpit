@@ -100,6 +100,20 @@
           <v-btn prepend-icon="mdi-file-rotate-left" variant="outlined" @click="rotateVideo(-90)"> Rotate Left</v-btn>
           <v-btn prepend-icon="mdi-file-rotate-right" variant="outlined" @click="rotateVideo(+90)"> Rotate Right</v-btn>
         </div>
+        <div class="flex-wrap justify-center d-flex ga-5 mt-3">
+          <v-btn
+            prepend-icon="mdi-reload"
+            variant="outlined"
+            :disabled="!nameSelectedStream || isReloading || !hasBeenMountedFor5Seconds"
+            @click="reloadVideo"
+          >
+            Reload Stream
+          </v-btn>
+        </div>
+        <div v-if="isReloading" class="reload-progress-config mt-3">
+          <v-progress-linear :model-value="reloadProgress" color="primary" height="6" rounded />
+          <p class="text-center mt-1 text-sm">Reloading... {{ Math.round(reloadProgress) }}%</p>
+        </div>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -134,6 +148,10 @@ const nameSelectedStream = ref<string | undefined>()
 const videoElement = ref<HTMLVideoElement | undefined>()
 const mediaStream = ref<MediaStream | undefined>()
 const streamConnected = ref(false)
+const isReloading = ref(false)
+const reloadProgress = ref(0)
+const previousStream = ref<string | undefined>()
+const hasBeenMountedFor5Seconds = ref(false)
 
 onBeforeMount(() => {
   // Set the default initial values that are not present in the widget options
@@ -147,6 +165,11 @@ onBeforeMount(() => {
   }
   widget.value.options = Object.assign({}, defaultOptions, widget.value.options)
   nameSelectedStream.value = widget.value.options.internalStreamName
+
+  // Set the 5-second delay before showing reload buttons
+  setTimeout(() => {
+    hasBeenMountedFor5Seconds.value = true
+  }, 5000)
 })
 
 const externalStreamId = computed(() => {
@@ -229,6 +252,34 @@ const rotateVideo = (angle: number): void => {
   widget.value.options.rotationAngle += angle
 }
 
+const reloadVideo = (): void => {
+  if (isReloading.value || !nameSelectedStream.value) return
+
+  // Store the current stream to re-select later
+  previousStream.value = nameSelectedStream.value
+  isReloading.value = true
+  reloadProgress.value = 0
+
+  // Clear the current stream
+  nameSelectedStream.value = undefined
+
+  // Progress bar animation
+  const progressInterval = setInterval(() => {
+    reloadProgress.value += 100 / 30 // Update 30 times over 3 seconds
+    if (reloadProgress.value >= 100) {
+      clearInterval(progressInterval)
+    }
+  }, 100)
+
+  // Re-select the stream after 3 seconds
+  setTimeout(() => {
+    nameSelectedStream.value = previousStream.value
+    isReloading.value = false
+    reloadProgress.value = 0
+    clearInterval(progressInterval)
+  }, 3000)
+}
+
 const flipStyle = computed(() => {
   return `scale(${widget.value.options.flipHorizontally ? -1 : 1}, ${widget.value.options.flipVertically ? -1 : 1})`
 })
@@ -288,5 +339,57 @@ video {
   padding: 3rem;
   color: white;
   border: 2px solid rgb(0, 20, 80);
+}
+
+.reload-section {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reload-button {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  color: white !important;
+  transition: all 0.3s ease;
+}
+
+.reload-button:hover {
+  border-color: white !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  transform: rotate(90deg);
+}
+
+.reload-progress-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.reload-icon {
+  animation: spin 2s linear infinite;
+}
+
+.reload-progress-bar {
+  width: 200px;
+  max-width: 80%;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.reload-progress-config {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 </style>
