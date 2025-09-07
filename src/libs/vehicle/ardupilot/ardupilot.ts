@@ -33,7 +33,7 @@ import {
   alertLevelFromMavSeverity,
   convertCockpitWaypointsToMavlink,
   convertMavlinkWaypointsToCockpit,
-} from '@/libs/vehicle/ardupilot/types'
+} from '@/libs/vehicle/mavlink/types'
 import {
   type PageDescription,
   Altitude,
@@ -51,9 +51,10 @@ import {
 import type { MetadataFile } from '@/types/ardupilot-metadata'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
+import { flattenData } from '../common/data-flattener'
+import { defaultMessageIntervalsOptions } from '../mavlink/defaults'
+import * as MAVLinkVehicle from '../mavlink/vehicle'
 import * as Vehicle from '../vehicle'
-import { flattenData } from './data-flattener'
-import { defaultMessageIntervalsOptions } from './defaults'
 
 export const MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY = 'cockpit-mavlink-message-intervals'
 
@@ -68,7 +69,7 @@ const preDefinedDataLakeVariables = {
 /**
  * Generic ArduPilot vehicle
  */
-export abstract class ArduPilotVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
+export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehicle<Modes> {
   _altitude = new Altitude({ msl: unit(0, 'm'), rel: 0 })
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0

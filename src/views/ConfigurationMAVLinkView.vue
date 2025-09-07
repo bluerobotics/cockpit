@@ -197,7 +197,7 @@ import { computed, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import type { MessageIntervalOptions } from '@/libs/vehicle/ardupilot/types'
+import type { MessageIntervalOptions } from '@/libs/vehicle/mavlink/types'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
