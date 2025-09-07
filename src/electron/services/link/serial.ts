@@ -28,9 +28,9 @@ export class SerialLink extends Link {
     super(uri)
     this.protocol = uri.protocol.replace(':', '')
     this.path = uri.pathname
-    this.baudRate = parseInt(uri.searchParams.get('baudRate') || '115200', 10)
+    this.baudRate = parseInt(uri.searchParams.get('baudrate') || '115200', 10)
     if (isNaN(this.baudRate) || this.baudRate <= 0) {
-      throw new Error(`Invalid baud rate: ${uri.searchParams.get('baudRate')}`)
+      throw new Error(`Invalid baud rate: ${uri.searchParams.get('baudrate')}`)
     }
   }
 
