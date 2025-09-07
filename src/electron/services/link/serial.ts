@@ -72,6 +72,8 @@ export class SerialLink extends Link {
           return
         }
 
+        this.socket = port
+
         port.on('data', (data: Buffer) => this.emit('data', data))
 
         port.on('error', (inner_error: any) => {
