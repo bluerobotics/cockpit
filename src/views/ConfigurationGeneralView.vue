@@ -123,6 +123,7 @@
                 </v-text-field>
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                  :disabled="!globalAddressFormValid"
                   class="bg-transparent"
                   :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
                   variant="text"
@@ -245,7 +246,7 @@
                 </div>
                 <v-btn
                   :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
+                  :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled || !webRTCSignallingFormValid"
                   class="bg-transparent -mt-5 -ml-6"
                   variant="text"
                   type="submit"
