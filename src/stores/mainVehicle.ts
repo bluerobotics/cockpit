@@ -154,7 +154,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const webRTCSignallingURI = computed(() => {
     const queryWebRTCSignallingURI = new URLSearchParams(window.location.search).get('webRTCSignallingURI')
     const customURI = customWebRTCSignallingURI.value.enabled ? customWebRTCSignallingURI.value.data : undefined
-    return new Connection.URI(queryWebRTCSignallingURI ?? customURI ?? defaultWebRTCSignallingURI.value)
+    try {
+      return new Connection.URI(queryWebRTCSignallingURI ?? customURI ?? defaultWebRTCSignallingURI.value)
+    } catch (error) {
+      console.error('Failed to create WebRTC Signalling URI.', error)
+      return undefined
+    }
   })
 
   /**
