@@ -209,7 +209,7 @@
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Video connection (WebRTC)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI.toString() }}</template>
+          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
           <template #content>
             <v-form
               ref="webRTCSignallingForm"
