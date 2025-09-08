@@ -95,6 +95,17 @@
             </div>
           </div>
         </Transition>
+        <div class="flex items-center justify-start w-full mt-3">
+          <input
+            id="useStringVariable"
+            v-model="miniWidget.options.useStringVariable"
+            type="checkbox"
+            class="mr-2 w-4 h-4 rounded bg-[#FFFFFF12] border-gray-300 focus:ring-blue-500"
+          />
+          <label for="useStringVariable" class="text-sm text-slate-100/75">
+            Use string variable (don't parse as number)
+          </label>
+        </div>
         <div class="flex items-center justify-between w-full mt-2">
           <div class="flex flex-col items-center justify-between w-full mx-5">
             <span class="w-full mb-1 text-sm text-slate-100/50">Unit</span>
@@ -102,17 +113,24 @@
           </div>
           <div class="flex flex-col items-center justify-between w-full mx-5">
             <span class="w-full mb-1 text-sm text-slate-100/50">Multiplier</span>
-            <input v-model="miniWidget.options.variableMultiplier" class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]" />
+            <input
+              v-model="miniWidget.options.variableMultiplier"
+              :disabled="miniWidget.options.useStringVariable"
+              class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12] disabled:cursor-not-allowed"
+              :class="{ 'opacity-50': miniWidget.options.useStringVariable }"
+            />
           </div>
           <div class="flex flex-col items-center justify-between w-full mx-5">
             <span class="w-full mb-1 text-sm text-slate-100/50">Decimal Places</span>
             <input
               v-model="miniWidget.options.decimalPlaces"
+              :disabled="miniWidget.options.useStringVariable"
               type="number"
               min="0"
               max="5"
               placeholder="Auto-formatting"
-              class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
+              class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12] disabled:cursor-not-allowed"
+              :class="{ 'opacity-50': miniWidget.options.useStringVariable }"
             />
           </div>
         </div>
@@ -227,6 +245,7 @@ onBeforeMount(() => {
       variableMultiplier: 1,
       decimalPlaces: null,
       widgetWidth: 136,
+      useStringVariable: false,
     })
   }
 
@@ -245,6 +264,12 @@ const parsedState = computed(() => {
   if (currentState.value === undefined) {
     return '--'
   }
+
+  // If using string variable, return the raw value as string without parsing
+  if (miniWidget.value.options.useStringVariable) {
+    return String(currentState.value)
+  }
+
   const value = finalValue.value
 
   const decimalPlaces = miniWidget.value.options.decimalPlaces
