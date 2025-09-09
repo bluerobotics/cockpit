@@ -6,6 +6,8 @@
         class="flex flex-col justify-around align-start ml-5 max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
+        <!-- BlueOS Alerts Configuration -->
+        <BlueOSAlertsConfig />
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider>
           <template #title>Voice alerts:</template>
           <template #info>
@@ -61,6 +63,7 @@
 <script setup lang="ts">
 import { capitalize } from 'vue'
 
+import BlueOSAlertsConfig from '@/components/configuration/BlueOSAlertsConfig.vue'
 import Dropdown from '@/components/Dropdown.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAlertStore } from '@/stores/alert'

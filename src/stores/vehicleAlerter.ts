@@ -68,4 +68,8 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
       lastBlueOsCpuUsageAlertTimestamp = Date.now()
     }
   })
+
+  return {
+    blueOsAlertsConfig,
+  }
 })
