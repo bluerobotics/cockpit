@@ -9,6 +9,7 @@ import {
   registerActionCallback,
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
+import { settingsManager } from '../settings-management'
 import { isNumber } from '../utils'
 import {
   findDataLakeInputsInString,
@@ -109,14 +110,14 @@ export const updateCockpitActions = (): void => {
 }
 
 export const loadMavlinkMessageActionConfigs = (): void => {
-  const savedActions = localStorage.getItem('cockpit-mavlink-message-actions')
-  if (savedActions) {
-    registeredMavlinkMessageActionConfigs = JSON.parse(savedActions)
+  const savedActions = settingsManager.getKeyValue('cockpit-mavlink-message-actions')
+  if (savedActions !== undefined) {
+    registeredMavlinkMessageActionConfigs = savedActions as Record<string, MavlinkMessageActionConfig>
   }
 }
 
 export const saveMavlinkMessageActionConfigs = (): void => {
-  localStorage.setItem('cockpit-mavlink-message-actions', JSON.stringify(registeredMavlinkMessageActionConfigs))
+  settingsManager.setKeyValue('cockpit-mavlink-message-actions', registeredMavlinkMessageActionConfigs)
 }
 
 export type MavlinkMessageActionCallback = () => void
