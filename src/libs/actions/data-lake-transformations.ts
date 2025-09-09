@@ -1,3 +1,4 @@
+import { settingsManager } from '../settings-management'
 import {
   findDataLakeVariablesIdsInString,
   getDataLakeVariableIdFromInput,
@@ -17,17 +18,17 @@ const transformingFunctionsKey = 'cockpit-transforming-functions'
 let globalTransformingFunctions: TransformingFunction[] = []
 
 const loadTransformingFunctions = (): void => {
-  const transformingFunctions = localStorage.getItem(transformingFunctionsKey)
-  if (!transformingFunctions) {
+  const transformingFunctions = settingsManager.getKeyValue(transformingFunctionsKey)
+  if (transformingFunctions === undefined) {
     globalTransformingFunctions = []
     return
   }
-  globalTransformingFunctions = JSON.parse(transformingFunctions)
+  globalTransformingFunctions = transformingFunctions as TransformingFunction[]
   updateTransformingFunctionListeners()
 }
 
 const saveTransformingFunctions = (): void => {
-  localStorage.setItem(transformingFunctionsKey, JSON.stringify(globalTransformingFunctions))
+  settingsManager.setKeyValue(transformingFunctionsKey, globalTransformingFunctions)
   updateTransformingFunctionListeners()
 }
 
