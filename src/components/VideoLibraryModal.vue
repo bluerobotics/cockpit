@@ -323,7 +323,8 @@
                     !loadingData &&
                     !loadingVideoBlob &&
                     !videoLoadError &&
-                    selectedVideos[0].isProcessed
+                    selectedVideos[0].isProcessed &&
+                    !isElectron()
                   "
                   id="video-player"
                   ref="videoPlayerRef"
@@ -332,6 +333,20 @@
                   :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
                   class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
                 ></video>
+                <div
+                  v-if="isElectron() && selectedVideos[0].isProcessed && !isMultipleSelectionMode"
+                  class="w-[660px] rounded-lg aspect-video flex flex-col justify-center items-center gap-y-4 text-center bg-black p-8"
+                >
+                  <v-icon size="60" class="text-white/30">mdi-video-off</v-icon>
+                  <p>
+                    Video replay has been disabled in the Cockpit application, to prevent a memory usage issue that
+                    could lead to loss of control of the vehicle.
+                  </p>
+                  <p>
+                    While we work on an update to fix the problem, you can still play videos by clicking the folder icon
+                    (in the bottom right corner) to open Cockpit's video folder in your device's file system.
+                  </p>
+                </div>
                 <div
                   v-if="
                     !isMultipleSelectionMode &&
@@ -1213,7 +1228,13 @@ const fetchVideosAndLogData = async (): Promise<void> => {
   const keys = await videoStore.videoStorage.keys()
   for (const key of keys) {
     if (videoStore.isVideoFilename(key)) {
-      videoFilesOperations.push({ fileName: key, isProcessed: true, thumbnail: videoStore.videoStorage.getItem(key) })
+      let thumb: Blob | undefined = undefined
+      if (!isElectron()) {
+        thumb = (await videoStore.videoStorage.getItem(key)) as Blob | undefined
+      } else {
+        thumb = new Blob([])
+      }
+      videoFilesOperations.push({ fileName: key, isProcessed: true, thumbnail: thumb })
       const thumbnail = await videoStore.getVideoThumbnail(key, true)
       videoThumbnailURLs[key] = thumbnail ? createObjectURL(thumbnail) : null
     }
@@ -1364,6 +1385,8 @@ watch(isVisible, (newValue) => {
 })
 
 const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => {
+  if (isElectron()) return
+
   loadingVideoBlob.value = true
   videoLoadError.value = false
 
