@@ -329,7 +329,7 @@
                   ref="videoPlayerRef"
                   width="660px"
                   :controls="selectedVideos[0].isProcessed ? true : false"
-                  :preload="selectedVideos[0].isProcessed ? 'auto' : 'none'"
+                  :preload="selectedVideos[0].isProcessed ? 'metadata' : 'none'"
                   class="border-[14px] border-white border-opacity-10 rounded-lg min-h-[382px] aspect-video"
                 ></video>
                 <div
@@ -1372,6 +1372,8 @@ const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => 
     const videoBlob = await videoStore.videoStorage.getItem(videoFileName)
 
     if (videoBlob instanceof Blob && videoPlayer) {
+      videoPlayer.preload = 'metadata'
+      unloadVideoBlob()
       videoBlobURL.value = createObjectURL(videoBlob)
       videoPlayer.src = videoBlobURL.value
 
@@ -1500,7 +1502,6 @@ watch(
           if (selectedVideos.value.length === 1 && isAlreadySelected) {
             const videoPlayer = document.getElementById(`video-player`) as HTMLVideoElement
             if (videoPlayer) {
-              videoPlayer.load()
               videoPlayer.play().catch((e: Error) => console.error('Error auto-playing video:', e))
             }
           }
