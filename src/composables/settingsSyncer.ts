@@ -14,7 +14,115 @@ import { useMissionStore } from '@/stores/mission'
 import { savedProfilesKey } from '@/stores/widgetManager'
 
 import { useInteractionDialog } from './interactionDialog'
+import { useSettingsConflictDialog } from './settingsConflictDialog'
 import { openSnackbar } from './snackbar'
+
+/**
+ * Represents a setting that has a conflict between local and remote values
+ */
+export interface ConflictItem {
+  /** The key of the setting with a conflict */
+  key: string
+
+  /** The current local value of the setting */
+  localValue: unknown
+
+  /** The value of the setting stored in BlueOS */
+  remoteValue: unknown
+
+  /** Callback function to resolve the conflict with the user's choice */
+  resolve: (useRemoteValue: boolean) => void
+}
+
+/**
+ * Represents the user's choice for resolving conflicts
+ */
+export interface SettingsConflictResolution {
+  [key: string]: boolean
+}
+
+/**
+ * Manages settings synchronization between local storage and BlueOS,
+ * providing centralized conflict resolution.
+ */
+class SettingsSyncer {
+  /** Singleton instance */
+  private static instance: SettingsSyncer
+
+  /** List of conflicts that are on hold until the current conflict resolution dialog is closed */
+  private conflictsOnHold: ConflictItem[] = []
+
+  /** Promise to resolve the current conflict resolution dialog */
+  private currentConflictDialogResolution: Promise<SettingsConflictResolution> | undefined = undefined
+
+  /** Timeout to prevent multiple conflict resolution dialogs opened at the same time */
+  private conflictDialogOpenerTimeout: ReturnType<typeof setTimeout> | undefined = undefined
+
+  /** Private constructor to enforce singleton pattern */
+  private constructor() {
+    // Singleton initialization
+  }
+
+  /**
+   * Gets the singleton instance of SettingsSyncer
+   * @returns {SettingsSyncer} The SettingsSyncer instance
+   */
+  public static getInstance(): SettingsSyncer {
+    if (!SettingsSyncer.instance) {
+      SettingsSyncer.instance = new SettingsSyncer()
+    }
+    return SettingsSyncer.instance
+  }
+
+  /**
+   * Schedules the conflict resolution dialog to be opened after a delay
+   */
+  private async scheduleConflictResolution(): Promise<void> {
+    // If there's a conflict resolution dialog already open, wait for it to be closed before scheduling a new one
+    if (this.currentConflictDialogResolution !== undefined) {
+      await this.currentConflictDialogResolution
+    }
+
+    // Clear the current schesuler if it's already set, and schedule a new opening of the conflict resolution dialog
+    clearTimeout(this.conflictDialogOpenerTimeout)
+    this.conflictDialogOpenerTimeout = setTimeout(async () => {
+      await this.resolveConflicts()
+    }, 5000)
+  }
+
+  /**
+   * Adds a new conflict to be resolved and triggers resolution if not already in progress
+   * @param {ConflictItem} conflict The conflict to be resolved
+   */
+  public async addConflict(conflict: ConflictItem): Promise<void> {
+    this.conflictsOnHold.push(conflict)
+    console.log(`Holding conflict for key: ${conflict.key}. Total conflicts on hold: ${this.conflictsOnHold.length}`)
+    await this.currentConflictDialogResolution
+    await this.scheduleConflictResolution()
+  }
+
+  /**
+   * Resolves all pending conflicts with a single user interaction
+   */
+  private async resolveConflicts(): Promise<void> {
+    if (this.conflictsOnHold.length === 0) return
+
+    // Get all conflicts that are on hold for resolution
+    const conflictsToResolve = [...this.conflictsOnHold]
+    this.conflictsOnHold = []
+
+    try {
+      this.currentConflictDialogResolution = useSettingsConflictDialog(conflictsToResolve)
+      const resolutions = await this.currentConflictDialogResolution
+      console.debug('Resolutions:', resolutions)
+    } catch (error) {
+      const message = 'Error showing settings conflict dialog'
+      openSnackbar({ message, duration: 5000, variant: 'error', closeButton: true })
+    } finally {
+      this.currentConflictDialogResolution = undefined
+    }
+  }
+}
 
 export const resetJustMadeKey = 'cockpit-reset-just-made'
 const resetJustMade = useStorage(resetJustMadeKey, false)
@@ -43,7 +151,7 @@ let lastVehicleIdWaitingLogDate: Date = new Date()
  * @returns { RemovableRef<T> }
  */
 export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): RemovableRef<T> {
-  const { showDialog, closeDialog } = useInteractionDialog()
+  const rebootDialog = useInteractionDialog()
 
   const primitiveDefaultValue = unref(defaultValue)
   const currentValue = useStorage(key, primitiveDefaultValue)
@@ -93,34 +201,16 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
     return missoinStore.lastConnectedUser
   }
 
-  const askIfUserWantsToUseBlueOsValue = async (): Promise<boolean> => {
-    let useBlueOsValue = true
-
-    const preferBlueOs = (): void => {
-      useBlueOsValue = true
-    }
-
-    const preferCockpit = (): void => {
-      useBlueOsValue = false
-    }
-
-    await showDialog({
-      maxWidth: 600,
-      title: 'Conflict with BlueOS',
-      message: `
-        The value for '${key}' that is currently used in Cockpit differs from the one stored in BlueOS. What do you
-        want to do?
-      `,
-      variant: 'warning',
-      actions: [
-        { text: 'Use the value from BlueOS', action: preferBlueOs },
-        { text: "Keep Cockpit's value", action: preferCockpit },
-      ],
+  const askIfUserWantsToUseBlueOsValue = async (remoteValue: T): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const settingsSyncer = SettingsSyncer.getInstance()
+      settingsSyncer.addConflict({
+        key,
+        localValue: currentValue.value,
+        remoteValue,
+        resolve,
+      })
     })
-
-    closeDialog()
-
-    return useBlueOsValue
   }
 
   const updateValueOnBlueOS = async (newValue: T): Promise<void> => {
@@ -189,7 +279,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         useBlueOsValue = false
       } else if (lastConnectedUser === username && lastConnectedVehicleId === currentVehicleId) {
         console.debug(`Conflict with BlueOS for key '${key}'. Asking user what to do.`)
-        useBlueOsValue = await askIfUserWantsToUseBlueOsValue()
+        useBlueOsValue = await askIfUserWantsToUseBlueOsValue(valueOnBlueOS as T)
       }
 
       if (useBlueOsValue) {
@@ -200,12 +290,12 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         // TODO: This is a workaround to make the profiles work after an import.
         // We need to find a better way to handle this, without reloading.
         if (key === savedProfilesKey) {
-          await showDialog({
+          await rebootDialog.showDialog({
             title: 'Widget profiles imported',
             message: `The widget profiles have been imported from the vehicle. We need to reload the page to apply the
             changes.`,
             variant: 'warning',
-            actions: [{ text: 'OK', action: closeDialog }],
+            actions: [{ text: 'OK', action: rebootDialog.closeDialog }],
             timer: 3000,
           })
           reloadCockpit()
