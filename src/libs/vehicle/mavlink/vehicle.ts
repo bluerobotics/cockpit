@@ -1,4 +1,5 @@
 import { differenceInMilliseconds } from 'date-fns'
+import { defaultMessageIntervalsOptions } from 'defaults'
 import { unit } from 'mathjs'
 
 import {
@@ -48,28 +49,22 @@ import {
   StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
-import type { MetadataFile } from '@/types/ardupilot-metadata'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import { flattenData } from '../common/data-flattener'
-import { defaultMessageIntervalsOptions } from '../mavlink/defaults'
-import * as MAVLinkVehicle from '../mavlink/vehicle'
 import * as Vehicle from '../vehicle'
 
 export const MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY = 'cockpit-mavlink-message-intervals'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ArduPilot = ArduPilotVehicle<any>
-
 const preDefinedDataLakeVariables = {
   cameraTilt: { id: 'cameraTiltDeg', name: 'Camera Tilt Degrees', type: 'number' },
-  ardupilotSystemId: { id: 'ardupilotSystemId', name: 'ArduPilot System ID', type: 'number' },
+  autopilotSystemId: { id: 'autopilotSystemId', name: 'Autopilot System ID', type: 'number' },
 }
 
 /**
- * Generic ArduPilot vehicle
+ * Generic MAVLink vehicle
  */
-export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehicle<Modes> {
+export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
   _altitude = new Altitude({ msl: unit(0, 'm'), rel: 0 })
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
@@ -90,7 +85,7 @@ export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehi
   _statusText = new StatusText()
   _statusGPS = new StatusGPS()
   _vehicleSpecificErrors = [0, 0, 0, 0]
-  _metadata: MetadataFile
+
   _messages: MAVLinkMessageDictionary = new Map()
 
   onIncomingMAVLinkMessage = new SignalTyped()
@@ -98,6 +93,31 @@ export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehi
   _flying = false
 
   protected currentSystemId = 1
+
+  /**
+   * Create MAVLink vehicle
+   * @param {Vehicle.Firmware} firmware
+   * @param {Vehicle.Type} type
+   * @param {number} systemId
+   */
+  constructor(firmware: Vehicle.Firmware, type: Vehicle.Type, systemId: number) {
+    super(firmware, type)
+    this.currentSystemId = systemId
+
+    // Request vehicle to stream a pre-defined list of messages so the GCS can receive them
+    try {
+      this.requestDefaultMessages()
+    } catch (error) {
+      console.error('Failed to request default messages from the vehicle.')
+      console.error(error)
+    }
+
+    // Create data-lake variables for the vehicle
+    this.createPredefinedDataLakeVariables()
+
+    // Set the system ID in the data-lake
+    setDataLakeVariableData(preDefinedDataLakeVariables.autopilotSystemId.id, systemId)
+  }
 
   /**
    * Returns the current system ID
@@ -116,30 +136,6 @@ export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehi
     // Nothing here, typescript does not not have clean optional abstract methods
     // without abstract class
     mavlink
-  }
-
-  /**
-   * Construct a new generic ArduPilot type
-   * @param {Vehicle.Type} type
-   * @param {number} systemId
-   */
-  constructor(type: Vehicle.Type, systemId: number) {
-    super(Vehicle.Firmware.ArduPilot, type)
-    this.currentSystemId = systemId
-
-    // Request vehicle to stream a pre-defined list of messages so the GCS can receive them
-    try {
-      this.requestDefaultMessages()
-    } catch (error) {
-      console.error('Failed to request default messages from the vehicle.')
-      console.error(error)
-    }
-
-    // Create data-lake variables for the vehicle
-    this.createPredefinedDataLakeVariables()
-
-    // Set the system ID in the data-lake
-    setDataLakeVariableData(preDefinedDataLakeVariables.ardupilotSystemId.id, systemId)
   }
 
   /**
@@ -692,14 +688,6 @@ export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehi
    */
   flying(): boolean {
     return this._flying
-  }
-
-  /**
-   * Return metadata from the vehicle
-   * @returns {MetadataFile}
-   */
-  metadata(): MetadataFile {
-    return this._metadata
   }
 
   /**
