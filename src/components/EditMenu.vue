@@ -718,6 +718,7 @@ import { getWidgetsFromBlueOS } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import {
   type Profile,
@@ -745,6 +746,7 @@ const { showDialog, closeDialog } = useInteractionDialog()
 
 const interfaceStore = useAppInterfaceStore()
 const store = useWidgetManagerStore()
+const mainVehicleStore = useMainVehicleStore()
 
 const miniWidgetsBars = computed(() => {
   let regularContainers = store.miniWidgetContainersInCurrentView.filter(
@@ -1094,7 +1096,8 @@ useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidget
 
 const getExternalWidgetSetupInfos = async (): Promise<void> => {
   try {
-    ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS()
+    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+    ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS(vehicleAddress)
   } catch (error) {
     const errorMessage = 'Error getting info around external widgets from BlueOS.'
     openSnackbar({ message: errorMessage, variant: 'error', closeButton: true })
