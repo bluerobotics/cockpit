@@ -9,19 +9,26 @@
         <!-- BlueOS Alerts Configuration -->
         <BlueOSAlertsConfig />
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider>
-          <template #title>Voice alerts:</template>
+          <template #title>Text to speech:</template>
           <template #info>
-            Enable voice alerts to receive audible notifications about system and vehicle activities. <br />
-            Select specific alert levels to customize which types of notifications you receive.
+            Enable text to speech to receive audible notifications of the system alerts. <br />
+            Select specific alert levels to customize which ones will be spoken.
           </template>
           <template #content>
-            <v-switch
-              v-model="alertStore.enableVoiceAlerts"
-              label="Enable voice alerts"
-              color="white"
-              class="-mt-4 -mb-2 ml-3"
-            />
-            <span class="text-sm font-medium mt-4">Alert levels:</span>
+            <div class="flex flex-row items-center mb-4 ml-2 gap-x-16">
+              <v-switch v-model="alertStore.enableVoiceAlerts" label="Enable" color="white" hide-details />
+              <div class="flex flex-row items-center">
+                <span class="text-sm font-medium">Voice:</span>
+                <Dropdown
+                  v-model="alertStore.selectedAlertSpeechVoiceName"
+                  :options="alertStore.availableAlertSpeechVoiceNames"
+                  name-key="name"
+                  value-key="value"
+                  class="max-w-[350px] ml-3"
+                />
+              </div>
+            </div>
+            <span class="text-sm font-medium mt-4">Levels to speak:</span>
             <div class="flex flex-wrap items-center justify-start">
               <div
                 v-for="enabledLevel in alertStore.enabledAlertLevels"
@@ -36,14 +43,6 @@
                 />
               </div>
             </div>
-            <span class="text-sm font-medium mt-4">Alert voice:</span>
-            <Dropdown
-              v-model="alertStore.selectedAlertSpeechVoiceName"
-              :options="alertStore.availableAlertSpeechVoiceNames"
-              name-key="name"
-              value-key="value"
-              class="max-w-[350px] mt-2 mb-4 ml-2"
-            />
           </template>
         </ExpansiblePanel>
         <!-- Armed Menu Warning Toggle -->
