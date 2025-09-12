@@ -24,10 +24,11 @@ import {
 } from './blueos'
 import { deserialize, isEqual, sleep, tryACoupleOfTimes } from './utils'
 
-export const oldStyleSettingsKey = 'cockpit-settings-v1-backup'
-export const vehicleOldStyleSettingsKey = 'settings-v1-backup'
+export const localOldStyleSettingsKey = 'cockpit-settings-v1-backup'
+export const vehicleOldStyleSettingsKey = 'settings'
+export const vehicleOldStyleSettingsBackupKey = 'settings-v1-backup'
 export const vehicleNewStyleSettingsKey = 'settings-v2'
-export const syncedSettingsKey = 'cockpit-settings-v2'
+export const localSyncedSettingsKey = 'cockpit-settings-v2'
 export const cockpitLastConnectedVehicleKey = 'cockpit-last-connected-vehicle-id'
 export const cockpitLastConnectedUserKey = 'cockpit-last-connected-user'
 export const vehicleIdKey = 'cockpit-vehicle-id'
@@ -178,7 +179,7 @@ class SettingsManager {
    * @returns {LocalSyncedSettings} The local settings
    */
   public getLocalSettings = (): LocalSyncedSettings => {
-    const storedLocalSettings = localStorage.getItem(syncedSettingsKey)
+    const storedLocalSettings = localStorage.getItem(localSyncedSettingsKey)
     if (storedLocalSettings) {
       return deserialize(storedLocalSettings)
     }
@@ -191,7 +192,7 @@ class SettingsManager {
    */
   private setLocalSettings = (newSettings: LocalSyncedSettings): void => {
     console.log('[SettingsManager]', 'Setting/saving local settings.')
-    localStorage.setItem(syncedSettingsKey, JSON.stringify(newSettings))
+    localStorage.setItem(localSyncedSettingsKey, JSON.stringify(newSettings))
   }
 
   private setLocalSettingsForUserAndVehicle = (userId: string, vehicleId: string, settings: SettingsPackage): void => {
@@ -395,7 +396,7 @@ class SettingsManager {
     }
   }
 
-  private getVehicleIdFromVehicle = async (vehicleAddress: string): Promise<string> => {
+  private getVehicleIdFromVehicleOrGenerateAndPushANewOne = async (vehicleAddress: string): Promise<string> => {
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const getVehicleIdFn = (): Promise<string | undefined> => getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleIdKey)
     const maybeId = await tryACoupleOfTimes(getVehicleIdFn, 0, 300)
@@ -505,60 +506,92 @@ class SettingsManager {
     console.info(`[SettingsManager] Looking for old-style settings backup on vehicle '${vehicleAddress}'.`)
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
-    const getOldStyleSettingsFn = (): Promise<OldCockpitSettingsPackage> => getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleOldStyleSettingsKey)
-    const oldStyleVehicleSettingsBackup = await tryACoupleOfTimes(getOldStyleSettingsFn, 0, 300)
+    const getOldStyleVehicleSettingsBackupFn = () => getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleOldStyleSettingsBackupKey)
+    const oldStyleVehicleSettingsBackup = await tryACoupleOfTimes(getOldStyleVehicleSettingsBackupFn, 0, 300)
 
     if (oldStyleVehicleSettingsBackup !== undefined) {
       console.info('[SettingsManager] Found old-style settings backup on vehicle. Skipping backup.')
       return
     }
 
-    console.info('[SettingsManager] Retrieving current vehicle settings.')
-    const vehicleSettings = await this.getValidSettingsFromVehicle(vehicleAddress)
+    console.info('[SettingsManager] Retrieving old-style vehicle settings.')
+    // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
+    const getOldStyleVehicleSettingsFn = () => getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleOldStyleSettingsKey)
+    const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 0, 300)
 
-    if (Object.keys(vehicleSettings).length === 0) {
-      console.warn('[SettingsManager] No vehicle settings found. Skipping backup.')
-      return
-    } else if (this.areVehicleSettingsInNewStyle(vehicleSettings)) {
-      console.info('[SettingsManager] Vehicle settings are already in new style. Skipping backup.')
+    if (Object.keys(oldStyleVehicleSettings).length === 0) {
+      console.warn('[SettingsManager] No old-style vehicle settings found. Skipping backup.')
       return
     }
-
-    console.info('[SettingsManager] No old-style settings backup found on vehicle. Backing up current settings.')
+    console.info('[SettingsManager] No old-style settings backup found on vehicle. Backing up current old-style settings.')
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
-    const setOldStyleSettingsFn = (): Promise<void> => setKeyDataOnCockpitVehicleStorage(vehicleAddress, vehicleOldStyleSettingsKey, vehicleSettings)
-    await tryACoupleOfTimes(setOldStyleSettingsFn, 0, 300)
+    const setOldStyleVehicleSettingsBackupFn = (): Promise<void> => setKeyDataOnCockpitVehicleStorage(vehicleAddress, vehicleOldStyleSettingsBackupKey, oldStyleVehicleSettings)
+    await tryACoupleOfTimes(setOldStyleVehicleSettingsBackupFn, 0, 300)
     console.info('[SettingsManager] Successfully backed up old-style vehicle settings.')
   }
 
   private migrateOldStyleVehicleSettingsIfNeeded = async (vehicleAddress: string): Promise<void> => {
     console.info('[SettingsManager] Checking if vehicle settings are in the new style already.')
 
-    const vehicleSettings = await this.getValidSettingsFromVehicle(vehicleAddress)
-    if (Object.keys(vehicleSettings).length === 0) {
-      console.warn('[SettingsManager] No settings found on vehicle. Skipping migration.')
+    const newStyleVehicleSettingsFn = () => getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleNewStyleSettingsKey)
+    const newStyleVehicleSettings = await tryACoupleOfTimes(newStyleVehicleSettingsFn, 0, 300)
+
+    if (this.areVehicleSettingsInNewStyle(newStyleVehicleSettings)) {
+      console.info('[SettingsManager] Vehicle settings in the new style already exist. Skipping migration.')
       return
     }
 
-    if (this.areVehicleSettingsInNewStyle(vehicleSettings)) {
-      console.info('[SettingsManager] Vehicle settings are already in the new style. Skipping migration.')
+    console.info('[SettingsManager] Did not find new-style vehicle settings. Migrating old-style settings to the new style.')
+
+    console.info('[SettingsManager] Retrieving old-style vehicle settings.')
+    // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
+    const getOldStyleVehicleSettingsFn = () => getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleOldStyleSettingsKey)
+    const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 0, 300)
+
+    if (Object.keys(oldStyleVehicleSettings).length === 0) {
+      console.warn('[SettingsManager] No old-style vehicle settings found. Skipping migration.')
       return
     }
 
-    console.info('[SettingsManager] Vehicle settings are in the old style. Migrating to the new style.')
-
-    const migratedSettings: VehicleSettings = {}
-    for (const user of Object.keys(vehicleSettings)) {
-      const vehicleUserSettings: SettingsPackage | OldCockpitSetting = vehicleSettings[user]
-      const newStyleVehicleUserSettings = this.getMigratedOldStyleSettingsPackage(vehicleUserSettings)
-      migratedSettings[user] = newStyleVehicleUserSettings
+    console.info('[SettingsManager] Migrating old-style settings to the new style.')
+    const newStyleMigratedSettings: VehicleSettings = {}
+    for (const [user, oldStyleUserSettings] of Object.entries(oldStyleVehicleSettings)) {
+      const newStyleVehicleUserSettings = this.getMigratedOldStyleSettingsPackage(oldStyleUserSettings as OldCockpitSettingsPackage)
+      newStyleMigratedSettings[user] = newStyleVehicleUserSettings
     }
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
-    const setNewStyleSettingsFn = (): Promise<void> => setKeyDataOnCockpitVehicleStorage(vehicleAddress, vehicleNewStyleSettingsKey, migratedSettings)
+    const setNewStyleSettingsFn = (): Promise<void> => setKeyDataOnCockpitVehicleStorage(vehicleAddress, vehicleNewStyleSettingsKey, newStyleMigratedSettings)
     await tryACoupleOfTimes(setNewStyleSettingsFn, 0, 300)
     console.info('[SettingsManager] Successfully migrated old-style vehicle settings to new style.')
+  }
+
+  private importMigratedVehicleSettingsToLocalStorageIfNeeded = async (vehicleAddress: string): Promise<void> => {
+    console.info('[SettingsManager] Importing migrated vehicle settings to local storage if needed.')
+
+    // If we already have new-style settings locally, we don't need to import them
+    if (localStorage.getItem(localSyncedSettingsKey)) {
+      console.info('[SettingsManager] New-style settings already exist locally. Skipping import.')
+      return
+    }
+
+    // Getting new-style vehicle settings
+    console.info('[SettingsManager] Retrieving new-style vehicle settings from vehicle.')
+    const getNewStyleVehicleSettingsFn = () => getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleNewStyleSettingsKey)
+    const newStyleVehicleSettings = await tryACoupleOfTimes(getNewStyleVehicleSettingsFn, 0, 300)
+
+    if (Object.keys(newStyleVehicleSettings).length <= 0) {
+      console.info('[SettingsManager] No new-style vehicle settings found. Aborting import.')
+      return
+    }
+
+    console.info('[SettingsManager] Importing migrated vehicle settings to local storage.')
+    Object.entries(newStyleVehicleSettings).forEach(([user, vehicleSettings]) => {
+      this.setLocalSettingsForUserAndVehicle(user, this.currentVehicleId, vehicleSettings as SettingsPackage)
+    })
+
+    console.info('[SettingsManager] Successfully imported migrated vehicle settings to local storage.')
   }
 
   /**
@@ -691,7 +724,7 @@ class SettingsManager {
   }
 
   private isThereAnOldStyleSettingsBackup = (): boolean => {
-    const storedSettings = localStorage.getItem(oldStyleSettingsKey)
+    const storedSettings = localStorage.getItem(localOldStyleSettingsKey)
     if (storedSettings === null) {
       return false
     }
@@ -705,7 +738,7 @@ class SettingsManager {
 
   private backupCurrentOldStyleSettings = (): void => {
     const oldStyleSettings: OldCockpitSettingsPackage = {}
-    const keysToIgnore = [syncedSettingsKey, oldStyleSettingsKey, cockpitLastConnectedUserKey, cockpitLastConnectedVehicleKey]
+    const keysToIgnore = [localSyncedSettingsKey, localOldStyleSettingsKey, cockpitLastConnectedUserKey, cockpitLastConnectedVehicleKey]
     const keysToBackup = Object.keys(localStorage).filter((k) => !keysToIgnore.includes(k))
       for (const key of keysToBackup) {
         const value = localStorage.getItem(key)
@@ -713,7 +746,7 @@ class SettingsManager {
           oldStyleSettings[key] = deserialize(value)
         }
       }
-      localStorage.setItem(oldStyleSettingsKey, JSON.stringify(oldStyleSettings))
+      localStorage.setItem(localOldStyleSettingsKey, JSON.stringify(oldStyleSettings))
   }
 
   private getSettingsWithEpochZeroed = (settings: SettingsPackage): SettingsPackage => {
@@ -783,7 +816,7 @@ class SettingsManager {
           fallbackSettings = this.getSettingsForUserAndVehicle(fallbackUsername, fallbackVehicleId)
         } else {
           console.warn(`[SettingsManager] No settings for user '${fallbackUsername}' and vehicle '${fallbackVehicleId}'. Migrating old-style settings.`)
-          const oldStyleSettings: OldCockpitSettingsPackage = deserialize(localStorage.getItem(oldStyleSettingsKey)!)
+          const oldStyleSettings: OldCockpitSettingsPackage = deserialize(localStorage.getItem(localOldStyleSettingsKey)!)
           fallbackSettings = this.getMigratedOldStyleSettingsPackage(oldStyleSettings)
           console.info(`[SettingsManager] Successfully migrated old-style settings to new style.`)
         }
@@ -815,12 +848,16 @@ class SettingsManager {
     this.currentVehicleAddress = vehicleAddress
 
     // Get ID of the connected vehicle
-    const vehicleId = await this.getVehicleIdFromVehicle(vehicleAddress)
+    const vehicleId = await this.getVehicleIdFromVehicleOrGenerateAndPushANewOne(vehicleAddress)
     console.log(`[SettingsManager] Got vehicle ID '${vehicleId}' from vehicle '${vehicleAddress}'.`)
 
     // Set the current vehicle ID
     console.log(`[SettingsManager] Setting current vehicle ID to: '${vehicleId}'.`)
     this.currentVehicleId = vehicleId
+
+    // Import migrated vehicle settings to local storage if we don't have them yet
+    // This should happen after we have the vehicle ID, because we need to know to which vehicle we are importing the settings to
+    await this.importMigratedVehicleSettingsToLocalStorageIfNeeded(vehicleAddress)
 
     let toBeUsedUser: string | undefined | undefined = undefined
     let toBeUsedVehicle: string | undefined | undefined = undefined
@@ -851,7 +888,7 @@ class SettingsManager {
       console.warn(`[SettingsManager] No settings found for any user/vehicle combination. Migrating old-style settings.`)
       toBeUsedUser = fallbackUsername
       toBeUsedVehicle = fallbackVehicleId
-      const oldStyleSettings: OldCockpitSettingsPackage = deserialize(localStorage.getItem(oldStyleSettingsKey)!)
+      const oldStyleSettings: OldCockpitSettingsPackage = deserialize(localStorage.getItem(localOldStyleSettingsKey)!)
       toBeUsedSettings = this.getMigratedOldStyleSettingsPackage(oldStyleSettings)
       console.info(`[SettingsManager] Successfully migrated old-style settings to new style for user '${toBeUsedUser}' and vehicle '${toBeUsedVehicle}'.`)
     }
@@ -945,7 +982,7 @@ class SettingsManager {
       toBeUsedSettings = this.getSettingsForUserAndVehicle(toBeUsedUser, toBeUsedVehicle)
     } else {
       console.warn(`[SettingsManager] No settings found for any user/vehicle combination. Migrating old-style settings.`)
-      const oldStyleSettings: OldCockpitSettingsPackage = deserialize(localStorage.getItem(oldStyleSettingsKey)!)
+      const oldStyleSettings: OldCockpitSettingsPackage = deserialize(localStorage.getItem(localOldStyleSettingsKey)!)
       toBeUsedSettings = this.getMigratedOldStyleSettingsPackage(oldStyleSettings)
       console.info(`[SettingsManager] Successfully migrated old-style settings to new style for user '${toBeUsedUser}' and vehicle '${toBeUsedVehicle}'.`)
     }
