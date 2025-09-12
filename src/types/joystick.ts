@@ -530,3 +530,67 @@ export const convertSDLJoystickStateToGamepadState = (sdlState: SDLJoystickState
     axes: sdlState.axes,
   }
 }
+
+/**
+ * Interface representing a single step in the joystick wizard
+ */
+export interface JoystickWizardStep {
+  /**
+   * Unique identifier for the step
+   */
+  id: number
+  /**
+   * Title of the step
+   */
+  title: string
+  /**
+   * Description of the step
+   */
+  content?: string
+  /**
+   * Lower description of the step
+   */
+  opposite?: string
+  /**
+   * If true, the content will be larger than usual
+   */
+  largeContent?: boolean
+  /**
+   * If true, the step detects an axis movement
+   */
+  inputType?: 'axis' | 'button'
+  /**
+   * If true, the step has selection options
+   */
+  hasSelection?: boolean
+  /**
+   * Options for the selection step
+   */
+  selectionOptions?: {
+    /**
+     * Label for the selection option
+     */
+    label: string
+    /**
+     * Action to perform when the option is selected
+     */
+    action: () => void
+  }[]
+  /**
+   * If true, the next button will be disabled
+   */
+  disableNextButton?: boolean
+  /**
+   * If true, the step is for reviewing mappings
+   */
+  reviewMappings?: boolean
+  /**
+   *  If the step is disabled
+   */
+  disabled?: boolean
+  /**
+   * OnStepReached callback
+   * @description Callback function to be called when the step is reached
+   */
+  onStepReached?: (step: JoystickWizardStep) => void
+}
