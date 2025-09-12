@@ -1,5 +1,7 @@
 import { v4 as uuid } from 'uuid'
 
+import { settingsManager } from '../settings-management'
+
 /**
  * The type of a variable in the data lake
  */
@@ -49,7 +51,7 @@ const dataLakeVariableInfoListeners: Record<string, (variables: Record<string, D
 
 // Load persistent variables from localStorage on initialization
 const loadPersistentVariables = (): void => {
-  const savedVariables = localStorage.getItem(persistentVariablesKey)
+  const savedVariables = settingsManager.getKeyValue(persistentVariablesKey)
 
   if (savedVariables) {
     const variables = JSON.parse(savedVariables) as DataLakeVariable[]
@@ -59,7 +61,7 @@ const loadPersistentVariables = (): void => {
   }
 
   // Load persistent values
-  const savedValues = localStorage.getItem(persistentValuesKey)
+  const savedValues = settingsManager.getKeyValue(persistentValuesKey)
   if (savedValues) {
     const values = JSON.parse(savedValues) as Record<string, string | number | boolean>
     Object.entries(values).forEach(([id, value]) => {
@@ -75,7 +77,7 @@ const loadPersistentVariables = (): void => {
 const savePersistentVariables = (): void => {
   const persistentVariables = Object.values(dataLakeVariableInfo).filter((variable) => variable.persistent)
 
-  localStorage.setItem(persistentVariablesKey, JSON.stringify(persistentVariables))
+  settingsManager.setKeyValue(persistentVariablesKey, JSON.stringify(persistentVariables))
 }
 
 // Save persistent values to localStorage
@@ -90,7 +92,7 @@ const savePersistentValues = (): void => {
       }
     })
 
-  localStorage.setItem(persistentValuesKey, JSON.stringify(persistentValuesObj))
+  settingsManager.setKeyValue(persistentValuesKey, JSON.stringify(persistentValuesObj))
 }
 
 export const getAllDataLakeVariablesInfo = (): Record<string, DataLakeVariable> => {
