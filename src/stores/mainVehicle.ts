@@ -29,10 +29,10 @@ import { availableCockpitActions, registerActionCallback } from '@/libs/joystick
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
-import { MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
-import type { ArduPilotParameterSetData, MessageIntervalOptions } from '@/libs/vehicle/mavlink/types'
+import type { MAVLinkParameterSetData, MessageIntervalOptions } from '@/libs/vehicle/mavlink/types'
+import { MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY } from '@/libs/vehicle/mavlink/vehicle'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
   Altitude,
@@ -358,7 +358,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   function configure(settings: VehicleConfigurationSettings): void {
     if (mainVehicle.value?.firmware() === Vehicle.Firmware.ArduPilot) {
-      mainVehicle.value?.setParameter(settings as ArduPilotParameterSetData)
+      mainVehicle.value?.setParameter(settings as MAVLinkParameterSetData)
     }
   }
 

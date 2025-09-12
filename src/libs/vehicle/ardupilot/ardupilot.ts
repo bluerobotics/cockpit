@@ -28,7 +28,7 @@ import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-messag
 import { SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, round, sleep } from '@/libs/utils'
 import {
-  type ArduPilotParameterSetData,
+  type MAVLinkParameterSetData,
   type MessageIntervalOptions,
   alertLevelFromMavSeverity,
   convertCockpitWaypointsToMavlink,
@@ -430,7 +430,7 @@ export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehi
         this._statusGPS.visibleSatellites = gpsMessage.satellites_visible
         this._statusGPS.HDOP = round(gpsMessage.eph / 100)
         this._statusGPS.VDOP = round(gpsMessage.epv / 100)
-        const arduPilotGPSFixTable = {
+        const gpsFixTable = {
           [GpsFixType.GPS_FIX_TYPE_NO_GPS]: FixTypeGPS.NO_GPS,
           [GpsFixType.GPS_FIX_TYPE_NO_FIX]: FixTypeGPS.NO_FIX,
           [GpsFixType.GPS_FIX_TYPE_2D_FIX]: FixTypeGPS.FIX_2D,
@@ -441,7 +441,7 @@ export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehi
           [GpsFixType.GPS_FIX_TYPE_STATIC]: FixTypeGPS.STATIC,
           [GpsFixType.GPS_FIX_TYPE_PPP]: FixTypeGPS.PPP,
         }
-        this._statusGPS.fixType = arduPilotGPSFixTable[(gpsMessage.fix_type as unknown as Type<GpsFixType>).type]
+        this._statusGPS.fixType = gpsFixTable[(gpsMessage.fix_type as unknown as Type<GpsFixType>).type]
         this.onStatusGPS.emit()
         break
       }
@@ -801,9 +801,9 @@ export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehi
 
   /**
    * Request parameters list from vehicle
-   * @param { ArduPilotParameterSetData } settings Data used to set a parameter
+   * @param { MAVLinkParameterSetData } settings Data used to set a parameter
    */
-  setParameter(settings: ArduPilotParameterSetData): void {
+  setParameter(settings: MAVLinkParameterSetData): void {
     const param_name = [...settings.id]
     while (param_name.length < 16) {
       param_name.push('\0')
