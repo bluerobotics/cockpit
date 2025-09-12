@@ -96,7 +96,7 @@ export const alertLevelFromMavSeverity = {
 /**
  * Data needed for setting a parameter on a ArduPilot vehicle
  */
-export interface ArduPilotParameterSetData extends VehicleConfigurationSettings {
+export interface MAVLinkParameterSetData extends VehicleConfigurationSettings {
   /**
    * Name of the parameter to be set
    */
