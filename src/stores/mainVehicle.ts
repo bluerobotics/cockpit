@@ -19,6 +19,7 @@ import {
   getVehicleName,
   setKeyDataOnCockpitVehicleStorage,
 } from '@/libs/blueos'
+import { blueOsVariables } from '@/libs/blueos/definitions'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -586,17 +587,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
 
     updateVehicleId()
-
-    // Register BlueOS variables in the data lake
-    const blueOsVariables = {
-      cpuTemp: { id: 'blueos/cpu/tempC', name: 'CPU Temperature', type: 'number' },
-      cpuUsageAverage: { id: 'blueos/cpu/usageAverage', name: 'BlueOS CPU Usage (average)', type: 'number' },
-      cpuFrequencyAverage: {
-        id: 'blueos/cpu/frequencyAverage',
-        name: 'BlueOS CPU Frequency (average)',
-        type: 'number',
-      },
-    }
 
     const cpuUsageVariableId = (cpuName: string): string => `blueos/${cpuName}/usage`
     const cpuFrequencyVariableId = (cpuName: string): string => `blueos/${cpuName}/frequency`
