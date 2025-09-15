@@ -1,3 +1,4 @@
+import { useThrottleFn } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { format } from 'date-fns'
 import saveAs from 'file-saver'
@@ -7,6 +8,7 @@ import { defineStore } from 'pinia'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { app_version } from '@/libs/cosmos'
+import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { isElectron } from '@/libs/utils'
 import { snapshotStorage, snapshotThumbStorage } from '@/libs/videoStorage'
 import { StorageDB } from '@/types/general'
@@ -284,6 +286,19 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     await Promise.all(fileNames.map((fileName) => snapshotStorage.removeItem(fileName)))
     await Promise.all(fileNames.map((fileName) => snapshotThumbStorage.removeItem(fileName + '-thumb')))
   }
+
+  const takeSnapshotAction = async (): Promise<void> => {
+    try {
+      // Take a snapshot of all available streams
+      await takeSnapshot(videoStore.namesAvailableStreams, isElectron())
+      console.log('Snapshot taken successfully via action')
+    } catch (error) {
+      console.error('Error taking snapshot via action:', error)
+    }
+  }
+
+  // Register the snapshot action callback
+  registerActionCallback(availableCockpitActions.take_snapshot, useThrottleFn(takeSnapshotAction, 300))
 
   return {
     snapshotStorage,

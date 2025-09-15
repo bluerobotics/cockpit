@@ -182,11 +182,15 @@ import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
 import { SubMenuComponent } from './types/general'
 const { openSnackbar } = useSnackbar()
+import { useSnapshotStore } from './stores/snapshot'
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const devStore = useDevelopmentStore()
+
+// Initialize the snapshot store to register action callbacks
+useSnapshotStore()
 
 const showAboutDialog = ref(false)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
