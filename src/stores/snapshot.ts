@@ -53,14 +53,21 @@ export const useSnapshotStore = defineStore('snapshot', () => {
 
   const buildExif = (opts: EIXFType): SnapshotExif => {
     const { latitude, longitude, yaw, pitch, roll, width, height } = opts
+
+    const jsonComment = {
+      vehicle_attitude: {
+        yaw: yaw ?? 0,
+        pitch: pitch ?? 0,
+        roll: roll ?? 0,
+      },
+    }
+
     return {
       '0th': {
         [piexif.ImageIFD.Software]: `Cockpit ${app_version.version} - Blue Robotics`,
       },
       'Exif': {
-        [piexif.ExifIFD.UserComment]: `Vehicle attitude: {yaw: ${yaw?.toFixed(2) ?? 0}, pitch: ${
-          pitch?.toFixed(2) ?? 0
-        }, roll: ${roll?.toFixed(2) ?? 0}}`,
+        [piexif.ExifIFD.UserComment]: JSON.stringify(jsonComment),
         [piexif.ExifIFD.PixelXDimension]: width,
         [piexif.ExifIFD.PixelYDimension]: height,
       },
