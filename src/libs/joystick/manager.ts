@@ -41,6 +41,7 @@ export enum JoystickModel {
   IpegaPG9023 = 'Ipega PG-9023',
   SteamDeckLCD = 'Steam Deck LCD',
   SteamDeckOLED = 'Steam Deck OLED',
+  EightBitDoUltimate2C = '8BitDo Ultimate 2C',
   Unknown = 'Unknown',
 }
 
@@ -58,6 +59,7 @@ const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   ['1949:0402', JoystickModel.IpegaPG9023],
   ['28de:11ff', JoystickModel.SteamDeckLCD],
   ['28de:1205', JoystickModel.SteamDeckOLED],
+  ['2dc8:301b', JoystickModel.EightBitDoUltimate2C],
 ])
 
 // Necessary to add functions
