@@ -256,3 +256,18 @@ export interface PointOfInterest {
   /** Timestamp of creation or last update */
   timestamp: number
 }
+
+export type ClosestSegmentInfo = {
+  /**
+   * Index of the segment in the polyline.
+   */
+  segmentIndex: number
+  /**
+   * Closest point on the segment to the mouse cursor.
+   */
+  closestPointOnSegment: L.Point
+  /**
+   * Distance from the mouse cursor to the closest point on the segment.
+   */
+  distanceInPixels: number
+}
