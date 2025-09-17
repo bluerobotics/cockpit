@@ -1,5 +1,8 @@
 <template>
-  <div v-tooltip="'Battery information'" class="flex items-center w-[95px] h-12 text-white justify-center">
+  <div
+    v-tooltip="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue + '%'}`"
+    class="flex items-center w-[95px] h-12 text-white justify-center"
+  >
     <div class="relative w-[1.5rem] battery-icon">
       <i class="mdi mdi-battery-outline"></i>
 
