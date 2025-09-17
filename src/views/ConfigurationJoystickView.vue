@@ -44,7 +44,7 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[280px] overflow-auto">
+              <div class="flex flex-col items-center h-[225px] overflow-hidden">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
@@ -92,6 +92,7 @@
                       >
                         <v-btn
                           class="text-md bg-[#FFFFFF23]"
+                          size="small"
                           :class="{
                             'bg-[#FFFFFF43]': selectedProfile.name === functionMapping.name,
                             'text-sm': interfaceStore.isOnSmallScreen,
@@ -106,7 +107,7 @@
                       <!-- Regular profile button -->
                       <div v-else class="relative mt-2">
                         <v-btn
-                          class="text-md bg-[#FFFFFF23] px-6"
+                          class="text-[13px] bg-[#FFFFFF23] px-2"
                           :class="{
                             'bg-[#FFFFFF43]': selectedProfile.name === functionMapping.name,
                             'text-sm': interfaceStore.isOnSmallScreen,
@@ -215,6 +216,17 @@
                       class="-mt-2"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
                     />
+                    <div v-if="showWizardButton" class="absolute right-0 mb-2">
+                      <v-btn
+                        variant="elevated"
+                        size="small"
+                        class="bg-[#FFFFFF22] text-white pt-[2px] pl-4"
+                        prepend-icon="mdi-gamepad-up"
+                        @click="interfaceStore.isJoystickWizardVisible = true"
+                      >
+                        Joystick config wizard
+                      </v-btn>
+                    </div>
                   </div>
                   <div
                     v-if="showJoystickLayout"
@@ -268,6 +280,17 @@
                       class="-mt-2 -mb-1"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
                     />
+                    <div v-if="showWizardButton" class="absolute right-0 mb-2">
+                      <v-btn
+                        variant="elevated"
+                        size="small"
+                        class="bg-[#FFFFFF22] text-white pt-[2px] pl-4"
+                        prepend-icon="mdi-gamepad-up"
+                        @click="interfaceStore.isJoystickWizardVisible = true"
+                      >
+                        Joystick config wizard
+                      </v-btn>
+                    </div>
                   </div>
                   <p class="text-start text-sm font-bold w-[93%] mb-1">Axes</p>
                   <v-data-table
@@ -762,6 +785,10 @@ const selectedProfileIndex = ref(0)
 const throttledButtonStates = ref<Record<number, number | undefined>>({})
 const lastButtonUpdateTime = ref(0)
 const buttonUpdateThrottleMs = 30
+
+const showWizardButton = computed(() => {
+  return vehicleType === 'MAV_TYPE_SUBMARINE'
+})
 
 // Optimized shallow watcher instead of deep watcher
 let buttonUpdateScheduled = false
