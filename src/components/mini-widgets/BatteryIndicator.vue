@@ -1,8 +1,23 @@
 <template>
-  <div v-tooltip="'Battery information'" class="flex items-center w-[95px] h-12 text-white justify-center">
-    <span class="relative w-[1.5rem] mdi battery-icon left-0 mr-3" :class="[batteryIconClass]">
-      <span class="absolute text-sm text-yellow-400 -bottom-[3px] left-[4px] mdi mdi-alert-circle"></span>
-    </span>
+  <div
+    v-tooltip="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue + '%'}`"
+    class="flex items-center w-[95px] h-12 text-white justify-center"
+  >
+    <div class="relative w-[1.5rem] battery-icon">
+      <i class="mdi mdi-battery-outline"></i>
+
+      <i
+        class="mdi mdi-battery absolute inset-0 bottom-0 -right-1 text-transparent bg-clip-text"
+        :style="{
+          backgroundImage: `linear-gradient(to top, white ${remainingDisplayValue}%, transparent ${remainingDisplayValue}%)`,
+        }"
+      />
+      <span
+        v-if="remainingDisplayValue < 0"
+        class="absolute text-sm text-yellow-400 -bottom-[3px] left-[4px] mdi mdi-alert-circle"
+      ></span>
+    </div>
+
     <div class="relative right-0 flex flex-col w-[4rem] select-none text-sm font-semibold leading-4 text-end -mr-2">
       <div class="w-full">
         <div class="flex justify-end gap-x-1 items-center">
@@ -103,8 +118,9 @@ const instantaneousWattsDisplayValue = computed(() => {
   return store.instantaneousWatts !== undefined ? store.instantaneousWatts.toFixed(1) : '--'
 })
 
-const batteryIconClass = computed(() => {
-  return 'mdi-battery'
+const remainingDisplayValue = computed(() => {
+  if (store?.powerSupply?.remaining === undefined) return -1
+  return Math.abs(store.powerSupply.remaining) > 100 ? 100 : store.powerSupply.remaining
 })
 
 const setupToggleInterval = (): void => {
