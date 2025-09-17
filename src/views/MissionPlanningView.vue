@@ -381,7 +381,13 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
-
+  <div
+    v-show="showCursorDeco"
+    :style="{ left: cursorLivePositionX + 'px', top: cursorLivePositionY + 'px' }"
+    class="cursor-deco"
+  >
+    {{ cursorSymbol }}
+  </div>
   <v-progress-linear
     v-if="fetchingMission"
     :model-value="missionFetchProgress"
@@ -642,6 +648,13 @@ const showMissionCreationTips = ref(missionStore.showMissionCreationTips)
 const countdownToHideTips = ref<number | undefined>(undefined)
 const isSettingHomeWaypoint = ref(false)
 const nearMissionPathTolerance = 16
+const isCtrlDown = ref(false)
+const isShiftDown = ref(false)
+const cursorLivePositionX = ref(0)
+const cursorLivePositionY = ref(0)
+
+const cursorSymbol = computed(() => (isCtrlDown.value ? '+' : isShiftDown.value ? '−' : ''))
+const showCursorDeco = computed(() => isCtrlDown.value || isShiftDown.value)
 
 let mapActionsOverlayEl: HTMLDivElement | null = null
 let mapActionsKnobEl: HTMLDivElement | null = null
@@ -845,6 +858,50 @@ const showSegmentAddKnobAt = (midpoint: L.LatLng, segmentIndex: number): void =>
 const hideSegmentAddKnob = (): void => {
   if (mapActionsKnobEl) mapActionsKnobEl.style.display = 'none'
   mapActionsKnobSegmentIndex = null
+}
+
+const setMapCursor = (): void => {
+  const map = planningMap.value as any
+  const el: HTMLElement | null = map && typeof map.getContainer === 'function' ? map.getContainer() : null
+  if (!el) return
+
+  if (isSettingHomeWaypoint.value) return
+
+  if (isCtrlDown.value || isShiftDown.value) {
+    el.style.cursor = 'pointer'
+    return
+  }
+
+  if (isCreatingSurvey.value || isCreatingSimplePath.value) {
+    el.style.cursor = 'crosshair'
+  } else {
+    el.style.cursor = ''
+  }
+}
+
+const onGlobalKeyDown = (e: KeyboardEvent): void => {
+  if (e.ctrlKey || e.metaKey) isCtrlDown.value = true
+  if (e.shiftKey) isShiftDown.value = true
+  setMapCursor()
+}
+
+const onGlobalKeyUp = (e: KeyboardEvent): void => {
+  // If keyup is Ctrl/Cmd/Shift, or no modifiers remain pressed, clear flags
+  if (e.key.toLowerCase() === 'control' || e.key === 'Meta') isCtrlDown.value = e.ctrlKey || e.metaKey
+  if (e.key === 'Shift') isShiftDown.value = e.shiftKey
+  if (!e.ctrlKey && !e.metaKey) isCtrlDown.value = false
+  if (!e.shiftKey) isShiftDown.value = false
+  setMapCursor()
+}
+
+const onWindowBlur = (): void => {
+  isCtrlDown.value = false
+  isShiftDown.value = false
+}
+
+const onMouseMove = (e: MouseEvent): void => {
+  cursorLivePositionX.value = e.clientX
+  cursorLivePositionY.value = e.clientY
 }
 
 const findClosestSegmentIndex = (segmentEndpoints: L.LatLng[], clickedLatLng: L.LatLng): number => {
@@ -1372,6 +1429,9 @@ watch(isSettingHomeWaypoint, (active) => {
   }
 })
 
+watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())
+watch(planningMap, () => setMapCursor())
+
 // Keep an eye on the existent surveys and highlight the selected one
 watch(selectedSurveyId, (newId, oldId) => {
   // Un-highlight old polygon
@@ -1673,12 +1733,8 @@ watch([isCreatingSurvey, isCreatingSimplePath], (isCreatingNow) => {
     planningMap.value.on('mousedown', () => {
       mapContainer.style.cursor = 'grabbing'
     })
-    planningMap.value.on('mouseup', () => {
-      mapContainer.style.cursor = 'crosshair'
-    })
-    planningMap.value.on('mouseout', () => {
-      mapContainer.style.cursor = 'crosshair'
-    })
+    planningMap.value.on('mouseup', () => setMapCursor())
+    planningMap.value.on('mouseout', () => setMapCursor())
     if (isCreatingNow) {
       mapContainer.classList.add('survey-cursor')
     } else {
@@ -2369,6 +2425,10 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keydown', onGlobalKeyDown)
+  window.addEventListener('keyup', onGlobalKeyUp)
+  window.addEventListener('blur', onWindowBlur)
+  window.addEventListener('mousemove', onMouseMove)
 })
 
 const onMapClick = (e: L.LeafletMouseEvent): void => {
@@ -2495,6 +2555,8 @@ onMounted(async () => {
 
   await nextTick()
 
+  setMapCursor()
+
   planningMap.value.on('contextmenu', (e: LeafletMouseEvent) => {
     if (isCreatingSurvey.value) return
     selectedWaypoint.value = undefined
@@ -2524,6 +2586,10 @@ onMounted(async () => {
 
 onUnmounted(() => {
   targetFollower.disableAutoUpdate()
+  window.removeEventListener('keydown', onGlobalKeyDown)
+  window.removeEventListener('keyup', onGlobalKeyUp)
+  window.removeEventListener('blur', onWindowBlur)
+  window.removeEventListener('mousemove', onMouseMove)
   if (planningMap.value) {
     planningMap.value.off('mousemove', handleMapMouseMoveNearMissionPath)
     planningMap.value.off('dblclick', handleMapDoubleClickNearMissionPath)
@@ -2969,6 +3035,19 @@ watch(
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%231e498f' stroke='%23ffffff55' stroke-width='2'/%3E%3Cpath d='M12 2c5 0 9 4 9 9 0 3.73-2.63 7.43-8.03 13.2a1 1 0 0 1-1.42 0C5.63 18.43 3 14.73 3 11a9 9 0 0 1 9-9z' fill='white'/%3E%3Cpath d='M8.5 10L12 6.5 15.5 10h-2.5v3h-2v-3H8.5z' fill='%231e498f'/%3E%3C/svg%3E")
       12 12,
     crosshair;
+}
+.cursor-deco {
+  position: fixed;
+  transform: translate(10px, 12px);
+  z-index: 10000;
+  pointer-events: none;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+  user-select: none;
+  background: transparent;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.7), 0 0 4px rgba(0, 0, 0, 0.6);
 }
 .segment-add-divicon {
   cursor: pointer;
