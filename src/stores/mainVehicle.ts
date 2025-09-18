@@ -37,6 +37,7 @@ import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
   Altitude,
   Attitude,
+  BatteryChemistry,
   PageDescription,
   PowerSupply,
   StatusGPS,
@@ -134,6 +135,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const statusGPS: StatusGPS = reactive({} as StatusGPS)
   const vehicleArmingTime = ref<Date | undefined>(undefined)
   const currentVehicleName = ref<string | undefined>(undefined)
+
+  const vehiclePayloadParameters = useBlueOsStorage('cockpit-vehicle-payload', {
+    extraPayloadKg: 0,
+    batteryCapacity: 266 * 2, // Default 2x 266.4Wh Blue Robotics batteries
+    batteryChemistry: 'li-ion' as BatteryChemistry, // Default battery chemistry
+  })
 
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -901,5 +908,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     resetMessageIntervalsToCockpitDefault,
     fetchHomeWaypoint,
     setHomeWaypoint,
+    vehiclePayloadParameters,
   }
 })
