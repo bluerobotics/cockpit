@@ -370,6 +370,7 @@
     @survey-lines-angle="onSurveyLinesAngleChange"
     @remove-waypoint="removeSelectedWaypoint"
     @place-point-of-interest="openPoiDialog"
+    @add-waypoint-at-cursor="addWaypointFromContextMenu"
   />
   <SideConfigPanel position="right" style="z-index: 600; pointer-events: auto" class="w-[320px]">
     <WaypointConfigPanel
@@ -380,7 +381,13 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
-
+  <div
+    v-show="showCursorDeco"
+    :style="{ left: cursorLivePositionX + 'px', top: cursorLivePositionY + 'px' }"
+    class="cursor-deco"
+  >
+    {{ cursorSymbol }}
+  </div>
   <v-progress-linear
     v-if="fetchingMission"
     :model-value="missionFetchProgress"
@@ -437,6 +444,7 @@ import {
   type Waypoint,
   type WaypointCoordinates,
   AltitudeReferenceType,
+  ClosestSegmentInfo,
   ContextMenuTypes,
   instanceOfCockpitMission,
   MissionCommand,
@@ -639,7 +647,18 @@ const loading = ref(false)
 const showMissionCreationTips = ref(missionStore.showMissionCreationTips)
 const countdownToHideTips = ref<number | undefined>(undefined)
 const isSettingHomeWaypoint = ref(false)
+const nearMissionPathTolerance = 16
+const isCtrlDown = ref(false)
+const isShiftDown = ref(false)
+const cursorLivePositionX = ref(0)
+const cursorLivePositionY = ref(0)
 
+const cursorSymbol = computed(() => (isCtrlDown.value ? '+' : isShiftDown.value ? '−' : ''))
+const showCursorDeco = computed(() => isCtrlDown.value || isShiftDown.value)
+
+let mapActionsOverlayEl: HTMLDivElement | null = null
+let mapActionsKnobEl: HTMLDivElement | null = null
+let mapActionsKnobSegmentIndex: number | null = null
 let setHomeOnFirstClick: ((e: L.LeafletMouseEvent) => void) | null = null
 
 watch(showMissionCreationTips, (newVal) => {
@@ -779,6 +798,279 @@ const updateConfirmButtonPosition = (): void => {
     }
   } else {
     confirmButtonStyle.value = { display: 'none' }
+  }
+}
+
+const ensureMapActionsOverlay = (map: L.Map): void => {
+  if (mapActionsOverlayEl) return
+  const container = map.getContainer()
+
+  const el = document.createElement('div')
+  el.className = 'map-actions-overlay'
+  el.style.position = 'absolute'
+  el.style.top = '0'
+  el.style.left = '0'
+  el.style.width = '100%'
+  el.style.height = '100%'
+  el.style.zIndex = '640' // above markers, below tooltips
+  el.style.pointerEvents = 'none' // container ignores events
+
+  container.appendChild(el)
+  mapActionsOverlayEl = el
+}
+
+const showSegmentAddKnobAt = (midpoint: L.LatLng, segmentIndex: number): void => {
+  if (!planningMap.value) return
+  ensureMapActionsOverlay(planningMap.value)
+  const pt = planningMap.value.latLngToContainerPoint(midpoint)
+
+  if (!mapActionsKnobEl) {
+    const knob = document.createElement('div')
+    knob.className = 'mission-segment-add-knob'
+    knob.style.position = 'absolute'
+    knob.style.transform = 'translate(-50%, -50%)'
+    knob.style.pointerEvents = 'auto'
+    knob.style.cursor = 'pointer'
+    knob.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+           xmlns="http://www.w3.org/2000/svg" style="display:block">
+        <circle cx="10" cy="10" r="9" fill="white" stroke="#3B82F6" stroke-width="2"/>
+        <path d="M10 5V15M5 10H15" stroke="#3B82F6" stroke-width="2"/>
+      </svg>
+    `
+    knob.addEventListener('click', (ev) => {
+      ev.stopPropagation()
+      if (mapActionsKnobSegmentIndex !== null) {
+        insertWaypointAtSegmentMidpoint(mapActionsKnobSegmentIndex)
+        hideSegmentAddKnob()
+      }
+    })
+    mapActionsOverlayEl!.appendChild(knob)
+    mapActionsKnobEl = knob
+  }
+
+  mapActionsKnobSegmentIndex = segmentIndex
+  mapActionsKnobEl!.style.left = `${pt.x}px`
+  mapActionsKnobEl!.style.top = `${pt.y}px`
+  mapActionsKnobEl!.style.display = 'block'
+}
+
+const hideSegmentAddKnob = (): void => {
+  if (mapActionsKnobEl) mapActionsKnobEl.style.display = 'none'
+  mapActionsKnobSegmentIndex = null
+}
+
+const setMapCursor = (): void => {
+  const map = planningMap.value as any
+  const el: HTMLElement | null = map && typeof map.getContainer === 'function' ? map.getContainer() : null
+  if (!el) return
+
+  if (isSettingHomeWaypoint.value) return
+
+  if (isCtrlDown.value || isShiftDown.value) {
+    el.style.cursor = 'pointer'
+    return
+  }
+
+  if (isCreatingSurvey.value || isCreatingSimplePath.value) {
+    el.style.cursor = 'crosshair'
+  } else {
+    el.style.cursor = ''
+  }
+}
+
+const onGlobalKeyDown = (e: KeyboardEvent): void => {
+  if (e.ctrlKey || e.metaKey) isCtrlDown.value = true
+  if (e.shiftKey) isShiftDown.value = true
+  setMapCursor()
+}
+
+const onGlobalKeyUp = (e: KeyboardEvent): void => {
+  // If keyup is Ctrl/Cmd/Shift, or no modifiers remain pressed, clear flags
+  if (e.key.toLowerCase() === 'control' || e.key === 'Meta') isCtrlDown.value = e.ctrlKey || e.metaKey
+  if (e.key === 'Shift') isShiftDown.value = e.shiftKey
+  if (!e.ctrlKey && !e.metaKey) isCtrlDown.value = false
+  if (!e.shiftKey) isShiftDown.value = false
+  setMapCursor()
+}
+
+const onWindowBlur = (): void => {
+  isCtrlDown.value = false
+  isShiftDown.value = false
+}
+
+const onMouseMove = (e: MouseEvent): void => {
+  cursorLivePositionX.value = e.clientX
+  cursorLivePositionY.value = e.clientY
+}
+
+const findClosestSegmentIndex = (segmentEndpoints: L.LatLng[], clickedLatLng: L.LatLng): number => {
+  if (!planningMap.value || segmentEndpoints.length < 2) return -1
+  const map = planningMap.value
+  const clickedPoint = map.latLngToLayerPoint(clickedLatLng)
+
+  let closestSegmentIndex = -1
+  let minimumDistance = Infinity
+
+  for (let i = 0; i < segmentEndpoints.length - 1; i++) {
+    const segmentStart = map.latLngToLayerPoint(segmentEndpoints[i])
+    const segmentEnd = map.latLngToLayerPoint(segmentEndpoints[i + 1])
+
+    const projectedPoint = (L as any).LineUtil.closestPointOnSegment(clickedPoint, segmentStart, segmentEnd) // eslint-disable-line @typescript-eslint/no-explicit-any
+    const distanceToSegment = clickedPoint.distanceTo(projectedPoint)
+
+    if (distanceToSegment < minimumDistance) {
+      minimumDistance = distanceToSegment
+      closestSegmentIndex = i
+    }
+  }
+
+  return closestSegmentIndex
+}
+
+const handleMissionPathDoubleClick = (event: L.LeafletMouseEvent): void => {
+  if (!planningMap.value || missionStore.currentPlanningWaypoints.length < 2) return
+
+  const waypointLatLngList = missionStore.currentPlanningWaypoints.map((waypoint) =>
+    L.latLng(waypoint.coordinates[0], waypoint.coordinates[1])
+  )
+
+  const clickedSegmentIndex = findClosestSegmentIndex(waypointLatLngList, event.latlng)
+  if (clickedSegmentIndex < 0) return
+
+  insertWaypointAtSegmentMidpoint(clickedSegmentIndex)
+}
+
+const insertWaypointAtSegmentMidpoint = (segmentIndex: number): void => {
+  if (!planningMap.value || missionStore.currentPlanningWaypoints.length < 2) return
+
+  const waypointLatLngList = missionStore.currentPlanningWaypoints.map((waypoint) =>
+    L.latLng(waypoint.coordinates[0], waypoint.coordinates[1])
+  )
+
+  const segmentStartLatLng = waypointLatLngList[segmentIndex]
+  const segmentEndLatLng = waypointLatLngList[segmentIndex + 1]
+
+  const midpointLatLng = L.latLng(
+    (segmentStartLatLng.lat + segmentEndLatLng.lat) / 2,
+    (segmentStartLatLng.lng + segmentEndLatLng.lng) / 2
+  )
+
+  const previousWaypoint = missionStore.currentPlanningWaypoints[segmentIndex]
+  const newWaypoint: Waypoint = {
+    id: uuid(),
+    coordinates: [midpointLatLng.lat, midpointLatLng.lng],
+    altitude: previousWaypoint.altitude,
+    type: previousWaypoint.type,
+    altitudeReferenceType: previousWaypoint.altitudeReferenceType,
+  }
+
+  missionStore.currentPlanningWaypoints.splice(segmentIndex + 1, 0, newWaypoint)
+  addWaypointMarker(newWaypoint)
+
+  // keep surveys in sync if this segment belongs to one
+  const matchingSurvey = surveys.value.find((survey) => {
+    const indexInSurvey = survey.waypoints.findIndex((wp) => wp.id === previousWaypoint.id)
+    return (
+      indexInSurvey >= 0 &&
+      survey.waypoints[indexInSurvey + 1]?.id === missionStore.currentPlanningWaypoints[segmentIndex + 2]?.id
+    )
+  })
+  if (matchingSurvey) {
+    const indexInSurvey = matchingSurvey.waypoints.findIndex((wp) => wp.id === previousWaypoint.id)
+    matchingSurvey.waypoints.splice(indexInSurvey + 1, 0, newWaypoint)
+    updateSurvey(matchingSurvey.id, { waypoints: matchingSurvey.waypoints })
+  }
+
+  reNumberWaypoints()
+}
+
+const getClosestMissionPathSegmentInfo = (segmentLatLngs: L.LatLng[], mouseLatLng: L.LatLng): ClosestSegmentInfo => {
+  const map = planningMap.value!
+  const mousePoint = map.latLngToLayerPoint(mouseLatLng)
+
+  let bestIndex = -1
+  let bestDistance = Infinity
+  let bestProjectedPoint: L.Point = mousePoint
+
+  for (let i = 0; i < segmentLatLngs.length - 1; i++) {
+    const segmentStartPoint = map.latLngToLayerPoint(segmentLatLngs[i])
+    const segmentEndPoint = map.latLngToLayerPoint(segmentLatLngs[i + 1])
+    const projectedPoint = (L as any).LineUtil.closestPointOnSegment(mousePoint, segmentStartPoint, segmentEndPoint) // eslint-disable-line
+    const distanceToSegment = mousePoint.distanceTo(projectedPoint)
+
+    if (distanceToSegment < bestDistance) {
+      bestDistance = distanceToSegment
+      bestIndex = i
+      bestProjectedPoint = projectedPoint
+    }
+  }
+
+  return { segmentIndex: bestIndex, closestPointOnSegment: bestProjectedPoint, distanceInPixels: bestDistance }
+}
+
+const handleMapMouseMoveNearMissionPath = (event: L.LeafletMouseEvent): void => {
+  if (!planningMap.value || !missionWaypointsPolyline.value || missionStore.currentPlanningWaypoints.length < 2) {
+    hideSegmentAddKnob()
+    return
+  }
+
+  // Don’t show while in conflicting modes/interactions
+  if (isCreatingSurvey.value || isSettingHomeWaypoint.value || isDraggingMarker.value || isDraggingPolygon.value) {
+    hideSegmentAddKnob()
+    return
+  }
+
+  const missionPathLatLngs = missionStore.currentPlanningWaypoints.map((wp) =>
+    L.latLng(wp.coordinates[0], wp.coordinates[1])
+  )
+  const { segmentIndex, distanceInPixels } = getClosestMissionPathSegmentInfo(missionPathLatLngs, event.latlng)
+
+  if (segmentIndex >= 0 && distanceInPixels <= nearMissionPathTolerance) {
+    const A = missionPathLatLngs[segmentIndex]
+    const B = missionPathLatLngs[segmentIndex + 1]
+    const midpoint = L.latLng((A.lat + B.lat) / 2, (A.lng + B.lng) / 2)
+    showSegmentAddKnobAt(midpoint, segmentIndex)
+  } else {
+    hideSegmentAddKnob()
+  }
+}
+
+const addWaypointFromClick = (latlng: L.LatLng): void => {
+  if (!planningMap.value) return
+
+  if (missionStore.currentPlanningWaypoints.length >= 2) {
+    const latLngs = missionStore.currentPlanningWaypoints.map((wp) => L.latLng(wp.coordinates[0], wp.coordinates[1]))
+    const { segmentIndex, distanceInPixels } = getClosestMissionPathSegmentInfo(latLngs, latlng)
+    if (segmentIndex >= 0 && distanceInPixels <= nearMissionPathTolerance) {
+      insertWaypointAtSegmentMidpoint(segmentIndex)
+      return
+    }
+  }
+
+  addWaypoint(
+    [latlng.lat, latlng.lng],
+    currentWaypointAltitude.value,
+    currentWaypointType.value,
+    currentWaypointAltitudeRefType.value
+  )
+  reNumberWaypoints()
+}
+
+const addWaypointFromContextMenu = (): void => {
+  if (!currentCursorGeoCoordinates.value) return
+  const ll = L.latLng(currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1])
+  addWaypointFromClick(ll)
+}
+
+const handleMapDoubleClickNearMissionPath = (event: L.LeafletMouseEvent): void => {
+  if (!planningMap.value || missionStore.currentPlanningWaypoints.length < 2) return
+  const latLngs = missionStore.currentPlanningWaypoints.map((wp) => L.latLng(wp.coordinates[0], wp.coordinates[1]))
+  const { segmentIndex, distanceInPixels } = getClosestMissionPathSegmentInfo(latLngs, event.latlng)
+  if (segmentIndex >= 0 && distanceInPixels <= nearMissionPathTolerance) {
+    L.DomEvent.stopPropagation(event)
+    L.DomEvent.preventDefault(event)
+    insertWaypointAtSegmentMidpoint(segmentIndex)
   }
 }
 
@@ -1091,6 +1383,16 @@ const deleteSelectedSurvey = (): void => {
   reNumberWaypoints()
 }
 
+const addVertexIcon = L.divIcon({
+  html: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+              <circle cx="10" cy="10" r="9" fill="white" stroke="#3B82F6" stroke-width="2"/>
+              <path d="M10 5V15M5 10H15" stroke="#3B82F6" stroke-width="2"/>
+            </svg>`,
+  className: 'edge-marker',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+})
+
 const homeWaypointCursor =
   'url("data:image/svg+xml;utf8,' +
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>" +
@@ -1126,6 +1428,9 @@ watch(isSettingHomeWaypoint, (active) => {
     }
   }
 })
+
+watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())
+watch(planningMap, () => setMapCursor())
 
 // Keep an eye on the existent surveys and highlight the selected one
 watch(selectedSurveyId, (newId, oldId) => {
@@ -1428,12 +1733,8 @@ watch([isCreatingSurvey, isCreatingSimplePath], (isCreatingNow) => {
     planningMap.value.on('mousedown', () => {
       mapContainer.style.cursor = 'grabbing'
     })
-    planningMap.value.on('mouseup', () => {
-      mapContainer.style.cursor = 'crosshair'
-    })
-    planningMap.value.on('mouseout', () => {
-      mapContainer.style.cursor = 'crosshair'
-    })
+    planningMap.value.on('mouseup', () => setMapCursor())
+    planningMap.value.on('mouseout', () => setMapCursor())
     if (isCreatingNow) {
       mapContainer.classList.add('survey-cursor')
     } else {
@@ -1555,17 +1856,7 @@ const updateSurveyEdgeAddMarkers = (): void => {
       const middle = L.latLng((start.lat + end.lat) / 2, (start.lng + end.lng) / 2)
 
       const surveyEdgeAddMarker = L.marker(middle, {
-        icon: L.divIcon({
-          html: `
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
-              <circle cx="10" cy="10" r="9" fill="white" stroke="#3B82F6" stroke-width="2"/>
-              <path d="M10 5V15M5 10H15" stroke="#3B82F6" stroke-width="2"/>
-            </svg>
-          `,
-          className: 'edge-marker',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        }),
+        icon: addVertexIcon,
       })
 
       surveyEdgeAddMarker.on('click', (e: L.LeafletMouseEvent) => addSurveyPoint(e.latlng, i))
@@ -2005,6 +2296,16 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   newMarker.on('click', (event: LeafletMouseEvent) => {
     L.DomEvent.stopPropagation(event)
     L.DomEvent.preventDefault(event)
+
+    const mouse = event.originalEvent as MouseEvent
+    if (mouse.shiftKey) {
+      // Shift+click on marker => delete
+      selectedWaypoint.value = waypoint
+      removeSelectedWaypoint()
+      return
+    }
+
+    // Default behavior (open panel)
     selectedWaypoint.value = waypoint
     selectedSurveyId.value = ''
     hideContextMenu()
@@ -2124,6 +2425,10 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keydown', onGlobalKeyDown)
+  window.addEventListener('keyup', onGlobalKeyUp)
+  window.addEventListener('blur', onWindowBlur)
+  window.addEventListener('mousemove', onMouseMove)
 })
 
 const onMapClick = (e: L.LeafletMouseEvent): void => {
@@ -2137,6 +2442,42 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   if (ignoreNextClick) {
     ignoreNextClick = false
     return
+  }
+
+  const mouse = e.originalEvent as MouseEvent
+
+  if (mouse.shiftKey && planningMap.value) {
+    const clickPoint = planningMap.value.latLngToContainerPoint(e.latlng)
+
+    let targetWpId: string | null = null
+    for (const [id, marker] of Object.entries(waypointMarkers.value)) {
+      const markerPoint = planningMap.value.latLngToContainerPoint(marker.getLatLng())
+      if (clickPoint.distanceTo(markerPoint) <= nearMissionPathTolerance) {
+        targetWpId = id
+        break
+      }
+    }
+
+    if (targetWpId) {
+      const wp = missionStore.currentPlanningWaypoints.find((w) => w.id === targetWpId)
+      if (wp) {
+        selectedWaypoint.value = wp
+        removeSelectedWaypoint() // handles surveys, renumber, UI cleanup
+      }
+      return
+    }
+    // If Shift+click wasn't on/near a waypoint, fall through to normal flow
+  }
+
+  // Ctrl (Windows/Linux) or Cmd (macOS) + Click => smart add
+  if (mouse.ctrlKey || mouse.metaKey) {
+    addWaypointFromClick(e.latlng)
+    return
+  }
+
+  if (interfaceStore.configPanelVisible) {
+    selectedWaypoint.value = undefined
+    interfaceStore.configPanelVisible = false
   }
 
   if (isCreatingSurvey.value) {
@@ -2214,6 +2555,8 @@ onMounted(async () => {
 
   await nextTick()
 
+  setMapCursor()
+
   planningMap.value.on('contextmenu', (e: LeafletMouseEvent) => {
     if (isCreatingSurvey.value) return
     selectedWaypoint.value = undefined
@@ -2227,6 +2570,8 @@ onMounted(async () => {
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
   })
+  planningMap.value.on('dblclick', handleMapDoubleClickNearMissionPath)
+  planningMap.value.on('mousemove', handleMapMouseMoveNearMissionPath)
 
   const layerControl = L.control.layers(baseMaps)
   planningMap.value.addControl(layerControl)
@@ -2241,6 +2586,15 @@ onMounted(async () => {
 
 onUnmounted(() => {
   targetFollower.disableAutoUpdate()
+  window.removeEventListener('keydown', onGlobalKeyDown)
+  window.removeEventListener('keyup', onGlobalKeyUp)
+  window.removeEventListener('blur', onWindowBlur)
+  window.removeEventListener('mousemove', onMouseMove)
+  if (planningMap.value) {
+    planningMap.value.off('mousemove', handleMapMouseMoveNearMissionPath)
+    planningMap.value.off('dblclick', handleMapDoubleClickNearMissionPath)
+    planningMap.value.off('mousemove', handleMapMouseMoveNearMissionPath)
+  }
 })
 
 const vehiclePosition = computed((): [number, number] | undefined =>
@@ -2350,18 +2704,31 @@ watch(planningMap, (newMap, oldMap) => {
   }
 })
 
-const missionWaypointsPolyline = ref()
-watch(missionStore.currentPlanningWaypoints, (newWaypoints, oldWaypoints) => {
-  if (planningMap.value === undefined) throw new Error('Map not yet defined')
-  if (missionWaypointsPolyline.value === undefined) {
-    missionWaypointsPolyline.value = L.polyline(newWaypoints.map((w) => w.coordinates)).addTo(planningMap.value)
-  }
-  missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+const missionWaypointsPolyline = ref<L.Polyline | null>(null)
 
-  if (newWaypoints.length !== oldWaypoints.length) {
-    reNumberWaypoints()
-  }
-})
+const getMissionPathLatLngs = (): L.LatLng[] =>
+  missionStore.currentPlanningWaypoints.map((waypoint) => L.latLng(waypoint.coordinates[0], waypoint.coordinates[1]))
+
+watch(
+  () => missionStore.currentPlanningWaypoints.map((waypoint) => waypoint.coordinates.slice()),
+  () => {
+    if (!planningMap.value) return
+
+    const missionPathLatLngs = getMissionPathLatLngs()
+
+    if (!missionWaypointsPolyline.value) {
+      missionWaypointsPolyline.value = L.polyline(missionPathLatLngs).addTo(planningMap.value)
+
+      missionWaypointsPolyline.value.on('dblclick', (event: L.LeafletMouseEvent) => {
+        L.DomEvent.stopPropagation(event)
+        handleMissionPathDoubleClick(event)
+      })
+    } else {
+      missionWaypointsPolyline.value.setLatLngs(missionPathLatLngs)
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 // Try to update map center position based on browser geolocation
 navigator?.geolocation?.watchPosition(
@@ -2668,6 +3035,23 @@ watch(
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%231e498f' stroke='%23ffffff55' stroke-width='2'/%3E%3Cpath d='M12 2c5 0 9 4 9 9 0 3.73-2.63 7.43-8.03 13.2a1 1 0 0 1-1.42 0C5.63 18.43 3 14.73 3 11a9 9 0 0 1 9-9z' fill='white'/%3E%3Cpath d='M8.5 10L12 6.5 15.5 10h-2.5v3h-2v-3H8.5z' fill='%231e498f'/%3E%3C/svg%3E")
       12 12,
     crosshair;
+}
+.cursor-deco {
+  position: fixed;
+  transform: translate(10px, 12px);
+  z-index: 10000;
+  pointer-events: none;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
+  user-select: none;
+  background: transparent;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.7), 0 0 4px rgba(0, 0, 0, 0.6);
+}
+.segment-add-divicon {
+  cursor: pointer;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
 }
 .leaflet-top {
   margin-top: 50px;
