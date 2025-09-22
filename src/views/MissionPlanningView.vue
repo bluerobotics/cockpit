@@ -392,7 +392,7 @@
   <SideConfigPanel position="right" style="z-index: 600; pointer-events: auto" class="w-[320px]">
     <WaypointConfigPanel
       :selected-waypoint="selectedWaypoint"
-      @remove-waypoint="removeWaypoint"
+      @remove-waypoint="removeSelectedWaypoint"
       @should-update-waypoints="handleShouldUpdateWaypoints"
     />
   </SideConfigPanel>
@@ -688,6 +688,11 @@ const saveOSM = (): void => {
 let mapActionsOverlayEl: HTMLDivElement | null = null
 let mapActionsKnobEl: HTMLDivElement | null = null
 let mapActionsKnobSegmentIndex: number | null = null
+let knobShowTimer: number | null = null
+let knobFadeOutTimer: number | null = null
+let lastHoverSegmentIndex: number | null = null
+let knobPendingShow = false
+
 const isCtrlDown = ref(false)
 const isShiftDown = ref(false)
 const cursorLivePositionX = ref(0)
@@ -934,6 +939,7 @@ const ensureMapActionsOverlay = (map: L.Map): void => {
   mapActionsOverlayEl = el
 }
 
+// Controls the "add waypoint" knob that appears when hovering near a mission path segment
 const showSegmentAddKnobAt = (midpoint: L.LatLng, segmentIndex: number): void => {
   if (!planningMap.value) return
   ensureMapActionsOverlay(planningMap.value)
@@ -943,16 +949,19 @@ const showSegmentAddKnobAt = (midpoint: L.LatLng, segmentIndex: number): void =>
     const knob = document.createElement('div')
     knob.className = 'mission-segment-add-knob'
     knob.style.position = 'absolute'
-    knob.style.transform = 'translate(-50%, -50%)'
-    knob.style.pointerEvents = 'auto'
+    knob.style.transform = 'translate(-50%, -50%) scale(0.85)'
+    knob.style.opacity = '0'
+    knob.style.pointerEvents = 'none'
+    knob.style.display = 'none'
     knob.style.cursor = 'pointer'
+    knob.style.zIndex = '660'
     knob.innerHTML = `
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-       xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="10" r="9" fill="white" stroke="#3B82F6" stroke-width="2"/>
-    <path d="M10 5V15M5 10H15" stroke="#3B82F6" stroke-width="2"/>
-  </svg>
-`
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+           xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="9" fill="white" stroke="#3B82F6" stroke-width="2"/>
+        <path d="M10 5V15M5 10H15" stroke="#3B82F6" stroke-width="2"/>
+      </svg>
+    `
     knob.addEventListener('click', (ev) => {
       ev.stopPropagation()
       if (mapActionsKnobSegmentIndex !== null) {
@@ -964,14 +973,64 @@ const showSegmentAddKnobAt = (midpoint: L.LatLng, segmentIndex: number): void =>
     mapActionsKnobEl = knob
   }
 
-  mapActionsKnobSegmentIndex = segmentIndex
   mapActionsKnobEl!.style.left = `${pt.x}px`
   mapActionsKnobEl!.style.top = `${pt.y}px`
+  const segChanged = lastHoverSegmentIndex !== segmentIndex
+  lastHoverSegmentIndex = segmentIndex
+  mapActionsKnobSegmentIndex = segmentIndex
+
+  if (knobFadeOutTimer && segChanged) {
+    clearTimeout(knobFadeOutTimer)
+    knobFadeOutTimer = null
+  }
+  const isVisible = mapActionsKnobEl!.classList.contains('visible')
+
+  if (isVisible) {
+    mapActionsKnobEl!.style.display = 'block'
+    mapActionsKnobEl!.style.pointerEvents = 'auto'
+    return
+  }
+
+  if (!segChanged && knobPendingShow) return
+
   mapActionsKnobEl!.style.display = 'block'
+  mapActionsKnobEl!.style.pointerEvents = 'none'
+  mapActionsKnobEl!.classList.remove('visible')
+
+  if (segChanged && knobShowTimer) {
+    clearTimeout(knobShowTimer)
+    knobShowTimer = null
+  }
+
+  knobPendingShow = true
+  knobShowTimer = window.setTimeout(() => {
+    mapActionsKnobEl!.classList.add('visible')
+    mapActionsKnobEl!.style.pointerEvents = 'auto'
+    knobPendingShow = false
+    knobShowTimer = null
+  }, 300)
 }
 
 const hideSegmentAddKnob = (): void => {
-  if (mapActionsKnobEl) mapActionsKnobEl.style.display = 'none'
+  if (!mapActionsKnobEl) return
+
+  if (knobShowTimer) {
+    clearTimeout(knobShowTimer)
+    knobShowTimer = null
+  }
+  knobPendingShow = false
+  lastHoverSegmentIndex = null
+  mapActionsKnobEl.classList.remove('visible')
+  mapActionsKnobEl.style.pointerEvents = 'none'
+
+  if (knobFadeOutTimer) clearTimeout(knobFadeOutTimer)
+  knobFadeOutTimer = window.setTimeout(() => {
+    if (!mapActionsKnobEl!.classList.contains('visible')) {
+      mapActionsKnobEl!.style.display = 'none'
+    }
+    knobFadeOutTimer = null
+  }, 180)
+
   mapActionsKnobSegmentIndex = null
 }
 
@@ -1319,7 +1378,9 @@ const handleKeyDown = (event: KeyboardEvent): void => {
       if (missionStore.currentPlanningWaypoints.length === 0) return
 
       if (lastWaypoint && !belongsToSurvey) {
-        removeWaypoint(lastWaypoint)
+        selectedWaypoint.value = lastWaypoint
+        removeSelectedWaypoint()
+        selectedWaypoint.value = undefined
       }
       return
     }
@@ -1576,16 +1637,6 @@ const addWaypoint = (
 
   // Update waypoint numbering to account for command counts
   reNumberWaypoints()
-}
-
-const removeWaypoint = (waypoint: Waypoint): void => {
-  const index = missionStore.currentPlanningWaypoints.indexOf(waypoint)
-  missionStore.currentPlanningWaypoints.splice(index, 1)
-  // @ts-ignore: Marker type is always a layer and thus can be deleted
-  planningMap.value?.removeLayer(waypointMarkers.value[waypoint.id])
-  delete waypointMarkers.value[waypoint.id]
-  reNumberWaypoints()
-  interfaceStore.configPanelVisible = false
 }
 
 const removeSelectedWaypoint = (): void => {
@@ -3098,6 +3149,16 @@ watch(
   border: 1px solid #ffffff55;
   border-radius: 50%;
   z-index: 100 !important;
+}
+
+.mission-segment-add-knob {
+  transition: opacity 180ms ease, transform 180ms ease;
+  will-change: opacity, transform;
+}
+
+.mission-segment-add-knob.visible {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) scale(1) !important;
 }
 
 .selected-marker {
