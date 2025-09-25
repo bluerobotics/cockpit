@@ -606,10 +606,95 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  const downloadTempVideo = async (hashes: string[], progressCallback?: DownloadProgressCallback): Promise<void> => {
-    console.debug(`Downloading ${hashes.length} video chunks from the temporary database.`)
+  const generateTelemetryForUnprocessedVideos = async (
+    hashes: string[],
+    progressCallback?: DownloadProgressCallback
+  ): Promise<void> => {
+    console.debug(`Generating telemetry files for ${hashes.length} unprocessed videos.`)
+
+    for (let i = 0; i < hashes.length; i++) {
+      const hash = hashes[i]
+      const info = unprocessedVideos.value[hash]
+
+      if (!info || !info.dateStart || !info.dateFinish) {
+        openSnackbar({
+          message: `Cannot generate telemetry for video ${hash}: missing date information`,
+          variant: 'error',
+          duration: 5000,
+        })
+        continue
+      }
+
+      // Validate dates
+      const dateStart = new Date(info.dateStart)
+      const dateFinish = new Date(info.dateFinish)
+
+      if (isNaN(dateStart.getTime()) || isNaN(dateFinish.getTime())) {
+        const msg = `Cannot generate telemetry for video ${hash}: invalid date values (${info.dateStart} - ${info.dateFinish}).`
+        openSnackbar({ message: msg, variant: 'error', duration: 5000 })
+        continue
+      }
+
+      if (dateStart >= dateFinish) {
+        const msg = `Cannot generate telemetry for video ${hash}: start date must be before end date ${info.dateStart} - ${info.dateFinish}`
+        openSnackbar({ message: msg, variant: 'error', duration: 5000 })
+        continue
+      }
+
+      try {
+        if (progressCallback) {
+          await progressCallback(i, hashes.length)
+        }
+
+        // Generate telemetry log for the video's time range
+        const telemetryLog = await datalogger.generateLog(dateStart, dateFinish)
+
+        if (telemetryLog && telemetryLog.length > 0) {
+          // Convert to ASS overlay format
+          const assLog = datalogger.toAssOverlay(
+            telemetryLog,
+            info.vWidth || 1920,
+            info.vHeight || 1080,
+            dateStart.getTime()
+          )
+
+          // Store the telemetry file in regular video storage with a naming convention
+          const telemetryFileName = `${info.fileName}.ass`
+          const logBlob = new Blob([assLog], { type: 'text/plain' })
+          await videoStorage.setItem(telemetryFileName, logBlob)
+
+          console.debug(`Generated telemetry file for unprocessed video: ${telemetryFileName}`)
+        } else {
+          const msg = `No telemetry data found for video ${hash} in the specified time range (${dateStart} - ${dateFinish}).`
+          openSnackbar({ message: msg, variant: 'error', duration: 5000 })
+        }
+      } catch (error) {
+        const msg = `Failed to generate telemetry for video ${hash}: ${error}`
+        openSnackbar({ message: msg, variant: 'error', duration: 5000 })
+      }
+    }
+  }
+
+  const downloadTempVideoWithTelemetry = async (
+    hashes: string[],
+    progressCallback?: DownloadProgressCallback
+  ): Promise<void> => {
+    console.debug(`Downloading ${hashes.length} video chunks with telemetry from databases.`)
 
     for (const hash of hashes) {
+      const info = unprocessedVideos.value[hash]
+
+      // Temporarily add telemetry file to tempVideoStorage if it exists
+      if (info) {
+        const telemetryFileName = `${info.fileName}.ass`
+        const telemetryBlob = await videoStorage.getItem(telemetryFileName)
+        if (telemetryBlob) {
+          // Store with hash prefix so the filter will pick it up
+          await tempVideoStorage.setItem(`${hash}_${telemetryFileName}`, telemetryBlob)
+        }
+      }
+
+      // Get all files for this hash (chunks + telemetry)
       const fileNames = (await tempVideoStorage.keys()).filter((filename) => filename.includes(hash))
       const zipFilenamePrefix = `Cockpit-Unprocessed-Video-Chunks-${hash}`
       await downloadFiles(tempVideoStorage, fileNames, true, zipFilenamePrefix, progressCallback)
@@ -1153,7 +1238,8 @@ export const useVideoStore = defineStore('video', () => {
     stopRecording,
     startRecording,
     unprocessedVideos,
-    downloadTempVideo,
+    generateTelemetryForUnprocessedVideos,
+    downloadTempVideoWithTelemetry,
     currentFileProgress,
     overallProgress,
     processVideoChunksAndTelemetry,

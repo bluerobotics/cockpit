@@ -1147,12 +1147,16 @@ const downloadVideoAndTelemetryFiles = async (): Promise<void> => {
 
   isPreparingDownload.value = true
   if (tempProcessedVideos.length > 0) {
+    // Add log files to the list of files to be downloaded
     const dataLogFilesAdded = addLogDataToFileList(tempProcessedVideos)
 
     await videoStore.downloadFilesFromVideoDB(dataLogFilesAdded, fillProgressData)
   }
   if (tempUnprocessedVideos.length > 0) {
-    await videoStore.downloadTempVideo(tempUnprocessedVideos, fillProgressData)
+    // Generate telemetry files for unprocessed videos before download
+    await videoStore.generateTelemetryForUnprocessedVideos(tempUnprocessedVideos, fillProgressData)
+
+    await videoStore.downloadTempVideoWithTelemetry(tempUnprocessedVideos, fillProgressData)
   }
   isPreparingDownload.value = false
 }
