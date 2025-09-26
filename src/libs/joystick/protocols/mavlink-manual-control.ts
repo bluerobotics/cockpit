@@ -9,7 +9,7 @@ import { sendManualControl } from '@/libs/communication/mavlink'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { round, scale } from '@/libs/utils'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
-import { type JoystickProtocolActionsMapping, type JoystickState, type ProtocolAction, JoystickAxis, JoystickButton, JoystickProtocol } from '@/types/joystick'
+import { type JoystickProtocolActionsMapping, type JoystickState, type ProtocolAction, CockpitModifierKeyOption, JoystickAxis, JoystickButton, JoystickProtocol } from '@/types/joystick'
 
 /**
  * Possible axes in the MAVLink `MANUAL_CONTROL` message protocol
@@ -72,33 +72,33 @@ export enum MAVLinkButtonFunction {
   relay3_on = 'Relay 3 on', // 57
   relay3_off = 'Relay 3 off', // 58
   relay3_toggle = 'Relay 3 toggle', // 59
-  servo1_inc = 'Servo 1 inc', // 61
-  servo1_dec = 'Servo 1 dec', // 62
-  servo1_min = 'Servo 1 min', // 63
-  servo1_max = 'Servo 1 max', // 64
-  servo1_center = 'Servo 1 center', // 65
-  servo2_inc = 'Servo 2 inc', // 66
-  servo2_dec = 'Servo 2 dec', // 67
-  servo2_min = 'Servo 2 min', // 68
-  servo2_max = 'Servo 2 max', // 69
-  servo2_center = 'Servo 2 center', // 70
-  servo3_inc = 'Servo 3 inc', // 71
-  servo3_dec = 'Servo 3 dec', // 72
-  servo3_min = 'Servo 3 min', // 73
-  servo3_max = 'Servo 3 max', // 74
-  servo3_center = 'Servo 3 center', // 75
-  servo1_min_momentary = 'Servo 1 min momentary', // 76
-  servo1_max_momentary = 'Servo 1 max momentary', // 77
-  servo1_min_toggle = 'Servo 1 min toggle', // 78
-  servo1_max_toggle = 'Servo 1 max toggle', // 79
-  servo2_min_momentary = 'Servo 2 min momentary', // 80
-  servo2_max_momentary = 'Servo 2 max momentary', // 81
-  servo2_min_toggle = 'Servo 2 min toggle', // 82
-  servo2_max_toggle = 'Servo 2 max toggle', // 83
-  servo3_min_momentary = 'Servo 3 min momentary', // 84
-  servo3_max_momentary = 'Servo 3 max momentary', // 85
-  servo3_min_toggle = 'Servo 3 min toggle', // 86
-  servo3_max_toggle = 'Servo 3 max toggle', // 87
+  actuator_1_inc = 'Actuator 1 inc', // 61
+  actuator_1_dec = 'Actuator 1 dec', // 62
+  actuator_1_min = 'Actuator 1 min', // 63
+  actuator_1_max = 'Actuator 1 max', // 64
+  actuator_1_center = 'Actuator 1 center', // 65
+  actuator_2_inc = 'Actuator 2 inc', // 66
+  actuator_2_dec = 'Actuator 2 dec', // 67
+  actuator_2_min = 'Actuator 2 min', // 68
+  actuator_2_max = 'Actuator 2 max', // 69
+  actuator_2_center = 'Actuator 2 center', // 70
+  actuator_3_inc = 'Actuator 3 inc', // 71
+  actuator_3_dec = 'Actuator 3 dec', // 72
+  actuator_3_min = 'Actuator 3 min', // 73
+  actuator_3_max = 'Actuator 3 max', // 74
+  actuator_3_center = 'Actuator 3 center', // 75
+  actuator_1_min_momentary = 'Actuator 1 min momentary', // 76
+  actuator_1_max_momentary = 'Actuator 1 max momentary', // 77
+  actuator_1_min_toggle = 'Actuator 1 min toggle', // 78
+  actuator_1_max_toggle = 'Actuator 1 max toggle', // 79
+  actuator_2_min_momentary = 'Actuator 2 min momentary', // 80
+  actuator_2_max_momentary = 'Actuator 2 max momentary', // 81
+  actuator_2_min_toggle = 'Actuator 2 min toggle', // 82
+  actuator_2_max_toggle = 'Actuator 2 max toggle', // 83
+  actuator_3_min_momentary = 'Actuator 3 min momentary', // 84
+  actuator_3_max_momentary = 'Actuator 3 max momentary', // 85
+  actuator_3_min_toggle = 'Actuator 3 min toggle', // 86
+  actuator_3_max_toggle = 'Actuator 3 max toggle', // 87
   custom1 = 'Custom 1', // 91
   custom2 = 'Custom 2', // 92
   custom3 = 'Custom 3', // 93
@@ -116,6 +116,33 @@ export enum MAVLinkButtonFunction {
   script_2 = 'Script 2', // 109
   script_3 = 'Script 3', // 110
   script_4 = 'Script 4', // 111
+  actuator_4_min = 'Actuator 4 min', // 112
+  actuator_4_max = 'Actuator 4 max', // 113
+  actuator_4_center = 'Actuator 4 center', // 114
+  actuator_4_inc = 'Actuator 4 inc', // 115
+  actuator_4_dec = 'Actuator 4 dec', // 116
+  actuator_4_min_momentary = 'Actuator 4 min momentary', // 117
+  actuator_4_max_momentary = 'Actuator 4 max momentary', // 118
+  actuator_4_min_toggle = 'Actuator 4 min toggle', // 119
+  actuator_4_max_toggle = 'Actuator 4 max toggle', // 120
+  actuator_5_min = 'Actuator 5 min', // 121
+  actuator_5_max = 'Actuator 5 max', // 122
+  actuator_5_center = 'Actuator 5 center', // 123
+  actuator_5_inc = 'Actuator 5 inc', // 124
+  actuator_5_dec = 'Actuator 5 dec', // 125
+  actuator_5_min_momentary = 'Actuator 5 min momentary', // 126
+  actuator_5_max_momentary = 'Actuator 5 max momentary', // 127
+  actuator_5_min_toggle = 'Actuator 5 min toggle', // 128
+  actuator_5_max_toggle = 'Actuator 5 max toggle', // 129
+  actuator_6_min = 'Actuator 6 min', // 130
+  actuator_6_max = 'Actuator 6 max', // 131
+  actuator_6_center = 'Actuator 6 center', // 132
+  actuator_6_inc = 'Actuator 6 inc', // 133
+  actuator_6_dec = 'Actuator 6 dec', // 134
+  actuator_6_min_momentary = 'Actuator 6 min momentary', // 135
+  actuator_6_max_momentary = 'Actuator 6 max momentary', // 136
+  actuator_6_min_toggle = 'Actuator 6 min toggle', // 137
+  actuator_6_max_toggle = 'Actuator 6 max toggle', // 138
 }
 
 export enum MAVLinkManualControlButton {
@@ -275,33 +302,33 @@ const mavlinkManualControlButtonFunctions: { [key in MAVLinkButtonFunction]: MAV
   [MAVLinkButtonFunction.relay3_on]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.relay3_on, 'Relay 3 on'),
   [MAVLinkButtonFunction.relay3_off]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.relay3_off, 'Relay 3 off'),
   [MAVLinkButtonFunction.relay3_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.relay3_toggle, 'Relay 3 toggle'),
-  [MAVLinkButtonFunction.servo1_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_inc, 'Servo 1 inc'),
-  [MAVLinkButtonFunction.servo1_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_dec, 'Servo 1 dec'),
-  [MAVLinkButtonFunction.servo1_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_min, 'Servo 1 min'),
-  [MAVLinkButtonFunction.servo1_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_max, 'Servo 1 max'),
-  [MAVLinkButtonFunction.servo1_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_center, 'Servo 1 center'),
-  [MAVLinkButtonFunction.servo2_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_inc, 'Servo 2 inc'),
-  [MAVLinkButtonFunction.servo2_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_dec, 'Servo 2 dec'),
-  [MAVLinkButtonFunction.servo2_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_min, 'Servo 2 min'),
-  [MAVLinkButtonFunction.servo2_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_max, 'Servo 2 max'),
-  [MAVLinkButtonFunction.servo2_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_center, 'Servo 2 center'),
-  [MAVLinkButtonFunction.servo3_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_inc, 'Servo 3 inc'),
-  [MAVLinkButtonFunction.servo3_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_dec, 'Servo 3 dec'),
-  [MAVLinkButtonFunction.servo3_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_min, 'Servo 3 min'),
-  [MAVLinkButtonFunction.servo3_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_max, 'Servo 3 max'),
-  [MAVLinkButtonFunction.servo3_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_center, 'Servo 3 center'),
-  [MAVLinkButtonFunction.servo1_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_min_momentary, 'Servo 1 min momentary'),
-  [MAVLinkButtonFunction.servo1_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_max_momentary, 'Servo 1 max momentary'),
-  [MAVLinkButtonFunction.servo1_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_min_toggle, 'Servo 1 min toggle'),
-  [MAVLinkButtonFunction.servo1_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo1_max_toggle, 'Servo 1 max toggle'),
-  [MAVLinkButtonFunction.servo2_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_min_momentary, 'Servo 2 min momentary'),
-  [MAVLinkButtonFunction.servo2_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_max_momentary, 'Servo 2 max momentary'),
-  [MAVLinkButtonFunction.servo2_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_min_toggle, 'Servo 2 min toggle'),
-  [MAVLinkButtonFunction.servo2_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo2_max_toggle, 'Servo 2 max toggle'),
-  [MAVLinkButtonFunction.servo3_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_min_momentary, 'Servo 3 min momentary'),
-  [MAVLinkButtonFunction.servo3_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_max_momentary, 'Servo 3 max momentary'),
-  [MAVLinkButtonFunction.servo3_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_min_toggle, 'Servo 3 min toggle'),
-  [MAVLinkButtonFunction.servo3_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.servo3_max_toggle, 'Servo 3 max toggle'),
+  [MAVLinkButtonFunction.actuator_1_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_inc, 'Actuator 1 inc'),
+  [MAVLinkButtonFunction.actuator_1_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_dec, 'Actuator 1 dec'),
+  [MAVLinkButtonFunction.actuator_1_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_min, 'Actuator 1 min'),
+  [MAVLinkButtonFunction.actuator_1_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_max, 'Actuator 1 max'),
+  [MAVLinkButtonFunction.actuator_1_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_center, 'Actuator 1 center'),
+  [MAVLinkButtonFunction.actuator_2_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_inc, 'Actuator 2 inc'),
+  [MAVLinkButtonFunction.actuator_2_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_dec, 'Actuator 2 dec'),
+  [MAVLinkButtonFunction.actuator_2_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_min, 'Actuator 2 min'),
+  [MAVLinkButtonFunction.actuator_2_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_max, 'Actuator 2 max'),
+  [MAVLinkButtonFunction.actuator_2_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_center, 'Actuator 2 center'),
+  [MAVLinkButtonFunction.actuator_3_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_inc, 'Actuator 3 inc'),
+  [MAVLinkButtonFunction.actuator_3_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_dec, 'Actuator 3 dec'),
+  [MAVLinkButtonFunction.actuator_3_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_min, 'Actuator 3 min'),
+  [MAVLinkButtonFunction.actuator_3_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_max, 'Actuator 3 max'),
+  [MAVLinkButtonFunction.actuator_3_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_center, 'Actuator 3 center'),
+  [MAVLinkButtonFunction.actuator_1_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_min_momentary, 'Actuator 1 min momentary'),
+  [MAVLinkButtonFunction.actuator_1_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_max_momentary, 'Actuator 1 max momentary'),
+  [MAVLinkButtonFunction.actuator_1_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_min_toggle, 'Actuator 1 min toggle'),
+  [MAVLinkButtonFunction.actuator_1_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_1_max_toggle, 'Actuator 1 max toggle'),
+  [MAVLinkButtonFunction.actuator_2_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_min_momentary, 'Actuator 2 min momentary'),
+  [MAVLinkButtonFunction.actuator_2_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_max_momentary, 'Actuator 2 max momentary'),
+  [MAVLinkButtonFunction.actuator_2_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_min_toggle, 'Actuator 2 min toggle'),
+  [MAVLinkButtonFunction.actuator_2_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_2_max_toggle, 'Actuator 2 max toggle'),
+  [MAVLinkButtonFunction.actuator_3_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_min_momentary, 'Actuator 3 min momentary'),
+  [MAVLinkButtonFunction.actuator_3_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_max_momentary, 'Actuator 3 max momentary'),
+  [MAVLinkButtonFunction.actuator_3_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_min_toggle, 'Actuator 3 min toggle'),
+  [MAVLinkButtonFunction.actuator_3_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_3_max_toggle, 'Actuator 3 max toggle'),
   [MAVLinkButtonFunction.custom1]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.custom1, 'Custom 1'),
   [MAVLinkButtonFunction.custom2]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.custom2, 'Custom 2'),
   [MAVLinkButtonFunction.custom3]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.custom3, 'Custom 3'),
@@ -319,6 +346,33 @@ const mavlinkManualControlButtonFunctions: { [key in MAVLinkButtonFunction]: MAV
   [MAVLinkButtonFunction.script_2]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.script_2, 'Script 2'),
   [MAVLinkButtonFunction.script_3]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.script_3, 'Script 3'),
   [MAVLinkButtonFunction.script_4]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.script_4, 'Script 4'),
+  [MAVLinkButtonFunction.actuator_4_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_min, 'Actuator 4 min'),
+  [MAVLinkButtonFunction.actuator_4_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_max, 'Actuator 4 max'),
+  [MAVLinkButtonFunction.actuator_4_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_inc, 'Actuator 4 inc'),
+  [MAVLinkButtonFunction.actuator_4_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_dec, 'Actuator 4 dec'),
+  [MAVLinkButtonFunction.actuator_4_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_center, 'Actuator 4 center'),
+  [MAVLinkButtonFunction.actuator_4_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_min_momentary, 'Actuator 4 min momentary'),
+  [MAVLinkButtonFunction.actuator_4_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_max_momentary, 'Actuator 4 max momentary'),
+  [MAVLinkButtonFunction.actuator_4_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_min_toggle, 'Actuator 4 min toggle'),
+  [MAVLinkButtonFunction.actuator_4_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_4_max_toggle, 'Actuator 4 max toggle'),
+  [MAVLinkButtonFunction.actuator_5_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_min, 'Actuator 5 min'),
+  [MAVLinkButtonFunction.actuator_5_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_max, 'Actuator 5 max'),
+  [MAVLinkButtonFunction.actuator_5_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_inc, 'Actuator 5 inc'),
+  [MAVLinkButtonFunction.actuator_5_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_dec, 'Actuator 5 dec'),
+  [MAVLinkButtonFunction.actuator_5_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_center, 'Actuator 5 center'),
+  [MAVLinkButtonFunction.actuator_5_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_min_momentary, 'Actuator 5 min momentary'),
+  [MAVLinkButtonFunction.actuator_5_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_max_momentary, 'Actuator 5 max momentary'),
+  [MAVLinkButtonFunction.actuator_5_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_min_toggle, 'Actuator 5 min toggle'),
+  [MAVLinkButtonFunction.actuator_5_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_5_max_toggle, 'Actuator 5 max toggle'),
+  [MAVLinkButtonFunction.actuator_6_min]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_min, 'Actuator 6 min'),
+  [MAVLinkButtonFunction.actuator_6_max]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_max, 'Actuator 6 max'),
+  [MAVLinkButtonFunction.actuator_6_inc]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_inc, 'Actuator 6 inc'),
+  [MAVLinkButtonFunction.actuator_6_dec]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_dec, 'Actuator 6 dec'),
+  [MAVLinkButtonFunction.actuator_6_center]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_center, 'Actuator 6 center'),
+  [MAVLinkButtonFunction.actuator_6_min_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_min_momentary, 'Actuator 6 min momentary'),
+  [MAVLinkButtonFunction.actuator_6_max_momentary]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_max_momentary, 'Actuator 6 max momentary'),
+  [MAVLinkButtonFunction.actuator_6_min_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_min_toggle, 'Actuator 6 min toggle'),
+  [MAVLinkButtonFunction.actuator_6_max_toggle]: new MAVLinkManualControlButtonAction(MAVLinkButtonFunction.actuator_6_max_toggle, 'Actuator 6 max toggle'),
 }
 
 // Exclude shift key so it's not mapped by user, as it's automatically handled by Cockpit backend.
@@ -630,3 +684,22 @@ export class MavlinkManualControlManager {
   }
 }
 
+const migrateServoSubButtonsToActuators = (mappings: JoystickProtocolActionsMapping[]): JoystickProtocolActionsMapping[] => {
+  const migratedMappings = JSON.parse(JSON.stringify(mappings))
+  mappings.forEach((mapping, mappingIndex) => {
+    Object.entries(mapping.buttonsCorrespondencies).forEach(([modKey, modKeyMapping]) => {
+      Object.entries(modKeyMapping).forEach(([buttonIndex, button]) => {
+        if (button.action.protocol === JoystickProtocol.MAVLinkManualControl) {
+          const action = migratedMappings[mappingIndex].buttonsCorrespondencies[modKey as CockpitModifierKeyOption][buttonIndex as unknown as number].action
+          action.id = action.id.replace('Servo', 'Actuator')
+          action.name = action.name.replace('Servo', 'Actuator')
+        }
+      })
+    })
+  })
+  return migratedMappings
+}
+
+export const migrateMavlinkManualControlButtons = (mappings: JoystickProtocolActionsMapping[]): JoystickProtocolActionsMapping[] => {
+  return migrateServoSubButtonsToActuators(mappings)
+}
