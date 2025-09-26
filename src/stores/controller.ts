@@ -21,7 +21,7 @@ import {
   JoysticksMap,
   JoystickStateEvent,
 } from '@/libs/joystick/manager'
-import { allAvailableAxes, allAvailableButtons } from '@/libs/joystick/protocols'
+import { allAvailableAxes, allAvailableButtons, performJoystickMappingMigrations } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { isElectron } from '@/libs/utils'
@@ -454,6 +454,7 @@ export const useControllerStore = defineStore('controller', () => {
     updatedMappings.push(defMapping)
   })
   protocolMappings.value = updatedMappings
+  protocolMappings.value = performJoystickMappingMigrations(updatedMappings)
 
   const loadDefaultProtocolMappingForVehicle = (vehicleType: MavType): void => {
     // @ts-ignore: We know that the value is a string
