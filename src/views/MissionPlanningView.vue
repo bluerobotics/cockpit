@@ -308,7 +308,6 @@
           v-bind="menuProps"
           class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[133px] text-[14px]"
           size="x-small"
-          style="z-index: 1002; border-radius: 0px"
           icon="mdi-download-multiple"
         />
       </template>
