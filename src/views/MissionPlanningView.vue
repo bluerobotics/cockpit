@@ -453,7 +453,7 @@ import { useSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { degrees } from '@/libs/utils'
-import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
+import { createGridOverlay, TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -676,6 +676,7 @@ const tilesSaved = ref(0)
 const tilesTotal = ref(0)
 const savingLayerName = ref<string>('')
 const downloadMenuOpen = ref(false)
+const gridLayer = ref<L.LayerGroup | undefined>(undefined)
 let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
 const nearMissionPathTolerance = 16 // in pixels
@@ -687,6 +688,52 @@ const saveEsri = (): void => {
 const saveOSM = (): void => {
   osmSaveBtn?.click()
   downloadMenuOpen.value = false
+}
+
+// Grid overlay functions for mission planning view
+const createGridOverlayLocal = (): void => {
+  if (!planningMap.value) return
+
+  try {
+    gridLayer.value = createGridOverlay(planningMap.value, gridLayer.value as L.LayerGroup)
+  } catch (error) {
+    console.error('Failed to create grid overlay:', error)
+  }
+}
+
+const removeGridOverlayLocal = (): void => {
+  if (gridLayer.value && planningMap.value) {
+    planningMap.value.removeLayer(gridLayer.value as L.LayerGroup)
+    gridLayer.value = undefined
+  }
+}
+
+// Standard Leaflet scale control
+const scaleControl = L.control.scale({
+  position: 'bottomright',
+  metric: true,
+  imperial: false,
+  maxWidth: 100,
+})
+
+const createScaleControl = (): void => {
+  if (!planningMap.value) return
+
+  // Remove existing scale control
+  removeScaleControl()
+
+  // Add standard Leaflet scale control
+  scaleControl.addTo(planningMap.value)
+}
+
+const removeScaleControl = (): void => {
+  if (planningMap.value) {
+    try {
+      planningMap.value.removeControl(scaleControl)
+    } catch (e) {
+      // Control might not be added yet, ignore error
+    }
+  }
 }
 
 // Creates an overlay on the map so elements can be added without interfering with the main map components and events
@@ -2707,6 +2754,14 @@ onMounted(async () => {
   const layerControl = L.control.layers(baseMaps)
   planningMap.value.addControl(layerControl)
 
+  // Initialize scale control (always show)
+  createScaleControl()
+
+  // Initialize grid overlay
+  if (missionStore.showGridOnMissionPlanning) {
+    createGridOverlayLocal()
+  }
+
   targetFollower.enableAutoUpdate()
   missionStore.clearMission()
 
@@ -2830,6 +2885,29 @@ watch(home, () => {
 watch(planningMap, (newMap, oldMap) => {
   if (planningMap.value !== undefined && newMap?.options === undefined) {
     planningMap.value = oldMap
+  }
+})
+
+// Watch for grid overlay changes
+watch(
+  () => missionStore.showGridOnMissionPlanning,
+  (show) => {
+    if (!planningMap.value) return
+    if (show) {
+      createGridOverlayLocal()
+    } else {
+      removeGridOverlayLocal()
+    }
+  }
+)
+
+// Watch for zoom/move changes to update grid and scale
+watch([zoom, mapCenter], () => {
+  if (missionStore.showGridOnMissionPlanning && planningMap.value) {
+    createGridOverlayLocal()
+  }
+  if (planningMap.value) {
+    createScaleControl()
   }
 })
 
@@ -3309,5 +3387,19 @@ watch(
   border: none;
   border-radius: 4px;
   padding: 5px 8px;
+}
+</style>
+
+<style scoped>
+/* Style the standard Leaflet scale control */
+:deep(.leaflet-control-scale) {
+  position: absolute;
+  right: 180px; /* Position to the left of the buttons */
+  bottom: 54px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  padding: 8px 8px;
+  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 5px 0px rgba(0, 0, 0, 0.12);
 }
 </style>
