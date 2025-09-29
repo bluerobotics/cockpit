@@ -41,6 +41,7 @@ export const useMissionStore = defineStore('mission', () => {
   const alwaysSwitchToFlightMode = useBlueOsStorage('cockpit-mission-always-switch-to-flight-mode', false)
   const showMissionCreationTips = useBlueOsStorage('cockpit-show-mission-creation-tips', true)
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
+  const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
 
   const { showDialog } = useInteractionDialog()
 
@@ -255,6 +256,7 @@ export const useMissionStore = defineStore('mission', () => {
     alwaysSwitchToFlightMode,
     showMissionCreationTips,
     showChecklistBeforeArm,
+    showGridOnMissionPlanning,
     addCommandToWaypoint,
     removeCommandFromWaypoint,
     updateWaypointCommand,
