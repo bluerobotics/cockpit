@@ -65,9 +65,12 @@ We have dedicated builds for every Desktop platform, so make sure you're using t
 - **Linux**: `.AppImage`
 - **Steam OS**: `.Flatpak`
 
-#### - Option 3: Install the BlueOS Extension
+#### - Option 3: Install the BlueOS Extension (Lite version!)
 If you're using BlueOS, you can install Cockpit [from the Extensions page](https://blueos.cloud/docs/stable/usage/advanced/#extensions).
 
+> ⚠️ Due to technical limitations of web browsers, the BlueOS Extension has limited functionality compared to the native app.
+>
+> [See below](#%EF%B8%8F-browser-vs-desktop-whats-the-difference) for details.
 
 #### - Option 4: Docker (for Developers)
 ```bash
