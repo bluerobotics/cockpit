@@ -494,6 +494,17 @@ const uploadingMission = ref(false)
 const missionUploadProgress = ref(0)
 const hasUploadedMission = ref(false)
 
+const defaultNavCommands: MissionCommand[] = [
+  {
+    type: MissionCommandType.MAVLINK_NAV_COMMAND,
+    command: MavCmd.MAV_CMD_NAV_WAYPOINT,
+    param1: 0,
+    param2: 5,
+    param3: 0,
+    param4: 999,
+  },
+]
+
 const uploadMissionToVehicle = async (): Promise<void> => {
   if (!home.value) {
     showHomePositionNotSetDialog.value = true
@@ -513,16 +524,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     coordinates: home.value,
     altitude: 0,
     altitudeReferenceType: currentWaypointAltitudeRefType.value,
-    commands: [
-      {
-        type: MissionCommandType.MAVLINK_NAV_COMMAND,
-        command: MavCmd.MAV_CMD_NAV_WAYPOINT,
-        param1: 0,
-        param2: 5,
-        param3: 0,
-        param4: 999,
-      },
-    ],
+    commands: defaultNavCommands,
   }
   missionItemsToUpload.unshift(homeWaypoint)
 
@@ -1055,17 +1057,6 @@ const getClosestMissionPathSegmentInfo = (segmentLatLngs: L.LatLng[], mouseLatLn
   return { segmentIndex: bestIndex, distanceInPixels: bestDistance, closestPointOnSegment: bestProjectedPoint }
 }
 
-const defaultNavCommands = (): MissionCommand[] => [
-  {
-    type: MissionCommandType.MAVLINK_NAV_COMMAND,
-    command: MavCmd.MAV_CMD_NAV_WAYPOINT,
-    param1: 0,
-    param2: 5,
-    param3: 0,
-    param4: 999,
-  },
-]
-
 const insertWaypointAtSegmentMidpoint = (segmentIndex: number): void => {
   if (!planningMap.value || missionStore.currentPlanningWaypoints.length < 2) return
 
@@ -1080,7 +1071,7 @@ const insertWaypointAtSegmentMidpoint = (segmentIndex: number): void => {
     coordinates: [mid.lat, mid.lng],
     altitude: prev.altitude,
     altitudeReferenceType: prev.altitudeReferenceType,
-    commands: defaultNavCommands(),
+    commands: defaultNavCommands,
   }
 
   missionStore.currentPlanningWaypoints.splice(segmentIndex + 1, 0, newWp)
@@ -1577,22 +1568,12 @@ const addWaypoint = (
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
 
   const waypointId = uuid()
-  const defaultCommands: MissionCommand[] = [
-    {
-      type: MissionCommandType.MAVLINK_NAV_COMMAND,
-      command: MavCmd.MAV_CMD_NAV_WAYPOINT,
-      param1: 0,
-      param2: 5,
-      param3: 0,
-      param4: 999,
-    },
-  ]
   const waypoint: Waypoint = {
     id: waypointId,
     coordinates,
     altitude,
     altitudeReferenceType,
-    commands: !commands || commands.length === 0 ? defaultCommands : commands,
+    commands: !commands || commands.length === 0 ? defaultNavCommands : commands,
   }
 
   missionStore.currentPlanningWaypoints.push(waypoint)
@@ -2016,16 +1997,7 @@ const generateWaypointsFromSurvey = (): void => {
     coordinates: [latLng.lat, latLng.lng],
     altitude: currentWaypointAltitude.value,
     altitudeReferenceType: currentWaypointAltitudeRefType.value,
-    commands: [
-      {
-        type: MissionCommandType.MAVLINK_NAV_COMMAND,
-        command: MavCmd.MAV_CMD_NAV_WAYPOINT,
-        param1: 0,
-        param2: 5,
-        param3: 0,
-        param4: 999,
-      },
-    ],
+    commands: defaultNavCommands,
   }))
 
   missionStore.currentPlanningWaypoints.push(...newSurveyWaypoints)
