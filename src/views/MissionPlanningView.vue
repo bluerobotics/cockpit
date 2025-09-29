@@ -302,22 +302,26 @@
         </button>
       </div>
     </div>
-    <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
-      <template #activator="{ props: menuProps }">
-        <v-btn
-          v-bind="menuProps"
-          class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[133px] text-[14px]"
-          size="x-small"
-          icon="mdi-download-multiple"
-        />
-      </template>
+    <v-tooltip location="top center" text="Download map tiles">
+      <template #activator="{ props: tooltipProps }">
+        <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
+          <template #activator="{ props: menuProps }">
+            <v-btn
+              v-bind="{ ...menuProps, ...tooltipProps }"
+              class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[133px] text-[14px]"
+              size="x-small"
+              icon="mdi-download-multiple"
+            />
+          </template>
 
-      <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-        <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
-        <v-divider />
-        <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
-      </v-list>
-    </v-menu>
+          <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
+            <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+            <v-divider />
+            <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+          </v-list>
+        </v-menu>
+      </template>
+    </v-tooltip>
     <v-tooltip location="top center" :text="centerHomeButtonTooltipText">
       <template #activator="{ props: tooltipProps }">
         <v-btn
