@@ -87,6 +87,18 @@
         class="flex flex-col rounded-md"
         :style="[interfaceStore.globalGlassMenuStyles, { background: '#333333EE', border: '1px solid #FFFFFF44' }]"
       >
+        <v-list-item v-if="!isCreatingSurvey" class="flex items-center gap-x-2 pb-2" @click="handleAddWaypointAtCursor">
+          <v-icon
+            variant="text"
+            icon="mdi-plus-circle-outline"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[18px]"
+          ></v-icon>
+          <span class="text-white text-sm ml-4">Add waypoint here</span>
+        </v-list-item>
+        <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSurvey">
           <v-icon
             variant="text"
@@ -235,6 +247,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'close'): void
+  (event: 'add-waypoint-at-cursor'): void
   (event: 'toggleSurvey'): void
   (event: 'toggleSimplePath'): void
   (event: 'deleteSelectedSurvey'): void
@@ -264,6 +277,11 @@ const surveyCreationButtonText = computed(() => {
   }
   return 'Add survey'
 })
+
+const handleAddWaypointAtCursor = (): void => {
+  emit('add-waypoint-at-cursor')
+  emit('close')
+}
 
 const pathCreationButtonText = computed(() => {
   if (props.isCreatingSimplePath) {
