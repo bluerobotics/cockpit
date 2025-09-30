@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
 
-import { defaultGlobalAddress } from '@/assets/defaults'
+import { defaultGlobalAddress, defaultVehicleBatteryPack } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { getAllDataLakeVariablesInfo, getDataLakeVariableInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
@@ -37,11 +37,13 @@ import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import type {
   Altitude,
   Attitude,
+  BatteryChemistry,
   PageDescription,
   PowerSupply,
   StatusGPS,
   StatusText,
   VehicleConfigurationSettings,
+  VehiclePayloadParameters,
   Velocity,
 } from '@/libs/vehicle/types'
 import { Coordinates } from '@/libs/vehicle/types'
@@ -134,6 +136,18 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const statusGPS: StatusGPS = reactive({} as StatusGPS)
   const vehicleArmingTime = ref<Date | undefined>(undefined)
   const currentVehicleName = ref<string | undefined>(undefined)
+
+  const defaultVehiclePayload: VehiclePayloadParameters = {
+    extraPayloadKg: 0,
+    batteryCapacity: defaultVehicleBatteryPack[vehicleType.value || MavType.MAV_TYPE_GENERIC],
+    batteryChemistry: 'li-ion' as BatteryChemistry,
+    hasHighDragSensor: false,
+  }
+
+  const vehiclePayloadParameters = useBlueOsStorage<VehiclePayloadParameters>(
+    'cockpit-vehicle-payload',
+    defaultVehiclePayload
+  )
 
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -901,5 +915,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     resetMessageIntervalsToCockpitDefault,
     fetchHomeWaypoint,
     setHomeWaypoint,
+    vehiclePayloadParameters,
   }
 })

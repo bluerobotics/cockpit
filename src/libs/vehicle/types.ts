@@ -280,3 +280,27 @@ export interface PageDescription {
  * Base interface for settings package used to configure a vehicle
  */
 export interface VehicleConfigurationSettings {}
+
+/**
+ * Battery chemistry types
+ */
+export type BatteryChemistry = 'li-ion' | 'li-po' | 'lifepo4'
+
+export type VehiclePayloadParameters = {
+  /**
+   * Extra payload weight in Kg
+   */
+  extraPayloadKg: number
+  /**
+   * Battery capacity in Wh
+   */
+  batteryCapacity: number
+  /**
+   * Battery chemistry type
+   */
+  batteryChemistry: BatteryChemistry
+  /**
+   * Whether the vehicle has a high-drag sensor (e.g., Ping1D sonar) or not
+   */
+  hasHighDragSensor: boolean
+}

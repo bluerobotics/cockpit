@@ -274,3 +274,10 @@ export const frequencyHzToIntervalUs = (frequencyHz: number): number => {
   }
   return 1000000 / frequencyHz
 }
+
+/**
+ * Normalize an angle to the range [0, 360).
+ * @param {number} deg - Angle in degrees
+ * @returns {number} Normalized angle in degrees
+ */
+export const norm360 = (deg: number): number => ((deg % 360) + 360) % 360

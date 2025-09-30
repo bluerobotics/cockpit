@@ -1,4 +1,5 @@
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { BatteryChemistry } from '@/libs/vehicle/types'
 
 /**
  * Possible types for mission commands.
@@ -270,4 +271,52 @@ export type ClosestSegmentInfo = {
    * Distance from the mouse cursor to the closest point on the segment.
    */
   distanceInPixels: number
+}
+
+/**
+ * Interface representing a leg of a mission (a segment between two waypoints).
+ */
+export type MissionLeg = {
+  /**
+   * Distance of the leg in meters.
+   */
+  distanceMeters: number
+  /**
+   * Speed of the leg in meters per second.
+   */
+  speedMps: number
+}
+
+/**
+ * Configuration for mission estimates.
+ */
+export interface MissionEstimatesConfig {
+  /**
+   * The waypoints of the mission.
+   */
+  waypoints: Waypoint[]
+  /**
+   * The legs of the mission with their respective speeds.
+   */
+  legs: MissionLeg[]
+  /**
+   * Indicates if the vehicle has a high drag sensor.
+   */
+  hasHighDragSensor?: boolean
+  /**
+   * The extra payload weight in kilograms.
+   */
+  extraPayloadKg?: number
+  /**
+   * The battery capacity in watt-hours.
+   */
+  batteryCapacityWh?: number
+  /**
+   * The original battery mass in kilograms.
+   */
+  batteryChemistry?: BatteryChemistry
+  /**
+   * The original battery mass in kilograms.
+   */
+  originalBatteryMassKg?: number
 }

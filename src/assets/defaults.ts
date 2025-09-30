@@ -919,3 +919,10 @@ export const defaultJoystickCalibration: JoystickCalibration = {
     },
   },
 }
+
+// Default battery pack capacities in Wh by vehicle types
+export const defaultVehicleBatteryPack: Record<string, number> = {
+  MAV_TYPE_SURFACE_BOAT: 236 * 2,
+  MAV_TYPE_SUBMARINE: 236 * 1,
+  MAV_TYPE_GENERIC: 236 * 2,
+}
