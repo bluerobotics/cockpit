@@ -468,8 +468,15 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
+import {
+  clearAllSurveyAreas,
+  removeSurveyAreaSquareMeters,
+  setSurveyAreaSquareMeters,
+  useMissionStats,
+} from '@/composables/useMissionStatistics'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
 import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
@@ -498,6 +505,7 @@ const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
+const missionEstimates = useMissionStats()
 const { height: windowHeight } = useWindowSize()
 
 const { showDialog, closeDialog } = useInteractionDialog()
@@ -698,6 +706,127 @@ let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
 const nearMissionPathTolerance = 16 // in pixels
 const isMissionEstimatesVisible = ref(true)
+const measureLayer = ref<L.LayerGroup | null>(null)
+let measureOverlayEl: HTMLDivElement | null = null
+let measureSvgEl: SVGSVGElement | null = null
+let measureLineEl: SVGLineElement | null = null
+let measureTextEl: HTMLDivElement | null = null
+const surveyAreaMarkers = ref<Record<string, L.Marker>>({})
+const liveSurveyAreaMarker = ref<L.Marker | null>(null)
+
+const clearLiveMeasure = (): void => {
+  destroyMeasureOverlay(planningMap.value || undefined)
+}
+
+const currentMeasureAnchor = (): L.LatLng | null => {
+  if (!planningMap.value) return null
+  if (isCreatingSimplePath.value && missionStore.currentPlanningWaypoints.length > 0) {
+    const last = missionStore.currentPlanningWaypoints[missionStore.currentPlanningWaypoints.length - 1]
+    return L.latLng(last.coordinates[0], last.coordinates[1])
+  }
+  if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length > 0) {
+    const last = surveyPolygonVertexesPositions.value[surveyPolygonVertexesPositions.value.length - 1]
+    return L.latLng(last.lat, last.lng)
+  }
+
+  return null
+}
+
+const ensureMeasureOverlay = (map: L.Map): void => {
+  if (measureOverlayEl) return
+  const container = map.getContainer()
+
+  measureOverlayEl = document.createElement('div')
+  measureOverlayEl.className = 'measure-overlay'
+  measureOverlayEl.style.pointerEvents = 'none'
+  measureOverlayEl.style.position = 'absolute'
+  measureOverlayEl.style.top = '0'
+  measureOverlayEl.style.left = '0'
+  measureOverlayEl.style.width = '100%'
+  measureOverlayEl.style.height = '100%'
+  measureOverlayEl.style.zIndex = '640'
+
+  measureSvgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  measureSvgEl.setAttribute('width', '100%')
+  measureSvgEl.setAttribute('height', '100%')
+  measureSvgEl.style.position = 'absolute'
+  measureSvgEl.style.top = '0'
+  measureSvgEl.style.left = '0'
+
+  measureLineEl = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+  measureLineEl.setAttribute('stroke-width', '2')
+  measureLineEl.setAttribute('stroke-dasharray', '10,10')
+  measureLineEl.setAttribute('opacity', '0.9')
+  measureLineEl.setAttribute('stroke', '#2563eb')
+
+  measureSvgEl.appendChild(measureLineEl)
+
+  measureTextEl = document.createElement('div')
+  measureTextEl.className = 'live-measure-pill'
+  measureTextEl.style.position = 'absolute'
+  measureTextEl.style.transform = 'translate(-50%, -50%)'
+
+  measureOverlayEl.appendChild(measureSvgEl)
+  measureOverlayEl.appendChild(measureTextEl)
+  container.appendChild(measureOverlayEl)
+}
+
+const destroyMeasureOverlay = (map?: L.Map): void => {
+  if (!measureOverlayEl) return
+  if (measureOverlayEl) {
+    ;(map?.getContainer() ?? measureOverlayEl.parentElement)?.removeChild(measureOverlayEl)
+  }
+  measureOverlayEl.remove()
+  measureOverlayEl = null
+  measureSvgEl = null
+  measureLineEl = null
+  measureTextEl = null
+}
+
+const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
+  const el = evt.originalEvent?.target as HTMLElement | null
+  if (!el) return false
+  return !!el.closest('.custom-div-icon, .edge-marker, .delete-popup, .delete-button')
+}
+
+const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
+  if (!planningMap.value) return
+
+  const anchor = currentMeasureAnchor()
+  const measuring = !!anchor && (isCreatingSimplePath.value || isCreatingSurvey.value)
+  if (!measuring) {
+    destroyMeasureOverlay(planningMap.value)
+    return
+  }
+
+  const map = planningMap.value
+  ensureMeasureOverlay(map)
+
+  // NEW: hide/show the live pill when hovering survey nodes/add/delete UI
+  if (measureTextEl) {
+    measureTextEl.style.display = isOverSurveyHandle(e) ? 'none' : 'block'
+  }
+
+  const a = map.latLngToContainerPoint(anchor!)
+  const b = map.latLngToContainerPoint(e.latlng)
+
+  if (measureLineEl) {
+    measureLineEl.setAttribute('x1', String(a.x))
+    measureLineEl.setAttribute('y1', String(a.y))
+    measureLineEl.setAttribute('x2', String(b.x))
+    measureLineEl.setAttribute('y2', String(b.y))
+  }
+
+  const midX = (a.x + b.x) / 2
+  const midY = (a.y + b.y) / 2
+  const dist = anchor!.distanceTo(e.latlng)
+  const text = missionEstimates.formatMetersShort(dist)
+  if (measureTextEl) {
+    measureTextEl.textContent = text
+    measureTextEl.style.left = `${midX}px`
+    measureTextEl.style.top = `${midY}px`
+  }
+}
 
 const toggleMissionEstimates = (): void => {
   isMissionEstimatesVisible.value = !isMissionEstimatesVisible.value
@@ -786,6 +915,14 @@ const clearCurrentMission = (): void => {
     planningMap.value?.removeLayer(missionWaypointsPolyline.value)
     missionWaypointsPolyline.value = undefined
   }
+  clearSurveyPath()
+  surveys.value = []
+  selectedSurveyId.value = ''
+  lastSelectedSurveyId.value = ''
+  canUndo.value = {}
+  lastSurveyState.value = {}
+  clearLiveMeasure()
+  clearAllSurveyAreas()
 }
 
 const openCLearMissionDialog = (): void => {
@@ -1159,6 +1296,60 @@ const addWaypointFromContextMenu = (): void => {
   addWaypointFromClick(ll)
 }
 
+const makeAreaMarker = (at: L.LatLng, text: string): L.Marker => {
+  return L.marker(at, {
+    pane: 'measurePane',
+    interactive: false,
+    keyboard: false,
+    bubblingMouseEvents: false,
+    icon: L.divIcon({
+      className: 'measure-area-icon',
+      html: `<div class="measure-area-pill">${text}</div>`,
+    }),
+  })
+}
+
+const addAreaToMeasureLayer = (m: L.Layer): void => {
+  if (measureLayer.value) {
+    measureLayer.value.addLayer(m)
+  } else {
+    planningMap.value?.addLayer(m)
+  }
+}
+
+const updateLiveSurveyAreaLabel = (coords: WaypointCoordinates[]): void => {
+  if (!coords.length) return
+
+  const m2 = polygonAreaSquareMeters(coords)
+  const label = missionEstimates.formatArea(m2)
+
+  const centerTuple = centroidLatLng(coords)
+  if (!Number.isFinite(centerTuple[0]) || !Number.isFinite(centerTuple[1])) return
+
+  const center = L.latLng(centerTuple[0], centerTuple[1])
+
+  if (!liveSurveyAreaMarker.value) {
+    liveSurveyAreaMarker.value = makeAreaMarker(center, label)
+    addAreaToMeasureLayer(liveSurveyAreaMarker.value)
+  } else {
+    liveSurveyAreaMarker.value.setLatLng(center)
+    const el = liveSurveyAreaMarker.value.getElement()
+    if (el) el.querySelector('.measure-area-pill')!.textContent = label
+  }
+}
+
+const createSurveyAreaLabel = (surveyId: string, coords: [number, number][]): void => {
+  const m2 = polygonAreaSquareMeters(coords)
+  const label = missionEstimates.formatArea(m2)
+  const centerTuple = centroidLatLng(coords)
+  const center = L.latLng(centerTuple[0], centerTuple[1])
+
+  const marker = makeAreaMarker(center, label)
+  addAreaToMeasureLayer(marker)
+  surveyAreaMarkers.value[surveyId] = marker
+  setSurveyAreaSquareMeters(surveyId, m2)
+}
+
 const onPolygonMouseDown = (event: L.LeafletMouseEvent): void => {
   isDraggingPolygon.value = true
   dragStartLatLng = event.latlng
@@ -1187,6 +1378,10 @@ const onPolygonMouseUp = (event: L.LeafletMouseEvent): void => {
 
 const onPolygonMouseMove = (event: L.LeafletMouseEvent): void => {
   if (!isDraggingPolygon.value || !dragStartLatLng) return
+
+  if (surveyPolygonLayer.value && surveyPolygonVertexesPositions.value.length >= 3) {
+    updateLiveSurveyAreaLabel(surveyPolygonVertexesPositions.value.map((p) => [p.lat, p.lng] as WaypointCoordinates))
+  }
 
   const latDiff = event.latlng.lat - dragStartLatLng.lat
   const lngDiff = event.latlng.lng - dragStartLatLng.lng
@@ -1354,7 +1549,8 @@ const addSurveyPolygonToMap = (survey: Survey): void => {
     }
   }
 
-  surveyPolygonLayer.on('touchstart', handleTouchStart as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+  createSurveyAreaLabel(survey.id, survey.polygonCoordinates)
+  surveyPolygonLayer.on('touchstart', handleTouchStart as any) // eslint-disable @typescript-eslint/no-explicit-any
   surveyPolygonLayer.on('touchend', handleTouchEnd)
   surveyPolygonLayer.on('touchcancel', handleTouchEnd)
 }
@@ -1413,6 +1609,7 @@ const clearSurveyCreation = (): void => {
   isCreatingSurvey.value = false
   lastSurveyState.value = {}
   canUndo.value = {}
+  clearLiveMeasure()
 }
 
 const deleteSelectedSurvey = (): void => {
@@ -1462,6 +1659,13 @@ const deleteSelectedSurvey = (): void => {
   }
   if (canUndo.value[surveyId]) {
     delete canUndo.value[surveyId]
+  }
+
+  const areaMarker = surveyAreaMarkers.value[surveyId]
+  if (areaMarker) {
+    planningMap.value?.removeLayer(areaMarker)
+    delete surveyAreaMarkers.value[surveyId]
+    removeSurveyAreaSquareMeters(surveyId)
   }
 
   openSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
@@ -1533,6 +1737,10 @@ watch(
       planningMap.value?.removeLayer(layer)
     })
     surveyPolygonLayers.value = {}
+
+    Object.values(surveyAreaMarkers.value).forEach((m) => {
+      planningMap.value?.removeLayer(m)
+    })
 
     // Add new polygons
     newSurveys.forEach((survey) => {
@@ -1771,6 +1979,10 @@ const clearSurveyPath = (): void => {
     planningMap.value?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
     surveyPolygonLayer.value = null
   }
+  if (liveSurveyAreaMarker.value) {
+    planningMap.value?.removeLayer(liveSurveyAreaMarker.value)
+    liveSurveyAreaMarker.value = null
+  }
   surveyPolygonVertexesMarkers.value.forEach((marker) => marker.remove())
   surveyEdgeAddMarkers.forEach((marker) => marker.remove())
   surveyPolygonVertexesMarkers.value = []
@@ -1779,6 +1991,7 @@ const clearSurveyPath = (): void => {
 
 watch([isCreatingSurvey, isCreatingSimplePath], (isCreatingNow) => {
   if (!isCreatingNow) clearSurveyPath()
+  clearLiveMeasure()
 
   if (planningMap.value) {
     const mapContainer = planningMap.value.getContainer()
@@ -1843,6 +2056,9 @@ const updatePolygon = (): void => {
     }).addTo(toRaw(planningMap.value)!)
 
     enablePolygonDragging()
+  }
+  if (surveyPolygonLayer.value && surveyPolygonVertexesPositions.value.length >= 3) {
+    surveyPolygonVertexesPositions.value.map((p) => [p.lat, p.lng] as WaypointCoordinates)
   }
   updateSurveyMarkersPositions()
 }
@@ -2322,6 +2538,7 @@ const undoGenerateWaypoints = (): void => {
   createSurveyPath()
   openSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
   undoIsInProgress.value = false
+  removeSurveyAreaSquareMeters(surveyId)
 }
 
 const addWaypointMarker = (waypoint: Waypoint): void => {
@@ -2524,6 +2741,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
 
   if (isCreatingSurvey.value) {
     addSurveyPoint(e.latlng)
+    clearLiveMeasure()
   }
 
   if (planningMap.value) {
@@ -2553,6 +2771,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
     ) {
       addWaypoint([e.latlng.lat, e.latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
     }
+    clearLiveMeasure()
   }
 }
 
@@ -2663,6 +2882,11 @@ onMounted(async () => {
   }).addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
 
+  const pane = planningMap.value!.createPane('measurePane')
+  pane.style.zIndex = '640'
+  pane.style.pointerEvents = 'none'
+  measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
+
   planningMap.value.on('moveend', () => {
     if (planningMap.value === undefined) return
     let { lat, lng } = planningMap.value.getCenter()
@@ -2670,6 +2894,7 @@ onMounted(async () => {
       mapCenter.value = [lat, lng]
     }
   })
+  planningMap.value.on('zoomstart', clearLiveMeasure)
   planningMap.value.on('zoomend', () => {
     if (planningMap.value === undefined) return
     zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
@@ -2722,7 +2947,7 @@ onMounted(async () => {
   })
 
   planningMap.value.on('drag', updateConfirmButtonPosition)
-
+  planningMap.value.on('mousemove', handleMapMouseMove)
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
   })
@@ -2732,6 +2957,7 @@ onMounted(async () => {
 
   targetFollower.enableAutoUpdate()
   missionStore.clearMission()
+  clearAllSurveyAreas()
 
   if (instanceOfCockpitMission(missionStore.draftMission)) {
     loadDraftMission(missionStore.draftMission)
@@ -2747,6 +2973,8 @@ onUnmounted(() => {
     window.removeEventListener('blur', onWindowBlur)
     window.removeEventListener('mousemove', onWindowMouseMove)
   }
+  planningMap.value?.off('mousemove', handleMapMouseMove)
+  clearLiveMeasure()
 })
 
 const vehiclePosition = computed((): [number, number] | undefined =>
@@ -3195,6 +3423,46 @@ watch(
 
 .vehicle-marker {
   z-index: 300 !important;
+}
+.live-measure-line {
+  pointer-events: none;
+}
+
+.live-measure-tag {
+  pointer-events: none;
+}
+.live-measure-pill {
+  position: relative;
+  left: -50%;
+  top: -50%;
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 16px;
+  background: #00000011;
+  color: #fff;
+  font-size: 14px;
+  line-height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  transform: translate(0, -50%);
+}
+.measure-area-icon {
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.measure-area-pill {
+  transform: translate(-50%, -50%);
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
 }
 .set-home-cursor {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%231e498f' stroke='%23ffffff55' stroke-width='2'/%3E%3Cpath d='M12 2c5 0 9 4 9 9 0 3.73-2.63 7.43-8.03 13.2a1 1 0 0 1-1.42 0C5.63 18.43 3 14.73 3 11a9 9 0 0 1 9-9z' fill='white'/%3E%3Cpath d='M8.5 10L12 6.5 15.5 10h-2.5v3h-2v-3H8.5z' fill='%231e498f'/%3E%3C/svg%3E")
