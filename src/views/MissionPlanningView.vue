@@ -220,7 +220,24 @@
         </div>
 
         <div>
-          <div class="flex justify-end mt-2 mb-2">
+          <div class="flex w-full justify-between mt-2 mb-2">
+            <v-tooltip
+              location="top"
+              :text="isMissionEstimatesVisible ? 'Hide mission estimates' : 'Show mission estimates'"
+            >
+              <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
+                <v-btn
+                  v-model="isMissionEstimatesVisible"
+                  v-bind="props"
+                  icon="mdi-chart-bar-stacked"
+                  variant="text"
+                  size="24"
+                  class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                  @click="toggleMissionEstimates"
+                />
+              </template>
+            </v-tooltip>
+            <v-divider vertical />
             <v-tooltip location="top" text="Save mission to file">
               <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
                 <v-btn
@@ -425,8 +442,8 @@
   >
     <p>Saving offline map content:&nbsp;{{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%</p>
   </div>
+  <MissionEstimatesPanel v-model="isMissionEstimatesVisible" />
 </template>
-
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
@@ -444,6 +461,7 @@ import brov2MarkerImage from '@/assets/brov2-marker.png'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
+import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
@@ -679,6 +697,11 @@ const downloadMenuOpen = ref(false)
 let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
 const nearMissionPathTolerance = 16 // in pixels
+const isMissionEstimatesVisible = ref(true)
+
+const toggleMissionEstimates = (): void => {
+  isMissionEstimatesVisible.value = !isMissionEstimatesVisible.value
+}
 
 const saveEsri = (): void => {
   esriSaveBtn?.click()
