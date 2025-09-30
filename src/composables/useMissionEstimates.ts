@@ -1,12 +1,15 @@
 import { computed, ComputedRef, ref } from 'vue'
 
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { blueBoatMissionEstimate } from '@/libs/mission/blueboat-estimates'
 import {
   calculateHaversineDistance,
   computeMissionDurationSecondsFromLegs,
   polygonAreaSquareMeters,
 } from '@/libs/mission/general-estimates'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
-import { MissionLeg } from '@/types/mission'
+import { MissionEstimatesByVehicleConfig, MissionLeg, VehicleMissionEstimate } from '@/types/mission'
 
 type LatLng = [number, number]
 
@@ -33,6 +36,7 @@ export const useMissionEstimates = (): {
   totalMissionLength: ComputedRef<string>
   totalSurveyCoverage: ComputedRef<string>
   totalMissionDuration: ComputedRef<string>
+  totalMissionEnergy: ComputedRef<string>
   missionLegsWithSpeed: ComputedRef<MissionLeg[]>
   formatMetersShort: (distance: number) => string
   formatArea: (area: number) => string
@@ -40,6 +44,33 @@ export const useMissionEstimates = (): {
   formatWh: (energy: number) => string
 } => {
   const missionStore = useMissionStore()
+  const vehicleStore = useMainVehicleStore()
+
+  const normalizedVehicleType = computed<MavType>(() => {
+    const raw = vehicleStore.vehicleType as unknown
+    if (typeof raw === 'number') return (raw as unknown as MavType) ?? MavType.MAV_TYPE_GENERIC
+    if (typeof raw === 'string') return (MavType as any)[raw] ?? MavType.MAV_TYPE_GENERIC
+    return MavType.MAV_TYPE_GENERIC
+  })
+
+  // Vehicle-specific estimators by vehicle type
+  const estimatorsByType: Partial<Record<MavType, VehicleMissionEstimate>> = {
+    [MavType.MAV_TYPE_SURFACE_BOAT]: blueBoatMissionEstimate,
+  }
+
+  const currentEstimator = computed<VehicleMissionEstimate | null>(() => {
+    return estimatorsByType[normalizedVehicleType.value] ?? null
+  })
+
+  const vehicleParametersInputs = computed<MissionEstimatesByVehicleConfig>(() => ({
+    vehicleType: normalizedVehicleType.value,
+    legs: missionLegsWithSpeed.value,
+    waypoints: missionStore.currentPlanningWaypoints,
+    hasHighDragSensor: vehicleStore.vehiclePayloadParameters.hasHighDragSensor,
+    extraPayloadKg: vehicleStore.vehiclePayloadParameters.extraPayloadKg,
+    batteryCapacityWh: vehicleStore.vehiclePayloadParameters.batteryCapacity,
+    batteryChemistry: vehicleStore.vehiclePayloadParameters.batteryChemistry,
+  }))
 
   // Mission legs with speed derived from currentPlanningWaypoints and MAVLink command speed changes
   const missionLegsWithSpeed = computed<MissionLeg[]>(() => {
@@ -127,14 +158,21 @@ export const useMissionEstimates = (): {
     return `${(area / 1e6).toFixed(3)} km²`
   }
 
-  // String formatting
+  // Basic mission stats - no vehicle-specific estimates
   const totalMissionLength = computed(() => formatMetersShort(missionLengthMeters.value))
   const totalSurveyCoverage = computed(() => formatArea(totalSurveyCoverageSquareMeters.value))
 
-  // Mission duration (s), without vehicle-specific estimates
+  // Mission duration (s), with vehicle-specific estimates if available
   const totalMissionDuration = computed(() => {
-    const missionDuration = computeMissionDurationSecondsFromLegs(missionLegsWithSpeed.value)
+    const missionDuration = currentEstimator.value
+      ? currentEstimator.value.timeToCompleteMission(vehicleParametersInputs.value)
+      : computeMissionDurationSecondsFromLegs(missionLegsWithSpeed.value)
     return formatSeconds(missionDuration)
+  })
+
+  // Mission energy consumption (Wh), with vehicle-specific estimates if available
+  const totalMissionEnergy = computed(() => {
+    return currentEstimator.value ? formatWh(currentEstimator.value.totalEnergy(vehicleParametersInputs.value)) : '—'
   })
 
   return {
@@ -143,6 +181,7 @@ export const useMissionEstimates = (): {
     totalMissionLength,
     totalSurveyCoverage,
     totalMissionDuration,
+    totalMissionEnergy,
     missionLegsWithSpeed,
     formatMetersShort,
     formatArea,

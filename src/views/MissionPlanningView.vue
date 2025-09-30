@@ -472,8 +472,8 @@ import {
   clearAllSurveyAreas,
   removeSurveyAreaSquareMeters,
   setSurveyAreaSquareMeters,
-  useMissionStats,
-} from '@/composables/useMissionStatistics'
+  useMissionEstimates,
+} from '@/composables/useMissionEstimates'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
@@ -505,7 +505,7 @@ const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
-const missionEstimates = useMissionStats()
+const missionEstimates = useMissionEstimates()
 const { height: windowHeight } = useWindowSize()
 
 const { showDialog, closeDialog } = useInteractionDialog()
