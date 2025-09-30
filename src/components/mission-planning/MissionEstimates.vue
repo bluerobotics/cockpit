@@ -159,13 +159,18 @@ defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
-const { totalMissionLength, totalSurveyCoverage, totalMissionDuration, formatWh, missionCoverageAreaSquareMeters } =
-  useMissionEstimates()
+const {
+  totalMissionLength,
+  totalSurveyCoverage,
+  totalMissionDuration,
+  totalMissionEnergy,
+  missionCoverageAreaSquareMeters,
+} = useMissionEstimates()
 
 const isOptionsIconVisible = computed(() => vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT)
 
 const missionDuration = computed(() => totalMissionDuration.value)
-const missionEnergy = formatWh(-1)
+const missionEnergy = computed(() => totalMissionEnergy.value)
 const missionCoverage = computed(() => missionCoverageAreaSquareMeters.value)
 
 const isSettingsOpen = ref(false)

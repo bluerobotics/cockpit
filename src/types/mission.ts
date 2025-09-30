@@ -1,4 +1,4 @@
-import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { BatteryChemistry } from '@/libs/vehicle/types'
 
 /**
@@ -290,15 +290,19 @@ export type MissionLeg = {
 /**
  * Configuration for mission estimates.
  */
-export interface MissionEstimatesConfig {
+export interface MissionEstimatesByVehicleConfig {
+  /**
+   * Vehicle type as defined in MAVLink
+   */
+  vehicleType: MavType
+  /**
+   * The legs of the mission including speed and distance between waypoints.
+   */
+  legs: MissionLeg[]
   /**
    * The waypoints of the mission.
    */
   waypoints: Waypoint[]
-  /**
-   * The legs of the mission with their respective speeds.
-   */
-  legs: MissionLeg[]
   /**
    * Indicates if the vehicle has a high drag sensor.
    */
@@ -315,8 +319,18 @@ export interface MissionEstimatesConfig {
    * The original battery mass in kilograms.
    */
   batteryChemistry?: BatteryChemistry
+}
+
+/**
+ * Vehicle-specific mission estimates.
+ */
+export interface VehicleMissionEstimate {
   /**
-   * The original battery mass in kilograms.
+   * Calculates the estimated time to complete the mission in seconds.
    */
-  originalBatteryMassKg?: number
+  timeToCompleteMission: (inputs: MissionEstimatesByVehicleConfig) => number
+  /**
+   * Calculates the total energy consumption for the mission in watt-hours.
+   */
+  totalEnergy: (inputs: MissionEstimatesByVehicleConfig) => number
 }
