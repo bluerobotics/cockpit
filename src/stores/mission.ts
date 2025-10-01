@@ -173,7 +173,7 @@ export const useMissionStore = defineStore('mission', () => {
         zoom: defaultMapZoom.value,
         currentWaypointAltitude: waypoints[0]?.altitude || 0,
         currentWaypointAltitudeRefType: waypoints[0]?.altitudeReferenceType || AltitudeReferenceType.RELATIVE_TO_HOME,
-        defaultCruiseSpeed: 0,
+        defaultCruiseSpeed: 1,
       },
       waypoints,
     }
