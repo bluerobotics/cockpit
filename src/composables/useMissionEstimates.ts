@@ -77,7 +77,7 @@ export const useMissionEstimates = (): {
     const wps = missionStore.currentPlanningWaypoints
     if (!Array.isArray(wps) || wps.length < 2) return []
 
-    const draftDefault = Number((missionStore.draftMission as any)?.settings?.defaultCruiseSpeed) || 1
+    const draftDefault = Number(missionStore.defaultCruiseSpeed)
 
     const legs: MissionLeg[] = []
     for (let i = 0; i < wps.length - 1; i++) {
