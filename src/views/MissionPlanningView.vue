@@ -568,6 +568,23 @@ const uploadMissionToVehicle = async (): Promise<void> => {
 
   missionItemsToUpload.unshift(homeWaypoint)
 
+  if (missionStore.defaultCruiseSpeed !== 1 && missionItemsToUpload.length > 1) {
+    const firstMissionItem = missionItemsToUpload[1]
+    const existing = Array.isArray(firstMissionItem.commands) ? firstMissionItem.commands : []
+
+    firstMissionItem.commands = [
+      ...existing.filter((cmd) => cmd.command !== MavCmd.MAV_CMD_DO_CHANGE_SPEED),
+      {
+        type: MissionCommandType.MAVLINK_NAV_COMMAND,
+        command: MavCmd.MAV_CMD_DO_CHANGE_SPEED,
+        param1: 1,
+        param2: Number(missionStore.defaultCruiseSpeed),
+        param3: -1,
+        param4: 0,
+      },
+    ]
+  }
+
   try {
     if (!vehicleStore.isVehicleOnline) {
       throw 'Vehicle is not online.'
@@ -589,12 +606,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       timer: undefined,
       maxWidth: '750px',
       actions: [
-        {
-          text: 'Close',
-          color: 'white',
-          action: closeDialog,
-        },
-
+        { text: 'Close', color: 'white', action: closeDialog },
         {
           text: 'Always switch to Flight Mode',
           color: 'white',
@@ -609,15 +621,8 @@ const uploadMissionToVehicle = async (): Promise<void> => {
             router.push('/')
           },
         },
-
-        {
-          text: 'Switch to Flight Mode',
-          color: 'white',
-          action: () => {
-            router.push('/')
-          },
-        },
-      ] as DialogActions[],
+        { text: 'Switch to Flight Mode', color: 'white', action: () => router.push('/') },
+      ],
     })
     hasUploadedMission.value = true
     missionStore.bumpVehicleMissionRevision(missionItemsToUpload)
@@ -675,7 +680,6 @@ const home = ref<WaypointCoordinates | undefined>(undefined)
 const zoom = ref(missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
-const defaultCruiseSpeed = ref(1)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = ref<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
@@ -1959,7 +1963,7 @@ const saveMissionToFile = async (): Promise<void> => {
       zoom: zoom.value,
       currentWaypointAltitude: currentWaypointAltitude.value,
       currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
-      defaultCruiseSpeed: defaultCruiseSpeed.value,
+      defaultCruiseSpeed: missionStore.defaultCruiseSpeed,
     },
     waypoints: missionStore.currentPlanningWaypoints,
   }
@@ -1984,7 +1988,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     zoom.value = maybeMission['settings']['zoom']
     currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
     currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
-    defaultCruiseSpeed.value = maybeMission['settings']['defaultCruiseSpeed']
+    missionStore.defaultCruiseSpeed = maybeMission['settings']['defaultCruiseSpeed']
     maybeMission['waypoints'].forEach((w: Waypoint) => {
       addWaypoint(w.coordinates, w.altitude, w.altitudeReferenceType, cloneCommands(w.commands))
     })
@@ -2739,7 +2743,7 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
     zoom.value = mission.settings.zoom
     currentWaypointAltitude.value = mission.settings.currentWaypointAltitude
     currentWaypointAltitudeRefType.value = mission.settings.currentWaypointAltitudeRefType
-    defaultCruiseSpeed.value = mission.settings.defaultCruiseSpeed
+    missionStore.defaultCruiseSpeed = mission.settings.defaultCruiseSpeed
 
     mission.waypoints.forEach((wp) => {
       addWaypoint(wp.coordinates, wp.altitude, wp.altitudeReferenceType, wp.commands)

@@ -42,6 +42,7 @@ export const useMissionStore = defineStore('mission', () => {
   const showMissionCreationTips = useBlueOsStorage('cockpit-show-mission-creation-tips', true)
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
+  const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
 
   const { showDialog } = useInteractionDialog()
 
@@ -174,7 +175,7 @@ export const useMissionStore = defineStore('mission', () => {
         zoom: defaultMapZoom.value,
         currentWaypointAltitude: waypoints[0]?.altitude || 0,
         currentWaypointAltitudeRefType: waypoints[0]?.altitudeReferenceType || AltitudeReferenceType.RELATIVE_TO_HOME,
-        defaultCruiseSpeed: 0,
+        defaultCruiseSpeed: defaultCruiseSpeed.value,
       },
       waypoints,
     }
@@ -260,5 +261,6 @@ export const useMissionStore = defineStore('mission', () => {
     addCommandToWaypoint,
     removeCommandFromWaypoint,
     updateWaypointCommand,
+    defaultCruiseSpeed,
   }
 })
