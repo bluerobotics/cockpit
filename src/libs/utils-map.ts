@@ -291,3 +291,118 @@ export const moveAlongEdge = (
 
   return path
 }
+
+/**
+ * Calculate grid spacing based on Leaflet's scale control logic
+ * This ensures the grid spacing matches what the standard Leaflet scale control shows
+ * @param {L.Map} map - Leaflet map instance
+ * @returns {number} The grid spacing in meters
+ */
+export const getGridSpacingFromScale = (map: L.Map): number => {
+  if (!map) throw new Error('Map instance is required')
+
+  // Get map bounds and center
+  const center = map.getCenter()
+  const zoom = map.getZoom()
+
+  // Calculate meters per pixel at current zoom level
+  const earthCircumference = 40075017 // meters
+  const latRad = (center.lat * Math.PI) / 180
+  const metersPerPixel = (earthCircumference * Math.cos(latRad)) / Math.pow(2, zoom + 8)
+
+  // Standard scale control width in pixels (Leaflet default is 100px max)
+  const maxWidth = 100
+  const maxDistanceMeters = metersPerPixel * maxWidth
+
+  // Round to nice numbers like Leaflet scale control does
+  const niceDistances = [
+    1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000, 10000, 20000, 30000, 50000, 100000, 200000,
+    300000, 500000, 1000000, 2000000, 3000000, 5000000, 10000000,
+  ]
+
+  // Find the largest nice distance that fits within maxWidth
+  let distanceMeters = niceDistances[0]
+  for (const distance of niceDistances) {
+    if (distance <= maxDistanceMeters) {
+      distanceMeters = distance
+    } else {
+      break
+    }
+  }
+
+  // Convert distance to degrees for grid spacing
+  // Approximate conversion: 1 degree ≈ 111,320 meters at equator
+  const metersPerDegree = 111320 * Math.cos(latRad)
+  const spacing = distanceMeters / metersPerDegree
+
+  return spacing
+}
+
+/**
+ * Creates a coordinate grid overlay on the provided map
+ * @param {L.Map} map - Leaflet map instance
+ * @param {L.LayerGroup} gridLayer - Reference to store the grid layer
+ * @returns {L.LayerGroup} The created grid layer
+ */
+export const createGridOverlay = (map: L.Map, gridLayer?: L.LayerGroup): L.LayerGroup => {
+  if (!map) throw new Error('Map instance is required')
+
+  // Remove existing grid if provided
+  if (gridLayer) {
+    map.removeLayer(gridLayer as L.Layer)
+  }
+
+  const bounds = map.getBounds()
+
+  // Get grid configuration based on Leaflet scale control
+  const spacing = getGridSpacingFromScale(map)
+  const lineOpacity = 0.3
+  const lineWeight = 1
+
+  const newGridLayer = L.layerGroup()
+
+  // Create grid lines
+  const south = Math.floor(bounds.getSouth() / spacing) * spacing
+  const north = Math.ceil(bounds.getNorth() / spacing) * spacing
+  const west = Math.floor(bounds.getWest() / spacing) * spacing
+  const east = Math.ceil(bounds.getEast() / spacing) * spacing
+
+  // Horizontal lines (latitude)
+  for (let lat = south; lat <= north; lat += spacing) {
+    const line = L.polyline(
+      [
+        [lat, west],
+        [lat, east],
+      ],
+      {
+        color: '#ffffff',
+        weight: lineWeight,
+        opacity: lineOpacity,
+        dashArray: '2, 4',
+        interactive: false,
+      }
+    )
+    newGridLayer.addLayer(line)
+  }
+
+  // Vertical lines (longitude)
+  for (let lng = west; lng <= east; lng += spacing) {
+    const line = L.polyline(
+      [
+        [south, lng],
+        [north, lng],
+      ],
+      {
+        color: '#ffffff',
+        weight: lineWeight,
+        opacity: lineOpacity,
+        dashArray: '2, 4',
+        interactive: false,
+      }
+    )
+    newGridLayer.addLayer(line)
+  }
+
+  newGridLayer.addTo(map)
+  return newGridLayer
+}

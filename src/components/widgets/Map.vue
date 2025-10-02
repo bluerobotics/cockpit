@@ -120,6 +120,13 @@
           :color="widget.options.showVehiclePath ? 'white' : undefined"
           hide-details
         />
+        <v-switch
+          v-model="widget.options.showCoordinateGrid"
+          class="my-1"
+          label="Show coordinate grid"
+          :color="widget.options.showCoordinateGrid ? 'white' : undefined"
+          hide-details
+        />
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -166,7 +173,6 @@ import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import {
-  type InstanceType,
   type Ref,
   computed,
   nextTick,
@@ -189,7 +195,7 @@ import { openSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
-import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
+import { createGridOverlay, TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -261,7 +267,7 @@ const onTouchEnd = (e: TouchEvent): void => {
   }
 }
 
-const poiManagerMapWidgetRef = ref<InstanceType<typeof PoiManager> | null>(null)
+const poiManagerMapWidgetRef = ref<typeof PoiManager | null>(null)
 const mapWidgetPoiMarkers = ref<{ [id: string]: L.Marker }>({})
 
 // Register the usage of the coordinate variables for logging
@@ -275,7 +281,12 @@ onBeforeMount(() => {
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
       showVehiclePath: true,
+      showCoordinateGrid: false,
     }
+  }
+  // Ensure new options exist for existing widgets
+  if (widget.value.options.showCoordinateGrid === undefined) {
+    widget.value.options.showCoordinateGrid = false
   }
   targetFollower.enableAutoUpdate()
 })
@@ -328,21 +339,93 @@ const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
 const layerControl = L.control.layers(baseMaps, overlays)
+const gridLayer = ref<L.LayerGroup | undefined>(undefined)
 
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
     map.value.addControl(zoomControl)
     map.value.addControl(layerControl)
+    createScaleControl()
   } else {
     map.value.removeControl(zoomControl)
     map.value.removeControl(layerControl)
+    removeScaleControl()
   }
 })
 
 watch(isMouseOver, () => {
   showButtons.value = isMouseOver.value
 })
+
+// Watch for grid overlay option changes
+watch(
+  () => widget.value.options.showCoordinateGrid,
+  (show) => {
+    if (map.value === undefined) return
+    if (show) {
+      createGridOverlayLocal()
+    } else {
+      removeGridOverlayLocal()
+    }
+  }
+)
+
+// Watch for zoom/move changes to update grid and scale
+watch([zoom, mapCenter], () => {
+  if (widget.value.options.showCoordinateGrid && map.value) {
+    createGridOverlayLocal()
+  }
+  if (showButtons.value && map.value) {
+    createScaleControl()
+  }
+})
+
+// Grid overlay functions using centralized utilities
+const createGridOverlayLocal = (): void => {
+  if (!map.value) return
+
+  try {
+    gridLayer.value = createGridOverlay(map.value, gridLayer.value as L.LayerGroup)
+  } catch (error) {
+    console.error('Failed to create grid overlay:', error)
+  }
+}
+
+const removeGridOverlayLocal = (): void => {
+  if (gridLayer.value && map.value) {
+    map.value.removeLayer(gridLayer.value as L.LayerGroup)
+    gridLayer.value = undefined
+  }
+}
+
+// Standard Leaflet scale control
+const scaleControl = L.control.scale({
+  position: 'bottomright',
+  metric: true,
+  imperial: false,
+  maxWidth: 100,
+})
+
+const createScaleControl = (): void => {
+  if (!map.value) return
+
+  // Remove existing scale control
+  removeScaleControl()
+
+  // Add standard Leaflet scale control
+  scaleControl.addTo(map.value)
+}
+
+const removeScaleControl = (): void => {
+  if (map.value) {
+    try {
+      map.value.removeControl(scaleControl)
+    } catch (e) {
+      // Control might not be added yet, ignore error
+    }
+  }
+}
 
 onMounted(async () => {
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
@@ -445,6 +528,11 @@ onMounted(async () => {
   // If vehicle is offline and a mission have been uploaded recently, draw it
   if (!vehicleStore.isVehicleOnline && missionStore.vehicleMission.length) {
     drawMission(missionStore.vehicleMission)
+  }
+
+  // Initialize grid overlay if enabled
+  if (widget.value.options.showCoordinateGrid) {
+    createGridOverlayLocal()
   }
 
   mapReady.value = true
@@ -1345,5 +1433,18 @@ watch(
 :deep(.leaflet-control-savetiles),
 :deep(.hidden-savetiles) {
   display: none !important;
+}
+
+/* Style the standard Leaflet scale control */
+:deep(.leaflet-control-scale) {
+  position: absolute;
+  bottom: v-bind('bottomButtonsDisplacement');
+  right: 260px; /* Position to the left of the buttons */
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  padding: 8px 8px;
+  margin-bottom: 12px;
+  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 5px 0px rgba(0, 0, 0, 0.12);
 }
 </style>

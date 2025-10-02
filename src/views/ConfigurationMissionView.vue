@@ -39,6 +39,14 @@
             base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
           />
+          <v-switch
+            v-model="missionStore.showGridOnMissionPlanning"
+            label="Show coordinate grid on maps"
+            color="white"
+            hide-details
+            base-color="#FFFFFF33"
+            class="mt-2 -mb-2 ml-3"
+          />
         </div>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Enable confirmation on specific categories:</template>
