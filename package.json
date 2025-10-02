@@ -73,7 +73,7 @@
     "semver": "^7.5.4",
     "serialport": "^13.0.0",
     "slugify": "^1.6.6",
-    "strip-ansi": "^7.1.0",
+    "strip-ansi": "^6.0.1",
     "sweetalert2": "^11.7.1",
     "tailwind-scrollbar-hide": "^1.1.7",
     "uuid": "^8.3.2",
@@ -129,6 +129,9 @@
     "vue-cli-plugin-vuetify": "~2.4.8",
     "vue-tsc": "2.0.10",
     "vuetify-loader": "^2.0.0-alpha.0"
+  },
+  "resolutions": {
+    "strip-ansi": "6.0.1"
   },
   "prettier": {
     "semi": false,
