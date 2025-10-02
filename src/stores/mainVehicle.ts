@@ -878,6 +878,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     clearMissions,
     startMission,
     getCurrentVehicleName,
+    mainVehicle,
     globalAddress,
     MAVLink2RestWebsocketURI,
     customMAVLink2RestWebsocketURI,

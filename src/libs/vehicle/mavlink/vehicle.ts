@@ -1132,6 +1132,23 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Set external position estimate on vehicle (correct EKF position based on user input)
+   * @param { [number, number] } coordinates Coordinates of the position to set (latitude, longitude)
+   */
+  async setExternalPositionEstimate(coordinates: [number, number]): Promise<void> {
+    await this.sendCommandInt(
+      'MAV_CMD_EXTERNAL_POSITION_ESTIMATE' as MavCmd,
+      NaN, // Transmission time
+      NaN, // Processing time
+      NaN, // Accuracy
+      NaN, // Empty
+      coordinates[0],
+      coordinates[1],
+      NaN // Altitude (not yet supported by the command)
+    )
+  }
+
+  /**
    * Fetch the home waypoint from the vehicle
    * and converts the message into a Waypoint.
    * @returns {Promise<Waypoint>} The home waypoint.
