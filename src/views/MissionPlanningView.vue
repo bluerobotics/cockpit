@@ -548,6 +548,20 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     missionUploadProgress.value = loadingPerc
   }
 
+  if (defaultCruiseSpeed.value !== 1) {
+    missionItemsToUpload[0].commands = [
+      ...missionItemsToUpload[0].commands.filter((cmd) => cmd.command !== MavCmd.MAV_CMD_DO_CHANGE_SPEED),
+      {
+        type: MissionCommandType.MAVLINK_NAV_COMMAND,
+        command: MavCmd.MAV_CMD_DO_CHANGE_SPEED,
+        param1: 1,
+        param2: defaultCruiseSpeed.value,
+        param3: -1,
+        param4: 0,
+      },
+    ]
+  }
+
   const homeWaypoint: Waypoint = {
     id: uuid(),
     coordinates: home.value,
