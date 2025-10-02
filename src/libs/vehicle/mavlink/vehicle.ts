@@ -1132,6 +1132,24 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Set global origin on vehicle (sets the GNSS coordinates of the local origin)
+   * @param { [number, number] } coordinates Coordinates of the origin (latitude, longitude)
+   * @param { number } altitude Altitude of the origin (MSL)
+   */
+  async setGlobalOrigin(coordinates: [number, number], altitude: number): Promise<void> {
+    await this.sendCommandInt(
+      'MAV_CMD_SET_GLOBAL_ORIGIN' as MavCmd, // TODO: Replace with MavCmd.MAV_CMD_SET_GLOBAL_ORIGIN once available in mavlink2rest
+      NaN,
+      NaN,
+      NaN,
+      NaN,
+      coordinates[0],
+      coordinates[1],
+      altitude
+    )
+  }
+
+  /**
    * Fetch the home waypoint from the vehicle
    * and converts the message into a Waypoint.
    * @returns {Promise<Waypoint>} The home waypoint.
