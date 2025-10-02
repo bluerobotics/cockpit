@@ -147,6 +147,13 @@
     @confirmed="executeMissionOnVehicle"
     @update:model-value="isMissionChecklistOpen = $event"
   />
+  <ExternalPositionEstimateDialog
+    v-model="showPositionEstimateDialog"
+    :vehicle="vehicleStore.mainVehicle as unknown as MAVLinkVehicle<string>"
+    :initial-latitude="positionEstimateLatitude"
+    :initial-longitude="positionEstimateLongitude"
+    @position-set="onPositionEstimateSet"
+  />
   <div
     v-if="isSavingOfflineTiles"
     class="absolute top-14 left-2 flex justify-start items-center text-white text-md py-2 px-4 rounded-lg"
@@ -182,6 +189,7 @@ import {
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
+import ExternalPositionEstimateDialog from '@/components/ExternalPositionEstimateDialog.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -190,6 +198,7 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
+import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -828,11 +837,22 @@ const contextMenuVisible = ref(false)
 const clickedLocation = ref<[number, number] | null>(null)
 const contextMenuMarker = ref<L.Marker>()
 
+// Position estimate dialog state
+const showPositionEstimateDialog = ref(false)
+const positionEstimateLatitude = ref(0)
+const positionEstimateLongitude = ref(0)
+const positionEstimateMarker = ref<L.Marker>()
+
 const menuItems = reactive([
   {
     item: 'Set home waypoint',
     action: () => onMenuOptionSelect('set-home-waypoint'),
     icon: 'mdi-home-map-marker',
+  },
+  {
+    item: 'Set Position Estimate',
+    action: () => onMenuOptionSelect('set-position'),
+    icon: 'mdi-crosshairs-question',
   },
   {
     item: 'Place Point of Interest',
@@ -969,6 +989,15 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
         setHomePosition(clickedLocation.value as [number, number])
       }
       break
+
+    case 'set-position':
+      if (clickedLocation.value) {
+        positionEstimateLatitude.value = clickedLocation.value[0]
+        positionEstimateLongitude.value = clickedLocation.value[1]
+        showPositionEstimateDialog.value = true
+      }
+      break
+
     default:
       console.warn('Unknown menu option selected:', option)
   }
@@ -981,6 +1010,30 @@ const hideContextMenuAndMarker = (): void => {
   if (map.value !== undefined && contextMenuMarker.value !== undefined) {
     map.value.removeLayer(contextMenuMarker.value)
   }
+}
+
+const onPositionEstimateSet = (latitude: number, longitude: number): void => {
+  if (!map.value) return
+
+  // Remove existing marker if present
+  if (positionEstimateMarker.value) {
+    map.value.removeLayer(positionEstimateMarker.value)
+  }
+
+  // Create a new marker with the axis-arrow icon
+  const icon = L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] })
+  const marker = L.marker([latitude, longitude] as LatLngTuple, { icon }).addTo(map.value)
+
+  const positionEstimateTooltip = L.tooltip({
+    content: '<i class="mdi mdi-axis-arrow text-[18px]"></i>',
+    permanent: true,
+    direction: 'center',
+    className: 'waypoint-tooltip',
+    opacity: 1,
+  })
+
+  marker.bindTooltip(positionEstimateTooltip)
+  positionEstimateMarker.value = marker
 }
 
 const onKeydown = (event: KeyboardEvent): void => {
