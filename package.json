@@ -86,7 +86,6 @@
     "vue3-slider": "^1.9.0",
     "vuetify": "3.7.0",
     "webfontloader": "^1.0.0",
-    "webm-duration-fix": "^1.0.4",
     "webrtc-adapter": "^8.2.0",
     "yauzl": "^3.2.0"
   },
