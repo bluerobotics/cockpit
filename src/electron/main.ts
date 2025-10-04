@@ -6,6 +6,7 @@ import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
+import { setupLiveVideoService } from './services/live-video'
 import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
@@ -86,6 +87,7 @@ setupSystemInfoService()
 setupUserAgentService()
 setupWorkspaceService()
 setupJoystickMonitoring()
+setupLiveVideoService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')

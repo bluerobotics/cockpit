@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
+import type { FileDialogOptions, FileStats } from '@/types/storage'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
@@ -39,6 +40,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   openCockpitFolder: () => ipcRenderer.invoke('open-cockpit-folder'),
   openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
+  openVideoChunksFolder: () => ipcRenderer.invoke('open-temp-video-chunks-folder'),
+  getFileStats: (pathOrKey: string, subFolders?: string[]): Promise<FileStats> =>
+    ipcRenderer.invoke('get-file-stats', pathOrKey, subFolders),
+  getPathOfSelectedFile: (options?: FileDialogOptions) => ipcRenderer.invoke('get-path-of-selected-file', options),
+  startLiveVideoConcat: async (
+    firstChunk: Blob,
+    recordingHash: string,
+    fileName: string,
+    keepChunkBackup?: boolean
+  ) => {
+    const arrayBuffer = await firstChunk.arrayBuffer()
+    return ipcRenderer.invoke(
+      'start-live-video-concat',
+      new Uint8Array(arrayBuffer),
+      recordingHash,
+      fileName,
+      keepChunkBackup
+    )
+  },
+  appendChunkToLiveVideoConcat: async (processId: string, chunk: Blob, chunkNumber: number) => {
+    const arrayBuffer = await chunk.arrayBuffer()
+    return ipcRenderer.invoke('append-chunk-to-live-video-concat', processId, new Uint8Array(arrayBuffer), chunkNumber)
+  },
+  finalizeLiveVideoConcat: (processId: string) => ipcRenderer.invoke('finalize-live-video-concat', processId),
+  extractVideoChunksZip: (zipFilePath: string) => ipcRenderer.invoke('extract-video-chunks-zip', zipFilePath),
+  readChunkFile: (chunkPath: string) => ipcRenderer.invoke('read-chunk-file', chunkPath),
+  copyTelemetryFile: (assFilePath: string, outputVideoPath: string) =>
+    ipcRenderer.invoke('copy-telemetry-file', assFilePath, outputVideoPath),
+  cleanupTempDir: (tempDir: string) => ipcRenderer.invoke('cleanup-temp-dir', tempDir),
   captureWorkspace: (rect?: Electron.Rectangle) => ipcRenderer.invoke('capture-workspace', rect),
   serialListPorts: () => ipcRenderer.invoke('serial-list-ports'),
   serialOpen: (path: string, baudRate?: number) => ipcRenderer.invoke('serial-open', { path, baudRate }),

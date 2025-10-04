@@ -4,7 +4,6 @@
     class="flex justify-around px-2 py-1 text-center rounded-lg w-40 h-9 align-center bg-slate-800/60"
   >
     <div
-      v-if="!isProcessingVideo"
       :class="{
         'blob red w-5 opacity-100 rounded-sm': isRecording,
         'opacity-30 bg-red-400': isOutside && !isRecording,
@@ -12,10 +11,7 @@
       class="w-6 transition-all duration-500 rounded-full aspect-square bg-red-lighten-1 hover:cursor-pointer opacity-70 hover:opacity-90"
       @click="toggleRecording()"
     />
-    <div v-else>
-      <v-icon class="w-6 h-6 animate-spin" color="white">mdi-loading</v-icon>
-    </div>
-    <template v-if="!isRecording && !isProcessingVideo">
+    <template v-if="!isRecording">
       <div
         v-if="nameSelectedStream"
         class="flex flex-col max-w-[50%] scroll-container transition-all border-blur cursor-pointer"
@@ -25,11 +21,8 @@
       </div>
       <FontAwesomeIcon v-else icon="fa-solid fa-video" class="h-6 text-slate-100" />
     </template>
-    <div v-if="isRecording && !isProcessingVideo" class="w-16 text-justify text-slate-100">
+    <div v-if="isRecording" class="w-16 text-justify text-slate-100">
       {{ timePassedString }}
-    </div>
-    <div v-else-if="isProcessingVideo" class="w-16 text-justify text-slate-100">
-      <div class="text-xs text-center text-white select-none flex-nowrap">Processing video...</div>
     </div>
     <div class="flex justify-center w-6">
       <v-divider vertical class="h-6 ml-1" />
@@ -125,7 +118,6 @@ const isVideoLibraryDialogOpen = ref(false)
 const isLoadingStream = ref(false)
 const timeNow = useTimestamp({ interval: 100 })
 const mediaStream = ref<MediaStream | undefined>()
-const isProcessingVideo = ref(false)
 const numberOfVideosOnDB = ref(0)
 const selectedExternalId = ref<string | undefined>()
 
@@ -195,8 +187,7 @@ watch(nameSelectedStream, (newName) => {
 const fetchNumberOfTempVideos = async (): Promise<void> => {
   const keys = await videoStore.videoStorage.keys()
   const nProcessedVideos = keys.filter((k) => videoStore.isVideoFilename(k)).length
-  const nFailedUnprocessedVideos = Object.keys(videoStore.keysFailedUnprocessedVideos).length
-  numberOfVideosOnDB.value = nProcessedVideos + nFailedUnprocessedVideos
+  numberOfVideosOnDB.value = nProcessedVideos
 }
 
 // eslint-disable-next-line jsdoc/require-jsdoc
@@ -311,20 +302,6 @@ if (widgetStore.isRealMiniWidget(miniWidget.value.hash)) {
   }, 1000)
 }
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
-
-// Check if there are videos being processed
-watch(
-  () => videoStore.areThereVideosProcessing,
-  (newValue) => {
-    isProcessingVideo.value = newValue
-    fetchNumberOfTempVideos()
-  }
-)
-
-watch(
-  () => videoStore.keysFailedUnprocessedVideos,
-  () => fetchNumberOfTempVideos()
-)
 
 watch(
   () => isVideoLibraryDialogOpen.value,
