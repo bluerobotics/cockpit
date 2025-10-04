@@ -21,6 +21,7 @@
     "dev:electron": "ELECTRON=true vite --host",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "lint:fix": "eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
+    "postinstall": "node scripts/download-ffmpeg.js",
     "preview": "vite preview --port 5050",
     "serve": "vite preview",
     "test:ci": "vitest --coverage --run",
@@ -42,6 +43,7 @@
     "@serialport/bindings-cpp": "13.0.0",
     "@turf/turf": "^7.1.0",
     "@types/hammerjs": "^2.0.45",
+    "@types/yauzl": "^2.10.3",
     "@vueuse/core": "9.8.1",
     "@vueuse/math": "^10.1.2",
     "@zip.js/zip.js": "^2.7.34",
@@ -73,7 +75,7 @@
     "semver": "^7.5.4",
     "serialport": "^13.0.0",
     "slugify": "^1.6.6",
-    "strip-ansi": "^7.1.0",
+    "strip-ansi": "^6.0.1",
     "sweetalert2": "^11.7.1",
     "tailwind-scrollbar-hide": "^1.1.7",
     "uuid": "^8.3.2",
@@ -85,8 +87,8 @@
     "vue3-slider": "^1.9.0",
     "vuetify": "3.7.0",
     "webfontloader": "^1.0.0",
-    "webm-duration-fix": "^1.0.4",
-    "webrtc-adapter": "^8.2.0"
+    "webrtc-adapter": "^8.2.0",
+    "yauzl": "^3.2.0"
   },
   "devDependencies": {
     "@electron/notarize": "^3.0.1",
@@ -130,6 +132,9 @@
     "vue-tsc": "2.0.10",
     "vuetify-loader": "^2.0.0-alpha.0"
   },
+  "resolutions": {
+    "strip-ansi": "6.0.1"
+  },
   "prettier": {
     "semi": false,
     "singleQuote": true,
@@ -139,6 +144,15 @@
   "build": {
     "files": [
       "dist"
+    ],
+    "extraResources": [
+      {
+        "from": "binaries/ffmpeg/",
+        "to": "ffmpeg/",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "appId": "org.bluerobotics.cockpit",
     "productName": "Cockpit",

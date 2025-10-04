@@ -2,6 +2,7 @@ coverage/
 dist/
 node_modules/
 dev-dist/
+binaries/
 
 cypress/fixtures/
 cypress/videos/

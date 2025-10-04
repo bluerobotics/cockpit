@@ -6,6 +6,7 @@ import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joysti
 import { NetworkInfo } from '@/types/network'
 import { SDLStatus } from '@/types/sdl'
 import type { SerialData } from '@/types/serial'
+import type { FileDialogOptions, FileStats } from '@/types/storage'
 
 import {
   createDataLakeVariable,
@@ -274,6 +275,22 @@ declare global {
        */
       openVideoFolder: () => void
       /**
+       * Open temporary chunks folder
+       */
+      openVideoChunksFolder: () => void
+      /**
+       * Get file stats for a file
+       * @param pathOrKey - Either a full file path, or a key (filename) if subFolders is provided
+       * @param subFolders - Optional subfolders under cockpit folder (if provided, pathOrKey is treated as a key)
+       */
+      getFileStats: (pathOrKey: string, subFolders?: string[]) => Promise<FileStats>
+      /**
+       * Show file dialog to select a file
+       * @param options - Optional dialog configuration
+       * @returns The selected file path, or null if cancelled
+       */
+      getPathOfSelectedFile: (options?: FileDialogOptions) => Promise<string | null>
+      /**
        * Capture the workspace area of the application
        */
       captureWorkspace(rect?: Electron.Rectangle): Promise<Uint8Array>
@@ -349,6 +366,61 @@ declare global {
          */
         processArch: string
       }>
+      /**
+       * Start live video streaming process with FFmpeg
+       * @param firstChunk - The first video chunk blob
+       * @param recordingHash - Unique identifier for this recording
+       * @param fileName - The name of the video file
+       * @param keepChunkBackup - Whether to keep raw chunks as backup (optional, default: true)
+       * @returns Promise resolving to process ID and output path
+       */
+      startLiveVideoConcat: (
+        firstChunk: Blob,
+        recordingHash: string,
+        fileName: string,
+        keepChunkBackup?: boolean
+      ) => Promise<import('@/types/video').LiveConcatProcessResult>
+      /**
+       * Append chunk to live video stream (pipes to FFmpeg stdin)
+       * @param processId - The ID of the live streaming process
+       * @param chunk - The video chunk blob to append
+       * @param chunkNumber - Sequential number of this chunk
+       */
+      appendChunkToLiveVideoConcat: (processId: string, chunk: Blob, chunkNumber: number) => Promise<void>
+      /**
+       * Delete chunk
+       * @param hash - The hash of the video chunk to delete
+       * @param chunkNumber - The number of the video chunk to delete
+       */
+      deleteChunk: (hash: string, chunkNumber: number) => Promise<void>
+      /**
+       * Finalize live video streaming by closing FFmpeg stdin
+       * @param processId - The ID of the streaming process
+       */
+      finalizeLiveVideoConcat: (processId: string) => Promise<void>
+      /**
+       * Extract video chunks from ZIP file
+       * @param zipFilePath - Path to the ZIP file
+       * @returns Promise resolving to extraction result with chunk paths and metadata
+       */
+      extractVideoChunksZip: (zipFilePath: string) => Promise<import('@/types/video').ZipExtractionResult>
+      /**
+       * Read chunk file and return as Uint8Array
+       * @param chunkPath - Path to the chunk file
+       * @returns Promise resolving to chunk data
+       */
+      readChunkFile: (chunkPath: string) => Promise<Uint8Array>
+      /**
+       * Copy telemetry file to video output directory
+       * @param assFilePath - Path to the .ass telemetry file
+       * @param outputVideoPath - Path to the output video file
+       */
+      copyTelemetryFile: (assFilePath: string, outputVideoPath: string) => Promise<void>
+      /**
+       * Clean up temporary directory
+       * @param tempDir - Path to the temporary directory to remove
+       */
+      cleanupTempDir: (tempDir: string) => Promise<void>
     }
   }
 }
