@@ -25,7 +25,14 @@ export const filesystemStorage = {
   },
   async removeItem(key: string, subFolders?: string[]): Promise<void> {
     const filePath = join(cockpitFolderPath, ...(subFolders ?? []), key)
-    await fs.unlink(filePath)
+    try {
+      await fs.unlink(filePath)
+    } catch (error: any) {
+      // File doesn't exist, which is fine - just ignore it
+      if (error.code === 'ENOENT') return
+
+      throw error
+    }
   },
   async clear(subFolders?: string[]): Promise<void> {
     const dirPath = join(cockpitFolderPath, ...(subFolders ?? []))
