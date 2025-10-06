@@ -17,7 +17,8 @@ export const filesystemStorage = {
   async getItem(key: string, subFolders?: string[]): Promise<ArrayBuffer | null> {
     const filePath = join(cockpitFolderPath, ...(subFolders ?? []), key)
     try {
-      return await fs.readFile(filePath)
+      const buffer = await fs.readFile(filePath)
+      return new Uint8Array(buffer).buffer
     } catch (error) {
       if (error.code === 'ENOENT') return null
       throw error
