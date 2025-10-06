@@ -66,18 +66,12 @@
     >
       <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
         <button
-          v-if="!isCreatingSimplePath"
+          v-if="!isCreatingSimplePath && !isCreatingSurvey"
           :class="{ ' elevation-4': isCreatingSurvey }"
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSurvey"
         >
-          {{
-            isCreatingSurvey
-              ? 'CANCEL SURVEY'
-              : missionStore.currentPlanningWaypoints.length > 0
-              ? 'ADD SURVEY'
-              : 'CREATE SURVEY'
-          }}
+          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SURVEY' : 'CREATE SURVEY' }}
         </button>
         <button
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
@@ -87,6 +81,18 @@
         >
           {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
         </button>
+        <div
+          v-if="!isCreatingSurvey && !isCreatingSimplePath"
+          class="flex flex-row justify-between items-center mx-4 my-1"
+        >
+          <p class="text-sm">Cruise speed</p>
+          <input
+            v-model="missionStore.defaultCruiseSpeed"
+            class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
+            type="number"
+          />
+          <p class="text-sm">m/s</p>
+        </div>
         <div
           v-if="showMissionCreationTips && !isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-col px-4 py-3 gap-y-2 ma-2 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#00000022]"
@@ -186,9 +192,17 @@
               Clear Path
             </v-btn>
           </div>
+          <button
+            v-if="isCreatingSurvey"
+            :class="{ ' elevation-4': isCreatingSurvey }"
+            class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
+            @click="toggleSurvey"
+          >
+            Cancel Survey
+          </button>
         </div>
         <v-divider v-if="isCreatingSurvey" class="my-2" />
-        <div v-if="isCreatingSurvey || isCreatingSimplePath" class="flex flex-col w-full h-full p-2">
+        <div v-if="isCreatingSimplePath" class="flex flex-col w-full h-full p-2">
           <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
           <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
           <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
@@ -206,8 +220,6 @@
               {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
             </option>
           </select>
-          <p class="m-1 overflow-visible mt-2 text-sm text-slate-200">Default cruise speed (m/s)</p>
-          <input v-model="defaultCruiseSpeed" class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]" />
           <v-divider class="my-2" />
           <button
             :disabled="missionStore.currentPlanningWaypoints.length < 2"
