@@ -77,6 +77,11 @@ export const setupFilesystemStorage = (): void => {
     await fs.mkdir(videoFolderPath, { recursive: true })
     await shell.openPath(videoFolderPath)
   })
+  ipcMain.handle('open-video-file', async (_, fileName: string) => {
+    const videoFolderPath = join(cockpitFolderPath, 'videos')
+    const videoFilePath = join(videoFolderPath, fileName)
+    await shell.openPath(videoFilePath)
+  })
   ipcMain.handle('open-temp-video-chunks-folder', async () => {
     const tempChunksFolderPath = join(cockpitFolderPath, 'videos', 'temporary-video-chunks')
     await fs.mkdir(tempChunksFolderPath, { recursive: true })

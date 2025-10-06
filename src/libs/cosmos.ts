@@ -275,6 +275,11 @@ declare global {
        */
       openVideoFolder: () => void
       /**
+       * Open a video file in the system's default video player
+       * @param fileName - The name of the video file to open
+       */
+      openVideoFile: (fileName: string) => void
+      /**
        * Open temporary chunks folder
        */
       openVideoChunksFolder: () => void
@@ -366,6 +371,67 @@ declare global {
          */
         processArch: string
       }>
+      /**
+       * Start live video streaming process with FFmpeg
+       * @param firstChunk - The first video chunk blob
+       * @param recordingHash - Unique identifier for this recording
+       * @param fileName - The name of the video file
+       * @param keepChunkBackup - Whether to keep raw chunks as backup (optional, default: true)
+       * @returns Promise resolving to process ID and output path
+       */
+      startVideoRecording: (
+        firstChunk: Blob,
+        recordingHash: string,
+        fileName: string,
+        keepChunkBackup?: boolean
+      ) => Promise<import('@/types/video').LiveConcatProcessResult>
+      /**
+       * Append chunk to live video stream (pipes to FFmpeg stdin)
+       * @param processId - The ID of the live streaming process
+       * @param chunk - The video chunk blob to append
+       * @param chunkNumber - Sequential number of this chunk
+       */
+      appendChunkToVideoRecording: (processId: string, chunk: Blob, chunkNumber: number) => Promise<void>
+      /**
+       * Delete chunk
+       * @param hash - The hash of the video chunk to delete
+       * @param chunkNumber - The number of the video chunk to delete
+       */
+      deleteChunk: (hash: string, chunkNumber: number) => Promise<void>
+      /**
+       * Finalize live video streaming by closing FFmpeg stdin
+       * @param processId - The ID of the streaming process
+       */
+      finalizeVideoRecording: (processId: string) => Promise<void>
+      /**
+       * Extract video chunks from ZIP file
+       * @param zipFilePath - Path to the ZIP file
+       * @returns Promise resolving to extraction result with chunk paths and metadata
+       */
+      extractVideoChunksZip: (zipFilePath: string) => Promise<import('@/types/video').ZipExtractionResult>
+      /**
+       * Read chunk file and return as Uint8Array
+       * @param chunkPath - Path to the chunk file
+       * @returns Promise resolving to chunk data
+       */
+      readChunkFile: (chunkPath: string) => Promise<Uint8Array>
+      /**
+       * Copy telemetry file to video output directory
+       * @param assFilePath - Path to the .ass telemetry file
+       * @param outputVideoPath - Path to the output video file
+       */
+      copyTelemetryFile: (assFilePath: string, outputVideoPath: string) => Promise<void>
+      /**
+       * Create a ZIP file containing video chunks and telemetry file
+       * @param hash - The hash identifier for the chunk group
+       * @returns Promise resolving to the path to the created ZIP file
+       */
+      createVideoChunksZip: (hash: string) => Promise<string>
+      /**
+       * Clean up temporary directory
+       * @param tempDir - Path to the temporary directory to remove
+       */
+      cleanupTempDir: (tempDir: string) => Promise<void>
     }
   }
 }

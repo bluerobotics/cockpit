@@ -11,6 +11,7 @@ import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
 import { setupSystemInfoService } from './services/system-info'
 import { setupUserAgentService } from './services/user-agent'
+import { setupVideoRecordingService } from './services/video-recording'
 import { setupWorkspaceService } from './services/workspace'
 
 // Setup the logger service as soon as possible to avoid different behaviors across runtime
@@ -86,6 +87,7 @@ setupSystemInfoService()
 setupUserAgentService()
 setupWorkspaceService()
 setupJoystickMonitoring()
+setupVideoRecordingService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
