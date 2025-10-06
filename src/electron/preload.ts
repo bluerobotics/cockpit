@@ -40,10 +40,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   openCockpitFolder: () => ipcRenderer.invoke('open-cockpit-folder'),
   openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
+  openVideoFile: (fileName: string) => ipcRenderer.invoke('open-video-file', fileName),
   openVideoChunksFolder: () => ipcRenderer.invoke('open-temp-video-chunks-folder'),
   getFileStats: (pathOrKey: string, subFolders?: string[]): Promise<FileStats> =>
     ipcRenderer.invoke('get-file-stats', pathOrKey, subFolders),
   getPathOfSelectedFile: (options?: FileDialogOptions) => ipcRenderer.invoke('get-path-of-selected-file', options),
+  startVideoRecording: async (firstChunk: Blob, recordingHash: string, fileName: string, keepChunkBackup?: boolean) => {
+    const chunkData = new Uint8Array(await firstChunk.arrayBuffer())
+    return ipcRenderer.invoke('start-video-recording', chunkData, recordingHash, fileName, keepChunkBackup)
+  },
+  appendChunkToVideoRecording: async (processId: string, chunk: Blob, chunkNumber: number) => {
+    const chunkData = new Uint8Array(await chunk.arrayBuffer())
+    return ipcRenderer.invoke('append-chunk-to-video-recording', processId, chunkData, chunkNumber)
+  },
+  finalizeVideoRecording: (processId: string) => ipcRenderer.invoke('finalize-video-recording', processId),
+  extractVideoChunksZip: (zipFilePath: string) => ipcRenderer.invoke('extract-video-chunks-zip', zipFilePath),
+  readChunkFile: (chunkPath: string) => ipcRenderer.invoke('read-chunk-file', chunkPath),
+  copyTelemetryFile: (assFilePath: string, outputVideoPath: string) =>
+    ipcRenderer.invoke('copy-telemetry-file', assFilePath, outputVideoPath),
+  createVideoChunksZip: (hash: string) => ipcRenderer.invoke('create-video-chunks-zip', hash),
+  cleanupTempDir: (tempDir: string) => ipcRenderer.invoke('cleanup-temp-dir', tempDir),
   captureWorkspace: (rect?: Electron.Rectangle) => ipcRenderer.invoke('capture-workspace', rect),
   serialListPorts: () => ipcRenderer.invoke('serial-list-ports'),
   serialOpen: (path: string, baudRate?: number) => ipcRenderer.invoke('serial-open', { path, baudRate }),
