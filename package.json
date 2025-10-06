@@ -43,6 +43,7 @@
     "@turf/turf": "^7.1.0",
     "@types/hammerjs": "^2.0.45",
     "@types/yauzl": "^2.10.3",
+    "@types/yazl": "^3.3.0",
     "@vueuse/core": "9.8.1",
     "@vueuse/math": "^10.1.2",
     "@zip.js/zip.js": "^2.7.34",
@@ -87,7 +88,8 @@
     "vuetify": "3.7.0",
     "webfontloader": "^1.0.0",
     "webrtc-adapter": "^8.2.0",
-    "yauzl": "^3.2.0"
+    "yauzl": "^3.2.0",
+    "yazl": "^3.3.1"
   },
   "devDependencies": {
     "@electron/notarize": "^3.0.1",
