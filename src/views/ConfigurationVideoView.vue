@@ -227,8 +227,12 @@
           <template #title>Video library options:</template>
           <template #info>
             <li>
-              Choose to process videos manual or automatically after recording ends. In some low end hardware systems
-              and for long durations videos, auto-processing could take some time.
+              Configure live video processing to process videos in real-time during recording for instant availability
+              when recording stops. This is only available in the Electron (desktop) version.
+            </li>
+            <li>
+              Choose whether to save backup raw chunks alongside the final video file. This provides safety for video
+              reconstruction if something goes wrong, but uses approximately double the storage space.
             </li>
             <li>
               Select whether video and subtitle files should be bundled together in a ZIP archive, or downloaded
@@ -238,13 +242,7 @@
             </li>
           </template>
           <template #content>
-            <div class="flex items-center justify-between w-[96%] ml-2">
-              <v-checkbox
-                v-model="videoStore.autoProcessVideos"
-                label="Auto process videos"
-                class="text-sm mx-2"
-                hide-details
-              />
+            <div class="flex items-center justify-end w-[96%] ml-2 mb-4">
               <v-btn variant="flat" class="bg-[#FFFFFF22] px-3 elevation-1" @click="openVideoLibrary">
                 <template #append>
                   <v-divider vertical></v-divider>
@@ -256,6 +254,68 @@
                 </template>
                 Video Library
               </v-btn>
+            </div>
+            <!-- Browser Environment Notice -->
+            <div v-if="!isElectron()" class="bg-amber-900/30 border border-amber-500/30 rounded-lg p-4 mx-2 mb-4">
+              <div class="flex items-start gap-3">
+                <v-icon color="amber" class="mt-1">mdi-information</v-icon>
+                <div>
+                  <h4 class="text-amber-200 font-medium mb-2">Browser Version</h4>
+                  <p class="text-amber-100 text-sm">
+                    Video processing is not available in the browser version. Your recordings will be saved as raw
+                    chunks that can be downloaded and processed using the standalone version of Cockpit.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-start w-[96%] ml-2">
+              <v-checkbox
+                v-model="videoStore.enableLiveProcessing"
+                label="Live video processing (Electron)"
+                class="text-sm mx-2"
+                hide-details
+                :disabled="!isElectron()"
+              />
+              <v-tooltip
+                :text="
+                  isElectron()
+                    ? 'Process videos in real-time during recording for instant availability when recording stops'
+                    : 'Live video processing is only available in the standalone version'
+                "
+              >
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" class="ml-2 text-slate-400">mdi-information-outline</v-icon>
+                </template>
+              </v-tooltip>
+            </div>
+
+            <div class="flex items-center justify-start w-[96%] ml-2">
+              <v-checkbox
+                v-model="videoStore.keepRawVideoChunksAsBackup"
+                label="Save backup raw chunks"
+                class="text-sm mx-2"
+                hide-details
+              />
+              <v-tooltip max-width="400px">
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" class="ml-2 text-slate-400">mdi-information-outline</v-icon>
+                </template>
+                <div class="text-sm">
+                  <p class="mb-2">Save the raw video chunks alongside the final video file for backup purposes.</p>
+                  <p class="mb-2">
+                    <strong>Enabled:</strong> Raw chunks are preserved after recording. Videos use ~2x storage space but
+                    provide safety for reconstruction if the final video is corrupted.
+                  </p>
+                  <p>
+                    <strong>Disabled:</strong> Raw chunks are automatically deleted after successful processing, using
+                    minimal storage space.
+                  </p>
+                  <p class="mt-2 text-gray-300">
+                    You can always manually clean up backup chunks later using the "Temporary" tab in the Video Library.
+                  </p>
+                </div>
+              </v-tooltip>
             </div>
             <div class="flex items-center justify-start w-[50%] ml-2">
               <v-checkbox
@@ -350,6 +410,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import ScrollingText from '@/components/ScrollingText.vue'
 import { type ProcessedStreamInfo, getStreamInformationFromVehicle } from '@/libs/blueos'
+import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useVideoStore } from '@/stores/video'

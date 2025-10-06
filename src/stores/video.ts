@@ -5,7 +5,6 @@ import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
 import { computed, ref, watch } from 'vue'
-import fixWebmDuration from 'webm-duration-fix'
 import adapter from 'webrtc-adapter'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -15,6 +14,7 @@ import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
+import { LiveVideoProcessor } from '@/libs/live-video-processor'
 import { CockpitStandardLog, datalogger } from '@/libs/sensors-logging'
 import { isEqual, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
@@ -24,10 +24,10 @@ import { Alert, AlertLevel } from '@/types/alert'
 import { StorageDB } from '@/types/general'
 import {
   type DownloadProgressCallback,
-  type FileDescriptor,
   type StreamData,
   type UnprocessedVideoInfo,
   type VideoProcessingDetails,
+  FilesToZip,
   getBlobExtensionContainer,
   VideoExtensionContainer,
   VideoStreamCorrespondency,
@@ -59,6 +59,9 @@ export const useVideoStore = defineStore('video', () => {
   const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
   const lastRenamedStreamName = ref('')
   const isRecordingAllStreams = ref(false)
+  const liveProcessors = ref<{ [key: string]: LiveVideoProcessor }>({})
+  const enableLiveProcessing = useBlueOsStorage('cockpit-enable-live-processing', true)
+  const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
@@ -191,6 +194,37 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Generate .ass telemetry overlay file for a video recording
+   * @param {string} recordingHash - The hash of the recording
+   */
+  const generateTelemetryOverlay = async (recordingHash: string): Promise<void> => {
+    try {
+      const recordingData = unprocessedVideos.value[recordingHash]
+      if (!recordingData) {
+        throw new Error(`Recording '${recordingHash}' not found.`)
+      }
+
+      // Generate telemetry log
+      const telemetryLog = await datalogger.generateLog(recordingData.dateStart!, recordingData.dateFinish!)
+
+      if (telemetryLog !== undefined) {
+        const assLog = datalogger.toAssOverlay(
+          telemetryLog,
+          recordingData.vWidth!,
+          recordingData.vHeight!,
+          recordingData.dateStart!.getTime()
+        )
+        const logBlob = new Blob([assLog], { type: 'text/plain' })
+
+        // Save the .ass file
+        await videoStorage.setItem(`${recordingData.fileName}.ass`, logBlob)
+      }
+    } catch (error) {
+      throw new Error(`Failed to generate telemetry for recording '${recordingHash}': ${error}`)
+    }
+  }
+
+  /**
    * Get the MediaStream object related to a given stream, if available
    * @param {string} streamName - Name of the stream
    * @returns {MediaStream | undefined} MediaStream that is running, if available
@@ -236,7 +270,9 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const videoThumbnailFilename = (videoFileName: string): string => {
-    return `thumbnail_${videoFileName}.jpeg`
+    // Strip video extension before adding .jpeg
+    const nameWithoutExt = videoFileName.replace('.mp4', '')
+    return `thumbnail_${nameWithoutExt}.jpeg`
   }
 
   const getVideoThumbnail = async (videoFileNameOrHash: string, isProcessed: boolean): Promise<Blob | null> => {
@@ -395,12 +431,15 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.timeRecordingStart = new Date()
     const streamData = activeStreams.value[streamName] as StreamData
 
+    // Generate a unique recording hash
     let recordingHash = ''
     let refreshHash = true
     const namesCurrentChunksOnDB = await tempVideoStorage.keys()
     while (refreshHash) {
       recordingHash = uuid().slice(0, 8)
-      refreshHash = namesCurrentChunksOnDB.some((chunkName) => chunkName.includes(recordingHash))
+      const hashOnDB = namesCurrentChunksOnDB.some((chunkName) => chunkName.includes(recordingHash))
+      const hashOnRegistry = unprocessedVideos.value[recordingHash] !== undefined
+      refreshHash = hashOnDB || hashOnRegistry
     }
 
     const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
@@ -425,6 +464,28 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
 
+    // Initialize live processor if enabled and on Electron
+    if (enableLiveProcessing.value && window.electronAPI) {
+      try {
+        const liveProcessor = new LiveVideoProcessor(recordingHash, fileName, keepRawVideoChunksAsBackup.value)
+        await liveProcessor.startProcessing()
+        liveProcessors.value[recordingHash] = liveProcessor
+
+        console.debug(`Live processing started for ${recordingHash}`)
+      } catch (error) {
+        // Stop recording and reset the stream data
+        activeStreams.value[streamName]!.mediaRecorder!.stop()
+        activeStreams.value[streamName]!.mediaRecorder = undefined
+        delete activeStreams.value[streamName]
+
+        // Stop live processing if it's running
+        if (liveProcessors.value[recordingHash]) {
+          delete liveProcessors.value[recordingHash]
+        }
+
+        throw new Error(`Failed to start live processing for recording '${recordingHash}': ${error}`)
+      }
+    }
     let losingChunksWarningIssued = false
     const unsavedChunkAlerts: { [key in string]: ReturnType<typeof setTimeout> } = {}
 
@@ -487,6 +548,16 @@ export const useVideoStore = defineStore('video', () => {
       try {
         await tempVideoStorage.setItem(chunkName, e.data)
         sequentialLostChunks = 0
+
+        // Send chunk to live processor if active
+        const processor = liveProcessors.value[recordingHash]
+        if (processor && e.data.size > 0) {
+          try {
+            await processor.addChunk(e.data, chunksCount)
+          } catch (error) {
+            console.warn(`Failed to add chunk ${chunksCount} to live processor:`, error)
+          }
+        }
       } catch {
         sequentialLostChunks++
         totalLostChunks++
@@ -507,13 +578,15 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
       const info = unprocessedVideos.value[recordingHash]
 
-      // Register that the recording finished and it's ready to be processed
+      // Register that the recording finished
       info.dateFinish = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
 
-      if (autoProcessVideos.value) {
+      // Finalize live processing if active (Electron only)
+      const processor = liveProcessors.value[recordingHash]
+      if (processor) {
         try {
-          await processVideoChunksAndTelemetry([recordingHash])
+          await processor.stopProcessing()
           openSnackbar({
             message: 'Video processing completed.',
             duration: 2000,
@@ -523,7 +596,18 @@ export const useVideoStore = defineStore('video', () => {
         } catch (error) {
           console.error('Failed to process video:', error)
           alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamName}.`))
+        } finally {
+          delete liveProcessors.value[recordingHash]
+
+          activeStreams.value[streamName]!.mediaRecorder = undefined
         }
+      }
+
+      // Generate telemetry overlay after video processing is complete
+      try {
+        await generateTelemetryOverlay(recordingHash)
+      } catch (telemetryError) {
+        openSnackbar({ message: 'Failed to generate telemetry overlay.', variant: 'error' })
       }
 
       activeStreams.value[streamName]!.mediaRecorder = undefined
@@ -552,13 +636,16 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const createZipAndDownload = async (
-    files: FileDescriptor[],
+    files: FilesToZip[],
     zipFilename: string,
     progressCallback?: DownloadProgressCallback
   ): Promise<void> => {
     const zipWriter = new ZipWriter(new BlobWriter('application/zip'), { level: 0 })
-    const zipAddingPromises = files.map(({ filename, blob }) => {
-      zipWriter.add(filename, new BlobReader(blob), { onprogress: progressCallback })
+    const zipAddingPromises = files.map(({ file, lastModDate }) => {
+      zipWriter.add(file.filename, new BlobReader(file.blob), {
+        lastModDate: lastModDate,
+        onprogress: progressCallback,
+      })
     })
     Promise.all(zipAddingPromises)
     const blob = await zipWriter.close()
@@ -587,7 +674,8 @@ export const useVideoStore = defineStore('video', () => {
     }
 
     if (shouldZip) {
-      await createZipAndDownload(files, `${zipFilenamePrefix}.zip`, progressCallback)
+      const filesToZip = files.map((file) => ({ file }))
+      await createZipAndDownload(filesToZip, `${zipFilenamePrefix}.zip`, progressCallback)
     } else {
       files.forEach(({ blob, filename }) => saveAs(blob, filename))
     }
@@ -808,7 +896,7 @@ export const useVideoStore = defineStore('video', () => {
 
       let durFixedBlob: Blob | undefined = undefined
       try {
-        durFixedBlob = await fixWebmDuration(mergedBlob)
+        durFixedBlob = mergedBlob
       } catch {
         const errorMsg = 'Failed to fix video duration. The processed video may present issues or be unplayable.'
         showDialog({ title: 'Video Processing Issue', message: errorMsg, variant: 'error' })
@@ -1240,6 +1328,7 @@ export const useVideoStore = defineStore('video', () => {
     unprocessedVideos,
     generateTelemetryForUnprocessedVideos,
     downloadTempVideoWithTelemetry,
+    createZipAndDownload,
     currentFileProgress,
     overallProgress,
     processVideoChunksAndTelemetry,
@@ -1251,5 +1340,8 @@ export const useVideoStore = defineStore('video', () => {
     lastRenamedStreamName,
     deleteStreamCorrespondency,
     restoreIgnoredStream,
+    enableLiveProcessing,
+    keepRawVideoChunksAsBackup,
+    generateTelemetryOverlay,
   }
 })

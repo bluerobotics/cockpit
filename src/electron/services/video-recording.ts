@@ -72,7 +72,6 @@ const startVideoRecording = async (
   const tempDir = await createTempDirectory(`video_recording_${recordingHash}`)
 
   // Get video folder path and construct output path
-  const { cockpitFolderPath } = await import('./storage')
   const videosPath = join(cockpitFolderPath, 'videos')
   await fs.mkdir(videosPath, { recursive: true })
 
@@ -275,7 +274,6 @@ const finalizeVideoRecording = async (processId: string): Promise<void> => {
             const thumbnailBuffer = await fs.readFile(tempThumbnailPath)
 
             // Store thumbnail in the video storage database
-            const { filesystemStorage } = await import('./storage')
             await filesystemStorage.setItem(thumbnailFileName, thumbnailBuffer as any, ['videos'])
 
             // Clean up temporary thumbnail file
@@ -472,7 +470,6 @@ const extractVideoChunksZip = async (zipFilePath: string): Promise<ZipExtraction
 const copyTelemetryFile = async (assFilePath: string, outputVideoPath: string): Promise<void> => {
   try {
     // Always use the videos folder from storage
-    const { cockpitFolderPath } = await import('./storage')
     const videosPath = join(cockpitFolderPath, 'videos')
 
     const videoBaseName = basename(outputVideoPath, '.mp4')
