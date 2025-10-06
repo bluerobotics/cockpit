@@ -1,7 +1,9 @@
-import { ipcMain, shell } from 'electron'
+import { dialog, ipcMain, shell } from 'electron'
 import { app } from 'electron'
 import * as fs from 'fs/promises'
 import { dirname, join } from 'path'
+
+import type { FileDialogOptions, FileStats } from '@/types/storage'
 
 // Create a new storage interface for filesystem
 export const cockpitFolderPath = join(app.getPath('home'), 'Cockpit')
@@ -74,5 +76,57 @@ export const setupFilesystemStorage = (): void => {
     const videoFolderPath = join(cockpitFolderPath, 'videos')
     await fs.mkdir(videoFolderPath, { recursive: true })
     await shell.openPath(videoFolderPath)
+  })
+  ipcMain.handle('open-temp-video-chunks-folder', async () => {
+    const tempChunksFolderPath = join(cockpitFolderPath, 'videos', 'temporary-video-chunks')
+    await fs.mkdir(tempChunksFolderPath, { recursive: true })
+    await shell.openPath(tempChunksFolderPath)
+  })
+
+  /**
+   * Get file stats for a file
+   * @param pathOrKey - Either a full file path, or a key (filename) if subFolders is provided
+   * @param subFolders - Optional subfolders under cockpit folder (if provided, pathOrKey is treated as a key)
+   */
+  ipcMain.handle('get-file-stats', async (_, pathOrKey: string, subFolders?: string[]): Promise<FileStats> => {
+    try {
+      // If subFolders is provided, construct path from cockpit folder
+      // Otherwise, treat pathOrKey as a full path
+      const filePath = subFolders ? join(cockpitFolderPath, ...(subFolders ?? []), pathOrKey) : pathOrKey
+      const stats = await fs.stat(filePath)
+      return {
+        exists: true,
+        size: stats.size,
+        mtime: stats.mtime,
+        isDirectory: stats.isDirectory(),
+        isFile: stats.isFile(),
+      }
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        return { exists: false }
+      }
+      console.error('Error getting file stats:', error)
+      throw error
+    }
+  })
+
+  /**
+   * Show file dialog to select a file
+   * @param options - Optional dialog configuration
+   * @returns The selected file path, or null if cancelled
+   */
+  ipcMain.handle('get-path-of-selected-file', async (_, options?: FileDialogOptions) => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: options?.filters,
+      title: options?.title,
+      defaultPath: options?.defaultPath,
+    })
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null
+    }
+
+    return result.filePaths[0]
   })
 }

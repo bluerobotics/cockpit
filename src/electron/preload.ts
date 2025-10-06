@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
+import type { FileDialogOptions, FileStats } from '@/types/storage'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
@@ -39,6 +40,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   openCockpitFolder: () => ipcRenderer.invoke('open-cockpit-folder'),
   openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
+  openVideoChunksFolder: () => ipcRenderer.invoke('open-temp-video-chunks-folder'),
+  getFileStats: (pathOrKey: string, subFolders?: string[]): Promise<FileStats> =>
+    ipcRenderer.invoke('get-file-stats', pathOrKey, subFolders),
+  getPathOfSelectedFile: (options?: FileDialogOptions) => ipcRenderer.invoke('get-path-of-selected-file', options),
   captureWorkspace: (rect?: Electron.Rectangle) => ipcRenderer.invoke('capture-workspace', rect),
   serialListPorts: () => ipcRenderer.invoke('serial-list-ports'),
   serialOpen: (path: string, baudRate?: number) => ipcRenderer.invoke('serial-open', { path, baudRate }),

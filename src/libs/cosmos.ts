@@ -6,6 +6,7 @@ import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joysti
 import { NetworkInfo } from '@/types/network'
 import { SDLStatus } from '@/types/sdl'
 import type { SerialData } from '@/types/serial'
+import type { FileDialogOptions, FileStats } from '@/types/storage'
 
 import {
   createDataLakeVariable,
@@ -273,6 +274,22 @@ declare global {
        * Open video folder
        */
       openVideoFolder: () => void
+      /**
+       * Open temporary chunks folder
+       */
+      openVideoChunksFolder: () => void
+      /**
+       * Get file stats for a file
+       * @param pathOrKey - Either a full file path, or a key (filename) if subFolders is provided
+       * @param subFolders - Optional subfolders under cockpit folder (if provided, pathOrKey is treated as a key)
+       */
+      getFileStats: (pathOrKey: string, subFolders?: string[]) => Promise<FileStats>
+      /**
+       * Show file dialog to select a file
+       * @param options - Optional dialog configuration
+       * @returns The selected file path, or null if cancelled
+       */
+      getPathOfSelectedFile: (options?: FileDialogOptions) => Promise<string | null>
       /**
        * Capture the workspace area of the application
        */
