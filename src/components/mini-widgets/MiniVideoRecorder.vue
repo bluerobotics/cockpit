@@ -4,7 +4,6 @@
     class="flex justify-around px-2 py-1 text-center rounded-lg w-40 h-9 align-center bg-slate-800/60"
   >
     <div
-      v-if="!isProcessingVideo"
       :class="{
         'blob red w-5 opacity-100 rounded-sm': isRecording,
         'opacity-30 bg-red-400': isOutside && !isRecording,
@@ -12,10 +11,7 @@
       class="w-6 transition-all duration-500 rounded-full aspect-square bg-red-lighten-1 hover:cursor-pointer opacity-70 hover:opacity-90"
       @click="toggleRecording()"
     />
-    <div v-else>
-      <v-icon class="w-6 h-6 animate-spin" color="white">mdi-loading</v-icon>
-    </div>
-    <template v-if="!isRecording && !isProcessingVideo">
+    <template v-if="!isRecording">
       <div
         v-if="nameSelectedStream"
         class="flex flex-col max-w-[50%] scroll-container transition-all border-blur cursor-pointer"
@@ -25,11 +21,8 @@
       </div>
       <FontAwesomeIcon v-else icon="fa-solid fa-video" class="h-6 text-slate-100" />
     </template>
-    <div v-if="isRecording && !isProcessingVideo" class="w-16 text-justify text-slate-100">
+    <div v-if="isRecording" class="w-16 text-justify text-slate-100">
       {{ timePassedString }}
-    </div>
-    <div v-else-if="isProcessingVideo" class="w-16 text-justify text-slate-100">
-      <div class="text-xs text-center text-white select-none flex-nowrap">Processing video...</div>
     </div>
     <div class="flex justify-center w-6">
       <v-divider vertical class="h-6 ml-1" />
@@ -125,7 +118,6 @@ const isVideoLibraryDialogOpen = ref(false)
 const isLoadingStream = ref(false)
 const timeNow = useTimestamp({ interval: 100 })
 const mediaStream = ref<MediaStream | undefined>()
-const isProcessingVideo = ref(false)
 const numberOfVideosOnDB = ref(0)
 const selectedExternalId = ref<string | undefined>()
 
@@ -191,12 +183,63 @@ watch(nameSelectedStream, (newName) => {
   mediaStream.value = undefined
 })
 
-// Fetch number of temporary videos on storage
+// Fetch number of videos on storage (chunk groups + processed videos without overlap)
 const fetchNumberOfTempVideos = async (): Promise<void> => {
-  const keys = await videoStore.videoStorage.keys()
-  const nProcessedVideos = keys.filter((k) => videoStore.isVideoFilename(k)).length
-  const nFailedUnprocessedVideos = Object.keys(videoStore.keysFailedUnprocessedVideos).length
-  numberOfVideosOnDB.value = nProcessedVideos + nFailedUnprocessedVideos
+  // Get processed videos from videoStorage
+  const processedKeys = await videoStore.videoStorage.keys()
+  const processedVideos = processedKeys.filter((k) => videoStore.isVideoFilename(k))
+
+  // Get chunk groups from tempVideoStorage
+  const tempKeys = await videoStore.tempVideoStorage.keys()
+  const chunkGroups: Set<string> = new Set()
+
+  for (const key of tempKeys) {
+    if (key.includes('thumbnail_')) continue
+
+    const parts = key.split('_')
+    if (parts.length < 2) continue
+
+    const hash = parts[0]
+    const chunkNumber = parseInt(parts[parts.length - 1], 10)
+    if (isNaN(chunkNumber)) continue
+
+    // Check if this chunk actually exists and has content
+    try {
+      const blob = (await videoStore.tempVideoStorage.getItem(key)) as Blob
+      if (blob && blob.size > 0) {
+        chunkGroups.add(hash)
+      }
+    } catch (error) {
+      console.warn(`Failed to check chunk ${key}:`, error)
+    }
+  }
+
+  // Count processed videos that don't have corresponding chunk groups
+  const processedVideoHashes = new Set<string>()
+  for (const videoKey of processedVideos) {
+    // Extract hash from processed video filename
+    // Processed videos have format like "MissionName (Date) #hash.webm"
+    // We need to extract the hash after the # symbol
+    const hashMatch = videoKey.match(/#([a-f0-9]+)\./)
+    if (hashMatch && hashMatch[1]) {
+      processedVideoHashes.add(hashMatch[1])
+    }
+  }
+
+  // Count unique videos: chunk groups + processed videos that don't have chunk groups
+  const uniqueVideos = new Set<string>()
+
+  // Add all chunk groups
+  chunkGroups.forEach((hash) => uniqueVideos.add(hash))
+
+  // Add processed videos that don't have corresponding chunk groups
+  processedVideoHashes.forEach((hash) => {
+    if (!chunkGroups.has(hash)) {
+      uniqueVideos.add(hash)
+    }
+  })
+
+  numberOfVideosOnDB.value = uniqueVideos.size
 }
 
 // eslint-disable-next-line jsdoc/require-jsdoc
@@ -311,20 +354,6 @@ if (widgetStore.isRealMiniWidget(miniWidget.value.hash)) {
   }, 1000)
 }
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
-
-// Check if there are videos being processed
-watch(
-  () => videoStore.areThereVideosProcessing,
-  (newValue) => {
-    isProcessingVideo.value = newValue
-    fetchNumberOfTempVideos()
-  }
-)
-
-watch(
-  () => videoStore.keysFailedUnprocessedVideos,
-  () => fetchNumberOfTempVideos()
-)
 
 watch(
   () => isVideoLibraryDialogOpen.value,

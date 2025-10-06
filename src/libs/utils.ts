@@ -281,3 +281,22 @@ export const frequencyHzToIntervalUs = (frequencyHz: number): number => {
  * @returns {number} Normalized angle in degrees
  */
 export const norm360 = (deg: number): number => ((deg % 360) + 360) % 360
+
+/**
+ * Format date for display
+ * @param {Date} date
+ * @returns {string} Formatted date string
+ */
+export const formatDate = (date: Date): string => {
+  if (date.getTime() === 0) {
+    return 'Unknown creation datetime'
+  }
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date)
+}
