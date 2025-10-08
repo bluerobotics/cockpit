@@ -523,7 +523,7 @@ const uploadingMission = ref(false)
 const missionUploadProgress = ref(0)
 const hasUploadedMission = ref(false)
 
-const defaultNavCommands: MissionCommand[] = [
+const defaultNavCommandsTemplate: MissionCommand[] = [
   {
     type: MissionCommandType.MAVLINK_NAV_COMMAND,
     command: MavCmd.MAV_CMD_NAV_WAYPOINT,
@@ -533,6 +533,16 @@ const defaultNavCommands: MissionCommand[] = [
     param4: 999,
   },
 ]
+
+const makeDefaultNavCommands = (): MissionCommand[] => defaultNavCommandsTemplate.map((c) => ({ ...c }))
+
+const cloneCommands = (commands?: MissionCommand[]): MissionCommand[] => {
+  if (commands && commands.length) {
+    return commands.map((command) => ({ ...command }))
+  }
+
+  return makeDefaultNavCommands()
+}
 
 const uploadMissionToVehicle = async (): Promise<void> => {
   if (!home.value) {
@@ -553,8 +563,9 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     coordinates: home.value,
     altitude: 0,
     altitudeReferenceType: currentWaypointAltitudeRefType.value,
-    commands: defaultNavCommands,
+    commands: makeDefaultNavCommands(),
   }
+
   missionItemsToUpload.unshift(homeWaypoint)
 
   try {
@@ -1281,7 +1292,7 @@ const insertWaypointAtSegmentMidpoint = (segmentIndex: number): void => {
     coordinates: [mid.lat, mid.lng],
     altitude: prev.altitude,
     altitudeReferenceType: prev.altitudeReferenceType,
-    commands: defaultNavCommands,
+    commands: makeDefaultNavCommands(),
   }
 
   missionStore.currentPlanningWaypoints.splice(segmentIndex + 1, 0, newWp)
@@ -1854,7 +1865,7 @@ const addWaypoint = (
     coordinates,
     altitude,
     altitudeReferenceType,
-    commands: !commands || commands.length === 0 ? defaultNavCommands : commands,
+    commands: cloneCommands(commands),
   }
 
   missionStore.currentPlanningWaypoints.push(waypoint)
@@ -1975,7 +1986,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
     defaultCruiseSpeed.value = maybeMission['settings']['defaultCruiseSpeed']
     maybeMission['waypoints'].forEach((w: Waypoint) => {
-      addWaypoint(w.coordinates, w.altitude, w.altitudeReferenceType, w.commands)
+      addWaypoint(w.coordinates, w.altitude, w.altitudeReferenceType, cloneCommands(w.commands))
     })
   }
   // @ts-ignore: We know the event type and need refactor of the event typing
@@ -2286,7 +2297,7 @@ const generateWaypointsFromSurvey = (): void => {
     coordinates: [latLng.lat, latLng.lng],
     altitude: currentWaypointAltitude.value,
     altitudeReferenceType: currentWaypointAltitudeRefType.value,
-    commands: defaultNavCommands,
+    commands: makeDefaultNavCommands(),
   }))
 
   missionStore.currentPlanningWaypoints.push(...newSurveyWaypoints)
