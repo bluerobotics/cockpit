@@ -44,7 +44,7 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[225px] overflow-hidden">
+              <div class="flex flex-col items-center h-[225px] overflow-visible">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
@@ -83,7 +83,7 @@
                     <div
                       v-for="functionMapping in controllerStore.protocolMappings"
                       :key="functionMapping.name"
-                      class="relative mx-2"
+                      class="relative mx-1"
                     >
                       <!-- Container for active profile -->
                       <div
@@ -91,11 +91,11 @@
                         class="flex flex-col items-center bg-[#FFFFFF15] rounded-lg p-2 border border-[#FFFFFF30]"
                       >
                         <v-btn
-                          class="text-md bg-[#FFFFFF23]"
+                          class="text-md bg-[#FFFFFF23] px-2"
                           size="small"
                           :class="{
                             'bg-[#FFFFFF43]': selectedProfile.name === functionMapping.name,
-                            'text-sm': interfaceStore.isOnSmallScreen,
+                            'text-xs': interfaceStore.isOnSmallScreen,
                           }"
                           @click="selectProfile(functionMapping)"
                         >
@@ -107,7 +107,7 @@
                       <!-- Regular profile button -->
                       <div v-else class="relative mt-2">
                         <v-btn
-                          class="text-[13px] bg-[#FFFFFF23] px-2"
+                          class="text-[12px] bg-[#FFFFFF23] px-2"
                           :class="{
                             'bg-[#FFFFFF43]': selectedProfile.name === functionMapping.name,
                             'text-sm': interfaceStore.isOnSmallScreen,
@@ -122,7 +122,7 @@
                           v-if="selectedProfile.name === functionMapping.name && isSelectedProfileDifferentFromActive"
                           icon
                           size="x-small"
-                          class="absolute top-3 -right-3 text-white bg-[#51565B] rounded-full"
+                          class="absolute top-3 -right-2 text-white bg-[#51565B] rounded-full"
                           @click.stop="switchToSelectedProfile"
                         >
                           <v-icon size="14">mdi-swap-horizontal</v-icon>
