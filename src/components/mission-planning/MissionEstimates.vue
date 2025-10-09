@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="modelValue"
-    class="absolute right-4 bottom-28 rounded-[10px] px-3 py-2"
+    class="absolute right-4 bottom-36 rounded-[10px] px-3 py-2"
     :style="[interfaceStore.globalGlassMenuStyles, { width: '250px' }]"
   >
     <p class="text-sm font-semibold mb-[6px]">Mission estimates</p>
