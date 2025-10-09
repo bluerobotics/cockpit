@@ -1355,10 +1355,6 @@ watch(
   z-index: 200 !important;
 }
 
-.leaflet-control-zoom {
-  bottom: v-bind('bottomButtonsDisplacement');
-}
-
 .context-menu {
   position: absolute;
   z-index: 1003;
@@ -1446,5 +1442,9 @@ watch(
   margin-bottom: 12px;
   box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14),
     0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+}
+
+:deep(.leaflet-control-zoom) {
+  bottom: v-bind('bottomButtonsDisplacement');
 }
 </style>
