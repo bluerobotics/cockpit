@@ -498,15 +498,18 @@
                     <!-- Empty State -->
                     <div v-else class="flex flex-col justify-center items-center flex-1 text-center px-4">
                       <div class="max-w-md mx-auto">
-                        <v-icon size="60" class="text-white/30 mb-4">mdi-folder-multiple-outline</v-icon>
-                        <h4 class="text-lg font-medium text-white mb-2">No Video Chunks Found</h4>
-                        <p class="text-white/70 text-sm">
-                          {{
-                            chunkLoadingData
-                              ? 'Loading...'
-                              : 'Start recording videos to create chunks that can be downloaded.'
-                          }}
-                        </p>
+                        <template v-if="chunkLoadingData">
+                          <v-progress-circular indeterminate color="white" size="60" width="3" class="mb-4" />
+                          <h4 class="text-lg font-medium text-white mb-2">Loading Video Chunks</h4>
+                          <p class="text-white/70 text-sm">Counting chunks and calculating sizes...</p>
+                        </template>
+                        <template v-else>
+                          <v-icon size="60" class="text-white/30 mb-4">mdi-folder-multiple-outline</v-icon>
+                          <h4 class="text-lg font-medium text-white mb-2">No Video Chunks Found</h4>
+                          <p class="text-white/70 text-sm">
+                            Start recording videos to create chunks that can be downloaded.
+                          </p>
+                        </template>
                       </div>
                     </div>
 
@@ -628,8 +631,19 @@
                     <!-- Empty State -->
                     <div v-else class="flex flex-col h-full">
                       <!-- Empty State Message -->
-                      <div class="flex justify-center items-center flex-1 text-xl text-center">
-                        {{ chunkLoadingData ? 'Loading' : 'No raw chunks found' }}
+                      <div class="flex flex-col justify-center items-center flex-1 text-center px-4">
+                        <div class="max-w-md mx-auto">
+                          <template v-if="chunkLoadingData">
+                            <v-progress-circular indeterminate color="white" size="60" width="3" class="mb-4" />
+                            <h4 class="text-lg font-medium text-white mb-2">Loading Video Chunks</h4>
+                            <p class="text-white/70 text-sm">Counting chunks and calculating sizes...</p>
+                          </template>
+                          <template v-else>
+                            <v-icon size="60" class="text-white/30 mb-4">mdi-folder-multiple-outline</v-icon>
+                            <h4 class="text-lg font-medium text-white mb-2">No Raw Chunks Found</h4>
+                            <p class="text-white/70 text-sm">Start recording videos to create raw chunks.</p>
+                          </template>
+                        </div>
                       </div>
 
                       <!-- Fixed Bottom Controls (always visible) -->
