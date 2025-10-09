@@ -140,12 +140,18 @@ export const useVideoChunkManager = (): {
             const chunkNumber = parseInt(parts[parts.length - 1], 10)
 
             try {
-              const blob = (await videoStore.tempVideoStorage.getItem(key)) as Blob
-              if (!blob || blob.size === 0) return
+              let chunkSize = 0
+              if (isElectron() && window.electronAPI) {
+                const fileStats = await window.electronAPI.getFileStats(key, ['videos', 'temporary-video-chunks'])
+                if (!fileStats?.exists) return
+                chunkSize = fileStats?.size || 0
+              } else {
+                const blob = (await videoStore.tempVideoStorage.getItem(key)) as Blob
+                if (!blob || blob.size === 0) return
+                chunkSize = blob.size
+              }
 
-              const chunkSize = blob.size
               totalSize += chunkSize
-
               if (!groups[hash]) {
                 groups[hash] = {
                   hash,
