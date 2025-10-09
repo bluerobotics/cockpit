@@ -119,45 +119,57 @@ export const useVideoChunkManager = (): {
       const groups: { [hash: string]: ChunkGroup } = {}
       let totalSize = 0
 
-      for (const key of allKeys) {
-        if (key.includes('thumbnail_')) continue
-
+      // Filter valid keys first
+      const validKeys = allKeys.filter((key) => {
+        if (key.includes('thumbnail_')) return false
         const parts = key.split('_')
-        if (parts.length < 2) continue
-
-        const hash = parts[0]
+        if (parts.length < 2) return false
         const chunkNumber = parseInt(parts[parts.length - 1], 10)
-        if (isNaN(chunkNumber)) continue
+        return !isNaN(chunkNumber)
+      })
 
-        try {
-          const blob = (await videoStore.tempVideoStorage.getItem(key)) as Blob
-          if (!blob || blob.size === 0) continue
+      // Process chunks in parallel batches for much faster loading
+      const BATCH_SIZE = 20 // Process 20 chunks at a time
+      for (let i = 0; i < validKeys.length; i += BATCH_SIZE) {
+        const batch = validKeys.slice(i, i + BATCH_SIZE)
 
-          const chunkSize = blob.size
-          totalSize += chunkSize
+        await Promise.all(
+          batch.map(async (key) => {
+            const parts = key.split('_')
+            const hash = parts[0]
+            const chunkNumber = parseInt(parts[parts.length - 1], 10)
 
-          if (!groups[hash]) {
-            groups[hash] = {
-              hash,
-              chunkCount: 0,
-              totalSize: 0,
-              estimatedDuration: 0,
-              firstChunkDate: new Date(0),
-              chunks: [],
+            try {
+              const blob = (await videoStore.tempVideoStorage.getItem(key)) as Blob
+              if (!blob || blob.size === 0) return
+
+              const chunkSize = blob.size
+              totalSize += chunkSize
+
+              if (!groups[hash]) {
+                groups[hash] = {
+                  hash,
+                  chunkCount: 0,
+                  totalSize: 0,
+                  estimatedDuration: 0,
+                  firstChunkDate: new Date(0),
+                  chunks: [],
+                }
+              }
+
+              const chunkTimestamp = await getChunkTimestamp(key)
+
+              groups[hash].chunks.push({ key, size: chunkSize, timestamp: chunkTimestamp })
+              groups[hash].chunkCount++
+              groups[hash].totalSize += chunkSize
+              groups[hash].estimatedDuration = groups[hash].chunkCount
+
+              updateFirstChunkDate(groups[hash], chunkNumber, chunkTimestamp)
+            } catch (error) {
+              console.warn(`Failed to load chunk ${key}:`, error)
             }
-          }
-
-          const chunkTimestamp = await getChunkTimestamp(key)
-
-          groups[hash].chunks.push({ key, size: chunkSize, timestamp: chunkTimestamp })
-          groups[hash].chunkCount++
-          groups[hash].totalSize += chunkSize
-          groups[hash].estimatedDuration = groups[hash].chunkCount
-
-          updateFirstChunkDate(groups[hash], chunkNumber, chunkTimestamp)
-        } catch (error) {
-          console.warn(`Failed to load chunk ${key}:`, error)
-        }
+          })
+        )
       }
 
       // Sort chunks within each group
