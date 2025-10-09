@@ -65,6 +65,7 @@ const preDefinedDataLakeVariables = {
  * Generic MAVLink vehicle
  */
 export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Modes> {
+  _dateLastHeartbeat: Date | undefined = undefined
   _altitude = new Altitude({ msl: unit(0, 'm'), rel: 0 })
   _attitude = new Attitude({ roll: 0, pitch: 0, yaw: 0 })
   _communicationDropRate = 0
@@ -443,6 +444,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       }
       case MAVLinkType.HEARTBEAT: {
         const heartbeat = mavlink_message.message as Message.Heartbeat
+        this._dateLastHeartbeat = new Date()
 
         this._isArmed = Boolean(heartbeat.base_mode.bits & MavModeFlag.MAV_MODE_FLAG_SAFETY_ARMED)
         this.onArm.emit()
@@ -624,6 +626,14 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       coordinates.longitude,
       coordinates.altitude
     )
+  }
+
+  /**
+   * Get the date of the last heartbeat
+   * @returns {Date}
+   */
+  dateLastHeartbeat(): Date | undefined {
+    return this._dateLastHeartbeat
   }
 
   /**

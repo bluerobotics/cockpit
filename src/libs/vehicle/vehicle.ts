@@ -159,6 +159,7 @@ export abstract class AbstractVehicle<Modes> {
   abstract onOutgoingMessage(message: Uint8Array): void
 
   abstract arm(): Promise<void>
+  abstract dateLastHeartbeat(): Date | undefined
   abstract altitude(): Altitude
   abstract attitude(): Attitude
   abstract batteries(): Battery[]
