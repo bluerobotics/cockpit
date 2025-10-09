@@ -204,8 +204,6 @@ const isSlidingOut = ref(false)
 
 const { width: windowWidth } = useWindowSize()
 
-const isConfigModalVisible = computed(() => interfaceStore.isConfigModalVisible)
-
 // Check if the user data in browser storage is the same as on blueOS; if not, keep the splash screen open for a maximum of 20 seconds.
 onBeforeMount(async () => {
   if (!devStore.showSplashScreenOnStartup) {
@@ -233,11 +231,14 @@ onBeforeMount(async () => {
   interfaceStore.showSplashScreen = false
 })
 
-watch(isConfigModalVisible, (newVal) => {
-  if (newVal === false) {
-    currentSubMenuComponent.value = null
+watch(
+  () => interfaceStore.isConfigModalVisible,
+  (isVisible) => {
+    if (!isVisible) {
+      currentSubMenuComponent.value = null
+    }
   }
-})
+)
 
 const topBottomBarScale = computed(() => {
   return windowWidth.value / originalBarWidth
