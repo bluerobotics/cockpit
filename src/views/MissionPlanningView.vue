@@ -848,11 +848,15 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   const midX = (a.x + b.x) / 2
   const midY = (a.y + b.y) / 2
   const dist = anchor!.distanceTo(e.latlng)
+
+  const hidePill = isOverSurveyHandle(e) || isOverLastWaypointMarker(e) || dist < 1 // hide if closer than 1 meter to last wp on the array
+
   const text = missionEstimates.formatMetersShort(dist)
   if (measureTextEl) {
     measureTextEl.textContent = text
     measureTextEl.style.left = `${midX}px`
     measureTextEl.style.top = `${midY}px`
+    measureTextEl.style.display = hidePill ? 'none' : 'block'
   }
 }
 
@@ -1422,6 +1426,17 @@ const createSurveyAreaLabel = (surveyId: string, coords: [number, number][]): vo
   addAreaToMeasureLayer(marker)
   surveyAreaMarkers.value[surveyId] = marker
   setSurveyAreaSquareMeters(surveyId, m2)
+}
+
+const isOverLastWaypointMarker = (event: L.LeafletMouseEvent): boolean => {
+  const el = event.originalEvent?.target as HTMLElement | null
+  if (!el) return false
+  const waypoints = missionStore.currentPlanningWaypoints
+  if (!Array.isArray(waypoints) || waypoints.length === 0) return false
+  const lastWp = waypoints[waypoints.length - 1]
+  const lastMarker = waypointMarkers.value[lastWp.id]
+  const lastElement = lastMarker?.getElement?.()
+  return !!lastElement && (lastElement === el || lastElement.contains(el))
 }
 
 const onPolygonMouseDown = (event: L.LeafletMouseEvent): void => {
