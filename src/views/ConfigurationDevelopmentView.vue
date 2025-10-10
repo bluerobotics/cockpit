@@ -24,7 +24,7 @@
               color="white"
               hide-details
               class="min-w-[155px]"
-              @update:model-value="reloadCockpit"
+              @update:model-value="reloadCockpitAndWarnUser"
             />
             <v-switch
               v-model="devStore.enableUsageStatisticsTelemetry"
@@ -32,7 +32,7 @@
               color="white"
               hide-details
               class="min-w-[155px]"
-              @update:model-value="reloadCockpit"
+              @update:model-value="reloadCockpitAndWarnUser"
             />
             <v-switch
               v-model="devStore.enableSystemLogging"
@@ -40,7 +40,7 @@
               color="white"
               hide-details
               class="min-w-[155px]"
-              @update:model-value="reloadCockpit"
+              @update:model-value="reloadCockpitAndWarnUser"
             />
           </div>
           <div class="flex flex-row w-full justify-start gap-x-[40px]">
@@ -109,7 +109,8 @@ import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { type SystemLog, cockpitSytemLogsDB, systemLogDateTimeFormat } from '@/libs/system-logging'
-import { isElectron, reloadCockpit } from '@/libs/utils'
+import { isElectron } from '@/libs/utils'
+import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
 
