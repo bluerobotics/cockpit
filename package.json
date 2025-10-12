@@ -18,7 +18,7 @@
     "deploy:electron:windows": "powershell -Command \"$v = ((git describe --tags --abbrev=0) -replace '^v','').Trim(); electron-builder --win --publish=never --config.extraMetadata.version=$v\"",
     "deploy:flatpak": "ELECTRON=true electron-builder --linux flatpak --publish=never -c.extraMetadata.version=$(git describe --tags --abbrev=0 | sed 's/^v//')",
     "dev": "vite --host",
-    "dev:electron": "ELECTRON=true vite --host",
+    "dev:electron": "cross-env ELECTRON=true vite --host",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "lint:fix": "eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "postinstall": "node scripts/download-ffmpeg.js",
@@ -27,7 +27,7 @@
     "test:ci": "vitest --coverage --run",
     "test:unit": "vitest",
     "typecheck": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
-    "build:lib": "BUILD_MODE=library vite build"
+    "build:lib": "cross-env BUILD_MODE=library vite build"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
