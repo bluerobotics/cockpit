@@ -265,7 +265,6 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.mediaRecorder!.stop()
 
-    datalogger.stopLogging(streamName)
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
 
@@ -425,7 +424,6 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
 
-    datalogger.startLogging(streamName)
     await sleep(100)
 
     activeStreams.value[streamName]!.timeRecordingStart = new Date()
