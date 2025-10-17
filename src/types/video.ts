@@ -91,10 +91,6 @@ export interface VideoProgress {
   message: string
 }
 
-export interface VideoProcessingDetails {
-  [fileName: string]: VideoProgress
-}
-
 export interface FileDescriptor {
   blob: Blob
   filename: string
