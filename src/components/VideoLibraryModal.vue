@@ -911,6 +911,7 @@ import { useVideoStore } from '@/stores/video'
 import { DialogActions } from '@/types/general'
 import { SnapshotLibraryFile } from '@/types/snapshot'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
+import { videoThumbnailFilename } from '@/utils/video'
 
 import InteractionDialog from './InteractionDialog.vue'
 
@@ -1258,7 +1259,7 @@ const discardVideosAndUpdateDB = async (videos?: VideoLibraryFile[]): Promise<vo
 
   await videosToDiscard.forEach((video: VideoLibraryFile) => {
     processedVideosToDiscard.push(video.fileName)
-    processedVideosToDiscard.push(videoStore.videoThumbnailFilename(video.fileName))
+    processedVideosToDiscard.push(videoThumbnailFilename(video.fileName))
   })
 
   const dataLogFilesAdded = addLogDataToFileList(processedVideosToDiscard)
