@@ -12,6 +12,7 @@ import * as yazl from 'yazl'
 
 import type { LiveConcatProcessResult, LiveStreamProcess, ZipExtractionResult } from '@/types/video'
 
+import { videoThumbnailFilename } from '../../utils/video'
 import { getFFmpegPath } from './ffmpeg-path'
 import { cockpitFolderPath, filesystemStorage } from './storage'
 
@@ -263,8 +264,7 @@ const finalizeVideoRecording = async (processId: string): Promise<void> => {
           // Generate thumbnail from the final MP4 file
           try {
             const videoFileName = basename(process.outputPath)
-            const videoFileNameWithoutExt = videoFileName.replace('.mp4', '')
-            const thumbnailFileName = `thumbnail_${videoFileNameWithoutExt}.jpeg`
+            const thumbnailFileName = videoThumbnailFilename(videoFileName)
             const tempThumbnailPath = join(dirname(process.outputPath), `temp_${thumbnailFileName}`)
 
             console.log(`Generating thumbnail for ${videoFileName}...`)

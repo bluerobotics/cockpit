@@ -33,6 +33,7 @@ import {
   VideoExtensionContainer,
   VideoStreamCorrespondency,
 } from '@/types/video'
+import { videoThumbnailFilename } from '@/utils/video'
 
 import { useAlertStore } from './alert'
 const { openSnackbar } = useSnackbar()
@@ -298,12 +299,6 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.mediaRecorder!.stop()
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
-  }
-
-  const videoThumbnailFilename = (videoFileName: string): string => {
-    // Strip video extension before adding .jpeg
-    const nameWithoutExt = videoFileName.replace('.mp4', '')
-    return `thumbnail_${nameWithoutExt}.jpeg`
   }
 
   const getVideoThumbnail = async (videoFileNameOrHash: string, isProcessed: boolean): Promise<Blob | null> => {
@@ -1364,7 +1359,6 @@ export const useVideoStore = defineStore('video', () => {
     processVideoChunksAndTelemetry,
     isVideoFilename,
     getVideoThumbnail,
-    videoThumbnailFilename,
     activeStreams,
     renameStreamInternalNameById,
     lastRenamedStreamName,
