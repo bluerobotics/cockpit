@@ -314,5 +314,6 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     snapshotFilename,
     takeSnapshot,
     deleteSnapshotFiles,
+    zipMultipleFiles,
   }
 })

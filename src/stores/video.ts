@@ -1,4 +1,4 @@
-import { useDebounceFn, useStorage, useThrottleFn, useTimestamp } from '@vueuse/core'
+import { useStorage, useThrottleFn } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { differenceInSeconds, format } from 'date-fns'
 import { saveAs } from 'file-saver'
@@ -15,21 +15,18 @@ import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { LiveVideoProcessor } from '@/libs/live-video-processor'
-import { CockpitStandardLog, datalogger } from '@/libs/sensors-logging'
+import { datalogger } from '@/libs/sensors-logging'
 import { isEqual, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
-import { StorageDB } from '@/types/general'
 import {
   type DownloadProgressCallback,
   type StreamData,
   type UnprocessedVideoInfo,
-  type VideoProcessingDetails,
   FilesToZip,
-  getBlobExtensionContainer,
   VideoExtensionContainer,
   VideoStreamCorrespondency,
 } from '@/types/video'
@@ -52,13 +49,10 @@ export const useVideoStore = defineStore('video', () => {
   const enableAutoIceIpFetch = useBlueOsStorage('cockpit-enable-auto-ice-ip-fetch', true)
   const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
   const jitterBufferTarget = useBlueOsStorage<number | null>('cockpit-jitter-buffer-target', 0)
-  const zipMultipleFiles = useBlueOsStorage('cockpit-zip-multiple-video-files', false)
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
-  const timeNow = useTimestamp({ interval: 500 })
-  const autoProcessVideos = useBlueOsStorage('cockpit-auto-process-videos', true)
   const lastRenamedStreamName = ref('')
   const isRecordingAllStreams = ref(false)
   const liveProcessors = ref<{ [key: string]: LiveVideoProcessor }>({})
@@ -308,128 +302,6 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
-   * Extracts a thumbnail from the first frame of a video.
-   * @param {Blob} firstChunkBlob
-   * @returns {Promise<string>} A promise that resolves with the base64-encoded image data of the thumbnail.
-   */
-  const extractThumbnailFromVideo = async (firstChunkBlob: Blob): Promise<Blob> => {
-    return new Promise<Blob>((resolve, reject) => {
-      const videoObjectUrl = URL.createObjectURL(firstChunkBlob)
-      const video = document.createElement('video')
-
-      let seekResolve: (() => void) | null = null
-      video.addEventListener('seeked', function () {
-        if (seekResolve) seekResolve()
-      })
-
-      video.addEventListener('error', () => {
-        URL.revokeObjectURL(videoObjectUrl)
-        reject('Error loading video')
-      })
-
-      video.src = videoObjectUrl
-
-      video.addEventListener('loadedmetadata', () => {
-        const canvas = document.createElement('canvas')
-        const context = canvas.getContext('2d')
-        if (!context) {
-          URL.revokeObjectURL(videoObjectUrl)
-          reject('2D context not available.')
-          return
-        }
-
-        const [width, height] = [660, 370]
-        canvas.width = width
-        canvas.height = height
-
-        video.currentTime = 0
-        seekResolve = () => {
-          context.drawImage(video, 0, 0, width, height)
-          const blobCallback = (blob: Blob | null): void => {
-            if (!blob) {
-              reject('Failed to create blob')
-              return
-            }
-            resolve(blob)
-            URL.revokeObjectURL(videoObjectUrl)
-          }
-          canvas.toBlob(blobCallback, 'image/jpeg', 0.6)
-        }
-      })
-    })
-  }
-
-  /**
-   * Generates a fake placeholder thumbnail for videos.
-   * @param {Date} dateStart - The date the video started recording
-   * @returns {Promise<Blob>} A promise that resolves with a placeholder thumbnail blob.
-   */
-  const generatePlaceholderThumbnail = async (dateStart: Date): Promise<Blob> => {
-    return new Promise<Blob>((resolve, reject) => {
-      const canvas = document.createElement('canvas')
-      const context = canvas.getContext('2d')
-      if (!context) {
-        reject('2D context not available.')
-        return
-      }
-
-      const [width, height] = [660, 370]
-      canvas.width = width
-      canvas.height = height
-
-      // Create gradient background
-      const gradient = context.createLinearGradient(0, 0, width, height)
-      gradient.addColorStop(0, '#4fa483') // Cockpit green
-      gradient.addColorStop(1, '#77bda2') // Cockpit green slightly lighter
-      context.fillStyle = gradient
-      context.fillRect(0, 0, width, height)
-
-      // Add video icon
-      context.fillStyle = '#ffffff'
-      context.font = 'bold 128px Arial'
-      context.textAlign = 'center'
-      context.fillText('▶', width / 2, height / 2 + 10)
-
-      // Add file name
-      context.fillStyle = '#e5e7eb' // Gray-200
-      context.font = '48px Arial'
-      context.textAlign = 'center'
-
-      // Truncate filename if too long
-      // @ts-ignore: replaceAll is available in any modern browser
-      const parsedFilename = dateStart.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-      const maxLength = 50
-      const displayName =
-        parsedFilename.length > maxLength ? parsedFilename.substring(0, maxLength) + '...' : parsedFilename
-      context.fillText(displayName, width / 2, height / 2 + 120)
-
-      // Add "Video Thumbnail" text
-      context.fillStyle = '#9ca3af' // Gray-400
-      context.font = '14px Arial'
-
-      // Add border
-      context.strokeStyle = '#374151' // Gray-700
-      context.lineWidth = 2
-      context.strokeRect(1, 1, width - 2, height - 2)
-
-      const blobCallback = (blob: Blob | null): void => {
-        if (!blob) {
-          reject('Failed to create placeholder thumbnail blob')
-          return
-        }
-        resolve(blob)
-      }
-      canvas.toBlob(blobCallback, 'image/jpeg', 0.8)
-    })
-  }
-
-  /**
    * Start recording the stream
    * @param {string} streamName - Name of the stream
    */
@@ -649,17 +521,6 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  const discardUnprocessedFilesFromVideoDB = async (hashes: string[]): Promise<void> => {
-    const allKeys = await tempVideoStorage.keys()
-    for (const hash of hashes) {
-      const keysToRemove = allKeys.filter((key) => key.includes(hash))
-      for (const key of keysToRemove) {
-        await tempVideoStorage.removeItem(key)
-      }
-      delete unprocessedVideos.value[hash]
-    }
-  }
-
   const createZipAndDownload = async (
     files: FilesToZip[],
     zipFilename: string,
@@ -675,391 +536,6 @@ export const useVideoStore = defineStore('video', () => {
     Promise.all(zipAddingPromises)
     const blob = await zipWriter.close()
     saveAs(blob, zipFilename)
-  }
-
-  const downloadFiles = async (
-    db: StorageDB | LocalForage,
-    keys: string[],
-    shouldZip = false,
-    zipFilenamePrefix = 'Cockpit-Video-Files',
-    progressCallback?: DownloadProgressCallback
-  ): Promise<void> => {
-    const maybeFiles = await Promise.all(
-      keys.map(async (key) => ({
-        blob: await db.getItem(key),
-        filename: key,
-      }))
-    )
-    /* eslint-disable jsdoc/require-jsdoc  */
-    const files = maybeFiles.filter((file): file is { blob: Blob; filename: string } => file.blob !== undefined)
-
-    if (files.length === 0) {
-      showDialog({ message: 'No files found.', variant: 'error' })
-      return
-    }
-
-    if (shouldZip) {
-      const filesToZip = files.map((file) => ({ file }))
-      await createZipAndDownload(filesToZip, `${zipFilenamePrefix}.zip`, progressCallback)
-    } else {
-      files.forEach(({ blob, filename }) => saveAs(blob, filename))
-    }
-  }
-
-  const downloadFilesFromVideoDB = async (
-    fileNames: string[],
-    progressCallback?: DownloadProgressCallback
-  ): Promise<void> => {
-    console.debug(`Downloading files from the video recovery database: ${fileNames.join(', ')}`)
-    if (zipMultipleFiles.value) {
-      const ZipFilename = fileNames.length > 1 ? 'Cockpit-Video-Recordings' : 'Cockpit-Video-Recording'
-      await downloadFiles(videoStorage, fileNames, true, ZipFilename, progressCallback)
-    } else {
-      await downloadFiles(videoStorage, fileNames)
-    }
-  }
-
-  const generateTelemetryForUnprocessedVideos = async (
-    hashes: string[],
-    progressCallback?: DownloadProgressCallback
-  ): Promise<void> => {
-    console.debug(`Generating telemetry files for ${hashes.length} unprocessed videos.`)
-
-    for (let i = 0; i < hashes.length; i++) {
-      const hash = hashes[i]
-      const info = unprocessedVideos.value[hash]
-
-      if (!info || !info.dateStart || !info.dateFinish) {
-        openSnackbar({
-          message: `Cannot generate telemetry for video ${hash}: missing date information`,
-          variant: 'error',
-          duration: 5000,
-        })
-        continue
-      }
-
-      // Validate dates
-      const dateStart = new Date(info.dateStart)
-      const dateFinish = new Date(info.dateFinish)
-
-      if (isNaN(dateStart.getTime()) || isNaN(dateFinish.getTime())) {
-        const msg = `Cannot generate telemetry for video ${hash}: invalid date values (${info.dateStart} - ${info.dateFinish}).`
-        openSnackbar({ message: msg, variant: 'error', duration: 5000 })
-        continue
-      }
-
-      if (dateStart >= dateFinish) {
-        const msg = `Cannot generate telemetry for video ${hash}: start date must be before end date ${info.dateStart} - ${info.dateFinish}`
-        openSnackbar({ message: msg, variant: 'error', duration: 5000 })
-        continue
-      }
-
-      try {
-        if (progressCallback) {
-          await progressCallback(i, hashes.length)
-        }
-
-        // Generate telemetry log for the video's time range
-        const telemetryLog = await datalogger.generateLog(dateStart, dateFinish)
-
-        if (telemetryLog && telemetryLog.length > 0) {
-          // Convert to ASS overlay format
-          const assLog = datalogger.toAssOverlay(
-            telemetryLog,
-            info.vWidth || 1920,
-            info.vHeight || 1080,
-            dateStart.getTime()
-          )
-
-          // Store the telemetry file in regular video storage with a naming convention
-          const telemetryFileName = `${info.fileName}.ass`
-          const logBlob = new Blob([assLog], { type: 'text/plain' })
-          await videoStorage.setItem(telemetryFileName, logBlob)
-
-          console.debug(`Generated telemetry file for unprocessed video: ${telemetryFileName}`)
-        } else {
-          const msg = `No telemetry data found for video ${hash} in the specified time range (${dateStart} - ${dateFinish}).`
-          openSnackbar({ message: msg, variant: 'error', duration: 5000 })
-        }
-      } catch (error) {
-        const msg = `Failed to generate telemetry for video ${hash}: ${error}`
-        openSnackbar({ message: msg, variant: 'error', duration: 5000 })
-      }
-    }
-  }
-
-  const downloadTempVideoWithTelemetry = async (
-    hashes: string[],
-    progressCallback?: DownloadProgressCallback
-  ): Promise<void> => {
-    console.debug(`Downloading ${hashes.length} video chunks with telemetry from databases.`)
-
-    for (const hash of hashes) {
-      const info = unprocessedVideos.value[hash]
-
-      // Temporarily add telemetry file to tempVideoStorage if it exists
-      if (info) {
-        const telemetryFileName = `${info.fileName}.ass`
-        const telemetryBlob = await videoStorage.getItem(telemetryFileName)
-        if (telemetryBlob) {
-          // Store with hash prefix so the filter will pick it up
-          await tempVideoStorage.setItem(`${hash}_${telemetryFileName}`, telemetryBlob)
-        }
-      }
-
-      // Get all files for this hash (chunks + telemetry)
-      const fileNames = (await tempVideoStorage.keys()).filter((filename) => filename.includes(hash))
-      const zipFilenamePrefix = `Cockpit-Unprocessed-Video-Chunks-${hash}`
-      await downloadFiles(tempVideoStorage, fileNames, true, zipFilenamePrefix, progressCallback)
-    }
-  }
-
-  // Used to clear the temporary video database
-  const clearTemporaryVideoDB = async (): Promise<void> => {
-    await tempVideoStorage.clear()
-  }
-
-  const temporaryVideoDBSize = async (): Promise<number> => {
-    let totalSizeBytes = 0
-    const keys = await tempVideoStorage.keys()
-    for (const key of keys) {
-      const blob = await tempVideoStorage.getItem(key)
-      if (blob) {
-        totalSizeBytes += blob.size
-      }
-    }
-    return totalSizeBytes
-  }
-
-  const videoStorageFileSize = async (filename: string): Promise<number | undefined> => {
-    const file = await videoStorage.getItem(filename)
-    return file ? (file as Blob).size : undefined
-  }
-
-  const updateLastProcessingUpdate = (recordingHash: string): void => {
-    const info = unprocessedVideos.value[recordingHash]
-    info.dateLastProcessingUpdate = new Date()
-    unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
-  }
-
-  // Progress tracking for video processing
-  const videoProcessingDetails = ref<VideoProcessingDetails>({})
-  const totalFilesToProcess = ref(0)
-
-  const updateFileProgress = (filename: string, progress: number, message: string): void => {
-    videoProcessingDetails.value[filename] = { filename, progress, message }
-  }
-
-  const currentFileProgress = computed(() => {
-    return Object.values(videoProcessingDetails.value).map((detail) => ({
-      fileName: detail.filename,
-      progress: detail.progress,
-      message: detail.message,
-    }))
-  })
-
-  const overallProgress = computed(() => {
-    const entries = Object.values(videoProcessingDetails.value)
-    const totalProgress = entries.reduce((acc, curr) => acc + curr.progress, 0)
-    return (totalProgress / (totalFilesToProcess.value * 100)) * 100
-  })
-
-  const debouncedUpdateFileProgress = useDebounceFn((filename: string, progress: number, message: string) => {
-    updateFileProgress(filename, progress, message)
-  }, 100)
-
-  const processVideoChunksAndTelemetry = async (hashes: string[]): Promise<void> => {
-    totalFilesToProcess.value = hashes.length
-    videoProcessingDetails.value = {}
-
-    const tasks = hashes.map(async (hash) => {
-      const info = unprocessedVideos.value[hash]
-      if (!info) return
-
-      /* eslint-disable jsdoc/require-jsdoc  */
-      const chunks: { blob: Blob; name: string }[] = []
-      if (info.dateFinish === undefined) {
-        info.dateFinish = info.dateLastRecordingUpdate
-      }
-      debouncedUpdateFileProgress(info.fileName, 1, 'Processing video.')
-
-      const dateStart = new Date(info.dateStart!)
-      const dateFinish = new Date(info.dateFinish!)
-
-      debouncedUpdateFileProgress(info.fileName, 30, 'Grouping video chunks.')
-      const keys = await tempVideoStorage.keys()
-      const filteredKeys = keys.filter((key) => key.includes(hash) && key !== videoThumbnailFilename(hash))
-      for (const key of filteredKeys) {
-        const blob = await tempVideoStorage.getItem(key)
-        if (blob && blob.size > 0) {
-          chunks.push({ blob, name: key })
-        }
-      }
-
-      // As we advance through the processing, we update the last processing update date, so consumers know this is ongoing
-      updateLastProcessingUpdate(hash)
-
-      if (chunks.length === 0) {
-        throw new Error(`No video chunks found for video ${hash}.`)
-      }
-
-      debouncedUpdateFileProgress(info.fileName, 30, 'Sorting video chunks.')
-      // Make sure the chunks are sorted in the order they were created, not the order they are stored
-      chunks.sort((a, b) => {
-        const splitA = a.name.split('_')
-        const splitB = b.name.split('_')
-        return Number(splitA[splitA.length - 1]) - Number(splitB[splitB.length - 1])
-      })
-
-      updateLastProcessingUpdate(hash)
-
-      const chunkBlobs = chunks.map((chunk) => chunk.blob)
-      const extensionContainer = getBlobExtensionContainer(chunkBlobs[0])
-      debouncedUpdateFileProgress(info.fileName, 50, 'Processing video chunks.')
-
-      const mergedBlob = new Blob([...chunkBlobs])
-
-      let durFixedBlob: Blob | undefined = undefined
-      try {
-        durFixedBlob = mergedBlob
-      } catch {
-        const errorMsg = 'Failed to fix video duration. The processed video may present issues or be unplayable.'
-        showDialog({ title: 'Video Processing Issue', message: errorMsg, variant: 'error' })
-      }
-
-      updateLastProcessingUpdate(hash)
-
-      debouncedUpdateFileProgress(info.fileName, 75, `Saving video file.`)
-      const finalFileName = `${info.fileName}.${extensionContainer || 'webm'}`
-      await videoStorage.setItem(finalFileName, durFixedBlob ?? mergedBlob)
-
-      // Save thumbnail in the storage
-      // Try to extract the thumbnail from the first 10 chunks, if it fails, generate a placeholder
-      let thumbnail: Blob | undefined = undefined
-      for (let i = 0; i < chunkBlobs.length; i++) {
-        if (i > 10) {
-          console.warn('Reached maximum thumbnail extraction attempts.')
-          break
-        }
-        try {
-          thumbnail = await extractThumbnailFromVideo(chunkBlobs[i])
-        } catch (error) {
-          console.warn(`Failed to extract thumbnail from chunk ${i}. Error: ${error}`)
-        }
-      }
-      if (!thumbnail) {
-        console.warn('Failed to extract thumbnail from video. Generating placeholder thumbnail.')
-        thumbnail = await generatePlaceholderThumbnail(dateStart)
-      }
-      await videoStorage.setItem(videoThumbnailFilename(finalFileName), thumbnail)
-
-      updateLastProcessingUpdate(hash)
-
-      debouncedUpdateFileProgress(info.fileName, 80, `Generating telemetry file.`)
-      let telemetryLog: CockpitStandardLog | undefined = undefined
-      try {
-        telemetryLog = await datalogger.generateLog(dateStart, dateFinish)
-      } catch (error) {
-        openSnackbar({ message: `Failed to generate telemetry file. ${error}`, variant: 'error', duration: 5000 })
-      }
-
-      if (telemetryLog !== undefined) {
-        debouncedUpdateFileProgress(info.fileName, 95, `Converting telemetry file.`)
-        const assLog = datalogger.toAssOverlay(telemetryLog, info.vWidth!, info.vHeight!, dateStart.getTime())
-        const logBlob = new Blob([assLog], { type: 'text/plain' })
-        videoStorage.setItem(`${info.fileName}.ass`, logBlob)
-      }
-
-      updateLastProcessingUpdate(hash)
-
-      debouncedUpdateFileProgress(info.fileName, 100, 'Processing completed')
-      updateFileProgress(info.fileName, 100, 'Processing completed')
-      await cleanupProcessedData(hash)
-    })
-    await Promise.all(tasks)
-  }
-
-  // Remove temp chunks and video metadata from the database
-  const cleanupProcessedData = async (recordingHash: string): Promise<void> => {
-    const keys = await tempVideoStorage.keys()
-    const filteredKeys = keys.filter((key) => key.includes(recordingHash) && key.includes('_'))
-    for (const key of filteredKeys) {
-      await tempVideoStorage.removeItem(key)
-    }
-    delete unprocessedVideos.value[recordingHash]
-  }
-
-  const keysAllUnprocessedVideos = computed(() => Object.keys(unprocessedVideos.value))
-
-  const keysFailedUnprocessedVideos = computed(() => {
-    const dateNow = new Date(timeNow.value)
-
-    return keysAllUnprocessedVideos.value.filter((recordingHash) => {
-      const info = unprocessedVideos.value[recordingHash]
-
-      const secondsSinceLastRecordingUpdate = differenceInSeconds(dateNow, new Date(info.dateLastRecordingUpdate!))
-      const recording = info.dateFinish === undefined && secondsSinceLastRecordingUpdate < 10
-
-      const dateLastProcessingUpdate = new Date(info.dateLastProcessingUpdate ?? 0)
-      const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, dateLastProcessingUpdate)
-      const processing = info.dateFinish !== undefined && secondsSinceLastProcessingUpdate < 10
-
-      return !recording && !processing
-    })
-  })
-
-  const areThereVideosProcessing = computed(() => {
-    const dateNow = new Date(timeNow.value)
-
-    return keysAllUnprocessedVideos.value.some((recordingHash) => {
-      const info = unprocessedVideos.value[recordingHash]
-      const dateLastProcessingUpdate = new Date(info.dateLastProcessingUpdate ?? 0)
-      const secondsSinceLastProcessingUpdate = differenceInSeconds(dateNow, dateLastProcessingUpdate)
-      return info.dateFinish !== undefined && secondsSinceLastProcessingUpdate < 10
-    })
-  })
-
-  // Process videos that were being recorded when the app was closed
-  const processAllUnprocessedVideos = async (): Promise<void> => {
-    if (keysFailedUnprocessedVideos.value.isEmpty()) return
-    console.log(`Processing unprocessed videos: ${keysFailedUnprocessedVideos.value.join(', ')}`)
-
-    const chunks = await tempVideoStorage.keys()
-    if (chunks.length === 0) {
-      discardUnprocessedVideos()
-      throw new Error('No video recording data found. Discarding leftover info.')
-    }
-
-    const processingErrors: string[] = []
-    for (const recordingHash of keysFailedUnprocessedVideos.value) {
-      const info = unprocessedVideos.value[recordingHash]
-      console.log(`Processing unprocessed video: ${info.fileName}`)
-      try {
-        await processVideoChunksAndTelemetry([recordingHash])
-      } catch (error) {
-        processingErrors.push(`Could not process video ${recordingHash}. ${error} Discarding leftover info.`)
-      }
-      delete unprocessedVideos.value[recordingHash]
-    }
-
-    if (processingErrors.isEmpty()) return
-    throw new Error(processingErrors.join('\n'))
-  }
-
-  // Discard all data related to videos that were not processed
-  const discardUnprocessedVideos = async (includeNotFailed = false): Promise<void> => {
-    console.log('Discarding unprocessed videos.')
-
-    const keysUnprocessedVideos = includeNotFailed ? keysAllUnprocessedVideos.value : keysFailedUnprocessedVideos.value
-    const currentChunks = await tempVideoStorage.keys()
-    const chunksUnprocessedVideos = currentChunks.filter((chunkName) => {
-      return keysUnprocessedVideos.some((key) => chunkName.includes(key))
-    })
-
-    unprocessedVideos.value = {}
-    for (const chunk of chunksUnprocessedVideos) {
-      tempVideoStorage.removeItem(chunk)
-    }
   }
 
   const isVideoFilename = (filename: string): boolean => {
@@ -1320,13 +796,11 @@ export const useVideoStore = defineStore('video', () => {
   )
 
   return {
-    autoProcessVideos,
     availableIceIps,
     allowedIceIps,
     enableAutoIceIpFetch,
     allowedIceProtocols,
     jitterBufferTarget,
-    zipMultipleFiles,
     namesAvailableStreams,
     videoStorage,
     tempVideoStorage,
@@ -1335,28 +809,13 @@ export const useVideoStore = defineStore('video', () => {
     namessAvailableAbstractedStreams,
     externalStreamId,
     discardProcessedFilesFromVideoDB,
-    discardUnprocessedFilesFromVideoDB,
-    downloadFilesFromVideoDB,
-    clearTemporaryVideoDB,
-    keysAllUnprocessedVideos,
-    keysFailedUnprocessedVideos,
-    areThereVideosProcessing,
-    processAllUnprocessedVideos,
-    discardUnprocessedVideos,
-    temporaryVideoDBSize,
-    videoStorageFileSize,
     getMediaStream,
     getStreamData,
     isRecording,
     stopRecording,
     startRecording,
     unprocessedVideos,
-    generateTelemetryForUnprocessedVideos,
-    downloadTempVideoWithTelemetry,
     createZipAndDownload,
-    currentFileProgress,
-    overallProgress,
-    processVideoChunksAndTelemetry,
     isVideoFilename,
     getVideoThumbnail,
     activeStreams,
@@ -1366,6 +825,5 @@ export const useVideoStore = defineStore('video', () => {
     restoreIgnoredStream,
     enableLiveProcessing,
     keepRawVideoChunksAsBackup,
-    generateTelemetryOverlay,
   }
 })
