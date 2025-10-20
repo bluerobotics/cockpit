@@ -42,6 +42,7 @@ export enum JoystickModel {
   SteamDeckLCD = 'Steam Deck LCD',
   SteamDeckOLED = 'Steam Deck OLED',
   EightBitDoUltimate2C = '8BitDo Ultimate 2C',
+  ThrustmasterSimTaskFarmStick = 'Thrustmaster SimTask FarmStick',
   Unknown = 'Unknown',
 }
 
@@ -60,6 +61,7 @@ const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   ['28de:11ff', JoystickModel.SteamDeckLCD],
   ['28de:1205', JoystickModel.SteamDeckOLED],
   ['2dc8:301b', JoystickModel.EightBitDoUltimate2C],
+  ['044f:0416', JoystickModel.ThrustmasterSimTaskFarmStick],
 ])
 
 // Necessary to add functions
