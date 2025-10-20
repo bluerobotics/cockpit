@@ -276,6 +276,11 @@ export const availableGamepadToCockpitMaps: { [key in JoystickModel]: GamepadToC
     axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
   },
+  [JoystickModel.ThrustmasterSimTaskFarmStick]: {
+    name: 'Thrustmaster SimTask FarmStick',
+    axes: [0, 1, 2, 3, 4, 5, 6, 7],
+    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
+  },
   [JoystickModel.Unknown]: {
     name: 'Standard gamepad',
     axes: [0, 1, 2, 3, 4, 5, 6, 7],
