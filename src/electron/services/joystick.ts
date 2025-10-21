@@ -195,8 +195,8 @@ export const checkControllerState = (deviceId: number): void => {
   }
 
   const state = { buttons: structuredClone(instance.buttons), axes: structuredClone(instance.axes) }
-  state.axes.leftTrigger = scale(state.axes.leftTrigger, 0.5, 1, 0, 1)
-  state.axes.rightTrigger = scale(state.axes.rightTrigger, 0.5, 1, 0, 1)
+  state.axes.leftTrigger = state.axes.leftTrigger > 0 ? scale(state.axes.leftTrigger, 0.5, 1, 0, 1) : 0
+  state.axes.rightTrigger = state.axes.rightTrigger > 0 ? scale(state.axes.rightTrigger, 0.5, 1, 0, 1) : 0
   state.buttons.extra = state.buttons[''] ?? false
   delete state.buttons['']
 
