@@ -295,6 +295,7 @@
                 v-model="videoStore.keepRawVideoChunksAsBackup"
                 label="Save backup raw chunks"
                 class="text-sm mx-2"
+                :disabled="!isElectron()"
                 hide-details
               />
               <v-tooltip max-width="400px">
@@ -314,6 +315,7 @@
                   <p class="mt-2 text-gray-300">
                     You can always manually clean up backup chunks later using the "Temporary" tab in the Video Library.
                   </p>
+                  <p class="mt-2 text-gray-300">For the browser version the chunks are always saved by default.</p>
                 </div>
               </v-tooltip>
             </div>
