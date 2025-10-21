@@ -98,7 +98,11 @@ export const openController = (sdl: SDLModule, device: SDLControllerDevice): voi
         return
       }
 
-      checkControllerState(device.id)
+      try {
+        checkControllerState(device.id)
+      } catch (error) {
+        console.warn(`Could not check controller state for '${device.name}' with id '${device.id}'.`)
+      }
     }, stateCheckInterval)
   } catch (error) {
     console.error(`Error opening controller ${device.name}:`, error)
@@ -132,7 +136,11 @@ export const openJoystick = (sdl: SDLModule, device: SDLJoystickDevice): void =>
         return
       }
 
-      checkJoystickState(device.id)
+      try {
+        checkJoystickState(device.id)
+      } catch (error) {
+        console.warn(`Could not check joystick state for '${device.name}' with id '${device.id}'.`)
+      }
     }, stateCheckInterval)
   } catch (error) {
     console.error(`Error opening joystick ${device.name}:`, error)
