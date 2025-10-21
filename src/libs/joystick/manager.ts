@@ -479,6 +479,20 @@ class JoystickManager {
         this.enabledJoysticks.push(gamepad.index)
         console.log(`Joystick ${gamepad.index} connected.`)
         joystickConnectionsChanged = true
+
+        // Log some information about the joystick so we can track used joysticks and easily add more to our database
+        try {
+          console.log(`Joystick info:
+            name: '${gamepad.id}'
+            id: '${gamepad.index}'
+            vendor: '${this.getVidPid(gamepad.id).vendor_id}'
+            product: '${this.getVidPid(gamepad.id).product_id}'
+            axes: ${gamepad.axes.join(', ')}
+            buttons: ${gamepad.buttons.map((button) => button.value).join(', ')}
+          `)
+        } catch (error) {
+          console.error(`Error logging joystick info for '${gamepad.id}' with index '${gamepad.index}':`, error)
+        }
       }
     }
 
