@@ -14,7 +14,11 @@ import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
-import { LiveVideoProcessor } from '@/libs/live-video-processor'
+import {
+  LiveVideoProcessor,
+  LiveVideoProcessorChunkAppendingError,
+  LiveVideoProcessorInitializationError,
+} from '@/libs/live-video-processor'
 import { datalogger } from '@/libs/sensors-logging'
 import { isEqual, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
@@ -452,7 +456,20 @@ export const useVideoStore = defineStore('video', () => {
           try {
             await processor.addChunk(e.data, chunksCount)
           } catch (error) {
-            console.warn(`Failed to add chunk ${chunksCount} to live processor:`, error)
+            if (error instanceof LiveVideoProcessorChunkAppendingError) {
+              if (!isRecording(streamName)) {
+                // eslint-disable-next-line
+                console.warn(`Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. This usually happens when stopping the recording, so it's expected and should not be a problem.`)
+                return
+              }
+              const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
+              openSnackbar({ message: msg, variant: 'error' })
+            } else if (error instanceof LiveVideoProcessorInitializationError) {
+              const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
+              showDialog({ message: msg, variant: 'error' })
+              alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+              stopRecording(streamName)
+            } else throw error
           }
         }
       } catch {
