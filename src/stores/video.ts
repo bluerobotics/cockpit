@@ -168,7 +168,12 @@ export const useVideoStore = defineStore('video', () => {
       // If the stream configuration has actually changed, we need to recreate the manager
       const oldStreamData = activeStreams.value[streamName]
       if (oldStreamData && oldStreamData.webRtcManager) {
-        console.log(`Stream '${streamName}' has changed. Closing the old connection.`)
+        if (isRecording(streamName)) {
+          showDialog({ message: `Stream '${streamName}' has changed. Stopping recording...`, variant: 'error' })
+          stopRecording(streamName)
+        }
+
+        console.log(`Stream '${streamName}' has changed. Stopping its WebRTC session...`)
         oldStreamData.webRtcManager.endAllSessions()
       }
 
