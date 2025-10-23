@@ -477,6 +477,13 @@ export const useVideoStore = defineStore('video', () => {
           }
         }
       } catch {
+        if (chunksCount === 0) {
+          const msg = 'Failed to initiate recording. First chunk was lost. Try again.'
+          showDialog({ message: msg, variant: 'error' })
+          alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+          stopRecording(streamName)
+        }
+
         sequentialLostChunks++
         totalLostChunks++
 
