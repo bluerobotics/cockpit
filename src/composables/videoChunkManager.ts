@@ -4,6 +4,7 @@ import { LiveVideoProcessor } from '@/libs/live-video-processor'
 import { formatBytes, isElectron } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { type FileDescriptor } from '@/types/video'
+import { videoFilename, videoSubtitlesFilename } from '@/utils/video'
 
 import { useInteractionDialog } from './interactionDialog'
 import { useSnackbar } from './snackbar'
@@ -459,15 +460,7 @@ export const useVideoChunkManager = (): {
       isProcessingChunks.value = true
 
       // Generate filename based on the chunk group
-      const timeString = group.firstChunkDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      })
-      const fileName = group.fileName || `Cockpit (${timeString}) #${group.hash}`
+      const fileName = group.fileName || videoFilename(group.hash, group.firstChunkDate)
 
       // Get the chunk file paths from the group's chunks array, sorted by chunk number
       const sortedChunks = group.chunks.sort((a, b) => {
@@ -513,7 +506,7 @@ export const useVideoChunkManager = (): {
         const videoKeys = await videoStore.videoStorage.keys()
         const assFile = videoKeys.find((key) => key.includes(group.hash) && key.endsWith('.ass'))
         if (assFile) {
-          await window.electronAPI.copyTelemetryFile(assFile, outputPath)
+          await window.electronAPI.copyTelemetryFile(assFile, videoSubtitlesFilename(outputPath))
         }
       } catch (error) {
         console.warn('Failed to copy telemetry file:', error)

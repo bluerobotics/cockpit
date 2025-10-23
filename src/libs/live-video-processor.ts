@@ -1,5 +1,6 @@
 import { isElectron } from '@/libs/utils'
 import type { VideoChunkQueueItem, ZipExtractionResult } from '@/types/video'
+import { videoSubtitlesFilename } from '@/utils/video'
 
 /**
  * Error class for LiveVideoProcessor initialization errors
@@ -278,7 +279,7 @@ export class LiveVideoProcessor {
       // Copy telemetry file if it exists (using the full output path)
       if (assFilePath) {
         onProgress?.(95, 'Copying telemetry file...')
-        await window.electronAPI.copyTelemetryFile(assFilePath, outputPath)
+        await window.electronAPI.copyTelemetryFile(assFilePath, videoSubtitlesFilename(outputPath))
       }
 
       // Clean up temporary extraction directory

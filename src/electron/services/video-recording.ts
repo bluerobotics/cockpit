@@ -1,5 +1,4 @@
 import { spawn } from 'child_process'
-import { format } from 'date-fns'
 import { ipcMain } from 'electron'
 import { promises as fs } from 'fs'
 import { createWriteStream } from 'fs'
@@ -12,7 +11,7 @@ import * as yazl from 'yazl'
 
 import type { LiveConcatProcessResult, LiveStreamProcess, ZipExtractionResult } from '@/types/video'
 
-import { videoThumbnailFilename } from '../../utils/video'
+import { videoFilename, videoThumbnailFilename } from '../../utils/video'
 import { getFFmpegPath } from './ffmpeg-path'
 import { cockpitFolderPath, filesystemStorage } from './storage'
 
@@ -70,14 +69,14 @@ const startVideoRecording = async (
   const processId = uuid()
 
   // Create temporary directory for chunk backups (if enabled)
-  const tempDir = await createTempDirectory(`video_recording_${recordingHash}`)
+  const tempDir = await createTempDirectory(`cockpit_video_recording_${recordingHash}`)
 
   // Get video folder path and construct output path
   const videosPath = join(cockpitFolderPath, 'videos')
   await fs.mkdir(videosPath, { recursive: true })
 
   // Output directly as MP4 with fragmented format
-  const outputPath = join(videosPath, `${fileName}.mp4`)
+  const outputPath = join(videosPath, fileName)
 
   console.log(`Starting live FFmpeg streaming process ${processId}`)
   console.log(`Output path: ${outputPath}`)
@@ -450,8 +449,7 @@ const extractVideoChunksZip = async (zipFilePath: string): Promise<ZipExtraction
   }
 
   // Generate filename
-  const timeString = format(creationDate, 'LLL dd, yyyy - HH꞉mm꞉ss O')
-  const fileName = assFile ? basename(assFile).replace('.ass', '') : `Cockpit (${timeString}) #${hash}`
+  const fileName = videoFilename(hash, creationDate)
 
   return {
     chunkPaths: validChunks,
@@ -464,19 +462,13 @@ const extractVideoChunksZip = async (zipFilePath: string): Promise<ZipExtraction
 
 /**
  * Copy telemetry file to video output directory
- * @param {string} assFilePath - Path to the .ass file
- * @param {string} outputVideoPath - Path to the output video file (MP4)
+ * @param {string} originAssFilePath - Path to the .ass file
+ * @param {string} destAssFilePath - Path where to put the ass file
  */
-const copyTelemetryFile = async (assFilePath: string, outputVideoPath: string): Promise<void> => {
+const copyTelemetryFile = async (originAssFilePath: string, destAssFilePath: string): Promise<void> => {
   try {
-    // Always use the videos folder from storage
-    const videosPath = join(cockpitFolderPath, 'videos')
-
-    const videoBaseName = basename(outputVideoPath, '.mp4')
-    const destPath = join(videosPath, `${videoBaseName}.ass`)
-
-    await fs.copyFile(assFilePath, destPath)
-    console.log(`Copied telemetry file: ${destPath}`)
+    await fs.copyFile(originAssFilePath, destAssFilePath)
+    console.log(`Copied telemetry file to '${destAssFilePath}'.`)
   } catch (error) {
     console.warn(`Failed to copy telemetry file:`, error)
   }
@@ -601,8 +593,7 @@ const createVideoChunksZip = async (hash: string): Promise<string> => {
     const firstChunkPath = join(tempChunksPath, chunkFiles[0])
     const stats = await fs.stat(firstChunkPath)
     const creationDate = stats.birthtime || stats.mtime
-    const timeString = format(creationDate, 'LLL dd, yyyy - HH꞉mm꞉ss O')
-    defaultFileName = assFileName ? assFileName.replace('.ass', '') : `Cockpit (${timeString}) #${hash}`
+    defaultFileName = videoFilename(hash, creationDate)
   } catch (error) {
     console.warn(`Failed to get creation date, using default filename:`, error)
   }
