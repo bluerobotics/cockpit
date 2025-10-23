@@ -114,7 +114,13 @@ export class LiveVideoProcessor {
           await this.deleteChunk(nextChunk.chunkNumber)
         }
       } else {
-        // Wait for missing chunks
+        console.warn(`Expected chunk ${this.lastProcessedChunk + 1} but got ${nextChunk.chunkNumber}.`)
+
+        if (this.chunkQueue.length > 5) {
+          console.warn('Too many chunks in queue, skipping ahead to the next expected chunk.')
+          this.lastProcessedChunk = this.lastProcessedChunk + 1
+        }
+
         break
       }
     }
