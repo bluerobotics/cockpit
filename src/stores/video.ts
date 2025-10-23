@@ -1,6 +1,6 @@
 import { useStorage, useThrottleFn } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
-import { differenceInSeconds, format } from 'date-fns'
+import { differenceInSeconds } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
@@ -34,7 +34,7 @@ import {
   VideoExtensionContainer,
   VideoStreamCorrespondency,
 } from '@/types/video'
-import { videoThumbnailFilename } from '@/utils/video'
+import { videoFilename, videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
 
 import { useAlertStore } from './alert'
 const { openSnackbar } = useSnackbar()
@@ -253,7 +253,7 @@ export const useVideoStore = defineStore('video', () => {
         const logBlob = new Blob([assLog], { type: 'text/plain' })
 
         // Save the .ass file
-        await videoStorage.setItem(`${recordingData.fileName}.ass`, logBlob)
+        await videoStorage.setItem(videoSubtitlesFilename(recordingData.fileName), logBlob)
       }
     } catch (error) {
       throw new Error(`Failed to generate telemetry for recording '${recordingHash}': ${error}`)
@@ -348,8 +348,7 @@ export const useVideoStore = defineStore('video', () => {
       refreshHash = hashOnDB || hashOnRegistry
     }
 
-    const timeRecordingStartString = format(streamData.timeRecordingStart!, 'LLL dd, yyyy - HH꞉mm꞉ss O')
-    const fileName = `${missionStore.missionName || 'Cockpit'} (${timeRecordingStartString}) #${recordingHash}`
+    const fileName = videoFilename(recordingHash, streamData.timeRecordingStart!, missionStore.missionName || 'Cockpit')
     activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
 
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
