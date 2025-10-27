@@ -80,7 +80,7 @@ export const convertCockpitWaypointsToMavlink = (
 export const convertMavlinkWaypointsToCockpit = (mavlinkWaypoints: Message.MissionItemInt[]): Waypoint[] => {
   const cockpitWaypoints: Waypoint[] = []
   mavlinkWaypoints.forEach((mavlinkWaypoint) => {
-    if (mavlinkWaypoint.command.type.includes('MAV_CMD_NAV')) {
+    if (mavlinkWaypoint.command.type.includes('MAV_CMD_NAV') && mavlinkWaypoint.x !== 0 && mavlinkWaypoint.y !== 0) {
       const altitudeReferenceType =
         cockpitAltRefFromMavlinkFrame(mavlinkWaypoint.frame.type) || AltitudeReferenceType.RELATIVE_TO_HOME
       cockpitWaypoints.push({
