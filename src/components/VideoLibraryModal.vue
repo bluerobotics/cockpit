@@ -289,7 +289,7 @@
                               icon
                               variant="outlined"
                               size="small"
-                              :disabled="showOnScreenProgress || isPreparingDownload"
+                              :disabled="isPreparingDownload"
                               @click.stop="handleDeleteVideos([video])"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
@@ -341,7 +341,7 @@
                           icon
                           variant="outlined"
                           size="small"
-                          :disabled="showOnScreenProgress || isPreparingDownload"
+                          :disabled="isPreparingDownload"
                           @click="handleDeleteVideos(selectedVideos)"
                         >
                           <v-tooltip open-delay="500" activator="parent" location="bottom">
@@ -769,76 +769,6 @@
       </div>
     </div>
   </v-dialog>
-  <InteractionDialog
-    :show-dialog="showProcessingInteractionDialog"
-    :title="interactionDialogTitle"
-    :actions="interactionDialogActions"
-    :max-width="600"
-  >
-    <template #content>
-      <div class="flex flex-col mb-2 text-center align-end">
-        Processing multiple videos may take a while, depending on the number of videos and their sizes. Cockpit will be
-        usable during the process, but the performance may be affected and recording of new videos is disabled.
-      </div>
-    </template>
-  </InteractionDialog>
-  <InteractionDialog
-    :show-dialog="showProgressInteractionDialog"
-    :title="progressInteractionDialogTitle"
-    :actions="progressInteractionDialogActions"
-    :max-width="600"
-  >
-    <template #content>
-      <div v-if="!errorProcessingVideos" class="flex flex-col -mt-2 text-center align-center">
-        <div class="flex flex-col justify-between h-[140px] w-full pb-3">
-          <div v-if="currentVideoProcessingProgress.length > 0" class="flex flex-col justify-start">
-            <div class="mb-3 text-sm text-center">
-              File {{ currentVideoProcessingProgress.length }} of {{ numberOfFilesToProcess }}:
-              {{ currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].message }}
-            </div>
-            <div class="flex flex-row justify-between w-full mb-2 align-center">
-              <div class="text-sm font-bold w-[450px] text-nowrap text-start text-ellipsis overflow-x-hidden">
-                {{ currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].fileName }}
-              </div>
-              <div class="text-sm text-end">
-                <v-progress-circular width="1" size="10" indeterminate class="mr-1 mb-[2px]"></v-progress-circular>
-                {{ `${currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].progress}%` }}
-              </div>
-            </div>
-            <v-progress-linear
-              :model-value="currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].progress"
-              color="white"
-              height="6"
-              rounded
-              striped
-            ></v-progress-linear>
-          </div>
-          <div>
-            <div class="flex flex-row justify-between w-full mb-2">
-              <div class="text-sm font-bold text-start">Overall Progress</div>
-              <div class="text-sm font-bold text-end">{{ `${Math.ceil(overallProcessingProgress)}%` }}</div>
-            </div>
-            <v-progress-linear
-              :model-value="Math.ceil(overallProcessingProgress)"
-              color="blue"
-              height="6"
-              rounded
-              striped
-            ></v-progress-linear>
-          </div>
-        </div>
-      </div>
-      <div v-if="errorProcessingVideos">
-        <div class="flex flex-col justify-center w-full pb-3 text-center text-md">
-          {{
-            `Error processing video file: ${
-              currentVideoProcessingProgress[currentVideoProcessingProgress.length - 1].fileName
-            }`
-          }}
-        </div>
-      </div>
-    </template>
-  </InteractionDialog>
   <v-dialog
     v-if="showFullScreenPictureModal"
     :model-value="showFullScreenPictureModal"
@@ -908,11 +838,9 @@ import { formatBytes, formatDate, isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
-import { DialogActions } from '@/types/general'
 import { SnapshotLibraryFile } from '@/types/snapshot'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
-
-import InteractionDialog from './InteractionDialog.vue'
+import { videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
@@ -964,20 +892,8 @@ const longPressSelected = ref(false)
 const recentlyLongPressed = ref(false)
 const hammerInstances = ref<HammerInstances>({})
 const loadingData = ref(true)
-const showProcessingInteractionDialog = ref(false)
-const interactionDialogTitle = ref('')
-const interactionDialogActions = ref<DialogActions[]>([])
-const showProgressInteractionDialog = ref(false)
-const progressInteractionDialogTitle = ref('')
-const progressInteractionDialogActions = ref<DialogActions[]>([])
-const isProcessingVideos = ref(false)
 const isPreparingDownload = ref(false)
-const overallProcessingProgress = ref(0)
-const currentVideoProcessingProgress = ref([{ fileName: '', progress: 0, message: '' }])
-const numberOfFilesToProcess = ref(0)
-const showOnScreenProgress = ref(false)
 const lastSelectedVideo = ref<VideoLibraryFile | null>(null)
-const errorProcessingVideos = ref(false)
 const deleteButtonLoading = ref(false)
 const videoBlobURL = ref<string | null>(null)
 const loadingVideoBlob = ref(false)
@@ -1217,13 +1133,6 @@ const onPictureClick = (filename: string): void => {
   }
 }
 
-const resetProgressBars = (): void => {
-  errorProcessingVideos.value = false
-  overallProcessingProgress.value = 0
-  currentVideoProcessingProgress.value = [{ fileName: '', progress: 0, message: '' }]
-  showOnScreenProgress.value = false
-}
-
 const selectAllVideos = (): void => {
   selectedVideos.value = [...availableVideos.value]
   isMultipleSelectionMode.value = true
@@ -1242,10 +1151,9 @@ const deselectAllVideos = (): void => {
 // Add the log files to the list of files to be downloaded/discarded
 const addLogDataToFileList = (fileNames: string[]): string[] => {
   const filesWithLogData = fileNames.flatMap((fileName) => {
-    const filenameWithoutExtension = fileName.split('.').slice(0, -1).join('.')
-    const subtitlefileName = `${filenameWithoutExtension}.ass`
-    const subtitleExists = availableLogFiles.value.some((video) => video.fileName === subtitlefileName)
-    return subtitleExists ? [fileName, subtitlefileName] : [fileName]
+    const subtitleFileName = videoSubtitlesFilename(fileName)
+    const subtitleExists = availableLogFiles.value.some((video) => video.fileName === subtitleFileName)
+    return subtitleExists ? [fileName, subtitleFileName] : [fileName]
   })
   return filesWithLogData
 }
@@ -1258,7 +1166,7 @@ const discardVideosAndUpdateDB = async (videos?: VideoLibraryFile[]): Promise<vo
 
   await videosToDiscard.forEach((video: VideoLibraryFile) => {
     processedVideosToDiscard.push(video.fileName)
-    processedVideosToDiscard.push(videoStore.videoThumbnailFilename(video.fileName))
+    processedVideosToDiscard.push(videoThumbnailFilename(video.fileName))
   })
 
   const dataLogFilesAdded = addLogDataToFileList(processedVideosToDiscard)
@@ -1406,38 +1314,10 @@ const handleProcessVideoChunksZip = async (): Promise<void> => {
   await processVideoChunksZip(fetchVideosAndLogData)
 }
 
-watch(
-  () => videoStore.currentFileProgress,
-  (newCurrentProgress) => {
-    currentVideoProcessingProgress.value = newCurrentProgress
-  },
-  { deep: true }
-)
-
-watch(
-  () => videoStore.overallProgress,
-  (newOverallProgress) => {
-    overallProcessingProgress.value = newOverallProgress
-    if (newOverallProgress > 0 && newOverallProgress < 100) {
-      isProcessingVideos.value = true
-      showOnScreenProgress.value = true
-    }
-    if (newOverallProgress === 100) {
-      isProcessingVideos.value = false
-      showOnScreenProgress.value = false
-      setTimeout(() => {
-        showProgressInteractionDialog.value = false
-      }, 1000)
-    }
-  }
-)
-
 watch(isVisible, (newValue) => {
   if (!newValue) {
-    resetProgressBars()
     isMultipleSelectionMode.value = false
     lastSelectedVideo.value = null
-    showOnScreenProgress.value = false
     interfaceStore.videoLibraryVisibility = false
   }
 })
@@ -1512,9 +1392,6 @@ watch(
     if (newVal.length === 1) {
       lastSelectedVideo.value = newVal[0]
       await loadVideoBlobIntoPlayer(newVal[0].fileName)
-      if (errorProcessingVideos.value) {
-        resetProgressBars()
-      }
     } else {
       unloadVideoBlob()
     }
@@ -1623,7 +1500,6 @@ onMounted(async () => {
   if (availableVideos.value.length > 0) {
     await loadVideoBlobIntoPlayer(availableVideos.value[0].fileName)
   }
-  showOnScreenProgress.value = false
 })
 
 onBeforeUnmount(() => {
