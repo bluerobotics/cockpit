@@ -76,6 +76,16 @@ export interface UnprocessedVideoInfo extends CommonVideoInfo {
    * This is undefined when the processing didn't start yet.
    */
   dateLastProcessingUpdate: Date | undefined
+  /**
+   * The last known size of the file.
+   * This is updated as the processing goes on. If the size is not growing, it's an indication that the recording is failling.
+   */
+  lastKnownFileSize: number | undefined
+  /**
+   * The last known number of chunks.
+   * This is updated as the processing goes on. If the number of chunks is not growing, it's an indication that the recording is failling.
+   */
+  lastKnownNumberOfChunks: number | undefined
 }
 
 export interface VideoLibraryFile extends CommonVideoInfo {
