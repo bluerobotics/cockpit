@@ -62,6 +62,7 @@ export const useVideoStore = defineStore('video', () => {
   const liveProcessors = ref<{ [key: string]: LiveVideoProcessor }>({})
   const enableLiveProcessing = useBlueOsStorage('cockpit-enable-live-processing', true)
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
+  const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
 
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
@@ -291,6 +292,11 @@ export const useVideoStore = defineStore('video', () => {
    * @param {string} streamName - Name of the stream
    */
   const stopRecording = (streamName: string): void => {
+    // Stop the recording monitor so there's no risk of receiving alerts after the recording is stopped.
+    console.info(`Stopping recording monitor for stream '${streamName}'.`)
+    clearInterval(recordingMonitors[streamName])
+    delete recordingMonitors[streamName]
+
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
     const timeRecordingStart = activeStreams.value[streamName]?.timeRecordingStart
@@ -364,8 +370,48 @@ export const useVideoStore = defineStore('video', () => {
       fileName,
       vWidth,
       vHeight,
+      lastKnownFileSize: 0,
+      lastKnownNumberOfChunks: 0,
     }
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
+
+    // On Electron, we can get the size of the video output file in real time
+    // This is useful to detect if the output file is growing, which is an indication that the recording is still ongoing.
+    // On Web, we can only know if the number of chunks is growing, which is an indication that the recording is still ongoing.
+    if (window.electronAPI) {
+      console.info(`Starting electron recording monitor for stream '${streamName}'.`)
+      recordingMonitors[streamName] = setInterval(async () => {
+        const fileStats = await window.electronAPI?.getFileStats(fileName, ['videos'])
+        if (!fileStats || !fileStats.exists) {
+          // eslint-disable-next-line
+          const msg = 'Cannot get size of the video output file. Please check if the file exists. This can indicate a problem with the recording.'
+          showDialog({ message: msg, variant: 'error' })
+          return
+        }
+        const lastKnownFileSize = unprocessedVideos.value[recordingHash].lastKnownFileSize
+        if (fileStats.size! <= lastKnownFileSize!) {
+          const msg = 'The video output file is not growing. This can indicate a problem with the recording.'
+          showDialog({ message: msg, variant: 'error' })
+          return
+        }
+        unprocessedVideos.value[recordingHash].lastKnownFileSize = fileStats.size
+        console.debug(`Size of video output file for stream '${streamName}' growed to ${fileStats.size} bytes.`)
+      }, 15000)
+    } else {
+      console.info(`Starting web recording monitor for stream '${streamName}'.`)
+      recordingMonitors[streamName] = setInterval(async () => {
+        // @ts-ignore: localForage is not defined on the StorageDB interface
+        const numberOfChunks = await tempVideoStorage.localForage.length()
+        const lastKnownNumberOfChunks = unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks
+        if (numberOfChunks <= lastKnownNumberOfChunks!) {
+          const msg = 'The number of video chunks is not growing. This can indicate a problem with the recording.'
+          showDialog({ message: msg, variant: 'error' })
+          return
+        }
+        unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks = numberOfChunks
+        console.debug(`Number of video chunks for stream '${streamName}' growed to ${numberOfChunks}.`)
+      }, 15000)
+    }
 
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
 
