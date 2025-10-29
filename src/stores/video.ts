@@ -18,6 +18,7 @@ import { LiveVideoProcessor } from '@/libs/live-video-processor'
 import { CockpitStandardLog, datalogger } from '@/libs/sensors-logging'
 import { isEqual, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
+import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
@@ -120,6 +121,34 @@ export const useVideoStore = defineStore('video', () => {
     Object.keys(activeStreams.value).forEach((streamName) => (activeStreams.value[streamName] = undefined))
   })
 
+  /**
+   * Check if a stream's configuration has meaningfully changed
+   * Ignores the stream ID and timestamps which change on server restart
+   * @param {Stream | undefined} oldStream - The old stream configuration
+   * @param {Stream | undefined} newStream - The new stream configuration
+   * @returns {boolean} True if the stream configuration has changed, false otherwise
+   */
+  const hasStreamConfigChanged = (oldStream: Stream | undefined, newStream: Stream | undefined): boolean => {
+    // If both are undefined/null, no change
+    if (!oldStream && !newStream) return false
+
+    // If only one exists, it's a change only if the new one appeared (not if it disappeared temporarily)
+    if (!oldStream && newStream) return true
+
+    // If the stream is temporarily unavailable, don't consider it a change till a new one appears
+    if (oldStream && !newStream) return false
+
+    // Compare only the meaningful properties
+    return (
+      oldStream!.name !== newStream!.name ||
+      oldStream!.encode !== newStream!.encode ||
+      oldStream!.height !== newStream!.height ||
+      oldStream!.width !== newStream!.width ||
+      oldStream!.source !== newStream!.source ||
+      oldStream!.interval !== newStream!.interval
+    )
+  }
+
   // Streams update routine. Responsible for starting and updating the streams.
   setInterval(() => {
     Object.keys(activeStreams.value).forEach((streamName) => {
@@ -131,13 +160,16 @@ export const useVideoStore = defineStore('video', () => {
       )
       availableIceIps.value = [...availableIceIps.value, ...newIps]
 
+      const oldStream = activeStreams.value[streamName]!.stream
       const updatedStream = mainWebRTCManager.availableStreams.value.find((s) => s.name === streamName)
 
-      // Checks if the stream has changed, and if so, it will close the old connections
-      if (isEqual(updatedStream, activeStreams.value[streamName]!.stream)) return
+      // If the stream configuration has not changed, skip the update
+      if (!hasStreamConfigChanged(oldStream, updatedStream)) return
+
+      // If the stream configuration has actually changed, we need to recreate the manager
       const oldStreamData = activeStreams.value[streamName]
       if (oldStreamData && oldStreamData.webRtcManager) {
-        console.log(`[FIX] Stream '${streamName}' has changed. Closing the old connection.`)
+        console.log(`Stream '${streamName}' has changed. Closing the old connection.`)
         oldStreamData.webRtcManager.endAllSessions()
       }
 

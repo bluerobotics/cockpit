@@ -110,7 +110,6 @@ import { storeToRefs } from 'pinia'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import StatsForNerds from '@/components/VideoPlayerStatsForNerds.vue'
-import { isEqual } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -187,7 +186,9 @@ const streamConnectionRoutine = setInterval(() => {
   if (externalStreamId.value !== undefined) {
     const updatedMediaStream = videoStore.getMediaStream(externalStreamId.value)
     // If the widget is not connected to the MediaStream, try to connect it
-    if (!isEqual(updatedMediaStream, mediaStream.value)) {
+    // Use reference comparison for MediaStream objects, not deep equality, as the media stream can be the same with one
+    // or more attributes having changed.
+    if (updatedMediaStream !== mediaStream.value) {
       mediaStream.value = updatedMediaStream
     }
 
