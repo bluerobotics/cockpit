@@ -110,7 +110,7 @@
   </ContextMenu>
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
-    <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
+    <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles" style="min-width: 400px">
       <v-card-title class="text-center">Map widget settings</v-card-title>
       <v-card-text>
         <v-switch
@@ -127,6 +127,108 @@
           :color="widget.options.showCoordinateGrid ? 'white' : undefined"
           hide-details
         />
+
+        <v-divider class="my-4" />
+
+        <v-card-subtitle class="text-center px-0 pb-2">Custom WMS Service</v-card-subtitle>
+
+        <v-switch
+          v-model="widget.options.wmsEnabled"
+          class="my-1"
+          label="Enable custom WMS overlay"
+          :color="widget.options.wmsEnabled ? 'white' : undefined"
+          hide-details
+        />
+
+        <v-text-field
+          v-model="widget.options.wmsUrl"
+          :disabled="!widget.options.wmsEnabled"
+          class="my-2"
+          label="WMS Service URL"
+          placeholder="https://example.com/geoserver/wms"
+          density="compact"
+          hide-details
+        />
+
+        <v-text-field
+          v-model="widget.options.wmsLayers"
+          :disabled="!widget.options.wmsEnabled"
+          class="my-2"
+          label="WMS Layers"
+          placeholder="layer1,layer2"
+          density="compact"
+          hide-details
+        />
+
+        <v-text-field
+          v-model="widget.options.wmsLayerName"
+          :disabled="!widget.options.wmsEnabled"
+          class="my-2"
+          label="Display Name"
+          placeholder="Custom WMS Layer"
+          density="compact"
+          hide-details
+        />
+
+        <v-select
+          v-model="widget.options.wmsFormat"
+          :disabled="!widget.options.wmsEnabled"
+          class="my-2"
+          label="Image Format"
+          :items="['image/png', 'image/jpeg', 'image/gif']"
+          density="compact"
+          hide-details
+        />
+
+        <v-select
+          v-model="widget.options.wmsVersion"
+          :disabled="!widget.options.wmsEnabled"
+          class="my-2"
+          label="WMS Version"
+          :items="['1.1.0', '1.1.1', '1.3.0']"
+          density="compact"
+          hide-details
+        />
+
+        <v-switch
+          v-model="widget.options.wmsTransparent"
+          :disabled="!widget.options.wmsEnabled"
+          class="my-1"
+          label="Transparent background"
+          :color="widget.options.wmsTransparent ? 'white' : undefined"
+          hide-details
+        />
+
+        <v-text-field
+          v-model.number="widget.options.wmsMaxZoom"
+          :disabled="!widget.options.wmsEnabled"
+          class="my-2"
+          label="Max Zoom Level"
+          type="number"
+          density="compact"
+          hide-details
+        />
+
+        <v-text-field
+          v-model="widget.options.wmsAttribution"
+          :disabled="!widget.options.wmsEnabled"
+          class="my-2"
+          label="Attribution (optional)"
+          placeholder="© Data Provider"
+          density="compact"
+          hide-details
+        />
+
+        <v-btn
+          :disabled="!widget.options.wmsEnabled || !widget.options.wmsUrl || !widget.options.wmsLayers"
+          class="mt-3"
+          color="primary"
+          block
+          size="small"
+          @click="applyWmsConfig"
+        >
+          Apply WMS Configuration
+        </v-btn>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -297,6 +399,18 @@ onBeforeMount(() => {
   if (widget.value.options.showCoordinateGrid === undefined) {
     widget.value.options.showCoordinateGrid = false
   }
+  // Initialize WMS options with defaults if they don't exist
+  if (widget.value.options.wmsEnabled === undefined) {
+    widget.value.options.wmsEnabled = true
+    widget.value.options.wmsUrl = 'http://10.144.37.83:40801/geoserver/ows'
+    widget.value.options.wmsLayers = 'dct:height_grid_layer_view_2m_aggregated'
+    widget.value.options.wmsLayerName = 'Bathymetry Height Data (2m)'
+    widget.value.options.wmsFormat = 'image/png'
+    widget.value.options.wmsVersion = '1.3.0'
+    widget.value.options.wmsTransparent = true
+    widget.value.options.wmsMaxZoom = 19
+    widget.value.options.wmsAttribution = ''
+  }
   targetFollower.enableAutoUpdate()
 })
 
@@ -332,14 +446,41 @@ const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserve
   maxZoom: 19,
 })
 
+// Custom WMS layer (will be created dynamically)
+const customWmsLayer = ref<L.TileLayer.WMS | undefined>(undefined)
+
+const createCustomWmsLayer = (): L.TileLayer.WMS | undefined => {
+  if (!widget.value.options.wmsEnabled || !widget.value.options.wmsUrl || !widget.value.options.wmsLayers) {
+    return undefined
+  }
+
+  return L.tileLayer.wms(widget.value.options.wmsUrl, {
+    layers: widget.value.options.wmsLayers,
+    format: widget.value.options.wmsFormat || 'image/png',
+    transparent: widget.value.options.wmsTransparent ?? true,
+    version: widget.value.options.wmsVersion || '1.1.1',
+    attribution: widget.value.options.wmsAttribution || '',
+    maxZoom: widget.value.options.wmsMaxZoom || 19,
+  })
+}
+
 const baseMaps = {
   'OpenStreetMap': osm,
   'Esri World Imagery': esri,
 }
 
-const overlays = {
-  'Seamarks': seamarks,
-  'Marine Profile': marineProfile,
+const getOverlays = (): { [key: string]: L.Layer } => {
+  const overlayMap: { [key: string]: L.Layer } = {
+    'Seamarks': seamarks,
+    'Marine Profile': marineProfile,
+  }
+
+  if (customWmsLayer.value) {
+    const layerName = widget.value.options.wmsLayerName || 'Custom WMS'
+    overlayMap[layerName] = customWmsLayer.value as unknown as L.Layer
+  }
+
+  return overlayMap
 }
 
 // Show buttons when the mouse is over the widget
@@ -347,24 +488,83 @@ const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
-const layerControl = L.control.layers(baseMaps, overlays)
+const layerControl = ref<L.Control.Layers | undefined>(undefined)
 const gridLayer = ref<L.LayerGroup | undefined>(undefined)
+
+// Function to recreate the layer control with updated overlays
+const updateLayerControl = (): void => {
+  if (!map.value) return
+
+  // Remove existing layer control if present
+  if (layerControl.value) {
+    map.value.removeControl(layerControl.value)
+  }
+
+  // Create new layer control with updated overlays
+  const updatedOverlays = getOverlays()
+  layerControl.value = L.control.layers(baseMaps, updatedOverlays)
+
+  // Add to map if buttons are visible
+  if (showButtons.value) {
+    map.value.addControl(layerControl.value)
+  }
+}
+
+// Function to apply WMS configuration
+const applyWmsConfig = (): void => {
+  if (!map.value) {
+    openSnackbar({ message: 'Map is not initialized yet', variant: 'warning' })
+    return
+  }
+
+  if (!widget.value.options.wmsUrl || !widget.value.options.wmsLayers) {
+    openSnackbar({ message: 'Please provide both WMS URL and Layers', variant: 'warning' })
+    return
+  }
+
+  try {
+    // Remove old custom WMS layer if it exists
+    if (customWmsLayer.value && map.value.hasLayer(customWmsLayer.value as unknown as L.Layer)) {
+      map.value.removeLayer(customWmsLayer.value as unknown as L.Layer)
+    }
+
+    // Create new custom WMS layer
+    customWmsLayer.value = createCustomWmsLayer()
+
+    // Update the layer control to include the new layer
+    updateLayerControl()
+
+    openSnackbar({
+      message: 'WMS layer configured successfully! Use the layer control to toggle visibility.',
+      variant: 'success',
+      duration: 4000,
+    })
+  } catch (error) {
+    console.error('Failed to configure WMS layer:', error)
+    openSnackbar({
+      message: `Failed to configure WMS layer: ${(error as Error).message}`,
+      variant: 'error',
+    })
+  }
+}
 
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
     map.value.addControl(zoomControl)
-    map.value.addControl(layerControl)
+    if (layerControl.value) {
+      map.value.addControl(layerControl.value)
+    } else {
+      updateLayerControl()
+    }
     createScaleControl()
   } else {
     map.value.removeControl(zoomControl)
-    map.value.removeControl(layerControl)
+    if (layerControl.value) {
+      map.value.removeControl(layerControl.value)
+    }
     removeScaleControl()
   }
-})
-
-watch(isMouseOver, () => {
-  showButtons.value = isMouseOver.value
 })
 
 // Watch for grid overlay option changes
@@ -440,14 +640,30 @@ onMounted(async () => {
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
 
+  // Initialize custom WMS layer if configuration exists
+  if (widget.value.options.wmsEnabled && widget.value.options.wmsUrl && widget.value.options.wmsLayers) {
+    customWmsLayer.value = createCustomWmsLayer()
+  }
+
+  // Build initial layers array - only include base layers by default
+  const initialLayers: L.Layer[] = [osm, esri]
+
+  // Add custom WMS layer if enabled
+  if (customWmsLayer.value) {
+    initialLayers.push(customWmsLayer.value as unknown as L.Layer)
+  }
+
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
-    layers: [osm, esri, seamarks, marineProfile],
+    layers: initialLayers,
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
+
+  // Initialize layer control
+  updateLayerControl()
 
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
