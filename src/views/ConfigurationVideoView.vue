@@ -295,6 +295,7 @@
                 v-model="videoStore.keepRawVideoChunksAsBackup"
                 label="Save backup raw chunks"
                 class="text-sm mx-2"
+                :disabled="!isElectron()"
                 hide-details
               />
               <v-tooltip max-width="400px">
@@ -314,12 +315,13 @@
                   <p class="mt-2 text-gray-300">
                     You can always manually clean up backup chunks later using the "Temporary" tab in the Video Library.
                   </p>
+                  <p class="mt-2 text-gray-300">For the browser version the chunks are always saved by default.</p>
                 </div>
               </v-tooltip>
             </div>
             <div class="flex items-center justify-start w-[50%] ml-2">
               <v-checkbox
-                v-model="videoStore.zipMultipleFiles"
+                v-model="snapshotStore.zipMultipleFiles"
                 label="Zip multiple files"
                 class="text-sm mx-2"
                 hide-details
@@ -413,6 +415,7 @@ import { type ProcessedStreamInfo, getStreamInformationFromVehicle } from '@/lib
 import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
 import { VideoStreamCorrespondency } from '@/types/video'
 
@@ -427,6 +430,7 @@ const availableICEProtocols = ['udp', 'tcp']
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
 const mainVehicleStore = useMainVehicleStore()
+const snapshotStore = useSnapshotStore()
 
 // Edit dialog state
 const showEditDialog = ref(false)

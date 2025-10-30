@@ -1,5 +1,34 @@
 import { isElectron } from '@/libs/utils'
 import type { VideoChunkQueueItem, ZipExtractionResult } from '@/types/video'
+import { videoSubtitlesFilename } from '@/utils/video'
+
+/**
+ * Error class for LiveVideoProcessor initialization errors
+ */
+export class LiveVideoProcessorInitializationError extends Error {
+  /**
+   * Creates a new LiveVideoProcessorInitializationError
+   * @param {string} message - The error message
+   */
+  constructor(message: string) {
+    super(message)
+    this.name = 'LiveVideoProcessorInitializationError'
+  }
+}
+
+/**
+ * Error class for LiveVideoProcessor chunk appending errors
+ */
+export class LiveVideoProcessorChunkAppendingError extends Error {
+  /**
+   * Creates a new LiveVideoProcessorChunkAppendingError
+   * @param {string} message - The error message
+   */
+  constructor(message: string) {
+    super(message)
+    this.name = 'LiveVideoProcessorChunkAppendingError'
+  }
+}
 
 /**
  * Live video processor for real-time FFmpeg streaming during recording
@@ -86,7 +115,13 @@ export class LiveVideoProcessor {
           await this.deleteChunk(nextChunk.chunkNumber)
         }
       } else {
-        // Wait for missing chunks
+        console.warn(`Expected chunk ${this.lastProcessedChunk + 1} but got ${nextChunk.chunkNumber}.`)
+
+        if (this.chunkQueue.length > 5) {
+          console.warn('Too many chunks in queue, skipping ahead to the next expected chunk.')
+          this.lastProcessedChunk = this.lastProcessedChunk + 1
+        }
+
         break
       }
     }
@@ -98,17 +133,21 @@ export class LiveVideoProcessor {
    * @param {number} chunkNumber - Sequential number of this chunk
    */
   private async processChunk(chunkBlob: Blob, chunkNumber: number): Promise<void> {
-    try {
-      if (chunkNumber === 0) {
+    if (chunkNumber === 0) {
+      try {
+        console.log('Initializing output file with the first chunk.')
         // First chunk - initialize the output file
         await this.initializeOutputFile(chunkBlob)
-      } else {
+      } catch (error) {
+        throw new LiveVideoProcessorInitializationError(`Failed to initialize output file: ${error}`)
+      }
+    } else {
+      try {
         // Subsequent chunks - append to existing file
         await this.appendChunkToOutput(chunkBlob, chunkNumber)
+      } catch (error) {
+        throw new LiveVideoProcessorChunkAppendingError(`Failed to append chunk ${chunkNumber}: ${error}`)
       }
-    } catch (error) {
-      console.error(`Failed to process chunk ${chunkNumber}:`, error)
-      // Continue processing other chunks even if one fails
     }
   }
 
@@ -147,6 +186,8 @@ export class LiveVideoProcessor {
     // The main process writes the chunk to FFmpeg's stdin pipe
     if (this.concatProcess) {
       await window.electronAPI?.appendChunkToVideoRecording(this.concatProcess.id, chunkBlob, chunkNumber)
+    } else {
+      throw new Error('Chunk concatenation process not initialized.')
     }
   }
 
@@ -238,7 +279,7 @@ export class LiveVideoProcessor {
       // Copy telemetry file if it exists (using the full output path)
       if (assFilePath) {
         onProgress?.(95, 'Copying telemetry file...')
-        await window.electronAPI.copyTelemetryFile(assFilePath, outputPath)
+        await window.electronAPI.copyTelemetryFile(assFilePath, videoSubtitlesFilename(outputPath))
       }
 
       // Clean up temporary extraction directory
