@@ -848,6 +848,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)
+  setInterval(() => mainVehicle.value?.sendSystemTime(), 10000)
 
   const getCurrentVehicleName = async (): Promise<string | undefined> => {
     if (currentVehicleName.value) return currentVehicleName.value
