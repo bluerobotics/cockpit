@@ -59,6 +59,7 @@ export const MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY = 'cockpit-mavlink-message-in
 const preDefinedDataLakeVariables = {
   cameraTilt: { id: 'cameraTiltDeg', name: 'Camera Tilt Degrees', type: 'number' },
   autopilotSystemId: { id: 'autopilotSystemId', name: 'Autopilot System ID', type: 'number' },
+  networkLatencyMs: { id: 'networkLatencyMs', name: 'Network Latency (ms)', type: 'number' },
 }
 
 /**
@@ -771,6 +772,68 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     }
 
     sendMavlinkMessage(heartbeatMessage)
+  }
+
+  /**
+   * Send system time from GCS
+   */
+  sendSystemTime(): void {
+    const systemTimeMessage: Message.SystemTime = {
+      type: MAVLinkType.SYSTEM_TIME,
+      time_unix_usec: Math.floor(Date.now() * 1000),
+      time_boot_ms: Math.floor(Date.now() / 1000),
+    }
+    sendMavlinkMessage(systemTimeMessage)
+  }
+
+  /**
+   * Measure network latency to vehicle using TIMESYNC message
+   * @returns {Promise<void>}
+   */
+  async measureLatency(): Promise<void> {
+    const time_sent = Math.floor(Date.now()) * 1000
+    let receivedTimesync = false
+    let timeoutReached = false
+    let latencyUs = 0
+    const timeout = 10000
+
+    const timesyncHandler = (pack: Package): void => {
+      const timesync = pack.message as Message.Timesync
+      if (timesync.ts1 === time_sent) {
+        const time_received = Math.floor(Date.now()) * 1000
+        // we could use the tc1 value to calculate the latency, but I think that would give us the
+        // GCS -> vehicle latency, not the round trip latency.
+        latencyUs = (time_received - time_sent) / 2
+        receivedTimesync = true
+      }
+    }
+
+    const timeSyncMessage: Message.Timesync = {
+      type: MAVLinkType.TIMESYNC,
+      ts1: time_sent,
+      tc1: 0,
+      target_system: this.currentSystemId,
+      target_component: 1,
+    }
+    sendMavlinkMessage(timeSyncMessage)
+
+    const startTime = new Date()
+    this.onIncomingMAVLinkMessage.add(MAVLinkType.TIMESYNC, timesyncHandler)
+
+    while (!timeoutReached && !receivedTimesync) {
+      await sleep(100)
+      timeoutReached = differenceInMilliseconds(new Date(), startTime) > timeout
+    }
+
+    this.onIncomingMAVLinkMessage.remove(MAVLinkType.TIMESYNC, timesyncHandler)
+
+    if (!receivedTimesync) {
+      console.warn(`No TIMESYNC response received before timeout (${timeout / 1000}s).`)
+      latencyUs = 0
+    }
+
+    const latencyMs = latencyUs / 1000
+    setDataLakeVariableData(preDefinedDataLakeVariables.networkLatencyMs.id, latencyMs)
   }
 
   /**
