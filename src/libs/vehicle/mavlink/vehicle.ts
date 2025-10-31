@@ -774,6 +774,18 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Send system time from GCS
+   */
+  sendSystemTime(): void {
+    const systemTimeMessage: Message.SystemTime = {
+      type: MAVLinkType.SYSTEM_TIME,
+      time_unix_usec: Math.floor(performance.now() * 1000),
+      time_boot_ms: 0,
+    }
+    sendMavlinkMessage(systemTimeMessage)
+  }
+
+  /**
    * Set vehicle flight mode
    * @param {'Modes'} mode Custom vehicle mode
    */
