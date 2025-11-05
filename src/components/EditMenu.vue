@@ -874,11 +874,11 @@ const allAvailableWidgets = computed(() => {
   return [
     ...ExternalWidgetSetupInfos.value.map((widget) => ({
       component: WidgetType.IFrame,
-      icon: widget.iframe_icon,
+      icon: widget.iframeIcon,
       name: widget.name,
       isExternal: true,
       options: {
-        source: widget.iframe_url,
+        source: widget.iframeUrl,
       },
       defaultSize: widgetDefaultSizes[WidgetType.IFrame],
     })),

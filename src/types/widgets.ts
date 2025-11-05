@@ -15,12 +15,12 @@ export interface ExternalWidgetSetupInfo {
    * The URL at which the widget is located
    * This is expected to be an absolute url
    */
-  iframe_url: string
+  iframeUrl: string
 
   /**
    * The icon of the widget, this is displayed on the widget browser
    */
-  iframe_icon: string
+  iframeIcon: string
 }
 
 /**
