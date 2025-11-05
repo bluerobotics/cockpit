@@ -540,6 +540,10 @@ export interface JoystickMapSuggestion {
    */
   id: string
   /**
+   * Protocol of the action to be mapped (e.g. cockpit-action, data-lake-variable, etc.)
+   */
+  actionProtocol: JoystickProtocol
+  /**
    * Human-readable name of the action to be mapped
    */
   actionName: string
