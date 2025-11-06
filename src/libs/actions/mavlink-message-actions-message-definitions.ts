@@ -15,7 +15,7 @@ interface MessageField {
 export const messageFieldDefinitions: Partial<Record<MAVLinkType, Record<string, MessageField>>> = {
   [MAVLinkType.COMMAND_LONG]: {
     target_system: {
-      value: '{{ardupilotSystemId}}',
+      value: '{{autopilotSystemId}}',
       type: MessageFieldType.NUMBER,
       description: 'System ID of target system',
       required: true,
@@ -83,7 +83,7 @@ export const messageFieldDefinitions: Partial<Record<MAVLinkType, Record<string,
   },
   [MAVLinkType.COMMAND_INT]: {
     target_system: {
-      value: '{{ardupilotSystemId}}',
+      value: '{{autopilotSystemId}}',
       type: MessageFieldType.NUMBER,
       description: 'System ID of target system',
       required: true,

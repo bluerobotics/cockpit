@@ -68,7 +68,7 @@ export const setupMavlinkCameraResources = (): void => {
     name: 'Camera Zoom (MAVLink)',
     messageType: MAVLinkType.COMMAND_LONG,
     messageConfig: {
-      target_system: { value: '{{ardupilotSystemId}}', type: MessageFieldType.NUMBER },
+      target_system: { value: '{{autopilotSystemId}}', type: MessageFieldType.NUMBER },
       target_component: { value: 1, type: MessageFieldType.NUMBER },
       command: { value: MavCmd.MAV_CMD_SET_CAMERA_ZOOM, type: MessageFieldType.TYPE_STRUCT_ENUM },
       confirmation: { value: 0, type: MessageFieldType.NUMBER },
@@ -94,7 +94,7 @@ export const setupMavlinkCameraResources = (): void => {
     name: 'Camera Focus (MAVLink)',
     messageType: MAVLinkType.COMMAND_LONG,
     messageConfig: {
-      target_system: { value: '{{ardupilotSystemId}}', type: MessageFieldType.NUMBER },
+      target_system: { value: '{{autopilotSystemId}}', type: MessageFieldType.NUMBER },
       target_component: { value: 1, type: MessageFieldType.NUMBER },
       command: { value: MavCmd.MAV_CMD_SET_CAMERA_FOCUS, type: MessageFieldType.TYPE_STRUCT_ENUM },
       confirmation: { value: 0, type: MessageFieldType.NUMBER },
