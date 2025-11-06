@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print window.exposed_interface</title>
+</head>
+<body>
+    <h1>window.exposed_interface Content:</h1>
+    Pitch: <div id="output"></div>
+
+    <script>
+        let registered = false;
+        const outputDiv = document.getElementById('output');
+        function printExposedInterface() {
+            const decoder = new TextDecoder()
+            if (window.MavlinkSignal && !registered) {
+                registered = true;
+                window.MavlinkSignal.add((message) => {
+                    const msg = JSON.parse(decoder.decode(message))['message']
+                    if (msg.type !== 'ATTITUDE') {
+                        return
+                    }
+                    outputDiv.innerHTML = `<pre>${msg.pitch}</pre>`;
+                })
+            }
+        }
+        printExposedInterface();
+
+        setInterval(printExposedInterface, 1000);
+    </script>
+</body>
+</html>
