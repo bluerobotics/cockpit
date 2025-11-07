@@ -2,7 +2,7 @@
   <BaseConfigurationView>
     <template #title>Data Lake</template>
     <template #content>
-      <div class="flex-col overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px] max-h-[80vh]">
+      <div class="flex-col overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px] max-h-[80vh] w-[1200px]">
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Variables monitor</template>
           <template #info>
@@ -71,8 +71,8 @@
 
                         <v-tooltip location="top">
                           <template #activator="{ props: tooltipProps }">
-                            <div v-bind="tooltipProps">
-                              <ScrollingText :text="item.name" max-width="180px" align="left" :pause-on-hover="false" />
+                            <div v-bind="tooltipProps" class="w-[440px]">
+                              <ScrollingText :text="item.name" max-width="440px" align="left" :pause-on-hover="false" />
                             </div>
                           </template>
                           <span>{{ item.name }}</span>
