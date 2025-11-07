@@ -292,7 +292,7 @@ export const checkDeviceChanges = (sdl: SDLModule): void => {
             const joystickInstance = openedJoysticks.get(device.id) as OpenJoystick
             if (joystickInstance?.instance) {
               console.log(`Joystick inputs:
-                Hats: ${joystickInstance.instance.hats.join(', ')}
+                Hats: ${joystickInstance.instance.hats.map((_, index) => index)}
                 Axes: ${Object.keys(joystickInstance.instance.axes).join(', ')}
                 Buttons: ${Object.keys(joystickInstance.instance.buttons).join(', ')}
               `)
