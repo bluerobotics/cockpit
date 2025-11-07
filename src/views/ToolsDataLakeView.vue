@@ -69,7 +69,14 @@
                           </div>
                         </button>
 
-                        <ScrollingText :text="item.name" max-width="180px" align="left" :pause-on-hover="false" />
+                        <v-tooltip location="top">
+                          <template #activator="{ props: tooltipProps }">
+                            <div v-bind="tooltipProps">
+                              <ScrollingText :text="item.name" max-width="180px" align="left" :pause-on-hover="false" />
+                            </div>
+                          </template>
+                          <span>{{ item.name }}</span>
+                        </v-tooltip>
                       </div>
                     </td>
                     <td>
