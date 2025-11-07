@@ -94,6 +94,8 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   onOutgoingMAVLinkMessage = new SignalTyped()
   _flying = false
 
+  shouldCreateDatalakeVariablesFromOtherSystems = false
+
   protected currentSystemId = 1
 
   /**
@@ -313,14 +315,19 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       return
     }
 
-    // Inject variables from the MAVLink messages into the DataLake
-    this.addPackageVariablesToDataLake(mavlink_message)
-
     const { system_id, component_id } = mavlink_message.header
 
     if (system_id !== this.currentSystemId || component_id !== 1) {
+      // For non-main systems, only inject variables from the MAVLink messages into the DataLake if the user wants to
+      if (this.shouldCreateDatalakeVariablesFromOtherSystems) {
+        this.addPackageVariablesToDataLake(mavlink_message)
+      }
+
       return
     }
+
+    // For the main vehicle, always inject variables from the MAVLink messages into the DataLake
+    this.addPackageVariablesToDataLake(mavlink_message)
 
     // Update our internal messages
     this._messages.set(mavlink_message.message.type, { ...mavlink_message.message, epoch: new Date().getTime() })

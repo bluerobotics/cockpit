@@ -161,6 +161,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     defaultMessageIntervalsOptions
   )
 
+  // Store setting to enable/disable creation of datalake variables from other MAVLink systems
+  const enableDatalakeVariablesFromOtherSystems = useBlueOsStorage(
+    'cockpit-enable-datalake-variables-from-other-systems',
+    false
+  )
+
   const MAVLink2RestWebsocketURI = computed(() => {
     const queryURI = new URLSearchParams(window.location.search).get('MAVLink2RestWebsocketURI')
     const customURI = customMAVLink2RestWebsocketURI.value.enabled
@@ -191,6 +197,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   watch(isVehicleOnline, (isOnline) => {
     if (isOnline) return
     currentlyConnectedVehicleId.value = undefined
+  })
+
+  watch(enableDatalakeVariablesFromOtherSystems, (newValue) => {
+    if (!mainVehicle.value) return
+    mainVehicle.value.shouldCreateDatalakeVariablesFromOtherSystems = newValue
   })
 
   watch(
@@ -496,6 +507,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     modes.value = mainVehicle.value.modesAvailable()
     icon.value = mainVehicle.value.icon()
     configurationPages.value = mainVehicle.value.configurationPages()
+
+    // Set callback to check if datalake variables from other systems should be created
+    mainVehicle.value.shouldCreateDatalakeVariablesFromOtherSystems = enableDatalakeVariablesFromOtherSystems.value
 
     mainVehicle.value.onAltitude.add((newAltitude: Altitude) => {
       Object.assign(altitude, newAltitude)
@@ -932,5 +946,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     setHomeWaypoint,
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
+    enableDatalakeVariablesFromOtherSystems,
   }
 })
