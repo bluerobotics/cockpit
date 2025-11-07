@@ -1,6 +1,11 @@
 <template>
   <div class="scrolling-text-container" :style="{ maxWidth: maxWidth }">
-    <div ref="textElement" class="scrolling-text" :class="{ animate: shouldAnimate }" :style="{ textAlign: align }">
+    <div
+      ref="textElement"
+      class="scrolling-text"
+      :class="{ 'animate': shouldAnimate, 'pause-on-hover': pauseOnHover }"
+      :style="{ textAlign: align }"
+    >
       {{ text }}
     </div>
   </div>
@@ -19,11 +24,14 @@ interface Props {
   maxWidth?: string
   /** Text alignment when not animating */
   align?: 'left' | 'center' | 'right'
+  /** Whether to pause animation on hover */
+  pauseOnHover?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxWidth: '100px',
   align: 'center',
+  pauseOnHover: true,
 })
 
 const textElement = ref<HTMLElement>()
@@ -73,7 +81,7 @@ watch(
   animation: scroll 8s infinite;
 }
 
-.scrolling-text.animate:hover {
+.scrolling-text.animate.pause-on-hover:hover {
   animation-play-state: paused;
 }
 
