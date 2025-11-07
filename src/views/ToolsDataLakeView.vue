@@ -69,7 +69,7 @@
                           </div>
                         </button>
 
-                        <p class="w-[180px] whitespace-nowrap overflow-hidden text-ellipsis">{{ item.name }}</p>
+                        <ScrollingText :text="item.name" max-width="180px" align="left" :pause-on-hover="false" />
                       </div>
                     </td>
                     <td>
@@ -158,6 +158,7 @@ import { computed, onBeforeMount, onUnmounted, ref, watch } from 'vue'
 
 import DataLakeVariableDialog from '@/components/DataLakeVariableDialog.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import ScrollingText from '@/components/ScrollingText.vue'
 import TransformingFunctionDialog from '@/components/TransformingFunctionDialog.vue'
 import { openSnackbar } from '@/composables/snackbar'
 import {
