@@ -1,6 +1,6 @@
 <template>
   <div class="scrolling-text-container" :style="{ maxWidth: maxWidth }">
-    <div ref="textElement" class="scrolling-text" :class="{ animate: shouldAnimate }">
+    <div ref="textElement" class="scrolling-text" :class="{ animate: shouldAnimate }" :style="{ textAlign: align }">
       {{ text }}
     </div>
   </div>
@@ -17,10 +17,13 @@ interface Props {
   text: string
   /** Maximum width of the container */
   maxWidth?: string
+  /** Text alignment when not animating */
+  align?: 'left' | 'center' | 'right'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   maxWidth: '100px',
+  align: 'center',
 })
 
 const textElement = ref<HTMLElement>()
@@ -63,7 +66,6 @@ watch(
 
 .scrolling-text {
   white-space: nowrap;
-  text-align: center;
   transition: transform 0.3s ease;
 }
 
