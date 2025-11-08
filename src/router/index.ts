@@ -6,8 +6,8 @@ import WidgetsView from '../views/WidgetsView.vue'
 
 const router = createRouter({
   history: process.env.IS_ELECTRON
-    ? createWebHistory(import.meta.env.BASE_URL)
-    : createWebHashHistory(import.meta.env.BASE_URL),
+    ? createWebHashHistory(import.meta.env.BASE_URL)
+    : createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
