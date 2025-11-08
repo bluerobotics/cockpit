@@ -1,4 +1,5 @@
 import { type RemovableRef } from '@vueuse/core'
+import { useStorage } from '@vueuse/core'
 import { diff } from 'jest-diff'
 import { format as prettyFormat } from 'pretty-format'
 import { type MaybeRef, ref, unref, watch } from 'vue'
@@ -6,6 +7,12 @@ import { type MaybeRef, ref, unref, watch } from 'vue'
 import { settingsManager } from '@/libs/settings-management'
 import { deserialize, isEqual } from '@/libs/utils'
 import type { CockpitSetting } from '@/types/settings-management'
+
+export const resetJustMadeKey = 'cockpit-reset-just-made'
+const resetJustMade = useStorage(resetJustMadeKey, false)
+setTimeout(() => {
+  resetJustMade.value = false
+}, 10000)
 
 /**
  * This composable will keep a setting in sync between the browser's local storage and BlueOS.

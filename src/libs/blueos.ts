@@ -1,184 +1,20 @@
-import camelcaseKeys from 'camelcase-keys'
 import ky, { HTTPError } from 'ky'
 import { z } from 'zod'
 
-import { HttpRequestMethod } from '@/libs/actions/http-request'
-import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { type ActionConfig, customActionTypes } from '@/libs/joystick/protocols/cockpit-actions'
+import { ExtrasJsonSchema, ServiceSchema } from '@/libs/blueos/schemas'
 import { sleep } from '@/libs/utils'
-import { type RawCpuLoadInfo, type RawCpuTempInfo, type RawNetworkInfo } from '@/types/blueos'
 import {
-  CockpitModifierKeyOption,
-  JoystickMapSuggestionGroup,
-  JoystickMapSuggestionGroupsFromExtension,
-} from '@/types/joystick'
+  type ActionsFromExtension,
+  type BagOfHoldingsError,
+  type ExtrasJson,
+  type RawCpuLoadInfo,
+  type RawCpuTempInfo,
+  type RawNetworkInfo,
+  type Service,
+  NoPathInBlueOsErrorName,
+} from '@/types/blueos'
+import { JoystickMapSuggestionGroupsFromExtension } from '@/types/joystick'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
-
-/**
- * Creates a preprocessing Zod schema that converts all keys to camelCase before validation
- * @param {z.ZodTypeAny} schema - The Zod schema to preprocess
- * @returns {z.ZodTypeAny} The preprocessed Zod schema
- */
-const preprocessCamelCase = <T extends z.ZodTypeAny>(schema: T) => {
-  return z.preprocess((val: Record<string, unknown>) => camelcaseKeys(val, { deep: true }), schema)
-}
-
-/**
- * Cockpits extra json format. Taken from extensions in BlueOS and (eventually) other places
- */
-interface ExtrasJson {
-  /**
-   *  The version of the cockpit API that the extra json is compatible with
-   */
-  targetCockpitApiVersion: string
-  /**
-   *  The target system that the extra json is compatible with, in our case, "cockpit"
-   */
-  targetSystem: string
-  /**
-   *  A list of widgets that the extra json contains. src/types/widgets.ts
-   */
-  widgets: ExternalWidgetSetupInfo[]
-  /**
-   * A list of available cockpit actions offered by the extension.
-   */
-  actions: ActionConfig[]
-  /**
-   * A list of joystick map suggestion groups offered by the extension.
-   */
-  joystickSuggestions?: JoystickMapSuggestionGroup[]
-}
-
-/**
- * Service object from BlueOS
- */
-interface Service {
-  /**
-   * Metadata of the service
-   */
-  metadata?: {
-    /**
-     * Extras of the service
-     */
-    extras?: {
-      /**
-       * Cockpit extra json url
-       */
-      cockpit?: string
-    } | null
-    /**
-     * Works in relative paths
-     */
-    worksInRelativePaths?: boolean
-    /**
-     * Sanitized name of the service
-     */
-    sanitizedName?: string
-  } | null
-  /**
-   * Port of the service
-   */
-  port?: number
-}
-
-// Zod schemas for external API responses
-const ServiceMetadataSchema = z
-  .object({
-    extras: z
-      .object({
-        cockpit: z.string().optional(),
-      })
-      .nullish(),
-    worksInRelativePaths: z.boolean().optional(),
-    sanitizedName: z.string().optional(),
-  })
-  .nullish()
-
-const ServiceSchema = preprocessCamelCase(
-  z.object({
-    metadata: ServiceMetadataSchema,
-    port: z.number().optional(),
-  })
-)
-
-const ExternalWidgetSetupInfoSchema = z.object({
-  name: z.string(),
-  iframeUrl: z.string(),
-  iframeIcon: z.string(),
-})
-
-const HttpRequestActionConfigSchema = z.object({
-  name: z.string(),
-  url: z.string(),
-  method: z.enum(HttpRequestMethod),
-  headers: z.record(z.string(), z.string()),
-  urlParams: z.record(z.string(), z.string()).default({}),
-  body: z.string(),
-})
-
-const MavlinkMessageActionConfigSchema = z.object({
-  name: z.string(),
-  messageType: z.enum(MAVLinkType),
-  messageConfig: z.any(),
-})
-
-const JavascriptActionConfigSchema = z.object({
-  name: z.string(),
-  code: z.string(),
-})
-
-const ActionConfigSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(customActionTypes),
-  config: z.union([HttpRequestActionConfigSchema, MavlinkMessageActionConfigSchema, JavascriptActionConfigSchema]),
-  version: z.string().optional(),
-})
-
-const JoystickButtonMappingSuggestionSchema = z
-  .object({
-    id: z.string(),
-    actionProtocol: z.string(),
-    actionName: z.string(),
-    actionId: z.string(),
-    button: z.number(),
-    modifierKey: z.enum(CockpitModifierKeyOption),
-    description: z.string().optional(),
-  })
-  .transform((data) => ({
-    ...data,
-    modifier: data.modifierKey,
-    modifierKey: undefined as never,
-  }))
-
-const JoystickMapSuggestionGroupSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  buttonMappingSuggestions: z.array(JoystickButtonMappingSuggestionSchema),
-  version: z.string().optional(),
-})
-
-const ExtrasJsonSchema = preprocessCamelCase(
-  z.object({
-    targetCockpitApiVersion: z.string(),
-    targetSystem: z.string(),
-    widgets: z.array(ExternalWidgetSetupInfoSchema).default([]),
-    actions: z.array(ActionConfigSchema).default([]),
-    joystickSuggestions: z.array(JoystickMapSuggestionGroupSchema).optional(),
-  })
-)
-
-export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
-
-/**
- * Error returned by BlueOS when a bag of holdings is not found
- */
-export interface BagOfHoldingsError extends Error {
-  /**
-   * Details about the error
-   */
-  detail: string
-}
 
 const defaultTimeout = 10000
 const quickStatusTimeout = 3000
@@ -268,17 +104,6 @@ export const getWidgetsFromBlueOS = async (vehicleAddress: string): Promise<Exte
   )
 
   return widgets
-}
-
-export type ActionsFromExtension = {
-  /**
-   * The name of the extension that is offering the actions
-   */
-  extensionName: string
-  /**
-   * The action configs from the extension
-   */
-  actionConfigs: ActionConfig[]
 }
 
 export const getActionsFromBlueOS = async (vehicleAddress: string): Promise<ActionsFromExtension[]> => {
