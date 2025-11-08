@@ -1,10 +1,27 @@
+import camelcaseKeys from 'camelcase-keys'
 import ky, { HTTPError } from 'ky'
+import { z } from 'zod'
 
-import { type ActionConfig } from '@/libs/joystick/protocols/cockpit-actions'
+import { HttpRequestMethod } from '@/libs/actions/http-request'
+import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { type ActionConfig, customActionTypes } from '@/libs/joystick/protocols/cockpit-actions'
 import { sleep } from '@/libs/utils'
 import { type RawCpuLoadInfo, type RawCpuTempInfo, type RawNetworkInfo } from '@/types/blueos'
-import { JoystickMapSuggestion, JoystickMapSuggestionsFromExtension } from '@/types/joystick'
+import {
+  CockpitModifierKeyOption,
+  JoystickMapSuggestionGroup,
+  JoystickMapSuggestionGroupsFromExtension,
+} from '@/types/joystick'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
+
+/**
+ * Creates a preprocessing Zod schema that converts all keys to camelCase before validation
+ * @param {z.ZodTypeAny} schema - The Zod schema to preprocess
+ * @returns {z.ZodTypeAny} The preprocessed Zod schema
+ */
+const preprocessCamelCase = <T extends z.ZodTypeAny>(schema: T) => {
+  return z.preprocess((val: Record<string, unknown>) => camelcaseKeys(val, { deep: true }), schema)
+}
 
 /**
  * Cockpits extra json format. Taken from extensions in BlueOS and (eventually) other places
@@ -27,9 +44,9 @@ interface ExtrasJson {
    */
   actions: ActionConfig[]
   /**
-   * A list of joystick map suggestions offered by the extension.
+   * A list of joystick map suggestion groups offered by the extension.
    */
-  joystickSuggestions?: JoystickMapSuggestion[]
+  joystickSuggestions?: JoystickMapSuggestionGroup[]
 }
 
 /**
@@ -48,7 +65,7 @@ interface Service {
        * Cockpit extra json url
        */
       cockpit?: string
-    }
+    } | null
     /**
      * Works in relative paths
      */
@@ -57,12 +74,99 @@ interface Service {
      * Sanitized name of the service
      */
     sanitizedName?: string
-  }
+  } | null
   /**
    * Port of the service
    */
   port?: number
 }
+
+// Zod schemas for external API responses
+const ServiceMetadataSchema = z
+  .object({
+    extras: z
+      .object({
+        cockpit: z.string().optional(),
+      })
+      .nullish(),
+    worksInRelativePaths: z.boolean().optional(),
+    sanitizedName: z.string().optional(),
+  })
+  .nullish()
+
+const ServiceSchema = preprocessCamelCase(
+  z.object({
+    metadata: ServiceMetadataSchema,
+    port: z.number().optional(),
+  })
+)
+
+const ExternalWidgetSetupInfoSchema = z.object({
+  name: z.string(),
+  iframeUrl: z.string(),
+  iframeIcon: z.string(),
+})
+
+const HttpRequestActionConfigSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+  method: z.enum(HttpRequestMethod),
+  headers: z.record(z.string(), z.string()),
+  urlParams: z.record(z.string(), z.string()).default({}),
+  body: z.string(),
+})
+
+const MavlinkMessageActionConfigSchema = z.object({
+  name: z.string(),
+  messageType: z.enum(MAVLinkType),
+  messageConfig: z.any(),
+})
+
+const JavascriptActionConfigSchema = z.object({
+  name: z.string(),
+  code: z.string(),
+})
+
+const ActionConfigSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(customActionTypes),
+  config: z.union([HttpRequestActionConfigSchema, MavlinkMessageActionConfigSchema, JavascriptActionConfigSchema]),
+  version: z.string().optional(),
+})
+
+const JoystickButtonMappingSuggestionSchema = z
+  .object({
+    id: z.string(),
+    actionProtocol: z.string(),
+    actionName: z.string(),
+    actionId: z.string(),
+    button: z.number(),
+    modifierKey: z.enum(CockpitModifierKeyOption),
+    description: z.string().optional(),
+  })
+  .transform((data) => ({
+    ...data,
+    modifier: data.modifierKey,
+    modifierKey: undefined as never,
+  }))
+
+const JoystickMapSuggestionGroupSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  buttonMappingSuggestions: z.array(JoystickButtonMappingSuggestionSchema),
+  version: z.string().optional(),
+})
+
+const ExtrasJsonSchema = preprocessCamelCase(
+  z.object({
+    targetCockpitApiVersion: z.string(),
+    targetSystem: z.string(),
+    widgets: z.array(ExternalWidgetSetupInfoSchema).default([]),
+    actions: z.array(ActionConfigSchema).default([]),
+    joystickSuggestions: z.array(JoystickMapSuggestionGroupSchema).optional(),
+  })
+)
 
 export const NoPathInBlueOsErrorName = 'NoPathInBlueOS'
 
@@ -115,9 +219,9 @@ const blueOsServiceUrl = (vehicleAddress: string, service: Service): string => {
 
 const getServicesFromBlueOS = async (vehicleAddress: string): Promise<Service[]> => {
   const options = { timeout: defaultTimeout, retry: 0 }
-  const services = (await ky
-    .get(`${protocol}//${vehicleAddress}/helper/v1.0/web_services`, options)
-    .json()) as Service[]
+  const rawData = await ky.get(`${protocol}//${vehicleAddress}/helper/v1.0/web_services`, options).json()
+
+  const services: Service[] = z.array(ServiceSchema).parse(rawData)
   return services
 }
 
@@ -131,7 +235,10 @@ export const getExtrasJsonFromBlueOsService = async (
   }
   const baseUrl = blueOsServiceUrl(vehicleAddress, service)
   const fullUrl = baseUrl + service.metadata?.extras?.cockpit
-  const extraJson: ExtrasJson = await ky.get(fullUrl, options).json()
+  const rawData = await ky.get(fullUrl, options).json()
+
+  const extraJson: ExtrasJson = ExtrasJsonSchema.parse(rawData)
+
   return extraJson
 }
 
@@ -195,9 +302,11 @@ export const getActionsFromBlueOS = async (vehicleAddress: string): Promise<Acti
   return actionsFromExtensions
 }
 
-export const getJoystickSuggestionsFromBlueOS = async (vehicleAddress: string): Promise<JoystickMapSuggestionsFromExtension[]> => {
+export const getJoystickSuggestionsFromBlueOS = async (
+  vehicleAddress: string
+): Promise<JoystickMapSuggestionsFromExtension[]> => {
   const services = await getServicesFromBlueOS(vehicleAddress)
-  const suggestionsMap = new Map<string, JoystickMapSuggestionsFromExtension>()
+  const suggestionGroupsMap = new Map<string, JoystickMapSuggestionGroupsFromExtension>()
 
   await Promise.all(
     services.map(async (service) => {
@@ -206,14 +315,9 @@ export const getJoystickSuggestionsFromBlueOS = async (vehicleAddress: string): 
         if (extraJson !== null && extraJson.joystickSuggestions) {
           const extensionName = service.metadata?.sanitizedName || 'Unknown Extension'
 
-          const suggestions: JoystickMapSuggestion[] = extraJson.joystickSuggestions.map((suggestion, index) => ({
-            ...suggestion,
-            id: `${extensionName}-${index}-${suggestion.actionProtocol}-${suggestion.actionId}`,
-          }))
-
-          suggestionsMap.set(extensionName, {
+          suggestionGroupsMap.set(extensionName, {
             extensionName,
-            suggestions,
+            suggestionGroups: extraJson.joystickSuggestions,
           })
         }
       } catch (error) {
@@ -224,7 +328,7 @@ export const getJoystickSuggestionsFromBlueOS = async (vehicleAddress: string): 
     })
   )
 
-  return Array.from(suggestionsMap.values())
+  return Array.from(suggestionGroupsMap.values())
 }
 
 export const setBagOfHoldingOnVehicle = async (

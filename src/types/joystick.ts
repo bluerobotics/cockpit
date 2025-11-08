@@ -566,6 +566,24 @@ export interface JoystickMapSuggestion {
 }
 
 /**
+ * A group of joystick button mapping suggestions
+ */
+export interface JoystickMapSuggestionGroup {
+  /**
+   * Unique identifier for the suggestion group
+   */
+  id: string
+  /**
+   * Display name for the suggestion group
+   */
+  name: string
+  /**
+   * List of button mapping suggestions in this group
+   */
+  buttonMappingSuggestions: JoystickMapSuggestion[]
+}
+
+/**
  * Joystick map suggestions grouped by extension
  */
 export interface JoystickMapSuggestionsFromExtension {
@@ -577,4 +595,18 @@ export interface JoystickMapSuggestionsFromExtension {
    * Array of suggestions from this extension
    */
   suggestions: JoystickMapSuggestion[]
+}
+
+/**
+ * Joystick map suggestion groups from extension
+ */
+export interface JoystickMapSuggestionGroupsFromExtension {
+  /**
+   * Name of the extension offering these suggestion groups
+   */
+  extensionName: string
+  /**
+   * Array of suggestion groups from this extension
+   */
+  suggestionGroups: JoystickMapSuggestionGroup[]
 }

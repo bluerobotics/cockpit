@@ -524,11 +524,11 @@ import {
   getAllMavlinkMessageActionConfigs,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { getActionsFromBlueOS, getJoystickSuggestionsFromBlueOS } from '@/libs/blueos'
 import { allAvailableButtons } from '@/libs/joystick/protocols'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { ActionConfig, customActionTypes, customActionTypesNames } from '@/types/cockpit-actions'
 import { CockpitModifierKeyOption, JoystickMapSuggestion, JoystickMapSuggestionsFromExtension } from '@/types/joystick'
 
