@@ -8,6 +8,7 @@ import { ArduCopter } from './ardupilot/arducopter'
 import { ArduPlane } from './ardupilot/arduplane'
 import { ArduRover } from './ardupilot/ardurover'
 import { ArduSub } from './ardupilot/ardusub'
+import { PX4 } from './px4/px4'
 import * as Vehicle from './vehicle'
 
 /**
@@ -37,6 +38,11 @@ export class VehicleFactory {
       case Vehicle.Firmware.ArduPilot:
         vehicle = VehicleFactory.createArduPilotVehicle(type, system_id)
         break
+      case Vehicle.Firmware.PX4:
+        vehicle = VehicleFactory.createPX4Vehicle(type, system_id)
+        break
+      default:
+        unimplemented('Firmware not supported')
     }
 
     if (vehicle === undefined) {
@@ -75,6 +81,16 @@ export class VehicleFactory {
   }
 
   /**
+   * Create PX4 vehicle based on the category
+   * @param {Vehicle.Type} type
+   * @param {number} system_id
+   * @returns {Vehicle.Abstract | undefined}
+   */
+  static createPX4Vehicle(type: Vehicle.Type, system_id: number): Vehicle.Abstract | undefined {
+    return new PX4(type, system_id)
+  }
+
+  /**
    * Return a list of vehicles available
    * @returns {WeakRef<Vehicle.Abstract>[]}
    */
@@ -106,10 +122,26 @@ function createVehicleFromMessage(message: Uint8Array): void {
 
   const heartbeat = mavlink_message.message as Message.Heartbeat
   if (heartbeat.autopilot.type === MavAutopilot.MAV_AUTOPILOT_INVALID) return
-  if (heartbeat.autopilot.type !== MavAutopilot.MAV_AUTOPILOT_ARDUPILOTMEGA) {
-    console.warn(`Vehicle not supported: ${system_id}/${component_id}: ${heartbeat.autopilot.type}`)
+  switch (heartbeat.autopilot.type) {
+    case MavAutopilot.MAV_AUTOPILOT_ARDUPILOTMEGA:
+      createArduPilotVehicle(heartbeat, system_id, component_id)
+      break
+    case MavAutopilot.MAV_AUTOPILOT_PX4:
+      VehicleFactory.createVehicle(Vehicle.Firmware.PX4, Vehicle.Type.Copter, system_id)
+      break
+    default:
+      console.warn(`Vehicle not supported: ${system_id}/${component_id}: ${heartbeat.autopilot.type}`)
+      return
   }
+}
 
+/**
+ * Create ArduPilot vehicle based on the heartbeat
+ * @param {Message.Heartbeat} heartbeat
+ * @param {number} system_id
+ * @param {number} component_id
+ */
+function createArduPilotVehicle(heartbeat: Message.Heartbeat, system_id: number, component_id: number): void {
   switch (heartbeat.mavtype.type) {
     case MavType.MAV_TYPE_SUBMARINE:
       VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Sub, system_id)
@@ -135,7 +167,7 @@ function createVehicleFromMessage(message: Uint8Array): void {
       VehicleFactory.createVehicle(Vehicle.Firmware.ArduPilot, Vehicle.Type.Copter, system_id)
       break
     default:
-      console.warn(`Vehicle type not supported: ${system_id}/${component_id}: ${heartbeat.mavtype.type}`)
+      console.warn(`ArduPilot vehicle type not supported: ${system_id}/${component_id}: ${heartbeat.mavtype.type}`)
   }
 }
 
