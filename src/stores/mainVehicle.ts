@@ -1,4 +1,5 @@
 import { useStorage, useTimestamp } from '@vueuse/core'
+import { useThrottleFn } from '@vueuse/core'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
@@ -136,6 +137,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const statusGPS: StatusGPS = reactive({} as StatusGPS)
   const vehicleArmingTime = ref<Date | undefined>(undefined)
   const currentVehicleName = ref<string | undefined>(undefined)
+  const vehiclePositionMaxSampleRate = useStorage('cockpit-vehicle-position-max-sampling-ms', 200) // Limits the frequency of vehicle position updates
 
   const defaultVehiclePayload: VehiclePayloadParameters = {
     extraPayloadKg: 0,
@@ -477,6 +479,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   ConnectionManager.addConnection(MAVLink2RestWebsocketURI.value, Protocol.Type.MAVLink)
 
+  let applyThrottledCoordinates = useThrottleFn(
+    (nc: Coordinates) => Object.assign(coordinates, nc),
+    vehiclePositionMaxSampleRate.value,
+    true,
+    true
+  )
+
   const getAutoPilot = (vehicles: WeakRef<Vehicle.Abstract>[]): ArduPilot => {
     const vehicle = vehicles?.last()?.deref()
     return (vehicle as ArduPilot) || undefined
@@ -516,7 +525,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       cpuLoad.value = newCpuLoad
     })
     mainVehicle.value.onPosition.add((newCoordinates: Coordinates) => {
-      Object.assign(coordinates, newCoordinates)
+      applyThrottledCoordinates(newCoordinates)
     })
     mainVehicle.value.onVelocity.add((newVelocity: Velocity) => {
       Object.assign(velocity, newVelocity)
@@ -804,6 +813,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     registerActionCallback(availableCockpitActions.mavlink_disarm, disarm)
   })
 
+  // Updates throttling function when the vehicle's position max sample rate changes
+  watch(vehiclePositionMaxSampleRate, (ms) => {
+    applyThrottledCoordinates = useThrottleFn((nc: Coordinates) => Object.assign(coordinates, nc), ms, true, true)
+  })
+
   const mavlinkManualControlManager = new MavlinkManualControlManager()
   controllerStore.registerControllerUpdateCallback(mavlinkManualControlManager.updateControllerData)
 
@@ -917,5 +931,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     fetchHomeWaypoint,
     setHomeWaypoint,
     vehiclePayloadParameters,
+    vehiclePositionMaxSampleRate,
   }
 })
