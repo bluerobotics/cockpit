@@ -29,7 +29,7 @@
           <iframe
             v-show="iframe_loaded"
             ref="iframe"
-            :src="widget.options.source"
+            :src="toBeUsedURL"
             :style="iframeStyle"
             frameborder="0"
             @load="loadFinished"
@@ -42,7 +42,7 @@
         <iframe
           v-show="iframe_loaded"
           ref="iframe"
-          :src="widget.options.source"
+          :src="toBeUsedURL"
           :style="[iframeStyle, { position: 'absolute' }]"
           frameborder="0"
           @load="loadFinished"
@@ -55,14 +55,18 @@
         <v-card-text>
           <div>
             <p>Iframe Source</p>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between mt-2 gap-1">
               <v-text-field
                 v-model="inputURL"
-                variant="filled"
-                outlined
-                :rules="[validateURL]"
+                variant="outlined"
+                :rules="[validateURL(composedURL(inputURL, widget.options.useVehicleAddressAsBase))]"
+                :placeholder="widget.options.useVehicleAddressAsBase ? '/my-service' : 'http://example.com'"
                 @keydown.enter="updateURL"
-              />
+              >
+                <template v-if="widget.options.useVehicleAddressAsBase" #prepend-inner>
+                  <span class="-mr-3 text-base text-gray-400">{{ vehicleBaseUrl }}</span>
+                </template>
+              </v-text-field>
               <v-btn
                 v-tooltip.bottom="'Set'"
                 icon="mdi-check"
@@ -79,6 +83,15 @@
           <ExpansiblePanel compact :is-expanded="true" no-bottom-divider no-top-divider>
             <template #title>Advanced options</template>
             <template #content>
+              <v-switch
+                v-model="widget.options.useVehicleAddressAsBase"
+                label="Use vehicle address as base URL"
+                color="white"
+                density="compact"
+                hide-details
+                class="ml-3 my-2"
+                @update:model-value="handleBaseUrlToggle"
+              />
               <div class="flex justify-between">
                 <v-switch
                   v-model="widget.options.isCollapsible"
@@ -127,7 +140,7 @@ import { computed, defineProps, onBeforeMount, onBeforeUnmount, ref, toRefs, wat
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
 import Snackbar from '@/components/Snackbar.vue'
-import { listenDataLakeVariable } from '@/libs/actions/data-lake'
+import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -152,6 +165,25 @@ const inputURL = ref(widget.value.options.source)
 const openSnackbar = ref(false)
 const snackbarMessage = ref('')
 const isWrapped = ref(false)
+const vehicleAddressFromDataLake = ref<string>('')
+const lastUsedURL = ref<Record<string, string>>({
+  usingVehicleAddressAsBase: '',
+  notUsingVehicleAddressAsBase: '',
+})
+
+const vehicleBaseUrl = computed(() => {
+  const protocol = window.location.protocol.includes('file') ? 'http:' : window.location.protocol
+  const vehicleAddress = vehicleAddressFromDataLake.value || defaultBlueOsAddress
+  return `${protocol}//${vehicleAddress}`
+})
+
+const composedURL = (userInputURL: string, useVehicleAddressAsBase: boolean): string => {
+  return useVehicleAddressAsBase ? `${vehicleBaseUrl.value}${userInputURL}` : userInputURL
+}
+
+const toBeUsedURL = computed(() => {
+  return composedURL(widget.value.options.source, widget.value.options.useVehicleAddressAsBase)
+})
 
 const toggleWrapContainer = (): void => {
   isWrapped.value = !isWrapped.value
@@ -179,15 +211,27 @@ const validateURL = (url: string): true | string => {
 }
 
 const updateURL = (): void => {
-  const urlValidationResult = validateURL(inputURL.value)
+  const urlValidationResult = validateURL(composedURL(inputURL.value, widget.value.options.useVehicleAddressAsBase))
   if (urlValidationResult !== true) {
     snackbarMessage.value = `${urlValidationResult} Please enter a valid URL.`
     openSnackbar.value = true
     return
   }
   widget.value.options.source = inputURL.value
-  snackbarMessage.value = `IFrame URL sucessfully updated to '${inputURL.value}'.`
+  snackbarMessage.value = `IFrame URL sucessfully updated to '${toBeUsedURL.value}'.`
   openSnackbar.value = true
+}
+
+const handleBaseUrlToggle = (useBaseUrl: boolean): void => {
+  // Store the current URL in the history and use the previous one for each case
+  if (useBaseUrl) {
+    lastUsedURL.value.notUsingVehicleAddressAsBase = inputURL.value
+    inputURL.value = lastUsedURL.value.usingVehicleAddressAsBase
+  } else {
+    lastUsedURL.value.usingVehicleAddressAsBase = inputURL.value
+    inputURL.value = lastUsedURL.value.notUsingVehicleAddressAsBase
+  }
+  updateURL()
 }
 
 const apiEventCallback = (event: MessageEvent): void => {
@@ -200,20 +244,53 @@ const apiEventCallback = (event: MessageEvent): void => {
   })
 }
 
+// Watch for changes in vehicle address to reload iframe when necessary
+watch(
+  [vehicleAddressFromDataLake, () => widget.value.options.useVehicleAddressAsBase],
+  () => {
+    if (widget.value.options.useVehicleAddressAsBase) {
+      // Force iframe reload by setting loaded to false
+      iframe_loaded.value = false
+      setTimeout(() => {
+        iframe_loaded.value = true
+      }, 100)
+    }
+  },
+  { deep: true }
+)
+
+// Listen to vehicle address changes from data lake
+let vehicleAddressListenerId: string | undefined
+
 onBeforeMount((): void => {
   window.addEventListener('message', apiEventCallback, true)
 
-  if (Object.keys(widget.value.options).length !== 0) {
-    return
-  }
-  widget.value.options = {
+  // Merge default options with existing widget options
+  const defaultOptions = {
     source: 'http://' + defaultBlueOsAddress,
+    useVehicleAddressAsBase: false,
   }
-  inputURL.value = defaultBlueOsAddress
+  widget.value.options = { ...defaultOptions, ...widget.value.options }
+
+  // Get initial vehicle address from data lake
+  const vehicleAddressData = getDataLakeVariableData('vehicle-address')
+  if (typeof vehicleAddressData === 'string') {
+    vehicleAddressFromDataLake.value = vehicleAddressData
+  }
+
+  // Listen to vehicle address changes
+  vehicleAddressListenerId = listenDataLakeVariable('vehicle-address', (value) => {
+    if (typeof value === 'string') {
+      vehicleAddressFromDataLake.value = value
+    }
+  })
 })
 
 onBeforeUnmount((): void => {
   window.removeEventListener('message', apiEventCallback, true)
+  if (vehicleAddressListenerId) {
+    unlistenDataLakeVariable('vehicle-address', vehicleAddressListenerId)
+  }
 })
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
@@ -253,7 +330,7 @@ watch(
   widget,
   () => {
     if (widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen === false) {
-      if (validateURL(inputURL.value) !== true) {
+      if (validateURL(toBeUsedURL.value) !== true) {
         inputURL.value = widget.value.options.source
       }
     }
