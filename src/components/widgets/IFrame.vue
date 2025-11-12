@@ -125,13 +125,6 @@
       </v-card>
     </v-dialog>
   </div>
-  <Snackbar
-    :open-snackbar="openSnackbar"
-    :message="snackbarMessage"
-    :duration="3000"
-    :close-button="false"
-    @update:open-snackbar="openSnackbar = $event"
-  />
 </template>
 
 <script setup lang="ts">
@@ -139,7 +132,7 @@ import { useWindowSize } from '@vueuse/core'
 import { computed, defineProps, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
-import Snackbar from '@/components/Snackbar.vue'
+import { openSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -162,8 +155,6 @@ const widget = toRefs(props).widget
 const iframe_loaded = ref(false)
 const transparency = ref(0)
 const inputURL = ref(widget.value.options.source)
-const openSnackbar = ref(false)
-const snackbarMessage = ref('')
 const isWrapped = ref(false)
 const vehicleAddressFromDataLake = ref<string>('')
 const lastUsedURL = ref<Record<string, string>>({
@@ -213,13 +204,11 @@ const validateURL = (url: string): true | string => {
 const updateURL = (): void => {
   const urlValidationResult = validateURL(composedURL(inputURL.value, widget.value.options.useVehicleAddressAsBase))
   if (urlValidationResult !== true) {
-    snackbarMessage.value = `${urlValidationResult} Please enter a valid URL.`
-    openSnackbar.value = true
+    openSnackbar({ message: `${urlValidationResult} Please enter a valid URL.`, variant: 'error' })
     return
   }
   widget.value.options.source = inputURL.value
-  snackbarMessage.value = `IFrame URL sucessfully updated to '${toBeUsedURL.value}'.`
-  openSnackbar.value = true
+  openSnackbar({ message: `IFrame URL sucessfully updated to '${toBeUsedURL.value}'.`, variant: 'success' })
 }
 
 const handleBaseUrlToggle = (useBaseUrl: boolean): void => {
