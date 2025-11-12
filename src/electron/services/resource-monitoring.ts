@@ -1,5 +1,4 @@
 import { app, ipcMain } from 'electron'
-import * as os from 'os'
 
 /**
  * Setup memory usage monitoring
@@ -8,14 +7,14 @@ import * as os from 'os'
 export const setupResourceMonitoringService = (): void => {
   ipcMain.handle('get-resource-usage', async () => {
     try {
-      const memoryInfo = await app.getAppMetrics()
+      const appMetrics = await app.getAppMetrics()
 
       // Separate memory by process type
       let mainMemory = 0
       let renderersMemory = 0
       let gpuMemory = 0
 
-      memoryInfo.forEach((metric) => {
+      appMetrics.forEach((metric) => {
         const memory = metric.memory?.workingSetSize || 0
 
         switch (metric.type) {
@@ -37,23 +36,13 @@ export const setupResourceMonitoringService = (): void => {
       })
 
       // Sum all process memory for backward compatibility
-      const totalMemory = memoryInfo.reduce((total, metric) => {
+      const totalMemory = appMetrics.reduce((total, metric) => {
         return total + (metric.memory?.workingSetSize || 0)
       }, 0)
 
-      // Get CPU usage
-      const cpus = os.cpus()
-      let totalIdle = 0
-      let totalTick = 0
-
-      cpus.forEach((cpu) => {
-        Object.entries(cpu.times).forEach(([, time]) => {
-          totalTick += time
-        })
-        totalIdle += cpu.times.idle
-      })
-
-      const cpuUsagePercent = Math.max(0, Math.min(100, 100 - (totalIdle / totalTick) * 100))
+      const cpuUsagePercent = appMetrics.reduce((total, metric) => {
+        return total + metric.cpu.percentCPUUsage
+      }, 0)
 
       return {
         totalMemoryMB: totalMemory / 1024, // Convert from KiloBytes to MegaBytes (backward compatibility)
