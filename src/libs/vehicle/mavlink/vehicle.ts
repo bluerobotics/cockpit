@@ -51,17 +51,12 @@ import {
   Velocity,
 } from '@/libs/vehicle/types'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
+import { DataLakeVariable } from '@/types/widgets'
 
 import { flattenData } from '../common/data-flattener'
 import * as Vehicle from '../vehicle'
 
 export const MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY = 'cockpit-mavlink-message-intervals'
-
-const preDefinedDataLakeVariables = {
-  cameraTilt: { id: 'cameraTiltDeg', name: 'Camera Tilt Degrees', type: 'number' },
-  autopilotSystemId: { id: 'autopilotSystemId', name: 'Autopilot System ID', type: 'number' },
-  networkLatencyMs: { id: 'networkLatencyMs', name: 'Network Latency (ms)', type: 'number' },
-}
 
 /**
  * Generic MAVLink vehicle
@@ -121,7 +116,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     this.createPredefinedDataLakeVariables()
 
     // Set the system ID in the data-lake
-    setDataLakeVariableData(preDefinedDataLakeVariables.autopilotSystemId.id, systemId)
+    setDataLakeVariableData(this.preDefinedDataLakeVariables.autopilotSystemId.id, systemId)
   }
 
   /**
@@ -383,7 +378,8 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         } else {
           pitch = Math.asin(sinp)
         }
-        setDataLakeVariableData(preDefinedDataLakeVariables.cameraTilt.id, degrees(pitch))
+        setDataLakeVariableData(this.preDefinedDataLakeVariables.cameraTilt.id, degrees(pitch))
+        setDataLakeVariableData(this.preDefinedDataLakeVariables.cameraTiltLegacy.id, degrees(pitch))
         break
       }
       case MAVLinkType.GLOBAL_POSITION_INT: {
@@ -814,7 +810,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     }
 
     const latencyMs = latencyNs * 1e-6
-    setDataLakeVariableData(preDefinedDataLakeVariables.networkLatencyMs.id, latencyMs)
+    setDataLakeVariableData(this.preDefinedDataLakeVariables.networkLatencyMs.id, latencyMs)
   }
 
   /**
@@ -1401,11 +1397,28 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Pre-defined data-lake variables related to the vehicle
+   * @returns {Record<string, DataLakeVariable>} The variables
+   */
+  private get preDefinedDataLakeVariables(): Record<string, DataLakeVariable> {
+    const vehiclePath = `/mavlink/system=${this.currentSystemId}/component=1`
+    const vehicleName = `MAVLink / System: ${this.currentSystemId} / Component: 1`
+    /* eslint-disable vue/max-len, prettier/prettier, max-len */
+    return {
+      cameraTiltLegacy: { id: 'cameraTiltDeg', name: '(Legacy) Camera Tilt Degrees', type: 'number' },
+      autopilotSystemId: { id: 'autopilotSystemId', name: 'Autopilot System ID', type: 'number' },
+      cameraTilt: { id: `${vehiclePath}/cameraTiltDeg`, name: `Camera Tilt [degrees] (${vehicleName})`, type: 'number' },
+      networkLatencyMs: { id: `${vehiclePath}/networkLatencyMs`, name: `Network Latency [ms] (${vehicleName})`, type: 'number' },
+    }
+    /* eslint-enable vue/max-len, prettier/prettier, max-len */
+  }
+
+  /**
    * Create data-lake variables for the vehicle
    */
   createPredefinedDataLakeVariables(): void {
     // Register BlueOS variables in the data lake
-    Object.values(preDefinedDataLakeVariables).forEach((variable) => {
+    Object.values(this.preDefinedDataLakeVariables).forEach((variable) => {
       if (!Object.values(getAllDataLakeVariablesInfo()).find((v) => v.id === variable.id)) {
         // @ts-ignore: The type is right, only being incorrectly inferred by TS
         createDataLakeVariable({ ...variable, persistent: false, persistValue: false })
