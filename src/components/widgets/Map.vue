@@ -192,6 +192,7 @@ import {
   watch,
 } from 'vue'
 
+import copterMarkerImage from '@/assets/arducopter-top-view.png'
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
@@ -789,6 +790,16 @@ watch(vehicleStore.coordinates, () => {
       vehicleIconUrl = blueboatMarkerImage
     } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
       vehicleIconUrl = brov2MarkerImage
+    } else if (
+      [
+        MavType.MAV_TYPE_QUADROTOR,
+        MavType.MAV_TYPE_HEXAROTOR,
+        MavType.MAV_TYPE_OCTOROTOR,
+        MavType.MAV_TYPE_TRICOPTER,
+        MavType.MAV_TYPE_DODECAROTOR,
+      ].includes(vehicleStore.vehicleType)
+    ) {
+      vehicleIconUrl = copterMarkerImage
     }
 
     const vehicleMarkerIcon = L.divIcon({
