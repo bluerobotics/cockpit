@@ -285,11 +285,14 @@ cd cockpit
 # Install dependencies
 yarn install
 
-# Start development server
+# Start minimal development server (for testing the Lite version, in a browser)
 yarn dev --host
 
-# Start Electron development server
+# Start Electron development server (for testing the full application)
 yarn dev:electron --host
+
+# Fix style issues (before making a pull request)
+yarn run lint --fix
 ```
 
 The development server will start at `http://localhost:5173` with hot reloading enabled.
