@@ -4,7 +4,7 @@
       v-if="widget.options.isCollapsible"
       ref="iframe-container"
       class="w-full rounded-lg overflow-hidden -mt-2"
-      :class="[isWrapped ? 'h-[42px]' : 'h-full']"
+      :class="[widget.options.startCollapsed ? 'h-[42px]' : 'h-full']"
       :width="canvasSize.width"
       :height="canvasSize.height"
       :style="interfaceStore.globalGlassMenuStyles"
@@ -18,14 +18,14 @@
             {{ widget.options.containerName || 'iframe' }}
           </div>
           <v-btn
-            :icon="isWrapped ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+            :icon="widget.options.startCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up'"
             variant="text"
             size="36"
             class="mt-[-6px] opacity-60"
-            @click="toggleWrapContainer"
+            @click="widget.options.startCollapsed = !widget.options.startCollapsed"
           />
         </div>
-        <div v-show="!isWrapped" class="pt-2">
+        <div v-show="!widget.options.startCollapsed" class="pt-2">
           <iframe
             v-show="iframe_loaded"
             ref="iframe"
@@ -155,7 +155,6 @@ const widget = toRefs(props).widget
 const iframe_loaded = ref(false)
 const transparency = ref(0)
 const inputURL = ref(widget.value.options.source)
-const isWrapped = ref(false)
 const vehicleAddressFromDataLake = ref<string>('')
 const lastUsedURL = ref<Record<string, string>>({
   usingVehicleAddressAsBase: '',
@@ -175,10 +174,6 @@ const composedURL = (userInputURL: string, useVehicleAddressAsBase: boolean): st
 const toBeUsedURL = computed(() => {
   return composedURL(widget.value.options.source, widget.value.options.useVehicleAddressAsBase)
 })
-
-const toggleWrapContainer = (): void => {
-  isWrapped.value = !isWrapped.value
-}
 
 const enableMovingOnDrag = (): void => {
   widgetStore.allowMovingAndResizing(widget.value.hash, true)
@@ -258,6 +253,7 @@ onBeforeMount((): void => {
   const defaultOptions = {
     source: 'http://' + defaultBlueOsAddress,
     useVehicleAddressAsBase: false,
+    startCollapsed: false,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 
