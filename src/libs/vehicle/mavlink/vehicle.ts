@@ -1401,7 +1401,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * @returns {Record<string, DataLakeVariable>} The variables
    */
   private get preDefinedDataLakeVariables(): Record<string, DataLakeVariable> {
-    const vehiclePath = `/mavlink/system=${this.currentSystemId}/component=1`
+    const vehiclePath = `/mavlink/${this.currentSystemId}/1`
     const vehicleName = `MAVLink / System: ${this.currentSystemId} / Component: 1`
     /* eslint-disable vue/max-len, prettier/prettier, max-len */
     return {
@@ -1449,7 +1449,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   private addPackageVariablesToDataLake(mavlinkPackage: Package): void {
     const messageType = mavlinkPackage.message.type
     const { system_id: messageSystemId, component_id: messageComponentId } = mavlinkPackage.header
-    const prefix = `/mavlink/system=${messageSystemId}/component=${messageComponentId}`
+    const prefix = `/mavlink/${messageSystemId}/${messageComponentId}`
 
     // Inject variables from the MAVLink messages into the DataLake
     if (['NAMED_VALUE_FLOAT', 'NAMED_VALUE_INT'].includes(messageType)) {
