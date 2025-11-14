@@ -378,6 +378,9 @@ export const useVideoStore = defineStore('video', () => {
     // On Electron, we can get the size of the video output file in real time
     // This is useful to detect if the output file is growing, which is an indication that the recording is still ongoing.
     // On Web, we can only know if the number of chunks is growing, which is an indication that the recording is still ongoing.
+    // We also need to clear the interval if it already exists, to avoid multiple intervals running at the same time.
+    clearInterval(recordingMonitors[streamName])
+    delete recordingMonitors[streamName]
     if (window.electronAPI) {
       console.info(`Starting electron recording monitor for stream '${streamName}'.`)
       recordingMonitors[streamName] = setInterval(async () => {
