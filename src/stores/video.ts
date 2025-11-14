@@ -384,6 +384,14 @@ export const useVideoStore = defineStore('video', () => {
     if (window.electronAPI) {
       console.info(`Starting electron recording monitor for stream '${streamName}'.`)
       recordingMonitors[streamName] = setInterval(async () => {
+        // Check if the stream is still recording before proceeding with checks
+        if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
+          const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
+          showDialog({ message: msg, variant: 'warning' })
+          clearInterval(recordingMonitors[streamName])
+          delete recordingMonitors[streamName]
+          return
+        }
         const fileStats = await window.electronAPI?.getFileStats(fileName, ['videos'])
         if (!fileStats || !fileStats.exists) {
           // eslint-disable-next-line
@@ -403,6 +411,14 @@ export const useVideoStore = defineStore('video', () => {
     } else {
       console.info(`Starting web recording monitor for stream '${streamName}'.`)
       recordingMonitors[streamName] = setInterval(async () => {
+        // Check if the stream is still recording before proceeding with checks
+        if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
+          const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
+          showDialog({ message: msg, variant: 'warning' })
+          clearInterval(recordingMonitors[streamName])
+          delete recordingMonitors[streamName]
+          return
+        }
         // @ts-ignore: localForage is not defined on the StorageDB interface
         const numberOfChunks = await tempVideoStorage.localForage.length()
         const lastKnownNumberOfChunks = unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks
