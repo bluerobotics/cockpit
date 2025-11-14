@@ -879,6 +879,9 @@ const allAvailableWidgets = computed(() => {
       isExternal: true,
       options: {
         source: widget.iframeUrl,
+        containerName: widget.collapsibleContainerName,
+        startCollapsed: widget.startCollapsed,
+        useVehicleAddressAsBase: widget.useVehicleAddressAsBaseUrl,
       },
       defaultSize: widgetDefaultSizes[WidgetType.IFrame],
     })),

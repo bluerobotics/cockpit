@@ -21,6 +21,26 @@ export interface ExternalWidgetSetupInfo {
    * The icon of the widget, this is displayed on the widget browser
    */
   iframeIcon: string
+
+  /**
+   * The name of the collapsed container, this is displayed on the widget browser
+   */
+  collapsibleContainerName?: string
+
+  /**
+   * Version of the widget (optional)
+   */
+  version?: string
+
+  /**
+   * Whether the widget should start collapsed (optional)
+   */
+  startCollapsed?: boolean
+
+  /**
+   * Whether to use vehicle address as base URL for the widget (optional)
+   */
+  useVehicleAddressAsBaseUrl?: boolean
 }
 
 /**

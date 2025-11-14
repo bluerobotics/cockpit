@@ -48,6 +48,10 @@ const ExternalWidgetSetupInfoSchema = z.object({
   name: z.string(),
   iframeUrl: z.string(),
   iframeIcon: z.string(),
+  collapsibleContainerName: z.string().optional(),
+  version: z.string().optional(),
+  startCollapsed: z.boolean().optional(),
+  useVehicleAddressAsBaseUrl: z.boolean().optional(),
 })
 
 const HttpRequestActionConfigSchema = z.object({
