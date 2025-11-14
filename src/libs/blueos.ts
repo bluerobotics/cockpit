@@ -148,18 +148,22 @@ export const getWidgetsFromBlueOS = async (): Promise<ExternalWidgetSetupInfo[]>
   const widgets: ExternalWidgetSetupInfo[] = []
   await Promise.all(
     services.map(async (service) => {
-      const extraJson = await getExtrasJsonFromBlueOsService(vehicleStore.globalAddress, service)
-      const baseUrl = blueOsServiceUrl(vehicleStore.globalAddress, service)
-      if (extraJson !== null) {
-        widgets.push(
-          ...extraJson.widgets.map((widget) => {
-            return {
-              ...widget,
-              iframe_url: baseUrl + widget.iframe_url,
-              iframe_icon: baseUrl + widget.iframe_icon,
-            }
-          })
-        )
+      try {
+        const extraJson = await getExtrasJsonFromBlueOsService(vehicleStore.globalAddress, service)
+        const baseUrl = blueOsServiceUrl(vehicleStore.globalAddress, service)
+        if (extraJson !== null) {
+          widgets.push(
+            ...extraJson.widgets.map((widget) => {
+              return {
+                ...widget,
+                iframe_url: baseUrl + widget.iframe_url,
+                iframe_icon: baseUrl + widget.iframe_icon,
+              }
+            })
+          )
+        }
+      } catch (error) {
+        console.error(`Could not get widgets from BlueOS service ${service.metadata?.sanitized_name}. ${error}`)
       }
     })
   )
