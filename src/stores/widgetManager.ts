@@ -581,7 +581,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
     if (widget.component === WidgetType.CollapsibleContainer) {
       newWidget.options = {
-        elementContainers: defaultCustomWidgetContainers,
+        elementContainers: structuredClone(defaultCustomWidgetContainers),
         columns: 1,
         leftColumnWidth: 50,
         backgroundOpacity: 0.2,
