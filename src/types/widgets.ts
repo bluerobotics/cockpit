@@ -67,6 +67,7 @@ export enum WidgetType {
   ImageView = 'ImageView',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
+  MissionControlPanel = 'MissionControlPanel',
   Plotter = 'Plotter',
   URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',
@@ -92,6 +93,7 @@ export enum MiniWidgetType {
   TakeoffLandCommander = 'TakeoffLandCommander',
   VeryGenericIndicator = 'VeryGenericIndicator',
   JoystickCommIndicator = 'JoystickCommIndicator',
+  MiniMissionControlPanel = 'MiniMissionControlPanel',
   MiniVideoRecorder = 'MiniVideoRecorder',
   ModeSelector = 'ModeSelector',
   EkfStateIndicator = 'EkfStateIndicator',
@@ -828,6 +830,7 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
   [WidgetType.URLVideoPlayer]: true,
   [WidgetType.VideoPlayer]: true,
   [WidgetType.VirtualHorizon]: false,
+  [WidgetType.MissionControlPanel]: false,
 }
 
 export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
@@ -851,6 +854,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.SatelliteIndicator]: false,
   [MiniWidgetType.ViewSelector]: false,
   [MiniWidgetType.SnapshotTool]: true,
+  [MiniWidgetType.MiniMissionControlPanel]: false,
 }
 
 export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
@@ -868,6 +872,7 @@ export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
   [WidgetType.URLVideoPlayer]: false,
   [WidgetType.VideoPlayer]: false,
   [WidgetType.VirtualHorizon]: false,
+  [WidgetType.MissionControlPanel]: false,
 }
 
 /**
