@@ -11,7 +11,7 @@
           <v-btn
             v-show="showButtons"
             v-bind="menuProps"
-            class="absolute right-[209px] m-3 bottom-button bg-slate-50 text-[14px]"
+            class="absolute right-[137px] m-3 bottom-button bg-slate-50 text-[14px]"
             elevation="2"
             size="x-small"
             style="z-index: 1002; border-radius: 0px"
@@ -32,7 +32,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute right-[166px] m-3 bottom-button bg-slate-50 text-[14px]"
+            class="absolute right-[90px] m-3 bottom-button bg-slate-50 text-[14px]"
             :class="!home ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
             elevation="2"
@@ -51,7 +51,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute m-3 bottom-button right-[124px] bg-slate-50 text-[14px]"
+            class="absolute m-3 bottom-button right-[44px] bg-slate-50 text-[14px]"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
             elevation="2"
@@ -64,44 +64,11 @@
           />
         </template>
       </v-tooltip>
-
-      <v-tooltip location="top" :text="vehicleDownloadMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            v-if="showButtons"
-            v-bind="tooltipProps"
-            class="absolute m-3 bottom-button right-[82px] bg-slate-50 text-[14px]"
-            :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
-            :disabled="!vehicleStore.isVehicleOnline"
-            elevation="2"
-            style="z-index: 1002; border-radius: 0px"
-            icon="mdi-download"
-            size="x-small"
-            @click.stop="downloadMissionFromVehicle"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="top" :text="vehicleExecuteMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            v-if="showButtons"
-            v-bind="tooltipProps"
-            class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50 text-[14px]"
-            :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
-            :disabled="!vehicleStore.isVehicleOnline"
-            elevation="2"
-            style="z-index: 1002; border-radius: 0px"
-            icon="mdi-play"
-            size="x-small"
-            @click.stop="tryToStartMission"
-          />
-        </template>
-      </v-tooltip>
     </div>
   </div>
-
   <ContextMenu
     ref="contextMenuRef"
+    :key="contextMenuVersion"
     :visible="contextMenuVisible"
     :width="'260px'"
     :menu-items="menuItems"
@@ -125,6 +92,13 @@
           class="my-1"
           label="Show coordinate grid"
           :color="widget.options.showCoordinateGrid ? 'white' : undefined"
+          hide-details
+        />
+        <v-switch
+          v-model="widget.options.showMissionControlPanel"
+          class="my-1"
+          label="Show mission control panel"
+          :color="widget.options.showMissionControlPanel ? 'white' : undefined"
           hide-details
         />
       </v-card-text>
@@ -160,6 +134,14 @@
     :initial-latitude="globalOriginLatitude"
     :initial-longitude="globalOriginLongitude"
     @origin-set="onGlobalOriginSet"
+  />
+  <MissionControlPanel
+    v-model="widget.options.showMissionControlPanel"
+    :map-waypoints="mapWaypoints"
+    @download-mission-from-vehicle="downloadMissionFromVehicle"
+    @clear-map-drawing="clearMapDrawing"
+    @try-to-start-mission="tryToStartMission"
+    @hide-control-panel="hideControlPanel"
   />
   <div
     v-if="isSavingOfflineTiles"
@@ -263,6 +245,16 @@ const saveSeamarks = (): void => {
 
 let pinchTimeout: number | undefined
 
+const contextMenuSelectedWpIndex = ref<number | null>(null)
+const contextMenuVersion = ref(0)
+const mapWaypointMarkers = ref<L.Marker[]>([])
+
+const currentVehicleWpIndex = computed<number>(() => {
+  return vehicleStore.currentMissionSeq ?? 1
+})
+
+const currentMapWpIndex = computed(() => Math.max(0, (currentVehicleWpIndex.value ?? 1) - 1))
+
 const onTouchStart = (e: TouchEvent): void => {
   if (e.touches.length > 1) {
     isPinching.value = true
@@ -297,6 +289,9 @@ onBeforeMount(() => {
   // Ensure new options exist for existing widgets
   if (widget.value.options.showCoordinateGrid === undefined) {
     widget.value.options.showCoordinateGrid = false
+  }
+  if (widget.value.options.showMissionControlPanel === undefined) {
+    widget.value.options.showMissionControlPanel = true
   }
   targetFollower.enableAutoUpdate()
 })
@@ -547,6 +542,12 @@ onMounted(async () => {
 
   mapReady.value = true
   await refreshMission()
+
+  // Register mission actions for map widget
+  missionStore.registerMapMissionActions({
+    downloadMissionFromVehicle,
+    clearMapDrawing,
+  })
 })
 
 const confirmDownloadDialog =
@@ -630,7 +631,7 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
 }
 
 const handleContextMenu = {
-  open: (event: MouseEvent): void => {
+  open: async (event: MouseEvent): Promise<void> => {
     if (!map.value || isPinching.value || isDragging.value) return
     event.preventDefault()
     event.stopPropagation()
@@ -639,12 +640,9 @@ const handleContextMenu = {
     const ll = map.value.containerPointToLatLng(pt)
     clickedLocation.value = [ll.lat, ll.lng]
 
-    contextMenuRef.value.openAt(event)
-    contextMenuVisible.value = true
+    await openContextMenuAt(event, null)
   },
-  close: () => {
-    hideContextMenuAndMarker()
-  },
+  close: () => hideContextMenuAndMarker(),
 }
 
 const clearMapDrawing = (): void => {
@@ -653,7 +651,8 @@ const clearMapDrawing = (): void => {
       map.value!.removeLayer(l)
     }
   })
-
+  mapWaypointMarkers.value.forEach((m) => m.remove())
+  mapWaypointMarkers.value = []
   mapWaypoints.value = []
 
   missionWaypointsPolyline.value = undefined
@@ -702,6 +701,12 @@ onBeforeUnmount(() => {
 
   mapBase.value?.removeEventListener('touchstart', onTouchStart)
   mapBase.value?.removeEventListener('touchend', onTouchEnd)
+
+  // Unregister mission actions for map widget
+  missionStore.registerMapMissionActions({
+    downloadMissionFromVehicle: async () => Promise.resolve(),
+    clearMapDrawing: async () => Promise.resolve(),
+  })
 })
 
 // Pan when variables change
@@ -887,19 +892,27 @@ watch(
     if (!map.value) return
 
     if (!missionWaypointsPolyline.value) {
-      missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3' }).addTo(map.value)
+      missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3', className: 'mission-path' }).addTo(map.value)
     }
     missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+
+    mapWaypointMarkers.value.forEach((m) => m.remove())
+    mapWaypointMarkers.value = []
 
     // Add a marker for each point
     newWaypoints.forEach((waypoint, idx) => {
       const marker = L.marker(waypoint.coordinates)
 
+      const isCurrent = idx === currentMapWpIndex.value
+
+      const size = isCurrent ? 18 : 16
+      const markerClass = isCurrent ? 'marker-icon marker-icon-active' : 'marker-icon '
+
       marker.setIcon(
         L.divIcon({
-          className: 'marker-icon',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          className: markerClass,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
         })
       )
 
@@ -909,14 +922,60 @@ watch(
         direction: 'center',
         className: 'waypoint-tooltip',
         opacity: 1,
+        interactive: true,
       })
 
       marker.bindTooltip(markerTooltip)
       map.value?.addLayer(marker)
+      mapWaypointMarkers.value.push(marker)
+
+      marker.on('contextmenu', async (e: L.LeafletMouseEvent) => {
+        if (!map.value) return
+
+        if (e.originalEvent) {
+          L.DomEvent.preventDefault(e.originalEvent)
+          L.DomEvent.stopPropagation(e.originalEvent)
+        }
+
+        clickedLocation.value = [e.latlng.lat, e.latlng.lng]
+        await openContextMenuAt(e.originalEvent as MouseEvent, idx + 1)
+      })
+
+      marker.on('add', () => {
+        const tEl = marker.getTooltip()?.getElement()
+        if (tEl) {
+          L.DomEvent.on(tEl, 'contextmenu', async (ev: Event) => {
+            if (!map.value) return
+            L.DomEvent.preventDefault(ev)
+            L.DomEvent.stopPropagation(ev)
+
+            const mouseEv = ev as MouseEvent
+            const ll = marker.getLatLng()
+            clickedLocation.value = [ll.lat, ll.lng]
+            await openContextMenuAt(mouseEv, idx + 1)
+          })
+        }
+      })
     })
   },
   { deep: true }
 )
+
+watch([vehicleStore.currentMissionSeq, currentVehicleWpIndex], () => {
+  mapWaypointMarkers.value.forEach((marker, idx) => {
+    const isCurrent = idx === currentMapWpIndex.value
+    const size = isCurrent ? 18 : 16
+    const markerClass = isCurrent ? 'marker-icon marker-icon-active' : 'marker-icon '
+
+    marker.setIcon(
+      L.divIcon({
+        className: markerClass,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+      })
+    )
+  })
+})
 
 // Create polyline for the vehicle path
 const vehicleHistoryPolyline = ref<L.Polyline>()
@@ -965,6 +1024,45 @@ const menuItems = reactive([
     icon: 'mdi-map-check',
   },
 ])
+
+const updateSkipToWpMenu = (): void => {
+  const want = contextMenuSelectedWpIndex.value !== null
+  const last = menuItems[menuItems.length - 1] as any
+  const lastIsSkip = !!last && last._isSkipToWp === true
+
+  if (want && !lastIsSkip) {
+    menuItems.push({
+      item: `Skip mission to this WP (#${contextMenuSelectedWpIndex.value! - 1})`,
+      action: () => onMenuOptionSelect('skip-to-wp'),
+      icon: 'mdi-skip-next-circle',
+      _isSkipToWp: true,
+    } as any)
+  } else if (!want && lastIsSkip) {
+    menuItems.pop()
+  } else if (want && lastIsSkip) {
+    last.item = `Skip mission to this WP (#${contextMenuSelectedWpIndex.value! - 1})`
+  }
+}
+
+const openContextMenuAt = async (mouseEv: MouseEvent, wpIndex: number | null): Promise<void> => {
+  if (contextMenuVisible.value) {
+    contextMenuVisible.value = false
+    await nextTick()
+  }
+
+  contextMenuSelectedWpIndex.value = wpIndex
+  updateSkipToWpMenu()
+  contextMenuVersion.value++
+  contextMenuVisible.value = true
+  await nextTick()
+
+  if (contextMenuRef.value?.openAt) {
+    contextMenuRef.value.openAt(mouseEv)
+  } else {
+    await nextTick()
+    contextMenuRef.value?.openAt?.(mouseEv)
+  }
+}
 
 const gotoMarker = ref<L.Marker>()
 
@@ -1097,6 +1195,19 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       }
       break
 
+    case 'skip-to-wp': {
+      const idx = contextMenuSelectedWpIndex.value
+      if (!vehicleStore.isVehicleOnline || idx == null) {
+        openSnackbar({ message: 'Cannot skip (vehicle offline or invalid WP).', variant: 'error' })
+        break
+      }
+      try {
+        vehicleStore.setMissionCurrent(idx)
+      } catch (error) {
+        openSnackbar({ message: `Failed to skip to WP #${idx}: ${(error as Error).message}`, variant: 'error' })
+      }
+      break
+    }
     default:
       console.warn('Unknown menu option selected:', option)
   }
@@ -1106,6 +1217,8 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
 
 const hideContextMenuAndMarker = (): void => {
   contextMenuVisible.value = false
+  contextMenuSelectedWpIndex.value = null
+  updateSkipToWpMenu()
   if (map.value !== undefined && contextMenuMarker.value !== undefined) {
     map.value.removeLayer(contextMenuMarker.value)
   }
@@ -1138,6 +1251,7 @@ const onGlobalOriginSet = (latitude: number, longitude: number): void => {
 const onKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
     hideContextMenuAndMarker()
+    return
   }
 }
 
@@ -1213,18 +1327,6 @@ const bottomButtonsDisplacement = computed(() => {
 
 const topProgressBarDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
-})
-
-const vehicleDownloadMissionButtonTooltipText = computed(() => {
-  return vehicleStore.isVehicleOnline
-    ? 'Download the mission that is stored in the vehicle.'
-    : 'Cannot download mission (vehicle offline).'
-})
-
-const vehicleExecuteMissionButtonTooltipText = computed(() => {
-  return vehicleStore.isVehicleOnline
-    ? 'Execute the mission that is stored in the vehicle.'
-    : 'Cannot execute mission (vehicle offline).'
 })
 
 const centerHomeButtonTooltipText = computed(() => {
@@ -1336,6 +1438,10 @@ const removePoiMarkerFromMapWidget = (poiId: string): void => {
   delete mapWidgetPoiMarkers.value[poiId]
 }
 
+const hideControlPanel = (): void => {
+  widget.value.options.showMissionControlPanel = false
+}
+
 // Watch for changes in POIs from the store and update markers on this map widget
 watch(
   () => missionStore.pointsOfInterest,
@@ -1400,10 +1506,22 @@ watch(
   width: 100%;
 }
 
-.marker-icon {
+:global(.marker-icon) {
   background-color: #1e498f;
   border: 1px solid #ffffff55;
   border-radius: 50%;
+  box-shadow: 2px 3px 1px rgba(0, 0, 0, 0.2);
+}
+
+:global(.marker-icon-active) {
+  background-color: #925801;
+  border: 2px solid #ffffffaa;
+  border-radius: 50%;
+  box-shadow: 2px 3px 1px rgba(0, 0, 0, 0.3);
+}
+
+:global(.mission-path) {
+  filter: drop-shadow(2px 3px 1px rgba(0, 0, 0, 0.2));
 }
 
 .waypoint-tooltip {
@@ -1499,11 +1617,11 @@ watch(
 :deep(.leaflet-control-scale) {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
-  right: 260px; /* Position to the left of the buttons */
+  right: 187px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 8px 8px;
-  margin-bottom: 12px;
+  margin-bottom: 11px;
   box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14),
     0px 1px 5px 0px rgba(0, 0, 0, 0.12);
 }
