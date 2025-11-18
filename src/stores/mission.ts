@@ -51,6 +51,8 @@ export const useMissionStore = defineStore('mission', () => {
     'cockpit-user-last-map-tile-provider',
     'Esri World Imagery'
   )
+  const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
+  const mapClearMapDrawing = ref<(() => void) | null>(null)
 
   const { showDialog } = useInteractionDialog()
 
@@ -352,6 +354,30 @@ export const useMissionStore = defineStore('mission', () => {
     }
   }
 
+  const registerMapMissionActions = (payload: {
+    /**
+     * Download the mission from the vehicle
+     */
+    downloadMissionFromVehicle: () => Promise<void>
+    /**
+     * Clear the map drawing
+     */
+    clearMapDrawing: () => void
+  }): void => {
+    mapDownloadMissionFromVehicle.value = payload.downloadMissionFromVehicle
+    mapClearMapDrawing.value = payload.clearMapDrawing
+  }
+
+  const callMapDownloadMissionFromVehicle = async (): Promise<void> => {
+    if (!mapDownloadMissionFromVehicle.value) return
+    await mapDownloadMissionFromVehicle.value()
+  }
+
+  const callMapClearMapDrawing = (): void => {
+    if (!mapClearMapDrawing.value) return
+    mapClearMapDrawing.value()
+  }
+
   watch(
     () => [...currentPlanningWaypoints],
     (wps) => persistDraft(wps),
@@ -409,5 +435,8 @@ export const useMissionStore = defineStore('mission', () => {
     canSkipToPrevWp,
     canSkipToNextWp,
     currentWaypointOnMission,
+    registerMapMissionActions,
+    callMapDownloadMissionFromVehicle,
+    callMapClearMapDrawing,
   }
 })
