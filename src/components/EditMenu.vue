@@ -905,9 +905,9 @@ const availableCustomWidgetElementsTypes = computed(() =>
 )
 const widgetImages = {
   Attitude: AttitudeImg,
+  CollapsibleContainer: CollapsibleContainerImg,
   Compass: CompassImg,
   CompassHUD: CompassHUDImg,
-  CollapsibleContainer: CollapsibleContainerImg,
   DepthHUD: DepthHUDImg,
   DoItYourself: DoItYourselfImg,
   IFrame: IFrameImg,
