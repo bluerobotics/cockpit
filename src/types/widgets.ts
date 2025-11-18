@@ -58,9 +58,9 @@ export interface ExternalWidgetSetupInfo {
  */
 export enum WidgetType {
   Attitude = 'Attitude',
+  CollapsibleContainer = 'CollapsibleContainer',
   Compass = 'Compass',
   CompassHUD = 'CompassHUD',
-  CollapsibleContainer = 'CollapsibleContainer',
   DepthHUD = 'DepthHUD',
   DoItYourself = 'DoItYourself',
   IFrame = 'IFrame',
@@ -85,21 +85,21 @@ export enum MiniWidgetType {
   BatteryIndicator = 'BatteryIndicator',
   ChangeAltitudeCommander = 'ChangeAltitudeCommander',
   Clock = 'Clock',
-  GoFullScreen = 'GoFullScreen',
-  EnterEditMode = 'EnterEditMode',
   DepthIndicator = 'DepthIndicator',
-  MissionIdentifier = 'MissionIdentifier',
-  RelativeAltitudeIndicator = 'RelativeAltitudeIndicator',
-  TakeoffLandCommander = 'TakeoffLandCommander',
-  VeryGenericIndicator = 'VeryGenericIndicator',
+  EkfStateIndicator = 'EkfStateIndicator',
+  EnterEditMode = 'EnterEditMode',
+  GoFullScreen = 'GoFullScreen',
   JoystickCommIndicator = 'JoystickCommIndicator',
   MiniMissionControlPanel = 'MiniMissionControlPanel',
   MiniVideoRecorder = 'MiniVideoRecorder',
+  MissionIdentifier = 'MissionIdentifier',
   ModeSelector = 'ModeSelector',
-  EkfStateIndicator = 'EkfStateIndicator',
+  RelativeAltitudeIndicator = 'RelativeAltitudeIndicator',
   SatelliteIndicator = 'SatelliteIndicator',
-  ViewSelector = 'ViewSelector',
   SnapshotTool = 'SnapshotTool',
+  TakeoffLandCommander = 'TakeoffLandCommander',
+  VeryGenericIndicator = 'VeryGenericIndicator',
+  ViewSelector = 'ViewSelector',
 }
 
 /**
@@ -572,6 +572,10 @@ export type WidgetManagerVars = {
    * If the widget should be allowed to move
    */
   allowMoving: boolean
+  /**
+   * If the widget should be allowed to resize
+   */
+  allowResizing: boolean
   /**
    * Last widget X position when it wasn't maximized
    */
