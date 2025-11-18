@@ -143,6 +143,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const currentVehicleName = ref<string | undefined>(undefined)
   const vehiclePositionMaxSampleRate = useStorage('cockpit-vehicle-position-max-sampling-ms', 200) // Limits the frequency of vehicle position updates
   const reachedMissionItemSequences = ref<number[]>([])
+  const currentMissionSeq = ref<number | undefined>(undefined)
 
   const markMissionItemAsReached = (sequence: number): void => {
     if (reachedMissionItemSequences.value.includes(sequence)) return
@@ -501,6 +502,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Pause mission that is on the vehicle
+   */
+  async function pauseMission(): Promise<void> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to pause mission.')
+    await mainVehicle.value.pauseMission()
+  }
+
+  /**
    * List of available flight modes
    * @returns {Array<string>}
    */
@@ -567,6 +576,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.shouldCreateDatalakeVariablesFromOtherSystems = enableDatalakeVariablesFromOtherSystems.value
     // Set whether to create legacy data lake variable names
     mainVehicle.value.shouldCreateLegacyDataLakeVariables = enableLegacyDataLakeVariableNames.value
+
+    // Set callback for mission's current waypoint updates
+    mainVehicle.value.onMissionCurrent.add(MAVLinkType.MISSION_CURRENT, (seq: number) => {
+      currentMissionSeq.value = seq
+    })
 
     mainVehicle.value.onAltitude.add((newAltitude: Altitude) => {
       Object.assign(altitude, newAltitude)
@@ -966,6 +980,15 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.requestDefaultMessages()
   }
 
+  /**
+   * Sets the current mission item as active on the vehicle
+   * @param {number} seq - Sequential number of the mission item to set as current
+   */
+  async function setMissionCurrent(seq: number): Promise<void> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to set mission current.')
+    await mainVehicle.value.setMissionCurrent(seq)
+  }
+
   return {
     arm,
     takeoff,
@@ -981,6 +1004,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     uploadMission,
     clearMissions,
     startMission,
+    pauseMission,
+    setMissionCurrent,
     getCurrentVehicleName,
     mainVehicle,
     globalAddress,
@@ -1028,5 +1053,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     enableDatalakeVariablesFromOtherSystems,
     enableLegacyDataLakeVariableNames,
     getVehicleAddress,
+    currentMissionSeq,
   }
 })
