@@ -466,7 +466,7 @@ import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
-import { type InstanceType, type Ref, computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
+import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
 
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
@@ -686,7 +686,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
   }
 }
 
-const planningMap: Ref<Map | undefined> = ref()
+const planningMap = shallowRef<Map | undefined>()
 const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref<WaypointCoordinates | undefined>(undefined)
 const zoom = ref(missionStore.defaultMapZoom)
@@ -729,18 +729,18 @@ const tilesSaved = ref(0)
 const tilesTotal = ref(0)
 const savingLayerName = ref<string>('')
 const downloadMenuOpen = ref(false)
-const gridLayer = ref<L.LayerGroup | undefined>(undefined)
+const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
 const nearMissionPathTolerance = 16 // in pixels
 const isMissionEstimatesVisible = ref(true)
-const measureLayer = ref<L.LayerGroup | null>(null)
+const measureLayer = shallowRef<L.LayerGroup | null>(null)
 let measureOverlayEl: HTMLDivElement | null = null
 let measureSvgEl: SVGSVGElement | null = null
 let measureLineEl: SVGLineElement | null = null
 let measureTextEl: HTMLDivElement | null = null
-const surveyAreaMarkers = ref<Record<string, L.Marker>>({})
-const liveSurveyAreaMarker = ref<L.Marker | null>(null)
+const surveyAreaMarkers = shallowRef<Record<string, L.Marker>>({})
+const liveSurveyAreaMarker = shallowRef<L.Marker | null>(null)
 
 const clearLiveMeasure = (): void => {
   destroyMeasureOverlay(planningMap.value || undefined)
@@ -981,7 +981,7 @@ const handleOpenMissionSettings = (): void => {
 }
 
 const poiManagerRef = ref<InstanceType<typeof PoiManager> | null>(null)
-const planningPoiMarkers = ref<{ [id: string]: L.Marker }>({})
+const planningPoiMarkers = shallowRef<{ [id: string]: L.Marker }>({})
 
 const clearCurrentMission = (): void => {
   missionStore.clearMission()
@@ -2055,8 +2055,8 @@ const onSurveyLinesAngleChange = (angle: number): void => {
   surveyLinesAngle.value = angle
 }
 
-const surveyPathLayer = ref<L.Polyline | null>(null)
-const surveyPolygonLayer = ref<L.Polygon | null>(null)
+const surveyPathLayer = shallowRef<L.Polyline | null>(null)
+const surveyPolygonLayer = shallowRef<L.Polygon | null>(null)
 
 const clearSurveyPath = (): void => {
   if (surveyPathLayer.value) {
@@ -3081,7 +3081,7 @@ const vehiclePosition = computed((): [number, number] | undefined =>
 )
 
 // Create marker for the vehicle
-const vehicleMarker = ref<L.Marker>()
+const vehicleMarker = shallowRef<L.Marker>()
 watch(vehicleStore.coordinates, () => {
   if (!planningMap.value || !vehiclePosition.value) return
 
@@ -3142,7 +3142,7 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
   }
 })
 
-const homeMarker = ref<L.Marker>()
+const homeMarker = shallowRef<L.Marker>()
 
 watch(home, () => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
@@ -3204,7 +3204,7 @@ watch([zoom, mapCenter], () => {
   }
 })
 
-const missionWaypointsPolyline = ref<L.Polyline | null>(null)
+const missionWaypointsPolyline = shallowRef<L.Polyline | null>(null)
 
 const getMissionPathLatLngs = (): L.LatLng[] =>
   missionStore.currentPlanningWaypoints.map((waypoint) => L.latLng(waypoint.coordinates[0], waypoint.coordinates[1]))
