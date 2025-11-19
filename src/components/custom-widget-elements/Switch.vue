@@ -71,12 +71,14 @@ const startListeningDataLakeVariable = (): void => {
 
 watch(
   () => miniWidget.value.options.dataLakeVariable?.id,
-  (newVal) => {
-    if (newVal) {
+  (newId, oldId) => {
+    if (oldId && listenerId) {
+      unlistenDataLakeVariable(oldId, listenerId)
+    }
+    if (newId) {
       startListeningDataLakeVariable()
     }
-  },
-  { immediate: true }
+  }
 )
 
 const handleToggleAction = (): void => {
@@ -104,18 +106,17 @@ onMounted(() => {
     switchValue.value = true
   }
 
-  if (miniWidget.value.options.dataLakeVariable && !miniWidget.value.options.dataLakeVariable.allowUserToChangeValue) {
-    updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
+  if (miniWidget.value.options.dataLakeVariable) {
+    if (!miniWidget.value.options.dataLakeVariable.allowUserToChangeValue) {
+      updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
+    }
+    startListeningDataLakeVariable()
   }
-
-  startListeningDataLakeVariable()
 })
 
 onUnmounted(() => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    if (listenerId) {
-      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
-    }
+  if (miniWidget.value.options.dataLakeVariable && listenerId) {
+    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
   }
 })
 </script>

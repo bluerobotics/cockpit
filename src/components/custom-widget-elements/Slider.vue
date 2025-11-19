@@ -60,7 +60,6 @@ const miniWidget = toRefs(props).miniWidget
 
 const sliderValue = ref(0)
 let listenerId: string | undefined
-let currentlyTrackedVariableName: string | undefined = undefined
 let lastUpdateListenedValue: Date | undefined = undefined
 
 const setSliderValue = (value: number | string | undefined): void => {
@@ -87,36 +86,27 @@ watch(
   { immediate: true, deep: true }
 )
 
-const stopListeningDataLakeVariable = (): void => {
-  if (listenerId && currentlyTrackedVariableName) {
-    console.debug(`Will stop listening to variable ${currentlyTrackedVariableName}.`)
-    unlistenDataLakeVariable(currentlyTrackedVariableName, listenerId)
+const startListeningDataLakeVariable = (): void => {
+  if (miniWidget.value.options.dataLakeVariable) {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
+      // Ignore updates that happen within 100ms of the last update
+      if (lastUpdateListenedValue && new Date().getTime() - lastUpdateListenedValue.getTime() < 100) return
+      lastUpdateListenedValue = new Date()
+
+      setSliderValue(value as number | string | undefined)
+    })
   }
-}
-
-const startListeningDataLakeVariable = (variableName: string): void => {
-  console.debug(`Will start listening to variable ${variableName}.`)
-  const initialValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
-  setSliderValue(initialValue)
-
-  // Stop listening to the data lake variable before starting to listen to a new one
-  stopListeningDataLakeVariable()
-
-  listenerId = listenDataLakeVariable(variableName, (value) => {
-    // Ignore updates that happen within 100ms of the last update
-    if (lastUpdateListenedValue && new Date().getTime() - lastUpdateListenedValue.getTime() < 100) return
-    lastUpdateListenedValue = new Date()
-
-    setSliderValue(value as number | string | undefined)
-  })
-  currentlyTrackedVariableName = variableName
 }
 
 watch(
   () => miniWidget.value.options.dataLakeVariable?.id,
-  (newVal) => {
-    if (!newVal) return
-    startListeningDataLakeVariable(newVal)
+  (newId, oldId) => {
+    if (oldId && listenerId) {
+      unlistenDataLakeVariable(oldId, listenerId)
+    }
+    if (newId) {
+      startListeningDataLakeVariable()
+    }
   }
 )
 
@@ -147,17 +137,18 @@ onMounted(() => {
     })
   }
 
-  if (miniWidget.value.options.dataLakeVariable && !miniWidget.value.options.dataLakeVariable.allowUserToChangeValue) {
-    updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
-  }
-
-  if (miniWidget.value.options.dataLakeVariable?.id) {
-    startListeningDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
+  if (miniWidget.value.options.dataLakeVariable) {
+    if (!miniWidget.value.options.dataLakeVariable.allowUserToChangeValue) {
+      updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
+    }
+    startListeningDataLakeVariable()
   }
 })
 
 onUnmounted(() => {
-  stopListeningDataLakeVariable()
+  if (miniWidget.value.options.dataLakeVariable && listenerId) {
+    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
+  }
 })
 </script>
 
