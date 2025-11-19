@@ -113,7 +113,7 @@ const startListeningDataLakeVariable = (variableName: string): void => {
 }
 
 watch(
-  () => miniWidget.value.options.dataLakeVariable?.name,
+  () => miniWidget.value.options.dataLakeVariable?.id,
   (newVal) => {
     if (!newVal) return
     startListeningDataLakeVariable(newVal)
@@ -125,7 +125,7 @@ const handleSliderInput = (value: number): void => {
   if (miniWidget.value.options.dataLakeVariable) {
     const roundedValue = Number(value.toFixed(1))
     widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
-    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, roundedValue)
+    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id, roundedValue)
   }
 }
 
@@ -151,8 +151,8 @@ onMounted(() => {
     updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
   }
 
-  if (miniWidget.value.options.dataLakeVariable?.name) {
-    startListeningDataLakeVariable(miniWidget.value.options.dataLakeVariable.name)
+  if (miniWidget.value.options.dataLakeVariable?.id) {
+    startListeningDataLakeVariable(miniWidget.value.options.dataLakeVariable.id)
   }
 })
 
