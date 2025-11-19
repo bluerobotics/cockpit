@@ -145,7 +145,7 @@ const setDialValue = (value: number | string | undefined): void => {
 
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.name, (value) => {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
       setDialValue(value as number)
     })
     const initialValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
@@ -154,7 +154,7 @@ const startListeningDataLakeVariable = (): void => {
 }
 
 watch(
-  () => miniWidget.value.options.dataLakeVariable?.name,
+  () => miniWidget.value.options.dataLakeVariable?.id,
   (newVal) => {
     if (newVal) {
       startListeningDataLakeVariable()
@@ -212,7 +212,7 @@ const updateDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable && !widgetStore.editingMode) {
     const roundedValue = Math.round(potentiometerValue.value)
     widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
-    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, roundedValue)
+    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id, roundedValue)
   }
 }
 
@@ -292,7 +292,7 @@ const finishEditingValue = (): void => {
   if (miniWidget.value.options.dataLakeVariable && !widgetStore.editingMode) {
     const roundedValue = Math.round(newValue)
     widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
-    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.name, roundedValue)
+    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id, roundedValue)
   }
 
   isEditingValue.value = false
@@ -301,7 +301,7 @@ const finishEditingValue = (): void => {
 onUnmounted(() => {
   if (miniWidget.value.options.dataLakeVariable) {
     if (listenerId) {
-      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.name, listenerId)
+      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
     }
   }
 })
