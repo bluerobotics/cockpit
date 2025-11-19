@@ -105,12 +105,14 @@ const startListeningDataLakeVariable = (): void => {
 
 watch(
   () => miniWidget.value.options.dataLakeVariable?.id,
-  (newVal) => {
-    if (newVal) {
+  (newId, oldId) => {
+    if (oldId && listenerId) {
+      unlistenDataLakeVariable(oldId, listenerId)
+    }
+    if (newId) {
       startListeningDataLakeVariable()
     }
-  },
-  { immediate: true }
+  }
 )
 
 onMounted(() => {
@@ -135,10 +137,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    if (listenerId) {
-      unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
-    }
+  if (miniWidget.value.options.dataLakeVariable && listenerId) {
+    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
   }
 })
 </script>
