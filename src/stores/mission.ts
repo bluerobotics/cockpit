@@ -18,8 +18,8 @@ import {
 
 import { useMainVehicleStore } from './mainVehicle'
 
-// Default map position (centered on Florianópolis, Brazil)
-const DEFAULT_MAP_CENTER: WaypointCoordinates = [-27.5935, -48.55854]
+// Default map position (centered on Hawaii)
+const DEFAULT_MAP_CENTER: WaypointCoordinates = [19.669511014021392, -156.0242794325606]
 const DEFAULT_MAP_ZOOM = 15
 
 export const useMissionStore = defineStore('mission', () => {
