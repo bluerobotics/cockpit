@@ -10,7 +10,10 @@
     "
     @click="widgetStore.editingMode && widgetStore.showElementPropsDrawer(miniWidget.hash)"
   >
-    <div class="flex flex-row" :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'">
+    <div
+      class="flex flex-row"
+      :class="widgetStore.editingMode || !isInput ? 'pointer-events-none' : 'pointer-events-auto'"
+    >
       <div
         class="potentiometer-container w-full"
         :class="sizeClass"
@@ -40,16 +43,16 @@
       <div
         class="value-display bg-[#FFFFFF22] border-[1px] rounded-md p-[2px] min-w-[40px] text-center elevation-1"
         :class="
-          isEditingValue
+          isInput && isEditingValue
             ? 'pointer-events-auto border-blue-800 bg-[#0000FF11]'
             : 'cursor-pointer border-[#FFFFFF44] bg-[#FFFFFF22]'
         "
       >
-        <div v-if="!isEditingValue" @click="startEditingValue">
+        <div v-if="!isEditingValue || !isInput" @click="startEditingValue">
           {{ Math.round(potentiometerValue) || 0 }}
         </div>
         <input
-          v-if="isEditingValue"
+          v-if="isEditingValue && isInput"
           v-model="editableValue"
           class="bg-transparent border-0 text-center outline-none max-w-[30px]"
           @keydown.enter="finishEditingValue"
@@ -58,13 +61,13 @@
       </div>
       <div class="flex flex-col w-4 h-7 justify-between items-center">
         <v-icon
-          v-if="!isEditingValue"
+          v-if="!isEditingValue && isInput"
           class="text-white text-[16px] -mt-[2px] ml-2 cursor-pointer opacity-30"
           @click="addDialValue"
           >mdi-plus</v-icon
         >
         <v-icon
-          v-if="!isEditingValue"
+          v-if="!isEditingValue && isInput"
           class="text-white text-[16px] -mb-1 ml-2 cursor-pointer opacity-30"
           @click="subtractDialValue"
           >mdi-minus</v-icon
@@ -144,13 +147,17 @@ const setDialValue = (value: number | string | undefined): void => {
   rotationAngle.value = ((numValue - assignedMinValue.value) / valueRange) * rotationRange - rotationLimit
 }
 
+const isInput = computed(() => {
+  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+})
+
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {
     listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
       setDialValue(value)
     })
     setDialValue(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id))
-  } 
+  }
 }
 
 watch(
@@ -170,7 +177,7 @@ watch(
   ([minVal]) => {
     potentiometerValue.value = minVal
     setDialValue(potentiometerValue.value)
-  },
+  }
 )
 
 onMounted(() => {
@@ -213,7 +220,7 @@ const sizeClass = computed(() => {
 })
 
 const updateDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable && !widgetStore.editingMode) {
+  if (isInput.value && !widgetStore.editingMode) {
     const roundedValue = Math.round(potentiometerValue.value)
     widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
     setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id, roundedValue)
@@ -224,6 +231,7 @@ let lastKnobAngle = 0
 
 const startDrag = (event: MouseEvent): void => {
   event.preventDefault()
+  if (!isInput.value) return
 
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
@@ -278,7 +286,7 @@ const subtractDialValue = (): void => {
 }
 
 const startEditingValue = (): void => {
-  if (widgetStore.editingMode) return
+  if (widgetStore.editingMode || !isInput.value) return
   isEditingValue.value = true
 
   editableValue.value = String(Math.round(potentiometerValue.value) || defaultMinValue)
@@ -289,15 +297,10 @@ const finishEditingValue = (): void => {
   if (isNaN(newValue)) {
     newValue = Math.round(potentiometerValue.value) || defaultMinValue
   }
-
   newValue = Math.max(assignedMinValue.value, Math.min(newValue, assignedMaxValue.value))
 
   setDialValue(newValue)
-  if (miniWidget.value.options.dataLakeVariable && !widgetStore.editingMode) {
-    const roundedValue = Math.round(newValue)
-    widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, roundedValue)
-    setDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id, roundedValue)
-  }
+  updateDataLakeVariable()
 
   isEditingValue.value = false
 }
