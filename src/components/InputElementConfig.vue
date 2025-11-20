@@ -295,7 +295,10 @@
                 </template>
               </div>
               <v-btn
-                v-if="openDataLakeVariableSelector"
+                v-if="
+                  (openDataLakeVariableSelector || currentElement.options.dataLakeVariable?.name) &&
+                  !openNewDataLakeVariableForm
+                "
                 variant="text"
                 class="self-start mt-[9px]"
                 size="x-small"
@@ -318,14 +321,9 @@
                 <input v-model="futureDataLakeVariable.description" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
               </div>
               <div class="flex w-full justify-between">
-                <v-btn
-                  v-if="openNewDataLakeVariableForm"
-                  variant="text"
-                  class="self-start mt-[9px]"
-                  size="x-small"
-                  @click="handleResetVariable"
-                  >{{ currentElement.options.dataLakeVariable?.name ? 'reset' : 'back' }}</v-btn
-                >
+                <v-btn variant="text" class="self-start mt-[9px]" size="x-small" @click="handleResetVariable">{{
+                  currentElement.options.dataLakeVariable?.name ? 'reset' : 'back'
+                }}</v-btn>
                 <div>
                   <v-btn
                     variant="text"
