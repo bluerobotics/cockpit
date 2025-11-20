@@ -26,6 +26,7 @@
 import { onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import {
+  getDataLakeVariableData,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
@@ -63,9 +64,9 @@ watch(
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {
     listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
-      switchValue.value = value as boolean
+      switchValue.value = Boolean(value)
     })
-    switchValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
+    switchValue.value = Boolean(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id))
   }
 }
 
@@ -111,6 +112,8 @@ onMounted(() => {
       updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
     }
     startListeningDataLakeVariable()
+  } else {
+    switchValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
   }
 })
 
