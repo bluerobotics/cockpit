@@ -12,7 +12,7 @@
       v-model="switchValue"
       hide-details
       :color="miniWidget.options.layout?.color || '#FFFFFF'"
-      :class="{ 'pointer-events-none': widgetStore.editingMode }"
+      :class="{ 'pointer-events-none': widgetStore.editingMode || !isInput }"
       class="min-w-[35px]"
       @change="handleToggleAction"
     />
@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import {
   getDataLakeVariableData,
@@ -60,6 +60,10 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+const isInput = computed(() => {
+  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+})
 
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {

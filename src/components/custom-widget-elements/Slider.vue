@@ -26,7 +26,7 @@
       class="min-w-20"
       :color="miniWidget.options.layout?.color || 'white'"
       :class="{
-        'pointer-events-none': widgetStore.editingMode,
+        'pointer-events-none': widgetStore.editingMode || !isInput,
         'scale-75': miniWidget.options.layout?.size === 'small',
       }"
       @update:model-value="(v) => handleSliderInput(v)"
@@ -36,7 +36,7 @@
 
 <script setup lang="ts">
 import { toRefs } from '@vueuse/core'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
   getDataLakeVariableData,
@@ -86,6 +86,10 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+const isInput = computed(() => {
+  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+})
 
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {

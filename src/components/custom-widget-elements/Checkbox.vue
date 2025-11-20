@@ -17,7 +17,7 @@
       hide-details
       :color="miniWidget.options.layout?.color"
       class="text-white"
-      :class="{ 'pointer-events-none': widgetStore.editingMode }"
+      :class="{ 'pointer-events-none': widgetStore.editingMode || !isInput }"
       theme="dark"
       @update:model-value="handleToggleAction"
     ></v-checkbox>
@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import {
   getDataLakeVariableData,
@@ -70,6 +70,10 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+const isInput = computed(() => {
+  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+})
 
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {

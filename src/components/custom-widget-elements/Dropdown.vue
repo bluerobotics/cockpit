@@ -21,10 +21,9 @@
         :min-width="miniWidget.options.layout?.width || 168"
         hide-details
         class="text-white"
-        :class="{ 'pointer-events-none': widgetStore.editingMode }"
+        :class="{ 'pointer-events-none': widgetStore.editingMode || !isInput }"
         @update:model-value="handleSelection"
       >
-        >
       </v-select>
     </div>
   </div>
@@ -98,6 +97,10 @@ const handleSelection = (value: string | number | boolean): void => {
   }
   widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, selected.value)
 }
+
+const isInput = computed(() => {
+  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+})
 
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {
