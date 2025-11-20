@@ -33,7 +33,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
-import { listenDataLakeVariable, setDataLakeVariableData, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
+import {
+  getDataLakeVariableData,
+  listenDataLakeVariable,
+  setDataLakeVariableData,
+  unlistenDataLakeVariable,
+} from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType, SelectorOption } from '@/types/widgets'
 
@@ -97,9 +102,9 @@ const handleSelection = (value: string | number | boolean): void => {
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {
     listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
-      selectedValue.value = value as string
+      selectedValue.value = String(value)
     })
-    selectedValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as string
+    selectedValue.value = String(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id))
   }
 }
 
@@ -130,9 +135,8 @@ onMounted(() => {
   }
   if (miniWidget.value.options.dataLakeVariable) {
     startListeningDataLakeVariable()
-  }
-  if (miniWidget.value.options.lastSelected?.name !== '') {
-    selectedOption.value = miniWidget.value.options.lastSelected
+  } else {
+    selectedOption.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as string
   }
 })
 

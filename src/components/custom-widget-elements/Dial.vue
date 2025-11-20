@@ -78,6 +78,7 @@
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import {
+  getDataLakeVariableData,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
@@ -146,11 +147,10 @@ const setDialValue = (value: number | string | undefined): void => {
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {
     listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
-      setDialValue(value as number)
+      setDialValue(value)
     })
-    const initialValue = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
-    setDialValue(initialValue)
-  }
+    setDialValue(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id))
+  } 
 }
 
 watch(
@@ -171,7 +171,6 @@ watch(
     potentiometerValue.value = minVal
     setDialValue(potentiometerValue.value)
   },
-  { immediate: true }
 )
 
 onMounted(() => {
@@ -197,6 +196,8 @@ onMounted(() => {
       updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
     }
     startListeningDataLakeVariable()
+  } else {
+    setDialValue(widgetStore.getMiniWidgetLastValue(miniWidget.value.hash))
   }
 })
 

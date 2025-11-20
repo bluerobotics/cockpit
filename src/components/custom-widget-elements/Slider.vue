@@ -39,6 +39,7 @@ import { toRefs } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
+  getDataLakeVariableData,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
@@ -93,8 +94,9 @@ const startListeningDataLakeVariable = (): void => {
       if (lastUpdateListenedValue && new Date().getTime() - lastUpdateListenedValue.getTime() < 100) return
       lastUpdateListenedValue = new Date()
 
-      setSliderValue(value as number | string | undefined)
+      setSliderValue(value)
     })
+    setSliderValue(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id))
   }
 }
 
@@ -142,6 +144,8 @@ onMounted(() => {
       updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
     }
     startListeningDataLakeVariable()
+  } else {
+    setSliderValue(widgetStore.getMiniWidgetLastValue(miniWidget.value.hash))
   }
 })
 
