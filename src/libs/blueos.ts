@@ -2,6 +2,7 @@ import ky, { HTTPError } from 'ky'
 
 import { getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { type ActionConfig } from '@/libs/joystick/protocols/cockpit-actions'
+import { sleep } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { type RawCpuLoadInfo, type RawCpuTempInfo, type RawNetworkInfo } from '@/types/blueos'
@@ -439,6 +440,13 @@ export const deleteUsernameOnBlueOS = async (username: string): Promise<void> =>
  */
 export const checkForOtherManualControlSources = async (): Promise<boolean> => {
   try {
+    const waitTime = 3
+    const secondsSinceCockpitOpened = performance.now() / 1000
+    // Ensure Cockpit has been open long enough to avoid detecting its past self
+    if (secondsSinceCockpitOpened < waitTime) {
+      await sleep((waitTime - secondsSinceCockpitOpened) * 1000)
+    }
+    
     // Get vehicle address from data-lake
     const vehicleAddressData = getDataLakeVariableData('vehicle-address')
     const vehicleAddress = typeof vehicleAddressData === 'string' ? vehicleAddressData : undefined
@@ -468,9 +476,9 @@ export const checkForOtherManualControlSources = async (): Promise<boolean> => {
         const currentTimestamp = Date.now()
         const secondsAgo = (currentTimestamp - lastUpdateTimestamp) / 1000
 
-        if (secondsAgo < 3) {
+        if (secondsAgo < waitTime) {
           console.warn(
-            `Detected MANUAL_CONTROL messages from another source (component ID: ${componentId}, ${secondsAgo.toFixed(
+            `Detected MANUAL_CONTROL messages from another source (component ID: ${componentId}, ${(secondsAgo).toFixed(
               2
             )}s ago)`
           )
