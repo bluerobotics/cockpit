@@ -436,7 +436,7 @@ export const deleteUsernameOnBlueOS = async (username: string): Promise<void> =>
 
 /**
  * Checks if other GCS is sending MANUAL_CONTROL messages to the vehicle
- * @returns {Promise<boolean>} True if another GCS is sending MANUAL_CONTROL messages (within last 3 seconds)
+ * @returns {Promise<boolean>} True if another GCS is sending MANUAL_CONTROL or RC_CHANNELS_OVERRIDE messages (within the last 3 seconds)
  */
 export const checkForOtherManualControlSources = async (): Promise<boolean> => {
   try {
@@ -446,7 +446,7 @@ export const checkForOtherManualControlSources = async (): Promise<boolean> => {
     if (secondsSinceCockpitOpened < waitTime) {
       await sleep((waitTime - secondsSinceCockpitOpened) * 1000)
     }
-    
+
     // Get vehicle address from data-lake
     const vehicleAddressData = getDataLakeVariableData('vehicle-address')
     const vehicleAddress = typeof vehicleAddressData === 'string' ? vehicleAddressData : undefined
@@ -455,43 +455,47 @@ export const checkForOtherManualControlSources = async (): Promise<boolean> => {
       return false
     }
 
-    // Try both component IDs (190 and 240)
+    // Try common component IDs (MISSIONPLANNER (190) and UDP_BRIDGE (240))
     const componentIds = [190, 240]
+    // Try both available manual control / joystick protocols
+    const messageNames = ['MANUAL_CONTROL', 'RC_CHANNELS_OVERRIDE']
 
     for (const componentId of componentIds) {
-      try {
-        const endpoint = `${protocol}//${vehicleAddress}:6040/v1/mavlink/vehicles/255/components/${componentId}/messages/MANUAL_CONTROL`
-        const response = await fetch(endpoint)
+      for (const messageName of messageNames) {
+        try {
+          const endpoint = `${protocol}//${vehicleAddress}:6040/v1/mavlink/vehicles/255/components/${componentId}/messages/${messageName}`
+          const response = await fetch(endpoint)
 
-        if (!response.ok) continue
+          if (!response.ok) continue
 
-        const data = await response.json()
-        const lastUpdateTime = data?.status?.time?.last_update
+          const data = await response.json()
+          const lastUpdateTime = data?.status?.time?.last_update
 
-        if (!lastUpdateTime) continue
+          if (!lastUpdateTime) continue
 
-        // The API returns time in UTC format
-        // Convert both times to milliseconds since epoch for accurate comparison
-        const lastUpdateTimestamp = new Date(lastUpdateTime).getTime()
-        const currentTimestamp = Date.now()
-        const secondsAgo = (currentTimestamp - lastUpdateTimestamp) / 1000
+          // The API returns time in UTC format
+          // Convert both times to milliseconds since epoch for accurate comparison
+          const lastUpdateTimestamp = new Date(lastUpdateTime).getTime()
+          const currentTimestamp = Date.now()
+          const secondsAgo = (currentTimestamp - lastUpdateTimestamp) / 1000
 
-        if (secondsAgo < waitTime) {
-          console.warn(
-            `Detected MANUAL_CONTROL messages from another source (component ID: ${componentId}, ${(secondsAgo).toFixed(
-              2
-            )}s ago)`
-          )
-          return true
+          if (secondsAgo < waitTime) {
+            console.warn(
+              `Detected ${messageName} messages from another source (component ID: ${componentId}, ${secondsAgo.toFixed(
+                2
+              )}s ago)`
+            )
+            return true
+          }
+        } catch (error) {
+          console.warn(`Error checking ${messageName} for component ${componentId}:`, error)
         }
-      } catch (error) {
-        console.warn(`Error checking MANUAL_CONTROL for component ${componentId}:`, error)
       }
     }
 
     return false
   } catch (error) {
-    console.error('Error checking for other MANUAL_CONTROL sources:', error)
+    console.error('Error checking for other active control stations:', error)
     return false
   }
 }
