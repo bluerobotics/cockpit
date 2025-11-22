@@ -1463,7 +1463,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       }
       setDataLakeVariableData(path, mavlinkPackage.message.value)
 
-      if (messageSystemId !== this.currentSystemId || messageComponentId !== 1) {
+      if (messageSystemId === this.currentSystemId && messageComponentId === 1) {
         // Create duplicated variables for legacy purposes (that was how they were stored in the old generic-variables system)
         const oldVariablePath = mavlinkPackage.message.name.join('').replaceAll('\x00', '')
         if (getDataLakeVariableInfo(oldVariablePath) === undefined) {
@@ -1478,7 +1478,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         if (value === null) return
         if (typeof value !== 'string' && typeof value !== 'number') return
 
-        if (messageSystemId !== this.currentSystemId || messageComponentId !== 1) {
+        if (messageSystemId === this.currentSystemId && messageComponentId === 1) {
           // Create the variable in the old style path for legacy purposes (that was how they were stored in the old generic-variables system)
           const oldStylePath = `${path}`
           if (getDataLakeVariableInfo(oldStylePath) === undefined) {
