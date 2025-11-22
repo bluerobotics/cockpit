@@ -1,6 +1,6 @@
 {
-    "name": "Cockpit",
-    "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
+    "name": "Cockpit Lite",
+    "description": "A browser-based version of the Cockpit application - an intuitive and customizable ground control station for remote vehicles of all types.",
     "icon": "mdi-gamepad-square",
     "company": "Blue Robotics",
     "version": "0.0.0",
