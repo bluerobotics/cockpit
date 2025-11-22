@@ -1,3 +1,4 @@
+import { createDataLakeVariable, getDataLakeVariableInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType, MavModeFlag } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
@@ -97,6 +98,23 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
 
         this._mode = heartbeat.custom_mode as CustomMode
         this.onMode.emit()
+        break
+      }
+      case MAVLinkType.SCALED_PRESSURE3: {
+        // Create a nice alias for when the user has a Celsius temperature sensor
+        const scaled_pressure3 = mavlink.message as Message.ScaledPressure3
+
+        // It's only a Celsius if the pressures are set to 0
+        if (scaled_pressure3.press_abs !== 0 || scaled_pressure3.press_diff !== 0) return
+        const { system_id: messageSystemId, component_id: messageComponentId } = mavlink.header
+        // Special names are only for the primary vehicle
+        if (messageSystemId !== this.currentSystemId || messageComponentId !== 1) return
+        const aliasId = 'celsius-temperature'
+        if (getDataLakeVariableInfo(aliasId) === undefined) {
+          createDataLakeVariable({ id: aliasId, name: `Celsius Temperature (Probably)`, type: 'number' })
+        }
+        setDataLakeVariableData(aliasId, scaled_pressure3.temperature)
+        break
       }
     }
   }
