@@ -1450,16 +1450,15 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     const messageType = mavlinkPackage.message.type
     const { system_id: messageSystemId, component_id: messageComponentId } = mavlinkPackage.header
     const prefix = `/mavlink/${messageSystemId}/${messageComponentId}`
+    const suffix = `(MAVLink / System: ${messageSystemId} / Component: ${messageComponentId})`
 
     // Inject variables from the MAVLink messages into the DataLake
     if (['NAMED_VALUE_FLOAT', 'NAMED_VALUE_INT'].includes(messageType)) {
       // Special handling for NAMED_VALUE_FLOAT/NAMED_VALUE_INT messages
-      const name = `${(mavlinkPackage.message.name as string[])
-        .join('')
-        .replace(/\0/g, '')} (MAVLink / System: ${messageSystemId} / Component: ${messageComponentId})`
+      const name = `${(mavlinkPackage.message.name as string[]).join('').replace(/\0/g, '')}`
       const path = `${prefix}/${messageType}/${name}`
       if (getDataLakeVariableInfo(path) === undefined) {
-        createDataLakeVariable({ id: path, name: name, type: 'number' })
+        createDataLakeVariable({ id: path, name: `${name} ${suffix}`, type: 'number' })
       }
       setDataLakeVariableData(path, mavlinkPackage.message.value)
 
@@ -1496,7 +1495,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         if (getDataLakeVariableInfo(newStylePath) === undefined) {
           createDataLakeVariable({
             id: newStylePath,
-            name: `${path} (MAVLink / System: ${messageSystemId} / Component: ${messageComponentId})`,
+            name: `${path} ${suffix}`,
             type: typeof value === 'string' ? 'string' : 'number',
           })
         }
