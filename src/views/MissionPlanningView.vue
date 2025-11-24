@@ -2001,6 +2001,21 @@ const saveMissionToFile = async (): Promise<void> => {
   saveAs(blob, `cockpit_mission_plan_${date}.cmp`)
 }
 
+const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
+  waypoints
+    .map((wp) => ({
+      ...wp,
+      id: wp.id ?? uuid(),
+      commands: cloneCommands(wp.commands),
+    }))
+    .forEach((wp) => {
+      missionStore.currentPlanningWaypoints.push(wp)
+      addWaypointMarker(wp)
+    })
+
+  reNumberWaypoints()
+}
+
 const loadMissionFromFile = async (e: Event): Promise<void> => {
   const reader = new FileReader()
   reader.onload = (event: Event) => {
@@ -2016,9 +2031,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
     currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
     missionStore.defaultCruiseSpeed = maybeMission['settings']['defaultCruiseSpeed']
-    maybeMission['waypoints'].forEach((w: Waypoint) => {
-      addWaypoint(w.coordinates, w.altitude, w.altitudeReferenceType, cloneCommands(w.commands))
-    })
+    drawMissionOnTheMap(maybeMission['waypoints'])
   }
   // @ts-ignore: We know the event type and need refactor of the event typing
   reader.readAsText(e.target.files[0])
@@ -2763,7 +2776,7 @@ const tryFetchHome = async (): Promise<void> => {
 }
 
 const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
-  missionStore.clearMission()
+  clearCurrentMission()
 
   try {
     mapCenter.value = mission.settings.mapCenter
@@ -2772,9 +2785,7 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
     currentWaypointAltitudeRefType.value = mission.settings.currentWaypointAltitudeRefType
     missionStore.defaultCruiseSpeed = mission.settings.defaultCruiseSpeed
 
-    mission.waypoints.forEach((wp) => {
-      addWaypoint(wp.coordinates, wp.altitude, wp.altitudeReferenceType, wp.commands)
-    })
+    drawMissionOnTheMap(mission.waypoints)
     if (!home.value) {
       await tryFetchHome()
       homeRetryTimer = setInterval(tryFetchHome, 1000)
