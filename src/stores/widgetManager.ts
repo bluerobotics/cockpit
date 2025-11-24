@@ -4,7 +4,7 @@ import { useStorage, useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
-import { computed, onBeforeMount, onBeforeUnmount, Ref, ref, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, Ref, ref, toRaw, watch } from 'vue'
 
 import {
   defaultCustomWidgetContainers,
@@ -466,10 +466,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   const duplicateProfile = (profile: Profile): void => {
+    const clonedViews = profile.views.map((view) => ({
+      ...structuredClone<View>(toRaw(view)),
+      hash: uuid4(),
+    }))
+
     savedProfiles.value.unshift({
       hash: uuid4(),
       name: profile.name.concat('+'),
-      views: profile.views,
+      views: clonedViews,
     })
     currentProfileIndex.value = 0
   }
@@ -527,14 +532,12 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   const duplicateView = (view: View): void => {
-    currentProfile.value.views.unshift({
+    const clonedView = {
+      ...structuredClone<View>(toRaw(view)),
       hash: uuid4(),
       name: view.name.concat('+'),
-      widgets: view.widgets,
-      miniWidgetContainers: view.miniWidgetContainers,
-      showBottomBarOnBoot: view.showBottomBarOnBoot,
-      visible: view.visible,
-    })
+    }
+    currentProfile.value.views.unshift(clonedView)
     currentViewIndex.value = 0
   }
 
