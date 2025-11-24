@@ -178,8 +178,18 @@ const infoContent = ref<HTMLElement | null>(null)
 const warningContent = ref<HTMLElement | null>(null)
 const animateWarning = ref(true)
 const showElevationEffect = ref(isPanelExpanded.value || false)
+const contentHeight = ref(0)
+const contentResizeObserver = ref<ResizeObserver | null>(null)
 
 const emit = defineEmits(['update:isExpanded'])
+
+const updateContentMaxHeight = (): void => {
+  if (!content.value || !isPanelExpanded.value) return
+  const newHeight = content.value.scrollHeight
+  if (!newHeight) return
+  contentHeight.value = newHeight
+  content.value.style.maxHeight = newHeight + 'px'
+}
 
 const togglePanel = (): void => {
   if (isPanelExpanded.value) {
@@ -215,15 +225,20 @@ watch(
 )
 
 watch(isPanelExpanded, (newValue) => {
-  if (content.value) {
-    if (newValue) {
-      content.value.style.maxHeight = content.value.scrollHeight + 'px'
-    } else {
-      content.value.style.maxHeight = content.value.scrollHeight + 'px'
-      setTimeout(() => {
-        content.value!.style.maxHeight = '0px'
-      }, 0)
-    }
+  if (!content.value) return
+  if (newValue) {
+    const targetHeight = content.value.scrollHeight || contentHeight.value || 0
+    contentHeight.value = targetHeight
+    content.value.style.maxHeight = targetHeight + 'px'
+  } else {
+    const currentHeight = content.value.scrollHeight || contentHeight.value || 0
+    contentHeight.value = currentHeight
+    content.value.style.maxHeight = currentHeight + 'px'
+    setTimeout(() => {
+      if (content.value) {
+        content.value.style.maxHeight = '0px'
+      }
+    }, 0)
   }
 })
 
@@ -269,8 +284,19 @@ const setupSlotObservers = (): void => {
 }
 
 onMounted(() => {
-  if (content.value && !isPanelExpanded.value) {
-    content.value.style.maxHeight = '0px'
+  if (content.value) {
+    if (!isPanelExpanded.value) {
+      content.value.style.maxHeight = '0px'
+    } else {
+      contentHeight.value = content.value.scrollHeight
+      content.value.style.maxHeight = contentHeight.value + 'px'
+    }
+    contentResizeObserver.value = new ResizeObserver(() => {
+      if (isPanelExpanded.value) {
+        updateContentMaxHeight()
+      }
+    })
+    contentResizeObserver.value.observe(content.value)
   }
   if (infoContent.value && !isInfoOpen.value) {
     infoContent.value.style.maxHeight = '0px'
@@ -287,6 +313,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (warningSlotObserver.value) warningSlotObserver.value.disconnect()
   if (infoSlotObserver.value) infoSlotObserver.value.disconnect()
+  if (contentResizeObserver.value) contentResizeObserver.value.disconnect()
 })
 </script>
 
