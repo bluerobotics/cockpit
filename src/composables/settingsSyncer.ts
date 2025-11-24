@@ -4,7 +4,6 @@ import { type MaybeRef, onMounted, ref, toRaw, unref, watch } from 'vue'
 import {
   getKeyDataFromCockpitVehicleStorage,
   getVehicleAddress,
-  NoPathInBlueOsErrorName,
   setKeyDataOnCockpitVehicleStorage,
 } from '@/libs/blueos'
 import { isEqual, reloadCockpit } from '@/libs/utils'
@@ -12,6 +11,7 @@ import { useDevelopmentStore } from '@/stores/development'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { savedProfilesKey } from '@/stores/widgetManager'
+import { NoPathInBlueOsErrorName } from '@/types/blueos'
 
 import { useInteractionDialog } from './interactionDialog'
 import { openSnackbar } from './snackbar'

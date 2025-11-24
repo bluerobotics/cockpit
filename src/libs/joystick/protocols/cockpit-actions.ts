@@ -1,7 +1,10 @@
 /* eslint-disable vue/max-len */
 /* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
+import { HttpRequestActionConfig } from '@/libs/actions/http-request'
+import { MavlinkMessageActionConfig } from '@/libs/actions/mavlink-message-actions'
 import { type ProtocolAction,JoystickProtocol } from '@/types/joystick'
+import { JavascriptActionConfig } from '@/libs/actions/free-javascript'
 
 /**
  * Possible functions in the MAVLink `MANUAL_CONTROL` message protocol
@@ -154,7 +157,11 @@ export interface ActionConfig {
    * Action configuration
    * Specific to the action type
    */
-  config: any
+  config: HttpRequestActionConfig | MavlinkMessageActionConfig | JavascriptActionConfig
+  /**
+   * Version of the Action
+   */
+  version?: string
 }
 
 /**
