@@ -90,7 +90,7 @@
         </p>
       </template>
       <template #content>
-        <div class="flex flex-col h-full -mr-2 pr-1 overflow-y-scroll">
+        <div class="flex flex-col -mr-2 pr-1 overflow-y-scroll">
           <!-- Existing Commands -->
           <div v-if="waypointOnMissionStore?.commands?.length" class="flex flex-col gap-2 my-2">
             <div
