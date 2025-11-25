@@ -63,6 +63,18 @@
           color="white"
         />
         <v-switch v-model="alertStore.enableVoiceAlerts" hide-details label="Enable voice alerts" color="white" />
+        <v-slider
+          v-model="alertStore.alertVolume"
+          min="0"
+          max="1"
+          step="0.05"
+          hide-details
+          thumb-label
+          label="Alert volume"
+          color="white"
+          class="w-[250px] mt-2"
+          :disabled="!alertStore.enableVoiceAlerts"
+        />
       </div>
     </template>
     <template #actions>
