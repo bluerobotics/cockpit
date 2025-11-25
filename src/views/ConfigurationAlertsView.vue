@@ -13,12 +13,20 @@
             Select specific alert levels to customize which types of notifications you receive.
           </template>
           <template #content>
-            <v-switch
-              v-model="alertStore.enableVoiceAlerts"
-              label="Enable voice alerts"
-              color="white"
-              class="-mt-4 -mb-2 ml-3"
-            />
+            <div class="flex justify-between">
+              <v-switch v-model="alertStore.enableVoiceAlerts" label="Enable voice alerts" color="white" class="ml-3" />
+              <v-slider
+                v-model="alertStore.alertVolume"
+                min="0"
+                max="1"
+                step="0.05"
+                hide-details
+                label="Alerts volume"
+                color="white"
+                class="max-w-[300px]"
+                :disabled="!alertStore.enableVoiceAlerts"
+              />
+            </div>
             <span class="text-sm font-medium mt-4">Alert levels:</span>
             <div class="flex flex-wrap items-center justify-start">
               <div

@@ -23,6 +23,7 @@ export const useAlertStore = defineStore('alert', () => {
     { level: AlertLevel.Warning, enabled: true },
     { level: AlertLevel.Critical, enabled: true },
   ])
+  const alertVolume = useBlueOsStorage('cockpit-alert-volume', 1)
 
   const sortedAlerts = computed(() => {
     return alerts.sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
@@ -122,6 +123,7 @@ export const useAlertStore = defineStore('alert', () => {
       return
     }
     const utterance = new SpeechSynthesisUtterance(text)
+    utterance.volume = Math.min(Math.max(alertVolume.value, 0), 1)
     const voice = availableAlertSpeechVoices.find((v) => v.name === selectedAlertSpeechVoiceName.value)
     if (voice) {
       utterance.voice = voice
@@ -163,5 +165,6 @@ export const useAlertStore = defineStore('alert', () => {
     pushCriticalAlert,
     neverShowArmedMenuWarning,
     skipArmedMenuWarningThisSession,
+    alertVolume,
   }
 })
