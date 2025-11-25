@@ -1,8 +1,13 @@
 <template>
-  <div class="mx-1 my-1.5 w-[500px]">
+  <div
+    class="mx-1 my-1.5 w-[500px] rounded-md"
+    :class="{ 'alert-border-blink': shouldBlinkBorder }"
+    :style="miniWidget.options.enableColorCoding ? colorCodeBorderStyle : 'border: none;'"
+  >
     <div
       ref="currentAlertBar"
-      class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap bg-slate-800/75"
+      class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap"
+      :class="shouldBlinkBorder ? 'bg-[#db151233]' : 'bg-slate-800/75'"
     >
       <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100 text-ellipsis">{{ currentAlert.message }}</p>
       <div class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100">
@@ -16,7 +21,15 @@
       :class="{ 'opacity-0 invisible': !isShowingExpandedAlerts }"
     >
       <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
-        <div :title="alert.message" class="flex items-center justify-between whitespace-nowrap">
+        <div
+          :title="alert.message"
+          class="flex items-center justify-between whitespace-nowrap"
+          :class="{
+            'border-[1px] border-[#dc262699] bg-[#dc262622] pa-1':
+              (alert.level === AlertLevel.Critical || alert.level === AlertLevel.Error) &&
+              miniWidget.options.enableColorCoding,
+          }"
+        >
           <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
           <div
             class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
@@ -34,11 +47,25 @@
 <script setup lang="ts">
 import { useElementHover, useTimestamp, useToggle } from '@vueuse/core'
 import { differenceInSeconds, format } from 'date-fns'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
 import { Alert, AlertLevel } from '@/types/alert'
+import { MiniWidget } from '@/types/widgets'
+
+/**
+ * Props for the JoystickCommIndicator component
+ */
+const props = defineProps<{
+  /**
+   * Configuration of the widget
+   */
+  miniWidget: MiniWidget
+}>()
+const miniWidget = toRefs(props).miniWidget
+
+miniWidget.value.options.enableColorCoding ??= true
 
 useVehicleAlerterStore()
 const alertStore = useAlertStore()
@@ -48,6 +75,27 @@ const alertPersistencyInterval = 10 // in seconds
 const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
 const currentAlert = ref(alertStore.alerts[0])
+
+const colorCodeBorderStyle = computed(() => {
+  switch (currentAlert.value.level) {
+    case AlertLevel.Critical:
+      return 'border: 2px solid transparent'
+    case AlertLevel.Error:
+      return 'border: 2px solid #dc2626;'
+    case AlertLevel.Warning:
+      return 'border: 2px solid #db9340;'
+    case AlertLevel.Info:
+      return 'border: 2px solid #3b82f655;'
+    case AlertLevel.Success:
+      return 'border: 2px solid #308013;'
+    default:
+      return 'border: none;'
+  }
+})
+
+const shouldBlinkBorder = computed<boolean>(() => {
+  return miniWidget.value.options.enableColorCoding && currentAlert.value.level === AlertLevel.Critical
+})
 
 // eslint-disable-next-line no-undef
 let currentAlertInterval: NodeJS.Timer | undefined = undefined
@@ -100,5 +148,34 @@ const sortedAlertsReversed = computed(() => {
 <style scoped>
 .expanded-alerts-bar[invisible] {
   display: none;
+}
+
+.alert-border-blink {
+  border-width: 2px;
+  border-style: solid;
+  animation-name: alert-border-blink;
+  animation-duration: 700ms;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, box-shadow, border-color;
+}
+
+@keyframes alert-border-blink {
+  0% {
+    border-color: transparent;
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+  40% {
+    border-color: #f97373;
+    box-shadow: 0 0 8px 2px rgba(248, 113, 113, 0.9);
+  }
+  70% {
+    border-color: #dc2626;
+    box-shadow: 0 0 1px 1px rgba(220, 38, 38, 0.7);
+  }
+  100% {
+    border-color: transparent;
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
 }
 </style>
