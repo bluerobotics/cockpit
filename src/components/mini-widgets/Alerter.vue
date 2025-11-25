@@ -1,47 +1,74 @@
 <template>
-  <div
-    class="mx-1 my-1.5 w-[500px] rounded-md"
-    :class="{ 'alert-border-blink': shouldBlinkBorder }"
-    :style="miniWidget.options.enableColorCoding ? colorCodeBorderStyle : 'border: none;'"
-  >
+  <div ref="currentAlertBar" class="flex" :class="{ 'pointer-events-none': widgetStore.editingMode }">
     <div
-      ref="currentAlertBar"
-      class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap"
-      :class="shouldBlinkBorder ? 'bg-[#db151233]' : 'bg-slate-800/75'"
+      class="mx-1 my-1.5 w-[500px] rounded-md"
+      :class="{ 'alert-border-blink': shouldBlinkBorder }"
+      :style="miniWidget.options.enableColorCoding ? colorCodeBorderStyle : 'border: none;'"
     >
-      <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100 text-ellipsis">{{ currentAlert.message }}</p>
-      <div class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100">
-        <p>{{ formattedDate(currentAlert.time_created || new Date()) }}</p>
-        <p>{{ currentAlert.level.toUpperCase() }}</p>
+      <div
+        class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap"
+        :class="shouldBlinkBorder ? 'bg-[#db151233]' : 'bg-slate-800/75'"
+      >
+        <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100 text-ellipsis">{{ currentAlert.message }}</p>
       </div>
-    </div>
-    <div
-      ref="expandedAlertsBar"
-      class="expanded-alerts-bar absolute w-full p-2 transition-all rounded top-12 max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
-      :class="{ 'opacity-0 invisible': !isShowingExpandedAlerts }"
-    >
-      <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
-        <div
-          :title="alert.message"
-          class="flex items-center justify-between whitespace-nowrap"
-          :class="{
-            'border-[1px] border-[#dc262699] bg-[#dc262622] pa-1':
-              (alert.level === AlertLevel.Critical || alert.level === AlertLevel.Error) &&
-              miniWidget.options.enableColorCoding,
-          }"
-        >
-          <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
+      <div
+        ref="expandedAlertsBar"
+        class="expanded-alerts-bar absolute w-full p-2 transition-all rounded top-12 max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
+        :class="{ 'opacity-0 invisible': !isShowingExpandedAlerts }"
+      >
+        <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
           <div
-            class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
+            :title="alert.message"
+            class="flex items-center justify-between whitespace-nowrap"
+            :class="{
+              'border-[1px] border-[#dc262699] bg-[#dc262622] pa-1':
+                (alert.level === AlertLevel.Critical || alert.level === AlertLevel.Error) &&
+                miniWidget.options.enableColorCoding,
+            }"
           >
-            <p>{{ formattedDate(alert.time_created || new Date()) }}</p>
-            <p>{{ alert.level.toUpperCase() }}</p>
+            <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
+            <div
+              class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
+            >
+              <p>{{ formattedDate(alert.time_created || new Date()) }}</p>
+              <p>{{ alert.level.toUpperCase() }}</p>
+            </div>
           </div>
+          <div v-if="i !== alertStore.alerts.length - 1" class="h-px mx-1 mb-2 bg-slate-50/30" />
         </div>
-        <div v-if="i !== alertStore.alerts.length - 1" class="h-px mx-1 mb-2 bg-slate-50/30" />
       </div>
     </div>
+    <v-btn
+      v-if="isShowingExpandedAlerts || lockAlertsOpened"
+      icon="mdi-arrow-vertical-lock"
+      variant="text"
+      :color="lockAlertsOpened ? 'orange ' : 'white'"
+      class="-mr-8 -ml-4 mt-[2px] bg-transparent"
+      @click="toggleExpandedAlertLock()"
+    ></v-btn>
   </div>
+
+  <InteractionDialog
+    v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
+    title="Alerter options"
+    max-width="400px"
+    variant="text-only"
+  >
+    <template #content>
+      <div class="flex items-start justify-between flex-col -mt-8 mb-6 pl-6">
+        <v-switch
+          v-model="miniWidget.options.enableColorCoding"
+          hide-details
+          label="Enable color coded alerts"
+          color="white"
+        />
+        <v-switch v-model="alertStore.enableVoiceAlerts" hide-details label="Enable voice alerts" color="white" />
+      </div>
+    </template>
+    <template #actions>
+      <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">Close</v-btn>
+    </template>
+  </InteractionDialog>
 </template>
 
 <script setup lang="ts">
@@ -51,8 +78,11 @@ import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { Alert, AlertLevel } from '@/types/alert'
 import { MiniWidget } from '@/types/widgets'
+
+import InteractionDialog from '../InteractionDialog.vue'
 
 /**
  * Props for the JoystickCommIndicator component
@@ -69,12 +99,15 @@ miniWidget.value.options.enableColorCoding ??= true
 
 useVehicleAlerterStore()
 const alertStore = useAlertStore()
+const widgetStore = useWidgetManagerStore()
 const timeNow = useTimestamp({ interval: 1000 })
+
 const alertPersistencyInterval = 10 // in seconds
 
 const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
 const currentAlert = ref(alertStore.alerts[0])
+const lockAlertsOpened = ref(false)
 
 const colorCodeBorderStyle = computed(() => {
   switch (currentAlert.value.level) {
@@ -116,26 +149,44 @@ onUnmounted(() => {
 })
 
 const [isShowingExpandedAlerts, toggleExpandedAlerts] = useToggle()
+const showExpandedAlerts = (): boolean => toggleExpandedAlerts(true)
+const hideExpandedAlerts = (): boolean => toggleExpandedAlerts(false)
 
 const currentAlertBar = ref()
 const isCurrentAlertBarHovered = useElementHover(currentAlertBar)
 const expandedAlertsBar = ref()
 const isExpandedAlertsBarHovered = useElementHover(expandedAlertsBar)
 watch(isCurrentAlertBarHovered, (isHovered, wasHovered) => {
+  if (lockAlertsOpened.value) return
   if (wasHovered && !isHovered) {
     setTimeout(() => {
-      if (!isExpandedAlertsBarHovered.value && !isCurrentAlertBarHovered.value && isShowingExpandedAlerts.value) {
-        toggleExpandedAlerts()
+      if (!lockAlertsOpened.value && !isExpandedAlertsBarHovered.value && !isCurrentAlertBarHovered.value) {
+        hideExpandedAlerts()
       }
     }, 250)
   }
   if (isShowingExpandedAlerts.value) return
-  toggleExpandedAlerts()
+  showExpandedAlerts()
 })
 watch(isExpandedAlertsBarHovered, (isHovering, wasHovering) => {
+  if (lockAlertsOpened.value) return
   if (!(wasHovering && !isHovering)) return
-  toggleExpandedAlerts()
+  hideExpandedAlerts()
 })
+
+const toggleExpandedAlertLock = (): void => {
+  const shouldLock = !lockAlertsOpened.value
+  lockAlertsOpened.value = shouldLock
+
+  if (shouldLock) {
+    showExpandedAlerts()
+    return
+  }
+
+  if (!isExpandedAlertsBarHovered.value && !isCurrentAlertBarHovered.value) {
+    hideExpandedAlerts()
+  }
+}
 
 const sortedAlertsReversed = computed(() => {
   // We copy the sortedAlerts list before reversing it, otherwise the reverse function, which

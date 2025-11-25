@@ -833,7 +833,7 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
 }
 
 export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
-  [MiniWidgetType.Alerter]: false,
+  [MiniWidgetType.Alerter]: true,
   [MiniWidgetType.ArmerButton]: false,
   [MiniWidgetType.BaseCommIndicator]: false,
   [MiniWidgetType.BatteryIndicator]: true,
