@@ -1,3 +1,4 @@
+import { DataLakeVariable } from '@/libs/actions/data-lake'
 import { CockpitAction } from '@/libs/joystick/protocols/cockpit-actions'
 
 import type { Point2D, SizeRect2D } from './general'
@@ -140,28 +141,6 @@ export type SelectorOption = {
    * The value of the option
    */
   value: string
-}
-
-/**
- * Options for the Cockpit Actions parameters
- */
-export interface DataLakeVariable {
-  /**
-   * Parameter ID, equals to initial name of the parameter
-   */
-  id: string
-  /**
-   * Parameter name
-   */
-  name: string
-  /**
-   * Parameter type
-   */
-  type: 'string' | 'boolean' | 'number'
-  /**
-   * Parameter description
-   */
-  description?: string
 }
 
 /**
