@@ -33,7 +33,7 @@
       >
         <template #title><p class="ml-10">Options</p></template>
         <template #content>
-          <div class="flex flex-col items-center mb-4 -ml-[7px] w-[248px]">
+          <div class="flex flex-col h-full items-center mb-4 -ml-[7px] w-[248px]">
             <div
               v-for="optionKey in sortedOptionKeys"
               :key="optionKey"
@@ -246,7 +246,7 @@
       >
         <template #title>Actions</template>
         <template #content>
-          <div class="flex flex-col items-center mb-4 -ml-[7px] w-[248px]">
+          <div class="flex flex-col h-full items-center mb-4 -ml-[7px] w-[248px]">
             <template v-if="currentElement.component !== CustomWidgetElementType.Button">
               <div class="flex w-full justify-between items-center h-auto border-b-[1px] border-[#FFFFFF33]">
                 <p class="text-center w-full text-sm">Data-lake variable</p>
@@ -383,6 +383,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   createDataLakeVariable,
+  DataLakeVariable,
   deleteDataLakeVariable,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableInfo,
@@ -391,7 +392,7 @@ import {
 import { availableCockpitActions } from '@/libs/joystick/protocols/cockpit-actions'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { CustomWidgetElement, CustomWidgetElementType, DataLakeVariable } from '@/types/widgets'
+import { CustomWidgetElement, CustomWidgetElementType } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
@@ -431,10 +432,15 @@ watch(
 
 const getMarginsFromBarsHeight = computed(() => {
   return {
-    marginTop: widgetStore.currentTopBarHeightPixels + 'px',
-    marginBottom: widgetStore.currentBottomBarHeightPixels + 'px',
-    height:
-      window.innerHeight - widgetStore.currentTopBarHeightPixels - widgetStore.currentBottomBarHeightPixels - 1 + 'px',
+    marginTop: widgetStore.editingMode ? '0px' : widgetStore.currentTopBarHeightPixels + 'px',
+    marginBottom: widgetStore.editingMode ? '0px' : widgetStore.currentBottomBarHeightPixels + 'px',
+    height: widgetStore.editingMode
+      ? window.innerHeight + 'px'
+      : window.innerHeight -
+        widgetStore.currentTopBarHeightPixels -
+        widgetStore.currentBottomBarHeightPixels -
+        1 +
+        'px',
   }
 })
 
