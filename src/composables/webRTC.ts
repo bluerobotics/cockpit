@@ -45,7 +45,7 @@ export class WebRTCManager {
   private rtcConfiguration: RTCConfiguration
   private selectedICEIPs: string[] = []
   private selectedICEProtocols: string[] = []
-  private JitterBufferTarget: number | null
+  private JitterBufferTarget = 0
 
   private hasEnded = false
   private signaller: Signaller
@@ -92,7 +92,7 @@ export class WebRTCManager {
     selectedStream: Ref<Stream | undefined>,
     selectedICEIPs: Ref<string[]>,
     selectedICEProtocols: Ref<string[]>,
-    jitterBufferTarget: Ref<number | null>
+    jitterBufferTarget: Ref<number>
   ): startStreamReturn {
     this.selectedICEIPs = selectedICEIPs.value
     this.selectedICEProtocols = selectedICEProtocols.value

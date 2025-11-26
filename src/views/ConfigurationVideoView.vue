@@ -582,8 +582,8 @@ const openVideoLibrary = (): void => {
  * @param {string} input - The input value to be processed
  */
 function handleJitterBufferTargetInput(input: InputEvent): void {
-  if (input.data === null) {
-    jitterBufferTarget.value = null
+  if (input.data === null || input.data === '' || input.data === undefined) {
+    jitterBufferTarget.value = 0
   }
 }
 
