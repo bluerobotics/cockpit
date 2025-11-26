@@ -564,7 +564,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
 
   uploadingMission.value = true
   missionUploadProgress.value = 0
-  const missionItemsToUpload: Waypoint[] = structuredClone(toRaw(missionStore.currentPlanningWaypoints))
+  const missionItemsToUpload: Waypoint[] = JSON.parse(JSON.stringify(missionStore.currentPlanningWaypoints))
 
   const loadingCallback = async (loadingPerc: number): Promise<void> => {
     missionUploadProgress.value = loadingPerc
