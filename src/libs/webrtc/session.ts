@@ -131,9 +131,9 @@ export class Session {
 
   /**
    * Sets jitterBufferTarget (milliseconds)
-   * @param {number | null} jitterBufferTarget - Target RTP receiver jitter buffer time in milliseconds
+   * @param {number} jitterBufferTarget - Target RTP receiver jitter buffer time in milliseconds
    */
-  public setJitterBufferTarget(jitterBufferTarget: number | null): void {
+  public setJitterBufferTarget(jitterBufferTarget: number): void {
     this.peerConnection.getReceivers().forEach((receiver: RTCRtpReceiver) => {
       if (receiver.track.kind !== 'video') {
         return

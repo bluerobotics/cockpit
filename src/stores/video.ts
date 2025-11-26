@@ -52,7 +52,7 @@ export const useVideoStore = defineStore('video', () => {
   const allowedIceIps = useBlueOsStorage<string[]>('cockpit-allowed-stream-ips', [])
   const enableAutoIceIpFetch = useBlueOsStorage('cockpit-enable-auto-ice-ip-fetch', true)
   const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
-  const jitterBufferTarget = useBlueOsStorage<number | null>('cockpit-jitter-buffer-target', 0)
+  const jitterBufferTarget = useBlueOsStorage<number>('cockpit-jitter-buffer-target', 0)
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
