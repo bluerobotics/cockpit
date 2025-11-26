@@ -13,24 +13,46 @@
         v-if="miniWidget.options.layout?.label !== ''"
         :style="{ color: miniWidget.options.layout?.coloredLabel ? miniWidget.options.layout?.color : '#FFFFFF' }"
         class="mr-3 mb-[3px]"
+        :class="{ 'opacity-50': !isConnected }"
       >
         {{ miniWidget.options.layout?.label }}
       </p>
     </div>
-    <v-slider
-      :model-value="sliderValue"
-      :min="miniWidget.options.layout?.minValue"
-      :max="miniWidget.options.layout?.maxValue"
-      :thumb-label="miniWidget.options.layout?.showTooltip"
-      hide-details
-      class="min-w-20"
-      :color="miniWidget.options.layout?.color || 'white'"
-      :class="{
-        'pointer-events-none': widgetStore.editingMode || !isInput,
-        'scale-75': miniWidget.options.layout?.size === 'small',
-      }"
-      @update:model-value="(v) => handleSliderInput(v)"
-    ></v-slider>
+    <v-tooltip
+      text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
+      location="top"
+      open-delay="500"
+      :disabled="isInteractive || !isConnected"
+    >
+      <template #activator="{ props: tooltipProps }">
+        <div v-bind="tooltipProps">
+          <v-slider
+            :model-value="sliderValue"
+            :min="miniWidget.options.layout?.minValue"
+            :max="miniWidget.options.layout?.maxValue"
+            :thumb-label="miniWidget.options.layout?.showTooltip"
+            hide-details
+            class="min-w-20"
+            :color="miniWidget.options.layout?.color || 'white'"
+            :class="{
+              'scale-75': miniWidget.options.layout?.size === 'small',
+              'opacity-30': !isConnected,
+              'pointer-events-none': !isInteractive,
+            }"
+            @update:model-value="(v) => handleSliderInput(v)"
+          ></v-slider>
+        </div>
+      </template>
+    </v-tooltip>
+    <AlertIcon
+      v-if="showAlertIcon"
+      icon="mdi-connection"
+      color="#b9af1d"
+      animation="pulse"
+      class="absolute center ml-16 mt-[10px]"
+      tooltip="This element isn't connected to a data-lake variable yet. Click here to configure it."
+      @click="widgetStore.showElementPropsDrawer(miniWidget.hash)"
+    />
   </div>
 </template>
 
@@ -38,12 +60,12 @@
 import { toRefs } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import AlertIcon from '@/components/AlertIcon.vue'
 import {
   getDataLakeVariableData,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
-  updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
@@ -63,7 +85,7 @@ const sliderValue = ref(0)
 let listenerId: string | undefined
 let lastUpdateListenedValue: Date | undefined = undefined
 
-const setSliderValue = (value: number | string | undefined): void => {
+const setSliderValue = (value: number | string | boolean | undefined): void => {
   let numValue: number
   if (value === undefined || value === null || isNaN(Number(value))) {
     numValue = miniWidget.value.options.layout?.minValue || 0
@@ -87,8 +109,20 @@ watch(
   { immediate: true, deep: true }
 )
 
+const showAlertIcon = computed(() => {
+  return !isConnected.value && !widgetStore.editingMode && widgetStore.isRealMiniWidget(miniWidget.value.hash)
+})
+
+const isConnected = computed(() => {
+  return !!miniWidget.value.options.dataLakeVariable?.id
+})
+
 const isInput = computed(() => {
-  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+  return miniWidget.value.options.dataLakeVariable?.allowUserToChangeValue === true
+})
+
+const isInteractive = computed(() => {
+  return !!miniWidget.value.options.dataLakeVariable?.id && isInput.value && !widgetStore.editingMode
 })
 
 const startListeningDataLakeVariable = (): void => {
@@ -144,9 +178,6 @@ onMounted(() => {
   }
 
   if (miniWidget.value.options.dataLakeVariable) {
-    if (!miniWidget.value.options.dataLakeVariable.allowUserToChangeValue) {
-      updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
-    }
     startListeningDataLakeVariable()
   } else {
     setSliderValue(widgetStore.getMiniWidgetLastValue(miniWidget.value.hash))

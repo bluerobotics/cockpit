@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-full"
+    class="flex relative w-full"
     :style="{ width: '100%', justifyContent: miniWidget.options.layout?.align }"
     :class="
       widgetStore.elementToShowOnDrawer?.hash === miniWidget.hash && widgetStore.editingMode
@@ -9,29 +9,51 @@
     "
     @click="widgetStore.editingMode && widgetStore.showElementPropsDrawer(miniWidget.hash)"
   >
-    <div>
-      <v-select
-        v-model="selectedValue"
-        :items="options"
-        item-title="name"
-        item-value="value"
-        theme="dark"
-        density="compact"
-        variant="filled"
-        :min-width="miniWidget.options.layout?.width || 168"
-        hide-details
-        class="text-white"
-        :class="{ 'pointer-events-none': widgetStore.editingMode || !isInput }"
-        @update:model-value="handleSelection"
-      >
-      </v-select>
-    </div>
+    <v-tooltip
+      text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
+      location="top"
+      open-delay="500"
+      :disabled="isInteractive || !isConnected"
+    >
+      <template #activator="{ props: tooltipProps }">
+        <div v-bind="tooltipProps">
+          <v-select
+            v-model="selectedValue"
+            :items="options"
+            item-title="name"
+            item-value="value"
+            theme="dark"
+            density="compact"
+            variant="filled"
+            :min-width="miniWidget.options.layout?.width || 168"
+            hide-details
+            class="text-white"
+            :class="[
+              isInteractive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none cursor-default',
+              !isConnected ? 'opacity-50' : '',
+            ]"
+            @update:model-value="handleSelection"
+          >
+          </v-select>
+        </div>
+      </template>
+    </v-tooltip>
+    <AlertIcon
+      v-if="showAlertIcon"
+      icon="mdi-connection"
+      color="#b9af1d"
+      animation="pulse"
+      class="absolute center ml-[70px] mt-[12px]"
+      tooltip="This element isn't connected to a data-lake variable yet. Click here to configure it."
+      @click="widgetStore.showElementPropsDrawer(miniWidget.hash)"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import AlertIcon from '@/components/AlertIcon.vue'
 import {
   getDataLakeVariableData,
   listenDataLakeVariable,
@@ -98,8 +120,20 @@ const handleSelection = (value: string | number | boolean): void => {
   widgetStore.setMiniWidgetLastValue(miniWidget.value.hash, selected.value)
 }
 
+const showAlertIcon = computed(() => {
+  return !isConnected.value && !widgetStore.editingMode && widgetStore.isRealMiniWidget(miniWidget.value.hash)
+})
+
+const isConnected = computed(() => {
+  return !!miniWidget.value.options.dataLakeVariable?.id
+})
+
 const isInput = computed(() => {
-  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+  return miniWidget.value.options.dataLakeVariable?.allowUserToChangeValue === true
+})
+
+const isInteractive = computed(() => {
+  return !!miniWidget.value.options.dataLakeVariable?.id && isInput.value && !widgetStore.editingMode
 })
 
 const startListeningDataLakeVariable = (): void => {
@@ -139,7 +173,8 @@ onMounted(() => {
   if (miniWidget.value.options.dataLakeVariable) {
     startListeningDataLakeVariable()
   } else {
-    selectedOption.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as string
+    const last = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash)
+    selectedOption.value = options.value.find((opt) => opt.value === last) || options.value[0]
   }
 })
 
