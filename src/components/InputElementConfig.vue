@@ -513,6 +513,8 @@ const saveOrUpdateParameter = (): void => {
     name: futureDataLakeVariable.value?.name,
     type: currentElement.value?.options.variableType,
     description: futureDataLakeVariable.value?.description,
+    persistent: true,
+    allowUserToChangeValue: true,
   }
   if (
     currentElement.value &&
@@ -523,13 +525,13 @@ const saveOrUpdateParameter = (): void => {
       showActionExistsError()
       return
     }
-    createDataLakeVariable({ ...newDataLakeVariable, persistent: true, allowUserToChangeValue: true })
+    createDataLakeVariable(newDataLakeVariable)
     currentElement.value.options.dataLakeVariable = newDataLakeVariable
     return
   }
   if (futureDataLakeVariable.value && currentElement.value?.options.dataLakeVariable?.name) {
     newDataLakeVariable.id = currentElement.value.options.dataLakeVariable.id
-    updateDataLakeVariableInfo({ ...newDataLakeVariable, persistent: true, allowUserToChangeValue: true })
+    updateDataLakeVariableInfo(newDataLakeVariable)
     currentElement.value.options.dataLakeVariable = newDataLakeVariable
   }
 }

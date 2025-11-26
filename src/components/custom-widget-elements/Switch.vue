@@ -8,29 +8,56 @@
     "
     @click="widgetStore.editingMode && widgetStore.showElementPropsDrawer(miniWidget.hash)"
   >
-    <v-switch
-      v-model="switchValue"
-      hide-details
-      :color="miniWidget.options.layout?.color || '#FFFFFF'"
-      :class="{ 'pointer-events-none': widgetStore.editingMode || !isInput }"
-      class="min-w-[35px]"
-      @change="handleToggleAction"
+    <v-tooltip
+      text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
+      location="top"
+      open-delay="500"
+      :disabled="isInteractive || !isConnected"
+    >
+      <template #activator="{ props: tooltipProps }">
+        <div v-bind="tooltipProps">
+          <v-switch
+            v-model="switchValue"
+            hide-details
+            :color="miniWidget.options.layout?.color || '#FFFFFF'"
+            :class="{
+              'opacity-40': !isConnected,
+              'cursor-default pointer pointer-events-none': !isInteractive,
+            }"
+            class="min-w-[35px]"
+            @change="handleToggleAction"
+          />
+          <p
+            v-if="miniWidget.options.layout?.label !== ''"
+            class="ml-3 mb-[3px] whitespace-nowrap"
+            :class="{ 'opacity-50': !isConnected }"
+          >
+            {{ miniWidget.options.layout?.label }}
+          </p>
+        </div>
+      </template>
+    </v-tooltip>
+    <AlertIcon
+      v-if="showAlertIcon"
+      icon="mdi-connection"
+      color="#b9af1d"
+      animation="pulse"
+      class="absolute center ml-6 mt-[10px]"
+      tooltip="This element isn't connected to a data-lake variable yet. Click here to configure it."
+      @click="widgetStore.showElementPropsDrawer(miniWidget.hash)"
     />
-    <p v-if="miniWidget.options.layout?.label !== ''" class="ml-3 mb-[3px] whitespace-nowrap">
-      {{ miniWidget.options.layout?.label }}
-    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import AlertIcon from '@/components/AlertIcon.vue'
 import {
   getDataLakeVariableData,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
-  updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
@@ -61,8 +88,20 @@ watch(
   { immediate: true, deep: true }
 )
 
+const showAlertIcon = computed(() => {
+  return !isConnected.value && !widgetStore.editingMode && widgetStore.isRealMiniWidget(miniWidget.value.hash)
+})
+
+const isConnected = computed(() => {
+  return !!miniWidget.value.options.dataLakeVariable?.id
+})
+
 const isInput = computed(() => {
-  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+  return miniWidget.value.options.dataLakeVariable?.allowUserToChangeValue === true
+})
+
+const isInteractive = computed(() => {
+  return !!miniWidget.value.options.dataLakeVariable?.id && isInput.value && !widgetStore.editingMode
 })
 
 const startListeningDataLakeVariable = (): void => {
@@ -112,9 +151,6 @@ onMounted(() => {
   }
 
   if (miniWidget.value.options.dataLakeVariable) {
-    if (!miniWidget.value.options.dataLakeVariable.allowUserToChangeValue) {
-      updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
-    }
     startListeningDataLakeVariable()
   } else {
     switchValue.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean

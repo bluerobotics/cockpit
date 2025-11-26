@@ -1,91 +1,129 @@
 <template>
-  <div
-    id="dial"
-    class="flex items-center w-auto"
-    :style="{ justifyContent: miniWidget.options.layout?.align }"
-    :class="
-      widgetStore.elementToShowOnDrawer?.hash === miniWidget.hash && widgetStore.editingMode
-        ? 'bg-[#00000010] '
-        : 'border-0'
-    "
-    @click="widgetStore.editingMode && widgetStore.showElementPropsDrawer(miniWidget.hash)"
+  <v-tooltip
+    text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
+    location="top"
+    open-delay="500"
+    :disabled="isInput || !isConnected"
   >
-    <div
-      class="flex flex-row"
-      :class="widgetStore.editingMode || !isInput ? 'pointer-events-none' : 'pointer-events-auto'"
-    >
+    <template #activator="{ props: tooltipProps }">
       <div
-        class="potentiometer-container w-full"
-        :class="sizeClass"
-        @mousedown="startDrag"
-        @click="isEditingValue = false"
+        v-bind="tooltipProps"
+        id="dial"
+        class="flex items-center relative w-auto"
+        :style="{ justifyContent: miniWidget.options.layout?.align }"
+        :class="
+          widgetStore.elementToShowOnDrawer?.hash === miniWidget.hash && widgetStore.editingMode
+            ? 'bg-[#00000010] '
+            : 'border-0'
+        "
+        @click="widgetStore.editingMode && widgetStore.showElementPropsDrawer(miniWidget.hash)"
       >
-        <div class="potentiometer-scale elevation-5">
+        <div
+          class="flex flex-row"
+          :class="[
+            isInteractive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none cursor-default',
+            !isConnected ? 'opacity-50' : '',
+          ]"
+        >
           <div
-            class="potentiometer-knob"
-            :style="{
-              transform: `rotate(${rotationAngle}deg)`,
-              background: miniWidget.options.layout?.knobColor || '#838383',
-            }"
+            class="potentiometer-container w-full"
+            :class="sizeClass"
+            @mousedown="startDrag"
+            @click="isEditingValue = false"
           >
-            <div class="knob-notch" :style="{ background: miniWidget.options.layout?.notchColor || '#222222' }"></div>
+            <div class="potentiometer-scale elevation-5">
+              <div
+                class="potentiometer-knob"
+                :style="{
+                  transform: `rotate(${rotationAngle}deg)`,
+                  background: miniWidget.options.layout?.knobColor || '#838383',
+                }"
+              >
+                <div
+                  class="knob-notch"
+                  :style="{ background: miniWidget.options.layout?.notchColor || '#222222' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+          <p
+            v-if="miniWidget.options.layout?.minValue >= miniWidget.options.layout?.maxValue"
+            class="absolute bg-[#880000] pa-2 text-xs mt-2 -ml-12 border-2 border-white rounded-md z-50"
+          >
+            Min value is larger than Max value
+          </p>
+        </div>
+        <div
+          v-if="miniWidget.options.layout?.showValue"
+          class="flex"
+          :class="{
+            'opacity-50 pointer-events-none': !isConnected,
+            'pointer-events-none cursor-default': !isInteractive && isConnected,
+          }"
+          @keydown.esc="finishEditingValue"
+        >
+          <div
+            class="value-display bg-[#FFFFFF22] border-[1px] rounded-md p-[2px] min-w-[40px] text-center elevation-1"
+            :class="
+              isEditingValue && isInteractive
+                ? 'pointer-events-auto border-blue-800 bg-[#0000FF11]'
+                : isInteractive
+                ? 'cursor-pointer border-[#FFFFFF44] bg-[#FFFFFF22]'
+                : 'pointer-events-none cursor-default border-[#FFFFFF44] bg-[#FFFFFF22]'
+            "
+          >
+            <div v-if="!isEditingValue || !isConnected" @click="startEditingValue">
+              {{ Math.round(potentiometerValue) || 0 }}
+            </div>
+            <input
+              v-if="isEditingValue && isConnected"
+              v-model="editableValue"
+              class="bg-transparent border-0 text-center outline-none max-w-[30px]"
+              @keydown.enter="finishEditingValue"
+              @blur="finishEditingValue"
+            />
+          </div>
+          <div class="flex flex-col w-4 h-7 justify-between items-center">
+            <v-icon
+              v-if="!isEditingValue && isInteractive"
+              class="text-white text-[16px] -mt-[2px] ml-2 cursor-pointer opacity-30"
+              @click="addDialValue"
+            >
+              mdi-plus
+            </v-icon>
+
+            <v-icon
+              v-if="!isEditingValue && isInteractive"
+              class="text-white text-[16px] -mb-1 ml-2 cursor-pointer opacity-30"
+              @click="subtractDialValue"
+            >
+              mdi-minus
+            </v-icon>
           </div>
         </div>
-      </div>
-      <p
-        v-if="miniWidget.options.layout?.minValue >= miniWidget.options.layout?.maxValue"
-        class="absolute bg-[#880000] pa-2 text-xs mt-2 -ml-12 border-2 border-white rounded-md z-50"
-      >
-        Min value is larger than Max value
-      </p>
-    </div>
-    <div v-if="miniWidget.options.layout?.showValue" class="flex" @keydown.esc="finishEditingValue">
-      <div
-        class="value-display bg-[#FFFFFF22] border-[1px] rounded-md p-[2px] min-w-[40px] text-center elevation-1"
-        :class="
-          isInput && isEditingValue
-            ? 'pointer-events-auto border-blue-800 bg-[#0000FF11]'
-            : 'cursor-pointer border-[#FFFFFF44] bg-[#FFFFFF22]'
-        "
-      >
-        <div v-if="!isEditingValue || !isInput" @click="startEditingValue">
-          {{ Math.round(potentiometerValue) || 0 }}
-        </div>
-        <input
-          v-if="isEditingValue && isInput"
-          v-model="editableValue"
-          class="bg-transparent border-0 text-center outline-none max-w-[30px]"
-          @keydown.enter="finishEditingValue"
-          @blur="finishEditingValue"
+        <AlertIcon
+          v-if="showAlertIcon"
+          icon="mdi-connection"
+          color="#b9af1d"
+          animation="pulse"
+          class="absolute center ml-20 mt-[10px]"
+          tooltip="This element isn't connected to a data-lake variable yet. Click here to configure it."
+          @click="widgetStore.showElementPropsDrawer(miniWidget.hash)"
         />
       </div>
-      <div class="flex flex-col w-4 h-7 justify-between items-center">
-        <v-icon
-          v-if="!isEditingValue && isInput"
-          class="text-white text-[16px] -mt-[2px] ml-2 cursor-pointer opacity-30"
-          @click="addDialValue"
-          >mdi-plus</v-icon
-        >
-        <v-icon
-          v-if="!isEditingValue && isInput"
-          class="text-white text-[16px] -mb-1 ml-2 cursor-pointer opacity-30"
-          @click="subtractDialValue"
-          >mdi-minus</v-icon
-        >
-      </div>
-    </div>
-  </div>
+    </template>
+  </v-tooltip>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import AlertIcon from '@/components/AlertIcon.vue'
 import {
   getDataLakeVariableData,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
-  updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
@@ -124,6 +162,10 @@ watch(
   { immediate: true, deep: true }
 )
 
+const showAlertIcon = computed(() => {
+  return !isConnected.value && !widgetStore.editingMode && widgetStore.isRealMiniWidget(miniWidget.value.hash)
+})
+
 const assignedMinValue = computed(() => {
   return Number(miniWidget.value.options.layout?.minValue) || defaultMinValue
 })
@@ -132,7 +174,7 @@ const assignedMaxValue = computed(() => {
   return Number(miniWidget.value.options.layout?.maxValue) || defaultMaxValue
 })
 
-const setDialValue = (value: number | string | undefined): void => {
+const setDialValue = (value: number | string | boolean | undefined): void => {
   let numValue: number
   if (value === undefined || value === null || isNaN(Number(value))) {
     numValue = assignedMinValue.value
@@ -147,16 +189,24 @@ const setDialValue = (value: number | string | undefined): void => {
   rotationAngle.value = ((numValue - assignedMinValue.value) / valueRange) * rotationRange - rotationLimit
 }
 
+const isConnected = computed(() => {
+  return !!miniWidget.value.options.dataLakeVariable?.id
+})
+
 const isInput = computed(() => {
-  return miniWidget.value.options?.dataLakeVariable?.persistent === true
+  return miniWidget.value.options.dataLakeVariable?.allowUserToChangeValue === true
+})
+
+const isInteractive = computed(() => {
+  return !!miniWidget.value.options.dataLakeVariable?.id && isInput.value && !widgetStore.editingMode
 })
 
 const startListeningDataLakeVariable = (): void => {
   if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
+    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.id, (value) => {
       setDialValue(value)
     })
-    setDialValue(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id))
+    setDialValue(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable?.id))
   }
 }
 
@@ -199,9 +249,6 @@ onMounted(() => {
   }
 
   if (miniWidget.value.options.dataLakeVariable) {
-    if (!miniWidget.value.options.dataLakeVariable.allowUserToChangeValue) {
-      updateDataLakeVariableInfo({ ...miniWidget.value.options.dataLakeVariable, allowUserToChangeValue: true })
-    }
     startListeningDataLakeVariable()
   } else {
     setDialValue(widgetStore.getMiniWidgetLastValue(miniWidget.value.hash))
@@ -231,7 +278,7 @@ let lastKnobAngle = 0
 
 const startDrag = (event: MouseEvent): void => {
   event.preventDefault()
-  if (!isInput.value) return
+  if (!isInteractive.value) return
 
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
@@ -286,7 +333,7 @@ const subtractDialValue = (): void => {
 }
 
 const startEditingValue = (): void => {
-  if (widgetStore.editingMode || !isInput.value) return
+  if (!isInteractive.value || !isConnected.value) return
   isEditingValue.value = true
 
   editableValue.value = String(Math.round(potentiometerValue.value) || defaultMinValue)
@@ -353,7 +400,6 @@ onUnmounted(() => {
   height: 100%;
   border-radius: 50%;
   position: relative;
-  cursor: pointer;
 }
 
 .knob-notch {
