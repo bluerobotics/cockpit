@@ -182,7 +182,7 @@ export const useMissionStore = defineStore('mission', () => {
   }
 
   const clearDraft = (): void => {
-    draftMission.value = null
+    draftMission.value = {}
   }
 
   const bumpVehicleMissionRevision = (wps: Waypoint[]): void => {
