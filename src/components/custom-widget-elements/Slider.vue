@@ -122,7 +122,7 @@ const isInput = computed(() => {
 })
 
 const isInteractive = computed(() => {
-  return !!miniWidget.value.options.dataLakeVariable?.id && isInput.value && !widgetStore.editingMode
+  return isConnected.value && isInput.value && !widgetStore.editingMode
 })
 
 const startListeningDataLakeVariable = (): void => {
