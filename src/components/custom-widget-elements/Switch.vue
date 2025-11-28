@@ -1,6 +1,7 @@
 <template>
   <div
     class="flex items-center h-[30px] px-4"
+    :style="{ justifyContent: miniWidget.options.layout?.align }"
     :class="
       widgetStore.elementToShowOnDrawer?.hash === miniWidget.hash && widgetStore.editingMode
         ? 'bg-[#00000010] '
