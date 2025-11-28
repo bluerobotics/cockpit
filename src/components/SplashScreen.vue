@@ -24,11 +24,15 @@
       <div
         class="relative flex flex-col w-full h-[80%] rounded-tr-[20px] rounded-tl-[20px] items-center justify-center elevation-7 border-b-[1px] border-[#ffffff33] bg-[#FFFFFF11] px-8"
       >
-        <img
-          class="h-[55%] -ml-[1vw] z-[9993] object-contain brightness-125"
-          :src="cockpitLogoName"
-          alt="Cockpit Logo"
-        />
+        <div class="relative h-[55%] -ml-[1vw] z-[9993] object-contain brightness-125">
+          <img :src="cockpitLogoName" class="h-full" alt="Cockpit Logo" />
+          <img
+            v-if="!isElectron()"
+            :src="lite"
+            class="w-[16vh] absolute right-8 -bottom-12 rotate-[-20deg]"
+            alt="Cockpit-lite"
+          />
+        </div>
         <img
           class="absolute top-[2vh] left-[2vh] w-[15%] z-[9993]"
           :src="blueRoboticsWhiteNameLogo"
@@ -76,6 +80,7 @@ import blueRoboticsWhiteNameLogo from '../assets/blue-robotics-white-name-logo.p
 import blueROV from '../assets/blueROV-front.png'
 import cockpitLogoName from '../assets/cockpit-name-logo.png'
 import fish from '../assets/fish-transparent.png'
+import lite from '../assets/lite.png'
 import splashBackground from '../assets/splash-background.png'
 import spool from '../assets/spool.gif'
 import tether from '../assets/tether.png'
@@ -85,6 +90,8 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 
 import { useFullscreen } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+
+import { isElectron } from '@/libs/utils'
 
 const randomLightHeartedMessage = ref<string>('')
 let timerId: ReturnType<typeof setTimeout>
