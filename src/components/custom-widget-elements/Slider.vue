@@ -22,7 +22,7 @@
       text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
       location="top"
       open-delay="500"
-      :disabled="isInteractive || !isConnected"
+      :disabled="isInput || !isConnected"
     >
       <template #activator="{ props: tooltipProps }">
         <div v-bind="tooltipProps">
