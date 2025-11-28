@@ -198,7 +198,7 @@ const isInput = computed(() => {
 })
 
 const isInteractive = computed(() => {
-  return !!miniWidget.value.options.dataLakeVariable?.id && isInput.value && !widgetStore.editingMode
+  return isConnected.value && isInput.value && !widgetStore.editingMode
 })
 
 const startListeningDataLakeVariable = (): void => {
@@ -333,7 +333,7 @@ const subtractDialValue = (): void => {
 }
 
 const startEditingValue = (): void => {
-  if (!isInteractive.value || !isConnected.value) return
+  if (!isInteractive.value) return
   isEditingValue.value = true
 
   editableValue.value = String(Math.round(potentiometerValue.value) || defaultMinValue)
