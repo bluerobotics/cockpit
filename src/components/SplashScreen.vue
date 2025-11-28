@@ -5,16 +5,50 @@
       :src="splashBackground"
       alt="Background"
     />
-    <div id="tether-animation">
-      <div
-        class="fixed bg-yellow-400 opacity-50 animate-tether-grow"
-        style="right: calc(18% + 15px); top: -130px; width: 1px; height: 150px; z-index: 9991"
-      ></div>
-      <div class="absolute top-0 right-[18%] opacity-60 animate-descend" style="z-index: 9991">
-        <img class="w-[40px]" :src="spool" alt="Spool" />
+    <div class="absolute bottom-[5vh] right-[11%] opacity-70 animate-left-slow" style="z-index: 9991">
+      <img class="w-[40px] contrast-100 brightness-0" :src="fish" alt="Fish" />
+    </div>
+    <div class="absolute bottom-[8vh] right-[17%] opacity-70 animate-left" style="z-index: 9991">
+      <img class="w-[60px] contrast-100 brightness-0" :src="fish" alt="Fish" />
+    </div>
+    <div class="absolute bottom-[10vh] right-[24%] opacity-70 animate-left-fast" style="z-index: 9991">
+      <img class="w-[60px] contrast-100 brightness-0" :src="fish" alt="Fish" />
+    </div>
+    <div class="absolute bottom-[9vh] right-[22%] opacity-70 animate-left-slow" style="z-index: 9991">
+      <img class="w-[60px] contrast-100 brightness-0" :src="fish" alt="Fish" />
+    </div>
+    <div class="absolute bottom-[4vh] right-[5%] opacity-70 animate-left" style="z-index: 9991">
+      <img class="w-[30px] contrast-100 brightness-0" :src="fish" alt="Fish" />
+    </div>
+    <div class="absolute bottom-[6vh] right-[5%] opacity-70 animate-left-fast" style="z-index: 9991">
+      <img class="w-[30px] contrast-100 brightness-0" :src="fish" alt="Fish" />
+    </div>
+
+    <div v-if="isDecember()" id="tether-animation">
+      <div class="absolute top-[30vh] right-[-55px] animate-left-down-fast" style="z-index: 9991">
+        <img class="wiggle w-[40px] opacity-60" :src="gifts" alt="tether-to-gift" />
       </div>
-      <div class="absolute top-[5vh] right-[11%] opacity-90 animate-left" style="z-index: 9991">
-        <img class="w-[60px]" :src="fish" alt="Fish" />
+      <div class="absolute top-[33vh] right-[-20px] animate-left-down-fast" style="z-index: 9990">
+        <img class="w-[60px] rotate-[-15deg]" :src="tetherXmas" alt="tether-to-gift" />
+      </div>
+      <div class="absolute top-[31.5vh] right-0 animate-left-down-fast" style="z-index: 9991">
+        <img
+          class="w-[70px] scale-x-[-1] scale-y-[-1] rotate-[15deg] contrast-100 brightness-0"
+          :src="xmasTree"
+          alt="christmas-tree"
+        />
+      </div>
+      <div class="absolute top-[35vh] right-[60px] animate-left-down-fast" style="z-index: 9990">
+        <img class="w-[110px]" :src="tetherXmas" alt="tether-to-tree" />
+      </div>
+      <div class="absolute top-[35vh] right-[8%] animate-left-down-fast" style="z-index: 9990">
+        <img class="w-[60px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Fish" />
+      </div>
+      <div class="absolute top-[37vh] right-[4%] animate-left-down-faster" style="z-index: 9990">
+        <img class="w-[30px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Fish" />
+      </div>
+      <div class="absolute top-[39vh] right-[2%] animate-left-down-faster2" style="z-index: 9990">
+        <img class="w-[35px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Fish" />
       </div>
     </div>
     <div
@@ -45,7 +79,7 @@
       </div>
     </div>
     <div class="absolute bottom-0 left-[280px] animate-ascend" style="z-index: 9991">
-      <img class="w-[130px]" style="margin-bottom: -130px" :src="blueROV" alt="blueROV" />
+      <img class="w-[130px]" style="margin-bottom: -130px" :src="isDecember() ? blueROVXmas : blueROV" alt="blueROV" />
     </div>
     <div class="absolute left-[180px] mb-[-70px] opacity-50 brightness-50 animate-tether-ascend" style="z-index: 9990">
       <img
@@ -74,19 +108,27 @@
   </div>
 </template>
 <script lang="ts" setup>
+import { getMonth } from 'date-fns'
+
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import blueRoboticsWhiteNameLogo from '../assets/blue-robotics-white-name-logo.png'
 import blueROV from '../assets/blueROV-front.png'
+import blueROVXmas from '../assets/blueROV-front-santa-hat.png'
+import rovSide from '../assets/blueROV-side-dark.png'
 import cockpitLogoName from '../assets/cockpit-name-logo.png'
 import fish from '../assets/fish-transparent.png'
+import gifts from '../assets/gifts.png'
 import lite from '../assets/lite.png'
+import xmasTree from '../assets/pulling-xmas-tree.gif'
 import splashBackground from '../assets/splash-background.png'
-import spool from '../assets/spool.gif'
 import tether from '../assets/tether.png'
+import tetherXmas from '../assets/tether-xmas.png'
 
 const interfaceStore = useAppInterfaceStore()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
+
+const isDecember = (): boolean => getMonth(new Date()) === 11
 
 import { useFullscreen } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
@@ -198,6 +240,44 @@ onBeforeUnmount(() => {
   animation: left 30s linear forwards;
 }
 
+.animate-left-slow {
+  animation: left 40s linear forwards;
+}
+
+.animate-left-fast {
+  animation: left 20s linear forwards;
+}
+
+@keyframes leftDown {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-20vw, 20vh);
+  }
+}
+
+@keyframes leftDown2 {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-20vw, 5vh);
+  }
+}
+
+.animate-left-down-faster {
+  animation: leftDown 20s linear forwards;
+}
+
+.animate-left-down-faster2 {
+  animation: leftDown2 24s linear forwards;
+}
+
+.animate-left-down-fast {
+  animation: leftDown 40s linear forwards;
+}
+
 @keyframes ascend {
   from {
     transform: translateY(calc(0 + 150px));
@@ -206,6 +286,42 @@ onBeforeUnmount(() => {
     transform: translateY(-350px);
   }
 }
+
+.wiggle {
+  animation: wiggle 8s ease-in-out infinite;
+  transform-origin: 10% 50%;
+}
+
+@keyframes wiggle {
+  0% {
+    transform: rotate(0deg);
+  }
+  8% {
+    transform: rotate(-1deg);
+  }
+  18% {
+    transform: rotate(2deg);
+  }
+  28% {
+    transform: rotate(-3deg);
+  }
+  42% {
+    transform: rotate(1deg);
+  }
+  57% {
+    transform: rotate(-2deg);
+  }
+  72% {
+    transform: rotate(1deg);
+  }
+  87% {
+    transform: rotate(-1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
 .animate-ascend {
   bottom: 0;
   animation: ascend 25s ease-in-out forwards;
