@@ -13,10 +13,11 @@
       text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
       location="top"
       open-delay="500"
+      class="flex items-center"
       :disabled="isInput || !isConnected"
     >
       <template #activator="{ props: tooltipProps }">
-        <div v-bind="tooltipProps">
+        <div v-bind="tooltipProps" style="display: contents">
           <v-switch
             v-model="switchValue"
             hide-details

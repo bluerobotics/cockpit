@@ -25,7 +25,7 @@
       :disabled="isInput || !isConnected"
     >
       <template #activator="{ props: tooltipProps }">
-        <div v-bind="tooltipProps">
+        <div v-bind="tooltipProps" style="display: contents">
           <v-slider
             :model-value="sliderValue"
             :min="miniWidget.options.layout?.minValue"
