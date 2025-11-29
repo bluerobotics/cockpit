@@ -3,11 +3,11 @@ import localforage from 'localforage'
 
 import { defaultSensorDataloggerProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
+import { settingsManager } from './settings-management'
 import { unitAbbreviation } from './units'
 import { degrees } from './utils'
 
@@ -34,6 +34,26 @@ export enum DatalogVariable {
 
 const logDateFormat = 'LLL dd, yyyy'
 const { showDialog } = useInteractionDialog()
+
+const telemetryDisplayDataKey = 'cockpit-datalogger-overlay-grid'
+const telemetryDisplayOptionsKey = 'cockpit-datalogger-overlay-options'
+const logIntervalKey = 'cockpit-datalogger-log-interval'
+
+const defaultTelemetryDisplayData = defaultSensorDataloggerProfile as OverlayGrid
+const defaultTelemetryDisplayOptions = {
+  fontSize: 30,
+  fontColor: '#FFFFFFFF',
+  backgroundColor: '#000000FF',
+  fontOutlineColor: '#000000FF',
+  fontOutlineSize: 2,
+  fontShadowColor: '#000000FF',
+  fontShadowSize: 1,
+  fontBold: false,
+  fontItalic: false,
+  fontUnderline: false,
+  fontStrikeout: false,
+} as OverlayOptions
+const defaultLogInterval = 1000
 
 /**
  * Data for VeryGenericIndicator variables
@@ -200,24 +220,66 @@ class DataLogger {
   datetimeLastLogPoint: Date | null = null
   variablesBeingUsed: DatalogVariable[] = []
   veryGenericIndicators: VeryGenericData[] = []
-  telemetryDisplayData = useBlueOsStorage<OverlayGrid>(
-    'cockpit-datalogger-overlay-grid',
-    defaultSensorDataloggerProfile
-  )
-  telemetryDisplayOptions = useBlueOsStorage<OverlayOptions>('cockpit-datalogger-overlay-options', {
-    fontSize: 30,
-    fontColor: '#FFFFFFFF',
-    backgroundColor: '#000000FF',
-    fontOutlineColor: '#000000FF',
-    fontOutlineSize: 2,
-    fontShadowColor: '#000000FF',
-    fontShadowSize: 1,
-    fontBold: false,
-    fontItalic: false,
-    fontUnderline: false,
-    fontStrikeout: false,
-  })
-  logInterval = useBlueOsStorage<number>('cockpit-datalogger-log-interval', 1000)
+  private _telemetryDisplayData?: OverlayGrid
+  private _telemetryDisplayOptions?: OverlayOptions
+  private _logInterval?: number
+
+  get telemetryDisplayData(): OverlayGrid {
+    if (this._telemetryDisplayData === undefined) {
+      const savedValue = settingsManager.getKeyValue(telemetryDisplayDataKey) as OverlayGrid
+      this._telemetryDisplayData = savedValue ?? defaultTelemetryDisplayData
+    }
+    return this._telemetryDisplayData
+  }
+
+  set telemetryDisplayData(value: OverlayGrid) {
+    this._telemetryDisplayData = value
+    settingsManager.setKeyValue(telemetryDisplayDataKey, value)
+  }
+
+  get telemetryDisplayOptions(): OverlayOptions {
+    if (this._telemetryDisplayOptions === undefined) {
+      const savedValue = settingsManager.getKeyValue(telemetryDisplayOptionsKey) as OverlayOptions
+      this._telemetryDisplayOptions = savedValue ?? defaultTelemetryDisplayOptions
+    }
+    return this._telemetryDisplayOptions
+  }
+
+  set telemetryDisplayOptions(value: OverlayOptions) {
+    this._telemetryDisplayOptions = value
+    settingsManager.setKeyValue(telemetryDisplayOptionsKey, value)
+  }
+
+  get logInterval(): number {
+    if (this._logInterval === undefined) {
+      const savedValue = settingsManager.getKeyValue(logIntervalKey) as number
+      this._logInterval = savedValue ?? defaultLogInterval
+    }
+    return this._logInterval
+  }
+
+  set logInterval(value: number) {
+    if (value < 1) {
+      showDialog({ message: 'Minimum log interval is 1 millisecond (1000 Hz).', variant: 'error' })
+      return
+    }
+
+    this._logInterval = value
+    settingsManager.setKeyValue(logIntervalKey, value)
+  }
+
+  get frequency(): number {
+    return 1000 / this.logInterval
+  }
+
+  set frequency(value: number) {
+    if (value > 1000 || value < 0.1) {
+      showDialog({ message: 'Log frequency should stay between 0.1 Hz and 1000 Hz.', variant: 'error' })
+      return
+    }
+
+    this.logInterval = 1000 / value
+  }
 
   cockpitLogsDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
@@ -292,7 +354,7 @@ class DataLogger {
       this.datetimeLastLogPoint = new Date()
 
       if (this.shouldBeLogging()) {
-        setTimeout(logRoutine, this.logInterval.value)
+        setTimeout(logRoutine, this.logInterval)
       }
     }
 
@@ -353,36 +415,7 @@ class DataLogger {
    * @returns {boolean}
    */
   logging(): boolean {
-    return (
-      this.datetimeLastLogPoint !== null &&
-      this.datetimeLastLogPoint > new Date(Date.now() - this.logInterval.value * 2)
-    )
-  }
-
-  /**
-   * Set the interval between log points
-   * @param {number} interval The interval in milliseconds. Default is 1000 and minimum is 1
-   */
-  setInterval(interval: number): void {
-    if (interval < 1) {
-      showDialog({ message: 'Minimum log interval is 1 millisecond (1000 Hz).', variant: 'error' })
-      return
-    }
-
-    this.logInterval.value = interval
-  }
-
-  /**
-   * Set the frequency of log points
-   * @param {number} frequency The frequency in hertz. Default is 1 Hz, minimum is 0.1 Hz and maximum is 1000 Hz
-   */
-  setFrequency(frequency: number): void {
-    if (frequency > 1000 || frequency < 0.1) {
-      showDialog({ message: 'Log frequency should stay between 0.1 Hz and 1000 Hz.', variant: 'error' })
-      return
-    }
-
-    this.setInterval(1000 / frequency)
+    return this.datetimeLastLogPoint !== null && this.datetimeLastLogPoint > new Date(Date.now() - this.logInterval * 2)
   }
 
   /**
@@ -501,15 +534,15 @@ PlayResY: ${videoHeight}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: LeftBottom,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},1,10,10,10,1
-Style: CenterBotom,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},2,10,10,10,1
-Style: RightBottom,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},3,10,10,10,1
-Style: LeftMid,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},4,10,10,10,1
-Style: CenterMid,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},5,10,10,10,1
-Style: RightMid,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},6,10,10,10,1
-Style: LeftTop,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},7,10,10,10,1
-Style: CenterTop,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},8,10,10,10,1
-Style: RightTop,Arial,${this.telemetryDisplayOptions.value.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.value.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.value.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.value.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.value.fontShadowSize.toString()},9,10,10,10,1
+Style: LeftBottom,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},1,10,10,10,1
+Style: CenterBotom,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},2,10,10,10,1
+Style: RightBottom,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},3,10,10,10,1
+Style: LeftMid,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},4,10,10,10,1
+Style: CenterMid,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},5,10,10,10,1
+Style: RightMid,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},6,10,10,10,1
+Style: LeftTop,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},7,10,10,10,1
+Style: CenterTop,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},8,10,10,10,1
+Style: RightTop,Arial,${this.telemetryDisplayOptions.fontSize.toString()},${convertRGBToBGRColor(this.telemetryDisplayOptions.fontColor)},&H000000FF,${convertRGBToBGRColor(this.telemetryDisplayOptions.fontOutlineColor)},&H00000000,${this.telemetryDisplayOptions.fontBold ? '-1' : '0'},${this.telemetryDisplayOptions.fontItalic ? '-1' : '0'},${this.telemetryDisplayOptions.fontUnderline ? '-1' : '0'},${this.telemetryDisplayOptions.fontStrikeout ? '-1' : '0'},100,100,0,0,1,2,${this.telemetryDisplayOptions.fontShadowSize.toString()},9,10,10,10,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
@@ -534,8 +567,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
       if (index === log.length - 1) return
 
      // Structured data object based on the user's telemetry display configuration
-     const data = Object.keys(this.telemetryDisplayData.value).reduce<Record<string, string>>((acc, gridPosition) => {
-      acc[gridPosition] = this.telemetryDisplayData.value[gridPosition]
+     const data = Object.keys(this.telemetryDisplayData).reduce<Record<string, string>>((acc, gridPosition) => {
+      acc[gridPosition] = this.telemetryDisplayData[gridPosition]
         .map((variable) => {
           const variableData = logPoint.data[variable]
           if (variableData) {
@@ -595,3 +628,4 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
 }
 
 export const datalogger = new DataLogger()
+console.log('[DataLogger]', 'Data logger initialized.')
