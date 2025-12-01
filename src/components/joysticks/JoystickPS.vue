@@ -26,6 +26,7 @@ enum SVGModel {
   PS5 = 'PS5',
   LogitechExtreme3DPro = 'LogitechExtreme3DPro',
   IPEGAPG9023 = 'Ipega9023',
+  Xbox = 'Xbox',
 }
 
 const joystickSvgModel = computed(() => {
@@ -34,6 +35,13 @@ const joystickSvgModel = computed(() => {
       return SVGModel.LogitechExtreme3DPro
     case JoystickModel.IpegaPG9023:
       return SVGModel.IPEGAPG9023
+    case JoystickModel.XboxOne_Wireless:
+    case JoystickModel.XboxOne_Wired:
+    case JoystickModel.XboxOneS_Bluetooth:
+    case JoystickModel.XboxController_Bluetooth:
+    case JoystickModel.XboxController_Wired:
+    case JoystickModel.XboxController_360:
+      return SVGModel.Xbox
     default:
       return SVGModel.PS4
   }
