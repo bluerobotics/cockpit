@@ -39,6 +39,7 @@ function createWindow(): void {
     height: store.get('windowBounds')?.height ?? screen.getPrimaryDisplay().workAreaSize.height,
     x: store.get('windowBounds')?.x ?? screen.getPrimaryDisplay().bounds.x,
     y: store.get('windowBounds')?.y ?? screen.getPrimaryDisplay().bounds.y,
+    title: `Cockpit (${app.getVersion()})`,
   })
 
   linkService.setMainWindow(mainWindow)
@@ -47,6 +48,11 @@ function createWindow(): void {
     const windowBounds = mainWindow!.getBounds()
     const { x, y, width, height } = windowBounds
     store.set('windowBounds', { x, y, width, height })
+  })
+
+  // Don't use the browser page title
+  mainWindow.on('page-title-updated', (event) => {
+    event.preventDefault()
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {
