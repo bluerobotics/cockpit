@@ -198,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover, useRefHistory } from '@vueuse/core'
+import { useDebounceFn, useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
@@ -260,8 +260,8 @@ const router = useRouter()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
-const zoom = ref(missionStore.defaultMapZoom)
-const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
+const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
+const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
@@ -518,6 +518,14 @@ watch(
   }
 )
 
+const saveLastMapPositionDebounced = useDebounceFn(
+  () => {
+    missionStore.saveLastMapPosition(zoom.value, mapCenter.value)
+  },
+  3000,
+  { maxWait: 8000 }
+)
+
 // Watch for zoom/move changes to update grid and scale
 watch([zoom, mapCenter], () => {
   if (widget.value.options.showCoordinateGrid && map.value) {
@@ -526,6 +534,7 @@ watch([zoom, mapCenter], () => {
   if (showButtons.value && map.value) {
     createScaleControl()
   }
+  saveLastMapPositionDebounced()
 })
 
 // Watch for reached mission item sequences to update marker styles

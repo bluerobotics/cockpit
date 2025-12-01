@@ -501,7 +501,7 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
-import { useWindowSize } from '@vueuse/core'
+import { useDebounceFn, useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
@@ -733,9 +733,9 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 }
 
 const planningMap = shallowRef<Map | undefined>()
-const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
+const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref<WaypointCoordinates | undefined>(undefined)
-const zoom = ref(missionStore.defaultMapZoom)
+const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
@@ -3366,6 +3366,14 @@ watch(
   }
 )
 
+const saveLastMapPositionDebounced = useDebounceFn(
+  () => {
+    missionStore.saveLastMapPosition(zoom.value, mapCenter.value)
+  },
+  3000,
+  { maxWait: 8000 }
+)
+
 // Watch for zoom/move changes to update grid and scale
 watch([zoom, mapCenter], () => {
   if (missionStore.showGridOnMissionPlanning && planningMap.value) {
@@ -3374,6 +3382,7 @@ watch([zoom, mapCenter], () => {
   if (planningMap.value) {
     createScaleControl()
   }
+  saveLastMapPositionDebounced()
 })
 
 // Watch for zoom level changes to update waypoint marker sizes
