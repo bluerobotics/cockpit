@@ -36,6 +36,8 @@ export const useMissionStore = defineStore('mission', () => {
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
   const defaultMapCenter = useBlueOsStorage<WaypointCoordinates>('cockpit-default-map-center', DEFAULT_MAP_CENTER)
   const defaultMapZoom = useBlueOsStorage<number>('cockpit-default-map-zoom', DEFAULT_MAP_ZOOM)
+  const userLastMapCenter = useBlueOsStorage<WaypointCoordinates>('cockpit-user-last-map-center', DEFAULT_MAP_CENTER)
+  const userLastMapZoom = useBlueOsStorage<number>('cockpit-user-last-map-zoom', DEFAULT_MAP_ZOOM)
   const draftMission = useBlueOsStorage('cockpit-draft-mission', {})
   const vehicleMission = useBlueOsStorage<Waypoint[]>('cockpit-vehicle-mission', [])
   const vehicleMissionRevision = useBlueOsStorage<number>('cockpit-vehicle-mission-rev', 0)
@@ -224,6 +226,11 @@ export const useMissionStore = defineStore('mission', () => {
     waypoint.commands[commandIndex] = updatedCommand
   }
 
+  const saveLastMapPosition = (zoom: number, mapCenter: WaypointCoordinates): void => {
+    userLastMapZoom.value = zoom
+    userLastMapCenter.value = mapCenter
+  }
+
   watch(
     () => [...currentPlanningWaypoints],
     (wps) => persistDraft(wps),
@@ -247,6 +254,9 @@ export const useMissionStore = defineStore('mission', () => {
     clearMission,
     defaultMapCenter,
     defaultMapZoom,
+    userLastMapCenter,
+    userLastMapZoom,
+    saveLastMapPosition,
     setDefaultMapPosition,
     getWaypointNumber,
     pointsOfInterest,
