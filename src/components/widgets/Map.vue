@@ -177,7 +177,7 @@
 <script setup lang="ts">
 import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
-import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
+import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import {
   computed,
@@ -211,7 +211,7 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { DialogActions } from '@/types/general'
-import type { PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
+import type { MapTileProvider, PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
@@ -440,12 +440,22 @@ const removeScaleControl = (): void => {
 onMounted(async () => {
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
+  const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
 
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
-    layers: [osm, esri, seamarks, marineProfile],
+    layers: [initialBaseLayer, seamarks, marineProfile],
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+
+  // Listen for base layer changes to save user preference
+  map.value.on('baselayerchange', (event: LayersControlEvent) => {
+    const name = event.name
+    if (!name.includes(name as MapTileProvider)) {
+      return
+    }
+    missionStore.userLastMapTileProvider = event.name as MapTileProvider
+  })
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
