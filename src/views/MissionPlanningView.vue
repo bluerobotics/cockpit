@@ -463,7 +463,7 @@ import { useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
-import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
+import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
@@ -506,6 +506,7 @@ import {
   ClosestSegmentInfo,
   ContextMenuTypes,
   instanceOfCockpitMission,
+  MapTileProvider,
   MissionCommand,
   MissionCommandType,
   PointOfInterest,
@@ -2974,7 +2975,12 @@ onMounted(async () => {
     'Esri World Imagery': esri,
   }
 
-  planningMap.value = L.map('planningMap', { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value)
+  const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
+
+  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
+    mapCenter.value as LatLngTuple,
+    zoom.value
+  )
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -2985,6 +2991,15 @@ onMounted(async () => {
   pane.style.zIndex = '640'
   pane.style.pointerEvents = 'none'
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
+
+  // Listen for base layer changes to save user preference
+  planningMap.value.on('baselayerchange', (event: LayersControlEvent) => {
+    const name = event.name
+    if (!name.includes(name as MapTileProvider)) {
+      return
+    }
+    missionStore.userLastMapTileProvider = event.name as MapTileProvider
+  })
 
   planningMap.value.on('moveend', () => {
     if (planningMap.value === undefined) return
