@@ -465,27 +465,12 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
 
-    // Initialize live processor if enabled and on Electron
+    // Create live processor object if enabled and on Electron, but don't start it yet
+    // It will be initialized when the first valid chunk arrives
     if (enableLiveProcessing.value && window.electronAPI) {
-      try {
-        const liveProcessor = new LiveVideoProcessor(recordingHash, fileName, keepRawVideoChunksAsBackup.value)
-        await liveProcessor.startProcessing()
-        liveProcessors.value[recordingHash] = liveProcessor
-
-        console.debug(`Live processing started for ${recordingHash}`)
-      } catch (error) {
-        // Stop recording and reset the stream data
-        activeStreams.value[streamName]!.mediaRecorder!.stop()
-        activeStreams.value[streamName]!.mediaRecorder = undefined
-        delete activeStreams.value[streamName]
-
-        // Stop live processing if it's running
-        if (liveProcessors.value[recordingHash]) {
-          delete liveProcessors.value[recordingHash]
-        }
-
-        throw new Error(`Failed to start live processing for recording '${recordingHash}': ${error}`)
-      }
+      const liveProcessor = new LiveVideoProcessor(recordingHash, fileName, keepRawVideoChunksAsBackup.value)
+      liveProcessors.value[recordingHash] = liveProcessor
+      console.debug(`Live processor created for ${recordingHash}, waiting for first valid chunk to initialize FFmpeg`)
     }
     let losingChunksWarningIssued = false
     const unsavedChunkAlerts: { [key in string]: ReturnType<typeof setTimeout> } = {}
@@ -549,9 +534,6 @@ export const useVideoStore = defineStore('video', () => {
       chunksCount++
       totalChunks++
 
-      const { hasSps, hasPps, hasIdr } = await inspectH264Chunk(e.data)
-      console.log(`Chunk ${chunksCount} for stream '${streamName}' has SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}.`)
-
       // --- Validate initial chunks for SPS/PPS/IDR ---
       if (waitingForFirstValidChunk) {
         try {
@@ -577,11 +559,30 @@ export const useVideoStore = defineStore('video', () => {
             return
           }
 
+          // This is the first valid chunk - now we can initialize FFmpeg
           waitingForFirstValidChunk = false
           console.info(
             `[Video] First valid recording chunk for stream '${streamName}' is index ${chunksCount} ` +
             `(skipped ${invalidInitialChunks} invalid chunks).`
           )
+
+          // Initialize live processor now that we have a valid chunk
+          const processor = liveProcessors.value[recordingHash]
+          if (processor && window.electronAPI) {
+            try {
+              await processor.startProcessing()
+              console.debug(`Live processing initialized for ${recordingHash} with first valid chunk`)
+            } catch (error) {
+              if (error instanceof LiveVideoProcessorInitializationError) {
+                const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
+                showDialog({ message: msg, variant: 'error' })
+                alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+                stopRecording(streamName)
+                return
+              }
+              throw error
+            }
+          }
         } catch (err) {
           console.error('[Video] Failed to inspect H.264 chunk:', err)
           // If inspection fails unexpectedly, don't block recording
