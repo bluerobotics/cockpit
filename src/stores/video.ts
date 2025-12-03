@@ -69,8 +69,17 @@ export const useVideoStore = defineStore('video', () => {
   const MAX_INVALID_INITIAL_CHUNKS = 10
 
   type H264ChunkAnalysis = {
+    /**
+     * Whether the chunk contains a SPS (Sequence Parameter Set) NAL unit.
+     */
     hasSps: boolean
+    /**
+     * Whether the chunk contains a PPS (Picture Parameter Set) NAL unit.
+     */
     hasPps: boolean
+    /**
+     * Whether the chunk contains an IDR (Instantaneous Decoder Refresh) NAL unit.
+     */
     hasIdr: boolean
   }
 
@@ -535,10 +544,6 @@ export const useVideoStore = defineStore('video', () => {
       chunksCount++
       totalChunks++
 
-      const { hasSps, hasPps, hasIdr } = await inspectH264Chunk(e.data)
-      console.log(`Chunk ${chunksCount} for stream '${streamName}' has SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}.`)
-
-
       // --- Validate initial chunks for SPS/PPS/IDR ---
       if (waitingForFirstValidChunk) {
         try {
@@ -551,7 +556,7 @@ export const useVideoStore = defineStore('video', () => {
             if (chunksCount === 0) {
               console.warn(
                 `[Video] Chunk 0 for stream '${streamName}' has no SPS/PPS/IDR NAL units ` +
-                `(SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}), but saving as WebM EBML header.`
+                  `(SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}), but saving as WebM EBML header.`
               )
 
               // Save chunk 0 to storage
@@ -568,7 +573,7 @@ export const useVideoStore = defineStore('video', () => {
             // For chunks 1, 2, 3... we can skip if they don't have keyframes
             console.warn(
               `[Video] Skipping initial chunk ${chunksCount} for stream '${streamName}' ` +
-              `due to missing SPS/PPS/IDR (SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}).`
+                `due to missing SPS/PPS/IDR (SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}).`
             )
 
             if (invalidInitialChunks >= MAX_INVALID_INITIAL_CHUNKS) {
@@ -588,7 +593,7 @@ export const useVideoStore = defineStore('video', () => {
           waitingForFirstValidChunk = false
           console.info(
             `[Video] First valid recording chunk for stream '${streamName}' is index ${chunksCount} ` +
-            `(skipped ${invalidInitialChunks} invalid chunks).`
+              `(skipped ${invalidInitialChunks} invalid chunks).`
           )
 
           // Initialize live processor now that we have a valid chunk
@@ -642,7 +647,7 @@ export const useVideoStore = defineStore('video', () => {
                 // eslint-disable-next-line
                 console.warn(
                   `Failed to add chunk ${savedChunksCount} to live video processor but stream ${streamName} was already not recording. ` +
-                  `This usually happens when stopping the recording, so it's expected and should not be a problem.`
+                    `This usually happens when stopping the recording, so it's expected and should not be a problem.`
                 )
                 return
               }
