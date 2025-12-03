@@ -529,6 +529,7 @@ export const useVideoStore = defineStore('video', () => {
     let savedChunksCount = -1 // Separate counter for actually saved chunks
     let waitingForFirstValidChunk = true
     let invalidInitialChunks = 0
+    let webmHeaderChunk: Blob | null = null // Store chunk 0 (WebM EBML header)
 
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
       chunksCount++
@@ -541,6 +542,26 @@ export const useVideoStore = defineStore('video', () => {
 
           if (!(hasSps && hasPps && hasIdr)) {
             invalidInitialChunks++
+
+            // Special handling for chunk 0 - it's the WebM EBML header and must be preserved
+            if (chunksCount === 0) {
+              console.warn(
+                `[Video] Chunk 0 for stream '${streamName}' has no SPS/PPS/IDR NAL units ` +
+                `(SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}), but saving as WebM EBML header.`
+              )
+
+              // Save chunk 0 to storage
+              savedChunksCount++
+              const headerChunkName = `${recordingHash}_${savedChunksCount}`
+              await tempVideoStorage.setItem(headerChunkName, e.data)
+
+              // Keep it aside to send to FFmpeg later when we have a valid keyframe
+              webmHeaderChunk = e.data
+
+              return
+            }
+
+            // For chunks 1, 2, 3... we can skip if they don't have keyframes
             console.warn(
               `[Video] Skipping initial chunk ${chunksCount} for stream '${streamName}' ` +
               `due to missing SPS/PPS/IDR (SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}).`
@@ -572,6 +593,13 @@ export const useVideoStore = defineStore('video', () => {
             try {
               await processor.startProcessing()
               console.debug(`Live processing initialized for ${recordingHash} with first valid chunk`)
+
+              // If we have a WebM header chunk (chunk 0), send it to FFmpeg FIRST
+              if (webmHeaderChunk) {
+                console.debug(`Sending WebM EBML header (chunk 0) to FFmpeg before first keyframe`)
+                await processor.addChunk(webmHeaderChunk, 0)
+                webmHeaderChunk = null // Clear it after sending
+              }
             } catch (error) {
               if (error instanceof LiveVideoProcessorInitializationError) {
                 const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
