@@ -64,6 +64,37 @@ export const useVideoStore = defineStore('video', () => {
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
 
+  // --- H.264 chunk validation: detect SPS/PPS/IDR in initial chunks ---
+
+  const MAX_INVALID_INITIAL_CHUNKS = 10
+
+  type H264ChunkAnalysis = {
+    hasSps: boolean
+    hasPps: boolean
+    hasIdr: boolean
+  }
+
+  const inspectH264Chunk = async (blob: Blob): Promise<H264ChunkAnalysis> => {
+    const buf = new Uint8Array(await blob.arrayBuffer())
+
+    let hasSps = false
+    let hasPps = false
+    let hasIdr = false
+
+    for (let i = 0; i < buf.length - 4; i++) {
+      // start code 00 00 00 01
+      if (buf[i] === 0x00 && buf[i + 1] === 0x00 && buf[i + 2] === 0x00 && buf[i + 3] === 0x01) {
+        const nalType = buf[i + 4] & 0x1f
+
+        if (nalType === 7) hasSps = true // SPS
+        if (nalType === 8) hasPps = true // PPS
+        if (nalType === 5) hasIdr = true // IDR (keyframe)
+      }
+    }
+
+    return { hasSps, hasPps, hasIdr }
+  }
+
   const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
 
   const namessAvailableAbstractedStreams = computed(() => {
@@ -510,9 +541,51 @@ export const useVideoStore = defineStore('video', () => {
     let totalLostChunks = 0
 
     let chunksCount = -1
+    let waitingForFirstValidChunk = true
+    let invalidInitialChunks = 0
+
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
       chunksCount++
       totalChunks++
+
+      // --- Validate initial chunks for SPS/PPS/IDR ---
+      if (waitingForFirstValidChunk) {
+        try {
+          const { hasSps, hasPps, hasIdr } = await inspectH264Chunk(e.data)
+
+          if (!(hasSps && hasPps && hasIdr)) {
+            invalidInitialChunks++
+            console.warn(
+              `[Video] Skipping initial chunk ${chunksCount} for stream '${streamName}' ` +
+              `due to missing SPS/PPS/IDR (SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}).`
+            )
+
+            if (invalidInitialChunks >= MAX_INVALID_INITIAL_CHUNKS) {
+              const msg =
+                'Failed to initiate recording: no valid video keyframe was received from the camera. ' +
+                'The video stream may be unstable or misconfigured.'
+              showDialog({ message: msg, variant: 'error' })
+              alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+              stopRecording(streamName)
+            }
+
+            // Don't save the chunk, don't send to live processor, don't count as lost
+            return
+          }
+
+          waitingForFirstValidChunk = false
+          console.info(
+            `[Video] First valid recording chunk for stream '${streamName}' is index ${chunksCount} ` +
+            `(skipped ${invalidInitialChunks} invalid chunks).`
+          )
+        } catch (err) {
+          console.error('[Video] Failed to inspect H.264 chunk:', err)
+          // If inspection fails unexpectedly, don't block recording
+          waitingForFirstValidChunk = false
+          // Fall through to normal flow
+        }
+      }
+
       const chunkName = `${recordingHash}_${chunksCount}`
 
       try {
@@ -528,7 +601,10 @@ export const useVideoStore = defineStore('video', () => {
             if (error instanceof LiveVideoProcessorChunkAppendingError) {
               if (!isRecording(streamName)) {
                 // eslint-disable-next-line
-                console.warn(`Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. This usually happens when stopping the recording, so it's expected and should not be a problem.`)
+                console.warn(
+                  `Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. ` +
+                  `This usually happens when stopping the recording, so it's expected and should not be a problem.`
+                )
                 return
               }
               const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
