@@ -541,6 +541,7 @@ export const useVideoStore = defineStore('video', () => {
     let totalLostChunks = 0
 
     let chunksCount = -1
+    let savedChunksCount = -1 // Separate counter for actually saved chunks
     let waitingForFirstValidChunk = true
     let invalidInitialChunks = 0
 
@@ -586,7 +587,9 @@ export const useVideoStore = defineStore('video', () => {
         }
       }
 
-      const chunkName = `${recordingHash}_${chunksCount}`
+      // Increment saved chunks counter - this ensures the first valid chunk is always chunk 0
+      savedChunksCount++
+      const chunkName = `${recordingHash}_${savedChunksCount}`
 
       try {
         await tempVideoStorage.setItem(chunkName, e.data)
@@ -596,18 +599,18 @@ export const useVideoStore = defineStore('video', () => {
         const processor = liveProcessors.value[recordingHash]
         if (processor && e.data.size > 0) {
           try {
-            await processor.addChunk(e.data, chunksCount)
+            await processor.addChunk(e.data, savedChunksCount)
           } catch (error) {
             if (error instanceof LiveVideoProcessorChunkAppendingError) {
               if (!isRecording(streamName)) {
                 // eslint-disable-next-line
                 console.warn(
-                  `Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. ` +
+                  `Failed to add chunk ${savedChunksCount} to live video processor but stream ${streamName} was already not recording. ` +
                   `This usually happens when stopping the recording, so it's expected and should not be a problem.`
                 )
                 return
               }
-              const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
+              const msg = `Failed to add chunk ${savedChunksCount} to live processor: ${error.message}`
               openSnackbar({ message: msg, variant: 'error' })
             } else if (error instanceof LiveVideoProcessorInitializationError) {
               const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
@@ -618,7 +621,7 @@ export const useVideoStore = defineStore('video', () => {
           }
         }
       } catch {
-        if (chunksCount === 0) {
+        if (savedChunksCount === 0) {
           const msg = 'Failed to initiate recording. First chunk was lost. Try again.'
           showDialog({ message: msg, variant: 'error' })
           alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
