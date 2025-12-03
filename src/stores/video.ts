@@ -535,6 +535,10 @@ export const useVideoStore = defineStore('video', () => {
       chunksCount++
       totalChunks++
 
+      const { hasSps, hasPps, hasIdr } = await inspectH264Chunk(e.data)
+      console.log(`Chunk ${chunksCount} for stream '${streamName}' has SPS=${hasSps}, PPS=${hasPps}, IDR=${hasIdr}.`)
+
+
       // --- Validate initial chunks for SPS/PPS/IDR ---
       if (waitingForFirstValidChunk) {
         try {
