@@ -3,7 +3,7 @@
     v-tooltip="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue + '%'}`"
     class="flex items-center w-[95px] h-12 text-white justify-center"
   >
-    <div class="relative w-[1.5rem] battery-icon">
+    <div v-if="remainingDisplayValue >= 0" class="relative w-[1.5rem] battery-icon">
       <i class="mdi mdi-battery-outline"></i>
 
       <i
@@ -14,7 +14,30 @@
       />
       <span
         v-if="remainingDisplayValue < 0"
+        class="absolute text-sm text-white -bottom-[3px] left-[4px] mdi mdi-circle"
+      ></span>
+      <span
+        v-if="remainingDisplayValue < 0"
         class="absolute text-sm text-yellow-400 -bottom-[3px] left-[4px] mdi mdi-alert-circle"
+      ></span>
+    </div>
+
+    <div v-else class="relative flex flex-col justify-center items-center h-full w-[1.5rem] battery-icon">
+      <i
+        class="absolute mdi mdi-battery"
+        :style="{ color: miniWidget.options.useVoltageToColor ? currentBatteryColor : 'transparent' }"
+      ></i>
+      <i
+        v-if="currentBatteryLevel === 'critical'"
+        class="absolute mdi mdi-battery animate-ping"
+        :style="{ color: currentBatteryColor }"
+      ></i>
+      <i class="absolute mdi mdi-battery-outline text-[#CCCCCC88]"></i>
+
+      <span v-if="remainingDisplayValue < 0" class="absolute text-sm text-white bottom-0 left-0 mdi mdi-circle"></span>
+      <span
+        v-if="remainingDisplayValue < 0"
+        class="absolute text-sm text-yellow-400 bottom-0 left-0 mdi mdi-alert-circle"
       ></span>
     </div>
 
@@ -42,10 +65,22 @@
     </div>
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
-    <v-card class="pa-4 text-white w-[20rem]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
+    <v-card class="pa-4 text-white w-[400px]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">Battery Indicator Config</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
-        <v-checkbox v-model="miniWidget.options.showCurrent" label="Show Current" hide-details />
+        <div class="absolute top-2 right-2 z-10">
+          <v-btn
+            icon
+            size="30"
+            variant="text"
+            class="text-white text-[22px]"
+            aria-label="Close"
+            @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
+          >
+            <i class="mdi mdi-close"></i>
+          </v-btn>
+        </div>
+        <v-checkbox v-model="miniWidget.options.showCurrent" label="Show Current" hide-details class="-mb-5" />
         <v-checkbox v-model="miniWidget.options.showPower" label="Show Power" hide-details />
         <v-text-field
           v-model.number="userSetToggleInterval"
@@ -55,8 +90,101 @@
           step="100"
           density="compact"
           variant="outlined"
+          hide-details
           :disabled="!miniWidget.options.showCurrent || !miniWidget.options.showPower"
         />
+
+        <v-divider class="mt-2" />
+        <div class="flex justify-between items-center -mt-1">
+          <v-checkbox
+            v-model="miniWidget.options.useVoltageToColor"
+            label="Use voltage to color scheme"
+            hide-details
+            class="mr-1"
+          />
+          <v-tooltip
+            location="top"
+            text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
+          >
+            <template #activator="{ props: infoProps }">
+              <v-icon
+                v-bind="infoProps"
+                icon="mdi-information-outline"
+                class="ml-1 text-yellow-300 cursor-pointer"
+                size="18"
+              />
+            </template>
+          </v-tooltip>
+        </div>
+
+        <div class="flex items-center gap-x-2">
+          <v-text-field
+            v-model.number="userBatteryThresholds.critical"
+            label="Critical voltage (V)"
+            type="number"
+            density="compact"
+            variant="outlined"
+            hide-details
+          />
+          <input
+            v-model="voltageToColorScheme.critical"
+            type="color"
+            theme="dark"
+            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
+          />
+        </div>
+
+        <div class="flex items-center gap-x-2">
+          <v-text-field
+            v-model.number="userBatteryThresholds.low"
+            label="Low voltage (V)"
+            type="number"
+            density="compact"
+            variant="outlined"
+            hide-details
+          />
+          <input
+            v-model="voltageToColorScheme.low"
+            type="color"
+            theme="dark"
+            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
+          />
+        </div>
+
+        <div class="flex items-center gap-x-2">
+          <v-text-field
+            v-model.number="userBatteryThresholds.medium"
+            label="Medium voltage (V)"
+            type="number"
+            density="compact"
+            variant="outlined"
+            hide-details
+          />
+          <input
+            v-model="voltageToColorScheme.medium"
+            type="color"
+            theme="dark"
+            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
+          />
+        </div>
+
+        <div class="flex items-center gap-x-2">
+          <v-text-field
+            v-model.number="userBatteryThresholds.high"
+            label="High voltage (V)"
+            type="number"
+            density="compact"
+            variant="outlined"
+            hide-details
+          />
+          <input
+            v-model="voltageToColorScheme.high"
+            type="color"
+            theme="dark"
+            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
+          />
+        </div>
+
         <p class="text-red-500 text-center text-sm w-[full]">{{ errorMessage }}</p>
       </v-card-text>
     </v-card>
@@ -64,8 +192,10 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounce } from '@vueuse/core'
 import { computed, onBeforeMount, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -99,6 +229,52 @@ const minInterval = 500
 const errorMessage = ref('')
 const errorMessageTimeout = ref<ReturnType<typeof setTimeout> | undefined>(undefined)
 const userSetToggleInterval = ref(miniWidget.value.options.toggleInterval ?? defaultOptions.toggleInterval)
+
+type BatteryLevel = 'critical' | 'low' | 'medium' | 'high' | 'unknown'
+
+miniWidget.value.options.useVoltageToColor ??= false
+
+const voltageToColorScheme = useBlueOsStorage('cockpit-user-voltage-color-scheme', {
+  high: '#2b7a40',
+  medium: '#c49a1a',
+  low: '#c7261e',
+  critical: '#7e1b1b',
+  unknown: '#aaaaaa99',
+})
+
+// Values based on Blue Robotics standard 4s Li-Ion battery pack voltages
+const userBatteryThresholds = useBlueOsStorage('cockpit-user-battery-levels', {
+  high: 15.2,
+  medium: 14.0,
+  low: 12.8,
+  critical: 12.0,
+})
+
+const batteryThresholds = computed(() => userBatteryThresholds.value)
+
+const rawVoltage = computed<number | null>(() => store?.powerSupply?.voltage ?? null)
+// Keeps a stable voltage reading for 4 seconds to avoid rapid battery level changes
+const debouncedVoltage = useDebounce(rawVoltage, 4000)
+
+const currentBatteryLevel = computed<BatteryLevel>(() => {
+  const voltage = debouncedVoltage.value
+
+  if (voltage == null) return 'unknown'
+
+  const { critical, low, medium, high } = batteryThresholds.value
+
+  if (voltage >= high) return 'high'
+  if (voltage >= medium) return 'medium'
+  if (voltage >= low) return 'low'
+  if (voltage >= critical) return 'critical'
+  if (voltage < critical) return 'critical'
+  return 'unknown'
+})
+
+const currentBatteryColor = computed(() => {
+  const level = currentBatteryLevel.value
+  return voltageToColorScheme.value[level] ?? 'transparent'
+})
 
 const voltageDisplayValue = computed(() => {
   if (store?.powerSupply?.voltage === undefined) return '--'
