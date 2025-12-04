@@ -1,6 +1,7 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { OverlayGrid } from '@/libs/sensors-logging'
 import { DistanceDisplayUnit } from '@/libs/units'
+import { BatteryLevel, BatteryLevelThresholds } from '@/types/general'
 import { JoystickCalibration } from '@/types/joystick'
 import {
   type MiniWidgetProfile,
@@ -925,4 +926,20 @@ export const defaultVehicleBatteryPack: Record<string, number> = {
   MAV_TYPE_SURFACE_BOAT: 236 * 2,
   MAV_TYPE_SUBMARINE: 236 * 1,
   MAV_TYPE_GENERIC: 236 * 2,
+}
+
+export const defaultBatteryLevelColorScheme: Record<BatteryLevel, string> = {
+  high: '#2b7a40',
+  medium: '#c49a1a',
+  low: '#c7261e',
+  critical: '#7e1b1b',
+  unknown: '#aaaaaa99',
+}
+
+// Values based on Blue Robotics standard 4s Li-Ion battery pack voltages
+export const defaultBatteryLevelThresholds: BatteryLevelThresholds = {
+  high: 15.2,
+  medium: 14.0,
+  low: 12.8,
+  critical: 12.0,
 }
