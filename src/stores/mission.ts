@@ -9,6 +9,7 @@ import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
 import {
   AltitudeReferenceType,
+  MapTileProvider,
   MissionCommand,
   PointOfInterest,
   PointOfInterestCoordinates,
@@ -43,6 +44,10 @@ export const useMissionStore = defineStore('mission', () => {
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
   const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
+  const userLastMapTileProvider = useBlueOsStorage<MapTileProvider>(
+    'cockpit-user-last-map-tile-provider',
+    'Esri World Imagery'
+  )
 
   const { showDialog } = useInteractionDialog()
 
@@ -262,5 +267,6 @@ export const useMissionStore = defineStore('mission', () => {
     removeCommandFromWaypoint,
     updateWaypointCommand,
     defaultCruiseSpeed,
+    userLastMapTileProvider,
   }
 })

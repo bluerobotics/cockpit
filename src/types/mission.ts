@@ -334,3 +334,8 @@ export interface VehicleMissionEstimate {
    */
   totalEnergy: (inputs: MissionEstimatesByVehicleConfig) => number
 }
+
+/**
+ * Types of map tile providers supported.
+ */
+export type MapTileProvider = 'Esri World Imagery' | 'OpenStreetMap'
