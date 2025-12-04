@@ -103,3 +103,7 @@ export interface SettingItem {
    */
   changed?: boolean
 }
+
+export type BatteryLevel = 'critical' | 'low' | 'medium' | 'high' | 'unknown'
+
+export type BatteryLevelThresholds = { high: number; medium: number; low: number; critical: number }
