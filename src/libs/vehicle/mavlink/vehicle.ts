@@ -27,8 +27,9 @@ import {
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
+import { settingsManager } from '@/libs/settings-management'
 import { SignalTyped } from '@/libs/signal'
-import { degrees, frequencyHzToIntervalUs, round, sleep } from '@/libs/utils'
+import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
 import {
   type MAVLinkParameterSetData,
   type MessageIntervalOptions,
@@ -903,17 +904,23 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    */
   async requestDefaultMessages(): Promise<void> {
     // Get custom message intervals from BlueOS storage, fallback to defaults if not available
-    const customMessageIntervalsStoredString = window.localStorage.getItem(MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY)
+    const storedCustomMessageIntervals = settingsManager.getKeyValue(MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY)
     const cockpitDefaultMessageIntervals = defaultMessageIntervalsOptions
 
     let toBeSetIntervals: Record<string, MessageIntervalOptions> = {}
-    if (customMessageIntervalsStoredString === null) {
+    if (storedCustomMessageIntervals === null) {
       toBeSetIntervals = cockpitDefaultMessageIntervals
     } else {
-      const customMessageIntervals = JSON.parse(customMessageIntervalsStoredString)
+      const customMessageIntervals = storedCustomMessageIntervals as Record<string, MessageIntervalOptions>
       toBeSetIntervals = { ...cockpitDefaultMessageIntervals, ...customMessageIntervals }
     }
-    window.localStorage.setItem(MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY, JSON.stringify(toBeSetIntervals))
+
+    if (isEqual(storedCustomMessageIntervals, toBeSetIntervals)) {
+      console.log('No changes to message intervals. Skipping request.')
+    } else {
+      console.log('Message intervals changed. Updating settings.')
+      settingsManager.setKeyValue(MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY, toBeSetIntervals)
+    }
 
     // Remove any message that was configured to not be touched
     Object.entries(toBeSetIntervals).forEach(([messageType, options]) => {
