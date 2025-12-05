@@ -6,7 +6,7 @@ import { dirname, join } from 'path'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 
 // Create a new storage interface for filesystem
-export const cockpitFolderPath = join(app.getPath('home'), 'Cockpit')
+export const cockpitFolderPath = join(app.getPath('documents'), 'Cockpit')
 fs.mkdir(cockpitFolderPath, { recursive: true })
 
 export const filesystemStorage = {
