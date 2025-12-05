@@ -83,6 +83,10 @@ const startVideoRecording = async (
 
   // Spawn FFmpeg with stdin input and fragmented MP4 output
   const ffmpegArgs = [
+    '-probesize',
+    '100M', // 100MB to find decoding info
+    '-analyzeduration',
+    '15M', // 15 seconds to find decoding info
     '-f',
     'webm', // Input format is WebM
     '-i',
