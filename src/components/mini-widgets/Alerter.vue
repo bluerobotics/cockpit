@@ -120,6 +120,7 @@ const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
 const currentAlert = ref(alertStore.alerts[0])
 const lockAlertsOpened = ref(false)
+const currentDisplayedAlertIndex = ref(alertStore.alerts.length - 1)
 
 const colorCodeBorderStyle = computed(() => {
   switch (currentAlert.value.level) {
@@ -147,18 +148,46 @@ let currentAlertInterval: NodeJS.Timer | undefined = undefined
 onMounted(() => {
   currentAlertInterval = setInterval(() => {
     const dateNow = new Date(timeNow.value)
-    const secsSinceLastAlert = differenceInSeconds(dateNow, alertStore.alerts.last()?.time_created || dateNow)
-    if (secsSinceLastAlert > alertPersistencyInterval) {
-      currentAlert.value = new Alert(AlertLevel.Info, 'No recent alerts.')
+    const lastAlertIndex = alertStore.alerts.length - 1
+    const lastAlert = alertStore.alerts[lastAlertIndex]
+
+    // Check if we've caught up to all alerts
+    if (currentDisplayedAlertIndex.value >= lastAlertIndex) {
+      // We're showing the latest alert, check if it's too old
+      const secsSinceLastAlert = differenceInSeconds(dateNow, lastAlert?.time_created || dateNow)
+      if (secsSinceLastAlert > alertPersistencyInterval) {
+        currentAlert.value = new Alert(AlertLevel.Info, 'No recent alerts.')
+        return
+      }
+      currentAlert.value = lastAlert!
       return
     }
-    currentAlert.value = alertStore.alerts.last()!
-  }, 1000)
+
+    // There are newer alerts queued - advance when the current alert's speech has finished
+    if (alertStore.lastSpokenAlertIndex >= currentDisplayedAlertIndex.value) {
+      // Speech for current alert has finished, move to the next alert
+      currentDisplayedAlertIndex.value++
+      currentAlert.value = alertStore.alerts[currentDisplayedAlertIndex.value]
+    }
+  }, 100) // Check frequently for responsive transitions
 })
 
 onUnmounted(() => {
   clearInterval(currentAlertInterval)
 })
+
+// Watch for new alerts to ensure we start tracking from the right index
+watch(
+  () => alertStore.alerts.length,
+  (newLength, oldLength) => {
+    // If this is a new alert and we're currently showing the "no recent alerts" message,
+    // jump to the new alert immediately
+    if (newLength > oldLength && currentAlert.value.message === 'No recent alerts.') {
+      currentDisplayedAlertIndex.value = newLength - 1
+      currentAlert.value = alertStore.alerts[currentDisplayedAlertIndex.value]
+    }
+  }
+)
 
 const [isShowingExpandedAlerts, toggleExpandedAlerts] = useToggle()
 const showExpandedAlerts = (): boolean => toggleExpandedAlerts(true)

@@ -113,13 +113,18 @@ export const useAlertStore = defineStore('alert', () => {
     availableAlertSpeechVoices.map((v) => ({ value: v.name, name: `${v.name} (${v.lang})` }))
   )
 
+  // Track the index of the last alert that finished being spoken
+  const lastSpokenAlertIndex = ref(0)
+
   /**
    * Speaks a text out loud using the browsers TTS engine
-   * @param {string} text string
+   * @param {string} text - The text to speak
+   * @param {number} alertIndex - The index of the alert being spoken
    */
-  function speak(text: string): void {
+  function speak(text: string, alertIndex: number): void {
     if (!synth) {
       console.warn('No speechSynthesis available')
+      lastSpokenAlertIndex.value = alertIndex
       return
     }
     const utterance = new SpeechSynthesisUtterance(text)
@@ -132,22 +137,28 @@ export const useAlertStore = defineStore('alert', () => {
     utterance_cache.push(utterance)
     utterance.onend = function () {
       delete utterance_cache[utterance_cache.indexOf(utterance)]
+      lastSpokenAlertIndex.value = alertIndex
     }
     utterance.onerror = function (event) {
       console.error(`SpeechSynthesisUtterance error: ${event.error}`)
+      lastSpokenAlertIndex.value = alertIndex
     }
     synth.speak(utterance)
   }
 
   watch(alerts, () => {
-    const lastAlert = alerts.slice(-1)[0]
+    const lastAlertIndex = alerts.length - 1
+    const lastAlert = alerts[lastAlertIndex]
     const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === lastAlert.level)
     if (
       !enableVoiceAlerts.value ||
       ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !lastAlert.message.startsWith('#'))
-    )
+    ) {
+      // If voice alerts are disabled for this alert, mark it as "spoken" immediately
+      lastSpokenAlertIndex.value = lastAlertIndex
       return
-    speak(lastAlert.message)
+    }
+    speak(lastAlert.message, lastAlertIndex)
   })
 
   return {
@@ -166,5 +177,6 @@ export const useAlertStore = defineStore('alert', () => {
     neverShowArmedMenuWarning,
     skipArmedMenuWarningThisSession,
     alertVolume,
+    lastSpokenAlertIndex,
   }
 })
