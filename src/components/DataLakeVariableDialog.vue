@@ -208,7 +208,7 @@ watch(
   () => variable.id,
   (newId) => {
     if (!isManualIdEnabled.value && !editMode.value) {
-      variable.id = machinizeString(newId)
+      variable.id = 'user/custom/' + machinizeString(newId)
     }
   }
 )
