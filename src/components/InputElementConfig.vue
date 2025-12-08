@@ -390,6 +390,7 @@ import {
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
 import { availableCockpitActions } from '@/libs/joystick/protocols/cockpit-actions'
+import { machinizeString } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElement, CustomWidgetElementType } from '@/types/widgets'
@@ -509,7 +510,10 @@ const deleteParameterFromDataLake = async (): Promise<void> => {
 
 const saveOrUpdateParameter = (): void => {
   let newDataLakeVariable = {
-    id: futureDataLakeVariable.value?.id === '' ? futureDataLakeVariable.value?.name : futureDataLakeVariable.value?.id,
+    id:
+      futureDataLakeVariable.value?.id === ''
+        ? 'user/inputs/' + machinizeString(futureDataLakeVariable.value?.name)
+        : futureDataLakeVariable.value?.id,
     name: futureDataLakeVariable.value?.name,
     type: currentElement.value?.options.variableType,
     description: futureDataLakeVariable.value?.description,
