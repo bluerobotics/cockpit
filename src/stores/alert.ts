@@ -120,15 +120,16 @@ export const useAlertStore = defineStore('alert', () => {
    * Speaks a text out loud using the browsers TTS engine
    * @param {string} text - The text to speak
    * @param {number} alertIndex - The index of the alert being spoken
+   * @param {boolean} muted - If true, speech will be silent (volume 0) but still run for timing purposes
    */
-  function speak(text: string, alertIndex: number): void {
+  function speak(text: string, alertIndex: number, muted = false): void {
     if (!synth) {
       console.warn('No speechSynthesis available')
       lastSpokenAlertIndex.value = alertIndex
       return
     }
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.volume = Math.min(Math.max(alertVolume.value, 0), 1)
+    utterance.volume = muted ? 0 : Math.min(Math.max(alertVolume.value, 0), 1)
     const voice = availableAlertSpeechVoices.find((v) => v.name === selectedAlertSpeechVoiceName.value)
     if (voice) {
       utterance.voice = voice
@@ -150,15 +151,10 @@ export const useAlertStore = defineStore('alert', () => {
     const lastAlertIndex = alerts.length - 1
     const lastAlert = alerts[lastAlertIndex]
     const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === lastAlert.level)
-    if (
+    const shouldMute =
       !enableVoiceAlerts.value ||
       ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !lastAlert.message.startsWith('#'))
-    ) {
-      // If voice alerts are disabled for this alert, mark it as "spoken" immediately
-      lastSpokenAlertIndex.value = lastAlertIndex
-      return
-    }
-    speak(lastAlert.message, lastAlertIndex)
+    speak(lastAlert.message, lastAlertIndex, shouldMute)
   })
 
   return {
