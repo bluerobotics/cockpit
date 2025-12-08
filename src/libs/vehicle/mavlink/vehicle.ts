@@ -1467,19 +1467,21 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     const suffix = `(MAVLink / System: ${messageSystemId} / Component: ${messageComponentId})`
 
     // Inject variables from the MAVLink messages into the DataLake
-    if (['NAMED_VALUE_FLOAT', 'NAMED_VALUE_INT'].includes(messageType)) {
-      // Special handling for NAMED_VALUE_FLOAT/NAMED_VALUE_INT messages
+    if (messageType.startsWith('NAMED_VALUE_')) {
+      // Special handling for NAMED_VALUE_(FLOAT/INT/STRING) messages
       const name = `${(mavlinkPackage.message.name as string[]).join('').replace(/\0/g, '')}`
       const path = `${prefix}/${messageType}/${name}`
+      const isString = messageType == 'NAMED_VALUE_STRING'
       if (getDataLakeVariableInfo(path) === undefined) {
-        createDataLakeVariable({ id: path, name: `${name} ${suffix}`, type: 'number' })
+        createDataLakeVariable({ id: path, name: `${name} ${suffix}`, type: isString ? 'string' : 'number' })
       }
       setDataLakeVariableData(path, mavlinkPackage.message.value)
 
       if (
         this.shouldCreateLegacyDataLakeVariables &&
         messageSystemId === this.currentSystemId &&
-        messageComponentId === 1
+        messageComponentId === 1 &&
+        !isString
       ) {
         // Create duplicated variables for legacy purposes (that was how they were stored in the old generic-variables system)
         const oldVariablePath = mavlinkPackage.message.name.join('').replaceAll('\x00', '')
