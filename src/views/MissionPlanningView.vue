@@ -2447,7 +2447,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
       coordinates: [latLng.lat, latLng.lng],
       altitude: currentWaypointAltitude.value,
       altitudeReferenceType: currentWaypointAltitudeRefType.value,
-      commands: [],
+      commands: makeDefaultNavCommands(),
     }))
 
     const firstOldWaypointIndex = missionStore.currentPlanningWaypoints.findIndex(
