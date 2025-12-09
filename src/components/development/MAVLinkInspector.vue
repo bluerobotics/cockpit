@@ -13,15 +13,19 @@
           <v-btn variant="outlined" class="rounded-md ml-2" @click="resetTrackedMessageTypes">Reset</v-btn>
         </div>
         <div class="bg-[#FFFFFF11] rounded-md p-2 max-h-[320px] overflow-y-auto">
-          <div
-            v-for="type in filteredMessageTypes"
-            :key="type"
-            class="cursor-pointer hover:bg-[#FFFFFF22] p-1 rounded"
-            :class="{ 'bg-[#FFFFFF33]': trackedMessageTypes.has(type) }"
-            @click="toggleMessageTracking(type)"
-          >
-            {{ type }}
-          </div>
+          <v-tooltip v-for="type in filteredMessageTypes" :key="type" location="top" open-delay="300">
+            <template #activator="{ props: tooltipProps }">
+              <div
+                v-bind="tooltipProps"
+                class="cursor-pointer hover:bg-[#FFFFFF22] p-1 rounded"
+                :class="{ 'bg-[#FFFFFF33]': trackedMessageTypes.has(type) }"
+                @click="toggleMessageTracking(type)"
+              >
+                {{ type }}
+              </div>
+            </template>
+            <div class="whitespace-pre-line">{{ messageTooltip(type) }}</div>
+          </v-tooltip>
           <div v-if="filteredMessageTypes.length === 0" class="text-gray-400 text-center p-2">No messages found</div>
         </div>
       </div>
@@ -64,6 +68,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 /**
@@ -140,6 +145,14 @@ const removeMessageTracking = (type: MAVLinkType): void => {
   trackedMessageTypes.value.delete(type)
   messageValues.value.delete(`in:${type}`)
   messageValues.value.delete(`out:${type}`)
+}
+
+const messageTooltip = (messageName: string): string => {
+  const description = mavlinkDefinition.message(messageName)?.description ?? messageName
+  if (description.length > 128) {
+    return description.slice(0, 128) + '...'
+  }
+  return description
 }
 
 // Set up listeners for any already tracked message types
