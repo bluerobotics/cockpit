@@ -2,6 +2,7 @@
 
 import { type Ref, ref, watch } from 'vue'
 
+import { useWebRTCDebugConsole } from '@/composables/webRTCDebugConsole'
 import * as Connection from '@/libs/connection/connection'
 import { Session } from '@/libs/webrtc/session'
 import { Signaller } from '@/libs/webrtc/signaller'
@@ -46,6 +47,8 @@ export class WebRTCManager {
   private selectedICEIPs: string[] = []
   private selectedICEProtocols: string[] = []
   private JitterBufferTarget = 0
+  private debugConsole = useWebRTCDebugConsole()
+  private instanceId: string
 
   private hasEnded = false
   private signaller: Signaller
@@ -60,6 +63,7 @@ export class WebRTCManager {
   constructor(webRTCSignallingURI: Connection.URI, rtcConfiguration: RTCConfiguration) {
     console.debug('[WebRTC] Trying to connect to signalling server.')
     this.rtcConfiguration = rtcConfiguration
+    this.instanceId = `webrtc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     this.signaller = new Signaller(
       webRTCSignallingURI,
       true,
@@ -167,6 +171,10 @@ export class WebRTCManager {
   private updateStreamStatus(newStatus: string): void {
     const time = new Date().toTimeString().split(' ').first()
     this.streamStatus.value = `${newStatus} (${time})`
+
+    // Add to debug console
+    const streamId = this.streamName || this.instanceId
+    this.debugConsole.addMessage(streamId, 'stream', newStatus)
   }
 
   /**
@@ -176,6 +184,10 @@ export class WebRTCManager {
   private updateSignallerStatus(newStatus: string): void {
     const time = new Date().toTimeString().split(' ').first()
     this.signallerStatus.value = `${newStatus} (${time})`
+
+    // Add to debug console
+    const streamId = this.streamName || this.instanceId
+    this.debugConsole.addMessage(streamId, 'signaller', newStatus)
   }
 
   /**
@@ -267,6 +279,14 @@ export class WebRTCManager {
     if (this.session) {
       this.session.end()
     }
+  }
+
+  /**
+   * Get the debug stream ID for this manager instance
+   * @returns {string} The debug stream ID
+   */
+  public getDebugStreamId(): string {
+    return this.streamName || this.instanceId
   }
 
   /**
