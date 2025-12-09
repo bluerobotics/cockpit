@@ -6,6 +6,8 @@
         class="flex flex-col justify-around align-start ml-5 max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw]' : 'max-w-[50vw]'"
       >
+        <!-- Data Lake Alerts Configuration -->
+        <DataLakeAlertsConfig />
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider>
           <template #title>Text to speech:</template>
           <template #info>
@@ -77,6 +79,7 @@
 <script setup lang="ts">
 import { capitalize } from 'vue'
 
+import DataLakeAlertsConfig from '@/components/configuration/DataLakeAlertsConfig.vue'
 import Dropdown from '@/components/Dropdown.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAlertStore } from '@/stores/alert'
