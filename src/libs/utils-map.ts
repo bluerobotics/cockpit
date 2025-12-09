@@ -220,14 +220,22 @@ export const generateSurveyPath = (
       const clipped = turf.lineIntersect(poly, line)
 
       if (clipped.features.length >= 2) {
-        const coords = clipped.features.map((f) => f.geometry.coordinates)
+        const sortedFeatures = clipped.features.sort((a, b) => {
+          const coordsA = a.geometry.coordinates
+          const coordsB = b.geometry.coordinates
+          const distA = Math.pow(coordsA[0] - lineStart[0], 2) + Math.pow(coordsA[1] - lineStart[1], 2)
+          const distB = Math.pow(coordsB[0] - lineStart[0], 2) + Math.pow(coordsB[1] - lineStart[1], 2)
+          return distA - distB
+        })
+
+        const coords = sortedFeatures.map((f) => f.geometry.coordinates)
         if (isReverse) coords.reverse()
 
         const linePoints = coords.map((c) => L.latLng(c[1], c[0]))
 
         if (continuousPath.length > 0) {
           const lastPoint = continuousPath[continuousPath.length - 1]
-          const edgePath = moveAlongEdge(poly, lastPoint, linePoints[0], distanceBetweenLines / 111000)
+          const edgePath = moveAlongEdge(poly, lastPoint, linePoints[0], diagonal)
           continuousPath.push(...edgePath)
         }
 
