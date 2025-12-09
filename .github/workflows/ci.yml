@@ -67,14 +67,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - os: macos-13
+        - os: macos-15-intel
           suffix: mac
           arch: x64
           extension: dmg
           latestMetadataName: latest-mac.yml
           deployCommand: deploy:electron:mac:x64
 
-        - os: macos-14
+        - os: macos-15
           suffix: mac
           arch: arm64
           extension: dmg
@@ -144,7 +144,7 @@ jobs:
           yarn build
 
       - name: Import Apple Certificate and Setup Keychain
-        if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name != 'pull_request'
+        if: (matrix.os == 'macos-15-intel' || matrix.os == 'macos-15') && github.event_name != 'pull_request'
         env:
           MAC_CERTIFICATE_BASE64: ${{ secrets.MAC_CERTIFICATE_BASE64 }}
           MAC_CERTIFICATE_PWD: ${{ secrets.MAC_CERTIFICATE_PWD }}
@@ -181,7 +181,7 @@ jobs:
           SNAPCRAFT_BUILD_ENVIRONMENT="host" yarn ${{ matrix.deployCommand }}
 
       - name: Deploy (macOS - Release Build)
-        if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name != 'pull_request'
+        if: (matrix.os == 'macos-15-intel' || matrix.os == 'macos-15') && github.event_name != 'pull_request'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
@@ -192,7 +192,7 @@ jobs:
           yarn ${{ matrix.deployCommand }}
 
       - name: Deploy (macOS - PR Build)
-        if: (matrix.os == 'macos-13' || matrix.os == 'macos-14') && github.event_name == 'pull_request'
+        if: (matrix.os == 'macos-15-intel' || matrix.os == 'macos-15') && github.event_name == 'pull_request'
         # No Apple ID env vars here, and 'Import Apple Certificate...' step was skipped, so no CSC_KEYCHAIN_NAME
         run: |
           echo "INFO: Building macOS for Pull Request. Signing and notarization will be skipped."
@@ -205,7 +205,7 @@ jobs:
           yarn ${{ matrix.deployCommand }}
 
       - name: Rename macOS arm64 latest metadata
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-15'
         run: |
           # In some environments the file may already be generated with the arm64 suffix.
           # Only rename if the generic name exists.
@@ -231,7 +231,7 @@ jobs:
 
       - name: Upload diff release (mac-only)
         uses: svenstaro/upload-release-action@v2
-        if: startsWith(github.ref, 'refs/tags/') && success() && (matrix.os == 'macos-13' || matrix.os == 'macos-14')
+        if: startsWith(github.ref, 'refs/tags/') && success() && (matrix.os == 'macos-15-intel' || matrix.os == 'macos-15')
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.zip
