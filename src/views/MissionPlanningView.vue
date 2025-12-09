@@ -2353,25 +2353,25 @@ const generateWaypointsFromSurvey = (): void => {
     surveyLinesAngle: surveyLinesAngle.value,
     waypoints: newSurveyWaypoints,
   }
+
   addSurvey(newSurvey)
   selectedSurveyId.value = newSurvey.id
-
   newSurveyWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
+  clearSurveyPath()
+  isCreatingSurvey.value = false
+  reNumberWaypoints()
 
   const firstWaypoint = newSurveyWaypoints[0]
   const lastWaypoint = newSurveyWaypoints[newSurveyWaypoints.length - 1]
   const firstMarker = waypointMarkers.value[firstWaypoint.id]
   const lastMarker = waypointMarkers.value[lastWaypoint.id]
+
   if (firstMarker) {
-    firstMarker.getElement()?.classList.add('green-marker')
+    firstMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
   }
   if (lastMarker && lastMarker !== firstMarker) {
-    lastMarker.getElement()?.classList.add('green-marker')
+    lastMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
   }
-
-  clearSurveyPath()
-  isCreatingSurvey.value = false
-  reNumberWaypoints()
 
   openSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
 }
@@ -2470,19 +2470,18 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     updateSurvey(selectedSurveyId.value, { ...selectedSurvey.value })
 
     newWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
+    reNumberWaypoints()
 
     const firstWaypoint = newWaypoints[0]
     const lastWaypoint = newWaypoints[newWaypoints.length - 1]
     const firstMarker = waypointMarkers.value[firstWaypoint.id]
     const lastMarker = waypointMarkers.value[lastWaypoint.id]
     if (firstMarker) {
-      firstMarker.getElement()?.classList.add('green-marker')
+      firstMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
     }
     if (lastMarker && lastMarker !== firstMarker) {
-      lastMarker.getElement()?.classList.add('green-marker')
+      lastMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
     }
-
-    reNumberWaypoints()
   }
 }
 
@@ -3524,7 +3523,9 @@ watch(
 }
 
 .green-marker {
-  background-color: #034103aa;
+  border-radius: 50%;
+  border: 2px solid #ffffff99;
+  background-color: #034103;
 }
 
 .command-count-indicator {
