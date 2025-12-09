@@ -693,7 +693,7 @@ const zoom = ref(missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
-const waypointMarkers = ref<{ [id: string]: Marker }>({})
+const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
@@ -991,7 +991,7 @@ const clearCurrentMission = (): void => {
   waypointMarkers.value = {}
   if (missionWaypointsPolyline.value) {
     planningMap.value?.removeLayer(missionWaypointsPolyline.value)
-    missionWaypointsPolyline.value = undefined
+    missionWaypointsPolyline.value = null
   }
   clearSurveyPath()
   surveys.value = []
@@ -2037,7 +2037,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
   reader.readAsText(e.target.files[0])
 }
 
-const surveyPolygonVertexesMarkers = ref<L.Marker[]>([])
+const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
 const rawDistanceBetweenSurveyLines = ref(10)
 const rawSurveyLinesAngle = ref(0)
 const existingWaypoints = ref<Waypoint[]>([])
