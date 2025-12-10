@@ -1294,10 +1294,13 @@ const centerVehicleButtonTooltipText = computed(() => {
 })
 
 // POI Marker Management Functions for Map Widget
-const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
+const poiIconConfig = async (poi: PointOfInterest): Promise<L.DivIconOptions> => {
+  const { getPoiMarkerColor, getPoiStatusText } = await import('@/libs/utils-poi')
+  const markerColor = getPoiMarkerColor(poi, poi.color)
+
   const poiIconHtml = `
     <div class="poi-marker-container">
-      <div class="poi-marker-background" style="background-color: ${poi.color}80;"></div>
+      <div class="poi-marker-background" style="background-color: ${markerColor}80;"></div>
       <i class="v-icon notranslate mdi ${poi.icon}" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
     </div>
   `
@@ -1310,26 +1313,30 @@ const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
   }
 }
 
-const addPoiMarkerToMapWidget = (poi: PointOfInterest): void => {
+const addPoiMarkerToMapWidget = async (poi: PointOfInterest): Promise<void> => {
   if (!map.value || !map.value.getContainer()) return
 
-  const poiMarkerIcon = L.divIcon(poiIconConfig(poi))
+  const { getPoiStatusText } = await import('@/libs/utils-poi')
+  const poiMarkerIcon = L.divIcon(await poiIconConfig(poi))
 
   const marker = L.marker(poi.coordinates as LatLngTuple, { icon: poiMarkerIcon, draggable: true }).addTo(map.value)
 
+  const statusText = getPoiStatusText(poi)
   const tooltipContent = `
     <strong>${poi.name}</strong><br>
     ${poi.description ? poi.description + '<br>' : ''}
+    ${statusText ? `<em>${statusText}</em><br>` : ''}
     Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
   `
   const tooltipConfig = { permanent: false, direction: 'top', offset: [0, -40], className: 'poi-tooltip-widget' }
   marker.bindTooltip(tooltipContent, tooltipConfig)
 
-  marker.on('drag', (event) => {
+  marker.on('drag', async (event) => {
     const newCoords = event.target.getLatLng()
     const updatedTooltipContent = `
       <strong>${poi.name}</strong><br>
       ${poi.description ? poi.description + '<br>' : ''}
+      ${statusText ? `<em>${statusText}</em><br>` : ''}
       Lat: ${newCoords.lat.toFixed(8)}, Lng: ${newCoords.lng.toFixed(8)}
     `
     marker.getTooltip()?.setContent(updatedTooltipContent)
@@ -1356,17 +1363,20 @@ const addPoiMarkerToMapWidget = (poi: PointOfInterest): void => {
   mapWidgetPoiMarkers.value[poi.id] = marker
 }
 
-const updatePoiMarkerOnMapWidget = (poi: PointOfInterest): void => {
+const updatePoiMarkerOnMapWidget = async (poi: PointOfInterest): Promise<void> => {
   if (!map.value || !map.value.getContainer() || !mapWidgetPoiMarkers.value[poi.id]) return
 
+  const { getPoiStatusText } = await import('@/libs/utils-poi')
   const marker = mapWidgetPoiMarkers.value[poi.id]
   marker.setLatLng(poi.coordinates as LatLngTuple)
 
-  marker.setIcon(L.divIcon(poiIconConfig(poi)))
+  marker.setIcon(L.divIcon(await poiIconConfig(poi)))
 
+  const statusText = getPoiStatusText(poi)
   const updatedTooltipContent = `
     <strong>${poi.name}</strong><br>
     ${poi.description ? poi.description + '<br>' : ''}
+    ${statusText ? `<em>${statusText}</em><br>` : ''}
     Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
   `
   marker.getTooltip()?.setContent(updatedTooltipContent)
@@ -1399,13 +1409,13 @@ watch(
       }
     })
 
-    newPois.forEach((poi) => {
+    for (const poi of newPois) {
       if (mapWidgetPoiMarkers.value[poi.id]) {
-        updatePoiMarkerOnMapWidget(poi)
+        await updatePoiMarkerOnMapWidget(poi)
       } else {
-        addPoiMarkerToMapWidget(poi)
+        await addPoiMarkerToMapWidget(poi)
       }
-    })
+    }
   },
   { deep: true, immediate: true }
 )
@@ -1413,15 +1423,15 @@ watch(
 // Ensure POIs are drawn when the map instance becomes available
 watch(
   map,
-  (currentMapInstance) => {
+  async (currentMapInstance) => {
     if (currentMapInstance && currentMapInstance.getContainer()) {
-      missionStore.pointsOfInterest.forEach((poi) => {
+      for (const poi of missionStore.pointsOfInterest) {
         if (!mapWidgetPoiMarkers.value[poi.id]) {
-          addPoiMarkerToMapWidget(poi)
+          await addPoiMarkerToMapWidget(poi)
         } else {
-          updatePoiMarkerOnMapWidget(poi) // Update if already exists, in case details changed
+          await updatePoiMarkerOnMapWidget(poi) // Update if already exists, in case details changed
         }
-      })
+      }
     }
   },
   { immediate: true }

@@ -5,8 +5,11 @@ import { reactive, ref, watch } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
+import { listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { reloadCockpit } from '@/libs/utils'
+import { findDataLakeVariablesIdsInString } from '@/libs/utils-data-lake'
+import { isDynamicPoi, updateDynamicPoiCoordinates } from '@/libs/utils-poi'
 import {
   AltitudeReferenceType,
   MapTileProvider,
@@ -55,6 +58,23 @@ export const useMissionStore = defineStore('mission', () => {
 
   const pointsOfInterest = useBlueOsStorage<PointOfInterest[]>('cockpit-points-of-interest', [])
 
+  // Keep track of data-lake variable listeners for dynamic POIs
+  const poiDataLakeListeners = ref<
+    Record<
+      string,
+      Array<{
+        /**
+         *
+         */
+        variableId: string
+        /**
+         *
+         */
+        listenerId: string
+      }>
+    >
+  >({})
+
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
@@ -82,19 +102,41 @@ export const useMissionStore = defineStore('mission', () => {
   }
 
   const addPointOfInterest = (poi: PointOfInterest): void => {
-    pointsOfInterest.value.push(poi)
+    // Initialize dynamic properties
+    const initializedPoi = updateDynamicPoiCoordinates(poi)
+    pointsOfInterest.value.push(initializedPoi)
+
+    // Set up data-lake listeners if needed
+    if (isDynamicPoi(initializedPoi)) {
+      setupPoiDataLakeListeners(initializedPoi)
+    }
   }
 
   const updatePointOfInterest = (id: string, poiUpdate: Partial<PointOfInterest>): void => {
     const index = pointsOfInterest.value.findIndex((p) => p.id === id)
     if (index !== -1) {
-      pointsOfInterest.value[index] = { ...pointsOfInterest.value[index], ...poiUpdate, timestamp: Date.now() }
+      const currentPoi = pointsOfInterest.value[index]
+      const updatedPoi = { ...currentPoi, ...poiUpdate, timestamp: Date.now() }
+
+      // Update dynamic coordinates if needed
+      const finalPoi = updateDynamicPoiCoordinates(updatedPoi)
+      pointsOfInterest.value[index] = finalPoi
+
+      // Update data-lake listeners if dynamic properties changed
+      if (isDynamicPoi(finalPoi)) {
+        cleanupPoiDataLakeListeners(id)
+        setupPoiDataLakeListeners(finalPoi)
+      } else {
+        cleanupPoiDataLakeListeners(id)
+      }
     }
   }
 
   const removePointOfInterest = (id: string): void => {
     const index = pointsOfInterest.value.findIndex((p) => p.id === id)
     if (index !== -1) {
+      // Clean up data-lake listeners
+      cleanupPoiDataLakeListeners(id)
       pointsOfInterest.value.splice(index, 1)
     }
   }
@@ -106,6 +148,79 @@ export const useMissionStore = defineStore('mission', () => {
     }
     updatePointOfInterest(id, { coordinates: newCoordinates })
   }
+
+  // Set up data-lake listeners for a dynamic POI
+  const setupPoiDataLakeListeners = (poi: PointOfInterest): void => {
+    if (!isDynamicPoi(poi)) return
+
+    const variableIds = new Set<string>()
+
+    // Find all data-lake variables used in coordinate expressions
+    if (typeof poi.latitudeExpression === 'string') {
+      findDataLakeVariablesIdsInString(poi.latitudeExpression).forEach((id) => variableIds.add(id))
+    }
+    if (typeof poi.longitudeExpression === 'string') {
+      findDataLakeVariablesIdsInString(poi.longitudeExpression).forEach((id) => variableIds.add(id))
+    }
+
+    // Set up listeners for each variable
+    const listeners: Array<{
+      /**
+       *
+       */
+      variableId: string
+      /**
+       *
+       */
+      listenerId: string
+    }> = []
+    variableIds.forEach((variableId) => {
+      const listenerId = listenDataLakeVariable(variableId, () => {
+        // Update POI coordinates when data changes
+        const currentPoi = pointsOfInterest.value.find((p) => p.id === poi.id)
+        if (currentPoi) {
+          const updatedPoi = updateDynamicPoiCoordinates(currentPoi)
+          const index = pointsOfInterest.value.findIndex((p) => p.id === poi.id)
+          if (index !== -1) {
+            pointsOfInterest.value[index] = updatedPoi
+          }
+        }
+      })
+      listeners.push({ variableId, listenerId })
+    })
+
+    poiDataLakeListeners.value[poi.id] = listeners
+  }
+
+  // Clean up data-lake listeners for a POI
+  const cleanupPoiDataLakeListeners = (poiId: string): void => {
+    const listeners = poiDataLakeListeners.value[poiId]
+    if (listeners) {
+      listeners.forEach(({ variableId, listenerId }) => {
+        unlistenDataLakeVariable(variableId, listenerId)
+      })
+      delete poiDataLakeListeners.value[poiId]
+    }
+  }
+
+  // Initialize data-lake listeners for existing dynamic POIs
+  const initializeDynamicPois = (): void => {
+    pointsOfInterest.value.forEach((poi) => {
+      // Update coordinates and set up listeners for dynamic POIs
+      const updatedPoi = updateDynamicPoiCoordinates(poi)
+      const index = pointsOfInterest.value.findIndex((p) => p.id === poi.id)
+      if (index !== -1) {
+        pointsOfInterest.value[index] = updatedPoi
+      }
+
+      if (isDynamicPoi(updatedPoi)) {
+        setupPoiDataLakeListeners(updatedPoi)
+      }
+    })
+  }
+
+  // Initialize dynamic POIs when store is created
+  initializeDynamicPois()
 
   const clearMission = (): void => {
     currentPlanningWaypoints.splice(0)
