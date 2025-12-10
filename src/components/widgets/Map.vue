@@ -27,6 +27,22 @@
           <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
         </v-list>
       </v-menu>
+      <v-tooltip location="top" text="Switch to Mission Planning mode">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-if="showButtons"
+            v-bind="tooltipProps"
+            class="absolute right-[265px] w-[140px] mb-[15px] bottom-button bg-slate-50 text-[12px] font-bold"
+            elevation="2"
+            text="Edit mission"
+            append-icon="mdi-map-marker-radius-outline"
+            style="z-index: 1002; border-radius: 0px"
+            hide-details
+            size="small"
+            @click.stop="router.push('/mission-planning')"
+          />
+        </template>
+      </v-tooltip>
       <v-tooltip location="top" :text="centerHomeButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
           <v-btn
@@ -191,6 +207,7 @@ import {
   toRefs,
   watch,
 } from 'vue'
+import { useRouter } from 'vue-router'
 
 import copterMarkerImage from '@/assets/arducopter-top-view.png'
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
@@ -225,6 +242,7 @@ const { showDialog, closeDialog } = useInteractionDialog()
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
+const router = useRouter()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
@@ -1509,7 +1527,7 @@ watch(
 :deep(.leaflet-control-scale) {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
-  right: 260px; /* Position to the left of the buttons */
+  right: 407px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 8px 8px;

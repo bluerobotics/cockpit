@@ -331,6 +331,21 @@
         </button>
       </div>
     </div>
+    <v-tooltip location="top" text="Switch to Flight mode">
+      <template #activator="{ props: tooltipProps }">
+        <v-btn
+          v-bind="tooltipProps"
+          class="absolute right-[180px] w-[140px] m-3 mb-[14px] bottom-12 bg-slate-50 text-[12px] font-bold"
+          elevation="2"
+          text="Flight mode"
+          append-icon="mdi-send"
+          style="z-index: 1002; border-radius: 0px"
+          hide-details
+          size="small"
+          @click.stop="router.push('/')"
+        />
+      </template>
+    </v-tooltip>
     <v-tooltip location="top center" text="Download map tiles">
       <template #activator="{ props: tooltipProps }">
         <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
@@ -3754,7 +3769,7 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 180px; /* Position to the left of the buttons */
+  right: 337px; /* Position to the left of the buttons */
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
