@@ -25,30 +25,29 @@
     </div>
 
     <div v-if="isDecember()" id="tether-animation">
-      <div class="absolute top-[30vh] right-[-55px] animate-left-down-fast" style="z-index: 9991">
-        <img class="wiggle w-[40px] opacity-60" :src="gifts" alt="tether-to-gift" />
-      </div>
-      <div class="absolute top-[33vh] right-[-20px] animate-left-down-fast" style="z-index: 9990">
-        <img class="w-[60px] rotate-[-15deg]" :src="tetherXmas" alt="tether-to-gift" />
-      </div>
-      <div class="absolute top-[31.5vh] right-0 animate-left-down-fast" style="z-index: 9991">
-        <img
-          class="w-[70px] scale-x-[-1] scale-y-[-1] rotate-[15deg] contrast-100 brightness-0"
-          :src="xmasTree"
-          alt="christmas-tree"
-        />
-      </div>
-      <div class="absolute top-[35vh] right-[60px] animate-left-down-fast" style="z-index: 9990">
-        <img class="w-[110px]" :src="tetherXmas" alt="tether-to-tree" />
-      </div>
-      <div class="absolute top-[35vh] right-[8%] animate-left-down-fast" style="z-index: 9990">
-        <img class="w-[60px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Fish" />
-      </div>
-      <div class="absolute top-[37vh] right-[4%] animate-left-down-faster" style="z-index: 9990">
-        <img class="w-[30px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Fish" />
-      </div>
-      <div class="absolute top-[39vh] right-[2%] animate-left-down-faster2" style="z-index: 9990">
-        <img class="w-[35px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Fish" />
+      <div class="absolute top-[10vh] right-[-55px]">
+        <div class="relative top-[3vh] right-[35px] animate-left-down-fast" style="z-index: 9990">
+          <img class="w-[60px] rotate-[-15deg]" :src="tetherXmas" alt="tether-to-gift" />
+        </div>
+        <div class="relative top-[5.4vh] right-[-125px] animate-left-down-fast-xmas-tree" style="z-index: 9991">
+          <img
+            class="w-[70px] scale-x-[-1] scale-y-[-1] rotate-[160deg] contrast-100 brightness-0"
+            :src="xmasTree"
+            alt="christmas-tree"
+          />
+        </div>
+        <div class="relative top-[4.9vh] right-[-35px] animate-left-down-fast" style="z-index: 9990">
+          <img class="w-[110px] rotate-[-15deg]" :src="tetherXmas" alt="tether-to-tree" />
+        </div>
+        <div class="relative top-[5vh] right-[8%] animate-left-down-fast" style="z-index: 9990">
+          <img class="w-[60px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Rov" />
+        </div>
+        <div class="relative top-[7vh] right-[2%] animate-left-down-faster" style="z-index: 9990">
+          <img class="w-[30px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Rov" />
+        </div>
+        <div class="relative top-[9vh] right-[1%] animate-left-down-faster2" style="z-index: 9990">
+          <img class="w-[35px] opacity-70 rotate-[-10deg]" :src="rovSide" alt="Rov" />
+        </div>
       </div>
     </div>
     <div
@@ -128,7 +127,6 @@ import blueROVXmas from '../assets/blueROV-front-santa-hat.png'
 import rovSide from '../assets/blueROV-side-dark.png'
 import cockpitLogoName from '../assets/cockpit-name-logo.png'
 import fish from '../assets/fish-transparent.png'
-import gifts from '../assets/gifts.png'
 import lite from '../assets/lite.png'
 import xmasTree from '../assets/pulling-xmas-tree.gif'
 import splashBackground from '../assets/splash-background.png'
@@ -267,6 +265,15 @@ onBeforeUnmount(() => {
   }
 }
 
+@keyframes leftDownXmas {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-20vw, 20vh) rotate(10deg);
+  }
+}
+
 @keyframes leftDown2 {
   from {
     transform: translate(0, 0);
@@ -288,6 +295,10 @@ onBeforeUnmount(() => {
   animation: leftDown 40s linear forwards;
 }
 
+.animate-left-down-fast-xmas-tree {
+  animation: leftDownXmas 40s linear forwards;
+}
+
 @keyframes ascend {
   from {
     transform: translateY(calc(0 + 150px));
@@ -299,7 +310,7 @@ onBeforeUnmount(() => {
 
 .wiggle {
   animation: wiggle 8s ease-in-out infinite;
-  transform-origin: 10% 50%;
+  transform-origin: 0% 100%;
 }
 
 @keyframes wiggle {
