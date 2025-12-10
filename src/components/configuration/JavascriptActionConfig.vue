@@ -57,6 +57,7 @@ import {
   JavascriptActionConfig,
   registerJavascriptActionConfig,
 } from '@/libs/actions/free-javascript'
+import { exportFile } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const emit = defineEmits<{
@@ -119,17 +120,7 @@ const exportAction = (id: string): void => {
     console.error('Action not found')
     return
   }
-  const json = JSON.stringify(action, null, 2)
-  const blob = new Blob([json], { type: 'application/json' })
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.style.display = 'none'
-  a.href = url
-  a.download = `${id}.json`
-  document.body.appendChild(a)
-  a.click()
-  window.URL.revokeObjectURL(url)
-  a.remove()
+  exportFile(action, `${id}.json`)
 }
 
 const deleteAction = (id: string): void => {

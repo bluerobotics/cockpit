@@ -39,8 +39,8 @@ export interface DataLakeVariable {
   allowUserToChangeValue?: boolean
 }
 
-const persistentVariablesKey = 'cockpit-persistent-data-lake-variables'
-const persistentValuesKey = 'cockpit-persistent-data-lake-values'
+export const persistentVariablesKey = 'cockpit-persistent-data-lake-variables'
+export const persistentValuesKey = 'cockpit-persistent-data-lake-values'
 
 const dataLakeVariableInfo: Record<string, DataLakeVariable> = {}
 export const dataLakeVariableData: Record<string, string | number | boolean | undefined> = {}

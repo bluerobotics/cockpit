@@ -131,6 +131,20 @@
                     </td>
                   </tr>
                 </template>
+                <template #bottom>
+                  <tr class="w-full">
+                    <td colspan="5" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-2">
+                      <v-btn variant="outlined" class="rounded-lg" @click="exportDataLakeVariables">
+                        <v-icon start>mdi-download</v-icon>
+                        Export variables
+                      </v-btn>
+                      <v-btn variant="outlined" class="rounded-lg" @click="importDataLakeVariables">
+                        <v-icon start>mdi-upload</v-icon>
+                        Import variables
+                      </v-btn>
+                    </td>
+                  </tr>
+                </template>
                 <template #no-data>
                   <tr>
                     <td colspan="5" class="text-center flex items-center justify-center h-[50px] w-full">
@@ -169,21 +183,27 @@ import ScrollingText from '@/components/ScrollingText.vue'
 import TransformingFunctionDialog from '@/components/TransformingFunctionDialog.vue'
 import { openSnackbar } from '@/composables/snackbar'
 import {
+  createDataLakeVariable,
   DataLakeVariable,
   deleteDataLakeVariable,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableData,
   listenDataLakeVariable,
   listenToDataLakeVariablesInfoChanges,
+  persistentValuesKey,
+  persistentVariablesKey,
+  setDataLakeVariableData,
   unlistenDataLakeVariable,
   unlistenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
 import {
+  createTransformingFunction,
   deleteTransformingFunction,
   getAllTransformingFunctions,
   TransformingFunction,
+  transformingFunctionsKey,
 } from '@/libs/actions/data-lake-transformations'
-import { copyToClipboard } from '@/libs/utils'
+import { copyToClipboard, exportFile, importFile, ImportFileValidator } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
@@ -366,6 +386,152 @@ const editUserDefinedVariable = (variableId: string): void => {
  */
 const handleVariableSaved = (): void => {
   showVariableDialog.value = false
+}
+
+/**
+ * Exports all persisted data lake variables and their values to a JSON file
+ */
+const exportDataLakeVariables = (): void => {
+  // Get persistent variables from localStorage
+  const savedVariables = localStorage.getItem(persistentVariablesKey)
+  const savedValues = localStorage.getItem(persistentValuesKey)
+  const savedTransformingFunctions = localStorage.getItem(transformingFunctionsKey)
+
+  const exportData = {
+    variables: savedVariables ? JSON.parse(savedVariables) : [],
+    values: savedValues ? JSON.parse(savedValues) : {},
+    transformingFunctions: savedTransformingFunctions ? JSON.parse(savedTransformingFunctions) : [],
+    exportDate: new Date().toISOString(),
+    version: '1.0',
+  }
+
+  // Download the file using the reusable utility
+  const timestamp = new Date().toISOString().split('T')[0]
+  const filename = `cockpit-data-lake-variables-${timestamp}.json`
+  exportFile(exportData, filename)
+
+  const message = `Exported ${exportData.variables.length} variables and ${exportData.transformingFunctions.length} compound variables to ${filename}`
+  openSnackbar({ message, variant: 'success' })
+}
+
+const validateDataLakeVariablesFile = (data: any): ImportFileValidator => {
+  if (!data || typeof data !== 'object') {
+    return { isValid: false, error: 'Invalid file: content is not a valid JSON object.' }
+  }
+
+  // Validate the import data structure
+  if (!data || typeof data !== 'object') {
+    return { isValid: false, error: 'Invalid file: content is not a valid JSON object.' }
+  }
+
+  if (!Array.isArray(data.variables)) {
+    return { isValid: false, error: 'Invalid file: missing or invalid variables array.' }
+  }
+
+  return { isValid: true }
+}
+
+/**
+ * Imports data lake variables and their values from a JSON file
+ */
+const importDataLakeVariables = async (): Promise<void> => {
+  try {
+    const importData = await importFile('application/json', true, validateDataLakeVariablesFile)
+
+    // Import regular variables first
+    let importedVariableCount = 0
+    let importedCompoundCount = 0
+    let errorCount = 0
+
+    importData.variables.forEach((variable: any) => {
+      try {
+        // Validate variable structure
+        if (!variable.id || !variable.name || !variable.type) {
+          console.warn('Skipping invalid variable:', variable)
+          errorCount++
+          return
+        }
+
+        // Check if variable already exists
+        const existingVariable = getAllDataLakeVariablesInfo()[variable.id]
+        if (existingVariable) {
+          console.warn(`Variable ${variable.id} already exists, skipping`)
+          errorCount++
+          return
+        }
+
+        // Create the variable
+        createDataLakeVariable({
+          id: variable.id,
+          name: variable.name,
+          type: variable.type,
+          description: variable.description || '',
+          persistent: variable.persistent ?? true,
+          persistValue: variable.persistValue ?? true,
+          allowUserToChangeValue: variable.allowUserToChangeValue ?? true,
+        })
+
+        // Set the value if it exists in the import data
+        if (importData.values && importData.values[variable.id] !== undefined) {
+          setDataLakeVariableData(variable.id, importData.values[variable.id])
+        }
+
+        importedVariableCount++
+      } catch (error) {
+        console.error(`Error importing variable ${variable.id}:`, error)
+        errorCount++
+      }
+    })
+
+    // Import transforming functions (compound variables) after regular variables
+    if (importData.transformingFunctions && Array.isArray(importData.transformingFunctions)) {
+      importData.transformingFunctions.forEach((func: any) => {
+        try {
+          // Validate transforming function structure
+          if (!func.id || !func.name || !func.type || !func.expression) {
+            console.warn('Skipping invalid transforming function:', func)
+            errorCount++
+            return
+          }
+
+          // Check if transforming function already exists
+          const existingFunctions = getAllTransformingFunctions()
+          if (existingFunctions.some((f) => f.id === func.id)) {
+            console.warn(`Transforming function ${func.id} already exists, skipping`)
+            errorCount++
+            return
+          }
+
+          // Create the transforming function
+          createTransformingFunction(func.id, func.name, func.type, func.expression, func.description)
+
+          importedCompoundCount++
+        } catch (error) {
+          console.error(`Error importing transforming function ${func.id}:`, error)
+          errorCount++
+        }
+      })
+    }
+
+    // Show results
+    const totalImported = importedVariableCount + importedCompoundCount
+    if (totalImported > 0) {
+      let message = `Successfully imported ${importedVariableCount} variables`
+      if (importedCompoundCount > 0) {
+        message += ` and ${importedCompoundCount} compound variables`
+      }
+      if (errorCount > 0) {
+        message += ` (${errorCount} errors)`
+      }
+      openSnackbar({ message, variant: 'success' })
+    } else {
+      const message = `No variables were imported${errorCount > 0 ? ` (${errorCount} errors)` : ''}`
+      openSnackbar({ message, variant: 'warning' })
+    }
+  } catch (error: any) {
+    console.error('Error importing data lake variables:', error)
+    openSnackbar({ message: error.message || 'Failed to import data lake variables', variant: 'error' })
+  }
 }
 
 /**
