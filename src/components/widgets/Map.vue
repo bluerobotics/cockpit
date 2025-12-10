@@ -4,12 +4,14 @@
     v-contextmenu="handleContextMenu"
     class="page-base"
     :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
+    :style="glassMenuCssVars"
   >
     <div :id="mapId" ref="map" class="map">
       <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
         <template #activator="{ props: menuProps }">
           <v-btn
             v-show="showButtons"
+            :style="interfaceStore.globalGlassMenuStyles"
             v-bind="menuProps"
             class="absolute right-[209px] m-3 bottom-button bg-slate-50 text-[14px]"
             elevation="2"
@@ -32,11 +34,12 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute right-[265px] w-[140px] mb-[15px] bottom-button bg-slate-50 text-[12px] font-bold"
-            elevation="2"
+            class="absolute right-[265px] w-[140px] mb-[14px] bottom-button bg-slate-50 text-[12px] font-bold"
+            elevation="4"
             text="Edit mission"
             append-icon="mdi-map-marker-radius-outline"
             style="z-index: 1002; border-radius: 0px"
+            :style="interfaceStore.globalGlassMenuStyles"
             hide-details
             size="small"
             @click.stop="router.push('/mission-planning')"
@@ -47,6 +50,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
+            :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
             class="absolute right-[166px] m-3 bottom-button bg-slate-50 text-[14px]"
             :class="!home ? 'active-events-on-disabled' : ''"
@@ -66,6 +70,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
+            :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
             class="absolute m-3 bottom-button right-[124px] bg-slate-50 text-[14px]"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
@@ -85,6 +90,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
+            :style="[interfaceStore.globalGlassMenuStyles, !vehicleStore.isVehicleOnline ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
             class="absolute m-3 bottom-button right-[82px] bg-slate-50 text-[14px]"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
@@ -101,6 +107,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
+            :style="[interfaceStore.globalGlassMenuStyles, !vehicleStore.isVehicleOnline ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
             class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50 text-[14px]"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
@@ -265,6 +272,14 @@ let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
 let seamarksSaveBtn: HTMLAnchorElement | undefined
 const downloadMenuOpen = ref(false)
+
+const glassMenuCssVars = computed(() => ({
+  '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
+  '--glass-filter': interfaceStore.globalGlassMenuStyles.backdropFilter,
+  '--glass-border': interfaceStore.globalGlassMenuStyles.border,
+  '--glass-color': interfaceStore.globalGlassMenuStyles.color,
+  '--glass-box-shadow': interfaceStore.globalGlassMenuStyles.boxShadow,
+}))
 
 const saveEsri = (): void => {
   esriSaveBtn?.click()
@@ -1527,16 +1542,68 @@ watch(
 :deep(.leaflet-control-scale) {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
+  margin-bottom: 12px;
   right: 407px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
-  padding: 8px 8px;
-  margin-bottom: 12px;
-  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14),
-    0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  padding: 6px 6px;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--glass-box-shadow);
+  color: var(--glass-color);
+  border: var(--glass-border);
+  font-weight: bolder;
 }
 
-:deep(.leaflet-control-zoom) {
+/* Style the Leaflet zoom control */
+:deep(.leaflet-control-zoom.leaflet-bar) {
   bottom: v-bind('bottomButtonsDisplacement');
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--glass-box-shadow);
+  color: var(--glass-color);
+  border: var(--glass-border);
+}
+
+:deep(.leaflet-control-zoom.leaflet-bar a) {
+  background: transparent !important;
+  border: none;
+  color: var(--glass-color);
+}
+
+:deep(.leaflet-control-zoom.leaflet-bar a:hover),
+:deep(.leaflet-control-zoom.leaflet-bar a:focus) {
+  background: transparent !important;
+}
+
+/* Style the Leaflet layer provider selector */
+:deep(.leaflet-control-layers) {
+  background: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  box-shadow: var(--glass-box-shadow) !important;
+  color: var(--glass-color) !important;
+  border: var(--glass-border) !important;
+  border-radius: 4px;
+}
+
+:deep(.leaflet-control-layers-expanded) {
+  background: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  box-shadow: var(--glass-box-shadow) !important;
+  color: var(--glass-color) !important;
+  border: var(--glass-border) !important;
+}
+
+:deep(.leaflet-control-layers-list) {
+  background: transparent !important;
+  color: var(--glass-color) !important;
+}
+
+:deep(.leaflet-control-layers-selector) {
+  accent-color: var(--glass-color) !important;
+}
+
+:deep(.leaflet-control-layers label) {
+  color: var(--glass-color) !important;
 }
 </style>
