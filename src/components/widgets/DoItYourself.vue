@@ -104,6 +104,7 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { cockpitTimerManager } from '@/libs/timer-management'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -309,19 +310,32 @@ const applyChanges = (): void => {
   executeUserScript()
 }
 
+const getDiyWidgetId = (): string => {
+  return `diy-widget-${widget.value.hash}`
+}
+
 const executeUserScript = (): void => {
   const js = widget.value.options.js || ''
-  const scriptElementId = `diy-script-${widget.value.hash}`
+  const diyWidgetId = getDiyWidgetId()
 
   // Remove existing script element
-  document.getElementById(scriptElementId)?.remove()
+  document.getElementById(diyWidgetId)?.remove()
+
+  // Clear any existing timers from previous script execution
+  cockpitTimerManager.clearAllTimersForOwner(diyWidgetId)
+
+  // Set the current owner ID so any setInterval/setTimeout calls in the user script are tracked
+  cockpitTimerManager.setCurrentOwnerId(diyWidgetId)
 
   // Create new script element
   const scriptEl = document.createElement('script')
   scriptEl.type = 'text/javascript'
   scriptEl.textContent = js
-  scriptEl.id = scriptElementId
+  scriptEl.id = diyWidgetId
   document.body.appendChild(scriptEl)
+
+  // Clear the current owner ID
+  cockpitTimerManager.clearCurrentOwnerId()
 }
 
 const resetChanges = (): void => {
@@ -451,6 +465,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   finishEditor()
+  // Clear any timers created by the user script
+  cockpitTimerManager.clearAllTimersForOwner(getDiyWidgetId())
 })
 </script>
 
