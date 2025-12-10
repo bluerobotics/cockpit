@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
 import {
   deleteJavascriptActionConfig,
@@ -57,7 +57,10 @@ import {
   JavascriptActionConfig,
   registerJavascriptActionConfig,
 } from '@/libs/actions/free-javascript'
+import { cockpitTimerManager } from '@/libs/timer-management'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+
+const javascriptActionConfigTestRunnerId = 'javascript-action-test-runner'
 
 const emit = defineEmits<{
   (e: 'action-saved'): void
@@ -96,6 +99,9 @@ const createActionConfig = (): void => {
 }
 
 const saveActionConfig = (): void => {
+  // Clear all existing managed timers for the test runner
+  cockpitTimerManager.clearAllTimersForOwner(javascriptActionConfigTestRunnerId)
+
   createActionConfig()
   closeActionDialog()
 }
@@ -110,7 +116,13 @@ const resetNewAction = (): void => {
 }
 
 const testAction = (): void => {
+  // Clear all existing managed timers for the test runner
+  cockpitTimerManager.clearAllTimersForOwner(javascriptActionConfigTestRunnerId)
+
+  // Execute the action code with managed timers
+  cockpitTimerManager.setCurrentOwnerId(javascriptActionConfigTestRunnerId)
   executeActionCode(newActionConfig.value.code)
+  cockpitTimerManager.clearCurrentOwnerId()
 }
 
 const exportAction = (id: string): void => {
@@ -144,6 +156,7 @@ const closeActionDialog = (): void => {
 
 const openEditDialog = (id: string): void => {
   const action = getJavascriptActionConfig(id)
+  cockpitTimerManager.clearAllTimersForOwner(id)
   if (action) {
     editMode.value = true
     newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
@@ -155,6 +168,10 @@ const openNewDialog = (): void => {
   resetNewAction()
   actionDialog.value.show = true
 }
+
+onBeforeUnmount(() => {
+  cockpitTimerManager.clearAllTimersForOwner(javascriptActionConfigTestRunnerId)
+})
 
 defineExpose({
   openEditDialog,
