@@ -89,7 +89,7 @@
             </div>
           </div>
           <!-- Deadband Axis Panels -->
-          <div class="grid grid-rows-2 grid-flow-col gap-x-6 gap-y-6 w-full my-2">
+          <div class="grid grid-rows-2 grid-cols-3 grid-flow-row gap-x-6 gap-y-6 w-full my-2">
             <div
               v-for="(_, index) in controllerStore.currentMainJoystick?.state.axes ?? []"
               :key="index"
