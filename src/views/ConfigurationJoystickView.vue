@@ -371,7 +371,7 @@
                     v-if="currentJoystick && currentJoystick?.gamepadToCockpitMap?.buttons"
                     :headers="headers"
                     :items="tableItems"
-                    :items-per-page="64"
+                    :items-per-page="128"
                     class="elevation-1 bg-transparent rounded-lg mt-2 mb-10"
                     theme="dark"
                     :style="interfaceStore.globalGlassMenuStyles"
@@ -754,6 +754,7 @@ const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
 const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
 const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
+const maxVisibleInputs = 64
 
 // Track the currently selected profile (for viewing) vs the active profile (for actual joystick control)
 const selectedProfileIndex = ref(0)
@@ -894,9 +895,15 @@ const tableItems = computed(() => {
   }
 
   // Create new items if cache is not defined yet
-  const axesItems = Array.from({ length: Math.min(31, axesLength) }, (_, index) => ({ type: 'axis', id: index }))
+  const axesItems = Array.from({ length: Math.min(maxVisibleInputs, axesLength) }, (_, index) => ({
+    type: 'axis',
+    id: index,
+  }))
 
-  const buttonItems = Array.from({ length: Math.min(31, buttonsLength) }, (_, index) => ({ type: 'button', id: index }))
+  const buttonItems = Array.from({ length: Math.min(maxVisibleInputs, buttonsLength) }, (_, index) => ({
+    type: 'button',
+    id: index,
+  }))
 
   const items = [...axesItems, ...buttonItems]
 
