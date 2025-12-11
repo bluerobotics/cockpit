@@ -8,6 +8,7 @@ import {
 } from '../joystick/protocols/cockpit-actions'
 import { isElectron } from '../utils'
 import { replaceDataLakeInputsInJsonString, replaceDataLakeInputsInString } from '../utils-data-lake'
+import { setDataLakeVariableData } from './data-lake'
 
 const httpRequestActionIdPrefix = 'http-request-action'
 
@@ -22,6 +23,17 @@ export enum HttpRequestMethod {
   PATCH = 'PATCH',
 }
 export const availableHttpRequestMethods: HttpRequestMethod[] = Object.values(HttpRequestMethod)
+
+export type DataLakeParser = {
+  /**
+   * The ID of the data lake variable to populate with the response.
+   */
+  dataLakeVariableId: string
+  /**
+   * The path to extract from the response JSON (e.g., "response.coco" or "response.xixi[2]").
+   */
+  responseParser?: string
+}
 
 export type HttpRequestActionConfig = {
   /**
@@ -48,6 +60,68 @@ export type HttpRequestActionConfig = {
    * The body of the request.
    */
   body: string
+  /**
+   * Array of data lake parsers to extract different values from the response (GET requests only).
+   */
+  dataLakeParsers?: DataLakeParser[]
+}
+
+/**
+ * Parse a JSON path and extract the value from a JSON object
+ * Supports paths like "response.coco", "response.xixi[2]", "response.nested.value"
+ * @param {any} obj The JSON object to extract from
+ * @param {string} path The path to extract (e.g., "response.coco" or "response.xixi[2]")
+ * @returns {any} The extracted value or undefined if not found
+ */
+export const parseJsonPath = (obj: any, path: string): any => {
+  if (!path || !obj) return undefined
+
+  try {
+    // Remove "response." or "response" prefix if present since we're already working with the response object
+    const pathWithoutResponsePrefix = path.startsWith('response') ? path.substring('response'.length) : path
+    const cleanPath = pathWithoutResponsePrefix.startsWith('.')
+      ? pathWithoutResponsePrefix.substring(1)
+      : pathWithoutResponsePrefix
+
+    // Split path by dots and handle array indices
+    const parts = cleanPath.split('.')
+    let current = obj
+
+    for (const part of parts) {
+      if (current === null || current === undefined) return undefined
+
+      // Handle standalone array indices like "[0]"
+      const standaloneArrayMatch = part.match(/^\[(\d+)\]$/)
+      if (standaloneArrayMatch) {
+        const [, index] = standaloneArrayMatch
+        if (Array.isArray(current)) {
+          current = current[parseInt(index)]
+        } else {
+          return undefined
+        }
+      }
+      // Handle array indices like "xixi[2]"
+      else {
+        const arrayMatch = part.match(/^([^[]+)\[(\d+)\]$/)
+        if (arrayMatch) {
+          const [, arrayName, index] = arrayMatch
+          current = current[arrayName]
+          if (Array.isArray(current)) {
+            current = current[parseInt(index)]
+          } else {
+            return undefined
+          }
+        } else {
+          current = current[part]
+        }
+      }
+    }
+
+    return current
+  } catch (error) {
+    console.error('Error parsing JSON path:', error)
+    return undefined
+  }
 }
 
 let registeredHttpRequestActionConfigs: Record<string, HttpRequestActionConfig> = {}
@@ -173,6 +247,28 @@ export const getHttpRequestActionCallback = (id: string): HttpRequestActionCallb
         })
 
         console.log(`HTTP ${action.method} request completed: ${response.status} ${response.statusText}`)
+
+        // Handle response for data lake population (GET requests only)
+        if (action.method === HttpRequestMethod.GET && action.dataLakeParsers && action.dataLakeParsers.length > 0) {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`)
+          }
+
+          const responseData = await response.json()
+
+          for (const parser of action.dataLakeParsers) {
+            if (parser.dataLakeVariableId) {
+              let extractedValue = responseData
+              if (parser.responseParser) {
+                extractedValue = parseJsonPath(responseData, parser.responseParser)
+              }
+
+              if (extractedValue !== undefined) {
+                setDataLakeVariableData(parser.dataLakeVariableId, extractedValue)
+              }
+            }
+          }
+        }
       } catch (error) {
         console.error(`HTTP ${action.method} request failed:`, error)
       } finally {
