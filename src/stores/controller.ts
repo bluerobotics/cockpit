@@ -53,6 +53,7 @@ export type controllerUpdateCallback = (
 const protocolMappingsKey = 'cockpit-protocol-mappings-v1'
 const protocolMappingIndexKey = 'cockpit-protocol-mapping-index-v1'
 const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
+const maxSupportedInputIndexes = 63
 
 export const useControllerStore = defineStore('controller', () => {
   const alertStore = useAlertStore()
@@ -123,8 +124,8 @@ export const useControllerStore = defineStore('controller', () => {
   }
 
   const initializeProtocolMapping = (mapping: JoystickProtocolActionsMapping): void => {
-    // Initialize axesCorrespondencies for all axes up to 31
-    for (let axis = 0; axis <= 31; axis++) {
+    // Initialize axesCorrespondencies for all axes up to maxSupportedInputIndexes
+    for (let axis = 0; axis <= maxSupportedInputIndexes; axis++) {
       if (mapping.axesCorrespondencies[axis] === undefined) {
         mapping.axesCorrespondencies[axis] = {
           action: otherAvailableActions.no_function,
@@ -134,11 +135,11 @@ export const useControllerStore = defineStore('controller', () => {
       }
     }
 
-    // Initialize buttonsCorrespondencies for all buttons up to 31
+    // Initialize buttonsCorrespondencies for all buttons up to maxSupportedInputIndexes
     const modifierKeys = Object.keys(mapping.buttonsCorrespondencies)
     for (const modKey of modifierKeys) {
       const buttonsCorrespondency = mapping.buttonsCorrespondencies[modKey as CockpitModifierKeyOption]
-      for (let button = 0; button <= 31; button++) {
+      for (let button = 0; button <= maxSupportedInputIndexes; button++) {
         if (buttonsCorrespondency[button] === undefined) {
           buttonsCorrespondency[button] = {
             action: otherAvailableActions.no_function,
