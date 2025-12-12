@@ -198,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover, useRefHistory } from '@vueuse/core'
+import { useDebounceFn, useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
@@ -253,8 +253,8 @@ const router = useRouter()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
-const zoom = ref(missionStore.defaultMapZoom)
-const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
+const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
+const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
@@ -422,6 +422,9 @@ watch([zoom, mapCenter], () => {
   if (showButtons.value && map.value) {
     createScaleControl()
   }
+  useDebounceFn(() => {
+    missionStore.saveLastMapPosition(zoom.value, mapCenter.value)
+  }, 3000)()
 })
 
 // Grid overlay functions using centralized utilities
