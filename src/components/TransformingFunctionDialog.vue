@@ -165,7 +165,7 @@ watch(
   () => newFunction.value.name,
   (newName) => {
     if (!isManualIdEnabled.value && !editingExistingFunction.value) {
-      newFunction.value.id = machinizeString(newName)
+      newFunction.value.id = 'user/compound/' + machinizeString(newName)
     }
   }
 )
