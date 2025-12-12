@@ -216,6 +216,8 @@ watch(
   max-height: 100vh;
   border: 1px solid #cbcbcb33;
   box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.3), 0px 8px 12px 6px rgba(0, 0, 0, 0.15);
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 100;
 }
 </style>
