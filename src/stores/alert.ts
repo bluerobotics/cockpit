@@ -1,17 +1,30 @@
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import {
+  getAlertsCount,
+  getAllAlerts,
+  pushAlert as managerPushAlert,
+  pushCriticalAlert as managerPushCriticalAlert,
+  pushErrorAlert as managerPushErrorAlert,
+  pushInfoAlert as managerPushInfoAlert,
+  pushSuccessAlert as managerPushSuccessAlert,
+  pushWarningAlert as managerPushWarningAlert,
+  subscribeToAlerts,
+  unsubscribeFromAlerts,
+} from '@/libs/alert-manager'
 
 import { Alert, AlertLevel } from '../types/alert'
 
 export const useAlertStore = defineStore('alert', () => {
-  const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
+  // Reactive alerts array that syncs with the manager
+  const alerts = reactive<Alert[]>(getAllAlerts())
+
+  // Settings stored in BlueOS storage (Vue composable)
   const enableVoiceAlerts = useBlueOsStorage('cockpit-enable-voice-alerts', true)
   const neverShowArmedMenuWarning = useBlueOsStorage('cockpit-never-show-armed-menu-warning', false)
   const skipArmedMenuWarningThisSession = ref(false)
-  // eslint-disable-next-line jsdoc/require-jsdoc
-  const availableAlertSpeechVoices = reactive<SpeechSynthesisVoice[]>([])
   const selectedAlertSpeechVoiceName = useBlueOsStorage<string | undefined>(
     'cockpit-selected-alert-speech-voice',
     undefined
@@ -25,53 +38,56 @@ export const useAlertStore = defineStore('alert', () => {
   ])
   const alertVolume = useBlueOsStorage('cockpit-alert-volume', 1)
 
+  // Speech synthesis state
+  // eslint-disable-next-line jsdoc/require-jsdoc
+  const availableAlertSpeechVoices = reactive<SpeechSynthesisVoice[]>([])
+  const lastSpokenAlertIndex = ref(0)
+
   const sortedAlerts = computed(() => {
-    return alerts.sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
+    return [...alerts].sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
   })
 
+  // Wrapper functions that delegate to the manager
   const pushAlert = (alert: Alert): void => {
-    alerts.push(alert)
-
-    switch (alert.level) {
-      case AlertLevel.Success:
-        console.log(alert.message)
-        break
-      case AlertLevel.Error:
-        console.error(alert.message)
-        break
-      case AlertLevel.Info:
-        console.info(alert.message)
-        break
-      case AlertLevel.Warning:
-        console.warn(alert.message)
-        break
-      case AlertLevel.Critical:
-        console.error(alert.message)
-        break
-      default:
-        unimplemented(`A new alert level was added but we have not updated
-        this part of the code. Regardless of that, here's the alert message: ${alert.message}`)
-        break
-    }
+    managerPushAlert(alert)
   }
 
   const pushSuccessAlert = (message: string, time_created: Date = new Date()): void => {
-    pushAlert(new Alert(AlertLevel.Success, message, time_created))
-  }
-  const pushErrorAlert = (message: string, time_created: Date = new Date()): void => {
-    pushAlert(new Alert(AlertLevel.Error, message, time_created))
-  }
-  const pushInfoAlert = (message: string, time_created: Date = new Date()): void => {
-    pushAlert(new Alert(AlertLevel.Info, message, time_created))
-  }
-  const pushWarningAlert = (message: string, time_created: Date = new Date()): void => {
-    pushAlert(new Alert(AlertLevel.Warning, message, time_created))
-  }
-  const pushCriticalAlert = (message: string, time_created: Date = new Date()): void => {
-    pushAlert(new Alert(AlertLevel.Critical, message, time_created))
+    managerPushSuccessAlert(message, time_created)
   }
 
-  // Alert speech syntesis routine
+  const pushErrorAlert = (message: string, time_created: Date = new Date()): void => {
+    managerPushErrorAlert(message, time_created)
+  }
+
+  const pushInfoAlert = (message: string, time_created: Date = new Date()): void => {
+    managerPushInfoAlert(message, time_created)
+  }
+
+  const pushWarningAlert = (message: string, time_created: Date = new Date()): void => {
+    managerPushWarningAlert(message, time_created)
+  }
+
+  const pushCriticalAlert = (message: string, time_created: Date = new Date()): void => {
+    managerPushCriticalAlert(message, time_created)
+  }
+
+  // Subscribe to manager alerts to keep reactive array in sync and handle speech
+  const alertListenerId = subscribeToAlerts((alert, alertIndex) => {
+    // Keep reactive array in sync
+    if (alerts.length < getAlertsCount()) {
+      alerts.push(alert)
+    }
+
+    // Handle speech synthesis
+    const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === alert.level)
+    const shouldMute =
+      !enableVoiceAlerts.value ||
+      ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !alert.message.startsWith('#'))
+    speak(alert.message, alertIndex, shouldMute)
+  })
+
+  // Alert speech synthesis routine
   const synth = window.speechSynthesis
 
   // We need to cache these otherwise they get garbage collected...
@@ -113,9 +129,6 @@ export const useAlertStore = defineStore('alert', () => {
     availableAlertSpeechVoices.map((v) => ({ value: v.name, name: `${v.name} (${v.lang})` }))
   )
 
-  // Track the index of the last alert that finished being spoken
-  const lastSpokenAlertIndex = ref(0)
-
   /**
    * Speaks a text out loud using the browsers TTS engine
    * @param {string} text - The text to speak
@@ -147,14 +160,9 @@ export const useAlertStore = defineStore('alert', () => {
     synth.speak(utterance)
   }
 
-  watch(alerts, () => {
-    const lastAlertIndex = alerts.length - 1
-    const lastAlert = alerts[lastAlertIndex]
-    const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === lastAlert.level)
-    const shouldMute =
-      !enableVoiceAlerts.value ||
-      ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !lastAlert.message.startsWith('#'))
-    speak(lastAlert.message, lastAlertIndex, shouldMute)
+  // Cleanup subscription when store is unmounted
+  onUnmounted(() => {
+    unsubscribeFromAlerts(alertListenerId)
   })
 
   return {
