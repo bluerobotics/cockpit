@@ -200,14 +200,14 @@
                   </v-tabs>
                 </div>
               </div>
-              <div v-if="currentTabVIew === 'svg'" class="flex flex-col justify-between mt-5">
+              <div v-if="currentTabVIew === 'svg'" class="flex flex-col justify-between">
                 <div
                   v-for="[key, joystick] in controllerStore.joysticks"
                   :key="key"
                   class="w-[95%] h-full flex-centered flex-column position-relative"
                 >
-                  <p class="text-md font-semibold">{{ joystick.model }} controller</p>
-                  <div class="flex items-center gap-2 -mb-4">
+                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
+                  <div class="flex items-center gap-2 -mb-8">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
                       :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
@@ -322,8 +322,8 @@
                   :key="key"
                   class="w-full flex-centered flex-column position-relative"
                 >
-                  <span class="text-lg font-bold w-full text-center">{{ joystick.model }} controller</span>
-                  <div class="flex items-center gap-2 -mb-4">
+                  <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
+                  <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
                       :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
@@ -545,7 +545,8 @@
         <div class="flex justify-center w-full font-bold mt-1">Input mapping</div>
       </template>
       <template #content>
-        <div class="flex flex-col mb-3" :class="currentAxisInputs.length > 0 ? 'h-[600px]' : 'h-[430px]'">
+        <v-icon class="fixed top-3 right-3 cursor-pointer" @click="closeInputMappingDialog">mdi-close</v-icon>
+        <div class="flex flex-col mb-3 -mt-4">
           <div
             v-for="input in currentButtonInputs"
             :key="input.id"
@@ -635,7 +636,7 @@
             </div>
           </div>
           <template v-if="currentAxisInputs.length > 0">
-            <p class="flex items-center justify-center w-full text-lg font-semibold mt-8">Axis mapping</p>
+            <p class="flex items-center justify-center w-full text-lg font-semibold mb-2 mt-2">Axis mapping</p>
           </template>
           <div class="flex flex-col items-center justify-between my-2">
             <Transition>
