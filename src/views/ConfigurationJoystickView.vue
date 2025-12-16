@@ -251,9 +251,72 @@
                       @click="(e) => setCurrentInputs(joystick, e)"
                     />
                   </div>
+                  <div
+                    v-if="getButtonsNotInSvg(joystick).length || getAxesNotInSvg(joystick).length"
+                    class="flex flex-row items-start justify-end w-full gap-4 -mr-8 mb-[20px]"
+                  >
+                    <div class="flex w-[60%] flex-col items-center">
+                      <p class="text-xs font-semibold opacity-80 mb-2">Additional buttons</p>
+                      <div class="grid grid-cols-3 sm:grid-cols-3 xl:grid-cols-4 gap-3 w-full">
+                        <div
+                          v-for="buttonId in getButtonsNotInSvg(joystick)"
+                          :key="buttonId"
+                          class="flex items-center gap-2 px-2 py-2 rounded-md border border-[#FFFFFF22] bg-[#FFFFFF12] cursor-pointer hover:border-[#FFFFFF55]"
+                          @click="
+                            setCurrentInputs(joystick, [{ type: InputType.Button, id: buttonId as JoystickButton }])
+                          "
+                        >
+                          <v-icon
+                            :icon="isExtraButtonPressed(joystick, buttonId) ? 'mdi-circle' : 'mdi-circle-outline'"
+                            :class="[
+                              'text-[22px]',
+                              isExtraButtonPressed(joystick, buttonId) ? 'text-[#5089b4]' : 'text-[#5089b4] opacity-50',
+                            ]"
+                          />
+                          <div class="flex flex-col leading-4">
+                            <span class="text-xs font-semibold">Button {{ buttonId }}</span>
+                            <v-tooltip location="top" :text="getButtonActionName(buttonId)">
+                              <template #activator="{ props }">
+                                <span
+                                  v-bind="props"
+                                  class="text-[11px] opacity-70 max-w-[110px] truncate cursor-pointer"
+                                >
+                                  {{ getButtonActionName(buttonId) }}
+                                </span>
+                              </template>
+                            </v-tooltip>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <v-divider vertical />
+                    <div v-if="getAxesNotInSvg(joystick).length" class="flex-1 w-1 /5 flex flex-col items-center">
+                      <p class="text-xs font-semibold opacity-80 mb-2">Additional axes</p>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                        <div
+                          v-for="axisId in getAxesNotInSvg(joystick)"
+                          :key="axisId"
+                          class="flex items-center gap-3 px-3 py-2 rounded-md border border-[#FFFFFF22] bg-[#FFFFFF12] cursor-pointer hover:border-[#FFFFFF55]"
+                          @click="setCurrentInputs(joystick, [{ type: InputType.Axis, id: axisId as JoystickAxis }])"
+                        >
+                          <div class="flex flex-col text-xs font-semibold w-[72px]">
+                            <span>Axis {{ axisId }}</span>
+                            <span class="text-[11px] opacity-70 max-w-[160px] truncate">{{
+                              getAxisActionName(axisId)
+                            }}</span>
+                          </div>
+                          <AxisVisualization
+                            class="flex-1"
+                            :raw-value="joystick.state.axes[axisId] || 0"
+                            :processed-value="scaledAxisValue(joystick, axisId as JoystickAxis)"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div v-if="currentTabVIew === 'table'" class="flex flex-col justify-between mt-5">
+              <div v-if="currentTabVIew === 'table'" class="w-full">
                 <div
                   v-for="[key, joystick] in controllerStore.joysticks"
                   :key="key"
@@ -755,6 +818,10 @@ const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions
 const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
 
+// Track buttons and axes that are represented in the SVG joystick layouts
+const svgButtons = new Set<number>(Object.values(JoystickButton).filter((btn) => typeof btn === 'number') as number[])
+const svgAxes = new Set<JoystickAxis>([JoystickAxis.A0, JoystickAxis.A1, JoystickAxis.A2, JoystickAxis.A3])
+
 // Track the currently selected profile (for viewing) vs the active profile (for actual joystick control)
 const selectedProfileIndex = ref(0)
 
@@ -789,6 +856,30 @@ watch(
 
 const isButtonPressed = (buttonId: JoystickButton): boolean => {
   return (throttledButtonStates.value[buttonId] ?? 0) > 0.5
+}
+
+const getButtonsNotInSvg = (joystick: Joystick): number[] => {
+  if (!joystick?.state?.buttons?.length) return []
+  return joystick.state.buttons.map((_, index) => index).filter((buttonId) => !svgButtons.has(buttonId))
+}
+
+const isExtraButtonPressed = (joystick: Joystick, buttonId: number): boolean => {
+  return (joystick.state.buttons[buttonId] ?? 0) > 0.5
+}
+
+const getButtonActionName = (buttonId: number): string => {
+  const action = currentButtonActions.value[buttonId as JoystickButton]?.action
+  return action?.name ?? 'unassigned'
+}
+
+const getAxesNotInSvg = (joystick: Joystick): number[] => {
+  if (!joystick?.state?.axes?.length) return []
+  return joystick.state.axes.map((_, index) => index).filter((axisId) => !svgAxes.has(axisId as JoystickAxis))
+}
+
+const getAxisActionName = (axisId: number): string => {
+  const action = selectedProfileAxesCorrespondencies.value[axisId as JoystickAxis]?.action
+  return action?.name ?? 'unassigned'
 }
 
 const shiftFunction = {
