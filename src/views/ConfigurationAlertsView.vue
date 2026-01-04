@@ -1,33 +1,32 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Alerts configuration</template>
+    <template #title>{{ $t('configuration.alerts.title') }}</template>
     <template #content>
       <div
         class="flex flex-col justify-around align-start ml-5 max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider>
-          <template #title>Voice alerts:</template>
+          <template #title>{{ $t('configuration.alerts.voiceAlerts') }}</template>
           <template #info>
-            Enable voice alerts to receive audible notifications about system and vehicle activities. <br />
-            Select specific alert levels to customize which types of notifications you receive.
+            {{ $t('configuration.alerts.voiceAlertsInfo') }}
           </template>
           <template #content>
             <div class="flex justify-between">
-              <v-switch v-model="alertStore.enableVoiceAlerts" label="Enable voice alerts" color="white" class="ml-3" />
+              <v-switch v-model="alertStore.enableVoiceAlerts" :label="$t('configuration.alerts.enableVoiceAlerts')" color="white" class="ml-3" />
               <v-slider
                 v-model="alertStore.alertVolume"
                 min="0"
                 max="1"
                 step="0.05"
                 hide-details
-                label="Alerts volume"
+                :label="$t('configuration.alerts.alertsVolume')"
                 color="white"
                 class="max-w-[300px]"
                 :disabled="!alertStore.enableVoiceAlerts"
               />
             </div>
-            <span class="text-sm font-medium mt-4">Alert levels:</span>
+            <span class="text-sm font-medium mt-4">{{ $t('configuration.alerts.alertLevels') }}</span>
             <div class="flex flex-wrap items-center justify-start">
               <div
                 v-for="enabledLevel in alertStore.enabledAlertLevels"
@@ -36,13 +35,13 @@
               >
                 <v-checkbox
                   v-model="enabledLevel.enabled"
-                  :label="capitalize(enabledLevel.level)"
+                  :label="$t(`configuration.alerts.${enabledLevel.level.toLowerCase()}`)"
                   hide-details
                   color="white"
                 />
               </div>
             </div>
-            <span class="text-sm font-medium mt-4">Alert voice:</span>
+            <span class="text-sm font-medium mt-4">{{ $t('configuration.alerts.alertVoice') }}</span>
             <Dropdown
               v-model="alertStore.selectedAlertSpeechVoiceName"
               :options="alertStore.availableAlertSpeechVoiceNames"
@@ -55,7 +54,7 @@
         <!-- Armed Menu Warning Toggle -->
         <v-switch
           :model-value="!alertStore.neverShowArmedMenuWarning"
-          label="Show warning when opening menu with armed vehicle"
+          :label="$t('configuration.alerts.showArmedMenuWarning')"
           color="white"
           class="mt-3 mb-2 ml-3"
           hide-details
@@ -67,8 +66,6 @@
 </template>
 
 <script setup lang="ts">
-import { capitalize } from 'vue'
-
 import Dropdown from '@/components/Dropdown.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAlertStore } from '@/stores/alert'

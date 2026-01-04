@@ -7,7 +7,7 @@
     <div class="flex items-center overflow-hidden text-lg font-medium text-white whitespace-nowrap">
       <p v-if="store.missionName" class="overflow-x-hidden text-ellipsis">{{ store.missionName }}</p>
       <p v-else class="overflow-x-hidden text-ellipsis">
-        {{ randomMissionName }}
+        {{ translatedMissionName }}
         <FontAwesomeIcon icon="fa-pen-to-square" size="1x" class="ml-2 text-slate-200/30" />
       </p>
     </div>
@@ -18,7 +18,7 @@
       <v-card class="pa-2 bg-[#20202022] backdrop-blur-2xl text-white rounded-lg">
         <v-card-title class="flex justify-between">
           <div />
-          <div>Mission configuration</div>
+          <div>{{ $t('missionPlanning.missionConfiguration') }}</div>
           <v-btn
             icon
             :width="38"
@@ -36,7 +36,7 @@
         </v-card-title>
         <v-card-text>
           <div class="flex flex-col">
-            <p>Mission Name</p>
+            <p>{{ $t('missionPlanning.missionName') }}</p>
             <v-text-field
               v-model="store.missionName"
               append-inner-icon="mdi-restore"
@@ -51,7 +51,8 @@
 </template>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
+import { computed, toRefs } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { coolMissionNames } from '@/libs/funny-name/words'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -73,6 +74,15 @@ const miniWidget = toRefs(props).miniWidget
 const store = useMissionStore()
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
 
 const randomMissionName = coolMissionNames.random()
+
+// Translate mission name
+const translatedMissionName = computed(() => {
+  const translationKey = `missionNames["${randomMissionName}"]`
+  const translated = t(translationKey)
+  // If translation exists and is different from the key, use it; otherwise fallback to original
+  return translated !== translationKey ? translated : randomMissionName
+})
 </script>

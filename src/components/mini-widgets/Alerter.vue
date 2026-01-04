@@ -9,7 +9,7 @@
         class="flex items-center justify-between p-1 overflow-hidden rounded cursor-pointer select-none whitespace-nowrap"
         :class="shouldBlinkBorder ? 'bg-[#db151233]' : 'bg-slate-800/75'"
       >
-        <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100 text-ellipsis">{{ currentAlert.message }}</p>
+        <p class="mx-1 overflow-hidden text-xl font-medium text-gray-100 text-ellipsis">{{ translateMessage(currentAlert.message) }}</p>
       </div>
       <div
         ref="expandedAlertsBar"
@@ -18,7 +18,7 @@
       >
         <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
           <div
-            :title="alert.message"
+            :title="translateMessage(alert.message)"
             class="flex items-center justify-between whitespace-nowrap"
             :class="{
               'border-[1px] border-[#dc262699] bg-[#dc262622] pa-1':
@@ -26,12 +26,12 @@
                 miniWidget.options.enableColorCoding,
             }"
           >
-            <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
+            <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ translateMessage(alert.message) }}</p>
             <div
               class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
             >
               <p>{{ formattedDate(alert.time_created || new Date()) }}</p>
-              <p>{{ alert.level.toUpperCase() }}</p>
+              <p>{{ translateLevel(alert.level) }}</p>
             </div>
           </div>
           <div v-if="i !== alertStore.alerts.length - 1" class="h-px mx-1 mb-2 bg-slate-50/30" />
@@ -87,6 +87,7 @@
 import { useElementHover, useTimestamp, useToggle } from '@vueuse/core'
 import { differenceInSeconds, format } from 'date-fns'
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
@@ -109,6 +110,7 @@ const miniWidget = toRefs(props).miniWidget
 
 miniWidget.value.options.enableColorCoding ??= true
 
+const { t } = useI18n()
 useVehicleAlerterStore()
 const alertStore = useAlertStore()
 const widgetStore = useWidgetManagerStore()
@@ -117,6 +119,26 @@ const timeNow = useTimestamp({ interval: 1000 })
 const alertPersistencyInterval = 10 // in seconds
 
 const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
+
+// Translate alert message if translation exists
+const translateMessage = (message: string): string => {
+  if (message === 'Cockpit started') {
+    return t('alerts.cockpitStarted')
+  }
+  return message
+}
+
+// Translate alert level
+const translateLevel = (level: AlertLevel): string => {
+  const levelMap: Record<AlertLevel, string> = {
+    [AlertLevel.Success]: t('alerts.levels.success'),
+    [AlertLevel.Error]: t('alerts.levels.error'),
+    [AlertLevel.Info]: t('alerts.levels.info'),
+    [AlertLevel.Warning]: t('alerts.levels.warning'),
+    [AlertLevel.Critical]: t('alerts.levels.critical'),
+  }
+  return levelMap[level] || level.toUpperCase()
+}
 
 const currentAlert = ref(alertStore.alerts[0])
 const lockAlertsOpened = ref(false)
@@ -149,7 +171,7 @@ onMounted(() => {
     const dateNow = new Date(timeNow.value)
     const secsSinceLastAlert = differenceInSeconds(dateNow, alertStore.alerts.last()?.time_created || dateNow)
     if (secsSinceLastAlert > alertPersistencyInterval) {
-      currentAlert.value = new Alert(AlertLevel.Info, 'No recent alerts.')
+      currentAlert.value = new Alert(AlertLevel.Info, t('alerts.noRecentAlerts'))
       return
     }
     currentAlert.value = alertStore.alerts.last()!

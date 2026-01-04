@@ -1,6 +1,6 @@
 <template>
   <div
-    v-tooltip="store.isVehicleOnline ? 'Vehicle connected' : 'Vehicle disconnected'"
+    v-tooltip="store.isVehicleOnline ? $t('vehicle.connected') : $t('vehicle.disconnected')"
     class="relative"
     :class="store.isVehicleOnline ? 'text-slate-50' : 'text-gray-700'"
   >

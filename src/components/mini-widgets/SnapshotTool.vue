@@ -20,14 +20,14 @@
           </template>
         </v-list-item>
         <v-divider />
-        <v-list-item title="Single capture" @click="handleSelectSnapshotTriggerType('single')">
+        <v-list-item :title="$t('snapshot.singleCapture')" @click="handleSelectSnapshotTriggerType('single')">
           <template #append>
             <v-icon size="22" icon="mdi-video-image" />
           </template>
         </v-list-item>
         <v-divider />
         <v-divider />
-        <v-list-item title="Timed multi-capture" @click="handleSelectSnapshotTriggerType('timed')">
+        <v-list-item :title="$t('snapshot.timedMultiCapture')" @click="handleSelectSnapshotTriggerType('timed')">
           <template #append> <v-icon size="20" icon="mdi-timer-outline" /> </template>
         </v-list-item>
       </v-list>
@@ -88,7 +88,7 @@
         clearable
         label="Streams to capture"
         variant="outlined"
-        no-data-text="No streams available."
+        :no-data-text="$t('stream.noStreamsAvailable')"
         hide-details
         theme="dark"
         class="w-[90%]"

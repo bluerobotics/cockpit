@@ -7,7 +7,7 @@
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[60vw]'"
       >
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider no-bottom-divider>
-          <template #title>Message Inspector</template>
+          <template #title>{{ $t('mavlink.messageInspector') }}</template>
           <template #content>
             <MAVLinkInspector />
           </template>

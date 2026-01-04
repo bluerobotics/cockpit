@@ -21,7 +21,7 @@
 
     <InteractionDialog
       v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
-      :title="joystickConnected ? 'Joystick connected' : 'Joystick disconnected'"
+      :title="joystickConnected ? $t('joystick.connected') : $t('joystick.disconnected')"
       max-width="400px"
       variant="text-only"
     >
@@ -38,7 +38,7 @@
         </div>
       </template>
       <template #actions>
-        <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">Close</v-btn>
+        <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">{{ $t('joystick.close') }}</v-btn>
       </template>
     </InteractionDialog>
   </div>
@@ -46,6 +46,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, toRefs } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { joystickManager } from '@/libs/joystick/manager'
@@ -67,6 +68,7 @@ const miniWidget = toRefs(props).miniWidget
 const widgetStore = useWidgetManagerStore()
 const controllerStore = useControllerStore()
 const joystickConnected = ref(false)
+const { t } = useI18n()
 
 onMounted(() => {
   joystickManager.onJoystickConnectionUpdate((event) => (joystickConnected.value = event.size !== 0))
@@ -79,13 +81,13 @@ const indicatorClass = computed(() => {
 })
 
 const tooltipText = computed(() => {
-  if (!joystickConnected.value) return 'Joystick disconnected'
-  if (!controllerStore.enableForwarding) return 'Joystick connected but disabled'
-  return 'Joystick connected and enabled'
+  if (!joystickConnected.value) return t('joystick.disconnected')
+  if (!controllerStore.enableForwarding) return t('joystick.connectedButDisabled')
+  return t('joystick.connectedAndEnabled')
 })
 
 const switchLabel = computed(() => {
-  if (controllerStore.enableForwarding) return 'Joystick commands enabled'
-  return 'Joystick commands paused'
+  if (controllerStore.enableForwarding) return t('joystick.commandsEnabled')
+  return t('joystick.commandsPaused')
 })
 </script>

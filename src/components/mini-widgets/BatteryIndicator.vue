@@ -1,6 +1,6 @@
 <template>
   <div
-    v-tooltip="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue + '%'}`"
+    v-tooltip="`${$t('battery.remaining')} ${remainingDisplayValue < 0 ? $t('battery.noData') : remainingDisplayValue + '%'}`"
     class="flex items-center w-[95px] h-12 text-white justify-center"
   >
     <div class="relative w-[1.5rem] battery-icon">

@@ -80,7 +80,7 @@
             v-model="newFunction.description"
             label="Description"
             variant="outlined"
-            placeholder="Optional description of what this transformation does"
+            :placeholder="$t('commonPlaceholders.optionalDescription')"
             rows="1"
             density="compact"
             hide-details

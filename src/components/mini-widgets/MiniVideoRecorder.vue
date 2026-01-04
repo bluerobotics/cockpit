@@ -49,12 +49,12 @@
       <p class="text-xl font-semibold m-4">Choose a stream to record</p>
       <v-select
         :model-value="nameSelectedStream"
-        label="Stream name"
+        :label="$t('stream.streamName')"
         :items="namesAvailableStreams"
         item-title="name"
         density="compact"
         variant="outlined"
-        no-data-text="No streams available."
+        :no-data-text="$t('stream.noStreamsAvailable')"
         hide-details
         return-object
         theme="dark"
@@ -67,7 +67,7 @@
           variant="text"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
-          Close
+          {{ $t('stream.close') }}
         </v-btn>
         <v-btn
           class="bg-[#FFFFFF11] hover:bg-[#FFFFFF33]"
@@ -75,7 +75,7 @@
           :class="{ 'opacity-30 pointer-events-none': isLoadingStream }"
           @click="startRecording"
         >
-          <span>Record</span>
+          <span>{{ $t('stream.record') }}</span>
           <v-icon v-if="isLoadingStream" class="m-2 animate-spin">mdi-loading</v-icon>
           <div v-else class="w-5 h-5 ml-2 rounded-full bg-red" />
         </v-btn>
@@ -89,6 +89,7 @@ import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { intervalToDuration } from 'date-fns'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { isEqual, sleep } from '@/libs/utils'
@@ -98,6 +99,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
+const { t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const videoStore = useVideoStore()
@@ -283,7 +285,7 @@ const startRecording = (): void => {
   }
 
   if (!videoStore.getStreamData(selectedExternalId.value)?.connected) {
-    showDialog({ title: 'Cannot start recording.', message: 'Stream is not connected.', variant: 'error' })
+    showDialog({ title: t('videoRecorder.cannotStartRecording'), message: t('videoRecorder.streamNotConnected'), variant: 'error' })
     return
   }
 

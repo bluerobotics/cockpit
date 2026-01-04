@@ -1,16 +1,13 @@
 <template>
   <BaseConfigurationView>
     <template #help-icon> </template>
-    <template #title>Video configuration</template>
+    <template #title>{{ $t('configuration.video.title') }}</template>
     <template #content>
       <div class="flex-col h-full ml-[1vw] w-[840px] max-h-[85vh] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Streams mapping</template>
+          <template #title>{{ $t('configuration.video.streamsMapping') }}</template>
           <template #info>
-            Here you can map your external video streams to internal names and manage ignored streams. Active streams
-            allow you to easily switch between different video sources in Cockpit. The widgets will be connected to the
-            internal names, and the external video stream will be mapped to the internal name. Ignored streams (shown
-            with "--" as internal name) can be restored by clicking the restore button.
+            {{ $t('configuration.video.streamsMappingInfo') }}
           </template>
           <template #content>
             <div class="flex justify-center flex-col w-full ml-2 mt-2">
@@ -24,22 +21,22 @@
                 <template #headers>
                   <tr>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Internal name</p>
+                      <p class="text-[16px] font-bold">{{ $t('configuration.video.internalName') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">External name</p>
+                      <p class="text-[16px] font-bold">{{ $t('configuration.video.externalName') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Video source</p>
+                      <p class="text-[16px] font-bold">{{ $t('configuration.video.videoSource') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Resolution</p>
+                      <p class="text-[16px] font-bold">{{ $t('configuration.video.resolution') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Status</p>
+                      <p class="text-[16px] font-bold">{{ $t('configuration.video.status') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Actions</p>
+                      <p class="text-[16px] font-bold">{{ $t('configuration.video.actions') }}</p>
                     </th>
                   </tr>
                 </template>
@@ -120,12 +117,12 @@
                   </tr>
                 </template>
                 <template #no-data>
-                  <div class="text-gray-400 py-4 w-[200px] text-end">No available streams found.</div>
+                  <div class="text-gray-400 py-4 w-[200px] text-end">{{ $t('configuration.video.noStreamsFound') }}</div>
                 </template>
                 <template #bottom></template>
               </v-data-table>
               <div class="flex items-center justify-start">
-                <v-checkbox v-model="showIgnoredStreams" label="Show ignored streams" hide-details class="text-sm" />
+                <v-checkbox v-model="showIgnoredStreams" :label="$t('configuration.video.showIgnoredStreams')" hide-details class="text-sm" />
                 <span v-if="ignoredStreamExternalIds.length > 0" class="text-gray-400 text-sm ml-2">
                   ({{ ignoredStreamExternalIds.length }} ignored)
                 </span>
@@ -134,11 +131,9 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Allowed WebRTC remote IP Addresses</template>
+          <template #title>{{ $t('configuration.video.allowedWebRTCIPs') }}</template>
           <template #info>
-            Select the IP addresses to allow connecting to for WebRTC video streaming. For best performance it is
-            recommended to only use the most reliable interfaces - e.g. avoid wireless interfaces if there is a
-            tethered/wired interface available. If no value is specified, all available routes are allowed.
+            {{ $t('configuration.video.allowedWebRTCIPsInfo') }}
           </template>
           <template #content>
             <div class="flex justify-center flex-col w-[90%] ml-2">
@@ -146,7 +141,7 @@
                 v-model="allowedIceIps"
                 multiple
                 :items="availableIceIps"
-                label="Allowed WebRTC remote IP Addresses"
+                :label="$t('configuration.video.allowedWebRTCIPsLabel')"
                 class="uri-input"
                 variant="outlined"
                 chips
@@ -157,7 +152,7 @@
               />
               <v-checkbox
                 v-model="videoStore.enableAutoIceIpFetch"
-                label="Enable auto-retrieval of allowed IP addresses"
+                :label="$t('configuration.video.enableAutoIpRetrieval')"
                 hide-details
                 class="mb-2"
               />
@@ -165,16 +160,9 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Allowed WebRTC protocols:</template>
+          <template #title>{{ $t('configuration.video.allowedWebRTCProtocols') }}</template>
           <template #info>
-            <li>
-              Video stream quality may be enhanced by enforcing a protocol that is well-suited to the available network
-              infrastructure.
-            </li>
-            <li>
-              UDP can be lower latency but may drop frames, while TCP enforces frame ordering at the cost of some
-              increased latency and jitter.
-            </li>
+            {{ $t('configuration.video.allowedWebRTCProtocolsInfo') }}
           </template>
           <template #content>
             <div class="flex items-center justify-start">
@@ -193,16 +181,9 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>RTP Jitter Buffer (Target) duration:</template>
+          <template #title>{{ $t('configuration.video.rtpJitterBuffer') }}</template>
           <template #info>
-            <li>
-              Increasing the buffer duration causes additional video latency, but can help to compensate for network
-              jitter and provide more consistent frame timing in the display.
-            </li>
-            <li>
-              Cockpit's default is zero milliseconds, but you can set a custom value, or leave the field empty to use
-              your browser's default.
-            </li>
+            {{ $t('configuration.video.rtpJitterBufferInfo') }}
           </template>
           <template #content>
             <div class="flex items-center justify-start w-[50%] ml-2">
@@ -219,27 +200,16 @@
                 :rules="jitterBufferTargetRules"
                 @input="handleJitterBufferTargetInput"
               />
-              <a class="ml-3">ms</a>
+              <a class="ml-3">{{ $t('configuration.video.milliseconds') }}</a>
             </div>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Video library options:</template>
+          <template #title>{{ $t('configuration.video.videoLibraryOptions') }}</template>
           <template #info>
-            <li>
-              Configure live video processing to process videos in real-time during recording for instant availability
-              when recording stops. This is only available in the Electron (desktop) version.
-            </li>
-            <li>
-              Choose whether to save backup raw chunks alongside the final video file. This provides safety for video
-              reconstruction if something goes wrong, but uses approximately double the storage space.
-            </li>
-            <li>
-              Select whether video and subtitle files should be bundled together in a ZIP archive, or downloaded
-              individually. Zipping allows a single download of a group of files, but requires waiting for the files to
-              get zipped together. Depending on file sizes, the zipping process may complete within seconds or could
-              take minutes.
-            </li>
+            <li>{{ $t('configuration.video.videoLibraryOptionsInfo1') }}</li>
+            <li>{{ $t('configuration.video.videoLibraryOptionsInfo2') }}</li>
+            <li>{{ $t('configuration.video.videoLibraryOptionsInfo3') }}</li>
           </template>
           <template #content>
             <div class="flex items-center justify-end w-[96%] ml-2 mb-4">
@@ -252,7 +222,7 @@
                     </v-icon></v-badge
                   >
                 </template>
-                Video Library
+                {{ $t('configuration.video.videoLibrary') }}
               </v-btn>
             </div>
             <!-- Browser Environment Notice -->
@@ -260,10 +230,9 @@
               <div class="flex items-start gap-3">
                 <v-icon color="amber" class="mt-1">mdi-information</v-icon>
                 <div>
-                  <h4 class="text-amber-200 font-medium mb-2">Browser Version</h4>
+                  <h4 class="text-amber-200 font-medium mb-2">{{ $t('configuration.video.browserVersion') }}</h4>
                   <p class="text-amber-100 text-sm">
-                    Video processing is not available in the browser version. Your recordings will be saved as raw
-                    chunks that can be downloaded and processed using the standalone version of Cockpit.
+                    {{ $t('configuration.video.browserVersionInfo') }}
                   </p>
                 </div>
               </div>
@@ -272,7 +241,7 @@
             <div class="flex items-center justify-start w-[96%] ml-2">
               <v-checkbox
                 v-model="videoStore.enableLiveProcessing"
-                label="Live video processing (Electron)"
+                :label="$t('configuration.video.liveVideoProcessing')"
                 class="text-sm mx-2"
                 hide-details
                 :disabled="!isElectron()"
@@ -280,8 +249,8 @@
               <v-tooltip
                 :text="
                   isElectron()
-                    ? 'Process videos in real-time during recording for instant availability when recording stops'
-                    : 'Live video processing is only available in the standalone version'
+                    ? $t('configuration.video.liveVideoProcessingTooltip')
+                    : $t('configuration.video.liveVideoProcessingTooltipBrowser')
                 "
               >
                 <template #activator="{ props }">
@@ -293,7 +262,7 @@
             <div class="flex items-center justify-start w-[96%] ml-2">
               <v-checkbox
                 v-model="videoStore.keepRawVideoChunksAsBackup"
-                label="Save backup raw chunks"
+                :label="$t('configuration.video.saveBackupRawChunks')"
                 class="text-sm mx-2"
                 :disabled="!isElectron()"
                 hide-details
@@ -303,26 +272,24 @@
                   <v-icon v-bind="props" class="ml-2 text-slate-400">mdi-information-outline</v-icon>
                 </template>
                 <div class="text-sm">
-                  <p class="mb-2">Save the raw video chunks alongside the final video file for backup purposes.</p>
+                  <p class="mb-2">{{ $t('configuration.video.saveBackupRawChunksTooltip') }}</p>
                   <p class="mb-2">
-                    <strong>Enabled:</strong> Raw chunks are preserved after recording. Videos use ~2x storage space but
-                    provide safety for reconstruction if the final video is corrupted.
+                    <strong>{{ $t('configuration.video.saveBackupRawChunksEnabled') }}</strong>
                   </p>
                   <p>
-                    <strong>Disabled:</strong> Raw chunks are automatically deleted after successful processing, using
-                    minimal storage space.
+                    <strong>{{ $t('configuration.video.saveBackupRawChunksDisabled') }}</strong>
                   </p>
                   <p class="mt-2 text-gray-300">
-                    You can always manually clean up backup chunks later using the "Temporary" tab in the Video Library.
+                    {{ $t('configuration.video.saveBackupRawChunksManual') }}
                   </p>
-                  <p class="mt-2 text-gray-300">For the browser version the chunks are always saved by default.</p>
+                  <p class="mt-2 text-gray-300">{{ $t('configuration.video.saveBackupRawChunksBrowser') }}</p>
                 </div>
               </v-tooltip>
             </div>
             <div class="flex items-center justify-start w-[50%] ml-2">
               <v-checkbox
                 v-model="snapshotStore.zipMultipleFiles"
-                label="Zip multiple files"
+                :label="$t('configuration.video.zipMultipleFiles')"
                 class="text-sm mx-2"
                 hide-details
               />

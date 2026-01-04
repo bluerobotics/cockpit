@@ -14,7 +14,7 @@
         <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
       </div>
       <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden">
-        {{ miniWidget.options.displayName }}
+        {{ translatedDisplayName }}
       </span>
     </div>
   </div>
@@ -80,7 +80,7 @@
           <div v-if="showVariableChooseModal" class="flex flex-col justify-center w-full mx-1 my-3 align-center">
             <input
               v-model="variableNameSearchString"
-              placeholder="Search variable..."
+              :placeholder="$t('commonPlaceholders.searchVariable')"
               class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
             />
             <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
@@ -128,7 +128,7 @@
               type="number"
               min="0"
               max="5"
-              placeholder="Auto-formatting"
+              :placeholder="$t('commonPlaceholders.autoFormatting')"
               class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12] disabled:cursor-not-allowed"
               :class="{ 'opacity-50': miniWidget.options.useStringVariable }"
             />
@@ -155,7 +155,7 @@
               <input
                 v-model="iconSearchString"
                 class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
-                placeholder="Search icons..."
+                :placeholder="$t('commonPlaceholders.searchIcons')"
               />
             </div>
             <RecycleScroller
@@ -196,7 +196,7 @@
             <span class="text-xl font-semibold leading-6 w-fit">
               {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }} {{ template.variableUnit }}
             </span>
-            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ template.displayName }}</span>
+            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ translateDisplayName(template.displayName) }}</span>
           </div>
         </div>
       </div>
@@ -209,6 +209,7 @@ import * as MdiExports from '@mdi/js/mdi'
 import { watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
@@ -226,6 +227,7 @@ import type { MiniWidget } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
 
 const props = defineProps<{
   /**
@@ -259,6 +261,39 @@ const widgetStore = useWidgetManagerStore()
 const currentState = ref<unknown>(0)
 
 const finalValue = computed(() => Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value))
+
+// Helper function to translate displayName
+const translateDisplayName = (displayName: string): string => {
+  if (!displayName) return ''
+  
+  // Create a map of displayName to translation key
+  const translationMap: Record<string, string> = {
+    'Depth': 'indicators.depth',
+    'Pilot Gain': 'indicators.pilotGain',
+    'Lights (1)': 'indicators.lights1',
+    'Lights (2)': 'indicators.lights2',
+    'Cam Tilt': 'indicators.camTilt',
+    'Cam Pan': 'indicators.camPan',
+    'Water Temp': 'indicators.waterTemp',
+    'Tether Turns': 'indicators.tetherTurns',
+    'Input Hold': 'indicators.inputHold',
+    'Roll Pitch': 'indicators.rollPitch',
+    'Altitude': 'indicators.altitude',
+    'Speed (GPS)': 'indicators.speed',
+    'Map View': 'indicators.mapView',
+    'sats': 'indicators.sats'
+  }
+  
+  const translationKey = translationMap[displayName]
+  if (translationKey && t(translationKey) !== translationKey) {
+    return t(translationKey)
+  }
+  
+  // Return original displayName if no translation found
+  return displayName
+}
+
+const translatedDisplayName = computed(() => translateDisplayName(miniWidget.value.options.displayName))
 
 const parsedState = computed(() => {
   if (currentState.value === undefined) {

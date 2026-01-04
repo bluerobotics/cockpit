@@ -12,7 +12,7 @@
         />
       </template>
       <template #title
-        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">On screen telemetry data</div></template
+        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">{{ $t('telemetryOverlay.title') }}</div></template
       >
       <template #content>
         <div
@@ -31,7 +31,7 @@
           >
             <div id="leftColumn" class="flex flex-col justify-start align-start mt-[2vh] overflow-auto">
               <ExpansiblePanel compact mark-expanded darken-content hover-effect>
-                <template #title>Overlay Options</template>
+                <template #title>{{ $t('telemetryOverlay.overlayOptions') }}</template>
                 <template #content>
                   <div>
                     <div class="flex flex-col flex-wrap justify-between align-start gap-y-0 pt-3">
@@ -39,7 +39,7 @@
                         <span
                           class="font-bold text-white text-start mb-5"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Font size</span
+                          >{{ $t('telemetryOverlay.fontSize') }}</span
                         >
                         <v-text-field
                           v-model="datalogger.telemetryDisplayOptions.value.fontSize"
@@ -51,7 +51,7 @@
                         <span
                           class="font-bold text-white text-start mb-5"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Shadow size</span
+                          >{{ $t('telemetryOverlay.shadowSize') }}</span
                         >
                         <v-text-field
                           v-model="datalogger.telemetryDisplayOptions.value.fontShadowSize"
@@ -76,7 +76,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Font color</span
+                                >{{ $t('telemetryOverlay.fontColor') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -103,7 +103,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Outline color</span
+                                >{{ $t('telemetryOverlay.outlineColor') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -129,7 +129,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Shadow color</span
+                                >{{ $t('telemetryOverlay.shadowColor') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -154,7 +154,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Bold</span
+                            >{{ $t('telemetryOverlay.bold') }}</span
                           >
                         </div>
                         <div
@@ -165,7 +165,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Italic</span
+                            >{{ $t('telemetryOverlay.italic') }}</span
                           >
                         </div>
                         <div
@@ -176,7 +176,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Underline</span
+                            >{{ $t('telemetryOverlay.underline') }}</span
                           >
                         </div>
                         <div
@@ -187,7 +187,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Strikethrough</span
+                            >{{ $t('telemetryOverlay.strikethrough') }}</span
                           >
                         </div>
                       </div>
@@ -196,7 +196,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Vehicle Variables</template>
+                <template #title>{{ $t('telemetryOverlay.vehicleVariables') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="loggedVariables"
@@ -225,7 +225,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Mission Variables</template>
+                <template #title>{{ $t('telemetryOverlay.missionVariables') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="otherLoggingElements"
@@ -254,7 +254,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Custom Messages</template>
+                <template #title>{{ $t('telemetryOverlay.customMessages') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="customMessageElements"
@@ -296,7 +296,7 @@
                       <div
                         class="frosted-button backdrop-blur-md rounded-lg overflow-hidden w-[400px] px-4 pt-2 elevation-2"
                       >
-                        <span class="text-sm font-bold text-white text-center w-full">Enter message</span>
+                        <span class="text-sm font-bold text-white text-center w-full">{{ $t('telemetryOverlay.enterMessage') }}</span>
                         <v-text-field
                           v-model="newMessage"
                           variant="outlined"
@@ -311,9 +311,9 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Settings</template>
+                <template #title>{{ $t('telemetryOverlay.settings') }}</template>
                 <template #content>
-                  <p class="text-[12px] mt-2 ml-1">Telemetry frequency - 1 to 100 Hz (default 1 Hz)</p>
+                  <p class="text-[12px] mt-2 ml-1">{{ $t('telemetryOverlay.telemetryFrequency') }}</p>
                   <div class="flex mb-1 justify">
                     <v-slider
                       v-model="newFrequency"
@@ -340,7 +340,7 @@
               </ExpansiblePanel>
               <div class="flex justify-end w-full mt-2">
                 <v-btn size="x-small" variant="text" class="mr-2" @click="resetAllChips">
-                  Reset Positions
+                  {{ $t('telemetryOverlay.resetPositions') }}
                   <v-icon size="18" class="ml-2">mdi-refresh</v-icon>
                 </v-btn>
               </div>

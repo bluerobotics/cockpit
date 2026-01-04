@@ -62,7 +62,7 @@
             v-model="variable.description"
             label="Description"
             variant="outlined"
-            placeholder="Optional description of what this variable is used for"
+            :placeholder="$t('commonPlaceholders.optionalDescription')"
             rows="1"
             density="compact"
             hide-details

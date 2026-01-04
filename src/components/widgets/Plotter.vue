@@ -3,21 +3,21 @@
     v-if="!widget.options.dataLakeVariableId"
     class="w-full h-full flex items-center justify-center text-center text-white text-h5 font-weight-bold p-4 overflow-hidden"
   >
-    Please open the Plotter widget configuration menu to select a variable to be plotted.
+    {{ t('plotter.selectVariable') }}
   </p>
   <div v-else class="main">
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
   </div>
   <InteractionDialog
     v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen"
-    :title="`Plotter config`"
+    :title="t('plotter.config')"
     variant="text-only"
   >
     <template #content>
       <!-- Data source section -->
       <v-row>
         <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-4">Data Source</div>
+          <div class="text-subtitle-1 font-weight-medium mb-4">{{ t('plotter.dataSource') }}</div>
           <div class="ml-2">
             <v-text-field
               v-model="searchTerm"
@@ -25,7 +25,7 @@
               variant="filled"
               theme="dark"
               type="text"
-              placeholder="Search variables..."
+              :placeholder="t('plotter.searchVariables')"
               class="mb-4"
               clearable
               @update:model-value="menuOpen = true"
@@ -37,8 +37,8 @@
               :items="filteredDataLakeNumberVariables"
               item-title="name"
               item-value="id"
-              label="Data Lake variable"
-              hint="Select a variable to be plotted"
+              :label="t('plotter.dataLakeVariable')"
+              :hint="t('plotter.selectVariableHint')"
               persistent-hint
               theme="dark"
               variant="outlined"
@@ -53,13 +53,13 @@
       <!-- Appearance section -->
       <v-row>
         <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-2">Appearance</div>
+          <div class="text-subtitle-1 font-weight-medium mb-2">{{ t('plotter.appearance') }}</div>
           <div class="ml-2 flex gap-x-8">
-            <v-checkbox v-model="widget.options.showTitle" label="Show title" hide-details class="-mt-1" />
+            <v-checkbox v-model="widget.options.showTitle" :label="t('plotter.showTitle')" hide-details class="-mt-1" />
             <v-menu :close-on-content-click="false">
               <template #activator="{ props: colorPickerActivatorProps }">
                 <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                  <span class="mt-3">Background color</span>
+                  <span class="mt-3">{{ t('plotter.backgroundColor') }}</span>
                   <div
                     class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
                     :style="{ backgroundColor: widget.options.backgroundColor }"
@@ -71,7 +71,7 @@
             <v-menu :close-on-content-click="false">
               <template #activator="{ props: colorPickerActivatorProps }">
                 <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                  <span class="mt-3">Line color</span>
+                  <span class="mt-3">{{ t('plotter.lineColor') }}</span>
                   <div
                     class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
                     :style="{ backgroundColor: widget.options.lineColor }"
@@ -83,10 +83,10 @@
             <v-text-field
               v-model.number="widget.options.lineThickness"
               type="number"
-              label="Line thickness"
+              :label="t('plotter.lineThickness')"
               variant="outlined"
               density="compact"
-              :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
+              :rules="[(v: number) => v > 0 || t('plotter.mustBeGreaterThanZero')]"
               width="140px"
               hide-details
             />
@@ -97,29 +97,29 @@
       <!-- Data points section -->
       <v-row>
         <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-4">Data Points</div>
+          <div class="text-subtitle-1 font-weight-medium mb-4">{{ t('plotter.dataPoints') }}</div>
           <div class="ml-2 flex gap-x-8">
             <v-text-field
               v-model.number="widget.options.decimalPlaces"
               type="number"
-              label="Decimal places"
+              :label="t('plotter.decimalPlaces')"
               variant="outlined"
               density="comfortable"
-              :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
-              hint="Number of decimal places to be displayed"
+              :rules="[(v: number) => v >= 0 || t('plotter.mustBeZeroOrGreater')]"
+              :hint="t('plotter.decimalPlacesHint')"
               width="160px"
               class="ml-2"
             />
-            <v-checkbox v-model="widget.options.limitSamples" label="Limit number of samples" />
+            <v-checkbox v-model="widget.options.limitSamples" :label="t('plotter.limitSamples')" />
             <v-text-field
               v-model.number="widget.options.maxSamples"
               type="number"
-              label="Maximum samples"
+              :label="t('plotter.maximumSamples')"
               variant="outlined"
               density="comfortable"
               :disabled="!widget.options.limitSamples"
-              :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
-              hint="Higher values will show more history but may impact performance"
+              :rules="[(v: number) => v > 0 || t('plotter.mustBeGreaterThanZero')]"
+              :hint="t('plotter.maximumSamplesHint')"
               width="220px"
             />
           </div>
@@ -128,7 +128,7 @@
     </template>
     <template #actions>
       <div class="flex w-full justify-end my-2">
-        <v-btn @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">Close</v-btn>
+        <v-btn @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">{{ t('common.close') }}</v-btn>
       </div>
     </template>
   </InteractionDialog>
@@ -137,6 +137,7 @@
 <script setup lang="ts">
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onBeforeMount, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import {
   DataLakeVariable,
@@ -152,6 +153,8 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 import InteractionDialog from '../InteractionDialog.vue'
+
+const { t } = useI18n()
 
 const widgetStore = useWidgetManagerStore()
 

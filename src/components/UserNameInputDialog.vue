@@ -3,7 +3,7 @@
     variant="text-only"
     persistent
     :show-dialog="showUserDialog"
-    :title="`Manage users on: ${currentVehicleName}`"
+    :title="`${t('usernameDialog.title')} ${currentVehicleName}`"
     :actions="showNewUsernamePrompt || isUsernamesEmpty ? inputDialogActions : regularDialogActions"
     :max-width="700"
   >
@@ -19,13 +19,13 @@
             class="w-full h-full flex flex-col align-center justify-center text-center"
           >
             <p v-if="missionStore.username === undefined">
-              It seems like you don't have any users stored on this device yet.
+              {{ t('usernameDialog.noUsersYet') }}
             </p>
             <p>
               {{
                 isOnEditMode
-                  ? `Be careful when deleting users from the vehicle - this process cannot be undone`
-                  : 'Select a user below, or switch to admin mode to create or edit users'
+                  ? t('usernameDialog.deleteWarning')
+                  : t('usernameDialog.selectOrEdit')
               }}
             </p>
             <br />
@@ -61,7 +61,7 @@
               variant="text"
               @click="showNewUsernamePrompt = true"
             >
-              <p class="mr-2">add new user</p>
+              <p class="mr-2">{{ t('usernameDialog.addNewUser') }}</p>
               <p><v-icon size="20" color="white">mdi-plus-circle-outline</v-icon></p></v-btn
             >
             <div class="fixed bottom-[6px] left-8">
@@ -69,15 +69,15 @@
             </div>
           </div>
           <div v-else class="w-full h-full flex flex-col align-center justify-center">
-            <p>This username will be used to store your settings in the vehicle.</p>
+            <p>{{ t('usernameDialog.usernameInfo') }}</p>
             <br />
-            <p>If you don't set your username, auto-sync with the vehicle won't work.</p>
-            <p>The user can be set or changed later in the General menu.</p>
+            <p>{{ t('usernameDialog.autoSyncWarning') }}</p>
+            <p>{{ t('usernameDialog.canSetLater') }}</p>
             <br />
             <v-text-field
               v-model="newUsername"
               variant="filled"
-              placeholder="Username"
+              :placeholder="t('usernameDialog.username')"
               type="input"
               density="compact"
               hint="Your identification username."
@@ -95,6 +95,7 @@
 <script setup lang="ts">
 import slugify from 'slugify'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
@@ -105,6 +106,7 @@ import { useMissionStore } from '@/stores/mission'
 import InteractionDialog from './InteractionDialog.vue'
 
 const emit = defineEmits(['confirmed', 'dismissed'])
+const { t } = useI18n()
 
 const missionStore = useMissionStore()
 const mainVehicleStore = useMainVehicleStore()
@@ -121,34 +123,32 @@ const currentVehicleName = ref<string | undefined>(undefined)
 
 const deleteUser = async (username: string): Promise<void> => {
   if (username === missionStore.username) {
-    openSnackbar({ message: 'You cannot delete the current user.', variant: 'error' })
+    openSnackbar({ message: t('usernameDialog.cannotDeleteCurrent'), variant: 'error' })
     return
   }
 
-  const UNKNOWN_VEHICLE_LABEL = 'current vehicle'
+  const UNKNOWN_VEHICLE_LABEL = t('usernameDialog.currentVehicle')
   showUserDialog.value = false
 
   showDialog({
-    title: 'Warning!',
-    message: `All settings for '${username}' will be permanently removed from ${
-      currentVehicleName.value || UNKNOWN_VEHICLE_LABEL
-    }.`,
+    title: t('common.warning') + '!',
+    message: `${t('usernameDialog.deleteUserWarning').replace('the vehicle', currentVehicleName.value || UNKNOWN_VEHICLE_LABEL)} (${username})`,
     maxWidth: '700px',
     variant: 'warning',
     actions: [
       {
-        text: 'Cancel',
+        text: t('common.cancel'),
         action: () => {
           closeDialog()
           showUserDialog.value = true
         },
       },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         action: async () => {
           try {
             await deleteUsernameOnBlueOS(username)
-            openSnackbar({ message: `User '${username}' deleted`, variant: 'success' })
+            openSnackbar({ message: `${t('usernameDialog.userDeleted')} (${username})`, variant: 'success' })
 
             if (missionStore.username === username) {
               missionStore.username = ''
@@ -159,12 +159,12 @@ const deleteUser = async (username: string): Promise<void> => {
             try {
               await loadUsernames()
               openSnackbar({
-                message: `Failed deleting '${username}'. The list was refreshed. Please try again.`,
+                message: `${t('usernameDialog.deleteUserFailed')} (${username})`,
                 variant: 'error',
                 duration: 5000,
               })
             } catch (updateError) {
-              openSnackbar({ message: `Failed deleting '${username}'`, variant: 'error' })
+              openSnackbar({ message: `${t('usernameDialog.deleteUserFailed')} (${username})`, variant: 'error' })
               console.error(updateError)
             }
             console.error(err)
@@ -233,13 +233,13 @@ const isUsernamesEmpty = computed(() => !usernamesStoredOnBlueOS.value || userna
 
 const validateUsername = (username: string): true | string => {
   if (username.length < 3) {
-    return 'Username must be at least 3 characters long.'
+    return t('usernameDialog.validationMinLength')
   } else if (username.length > 16) {
-    return 'Username must be at most 16 characters long.'
+    return t('usernameDialog.validationMaxLength')
   } else if (!username.match(/^[a-zA-Z0-9_.-]+$/)) {
-    return 'Username can only contain letters, numbers, and the following characters: _ - .'
+    return t('usernameDialog.validationCharacters')
   } else if (username.toLowerCase() !== username) {
-    return 'Username must be lowercase.'
+    return t('usernameDialog.validationLowercase')
   }
   return true
 }
@@ -259,21 +259,21 @@ const saveUserName = (): void => {
 
 const inputDialogActions = [
   {
-    text: 'Cancel',
+    text: t('common.cancel'),
     action: () => {
       showUserDialog.value = false
       emit('dismissed')
     },
   },
   {
-    text: 'Save',
+    text: t('common.save'),
     action: saveUserName,
   },
 ]
 
 const regularDialogActions = [
   {
-    text: 'Close',
+    text: t('common.close'),
     action: () => {
       showUserDialog.value = false
     },

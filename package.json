@@ -83,6 +83,7 @@
     "vue": "^3.4.21",
     "vue-draggable-plus": "^0.2.0-beta.2",
     "vue-draggable-resizable": "3.0.0",
+    "vue-i18n": "9",
     "vue-router": "^4.0.14",
     "vue-virtual-scroller": "^2.0.0-beta.8",
     "vue3-slider": "^1.9.0",

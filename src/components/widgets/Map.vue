@@ -20,11 +20,11 @@
         </template>
 
         <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-          <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+          <v-list-item class="py-0" :title="$t('map.saveVisibleEsriTiles')" @click="saveEsri" />
           <v-divider />
-          <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+          <v-list-item class="py-0" :title="$t('map.saveVisibleOSMTiles')" @click="saveOSM" />
           <v-divider />
-          <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
+          <v-list-item class="py-0" :title="$t('map.saveVisibleSeamarksTiles')" @click="saveSeamarks" />
         </v-list>
       </v-menu>
       <v-tooltip location="top" :text="centerHomeButtonTooltipText">
@@ -111,19 +111,19 @@
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Map widget settings</v-card-title>
+      <v-card-title class="text-center">{{ $t('map.mapWidgetSettings') }}</v-card-title>
       <v-card-text>
         <v-switch
           v-model="widget.options.showVehiclePath"
           class="my-1"
-          label="Show vehicle path"
+          :label="$t('map.showVehiclePath')"
           :color="widget.options.showVehiclePath ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.showCoordinateGrid"
           class="my-1"
-          label="Show coordinate grid"
+          :label="$t('map.showCoordinateGrid')"
           :color="widget.options.showCoordinateGrid ? 'white' : undefined"
           hide-details
         />
@@ -191,7 +191,9 @@ import {
   toRefs,
   watch,
 } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import i18n from '@/plugins/i18n'
 import copterMarkerImage from '@/assets/arducopter-top-view.png'
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
@@ -225,6 +227,7 @@ const { showDialog, closeDialog } = useInteractionDialog()
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
+const { t } = useI18n()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
@@ -347,21 +350,70 @@ const overlays = {
 const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
-const zoomControl = L.control.zoom({ position: 'bottomright' })
 const layerControl = L.control.layers(baseMaps, overlays)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
+let currentZoomControl: L.Control.Zoom | undefined
+
+const updateZoomControl = () => {
+  if (!map.value) return
+  
+  // Remove old zoom control if exists
+  if (currentZoomControl) {
+    map.value.removeControl(currentZoomControl)
+    currentZoomControl = undefined
+  }
+  
+  // Only add control if buttons should be visible
+  if (!showButtons.value) return
+  
+  // Create new zoom control with current translations
+  currentZoomControl = L.control.zoom({ 
+    position: 'bottomright',
+    zoomInTitle: t('map.zoomIn'),
+    zoomOutTitle: t('map.zoomOut')
+  })
+  map.value.addControl(currentZoomControl)
+  
+  // Force update the button titles in the DOM
+  nextTick(() => {
+    const container = currentZoomControl?.getContainer()
+    if (container) {
+      const zoomInBtn = container.querySelector('.leaflet-control-zoom-in')
+      const zoomOutBtn = container.querySelector('.leaflet-control-zoom-out')
+      if (zoomInBtn) zoomInBtn.setAttribute('title', t('map.zoomIn'))
+      if (zoomOutBtn) zoomOutBtn.setAttribute('title', t('map.zoomOut'))
+    }
+  })
+}
 
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
-    map.value.addControl(zoomControl)
+    updateZoomControl()
     map.value.addControl(layerControl)
     createScaleControl()
   } else {
-    map.value.removeControl(zoomControl)
+    if (currentZoomControl) {
+      map.value.removeControl(currentZoomControl)
+    }
     map.value.removeControl(layerControl)
     removeScaleControl()
   }
+})
+
+// Watch for language changes to update zoom control
+watch(() => i18n.global.locale.value, () => {
+  // Update existing zoom control buttons' titles directly in DOM
+  nextTick(() => {
+    if (!currentZoomControl) return
+    const container = currentZoomControl.getContainer()
+    if (container) {
+      const zoomInBtn = container.querySelector('.leaflet-control-zoom-in')
+      const zoomOutBtn = container.querySelector('.leaflet-control-zoom-out')
+      if (zoomInBtn) zoomInBtn.setAttribute('title', t('map.zoomIn'))
+      if (zoomOutBtn) zoomOutBtn.setAttribute('title', t('map.zoomOut'))
+    }
+  })
 })
 
 watch(isMouseOver, () => {
@@ -587,7 +639,7 @@ const deleteDownloadedTilesDialog =
           action: () => {
             ok()
             closeDialog()
-            openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
+            openSnackbar({ message: t('mapTiles.offlineTilesRemoved', { layer: layerLabel }), variant: 'info', duration: 3000 })
           },
         },
       ] as DialogActions[],
@@ -614,13 +666,13 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
     tilesTotal.value = e?._tilesforSave?.length ?? 0
     savingLayerName.value = layerName
     isSavingOfflineTiles.value = true
-    openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
+    openSnackbar({ message: t('mapTiles.savingTiles', { count: tilesTotal.value, layer: layerName }), variant: 'info', duration: 2000 })
   })
 
   layer.on('loadtileend', () => {
     tilesSaved.value += 1
     if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
-      openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
+      openSnackbar({ message: t('mapTiles.offlineTilesSaved', { layer: layerName }), variant: 'success', duration: 3000 })
       isSavingOfflineTiles.value = false
       savingLayerName.value = ''
       tilesSaved.value = 0
@@ -973,7 +1025,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
 
   try {
     await missionStore.setDefaultMapPosition(clickedLocation.value, zoom.value)
-    openSnackbar({ message: 'Default map position set', variant: 'success' })
+    openSnackbar({ message: t('mapTiles.defaultMapPositionSet'), variant: 'success' })
 
     const tempMarker = L.marker(clickedLocation.value as LatLngTuple, {
       icon: L.divIcon({
@@ -1012,7 +1064,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
     }, 1500)
   } catch (error) {
     console.error(error)
-    openSnackbar({ message: 'Failed to set default map position', variant: 'error' })
+    openSnackbar({ message: t('mapTiles.failedToSetDefaultMapPosition'), variant: 'error' })
   }
 }
 
@@ -1229,25 +1281,25 @@ const vehicleExecuteMissionButtonTooltipText = computed(() => {
 
 const centerHomeButtonTooltipText = computed(() => {
   if (home.value === undefined) {
-    return 'Cannot center map on home (home position undefined).'
+    return t('map.cannotCenterOnHome')
   }
   if (followerTarget.value === WhoToFollow.HOME) {
-    return 'Tracking home position. Click to stop tracking.'
+    return t('map.trackingHome')
   }
-  return 'Click once to center on home or twice to track it.'
+  return t('map.centerOnHome')
 })
 
 const centerVehicleButtonTooltipText = computed(() => {
   if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
+    return t('map.cannotCenterOnVehicleOffline')
   }
   if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
+    return t('map.cannotCenterOnVehiclePosition')
   }
   if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
+    return t('map.trackingVehicle')
   }
-  return 'Click once to center on vehicle or twice to track it.'
+  return t('map.centerOnVehicle')
 })
 
 // POI Marker Management Functions for Map Widget

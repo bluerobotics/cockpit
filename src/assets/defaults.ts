@@ -131,157 +131,6 @@ export const widgetProfiles: Profile[] = [
     hash: defaultRovProfileHash,
     views: [
       {
-        hash: 'eddd8e53-88c3-46a9-9e50-909227661f38',
-        name: 'Video View',
-        showBottomBarOnBoot: true,
-        visible: true,
-        widgets: [
-          {
-            hash: '80e785e1-31e2-4bfe-85d4-99fee6ca3f76',
-            name: 'VirtualHorizon',
-            component: WidgetType.VirtualHorizon,
-            position: {
-              x: 0.933,
-              y: 0.054,
-            },
-            size: {
-              width: 0.062,
-              height: 0.118,
-            },
-            options: {},
-          },
-          {
-            hash: '0a786865-0eff-408c-bc1d-a2b710222418',
-            name: 'Compass',
-            component: WidgetType.Compass,
-            position: {
-              x: 0.863,
-              y: 0.054,
-            },
-            size: {
-              width: 0.062,
-              height: 0.118,
-            },
-            options: {
-              headingStyle: 'North Up',
-            },
-          },
-          {
-            hash: '6439e791-3031-4928-aff2-8bd9af713798',
-            name: 'Video player',
-            component: WidgetType.VideoPlayer,
-            position: {
-              x: 0,
-              y: 0,
-            },
-            size: {
-              width: 1,
-              height: 1,
-            },
-            options: {
-              videoFitStyle: 'cover',
-              flipHorizontally: false,
-              flipVertically: false,
-            },
-          },
-        ],
-        miniWidgetContainers: [
-          {
-            name: 'Bottom-left container',
-            widgets: [
-              {
-                hash: '59517f70-4221-491a-8f10-c877c05c22b5',
-                component: MiniWidgetType.ViewSelector,
-                name: 'ViewSelector',
-                options: {},
-              },
-              {
-                component: MiniWidgetType.VeryGenericIndicator,
-                name: 'VeryGenericIndicator',
-                options: {
-                  displayName: 'Pilot Gain',
-                  variableName: 'PilotGain',
-                  iconName: 'mdi-account-hard-hat',
-                  variableUnit: '%',
-                  variableMultiplier: 100,
-                },
-                hash: '2f720389-4037-4523-9b98-249cf9640289',
-              },
-              {
-                component: MiniWidgetType.VeryGenericIndicator,
-                name: 'VeryGenericIndicator',
-                options: {
-                  displayName: 'Lights (1)',
-                  variableName: 'Lights1',
-                  iconName: 'mdi-flashlight',
-                  variableUnit: '%',
-                  variableMultiplier: 100,
-                },
-                hash: 'e43916ab-7f41-4c41-810d-96b5f651c6da',
-              },
-              {
-                component: MiniWidgetType.VeryGenericIndicator,
-                name: 'VeryGenericIndicator',
-                options: {
-                  displayName: 'Cam Tilt',
-                  variableName: 'CamTilt',
-                  iconName: 'mdi-camera-retake',
-                  variableUnit: '%',
-                  variableMultiplier: 100,
-                },
-                hash: '31cc564a-a01e-456a-b181-f04ba512486a',
-              },
-            ],
-          },
-          {
-            name: 'Bottom-center container',
-            widgets: [
-              {
-                hash: '7e1dd699-b336-4026-ad7d-f214aee5e4b7',
-                component: MiniWidgetType.DepthIndicator,
-                name: 'DepthIndicator',
-                options: {},
-              },
-              {
-                component: MiniWidgetType.VeryGenericIndicator,
-                name: 'VeryGenericIndicator',
-                options: {
-                  displayName: 'Water Temp',
-                  variableName: 'SCALED_PRESSURE2.temperature',
-                  iconName: 'mdi-thermometer',
-                  variableUnit: '°C',
-                  variableMultiplier: '.01',
-                },
-                hash: '9ee52751-e828-4947-a7ce-0b2f3c2bc42f',
-              },
-            ],
-          },
-          {
-            name: 'Bottom-right container',
-            widgets: [
-              {
-                hash: '837a6722-1e54-4ace-9a92-d9c5af059d16',
-                component: MiniWidgetType.ArmerButton,
-                name: 'ArmerButton',
-                options: {},
-              },
-              {
-                hash: 'c6301929-cdfc-48af-9fdd-c87ce65d7395',
-                component: MiniWidgetType.ModeSelector,
-                name: 'ModeSelector',
-                options: {},
-              },
-              {
-                hash: 'a4d0d6ce-9978-40f2-89ab-958f91137177',
-                component: MiniWidgetType.MiniVideoRecorder,
-                name: 'MiniVideoRecorder',
-                options: {},
-              },
-            ],
-          },
-        ],
-      },
-      {
         hash: 'fc6abfcc-5a19-4e70-9a96-f03f6c55f1b3',
         name: 'Map View',
         widgets: [
@@ -435,6 +284,157 @@ export const widgetProfiles: Profile[] = [
         ],
         showBottomBarOnBoot: true,
         visible: true,
+      },
+      {
+        hash: 'eddd8e53-88c3-46a9-9e50-909227661f38',
+        name: 'Video View',
+        showBottomBarOnBoot: true,
+        visible: true,
+        widgets: [
+          {
+            hash: '80e785e1-31e2-4bfe-85d4-99fee6ca3f76',
+            name: 'VirtualHorizon',
+            component: WidgetType.VirtualHorizon,
+            position: {
+              x: 0.933,
+              y: 0.054,
+            },
+            size: {
+              width: 0.062,
+              height: 0.118,
+            },
+            options: {},
+          },
+          {
+            hash: '0a786865-0eff-408c-bc1d-a2b710222418',
+            name: 'Compass',
+            component: WidgetType.Compass,
+            position: {
+              x: 0.863,
+              y: 0.054,
+            },
+            size: {
+              width: 0.062,
+              height: 0.118,
+            },
+            options: {
+              headingStyle: 'North Up',
+            },
+          },
+          {
+            hash: '6439e791-3031-4928-aff2-8bd9af713798',
+            name: 'Video player',
+            component: WidgetType.VideoPlayer,
+            position: {
+              x: 0,
+              y: 0,
+            },
+            size: {
+              width: 1,
+              height: 1,
+            },
+            options: {
+              videoFitStyle: 'cover',
+              flipHorizontally: false,
+              flipVertically: false,
+            },
+          },
+        ],
+        miniWidgetContainers: [
+          {
+            name: 'Bottom-left container',
+            widgets: [
+              {
+                hash: '59517f70-4221-491a-8f10-c877c05c22b5',
+                component: MiniWidgetType.ViewSelector,
+                name: 'ViewSelector',
+                options: {},
+              },
+              {
+                component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
+                options: {
+                  displayName: 'Pilot Gain',
+                  variableName: 'PilotGain',
+                  iconName: 'mdi-account-hard-hat',
+                  variableUnit: '%',
+                  variableMultiplier: 100,
+                },
+                hash: '2f720389-4037-4523-9b98-249cf9640289',
+              },
+              {
+                component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
+                options: {
+                  displayName: 'Lights (1)',
+                  variableName: 'Lights1',
+                  iconName: 'mdi-flashlight',
+                  variableUnit: '%',
+                  variableMultiplier: 100,
+                },
+                hash: 'e43916ab-7f41-4c41-810d-96b5f651c6da',
+              },
+              {
+                component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
+                options: {
+                  displayName: 'Cam Tilt',
+                  variableName: 'CamTilt',
+                  iconName: 'mdi-camera-retake',
+                  variableUnit: '%',
+                  variableMultiplier: 100,
+                },
+                hash: '31cc564a-a01e-456a-b181-f04ba512486a',
+              },
+            ],
+          },
+          {
+            name: 'Bottom-center container',
+            widgets: [
+              {
+                hash: '7e1dd699-b336-4026-ad7d-f214aee5e4b7',
+                component: MiniWidgetType.DepthIndicator,
+                name: 'DepthIndicator',
+                options: {},
+              },
+              {
+                component: MiniWidgetType.VeryGenericIndicator,
+                name: 'VeryGenericIndicator',
+                options: {
+                  displayName: 'Water Temp',
+                  variableName: 'SCALED_PRESSURE2.temperature',
+                  iconName: 'mdi-thermometer',
+                  variableUnit: '°C',
+                  variableMultiplier: '.01',
+                },
+                hash: '9ee52751-e828-4947-a7ce-0b2f3c2bc42f',
+              },
+            ],
+          },
+          {
+            name: 'Bottom-right container',
+            widgets: [
+              {
+                hash: '837a6722-1e54-4ace-9a92-d9c5af059d16',
+                component: MiniWidgetType.ArmerButton,
+                name: 'ArmerButton',
+                options: {},
+              },
+              {
+                hash: 'c6301929-cdfc-48af-9fdd-c87ce65d7395',
+                component: MiniWidgetType.ModeSelector,
+                name: 'ModeSelector',
+                options: {},
+              },
+              {
+                hash: 'a4d0d6ce-9978-40f2-89ab-958f91137177',
+                component: MiniWidgetType.MiniVideoRecorder,
+                name: 'MiniVideoRecorder',
+                options: {},
+              },
+            ],
+          },
+        ],
       },
       {
         hash: '795c3c97-c3f6-4a2d-b38f-d4ac8219bac0',

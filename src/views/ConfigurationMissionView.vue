@@ -1,6 +1,6 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Mission configuration</template>
+    <template #title>{{ $t('configuration.mission.title') }}</template>
     <template #content>
       <div
         class="flex flex-col justify-between items-start ml-[1vw] max-h-[85vh] overflow-y-auto"
@@ -9,7 +9,7 @@
         <div class="grid grid-cols-3 gap-x-4 mb-4">
           <v-switch
             v-model="missionStore.showChecklistBeforeArm"
-            label="Enable pre-arm checklist"
+            :label="$t('configuration.mission.enablePreArmChecklist')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -17,7 +17,7 @@
           />
           <v-switch
             v-model="missionStore.slideEventsEnabled"
-            label="Enable slide to confirm"
+            :label="$t('configuration.mission.enableSlideToConfirm')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -25,7 +25,7 @@
           />
           <v-switch
             v-model="missionStore.alwaysSwitchToFlightMode"
-            label="Auto switch to flight mode on mission upload"
+            :label="$t('configuration.mission.autoSwitchToFlightMode')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -33,7 +33,7 @@
           />
           <v-switch
             v-model="missionStore.showMissionCreationTips"
-            label="Show mission creation checklist"
+            :label="$t('configuration.mission.showMissionCreationChecklist')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -41,7 +41,7 @@
           />
           <v-switch
             v-model="missionStore.showGridOnMissionPlanning"
-            label="Show coordinate grid on maps"
+            :label="$t('configuration.mission.showCoordinateGrid')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -49,9 +49,9 @@
           />
         </div>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Enable confirmation on specific categories:</template>
+          <template #title>{{ $t('configuration.mission.enableConfirmationCategories') }}</template>
           <template #info>
-            Add an extra confirmation step for UI elements that can trigger mission critical actions.
+            {{ $t('configuration.mission.enableConfirmationCategoriesInfo') }}
           </template>
           <template #content>
             <div class="flex flex-wrap items-center justify-start">
@@ -64,7 +64,7 @@
                 <v-checkbox
                   v-model="missionStore.slideEventsCategoriesRequired[category]"
                   :disabled="!missionStore.slideEventsEnabled"
-                  :label="category"
+                  :label="$t(`configuration.mission.${category.toLowerCase()}`)"
                   hide-details
                 ></v-checkbox>
               </div>
@@ -73,18 +73,16 @@
         </ExpansiblePanel>
 
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Map options</template>
+          <template #title>{{ $t('configuration.mission.mapOptions') }}</template>
           <template #info>
-            <strong>Default map position:</strong> Defines the initial center and zoom level for the map. <br />
-            <strong>Max. vehicle position update rate:</strong> Limits how often the vehicle's position is updated on
-            the map to reduce CPU usage.
+            {{ $t('configuration.mission.mapOptionsInfo') }}
           </template>
           <template #content>
             <div class="flex flex-wrap gap-4 px-4 pb-4">
-              <p class="w-full text-md">Default map position</p>
+              <p class="w-full text-md">{{ $t('configuration.mission.defaultMapPosition') }}</p>
               <div class="flex w-[70%] justify-around items-center">
                 <div class="flex flex-col max-w-[9rem]">
-                  <p class="text-sm text-slate-200 mb-2">Latitude</p>
+                  <p class="text-sm text-slate-200 mb-2">{{ $t('configuration.mission.latitude') }}</p>
                   <input
                     v-model.number="defaultMapCenter[0]"
                     type="number"
@@ -93,7 +91,7 @@
                   />
                 </div>
                 <div class="flex flex-col max-w-[9rem]">
-                  <p class="text-sm text-slate-200 mb-2 ml-4">Longitude</p>
+                  <p class="text-sm text-slate-200 mb-2 ml-4">{{ $t('configuration.mission.longitude') }}</p>
                   <input
                     v-model.number="defaultMapCenter[1]"
                     type="number"
@@ -102,7 +100,7 @@
                   />
                 </div>
                 <div class="flex flex-col max-w-[9rem]">
-                  <p class="text-sm text-slate-200 mb-2 ml-4">Zoom Level (1-19)</p>
+                  <p class="text-sm text-slate-200 mb-2 ml-4">{{ $t('configuration.mission.zoomLevel') }}</p>
                   <input
                     v-model.number="defaultMapZoom"
                     type="number"
@@ -112,10 +110,10 @@
                   />
                 </div>
                 <div class="flex-grow-1" />
-                <v-btn class="mt-7 bg-[#FFFFFF22]" variant="plain" size="small" @click="saveMapPosition">Save</v-btn>
+                <v-btn class="mt-7 bg-[#FFFFFF22]" variant="plain" size="small" @click="saveMapPosition">{{ $t('configuration.mission.save') }}</v-btn>
               </div>
               <div class="flex w-[63%] justify-between items-center mt-4">
-                <p class="w-full text-md">Max. vehicle position update rate</p>
+                <p class="w-full text-md">{{ $t('configuration.mission.maxVehiclePositionUpdateRate') }}</p>
                 <div class="flex flex-col max-w-[118px]">
                   <input
                     v-model.number="vehicleStore.vehiclePositionMaxSampleRate"
@@ -124,7 +122,7 @@
                     class="px-2 py-1 rounded-sm bg-[#FFFFFF22]"
                   />
                 </div>
-                <p class="ml-2">ms</p>
+                <p class="ml-2">{{ $t('configuration.mission.milliseconds') }}</p>
               </div>
             </div>
           </template>

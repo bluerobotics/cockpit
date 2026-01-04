@@ -1,6 +1,6 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Development configuration</template>
+    <template #title>{{ $t('configuration.development.title') }}</template>
     <template #content>
       <div
         class="max-h-[85vh] overflow-y-auto -mr-4"
@@ -13,14 +13,14 @@
           <div class="flex flex-row gap-x-[40px]">
             <v-switch
               v-model="devStore.developmentMode"
-              label="Development mode"
+              :label="$t('configuration.development.developmentMode')"
               color="white"
               hide-details
               class="min-w-[155px]"
             />
             <v-switch
               v-model="devStore.enableBlueOsSettingsSync"
-              label="BlueOS settings sync"
+              :label="$t('configuration.development.blueOsSettingsSync')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -28,7 +28,7 @@
             />
             <v-switch
               v-model="devStore.enableUsageStatisticsTelemetry"
-              label="Usage statistics telemetry"
+              :label="$t('configuration.development.usageStatisticsTelemetry')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -36,7 +36,7 @@
             />
             <v-switch
               v-model="devStore.enableSystemLogging"
-              label="Enable system logging"
+              :label="$t('configuration.development.enableSystemLogging')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -46,7 +46,7 @@
           <div class="flex flex-row w-full justify-start gap-x-[40px]">
             <v-switch
               v-model="devStore.showSplashScreenOnStartup"
-              label="Show splashscreen on startup"
+              :label="$t('configuration.development.showSplashscreenOnStartup')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -54,7 +54,7 @@
           </div>
           <v-slider
             v-model="devStore.widgetDevInfoBlurLevel"
-            label="Dev info blur level"
+            :label="$t('configuration.development.devInfoBlurLevel')"
             min="0"
             max="10"
             class="w-[350px]"
@@ -66,9 +66,9 @@
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>
             <div class="flex justify-between">
-              <span>System logs</span>
+              <span>{{ $t('configuration.development.systemLogs') }}</span>
               <span class="text-sm text-gray-300 cursor-pointer" @click.stop="deleteOldLogs">
-                <v-tooltip text="Delete old logs">
+                <v-tooltip :text="$t('configuration.development.deleteOldLogs')">
                   <template #activator="{ props }">
                     <v-icon left class="mr-2" v-bind="props">mdi-delete-sweep</v-icon>
                   </template>
@@ -106,6 +106,7 @@ import { parse } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { onBeforeMount } from 'vue'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { type SystemLog, cockpitSytemLogsDB, systemLogDateTimeFormat } from '@/libs/system-logging'
@@ -116,6 +117,7 @@ import { useDevelopmentStore } from '@/stores/development'
 import BaseConfigurationView from './BaseConfigurationView.vue'
 const devStore = useDevelopmentStore()
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
 
 /* eslint-disable jsdoc/require-jsdoc */
 interface SystemLogsData {
@@ -130,11 +132,11 @@ const systemLogsData = ref<SystemLogsData[]>([])
 const isRunningInElectron = isElectron()
 
 const headers = [
-  { title: 'Name', value: 'name' },
-  { title: 'Time (initial)', value: 'initialTime' },
-  { title: 'Date (initial)', value: 'initialDate' },
-  { title: 'events', value: 'nEvents' },
-  { title: 'Download', value: 'actions' },
+  { title: t('configuration.development.name'), value: 'name' },
+  { title: t('configuration.development.timeInitial'), value: 'initialTime' },
+  { title: t('configuration.development.dateInitial'), value: 'initialDate' },
+  { title: t('configuration.development.events'), value: 'nEvents' },
+  { title: t('configuration.development.download'), value: 'actions' },
 ]
 
 onBeforeMount(async () => {

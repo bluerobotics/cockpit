@@ -1,28 +1,26 @@
 <template>
   <BaseConfigurationView>
-    <template #title>General configuration</template>
+    <template #title>{{ $t('configuration.general.title') }}</template>
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>User settings</template>
+          <template #title>{{ $t('configuration.general.userSettings') }}</template>
           <template #info>
             <p class="w-full">
-              User related configuration. Here you can set the user that is currently set for this device as well as
-              create a new user account.
+              {{ $t('configuration.general.userSettingsInfo') }}
               <br />
               <br />
-              <span class="font-semibold">Pirate mode</span> allows Cockpit to expose advanced features, like setting
-              the frequency of MAVLink messages. Take care when enabling this mode.
+              <span class="font-semibold">{{ $t('configuration.general.pirateModeInfo').split('allows')[0].trim() }}</span> {{ $t('configuration.general.pirateModeInfo').split('allows')[1] }}
             </p>
           </template>
           <template #content>
             <div class="flex flex-col w-full items-start">
               <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
-                  <span class="mr-2">Current user:</span>
+                  <span class="mr-2">{{ $t('configuration.general.currentUser') }}</span>
                   <span class="font-semibold text-2xl cursor-pointer" @click="missionStore.changeUsername">{{
                     missionStore.username
                   }}</span>
@@ -35,14 +33,21 @@
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
                     @click="missionStore.changeUsername"
-                    >Manage users</v-btn
+                    >{{ $t('configuration.general.manageUsers') }}</v-btn
                   >
+                </div>
+              </div>
+              <v-divider class="w-full opacity-[0.08]" />
+              <div class="flex flex-row w-full items-center justify-between py-3 gap-x-2">
+                <div class="flex items-center gap-x-2">
+                  <span class="text-sm">{{ $t('configuration.general.language') }}</span>
+                  <LanguageSwitcher />
                 </div>
               </div>
               <v-divider class="w-full opacity-[0.08]" />
               <div class="flex flex-row w-full items-center justify-between py-5 gap-x-2">
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
-                  Show tutorial
+                  {{ $t('configuration.general.showTutorial') }}
                 </v-btn>
                 <v-btn
                   v-if="isElectron()"
@@ -51,7 +56,7 @@
                   variant="flat"
                   @click="openCockpitFolder"
                 >
-                  Open Cockpit folder
+                  {{ $t('configuration.general.openCockpitFolder') }}
                 </v-btn>
                 <v-btn
                   size="x-small"
@@ -59,7 +64,7 @@
                   variant="flat"
                   @click="showCockpitSettingsDialog = true"
                 >
-                  Manage Cockpit settings
+                  {{ $t('configuration.general.manageCockpitSettings') }}
                 </v-btn>
                 <v-btn
                   size="x-small"
@@ -67,7 +72,7 @@
                   variant="flat"
                   @click="interfaceStore.pirateMode = !interfaceStore.pirateMode"
                 >
-                  {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
+                  {{ interfaceStore.pirateMode ? $t('configuration.general.disablePirateMode') : $t('configuration.general.enablePirateMode') }}
                 </v-btn>
               </div>
             </div>
@@ -75,9 +80,9 @@
         </ExpansiblePanel>
 
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle network connection (global address)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
-          <template #info>Sets the network address for device communication. E.g: blueos.local</template>
+          <template #title>{{ $t('configuration.general.vehicleNetworkConnection') }}</template>
+          <template #subtitle>{{ $t('configuration.general.currentAddress') }} {{ mainVehicleStore.globalAddress }}</template>
+          <template #info>{{ $t('configuration.general.connectionInfo') }}</template>
           <template #content>
             <v-btn
               v-if="isElectron()"
@@ -86,7 +91,7 @@
               variant="flat"
               @click="showDiscoveryDialog = true"
             >
-              Search for vehicles
+              {{ $t('configuration.general.searchForVehicles') }}
             </v-btn>
             <v-form
               ref="globalAddressForm"
@@ -129,19 +134,19 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('common.apply') }}
                 </v-btn>
               </div>
             </v-form>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>MAVLink2REST URI</template>
+          <template #title>{{ $t('configuration.general.mavlinkUri') }}</template>
           <template #subtitle>
-            Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
-            Status:
+            {{ $t('configuration.general.currentAddress') }} {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
+            {{ $t('configuration.general.status') }}
             {{
-              vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
+              vehicleConnected ? $t('configuration.general.connected') : vehicleConnected === undefined ? $t('configuration.general.connecting') : $t('configuration.general.failedToConnect')
             }}
           </template>
           <template #content>
@@ -185,7 +190,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('common.apply') }}
                 </v-btn>
               </div>
               <div class="flex justify-end mt-6">
@@ -201,7 +206,7 @@
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? $t('configuration.general.enabled') : $t('configuration.general.disabled') }}
                   </div>
                 </div>
               </div>
@@ -209,8 +214,8 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Video connection (WebRTC)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
+          <template #title>{{ $t('configuration.general.videoConnection') }}</template>
+          <template #subtitle>{{ $t('configuration.general.currentAddress') }} {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
           <template #content>
             <v-form
               ref="webRTCSignallingForm"
@@ -251,7 +256,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('common.apply') }}
                 </v-btn>
               </div>
               <div>
@@ -267,7 +272,7 @@
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? $t('configuration.general.enabled') : $t('configuration.general.disabled') }}
                   </div>
                 </div>
               </div>
@@ -275,7 +280,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Custom WebRTC configuration</template>
+          <template #title>{{ $t('configuration.general.customWebRtcConfig') }}</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
               <v-textarea
@@ -283,7 +288,7 @@
                 v-model="customRtcConfiguration"
                 :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
                 variant="outlined"
-                label="Custom WebRTC Configuration"
+                :label="$t('configuration.general.customWebRtcConfigLabel')"
                 :rows="6"
                 hint="e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
                 class="w-full"
@@ -297,7 +302,7 @@
                   type="submit"
                   @click="handleCustomRtcConfiguration"
                 >
-                  Apply
+                  {{ $t('common.apply') }}
                 </v-btn>
 
                 <div class="flex flex-col align-end text-[10px] -mt-8">
@@ -309,7 +314,7 @@
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? $t('configuration.general.enabled') : $t('configuration.general.disabled') }}
                   </div>
                 </div>
               </div>
@@ -329,6 +334,7 @@ import { onMounted, ref, watch } from 'vue'
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import * as Connection from '@/libs/connection/connection'
