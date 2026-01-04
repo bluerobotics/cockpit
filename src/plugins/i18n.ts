@@ -12,7 +12,7 @@ const browserLocale = navigator.language.split('-')[0]
 const supportedLocales = ['en', 'zh']
 
 // Determine default locale
-const defaultLocale = savedLocale || (supportedLocales.includes(browserLocale) ? browserLocale : 'zh')
+const defaultLocale = savedLocale || (supportedLocales.includes(browserLocale) ? browserLocale : 'en')
 
 // Create i18n instance
 const i18n = createI18n({
