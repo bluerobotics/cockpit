@@ -424,6 +424,21 @@
       "videoConnection": "Video connection (WebRTC)",
       "enabled": "Enabled",
       "disabled": "Disabled",
+      "mapCache": {
+        "title": "Map Tile Cache",
+        "info": "Enable auto-caching to automatically save map tiles for offline use as you browse. The number of cached tiles depends on the areas and zoom levels you explore.",
+        "autoCache": "Enable Auto-caching",
+        "autoCacheEnabled": "Enabled - Map tiles will be automatically cached as you browse",
+        "autoCacheDisabled": "Disabled - Tiles must be downloaded manually",
+        "cachedTiles": "Cached tiles:",
+        "cacheSize": "Cache size:",
+        "clearCache": "Clear cache",
+        "clearCacheConfirm": "Confirm Clear Cache",
+        "clearCacheMessage": "This will permanently delete all cached map tiles. This action cannot be undone.",
+        "cacheCleared": "Cache cleared successfully",
+        "clearFailed": "Failed to clear cache",
+        "refreshStats": "Refresh"
+      },
       "customWebRtcConfig": "Custom WebRTC configuration",
       "customWebRtcConfigLabel": "Custom WebRTC Configuration"
     },

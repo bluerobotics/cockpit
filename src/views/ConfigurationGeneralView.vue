@@ -280,6 +280,58 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>{{ $t('configuration.general.mapCache.title') }}</template>
+          <template #info>{{ $t('configuration.general.mapCache.info') }}</template>
+          <template #content>
+            <div class="flex flex-col w-full gap-y-4 mt-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">{{ $t('configuration.general.mapCache.autoCache') }}</span>
+                <v-switch
+                  v-model="autoCacheEnabled"
+                  v-tooltip.left="autoCacheEnabled ? $t('configuration.general.mapCache.autoCacheEnabled') : $t('configuration.general.mapCache.autoCacheDisabled')"
+                  class="bg-transparent"
+                  rounded="lg"
+                  hide-details
+                  @update:model-value="toggleAutoCache"
+                />
+              </div>
+              <v-divider class="w-full opacity-[0.08]" />
+              <div class="flex flex-col gap-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm">{{ $t('configuration.general.mapCache.cachedTiles') }}</span>
+                  <span class="font-mono text-sm">{{ cachedTilesCount }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm">{{ $t('configuration.general.mapCache.cacheSize') }}</span>
+                  <span class="font-mono text-sm">{{ cachedTilesSize }}</span>
+                </div>
+              </div>
+              <v-divider class="w-full opacity-[0.08]" />
+              <div class="flex gap-x-2">
+                <v-btn
+                  size="x-small"
+                  class="bg-[#FFFFFF22] shadow-1"
+                  variant="flat"
+                  @click="refreshCacheStats"
+                >
+                  <v-icon start>mdi-refresh</v-icon>
+                  {{ $t('configuration.general.mapCache.refreshStats') }}
+                </v-btn>
+                <v-btn
+                  size="x-small"
+                  class="bg-[#FFFFFF22] shadow-1"
+                  variant="flat"
+                  :disabled="cachedTilesCount === 0"
+                  @click="confirmClearCache"
+                >
+                  <v-icon start>mdi-delete</v-icon>
+                  {{ $t('configuration.general.mapCache.clearCache') }}
+                </v-btn>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>{{ $t('configuration.general.customWebRtcConfig') }}</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
@@ -329,22 +381,26 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
+import { useI18n } from 'vue-i18n'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
+import { OfflineMapManager } from '@/libs/offline-map'
 import { isValidNetworkAddress, reloadCockpit } from '@/libs/utils'
 import { isElectron } from '@/libs/utils'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import { keys } from 'idb-keyval'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
@@ -352,6 +408,8 @@ const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const { openSnackbar } = useSnackbar()
+const { showDialog, closeDialog } = useInteractionDialog()
+const { t } = useI18n()
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
@@ -570,8 +628,122 @@ const openTutorial = (): void => {
 
 watch(customRtcConfiguration, () => tryToPrettifyRtcConfig())
 
+// Map cache management
+const autoCacheEnabled = ref(localStorage.getItem('cockpit-auto-map-cache') === 'true')
+const cachedTilesCount = ref(0)
+const cachedTilesSize = ref('0 KB')
+
+const toggleAutoCache = (enabled: boolean): void => {
+  localStorage.setItem('cockpit-auto-map-cache', enabled ? 'true' : 'false')
+  openSnackbar({
+    message: enabled 
+      ? 'Auto-caching enabled. Map tiles will be saved as you browse.' 
+      : 'Auto-caching disabled.',
+    duration: 2000,
+    variant: 'info',
+  })
+}
+
+// Add a debounced refresh to avoid too frequent updates
+let refreshTimeout: number | undefined
+const debouncedRefreshCacheStats = (): void => {
+  if (refreshTimeout) {
+    clearTimeout(refreshTimeout)
+  }
+  refreshTimeout = window.setTimeout(() => {
+    refreshCacheStats()
+  }, 1000)
+}
+
+const refreshCacheStats = async (): Promise<void> => {
+  try {
+    const allKeys = await keys()
+    const mapKeys = allKeys.filter((key: IDBValidKey) => String(key).startsWith('cockpit-map-'))
+    
+    cachedTilesCount.value = mapKeys.length
+    
+    // Create a temporary manager just to estimate size
+    const tempManager = new OfflineMapManager('', {}, 'temp')
+    cachedTilesSize.value = tempManager.estimateStorageSize(mapKeys.length)
+  } catch (error) {
+    console.error('Failed to get cache stats:', error)
+    cachedTilesCount.value = 0
+    cachedTilesSize.value = '0 KB'
+  }
+}
+
+const confirmClearCache = (): void => {
+  showDialog({
+    title: t('configuration.general.mapCache.clearCacheConfirm'),
+    message: t('configuration.general.mapCache.clearCacheMessage'),
+    variant: 'warning',
+    actions: [
+      {
+        text: t('common.cancel'),
+        action: () => {
+          closeDialog()
+        },
+      },
+      {
+        text: t('configuration.general.mapCache.clearCache'),
+        action: async () => {
+          try {
+            // Clear all map caches
+            const managers = [
+              new OfflineMapManager('', {}, 'osm'),
+              new OfflineMapManager('', {}, 'esri'),
+              new OfflineMapManager('', {}, 'seamarks'),
+            ]
+            
+            await Promise.all(managers.map(m => m.clearCache()))
+            
+            cachedTilesCount.value = 0
+            cachedTilesSize.value = '0 KB'
+            
+            closeDialog()
+            
+            openSnackbar({ 
+              message: t('configuration.general.mapCache.cacheCleared'), 
+              variant: 'success', 
+              duration: 2000 
+            })
+          } catch (error) {
+            console.error('Failed to clear cache:', error)
+            
+            closeDialog()
+            
+            openSnackbar({ 
+              message: t('configuration.general.mapCache.clearFailed'), 
+              variant: 'error', 
+              duration: 3000 
+            })
+          }
+        },
+      },
+    ],
+  })
+}
+
 onMounted(() => {
   tryToPrettifyRtcConfig()
+  refreshCacheStats()
+  
+  // Listen for cache updates
+  window.addEventListener('map-cache-updated', debouncedRefreshCacheStats)
+  
+  // Auto-refresh when component becomes visible
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      debouncedRefreshCacheStats()
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('map-cache-updated', debouncedRefreshCacheStats)
+  if (refreshTimeout) {
+    clearTimeout(refreshTimeout)
+  }
 })
 
 const showDiscoveryDialog = ref(false)

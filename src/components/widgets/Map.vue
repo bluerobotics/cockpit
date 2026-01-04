@@ -179,6 +179,7 @@ import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
+import { OfflineMapManager } from '@/libs/offline-map'
 import {
   computed,
   nextTick,
@@ -304,27 +305,39 @@ onBeforeMount(() => {
   targetFollower.enableAutoUpdate()
 })
 
-// Configure the available map tile providers
-const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 23,
-  maxNativeZoom: 19,
-  attribution: '© OpenStreetMap',
-})
+// Configure the available map tile providers with offline support and auto-caching
+const osmOfflineManager = new OfflineMapManager(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    maxZoom: 23,
+    maxNativeZoom: 19,
+    attribution: '© OpenStreetMap',
+  },
+  'osm'
+)
 
-const esri = tileLayerOffline(
+const esriOfflineManager = new OfflineMapManager(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© Esri World Imagery',
-  }
+  },
+  'esri'
 )
 
-// Overlays
-const seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
-  maxZoom: 18,
-  attribution: '© OpenSeaMap contributors',
-})
+const seamarksOfflineManager = new OfflineMapManager(
+  'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+  {
+    maxZoom: 18,
+    attribution: '© OpenSeaMap contributors',
+  },
+  'seamarks'
+)
+
+const osm = osmOfflineManager.createTileLayer()
+const esri = esriOfflineManager.createTileLayer()
+const seamarks = seamarksOfflineManager.createTileLayer()
 
 const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserver/gwc/service/wms', {
   layers: 'gebco2021:gebco_2021',

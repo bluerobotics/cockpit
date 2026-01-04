@@ -424,6 +424,21 @@
       "videoConnection": "视频连接 (WebRTC)",
       "enabled": "已启用",
       "disabled": "已禁用",
+      "mapCache": {
+        "title": "地图瓦片缓存",
+        "info": "启用自动缓存可在浏览地图时自动保存瓦片以供离线使用。缓存的瓦片数量取决于您浏览的区域和缩放级别。",
+        "autoCache": "启用自动缓存",
+        "autoCacheEnabled": "已启用 - 地图瓦片将在浏览时自动缓存",
+        "autoCacheDisabled": "已禁用 - 需要手动下载瓦片",
+        "cachedTiles": "缓存的瓦片数量：",
+        "cacheSize": "缓存大小：",
+        "clearCache": "清除缓存",
+        "clearCacheConfirm": "确认清除缓存",
+        "clearCacheMessage": "这将永久删除所有缓存的地图瓦片。此操作无法撤销。",
+        "cacheCleared": "缓存已清除",
+        "clearFailed": "清除缓存失败",
+        "refreshStats": "刷新"
+      },
       "customWebRtcConfig": "自定义 WebRTC 配置",
       "customWebRtcConfigLabel": "自定义 WebRTC 配置"
     },
