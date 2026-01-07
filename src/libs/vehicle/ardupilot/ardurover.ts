@@ -21,6 +21,7 @@ export enum CustomMode {
   FOLLOW = 6,
   SIMPLE = 7,
   DOCK = 8,
+  CIRCLE = 9,
   AUTO = 10,
   RTL = 11,
   SMART_RTL = 12,
