@@ -232,7 +232,7 @@
         </div>
 
         <div>
-          <div class="flex w-full justify-between mt-2 mb-2">
+          <div class="flex w-full justify-between my-2 px-1">
             <v-tooltip
               location="top"
               :text="isMissionEstimatesVisible ? 'Hide mission estimates' : 'Show mission estimates'"
@@ -249,7 +249,7 @@
                 />
               </template>
             </v-tooltip>
-            <v-divider vertical />
+            <v-divider v-if="missionStore.currentPlanningWaypoints.length > 0" vertical />
             <v-tooltip location="top" text="Save mission to file">
               <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
                 <v-btn
@@ -277,6 +277,7 @@
                 <v-btn
                   v-bind="props"
                   icon="mdi-delete"
+                  :disabled="loading || !vehicleStore.isVehicleOnline"
                   variant="text"
                   size="24"
                   class="text-[12px] mx-3 mt-[2px] mb-[1px]"
@@ -302,10 +303,10 @@
         <v-divider v-if="isCreatingSimplePath || isCreatingSurvey" class="my-2" />
         <button
           v-if="isCreatingSimplePath || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0"
-          :disabled="missionStore.currentPlanningWaypoints.length < 2"
+          :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
           :class="{
             'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
-              missionStore.currentPlanningWaypoints.length < 2,
+              missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline,
           }"
           class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
           @click="uploadMissionToVehicle"
@@ -322,8 +323,9 @@
           <p v-else>CLEAR CURRENT MISSION</p>
         </button>
         <button
-          :disabled="loading"
+          :disabled="loading || !vehicleStore.isVehicleOnline"
           class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+          :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
           @click="downloadMissionFromVehicle"
         >
           <v-progress-circular v-if="loading" size="20" class="py-4" />
