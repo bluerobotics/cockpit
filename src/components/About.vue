@@ -16,26 +16,24 @@
           <div class="w-[90%] flex justify-between my-6 py-3">
             <div class="w-[45%] flex flex-col text-start">
               <p class="mb-1">
-                Cockpit is an intuitive and customizable cross-platform ground control station for remote vehicles of
-                all types.
+                {{ t('about.description1') }}
               </p>
-              <p class="my-3">It was created by Blue Robotics and is entirely open-source.</p>
+              <p class="my-3">{{ t('about.description2') }}</p>
               <p class="mt-1">
-                It currently supports Ardupilot-based vehicles, but has plans to support any generic vehicle, be it
-                communicating MAVLink or not.
+                {{ t('about.description3') }}
               </p>
             </div>
             <div class="w-[45%] flex flex-col justify-end text-end">
               <p class="mb-1">
-                Version
+                {{ t('about.version') }}
                 <a :href="app_version.link" target="_blank" class="text-primary hover:underline">
                   {{ app_version.version }}
                 </a>
                 <br />
-                <span class="text-sm text-gray-500">Released: {{ app_version.date }}</span>
+                <span class="text-sm text-gray-500">{{ t('about.released') }} {{ app_version.date }}</span>
               </p>
-              <p class="my-3">Created by Blue Robotics</p>
-              <p class="mt-1">Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom</p>
+              <p class="my-3">{{ t('about.createdBy') }}</p>
+              <p class="mt-1">{{ t('about.license') }}</p>
             </div>
           </div>
           <div class="mb-5 flex justify-center align-center">
@@ -67,7 +65,7 @@
         </div>
       </template>
       <template #actions
-        ><div class="flex w-full justify-end"><v-btn @click="closeDialog">Close</v-btn></div></template
+        ><div class="flex w-full justify-end"><v-btn @click="closeDialog">{{ t('about.close') }}</v-btn></div></template
       >
     </InteractionDialog>
   </teleport>
@@ -75,12 +73,15 @@
 
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import CockpitLogo from '@/assets/cockpit-logo.png'
 import lite from '@/assets/lite.png'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
+
+const { t } = useI18n()
 
 const showDialog = ref(true)
 const emit = defineEmits(['update:showAboutDialog'])

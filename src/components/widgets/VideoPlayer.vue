@@ -2,29 +2,27 @@
   <div ref="videoWidget" class="video-widget">
     <statsForNerds v-if="widget.options.statsForNerds" :stream-name="externalStreamId" />
     <div v-if="nameSelectedStream === undefined" class="no-video-alert">
-      <span>No video stream selected.</span>
+      <span>{{ $t('videoPlayer.noVideoStreamSelected') }}</span>
     </div>
     <div
       v-else-if="!namesAvailableStreams.isEmpty() && !namesAvailableStreams.includes(nameSelectedStream)"
       class="no-video-alert"
     >
-      <p>The selected stream "{{ nameSelectedStream }}" is not available.</p>
-      <p>Available ones are: {{ namesAvailableStreams.map((name) => `"${name}"`).join(', ') }}.</p>
+      <p>{{ $t('videoPlayer.streamNotAvailable', { streamName: nameSelectedStream }) }}</p>
+      <p>{{ $t('videoPlayer.availableStreams', { streams: namesAvailableStreams.map((name) => `"${name}"`).join(', ') }) }}</p>
       <br />
       <p>
-        This can happen if you changed vehicles and the stream name in the new one is different from the former, or if
-        the source is not available at all.
+        {{ $t('videoPlayer.streamChangeInfo') }}
       </p>
       <br />
       <p>
-        Please open this video player configuration and select a new stream from the ones available, or check your
-        source for issues.
+        {{ $t('videoPlayer.selectNewStream') }}
       </p>
     </div>
     <div v-else-if="!streamConnected" class="no-video-alert">
       <div class="no-video-alert">
         <p>
-          <span class="text-xl font-bold">Server status: </span>
+          <span class="text-xl font-bold">{{ $t('videoPlayer.serverStatus') }} </span>
           <span v-for="(statusParagraph, i) in serverStatus.toString().split('\\n')" :key="i">
             {{ statusParagraph }}
             <br />

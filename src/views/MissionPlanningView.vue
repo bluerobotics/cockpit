@@ -1,5 +1,5 @@
 <template>
-  <div class="mission-planning">
+  <div class="mission-planning" :style="glassMenuCssVars">
     <div id="planningMap" ref="planningMap" class="relative" />
     <v-tooltip location="top" text="Generate waypoints">
       <template #activator="{ props }">
@@ -71,7 +71,7 @@
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSurvey"
         >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SURVEY' : 'CREATE SURVEY' }}
+          {{ missionStore.currentPlanningWaypoints.length > 0 ? $t('missionPlanning.addSurvey') : $t('missionPlanning.createSurvey') }}
         </button>
         <button
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
@@ -79,13 +79,13 @@
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSimplePath"
         >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
+          {{ missionStore.currentPlanningWaypoints.length > 0 ? $t('missionPlanning.addSimplePath') : $t('missionPlanning.createSimplePath') }}
         </button>
         <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-row justify-between items-center mx-4 my-1"
         >
-          <p class="text-sm">Cruise speed</p>
+          <p class="text-sm">{{ $t('missionPlanning.cruiseSpeed') }}</p>
           <input
             v-model="missionStore.defaultCruiseSpeed"
             class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
@@ -98,7 +98,7 @@
           class="flex flex-col px-4 py-3 gap-y-2 ma-2 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#00000022]"
         >
           <div class="flex justify-between my-[1px]">
-            <p class="self-center text-sm font-bold -mt-1 text-start">New mission checklist</p>
+            <p class="self-center text-sm font-bold -mt-1 text-start">{{ $t('missionPlanning.newMissionChecklist') }}</p>
             <v-icon class="text-sm -mr-[5px] cursor-pointer -mt-[1px]" @click="showMissionCreationTips = false"
               >mdi-close</v-icon
             >
@@ -108,7 +108,7 @@
             <v-icon v-if="home === undefined" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
             <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
             <p :class="{ 'cursor-pointer hover:underline': home === undefined }" @click="handleAddHomeWaypointByClick">
-              Set home waypoint
+              {{ $t('missionPlanning.setHomeWaypoint') }}
             </p>
           </div>
           <div class="text-sm flex justify-start items-center">
@@ -120,7 +120,7 @@
               :class="{ 'cursor-pointer hover:underline': missionStore.currentPlanningWaypoints.length === 0 }"
               @click="missionStore.currentPlanningWaypoints.length === 0 ? toggleSimplePath() : undefined"
             >
-              Create mission path
+              {{ $t('missionPlanning.createMissionPath') }}
             </p>
           </div>
           <div class="text-sm flex justify-start items-center">
@@ -130,7 +130,7 @@
               :class="{ 'cursor-pointer hover:underline': !hasUploadedMission }"
               @click="!hasUploadedMission ? uploadMissionToVehicle() : undefined"
             >
-              Upload to the vehicle
+              {{ $t('missionPlanning.uploadToVehicle') }}
             </p>
           </div>
         </div>
@@ -139,7 +139,7 @@
           class="flex flex-row justify-between px-3 py-1 my-2 mx-6 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#ffad4322] cursor-pointer opacity-60 elevation-4"
           @click="handleDoNotShowTipsAgain"
         >
-          <p class="text-sm">Don't show again</p>
+          <p class="text-sm">{{ $t('missionPlanning.dontShowAgain') }}</p>
           <p class="text-sm">{{ countdownToHideTips }}</p>
         </div>
         <div
@@ -151,7 +151,7 @@
           <p
             class="text-sm flex justify-start items-center bg-[#1e498f] rounded-full pl-3 pr-1 py-1 border-[1px] border-[#FFFFFF44] elevation-2 cursor-pointer"
           >
-            <span>Set home waypoint</span>
+            <span>{{ $t('missionPlanning.setHomeWaypoint') }}</span>
             <v-icon class="text-md ml-2">mdi-home-circle</v-icon>
           </p>
         </div>
@@ -235,7 +235,7 @@
           <div class="flex w-full justify-between mt-2 mb-2">
             <v-tooltip
               location="top"
-              :text="isMissionEstimatesVisible ? 'Hide mission estimates' : 'Show mission estimates'"
+              :text="isMissionEstimatesVisible ? $t('missionEstimates.hideMissionEstimates') : $t('missionEstimates.showMissionEstimates')"
             >
               <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
                 <v-btn
@@ -319,7 +319,7 @@
           @click="openCLearMissionDialog"
         >
           <v-progress-circular v-if="loading" size="20" class="py-4" />
-          <p v-else>CLEAR CURRENT MISSION</p>
+          <p v-else>{{ $t('missionPlanning.clearCurrentMission') }}</p>
         </button>
         <button
           :disabled="loading"
@@ -327,26 +327,43 @@
           @click="downloadMissionFromVehicle"
         >
           <v-progress-circular v-if="loading" size="20" class="py-4" />
-          <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
+          <p v-else>{{ $t('missionPlanning.downloadMissionFromVehicle') }}</p>
         </button>
       </div>
     </div>
-    <v-tooltip location="top center" text="Download map tiles">
+    <v-tooltip location="top" :text="$t('missionPlanning.switchToFlightMode')">
+      <template #activator="{ props: tooltipProps }">
+        <v-btn
+          v-bind="tooltipProps"
+          class="absolute right-[180px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
+          elevation="8"
+          :text="$t('missionPlanning.flightMode')"
+          append-icon="mdi-send"
+          style="z-index: 1002; border-radius: 0px"
+          :style="interfaceStore.globalGlassMenuStyles"
+          hide-details
+          size="small"
+          @click.stop="router.push('/')"
+        />
+      </template>
+    </v-tooltip>
+    <v-tooltip location="top center" :text="$t('map.downloadMapTiles')">
       <template #activator="{ props: tooltipProps }">
         <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
           <template #activator="{ props: menuProps }">
             <v-btn
               v-bind="{ ...menuProps, ...tooltipProps }"
               class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[133px] text-[14px]"
+              :style="interfaceStore.globalGlassMenuStyles"
               size="x-small"
               icon="mdi-download-multiple"
             />
           </template>
 
           <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-            <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+            <v-list-item class="py-0" :title="$t('map.saveVisibleEsriTiles')" @click="saveEsri" />
             <v-divider />
-            <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+            <v-list-item class="py-0" :title="$t('map.saveVisibleOSMTiles')" @click="saveOSM" />
           </v-list>
         </v-menu>
       </template>
@@ -355,6 +372,7 @@
       <template #activator="{ props: tooltipProps }">
         <v-btn
           class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[88px] text-[14px]"
+          :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
           :class="[!home ? 'active-events-on-disabled' : '']"
           :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
           icon="mdi-home-search"
@@ -370,6 +388,7 @@
       <template #activator="{ props: tooltipProps }">
         <v-btn
           class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[44px] text-[14px]"
+          :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
           :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
           :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
           icon="mdi-airplane-marker"
@@ -463,10 +482,11 @@ import { useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
-import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
+import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
@@ -506,6 +526,7 @@ import {
   ClosestSegmentInfo,
   ContextMenuTypes,
   instanceOfCockpitMission,
+  MapTileProvider,
   MissionCommand,
   MissionCommandType,
   PointOfInterest,
@@ -519,6 +540,7 @@ const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const missionEstimates = useMissionEstimates()
 const { height: windowHeight } = useWindowSize()
+const { t } = useI18n()
 
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
@@ -677,9 +699,9 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     })
     reNumberWaypoints()
 
-    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
+    openSnackbar({ variant: 'success', message: t('missionDownload.succeeded'), duration: 3000 })
   } catch (error) {
-    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
+    showDialog({ variant: 'error', title: t('missionDownload.failed'), message: error as string, timer: 5000 })
   } finally {
     loading.value = false
     fetchingMission.value = false
@@ -693,7 +715,7 @@ const zoom = ref(missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
-const waypointMarkers = ref<{ [id: string]: Marker }>({})
+const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
@@ -741,6 +763,14 @@ let measureLineEl: SVGLineElement | null = null
 let measureTextEl: HTMLDivElement | null = null
 const surveyAreaMarkers = shallowRef<Record<string, L.Marker>>({})
 const liveSurveyAreaMarker = shallowRef<L.Marker | null>(null)
+
+const glassMenuCssVars = computed(() => ({
+  '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
+  '--glass-filter': interfaceStore.globalGlassMenuStyles.backdropFilter,
+  '--glass-border': interfaceStore.globalGlassMenuStyles.border,
+  '--glass-color': interfaceStore.globalGlassMenuStyles.color,
+  '--glass-box-shadow': interfaceStore.globalGlassMenuStyles.boxShadow,
+}))
 
 const clearLiveMeasure = (): void => {
   destroyMeasureOverlay(planningMap.value || undefined)
@@ -991,7 +1021,7 @@ const clearCurrentMission = (): void => {
   waypointMarkers.value = {}
   if (missionWaypointsPolyline.value) {
     planningMap.value?.removeLayer(missionWaypointsPolyline.value)
-    missionWaypointsPolyline.value = undefined
+    missionWaypointsPolyline.value = null
   }
   clearSurveyPath()
   surveys.value = []
@@ -1704,13 +1734,13 @@ const clearSurveyCreation = (): void => {
 const deleteSelectedSurvey = (): void => {
   const surveyId = selectedSurveyId.value
   if (!surveyId) {
-    openSnackbar({ variant: 'error', message: 'No survey selected to delete.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('missionAction.noSurveyToDelete'), duration: 2000 })
     return
   }
 
   const surveyIndex = surveys.value.findIndex((s) => s.id === surveyId)
   if (surveyIndex === -1) {
-    openSnackbar({ variant: 'error', message: 'Selected survey does not exist.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('missionAction.surveyDoesNotExist'), duration: 2000 })
     return
   }
 
@@ -1757,7 +1787,7 @@ const deleteSelectedSurvey = (): void => {
     removeSurveyAreaSquareMeters(surveyId)
   }
 
-  openSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
+  openSnackbar({ variant: 'success', message: t('missionAction.surveyDeleted'), duration: 2000 })
   hideContextMenu()
   reNumberWaypoints()
 }
@@ -2037,7 +2067,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
   reader.readAsText(e.target.files[0])
 }
 
-const surveyPolygonVertexesMarkers = ref<L.Marker[]>([])
+const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
 const rawDistanceBetweenSurveyLines = ref(10)
 const rawSurveyLinesAngle = ref(0)
 const existingWaypoints = ref<Waypoint[]>([])
@@ -2304,7 +2334,7 @@ watch(isCreatingSurvey, (isCreatingNow) => {
 
 const generateWaypointsFromSurvey = (): void => {
   if (!surveyPathLayer.value) {
-    showDialog({ variant: 'error', message: 'No survey path to generate waypoints from.', timer: 2000 })
+    showDialog({ variant: 'error', message: t('missionAction.noSurveyPathToGenerateWaypoints'), timer: 2000 })
     return
   }
 
@@ -2353,36 +2383,31 @@ const generateWaypointsFromSurvey = (): void => {
     surveyLinesAngle: surveyLinesAngle.value,
     waypoints: newSurveyWaypoints,
   }
+
   addSurvey(newSurvey)
   selectedSurveyId.value = newSurvey.id
-
   newSurveyWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
+  clearSurveyPath()
+  isCreatingSurvey.value = false
+  reNumberWaypoints()
 
   const firstWaypoint = newSurveyWaypoints[0]
   const lastWaypoint = newSurveyWaypoints[newSurveyWaypoints.length - 1]
   const firstMarker = waypointMarkers.value[firstWaypoint.id]
   const lastMarker = waypointMarkers.value[lastWaypoint.id]
+
   if (firstMarker) {
-    firstMarker.getElement()?.classList.add('green-marker')
+    firstMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
   }
   if (lastMarker && lastMarker !== firstMarker) {
-    lastMarker.getElement()?.classList.add('green-marker')
+    lastMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
   }
 
   clearSurveyPath()
   isCreatingSurvey.value = false
   reNumberWaypoints()
 
-  openSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
-}
-
-// Helper function to create waypoint marker HTML with command count indicator
-const createWaypointMarkerHtml = (commandCount: number, isSelected = false): string => {
-  const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
-  return `
-    <div class="waypoint-marker-container">
-      <div class="${baseClass} waypoint-main-marker"></div>
-      ${commandCount > 1 ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
+  openSnackbar({ variant: 'success', message: t('missionAction.waypointsGeneratedFromSurvey'), duration: 1000 })
     </div>
   `
 }
@@ -2447,7 +2472,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
       coordinates: [latLng.lat, latLng.lng],
       altitude: currentWaypointAltitude.value,
       altitudeReferenceType: currentWaypointAltitudeRefType.value,
-      commands: [],
+      commands: makeDefaultNavCommands(),
     }))
 
     const firstOldWaypointIndex = missionStore.currentPlanningWaypoints.findIndex(
@@ -2470,19 +2495,18 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     updateSurvey(selectedSurveyId.value, { ...selectedSurvey.value })
 
     newWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
+    reNumberWaypoints()
 
     const firstWaypoint = newWaypoints[0]
     const lastWaypoint = newWaypoints[newWaypoints.length - 1]
     const firstMarker = waypointMarkers.value[firstWaypoint.id]
     const lastMarker = waypointMarkers.value[lastWaypoint.id]
     if (firstMarker) {
-      firstMarker.getElement()?.classList.add('green-marker')
+      firstMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
     }
     if (lastMarker && lastMarker !== firstMarker) {
-      lastMarker.getElement()?.classList.add('green-marker')
+      lastMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
     }
-
-    reNumberWaypoints()
   }
 }
 
@@ -2547,7 +2571,7 @@ const undoGenerateWaypoints = (): void => {
   const surveyId = selectedSurveyId.value
 
   if (!surveyId || !canUndo.value[surveyId] || !lastSurveyState.value[surveyId]) {
-    openSnackbar({ variant: 'error', message: 'Nothing to undo.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('missionAction.nothingToUndo'), duration: 2000 })
     undoIsInProgress.value = false
     return
   }
@@ -2638,7 +2662,7 @@ const undoGenerateWaypoints = (): void => {
   isCreatingSurvey.value = true
 
   createSurveyPath()
-  openSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
+  openSnackbar({ variant: 'success', message: t('missionAction.undoSuccessful'), duration: 1000 })
   undoIsInProgress.value = false
   removeSurveyAreaSquareMeters(surveyId)
 }
@@ -2975,7 +2999,12 @@ onMounted(async () => {
     'Esri World Imagery': esri,
   }
 
-  planningMap.value = L.map('planningMap', { layers: [osm, esri] }).setView(mapCenter.value as LatLngTuple, zoom.value)
+  const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
+
+  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
+    mapCenter.value as LatLngTuple,
+    zoom.value
+  )
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -2986,6 +3015,15 @@ onMounted(async () => {
   pane.style.zIndex = '640'
   pane.style.pointerEvents = 'none'
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
+
+  // Listen for base layer changes to save user preference
+  planningMap.value.on('baselayerchange', (event: LayersControlEvent) => {
+    const name = event.name
+    if (!name.includes(name as MapTileProvider)) {
+      return
+    }
+    missionStore.userLastMapTileProvider = event.name as MapTileProvider
+  })
 
   planningMap.value.on('moveend', () => {
     if (planningMap.value === undefined) return
@@ -3295,35 +3333,35 @@ watch(
 
 const centerHomeButtonTooltipText = computed(() => {
   if (home.value === undefined) {
-    return 'Cannot center map on home (home position undefined).'
+    return t('map.cannotCenterOnHome')
   }
   if (followerTarget.value === WhoToFollow.HOME) {
-    return 'Tracking home position. Click to stop tracking.'
+    return t('map.trackingHome')
   }
-  return 'Click once to center on home or twice to track it.'
+  return t('map.centerOnHome')
 })
 
 const centerVehicleButtonTooltipText = computed(() => {
   if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
+    return t('map.cannotCenterOnVehicleOffline')
   }
   if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
+    return t('map.cannotCenterOnVehiclePosition')
   }
   if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
+    return t('map.trackingVehicle')
   }
-  return 'Click once to center on vehicle or twice to track it.'
+  return t('map.centerOnVehicle')
 })
 
 const openPoiDialog = (): void => {
   if (cursorCoordinates.value && poiManagerRef.value) {
     poiManagerRef.value.openDialog(cursorCoordinates.value)
   } else if (!cursorCoordinates.value) {
-    showDialog({ variant: 'error', title: 'Error', message: 'Cannot place Point of Interest without map coordinates.' })
+    showDialog({ variant: 'error', title: 'Error', message: t('map.cannotPlacePOI') })
     console.error('Cannot open POI dialog without click coordinates for new POI')
   } else if (!poiManagerRef.value) {
-    showDialog({ variant: 'error', title: 'Error', message: 'POI Manager is not available.' })
+    showDialog({ variant: 'error', title: 'Error', message: t('map.poiManagerNotAvailable') })
     console.error('Cannot open POI dialog, POI Manager ref is not set.')
   }
   hideContextMenu()
@@ -3524,7 +3562,9 @@ watch(
 }
 
 .green-marker {
-  background-color: #034103aa;
+  border-radius: 50%;
+  border: 2px solid #ffffff99;
+  background-color: #034103;
 }
 
 .command-count-indicator {
@@ -3738,16 +3778,68 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 180px; /* Position to the left of the buttons */
+  right: 337px; /* Position to the left of the buttons */
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
-  padding: 8px 8px;
-  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14),
-    0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  padding: 6px 6px;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--glass-box-shadow);
+  color: var(--glass-color);
+  border: var(--glass-border);
+  font-weight: bolder;
 }
 
-:deep(.leaflet-control-zoom) {
-  bottom: 30px;
+/* Style the Leaflet zoom control */
+:deep(.leaflet-control-zoom.leaflet-bar) {
+  bottom: 33px;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--glass-box-shadow);
+  color: var(--glass-color);
+  border: var(--glass-border);
+}
+
+:deep(.leaflet-control-zoom.leaflet-bar a) {
+  background: transparent !important;
+  border: none;
+  color: var(--glass-color);
+}
+
+:deep(.leaflet-control-zoom.leaflet-bar a:hover),
+:deep(.leaflet-control-zoom.leaflet-bar a:focus) {
+  background: transparent !important;
+}
+
+/* Style the Leaflet layer provider selector */
+:deep(.leaflet-control-layers) {
+  background: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  box-shadow: var(--glass-box-shadow) !important;
+  color: var(--glass-color) !important;
+  border: var(--glass-border) !important;
+  border-radius: 4px;
+}
+
+:deep(.leaflet-control-layers-expanded) {
+  background: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  box-shadow: var(--glass-box-shadow) !important;
+  color: var(--glass-color) !important;
+  border: var(--glass-border) !important;
+}
+
+:deep(.leaflet-control-layers-list) {
+  background: transparent !important;
+  color: var(--glass-color) !important;
+}
+
+:deep(.leaflet-control-layers-selector) {
+  accent-color: var(--glass-color) !important;
+}
+
+:deep(.leaflet-control-layers label) {
+  color: var(--glass-color) !important;
 }
 </style>

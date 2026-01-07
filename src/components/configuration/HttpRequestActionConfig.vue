@@ -127,7 +127,7 @@
             required
             variant="outlined"
             density="compact"
-            placeholder="Non-dynamic value."
+            :placeholder="$t('commonPlaceholders.nonDynamicValue')"
           ></v-text-field>
         </v-form>
       </v-card-text>

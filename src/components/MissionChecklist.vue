@@ -45,7 +45,7 @@
               class="elevation-1 bg-[#FFFFFF15] hover:bg-[#FFFFFF22]"
               @click="isOnEditMode = true"
             >
-              Edit Items
+              {{ t('missionChecklist.editItems') }}
             </v-btn>
           </div>
           <div v-else class="flex w-full items-center">
@@ -56,7 +56,7 @@
               :disabled="!missionStore.showChecklistBeforeArm"
               variant="filled"
               density="compact"
-              placeholder="Type an item and press Enter"
+              :placeholder="t('missionChecklist.typeAndEnter')"
               hide-details
               class="ml-6 w-[80%]"
               append-inner-icon="mdi-plus"
@@ -76,7 +76,7 @@
                   addItem()
                 }
               "
-              >Done</v-btn
+              >{{ t('missionChecklist.done') }}</v-btn
             >
           </div>
         </div>
@@ -84,7 +84,7 @@
       <v-divider class="flex center w-[80%]" inset />
       <v-card-actions>
         <div class="flex justify-between w-full py-1 px-2 pt-3">
-          <v-btn variant="text" @click="onCancel">Cancel</v-btn>
+          <v-btn variant="text" @click="onCancel">{{ t('missionChecklist.cancel') }}</v-btn>
           <div class="flex items-center">
             <v-checkbox
               :model-value="!missionStore.showChecklistBeforeArm"
@@ -93,7 +93,7 @@
               density="compact"
               @update:model-value="(val) => (missionStore.showChecklistBeforeArm = !val)"
             />
-            <p class="text-xs text-center ml-2">Don't show this checklist again</p>
+            <p class="text-xs text-center ml-2">{{ t('missionChecklist.dontShowAgain') }}</p>
           </div>
           <v-btn
             color="#ffffff33"
@@ -112,11 +112,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
+
+const { t } = useI18n()
 
 type ChecklistItem = {
   /**

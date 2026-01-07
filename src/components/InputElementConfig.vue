@@ -169,7 +169,7 @@
                             <p class="text-[14px]">{{ `Option ${index + 1} name` }}</p>
                             <input
                               v-model="currentElement.options.layout[optionKey][index].name"
-                              placeholder="option name"
+                              :placeholder="$t('commonPlaceholders.optionName')"
                               theme="dark"
                               type="text"
                               class="p-2 w-[120px] bg-[#FFFFFF11]"
@@ -179,7 +179,7 @@
                             <p class="text-[14px]">{{ `Option ${index + 1} value` }}</p>
                             <input
                               v-model="currentElement.options.layout[optionKey][index].value"
-                              placeholder="value"
+                              :placeholder="$t('commonPlaceholders.value')"
                               theme="dark"
                               type="text"
                               class="p-2 w-[120px] bg-[#FFFFFF11]"

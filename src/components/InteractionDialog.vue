@@ -71,7 +71,7 @@
             </v-btn>
           </div>
           <div v-else class="flex w-full px-1 py-2 justify-end">
-            <v-btn size="small" variant="text" @click="handleAction(() => (internalShowDialog = false))">Close</v-btn>
+            <v-btn size="small" variant="text" @click="handleAction(() => (internalShowDialog = false))">{{ $t('common.close') }}</v-btn>
           </div>
         </template>
       </v-card-actions>

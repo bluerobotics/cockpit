@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid'
 import { createApp } from 'vue'
 
 import UserNameInputDialog from '@/components/UserNameInputDialog.vue'
+import i18n from '@/plugins/i18n'
 import vuetify from '@/plugins/vuetify'
 
 export const askForUsername = (): Promise<string | undefined> => {
@@ -21,6 +22,7 @@ export const askForUsername = (): Promise<string | undefined> => {
         mountPoint.remove()
       },
     })
+    dialogApp.use(i18n)
     dialogApp.use(vuetify)
     dialogApp.mount(mountPoint)
   })

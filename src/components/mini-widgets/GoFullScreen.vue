@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-tooltip :text="isFullScreen ? 'Exit full screen' : 'Go full screen'" location="bottom">
+    <v-tooltip :text="isFullScreen ? $t('fullscreen.exit') : $t('fullscreen.enter')" location="bottom">
       <template #activator="{ props: tooltipProps }">
         <div v-bind="tooltipProps" class="relative cursor-pointer" @click="toggleFullScreen">
           <FontAwesomeIcon :icon="fullScreenToggleIcon" size="xl text-white" />

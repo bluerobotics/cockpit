@@ -1,9 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useInteractionDialog } from '@/composables/interactionDialog'
-
-const { showDialog } = useInteractionDialog()
-
 export const constrain = (value: number, min: number, max: number): number => {
   return Math.max(Math.min(value, max), min)
 }
@@ -130,10 +126,7 @@ export const sleep = (delay: number): Promise<void> => {
  * Wait till the next tick to reload Cockpit
  * @param {number} timeout The time to wait before reloading, in milliseconds. Default value is 500 ms.
  */
-export const reloadCockpit = (timeout = 500): void => {
-  const restartMessage = `Restarting Cockpit in ${timeout / 1000} seconds...`
-  console.log(restartMessage)
-  showDialog({ message: restartMessage, variant: 'info', timer: timeout })
+export const reloadCockpit = (timeout = 3000): void => {
   setTimeout(() => location.reload(), timeout)
 }
 
@@ -299,4 +292,53 @@ export const formatDate = (date: Date): string => {
     minute: '2-digit',
     second: '2-digit',
   }).format(date)
+}
+
+/**
+ * Deserialize a serialized string
+ * @param {string} serialized The serialized string to deserialize
+ * @returns {any} The deserialized string
+ */
+export const deserialize = (serialized: string): any => {
+  try {
+    return JSON.parse(serialized)
+  } catch (error) {
+    return serialized
+  }
+}
+
+/**
+ * Try to execute a function a couple of times.
+ * If it fails, it will wait for the delay and try again.
+ * If it fails after the number of tries, it will throw an error.
+ * @template T The type of the function's return value.
+ * @param {() => Promise<T>} fn The function to execute.
+ * @param {number} times The number of times to try. Default value is 5. If value is 0, it will try until it succeeds.
+ * @param {number} delay The delay between tries in milliseconds. Default value is 1 second.
+ * @param {string} errorMessage The error message to use. Default value is 'Error while trying to execute function'.
+ * @returns {Promise<T>} The result of the function.
+ */
+export const tryACoupleOfTimes = async <T>(
+  fn: () => Promise<T>,
+  times = 5,
+  delay = 1000,
+  errorMessage?: string
+): Promise<T> => {
+  // If the function has no name, use 'function' as the name
+  const defaultErrorMessage = `Error while trying to execute function '${fn.name || 'function'}'`
+  for (let i = 0; times === 0 || i < times; i++) {
+    try {
+      return await fn()
+    } catch (error) {
+      if (times !== 0 && i >= times - 1) {
+        // If we have a limit on the number of tries, and we have reached it, throw an error
+        throw error
+      }
+      // If we have not reached the limit of tries, wait for the delay and try again
+      console.warn(`${errorMessage || defaultErrorMessage}. Will try again in ${delay}ms...`)
+      await sleep(delay)
+    }
+  }
+  // If we have reached the limit of tries, throw an error
+  throw new Error(`Failed to execute function '${fn.name || 'function'}' after ${times} tries. Will stop trying.`)
 }

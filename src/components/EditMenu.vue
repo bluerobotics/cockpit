@@ -5,7 +5,7 @@
     @click="() => emit('update:editMode', false)"
   >
     <v-btn icon="mdi-close" size="54" class="bg-[#334a5755] text-[#FFFFFFCC] text-[28px] rounded-full elevation-5" />
-    <div class="ml-2 mt-[7px] text-[26px]">Exit</div>
+    <div class="ml-2 mt-[7px] text-[26px]">{{ $t('editPanel.exit') }}</div>
   </div>
   <div v-if="editMode" class="flex fixed top-0 left-0 h-[100vh] w-[22vw] bg-[#031C2B]" />
   <div
@@ -30,7 +30,7 @@
           >
             <span
               class="wrapclass text-none 2xl:text-xl xl:text-[16px] lg:text-md text-sm 2xl:max-w-[230px] xl:max-w-[180px] max-w-[160px]"
-              >{{ store.currentProfile.name }} {{ store.currentProfile.name.endsWith('profile') ? '' : 'profile' }}
+              >{{ translateProfileName(store.currentProfile.name) }} {{ store.currentProfile.name.endsWith($t('editPanel.profile')) ? '' : $t('editPanel.profile') }}
             </span>
           </v-btn>
         </div>
@@ -60,7 +60,7 @@
               />
               <span
                 class="text-nowrap wrapclass text-left 2xl:max-w-[270px] xl:max-w-[240px] lg:max-w-[150px] max-w-[120px] mt-[1px] 2xl:text-[18px] xl:text-[18px] text-[16px]"
-                >{{ profile.name }} {{ profile.name.endsWith('profile') ? '' : 'profile' }}
+                >{{ translateProfileName(profile.name) }} {{ profile.name.endsWith($t('editPanel.profile')) ? '' : $t('editPanel.profile') }}
               </span>
             </div>
           </div>
@@ -88,7 +88,7 @@
           <v-list>
             <div class="flex justify-center max-w-[250px] px-2 gap-x-[5px] pb-2">
               <p class="whitespace-nowrap">Settings -</p>
-              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ store.currentProfile.name }}</p>
+              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ translateProfileName(store.currentProfile.name) }}</p>
             </div>
 
             <v-divider />
@@ -170,7 +170,7 @@
           class="wrapclass 2xl:w-[129px] xl:w-[108px] lg:w-[84px] 2xl:h-[85px] xl:h-[75px] lg:h-[65px] 2xl:text-[16px] xl:text-[14px] text-[11px] text-none overflow-x-hidden"
           @click="selectView(view)"
         >
-          <span class="wrapclass 2xl:max-w-[119px] xl:max-w-[100px] lg:max-w-[80px]">{{ view.name }}</span>
+          <span class="wrapclass 2xl:max-w-[119px] xl:max-w-[100px] lg:max-w-[80px]">{{ translateViewName(view.name) }}</span>
         </v-btn>
       </v-btn-toggle>
       <v-badge
@@ -192,7 +192,7 @@
         <div class="flex justify-center w-full bg-[#CBCBCB09]">
           <div class="flex w-[350px] justify-center py-[2px]">
             <p class="overflow-hidden text-[12px] text-ellipsis whitespace-nowrap opacity-60">
-              Views on {{ store.currentProfile.name }}
+              {{ $t('editPanel.viewsOn') }} {{ translateProfileName(store.currentProfile.name) }}
             </p>
           </div>
         </div>
@@ -203,7 +203,7 @@
           :class="view === store.currentView ? 'bg-[#CBCBCB64]' : 'bg-[#CBCBCB2A]'"
           @click="store.selectView(view)"
         >
-          <p class="overflow-hidden text-sm text-ellipsis ml-3 whitespace-nowrap">{{ view.name }}</p>
+          <p class="overflow-hidden text-sm text-ellipsis ml-3 whitespace-nowrap">{{ translateViewName(view.name) }}</p>
           <div class="grow" />
           <div
             class="icon-btn mdi mdi-eye"
@@ -231,7 +231,7 @@
       <div class="flex justify-center w-full bg-[#CBCBCB09]">
         <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
           <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
-            Widgets in {{ store.currentView.name }}
+            {{ $t('editPanel.widgetsIn') }} {{ translateViewName(store.currentView.name) }}
           </p>
         </div>
       </div>
@@ -248,7 +248,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Main view area
+            {{ $t('editPanel.mainViewArea') }}
             <v-badge
               :content="store.currentView.widgets.length"
               color="#4FA483"
@@ -283,7 +283,7 @@
                   />
                   <v-divider vertical />
                   <p class="ml-3 overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap">
-                    {{ widget.name }}
+                    {{ translateWidgetName(widget.name) }}
                   </p>
                   <div class="grow" />
                   <v-divider vertical class="opacity-10 mr-[2px]" />
@@ -316,7 +316,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Top Bar
+            {{ $t('editPanel.topBar') }}
             <v-badge
               :content="
                 store.miniWidgetContainersInCurrentView.reduce((count, container) => {
@@ -338,7 +338,7 @@
           >
             <div v-if="miniWidgetContainer.name.startsWith('Top')">
               <span class="w-full px-1 2xl:text-sm text-xs text-left select-none text-slate-400">{{
-                miniWidgetContainer.name
+                translateContainerName(miniWidgetContainer.name)
               }}</span>
               <div class="flex flex-col items-center w-full 2xl:px-3 overflow-x-hidden grow">
                 <TransitionGroup name="fade">
@@ -355,7 +355,7 @@
                   >
                     <div class="flex items-center justify-start w-full overflow-auto">
                       <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
-                        {{ widget.name || widget.component }}
+                        {{ translateMiniWidgetName(widget.component, widget.name) }}
                       </p>
                     </div>
                     <v-divider vertical class="opacity-10 mr-1" />
@@ -383,7 +383,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Bottom Bar
+            {{ $t('editPanel.bottomBar') }}
             <v-badge
               :content="
                 store.miniWidgetContainersInCurrentView.reduce((count, container) => {
@@ -405,7 +405,7 @@
           >
             <div v-if="miniWidgetContainer.name.startsWith('Bottom')">
               <span class="w-full px-1 2xl:text-sm text-xs text-left select-none text-slate-400">{{
-                miniWidgetContainer.name
+                translateContainerName(miniWidgetContainer.name)
               }}</span>
               <div class="flex flex-col items-center w-full 2xl:px-3 overflow-x-hidden grow">
                 <TransitionGroup name="fade">
@@ -425,7 +425,7 @@
                   >
                     <div class="flex items-center justify-start w-full overflow-auto">
                       <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
-                        {{ widget.name || widget.component }}
+                        {{ translateMiniWidgetName(widget.component, widget.name) }}
                       </p>
                     </div>
                     <v-divider vertical class="opacity-10 mr-1" />
@@ -483,7 +483,7 @@
                 >
                   <div class="flex items-center justify-start w-full overflow-auto">
                     <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
-                      {{ widget.name || widget.component }}
+                      {{ translateMiniWidgetName(widget.component, widget.name) }}
                     </p>
                   </div>
                   <v-divider vertical class="opacity-10 mr-1" />
@@ -507,33 +507,36 @@
       class="flex flex-col justify-around items-center 2xl:w-[30%] w-[25%] max-w-[240px] h-full text-white 2xl:pr-2 px-1 2xl:py-5 xl:py-4 lg:py-1"
     >
       <div>
-        <p class="2xl:text-md text-xs ml-1">Widget type:</p>
+        <p class="2xl:text-md text-xs ml-1">{{ $t('editPanel.widgetType') }}</p>
         <v-select
           v-model="widgetMode"
           theme="dark"
           variant="filled"
           density="compact"
-          :items="['Regular', 'Mini', 'Input']"
+          :items="[
+            { title: $t('editPanel.regular'), value: 'Regular' },
+            { title: $t('editPanel.mini'), value: 'Mini' },
+            { title: $t('editPanel.input'), value: 'Input' }
+          ]"
           class="bg-[#27384255] 2xl:scale-100 scale-[80%]"
           hide-details
-          @change="widgetMode = $event"
         />
       </div>
       <div class="flex flex-col items-center justify-start w-full pl-2">
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
-          To be placed on the main view area
+          {{ $t('editPanel.toMainView') }}
         </div>
-        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
+        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">{{ $t('editPanel.dragToAdd') }}</div>
         <div v-show="widgetMode === 'Mini'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
-          To be placed on the top and bottom bars
+          {{ $t('editPanel.toTopBottomBars') }}
         </div>
-        <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
+        <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">{{ $t('editPanel.dragToAdd') }}</div>
         <div v-show="widgetMode === 'Input'">
           <v-btn
             type="flat"
             class="bg-[#FFFFFF33] text-white w-[95%]"
             @click="store.addWidget(makeNewWidget(WidgetType.CollapsibleContainer), store.currentView)"
-            >Add new container
+            >{{ $t('editPanel.addNewContainer') }}
           </v-btn>
         </div>
       </div>
@@ -557,10 +560,10 @@
           v-if="widget.isExternal"
           class="absolute top-0 left-0 bg-[#135da3] text-white text-xs px-1 py-0.5 rounded-tl-md rounded-br-md"
         >
-          External
+          {{ $t('editPanel.external') }}
         </div>
 
-        <v-tooltip text="Drag to add" location="top" theme="light">
+        <v-tooltip :text="$t('editPanel.dragToAddTooltip')" location="top" theme="light">
           <template #activator="{ props: tooltipProps }">
             <div />
             <img v-bind="tooltipProps" :src="widget.icon" alt="widget-icon" class="p-4 max-h-[75%] max-w-[95%]" />
@@ -569,7 +572,7 @@
               :class="{ 'bg-[#135da3]': widget.isExternal, 'bg-[#4fa483]': !widget.isExternal }"
             >
               <span class="whitespace-normal text-center">{{
-                widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
+                $te(`widgets.${widget.name}`) ? $t(`widgets.${widget.name}`) : widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
               }}</span>
             </div>
           </template>
@@ -599,8 +602,7 @@
           class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#4FA483] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
-            miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
-            'Very generic indicator'
+            $te(`miniWidgets.${miniWidget.component}`) ? $t(`miniWidgets.${miniWidget.component}`) : (miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) || $t('miniWidgets.VeryGenericIndicator'))
           }}</span>
         </div>
       </div>
@@ -627,8 +629,7 @@
           class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#4FA483] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
-            miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
-            'Very generic indicator'
+            $te(`customWidgetElements.${miniWidget.component}`) ? $t(`customWidgetElements.${miniWidget.component}`) : miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
           }}</span>
         </div>
       </div>
@@ -692,6 +693,7 @@ import { onClickOutside, useConfirmDialog } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
 
 import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
@@ -718,6 +720,7 @@ import { getWidgetsFromBlueOS } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import {
   type Profile,
@@ -745,6 +748,73 @@ const { showDialog, closeDialog } = useInteractionDialog()
 
 const interfaceStore = useAppInterfaceStore()
 const store = useWidgetManagerStore()
+const mainVehicleStore = useMainVehicleStore()
+const { t } = useI18n()
+
+// Helper function to translate container names
+const translateContainerName = (containerName: string): string => {
+  const translationMap: Record<string, string> = {
+    'Top-left container': t('editPanel.topLeftContainer'),
+    'Top-center container': t('editPanel.topCenterContainer'),
+    'Top-right container': t('editPanel.topRightContainer'),
+    'Bottom-left container': t('editPanel.bottomLeftContainer'),
+    'Bottom-center container': t('editPanel.bottomCenterContainer'),
+    'Bottom-right container': t('editPanel.bottomRightContainer'),
+  }
+  return translationMap[containerName] || containerName
+}
+
+// Helper function to translate widget names
+const translateWidgetName = (widgetName: string): string => {
+  // Check if it's a widget type name
+  if (t(`widgets.${widgetName}`) !== `widgets.${widgetName}`) {
+    return t(`widgets.${widgetName}`)
+  }
+  // Return original name if no translation found
+  return widgetName
+}
+
+// Helper function to translate mini widget names
+const translateMiniWidgetName = (widgetComponent: string, widgetName: string): string => {
+  // Try to translate by component type first
+  if (t(`miniWidgets.${widgetComponent}`) !== `miniWidgets.${widgetComponent}`) {
+    return t(`miniWidgets.${widgetComponent}`)
+  }
+  // Try to translate by name
+  if (t(`miniWidgets.${widgetName}`) !== `miniWidgets.${widgetName}`) {
+    return t(`miniWidgets.${widgetName}`)
+  }
+  // Return original name if no translation found
+  return widgetName || widgetComponent
+}
+
+// Helper function to translate view names
+const translateViewName = (viewName: string): string => {
+  // Try direct translation
+  if (t(`views.${viewName}`) !== `views.${viewName}`) {
+    return t(`views.${viewName}`)
+  }
+  // Return original name if no translation found
+  return viewName
+}
+
+// Helper function to translate profile names
+const translateProfileName = (profileName: string): string => {
+  // Map common profile names to translation keys
+  const profileMap: Record<string, string> = {
+    'ROV default': 'editPanel.rovDefault',
+    'Boat default': 'editPanel.boatDefault',
+    'MAV default': 'editPanel.mavDefault'
+  }
+  
+  // Try mapped translation
+  if (profileMap[profileName]) {
+    return t(profileMap[profileName])
+  }
+  
+  // Return original name if no translation found
+  return profileName
+}
 
 const miniWidgetsBars = computed(() => {
   let regularContainers = store.miniWidgetContainersInCurrentView.filter(
@@ -1094,7 +1164,8 @@ useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidget
 
 const getExternalWidgetSetupInfos = async (): Promise<void> => {
   try {
-    ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS()
+    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+    ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS(vehicleAddress)
   } catch (error) {
     const errorMessage = 'Error getting info around external widgets from BlueOS.'
     openSnackbar({ message: errorMessage, variant: 'error', closeButton: true })

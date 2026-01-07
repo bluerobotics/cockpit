@@ -23,6 +23,7 @@ import { datalogger } from '@/libs/sensors-logging'
 import { isEqual, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { t } from '@/plugins/i18n'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
@@ -325,16 +326,16 @@ export const useVideoStore = defineStore('video', () => {
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {
-      showDialog({ message: 'No streams available.', variant: 'error' })
+      showDialog({ message: t('video.noStreamsAvailable'), variant: 'error' })
       return
     }
 
     if (activeStreams.value[streamName]!.mediaStream === undefined) {
-      showDialog({ message: 'Media stream not defined.', variant: 'error' })
+      showDialog({ message: t('video.mediaStreamNotDefined'), variant: 'error' })
       return
     }
     if (!activeStreams.value[streamName]!.mediaStream!.active) {
-      showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
+      showDialog({ message: t('video.mediaStreamNotActive'), variant: 'error' })
       return
     }
 
@@ -578,7 +579,7 @@ export const useVideoStore = defineStore('video', () => {
         try {
           await processor.stopProcessing()
           openSnackbar({
-            message: 'Video processing completed.',
+            message: t('video.videoProcessingCompleted'),
             duration: 2000,
             variant: 'success',
             closeButton: false,

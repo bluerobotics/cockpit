@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, screen } from 'electron'
+import { app, BrowserWindow, Menu, protocol, screen } from 'electron'
 import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
@@ -6,6 +6,7 @@ import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
+import { setupMenuService } from './services/menu'
 import { setupNetworkService } from './services/network'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
@@ -94,6 +95,7 @@ setupUserAgentService()
 setupWorkspaceService()
 setupJoystickMonitoring()
 setupVideoRecordingService()
+setupMenuService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')

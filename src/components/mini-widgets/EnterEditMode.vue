@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-tooltip :text="widgetStore.editingMode ? 'Exit edit mode' : 'Enter edit mode'" location="bottom">
+    <v-tooltip :text="widgetStore.editingMode ? $t('editMode.exit') : $t('editMode.enter')" location="bottom">
       <template #activator="{ props: tooltipProps }">
         <div v-bind="tooltipProps" class="relative cursor-pointer mr-2 scale-75" @click="toggleEditMode">
           <FontAwesomeIcon icon="fa-solid fa-pencil" size="xl" class="text-white mb-1" />

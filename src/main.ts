@@ -1,3 +1,6 @@
+// eslint-disable-next-line simple-import-sort/imports -- The settings manager must be imported before any other system, as they can depend on it
+import { settingsManager } from '@/libs/settings-management'
+
 import 'floating-vue/dist/style.css'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import '@/libs/system-logging'
@@ -23,6 +26,7 @@ import { runMigrations } from '@/utils/migrations'
 
 import App from './App.vue'
 import { contextMenu } from './directives/contextMenu'
+import i18n from './plugins/i18n'
 import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
 import router from './router'
@@ -40,7 +44,8 @@ eventTracker.capture('App started')
 
 // Initialize Sentry for error tracking
 // Only track usage statistics if the user has not opted out and the app is not in development mode
-if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry') && import.meta.env.DEV === false) {
+// @ts-ignore: import.meta.env does not exist in the types
+if (settingsManager.getKeyValue('cockpit-enable-usage-statistics-telemetry') && !import.meta.env.DEV) {
   console.log('Initializing Sentry telemetry...')
   Sentry.init({
     app,
@@ -59,8 +64,13 @@ if (window.localStorage.getItem('cockpit-enable-usage-statistics-telemetry') && 
 app.component('FontAwesomeIcon', FontAwesomeIcon)
 app.component('VueDraggableResizable', VueDraggableResizable)
 app.directive('contextmenu', contextMenu)
-app.use(router).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
+app.use(router).use(vuetify).use(createPinia()).use(i18n).use(FloatingVue).use(VueVirtualScroller)
 app.mount('#app')
+
+// Sync Electron menu language with i18n locale
+if (window.electronAPI?.updateMenuLanguage) {
+  window.electronAPI.updateMenuLanguage(i18n.global.locale.value)
+}
 
 // Initialize the logger store
 useOmniscientLoggerStore()

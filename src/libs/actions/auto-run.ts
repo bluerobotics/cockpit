@@ -1,5 +1,7 @@
 import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 
+import { settingsManager } from '../settings-management'
+
 const STORAGE_KEY = 'cockpit-actions-auto-run-options'
 
 /**
@@ -30,9 +32,9 @@ const intervalTimers: Record<string, number> = {}
  * @returns {AutoRunStorage} Object containing all action auto-run configurations
  */
 export function getAllAutoRunConfigs(): AutoRunStorage {
-  const storedConfig = localStorage.getItem(STORAGE_KEY)
-  if (!storedConfig) return {}
-  return JSON.parse(storedConfig)
+  const storedConfig = settingsManager.getKeyValue(STORAGE_KEY)
+  if (storedConfig === undefined) return {}
+  return storedConfig as AutoRunStorage
 }
 
 /**
@@ -53,7 +55,7 @@ export function getAutoRunConfig(actionId: string): AutoRunConfig | null {
 export function saveAutoRunConfig(actionId: string, config: AutoRunConfig): void {
   const allConfigs = getAllAutoRunConfigs()
   allConfigs[actionId] = config
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(allConfigs))
+  settingsManager.setKeyValue(STORAGE_KEY, allConfigs)
 
   // For interval-based configurations, start the interval immediately
   if (config.type === 'interval') {
@@ -80,7 +82,7 @@ export function removeAutoRunConfig(actionId: string): void {
   const allConfigs = getAllAutoRunConfigs()
   if (allConfigs[actionId]) {
     delete allConfigs[actionId]
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allConfigs))
+    settingsManager.setKeyValue(STORAGE_KEY, JSON.stringify(allConfigs))
   }
 
   // Clear any existing interval timer

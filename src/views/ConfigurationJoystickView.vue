@@ -1,6 +1,6 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Joystick configuration </template>
+    <template #title>{{ $t('configuration.joystick.title') }}</template>
     <template #content>
       <div
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'"
@@ -11,11 +11,11 @@
           class="px-6 pb-2 flex-centered flex-column position-relative"
           :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
-          <p class="text-base text-center font-bold mt-6 mb-4">Connect a joystick and press any key.</p>
+          <p class="text-base text-center font-bold mt-6 mb-4">{{ $t('configuration.joystick.connectJoystick') }}</p>
         </div>
         <div v-else>
           <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
-            <template #title>General settings</template>
+            <template #title>{{ $t('configuration.joystick.generalSettings') }}</template>
             <template #info>
               <div class="flex flex-col items-start px-5 font-medium">
                 <li>

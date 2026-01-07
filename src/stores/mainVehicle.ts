@@ -2,7 +2,6 @@ import { useStorage, useTimestamp } from '@vueuse/core'
 import { useThrottleFn } from '@vueuse/core'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
-import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress, defaultVehicleBatteryPack } from '@/assets/defaults'
@@ -115,7 +114,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     enabled: false,
   })
 
-  const lastConnectedVehicleId = localStorage.getItem('cockpit-last-connected-vehicle-id') || undefined
   const currentlyConnectedVehicleId = ref<string | undefined>()
 
   const lastHeartbeat = ref<Date>()
@@ -195,6 +193,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   watch(isVehicleOnline, (isOnline) => {
+    if (isOnline) {
+      dispatchEvent(new CustomEvent('vehicle-online', { detail: { vehicleAddress: globalAddress.value } }))
+    } else {
+      dispatchEvent(new CustomEvent('vehicle-offline'))
+    }
     if (isOnline) return
     currentlyConnectedVehicleId.value = undefined
   })
@@ -478,6 +481,20 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     if (enumMode !== undefined) {
       await mainVehicle.value?.setMode(enumMode)
     }
+  }
+
+  /**
+   * Get vehicle address. Waits until the vehicle address is available.
+   * @returns {Promise<string>} The vehicle address
+   */
+  async function getVehicleAddress(): Promise<string> {
+    // Wait until we have a global address
+    while (globalAddress.value === undefined) {
+      console.debug('Waiting for vehicle global address to be available...')
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+
+    return globalAddress.value
   }
 
   ConnectionManager.onMainConnection.add(() => {
@@ -854,8 +871,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const getCurrentVehicleName = async (): Promise<string | undefined> => {
     if (currentVehicleName.value) return currentVehicleName.value
     if (currentVehicleName.value === undefined) {
-      const vehicleNameResponse = await (await getVehicleName(globalAddress.value)).json()
-      currentVehicleName.value = vehicleNameResponse
+      currentVehicleName.value = await getVehicleName(globalAddress.value)
     }
     return currentVehicleName.value
   }
@@ -916,7 +932,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     webRTCSignallingURI,
     customWebRTCSignallingURI,
     defaultWebRTCSignallingURI,
-    lastConnectedVehicleId,
     currentlyConnectedVehicleId,
     cpuLoad,
     lastHeartbeat,
@@ -949,5 +964,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
     enableDatalakeVariablesFromOtherSystems,
+    getVehicleAddress,
   }
 })

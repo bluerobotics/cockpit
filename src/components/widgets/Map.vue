@@ -4,12 +4,14 @@
     v-contextmenu="handleContextMenu"
     class="page-base"
     :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
+    :style="glassMenuCssVars"
   >
     <div :id="mapId" ref="map" class="map">
       <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
         <template #activator="{ props: menuProps }">
           <v-btn
             v-show="showButtons"
+            :style="interfaceStore.globalGlassMenuStyles"
             v-bind="menuProps"
             class="absolute right-[209px] m-3 bottom-button bg-slate-50 text-[14px]"
             elevation="2"
@@ -20,17 +22,35 @@
         </template>
 
         <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-          <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+          <v-list-item class="py-0" :title="$t('map.saveVisibleEsriTiles')" @click="saveEsri" />
           <v-divider />
-          <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+          <v-list-item class="py-0" :title="$t('map.saveVisibleOSMTiles')" @click="saveOSM" />
           <v-divider />
-          <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
+          <v-list-item class="py-0" :title="$t('map.saveVisibleSeamarksTiles')" @click="saveSeamarks" />
         </v-list>
       </v-menu>
+      <v-tooltip location="top" text="Switch to Mission Planning mode">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-if="showButtons"
+            v-bind="tooltipProps"
+            class="absolute right-[265px] w-[140px] mb-[14px] bottom-button bg-slate-50 text-[12px] font-bold"
+            elevation="4"
+            text="Edit mission"
+            append-icon="mdi-map-marker-radius-outline"
+            style="z-index: 1002; border-radius: 0px"
+            :style="interfaceStore.globalGlassMenuStyles"
+            hide-details
+            size="small"
+            @click.stop="router.push('/mission-planning')"
+          />
+        </template>
+      </v-tooltip>
       <v-tooltip location="top" :text="centerHomeButtonTooltipText">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
+            :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
             class="absolute right-[166px] m-3 bottom-button bg-slate-50 text-[14px]"
             :class="!home ? 'active-events-on-disabled' : ''"
@@ -50,6 +70,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
+            :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
             class="absolute m-3 bottom-button right-[124px] bg-slate-50 text-[14px]"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
@@ -69,6 +90,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
+            :style="[interfaceStore.globalGlassMenuStyles, !vehicleStore.isVehicleOnline ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
             class="absolute m-3 bottom-button right-[82px] bg-slate-50 text-[14px]"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
@@ -85,6 +107,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
+            :style="[interfaceStore.globalGlassMenuStyles, !vehicleStore.isVehicleOnline ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
             class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50 text-[14px]"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
@@ -111,19 +134,19 @@
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Map widget settings</v-card-title>
+      <v-card-title class="text-center">{{ $t('map.mapWidgetSettings') }}</v-card-title>
       <v-card-text>
         <v-switch
           v-model="widget.options.showVehiclePath"
           class="my-1"
-          label="Show vehicle path"
+          :label="$t('map.showVehiclePath')"
           :color="widget.options.showVehiclePath ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.showCoordinateGrid"
           class="my-1"
-          label="Show coordinate grid"
+          :label="$t('map.showCoordinateGrid')"
           :color="widget.options.showCoordinateGrid ? 'white' : undefined"
           hide-details
         />
@@ -177,7 +200,7 @@
 <script setup lang="ts">
 import { useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
-import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
+import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import {
   computed,
@@ -191,7 +214,10 @@ import {
   toRefs,
   watch,
 } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
+import i18n from '@/plugins/i18n'
 import copterMarkerImage from '@/assets/arducopter-top-view.png'
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
@@ -211,7 +237,7 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { DialogActions } from '@/types/general'
-import type { PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
+import type { MapTileProvider, PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
@@ -225,6 +251,8 @@ const { showDialog, closeDialog } = useInteractionDialog()
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
+const { t } = useI18n()
+const router = useRouter()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
@@ -247,6 +275,14 @@ let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
 let seamarksSaveBtn: HTMLAnchorElement | undefined
 const downloadMenuOpen = ref(false)
+
+const glassMenuCssVars = computed(() => ({
+  '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
+  '--glass-filter': interfaceStore.globalGlassMenuStyles.backdropFilter,
+  '--glass-border': interfaceStore.globalGlassMenuStyles.border,
+  '--glass-color': interfaceStore.globalGlassMenuStyles.color,
+  '--glass-box-shadow': interfaceStore.globalGlassMenuStyles.boxShadow,
+}))
 
 const saveEsri = (): void => {
   esriSaveBtn?.click()
@@ -347,21 +383,70 @@ const overlays = {
 const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
-const zoomControl = L.control.zoom({ position: 'bottomright' })
 const layerControl = L.control.layers(baseMaps, overlays)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
+let currentZoomControl: L.Control.Zoom | undefined
+
+const updateZoomControl = () => {
+  if (!map.value) return
+  
+  // Remove old zoom control if exists
+  if (currentZoomControl) {
+    map.value.removeControl(currentZoomControl)
+    currentZoomControl = undefined
+  }
+  
+  // Only add control if buttons should be visible
+  if (!showButtons.value) return
+  
+  // Create new zoom control with current translations
+  currentZoomControl = L.control.zoom({ 
+    position: 'bottomright',
+    zoomInTitle: t('map.zoomIn'),
+    zoomOutTitle: t('map.zoomOut')
+  })
+  map.value.addControl(currentZoomControl)
+  
+  // Force update the button titles in the DOM
+  nextTick(() => {
+    const container = currentZoomControl?.getContainer()
+    if (container) {
+      const zoomInBtn = container.querySelector('.leaflet-control-zoom-in')
+      const zoomOutBtn = container.querySelector('.leaflet-control-zoom-out')
+      if (zoomInBtn) zoomInBtn.setAttribute('title', t('map.zoomIn'))
+      if (zoomOutBtn) zoomOutBtn.setAttribute('title', t('map.zoomOut'))
+    }
+  })
+}
 
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
-    map.value.addControl(zoomControl)
+    updateZoomControl()
     map.value.addControl(layerControl)
     createScaleControl()
   } else {
-    map.value.removeControl(zoomControl)
+    if (currentZoomControl) {
+      map.value.removeControl(currentZoomControl)
+    }
     map.value.removeControl(layerControl)
     removeScaleControl()
   }
+})
+
+// Watch for language changes to update zoom control
+watch(() => i18n.global.locale.value, () => {
+  // Update existing zoom control buttons' titles directly in DOM
+  nextTick(() => {
+    if (!currentZoomControl) return
+    const container = currentZoomControl.getContainer()
+    if (container) {
+      const zoomInBtn = container.querySelector('.leaflet-control-zoom-in')
+      const zoomOutBtn = container.querySelector('.leaflet-control-zoom-out')
+      if (zoomInBtn) zoomInBtn.setAttribute('title', t('map.zoomIn'))
+      if (zoomOutBtn) zoomOutBtn.setAttribute('title', t('map.zoomOut'))
+    }
+  })
 })
 
 watch(isMouseOver, () => {
@@ -440,12 +525,22 @@ const removeScaleControl = (): void => {
 onMounted(async () => {
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
+  const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
 
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
-    layers: [osm, esri, seamarks, marineProfile],
+    layers: [initialBaseLayer, seamarks, marineProfile],
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+
+  // Listen for base layer changes to save user preference
+  map.value.on('baselayerchange', (event: LayersControlEvent) => {
+    const name = event.name
+    if (!name.includes(name as MapTileProvider)) {
+      return
+    }
+    missionStore.userLastMapTileProvider = event.name as MapTileProvider
+  })
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
@@ -587,7 +682,7 @@ const deleteDownloadedTilesDialog =
           action: () => {
             ok()
             closeDialog()
-            openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
+            openSnackbar({ message: t('mapTiles.offlineTilesRemoved', { layer: layerLabel }), variant: 'info', duration: 3000 })
           },
         },
       ] as DialogActions[],
@@ -614,13 +709,13 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
     tilesTotal.value = e?._tilesforSave?.length ?? 0
     savingLayerName.value = layerName
     isSavingOfflineTiles.value = true
-    openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
+    openSnackbar({ message: t('mapTiles.savingTiles', { count: tilesTotal.value, layer: layerName }), variant: 'info', duration: 2000 })
   })
 
   layer.on('loadtileend', () => {
     tilesSaved.value += 1
     if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
-      openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
+      openSnackbar({ message: t('mapTiles.offlineTilesSaved', { layer: layerName }), variant: 'success', duration: 3000 })
       isSavingOfflineTiles.value = false
       savingLayerName.value = ''
       tilesSaved.value = 0
@@ -973,7 +1068,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
 
   try {
     await missionStore.setDefaultMapPosition(clickedLocation.value, zoom.value)
-    openSnackbar({ message: 'Default map position set', variant: 'success' })
+    openSnackbar({ message: t('mapTiles.defaultMapPositionSet'), variant: 'success' })
 
     const tempMarker = L.marker(clickedLocation.value as LatLngTuple, {
       icon: L.divIcon({
@@ -1012,7 +1107,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
     }, 1500)
   } catch (error) {
     console.error(error)
-    openSnackbar({ message: 'Failed to set default map position', variant: 'error' })
+    openSnackbar({ message: t('mapTiles.failedToSetDefaultMapPosition'), variant: 'error' })
   }
 }
 
@@ -1229,25 +1324,25 @@ const vehicleExecuteMissionButtonTooltipText = computed(() => {
 
 const centerHomeButtonTooltipText = computed(() => {
   if (home.value === undefined) {
-    return 'Cannot center map on home (home position undefined).'
+    return t('map.cannotCenterOnHome')
   }
   if (followerTarget.value === WhoToFollow.HOME) {
-    return 'Tracking home position. Click to stop tracking.'
+    return t('map.trackingHome')
   }
-  return 'Click once to center on home or twice to track it.'
+  return t('map.centerOnHome')
 })
 
 const centerVehicleButtonTooltipText = computed(() => {
   if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
+    return t('map.cannotCenterOnVehicleOffline')
   }
   if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
+    return t('map.cannotCenterOnVehiclePosition')
   }
   if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
+    return t('map.trackingVehicle')
   }
-  return 'Click once to center on vehicle or twice to track it.'
+  return t('map.centerOnVehicle')
 })
 
 // POI Marker Management Functions for Map Widget
@@ -1499,16 +1594,68 @@ watch(
 :deep(.leaflet-control-scale) {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
-  right: 260px; /* Position to the left of the buttons */
+  margin-bottom: 12px;
+  right: 407px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
-  padding: 8px 8px;
-  margin-bottom: 12px;
-  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14),
-    0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  padding: 6px 6px;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--glass-box-shadow);
+  color: var(--glass-color);
+  border: var(--glass-border);
+  font-weight: bolder;
 }
 
-:deep(.leaflet-control-zoom) {
+/* Style the Leaflet zoom control */
+:deep(.leaflet-control-zoom.leaflet-bar) {
   bottom: v-bind('bottomButtonsDisplacement');
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--glass-box-shadow);
+  color: var(--glass-color);
+  border: var(--glass-border);
+}
+
+:deep(.leaflet-control-zoom.leaflet-bar a) {
+  background: transparent !important;
+  border: none;
+  color: var(--glass-color);
+}
+
+:deep(.leaflet-control-zoom.leaflet-bar a:hover),
+:deep(.leaflet-control-zoom.leaflet-bar a:focus) {
+  background: transparent !important;
+}
+
+/* Style the Leaflet layer provider selector */
+:deep(.leaflet-control-layers) {
+  background: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  box-shadow: var(--glass-box-shadow) !important;
+  color: var(--glass-color) !important;
+  border: var(--glass-border) !important;
+  border-radius: 4px;
+}
+
+:deep(.leaflet-control-layers-expanded) {
+  background: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter) !important;
+  box-shadow: var(--glass-box-shadow) !important;
+  color: var(--glass-color) !important;
+  border: var(--glass-border) !important;
+}
+
+:deep(.leaflet-control-layers-list) {
+  background: transparent !important;
+  color: var(--glass-color) !important;
+}
+
+:deep(.leaflet-control-layers-selector) {
+  accent-color: var(--glass-color) !important;
+}
+
+:deep(.leaflet-control-layers label) {
+  color: var(--glass-color) !important;
 }
 </style>

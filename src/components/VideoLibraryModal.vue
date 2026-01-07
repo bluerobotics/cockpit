@@ -74,7 +74,7 @@
                 >
                   <v-icon class="text-[18px]">mdi-close</v-icon>
                 </div>
-                <div class="text-sm">Close</div>
+                <div class="text-sm">{{ t('videoLibrary.close') }}</div>
               </button>
             </div>
           </div>
@@ -830,6 +830,7 @@
 <script setup lang="ts">
 import * as Hammer from 'hammerjs'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
@@ -841,6 +842,8 @@ import { useVideoStore } from '@/stores/video'
 import { SnapshotLibraryFile } from '@/types/snapshot'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
 import { videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
+
+const { t } = useI18n()
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
@@ -931,8 +934,8 @@ const getVideoCardClasses = (video: VideoLibraryFile): string => {
 }
 
 const menuButtons = [
-  { name: 'Videos', icon: 'mdi-video-outline', selected: true, disabled: false, tooltip: '' },
-  { name: 'Snapshots', icon: 'mdi-image-outline', selected: false, disabled: false, tooltip: '' },
+  { name: t('videoLibrary.videos'), icon: 'mdi-video-outline', selected: true, disabled: false, tooltip: '' },
+  { name: t('videoLibrary.snapshots'), icon: 'mdi-image-outline', selected: false, disabled: false, tooltip: '' },
 ]
 
 const videoSubTabs = [

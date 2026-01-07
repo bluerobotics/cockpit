@@ -113,17 +113,23 @@ export const useAlertStore = defineStore('alert', () => {
     availableAlertSpeechVoices.map((v) => ({ value: v.name, name: `${v.name} (${v.lang})` }))
   )
 
+  // Track the index of the last alert that finished being spoken
+  const lastSpokenAlertIndex = ref(0)
+
   /**
    * Speaks a text out loud using the browsers TTS engine
-   * @param {string} text string
+   * @param {string} text - The text to speak
+   * @param {number} alertIndex - The index of the alert being spoken
+   * @param {boolean} muted - If true, speech will be silent (volume 0) but still run for timing purposes
    */
-  function speak(text: string): void {
+  function speak(text: string, alertIndex: number, muted = false): void {
     if (!synth) {
       console.warn('No speechSynthesis available')
+      lastSpokenAlertIndex.value = alertIndex
       return
     }
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.volume = Math.min(Math.max(alertVolume.value, 0), 1)
+    utterance.volume = muted ? 0 : Math.min(Math.max(alertVolume.value, 0), 1)
     const voice = availableAlertSpeechVoices.find((v) => v.name === selectedAlertSpeechVoiceName.value)
     if (voice) {
       utterance.voice = voice
@@ -132,22 +138,23 @@ export const useAlertStore = defineStore('alert', () => {
     utterance_cache.push(utterance)
     utterance.onend = function () {
       delete utterance_cache[utterance_cache.indexOf(utterance)]
+      lastSpokenAlertIndex.value = alertIndex
     }
     utterance.onerror = function (event) {
       console.error(`SpeechSynthesisUtterance error: ${event.error}`)
+      lastSpokenAlertIndex.value = alertIndex
     }
     synth.speak(utterance)
   }
 
   watch(alerts, () => {
-    const lastAlert = alerts.slice(-1)[0]
+    const lastAlertIndex = alerts.length - 1
+    const lastAlert = alerts[lastAlertIndex]
     const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === lastAlert.level)
-    if (
+    const shouldMute =
       !enableVoiceAlerts.value ||
       ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !lastAlert.message.startsWith('#'))
-    )
-      return
-    speak(lastAlert.message)
+    speak(lastAlert.message, lastAlertIndex, shouldMute)
   })
 
   return {
@@ -166,5 +173,6 @@ export const useAlertStore = defineStore('alert', () => {
     neverShowArmedMenuWarning,
     skipArmedMenuWarningThisSession,
     alertVolume,
+    lastSpokenAlertIndex,
   }
 })
