@@ -7,7 +7,12 @@
     :leave-from-class="leaveFromClass"
     :leave-to-class="leaveToClass"
   >
-    <div v-if="interfaceStore.isConfigPanelVisible" class="fixed shadow-lg" :class="panelPositionClass">
+    <div
+      v-if="interfaceStore.isConfigPanelVisible"
+      class="fixed shadow-lg"
+      :class="panelPositionClass"
+      :style="panelPositionStyle"
+    >
       <v-btn
         v-if="!hideButton"
         icon
@@ -24,11 +29,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineProps } from 'vue'
+import { computed } from 'vue'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 
 const interfaceStore = useAppInterfaceStore()
+const widgetStore = useWidgetManagerStore()
 
 const props = defineProps<{
   /**
@@ -80,7 +87,7 @@ const leaveToClass = computed(() => {
 const panelPositionClass = computed(() => {
   switch (props.position) {
     case 'right':
-      return 'right-0 top-0 bottom-0 w-64'
+      return 'right-0 bottom-0 w-64'
     case 'bottom':
       return 'left-0 right-0 bottom-0 h-64'
     case 'top':
@@ -88,6 +95,30 @@ const panelPositionClass = computed(() => {
     case 'left':
     default:
       return 'left-0 top-0 bottom-0 w-64'
+  }
+})
+
+const panelPositionStyle = computed<Record<string, string>>((): Record<string, string> => {
+  const topPx = `${widgetStore.currentTopBarHeightPixels}px`
+  const bottomPx = `${widgetStore.currentBottomBarHeightPixels}px`
+
+  switch (props.position) {
+    case 'left':
+    case 'right':
+      return {
+        top: topPx,
+        bottom: bottomPx,
+        height: `calc(100% - ${widgetStore.currentTopBarHeightPixels}px - ${widgetStore.currentBottomBarHeightPixels}px)`,
+      }
+
+    case 'bottom':
+      return {
+        bottom: bottomPx,
+        height: `calc(16rem + ${widgetStore.currentBottomBarHeightPixels}px)`,
+      }
+
+    default:
+      return {}
   }
 })
 </script>
