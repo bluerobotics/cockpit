@@ -1,5 +1,8 @@
 <template>
-  <div class="flex flex-col h-full w-full justify-start" :style="interfaceStore.globalGlassMenuStyles">
+  <div
+    class="flex flex-col h-full w-full justify-start"
+    :style="[interfaceStore.globalGlassMenuStyles, { boxShadow: '-6px 0 8px -2px #00000033' }]"
+  >
     <ExpansiblePanel
       mark-expanded
       compact
@@ -11,7 +14,7 @@
     >
       <template #title>
         <p class="ml-10 text-center text-[13px] font-normal">
-          {{ selectedWaypoint.id === 'home' ? 'Home' : `Waypoint  parameters` }}
+          {{ selectedWaypoint.id === 'home' ? 'Home' : `Waypoint parameters` }}
         </p>
       </template>
       <template #content>
