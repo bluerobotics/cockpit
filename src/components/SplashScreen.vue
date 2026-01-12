@@ -1,7 +1,7 @@
 <template>
   <div>
     <img
-      class="fixed w-[100vw] h-[100vh] top-0 left-0 z-[9990] filter brightness-[80%]"
+      class="fixed inset-0 w-full h-full object-cover object-center z-[9990] filter brightness-[80%]"
       :src="splashBackground"
       alt="Background"
     />
@@ -52,23 +52,33 @@
       </div>
     </div>
     <div
-      class="fixed w-[70vw] h-[55vh] top-1/2 left-1/2 rounded-[20px] transform -translate-x-1/2 -translate-y-1/2 z-[9992]"
-      :style="[interfaceStore.globalGlassMenuStyles, { border: '1px solid #ffffff55' }]"
+      class="fixed top-1/2 left-1/2 rounded-[20px] transform -translate-x-1/2 -translate-y-1/2 z-[9992]"
+      :style="[
+        interfaceStore.globalGlassMenuStyles,
+        {
+          border: '1px solid #ffffff55',
+          width: 'min(70vw, 90vw)',
+          maxWidth: '1200px',
+          aspectRatio: '70 / 35',
+          height: 'auto',
+          maxHeight: '90vh',
+        },
+      ]"
     >
       <div
-        class="relative flex flex-col w-full h-[80%] rounded-tr-[20px] rounded-tl-[20px] items-center justify-center elevation-7 border-b-[1px] border-[#ffffff33] bg-[#FFFFFF11] px-8"
+        class="relative flex flex-col w-full h-[80%] rounded-tr-[20px] rounded-tl-[20px] items-center justify-center elevation-7 border-b-[1px] border-[#ffffff33] bg-[#FFFFFF11] px-[8%] py-[2%]"
       >
         <div class="relative h-[55%] -ml-[1vw] z-[9993] object-contain brightness-125">
           <img :src="cockpitLogoName" class="h-full" alt="Cockpit Logo" />
           <img
             v-if="!isElectron()"
             :src="lite"
-            class="w-[16vh] absolute right-8 -bottom-12 rotate-[-20deg]"
+            class="w-[16%] absolute right-[3%] -bottom-[22%] rotate-[-20deg]"
             alt="Cockpit-lite"
           />
         </div>
         <img
-          class="absolute top-[2vh] left-[2vh] w-[15%] z-[9993]"
+          class="absolute top-[5%] left-[2%] w-[15%] z-[9993]"
           :src="blueRoboticsWhiteNameLogo"
           alt="Blue Robotics Logo"
         />
