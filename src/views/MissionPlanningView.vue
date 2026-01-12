@@ -339,7 +339,6 @@
           elevation="8"
           text="Flight mode"
           append-icon="mdi-send"
-          style="z-index: 1002; border-radius: 0px"
           :style="interfaceStore.globalGlassMenuStyles"
           hide-details
           size="small"
