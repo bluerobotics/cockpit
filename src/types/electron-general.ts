@@ -3,9 +3,9 @@
  */
 export interface ElectronLog {
   /**
-   * The log file content
+   * The size of the log file in bytes
    */
-  content: string
+  size: number
   /**
    * The path to the log file
    */

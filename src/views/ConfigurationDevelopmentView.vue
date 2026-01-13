@@ -109,7 +109,7 @@ import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { type SystemLog, cockpitSytemLogsDB, systemLogDateTimeFormat } from '@/libs/system-logging'
-import { isElectron } from '@/libs/utils'
+import { formatBytes, isElectron } from '@/libs/utils'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
@@ -123,7 +123,7 @@ interface SystemLogsData {
   name: string
   initialTime: string
   initialDate: string
-  nEvents: number
+  size: string
 }
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -134,7 +134,7 @@ const headers = [
   { title: 'Name', value: 'name' },
   { title: 'Time (initial)', value: 'initialTime' },
   { title: 'Date (initial)', value: 'initialDate' },
-  { title: 'events', value: 'nEvents' },
+  { title: 'Size', value: 'size' },
   { title: 'Download', value: 'actions' },
 ]
 
@@ -154,7 +154,7 @@ const loadElectronLogs = async (): Promise<void> => {
         name: log.path,
         initialTime: log.initialTime,
         initialDate: log.initialDate,
-        nEvents: log.content.split('\n').filter((line) => line.trim()).length,
+        size: formatBytes(log.size),
       }))
       systemLogsData.value = getSortedLogs(logs)
     }
@@ -164,13 +164,15 @@ const loadElectronLogs = async (): Promise<void> => {
 }
 
 const loadIndexedDBLogs = async (): Promise<void> => {
-  const logs = []
+  const logs: SystemLogsData[] = []
   await cockpitSytemLogsDB.iterate((log: SystemLog, logName) => {
+    // Estimate size based on JSON serialization of events
+    const estimatedSize = JSON.stringify(log.events).length
     logs.push({
       name: logName,
       initialTime: log.initialTime,
       initialDate: log.initialDate,
-      nEvents: log.events.length,
+      size: formatBytes(estimatedSize),
     })
   })
   systemLogsData.value = getSortedLogs(logs)
