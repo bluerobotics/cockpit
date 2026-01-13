@@ -2834,6 +2834,20 @@ onMounted(() => {
 
 const onMapClick = (e: L.LeafletMouseEvent): void => {
   hideContextMenu()
+  const oldWaypoint = selectedWaypoint.value
+  if (oldWaypoint) {
+    const oldMarker = waypointMarkers.value[oldWaypoint.id]
+    if (oldMarker) {
+      oldMarker.setIcon(
+        L.divIcon({
+          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          className: 'waypoint-marker-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        })
+      )
+    }
+  }
 
   if (interfaceStore.configPanelVisible) {
     selectedWaypoint.value = undefined
@@ -3567,6 +3581,9 @@ watch(
 .selected-marker {
   border: 2px solid #ffff0099;
   background-color: #1e498f;
+  box-shadow: 0 0 5px 2px rgba(255, 235, 59, 0.2), 0 0 18px 8px rgba(255, 193, 7, 0.12);
+  filter: drop-shadow(0 0 6px rgba(255, 235, 59, 0.1));
+  outline: 1px solid rgba(255, 235, 59, 0.1);
 }
 
 .green-marker {
