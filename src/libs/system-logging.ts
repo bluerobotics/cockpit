@@ -64,7 +64,7 @@ const sendLogToElectron = (level: string, message: string): void => {
 
 const enableSystemLogging = settingsManager.getKeyValue(systemLoggingEnablingKey)
 
-if (enableSystemLogging === 'true') {
+if (enableSystemLogging) {
   const isRunningInElectron = isElectron()
 
   console.log(`
