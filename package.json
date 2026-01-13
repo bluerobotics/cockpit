@@ -168,7 +168,7 @@
     "artifactName": "${productName}-${os}-${arch}-${version}.${ext}",
     "mac": {
       "category": "public.app-category.utilities",
-      "icon": "public/pwa-512x512.png",
+      "icon": "public/icon-mac-512x512.png",
       "hardenedRuntime": true,
       "entitlements": "./src/assets/entitlements.mac.plist",
       "entitlementsInherit": "./src/assets/entitlements.mac.plist"
