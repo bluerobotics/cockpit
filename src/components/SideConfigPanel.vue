@@ -25,6 +25,17 @@
       </v-btn>
       <slot></slot>
     </div>
+    <v-btn
+      v-else-if="!hideButton"
+      icon
+      size="x-small"
+      variant="text"
+      class="reopen_btn bg-[#00000066] text-white elevation-2"
+      :class="reopenPositionClass"
+      @click="openPanel"
+    >
+      <v-icon class="text-[18px]">{{ `mdi-arrow-${oppositePosition}` }}</v-icon>
+    </v-btn>
   </transition>
 </template>
 
@@ -51,6 +62,38 @@ const props = defineProps<{
 const closePanel = (): void => {
   interfaceStore.configPanelVisible = false
 }
+
+const openPanel = (): void => {
+  interfaceStore.configPanelVisible = true
+}
+
+const oppositePosition = computed(() => {
+  switch (props.position) {
+    case 'right':
+      return 'left'
+    case 'bottom':
+      return 'up'
+    case 'top':
+      return 'down'
+    case 'left':
+    default:
+      return 'right'
+  }
+})
+
+const reopenPositionClass = computed(() => {
+  switch (props.position) {
+    case 'right':
+      return 'right-0 top-1/2 -translate-y-1/2'
+    case 'bottom':
+      return 'bottom-0 left-1/2 -translate-x-1/2'
+    case 'top':
+      return 'top-0 left-1/2 -translate-x-1/2'
+    case 'left':
+    default:
+      return 'left-0 top-1/2 -translate-y-1/2'
+  }
+})
 
 const enterActiveClass = 'transition-transform duration-500 ease-in-out'
 const leaveActiveClass = 'transition-transform duration-0 ease-in-out'
@@ -133,5 +176,10 @@ const panelPositionStyle = computed<Record<string, string>>((): Record<string, s
   z-index: 500;
   position: absolute;
   margin-top: 3px;
+}
+.reopen_btn {
+  z-index: 500;
+  position: fixed;
+  border-radius: 4px;
 }
 </style>
