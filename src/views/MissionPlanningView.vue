@@ -2416,10 +2416,12 @@ const generateWaypointsFromSurvey = (): void => {
 }
 
 // Helper function to create waypoint marker HTML with command count indicator
-const createWaypointMarkerHtml = (commandCount: number, isSelected = false): string => {
+const createWaypointMarkerHtml = (commandCount: number, isSelected = false, isLarge = false): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
+  const sizeClass = isLarge ? 'wp-large-number' : ''
+
   return `
-    <div class="waypoint-marker-container">
+    <div class="waypoint-marker-container ${sizeClass}">
       <div class="${baseClass} waypoint-main-marker"></div>
       ${commandCount > 1 ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
     </div>
@@ -2436,15 +2438,18 @@ const reNumberWaypoints = (): void => {
 
       // Update marker icon to show command count
       const isSelected = selectedWaypoint.value?.id === wp.id
+      const isLargeNumber = cumulativeCommandCount >= 100
+
       marker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(wp.commands.length, isSelected),
+          html: createWaypointMarkerHtml(wp.commands.length, isSelected, isLargeNumber),
           className: 'waypoint-marker-icon',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          iconSize: isLargeNumber ? [28, 28] : [24, 24],
+          iconAnchor: isLargeNumber ? [14, 14] : [12, 12],
         })
       )
     }
+
     // Add the number of commands this waypoint has for the next waypoint's number
     cumulativeCommandCount += wp.commands.length
     refreshSurveyEntryExitMarkers()
@@ -3548,8 +3553,18 @@ watch(
 
 .waypoint-marker-container {
   position: relative;
-  width: 24px;
-  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.waypoint-marker-container.wp-large-number .waypoint-main-marker {
+  width: 25px;
+  height: 25px;
+  margin-top: -1px;
+  margin-left: -1px;
 }
 
 .waypoint-main-marker {
