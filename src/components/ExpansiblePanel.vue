@@ -108,8 +108,10 @@
       interfaceStore.isOnPhoneScreen ? 'px-1' : 'px-2',
     ]"
   >
-    <slot name="content"></slot>
-    <v-divider v-if="!noBottomDivider" centered class="opacity-10 border-[#fafafa] w-full" />
+    <div ref="contentInner">
+      <slot name="content"></slot>
+      <v-divider v-if="!noBottomDivider" centered class="opacity-10 border-[#fafafa] w-full" />
+    </div>
   </div>
 </template>
 
@@ -174,6 +176,7 @@ const isChevronInverted = ref(props.invertChevron ?? false)
 const isElevationEffect = ref(props.elevationEffect ?? false)
 
 const content = ref<HTMLElement | null>(null)
+const contentInner = ref<HTMLElement | null>(null)
 const infoContent = ref<HTMLElement | null>(null)
 const warningContent = ref<HTMLElement | null>(null)
 const animateWarning = ref(true)
@@ -184,8 +187,8 @@ const contentResizeObserver = ref<ResizeObserver | null>(null)
 const emit = defineEmits(['update:isExpanded'])
 
 const updateContentMaxHeight = (): void => {
-  if (!content.value || !isPanelExpanded.value) return
-  const newHeight = content.value.scrollHeight
+  if (!content.value || !contentInner.value || !isPanelExpanded.value) return
+  const newHeight = contentInner.value.scrollHeight
   if (!newHeight) return
   contentHeight.value = newHeight
   content.value.style.maxHeight = newHeight + 'px'
@@ -225,13 +228,13 @@ watch(
 )
 
 watch(isPanelExpanded, (newValue) => {
-  if (!content.value) return
+  if (!content.value || !contentInner.value) return
   if (newValue) {
-    const targetHeight = content.value.scrollHeight || contentHeight.value || 0
+    const targetHeight = contentInner.value.scrollHeight || contentHeight.value
     contentHeight.value = targetHeight
     content.value.style.maxHeight = targetHeight + 'px'
   } else {
-    const currentHeight = content.value.scrollHeight || contentHeight.value || 0
+    const currentHeight = contentInner.value.scrollHeight || contentHeight.value || 0
     contentHeight.value = currentHeight
     content.value.style.maxHeight = currentHeight + 'px'
     setTimeout(() => {
@@ -284,11 +287,11 @@ const setupSlotObservers = (): void => {
 }
 
 onMounted(() => {
-  if (content.value) {
+  if (content.value && contentInner.value) {
     if (!isPanelExpanded.value) {
       content.value.style.maxHeight = '0px'
     } else {
-      contentHeight.value = content.value.scrollHeight
+      contentHeight.value = contentInner.value.scrollHeight
       content.value.style.maxHeight = contentHeight.value + 'px'
     }
     contentResizeObserver.value = new ResizeObserver(() => {
@@ -296,7 +299,7 @@ onMounted(() => {
         updateContentMaxHeight()
       }
     })
-    contentResizeObserver.value.observe(content.value)
+    contentResizeObserver.value.observe(contentInner.value)
   }
   if (infoContent.value && !isInfoOpen.value) {
     infoContent.value.style.maxHeight = '0px'
