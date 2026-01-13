@@ -423,7 +423,7 @@ const resetAllCockpitSettings = (): void => {
           localStorage.clear()
           openSnackbar({ message: 'All settings have been reset to default values.', variant: 'success' })
           closeDialog()
-          reloadCockpitAndWarnUser(3000)
+          reloadCockpitAndWarnUser()
         },
       },
     ],
