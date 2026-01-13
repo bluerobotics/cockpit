@@ -3,7 +3,7 @@
     <div class="relative flex items-start justify-start">
       <div class="dial-container">
         <div class="compass">
-          <div class="wind-direction-dial-container" @mousedown="startDrag">
+          <div class="wind-direction-dial-container" @pointerdown="startDrag">
             <div class="dial-arrow" :style="{ transform: `rotate(${rotationAngle}deg)` }">
               <v-icon class="text-[90px] scale-x-[.4]">mdi-arrow-up-thin</v-icon>
             </div>
@@ -47,6 +47,8 @@ const emit = defineEmits<{
 const rotationAngle = ref(props.angle)
 const hovering = ref(false)
 const polygonStateEdit = ref(props.polygonState || false)
+const activeHandleDrag = ref<((e: PointerEvent) => void) | null>(null)
+const activeStopDrag = ref<((e: PointerEvent) => void) | null>(null)
 
 watch(
   () => props.angle,
@@ -56,21 +58,28 @@ watch(
 )
 
 const updateLinesAngleOnParent = (): void => {
-  if (props.autoUpdate && !polygonStateEdit.value && rotationAngle.value) {
+  if (props.autoUpdate && !polygonStateEdit.value && rotationAngle.value !== undefined) {
     onRegenerateSurveyWaypoints(rotationAngle.value)
   }
   if (polygonStateEdit.value) {
-    onSurveyLinesAngleChange(rotationAngle.value || 0)
+    onSurveyLinesAngleChange(rotationAngle.value ?? 0)
   }
 }
 
-const startDrag = (event: MouseEvent): void => {
+const startDrag = (event: PointerEvent): void => {
   hovering.value = true
-  event.preventDefault()
-  const target = event.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
 
-  const handleDrag = (moveEvent: MouseEvent): void => {
+  if (event.cancelable) event.preventDefault()
+  const target = event.currentTarget as HTMLElement
+
+  try {
+    target.setPointerCapture(event.pointerId)
+  } catch {
+    console.warn('Pointer capture not supported')
+  }
+
+  const handleDrag = (moveEvent: PointerEvent): void => {
+    const rect = target.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
     const centerY = rect.top + rect.height / 2
     const dx = moveEvent.clientX - centerX
@@ -84,13 +93,25 @@ const startDrag = (event: MouseEvent): void => {
 
   const stopDrag = (): void => {
     hovering.value = false
-    document.removeEventListener('mousemove', handleDrag)
-    document.removeEventListener('mouseup', stopDrag)
+
+    if (activeHandleDrag.value) document.removeEventListener('pointermove', activeHandleDrag.value)
+    if (activeStopDrag.value) {
+      document.removeEventListener('pointerup', activeStopDrag.value)
+      document.removeEventListener('pointercancel', activeStopDrag.value)
+    }
+
+    activeHandleDrag.value = null
+    activeStopDrag.value = null
+
     updateLinesAngleOnParent()
   }
 
-  document.addEventListener('mousemove', handleDrag)
-  document.addEventListener('mouseup', stopDrag)
+  activeHandleDrag.value = handleDrag
+  activeStopDrag.value = stopDrag
+
+  document.addEventListener('pointermove', handleDrag, { passive: false })
+  document.addEventListener('pointerup', stopDrag)
+  document.addEventListener('pointercancel', stopDrag)
 }
 
 const getCardinalDirection = (angle: number): string => {
@@ -127,8 +148,14 @@ const onSurveyLinesAngleChange = (newAngle: number): void => {
 }
 
 onUnmounted(() => {
-  document.removeEventListener('mousemove', startDrag)
-  document.removeEventListener('mouseup', startDrag)
+  if (activeHandleDrag.value) document.removeEventListener('pointermove', activeHandleDrag.value)
+  if (activeStopDrag.value) {
+    document.removeEventListener('pointerup', activeStopDrag.value)
+    document.removeEventListener('pointercancel', activeStopDrag.value)
+  }
+  activeHandleDrag.value = null
+  activeStopDrag.value = null
+
   hovering.value = false
 })
 </script>
@@ -168,6 +195,7 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   user-select: none;
+  touch-action: none;
 }
 
 .dial-arrow {
