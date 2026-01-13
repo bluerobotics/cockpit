@@ -24,7 +24,7 @@
               color="white"
               hide-details
               class="min-w-[155px]"
-              @update:model-value="reloadCockpitAndWarnUser"
+              @update:model-value="reloadCockpitAndWarnUser()"
             />
             <v-switch
               v-model="devStore.enableUsageStatisticsTelemetry"
@@ -32,7 +32,7 @@
               color="white"
               hide-details
               class="min-w-[155px]"
-              @update:model-value="reloadCockpitAndWarnUser"
+              @update:model-value="reloadCockpitAndWarnUser()"
             />
             <v-switch
               v-model="devStore.enableSystemLogging"
@@ -40,7 +40,7 @@
               color="white"
               hide-details
               class="min-w-[155px]"
-              @update:model-value="reloadCockpitAndWarnUser"
+              @update:model-value="reloadCockpitAndWarnUser()"
             />
           </div>
           <div class="flex flex-row w-full justify-start gap-x-[40px]">

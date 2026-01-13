@@ -366,7 +366,7 @@ const setGlobalAddress = async (): Promise<void> => {
 
   // Temporary solution to actually set the address and connect the vehicle, since this is non-reactive today.
   // TODO: Modify the store variables to be reactive.
-  reloadCockpitAndWarnUser(3000)
+  reloadCockpitAndWarnUser()
 }
 
 const resetGlobalAddress = async (): Promise<void> => {
@@ -456,7 +456,7 @@ const addWebRTCConnection = async (conn: Connection.URI): Promise<void> => {
   // Temporary solution to actually set WebRTC URI, since right now we cannot just make reactive because streams will
   // be kept open.
   // TODO: handle video stream re connection
-  reloadCockpitAndWarnUser(3000)
+  reloadCockpitAndWarnUser()
 }
 
 watch(
@@ -539,7 +539,7 @@ const updateWebRtcConfiguration = (): void => {
   try {
     const newConfig = JSON.parse(customRtcConfiguration.value)
     mainVehicleStore.customWebRTCConfiguration.data = newConfig
-    reloadCockpitAndWarnUser(3000)
+    reloadCockpitAndWarnUser()
   } catch (error) {
     alert(`Could not update WebRTC configuration. ${error}.`)
   }
