@@ -1028,6 +1028,7 @@ const clearCurrentMission = (): void => {
   lastSelectedSurveyId.value = ''
   canUndo.value = {}
   lastSurveyState.value = {}
+  interfaceStore.configPanelVisible = false
   clearLiveMeasure()
   clearAllSurveyAreas()
 }
@@ -1876,36 +1877,6 @@ watch(
   { immediate: true, deep: true }
 )
 
-// Watches for changes in the selected waypoint and updates marker accordingly
-watch(selectedWaypoint, (newWaypoint, oldWaypoint) => {
-  if (oldWaypoint) {
-    const oldMarker = waypointMarkers.value[oldWaypoint.id]
-    if (oldMarker) {
-      oldMarker.setIcon(
-        L.divIcon({
-          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
-          className: 'waypoint-marker-icon',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        })
-      )
-    }
-  }
-  if (newWaypoint) {
-    const newMarker = waypointMarkers.value[newWaypoint.id]
-    if (newMarker) {
-      newMarker.setIcon(
-        L.divIcon({
-          html: createWaypointMarkerHtml(newWaypoint.commands.length, true),
-          className: 'waypoint-marker-icon',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        })
-      )
-    }
-  }
-})
-
 watch(zoom, (newZoom, oldZoom) => {
   if (newZoom === oldZoom) return
   planningMap.value?.setZoom(zoom.value)
@@ -1944,7 +1915,9 @@ const addWaypoint = (
     isDraggingMarker.value = false
   })
   newMarker.on('contextmenu', (e: L.LeafletMouseEvent) => {
+    const oldId = selectedWaypoint.value?.id
     selectedWaypoint.value = waypoint
+    applySelectedWaypointMarkerVisual(waypoint.id, oldId)
     contextMenuType.value = 'waypoint'
     currentCursorGeoCoordinates.value = [e.latlng.lat, e.latlng.lng]
     showContextMenu(e)
@@ -2242,6 +2215,18 @@ const createSurveyPath = (): void => {
   }
 }
 
+watch(
+  () => interfaceStore.configPanelVisible,
+  async (isVisible, wasVisible) => {
+    if (!isVisible || wasVisible) return
+
+    await nextTick()
+
+    const currentId = selectedWaypoint.value?.id
+    if (currentId) applySelectedWaypointMarkerVisual(currentId, undefined)
+  }
+)
+
 // Watch for changes in distanceBetweenSurveyLines and surveyLinesAngle
 watch([distanceBetweenSurveyLines, surveyLinesAngle], () => createSurveyPath())
 
@@ -2331,6 +2316,30 @@ watch(isCreatingSurvey, (isCreatingNow) => {
   }
 })
 
+const refreshSurveyEntryExitMarkers = (): void => {
+  Object.values(waypointMarkers.value).forEach((marker) => {
+    marker.getElement()?.querySelector('.waypoint-main-marker')?.classList.remove('green-marker')
+  })
+
+  surveys.value.forEach((survey) => {
+    const firstWp = survey.waypoints[0]
+    const lastWp = survey.waypoints.at(-1)
+
+    if (firstWp) {
+      waypointMarkers.value[firstWp.id]
+        ?.getElement()
+        ?.querySelector('.waypoint-main-marker')
+        ?.classList.add('green-marker')
+    }
+    if (lastWp && lastWp !== firstWp) {
+      waypointMarkers.value[lastWp.id]
+        ?.getElement()
+        ?.querySelector('.waypoint-main-marker')
+        ?.classList.add('green-marker')
+    }
+  })
+}
+
 const generateWaypointsFromSurvey = (): void => {
   if (!surveyPathLayer.value) {
     showDialog({ variant: 'error', message: 'No survey path to generate waypoints from.', timer: 2000 })
@@ -2389,6 +2398,7 @@ const generateWaypointsFromSurvey = (): void => {
   clearSurveyPath()
   isCreatingSurvey.value = false
   reNumberWaypoints()
+  refreshSurveyEntryExitMarkers()
 
   const firstWaypoint = newSurveyWaypoints[0]
   const lastWaypoint = newSurveyWaypoints[newSurveyWaypoints.length - 1]
@@ -2437,6 +2447,7 @@ const reNumberWaypoints = (): void => {
     }
     // Add the number of commands this waypoint has for the next waypoint's number
     cumulativeCommandCount += wp.commands.length
+    refreshSurveyEntryExitMarkers()
   })
 }
 
@@ -2500,6 +2511,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
 
     newWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
     reNumberWaypoints()
+    refreshSurveyEntryExitMarkers()
 
     const firstWaypoint = newWaypoints[0]
     const lastWaypoint = newWaypoints[newWaypoints.length - 1]
@@ -2690,7 +2702,9 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
 
   newMarker.on('contextmenu', (event: LeafletMouseEvent) => {
     contextMenuType.value = 'waypoint'
+    const oldId = selectedWaypoint.value?.id
     selectedWaypoint.value = waypoint
+    applySelectedWaypointMarkerVisual(waypoint.id, oldId)
     selectedSurveyId.value = ''
     interfaceStore.configPanelVisible = false
     currentCursorGeoCoordinates.value = [event.latlng.lat, event.latlng.lng]
@@ -2703,13 +2717,17 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
 
     const mouse = event.originalEvent as MouseEvent
     if (mouse.shiftKey) {
+      const oldId = selectedWaypoint.value?.id
       selectedWaypoint.value = waypoint
+      applySelectedWaypointMarkerVisual(waypoint.id, oldId)
       removeSelectedWaypoint()
       return
     }
 
     // Default: open config panel
+    const oldId = selectedWaypoint.value?.id
     selectedWaypoint.value = waypoint
+    applySelectedWaypointMarkerVisual(waypoint.id, oldId)
     selectedSurveyId.value = ''
     hideContextMenu()
     interfaceStore.configPanelVisible = true
@@ -2736,54 +2754,40 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   waypointMarkers.value[waypoint.id] = newMarker
 }
 
-// Watches for changes in the selected waypoint and updates marker accordingly
-watch(selectedWaypoint, (newWaypoint, oldWaypoint) => {
-  if (oldWaypoint) {
-    const oldMarker = waypointMarkers.value[oldWaypoint.id]
+// single source of truth for selected-marker visuals
+const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId?: string): void => {
+  if (oldWaypointId) {
+    const oldMarker = waypointMarkers.value[oldWaypointId]
     if (oldMarker) {
+      const oldWp = missionStore.currentPlanningWaypoints.find((w) => w.id === oldWaypointId)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false),
           className: 'waypoint-marker-icon',
           iconSize: [24, 24],
           iconAnchor: [12, 12],
         })
       )
-      const oldSurvey = surveys.value.find((s) => s.waypoints.some((w) => w.id === oldWaypoint.id))
-      if (oldSurvey) {
-        const oldM = waypointMarkers.value[oldWaypoint.id]
-        oldM?.getElement()?.classList.remove('green-marker')
-      }
     }
   }
 
-  if (newWaypoint) {
-    const newMarker = waypointMarkers.value[newWaypoint.id]
+  if (newWaypointId) {
+    const newMarker = waypointMarkers.value[newWaypointId]
     if (newMarker) {
+      const newWp = missionStore.currentPlanningWaypoints.find((w) => w.id === newWaypointId)
       newMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(newWaypoint.commands.length, true),
+          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true),
           className: 'waypoint-marker-icon',
           iconSize: [24, 24],
           iconAnchor: [12, 12],
         })
       )
-      const newSurvey = surveys.value.find((s) => s.waypoints.some((w) => w.id === newWaypoint.id))
-      if (newSurvey && newSurvey.waypoints.length > 0) {
-        newSurvey.waypoints.forEach((w) => {
-          const m = waypointMarkers.value[w.id]
-          if (m) m.getElement()?.classList.remove('green-marker')
-        })
-        const firstW = newSurvey.waypoints[0]
-        const lastW = newSurvey.waypoints[newSurvey.waypoints.length - 1]
-        const firstMarker = waypointMarkers.value[firstW.id]
-        const lastMarker = waypointMarkers.value[lastW.id]
-        if (firstMarker) firstMarker.getElement()?.classList.add('green-marker')
-        if (lastMarker && lastMarker !== firstMarker) lastMarker.getElement()?.classList.add('green-marker')
-      }
     }
   }
-})
+
+  refreshSurveyEntryExitMarkers() // keep entry/exit green after selection updates
+}
 
 let homeRetryTimer: ReturnType<typeof setInterval> | null = null
 const tryFetchHome = async (): Promise<void> => {
