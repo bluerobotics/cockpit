@@ -84,6 +84,12 @@
               :headers="headers"
               class="w-full max-h-[60%] rounded-md bg-[#FFFFFF11]"
             >
+              <template #item.dateTimeMs="{ item }">
+                {{ item.dateTimeFormatted }}
+              </template>
+              <template #item.sizeBytes="{ item }">
+                {{ item.sizeFormatted }}
+              </template>
               <template #item.actions="{ item }">
                 <div class="flex justify-center space-x-2">
                   <div class="cursor-pointer icon-btn mdi mdi-download" @click="downloadLog(item.name)" />
@@ -121,9 +127,10 @@ const interfaceStore = useAppInterfaceStore()
 /* eslint-disable jsdoc/require-jsdoc */
 interface SystemLogsData {
   name: string
-  initialTime: string
-  initialDate: string
-  size: string
+  dateTimeFormatted: string
+  sizeFormatted: string
+  sizeBytes: number
+  dateTimeMs: number
 }
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -131,11 +138,10 @@ const systemLogsData = ref<SystemLogsData[]>([])
 const isRunningInElectron = isElectron()
 
 const headers = [
-  { title: 'Name', value: 'name' },
-  { title: 'Time (initial)', value: 'initialTime' },
-  { title: 'Date (initial)', value: 'initialDate' },
-  { title: 'Size', value: 'size' },
-  { title: 'Download', value: 'actions' },
+  { title: 'Name', key: 'name', sortable: false },
+  { title: 'Date/Time', key: 'dateTimeMs', sortable: true },
+  { title: 'Size', key: 'sizeBytes', sortable: true },
+  { title: 'Actions', key: 'actions', sortable: false },
 ]
 
 onBeforeMount(async () => {
@@ -150,12 +156,18 @@ const loadElectronLogs = async (): Promise<void> => {
   try {
     const electronLogs = await window.electronAPI?.getElectronLogs()
     if (electronLogs) {
-      const logs = electronLogs.map((log) => ({
-        name: log.path,
-        initialTime: log.initialTime,
-        initialDate: log.initialDate,
-        size: formatBytes(log.size),
-      }))
+      const dateTimeFormatWithoutOffset = systemLogDateTimeFormat.replace(' O', '')
+      const logs = electronLogs.map((log) => {
+        const dateTimeString = log.path.split('(')[1]?.split(' GMT')[0] ?? ''
+        const dateTime = parse(dateTimeString, dateTimeFormatWithoutOffset, new Date())
+        return {
+          name: log.path,
+          dateTimeFormatted: `${log.initialDate} - ${log.initialTime}`,
+          sizeFormatted: formatBytes(log.size),
+          sizeBytes: log.size,
+          dateTimeMs: dateTime.getTime(),
+        }
+      })
       systemLogsData.value = getSortedLogs(logs)
     }
   } catch (error) {
@@ -165,28 +177,25 @@ const loadElectronLogs = async (): Promise<void> => {
 
 const loadIndexedDBLogs = async (): Promise<void> => {
   const logs: SystemLogsData[] = []
+  const dateTimeFormatWithoutOffset = systemLogDateTimeFormat.replace(' O', '')
   await cockpitSytemLogsDB.iterate((log: SystemLog, logName) => {
     // Estimate size based on JSON serialization of events
     const estimatedSize = JSON.stringify(log.events).length
+    const dateTimeString = logName.split('(')[1]?.split(' GMT')[0] ?? ''
+    const dateTime = parse(dateTimeString, dateTimeFormatWithoutOffset, new Date())
     logs.push({
       name: logName,
-      initialTime: log.initialTime,
-      initialDate: log.initialDate,
-      size: formatBytes(estimatedSize),
+      dateTimeFormatted: `${log.initialDate} - ${log.initialTime}`,
+      sizeFormatted: formatBytes(estimatedSize),
+      sizeBytes: estimatedSize,
+      dateTimeMs: dateTime.getTime(),
     })
   })
   systemLogsData.value = getSortedLogs(logs)
 }
 
 const getSortedLogs = (logs: SystemLogsData[]): SystemLogsData[] => {
-  return logs.sort((a, b) => {
-    const dateTimeFormatWithoutOffset = systemLogDateTimeFormat.replace(' O', '')
-    const stringDateTimeA = a.name.split('(')[1].split(' GMT')[0]
-    const stringDateTimeB = b.name.split('(')[1].split(' GMT')[0]
-    const dateTimeA = parse(stringDateTimeA, dateTimeFormatWithoutOffset, new Date())
-    const dateTimeB = parse(stringDateTimeB, dateTimeFormatWithoutOffset, new Date())
-    return dateTimeB.getTime() - dateTimeA.getTime()
-  })
+  return logs.sort((a, b) => b.dateTimeMs - a.dateTimeMs)
 }
 
 const downloadLog = async (logName: string): Promise<void> => {
