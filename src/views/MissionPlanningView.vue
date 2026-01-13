@@ -43,7 +43,17 @@
           variant="text"
           @click="clearSurveyCreation"
         >
-          <v-icon color="white" class="border-2 rounded-full bg-red">mdi-close</v-icon>
+          <div color="white" class="border-2 rounded-full bg-red text-[18px] pa-1">
+            <svg width="16" height="16" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2"
+                stroke="white"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
         </div>
       </template>
     </v-tooltip>
