@@ -92,9 +92,10 @@ export const setupElectronLogService = (): void => {
 
       return await Promise.all(
         syslogFiles.map(async (logFile) => {
-          const logContent = await readFile(join(getElectronLogsPath(), logFile), 'utf-8')
+          const filePath = join(getElectronLogsPath(), logFile)
 
-          // Extract date and time from filename
+          // Extract date, time and size from file
+          const stats = await stat(filePath)
           const match = logFile.match(/Cockpit \((.+?)\)\.syslog/)
           let initialDate = format(new Date(), systemLogDateFormat)
           let initialTime = format(new Date(), systemLogTimeFormat)
@@ -108,7 +109,7 @@ export const setupElectronLogService = (): void => {
           }
 
           return {
-            content: logContent,
+            size: stats.size,
             path: logFile,
             initialTime,
             initialDate,
