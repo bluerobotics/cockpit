@@ -451,8 +451,20 @@
     @place-point-of-interest="openPoiDialog"
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
   />
-  <SideConfigPanel position="right" style="z-index: 600; pointer-events: auto" class="w-[320px]">
+  <SideConfigPanel
+    v-if="isCreatingSurvey || selectedWaypoint"
+    position="right"
+    style="z-index: 600; pointer-events: auto"
+    class="w-[320px]"
+  >
+    <SurveyVertexList
+      v-if="isCreatingSurvey"
+      :vertexes="surveyPolygonVertexesPositions"
+      @update-vertex="onUpdateSurveyVertex"
+      @remove-vertex="onRemoveSurveyVertex"
+    />
     <WaypointConfigPanel
+      v-else-if="selectedWaypoint"
       :selected-waypoint="selectedWaypoint"
       @remove-waypoint="removeSelectedWaypoint"
       @should-update-waypoints="handleShouldUpdateWaypoints"
@@ -505,6 +517,7 @@ import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
+import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
@@ -732,6 +745,7 @@ const currentCursorGeoCoordinates = ref<[number, number] | null>(null)
 const confirmButtonStyle = ref<Record<string, string>>({})
 const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
 const isCreatingSurvey = ref(false)
+const isDrawingSurveyPolygon = ref(false)
 const selectedSurveyId = ref<string>('')
 const surveyPolygonLayers = ref<{ [key: string]: Polygon }>({})
 const lastSelectedSurveyId = ref('')
@@ -860,7 +874,7 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   if (!planningMap.value) return
 
   const anchor = currentMeasureAnchor()
-  const measuring = !!anchor && (isCreatingSimplePath.value || isCreatingSurvey.value)
+  const measuring = !!anchor && (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
   if (!measuring) {
     destroyMeasureOverlay(planningMap.value)
     return
@@ -1592,11 +1606,14 @@ const toggleSurvey = (): void => {
   }
   if (isCreatingSurvey.value) {
     isCreatingSurvey.value = false
+    isDrawingSurveyPolygon.value = false
     lastSurveyState.value = {}
     canUndo.value = {}
     return
   }
   isCreatingSurvey.value = true
+  isDrawingSurveyPolygon.value = true
+  interfaceStore.configPanelVisible = true
   hideContextMenu()
 }
 
@@ -1692,7 +1709,9 @@ const clearSurveyVertexMarkers = (): void => {
 const handleKeyDown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
     if (isCreatingSurvey.value) {
-      clearSurveyCreation()
+      if (isDrawingSurveyPolygon.value) {
+        isDrawingSurveyPolygon.value = false
+      }
     }
     if (isCreatingSimplePath.value) {
       isCreatingSimplePath.value = false
@@ -1736,6 +1755,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
 const clearSurveyCreation = (): void => {
   clearSurveyPath()
   isCreatingSurvey.value = false
+  isDrawingSurveyPolygon.value = false
   lastSurveyState.value = {}
   canUndo.value = {}
   clearLiveMeasure()
@@ -2172,7 +2192,7 @@ const updatePolygon = (): void => {
     enablePolygonDragging()
   }
   if (surveyPolygonLayer.value && surveyPolygonVertexesPositions.value.length >= 3) {
-    surveyPolygonVertexesPositions.value.map((p) => [p.lat, p.lng] as WaypointCoordinates)
+    updateLiveSurveyAreaLabel(surveyPolygonVertexesPositions.value.map((p) => [p.lat, p.lng] as WaypointCoordinates))
   }
   updateSurveyMarkersPositions()
 }
@@ -2275,6 +2295,28 @@ const updateSurveyEdgeAddMarkers = (): void => {
   }
 }
 
+const onUpdateSurveyVertex = (index: number, latlng: L.LatLng): void => {
+  const marker = surveyPolygonVertexesMarkers.value[index]
+  if (marker) {
+    marker.setLatLng(latlng)
+    updatePolygon()
+    createSurveyPath()
+  }
+}
+
+const onRemoveSurveyVertex = (index: number): void => {
+  const marker = surveyPolygonVertexesMarkers.value[index]
+  if (marker) {
+    surveyPolygonVertexesPositions.value.splice(index, 1)
+    surveyPolygonVertexesMarkers.value.splice(index, 1)
+    marker.remove()
+    updatePolygon()
+    updateSurveyEdgeAddMarkers()
+    checkAndRemoveSurveyPath()
+    createSurveyPath()
+  }
+}
+
 const addSurveyPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefined): void => {
   if (!isCreatingSurvey.value) return
 
@@ -2290,13 +2332,7 @@ const addSurveyPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefi
     (marker) => {
       const index = surveyPolygonVertexesMarkers.value.indexOf(marker)
       if (index !== -1) {
-        surveyPolygonVertexesPositions.value.splice(index, 1)
-        surveyPolygonVertexesMarkers.value.splice(index, 1)
-        marker.remove()
-        updatePolygon()
-        updateSurveyEdgeAddMarkers()
-        checkAndRemoveSurveyPath()
-        createSurveyPath()
+        onRemoveSurveyVertex(index)
       }
     },
     // onDrag callback
@@ -2321,6 +2357,7 @@ watch(isCreatingSurvey, (isCreatingNow) => {
   if (isCreatingNow) {
     existingWaypoints.value = [...missionStore.currentPlanningWaypoints]
     surveyWaypoints.value = []
+    interfaceStore.configPanelVisible = true
   } else {
     clearSurveyPath()
   }
@@ -2407,6 +2444,7 @@ const generateWaypointsFromSurvey = (): void => {
   newSurveyWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
   clearSurveyPath()
   isCreatingSurvey.value = false
+  isDrawingSurveyPolygon.value = false
   reNumberWaypoints()
   refreshSurveyEntryExitMarkers()
 
@@ -2691,6 +2729,7 @@ const undoGenerateWaypoints = (): void => {
   delete lastSurveyState.value[surveyId]
   delete canUndo.value[surveyId]
   isCreatingSurvey.value = true
+  isDrawingSurveyPolygon.value = false
 
   createSurveyPath()
   openSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
@@ -2864,7 +2903,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
     }
   }
 
-  if (interfaceStore.configPanelVisible) {
+  if (interfaceStore.configPanelVisible && !isCreatingSurvey.value) {
     selectedWaypoint.value = undefined
     interfaceStore.configPanelVisible = false
   }
@@ -2900,7 +2939,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
     }
   }
 
-  if (isCreatingSurvey.value) {
+  if (isCreatingSurvey.value && isDrawingSurveyPolygon.value) {
     addSurveyPoint(e.latlng)
     clearLiveMeasure()
   }
