@@ -13,7 +13,7 @@
             v-show="showButtons"
             :style="interfaceStore.globalGlassMenuStyles"
             v-bind="menuProps"
-            class="absolute right-[209px] m-3 bottom-button bg-slate-50 text-[14px]"
+            class="absolute right-[135px] m-3 bottom-button bg-slate-50 text-[14px]"
             elevation="2"
             size="x-small"
             style="z-index: 1002; border-radius: 0px"
@@ -34,7 +34,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute right-[265px] w-[140px] mb-[14px] bottom-button bg-slate-50 text-[12px] font-bold"
+            class="absolute right-[194px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
             text="Edit mission"
             append-icon="mdi-map-marker-radius-outline"
@@ -52,7 +52,7 @@
             v-if="showButtons"
             :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
-            class="absolute right-[166px] m-3 bottom-button bg-slate-50 text-[14px]"
+            class="absolute right-[89px] m-3 bottom-button bg-slate-50 text-[14px]"
             :class="!home ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
             elevation="2"
@@ -72,7 +72,7 @@
             v-if="showButtons"
             :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF33' } : {}]"
             v-bind="tooltipProps"
-            class="absolute m-3 bottom-button right-[124px] bg-slate-50 text-[14px]"
+            class="absolute m-3 bottom-button right-[44px] bg-slate-50 text-[14px]"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
             :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
             elevation="2"
@@ -85,46 +85,11 @@
           />
         </template>
       </v-tooltip>
-
-      <v-tooltip location="top" :text="vehicleDownloadMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            v-if="showButtons"
-            :style="[interfaceStore.globalGlassMenuStyles, !vehicleStore.isVehicleOnline ? { color: '#FFFFFF33' } : {}]"
-            v-bind="tooltipProps"
-            class="absolute m-3 bottom-button right-[82px] bg-slate-50 text-[14px]"
-            :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
-            :disabled="!vehicleStore.isVehicleOnline"
-            elevation="2"
-            style="z-index: 1002; border-radius: 0px"
-            icon="mdi-download"
-            size="x-small"
-            @click.stop="downloadMissionFromVehicle"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="top" :text="vehicleExecuteMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            v-if="showButtons"
-            :style="[interfaceStore.globalGlassMenuStyles, !vehicleStore.isVehicleOnline ? { color: '#FFFFFF33' } : {}]"
-            v-bind="tooltipProps"
-            class="absolute mb-3 ml-1 bottom-button right-[52px] bg-slate-50 text-[14px]"
-            :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
-            :disabled="!vehicleStore.isVehicleOnline"
-            elevation="2"
-            style="z-index: 1002; border-radius: 0px"
-            icon="mdi-play"
-            size="x-small"
-            @click.stop="tryToStartMission"
-          />
-        </template>
-      </v-tooltip>
     </div>
   </div>
-
   <ContextMenu
     ref="contextMenuRef"
+    :key="contextMenuVersion"
     :visible="contextMenuVisible"
     :width="'260px'"
     :menu-items="menuItems"
@@ -148,6 +113,13 @@
           class="my-1"
           label="Show coordinate grid"
           :color="widget.options.showCoordinateGrid ? 'white' : undefined"
+          hide-details
+        />
+        <v-switch
+          v-model="widget.options.showMissionControlPanel"
+          class="my-1"
+          label="Show mission control panel"
+          :color="widget.options.showMissionControlPanel ? 'white' : undefined"
           hide-details
         />
       </v-card-text>
@@ -183,6 +155,14 @@
     :initial-latitude="globalOriginLatitude"
     :initial-longitude="globalOriginLongitude"
     @origin-set="onGlobalOriginSet"
+  />
+  <MissionControlPanel
+    v-model="widget.options.showMissionControlPanel"
+    :map-waypoints="mapWaypoints"
+    @download-mission-from-vehicle="downloadMissionFromVehicle"
+    @clear-map-drawing="clearMapDrawing"
+    @try-to-start-mission="tryToStartMission"
+    @hide-control-panel="hideControlPanel"
   />
   <div
     v-if="isSavingOfflineTiles"
@@ -306,6 +286,19 @@ const saveSeamarks = (): void => {
 
 let pinchTimeout: number | undefined
 
+const contextMenuSelectedWpIndex = ref<number | null>(null)
+const contextMenuVersion = ref(0)
+const mapWaypointMarkers = ref<L.Marker[]>([])
+
+const currentVehicleWpIndex = computed<number>(() => {
+  return vehicleStore.currentMissionSeq ?? -1
+})
+
+const currentMapWpIndex = computed(() => {
+  if (currentVehicleWpIndex.value === -1 || currentVehicleWpIndex.value === undefined) return -1
+  return Math.max(0, currentVehicleWpIndex.value - 1)
+})
+
 const onTouchStart = (e: TouchEvent): void => {
   if (e.touches.length > 1) {
     isPinching.value = true
@@ -350,8 +343,13 @@ const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
   return { iconSize: [26, 26], iconAnchor: [13, 13] } // md size
 }
 
-const createWaypointMarkerHtml = (isReached: boolean): string => {
-  const baseClass = isReached ? 'marker-icon marker-icon--reached' : 'marker-icon'
+const createWaypointMarkerHtml = (isReached: boolean, isCurrent = false): string => {
+  let baseClass = 'marker-icon'
+  if (isReached) {
+    baseClass = 'marker-icon marker-icon--reached'
+  } else if (isCurrent) {
+    baseClass = 'marker-icon marker-icon-active'
+  }
   const size = getMarkerSizeFromZoom(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
 
@@ -362,12 +360,12 @@ const createWaypointMarkerHtml = (isReached: boolean): string => {
   `
 }
 
-const createWaypointMarkerIcon = (seq: number, isReached: boolean): L.DivIcon => {
+const createWaypointMarkerIcon = (isReached: boolean, isCurrent = false): L.DivIcon => {
   const markerSize = getMarkerSizeFromZoom(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
   return L.divIcon({
-    html: createWaypointMarkerHtml(isReached),
+    html: createWaypointMarkerHtml(isReached, isCurrent),
     className: 'waypoint-marker-icon',
     iconSize: dimensions.iconSize,
     iconAnchor: dimensions.iconAnchor,
@@ -378,19 +376,21 @@ const applyWaypointMarkerStyle = (seq: number): void => {
   const marker = reachedWaypoints.value[seq]
   if (!marker) return
   const isReached = getReachedWaypointIndices.value.has(seq)
+  const idx = seq - 1
+  const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
   const markerSize = getMarkerSizeFromZoom(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
   marker.setIcon(
     L.divIcon({
-      html: createWaypointMarkerHtml(isReached),
+      html: createWaypointMarkerHtml(isReached, isCurrent),
       className: 'waypoint-marker-icon',
       iconSize: dimensions.iconSize,
       iconAnchor: dimensions.iconAnchor,
     })
   )
 
-  // Updates the tooltip class for reached waypoints and visibility based on size
+  // Updates the tooltip class for reached/current waypoints and visibility based on size
   const tooltip = marker.getTooltip()
   if (tooltip) {
     if (markerSize === 'xs' || markerSize === 'sm') {
@@ -401,10 +401,11 @@ const applyWaypointMarkerStyle = (seq: number): void => {
 
     const tooltipElement = tooltip.getElement()
     if (tooltipElement) {
+      tooltipElement.classList.remove('waypoint-tooltip--reached', 'waypoint-tooltip--current-waypoint')
       if (isReached) {
         tooltipElement.classList.add('waypoint-tooltip--reached')
-      } else {
-        tooltipElement.classList.remove('waypoint-tooltip--reached')
+      } else if (isCurrent) {
+        tooltipElement.classList.add('waypoint-tooltip--current-waypoint')
       }
     }
   }
@@ -434,6 +435,9 @@ onBeforeMount(() => {
   // Ensure new options exist for existing widgets
   if (widget.value.options.showCoordinateGrid === undefined) {
     widget.value.options.showCoordinateGrid = false
+  }
+  if (widget.value.options.showMissionControlPanel === undefined) {
+    widget.value.options.showMissionControlPanel = true
   }
   targetFollower.enableAutoUpdate()
 })
@@ -694,8 +698,11 @@ onMounted(async () => {
   map.value.whenReady(() => {
     nextTick(() => {
       Object.entries(reachedWaypoints.value).forEach(([seq, marker]) => {
-        const isReached = getReachedWaypointIndices.value.has(Number(seq))
-        marker.setIcon(createWaypointMarkerIcon(Number(seq), isReached))
+        const seqNum = Number(seq)
+        const idx = seqNum - 1
+        const isReached = getReachedWaypointIndices.value.has(seqNum)
+        const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
+        marker.setIcon(createWaypointMarkerIcon(isReached, isCurrent))
       })
     })
   })
@@ -733,6 +740,12 @@ onMounted(async () => {
     targetFollower.unFollow()
   }
   await refreshMission()
+
+  // Register mission actions for map widget
+  missionStore.registerMapMissionActions({
+    downloadMissionFromVehicle,
+    clearMapDrawing,
+  })
 })
 
 const confirmDownloadDialog =
@@ -816,7 +829,7 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
 }
 
 const handleContextMenu = {
-  open: (event: MouseEvent): void => {
+  open: async (event: MouseEvent): Promise<void> => {
     if (!map.value || isPinching.value || isDragging.value) return
     event.preventDefault()
     event.stopPropagation()
@@ -825,12 +838,9 @@ const handleContextMenu = {
     const ll = map.value.containerPointToLatLng(pt)
     clickedLocation.value = [ll.lat, ll.lng]
 
-    contextMenuRef.value.openAt(event)
-    contextMenuVisible.value = true
+    await openContextMenuAt(event, null)
   },
-  close: () => {
-    hideContextMenuAndMarker()
-  },
+  close: () => hideContextMenuAndMarker(),
 }
 
 const clearMapDrawing = (): void => {
@@ -842,7 +852,8 @@ const clearMapDrawing = (): void => {
       map.value!.removeLayer(l)
     }
   })
-
+  mapWaypointMarkers.value.forEach((m) => m.remove())
+  mapWaypointMarkers.value = []
   mapWaypoints.value = []
 
   missionWaypointsPolyline.value = undefined
@@ -895,6 +906,12 @@ onBeforeUnmount(() => {
 
   mapBase.value?.removeEventListener('touchstart', onTouchStart)
   mapBase.value?.removeEventListener('touchend', onTouchEnd)
+
+  // Unregister mission actions for map widget
+  missionStore.registerMapMissionActions({
+    downloadMissionFromVehicle: async () => Promise.resolve(),
+    clearMapDrawing: async () => Promise.resolve(),
+  })
 })
 
 // Pan when variables change
@@ -1089,9 +1106,12 @@ watch(
     if (!map.value) return
 
     if (!missionWaypointsPolyline.value) {
-      missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3' }).addTo(map.value)
+      missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3', className: 'mission-path' }).addTo(map.value)
     }
     missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+
+    mapWaypointMarkers.value.forEach((m) => m.remove())
+    mapWaypointMarkers.value = []
 
     // Add a marker for each point
     newWaypoints.forEach((waypoint, idx) => {
@@ -1099,7 +1119,8 @@ watch(
       let marker = reachedWaypoints.value[seq]
       if (!marker) {
         const isReached = getReachedWaypointIndices.value.has(seq)
-        const markerIcon = createWaypointMarkerIcon(seq, isReached)
+        const isCurrent = idx === currentMapWpIndex.value
+        const markerIcon = createWaypointMarkerIcon(isReached, isCurrent)
         marker = L.marker(waypoint.coordinates, { icon: markerIcon })
         reachedWaypoints.value[seq] = marker
 
@@ -1108,7 +1129,11 @@ watch(
           content: seq.toString(),
           permanent: true,
           direction: 'center',
-          className: isReached ? 'waypoint-tooltip waypoint-tooltip--reached' : 'waypoint-tooltip',
+          className: isReached
+            ? 'waypoint-tooltip waypoint-tooltip--reached'
+            : isCurrent
+            ? 'waypoint-tooltip waypoint-tooltip--current-waypoint'
+            : 'waypoint-tooltip',
           opacity: markerSizeForTooltip === 'md' ? 1 : 0,
         })
 
@@ -1132,6 +1157,32 @@ watch(
   },
   { deep: true }
 )
+
+// Keep an eye on the current mission status and update the waypoint markers accordingly
+watch([vehicleStore.currentMissionSeq, currentVehicleWpIndex, getReachedWaypointIndices, currentMapWpIndex], () => {
+  Object.entries(reachedWaypoints.value).forEach(([seqStr, marker]) => {
+    const seq = Number(seqStr)
+    const idx = seq - 1
+    const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
+    const isReached = getReachedWaypointIndices.value.has(seq)
+
+    applyWaypointMarkerStyle(seq)
+
+    const tooltip = marker.getTooltip()
+    if (tooltip) {
+      const tooltipElement = tooltip.getElement()
+      if (tooltipElement) {
+        tooltipElement.classList.remove('waypoint-tooltip--reached', 'waypoint-tooltip--current-waypoint')
+        if (isReached) {
+          tooltipElement.classList.add('waypoint-tooltip--reached')
+        } else if (isCurrent) {
+          tooltipElement.classList.add('waypoint-tooltip--current-waypoint')
+        }
+      }
+      tooltip.update()
+    }
+  })
+})
 
 // Create polyline for the vehicle path
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
@@ -1181,7 +1232,46 @@ const menuItems = reactive([
   },
 ])
 
-const gotoMarker = shallowRef<L.Marker>()
+const updateSkipToWpMenu = (): void => {
+  const want = contextMenuSelectedWpIndex.value !== null
+  const last = menuItems[menuItems.length - 1] as any
+  const lastIsSkip = !!last && last._isSkipToWp === true
+
+  if (want && !lastIsSkip) {
+    menuItems.push({
+      item: `Skip mission to this WP (#${contextMenuSelectedWpIndex.value! - 1})`,
+      action: () => onMenuOptionSelect('skip-to-wp'),
+      icon: 'mdi-skip-next-circle',
+      _isSkipToWp: true,
+    } as any)
+  } else if (!want && lastIsSkip) {
+    menuItems.pop()
+  } else if (want && lastIsSkip) {
+    last.item = `Skip mission to this WP (#${contextMenuSelectedWpIndex.value! - 1})`
+  }
+}
+
+const openContextMenuAt = async (mouseEv: MouseEvent, wpIndex: number | null): Promise<void> => {
+  if (contextMenuVisible.value) {
+    contextMenuVisible.value = false
+    await nextTick()
+  }
+
+  contextMenuSelectedWpIndex.value = wpIndex
+  updateSkipToWpMenu()
+  contextMenuVersion.value++
+  contextMenuVisible.value = true
+  await nextTick()
+
+  if (contextMenuRef.value?.openAt) {
+    contextMenuRef.value.openAt(mouseEv)
+  } else {
+    await nextTick()
+    contextMenuRef.value?.openAt?.(mouseEv)
+  }
+}
+
+const gotoMarker = ref<L.Marker>()
 
 const setDefaultMapPosition = async (): Promise<void> => {
   if (!map.value || !clickedLocation.value) return
@@ -1312,6 +1402,19 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       }
       break
 
+    case 'skip-to-wp': {
+      const idx = contextMenuSelectedWpIndex.value
+      if (!vehicleStore.isVehicleOnline || idx == null) {
+        openSnackbar({ message: 'Cannot skip (vehicle offline or invalid WP).', variant: 'error' })
+        break
+      }
+      try {
+        vehicleStore.setMissionCurrent(idx)
+      } catch (error) {
+        openSnackbar({ message: `Failed to skip to WP #${idx}: ${(error as Error).message}`, variant: 'error' })
+      }
+      break
+    }
     default:
       console.warn('Unknown menu option selected:', option)
   }
@@ -1321,6 +1424,8 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
 
 const hideContextMenuAndMarker = (): void => {
   contextMenuVisible.value = false
+  contextMenuSelectedWpIndex.value = null
+  updateSkipToWpMenu()
   if (map.value !== undefined && contextMenuMarker.value !== undefined) {
     map.value.removeLayer(contextMenuMarker.value)
   }
@@ -1353,6 +1458,7 @@ const onGlobalOriginSet = (latitude: number, longitude: number): void => {
 const onKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
     hideContextMenuAndMarker()
+    return
   }
 }
 
@@ -1447,18 +1553,6 @@ const bottomButtonsDisplacement = computed(() => {
 
 const topProgressBarDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
-})
-
-const vehicleDownloadMissionButtonTooltipText = computed(() => {
-  return vehicleStore.isVehicleOnline
-    ? 'Download the mission that is stored in the vehicle.'
-    : 'Cannot download mission (vehicle offline).'
-})
-
-const vehicleExecuteMissionButtonTooltipText = computed(() => {
-  return vehicleStore.isVehicleOnline
-    ? 'Execute the mission that is stored in the vehicle.'
-    : 'Cannot execute mission (vehicle offline).'
 })
 
 const centerHomeButtonTooltipText = computed(() => {
@@ -1570,6 +1664,10 @@ const removePoiMarkerFromMapWidget = (poiId: string): void => {
   delete mapWidgetPoiMarkers.value[poiId]
 }
 
+const hideControlPanel = (): void => {
+  widget.value.options.showMissionControlPanel = false
+}
+
 // Watch for changes in POIs from the store and update markers on this map widget
 watch(
   () => missionStore.pointsOfInterest,
@@ -1660,17 +1758,28 @@ watch(
   left: 1px;
 }
 
-:deep(.marker-icon) {
-  background-color: #1e498f;
-  border: 1px solid #ffffff55;
-  border-radius: 50%;
-  z-index: 100 !important;
-}
-
 :deep(.marker-icon--reached) {
   background-color: #ffff00;
   border: 2px solid #000000dd;
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
+:global(.marker-icon) {
+  background-color: #1e498f;
+  border: 1px solid #ffffff55;
+  border-radius: 50%;
+  box-shadow: 2px 3px 1px rgba(0, 0, 0, 0.2);
+}
+
+:global(.marker-icon-active) {
+  background-color: #925801;
+  border: 2px solid #ffffffaa;
+  border-radius: 50%;
+  box-shadow: 2px 3px 1px rgba(0, 0, 0, 0.3);
+}
+
+:global(.mission-path) {
+  filter: drop-shadow(2px 3px 1px rgba(0, 0, 0, 0.2));
 }
 
 .waypoint-tooltip {
@@ -1680,6 +1789,21 @@ watch(
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   color: black;
   z-index: 100;
+}
+
+:deep(.waypoint-tooltip--current-waypoint) {
+  background-color: #925801;
+  border: 1px solid #ffffffaa;
+  border-radius: 50%;
+  box-shadow: 2px 3px 1px rgba(0, 0, 0, 0.3);
+  color: white;
+  padding: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 :deep(.waypoint-tooltip--reached) {
@@ -1772,7 +1896,7 @@ watch(
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 407px; /* Position to the left of the buttons */
+  right: 340px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
