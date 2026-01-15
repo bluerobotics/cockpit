@@ -938,11 +938,12 @@ watch(
     newWaypoints.forEach((waypoint, idx) => {
       const marker = L.marker(waypoint.coordinates)
 
+      const isLargeNumber = idx >= 100
       marker.setIcon(
         L.divIcon({
           className: 'marker-icon',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          iconSize: isLargeNumber ? [24, 24] : [20, 20],
+          iconAnchor: isLargeNumber ? [12, 12] : [10, 10],
         })
       )
 
@@ -1443,7 +1444,7 @@ watch(
   width: 100%;
 }
 
-.marker-icon {
+:deep(.marker-icon) {
   background-color: #1e498f;
   border: 1px solid #ffffff55;
   border-radius: 50%;
