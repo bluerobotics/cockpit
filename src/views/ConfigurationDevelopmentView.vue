@@ -116,11 +116,17 @@
 
 import { parse } from 'date-fns'
 import { saveAs } from 'file-saver'
-import { onBeforeMount } from 'vue'
+import { onBeforeMount, onBeforeUnmount } from 'vue'
 import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import { type SystemLog, cockpitSytemLogsDB, systemLogDateTimeFormat } from '@/libs/system-logging'
+import {
+  type SystemLog,
+  cockpitSytemLogsDB,
+  getCurrentSessionLogFileName,
+  getCurrentSessionLogInfo,
+  systemLogDateTimeFormat,
+} from '@/libs/system-logging'
 import { formatBytes, isElectron } from '@/libs/utils'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -143,6 +149,15 @@ interface SystemLogsData {
 
 const systemLogsData = ref<SystemLogsData[]>([])
 const isRunningInElectron = isElectron()
+const currentSessionLogFileName = ref<string | null>(null)
+let updateInterval: ReturnType<typeof setInterval> | null = null
+
+/* eslint-disable jsdoc/require-jsdoc */
+interface CurrentLogInfo {
+  fileName: string
+  size: number
+}
+/* eslint-enable jsdoc/require-jsdoc */
 
 const headers = [
   { title: 'Name', key: 'name', sortable: false },
@@ -150,6 +165,35 @@ const headers = [
   { title: 'Size', key: 'sizeBytes', sortable: true },
   { title: 'Actions', key: 'actions', sortable: false },
 ]
+
+const updateCurrentSessionLogSize = async (): Promise<void> => {
+  if (!currentSessionLogFileName.value) {
+    return
+  }
+
+  try {
+    let logInfo: CurrentLogInfo | null = null
+
+    if (isRunningInElectron) {
+      // Get current log info (name and size) directly
+      logInfo = (await window.electronAPI?.getCurrentElectronLogInfo()) ?? null
+    } else {
+      // Get current log info from IndexedDB
+      logInfo = await getCurrentSessionLogInfo()
+    }
+
+    if (logInfo && logInfo.fileName === currentSessionLogFileName.value) {
+      // Update the size in systemLogsData
+      const index = systemLogsData.value.findIndex((log) => log.name === currentSessionLogFileName.value)
+      if (index !== -1) {
+        systemLogsData.value[index].sizeBytes = logInfo.size
+        systemLogsData.value[index].sizeFormatted = formatBytes(logInfo.size)
+      }
+    }
+  } catch (error) {
+    // Silently fail - don't spam console with errors
+  }
+}
 
 onBeforeMount(async () => {
   // Get the current session's log file name
@@ -160,6 +204,16 @@ onBeforeMount(async () => {
   } else {
     currentSessionLogFileName.value = getCurrentSessionLogFileName()
     await loadIndexedDBLogs()
+  }
+
+  // Start updating the current session log size every second
+  updateInterval = setInterval(updateCurrentSessionLogSize, 1000)
+})
+
+onBeforeUnmount(() => {
+  if (updateInterval) {
+    clearInterval(updateInterval)
+    updateInterval = null
   }
 })
 
