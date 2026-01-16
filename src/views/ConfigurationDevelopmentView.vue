@@ -84,6 +84,12 @@
               :headers="headers"
               class="w-full max-h-[60%] rounded-md bg-[#FFFFFF11]"
             >
+              <template #item.name="{ item }">
+                <div class="flex items-center gap-2">
+                  <span>{{ item.name }}</span>
+                  <div v-if="item.isCurrentSession" class="current-session-indicator" />
+                </div>
+              </template>
               <template #item.dateTimeMs="{ item }">
                 {{ item.dateTimeFormatted }}
               </template>
@@ -131,6 +137,7 @@ interface SystemLogsData {
   sizeFormatted: string
   sizeBytes: number
   dateTimeMs: number
+  isCurrentSession: boolean
 }
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -145,9 +152,13 @@ const headers = [
 ]
 
 onBeforeMount(async () => {
+  // Get the current session's log file name
   if (isRunningInElectron) {
+    const logInfo = await window.electronAPI?.getCurrentElectronLogInfo()
+    currentSessionLogFileName.value = logInfo?.fileName ?? null
     await loadElectronLogs()
   } else {
+    currentSessionLogFileName.value = getCurrentSessionLogFileName()
     await loadIndexedDBLogs()
   }
 })
@@ -166,6 +177,7 @@ const loadElectronLogs = async (): Promise<void> => {
           sizeFormatted: formatBytes(log.size),
           sizeBytes: log.size,
           dateTimeMs: dateTime.getTime(),
+          isCurrentSession: log.path === currentSessionLogFileName.value,
         }
       })
       systemLogsData.value = getSortedLogs(logs)
@@ -189,6 +201,7 @@ const loadIndexedDBLogs = async (): Promise<void> => {
       sizeFormatted: formatBytes(estimatedSize),
       sizeBytes: estimatedSize,
       dateTimeMs: dateTime.getTime(),
+      isCurrentSession: logName === currentSessionLogFileName.value,
     })
   })
   systemLogsData.value = getSortedLogs(logs)
@@ -290,5 +303,24 @@ const deleteOldLogsFromDB = async (): Promise<void> => {
 .custom-header {
   background-color: #333 !important;
   color: #fff;
+}
+
+.current-session-indicator {
+  width: 8px;
+  height: 8px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 </style>
