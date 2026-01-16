@@ -187,7 +187,12 @@ const updateCurrentSessionLogSize = async (): Promise<void> => {
       const index = systemLogsData.value.findIndex((log) => log.name === currentSessionLogFileName.value)
       if (index !== -1) {
         systemLogsData.value[index].sizeBytes = logInfo.size
-        systemLogsData.value[index].sizeFormatted = formatBytes(logInfo.size)
+        if (isRunningInElectron) {
+          systemLogsData.value[index].sizeFormatted = formatBytes(logInfo.size)
+        } else {
+          // For web version, show event count
+          systemLogsData.value[index].sizeFormatted = `${logInfo.size} event${logInfo.size !== 1 ? 's' : ''}`
+        }
       }
     }
   } catch (error) {
@@ -245,15 +250,15 @@ const loadIndexedDBLogs = async (): Promise<void> => {
   const logs: SystemLogsData[] = []
   const dateTimeFormatWithoutOffset = systemLogDateTimeFormat.replace(' O', '')
   await cockpitSytemLogsDB.iterate((log: SystemLog, logName) => {
-    // Estimate size based on JSON serialization of events
-    const estimatedSize = JSON.stringify(log.events).length
+    // Use event count for web version (lighter than estimating size)
+    const eventCount = log.events.length
     const dateTimeString = logName.split('(')[1]?.split(' GMT')[0] ?? ''
     const dateTime = parse(dateTimeString, dateTimeFormatWithoutOffset, new Date())
     logs.push({
       name: logName,
       dateTimeFormatted: `${log.initialDate} - ${log.initialTime}`,
-      sizeFormatted: formatBytes(estimatedSize),
-      sizeBytes: estimatedSize,
+      sizeFormatted: `${eventCount} event${eventCount !== 1 ? 's' : ''}`,
+      sizeBytes: eventCount, // Use event count for sorting
       dateTimeMs: dateTime.getTime(),
       isCurrentSession: logName === currentSessionLogFileName.value,
     })

@@ -28,9 +28,10 @@ const fileName = `Cockpit (${format(initialTime, systemLogDateTimeFormat)}).sysl
 export const getCurrentSessionLogFileName = (): string => fileName
 
 // Export function to get current session log file name and size
+// For web version, returns event count instead of estimated size
 export const getCurrentSessionLogInfo = async (): Promise<{ fileName: string; size: number }> => {
-  const estimatedSize = JSON.stringify(currentSystemLog.events).length
-  return { fileName, size: estimatedSize }
+  const eventCount = currentSystemLog.events.length
+  return { fileName, size: eventCount }
 }
 
 type LogEvent = {
