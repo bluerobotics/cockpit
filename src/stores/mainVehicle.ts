@@ -136,6 +136,16 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const vehicleArmingTime = ref<Date | undefined>(undefined)
   const currentVehicleName = ref<string | undefined>(undefined)
   const vehiclePositionMaxSampleRate = useStorage('cockpit-vehicle-position-max-sampling-ms', 200) // Limits the frequency of vehicle position updates
+  const reachedMissionItemSequences = ref<number[]>([])
+
+  const markMissionItemAsReached = (sequence: number): void => {
+    if (reachedMissionItemSequences.value.includes(sequence)) return
+    reachedMissionItemSequences.value = [...reachedMissionItemSequences.value, sequence]
+  }
+
+  const clearReachedMissionItems = (): void => {
+    reachedMissionItemSequences.value = []
+  }
 
   const defaultVehiclePayload: VehiclePayloadParameters = {
     extraPayloadKg: 0,
@@ -239,6 +249,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     },
     { immediate: true }
   )
+
+  watch(isArmed, (isNowArmed, wasPreviouslyArmed) => {
+    if (isNowArmed === true && wasPreviouslyArmed !== true) {
+      clearReachedMissionItems()
+    }
+  })
 
   const rtcConfiguration = computed(() => {
     const queryWebRtcConfiguration = new URLSearchParams(window.location.search).get('webRTCConfiguration')
@@ -574,6 +590,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     })
     mainVehicle.value.onStatusGPS.add((newStatusGPS: StatusGPS) => {
       Object.assign(statusGPS, newStatusGPS)
+    })
+    mainVehicle.value.onMissionItemReached.add((sequence: number) => {
+      markMissionItemAsReached(sequence)
     })
     mainVehicle.value.onIncomingMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.component_id != 1) {
@@ -959,6 +978,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mavlinkMessageIntervalOptions,
     updateMessageInterval,
     resetMessageIntervalsToCockpitDefault,
+    reachedMissionItemSequences,
+    clearReachedMissionItems,
     fetchHomeWaypoint,
     setHomeWaypoint,
     vehiclePayloadParameters,
