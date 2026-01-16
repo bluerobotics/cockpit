@@ -905,6 +905,7 @@ const showFullScreenPictureModal = ref(false)
 const fullScreenPicture = ref<SnapshotLibraryFile | null>(null)
 const selectedPicSet = shallowRef<Set<string>>(new Set())
 const isInstructionsExpanded = ref(false)
+const showHelpTooltip = ref(false)
 
 const selectedPictures = computed({
   get: () => [...selectedPicSet.value],
