@@ -57,12 +57,6 @@
                       </div>
 
                       <div><strong>Mobile:</strong> Long press to select multiple videos.</div>
-                      <div class="flex flex-row mt-4 gap-x-10">
-                        <div class="ml-[-8px]">
-                          <v-icon size="10" class="text-green-500 ml-2 mb-[2px] mr-1">mdi-circle</v-icon> Processed MP4
-                        </div>
-                        <div><v-icon size="10" class="text-orange-500 mb-[2px] mr-1">mdi-circle</v-icon> Raw WebM</div>
-                      </div>
                     </div>
                   </v-tooltip>
                 </button>
