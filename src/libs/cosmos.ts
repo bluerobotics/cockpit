@@ -326,6 +326,20 @@ declare global {
        */
       getElectronLogs: () => Promise<ElectronLog[]>
       /**
+       * Get the current session's electron log file name and size
+       * @returns The file name and size of the current session's log file
+       */
+      getCurrentElectronLogInfo: () => Promise<{
+        /**
+         * The name of the current session's log file
+         */
+        fileName: string
+        /**
+         * The size in bytes of the current session's log file
+         */
+        size: number
+      }>
+      /**
        * Get specific electron log content
        * @param logName - The name of the log file
        */

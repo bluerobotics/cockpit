@@ -23,6 +23,16 @@ const initialTime = new Date()
 const fileName = `Cockpit (${format(initialTime, systemLogDateTimeFormat)}).syslog`
 
 /* eslint-disable jsdoc/require-jsdoc */
+
+// Export the current session's log file name so it can be used to identify the current session
+export const getCurrentSessionLogFileName = (): string => fileName
+
+// Export function to get current session log file name and size
+export const getCurrentSessionLogInfo = async (): Promise<{ fileName: string; size: number }> => {
+  const estimatedSize = JSON.stringify(currentSystemLog.events).length
+  return { fileName, size: estimatedSize }
+}
+
 type LogEvent = {
   epoch: number
   level: string

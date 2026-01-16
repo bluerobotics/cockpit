@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   systemLog: (level: string, message: string) => ipcRenderer.send('system-log', { level, message }),
   getElectronLogs: () => ipcRenderer.invoke('get-electron-logs'),
+  getCurrentElectronLogInfo: () => ipcRenderer.invoke('get-current-electron-log-info'),
   getElectronLogContent: (logName: string) => ipcRenderer.invoke('get-electron-log-content', logName),
   deleteElectronLog: (logName: string) => ipcRenderer.invoke('delete-electron-log', logName),
   deleteOldElectronLogs: () => ipcRenderer.invoke('delete-old-electron-logs'),
