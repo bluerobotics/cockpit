@@ -260,6 +260,7 @@ const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
+const reachedWaypoints = shallowRef<Record<number, L.Marker>>({})
 const contextMenuRef = ref()
 const isDragging = ref(false)
 const isPinching = ref(false)
@@ -272,6 +273,8 @@ let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
 let seamarksSaveBtn: HTMLAnchorElement | undefined
 const downloadMenuOpen = ref(false)
+const missionItemsInVehicle = ref<Waypoint[]>([])
+const missionSeqToMarkerSeq = shallowRef<Record<number, number>>({})
 
 const glassMenuCssVars = computed(() => ({
   '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
@@ -308,6 +311,53 @@ const onTouchEnd = (e: TouchEvent): void => {
   if (e.touches.length <= 1) {
     pinchTimeout = window.setTimeout(() => (isPinching.value = false), 300)
   }
+}
+
+// Maps the reached mission item sequences to the marker sequences for reached waypoints
+const getReachedWaypointIndices = computed(() => {
+  const waypointIndices = new Set<number>()
+
+  if (!vehicleStore.reachedMissionItemSequences.length) return waypointIndices
+
+  vehicleStore.reachedMissionItemSequences.forEach((missionSeq) => {
+    const markerSeq = missionSeqToMarkerSeq.value[missionSeq]
+    if (markerSeq !== undefined) waypointIndices.add(markerSeq)
+  })
+
+  return waypointIndices
+})
+
+const createWaypointMarkerIcon = (seq: number, isReached: boolean): L.DivIcon => {
+  const isLargeNumber = seq >= 100
+  return L.divIcon({
+    className: isReached ? 'marker-icon marker-icon--reached' : 'marker-icon',
+    iconSize: isLargeNumber ? [24, 24] : [20, 20],
+    iconAnchor: isLargeNumber ? [12, 12] : [10, 10],
+  })
+}
+
+const applyWaypointMarkerStyle = (seq: number): void => {
+  const marker = reachedWaypoints.value[seq]
+  if (!marker) return
+  const isReached = getReachedWaypointIndices.value.has(seq)
+  marker.setIcon(createWaypointMarkerIcon(seq, isReached))
+
+  // Updates the tooltip class for reached waypoints
+  const tooltip = marker.getTooltip()
+  if (tooltip) {
+    const tooltipElement = tooltip.getElement()
+    if (tooltipElement) {
+      if (isReached) {
+        tooltipElement.classList.add('waypoint-tooltip--reached')
+      } else {
+        tooltipElement.classList.remove('waypoint-tooltip--reached')
+      }
+    }
+  }
+}
+
+const refreshReachedWaypointMarkerStyles = (): void => {
+  Object.keys(reachedWaypoints.value).forEach((k) => applyWaypointMarkerStyle(Number(k)))
 }
 
 const poiManagerMapWidgetRef = ref<typeof PoiManager | null>(null)
@@ -424,6 +474,15 @@ watch([zoom, mapCenter], () => {
   }
 })
 
+// Watch for reached mission item sequences to update marker styles
+watch(
+  () => vehicleStore.reachedMissionItemSequences,
+  () => {
+    refreshReachedWaypointMarkerStyles()
+  },
+  { deep: true }
+)
+
 // Grid overlay functions using centralized utilities
 const createGridOverlayLocal = (): void => {
   if (!map.value) return
@@ -471,6 +530,11 @@ const removeScaleControl = (): void => {
 }
 
 onMounted(async () => {
+  reachedWaypoints.value = {}
+  missionItemsInVehicle.value = []
+  missionSeqToMarkerSeq.value = {}
+  vehicleStore.clearReachedMissionItems()
+
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
   const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
@@ -561,6 +625,16 @@ onMounted(async () => {
     contextMenuVisible.value = false
     if (map.value === undefined) return
     zoom.value = map.value?.getZoom() ?? mapCenter.value
+  })
+
+  // Refreshes the marker positions when the map is ready
+  map.value.whenReady(() => {
+    nextTick(() => {
+      Object.entries(reachedWaypoints.value).forEach(([seq, marker]) => {
+        const isReached = getReachedWaypointIndices.value.has(Number(seq))
+        marker.setIcon(createWaypointMarkerIcon(Number(seq), isReached))
+      })
+    })
   })
 
   map.value.on('contextmenu', (event: LeafletMouseEvent) => {
@@ -703,6 +777,9 @@ const clearMapDrawing = (): void => {
   homeMarker.value = undefined
   gotoMarker.value = undefined
   vehicleMarker.value = undefined
+  reachedWaypoints.value = {}
+  missionItemsInVehicle.value = []
+  missionSeqToMarkerSeq.value = {}
 }
 
 const refreshMission = async (): Promise<void> => {
@@ -712,6 +789,7 @@ const refreshMission = async (): Promise<void> => {
   if (vehicleStore.isVehicleOnline) {
     await downloadMissionFromVehicle()
   } else if (missionStore.vehicleMission.length) {
+    rebuildMissionSeqMapping(missionStore.vehicleMission)
     drawMission(missionStore.vehicleMission)
   }
 }
@@ -936,27 +1014,29 @@ watch(
 
     // Add a marker for each point
     newWaypoints.forEach((waypoint, idx) => {
-      const marker = L.marker(waypoint.coordinates)
+      const seq = idx + 1
+      let marker = reachedWaypoints.value[seq]
+      if (!marker) {
+        const isReached = getReachedWaypointIndices.value.has(seq)
+        const markerIcon = createWaypointMarkerIcon(seq, isReached)
+        marker = L.marker(waypoint.coordinates, { icon: markerIcon })
+        reachedWaypoints.value[seq] = marker
 
-      const isLargeNumber = idx >= 100
-      marker.setIcon(
-        L.divIcon({
-          className: 'marker-icon',
-          iconSize: isLargeNumber ? [24, 24] : [20, 20],
-          iconAnchor: isLargeNumber ? [12, 12] : [10, 10],
+        const markerTooltip = L.tooltip({
+          content: seq.toString(),
+          permanent: true,
+          direction: 'center',
+          className: isReached ? 'waypoint-tooltip waypoint-tooltip--reached' : 'waypoint-tooltip',
+          opacity: 1,
         })
-      )
 
-      const markerTooltip = L.tooltip({
-        content: idx.toString(),
-        permanent: true,
-        direction: 'center',
-        className: 'waypoint-tooltip',
-        opacity: 1,
-      })
-
-      marker.bindTooltip(markerTooltip)
-      map.value?.addLayer(marker)
+        marker.bindTooltip(markerTooltip)
+        map.value?.addLayer(marker)
+      } else {
+        marker.setLatLng(waypoint.coordinates as LatLngTuple)
+        marker.getTooltip()?.setContent(seq.toString())
+        applyWaypointMarkerStyle(seq)
+      }
     })
   },
   { deep: true }
@@ -1200,6 +1280,24 @@ const drawMission = (missionItems: Waypoint[]): void => {
 const fetchingMission = ref(false)
 const missionFetchProgress = ref(0)
 
+const rebuildMissionSeqMapping = (missionItems: Waypoint[]): void => {
+  const remap: Record<number, number> = {}
+  let seq = 0
+
+  missionItems.forEach((wp, idx) => {
+    const markerSeq = idx === 0 ? undefined : idx
+
+    wp.commands.forEach((cmd) => {
+      if (cmd.type !== 'MAVLINK_NAV_COMMAND' && cmd.type !== 'MAVLINK_NON_NAV_COMMAND') return // unchanged intent
+
+      if (markerSeq !== undefined) remap[seq] = markerSeq
+      seq += 1
+    })
+  })
+
+  missionSeqToMarkerSeq.value = remap
+}
+
 // Allow fetching missions
 const downloadMissionFromVehicle = async (): Promise<void> => {
   fetchingMission.value = true
@@ -1210,8 +1308,9 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
   }
 
   try {
-    const missionItemsInVehicle = await vehicleStore.fetchMission(loadingCallback)
-    drawMission(missionItemsInVehicle)
+    missionItemsInVehicle.value = await vehicleStore.fetchMission(loadingCallback)
+    rebuildMissionSeqMapping(missionItemsInVehicle.value as Waypoint[])
+    drawMission(missionItemsInVehicle.value as Waypoint[])
 
     openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
@@ -1450,6 +1549,12 @@ watch(
   border-radius: 50%;
 }
 
+:deep(.marker-icon--reached) {
+  background-color: #ffff00;
+  border: 2px solid #000000dd;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
 .waypoint-tooltip {
   background-color: white;
   padding: 0.75rem;
@@ -1457,6 +1562,11 @@ watch(
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   color: black;
   z-index: 100;
+}
+
+:deep(.waypoint-tooltip--reached) {
+  color: #000000;
+  font-weight: bold;
 }
 
 .vehicle-marker {

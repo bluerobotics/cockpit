@@ -28,7 +28,7 @@ import {
 import { MavFrame } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { settingsManager } from '@/libs/settings-management'
-import { SignalTyped } from '@/libs/signal'
+import { Signal, SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
 import {
   type MAVLinkParameterSetData,
@@ -89,6 +89,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
 
   onIncomingMAVLinkMessage = new SignalTyped()
   onOutgoingMAVLinkMessage = new SignalTyped()
+  onMissionItemReached = new Signal<number>()
   _flying = false
 
   shouldCreateDatalakeVariablesFromOtherSystems = false
@@ -469,6 +470,11 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         this._statusText.text = statusText.text.filter((char) => char.toString() !== '\u0000').join('')
         this._statusText.severity = alertLevelFromMavSeverity[statusText.severity.type]
         this.onStatusText.emit()
+        break
+      }
+      case MAVLinkType.MISSION_ITEM_REACHED: {
+        const missionItemReached = mavlink_message.message as Message.MissionItemReached
+        this.onMissionItemReached.emit_value(missionItemReached.seq)
         break
       }
 
