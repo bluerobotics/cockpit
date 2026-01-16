@@ -43,7 +43,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     height: windowHeight.value,
     configModalVisibility: false,
     videoLibraryVisibility: false,
-    videoLibraryMode: 'video',
+    videoLibraryMode: 'videos',
     UIGlassEffect: useBlueOsStorage('cockpit-ui-glass-effect', {
       opacity: 0.9,
       bgColor: '#63636354',
