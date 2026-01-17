@@ -15,6 +15,7 @@ import {
   getAllDataLakeVariablesInfo,
   getDataLakeVariableData,
   getDataLakeVariableInfo,
+  getDataLakeVariableLastUpdateTimestamp,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
@@ -153,6 +154,12 @@ declare global {
        * @param id - The id of the variable to delete
        */
       deleteDataLakeVariable: typeof deleteDataLakeVariable
+      /**
+       * Get the timestamp of the last update for a data lake variable
+       * @param id - The id of the variable
+       * @returns The timestamp (from performance.now()) or undefined if the variable has never been set
+       */
+      getDataLakeVariableLastUpdateTimestamp: typeof getDataLakeVariableLastUpdateTimestamp
 
       // Cockpit actions:
 
@@ -468,6 +475,7 @@ window.cockpit = {
   createDataLakeVariable: createDataLakeVariable,
   updateDataLakeVariableInfo: updateDataLakeVariableInfo,
   deleteDataLakeVariable: deleteDataLakeVariable,
+  getDataLakeVariableLastUpdateTimestamp: getDataLakeVariableLastUpdateTimestamp,
   // Cockpit actions:
   availableCockpitActions: availableCockpitActions,
   registerNewAction: registerNewAction,
@@ -490,7 +498,7 @@ global!.unimplemented = function (message?: string) {
 }
 
 // eslint-disable-next-line
-global!.unused = function <T>(variable: T) {} // eslint-disable-line
+global!.unused = function <T>(variable: T) { } // eslint-disable-line
 
 /* c8 ignore stop */
 
