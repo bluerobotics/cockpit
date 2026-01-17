@@ -123,6 +123,14 @@
               width="220px"
             />
           </div>
+          <div class="ml-2">
+            <v-checkbox
+              v-model="widget.options.updateOnConstantValue"
+              label="Update on constant value"
+              hint="Advance graph when value is unchanged (shows horizontal lines for constant values)"
+              persistent-hint
+            />
+          </div>
         </v-col>
       </v-row>
     </template>
@@ -177,6 +185,7 @@ onBeforeMount(() => {
     lineThickness: 1,
     decimalPlaces: 2,
     showTitle: true,
+    updateOnConstantValue: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
@@ -251,7 +260,9 @@ const changeDataLakeVariable = (newId: string, oldId?: string): void => {
     unlistenDataLakeVariable(oldId, dataLakeVariableListenerId)
   }
 
-  dataLakeVariableListenerId = listenDataLakeVariable(newId, (value) => pushNewValue(value as number))
+  dataLakeVariableListenerId = listenDataLakeVariable(newId, (value) => pushNewValue(value as number), {
+    notifyOnTimestampChange: widget.value.options.updateOnConstantValue,
+  })
 }
 
 watch(
@@ -259,6 +270,17 @@ watch(
   (newId, oldId) => {
     changeDataLakeVariable(newId, oldId)
     valuesHistory.length = 0
+  }
+)
+
+// Re-register listener when updateOnConstantValue option changes
+watch(
+  () => widget.value.options.updateOnConstantValue,
+  () => {
+    const currentId = widget.value.options.dataLakeVariableId
+    if (currentId) {
+      changeDataLakeVariable(currentId, currentId)
+    }
   }
 )
 
