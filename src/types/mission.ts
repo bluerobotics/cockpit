@@ -339,3 +339,16 @@ export interface VehicleMissionEstimate {
  * Types of map tile providers supported.
  */
 export type MapTileProvider = 'Esri World Imagery' | 'OpenStreetMap'
+
+export type IconDimensions = {
+  /**
+   * The size of the icon in pixels
+   */
+  iconSize: [number, number]
+  /**
+   * The anchor point of the icon in pixels
+   */
+  iconAnchor: [number, number]
+}
+
+export type MarkerSizes = 'xs' | 'sm' | 'md'
