@@ -721,7 +721,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
         addWaypointMarker(wp)
       }
     })
-    reNumberWaypoints()
+    updateWaypointMarkers()
 
     openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
@@ -1373,7 +1373,7 @@ const insertWaypointAtSegmentMidpoint = (segmentIndex: number): void => {
 
   missionStore.currentPlanningWaypoints.splice(segmentIndex + 1, 0, newWp)
   addWaypointMarker(newWp)
-  reNumberWaypoints()
+  updateWaypointMarkers()
 }
 
 const handleMapMouseMoveNearMissionPath = (event: L.LeafletMouseEvent): void => {
@@ -1421,7 +1421,7 @@ const addWaypointFromClick = (latlng: L.LatLng): void => {
   }
 
   addWaypoint([latlng.lat, latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
-  reNumberWaypoints()
+  updateWaypointMarkers()
 }
 
 const addWaypointFromContextMenu = (): void => {
@@ -1821,7 +1821,7 @@ const deleteSelectedSurvey = (): void => {
 
   openSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
   hideContextMenu()
-  reNumberWaypoints()
+  updateWaypointMarkers()
 }
 
 const homeWaypointCursor =
@@ -1976,7 +1976,7 @@ const addWaypoint = (
   waypointMarkers.value[waypointId] = newMarker
 
   // Update waypoint numbering to account for command counts
-  reNumberWaypoints()
+  updateWaypointMarkers()
 }
 
 const removeSelectedWaypoint = (): void => {
@@ -2010,12 +2010,12 @@ const removeSelectedWaypoint = (): void => {
     missionWaypointsPolyline.value.setLatLngs(newCoordinates)
   }
 
-  reNumberWaypoints()
+  updateWaypointMarkers()
   hideContextMenu()
 }
 
 const handleShouldUpdateWaypoints = (): void => {
-  reNumberWaypoints()
+  updateWaypointMarkers()
 }
 
 const saveMissionToFile = async (): Promise<void> => {
@@ -2049,7 +2049,7 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
       addWaypointMarker(wp)
     })
 
-  reNumberWaypoints()
+  updateWaypointMarkers()
 }
 
 const loadMissionFromFile = async (e: Event): Promise<void> => {
@@ -2449,7 +2449,7 @@ const generateWaypointsFromSurvey = (): void => {
   clearSurveyPath()
   isCreatingSurvey.value = false
   isDrawingSurveyPolygon.value = false
-  reNumberWaypoints()
+  updateWaypointMarkers()
   refreshSurveyEntryExitMarkers()
 
   const firstWaypoint = newSurveyWaypoints[0]
@@ -2484,7 +2484,7 @@ const createWaypointMarkerHtml = (commandCount: number, isSelected = false): str
   `
 }
 
-const reNumberWaypoints = (): void => {
+const updateWaypointMarkers = (): void => {
   let cumulativeCommandCount = 1 // Start numbering from 1
   if (!planningMap.value) return
 
@@ -2585,7 +2585,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     updateSurvey(selectedSurveyId.value, { ...selectedSurvey.value })
 
     newWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
-    reNumberWaypoints()
+    updateWaypointMarkers()
     refreshSurveyEntryExitMarkers()
 
     const firstWaypoint = newWaypoints[0]
@@ -3379,7 +3379,7 @@ watch([zoom, mapCenter], () => {
 // Watch for zoom level changes to update waypoint marker sizes
 watch(zoom, () => {
   if (planningMap.value) {
-    reNumberWaypoints()
+    updateWaypointMarkers()
   }
 })
 
