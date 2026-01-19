@@ -235,7 +235,14 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { DialogActions } from '@/types/general'
-import type { MapTileProvider, PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
+import type {
+  IconDimensions,
+  MapTileProvider,
+  MarkerSizes,
+  PointOfInterest,
+  Waypoint,
+  WaypointCoordinates,
+} from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
@@ -327,12 +334,43 @@ const getReachedWaypointIndices = computed(() => {
   return waypointIndices
 })
 
+const getMarkerSizeFromZoom = (zoomLevel: number): MarkerSizes => {
+  if (zoomLevel <= 17) return 'xs'
+  if (zoomLevel > 17 && zoomLevel <= 19) return 'sm'
+  return 'md'
+}
+
+const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
+  if (size === 'xs') {
+    return { iconSize: [6, 6], iconAnchor: [3, 3] }
+  }
+  if (size === 'sm') {
+    return { iconSize: [12, 12], iconAnchor: [6, 6] }
+  }
+  return { iconSize: [26, 26], iconAnchor: [13, 13] } // md size
+}
+
+const createWaypointMarkerHtml = (isReached: boolean): string => {
+  const baseClass = isReached ? 'marker-icon marker-icon--reached' : 'marker-icon'
+  const size = getMarkerSizeFromZoom(zoom.value)
+  const markerSizeClass = `wp-marker-${size}`
+
+  return `
+    <div class="${markerSizeClass}">
+      <div class="${baseClass} waypoint-main-marker"></div>
+    </div>
+  `
+}
+
 const createWaypointMarkerIcon = (seq: number, isReached: boolean): L.DivIcon => {
-  const isLargeNumber = seq >= 100
+  const markerSize = getMarkerSizeFromZoom(zoom.value)
+  const dimensions = getIconDimensionsFromMarkerSize(markerSize)
+
   return L.divIcon({
-    className: isReached ? 'marker-icon marker-icon--reached' : 'marker-icon',
-    iconSize: isLargeNumber ? [24, 24] : [20, 20],
-    iconAnchor: isLargeNumber ? [12, 12] : [10, 10],
+    html: createWaypointMarkerHtml(isReached),
+    className: 'waypoint-marker-icon',
+    iconSize: dimensions.iconSize,
+    iconAnchor: dimensions.iconAnchor,
   })
 }
 
@@ -340,11 +378,27 @@ const applyWaypointMarkerStyle = (seq: number): void => {
   const marker = reachedWaypoints.value[seq]
   if (!marker) return
   const isReached = getReachedWaypointIndices.value.has(seq)
-  marker.setIcon(createWaypointMarkerIcon(seq, isReached))
+  const markerSize = getMarkerSizeFromZoom(zoom.value)
+  const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
-  // Updates the tooltip class for reached waypoints
+  marker.setIcon(
+    L.divIcon({
+      html: createWaypointMarkerHtml(isReached),
+      className: 'waypoint-marker-icon',
+      iconSize: dimensions.iconSize,
+      iconAnchor: dimensions.iconAnchor,
+    })
+  )
+
+  // Updates the tooltip class for reached waypoints and visibility based on size
   const tooltip = marker.getTooltip()
   if (tooltip) {
+    if (markerSize === 'xs' || markerSize === 'sm') {
+      tooltip.setOpacity(0)
+    } else {
+      tooltip.setOpacity(1)
+    }
+
     const tooltipElement = tooltip.getElement()
     if (tooltipElement) {
       if (isReached) {
@@ -846,6 +900,13 @@ watch(zoom, (newZoom, oldZoom) => {
   map.value?.setZoom(zoom.value)
 })
 
+// Watch for zoom level changes to update waypoint marker sizes
+watch(zoom, () => {
+  if (map.value) {
+    refreshReachedWaypointMarkerStyles()
+  }
+})
+
 // Re-render the map when the widget changes
 watch(props.widget, () => {
   map.value?.invalidateSize()
@@ -1022,19 +1083,29 @@ watch(
         marker = L.marker(waypoint.coordinates, { icon: markerIcon })
         reachedWaypoints.value[seq] = marker
 
+        const markerSizeForTooltip = getMarkerSizeFromZoom(zoom.value)
         const markerTooltip = L.tooltip({
           content: seq.toString(),
           permanent: true,
           direction: 'center',
           className: isReached ? 'waypoint-tooltip waypoint-tooltip--reached' : 'waypoint-tooltip',
-          opacity: 1,
+          opacity: markerSizeForTooltip === 'md' ? 1 : 0,
         })
 
         marker.bindTooltip(markerTooltip)
         map.value?.addLayer(marker)
       } else {
         marker.setLatLng(waypoint.coordinates as LatLngTuple)
-        marker.getTooltip()?.setContent(seq.toString())
+        const markerSizeForUpdate = getMarkerSizeFromZoom(zoom.value)
+        const tooltip = marker.getTooltip()
+        if (tooltip) {
+          if (markerSizeForUpdate === 'xs' || markerSizeForUpdate === 'sm') {
+            tooltip.setOpacity(0)
+          } else {
+            tooltip.setContent(seq.toString())
+            tooltip.setOpacity(1)
+          }
+        }
         applyWaypointMarkerStyle(seq)
       }
     })
@@ -1543,10 +1614,37 @@ watch(
   width: 100%;
 }
 
+.waypoint-marker-icon {
+  background: none;
+  border: none;
+}
+
+.waypoint-main-marker {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  position: absolute;
+}
+
+.wp-marker-xs .waypoint-main-marker {
+  width: 4px;
+  height: 4px;
+  top: 1px;
+  left: 1px;
+}
+
+.wp-marker-sm .waypoint-main-marker {
+  width: 10px;
+  height: 10px;
+  top: 1px;
+  left: 1px;
+}
+
 :deep(.marker-icon) {
   background-color: #1e498f;
   border: 1px solid #ffffff55;
   border-radius: 50%;
+  z-index: 100 !important;
 }
 
 :deep(.marker-icon--reached) {
