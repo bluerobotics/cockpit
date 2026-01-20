@@ -58,7 +58,7 @@
           border: '1px solid #ffffff55',
           width: 'min(70vw, 90vw)',
           maxWidth: '1200px',
-          aspectRatio: '70 / 35',
+          aspectRatio: '70 / 32',
           height: 'auto',
           maxHeight: '90vh',
         },
@@ -83,8 +83,13 @@
         />
       </div>
 
-      <div class="flex flex-col w-full h-[20%] items-center justify-center text-center">
-        <p class="text-[1.7vw]">{{ randomLightHeartedMessage }}</p>
+      <div
+        class="flex flex-col w-full h-[20%] items-center justify-center text-center overflow-hidden px-6"
+        style="container-type: size"
+      >
+        <p class="max-w-full whitespace-nowrap text-ellipsis overflow-hidden" style="font-size: 30cqh">
+          {{ randomLightHeartedMessage }}
+        </p>
       </div>
     </div>
     <div class="absolute bottom-0 left-[280px] animate-ascend" style="z-index: 9991">
