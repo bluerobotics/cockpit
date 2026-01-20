@@ -571,17 +571,18 @@ class JoystickManager {
         axes: [...gamepad.axes],
         buttons: [...(gamepad.buttons.map((button) => button.value) as number[])],
       }
+
+      const calibratedState: JoystickState = JSON.parse(JSON.stringify(rawState))
+
       let shouldEmitStateEvent = false
 
-      // Check axes
+      // Check for changes using RAW values (consistent comparison)
       if (previousState) {
         // Check for axis changes
         gamepad.axes.forEach((value, index) => {
           if (previousState.axes[index] !== value) {
             const calibratedValue = this.applyCalibrationToValue('axis', index, value, joystickModel)
-            newState.axes[index] = calibratedValue
-          }
-          if (previousState.axes[index] !== value) {
+            calibratedState.axes[index] = calibratedValue
             shouldEmitStateEvent = true
           }
         })
@@ -590,9 +591,7 @@ class JoystickManager {
         gamepad.buttons.forEach((button, index) => {
           const previousButton = previousState.buttons[index]
           if (previousButton !== button.value) {
-            newState.buttons[index] = button.value
-          }
-          if (previousButton !== button.value) {
+            calibratedState.buttons[index] = button.value
             shouldEmitStateEvent = true
           }
         })
@@ -602,7 +601,22 @@ class JoystickManager {
       this.previousGamepadState.set(gamepad.index, rawState)
 
       if (shouldEmitStateEvent) {
-        this.emitStateEvent({ index: gamepad.index, gamepad: gamepad })
+        // Emit event with CALIBRATED values in a gamepad-like object
+        const calibratedGamepad: Gamepad = {
+          id: gamepad.id,
+          index: gamepad.index,
+          connected: gamepad.connected,
+          timestamp: gamepad.timestamp,
+          mapping: gamepad.mapping,
+          axes: calibratedState.axes.map((value) => value ?? 0),
+          buttons: calibratedState.buttons.map((value) => ({
+            pressed: (value ?? 0) > 0.5,
+            value: value ?? 0,
+            touched: false,
+          })),
+          vibrationActuator: gamepad.vibrationActuator,
+        }
+        this.emitStateEvent({ index: gamepad.index, gamepad: calibratedGamepad })
       }
     }
 
