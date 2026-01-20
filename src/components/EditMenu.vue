@@ -552,6 +552,8 @@
         draggable="true"
         @dragstart="onRegularWidgetDragStart"
         @dragend="onRegularWidgetDragEnd(widget)"
+        @touchstart="onRegularWidgetDragStart"
+        @touchend="onRegularWidgetDragEnd(widget)"
       >
         <div
           v-if="widget.isExternal"
@@ -1158,7 +1160,7 @@ watch(widgetMode, async (newValue: string): Promise<void> => {
   })
 })
 
-const onRegularWidgetDragStart = (event: DragEvent): void => {
+const onRegularWidgetDragStart = (event: Event): void => {
   const target = event.target as HTMLElement
   if (target) {
     target.style.opacity = '0.5'
