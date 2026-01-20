@@ -566,7 +566,8 @@ class JoystickManager {
 
       const previousState = this.previousGamepadState.get(gamepad.index)
 
-      const newState: JoystickState = {
+      // Store RAW values for change detection to avoid comparing calibrated vs raw values
+      const rawState: JoystickState = {
         axes: [...gamepad.axes],
         buttons: [...(gamepad.buttons.map((button) => button.value) as number[])],
       }
@@ -597,8 +598,8 @@ class JoystickManager {
         })
       }
 
-      // Update previous state
-      this.previousGamepadState.set(gamepad.index, newState)
+      // Update previous state with RAW values for next comparison
+      this.previousGamepadState.set(gamepad.index, rawState)
 
       if (shouldEmitStateEvent) {
         this.emitStateEvent({ index: gamepad.index, gamepad: gamepad })
