@@ -171,10 +171,11 @@ export const useControllerStore = defineStore('controller', () => {
   const processJoystickConnectionEvent = async (event: JoysticksMap): Promise<void> => {
     const newMap = new Map(Array.from(event).map(([index, gamepad]) => [index, new Joystick(gamepad)]))
 
-    const thereWereJoysticksBefore = joysticks.value.size > 0
-
     // Add new joysticks
     for (const [index, joystick] of newMap) {
+      // Check if there were joysticks connected before this one
+      const thereWereJoysticksBefore = joysticks.value.size > 0
+
       if (joysticks.value.has(index)) continue
       joystick.model = joystickManager.getModel(joystick.gamepad.id)
       const { product_id, vendor_id } = joystickManager.getVidPid(joystick.gamepad.id)
