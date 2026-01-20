@@ -133,6 +133,41 @@
           </div>
         </v-col>
       </v-row>
+
+      <!-- Y-Axis bounds section -->
+      <v-row>
+        <v-col cols="12">
+          <div class="text-subtitle-1 font-weight-medium">Y-Axis Bounds</div>
+          <div class="ml-2 flex gap-x-8 mb-4">
+            <div class="flex flex-col">
+              <v-checkbox v-model="widget.options.useFixedMinY" label="Fixed minimum" hide-details class="-mt-1" />
+              <v-text-field
+                v-model.number="widget.options.fixedMinY"
+                type="number"
+                label="Min value"
+                variant="outlined"
+                density="compact"
+                :disabled="!widget.options.useFixedMinY"
+                width="140px"
+                hide-details
+              />
+            </div>
+            <div class="flex flex-col">
+              <v-checkbox v-model="widget.options.useFixedMaxY" label="Fixed maximum" hide-details class="-mt-1" />
+              <v-text-field
+                v-model.number="widget.options.fixedMaxY"
+                type="number"
+                label="Max value"
+                variant="outlined"
+                density="compact"
+                :disabled="!widget.options.useFixedMaxY"
+                width="140px"
+                hide-details
+              />
+            </div>
+          </div>
+        </v-col>
+      </v-row>
     </template>
     <template #actions>
       <div class="flex w-full justify-end my-2">
@@ -186,6 +221,10 @@ onBeforeMount(() => {
     decimalPlaces: 2,
     showTitle: true,
     updateOnConstantValue: true,
+    useFixedMinY: false,
+    useFixedMaxY: false,
+    fixedMinY: 0,
+    fixedMaxY: 100,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
@@ -333,10 +372,13 @@ const renderCanvas = (): void => {
     maxValue = Math.max(...valuesHistory)
     minValue = Math.min(...valuesHistory)
 
-    // Add a buffer to keep the plot neatly within bounds, and centered when there are no changes
-    const buffer = 0.05 * (maxValue != minValue ? maxValue - minValue : 1)
-    const maxY = maxValue + buffer
-    const minY = minValue - buffer
+    // Use fixed Y-axis bounds if enabled, otherwise calculate with a buffer to keep the plot neatly within bounds, and centered when there are no changes
+    const tempMinValue = widget.value.options.useFixedMinY ? widget.value.options.fixedMinY : minValue
+    const tempMaxValue = widget.value.options.useFixedMaxY ? widget.value.options.fixedMaxY : maxValue
+    const buffer = 0.05 * (tempMaxValue != tempMinValue ? tempMaxValue - tempMinValue : 1)
+    const minY = widget.value.options.useFixedMinY ? widget.value.options.fixedMinY : tempMinValue - buffer
+    const maxY = widget.value.options.useFixedMaxY ? widget.value.options.fixedMaxY : tempMaxValue + buffer
+
     const currentValue = valuesHistory[valuesHistory.length - 1]
 
     // Draw the graph
