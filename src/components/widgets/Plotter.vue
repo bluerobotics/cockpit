@@ -381,6 +381,21 @@ const renderCanvas = (): void => {
 
     const currentValue = valuesHistory[valuesHistory.length - 1]
 
+    // Draw zero reference line if zero is within the visible range
+    if (minY <= 0 && maxY >= 0) {
+      const zeroY = canvasHeight - ((0 - minY) / (maxY - minY)) * canvasHeight
+      ctx.beginPath()
+      ctx.setLineDash([5, 5])
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
+      ctx.lineWidth = 1
+      ctx.moveTo(0, zeroY)
+      ctx.lineTo(canvasWidth, zeroY)
+      ctx.stroke()
+      // Restore line settings for the main graph
+      ctx.strokeStyle = widget.value.options.lineColor
+      ctx.lineWidth = Math.max(widget.value.options.lineThickness, 1)
+    }
+
     // Draw the graph
     ctx.beginPath()
     ctx.moveTo(0, canvasHeight / 2)
