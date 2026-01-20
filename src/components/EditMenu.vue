@@ -551,9 +551,9 @@
         :class="{ 'border-2 border-[#135da3]': widget.isExternal }"
         draggable="true"
         @dragstart="onRegularWidgetDragStart"
-        @dragend="onRegularWidgetDragEnd(widget)"
+        @dragend="(event) => onRegularWidgetDragEnd(widget, event)"
         @touchstart="onRegularWidgetDragStart"
-        @touchend="onRegularWidgetDragEnd(widget)"
+        @touchend="(event) => onRegularWidgetDragEnd(widget, event)"
       >
         <div
           v-if="widget.isExternal"
@@ -1167,8 +1167,42 @@ const onRegularWidgetDragStart = (event: Event): void => {
   }
 }
 
-const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo): void => {
-  store.addWidget(makeWidgetUnique(widget), store.currentView)
+// Places the widget if it is within the main-view
+const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEvent | TouchEvent): void => {
+  let clientX: number
+  let clientY: number
+
+  // Gets the coordinates the user released the widget at
+  if (event instanceof TouchEvent) {
+    const touch = event.changedTouches[0]
+    clientX = touch.clientX
+    clientY = touch.clientY
+  } else {
+    clientX = event.clientX
+    clientY = event.clientY
+  }
+
+  // If the main-view element is not found, return the opacity of the dragged widget card to 1 (previously set to 0.5 on onRegularWidgetDragStart)
+  const mainViewElement = document.querySelector('.main-view') as HTMLElement
+  if (!mainViewElement) {
+    const widgetCards = document.querySelectorAll('[draggable="true"]')
+    widgetCards.forEach((card) => {
+      ;(card as HTMLElement).style.opacity = '1'
+    })
+    return
+  }
+
+  // Checks if the final dragged widget coordinates are within the main-view's bounding rectangle
+  const mainViewRect = mainViewElement.getBoundingClientRect()
+  const isWithinMainView =
+    clientX >= mainViewRect.left &&
+    clientX <= mainViewRect.right &&
+    clientY >= mainViewRect.top &&
+    clientY <= mainViewRect.bottom
+
+  if (isWithinMainView) {
+    store.addWidget(makeWidgetUnique(widget), store.currentView)
+  }
 
   const widgetCards = document.querySelectorAll('[draggable="true"]')
   widgetCards.forEach((card) => {
