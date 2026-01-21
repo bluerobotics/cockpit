@@ -429,13 +429,12 @@ class JoystickManager {
       if (!this.joysticks.has(data.deviceId)) {
         this.joysticks.set(data.deviceId, joystickEvent.gamepad)
         this.enabledJoysticks.push(data.deviceId)
+        // Emit joystick connection update only when a new joystick is detected
+        this.emitJoystickConnectionUpdate()
       }
 
       // Emit joystick state update
       this.emitStateEvent(joystickEvent)
-
-      // Emit joystick connection update
-      this.emitJoystickConnectionUpdate()
     })
   }
 
