@@ -6,6 +6,9 @@ import {
   mavlinkManualControlAxes,
 } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import { getVehicleModeAction } from '@/libs/vehicle/ardupilot/common'
+import { RoverMode } from '@/libs/vehicle/ardupilot/types/modes'
+import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 import {
   type GamepadToCockpitStdMapping,
   type JoystickProtocolActionsMapping,
@@ -89,10 +92,10 @@ export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
     },
     buttonsCorrespondencies: {
       [CockpitModifierKeyOption.regular]: {
-        [JoystickButton.B0]: { action: modifierKeyActions.shift },
-        [JoystickButton.B1]: { action: otherAvailableActions.no_function },
-        [JoystickButton.B2]: { action: otherAvailableActions.no_function },
-        [JoystickButton.B3]: { action: otherAvailableActions.no_function },
+        [JoystickButton.B0]: { action: getVehicleModeAction(VehicleType.Rover, RoverMode.LOITER) },
+        [JoystickButton.B1]: { action: getVehicleModeAction(VehicleType.Rover, RoverMode.MANUAL) },
+        [JoystickButton.B2]: { action: getVehicleModeAction(VehicleType.Rover, RoverMode.AUTO) },
+        [JoystickButton.B3]: { action: getVehicleModeAction(VehicleType.Rover, RoverMode.ACRO) },
         [JoystickButton.B4]: { action: availableCockpitActions.go_to_previous_view },
         [JoystickButton.B5]: { action: availableCockpitActions.go_to_next_view },
         [JoystickButton.B6]: { action: otherAvailableActions.no_function },
