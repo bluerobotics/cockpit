@@ -764,6 +764,7 @@ import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
+import { getVehicleTypeFromMavType, getVehicleTypeFromModeActionId } from '@/libs/vehicle/ardupilot/common'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -922,6 +923,13 @@ const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void
   }
 }
 
+// Get the vehicle types (as VehicleType) that are assigned to the selected profile
+const allowedVehicleTypesForProfile = computed(() => {
+  return vehicleTypesAssignedToCurrentProfile.value
+    .map((mavType) => getVehicleTypeFromMavType(mavType))
+    .filter((vt): vt is NonNullable<typeof vt> => vt !== undefined)
+})
+
 const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
   const allowedProtocols = [
     JoystickProtocol.MAVLinkManualControl,
@@ -938,6 +946,13 @@ const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
       return dataLakeVariableInfo.allowUserToChangeValue && dataLakeVariableInfo.type !== 'string'
     })
     .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
+    .filter((action: JoystickAction) => {
+      // Filter mode actions to only show those matching the profile's vehicle types
+      const modeVehicleType = getVehicleTypeFromModeActionId(action.id)
+      if (!modeVehicleType) return true // Not a mode action, keep it
+      if (allowedVehicleTypesForProfile.value.length === 0) return true // No vehicle types assigned, show all
+      return allowedVehicleTypesForProfile.value.includes(modeVehicleType)
+    })
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 })
 
