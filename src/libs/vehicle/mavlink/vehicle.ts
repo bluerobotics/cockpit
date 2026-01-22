@@ -8,6 +8,7 @@ import {
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
+import { type DataLakeVariable } from '@/libs/actions/data-lake'
 import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -52,7 +53,6 @@ import {
   Velocity,
 } from '@/libs/vehicle/types'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
-import { DataLakeVariable } from '@/types/widgets'
 
 import { flattenData } from '../common/data-flattener'
 import * as Vehicle from '../vehicle'
