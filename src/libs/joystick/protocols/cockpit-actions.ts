@@ -1,25 +1,36 @@
 /* eslint-disable vue/max-len */
 /* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
-import { type ProtocolAction,JoystickProtocol } from '@/types/joystick'
+import { type ArduPilotVehicleModeActionIdPattern } from '@/libs/vehicle/ardupilot/common'
+import { type ProtocolAction, JoystickProtocol } from '@/types/joystick'
 
 /**
  * Possible functions in the MAVLink `MANUAL_CONTROL` message protocol
  */
-export enum CockpitActionsFunction {
-  go_to_next_view = 'go_to_next_view',
-  go_to_previous_view = 'go_to_previous_view',
-  toggle_full_screen = 'toggle_full_screen',
-  mavlink_arm = 'mavlink_arm',
-  mavlink_disarm = 'mavlink_disarm',
-  toggle_bottom_bar = 'toggle_bottom_bar',
-  toggle_top_bar = 'toggle_top_bar',
-  start_recording_all_streams = 'start_recording_all_streams',
-  stop_recording_all_streams = 'stop_recording_all_streams',
-  toggle_recording_all_streams = 'toggle_recording_all_streams',
-  take_snapshot = 'take_snapshot',
-  hold_to_confirm = 'hold_to_confirm',
-}
+export const CockpitActionsFunction = {
+  go_to_next_view: 'go_to_next_view',
+  go_to_previous_view: 'go_to_previous_view',
+  toggle_full_screen: 'toggle_full_screen',
+  mavlink_arm: 'mavlink_arm',
+  mavlink_disarm: 'mavlink_disarm',
+  toggle_bottom_bar: 'toggle_bottom_bar',
+  toggle_top_bar: 'toggle_top_bar',
+  start_recording_all_streams: 'start_recording_all_streams',
+  stop_recording_all_streams: 'stop_recording_all_streams',
+  toggle_recording_all_streams: 'toggle_recording_all_streams',
+  take_snapshot: 'take_snapshot',
+  hold_to_confirm: 'hold_to_confirm',
+} as const
+
+/**
+ * Predefined cockpit action IDs
+ */
+type PredefinedCockpitActionId = (typeof CockpitActionsFunction)[keyof typeof CockpitActionsFunction]
+
+/**
+ * All valid cockpit action IDs
+ */
+export type CockpitActionsFunction = PredefinedCockpitActionId | ArduPilotVehicleModeActionIdPattern
 
 /**
  * An action to be performed by Cockpit itself

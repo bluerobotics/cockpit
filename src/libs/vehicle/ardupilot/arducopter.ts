@@ -21,7 +21,7 @@ export class ArduCopter extends ArduPilotVehicle<CustomMode> {
    * @param {number} system_id
    */
   constructor(system_id: number) {
-    super(Vehicle.Type.Copter, system_id)
+    super(Vehicle.Type.Copter, system_id, CustomMode)
   }
 
   /**

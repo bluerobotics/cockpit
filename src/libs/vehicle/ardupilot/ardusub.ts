@@ -22,7 +22,7 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
    * @param {number} system_id
    */
   constructor(system_id: number) {
-    super(Vehicle.Type.Sub, system_id)
+    super(Vehicle.Type.Sub, system_id, CustomMode)
   }
 
   /**
