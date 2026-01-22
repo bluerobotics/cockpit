@@ -1,6 +1,7 @@
 /* eslint-disable vue/max-len */
 /* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
+import { cockpitTimerManager } from '@/libs/timer-management'
 import { type ProtocolAction,JoystickProtocol } from '@/types/joystick'
 
 /**
@@ -100,8 +101,15 @@ export class CockpitActionsManager {
     }
 
     console.debug(`Executing action callback for action ${id}.`)
+
+    // Clear all existing managed timers for the action
+    cockpitTimerManager.clearAllTimersForOwner(id)
+
     try {
+      // Execute the action callback with managed timers
+      cockpitTimerManager.setCurrentOwnerId(id)
       callbackEntry.callback()
+      cockpitTimerManager.clearCurrentOwnerId()
     } catch (error) {
       console.error(`Error executing action callback for action ${id}.`, error)
     }

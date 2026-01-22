@@ -29,6 +29,7 @@ import {
   registerNewAction,
   unregisterActionCallback,
 } from './joystick/protocols/cockpit-actions'
+import { type CockpitTimerManager, cockpitTimerManager } from './timer-management'
 
 declare global {
   /**
@@ -194,6 +195,27 @@ declare global {
        * @param id - The id of the action to execute the callback for
        */
       executeActionCallback: typeof executeActionCallback
+
+      // Managed timers
+      /**
+       * Managed setInterval that clears previous intervals when action is re-run
+       * @param {Function} callback - The function to execute
+       * @param {number} delay - The delay in milliseconds
+       * @returns {number} The interval ID
+       */
+      setInterval: (callback: () => void, delay?: number) => number
+      /**
+       * Managed setTimeout that clears when action is re-run (but not when stopped)
+       * @param {Function} callback - The function to execute
+       * @param {number} delay - The delay in milliseconds
+       * @returns {number} The timeout ID
+       */
+      setTimeout: (callback: () => void, delay?: number) => number
+
+      /**
+       * Internal timer manager (used for action lifecycle integration)
+       */
+      timerManager: CockpitTimerManager
     }
     /**
      * Electron API exposed through preload script
@@ -483,6 +505,10 @@ window.cockpit = {
   registerActionCallback: registerActionCallback,
   unregisterActionCallback: unregisterActionCallback,
   executeActionCallback: executeActionCallback,
+  // Timers management:
+  setInterval: (callback: () => void, delay?: number) => cockpitTimerManager.createManagedSetInterval(callback, delay),
+  setTimeout: (callback: () => void, delay?: number) => cockpitTimerManager.createManagedSetTimeout(callback, delay),
+  timerManager: cockpitTimerManager,
 }
 
 /* c8 ignore start */
