@@ -3231,6 +3231,20 @@ onMounted(async () => {
   if (instanceOfCockpitMission(missionStore.draftMission)) {
     loadDraftMission(missionStore.draftMission)
   }
+
+  if (missionStore.followVehicleOnMap === true) {
+    targetFollower.follow(WhoToFollow.VEHICLE)
+  } else {
+    targetFollower.unFollow()
+  }
+})
+
+watch(followerTarget, (newTarget) => {
+  if (newTarget === WhoToFollow.VEHICLE) {
+    missionStore.followVehicleOnMap = true
+  } else {
+    missionStore.followVehicleOnMap = false
+  }
 })
 
 onUnmounted(() => {
