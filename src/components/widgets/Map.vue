@@ -83,6 +83,7 @@
             @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
             @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
           />
+          <div></div>
         </template>
       </v-tooltip>
 
@@ -720,6 +721,12 @@ onMounted(async () => {
   }
 
   mapReady.value = true
+
+  if (missionStore.followVehicleOnMap === true) {
+    targetFollower.follow(WhoToFollow.VEHICLE)
+  } else {
+    targetFollower.unFollow()
+  }
   await refreshMission()
 })
 
@@ -1007,10 +1014,12 @@ watch(vehicleStore.coordinates, () => {
   vehicleMarker.value.setLatLng(vehiclePosition.value)
 })
 
-// If vehicle position was not available and now it is, start following it
-watch(vehiclePosition, (_, oldPosition) => {
-  if (followerTarget.value === WhoToFollow.VEHICLE || oldPosition !== undefined) return
-  targetFollower.follow(WhoToFollow.VEHICLE)
+watch(followerTarget, (newTarget) => {
+  if (newTarget === WhoToFollow.VEHICLE) {
+    missionStore.followVehicleOnMap = true
+  } else {
+    missionStore.followVehicleOnMap = false
+  }
 })
 
 // Dinamically update data of the vehicle tooltip
