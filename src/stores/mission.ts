@@ -38,6 +38,7 @@ export const useMissionStore = defineStore('mission', () => {
   const defaultMapZoom = useBlueOsStorage<number>('cockpit-default-map-zoom', DEFAULT_MAP_ZOOM)
   const userLastMapCenter = useBlueOsStorage<WaypointCoordinates>('cockpit-user-last-map-center', DEFAULT_MAP_CENTER)
   const userLastMapZoom = useBlueOsStorage<number>('cockpit-user-last-map-zoom', DEFAULT_MAP_ZOOM)
+  const followVehicleOnMap = useBlueOsStorage<boolean>('cockpit-map-follow-vehicle', false)
   const draftMission = useBlueOsStorage('cockpit-draft-mission', {})
   const vehicleMission = useBlueOsStorage<Waypoint[]>('cockpit-vehicle-mission', [])
   const vehicleMissionRevision = useBlueOsStorage<number>('cockpit-vehicle-mission-rev', 0)
@@ -279,5 +280,6 @@ export const useMissionStore = defineStore('mission', () => {
     updateWaypointCommand,
     defaultCruiseSpeed,
     userLastMapTileProvider,
+    followVehicleOnMap,
   }
 })
