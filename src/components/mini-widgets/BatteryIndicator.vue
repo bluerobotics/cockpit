@@ -102,23 +102,32 @@
         <div class="flex justify-between items-center -mt-1">
           <v-checkbox
             v-model="miniWidget.options.useVoltageToColor"
-            label="Use voltage to color scheme"
+            label="Change color by voltage"
             hide-details
             class="mr-1"
           />
-          <v-tooltip
-            location="top"
-            text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
-          >
-            <template #activator="{ props: infoProps }">
-              <v-icon
-                v-bind="infoProps"
-                icon="mdi-information-outline"
-                class="ml-1 text-yellow-300 cursor-pointer"
-                size="18"
-              />
-            </template>
-          </v-tooltip>
+          <div class="flex items-center gap-x-1">
+            <v-tooltip
+              location="top"
+              text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
+            >
+              <template #activator="{ props: infoProps }">
+                <v-icon
+                  v-bind="infoProps"
+                  icon="mdi-information-outline"
+                  class="ml-1 text-yellow-300 cursor-pointer"
+                  size="18"
+                />
+              </template>
+            </v-tooltip>
+            <v-tooltip location="top" text="Reset colors and voltage thresholds to default values">
+              <template #activator="{ props: resetProps }">
+                <v-btn v-bind="resetProps" icon size="small" variant="text" class="text-white" @click="resetToDefaults">
+                  <v-icon icon="mdi-restore" size="18" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+          </div>
         </div>
 
         <div class="flex items-start gap-x-2">
@@ -244,6 +253,11 @@ miniWidget.value.options.voltageToColorScheme ??= Object.assign({}, defaultBatte
 miniWidget.value.options.batteryThresholds ??= Object.assign({}, defaultBatteryLevelThresholds)
 
 const batteryThresholds = computed<BatteryLevelThresholds>(() => miniWidget.value.options.batteryThresholds)
+
+const resetToDefaults = (): void => {
+  miniWidget.value.options.voltageToColorScheme = Object.assign({}, defaultBatteryLevelColorScheme)
+  miniWidget.value.options.batteryThresholds = Object.assign({}, defaultBatteryLevelThresholds)
+}
 
 // Round voltage to 0.1V precision for values < 100V, integer precision for >= 100V
 const roundedVoltage = computed(() => {
