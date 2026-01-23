@@ -121,89 +121,76 @@
           </v-tooltip>
         </div>
 
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.high"
-            label="High voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-         <div class="flex-1 text-sm">High battery</div>
-          <v-menu :close-on-content-click="false">
-            <template #activator="{ props: colorProps }">
-              <div
-                v-bind="colorProps"
-                class="w-8 h-8 rounded border border-white/30 cursor-pointer"
-                :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.high }"
-              />
-            </template>
-            <v-color-picker v-model="miniWidget.options.voltageToColorScheme.high" hide-inputs theme="dark" />
-          </v-menu>
-        </div>
-
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.medium"
-            label="Medium voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <v-menu :close-on-content-click="false">
-            <template #activator="{ props: colorProps }">
-              <div
-                v-bind="colorProps"
-                class="w-8 h-8 rounded border border-white/30 cursor-pointer"
-                :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.medium }"
-              />
-            </template>
-            <v-color-picker v-model="miniWidget.options.voltageToColorScheme.medium" hide-inputs theme="dark" />
-          </v-menu>
-        </div>
-
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.low"
-            label="Low voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <v-menu :close-on-content-click="false">
-            <template #activator="{ props: colorProps }">
-              <div
-                v-bind="colorProps"
-                class="w-8 h-8 rounded border border-white/30 cursor-pointer"
-                :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.low }"
-              />
-            </template>
-            <v-color-picker v-model="miniWidget.options.voltageToColorScheme.low" hide-inputs theme="dark" />
-          </v-menu>
-        </div>
-
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.critical"
-            label="Critical voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <v-menu :close-on-content-click="false">
-            <template #activator="{ props: colorProps }">
-              <div
-                v-bind="colorProps"
-                class="w-8 h-8 rounded border border-white/30 cursor-pointer"
-                :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.critical }"
-              />
-            </template>
-            <v-color-picker v-model="miniWidget.options.voltageToColorScheme.critical" hide-inputs theme="dark" />
-          </v-menu>
+        <div class="flex items-start gap-x-2">
+          <div class="flex flex-1 min-w-0 flex-col gap-y-4">
+            <div class="h-3 shrink-0" />
+            <v-text-field
+              v-model.number="batteryThresholds.medium"
+              label="Medium threshold (V)"
+              type="number"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+            <v-text-field
+              v-model.number="batteryThresholds.low"
+              label="Low threshold (V)"
+              type="number"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+            <v-text-field
+              v-model.number="batteryThresholds.critical"
+              label="Critical threshold (V)"
+              type="number"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+          </div>
+          <div class="flex shrink-0 flex-col gap-y-4">
+            <v-menu :close-on-content-click="false">
+              <template #activator="{ props: colorProps }">
+                <div
+                  v-bind="colorProps"
+                  class="w-10 h-10 rounded border border-white/30 cursor-pointer shrink-0"
+                  :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.high }"
+                />
+              </template>
+              <v-color-picker v-model="miniWidget.options.voltageToColorScheme.high" hide-inputs theme="dark" />
+            </v-menu>
+            <v-menu :close-on-content-click="false">
+              <template #activator="{ props: colorProps }">
+                <div
+                  v-bind="colorProps"
+                  class="w-10 h-10 rounded border border-white/30 cursor-pointer shrink-0"
+                  :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.medium }"
+                />
+              </template>
+              <v-color-picker v-model="miniWidget.options.voltageToColorScheme.medium" hide-inputs theme="dark" />
+            </v-menu>
+            <v-menu :close-on-content-click="false">
+              <template #activator="{ props: colorProps }">
+                <div
+                  v-bind="colorProps"
+                  class="w-10 h-10 rounded border border-white/30 cursor-pointer shrink-0"
+                  :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.low }"
+                />
+              </template>
+              <v-color-picker v-model="miniWidget.options.voltageToColorScheme.low" hide-inputs theme="dark" />
+            </v-menu>
+            <v-menu :close-on-content-click="false">
+              <template #activator="{ props: colorProps }">
+                <div
+                  v-bind="colorProps"
+                  class="w-10 h-10 rounded border border-white/30 cursor-pointer shrink-0"
+                  :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.critical }"
+                />
+              </template>
+              <v-color-picker v-model="miniWidget.options.voltageToColorScheme.critical" hide-inputs theme="dark" />
+            </v-menu>
+          </div>
         </div>
 
         <p class="text-red-500 text-center text-sm w-[full]">{{ errorMessage }}</p>
@@ -273,13 +260,12 @@ const currentBatteryLevel = computed<BatteryLevel>(() => {
 
   if (voltage == null) return 'unknown'
 
-  const { critical, low, medium, high } = batteryThresholds.value
+  const { critical, low, medium } = batteryThresholds.value
 
-  if (voltage >= high) return 'high'
-  if (voltage >= medium) return 'medium'
-  if (voltage >= low) return 'low'
-  if (voltage >= critical) return 'critical'
-  if (voltage < critical) return 'critical'
+  if (voltage <= critical) return 'critical'
+  if (voltage <= low) return 'low'
+  if (voltage <= medium) return 'medium'
+  if (voltage > medium) return 'high'
   return 'unknown'
 })
 
