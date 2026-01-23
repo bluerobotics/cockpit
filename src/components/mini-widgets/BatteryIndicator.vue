@@ -123,32 +123,15 @@
 
         <div class="flex items-center gap-x-2">
           <v-text-field
-            v-model.number="batteryThresholds.critical"
-            label="Critical voltage (V)"
+            v-model.number="batteryThresholds.high"
+            label="High voltage (V)"
             type="number"
             density="compact"
             variant="outlined"
             hide-details
           />
           <input
-            v-model="miniWidget.options.voltageToColorScheme.critical"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
-        </div>
-
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.low"
-            label="Low voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.low"
+            v-model="miniWidget.options.voltageToColorScheme.high"
             type="color"
             theme="dark"
             class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
@@ -174,15 +157,32 @@
 
         <div class="flex items-center gap-x-2">
           <v-text-field
-            v-model.number="batteryThresholds.high"
-            label="High voltage (V)"
+            v-model.number="batteryThresholds.low"
+            label="Low voltage (V)"
             type="number"
             density="compact"
             variant="outlined"
             hide-details
           />
           <input
-            v-model="miniWidget.options.voltageToColorScheme.high"
+            v-model="miniWidget.options.voltageToColorScheme.low"
+            type="color"
+            theme="dark"
+            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
+          />
+        </div>
+
+        <div class="flex items-center gap-x-2">
+          <v-text-field
+            v-model.number="batteryThresholds.critical"
+            label="Critical voltage (V)"
+            type="number"
+            density="compact"
+            variant="outlined"
+            hide-details
+          />
+          <input
+            v-model="miniWidget.options.voltageToColorScheme.critical"
             type="color"
             theme="dark"
             class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
