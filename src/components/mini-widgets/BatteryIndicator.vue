@@ -241,9 +241,15 @@ miniWidget.value.options.batteryThresholds ??= Object.assign({}, defaultBatteryL
 
 const batteryThresholds = computed<BatteryLevelThresholds>(() => miniWidget.value.options.batteryThresholds)
 
-const rawVoltage = computed<number | null>(() => store?.powerSupply?.voltage ?? null)
+// Round voltage to 0.1V precision for values < 100V, integer precision for >= 100V
+const roundedVoltage = computed(() => {
+  const voltage = store?.powerSupply?.voltage
+  if (voltage === undefined || voltage === null) return null
+  return Math.abs(voltage) >= 100 ? Math.round(voltage) : Math.round(voltage * 10) / 10
+})
+
 // Keeps a stable voltage reading for 4 seconds to avoid rapid battery level changes
-const debouncedVoltage = useDebounce(rawVoltage, 4000)
+const debouncedVoltage = useDebounce(roundedVoltage, 4000)
 
 const currentBatteryLevel = computed<BatteryLevel>(() => {
   const voltage = debouncedVoltage.value
@@ -266,10 +272,9 @@ const currentBatteryColor = computed(() => {
 })
 
 const voltageDisplayValue = computed(() => {
-  if (store?.powerSupply?.voltage === undefined) return '--'
-  return Math.abs(store.powerSupply.voltage) >= 100
-    ? store.powerSupply.voltage.toFixed(0)
-    : store.powerSupply.voltage.toFixed(1)
+  const voltage = roundedVoltage.value
+  if (voltage === null) return '--'
+  return Math.abs(voltage) >= 100 ? voltage.toFixed(0) : voltage.toFixed(1)
 })
 
 const currentDisplayValue = computed(() => {
