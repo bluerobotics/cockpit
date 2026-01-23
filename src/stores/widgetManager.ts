@@ -43,7 +43,6 @@ import {
   WidgetManagerVars,
   WidgetType,
 } from '@/types/widgets'
-
 const { showDialog } = useInteractionDialog()
 
 export const savedProfilesKey = 'cockpit-saved-profiles-v8'
