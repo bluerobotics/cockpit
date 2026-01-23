@@ -130,12 +130,17 @@
             variant="outlined"
             hide-details
           />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.high"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
+         <div class="flex-1 text-sm">High battery</div>
+          <v-menu :close-on-content-click="false">
+            <template #activator="{ props: colorProps }">
+              <div
+                v-bind="colorProps"
+                class="w-8 h-8 rounded border border-white/30 cursor-pointer"
+                :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.high }"
+              />
+            </template>
+            <v-color-picker v-model="miniWidget.options.voltageToColorScheme.high" hide-inputs theme="dark" />
+          </v-menu>
         </div>
 
         <div class="flex items-center gap-x-2">
@@ -147,12 +152,16 @@
             variant="outlined"
             hide-details
           />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.medium"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
+          <v-menu :close-on-content-click="false">
+            <template #activator="{ props: colorProps }">
+              <div
+                v-bind="colorProps"
+                class="w-8 h-8 rounded border border-white/30 cursor-pointer"
+                :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.medium }"
+              />
+            </template>
+            <v-color-picker v-model="miniWidget.options.voltageToColorScheme.medium" hide-inputs theme="dark" />
+          </v-menu>
         </div>
 
         <div class="flex items-center gap-x-2">
@@ -164,12 +173,16 @@
             variant="outlined"
             hide-details
           />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.low"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
+          <v-menu :close-on-content-click="false">
+            <template #activator="{ props: colorProps }">
+              <div
+                v-bind="colorProps"
+                class="w-8 h-8 rounded border border-white/30 cursor-pointer"
+                :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.low }"
+              />
+            </template>
+            <v-color-picker v-model="miniWidget.options.voltageToColorScheme.low" hide-inputs theme="dark" />
+          </v-menu>
         </div>
 
         <div class="flex items-center gap-x-2">
@@ -181,12 +194,16 @@
             variant="outlined"
             hide-details
           />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.critical"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
+          <v-menu :close-on-content-click="false">
+            <template #activator="{ props: colorProps }">
+              <div
+                v-bind="colorProps"
+                class="w-8 h-8 rounded border border-white/30 cursor-pointer"
+                :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.critical }"
+              />
+            </template>
+            <v-color-picker v-model="miniWidget.options.voltageToColorScheme.critical" hide-inputs theme="dark" />
+          </v-menu>
         </div>
 
         <p class="text-red-500 text-center text-sm w-[full]">{{ errorMessage }}</p>
