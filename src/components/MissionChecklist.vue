@@ -84,7 +84,7 @@
       <v-divider class="flex center w-[80%]" inset />
       <v-card-actions>
         <div class="flex justify-between w-full py-1 px-2 pt-3">
-          <v-btn variant="text" @click="onCancel">Cancel</v-btn>
+          <v-btn variant="text" @click="onCancel">{{ $t('common.cancel') }}</v-btn>
           <div class="flex items-center">
             <v-checkbox
               :model-value="!missionStore.showChecklistBeforeArm"

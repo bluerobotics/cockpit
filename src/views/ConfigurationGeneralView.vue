@@ -1,28 +1,26 @@
 <template>
   <BaseConfigurationView>
-    <template #title>General configuration</template>
+    <template #title>{{ $t('configuration.general.title') }}</template>
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>User settings</template>
+          <template #title>{{ $t('configuration.general.userSettings') }}</template>
           <template #info>
             <p class="w-full">
-              User related configuration. Here you can set the user that is currently set for this device as well as
-              create a new user account.
+              {{ $t('configuration.general.userSettingsInfo') }}
               <br />
               <br />
-              <span class="font-semibold">Pirate mode</span> allows Cockpit to expose advanced features, like setting
-              the frequency of MAVLink messages. Take care when enabling this mode.
+              {{ $t('configuration.general.pirateModeInfo') }}
             </p>
           </template>
           <template #content>
             <div class="flex flex-col w-full items-start">
               <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
-                  <span class="mr-2">Current user:</span>
+                  <span class="mr-2">{{ $t('configuration.general.currentUser') }}</span>
                   <span class="font-semibold text-2xl cursor-pointer" @click="missionStore.changeUsername">{{
                     missionStore.username
                   }}</span>
@@ -35,14 +33,37 @@
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
                     @click="missionStore.changeUsername"
-                    >Manage users</v-btn
+                    >{{ $t('configuration.general.manageUsers') }}</v-btn
                   >
                 </div>
               </div>
               <v-divider class="w-full opacity-[0.08]" />
+              <div class="flex flex-row w-full items-center justify-between py-3 gap-x-2">
+                <span class="text-sm">{{ $t('configuration.general.language') }}</span>
+                <v-select
+                  v-model="currentLanguage"
+                  :items="availableLanguages"
+                  item-title="label"
+                  item-value="value"
+                  density="compact"
+                  variant="solo"
+                  hide-details
+                  flat
+                  class="w-40 language-select"
+                  bg-color="transparent"
+                  base-color="white"
+                  color="white"
+                  :menu-props="{
+                    class: 'glass-menu-dropdown',
+                    contentClass: 'glass-menu-content',
+                  }"
+                  @update:model-value="changeLanguage"
+                ></v-select>
+              </div>
+              <v-divider class="w-full opacity-[0.08]" />
               <div class="flex flex-row w-full items-center justify-between py-5 gap-x-2">
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
-                  Show tutorial
+                  {{ $t('configuration.general.showTutorial') }}
                 </v-btn>
                 <v-btn
                   v-if="isElectron()"
@@ -51,7 +72,7 @@
                   variant="flat"
                   @click="openCockpitFolder"
                 >
-                  Open Cockpit folder
+                  {{ $t('configuration.general.openCockpitFolder') }}
                 </v-btn>
                 <v-btn
                   size="x-small"
@@ -59,7 +80,7 @@
                   variant="flat"
                   @click="showCockpitSettingsDialog = true"
                 >
-                  Manage Cockpit settings
+                  {{ $t('configuration.general.manageCockpitSettings') }}
                 </v-btn>
                 <v-btn
                   size="x-small"
@@ -67,7 +88,11 @@
                   variant="flat"
                   @click="interfaceStore.pirateMode = !interfaceStore.pirateMode"
                 >
-                  {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
+                  {{
+                    interfaceStore.pirateMode
+                      ? $t('configuration.general.disablePirateMode')
+                      : $t('configuration.general.enablePirateMode')
+                  }}
                 </v-btn>
               </div>
             </div>
@@ -75,9 +100,11 @@
         </ExpansiblePanel>
 
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle network connection (global address)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
-          <template #info>Sets the network address for device communication. E.g: blueos.local</template>
+          <template #title>{{ $t('configuration.general.vehicleNetworkConnection') }}</template>
+          <template #subtitle
+            >{{ $t('configuration.general.currentAddress') }} {{ mainVehicleStore.globalAddress }}</template
+          >
+          <template #info>{{ $t('configuration.general.connectionInfo') }}</template>
           <template #content>
             <v-btn
               v-if="isElectron()"
@@ -86,7 +113,7 @@
               variant="flat"
               @click="showDiscoveryDialog = true"
             >
-              Search for vehicles
+              {{ $t('configuration.general.searchForVehicles') }}
             </v-btn>
             <v-form
               ref="globalAddressForm"
@@ -116,7 +143,7 @@
                   @click:append-inner="resetGlobalAddress"
                 >
                   <template #append-inner>
-                    <v-icon v-tooltip.bottom="'Reset global address'" color="white" @click="resetGlobalAddress">
+                    <v-icon v-tooltip.bottom="$t('configuration.interface.resetGlobalAddress')" color="white" @click="resetGlobalAddress">
                       mdi-refresh
                     </v-icon>
                   </template>
@@ -129,19 +156,24 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('common.apply') }}
                 </v-btn>
               </div>
             </v-form>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>MAVLink2REST URI</template>
+          <template #title>{{ $t('configuration.general.mavlinkUri') }}</template>
           <template #subtitle>
-            Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
-            Status:
+            {{ $t('configuration.general.currentAddress') }}
+            {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
+            {{ $t('configuration.general.status') }}
             {{
-              vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
+              vehicleConnected
+                ? $t('configuration.general.connected')
+                : vehicleConnected === undefined
+                ? $t('configuration.general.connecting')
+                : $t('configuration.general.failedToConnect')
             }}
           </template>
           <template #content>
@@ -168,7 +200,7 @@
                   >
                     <template #append-inner>
                       <v-icon
-                        v-tooltip.bottom="'Reset to default'"
+                        v-tooltip.bottom="$t('configuration.interface.resetToDefault')"
                         color="white"
                         :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                         @click="resetMainVehicleConnectionURI"
@@ -185,7 +217,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('common.apply') }}
                 </v-btn>
               </div>
               <div class="flex justify-end mt-6">
@@ -195,13 +227,17 @@
                 >
                   <v-switch
                     v-model="mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="$t('configuration.interface.enableCustom')"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{
+                      mainVehicleStore.customMAVLink2RestWebsocketURI.enabled
+                        ? $t('configuration.general.enabled')
+                        : $t('configuration.general.disabled')
+                    }}
                   </div>
                 </div>
               </div>
@@ -209,8 +245,11 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Video connection (WebRTC)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
+          <template #title>{{ $t('configuration.general.videoConnection') }}</template>
+          <template #subtitle
+            >{{ $t('configuration.general.currentAddress') }}
+            {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template
+          >
           <template #content>
             <v-form
               ref="webRTCSignallingForm"
@@ -234,7 +273,7 @@
                   >
                     <template #append-inner>
                       <v-icon
-                        v-tooltip.bottom="'Reset to default'"
+                        v-tooltip.bottom="$t('configuration.interface.resetToDefault')"
                         color="white"
                         :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
                         @click="resetWebRTCSignallingURI"
@@ -251,7 +290,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('common.apply') }}
                 </v-btn>
               </div>
               <div>
@@ -261,13 +300,17 @@
                 >
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCSignallingURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="$t('configuration.interface.enableCustom')"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{
+                      mainVehicleStore.customWebRTCSignallingURI.enabled
+                        ? $t('configuration.general.enabled')
+                        : $t('configuration.general.disabled')
+                    }}
                   </div>
                 </div>
               </div>
@@ -275,7 +318,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Custom WebRTC configuration</template>
+          <template #title>{{ $t('configuration.general.customWebRtcConfig') }}</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
               <v-textarea
@@ -283,7 +326,7 @@
                 v-model="customRtcConfiguration"
                 :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
                 variant="outlined"
-                label="Custom WebRTC Configuration"
+                :label="$t('configuration.general.customWebRtcConfigLabel')"
                 :rows="6"
                 hint="e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
                 class="w-full"
@@ -297,19 +340,23 @@
                   type="submit"
                   @click="handleCustomRtcConfiguration"
                 >
-                  Apply
+                  {{ $t('common.apply') }}
                 </v-btn>
 
                 <div class="flex flex-col align-end text-[10px] -mt-8">
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="$t('configuration.interface.enableCustom')"
                     class="-mt-5 bg-transparent"
                     rounded="lg"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? 'Enabled' : 'Disabled' }}
+                    {{
+                      mainVehicleStore.customWebRTCConfiguration.enabled
+                        ? $t('configuration.general.enabled')
+                        : $t('configuration.general.disabled')
+                    }}
                   </div>
                 </div>
               </div>
@@ -325,6 +372,8 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useLocale } from 'vuetify'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
@@ -347,11 +396,41 @@ const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const { openSnackbar } = useSnackbar()
+const { locale, t } = useI18n()
+const { current: vuetifyLocale } = useLocale()
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
 const newGlobalAddress = ref(mainVehicleStore.globalAddress)
 const showCockpitSettingsDialog = ref(false)
+
+const availableLanguages = [
+  { label: 'English', value: 'en' },
+  { label: '中文', value: 'zh' },
+  // Add more languages here as needed
+  // { label: 'Español', value: 'es' },
+  // { label: 'Français', value: 'fr' },
+]
+
+const currentLanguage = ref(locale.value)
+
+const changeLanguage = (newLocale: string): void => {
+  locale.value = newLocale
+  currentLanguage.value = newLocale
+
+  // Update Vuetify locale
+  vuetifyLocale.value = newLocale === 'zh' ? 'zhHans' : 'en'
+
+  // Save to localStorage
+  localStorage.setItem('cockpit-language', newLocale)
+
+  // Update Electron menu language if running in Electron
+  if (window.electronAPI?.updateMenuLanguage) {
+    window.electronAPI.updateMenuLanguage(newLocale)
+  }
+
+  openSnackbar({ message: t('success.languageChanged'), variant: 'success', duration: 3000 })
+}
 
 const setGlobalAddress = async (): Promise<void> => {
   await globalAddressForm.value.validate()
@@ -576,7 +655,7 @@ const openCockpitFolder = (): void => {
     window.electronAPI?.openCockpitFolder()
   } else {
     openSnackbar({
-      message: 'This feature is only available in the desktop version of Cockpit.',
+      message: t('errors.desktopFeatureOnly'),
       duration: 3000,
       variant: 'error',
       closeButton: true,
@@ -587,5 +666,62 @@ const openCockpitFolder = (): void => {
 <style scoped>
 .uri-input {
   width: 100% !important;
+}
+
+/* Language select glass effect */
+:deep(.language-select) {
+  background: rgba(255, 255, 255, 0.13) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.language-select .v-field) {
+  background: rgba(255, 255, 255, 0.13) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+:deep(.language-select .v-field__input) {
+  color: white !important;
+}
+
+:deep(.language-select .v-select__selection-text) {
+  color: white !important;
+}
+
+:deep(.language-select .v-icon) {
+  color: white !important;
+  opacity: 0.7;
+}
+</style>
+
+<style>
+/* Global glass menu dropdown styles (not scoped) */
+.glass-menu-dropdown.v-overlay {
+  background: transparent !important;
+}
+
+.glass-menu-dropdown .v-overlay__content {
+  background: rgba(30, 41, 59, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+.glass-menu-content.v-list,
+.glass-menu-dropdown .v-list {
+  background: transparent !important;
+}
+
+.glass-menu-dropdown .v-list-item {
+  color: white !important;
+}
+
+.glass-menu-dropdown .v-list-item:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.glass-menu-dropdown .v-list-item--active {
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 </style>

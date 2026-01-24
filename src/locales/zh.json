@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "ok": "确定",
     "cancel": "取消",
@@ -28,14 +28,14 @@
     "description": "描述",
     "latitude": "纬度",
     "longitude": "经度",
-    "altitude": "海拔",
+    "altitude": "高度",
     "url": "URL",
     "add": "添加",
     "create": "创建"
   },
   "errors": {
-    "noVehicleAvailableForHomeWaypoint": "没有可用的载具来设置起始航点。",
-    "missionDeletedFromVehicle": "任务已从载具删除",
+    "noVehicleAvailableForHomeWaypoint": "没有可用的设备来设置起始航点。",
+    "missionDeletedFromVehicle": "任务已从设备删除",
     "variableNotEditable": "ID 为 {id} 的变量不可编辑",
     "variableNotFound": "未找到 ID 为 {id} 的变量",
     "variableCannotDelete": "无法删除 ID 为 {id} 的变量",
@@ -85,19 +85,23 @@
     "commandIgnoredOrDenied": "'{command}' 命令的确认被用户忽略或拒绝。",
     "cannotOpenPoiDialogWithoutCoords": "没有坐标无法打开兴趣点对话框。",
     "cannotSavePoiWithoutCoords": "没有坐标无法保存兴趣点。",
-    "cannotSetGlobalOriginOffline": "载具离线时无法设置全局原点。",
+    "cannotSetGlobalOriginOffline": "设备离线时无法设置全局原点。",
     "failedToSetGlobalOrigin": "设置全局原点失败：{error}",
     "invalidLatLngNumbers": "无效的纬度/经度数字。",
     "noValidSurveyPath": "没有有效的调查路径可生成航点。",
     "poiNotFoundInStore": "在存储中未找到兴趣点。",
-    "vehicleConnected": "载具已连接",
-    "vehicleConnectionLost": "载具连接已断开",
+    "vehicleConnected": "设备已连接",
+    "vehicleConnectionLost": "设备连接已断开",
     "anotherConfirmationInProgress": "无法确认 {command}。另一个确认正在进行中。",
-    "streamNotAvailable": "选定的视频流不可用。请检查其源或选择其他视频流。"
+    "streamNotAvailable": "选定的视频流不可用。请检查其源或选择其他视频流。",
+    "variableNameAlreadyExists": "变量名已存在",
+    "errorDeletingActionVariable": "删除操作变量时出错",
+    "cannotHideCurrentView": "您无法隐藏当前视图。",
+    "permanentlyDeleteProfile": "永久删除配置文件？"
   },
   "success": {
     "widgetLoadedSuccessfully": "组件已成功加载新哈希值。",
-    "vehicleAddressUpdated": "载具地址已更新",
+    "vehicleAddressUpdated": "设备地址已更新",
     "languageChanged": "语言已成功更改",
     "buttonRemapped": "按钮 {id} 已重新映射到功能 '{name}'。",
     "switchedToProfile": "已切换到配置文件 '{name}'。",
@@ -116,7 +120,8 @@
     "offlineTilesSaved": "{layerName} 离线瓦片已保存！",
     "chunksDownloaded": "已在 {batches} 个存档中下载 {count} 个块",
     "streamRestored": "流\"{externalId}\"已从忽略列表中恢复。",
-    "streamDeletedAndIgnored": "流\"{name}\"已删除并添加到忽略列表。"
+    "streamDeletedAndIgnored": "流\"{name}\"已删除并添加到忽略列表。",
+    "actionVariableDeleted": "操作变量已删除"
   },
   "info": {
     "missionChecklistDisabled": "任务检查清单将不再显示。您可以在设置中重新启用。",
@@ -135,6 +140,26 @@
     "streamNotAvailableAnymore": "流\"{externalId}\"不再可用。",
     "streamNotOnIgnoredList": "外部 ID 为\"{externalId}\"的流不在忽略列表中。"
   },
+  "armSafety": {
+    "title": "请小心",
+    "vehicleArmedWarning": "设备当前已解锁，主菜单包含可能导致不安全情况的配置和工具。",
+    "proceedCarefully": "请稍后再来，或谨慎选择以下选项之一继续：",
+    "continueNeverWarn": "继续且不再警告",
+    "continueSessionWarn": "继续且本次会话期间不再警告",
+    "continueAnyway": "仍然继续",
+    "disarmAndContinue": "解除设备锁定并继续",
+    "warningDisabled": "已禁用解锁菜单警告。您可以在设置>警报菜单中重新启用它。"
+  },
+  "architectureWarning": {
+    "title": "性能警告",
+    "runningWrongVersion": "您正在 Apple Silicon Mac（M 系列）上运行 x64 版本的 Cockpit，这会导致性能严重下降，包括：",
+    "slowerStartup": "应用程序启动时间慢 3-4 倍",
+    "doubleMemory": "内存使用量增加 2 倍",
+    "reducedPerformance": "整体性能下降",
+    "cannotDisable": "此警告无法禁用 - 我们强烈建议您下载并安装适合您系统的正确版本。",
+    "dismiss": "忽略",
+    "downloadARM": "下载 ARM64 版本"
+  },
   "usernameDialog": {
     "title": "管理用户：",
     "usernameInfo": "此用户名将用于在设备中存储您的设置。",
@@ -150,6 +175,7 @@
     "cannotDeleteCurrent": "无法删除当前用户。",
     "userDeleted": "用户已删除",
     "deleteUserFailed": "删除用户失败。列表已刷新。请重试。",
+    "failedDeletingUser": "删除用户 '{username}' 失败",
     "currentVehicle": "当前设备",
     "validationMinLength": "用户名至少需要3个字符。",
     "validationMaxLength": "用户名最多16个字符。",
@@ -158,6 +184,21 @@
     "validationNoSpaces": "用户名不能包含空格。",
     "validationNoCockpit": "用户名不能包含 \"cockpit\"，这是为内部使用保留的。",
     "validationNoFallback": "用户名不能包含 \"fallback\"，这是为内部使用保留的。"
+  },
+  "flightModes": {
+    "MANUAL": "手动",
+    "ACRO": "特技",
+    "STEERING": "转向",
+    "HOLD": "保持",
+    "LOITER": "定点",
+    "FOLLOW": "跟随",
+    "SIMPLE": "简单",
+    "DOCK": "对接",
+    "AUTO": "自动",
+    "RTL": "返航",
+    "SMART_RTL": "智能返航",
+    "GUIDED": "引导",
+    "INITIALISING": "初始化中"
   },
   "tutorial": {
     "previous": "上一步",
@@ -250,7 +291,7 @@
   },
   "globalOrigin": {
     "title": "设置全局原点",
-    "description": "此功能允许您设置载具局部原点(0,0,0)的 GNSS 坐标。当使用局部位置单位（例如室内定位系统或 DVL）并想要定义相应的全局位置时，这很有用。",
+    "description": "此功能允许您设置设备局部原点(0,0,0)的 GNSS 坐标。当使用局部位置单位（例如室内定位系统或 DVL）并想要定义相应的全局位置时，这很有用。",
     "latitude": "纬度",
     "longitude": "经度",
     "altitude": "高度",
@@ -497,7 +538,7 @@
     "clearSurvey": "清空调查",
     "saveMissionToFile": "保存任务到文件",
     "loadMissionFromFile": "从文件加载任务",
-    "clearMissionOnVehicle": "清除载具上的任务",
+    "clearMissionOnVehicle": "清除设备上的任务",
     "missionSettings": "任务设置",
     "waypointParameters": "航点参数",
     "home": "起始点",
@@ -544,7 +585,60 @@
       "DO_REPEAT_SERVO": "重复舵机",
       "DO_DIGICAM_CONTROL": "数码相机控制",
       "DO_MOUNT_CONTROL": "云台控制",
-      "DO_SET_CAM_TRIGG_DIST": "设置相机触发距离"
+      "DO_SET_CAM_TRIGG_DIST": "设置相机触发距离",
+      "FENCE_RETURN_POINT": "围栏返回点",
+      "FOLLOW": "跟随",
+      "GUIDED_ENABLE": "引导模式启用",
+      "LAND_LOCAL": "本地降落",
+      "LAST": "最后",
+      "PATHPLANNING": "路径规划",
+      "TAKEOFF_LOCAL": "本地起飞",
+      "ROI": "兴趣点",
+      "SPLINE_WAYPOINT": "样条航点",
+      "VTOL_TAKEOFF": "垂直起降起飞",
+      "VTOL_LAND": "垂直起降降落",
+      "PAYLOAD_PLACE": "载荷放置",
+      "SET_YAW_SPEED": "设置偏航速度",
+      "RALLY_POINT": "集结点",
+      "DO_FOLLOW": "跟随",
+      "DO_FOLLOW_REPOSITION": "跟随重定位",
+      "DO_ORBIT": "轨道飞行",
+      "DO_SET_PARAMETER": "设置参数",
+      "DO_FLIGHTTERMINATION": "飞行终止",
+      "DO_CHANGE_ALTITUDE": "改变高度",
+      "DO_SET_ACTUATOR": "设置执行器",
+      "DO_LAND_START": "开始降落",
+      "DO_RALLY_LAND": "集结点降落",
+      "DO_GO_AROUND": "复飞",
+      "DO_REPOSITION": "重定位",
+      "DO_PAUSE_CONTINUE": "暂停/继续",
+      "DO_SET_REVERSE": "设置反向",
+      "DO_SET_ROI_LOCATION": "设置兴趣点位置",
+      "DO_SET_ROI_WPNEXT_OFFSET": "设置兴趣点下个航点偏移",
+      "DO_SET_ROI_NONE": "取消兴趣点",
+      "DO_SET_ROI_SYSID": "设置兴趣点系统ID",
+      "DO_CONTROL_VIDEO": "控制视频",
+      "DO_SET_ROI": "设置兴趣点",
+      "DO_DIGICAM_CONFIGURE": "数码相机配置",
+      "DO_MOUNT_CONFIGURE": "云台配置",
+      "DO_SET_CAM_TRIGG_INTERVAL": "设置相机触发间隔",
+      "DO_MOUNT_CONTROL_QUAT": "云台四元数控制",
+      "DO_GUIDED_MASTER": "引导主控",
+      "DO_GUIDED_LIMITS": "引导限制",
+      "DO_ENGINE_CONTROL": "发动机控制",
+      "DO_SET_MISSION_CURRENT": "设置当前任务",
+      "DO_LAST": "最后",
+      "DO_JUMP_TAG": "跳转标签",
+      "DO_TRIGGER_CONTROL": "触发控制",
+      "DO_VTOL_TRANSITION": "垂直起降转换",
+      "DO_FENCE_ENABLE": "启用围栏",
+      "DO_PARACHUTE": "降落伞",
+      "DO_MOTOR_TEST": "电机测试",
+      "DO_INVERTED_FLIGHT": "倒飞",
+      "DO_GRIPPER": "夹爪",
+      "DO_GIMBAL_MANAGER_TILTPAN": "云台管理器俯仰/左右",
+      "DO_GIMBAL_MANAGER_TRACK_POINT": "云台管理器追踪点",
+      "DO_GIMBAL_MANAGER_TRACK_RECTANGLE": "云台管理器追踪矩形"
     },
     "distanceBetweenLines": "线间距 (m)",
     "linesAngle": "线角度 (度)",
@@ -572,9 +666,17 @@
     "batteryCapacity": "电池组容量 (瓦特时)",
     "batteryCapacityDesc": "设备电池的总容量。影响质量和功率估算。",
     "hasHighDragSensor": "设备有水下探头（例如 Ping1D 声纳）",
-    "hasHighDragSensorDesc": "水下探头会影响阻力，从而影响功耗估算。"
+    "hasHighDragSensorDesc": "水下探头会影响阻力，从而影响功耗估算。",
+    "aboutEstimates": "关于估算"
   },
   "map": {
+    "coordinates": "坐标",
+    "velocity": "速度",
+    "heading": "航向",
+    "armed": "已解锁",
+    "disarmed": "已上锁",
+    "lastSeen": "最后可见",
+    "never": "从未",
     "downloadMapTiles": "下载地图瓦片",
     "saveVisibleEsriTiles": "保存可见 Esri 瓦片",
     "saveVisibleOSMTiles": "保存可见 OSM 瓦片",
@@ -692,7 +794,11 @@
     "connectedAndEnabled": "摇杆已连接并已启用",
     "commandsEnabled": "摇杆命令已启用",
     "commandsPaused": "摇杆命令已暂停",
-    "close": "关闭"
+    "close": "关闭",
+    "cannotMapModifierToOwnLayout": "无法将修饰键映射到其自身的布局。",
+    "invalidJoystickMappingFile": "操纵杆映射文件无效。",
+    "invalidFunctionsMappingFile": "功能映射文件无效。",
+    "functionsMappingImported": "功能映射导入成功。"
   },
   "fullscreen": {
     "enter": "进入全屏",
@@ -805,10 +911,39 @@
     "failedToSetDefaultMapPosition": "无法设置默认地图位置。",
     "gotoRequestFailed": "GoTo 请求失败：{{error}}"
   },
+  "snapshot": {
+    "noFilesFound": "找不到文件。"
+  },
   "missionDownload": {
     "succeeded": "任务下载成功！",
     "failed": "任务下载失败",
-    "invalidMissionFile": "任务文件无效。"
+    "invalidMissionFile": "任务文件无效。",
+    "timeoutFetchingCount": "获取任务数量时超时。",
+    "timeoutDownloadingItems": "下载任务项时超时。",
+    "noMissionCountReceived": "未从设备接收到任务项数量。",
+    "loadingMission": "加载任务中...",
+    "uploadingMission": "正在上传任务到设备..."
+  },
+  "missionUpload": {
+    "timeout": "上传任务时超时。",
+    "noAcknowledgment": "未收到任务上传的确认信息。",
+    "failed": "任务上传失败。收到的结果：{{result}}。",
+    "modeNotAvailable": "{{mode}} 模式不可用。请手动将设备切换到 {{mode}} 模式以启动新任务。",
+    "couldNotSetMode": "无法将设备切换到 {{mode}} 模式。请手动操作。",
+    "couldNotArm": "无法解锁设备。请手动解锁。"
+  },
+  "command": {
+    "noAcknowledgment": "命令 '{{command}}' 在超时 ({{timeout}} 秒) 前未收到确认。"
+  },
+  "vehicle": {
+    "connected": "设备已连接",
+    "disconnected": "设备已断开",
+    "armed": "设备已解锁",
+    "disarmed": "设备已上锁",
+    "modeChanged": "设备模式已更改为 {{mode}}。"
+  },
+  "cockpit": {
+    "started": "Cockpit 已启动"
   },
   "missionAction": {
     "surveyDeleted": "调查任务已删除。",
@@ -1065,14 +1200,14 @@
       "title": "MAVLink 配置",
       "dataLakeVariables": "DataLake 变量创建",
       "messageIntervals": "消息间隔",
-      "dataLakeInfo": "启用从主载具（系统 ID {systemId}，组件 ID 1）以外的系统/组件发起的 MAVLink 消息创建 DataLake 变量。启用后，网络上所有 MAVLink 系统的变量将在 DataLake 中可用。禁用后，只会创建主载具的变量。",
+      "dataLakeInfo": "启用从主设备（系统 ID {systemId}，组件 ID 1）以外的系统/组件发起的 MAVLink 消息创建 DataLake 变量。启用后，网络上所有 MAVLink 系统的变量将在 DataLake 中可用。禁用后，只会创建主设备的变量。",
       "enableDataLakeFromOtherSystems": "启用来自其他系统的 DataLake 变量",
-      "messageIntervalsInfo": "配置从载具请求每条 MAVLink 消息的频率。更高的频率提供更快速响应的数据，但会增加网络和载具 CPU 的负载。如果消息尚未配置，可以使用底部的表单将其添加到间隔配置中。",
+      "messageIntervalsInfo": "配置从设备请求每条 MAVLink 消息的频率。更高的频率提供更快速响应的数据，但会增加网络和设备 CPU 的负载。如果消息尚未配置，可以使用底部的表单将其添加到间隔配置中。",
       "searchMessage": "搜索消息",
       "resetToDefaults": "将间隔重置为 Cockpit 默认值",
       "message": "消息",
       "configuration": "配置",
-      "vehicleDefault": "载具默认",
+      "vehicleDefault": "设备默认",
       "disabled": "已禁用",
       "custom": "自定义",
       "dontTouch": "不要触碰",
@@ -1093,8 +1228,8 @@
       "title": "Cockpit 操作配置",
       "actions": "操作",
       "info1": "查看、管理和创建不同类型的操作。",
-      "info2": "HTTP Request 操作可用于调用外部 API，如服务器、载具、摄像头等。",
-      "info3": "MAVLink Message 操作允许您向载具发送特定的 MAVLink 消息。",
+      "info2": "HTTP Request 操作可用于调用外部 API，如服务器、设备、摄像头等。",
+      "info3": "MAVLink Message 操作允许您向设备发送特定的 MAVLink 消息。",
       "info4": "JavaScript 操作通过允许您编写自定义代码，为您提供完全的灵活性。",
       "info5": "链接按钮可用于将操作链接到 Data Lake 变量，以便变量值的变化会自动触发链接的操作。",
       "info6": "操作也可以使用播放按钮手动测试/运行。",
@@ -1110,7 +1245,7 @@
       "httpRequestAction": "HTTP 请求操作",
       "httpRequestDescription": "创建向外部 API 和服务发出 HTTP 请求的操作",
       "mavlinkMessageAction": "MAVLink 消息操作",
-      "mavlinkMessageDescription": "创建向载具发送 MAVLink 消息的操作",
+      "mavlinkMessageDescription": "创建向设备发送 MAVLink 消息的操作",
       "javascriptAction": "JavaScript 操作",
       "javascriptDescription": "使用 JavaScript 代码创建自定义操作",
       "link": "链接",
@@ -1211,11 +1346,11 @@
     "noRecentAlerts": "无最近警报。",
     "cockpitStarted": "Cockpit 已启动",
     "errorGettingExternalWidgetsInfo": "从 BlueOS 获取外部小部件信息时出错。",
-    "vehicleModeChanged": "载具模式已更改为 {mode}。",
-    "vehicleArmed": "载具已解锁",
-    "vehicleDisarmed": "载具已锁定",
-    "vehicleConnected": "载具已连接",
-    "vehicleDisconnected": "载具已断开连接",
+    "vehicleModeChanged": "设备模式已更改为 {mode}。",
+    "vehicleArmed": "设备已解锁",
+    "vehicleDisarmed": "设备已锁定",
+    "vehicleConnected": "设备已连接",
+    "vehicleDisconnected": "设备已断开连接",
     "levels": {
       "success": "成功",
       "error": "错误",
@@ -1256,15 +1391,6 @@
     "Map View": "地图视图",
     "HUD View": "HUD 视图"
   },
-  "about": {
-    "description1": "Cockpit 是一个直观且可定制的跨平台地面站，用于控制各类型的远程载具。",
-    "description2": "它由 Blue Robotics 创建，并且完全开源。",
-    "description3": "它目前支持基于 Ardupilot 的载具，但计划支持任何通用载具，无论是否使用 MAVLink 通信。",
-    "version": "版本",
-    "released": "发布日期",
-    "createdBy": "由 Blue Robotics 创建",
-    "license": "授权协议：AGPL-3.0-only 或 LicenseRef-Cockpit-Custom"
-  },
   "plotter": {
     "selectVariable": "请打开 Plotter 小部件配置菜单以选择要绘制的变量。",
     "config": "Plotter 配置",
@@ -1288,12 +1414,12 @@
   },
   "missionChecklist": {
     "title": "任务检查清单",
-    "description": "在解锁载具之前，请确保以下项目已完成：",
+    "description": "在解锁设备之前，请确保以下项目已完成：",
     "editItems": "编辑项目",
     "typeAndEnter": "输入项目并按回车",
     "done": "完成",
     "dontShowAgain": "不再显示此检查清单",
-    "armVehicle": "解锁载具"
+    "armVehicle": "解锁设备"
   },
   "settingsManager": {
     "title": "Cockpit 设置管理器",
@@ -1319,7 +1445,7 @@
     "noVideoStreamSelected": "未选择视频流",
     "streamNotAvailable": "所选视频流 \"{streamName}\" 不可用。",
     "availableStreams": "可用的视频流有：{streams}。",
-    "streamChangeInfo": "如果您更换了载具且新载具的视频流名称与之前不同，或者视频源完全不可用，就会出现这种情况。",
+    "streamChangeInfo": "如果您更换了设备且新设备的视频流名称与之前不同，或者视频源完全不可用，就会出现这种情况。",
     "selectNewStream": "请打开此视频播放器配置并从可用的视频流中选择一个新的，或检查视频源是否有问题。",
     "serverStatus": "服务器状态：",
     "widgetConfig": "视频小部件配置",
@@ -1454,5 +1580,110 @@
     "利维坦的传奇遗产",
     "发现深蓝世界",
     "解决航海之谜"
-  ]
+  ],
+  "about": {
+    "description1": "Cockpit 是一款直观且可定制的跨平台地面控制站，适用于所有类型的远程设备。",
+    "description2": "它由 Blue Robotics 创建，完全开源。",
+    "description3": "它目前支持基于 Ardupilot 的设备，但计划支持任何通用设备，无论是否使用 MAVLink 通信。",
+    "version": "版本",
+    "released": "发布时间",
+    "createdBy": "由 Blue Robotics 创建",
+    "license": "许可证：AGPL-3.0-only 或 LicenseRef-Cockpit-Custom"
+  },
+  "widgetsView": {
+    "noWidgets": "您当前没有小部件！",
+    "openEditMode": "打开编辑模式开始调整此视图。"
+  },
+  "joystickWarning": {
+    "updateRecommended": "建议更新系统",
+    "extendedMavlinkInfo": "您似乎正在运行不支持扩展 MAVLink MANUAL_CONTROL 消息的 Mavlink2Rest（BlueOS）和/或 ArduPilot 版本。我们强烈建议升级两者，以便您能够支持摇杆上的额外按钮和轴。如果您有时使用其他控制站软件（如 QGroundControl），这一点尤其重要，因为 Cockpit 可以优先使用扩展按钮来减少配置冲突。我们建议使用 BlueOS ≥ 1.2.0 和 ArduPilot 固件 ≥ 4.1.2 版本。",
+    "additionalButtons": "额外按钮",
+    "additionalAxes": "额外轴",
+    "axisMapping": "轴映射",
+    "couldNotEstablishComm": "无法与设备建立通信。",
+    "buttonFunctionsAsNumbers": "按钮功能将显示为数字。如果重新建立连接，将显示功能名称。"
+  },
+  "logs": {
+    "enterMessage": "输入消息"
+  },
+  "inputElement": {
+    "addAnotherOption": "添加另一个选项",
+    "actionToTrigger": "要触发的动作",
+    "options": "选项",
+    "actions": "操作"
+  },
+  "videoLibrary": {
+    "processedVideos": "已处理视频",
+    "rawVideoChunks": "原始视频分段",
+    "finalVideosWithTelemetry": "带遥测覆盖的最终视频",
+    "browserVersionInstructions": "浏览器版本说明",
+    "rawChunksInfo": "这些是需要处理的原始视频分段。处理只能在 Cockpit 的独立版本中完成。浏览器版本只能录制视频分段。",
+    "toProcessYourVideos": "处理您的视频：",
+    "downloadChunksStep": "使用下载按钮下载您的视频分段",
+    "openStandaloneStep": "打开 Cockpit 的独立版本（桌面应用）",
+    "goToProcessingTabStep": "在视频库中转到\"处理\"选项卡",
+    "selectAndProcessStep": "选择并处理您下载的 ZIP 文件",
+    "deleteChunksStep": "确认视频已处理后，从此处删除原始视频分段",
+    "processingComplete": "处理完成！",
+    "zipProcessedSuccess": "ZIP 文件已成功处理。视频现在可在\"视频\"选项卡中查看。",
+    "processAnotherZip": "处理另一个 ZIP 文件",
+    "viewVideos": "查看视频",
+    "processZipFile": "处理 ZIP 文件",
+    "selectZipDescription": "选择一个包含从浏览器版本下载的原始视频分段的 ZIP 文件。",
+    "selectAndProcessZip": "选择并处理 ZIP 文件",
+    "processingInstructions": "处理说明",
+    "downloadFromRawTab": "从浏览器版本的\"原始\"选项卡下载原始视频分段",
+    "selectZipFile": "选择包含分段的 ZIP 文件",
+    "clickProcessZip": "点击\"处理 ZIP\"将分段转换为 MP4 视频",
+    "videoAppearsInTab": "处理后的视频将出现在\"视频\"选项卡中",
+    "cockpitVideo": "Cockpit 视频",
+    "manageRawChunks": "管理原始视频分段",
+    "processZipFiles": "处理包含原始视频分段的 ZIP 文件",
+    "onlyAvailableStandalone": "仅在独立版本中可用",
+    "processingZip": "正在处理 ZIP 文件...",
+    "processZipFilesTitle": "处理 ZIP 文件",
+    "processRawChunksFromWeb": "处理来自 Cockpit Lite（网页版）的原始分段",
+    "computer": "电脑",
+    "computerMultiSelect": "Command+点击、Ctrl+点击或长按以选择多个视频。",
+    "mobile": "移动设备",
+    "mobileMultiSelect": "长按以选择多个视频。",
+    "loadingChunks": "加载视频分段中",
+    "countingChunks": "正在计算分段和大小...",
+    "startRecording": "开始录制视频以创建原始分段。",
+    "backupRawData": "备份原始数据",
+    "playVideo": "播放视频",
+    "longPressMultiSelect": "长按以选择多个视频。"
+  },
+  "collapsibleContainer": {
+    "cloneToAnotherView": "克隆到另一个视图",
+    "customWidgetOptions": "自定义小部件选项",
+    "name": "名称：",
+    "backgroundColor": "背景颜色",
+    "backgroundOpacity": "背景不透明度：",
+    "backgroundBlur": "背景模糊：",
+    "cloneWidgetTo": "克隆小部件到",
+    "options": "选项"
+  },
+  "videoPlayer": {
+    "autoplay": "自动播放",
+    "controls": "显示控制器",
+    "loop": "循环播放",
+    "muted": "静音",
+    "loadingStream": "加载流中..."
+  },
+  "snapshot": {
+    "openLibrary": "打开快照库"
+  },
+  "plotter": {
+    "searchVariables": "搜索变量...",
+    "dataLakeVariable": "数据湖变量",
+    "background": "背景",
+    "line": "线条",
+    "maximumSamples": "最大样本数",
+    "updateOnConstantValue": "恒定值时更新",
+    "fixedMinimum": "固定最小值",
+    "minValue": "最小值",
+    "fixedMaximum": "固定最大值",
+    "maxValue": "最大值"
+  }
 }

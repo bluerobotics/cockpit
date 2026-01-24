@@ -51,7 +51,7 @@
     </div>
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="600" max-width="45%">
       <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-        <v-card-title class="text-center">Settings</v-card-title>
+        <v-card-title class="text-center">{{ $t('common.settings') }}</v-card-title>
         <v-card-text>
           <div>
             <p>Iframe Source</p>
@@ -78,14 +78,14 @@
             </div>
           </div>
           <div class="mt-2 mb-2 w-[95%]">
-            <v-slider v-model="transparency" label="Transparency" color="white" :min="0" :max="90" />
+            <v-slider v-model="transparency" :label="$t('iframe.transparency')" color="white" :min="0" :max="90" />
           </div>
           <ExpansiblePanel compact :is-expanded="true" no-bottom-divider no-top-divider>
-            <template #title>Advanced options</template>
+            <template #title>{{ $t('iframe.advancedOptions') }}</template>
             <template #content>
               <v-switch
                 v-model="widget.options.useVehicleAddressAsBase"
-                label="Use vehicle address as base URL"
+                :label="$t('iframe.useVehicleAddress')"
                 color="white"
                 density="compact"
                 hide-details
@@ -204,11 +204,11 @@ const validateURL = (url: string): true | string => {
 const updateURL = (): void => {
   const urlValidationResult = validateURL(composedURL(inputURL.value, widget.value.options.useVehicleAddressAsBase))
   if (urlValidationResult !== true) {
-    openSnackbar({ message: `${urlValidationResult} Please enter a valid URL.`, variant: 'error' })
+    openSnackbar({ message: t('iframe.invalidURL'), variant: 'error' })
     return
   }
   widget.value.options.source = inputURL.value
-  openSnackbar({ message: `IFrame URL sucessfully updated to '${toBeUsedURL.value}'.`, variant: 'success' })
+  openSnackbar({ message: t('iframe.urlUpdatedSuccessfully', { url: toBeUsedURL.value }), variant: 'success' })
 }
 
 const handleBaseUrlToggle = (useBaseUrl: boolean): void => {

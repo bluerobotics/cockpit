@@ -5,6 +5,7 @@ import saveAs from 'file-saver'
 import piexif from 'piexifjs'
 import { defineStore } from 'pinia'
 
+import i18n from '@/plugins/i18n'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { app_version } from '@/libs/cosmos'
@@ -266,7 +267,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
 
     const files = maybeFiles.filter((file): file is SnapshotFileDescriptor => file.blob instanceof Blob)
     if (files.length === 0) {
-      showDialog({ message: 'No files found.', variant: 'error' })
+      showDialog({ message: i18n.global.t('snapshot.noFilesFound'), variant: 'error' })
       return
     }
     if (shouldZip) {

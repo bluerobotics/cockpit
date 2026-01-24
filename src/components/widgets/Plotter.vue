@@ -25,7 +25,7 @@
               variant="filled"
               theme="dark"
               type="text"
-              placeholder="Search variables..."
+              :placeholder="$t('plotter.searchVariables')"
               class="mb-4"
               clearable
               @update:model-value="menuOpen = true"
@@ -37,7 +37,7 @@
               :items="filteredDataLakeNumberVariables"
               item-title="name"
               item-value="id"
-              label="Data Lake variable"
+              :label="$t('plotter.dataLakeVariable')"
               hint="Select a variable to be plotted"
               persistent-hint
               theme="dark"
@@ -53,40 +53,40 @@
       <!-- Appearance section -->
       <v-row>
         <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-2">Appearance</div>
+          <div class="text-subtitle-1 font-weight-medium mb-2">{{ $t('plotter.appearance') }}</div>
           <div class="ml-2 flex gap-x-8">
-            <v-checkbox v-model="widget.options.showTitle" label="Show title" hide-details class="-mt-1" />
+            <v-checkbox v-model="widget.options.showTitle" :label="$t('plotter.showTitle')" hide-details class="-mt-1" />
             <v-menu :close-on-content-click="false">
               <template #activator="{ props: colorPickerActivatorProps }">
                 <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                  <span class="mt-3">Background color</span>
+                  <span class="mt-3">{{ $t('plotter.backgroundColor') }}</span>
                   <div
                     class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
                     :style="{ backgroundColor: widget.options.backgroundColor }"
                   ></div>
                 </div>
               </template>
-              <v-color-picker v-model="widget.options.backgroundColor" label="Background" hide-inputs theme="dark" />
+              <v-color-picker v-model="widget.options.backgroundColor" :label="$t('plotter.background')" hide-inputs theme="dark" />
             </v-menu>
             <v-menu :close-on-content-click="false">
               <template #activator="{ props: colorPickerActivatorProps }">
                 <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                  <span class="mt-3">Line color</span>
+                  <span class="mt-3">{{ $t('plotter.lineColor') }}</span>
                   <div
                     class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
                     :style="{ backgroundColor: widget.options.lineColor }"
                   ></div>
                 </div>
               </template>
-              <v-color-picker v-model="widget.options.lineColor" label="Line" hide-inputs theme="dark" />
+              <v-color-picker v-model="widget.options.lineColor" :label="$t('plotter.line')" hide-inputs theme="dark" />
             </v-menu>
             <v-text-field
               v-model.number="widget.options.lineThickness"
               type="number"
-              label="Line thickness"
+              :label="$t('plotter.lineThickness')"
               variant="outlined"
               density="compact"
-              :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
+              :rules="[(v: number) => v > 0 || $t('plotter.mustBeGreaterThanZero')]"
               width="140px"
               hide-details
             />
@@ -97,24 +97,24 @@
       <!-- Data points section -->
       <v-row>
         <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-4">Data Points</div>
+          <div class="text-subtitle-1 font-weight-medium mb-4">{{ $t('plotter.dataPoints') }}</div>
           <div class="ml-2 flex gap-x-8">
             <v-text-field
               v-model.number="widget.options.decimalPlaces"
               type="number"
-              label="Decimal places"
+              :label="$t('plotter.decimalPlaces')"
               variant="outlined"
               density="comfortable"
-              :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
-              hint="Number of decimal places to be displayed"
+              :rules="[(v: number) => v >= 0 || $t('plotter.mustBeZeroOrGreater')]"
+              :hint="$t('plotter.decimalPlacesHint')"
               width="160px"
               class="ml-2"
             />
-            <v-checkbox v-model="widget.options.limitSamples" label="Limit number of samples" />
+            <v-checkbox v-model="widget.options.limitSamples" :label="$t('plotter.limitSamples')" />
             <v-text-field
               v-model.number="widget.options.maxSamples"
               type="number"
-              label="Maximum samples"
+              :label="$t('plotter.maximumSamples')"
               variant="outlined"
               density="comfortable"
               :disabled="!widget.options.limitSamples"
@@ -126,7 +126,7 @@
           <div class="ml-2">
             <v-checkbox
               v-model="widget.options.updateOnConstantValue"
-              label="Update on constant value"
+              :label="$t('plotter.updateOnConstantValue')"
               hint="Advance graph when value is unchanged (shows horizontal lines for constant values)"
               persistent-hint
             />
@@ -140,11 +140,11 @@
           <div class="text-subtitle-1 font-weight-medium">Y-Axis Bounds</div>
           <div class="ml-2 flex gap-x-8 mb-4">
             <div class="flex flex-col">
-              <v-checkbox v-model="widget.options.useFixedMinY" label="Fixed minimum" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.useFixedMinY" :label="$t('plotter.fixedMinimum')" hide-details class="-mt-1" />
               <v-text-field
                 v-model.number="widget.options.fixedMinY"
                 type="number"
-                label="Min value"
+                :label="$t('plotter.minValue')"
                 variant="outlined"
                 density="compact"
                 :disabled="!widget.options.useFixedMinY"
@@ -153,11 +153,11 @@
               />
             </div>
             <div class="flex flex-col">
-              <v-checkbox v-model="widget.options.useFixedMaxY" label="Fixed maximum" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.useFixedMaxY" :label="$t('plotter.fixedMaximum')" hide-details class="-mt-1" />
               <v-text-field
                 v-model.number="widget.options.fixedMaxY"
                 type="number"
-                label="Max value"
+                :label="$t('plotter.maxValue')"
                 variant="outlined"
                 density="compact"
                 :disabled="!widget.options.useFixedMaxY"
@@ -171,7 +171,7 @@
     </template>
     <template #actions>
       <div class="flex w-full justify-end my-2">
-        <v-btn @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">Close</v-btn>
+        <v-btn @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">{{ $t('common.close') }}</v-btn>
       </div>
     </template>
   </InteractionDialog>

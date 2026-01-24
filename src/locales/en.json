@@ -93,7 +93,11 @@
     "invalidJSON": "Invalid JSON: {error}",
     "commandIgnoredOrDenied": "Confirmation of '{command}' command ignored or denied by the user.",
     "anotherConfirmationInProgress": "Cannot confirm {command}. Another confirmation is already in progress.",
-    "streamNotAvailable": "The selected stream is not available. Please check its source or select another stream."
+    "streamNotAvailable": "The selected stream is not available. Please check its source or select another stream.",
+    "variableNameAlreadyExists": "Variable name already exists",
+    "errorDeletingActionVariable": "Error deleting action variable",
+    "cannotHideCurrentView": "You cannot hide the current view.",
+    "permanentlyDeleteProfile": "Permanently delete profile?"
   },
   "success": {
     "widgetLoadedSuccessfully": "Widget loaded successfully with new hash.",
@@ -116,7 +120,8 @@
     "offlineTilesSaved": "{layerName} offline tiles saved!",
     "chunksDownloaded": "Downloaded {count} chunks in {batches} archive(s)",
     "streamRestored": "Stream '{externalId}' restored from ignored list.",
-    "streamDeletedAndIgnored": "Stream '{name}' deleted and added to ignored list."
+    "streamDeletedAndIgnored": "Stream '{name}' deleted and added to ignored list.",
+    "actionVariableDeleted": "Action variable deleted"
   },
   "info": {
     "missionChecklistDisabled": "Mission checklist will not be shown again. You can enable them back in the settings.",
@@ -135,6 +140,26 @@
     "streamNotAvailableAnymore": "Stream '{externalId}' not available anymore.",
     "streamNotOnIgnoredList": "Stream with external ID '{externalId}' not on ignored list."
   },
+  "armSafety": {
+    "title": "Be careful",
+    "vehicleArmedWarning": "The vehicle is currently armed, and the main-menu contains configurations and tools that can cause unsafe situations.",
+    "proceedCarefully": "Come back later, or proceed carefully with one of the following options:",
+    "continueNeverWarn": "Continue and never warn again",
+    "continueSessionWarn": "Continue and don't warn again during this session",
+    "continueAnyway": "Continue anyway",
+    "disarmAndContinue": "Disarm vehicle and continue",
+    "warningDisabled": "Armed menu warning disabled. You can re-enable it in the Settings > Alerts menu."
+  },
+  "architectureWarning": {
+    "title": "Performance Warning",
+    "runningWrongVersion": "You are running the x64 version of Cockpit on an Apple Silicon Mac (M series), which causes severely degraded performance, including:",
+    "slowerStartup": "3-4x slower application startup times",
+    "doubleMemory": "2x the memory usage",
+    "reducedPerformance": "Reduced overall performance",
+    "cannotDisable": "This warning cannot be disabled - we strongly recommend that you download and install the intended version for your system.",
+    "dismiss": "Dismiss",
+    "downloadARM": "Download ARM64 Version"
+  },
   "usernameDialog": {
     "title": "Manage users on:",
     "usernameInfo": "This username will be used to store your settings in the vehicle.",
@@ -150,6 +175,7 @@
     "cannotDeleteCurrent": "You cannot delete the current user.",
     "userDeleted": "User deleted",
     "deleteUserFailed": "Failed deleting user. The list was refreshed. Please try again.",
+    "failedDeletingUser": "Failed deleting '{username}'",
     "currentVehicle": "current vehicle",
     "validationMinLength": "Username must be at least 3 characters long.",
     "validationMaxLength": "Username must be at most 16 characters long.",
@@ -158,6 +184,21 @@
     "validationNoSpaces": "Username cannot contain spaces.",
     "validationNoCockpit": "Username cannot contain \"cockpit\" as it is reserved for internal use.",
     "validationNoFallback": "Username cannot contain \"fallback\" as it is reserved for internal use."
+  },
+  "flightModes": {
+    "MANUAL": "Manual",
+    "ACRO": "Acro",
+    "STEERING": "Steering",
+    "HOLD": "Hold",
+    "LOITER": "Loiter",
+    "FOLLOW": "Follow",
+    "SIMPLE": "Simple",
+    "DOCK": "Dock",
+    "AUTO": "Auto",
+    "RTL": "RTL",
+    "SMART_RTL": "Smart RTL",
+    "GUIDED": "Guided",
+    "INITIALISING": "Initialising"
   },
   "tutorial": {
     "previous": "Previous",
@@ -546,7 +587,60 @@
       "DO_REPEAT_SERVO": "Repeat Servo",
       "DO_DIGICAM_CONTROL": "Digital Camera Control",
       "DO_MOUNT_CONTROL": "Mount Control",
-      "DO_SET_CAM_TRIGG_DIST": "Set Camera Trigger Distance"
+      "DO_SET_CAM_TRIGG_DIST": "Set Camera Trigger Distance",
+      "FENCE_RETURN_POINT": "Fence Return Point",
+      "FOLLOW": "Follow",
+      "GUIDED_ENABLE": "Guided Enable",
+      "LAND_LOCAL": "Land Local",
+      "LAST": "Last",
+      "PATHPLANNING": "Pathplanning",
+      "TAKEOFF_LOCAL": "Takeoff Local",
+      "ROI": "Region of Interest",
+      "SPLINE_WAYPOINT": "Spline Waypoint",
+      "VTOL_TAKEOFF": "VTOL Takeoff",
+      "VTOL_LAND": "VTOL Land",
+      "PAYLOAD_PLACE": "Payload Place",
+      "SET_YAW_SPEED": "Set Yaw Speed",
+      "RALLY_POINT": "Rally Point",
+      "DO_FOLLOW": "Follow",
+      "DO_FOLLOW_REPOSITION": "Follow Reposition",
+      "DO_ORBIT": "Orbit",
+      "DO_SET_PARAMETER": "Set Parameter",
+      "DO_FLIGHTTERMINATION": "Flight Termination",
+      "DO_CHANGE_ALTITUDE": "Change Altitude",
+      "DO_SET_ACTUATOR": "Set Actuator",
+      "DO_LAND_START": "Land Start",
+      "DO_RALLY_LAND": "Rally Land",
+      "DO_GO_AROUND": "Go Around",
+      "DO_REPOSITION": "Reposition",
+      "DO_PAUSE_CONTINUE": "Pause/Continue",
+      "DO_SET_REVERSE": "Set Reverse",
+      "DO_SET_ROI_LOCATION": "Set ROI Location",
+      "DO_SET_ROI_WPNEXT_OFFSET": "Set ROI Waypoint Next Offset",
+      "DO_SET_ROI_NONE": "Set ROI None",
+      "DO_SET_ROI_SYSID": "Set ROI System ID",
+      "DO_CONTROL_VIDEO": "Control Video",
+      "DO_SET_ROI": "Set ROI",
+      "DO_DIGICAM_CONFIGURE": "Digital Camera Configure",
+      "DO_MOUNT_CONFIGURE": "Mount Configure",
+      "DO_SET_CAM_TRIGG_INTERVAL": "Set Camera Trigger Interval",
+      "DO_MOUNT_CONTROL_QUAT": "Mount Control Quaternion",
+      "DO_GUIDED_MASTER": "Guided Master",
+      "DO_GUIDED_LIMITS": "Guided Limits",
+      "DO_ENGINE_CONTROL": "Engine Control",
+      "DO_SET_MISSION_CURRENT": "Set Mission Current",
+      "DO_LAST": "Last",
+      "DO_JUMP_TAG": "Jump Tag",
+      "DO_TRIGGER_CONTROL": "Trigger Control",
+      "DO_VTOL_TRANSITION": "VTOL Transition",
+      "DO_FENCE_ENABLE": "Fence Enable",
+      "DO_PARACHUTE": "Parachute",
+      "DO_MOTOR_TEST": "Motor Test",
+      "DO_INVERTED_FLIGHT": "Inverted Flight",
+      "DO_GRIPPER": "Gripper",
+      "DO_GIMBAL_MANAGER_TILTPAN": "Gimbal Manager Tilt/Pan",
+      "DO_GIMBAL_MANAGER_TRACK_POINT": "Gimbal Manager Track Point",
+      "DO_GIMBAL_MANAGER_TRACK_RECTANGLE": "Gimbal Manager Track Rectangle"
     },
     "setHomeWaypoint": "Set home waypoint",
     "distanceBetweenLines": "Distance between lines (m)",
@@ -575,9 +669,17 @@
     "batteryCapacity": "Battery bank capacity (Watt-hours)",
     "batteryCapacityDesc": "Total capacity from the vehicle batteries. Affects mass and power estimate.",
     "hasHighDragSensor": "Vehicle has a submerged probe (e.g. Ping1D sonar)",
-    "hasHighDragSensorDesc": "Submerged probes affect drag and consequently, the power consumption estimates."
+    "hasHighDragSensorDesc": "Submerged probes affect drag and consequently, the power consumption estimates.",
+    "aboutEstimates": "About the estimates"
   },
   "map": {
+    "coordinates": "Coordinates",
+    "velocity": "Velocity",
+    "heading": "Heading",
+    "armed": "Armed",
+    "disarmed": "Disarmed",
+    "lastSeen": "Last seen",
+    "never": "never",
     "downloadMapTiles": "Download map tiles",
     "saveVisibleEsriTiles": "Save visible Esri tiles",
     "saveVisibleOSMTiles": "Save visible OSM tiles",    "saveVisibleSeamarksTiles": "Save visible Seamarks tiles",
@@ -792,10 +894,73 @@
     "failedToSetDefaultMapPosition": "Failed to set default map position.",
     "gotoRequestFailed": "GoTo request failed: {{error}}"
   },
+  "joystick": {
+    "cannotMapModifierToOwnLayout": "Cannot map modifier key to it's own layout.",
+    "invalidJoystickMappingFile": "Invalid joystick mapping file.",
+    "invalidFunctionsMappingFile": "Invalid functions mapping file.",
+    "functionsMappingImported": "Functions mapping imported successful."
+  },
+  "widgetManager": {
+    "elementNotFound": "Could not find element with the given hash.",
+    "widgetNotFound": "Widget not found with the given hash.",
+    "widgetLoadedSuccessfully": "Widget loaded successfully with new hash.",
+    "profileNotFound": "Could not find profile.",
+    "viewNameCannotBeBlank": "View name cannot be blank.",
+    "cannotSelectInvisibleView": "Cannot select a view that is not visible.",
+    "miniWidgetContainerNotFound": "Mini-widget container not found."
+  },
+  "video": {
+    "streamChanged": "Stream '{{streamName}}' has changed. Stopping recording...",
+    "noStreamsAvailable": "No streams available.",
+    "mediaStreamNotDefined": "Media stream not defined.",
+    "mediaStreamNotActive": "Media stream not yet active. Wait a second and try again.",
+    "recordingStoppedForStream": "Recording for stream '{{streamName}}' has stopped. Stopping health monitor for this stream.",
+    "cannotGetVideoFileSize": "Cannot get size of the video output file. Please check if the file exists. This can indicate a problem with the recording.",
+    "videoFileNotGrowing": "The video output file is not growing. This can indicate a problem with the recording.",
+    "videoChunksNotGrowing": "The number of video chunks is not growing. This can indicate a problem with the recording.",
+    "failedToAddChunk": "Failed to add chunk {{chunksCount}} to live processor: {{error}}",
+    "failedToInitializeProcessor": "Failed to initialize live processor for stream {{streamName}}: {{error}}",
+    "failedToInitiateRecording": "Failed to initiate recording. First chunk was lost. Try again.",
+    "failedToGenerateTelemetryOverlay": "Failed to generate telemetry overlay.",
+    "streamDeletedAndIgnored": "Stream '{{streamName}}' deleted and added to ignored list.",
+    "streamNotFound": "Stream with external ID '{{externalId}}' not found.",
+    "streamNotAvailable": "Stream '{{externalId}}' not available anymore.",
+    "streamRestored": "Stream '{{externalId}}' restored from ignored list.",
+    "streamNotInIgnoredList": "Stream with external ID '{{externalId}}' not on ignored list."
+  },
+  "snapshot": {
+    "noFilesFound": "No files found."
+  },
   "missionDownload": {
     "succeeded": "Mission download succeeded!",
     "failed": "Mission download failed",
-    "invalidMissionFile": "Invalid mission file."
+    "invalidMissionFile": "Invalid mission file.",
+    "timeoutFetchingCount": "Timeout reached while fetching mission count.",
+    "timeoutDownloadingItems": "Timeout reached while downloading mission items.",
+    "noMissionCountReceived": "Did not receive number of mission items from vehicle.",
+    "loadingMission": "Loading mission...",
+    "uploadingMission": "Uploading mission to vehicle..."
+  },
+  "missionUpload": {
+    "timeout": "Timeout reached while uploading mission.",
+    "noAcknowledgment": "Did not receive acknowledgment of mission upload.",
+    "failed": "Failed uploading mission. Result received: {{result}}.",
+    "modeNotAvailable": "{{mode}} mode is not available. Please put the vehicle in {{mode}} mode manually so a new mission can be started.",
+    "couldNotSetMode": "Could not put vehicle in {{mode}} mode. Please do it manually.",
+    "couldNotArm": "Could not arm the vehicle. Please arm it manually."
+  },
+  "command": {
+    "noAcknowledgment": "No acknowledgment received for command '{{command}}' before timeout ({{timeout}}s)."
+  },
+  "vehicle": {
+    "connected": "Vehicle connected",
+    "disconnected": "Vehicle disconnected",
+    "armed": "Vehicle armed",
+    "disarmed": "Vehicle disarmed",
+    "modeChanged": "Vehicle mode changed to {{mode}}."
+  },
+  "cockpit": {
+    "started": "Cockpit started"
   },
   "missionAction": {
     "surveyDeleted": "Survey deleted.",
@@ -1435,5 +1600,135 @@
     "released": "Released",
     "createdBy": "Created by Blue Robotics",
     "license": "Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom"
-  }
+  },
+  "widgetsView": {
+    "noWidgets": "You currently have no widgets!",
+    "openEditMode": "Open edit mode to start tweaking this view."
+  },
+  "joystickWarning": {
+    "updateRecommended": "System update is recommended",
+    "extendedMavlinkInfo": "It seems like you're running versions of Mavlink2Rest (BlueOS) and/or ArduPilot that do not support the extended MAVLink MANUAL_CONTROL message. We strongly suggest upgrading both so you can have support for additional buttons and axes on the joystick. This is especially important if you sometimes use other control station software, like QGroundControl, as Cockpit can preferentially use the extended buttons to reduce configuration clashes. We recommend using BlueOS ≥ 1.2.0, and ≥ version 4.1.2 for ArduPilot-based autopilot firmware.",
+    "additionalButtons": "Additional buttons",
+    "additionalAxes": "Additional axes",
+    "axisMapping": "Axis mapping",
+    "couldNotEstablishComm": "Could not stablish communication with the vehicle.",
+    "buttonFunctionsAsNumbers": "Button functions will appear as numbers. If connection is restablished, function names will appear."
+  },
+  "logs": {
+    "enterMessage": "Enter message"
+  },
+  "inputElement": {
+    "addAnotherOption": "add another option",
+    "actionToTrigger": "Action to trigger",
+    "options": "Options",
+    "actions": "Actions"
+  },
+  "videoLibrary": {
+    "processedVideos": "Processed Videos",
+    "rawVideoChunks": "Raw Video Chunks",
+    "finalVideosWithTelemetry": "Final videos with telemetry overlay",
+    "browserVersionInstructions": "Browser Version Instructions",
+    "rawChunksInfo": "These are raw video chunks that need to be processed. The processing can be done exclusively in the standalone version of Cockpit. The browser version can only record the video chunks.",
+    "toProcessYourVideos": "To process your videos:",
+    "downloadChunksStep": "Download your video chunks using the download buttons",
+    "openStandaloneStep": "Open the standalone version of Cockpit (desktop app)",
+    "goToProcessingTabStep": "Go to the \"Processing\" tab in the video library",
+    "selectAndProcessStep": "Select and process your downloaded ZIP files",
+    "deleteChunksStep": "Once sure the video is processed, delete the raw video chunks from here",
+    "processingComplete": "Processing Complete!",
+    "zipProcessedSuccess": "The ZIP file has been successfully processed. The video is now available in the Videos tab.",
+    "processAnotherZip": "Process Another ZIP File",
+    "viewVideos": "View Videos",
+    "processZipFile": "Process ZIP File",
+    "selectZipDescription": "Select a ZIP file containing raw video chunks downloaded from the browser version.",
+    "selectAndProcessZip": "Select and Process ZIP File",
+    "processingInstructions": "Processing Instructions",
+    "downloadFromRawTab": "Download raw video chunks from the browser version's \"Raw\" tab",
+    "selectZipFile": "Select the ZIP file containing the chunks",
+    "clickProcessZip": "Click \"Process ZIP\" to convert chunks to MP4 video",
+    "videoAppearsInTab": "The processed video will appear in the \"Videos\" tab",
+    "cockpitVideo": "Cockpit video",
+    "manageRawChunks": "Manage raw video chunks",
+    "processZipFiles": "Process ZIP files with raw video chunks",
+    "onlyAvailableStandalone": "Only available in standalone version",
+    "processingZip": "Processing ZIP file...",
+    "processZipFilesTitle": "Process ZIP Files",
+    "processRawChunksFromWeb": "Process raw chunks from Cockpit Lite (web version)",
+    "computer": "Computer",
+    "computerMultiSelect": "Command+click, Ctrl+click or Long click to select multiple videos.",
+    "mobile": "Mobile",
+    "mobileMultiSelect": "Long press to select multiple videos.",
+    "loadingChunks": "Loading Video Chunks",
+    "countingChunks": "Counting chunks and calculating sizes...",
+    "startRecording": "Start recording videos to create raw chunks.",
+    "backupRawData": "Backup raw data",
+    "playVideo": "Play video",
+    "longPressMultiSelect": "Long press to select multiple videos."
+  },
+  "collapsibleContainer": {
+    "cloneToAnotherView": "Clone to another view",
+    "customWidgetOptions": "Custom Widget options",
+    "name": "Name:",
+    "backgroundColor": "Background color",
+    "backgroundOpacity": "Background opacity:",
+    "backgroundBlur": "Background blur:",
+    "cloneWidgetTo": "Clone widget to",
+    "options": "Options"
+  },
+  "videoPlayer": {
+    "autoplay": "Autoplay",
+    "controls": "Controls",
+    "loop": "Loop",
+    "muted": "Muted",
+    "loadingStream": "Loading stream..."
+  },
+  "snapshot": {
+    "openLibrary": "Open snapshot library"
+  },
+  "plotter": {
+    "searchVariables": "Search variables...",
+    "dataLakeVariable": "Data Lake variable",
+    "background": "Background",
+    "line": "Line",
+    "maximumSamples": "Maximum samples",
+    "updateOnConstantValue": "Update on constant value",
+    "fixedMinimum": "Fixed minimum",
+    "minValue": "Min value",
+    "fixedMaximum": "Fixed maximum",
+    "maxValue": "Max value"
+  },
+  "missionNames": [
+    "Diving into the Abyss Explorer",
+    "Embarking on Neptune's Quest",
+    "Exploring the Mariana Mirage",
+    "Embarking on an Oceanic Odyssey",
+    "Discovering Seabed Serenity",
+    "Ascending to Atlantis",
+    "Conquering Leviathan's Lair",
+    "Quest for the Deep Blue",
+    "Triumph of Tidal Exploration",
+    "Navigating the Nautical Nexus",
+    "Venturing into the Sublime Seafloor",
+    "Plumbing the Azure Abyss",
+    "Entering Poseidon's Portal",
+    "Decrypting the Coral Cryptic",
+    "Venturing into the Vortex",
+    "Keeping Watch on Kraken's Lair",
+    "Investigating the Aqua Anomaly",
+    "Symphony with the Sirens",
+    "Diving into Davy Jones' Abyss",
+    "Embarking on a Subaquatic Saga",
+    "Consulting the Oceanic Oracle",
+    "Navigating the Mystical Maelstrom",
+    "Sojourning through the Seastorm",
+    "Unlocking Sublime Secrets",
+    "Finding Tidal Tranquility",
+    "Alchemy of the Abyss",
+    "Navigating Neptune's Nexus",
+    "Unraveling the Mariner's Mystery",
+    "Symphony of the Submerged",
+    "Legends in Leviathan's Legacy",
+    "Discovering the Deep Blue",
+    "Solving the Nautical Enigma"
+  ]
 }

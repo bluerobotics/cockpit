@@ -5,14 +5,14 @@
         <div class="flex items-center justify-between gap-8">
           <div class="flex items-center gap-1">
             <v-checkbox v-model="currentCalibration.deadband.enabled" density="compact" hide-details class="mt-0" />
-            <span>Deadband/Deadzone</span>
+            <span>{{ $t('configuration.joystick.deadbandDeadzone') }}</span>
           </div>
           <div class="flex items-center gap-1">
             <v-checkbox v-model="currentCalibration.exponential.enabled" density="compact" hide-details class="mt-0" />
-            <span>Exponential Scaling</span>
+            <span>{{ $t('configuration.joystick.exponentialScaling') }}</span>
           </div>
         </div>
-        <v-btn variant="text" class="text-blue-400" @click="openCalibrationModal"> Calibrate </v-btn>
+        <v-btn variant="text" class="text-blue-400" @click="openCalibrationModal">{{ $t('configuration.joystick.calibrate') }}</v-btn>
       </div>
     </div>
   </div>
@@ -21,7 +21,7 @@
     <InteractionDialog v-model="showCalibrationModal" max-width="1000px" variant="text-only" persistent>
       <template #title>
         <div class="flex justify-center w-full font-bold mt-1 relative">
-          Joystick Calibration
+          {{ $t('configuration.joystick.joystickCalibration') }}
           <v-icon class="absolute right-2 top-1 cursor-pointer" size="24" @click="showInstructions = !showInstructions">
             mdi-information-outline
           </v-icon>
@@ -33,30 +33,22 @@
           <v-expand-transition>
             <div v-if="showInstructions" class="help-panel mb-4 p-4 rounded bg-white/5 w-full">
               <div class="mb-1">
-                <div class="font-semibold text-base mb-1">Deadband Calibration</div>
+                <div class="font-semibold text-base mb-1">{{ $t('configuration.joystick.deadbandCalibration') }}</div>
                 <p class="text-xs text-gray-400 mb-1">
-                  This allows ignoring small unwanted movements near the center of each joystick.
+                  {{ $t('configuration.joystick.deadbandDescription1') }}
                 </p>
                 <p class="text-xs text-gray-400 mb-1">
-                  The deadband regions are the red regions in the center of each graph, specifying how much of the
-                  joystick axis range to ignore. Within each deadband the output is clamped to 0, and the output curve
-                  (linear or exponential) starts at the edges of the region. This is useful if a spring-loaded joystick
-                  does not get consistently returned to the exact center of each axis.
+                  {{ $t('configuration.joystick.deadbandDescription2') }}
                 </p>
                 <p class="text-xs text-gray-400 mb-2">
-                  To calibrate the deadband, click and drag the deadband regions on the graphs, set the region width
-                  numbers directly with the text-input, or click the "auto calibrate deadband" button at the bottom. If
-                  auto-calibrating, gently touch the sticks during the calibration, while trying not to actually move
-                  them.
+                  {{ $t('configuration.joystick.deadbandDescription3') }}
                 </p>
               </div>
               <div>
-                <div class="font-semibold text-base mb-1">Exponential Calibration</div>
-                <p class="text-xs text-gray-400 mb-1">This adjusts the sensitivity curve of your joysticks.</p>
+                <div class="font-semibold text-base mb-1">{{ $t('configuration.joystick.exponentialCalibration') }}</div>
+                <p class="text-xs text-gray-400 mb-1">{{ $t('configuration.joystick.exponentialDescription1') }}</p>
                 <p class="text-xs text-gray-400 mb-2">
-                  Exponential scaling allows reducing the sensitivity of an axis near the center, for more precise
-                  control, which then steepens the curve near the edges to use the full range. A value of 1 will result
-                  in a linear curve, while greater values result in more rounded exponentials.
+                  {{ $t('configuration.joystick.exponentialDescription2') }}
                 </p>
               </div>
             </div>
@@ -65,18 +57,18 @@
           <div class="flex items-center gap-6">
             <div class="flex items-center gap-2">
               <v-checkbox v-model="currentCalibration.deadband.enabled" density="compact" hide-details />
-              <span>Deadband/Deadzone</span>
+              <span>{{ $t('configuration.joystick.deadbandDeadzone') }}</span>
             </div>
             <div class="flex items-center gap-2">
               <v-checkbox v-model="currentCalibration.exponential.enabled" density="compact" hide-details />
-              <span>Exponential Scaling</span>
+              <span>{{ $t('configuration.joystick.exponentialScaling') }}</span>
             </div>
           </div>
           <!-- Deadband Calibration Section -->
           <div class="w-full">
             <div class="flex items-center justify-between mb-2">
               <span v-if="isCalibrating && calibratingAxis === null" class="text-xs text-blue-400 ml-2">
-                Calibrating all axes...
+                {{ $t('configuration.joystick.calibratingAllAxes') }}
               </span>
               <v-progress-linear
                 v-if="isCalibrating && calibratingAxis === null"
@@ -95,7 +87,7 @@
               :key="index"
               class="border border-gray-700/60 rounded-lg py-2 px-4 bg-gray-900/60 flex flex-col"
             >
-              <div class="flex w-full justify-center text-lg font-bold text-white mb-3">Axis {{ index }}</div>
+              <div class="flex w-full justify-center text-lg font-bold text-white mb-3">{{ $t('configuration.joystick.axisLabel', { index }) }}</div>
               <div class="w-full h-40 relative">
                 <!-- Axis labels -->
                 <span class="font-mono text-xs text-gray-400 absolute top-[81px] right-[10px]">
@@ -237,11 +229,11 @@
         </div>
       </template>
       <template #actions>
-        <v-btn variant="text" @click="cancelCalibration">Cancel</v-btn>
+        <v-btn variant="text" @click="cancelCalibration">{{ $t('common.cancel') }}</v-btn>
         <div class="w-full" />
-        <v-btn variant="text" :disabled="isCalibrating" @click="startCalibration()"> Auto calibrate deadzones </v-btn>
+        <v-btn variant="text" :disabled="isCalibrating" @click="startCalibration()">{{ $t('configuration.joystick.autoCalibrateDeadzones') }}</v-btn>
 
-        <v-btn variant="text" :disabled="!allowSavingCalibration" @click="saveCalibration">Save</v-btn>
+        <v-btn variant="text" :disabled="!allowSavingCalibration" @click="saveCalibration">{{ $t('common.save') }}</v-btn>
       </template>
     </InteractionDialog>
   </teleport>

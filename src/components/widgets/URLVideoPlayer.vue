@@ -31,10 +31,10 @@
               variant="outlined"
               class="max-w-[144px]"
             />
-            <v-checkbox v-model="widget.options.autoplay" label="Autoplay" hide-details />
-            <v-checkbox v-model="widget.options.controls" label="Controls" hide-details />
-            <v-checkbox v-model="widget.options.loop" label="Loop" hide-details />
-            <v-checkbox v-model="widget.options.muted" label="Muted" hide-details />
+            <v-checkbox v-model="widget.options.autoplay" :label="$t('videoPlayer.autoplay')" hide-details />
+            <v-checkbox v-model="widget.options.controls" :label="$t('videoPlayer.controls')" hide-details />
+            <v-checkbox v-model="widget.options.loop" :label="$t('videoPlayer.loop')" hide-details />
+            <v-checkbox v-model="widget.options.muted" :label="$t('videoPlayer.muted')" hide-details />
           </div>
         </v-card-text>
         <v-card-actions class="flex justify-end">

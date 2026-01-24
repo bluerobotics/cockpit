@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
+import i18n from '@/plugins/i18n'
 import { defaultJoystickCalibration } from '@/assets/defaults'
 import {
   availableGamepadToCockpitMaps,
@@ -377,7 +378,7 @@ export const useControllerStore = defineStore('controller', () => {
       Object.entries(mapping).forEach(([btn, action]) => {
         const modKeyAction = modifierKeyActions[modKey as CockpitModifierKeyOption]
         if (JSON.stringify(action.action) !== JSON.stringify(modKeyAction)) return
-        showDialog({ message: "Cannot map modifier key to it's own layout.", variant: 'warning' })
+        showDialog({ message: i18n.global.t('joystick.cannotMapModifierToOwnLayout'), variant: 'warning' })
         protocolMapping.value.buttonsCorrespondencies[modKey as CockpitModifierKeyOption][
           Number(btn) as JoystickButton
         ].action = otherAvailableActions.no_function
@@ -407,7 +408,7 @@ export const useControllerStore = defineStore('controller', () => {
       const contents = event.target.result
       const maybeProfile = JSON.parse(contents)
       if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
-        showDialog({ variant: 'error', message: 'Invalid joystick mapping file.', timer: 3000 })
+        showDialog({ variant: 'error', message: i18n.global.t('joystick.invalidJoystickMappingFile'), timer: 3000 })
         return
       }
       cockpitStdMappings.value[joystick.model] = maybeProfile
@@ -432,11 +433,11 @@ export const useControllerStore = defineStore('controller', () => {
         !maybeFunctionsMapping['axesCorrespondencies'] ||
         !maybeFunctionsMapping['buttonsCorrespondencies']
       ) {
-        showDialog({ message: 'Invalid functions mapping file.', variant: 'error', timer: 3000 })
+        showDialog({ message: i18n.global.t('joystick.invalidFunctionsMappingFile'), variant: 'error', timer: 3000 })
         return
       }
       protocolMapping.value = maybeFunctionsMapping
-      showDialog({ message: 'Functions mapping imported successful.', variant: 'success', timer: 2000 })
+      showDialog({ message: i18n.global.t('joystick.functionsMappingImported'), variant: 'success', timer: 2000 })
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
     reader.readAsText(e.target.files[0])

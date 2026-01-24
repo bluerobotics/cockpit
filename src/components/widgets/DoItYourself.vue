@@ -63,10 +63,10 @@
             </v-expansion-panel>
           </v-expansion-panels>
 
-          <v-checkbox v-model="autoSave" label="Auto Save" density="compact" class="-mb-2" hide-details />
+          <v-checkbox v-model="autoSave" :label="$t('doItYourself.autoSave')" density="compact" class="-mb-2" hide-details />
           <v-checkbox
             v-model="widget.options.inheritCockpitStyles"
-            label="Inherit Cockpit interface styles"
+            :label="$t('doItYourself.inheritStyles')"
             density="compact"
             class="-mb-2"
             hide-details
@@ -76,13 +76,13 @@
           <div class="flex justify-between items-center px-4 w-full h-full">
             <v-btn class="text-white/60" variant="text" @click="closeDialog">Close</v-btn>
             <div class="flex gap-x-3">
-              <v-btn class="text-white/60" variant="text" title="Export configuration" @click="exportConfig">
+              <v-btn class="text-white/60" variant="text" :title="$t('doItYourself.exportConfig')" @click="exportConfig">
                 <v-icon class="mr-1 mt-[2px]">mdi-download</v-icon>
-                Export
+                {{ $t('doItYourself.export') }}
               </v-btn>
-              <v-btn class="text-white/60 mr-10" variant="text" title="Import configuration" @click="importConfig">
+              <v-btn class="text-white/60 mr-10" variant="text" :title="$t('doItYourself.importConfig')" @click="importConfig">
                 <v-icon class="mr-1 mt-[2px]">mdi-upload</v-icon>
-                Import
+                {{ $t('doItYourself.import') }}
               </v-btn>
               <v-btn class="text-white/60" variant="text" @click="resetChanges">Reset</v-btn>
               <v-btn class="text-white" variant="text" @click="applyChanges">Apply</v-btn>

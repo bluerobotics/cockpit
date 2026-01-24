@@ -29,29 +29,29 @@
           </div>
           <v-text-field
             v-model="newFunction.name"
-            label="Variable Name"
+            :label="$t('transformingFunction.variableName')"
             variant="outlined"
-            :rules="[(v) => !!v || 'Name is required']"
+            :rules="[(v) => !!v || $t('transformingFunction.nameRequired')]"
             density="compact"
             hide-details
           />
           <div class="flex items-center gap-2">
-            <label class="text-sm">Variable Type: </label>
+            <label class="text-sm">{{ $t('transformingFunction.variableType') }}: </label>
             <v-radio-group
               v-model="newFunction.type"
-              :rules="[(v) => !!v || 'Type is required']"
+              :rules="[(v) => !!v || $t('transformingFunction.typeRequired')]"
               density="compact"
               hide-details
               inline
             >
-              <v-radio class="ml-3 mr-4" label="String" value="string" />
-              <v-radio class="ml-3 mr-4" label="Number" value="number" />
-              <v-radio class="ml-3 mr-4" label="Boolean" value="boolean" />
+              <v-radio class="ml-3 mr-4" :label="$t('transformingFunction.string')" value="string" />
+              <v-radio class="ml-3 mr-4" :label="$t('transformingFunction.number')" value="number" />
+              <v-radio class="ml-3 mr-4" :label="$t('transformingFunction.boolean')" value="boolean" />
             </v-radio-group>
           </div>
           <div class="flex flex-col gap-2">
             <div class="flex justify-between items-center">
-              <label class="text-sm">Expression</label>
+              <label class="text-sm">{{ $t('transformingFunction.expression') }}</label>
               <v-btn
                 variant="text"
                 density="compact"
@@ -62,13 +62,13 @@
             </div>
             <v-expand-transition>
               <div v-if="isExpressionInfoVisible" class="mb-2 text-sm pa-2 bg-[#FFFFFF11] rounded">
-                Create complex transformations by combining existing Data Lake variables using JavaScript expressions.
+                {{ $t('transformingFunction.expressionInfo') }}
                 <br />
-                • Type <code>&#123;&#123;</code> to access available variables
+                • {{ $t('transformingFunction.expressionTip1') }}
                 <br />
-                • Return is optional, but should be included in complex expressions
+                • {{ $t('transformingFunction.expressionTip2') }}
                 <br />
-                • Remember to set the type accordingly
+                • {{ $t('transformingFunction.expressionTip3') }}
               </div>
             </v-expand-transition>
             <div
@@ -78,9 +78,9 @@
           </div>
           <v-textarea
             v-model="newFunction.description"
-            label="Description"
+            :label="$t('common.description')"
             variant="outlined"
-            placeholder="Optional description of what this transformation does"
+            :placeholder="$t('transformingFunction.descriptionPlaceholder')"
             rows="1"
             density="compact"
             hide-details
@@ -90,8 +90,10 @@
       <v-divider class="mx-10" />
       <v-card-actions>
         <div class="flex justify-between items-center pa-2 w-full h-full">
-          <v-btn color="white" variant="text" @click="closeDialog">Cancel</v-btn>
-          <v-btn color="white" :disabled="!isValidForm" @click="saveTransformingFunction">Save</v-btn>
+          <v-btn color="white" variant="text" @click="closeDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="white" :disabled="!isValidForm" @click="saveTransformingFunction">{{
+            $t('common.save')
+          }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -105,6 +107,7 @@ import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 // @ts-ignore: Worker imports
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useSnackbar } from '@/composables/snackbar'
 import { DataLakeVariable, getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
@@ -116,6 +119,7 @@ import {
 import { machinizeString } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
+const { t } = useI18n()
 const { openSnackbar } = useSnackbar()
 
 /**
@@ -211,7 +215,7 @@ const isValidForm = computed(() => {
 
 const saveTransformingFunction = (): void => {
   if (!isValidForm.value) {
-    openSnackbar({ message: 'Please fill in all fields', variant: 'error' })
+    openSnackbar({ message: t('errors.pleaseFillAllFields'), variant: 'error' })
     return
   }
 

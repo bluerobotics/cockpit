@@ -31,7 +31,7 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title><p class="ml-10">Options</p></template>
+        <template #title><p class="ml-10">{{ $t('inputElement.options') }}</p></template>
         <template #content>
           <div class="flex flex-col h-full items-center mb-4 -ml-[7px] w-[248px]">
             <div
@@ -213,7 +213,9 @@
                                 isOptionsMenuOpen[index + 1] = true
                               }
                             "
-                            >add another option</v-btn
+                          >
+                            {{ $t('inputElement.addAnotherOption') }}
+                          </v-btn
                           >
                         </div>
                       </v-card>
@@ -244,7 +246,7 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title>Actions</template>
+        <template #title>{{ $t('inputElement.actions') }}</template>
         <template #content>
           <div class="flex flex-col h-full items-center mb-4 -ml-[7px] w-[248px]">
             <template v-if="currentElement.component !== CustomWidgetElementType.Button">
@@ -317,7 +319,7 @@
                 <input v-model="futureDataLakeVariable.name" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
               </div>
               <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
-                <p class="ml-1 text-[14px]">Description</p>
+                <p class="ml-1 text-[14px]">{{ $t('common.description') }}</p>
                 <input v-model="futureDataLakeVariable.description" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
               </div>
               <div class="flex w-full justify-between">
@@ -350,7 +352,7 @@
 
             <template v-if="currentElement.component === CustomWidgetElementType.Button">
               <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
-                <p class="ml-1 text-[14px]">Action to trigger</p>
+                <p class="ml-1 text-[14px]">{{ $t('inputElement.actionToTrigger') }}</p>
                 <select v-model="currentElement.options.cockpitAction" class="p-2 bg-[#FFFFFF11] w-[123px]">
                   <option
                     v-for="cockpitAction in availableCockpitActions"
@@ -477,7 +479,7 @@ const CloseConfigPanel = (): void => {
 
 const showActionExistsError = (): void => {
   openSnackbar({
-    message: 'Variable name already exists',
+    message: t('errors.variableNameAlreadyExists'),
     variant: 'error',
   })
   dataLakeVariableError.value.push('This name is already in use')
@@ -491,12 +493,12 @@ const deleteParameterFromDataLake = async (): Promise<void> => {
     try {
       await deleteDataLakeVariable(currentElement.value.options.dataLakeVariable)
       openSnackbar({
-        message: 'Action variable deleted',
+        message: t('success.actionVariableDeleted'),
         variant: 'success',
       })
     } catch (e) {
       openSnackbar({
-        message: 'Error deleting action variable',
+        message: t('errors.errorDeletingActionVariable'),
         variant: 'error',
       })
     }

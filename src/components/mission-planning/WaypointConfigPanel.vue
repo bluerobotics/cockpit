@@ -14,7 +14,7 @@
     >
       <template #title>
         <p class="ml-10 text-center text-[13px] font-normal">
-          {{ selectedWaypoint.id === 'home' ? 'Home' : `Waypoint parameters` }}
+          {{ selectedWaypoint.id === 'home' ? t('missionPlanning.home') : t('missionPlanning.waypointParameters') }}
         </p>
       </template>
       <template #content>
@@ -23,7 +23,7 @@
           class="flex flex-col justify-center w-full items-center py-1 px-2 my-2 bg-[#EEEEEE22] text-white rounded-bl-md rounded-br-md"
         >
           <div class="flex w-full gap-x-4 my-[4px] justify-between text-[12px] text-center mb-[2px]">
-            <p class="w-[50px] text-start">Latitude:</p>
+            <p class="w-[50px] text-start">{{ t('missionPlanning.latitude') }}</p>
             <input
               :value="editableLat"
               class="text-right w-[130px] mt-[2px] bg-transparent h-[15px] border-transparent focus:outline-none text-xs"
@@ -33,7 +33,7 @@
           </div>
           <v-divider class="border-black w-full" />
           <div class="flex w-full gap-x-4 my-[4px] justify-between text-[12px] text-center pt-[1px]">
-            <p class="w-[50px] text-start">Longitude:</p>
+            <p class="w-[50px] text-start">{{ t('missionPlanning.longitude') }}</p>
             <input
               :value="editableLng"
               class="text-right w-[130px] mt-[2px] bg-transparent h-[15px] border-transparent focus:outline-none text-xs"
@@ -43,7 +43,7 @@
           </div>
           <v-divider class="border-black w-full" />
           <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
-            <p class="w-[140px] text-start">Altitude:</p>
+            <p class="w-[140px] text-start">{{ t('missionPlanning.altitude') }}</p>
             <div class="flex w-full pr-2 h-[35px] items-center">
               <v-text-field
                 v-model="waypointOnMissionStore.altitude"
@@ -58,7 +58,7 @@
           </div>
           <v-divider class="border-black w-full" />
           <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
-            <p class="w-[80px] mt-1 text-start">MAVFrame:</p>
+            <p class="w-[80px] mt-1 text-start">{{ t('missionPlanning.mavFrame') }}</p>
             <v-select
               v-model="waypointOnMissionStore.altitudeReferenceType"
               :items="availableFrames"
@@ -89,7 +89,7 @@
     >
       <template #title>
         <p class="ml-4 text-center text-[13px] font-normal">
-          Waypoint Commands ({{ waypointOnMissionStore?.commands?.length || 0 }})
+          {{ t('missionPlanning.waypointCommands') }} ({{ waypointOnMissionStore?.commands?.length || 0 }})
         </p>
       </template>
       <template #content>
@@ -104,10 +104,10 @@
               <div class="flex justify-between items-center">
                 <div class="flex flex-col gap-1 max-w-[80%]">
                   <p class="text-[11px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap">
-                    {{ command.command }}
+                    {{ translateCommandName(command.command) }}
                   </p>
                   <p class="text-[10px] opacity-75 overflow-hidden text-ellipsis whitespace-nowrap">
-                    {{ command.type }}
+                    {{ translateCommandType(command.type) }}
                   </p>
                   <div class="text-[10px] grid grid-cols-2 gap-1">
                     <span v-if="command.type === MissionCommandType.MAVLINK_NAV_COMMAND">
@@ -149,7 +149,7 @@
             prepend-icon="mdi-plus"
             @click="showCommandForm = true"
           >
-            Append New Command
+            {{ t('missionPlanning.appendNewCommand') }}
           </v-btn>
 
           <!-- Command Input Form -->
@@ -172,13 +172,14 @@
         prepend-icon="mdi-delete"
         @click="handleRemoveWaypoint(selectedWaypoint)"
       >
-        Delete waypoint
+        {{ t('missionPlanning.deleteWaypoint') }}
       </v-btn>
     </div>
   </div>
 </template>
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import CommandInputForm from '@/components/mission-planning/CommandInputForm.vue'
@@ -194,6 +195,7 @@ import {
 
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
+const { t } = useI18n()
 
 const props = defineProps<{
   /**
@@ -235,10 +237,45 @@ const handleRemoveWaypoint = (waypoint: Waypoint): void => {
   emit('shouldUpdateWaypoints')
 }
 
+const translateAltitudeRefType = (type: AltitudeReferenceType): string => {
+  const translationMap: Record<AltitudeReferenceType, string> = {
+    [AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL]: t('missionPlanning.absoluteRelativeToMSL'),
+    [AltitudeReferenceType.RELATIVE_TO_HOME]: t('missionPlanning.relativeToHome'),
+    [AltitudeReferenceType.RELATIVE_TO_TERRAIN]: t('missionPlanning.relativeToTerrain'),
+  }
+  return translationMap[type] || type
+}
+
 const availableFrames = Object.values(AltitudeReferenceType).map((value: AltitudeReferenceType) => ({
-  name: value,
+  name: translateAltitudeRefType(value),
   value,
 }))
+
+const translateCommandName = (commandName: string): string => {
+  // Remove MAV_CMD_NAV_ and MAV_CMD_ prefixes
+  let simpleName = commandName.replace('MAV_CMD_NAV_', '').replace('MAV_CMD_', '')
+
+  // Try to get translation from the map
+  const translationKey = `missionPlanning.mavCommands.${simpleName}`
+  if (t(translationKey) !== translationKey) {
+    return t(translationKey)
+  }
+
+  // Fallback: return the simplified name
+  return simpleName
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+}
+
+const translateCommandType = (type: MissionCommandType): string => {
+  if (type === MissionCommandType.MAVLINK_NAV_COMMAND) {
+    return t('missionPlanning.mavlinkNavigationCommand')
+  } else if (type === MissionCommandType.MAVLINK_NON_NAV_COMMAND) {
+    return t('missionPlanning.mavlinkNonNavigationCommand')
+  }
+  return type
+}
 
 const onLatInput = (event: Event): void => {
   const input = event.target as HTMLInputElement
