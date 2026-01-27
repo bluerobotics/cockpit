@@ -735,6 +735,7 @@ import {
   MiniWidget,
   MiniWidgetContainer,
   MiniWidgetType,
+  widgetDefaultSizes,
   WidgetType,
 } from '@/types/widgets'
 
@@ -845,6 +846,7 @@ const makeNewWidget = (widget: WidgetType, name?: string, options?: Record<strin
     component: widget,
     options: options || {},
     icon: widgetImages[widget] as string,
+    defaultSize: widgetDefaultSizes[widget],
   }
 }
 
@@ -862,6 +864,7 @@ const availableInternalWidgets = computed(() =>
       name: widgetType,
       icon: widgetImages[widgetType] as string,
       options: {},
+      defaultSize: widgetDefaultSizes[widgetType],
     }
   })
 )
@@ -876,6 +879,7 @@ const allAvailableWidgets = computed(() => {
       options: {
         source: widget.iframe_url,
       },
+      defaultSize: widgetDefaultSizes[WidgetType.IFrame],
     })),
     ...availableInternalWidgets.value.map((widget) => ({
       ...widget,

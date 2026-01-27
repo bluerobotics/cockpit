@@ -577,7 +577,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       name: widget.name,
       component: widget.component,
       position: dropPosition ?? widget.defaultPosition ?? { x: 0.4, y: 0.32 },
-      size: { width: 0.2, height: 0.36 },
+      size: widget.defaultSize ?? { width: 0.2, height: 0.36 },
       options: widget.options,
     }
 
