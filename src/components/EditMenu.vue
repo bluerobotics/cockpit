@@ -550,9 +550,9 @@
         class="flex flex-col items-center justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 relative"
         :class="{ 'border-2 border-[#135da3]': widget.isExternal }"
         draggable="true"
-        @dragstart="onRegularWidgetDragStart"
+        @dragstart="(event) => onRegularWidgetDragStart(event, widget)"
         @dragend="(event) => onRegularWidgetDragEnd(widget, event)"
-        @touchstart="onRegularWidgetDragStart"
+        @touchstart="(event) => onRegularWidgetDragStart(event, widget)"
         @touchend="(event) => onRegularWidgetDragEnd(widget, event)"
       >
         <div
@@ -722,6 +722,7 @@ import { isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import { Point2D } from '@/types/general'
 import {
   type Profile,
   type View,
@@ -1165,15 +1166,68 @@ watch(widgetMode, async (newValue: string): Promise<void> => {
   })
 })
 
-const onRegularWidgetDragStart = (event: Event): void => {
+// Get the coordinates of the widget being dragged and update the drag state
+const onRegularWidgetDragStart = (event: Event, widget: InternalWidgetSetupInfo): void => {
   const target = event.target as HTMLElement
   if (target) {
     target.style.opacity = '0.5'
+  }
+  store.widgetDragState = {
+    widget,
+    position: null,
+  }
+  document.addEventListener('dragover', onDragOver)
+  document.addEventListener('touchmove', onTouchMove, { passive: true })
+}
+
+// Track drag position for ghost preview
+const onDragOver = (event: DragEvent): void => {
+  event.preventDefault()
+  updateDragPosition(event.clientX, event.clientY)
+}
+
+// Track touch move for ghost preview
+const onTouchMove = (event: TouchEvent): void => {
+  if (store.widgetDragState.widget && event.touches.length > 0) {
+    const touch = event.touches[0]
+    updateDragPosition(touch.clientX, touch.clientY)
+  }
+}
+
+// Update the drag position for ghost preview
+const updateDragPosition = (clientX: number, clientY: number): void => {
+  const mainViewElement = document.querySelector('.main-view') as HTMLElement
+  if (!mainViewElement || !store.widgetDragState.widget) {
+    return
+  }
+
+  const mainViewRect = mainViewElement.getBoundingClientRect()
+  const isWithinMainView =
+    clientX >= mainViewRect.left &&
+    clientX <= mainViewRect.right &&
+    clientY >= mainViewRect.top &&
+    clientY <= mainViewRect.bottom
+
+  if (isWithinMainView) {
+    // Calculate position relative to main-view
+    const dropX = (clientX - mainViewRect.left) / mainViewRect.width
+    const dropY = (clientY - mainViewRect.top) / mainViewRect.height
+    const widgetSize = store.widgetDragState.widget.defaultSize ?? { width: 0.2, height: 0.36 }
+    // Center the widget on the drop position
+    const x = Math.max(0, Math.min(1 - widgetSize.width, dropX - widgetSize.width / 2))
+    const y = Math.max(0, Math.min(1 - widgetSize.height, dropY - widgetSize.height / 2))
+    store.widgetDragState.position = { x, y }
+  } else {
+    store.widgetDragState.position = null
   }
 }
 
 // Places the widget if it is within the main-view
 const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEvent | TouchEvent): void => {
+  // Remove global event listeners added in onRegularWidgetDragStart
+  document.removeEventListener('dragover', onDragOver)
+  document.removeEventListener('touchmove', onTouchMove)
+
   let clientX: number
   let clientY: number
 
@@ -1194,6 +1248,7 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
     widgetCards.forEach((card) => {
       ;(card as HTMLElement).style.opacity = '1'
     })
+    store.widgetDragState = { widget: null, position: null }
     return
   }
 
@@ -1206,14 +1261,18 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
     clientY <= mainViewRect.bottom
 
   if (isWithinMainView) {
-    // Calculates the drop position inside the app area
-    const dropX = (clientX - mainViewRect.left) / mainViewRect.width
-    const dropY = (clientY - mainViewRect.top) / mainViewRect.height
-    // Centers the widget on the drop position
-    const widgetSize = widget.defaultSize ?? { width: 0.2, height: 0.36 }
-    const dropPosition = {
-      x: Math.max(0, Math.min(1 - widgetSize.width, dropX - widgetSize.width / 2)),
-      y: Math.max(0, Math.min(1 - widgetSize.height, dropY - widgetSize.height / 2)),
+    // Use the last tracked position if available, otherwise calculate from event
+    let dropPosition: Point2D = { x: 0, y: 0 }
+    if (store.widgetDragState.position) {
+      dropPosition = store.widgetDragState.position
+    } else {
+      const dropX = (clientX - mainViewRect.left) / mainViewRect.width
+      const dropY = (clientY - mainViewRect.top) / mainViewRect.height
+      const widgetSize = widget.defaultSize ?? { width: 0.2, height: 0.36 }
+      dropPosition = {
+        x: Math.max(0, Math.min(1 - widgetSize.width, dropX - widgetSize.width / 2)),
+        y: Math.max(0, Math.min(1 - widgetSize.height, dropY - widgetSize.height / 2)),
+      }
     }
     store.addWidget(makeWidgetUnique(widget), store.currentView, dropPosition)
   }
@@ -1222,6 +1281,8 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
   widgetCards.forEach((card) => {
     ;(card as HTMLElement).style.opacity = '1'
   })
+
+  store.widgetDragState = { widget: null, position: null }
 }
 
 const availableVehicleTypes = computed(() => Object.keys(MavType))

@@ -35,6 +35,7 @@ import {
   type Widget,
   CustomWidgetElement,
   CustomWidgetElementContainer,
+  DragState,
   InternalWidgetSetupInfo,
   MiniWidgetManagerVars,
   validateProfile,
@@ -70,6 +71,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const miniWidgetLastValues = useBlueOsStorage<Record<string, any>>('cockpit-mini-widget-last-values', {})
   const floatingWidgetContainers = ref<MiniWidgetContainer[]>([])
   const currentContextMenu = ref<any | null>(null)
+  const widgetDragState = ref<DragState>({ widget: null, position: null })
 
   const editWidgetByHash = (hash: string): Widget | undefined => {
     widgetToEdit.value = currentProfile.value.views
@@ -929,6 +931,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     updateElementOptions,
     removeElementFromCustomWidget,
     loadWidgetFromFile,
+    widgetDragState,
     widgetToEdit,
     editWidgetByHash,
     setMiniWidgetLastValue,
