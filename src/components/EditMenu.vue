@@ -844,6 +844,7 @@ const makeNewWidget = (widget: WidgetType, name?: string, options?: Record<strin
     name: findUniqueName(newName),
     component: widget,
     options: options || {},
+    icon: widgetImages[widget] as string,
   }
 }
 
@@ -1201,7 +1202,16 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
     clientY <= mainViewRect.bottom
 
   if (isWithinMainView) {
-    store.addWidget(makeWidgetUnique(widget), store.currentView)
+    // Calculates the drop position inside the app area
+    const dropX = (clientX - mainViewRect.left) / mainViewRect.width
+    const dropY = (clientY - mainViewRect.top) / mainViewRect.height
+    // Centers the widget on the drop position
+    const widgetSize = widget.defaultSize ?? { width: 0.2, height: 0.36 }
+    const dropPosition = {
+      x: Math.max(0, Math.min(1 - widgetSize.width, dropX - widgetSize.width / 2)),
+      y: Math.max(0, Math.min(1 - widgetSize.height, dropY - widgetSize.height / 2)),
+    }
+    store.addWidget(makeWidgetUnique(widget), store.currentView, dropPosition)
   }
 
   const widgetCards = document.querySelectorAll('[draggable="true"]')

@@ -42,6 +42,10 @@ export interface ExternalWidgetSetupInfo {
    *  Widget icon, this is the icon that will be displayed on the widget browser
    */
   icon: string
+  /**
+   *  Default position for the widget when first added (optional)
+   */
+  defaultPosition?: Point2D
 }
 
 /**
