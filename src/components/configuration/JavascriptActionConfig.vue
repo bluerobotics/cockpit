@@ -22,8 +22,7 @@
 
           <div class="d-flex align-center justify-space-between mb-2">
             <h3 class="text-subtitle-2 font-weight-bold">JavaScript Code</h3>
-            <!-- eslint-disable-next-line prettier/prettier -->
-            <div v-pre class="text-caption">Use {{ variable-id }} to access data lake variables</div>
+            <div class="text-caption">Type <code v-pre>{{</code> to autocomplete data lake variables</div>
           </div>
           <div class="editor-wrapper">
             <div ref="editorContainer" class="editor-container"></div>
