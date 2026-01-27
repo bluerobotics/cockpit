@@ -759,6 +759,17 @@ export type DraggableEvent = {
   item: HTMLElement
 }
 
+export type DragState = {
+  /**
+   * The widget being dragged
+   */
+  widget: InternalWidgetSetupInfo | null
+  /**
+   * The position where the widget would be dropped (normalized 0-1 coordinates)
+   */
+  position: Point2D | null
+}
+
 export type View = {
   /**
    * Unique identifier for the view

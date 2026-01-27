@@ -12,6 +12,27 @@
         </div>
       </div>
       <SnappingGrid v-if="store.snapToGrid && store.editingMode" :grid-interval="store.gridInterval" />
+      <!-- Ghost preview for widget being dragged -->
+      <div
+        v-if="store.widgetDragState.widget && store.widgetDragState.position && store.editingMode"
+        class="widget-ghost-preview"
+        :style="{
+          position: 'absolute',
+          left: `${store.widgetDragState.position.x * 100}%`,
+          top: `${store.widgetDragState.position.y * 100}%`,
+          width: `${(store.widgetDragState.widget.defaultSize?.width ?? 0.2) * 100}%`,
+          height: `${(store.widgetDragState.widget.defaultSize?.height ?? 0.36) * 100}%`,
+          pointerEvents: 'none',
+          zIndex: 1000,
+        }"
+      >
+        <div
+          class="w-full h-full border-2 border-dashed border-[#ffffff21] bg-[#ffffff03] rounded-md shadow-sm"
+          style="backdrop-filter: blur(16px)"
+        >
+          <div class="w-full h-full bg-[#ffffff03] rounded-md" />
+        </div>
+      </div>
       <template v-for="widget in view.widgets.slice().reverse()" :key="widget.hash">
         <WidgetHugger
           v-if="componentExists(widget.component)"
