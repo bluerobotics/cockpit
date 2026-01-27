@@ -43,6 +43,10 @@ export interface ExternalWidgetSetupInfo {
    */
   icon: string
   /**
+   *  Default size for the widget when first added (optional)
+   */
+  defaultSize?: SizeRect2D
+  /**
    *  Default position for the widget when first added (optional)
    */
   defaultPosition?: Point2D
@@ -853,6 +857,26 @@ export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
   [WidgetType.URLVideoPlayer]: false,
   [WidgetType.VideoPlayer]: false,
   [WidgetType.VirtualHorizon]: false,
+}
+
+/**
+ * Default sizes for widgets when first added to a view
+ */
+export const widgetDefaultSizes: Partial<Record<WidgetType, SizeRect2D>> = {
+  [WidgetType.Attitude]: { width: 0.6, height: 0.8 },
+  [WidgetType.Compass]: { width: 0.062, height: 0.118 },
+  [WidgetType.CompassHUD]: { width: 0.56, height: 0.062 },
+  [WidgetType.CollapsibleContainer]: { width: 0.3, height: 0.4 },
+  [WidgetType.DepthHUD]: { width: 0.05, height: 0.7 },
+  [WidgetType.DoItYourself]: { width: 0.3, height: 0.3 },
+  [WidgetType.IFrame]: { width: 0.4, height: 0.4 },
+  [WidgetType.ImageView]: { width: 0.3, height: 0.3 },
+  [WidgetType.Map]: { width: 1, height: 1 },
+  [WidgetType.MiniWidgetsBar]: { width: 0.2, height: 0.1 },
+  [WidgetType.Plotter]: { width: 0.4, height: 0.3 },
+  [WidgetType.URLVideoPlayer]: { width: 0.5, height: 0.4 },
+  [WidgetType.VideoPlayer]: { width: 1, height: 1 },
+  [WidgetType.VirtualHorizon]: { width: 0.062, height: 0.118 },
 }
 
 export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
