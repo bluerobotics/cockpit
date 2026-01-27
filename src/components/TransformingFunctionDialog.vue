@@ -99,20 +99,15 @@
 </template>
 
 <script setup lang="ts">
-import * as monaco from 'monaco-editor'
-// @ts-ignore: Worker imports
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
-// @ts-ignore: Worker imports
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useSnackbar } from '@/composables/snackbar'
-import { DataLakeVariable, getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
 import {
   createTransformingFunction,
   TransformingFunction,
   updateTransformingFunction,
 } from '@/libs/actions/data-lake-transformations'
+import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
 import { machinizeString } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -189,8 +184,6 @@ watch(
   { immediate: true }
 )
 
-const variablesMap = ref<Record<string, DataLakeVariable>>({})
-
 const closeDialog = (): void => {
   emit('update:modelValue', false)
   newFunction.value = { ...defaultValues }
@@ -237,125 +230,16 @@ const saveTransformingFunction = (): void => {
 
 const expressionEditorContainer = ref<HTMLElement | null>(null)
 let expressionEditor: monaco.editor.IStandaloneCodeEditor | null = null
-let completionProvider: monaco.IDisposable | null = null
-
-// Configure Monaco environment
-self.MonacoEnvironment = {
-  getWorker(_, label) {
-    if (label === 'typescript' || label === 'javascript') {
-      return new tsWorker()
-    }
-    return new editorWorker()
-  },
-}
-
-// Configure custom language for data lake expressions
-monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-  noSemanticValidation: true,
-  noSyntaxValidation: true,
-  diagnosticCodesToIgnore: [1005, 1128, 7027],
-})
-
-// Add custom tokens to JavaScript language
-monaco.languages.setMonarchTokensProvider('javascript', {
-  tokenizer: {
-    root: [
-      [/\{\{[^}]*\}\}/, { token: 'variable.name.data-lake' }],
-      [/[a-z_$][\w$]*/, 'identifier'],
-      [/[A-Z][\w$]*/, 'type.identifier'],
-      [/"([^"\\]|\\.)*$/, 'string.invalid'],
-      [/'([^'\\]|\\.)*$/, 'string.invalid'],
-      [/"/, 'string', '@string_double'],
-      [/'/, 'string', '@string_single'],
-      [/[0-9]+/, 'number'],
-      [/[,.]/, 'delimiter'],
-      [/[()]/, '@brackets'],
-      [/[{}]/, '@brackets'],
-      [/[[\]]/, '@brackets'],
-      [/[;]/, 'delimiter'],
-      [/[+\-*/=<>!&|^~?:]/, 'operator'],
-      [/@[a-zA-Z]+/, 'annotation'],
-      [/\s+/, 'white'],
-    ],
-    string_double: [
-      [/[^"]+/, 'string'],
-      [/"/, 'string', '@pop'],
-    ],
-    string_single: [
-      [/[^']+/, 'string'],
-      [/'/, 'string', '@pop'],
-    ],
-  },
-})
-
-// Create custom theme to style our data lake variables
-monaco.editor.defineTheme('data-lake-dark', {
-  base: 'vs-dark',
-  inherit: true,
-  rules: [{ token: 'variable.name.data-lake', foreground: '4EC9B0', fontStyle: 'italic' }],
-  colors: {},
-})
-
-// Create Monaco editor
-const createEditor = (container: HTMLElement, value: string): monaco.editor.IStandaloneCodeEditor => {
-  return monaco.editor.create(container, {
-    value: value,
-    language: 'javascript',
-    theme: 'data-lake-dark',
-    minimap: { enabled: false },
-    fontSize: 14,
-    lineNumbers: 'on',
-    scrollBeyondLastLine: false,
-    automaticLayout: true,
-    tabSize: 2,
-    wordWrap: 'on',
-    padding: { top: 12, bottom: 12 },
-    autoClosingBrackets: 'never',
-    autoClosingQuotes: 'never',
-  })
-}
 
 // Initialize editor
 const initEditor = async (): Promise<void> => {
   if (!expressionEditorContainer.value || expressionEditor) return
-  expressionEditor = createEditor(expressionEditorContainer.value, newFunction.value.expression)
 
-  // Dispose of previous completion provider if it exists
-  if (completionProvider) {
-    completionProvider.dispose()
-    completionProvider = null
-  }
-
-  // Configure auto-completion for data lake variables
-  completionProvider = monaco.languages.registerCompletionItemProvider('javascript', {
-    triggerCharacters: ['{'],
-    provideCompletionItems: (model, position) => {
-      const textUntilPosition = model.getValueInRange({
-        startLineNumber: position.lineNumber,
-        startColumn: 1,
-        endLineNumber: position.lineNumber,
-        endColumn: position.column,
-      })
-
-      if (!textUntilPosition.endsWith('{{')) {
-        return { suggestions: [] }
-      }
-
-      const suggestions = Object.entries(variablesMap.value).map(([id, variable]) => ({
-        label: variable.name,
-        kind: monaco.languages.CompletionItemKind.Variable,
-        insertText: `${id}}}`,
-        detail: `${variable.type} - ${variable.description || 'No description'}`,
-        range: {
-          startLineNumber: position.lineNumber,
-          startColumn: position.column,
-          endLineNumber: position.lineNumber,
-          endColumn: position.column,
-        },
-      }))
-
-      return { suggestions }
-    },
+  // Use the centralized Monaco manager with transform completion type
+  expressionEditor = createMonacoEditor(expressionEditorContainer.value, {
+    language: 'javascript',
+    value: newFunction.value.expression,
+    dataLakeCompletionType: 'use-bracket-parser',
   })
 
   // Watch for changes
@@ -371,10 +255,6 @@ const finishEditor = (): void => {
   if (expressionEditor) {
     expressionEditor.dispose()
     expressionEditor = null
-  }
-  if (completionProvider) {
-    completionProvider.dispose()
-    completionProvider = null
   }
 }
 
@@ -403,11 +283,6 @@ watch(
 
 onBeforeUnmount(() => {
   finishEditor()
-})
-
-// Load available variables when mounted
-onMounted((): void => {
-  variablesMap.value = getAllDataLakeVariablesInfo()
 })
 </script>
 
