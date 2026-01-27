@@ -1,14 +1,13 @@
 import { differenceInMilliseconds } from 'date-fns'
-import { defaultMessageIntervalsOptions } from 'defaults'
 import { unit } from 'mathjs'
 
 import {
+  type DataLakeVariable,
   createDataLakeVariable,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
-import { type DataLakeVariable } from '@/libs/actions/data-lake'
 import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
@@ -31,6 +30,7 @@ import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-messag
 import { settingsManager } from '@/libs/settings-management'
 import { Signal, SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
+import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
 import {
   type MAVLinkParameterSetData,
   type MessageIntervalOptions,
