@@ -11,7 +11,9 @@
     <div class="absolute left-[3rem] h-full select-none font-semibold scroll-container w-full">
       <div class="w-full" :class="{ 'scroll-text': valueIsOverflowing }">
         <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
-        <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
+        <span class="text-xl leading-6"
+          >{{ String.fromCharCode(0x20) }}{{ unitPrefix }}{{ miniWidget.options.variableUnit }}
+        </span>
       </div>
       <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden">
         {{ miniWidget.options.displayName }}
@@ -260,14 +262,41 @@ const currentState = ref<unknown>(0)
 
 const finalValue = computed(() => Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value))
 
+const valueIsOverflowing = ref(false)
+let newOverflowState = valueIsOverflowing.value
+
+const unitPrefix = ref('')
+let newUnitPrefix = unitPrefix.value
+
 const parsedState = computed(() => {
+  // Initialize with reasonable defaults for special cases
+  newUnitPrefix = ''
+  newOverflowState = false
+
   if (currentState.value === undefined) {
     return '--'
   }
 
+  const iconWidth = 3 * 16 + 6 // 3rem @ 16px/rem, plus some space
+  const displayWidth = miniWidget.value.options.widgetWidth - iconWidth
+  const charWidth = (20 * 2) / 3 // text-xl is 1.25rem (20px) per character, then scale by width/height ratio
+  const wideUnits = ['m', 'M', 'w', 'W', '%', '℃', '℉']
+  let wideUnitCompensation = 0
+  wideUnits.forEach((unit) => {
+    if (miniWidget.value.options.variableUnit.includes(unit)) {
+      wideUnitCompensation += 0.5
+    }
+  })
+  const displayChars = Math.max(
+    4,
+    Math.floor(displayWidth / charWidth) - miniWidget.value.options.variableUnit.length - wideUnitCompensation
+  )
+
   // If using string variable, return the raw value as string without parsing
   if (miniWidget.value.options.useStringVariable) {
-    return String(currentState.value)
+    const output = String(currentState.value)
+    newOverflowState = output.length > displayChars
+    return output
   }
 
   const value = finalValue.value
@@ -277,24 +306,40 @@ const parsedState = computed(() => {
     return value.toFixed(decimalPlaces)
   }
 
-  if (value < 0 && value > -10) return value.toFixed(1)
-  if (value <= -10 && value > -100) return value.toFixed(1)
-  if (value <= -100 && value > -1000) return value.toFixed(0)
-  if (value <= -1000 && value > -10000) return `${(value / 1000).toFixed(1)}k`
-  if (value <= -10000) return `${(value / 1000).toFixed(0)}k`
+  // Avoid trying to calculate order of magnitude for 0
+  if (value == 0) return '0'
 
-  if (value < 1) return value.toFixed(3)
-  if (value >= 1 && value < 100) return value.toFixed(2)
-  if (value >= 100 && value < 1000) return value.toFixed(1)
-  if (value >= 1000 && value < 10000) return value.toFixed(0)
-  if (value >= 10000 && value < 100000) return `${(value / 1000).toFixed(1)}k`
-  if (value >= 100000) return `${(value / 1000).toFixed(0)}k`
+  // Determine maximum display precision, with metric unit prefixes
+  let absValue = Math.abs(value)
+  const isNegative = value < 0
+  const macroScale = Math.max(Math.min(Math.floor(Math.log(absValue) / Math.log(1000)), 4), -4)
+  let scaleSuffix = ['', 'k', 'M', 'B', 'T', /* <big - small> */ 'p', 'n', 'µ', 'm'].at(macroScale)
 
-  return value.toFixed(0)
-})
+  // Special handling for milli and kilo scales - sometimes they look nicer unscaled
+  if (
+    (macroScale === -1 && (!isNegative || value < -0.01 || displayChars >= 5)) ||
+    (macroScale === 1 && absValue < 10_000 && !(isNegative && displayChars <= 4))
+  ) {
+    scaleSuffix = ''
+  }
 
-const valueIsOverflowing = computed(() => {
-  return finalValue.value <= -100000 || finalValue.value >= 1000000
+  let displayValue = value
+  if (['m', 'k'].includes(scaleSuffix) || Math.abs(macroScale) > 1) {
+    const divisor = 10 ** (macroScale * 3)
+    absValue /= divisor
+    displayValue /= divisor
+  }
+
+  // Create the output string, with relevant compensation
+  const wideSuffixes = ['m', 'M', 'B', 'T']
+  const extraWidth = isNegative + scaleSuffix.length + wideSuffixes.includes(scaleSuffix)
+  const leadingZeros = -Math.min(Math.floor(Math.log10(absValue)), 0)
+  const precisionScale = displayChars - extraWidth - leadingZeros
+  const output = displayValue.toPrecision(precisionScale)
+
+  newOverflowState = output.length - 1 > displayChars
+  newUnitPrefix = scaleSuffix
+  return output
 })
 
 const loggedMiniWidgets = ref(Array.from(CurrentlyLoggedVariables.getAllVariables()))
@@ -362,6 +407,11 @@ watch(
     }
   }
 )
+
+watch(parsedState, () => {
+  valueIsOverflowing.value = newOverflowState
+  unitPrefix.value = newUnitPrefix
+})
 
 watch(
   finalValue,
