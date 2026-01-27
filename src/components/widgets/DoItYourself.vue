@@ -95,38 +95,15 @@
 </template>
 
 <script setup lang="ts">
-import * as monaco from 'monaco-editor'
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 const autoSave = useBlueOsStorage('diy-widget-auto-save', false)
-
-self.MonacoEnvironment = {
-  getWorker(_, label) {
-    if (label === 'json') {
-      return new jsonWorker()
-    }
-    if (label === 'css' || label === 'scss' || label === 'less') {
-      return new cssWorker()
-    }
-    if (label === 'html' || label === 'handlebars' || label === 'razor') {
-      return new htmlWorker()
-    }
-    if (label === 'typescript' || label === 'javascript') {
-      return new tsWorker()
-    }
-    return new editorWorker()
-  },
-}
 
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
@@ -191,20 +168,13 @@ ${js}
 })
 /* eslint-enable jsdoc/require-jsdoc */
 
-const createEditor = (container: HTMLElement, language: string, value: string): monaco.editor.IStandaloneCodeEditor => {
-  return monaco.editor.create(container, {
-    value,
-    language,
-    theme: 'vs-dark',
-    minimap: { enabled: false },
-    fontSize: 14,
-    lineNumbers: 'on',
-    scrollBeyondLastLine: false,
-    automaticLayout: true,
-    tabSize: 2,
-    wordWrap: 'on',
-    padding: { top: 12, bottom: 12 },
-  })
+const createEditor = (
+  container: HTMLElement,
+  language: string,
+  value: string,
+  dataLakeCompletionType?: 'use-bracket-parser' | 'use-api-function'
+): monaco.editor.IStandaloneCodeEditor => {
+  return createMonacoEditor(container, { language, value, dataLakeCompletionType })
 }
 
 const addKeyboardShortcuts = (editor: monaco.editor.IStandaloneCodeEditor): void => {
@@ -231,46 +201,18 @@ const addChangeListener = (editor: monaco.editor.IStandaloneCodeEditor): void =>
   })
 }
 
-// Autocomplete provider for cockpit data lake variables
-monaco.languages.registerCompletionItemProvider('javascript', {
-  triggerCharacters: ['('],
-
-  provideCompletionItems: (model, position) => {
-    // Get current word and define replacement range
-    const word = model.getWordUntilPosition(position)
-    const range: monaco.IRange = {
-      startLineNumber: position.lineNumber,
-      startColumn: word.startColumn,
-      endLineNumber: position.lineNumber,
-      endColumn: word.endColumn,
-    }
-
-    // Create suggestions from cockpit data variables
-    const suggestions: monaco.languages.CompletionItem[] = Object.entries(
-      window.cockpit.getAllDataLakeVariablesInfo()
-    ).map(([key, value]) => {
-      return {
-        label: key,
-        kind: monaco.languages.CompletionItemKind.Variable,
-        documentation: `${key}: ${value} (${typeof value})`,
-        insertText: `window.cockpit.getDataLakeVariableData('${key}')`,
-        range: range,
-      }
-    })
-
-    return {
-      suggestions,
-    }
-  },
-})
-
 const initEditor = async (): Promise<void> => {
   if (htmlEditor || !htmlEditorContainer.value) return
   if (jsEditor || !jsEditorContainer.value) return
   if (cssEditor || !cssEditorContainer.value) return
 
   htmlEditor = createEditor(htmlEditorContainer.value, 'html', widget.value.options.html || defaultOptions.html)
-  jsEditor = createEditor(jsEditorContainer.value, 'javascript', widget.value.options.js || defaultOptions.js)
+  jsEditor = createEditor(
+    jsEditorContainer.value,
+    'javascript',
+    widget.value.options.js || defaultOptions.js,
+    'use-api-function'
+  )
   cssEditor = createEditor(cssEditorContainer.value, 'css', widget.value.options.css || defaultOptions.css)
 
   // Add keyboard shortcuts and change listener to all editors
