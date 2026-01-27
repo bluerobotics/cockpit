@@ -280,9 +280,22 @@ export const unlistenToDataLakeVariablesInfoChanges = (listenerId: string): void
   delete dataLakeVariableInfoListeners[listenerId]
 }
 
+// Debounce timer for variable info change notifications
+let notifyInfoListenersTimeout: ReturnType<typeof setTimeout> | null = null
+const notifyInfoDebounceMs = 1000
+
 const notifyDataLakeVariableInfoListeners = (): void => {
-  const updatedVariables = getAllDataLakeVariablesInfo()
-  Object.values(dataLakeVariableInfoListeners).forEach((listener) => listener(updatedVariables))
+  // Clear any pending notification
+  if (notifyInfoListenersTimeout) {
+    clearTimeout(notifyInfoListenersTimeout)
+  }
+
+  // Schedule a new notification after the debounce period
+  notifyInfoListenersTimeout = setTimeout(() => {
+    const updatedVariables = getAllDataLakeVariablesInfo()
+    Object.values(dataLakeVariableInfoListeners).forEach((listener) => listener(updatedVariables))
+    notifyInfoListenersTimeout = null
+  }, notifyInfoDebounceMs)
 }
 
 // Initialize by loading persistent variables
