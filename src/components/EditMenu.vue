@@ -710,6 +710,7 @@ import IFrameImg from '@/assets/widgets/IFrame.png'
 import ImageViewImg from '@/assets/widgets/ImageView.png'
 import MapImg from '@/assets/widgets/Map.png'
 import MiniWidgetsBarImg from '@/assets/widgets/MiniWidgetsBar.png'
+import MissionControlPanelImg from '@/assets/widgets/MissionControlPanel.png'
 import PlotterImg from '@/assets/widgets/Plotter.png'
 import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
 import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
@@ -910,15 +911,16 @@ const availableCustomWidgetElementsTypes = computed(() =>
 )
 const widgetImages = {
   Attitude: AttitudeImg,
+  CollapsibleContainer: CollapsibleContainerImg,
   Compass: CompassImg,
   CompassHUD: CompassHUDImg,
-  CollapsibleContainer: CollapsibleContainerImg,
   DepthHUD: DepthHUDImg,
   DoItYourself: DoItYourselfImg,
   IFrame: IFrameImg,
   ImageView: ImageViewImg,
   Map: MapImg,
   MiniWidgetsBar: MiniWidgetsBarImg,
+  MissionControlPanel: MissionControlPanelImg,
   Plotter: PlotterImg,
   URLVideoPlayer: URLVideoPlayerImg,
   VideoPlayer: VideoPlayerImg,

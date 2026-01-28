@@ -84,8 +84,8 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   _statusText = new StatusText()
   _statusGPS = new StatusGPS()
   _vehicleSpecificErrors = [0, 0, 0, 0]
-
   _messages: MAVLinkMessageDictionary = new Map()
+  _currentMissionSeq: number | undefined = undefined
 
   onIncomingMAVLinkMessage = new SignalTyped()
   onOutgoingMAVLinkMessage = new SignalTyped()
@@ -96,6 +96,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   shouldCreateLegacyDataLakeVariables = true
 
   protected currentSystemId = 1
+  onMissionCurrent = new SignalTyped()
 
   /**
    * Create MAVLink vehicle
@@ -476,6 +477,13 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       case MAVLinkType.MISSION_ITEM_REACHED: {
         const missionItemReached = mavlink_message.message as Message.MissionItemReached
         this.onMissionItemReached.emit_value(missionItemReached.seq)
+        break
+      }
+
+      case MAVLinkType.MISSION_CURRENT: {
+        const msg = mavlink_message.message as Message.MissionCurrent
+        this._currentMissionSeq = msg.seq
+        this.onMissionCurrent.emit_value(MAVLinkType.MISSION_CURRENT, msg.seq)
         break
       }
 
@@ -1262,15 +1270,15 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
-   * Start mission that is on the vehicle
+   * Reset vehicle mode to LOITER/ALT_HOLD
    */
-  async startMission(): Promise<void> {
-    // Start by reseting the current mode to LOITER (or ALT_HOLD for submarines)
-    // This is necessary as the vehicle can be in a mission and will not answer until getting off of the AUTO mode
+  private async resetMode(): Promise<void> {
+    // Resets the current mode to LOITER (or ALT_HOLD for submarines)
     let resetModeName = 'LOITER'
     if ([Vehicle.Type.Sub].includes(this._type)) {
       resetModeName = 'ALT_HOLD'
     }
+
     const resetMode = this.modesAvailable().get(resetModeName)
     if (resetMode === undefined) {
       throw Error(
@@ -1278,6 +1286,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         Please put the vehicle in ${resetModeName} mode manually so a new mission can be started.`
       )
     }
+
     await this.setMode(resetMode as Modes)
 
     // Check if the vehicle got off of the AUTO mode
@@ -1286,9 +1295,19 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       await this.setMode(resetMode as Modes)
       await sleep(100)
     }
+
     if (this.mode() !== resetMode) {
       throw Error(`Could not put vehicle in ${resetModeName} mode. Please do it manually.`)
     }
+  }
+
+  /**
+   * Start mission that is on the vehicle
+   */
+  async startMission(): Promise<void> {
+    // Start by resetting the current mode
+    // This is necessary as the vehicle can be in a mission and will not answer until getting off of the AUTO mode
+    await this.resetMode()
 
     // Arming the vehicle is necessary to successfully start a mission
     const initialTimeArmCheck = new Date().getTime()
@@ -1301,6 +1320,18 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     }
 
     await this.sendCommandLong(MavCmd.MAV_CMD_MISSION_START, 0, 0)
+  }
+
+  /**
+   * Pause mission that is on the vehicle
+   */
+  async pauseMission(): Promise<void> {
+    const autoMode = this.modesAvailable().get('AUTO')
+    const guidedMode = this.modesAvailable().get('GUIDED')
+
+    if ((autoMode && this.mode() === autoMode) || (guidedMode && this.mode() === guidedMode)) {
+      await this.resetMode()
+    }
   }
 
   /**
@@ -1524,5 +1555,21 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         setDataLakeVariableData(newStylePath, value)
       })
     }
+  }
+
+  /**
+   * Set mission current (jump/skip to waypoint)
+   * @param {number} seq - Mission item index to set as current
+   */
+  async setMissionCurrent(seq: number): Promise<void> {
+    await this.sendCommandLong(MavCmd.MAV_CMD_DO_SET_MISSION_CURRENT, seq)
+  }
+
+  /**
+   * Getter for current mission seq
+   * @returns {number | undefined} Current mission seq, or undefined if n/a
+   */
+  currentMissionSeq(): number | undefined {
+    return this._currentMissionSeq
   }
 }
