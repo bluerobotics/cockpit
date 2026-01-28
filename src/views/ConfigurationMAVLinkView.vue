@@ -6,19 +6,33 @@
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>DataLake variables creation</template>
           <template #info>
-            <p class="max-w-[500px]">
-              Enable the creation of DataLake variables from MAVLink messages originating from systems/components other
-              than the main vehicle (System ID {{ mainVehicleStore.mainVehicle?.systemId }}, Component ID 1). When
-              enabled, variables from all MAVLink systems on the network will be available in the DataLake. When
-              disabled, only variables from the main vehicle will be created.
-            </p>
+            <ul class="max-w-[700px] list-disc pl-4 space-y-2">
+              <li>
+                <strong>Variables from other systems:</strong> Enable creation of DataLake variables from MAVLink
+                messages originating from systems/components other than the main vehicle (System ID
+                {{ mainVehicleStore.mainVehicle?.systemId }}, Component ID 1). When enabled, variables from all MAVLink
+                systems on the network will be available in the DataLake.
+              </li>
+              <li>
+                <strong>Legacy variable names:</strong> Creates duplicate variables with the old naming format for
+                backward compatibility. Enabled by default - users with old devices may want to disable this to improve
+                performance. If disabled, you will need to manually replace the usage of legacy variables with the new
+                ones in your widgets (e.g.: VGI, Plotter) and scripts (e.g.: DataLake Transforming functions).
+              </li>
+            </ul>
           </template>
           <template #content>
-            <div class="flex w-full px-2 mb-3">
+            <div class="flex flex-col w-full px-2 mb-3 gap-1">
               <v-switch
                 v-model="mainVehicleStore.enableDatalakeVariablesFromOtherSystems"
                 color="white"
                 label="Enable DataLake variables from other systems"
+                hide-details
+              />
+              <v-switch
+                v-model="mainVehicleStore.enableLegacyDataLakeVariableNames"
+                color="white"
+                label="Enable legacy variable names (e.g., 'ATTITUDE/roll')"
                 hide-details
               />
             </div>

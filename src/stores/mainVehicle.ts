@@ -175,6 +175,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     false
   )
 
+  // Store setting to enable/disable legacy data lake variable names (e.g., 'ATTITUDE/roll' in addition to '/mavlink/1/1/ATTITUDE/roll')
+  // Enabled by default for backward compatibility reasons - users with old devices may want to disable this to improve performance
+  const enableLegacyDataLakeVariableNames = useBlueOsStorage('cockpit-enable-legacy-datalake-variable-names', true)
+
   const MAVLink2RestWebsocketURI = computed(() => {
     const queryURI = new URLSearchParams(window.location.search).get('MAVLink2RestWebsocketURI')
     const customURI = customMAVLink2RestWebsocketURI.value.enabled
@@ -215,6 +219,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   watch(enableDatalakeVariablesFromOtherSystems, (newValue) => {
     if (!mainVehicle.value) return
     mainVehicle.value.shouldCreateDatalakeVariablesFromOtherSystems = newValue
+  })
+
+  watch(enableLegacyDataLakeVariableNames, (newValue) => {
+    if (!mainVehicle.value) return
+    mainVehicle.value.shouldCreateLegacyDataLakeVariables = newValue
   })
 
   watch(
@@ -543,6 +552,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     // Set callback to check if datalake variables from other systems should be created
     mainVehicle.value.shouldCreateDatalakeVariablesFromOtherSystems = enableDatalakeVariablesFromOtherSystems.value
+    // Set whether to create legacy data lake variable names
+    mainVehicle.value.shouldCreateLegacyDataLakeVariables = enableLegacyDataLakeVariableNames.value
 
     mainVehicle.value.onAltitude.add((newAltitude: Altitude) => {
       Object.assign(altitude, newAltitude)
@@ -985,6 +996,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
     enableDatalakeVariablesFromOtherSystems,
+    enableLegacyDataLakeVariableNames,
     getVehicleAddress,
   }
 })
