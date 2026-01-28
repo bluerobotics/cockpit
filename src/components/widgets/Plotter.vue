@@ -371,6 +371,8 @@ const renderCanvas = (): void => {
   try {
     maxValue = Math.max(...valuesHistory)
     minValue = Math.min(...valuesHistory)
+    medianValue = calculateMedian(valuesHistory)
+    averageValue = calculateAverage(valuesHistory)
 
     // Use fixed Y-axis bounds if enabled, otherwise calculate with a buffer to keep the plot neatly within bounds, and centered when there are no changes
     const tempMinValue = widget.value.options.useFixedMinY ? widget.value.options.fixedMinY : minValue
@@ -446,6 +448,8 @@ const renderCanvas = (): void => {
     drawText(ctx, `Current: ${Number(currentValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 10)
     drawText(ctx, `Min: ${Number(minValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 30)
     drawText(ctx, `Max: ${Number(maxValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 50)
+    drawText(ctx, `Avg: ${Number(averageValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 70)
+    drawText(ctx, `Median: ${Number(medianValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 90)
   } catch (error) {
     console.error('Error drawing graph:', error)
   }
@@ -454,6 +458,36 @@ const renderCanvas = (): void => {
 const valuesHistory: number[] = []
 let maxValue = 0
 let minValue = 0
+let medianValue = 0
+let averageValue = 0
+
+/**
+ * Calculate the median value from an array of numbers
+ * @param {number[]} values - Array of numbers to calculate median from
+ * @returns {number} The median value
+ */
+const calculateMedian = (values: number[]): number => {
+  if (values.length === 0) return NaN
+  if (values.length === 1) return values[0]
+
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2
+  }
+  return sorted[mid]
+}
+
+/**
+ * Calculate the average (mean) value from an array of numbers
+ * @param {number[]} values - Array of numbers to calculate average from
+ * @returns {number} The average value
+ */
+const calculateAverage = (values: number[]): number => {
+  if (values.length === 0) return NaN
+  return values.reduce((sum, val) => sum + val, 0) / values.length
+}
 
 // Update canvas whenever reference variables changes
 watch(
