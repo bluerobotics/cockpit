@@ -1,5 +1,11 @@
 <template>
-  <v-dialog v-model="actionDialog.show" max-width="800px" persistent>
+  <v-dialog
+    v-model="actionDialog.show"
+    max-width="800px"
+    persistent
+    @after-enter="handleDialogOpen"
+    @after-leave="handleDialogClose"
+  >
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">{{
         editMode ? 'Edit action' : 'Create new action'
@@ -19,15 +25,10 @@
             <!-- eslint-disable-next-line prettier/prettier -->
             <div v-pre class="text-caption">Use {{ variable-id }} to access data lake variables</div>
           </div>
-          <v-textarea
-            v-model="newActionConfig.code"
-            label="JavaScript Code"
-            :error-messages="codeError"
-            rows="10"
-            variant="outlined"
-            density="compact"
-            @update:model-value="validateCode"
-          ></v-textarea>
+          <div class="editor-wrapper">
+            <div ref="editorContainer" class="editor-container"></div>
+            <div v-if="codeError" class="code-error text-error text-caption mt-1">{{ codeError }}</div>
+          </div>
         </v-form>
       </v-card-text>
       <v-divider class="mt-2 mx-10" />
@@ -48,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
 import {
   deleteJavascriptActionConfig,
@@ -57,6 +58,7 @@ import {
   JavascriptActionConfig,
   registerJavascriptActionConfig,
 } from '@/libs/actions/free-javascript'
+import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const emit = defineEmits<{
@@ -65,6 +67,9 @@ const emit = defineEmits<{
 }>()
 
 const interfaceStore = useAppInterfaceStore()
+
+const editorContainer = ref<HTMLElement | null>(null)
+let editor: monaco.editor.IStandaloneCodeEditor | null = null
 
 const newActionConfig = ref<JavascriptActionConfig>({
   name: '',
@@ -88,6 +93,45 @@ const validateCode = (code: string): void => {
   }
 }
 
+const initEditor = (): void => {
+  if (editor || !editorContainer.value) return
+
+  editor = createMonacoEditor(editorContainer.value, {
+    language: 'javascript',
+    value: newActionConfig.value.code,
+    dataLakeCompletionType: 'use-api-function',
+  })
+
+  // Sync editor content to model and validate
+  editor.onDidChangeModelContent(() => {
+    const code = editor?.getValue() || ''
+    newActionConfig.value.code = code
+    validateCode(code)
+  })
+
+  // Add keyboard shortcut for save (Ctrl/Cmd + S)
+  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+    if (isFormValid.value) {
+      saveActionConfig()
+    }
+  })
+}
+
+const disposeEditor = (): void => {
+  if (editor) {
+    editor.dispose()
+    editor = null
+  }
+}
+
+const handleDialogOpen = (): void => {
+  initEditor()
+}
+
+const handleDialogClose = (): void => {
+  disposeEditor()
+}
+
 const createActionConfig = (): void => {
   editMode.value = false
   registerJavascriptActionConfig(newActionConfig.value)
@@ -107,6 +151,9 @@ const resetNewAction = (): void => {
   }
   codeError.value = ''
   editMode.value = false
+  if (editor) {
+    editor.setValue('')
+  }
 }
 
 const testAction = (): void => {
@@ -162,10 +209,31 @@ defineExpose({
   exportAction,
   deleteAction,
 })
+
+onBeforeUnmount(() => {
+  disposeEditor()
+})
 </script>
 
 <style scoped>
 .v-data-table ::v-deep tbody tr:hover {
   background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.editor-wrapper {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.editor-container {
+  height: 300px;
+  width: 100%;
+}
+
+.code-error {
+  padding: 8px 12px;
+  background-color: rgba(255, 82, 82, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 </style>
