@@ -98,7 +98,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
       if (state.width >= 1920) return '2xl'
     },
     currentWindowSize: (state) => `${state.width} x ${state.height}`,
-    isOnSmallScreen: (state) => state.width < 1280,
+    isOnSmallScreen: (state) => state.width <= 1280,
     isOnPhoneScreen: (state) => state.width < 600,
     isOnVeryLargeScreen: (state) => state.width > 1920,
     mainMenuWidth: (state) => {
