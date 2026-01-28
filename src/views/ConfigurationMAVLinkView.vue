@@ -2,11 +2,11 @@
   <BaseConfigurationView>
     <template #title>MAVLink configuration</template>
     <template #content>
-      <div class="max-h-[80vh] w-[710px] overflow-y-auto">
+      <div class="max-h-[80vh] w-[730px] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>DataLake variables creation</template>
           <template #info>
-            <ul class="max-w-[700px] list-disc pl-4 space-y-2">
+            <ul class="list-disc pl-4 space-y-2">
               <li>
                 <strong>Variables from other systems:</strong> Enable creation of DataLake variables from MAVLink
                 messages originating from systems/components other than the main vehicle (System ID
@@ -41,14 +41,14 @@
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Message intervals</template>
           <template #info>
-            <p class="max-w-[500px]">
+            <p>
               Configure the frequency at which each MAVLink message is requested from the vehicle. Higher frequencies
               provide more responsive data but increase the load on the network and in the vehicle's CPU. If the message
               is not already configured, you can add it to the interval configuration with the forms in the bottom.
             </p>
           </template>
           <template #content>
-            <div class="flex w-full -mt-4">
+            <div class="flex w-full">
               <div class="flex flex-col px-2 mb-3">
                 <div class="flex flex-row justify-between items-center w-full mb-1">
                   <v-text-field
@@ -57,7 +57,6 @@
                     variant="plain"
                     density="compact"
                     hide-details
-                    class="mt-1"
                   >
                     <template #prepend>
                       <v-icon class="ml-2 mt-[2px]">mdi-magnify</v-icon>
