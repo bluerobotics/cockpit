@@ -2,7 +2,7 @@
   <BaseConfigurationView>
     <template #title>Data Lake</template>
     <template #content>
-      <div class="flex-col overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px] max-h-[80vh] w-[1200px]">
+      <div class="flex-col overflow-y-auto ml-[10px] pr-3 -mr-[10px] max-h-[80vh] w-[1200px]">
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Variables monitor</template>
           <template #info>
@@ -37,7 +37,7 @@
                 :items="filteredVariables"
                 items-per-page="10"
                 density="compact"
-                class="w-full h-full rounded-md bg-[#FFFFFF11] elevation-1"
+                class="rounded-lg bg-[#FFFFFF11] mb-8 elevation-1"
                 theme="dark"
                 :style="interfaceStore.globalGlassMenuStyles"
                 :headers="tableHeaders"
