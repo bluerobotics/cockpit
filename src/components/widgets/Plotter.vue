@@ -134,6 +134,20 @@
         </v-col>
       </v-row>
 
+      <!-- Statistics display section -->
+      <v-row>
+        <v-col cols="12">
+          <div class="text-subtitle-1 font-weight-medium mb-2">Statistics Display</div>
+          <div class="ml-2 flex flex-wrap gap-x-6">
+            <v-checkbox v-model="widget.options.showCurrent" label="Current" hide-details class="-mt-1" />
+            <v-checkbox v-model="widget.options.showMin" label="Min" hide-details class="-mt-1" />
+            <v-checkbox v-model="widget.options.showMax" label="Max" hide-details class="-mt-1" />
+            <v-checkbox v-model="widget.options.showAvg" label="Avg" hide-details class="-mt-1" />
+            <v-checkbox v-model="widget.options.showMedian" label="Median" hide-details class="-mt-1" />
+          </div>
+        </v-col>
+      </v-row>
+
       <!-- Y-Axis bounds section -->
       <v-row>
         <v-col cols="12">
@@ -225,6 +239,11 @@ onBeforeMount(() => {
     useFixedMaxY: false,
     fixedMinY: 0,
     fixedMaxY: 100,
+    showCurrent: true,
+    showMin: true,
+    showMax: true,
+    showAvg: true,
+    showMedian: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
@@ -443,13 +462,30 @@ const renderCanvas = (): void => {
       }
     }
 
-    // Draw the values
+    // Draw the values (stacked based on which ones are enabled)
     const decimalPlaces = widget.value.options.decimalPlaces
-    drawText(ctx, `Current: ${Number(currentValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 10)
-    drawText(ctx, `Min: ${Number(minValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 30)
-    drawText(ctx, `Max: ${Number(maxValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 50)
-    drawText(ctx, `Avg: ${Number(averageValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 70)
-    drawText(ctx, `Median: ${Number(medianValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 90)
+    const lineHeight = 20
+    let yOffset = 10
+
+    if (widget.value.options.showCurrent) {
+      drawText(ctx, `Current: ${Number(currentValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showMin) {
+      drawText(ctx, `Min: ${Number(minValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showMax) {
+      drawText(ctx, `Max: ${Number(maxValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showAvg) {
+      drawText(ctx, `Avg: ${Number(averageValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showMedian) {
+      drawText(ctx, `Median: ${Number(medianValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+    }
   } catch (error) {
     console.error('Error drawing graph:', error)
   }
