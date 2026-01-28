@@ -501,7 +501,7 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 
-import { useWindowSize } from '@vueuse/core'
+import { useDebounceFn, useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
@@ -733,9 +733,9 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 }
 
 const planningMap = shallowRef<Map | undefined>()
-const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
+const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref<WaypointCoordinates | undefined>(undefined)
-const zoom = ref(missionStore.defaultMapZoom)
+const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
@@ -3231,6 +3231,20 @@ onMounted(async () => {
   if (instanceOfCockpitMission(missionStore.draftMission)) {
     loadDraftMission(missionStore.draftMission)
   }
+
+  if (missionStore.followVehicleOnMap === true) {
+    targetFollower.follow(WhoToFollow.VEHICLE)
+  } else {
+    targetFollower.unFollow()
+  }
+})
+
+watch(followerTarget, (newTarget) => {
+  if (newTarget === WhoToFollow.VEHICLE) {
+    missionStore.followVehicleOnMap = true
+  } else {
+    missionStore.followVehicleOnMap = false
+  }
 })
 
 onUnmounted(() => {
@@ -3374,6 +3388,9 @@ watch([zoom, mapCenter], () => {
   if (planningMap.value) {
     createScaleControl()
   }
+  useDebounceFn(() => {
+    missionStore.saveLastMapPosition(zoom.value, mapCenter.value)
+  }, 3000)()
 })
 
 // Watch for zoom level changes to update waypoint marker sizes
