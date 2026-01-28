@@ -216,7 +216,7 @@ function registerCompletionProviders(): void {
           suggestions: Object.entries(cachedVariablesMap).map(([id, variable]) => ({
             label: variable.name || id,
             kind: monaco.languages.CompletionItemKind.Variable,
-            insertText: `${id}}}`,
+            insertText: ` ${id} }}`,
             filterText: `{{${variable.name || id}`,
             detail: `${variable.type}${variable.description ? ` - ${variable.description}` : ''}`,
             range,
