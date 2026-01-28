@@ -249,13 +249,13 @@ function assertStreamIsSelectedAndAvailable(
   nameSelectedStream.value = selectedStream
 
   if (nameSelectedStream.value === undefined) {
-    showDialog({ message: 'No stream selected.', variant: 'error' })
+    showDialog({ message: t('errors.noStreamSelected'), variant: 'error' })
     return
   }
 
   if (namesAvailableStreams.value.includes(nameSelectedStream.value)) return
 
-  const errorMsg = `The selected stream is not available. Please check its source or select another stream.`
+  const errorMsg = t('errors.streamNotAvailable')
   showDialog({ message: errorMsg, variant: 'error' })
   throw new Error(errorMsg)
 }
@@ -278,12 +278,12 @@ const toggleRecording = async (): Promise<void> => {
 
 const startRecording = (): void => {
   if (!selectedExternalId.value) {
-    showDialog({ title: 'Cannot start recording.', message: 'No stream selected.', variant: 'error' })
+    showDialog({ title: t('errors.cannotStartRecording'), message: t('errors.noStreamSelected'), variant: 'error' })
     return
   }
 
   if (!videoStore.getStreamData(selectedExternalId.value)?.connected) {
-    showDialog({ title: 'Cannot start recording.', message: 'Stream is not connected.', variant: 'error' })
+    showDialog({ title: t('errors.cannotStartRecording'), message: t('errors.streamNotConnected'), variant: 'error' })
     return
   }
 
@@ -326,7 +326,7 @@ const updateCurrentStream = async (internalStreamName: string | undefined): Prom
   }
 
   if (isLoadingStream.value) {
-    showDialog({ message: 'Could not load media stream.', variant: 'error' })
+    showDialog({ message: t('errors.mediaStreamNotActive'), variant: 'error' })
     return
   }
 

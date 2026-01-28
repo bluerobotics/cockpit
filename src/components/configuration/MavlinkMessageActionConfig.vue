@@ -3,13 +3,17 @@
   <v-dialog v-model="actionDialog.show" max-width="500px">
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">
-        {{ editMode ? 'Edit action' : 'Create new action' }}
+        {{
+          editMode
+            ? $t('configuration.actions.mavlinkAction.editAction')
+            : $t('configuration.actions.mavlinkAction.createNewAction')
+        }}
       </v-card-title>
       <v-card-text class="px-8">
         <v-form class="d-flex flex-column gap-2" @submit.prevent="saveActionConfig">
           <v-text-field
             v-model="newActionConfig.name"
-            label="Action Name"
+            :label="$t('configuration.actions.mavlinkAction.actionName')"
             required
             variant="outlined"
             density="compact"
@@ -17,7 +21,7 @@
           <v-select
             v-model="newActionConfig.messageType"
             :items="availableMessageTypes"
-            label="Message Type"
+            :label="$t('configuration.actions.mavlinkAction.messageType')"
             required
             variant="outlined"
             density="compact"
@@ -26,26 +30,30 @@
           />
 
           <div v-if="newActionConfig.messageType" class="mt-4">
-            <h3 class="text-subtitle-1 font-weight-bold mb-2">Message Configuration</h3>
+            <h3 class="text-subtitle-1 font-weight-bold mb-2">
+              {{ $t('configuration.actions.mavlinkAction.messageConfiguration') }}
+            </h3>
             <div v-if="typeof messageFields !== 'string' && Object.keys(messageFields).length > 0">
               <div v-for="(field, key) in messageFields" :key="key" class="mb-1">
                 <v-text-field
                   v-model.trim="newActionConfig.messageConfig[key].value"
-                  :label="field.description + (field.units ? ` (${field.units})` : '')"
+                  :label="translateFieldDescription(field.descriptionKey) + (field.units ? ` (${field.units})` : '')"
                   :placeholder="field.type"
                   variant="outlined"
                   density="compact"
-                  :rules="[field.required ? (v) => !!v || 'This field is required' : () => true]"
+                  :rules="[
+                    field.required ? (v) => !!v || t('configuration.actions.mavlinkAction.fieldRequired') : () => true,
+                  ]"
                 />
               </div>
             </div>
             <div v-else>
               <v-textarea
                 v-model="newActionConfig.messageConfig"
-                label="Message fields object"
+                :label="$t('configuration.actions.mavlinkAction.messageFieldsObject')"
                 variant="outlined"
                 density="compact"
-                hint="Insert a JSON object with the message fields here. Use {{ data_lake_key }} for dynamic values. Use { type: 'ENUM_VALUE' } for enum values (e.g.: MAV_CMD_COMPONENT_ARM_DISARM)."
+                :hint="$t('configuration.actions.mavlinkAction.messageFieldsHint')"
                 persistent-hint
                 rows="12"
               />
@@ -56,11 +64,11 @@
       <v-divider class="mt-2 mx-10" />
       <v-card-actions>
         <div class="flex justify-between items-center pa-2 w-full h-full" style="color: rgba(255, 255, 255, 0.5)">
-          <v-btn @click="closeActionDialog">Cancel</v-btn>
+          <v-btn @click="closeActionDialog">{{ $t('common.cancel') }}</v-btn>
           <div class="flex gap-x-10">
-            <v-btn @click="resetNewAction">Reset</v-btn>
+            <v-btn @click="resetNewAction">{{ $t('common.reset') }}</v-btn>
             <v-btn :disabled="!isFormValid" class="text-white" @click="saveActionConfig">
-              {{ editMode ? 'Save' : 'Create' }}
+              {{ editMode ? $t('common.save') : $t('configuration.actions.mavlinkAction.create') }}
             </v-btn>
           </div>
         </div>
@@ -71,6 +79,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import {
   type MavlinkMessageActionConfig,
@@ -87,7 +96,20 @@ const emit = defineEmits<{
   (e: 'action-deleted'): void
 }>()
 
+const { t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
+
+/**
+ * Translate field description to localized string
+ * @param {string} fieldKey - The field key to translate
+ * @returns {string} The translated description or field key if translation not found
+ */
+const translateFieldDescription = (fieldKey: string): string => {
+  const translationKey = `configuration.actions.mavlinkAction.fieldDescriptions.${fieldKey}`
+  const translated = t(translationKey)
+  // If translation key doesn't exist, return field key
+  return translated === translationKey ? fieldKey : translated
+}
 
 const defaultMessageType = MAVLinkType.COMMAND_LONG
 const defaultActionConfig = {

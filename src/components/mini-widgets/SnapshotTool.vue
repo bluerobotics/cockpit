@@ -16,18 +16,18 @@
           class="bg-[#FFFFFF11] hover:bg-[#FFFFFF22] cursor-pointer text-sm"
           @click="handleOpenSnapshotLibrary"
           ><template #title>
-            <span class="text-white text-[16px] font-bold">Open snapshot library</span>
+            <span class="text-white text-[16px] font-bold">{{ $t('snapshot.openLibrary') }}</span>
           </template>
         </v-list-item>
         <v-divider />
-        <v-list-item title="Single capture" @click="handleSelectSnapshotTriggerType('single')">
+        <v-list-item :title="$t('snapshot.singleCapture')" @click="handleSelectSnapshotTriggerType('single')">
           <template #append>
             <v-icon size="22" icon="mdi-video-image" />
           </template>
         </v-list-item>
         <v-divider />
         <v-divider />
-        <v-list-item title="Timed multi-capture" @click="handleSelectSnapshotTriggerType('timed')">
+        <v-list-item :title="$t('snapshot.timedMultiCapture')" @click="handleSelectSnapshotTriggerType('timed')">
           <template #append> <v-icon size="20" icon="mdi-timer-outline" /> </template>
         </v-list-item>
       </v-list>
@@ -273,7 +273,7 @@ watch(isTakingTimedSnapshot, (newValue) => {
     }, PROGRESS_TICK)
     return
   }
-  openSnackbar({ message: 'Timed snapshot stopped.', variant: 'info', duration: 2000 })
+  openSnackbar({ message: t('info.timedSnapshotStopped'), variant: 'info', duration: 2000 })
   if (shotInterval) {
     clearInterval(shotInterval)
     shotInterval = null

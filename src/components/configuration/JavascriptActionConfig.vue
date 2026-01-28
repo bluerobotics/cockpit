@@ -2,26 +2,26 @@
   <v-dialog v-model="actionDialog.show" max-width="800px" persistent>
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">{{
-        editMode ? 'Edit action' : 'Create new action'
+        editMode ? $t('actions.editAction') : $t('actions.createNewAction')
       }}</v-card-title>
       <v-card-text class="px-8">
         <v-form class="d-flex flex-column gap-2" @submit.prevent="createActionConfig">
           <v-text-field
             v-model="newActionConfig.name"
-            label="Action Name"
+            :label="$t('actions.actionName')"
             required
             variant="outlined"
             density="compact"
           ></v-text-field>
 
           <div class="d-flex align-center justify-space-between mb-2">
-            <h3 class="text-subtitle-2 font-weight-bold">JavaScript Code</h3>
+            <h3 class="text-subtitle-2 font-weight-bold">{{ $t('actions.javascriptCode') }}</h3>
             <!-- eslint-disable-next-line prettier/prettier -->
             <div v-pre class="text-caption">Use {{ variable-id }} to access data lake variables</div>
           </div>
           <v-textarea
             v-model="newActionConfig.code"
-            label="JavaScript Code"
+            :label="$t('actions.javascriptCode')"
             :error-messages="codeError"
             rows="10"
             variant="outlined"
@@ -33,12 +33,12 @@
       <v-divider class="mt-2 mx-10" />
       <v-card-actions>
         <div class="flex justify-between items-center pa-2 w-full h-full" style="color: rgba(255, 255, 255, 0.5)">
-          <v-btn @click="closeActionDialog">Cancel</v-btn>
+          <v-btn @click="closeActionDialog">{{ $t('common.cancel') }}</v-btn>
           <div class="flex gap-x-10">
-            <v-btn @click="testAction">Test Action</v-btn>
-            <v-btn @click="resetNewAction">Reset</v-btn>
+            <v-btn @click="testAction">{{ $t('actions.testAction') }}</v-btn>
+            <v-btn @click="resetNewAction">{{ $t('common.reset') }}</v-btn>
             <v-btn class="text-white" :disabled="!isFormValid" @click="saveActionConfig">
-              {{ editMode ? 'Save' : 'Create' }}
+              {{ editMode ? $t('common.save') : $t('common.create') }}
             </v-btn>
           </div>
         </div>

@@ -14,13 +14,21 @@
       "
     >
       <span class="inline-block font-extrabold align-middle unselectable">
-        {{ vehicleStore.isArmed === undefined ? '...' : vehicleStore.isArmed ? 'Armed' : 'Disarmed' }}
+        {{
+          vehicleStore.isArmed === undefined
+            ? '...'
+            : vehicleStore.isArmed
+            ? $t('vehicle.armed')
+            : $t('vehicle.disarmed')
+        }}
       </span>
     </div>
   </button>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import { useSnackbar } from '@/composables/snackbar'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -29,13 +37,18 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 const vehicleStore = useMainVehicleStore()
 const widgetStore = useWidgetManagerStore()
 const { openSnackbar } = useSnackbar()
+const { t } = useI18n()
 
 const arm = async (): Promise<void> => {
   try {
     await slideToConfirm({ command: 'Arm' }, canByPassCategory(EventCategory.ARM))
     await vehicleStore.arm()
   } catch (error) {
-    openSnackbar({ message: `Arm request failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+    openSnackbar({
+      message: `${t('vehicle.armRequestFailed')}: ${(error as Error).message}`,
+      variant: 'error',
+      duration: 3000,
+    })
   }
 }
 
@@ -44,7 +57,11 @@ const disarm = async (): Promise<void> => {
     await slideToConfirm({ command: 'Disarm' }, canByPassCategory(EventCategory.DISARM))
     await vehicleStore.disarm()
   } catch (error) {
-    openSnackbar({ message: `Disarm request failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+    openSnackbar({
+      message: `${t('vehicle.disarmRequestFailed')}: ${(error as Error).message}`,
+      variant: 'error',
+      duration: 3000,
+    })
   }
 }
 </script>
