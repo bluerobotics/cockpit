@@ -3,7 +3,7 @@
     <template #title>Development configuration</template>
     <template #content>
       <div
-        class="max-h-[85vh] overflow-y-auto -mr-4"
+        class="max-h-[85vh] overflow-y-auto -mr-2 mb-2"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[50vw]'"
       >
         <div
@@ -63,7 +63,7 @@
             thumb-label="hover"
           />
         </div>
-        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
           <template #title>
             <div class="flex justify-between">
               <span>System logs</span>
@@ -82,7 +82,7 @@
               density="compact"
               theme="dark"
               :headers="headers"
-              class="w-full max-h-[60%] rounded-md bg-[#FFFFFF11]"
+              class="bg-[#FFFFFF11] rounded-lg"
             >
               <template #item.name="{ item }">
                 <div class="flex items-center gap-2">
