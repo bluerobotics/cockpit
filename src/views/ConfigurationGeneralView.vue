@@ -274,7 +274,7 @@
             </v-form>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Custom WebRTC configuration</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
@@ -316,6 +316,68 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Generic WebSocket connections</template>
+          <template #info>
+            <div class="w-full">
+              <p>Connect to external WebSocket servers to receive data and inject it into the data-lake.</p>
+              <ul class="list-disc list-inside mt-2">
+                <li>
+                  Messages should be in the format <span class="font-mono">variableName=value</span>, one per message.
+                </li>
+                <li>
+                  You can use data-lake variables to compose the URL, for example:
+                  <span class="font-mono">{{ exampleGenericWebSocketUrl }}</span>
+                </li>
+              </ul>
+            </div>
+          </template>
+          <template #content>
+            <div class="flex flex-col w-full mt-2 pb-8">
+              <!-- Existing connections list -->
+              <div v-if="Object.keys(genericWebSocketConnections).length > 0" class="mb-4">
+                <div
+                  v-for="(conn, url) in genericWebSocketConnections"
+                  :key="url"
+                  class="flex items-center justify-between py-2 px-3 mb-2 rounded bg-[#FFFFFF11]"
+                >
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <v-icon :color="getLoadingStatusColor(conn.status)" size="small">
+                      {{ getLoadingStatusIcon(conn.status) }}
+                    </v-icon>
+                    <span class="truncate text-sm" :title="url">{{ replaceDataLakeInputsInString(url) }}</span>
+                    <span class="text-xs opacity-60">({{ conn.status }})</span>
+                  </div>
+                  <v-btn icon="mdi-close" size="x-small" variant="text" @click="removeGenericWebSocket(url)" />
+                </div>
+              </div>
+              <div v-else class="text-sm opacity-60 mb-4">No connections configured.</div>
+
+              <!-- Add new connection -->
+              <div class="flex justify-start items-center">
+                <v-text-field
+                  v-model="newGenericWebSocketUrl"
+                  variant="outlined"
+                  type="input"
+                  density="compact"
+                  :hint="exampleGenericWebSocketUrl"
+                  hide-details
+                  @keyup.enter="addGenericWebSocket"
+                />
+                <v-btn
+                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                  :disabled="!newGenericWebSocketUrl.trim()"
+                  class="bg-transparent"
+                  :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
+                  variant="text"
+                  @click="addGenericWebSocket"
+                >
+                  Add connection
+                </v-btn>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -324,7 +386,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
@@ -333,8 +395,15 @@ import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
-import { isValidNetworkAddress } from '@/libs/utils'
-import { isElectron } from '@/libs/utils'
+import {
+  addGenericWebSocketConnection,
+  GenericWebSocketConnection,
+  listenToGenericWebSocketConnections,
+  removeGenericWebSocketConnection,
+} from '@/libs/generic-websocket'
+import { isElectron, isValidNetworkAddress } from '@/libs/utils'
+import { getLoadingStatusColor, getLoadingStatusIcon } from '@/libs/utils/ui'
+import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -565,11 +634,38 @@ const openTutorial = (): void => {
 
 watch(customRtcConfiguration, () => tryToPrettifyRtcConfig())
 
+const showDiscoveryDialog = ref(false)
+
+// Generic WebSocket connections
+const exampleGenericWebSocketUrl = 'ws://{{ vehicle-address }}:1234'
+const genericWebSocketConnections = ref<Record<string, GenericWebSocketConnection>>({})
+const newGenericWebSocketUrl = ref(exampleGenericWebSocketUrl)
+let unsubscribeGenericWebSocket: (() => void) | null = null
+
 onMounted(() => {
   tryToPrettifyRtcConfig()
+  unsubscribeGenericWebSocket = listenToGenericWebSocketConnections((connections) => {
+    genericWebSocketConnections.value = connections
+  })
 })
 
-const showDiscoveryDialog = ref(false)
+onUnmounted(() => {
+  if (unsubscribeGenericWebSocket) {
+    unsubscribeGenericWebSocket()
+  }
+})
+
+const addGenericWebSocket = (): void => {
+  const url = newGenericWebSocketUrl.value.trim()
+  if (!url) return
+
+  addGenericWebSocketConnection(url)
+  newGenericWebSocketUrl.value = ''
+}
+
+const removeGenericWebSocket = (url: string): void => {
+  removeGenericWebSocketConnection(url)
+}
 
 const openCockpitFolder = (): void => {
   if (isElectron() && window.electronAPI) {
