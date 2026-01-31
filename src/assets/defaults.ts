@@ -287,6 +287,20 @@ export const widgetProfiles: Profile[] = [
         name: 'Map View',
         widgets: [
           {
+            hash: '32759d44-73ce-470b-92e7-4b6d70b3c827',
+            name: 'MissionControlPanel',
+            component: WidgetType.MissionControlPanel,
+            position: {
+              x: 0.837604,
+              y: 0.804823,
+            },
+            size: {
+              width: 0.134754,
+              height: 0.09353,
+            },
+            options: {},
+          },
+          {
             hash: '80e785e1-31e2-4bfe-85d4-99fee6ca3f76',
             name: 'VirtualHorizon',
             component: WidgetType.VirtualHorizon,
