@@ -14,160 +14,178 @@
     variant="text-only"
   >
     <template #content>
-      <!-- Data source section -->
-      <v-row>
-        <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-4">Data Source</div>
-          <div class="ml-2">
-            <v-text-field
-              v-model="searchTerm"
-              density="compact"
-              variant="filled"
-              theme="dark"
-              type="text"
-              placeholder="Search variables..."
-              class="mb-4"
-              clearable
-              @update:model-value="menuOpen = true"
-              @click:clear="menuOpen = false"
-              @update:focused="(isFocused: boolean) => (menuOpen = isFocused)"
-            />
-            <v-select
-              v-model="widget.options.dataLakeVariableId"
-              :items="filteredDataLakeNumberVariables"
-              item-title="name"
-              item-value="id"
-              label="Data Lake variable"
-              hint="Select a variable to be plotted"
-              persistent-hint
-              theme="dark"
-              variant="outlined"
-              density="comfortable"
-              :menu-props="{ modelValue: menuOpen }"
-              @click="menuOpen = !menuOpen"
-            />
-          </div>
-        </v-col>
-      </v-row>
-
-      <!-- Appearance section -->
-      <v-row>
-        <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-2">Appearance</div>
-          <div class="ml-2 flex gap-x-8">
-            <v-checkbox v-model="widget.options.showTitle" label="Show title" hide-details class="-mt-1" />
-            <v-menu :close-on-content-click="false">
-              <template #activator="{ props: colorPickerActivatorProps }">
-                <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                  <span class="mt-3">Background color</span>
-                  <div
-                    class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
-                    :style="{ backgroundColor: widget.options.backgroundColor }"
-                  ></div>
-                </div>
-              </template>
-              <v-color-picker v-model="widget.options.backgroundColor" label="Background" hide-inputs theme="dark" />
-            </v-menu>
-            <v-menu :close-on-content-click="false">
-              <template #activator="{ props: colorPickerActivatorProps }">
-                <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                  <span class="mt-3">Line color</span>
-                  <div
-                    class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
-                    :style="{ backgroundColor: widget.options.lineColor }"
-                  ></div>
-                </div>
-              </template>
-              <v-color-picker v-model="widget.options.lineColor" label="Line" hide-inputs theme="dark" />
-            </v-menu>
-            <v-text-field
-              v-model.number="widget.options.lineThickness"
-              type="number"
-              label="Line thickness"
-              variant="outlined"
-              density="compact"
-              :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
-              width="140px"
-              hide-details
-            />
-          </div>
-        </v-col>
-      </v-row>
-
-      <!-- Data points section -->
-      <v-row>
-        <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium mb-4">Data Points</div>
-          <div class="ml-2 flex gap-x-8">
-            <v-text-field
-              v-model.number="widget.options.decimalPlaces"
-              type="number"
-              label="Decimal places"
-              variant="outlined"
-              density="comfortable"
-              :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
-              hint="Number of decimal places to be displayed"
-              width="160px"
-              class="ml-2"
-            />
-            <v-checkbox v-model="widget.options.limitSamples" label="Limit number of samples" />
-            <v-text-field
-              v-model.number="widget.options.maxSamples"
-              type="number"
-              label="Maximum samples"
-              variant="outlined"
-              density="comfortable"
-              :disabled="!widget.options.limitSamples"
-              :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
-              hint="Higher values will show more history but may impact performance"
-              width="220px"
-            />
-          </div>
-          <div class="ml-2">
-            <v-checkbox
-              v-model="widget.options.updateOnConstantValue"
-              label="Update on constant value"
-              hint="Advance graph when value is unchanged (shows horizontal lines for constant values)"
-              persistent-hint
-            />
-          </div>
-        </v-col>
-      </v-row>
-
-      <!-- Y-Axis bounds section -->
-      <v-row>
-        <v-col cols="12">
-          <div class="text-subtitle-1 font-weight-medium">Y-Axis Bounds</div>
-          <div class="ml-2 flex gap-x-8 mb-4">
-            <div class="flex flex-col">
-              <v-checkbox v-model="widget.options.useFixedMinY" label="Fixed minimum" hide-details class="-mt-1" />
+      <div
+        class="max-h-[85vh] overflow-y-auto -mr-2 -mt-12"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[50vw]'"
+      >
+        <!-- Data source section -->
+        <ExpansiblePanel no-top-divider no-bottom-divider is-expanded compact>
+          <template #title>Data Source</template>
+          <template #content>
+            <div class="py-2">
               <v-text-field
-                v-model.number="widget.options.fixedMinY"
+                v-model="searchTerm"
+                density="compact"
+                variant="filled"
+                theme="dark"
+                type="text"
+                placeholder="Search variables..."
+                class="mb-4"
+                clearable
+                @update:model-value="menuOpen = true"
+                @click:clear="menuOpen = false"
+                @update:focused="(isFocused: boolean) => (menuOpen = isFocused)"
+              />
+              <v-select
+                v-model="widget.options.dataLakeVariableId"
+                :items="filteredDataLakeNumberVariables"
+                item-title="name"
+                item-value="id"
+                label="Data Lake variable"
+                hint="Select a variable to be plotted"
+                persistent-hint
+                theme="dark"
+                variant="outlined"
+                density="comfortable"
+                :menu-props="{ modelValue: menuOpen }"
+                @click="menuOpen = !menuOpen"
+              />
+            </div>
+          </template>
+        </ExpansiblePanel>
+
+        <!-- Appearance section -->
+        <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #title>Appearance</template>
+          <template #content>
+            <div class="flex flex-wrap gap-x-8 gap-y-2 py-2">
+              <v-checkbox v-model="widget.options.showTitle" label="Show title" hide-details class="-mt-1" />
+              <v-menu :close-on-content-click="false">
+                <template #activator="{ props: colorPickerActivatorProps }">
+                  <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
+                    <span class="mt-3">Background color</span>
+                    <div
+                      class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
+                      :style="{ backgroundColor: widget.options.backgroundColor }"
+                    ></div>
+                  </div>
+                </template>
+                <v-color-picker v-model="widget.options.backgroundColor" label="Background" hide-inputs theme="dark" />
+              </v-menu>
+              <v-menu :close-on-content-click="false">
+                <template #activator="{ props: colorPickerActivatorProps }">
+                  <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
+                    <span class="mt-3">Line color</span>
+                    <div
+                      class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
+                      :style="{ backgroundColor: widget.options.lineColor }"
+                    ></div>
+                  </div>
+                </template>
+                <v-color-picker v-model="widget.options.lineColor" label="Line" hide-inputs theme="dark" />
+              </v-menu>
+              <v-text-field
+                v-model.number="widget.options.lineThickness"
                 type="number"
-                label="Min value"
+                label="Line thickness"
                 variant="outlined"
                 density="compact"
-                :disabled="!widget.options.useFixedMinY"
+                :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
                 width="140px"
                 hide-details
               />
             </div>
-            <div class="flex flex-col">
-              <v-checkbox v-model="widget.options.useFixedMaxY" label="Fixed maximum" hide-details class="-mt-1" />
-              <v-text-field
-                v-model.number="widget.options.fixedMaxY"
-                type="number"
-                label="Max value"
-                variant="outlined"
-                density="compact"
-                :disabled="!widget.options.useFixedMaxY"
-                width="140px"
-                hide-details
+          </template>
+        </ExpansiblePanel>
+
+        <!-- Data points section -->
+        <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #title>Data Points</template>
+          <template #content>
+            <div class="py-2">
+              <div class="flex flex-wrap gap-x-8 gap-y-2">
+                <v-text-field
+                  v-model.number="widget.options.decimalPlaces"
+                  type="number"
+                  label="Decimal places"
+                  variant="outlined"
+                  density="comfortable"
+                  :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
+                  hint="Number of decimal places to be displayed"
+                  width="160px"
+                />
+                <v-checkbox v-model="widget.options.limitSamples" label="Limit number of samples" />
+                <v-text-field
+                  v-model.number="widget.options.maxSamples"
+                  type="number"
+                  label="Maximum samples"
+                  variant="outlined"
+                  density="comfortable"
+                  :disabled="!widget.options.limitSamples"
+                  :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
+                  hint="Higher values will show more history but may impact performance"
+                  width="220px"
+                />
+              </div>
+              <v-checkbox
+                v-model="widget.options.updateOnConstantValue"
+                label="Update on constant value"
+                hint="Advance graph when value is unchanged (shows horizontal lines for constant values)"
+                persistent-hint
               />
             </div>
-          </div>
-        </v-col>
-      </v-row>
+          </template>
+        </ExpansiblePanel>
+
+        <!-- Statistics display section -->
+        <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #title>Statistics Display</template>
+          <template #content>
+            <div class="flex flex-wrap gap-x-6 py-2">
+              <v-checkbox v-model="widget.options.showCurrent" label="Current" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showMin" label="Min" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showMax" label="Max" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showAvg" label="Avg" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showMedian" label="Median" hide-details class="-mt-1" />
+            </div>
+          </template>
+        </ExpansiblePanel>
+
+        <!-- Y-Axis bounds section -->
+        <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #title>Y-Axis Bounds</template>
+          <template #content>
+            <div class="flex gap-x-8 py-2 mb-2">
+              <div class="flex flex-col">
+                <v-checkbox v-model="widget.options.useFixedMinY" label="Fixed minimum" hide-details class="-mt-1" />
+                <v-text-field
+                  v-model.number="widget.options.fixedMinY"
+                  type="number"
+                  label="Min value"
+                  variant="outlined"
+                  density="compact"
+                  :disabled="!widget.options.useFixedMinY"
+                  width="140px"
+                  hide-details
+                />
+              </div>
+              <div class="flex flex-col">
+                <v-checkbox v-model="widget.options.useFixedMaxY" label="Fixed maximum" hide-details class="-mt-1" />
+                <v-text-field
+                  v-model.number="widget.options.fixedMaxY"
+                  type="number"
+                  label="Max value"
+                  variant="outlined"
+                  density="compact"
+                  :disabled="!widget.options.useFixedMaxY"
+                  width="140px"
+                  hide-details
+                />
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
+      </div>
     </template>
     <template #actions>
       <div class="flex w-full justify-end my-2">
@@ -191,10 +209,14 @@ import {
   unlistenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
 import { resetCanvas } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
+import ExpansiblePanel from '../ExpansiblePanel.vue'
 import InteractionDialog from '../InteractionDialog.vue'
+
+const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()
 
@@ -225,6 +247,11 @@ onBeforeMount(() => {
     useFixedMaxY: false,
     fixedMinY: 0,
     fixedMaxY: 100,
+    showCurrent: true,
+    showMin: true,
+    showMax: true,
+    showAvg: true,
+    showMedian: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
@@ -371,6 +398,8 @@ const renderCanvas = (): void => {
   try {
     maxValue = Math.max(...valuesHistory)
     minValue = Math.min(...valuesHistory)
+    medianValue = calculateMedian(valuesHistory)
+    averageValue = calculateAverage(valuesHistory)
 
     // Use fixed Y-axis bounds if enabled, otherwise calculate with a buffer to keep the plot neatly within bounds, and centered when there are no changes
     const tempMinValue = widget.value.options.useFixedMinY ? widget.value.options.fixedMinY : minValue
@@ -441,11 +470,30 @@ const renderCanvas = (): void => {
       }
     }
 
-    // Draw the values
+    // Draw the values (stacked based on which ones are enabled)
     const decimalPlaces = widget.value.options.decimalPlaces
-    drawText(ctx, `Current: ${Number(currentValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 10)
-    drawText(ctx, `Min: ${Number(minValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 30)
-    drawText(ctx, `Max: ${Number(maxValue).toFixed(decimalPlaces)}`, 10, canvasHeight - 50)
+    const lineHeight = 20
+    let yOffset = 10
+
+    if (widget.value.options.showCurrent) {
+      drawText(ctx, `Current: ${Number(currentValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showMin) {
+      drawText(ctx, `Min: ${Number(minValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showMax) {
+      drawText(ctx, `Max: ${Number(maxValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showAvg) {
+      drawText(ctx, `Avg: ${Number(averageValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showMedian) {
+      drawText(ctx, `Median: ${Number(medianValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+    }
   } catch (error) {
     console.error('Error drawing graph:', error)
   }
@@ -454,6 +502,36 @@ const renderCanvas = (): void => {
 const valuesHistory: number[] = []
 let maxValue = 0
 let minValue = 0
+let medianValue = 0
+let averageValue = 0
+
+/**
+ * Calculate the median value from an array of numbers
+ * @param {number[]} values - Array of numbers to calculate median from
+ * @returns {number} The median value
+ */
+const calculateMedian = (values: number[]): number => {
+  if (values.length === 0) return 0
+  if (values.length === 1) return values[0]
+
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2
+  }
+  return sorted[mid]
+}
+
+/**
+ * Calculate the average (mean) value from an array of numbers
+ * @param {number[]} values - Array of numbers to calculate average from
+ * @returns {number} The average value
+ */
+const calculateAverage = (values: number[]): number => {
+  if (values.length === 0) return 0
+  return values.reduce((sum, val) => sum + val, 0) / values.length
+}
 
 // Update canvas whenever reference variables changes
 watch(
