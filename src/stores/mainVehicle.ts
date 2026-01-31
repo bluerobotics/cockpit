@@ -231,6 +231,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     (newAddress) => {
       if (newAddress === undefined) return
 
+      // Clean the address by removing trailing slashes
+      let cleanedAddress = newAddress
+      if (cleanedAddress.endsWith('/')) {
+        cleanedAddress = cleanedAddress.slice(0, -1)
+        globalAddress.value = cleanedAddress
+      }
+
       // Register vehicle address variables if they don't exist
       const vehicleAddressVariableId = 'vehicle-address'
       if (!getDataLakeVariableInfo(vehicleAddressVariableId)) {
@@ -253,7 +260,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       }
 
       // Update the variables with the new address
-      setDataLakeVariableData(vehicleAddressVariableId, newAddress)
+      setDataLakeVariableData(vehicleAddressVariableId, cleanedAddress)
       setDataLakeVariableData(vehicleMavlink2RestHttpEndpointVariableId, defaultMAVLink2RestHttpURI.value)
     },
     { immediate: true }
