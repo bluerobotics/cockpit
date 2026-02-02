@@ -147,6 +147,7 @@
               <v-checkbox v-model="widget.options.showMax" label="Max" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showAvg" label="Avg" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showMedian" label="Median" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showStdDev" label="Std Dev" hide-details class="-mt-1" />
             </div>
           </template>
         </ExpansiblePanel>
@@ -252,6 +253,7 @@ onBeforeMount(() => {
     showMax: true,
     showAvg: true,
     showMedian: true,
+    showStdDev: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
@@ -400,6 +402,7 @@ const renderCanvas = (): void => {
     minValue = Math.min(...valuesHistory)
     medianValue = calculateMedian(valuesHistory)
     averageValue = calculateAverage(valuesHistory)
+    stdDevValue = calculateStdDev(valuesHistory, averageValue)
 
     // Use fixed Y-axis bounds if enabled, otherwise calculate with a buffer to keep the plot neatly within bounds, and centered when there are no changes
     const tempMinValue = widget.value.options.useFixedMinY ? widget.value.options.fixedMinY : minValue
@@ -493,6 +496,10 @@ const renderCanvas = (): void => {
     }
     if (widget.value.options.showMedian) {
       drawText(ctx, `Median: ${Number(medianValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showStdDev) {
+      drawText(ctx, `Std Dev: ${Number(stdDevValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
     }
   } catch (error) {
     console.error('Error drawing graph:', error)
@@ -504,6 +511,7 @@ let maxValue = 0
 let minValue = 0
 let medianValue = 0
 let averageValue = 0
+let stdDevValue = 0
 
 /**
  * Calculate the median value from an array of numbers
@@ -531,6 +539,22 @@ const calculateMedian = (values: number[]): number => {
 const calculateAverage = (values: number[]): number => {
   if (values.length === 0) return NaN
   return values.reduce((sum, val) => sum + val, 0) / values.length
+}
+
+/**
+ * Calculate the standard deviation from an array of numbers
+ * @param {number[]} values - Array of numbers to calculate standard deviation from
+ * @param {number} mean - Pre-calculated mean value (optional, will be calculated if not provided)
+ * @returns {number} The standard deviation (population)
+ */
+const calculateStdDev = (values: number[], mean?: number): number => {
+  if (values.length === 0) return NaN
+  if (values.length === 1) return 0
+
+  const avg = mean !== undefined ? mean : calculateAverage(values)
+  const squaredDiffs = values.map((val) => Math.pow(val - avg, 2))
+  const avgSquaredDiff = squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length
+  return Math.sqrt(avgSquaredDiff)
 }
 
 // Update canvas whenever reference variables changes
