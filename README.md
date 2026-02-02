@@ -102,7 +102,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Feature** | **🌐 Browser** | **🖥️ Desktop** |
 |-------------|---------------|----------------|
 | **Joystick Support** | Only when tab and window are in focus  | ✅ Window can be unfocused and in the background |
-| **Video** | Needs to be downloaded and merged into a working video | ✅ Final MP4 file directly in your folder |
+| **Video** | Needs to be downloaded and merged into a working video using the Desktop app | ✅ Final MP4 file saved directly to your folders |
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
@@ -228,8 +228,6 @@ While Cockpit is a powerful and feature-rich ground control station, there are s
 - **Contributions welcome**: We're actively seeking community help to add support for PX4 vehicles as well as improve the support for Aerial and Ground vehicles on Ardupilot
 
 ### 🗺️ **Mission Planning Limitations**
-- **Basic waypoints only**: Current mission planning supports "pass by" waypoints and polygon surveys
-- [**No MAVLink command support**](https://github.com/bluerobotics/cockpit/issues/1737): Advanced waypoints with specific MAVLink commands (loitering, conditional actions, servo control) are not yet implemented
 - **Geofencing**: Not currently supported in mission planning
 
 > 💡 **Help Us Improve**: Many of these limitations represent opportunities for community contributions. Check our [GitHub Issues](https://github.com/bluerobotics/cockpit/issues) for specific areas where help is needed!
