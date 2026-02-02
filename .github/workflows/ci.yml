@@ -211,7 +211,16 @@ jobs:
           # Only rename if the generic name exists.
           if [ -f dist/latest-mac.yml ]; then mv dist/latest-mac.yml dist/latest-mac-arm64.yml; fi
 
+      - name: Package AppImage in tar.gz (Linux)
+        if: matrix.suffix == 'linux'
+        run: |
+          cd dist
+          chmod +x Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage
+          tar -czvf Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage.tar.gz \
+            Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage
+
       - name: Upload binary artifact
+        if: matrix.suffix != 'linux'
         uses: actions/upload-artifact@v4
         with:
           name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
@@ -220,7 +229,7 @@ jobs:
 
       - name: Upload binary release
         uses: svenstaro/upload-release-action@v2
-        if: startsWith(github.ref, 'refs/tags/') && success()
+        if: matrix.suffix != 'linux' && startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
@@ -228,6 +237,24 @@ jobs:
           overwrite: true
           prerelease: true
           file_glob: true
+
+      - name: Upload tar.gz artifact (Linux)
+        if: matrix.suffix == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage.tar.gz
+          path: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage.tar.gz
+          if-no-files-found: error
+
+      - name: Upload tar.gz release (Linux)
+        uses: svenstaro/upload-release-action@v2
+        if: matrix.suffix == 'linux' && startsWith(github.ref, 'refs/tags/') && success()
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
 
       - name: Upload diff release (mac-only)
         uses: svenstaro/upload-release-action@v2
