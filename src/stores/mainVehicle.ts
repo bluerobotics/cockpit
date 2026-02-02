@@ -114,8 +114,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     enabled: false,
   })
 
-  const currentlyConnectedVehicleId = ref<string | undefined>()
-
   const lastHeartbeat = ref<Date>()
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
@@ -219,8 +217,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     } else {
       dispatchEvent(new CustomEvent('vehicle-offline'))
     }
-    if (isOnline) return
-    currentlyConnectedVehicleId.value = undefined
   })
 
   watch(enableDatalakeVariablesFromOtherSystems, (newValue) => {
@@ -674,35 +670,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         .first()
     })
 
-    // Get the ID for the currently connected vehicle, or create one if it does not exist
-    // Try this every 5 seconds until we have an ID
-    const updateVehicleId = async (): Promise<void> => {
-      try {
-        const maybeId = await getKeyDataFromCockpitVehicleStorage(globalAddress.value, 'cockpit-vehicle-id')
-        if (typeof maybeId !== 'string') {
-          throw new Error('Vehicle ID is not a string.')
-        }
-        currentlyConnectedVehicleId.value = maybeId
-        localStorage.setItem('cockpit-last-connected-vehicle-id', currentlyConnectedVehicleId.value)
-      } catch (idFetchError) {
-        console.error(`Could not get vehicle ID from storage. ${(idFetchError as Error).message}`)
-
-        const newVehicleId = uuid()
-        console.log(`Setting new vehicle ID: ${newVehicleId}`)
-        try {
-          await setKeyDataOnCockpitVehicleStorage(globalAddress.value, 'cockpit-vehicle-id', newVehicleId)
-          currentlyConnectedVehicleId.value = newVehicleId
-          localStorage.setItem('cockpit-last-connected-vehicle-id', currentlyConnectedVehicleId.value)
-        } catch (idSetError) {
-          console.error(`Could not set vehicle ID in storage. ${(idSetError as Error).message}`)
-          console.log('Will try setting the vehicle ID again in 5 seconds...')
-          setTimeout(updateVehicleId, 5000)
-        }
-      }
-    }
-
-    updateVehicleId()
-
     // Register BlueOS variables in the data lake
     const blueOsVariables = {
       cpuTemp: { id: 'blueos/cpu/tempC', name: 'CPU Temperature', type: 'number' },
@@ -1015,7 +982,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     webRTCSignallingURI,
     customWebRTCSignallingURI,
     defaultWebRTCSignallingURI,
-    currentlyConnectedVehicleId,
     cpuLoad,
     lastHeartbeat,
     firmwareType,

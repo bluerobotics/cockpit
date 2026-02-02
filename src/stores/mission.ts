@@ -17,8 +17,6 @@ import {
   WaypointCoordinates,
 } from '@/types/mission'
 
-import { useMainVehicleStore } from './mainVehicle'
-
 // Default map position (centered on Florianópolis, Brazil)
 const DEFAULT_MAP_CENTER: WaypointCoordinates = [-27.5935, -48.55854]
 const DEFAULT_MAP_ZOOM = 15
@@ -55,8 +53,6 @@ export const useMissionStore = defineStore('mission', () => {
   const mapClearMapDrawing = ref<(() => void) | null>(null)
 
   const { showDialog } = useInteractionDialog()
-
-  const mainVehicleStore = useMainVehicleStore()
 
   const pointsOfInterest = useBlueOsStorage<PointOfInterest[]>('cockpit-points-of-interest', [])
 
@@ -147,29 +143,20 @@ export const useMissionStore = defineStore('mission', () => {
     defaultMapZoom.value = zoom < 1 ? 1 : zoom > 19 ? 19 : zoom
   }
 
-  let idLastConnectedVehicle: string | undefined = undefined
-  watch(
-    () => mainVehicleStore.currentlyConnectedVehicleId,
-    async (newVehicleId) => {
-      if (newVehicleId) {
-        // If there's a username saved, assign it as the last connected user
-        localStorage.setItem('cockpit-last-connected-user', username.value)
-        if (username.value) {
-          console.log(`Last connected user set to '${username.value}'.`)
-        } else {
-          console.log('No username set. Will not set last connected user.')
-        }
+  window.addEventListener('vehicle-online', async () => {
+    // If there's a username saved, assign it as the last connected user
+    localStorage.setItem('cockpit-last-connected-user', username.value)
+    if (username.value) {
+      console.log(`Last connected user set to '${username.value}'.`)
+    } else {
+      console.log('No username set. Will not set last connected user.')
+    }
 
-        const vehicleChanged = idLastConnectedVehicle !== newVehicleId
-        idLastConnectedVehicle = newVehicleId
-        if (!username.value && (idLastConnectedVehicle === undefined || vehicleChanged)) {
-          // If no username is set and vehicle is connected, ask the user to enter one
-          await changeUsername()
-        }
-      }
-    },
-    { immediate: true }
-  )
+    if (!username.value) {
+      // If no username is set and vehicle is connected, ask the user to enter one
+      await changeUsername()
+    }
+  })
 
   const getWaypointNumber = (id: string): number | string => {
     const waypointIndex = currentPlanningWaypoints.findIndex((wp) => wp.id === id)
