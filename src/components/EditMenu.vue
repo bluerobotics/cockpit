@@ -722,7 +722,7 @@ import { isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { Point2D } from '@/types/general'
+import type { Point2D, SizeRect2D } from '@/types/general'
 import {
   type Profile,
   type View,
@@ -1166,64 +1166,118 @@ watch(widgetMode, async (newValue: string): Promise<void> => {
   })
 })
 
+// Cached references for performance
+let cachedMainViewElement: HTMLElement | null = null
+let cachedMainViewRect: DOMRect | null = null
+let cachedWidgetSize: SizeRect2D | null = null
+let rafId: number | null = null
+let pendingPosition: Point2D | null = null
+
 // Get the coordinates of the widget being dragged and update the drag state
 const onRegularWidgetDragStart = (event: Event, widget: InternalWidgetSetupInfo): void => {
   const target = event.target as HTMLElement
   if (target) {
     target.style.opacity = '0.5'
   }
+
+  // Cache references for performance
+  cachedMainViewElement = document.querySelector('.main-view') as HTMLElement
+  if (cachedMainViewElement) {
+    cachedMainViewRect = cachedMainViewElement.getBoundingClientRect()
+  }
+  cachedWidgetSize = widget.defaultSize ?? { width: 0.2, height: 0.36 }
+
   store.widgetDragState = {
     widget,
     position: null,
   }
-  document.addEventListener('dragover', onDragOver)
+
+  document.addEventListener('dragover', onDragOver, { passive: false })
   document.addEventListener('touchmove', onTouchMove, { passive: true })
 }
 
 // Track drag position for ghost preview
 const onDragOver = (event: DragEvent): void => {
   event.preventDefault()
-  updateDragPosition(event.clientX, event.clientY)
+  // Store position but don't update state yet - will be updated in RAF
+  if (cachedMainViewElement && cachedMainViewRect) {
+    pendingPosition = calculatePosition(event.clientX, event.clientY)
+    scheduleUpdate()
+  }
 }
 
 // Track touch move for ghost preview
 const onTouchMove = (event: TouchEvent): void => {
-  if (store.widgetDragState.widget && event.touches.length > 0) {
+  if (store.widgetDragState.widget && event.touches.length > 0 && cachedMainViewElement && cachedMainViewRect) {
     const touch = event.touches[0]
-    updateDragPosition(touch.clientX, touch.clientY)
+    pendingPosition = calculatePosition(touch.clientX, touch.clientY)
+    scheduleUpdate()
   }
 }
 
+// Schedule position update using requestAnimationFrame for smooth 60fps updates
+const scheduleUpdate = (): void => {
+  if (rafId !== null) {
+    return // Already scheduled
+  }
+  rafId = requestAnimationFrame(() => {
+    if (pendingPosition !== null) {
+      store.widgetDragState.position = pendingPosition
+      pendingPosition = null
+    }
+    rafId = null
+  })
+}
+
 // Update the drag position for ghost preview
-const updateDragPosition = (clientX: number, clientY: number): void => {
-  const mainViewElement = document.querySelector('.main-view') as HTMLElement
-  if (!mainViewElement || !store.widgetDragState.widget) {
-    return
+const calculatePosition = (clientX: number, clientY: number): Point2D | null => {
+  if (!cachedMainViewElement || !cachedMainViewRect || !cachedWidgetSize || !store.widgetDragState.widget) {
+    return null
   }
 
-  const mainViewRect = mainViewElement.getBoundingClientRect()
+  // Will now only recalculate if significantly different to avoid constant recalculation
+  const currentRect = cachedMainViewElement.getBoundingClientRect()
+  if (
+    Math.abs(currentRect.left - (cachedMainViewRect?.left ?? 0)) > 1 ||
+    Math.abs(currentRect.top - (cachedMainViewRect?.top ?? 0)) > 1 ||
+    Math.abs(currentRect.width - (cachedMainViewRect?.width ?? 0)) > 1 ||
+    Math.abs(currentRect.height - (cachedMainViewRect?.height ?? 0)) > 1
+  ) {
+    cachedMainViewRect = currentRect
+  }
+
   const isWithinMainView =
-    clientX >= mainViewRect.left &&
-    clientX <= mainViewRect.right &&
-    clientY >= mainViewRect.top &&
-    clientY <= mainViewRect.bottom
+    clientX >= cachedMainViewRect.left &&
+    clientX <= cachedMainViewRect.right &&
+    clientY >= cachedMainViewRect.top &&
+    clientY <= cachedMainViewRect.bottom
 
   if (isWithinMainView) {
     // Calculate position relative to main-view
-    const dropX = (clientX - mainViewRect.left) / mainViewRect.width
-    const dropY = (clientY - mainViewRect.top) / mainViewRect.height
-    const widgetSize = store.widgetDragState.widget.defaultSize ?? { width: 0.2, height: 0.36 }
+    const dropX = (clientX - cachedMainViewRect.left) / cachedMainViewRect.width
+    const dropY = (clientY - cachedMainViewRect.top) / cachedMainViewRect.height
     // Center the widget on the drop position
-    const x = Math.max(0, Math.min(1 - widgetSize.width, dropX - widgetSize.width / 2))
-    const y = Math.max(0, Math.min(1 - widgetSize.height, dropY - widgetSize.height / 2))
-    store.widgetDragState.position = { x, y }
-  } else {
-    store.widgetDragState.position = null
+    const x = Math.max(0, Math.min(1 - cachedWidgetSize.width, dropX - cachedWidgetSize.width / 2))
+    const y = Math.max(0, Math.min(1 - cachedWidgetSize.height, dropY - cachedWidgetSize.height / 2))
+    return { x, y }
   }
+
+  return null
 }
 
 // Places the widget if it is within the main-view
 const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEvent | TouchEvent): void => {
+  // Cancel any pending RAF updates
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+
+  if (pendingPosition !== null) {
+    store.widgetDragState.position = pendingPosition
+    pendingPosition = null
+  }
+
   // Remove global event listeners added in onRegularWidgetDragStart
   document.removeEventListener('dragover', onDragOver)
   document.removeEventListener('touchmove', onTouchMove)
@@ -1242,18 +1296,24 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
   }
 
   // If the main-view element is not found, return the opacity of the dragged widget card to 1 (previously set to 0.5 on onRegularWidgetDragStart)
-  const mainViewElement = document.querySelector('.main-view') as HTMLElement
+  const mainViewElement = cachedMainViewElement || (document.querySelector('.main-view') as HTMLElement)
   if (!mainViewElement) {
     const widgetCards = document.querySelectorAll('[draggable="true"]')
     widgetCards.forEach((card) => {
       ;(card as HTMLElement).style.opacity = '1'
     })
+    // Clear drag and other cached references
     store.widgetDragState = { widget: null, position: null }
+    cachedMainViewElement = null
+    cachedMainViewRect = null
+    cachedWidgetSize = null
     return
   }
 
+  // Use cached rect if available, otherwise get it fresh
+  const mainViewRect = cachedMainViewRect || mainViewElement.getBoundingClientRect()
+
   // Checks if the final dragged widget coordinates are within the main-view's bounding rectangle
-  const mainViewRect = mainViewElement.getBoundingClientRect()
   const isWithinMainView =
     clientX >= mainViewRect.left &&
     clientX <= mainViewRect.right &&
@@ -1262,13 +1322,13 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
 
   if (isWithinMainView) {
     // Use the last tracked position if available, otherwise calculate from event
-    let dropPosition: Point2D = { x: 0, y: 0 }
+    let dropPosition: Point2D
     if (store.widgetDragState.position) {
       dropPosition = store.widgetDragState.position
     } else {
       const dropX = (clientX - mainViewRect.left) / mainViewRect.width
       const dropY = (clientY - mainViewRect.top) / mainViewRect.height
-      const widgetSize = widget.defaultSize ?? { width: 0.2, height: 0.36 }
+      const widgetSize = cachedWidgetSize || widget.defaultSize || { width: 0.2, height: 0.36 }
       dropPosition = {
         x: Math.max(0, Math.min(1 - widgetSize.width, dropX - widgetSize.width / 2)),
         y: Math.max(0, Math.min(1 - widgetSize.height, dropY - widgetSize.height / 2)),
@@ -1282,7 +1342,11 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
     ;(card as HTMLElement).style.opacity = '1'
   })
 
+  // Again, clear drag state and cached references
   store.widgetDragState = { widget: null, position: null }
+  cachedMainViewElement = null
+  cachedMainViewRect = null
+  cachedWidgetSize = null
 }
 
 const availableVehicleTypes = computed(() => Object.keys(MavType))
