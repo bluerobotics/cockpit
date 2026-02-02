@@ -10,7 +10,6 @@ import {
   SettingsListener,
   SettingsListeners,
   SettingsPackage,
-  UserChangedEvent,
   UserSettings,
   VehicleOnlineEvent,
   VehicleSettings,
@@ -38,6 +37,25 @@ const possibleNullValues = [fallbackUsername, fallbackVehicleId, nullValue, null
 const keyValueUpdateDebounceTime = 100
 
 export type SettingValue = string | number | boolean | object | null | undefined
+
+/**
+ * Callback type for user change listeners
+ */
+export type UserChangeListener = (username: string) => void
+
+/**
+ * User change listener with ID for unregistration
+ */
+interface UserChangeListenerEntry {
+  /**
+   * The ID of the listener
+   */
+  id: string
+  /**
+   * The callback function to call when the user changes
+   */
+  callback: UserChangeListener
+}
 
 /**
  * Error thrown when the vehicle ID does not match the expected ID
@@ -199,6 +217,7 @@ export class SettingsManager {
   public currentUsername: string = fallbackUsername
   public currentVehicleId: string = fallbackVehicleId
   private listeners: SettingsListeners = {}
+  private userChangeListeners: UserChangeListenerEntry[] = []
   private keyValueUpdateTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
   private lastLocalUserVehicleSettings: SettingsPackage = {}
   private currentVehicleAddress: string = nullValue
@@ -322,6 +341,78 @@ export class SettingsManager {
       return
     }
     this.listeners[key] = this.listeners[key].filter((listener) => listener.id !== listenerId)
+  }
+
+  /**
+   * Registers a listener for user changes
+   * @param {UserChangeListener} callback - The callback to call when the user changes
+   * @returns {string} The listener ID for unregistration
+   */
+  public registerUserChangeListener = (callback: UserChangeListener): string => {
+    const listenerId = uuidv4()
+    this.userChangeListeners.push({ id: listenerId, callback })
+    return listenerId
+  }
+
+  /**
+   * Unregisters a user change listener
+   * @param {string} listenerId - The ID of the listener to unregister
+   */
+  public unregisterUserChangeListener = (listenerId: string): void => {
+    this.userChangeListeners = this.userChangeListeners.filter((listener) => listener.id !== listenerId)
+  }
+
+  /**
+   * Notifies all user change listeners about a user change
+   */
+  private notifyUserChangeListeners = (): void => {
+    this.userChangeListeners.forEach((listener) => {
+      listener.callback(this.currentUsername)
+    })
+  }
+
+  /**
+   * Gets the current username
+   * @returns {string} The current username
+   */
+  public getCurrentUser = (): string => {
+    return this.currentUsername
+  }
+
+  /**
+   * Gets the last connected user from storage
+   * @returns {string | undefined} The last connected user, or undefined if not set
+   */
+  public getLastConnectedUser = (): string | undefined => {
+    const lastUser = this.retrieveLastConnectedUser()
+    return lastUser && !possibleNullValues.includes(lastUser) ? lastUser : undefined
+  }
+
+  /**
+   * Sets the current user and handles all related settings sync
+   * This is the main entry point for changing the user from the UI
+   * @param {string} username - The new username to set
+   */
+  public setCurrentUser = async (username: string): Promise<void> => {
+    await this.handleUserChanging(username)
+    this.notifyUserChangeListeners()
+  }
+
+  /**
+   * Gets the list of available users from local storage and the vehicle
+   * @param {string} vehicleAddress - The address of the vehicle to fetch users from
+   * @returns {Promise<string[]>} The list of available usernames
+   */
+  public getAvailableUsers = async (vehicleAddress: string): Promise<string[]> => {
+    const localUsers = Object.keys(this.getLocalSettings())
+    try {
+      const vehicleUsers = await this.vehicle.getKeyData(vehicleAddress, 'settings')
+      const vehicleUsernames = vehicleUsers ? Object.keys(vehicleUsers as object) : []
+      return [...new Set([...localUsers, ...vehicleUsernames])]
+    } catch (error) {
+      console.warn('[SettingsManager] Failed to get users from vehicle, returning local users only.', error)
+      return localUsers
+    }
   }
 
   /**
@@ -1306,15 +1397,6 @@ export const settingsManager = new SettingsManager()
 window.addEventListener('vehicle-online', async (event: VehicleOnlineEvent) => {
   console.log('[SettingsManager]', `Vehicle online event received. Will handle vehicle getting online with address '${event.detail.vehicleAddress}'.`)
   await settingsManager.handleVehicleGettingOnline(event.detail.vehicleAddress)
-})
-
-/**
- * Event handler for when the user changes
- * @param event - The custom event containing username
- */
-window.addEventListener('user-changed', (event: UserChangedEvent) => {
-  console.log('[SettingsManager]', `User change event received. Will handle user change from '${settingsManager.currentUsername}' to '${event.detail.username}'.`)
-  settingsManager.handleUserChanging(event.detail.username)
 })
 
 /**

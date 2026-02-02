@@ -294,6 +294,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
+import { useCurrentUser } from '@/composables/useCurrentUser'
 import {
   cockpitLastConnectedUserKey,
   cockpitLastConnectedVehicleKey,
@@ -305,8 +306,6 @@ import {
 import { isEqual } from '@/libs/utils'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useMissionStore } from '@/stores/mission'
-import { Settings } from '@/types/general'
 import { LocalSyncedSettings, SettingsPackage } from '@/types/settings-management'
 
 type SettingsRowSource = 'v2' | 'legacy' | 'all-local-storage'
@@ -332,6 +331,7 @@ type SettingsRow = {
    */
   v2SettingKey?: string
 }
+import { Settings } from '@/types/general'
 
 const props = defineProps<{
   /**
@@ -343,7 +343,7 @@ const emits = defineEmits(['update:openConfigDialog'])
 
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
-const missionStore = useMissionStore()
+const { currentUser } = useCurrentUser()
 const interfaceStore = useAppInterfaceStore()
 
 const openConfigDialog = ref(props.openConfigDialog || false)
@@ -640,7 +640,7 @@ const downloadConfigFile = (): void => {
   const blob = new Blob([dataStr], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  const username = missionStore.username !== 'null' ? missionStore.username : 'unnamed'
+  const username = currentUser.value !== 'null' ? currentUser.value : 'unnamed'
   const filename = `${username}_config.json`
   a.href = url
   a.download = filename

@@ -23,9 +23,7 @@
               <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
                   <span class="mr-2">Current user:</span>
-                  <span class="font-semibold text-2xl cursor-pointer" @click="missionStore.changeUsername">{{
-                    missionStore.username
-                  }}</span>
+                  <span class="font-semibold text-2xl cursor-pointer" @click="promptUserChange">{{ currentUser }}</span>
                 </div>
                 <div class="flex justify-end">
                   <v-btn
@@ -34,7 +32,7 @@
                     append-icon="mdi-account"
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
-                    @click="missionStore.changeUsername"
+                    @click="promptUserChange"
                     >Manage users</v-btn
                   >
                 </div>
@@ -430,6 +428,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
+import { useCurrentUser } from '@/composables/useCurrentUser'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import {
@@ -445,13 +444,12 @@ import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import { useMissionStore } from '@/stores/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
-const missionStore = useMissionStore()
+const { currentUser, promptUserChange } = useCurrentUser()
 const { openSnackbar } = useSnackbar()
 const { showDialog, closeDialog } = useInteractionDialog()
 

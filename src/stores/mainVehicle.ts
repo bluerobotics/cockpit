@@ -10,15 +10,7 @@ import { useSnackbar } from '@/composables/snackbar'
 import { getAllDataLakeVariablesInfo, getDataLakeVariableInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { altitude_setpoint } from '@/libs/altitude-slider'
-import {
-  getCpusInfo,
-  getCpuTempCelsius,
-  getKeyDataFromCockpitVehicleStorage,
-  getNetworkInfo,
-  getStatus,
-  getVehicleName,
-  setKeyDataOnCockpitVehicleStorage,
-} from '@/libs/blueos'
+import { getCpusInfo, getCpuTempCelsius, getNetworkInfo, getStatus, getVehicleName } from '@/libs/blueos'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'

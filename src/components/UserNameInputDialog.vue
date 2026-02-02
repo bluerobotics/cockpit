@@ -18,9 +18,7 @@
             v-if="!isUsernamesEmpty && !showNewUsernamePrompt"
             class="w-full h-full flex flex-col align-center justify-center text-center"
           >
-            <p v-if="missionStore.username === undefined">
-              It seems like you don't have any users stored on this device yet.
-            </p>
+            <p v-if="currentUser === undefined">It seems like you don't have any users stored on this device yet.</p>
             <p>
               {{
                 isOnEditMode
@@ -37,14 +35,14 @@
                   variant="flat"
                   class="relative bg-[#FFFFFF18] m-2"
                   :class="[
-                    { 'elevation-2 border-2 bg-[#FFFFFF33] border-[#FFFFFF33]': missionStore.username === username },
+                    { 'elevation-2 border-2 bg-[#FFFFFF33] border-[#FFFFFF33]': currentUser === username },
                     { 'pointer-events-none': isOnEditMode },
                   ]"
                   @click="!isOnEditMode && setNewUsername(username)"
                 >
                   {{ username }}
 
-                  <template v-if="isOnEditMode && username !== missionStore.username">
+                  <template v-if="isOnEditMode && username !== currentUser">
                     <div
                       class="absolute -top-1 -left-1 w-5 h-5 flex items-center justify-center rounded-full bg-white bg-opacity-90 pointer-events-auto elevation-2 cursor-pointer"
                     >
@@ -98,16 +96,16 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { useCurrentUser } from '@/composables/useCurrentUser'
 import { deleteUsernameOnBlueOS, getSettingsUsernamesFromBlueOS } from '@/libs/blueos'
 import { settingsManager } from '@/libs/settings-management'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import { useMissionStore } from '@/stores/mission'
 
 import InteractionDialog from './InteractionDialog.vue'
 
 const emit = defineEmits(['confirmed', 'dismissed'])
 
-const missionStore = useMissionStore()
+const { currentUser } = useCurrentUser()
 const mainVehicleStore = useMainVehicleStore()
 const { showDialog, closeDialog } = useInteractionDialog()
 
@@ -121,7 +119,7 @@ const isOnEditMode = ref(false)
 const currentVehicleName = ref<string | undefined>(undefined)
 
 const deleteUser = async (username: string): Promise<void> => {
-  if (username === missionStore.username) {
+  if (username === currentUser.value) {
     openSnackbar({ message: 'You cannot delete the current user.', variant: 'error' })
     return
   }
@@ -151,10 +149,6 @@ const deleteUser = async (username: string): Promise<void> => {
             const vehicleAddress = await mainVehicleStore.getVehicleAddress()
             await deleteUsernameOnBlueOS(vehicleAddress, username)
             openSnackbar({ message: `User '${username}' deleted`, variant: 'success' })
-
-            if (missionStore.username === username) {
-              missionStore.username = ''
-            }
 
             usernamesStoredOnBlueOS.value = (usernamesStoredOnBlueOS.value ?? []).filter((u) => u !== username)
           } catch (err) {

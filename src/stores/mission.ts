@@ -2,10 +2,7 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
-import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
-import { askForUsername } from '@/composables/usernamePrompDialog'
-import { cockpitLastConnectedUserKey, fallbackUsername } from '@/libs/settings-management'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
@@ -22,8 +19,6 @@ const DEFAULT_MAP_CENTER: WaypointCoordinates = [-27.5935, -48.55854]
 const DEFAULT_MAP_ZOOM = 15
 
 export const useMissionStore = defineStore('mission', () => {
-  const username = useStorage<string>('cockpit-username', fallbackUsername)
-  const lastConnectedUser = localStorage.getItem(cockpitLastConnectedUserKey) || undefined
   const missionName = ref('')
   const slideEventsEnabled = useBlueOsStorage('cockpit-slide-events-enabled', true)
   const slideEventsCategoriesRequired = useBlueOsStorage(
@@ -51,8 +46,6 @@ export const useMissionStore = defineStore('mission', () => {
   )
   const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
   const mapClearMapDrawing = ref<(() => void) | null>(null)
-
-  const { showDialog } = useInteractionDialog()
 
   const pointsOfInterest = useBlueOsStorage<PointOfInterest[]>('cockpit-points-of-interest', [])
 
@@ -114,49 +107,10 @@ export const useMissionStore = defineStore('mission', () => {
     missionStartTime.value = new Date()
   }
 
-  const changeUsername = async (): Promise<void> => {
-    let newUsername: string | undefined
-    try {
-      newUsername = await askForUsername()
-    } catch (error) {
-      console.error('Username not set. User dismissed dialog.')
-      return
-    }
-    console.debug('Username set:', newUsername)
-
-    // If the user cancels the prompt or sets a name with less than 3 chars, do nothing
-    if (!newUsername || newUsername.trim().length < 3) {
-      showDialog({
-        title: 'Invalid username',
-        message: 'Username must be at least 3 characters long. No username was set. Auto-sync disabled.',
-        variant: 'error',
-        maxWidth: 560,
-      })
-      return
-    }
-
-    username.value = newUsername
-  }
-
   const setDefaultMapPosition = (center: WaypointCoordinates, zoom: number): void => {
     defaultMapCenter.value = [Number(center[0].toFixed(8)), Number(center[1].toFixed(8))]
     defaultMapZoom.value = zoom < 1 ? 1 : zoom > 19 ? 19 : zoom
   }
-
-  window.addEventListener('vehicle-online', async () => {
-    // If there's a username saved, assign it as the last connected user
-    localStorage.setItem('cockpit-last-connected-user', username.value)
-    if (username.value) {
-      console.log(`Last connected user set to '${username.value}'.`)
-    } else {
-      console.log('No username set. Will not set last connected user.')
-    }
-
-    if (!username.value) {
-      // If no username is set and vehicle is connected, ask the user to enter one
-      await changeUsername()
-    }
-  })
 
   const getWaypointNumber = (id: string): number | string => {
     const waypointIndex = currentPlanningWaypoints.findIndex((wp) => wp.id === id)
@@ -371,12 +325,7 @@ export const useMissionStore = defineStore('mission', () => {
     { deep: true }
   )
 
-  watch(username, () => window.dispatchEvent(new CustomEvent('user-changed', { detail: { username: username.value } })))
-
   return {
-    username,
-    lastConnectedUser,
-    changeUsername,
     missionName,
     lastMissionName,
     missionStartTime,
