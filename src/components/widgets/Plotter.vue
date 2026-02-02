@@ -112,7 +112,7 @@
                   density="comfortable"
                   :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
                   hint="Number of decimal places to be displayed"
-                  width="160px"
+                  width="100px"
                 />
                 <v-checkbox v-model="widget.options.limitSamples" label="Limit number of samples" />
                 <v-text-field
@@ -124,7 +124,7 @@
                   :disabled="!widget.options.limitSamples"
                   :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
                   hint="Higher values will show more history but may impact performance"
-                  width="220px"
+                  width="150px"
                 />
               </div>
               <v-checkbox
@@ -152,37 +152,34 @@
           </template>
         </ExpansiblePanel>
 
-        <!-- Y-Axis bounds section -->
+        <!-- Vertical Range section -->
         <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
-          <template #title>Y-Axis Bounds</template>
+          <template #title>Vertical Range</template>
           <template #content>
-            <div class="flex gap-x-8 py-2 mb-2">
-              <div class="flex flex-col">
-                <v-checkbox v-model="widget.options.useFixedMinY" label="Fixed minimum" hide-details class="-mt-1" />
-                <v-text-field
-                  v-model.number="widget.options.fixedMinY"
-                  type="number"
-                  label="Min value"
-                  variant="outlined"
-                  density="compact"
-                  :disabled="!widget.options.useFixedMinY"
-                  width="140px"
-                  hide-details
-                />
-              </div>
-              <div class="flex flex-col">
-                <v-checkbox v-model="widget.options.useFixedMaxY" label="Fixed maximum" hide-details class="-mt-1" />
-                <v-text-field
-                  v-model.number="widget.options.fixedMaxY"
-                  type="number"
-                  label="Max value"
-                  variant="outlined"
-                  density="compact"
-                  :disabled="!widget.options.useFixedMaxY"
-                  width="140px"
-                  hide-details
-                />
-              </div>
+            <div class="flex items-center gap-x-4 py-2 mb-2">
+              <v-checkbox v-model="widget.options.useFixedMinY" label="Fixed minimum" hide-details class="-mt-1" />
+              <v-text-field
+                v-model.number="widget.options.fixedMinY"
+                type="number"
+                label="Min value"
+                variant="outlined"
+                density="compact"
+                :disabled="!widget.options.useFixedMinY"
+                width="100px"
+                hide-details
+              />
+              <div class="h-12 border-l border-slate-500"></div>
+              <v-checkbox v-model="widget.options.useFixedMaxY" label="Fixed maximum" hide-details class="-mt-1" />
+              <v-text-field
+                v-model.number="widget.options.fixedMaxY"
+                type="number"
+                label="Max value"
+                variant="outlined"
+                density="compact"
+                :disabled="!widget.options.useFixedMaxY"
+                width="100px"
+                hide-details
+              />
             </div>
           </template>
         </ExpansiblePanel>
