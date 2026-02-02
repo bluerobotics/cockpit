@@ -223,7 +223,7 @@ While Cockpit is a powerful and feature-rich ground control station, there are s
 
 
 ### 🚁 **Vehicle Support Gaps**
-- [**PX4 autopilots**](https://github.com/bluerobotics/cockpit/issues/2008): Currently not supported, though MAVLink communication is implemented
+- [**PX4 autopilots**]: Cockpit's MAVLink functionality is mostly generic, so it is expected that most available features will also work with PX4 autopilot firmware. That said, the core development team does not actively test with PX4 vehicles, so please open a documenting issue (or ideally a solving pull request) for any problems you encounter.
 - **Aerial and Ground vehicles**: Although recognized by the application, those types of vehicles have limited support and testing
 - **Contributions welcome**: We're actively seeking community help to add support for PX4 vehicles as well as improve the support for Aerial and Ground vehicles on Ardupilot
 
