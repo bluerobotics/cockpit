@@ -24,11 +24,12 @@
           height: `${(store.widgetDragState.widget.defaultSize?.height ?? 0.36) * 100}%`,
           pointerEvents: 'none',
           zIndex: 1000,
+          willChange: 'transform',
         }"
       >
         <div
           class="w-full h-full border-2 border-dashed border-[#ffffff21] bg-[#ffffff03] rounded-md shadow-sm"
-          style="backdrop-filter: blur(16px)"
+          style="backdrop-filter: blur(16px); will-change: transform"
         >
           <div class="w-full h-full bg-[#ffffff03] rounded-md" />
         </div>
