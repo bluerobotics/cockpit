@@ -144,9 +144,9 @@
             <div class="flex flex-wrap gap-x-6 py-2">
               <v-checkbox v-model="widget.options.showCurrent" label="Current" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showMin" label="Min" hide-details class="-mt-1" />
-              <v-checkbox v-model="widget.options.showMax" label="Max" hide-details class="-mt-1" />
-              <v-checkbox v-model="widget.options.showAvg" label="Avg" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showMedian" label="Median" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showAvg" label="Avg" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showMax" label="Max" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showStdDev" label="Std Dev" hide-details class="-mt-1" />
             </div>
           </template>
@@ -478,12 +478,8 @@ const renderCanvas = (): void => {
     const lineHeight = 20
     let yOffset = 10
 
-    if (widget.value.options.showCurrent) {
-      drawText(ctx, `Current: ${Number(currentValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
-      yOffset += lineHeight
-    }
-    if (widget.value.options.showMin) {
-      drawText(ctx, `Min: ${Number(minValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+    if (widget.value.options.showStdDev) {
+      drawText(ctx, `Std Dev: ${Number(stdDevValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
       yOffset += lineHeight
     }
     if (widget.value.options.showMax) {
@@ -498,8 +494,12 @@ const renderCanvas = (): void => {
       drawText(ctx, `Median: ${Number(medianValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
       yOffset += lineHeight
     }
-    if (widget.value.options.showStdDev) {
-      drawText(ctx, `Std Dev: ${Number(stdDevValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+    if (widget.value.options.showMin) {
+      drawText(ctx, `Min: ${Number(minValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
+      yOffset += lineHeight
+    }
+    if (widget.value.options.showCurrent) {
+      drawText(ctx, `Current: ${Number(currentValue).toFixed(decimalPlaces)}`, 10, canvasHeight - yOffset)
     }
   } catch (error) {
     console.error('Error drawing graph:', error)
