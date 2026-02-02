@@ -102,7 +102,8 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Feature** | **🌐 Browser** | **🖥️ Desktop** |
 |-------------|---------------|----------------|
 | **Joystick Support** | Only when tab and window are in focus  | ✅ Window can be unfocused and in the background |
-| **Video/Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
+| **Video** | Needs to be downloaded and merged into a working video | ✅ Final MP4 file directly in your folder |
+| **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
@@ -220,12 +221,6 @@ Be sure to check our docs for more information on how to take advantage of these
 
 While Cockpit is a powerful and feature-rich ground control station, there are some current limitations to be aware of:
 
-### 📹 **Video Processing Constraints**
-Cockpit records video in "chunks" at each second and then reconstructs them into a complete video file through a processing step. For longer recordings, this reconstruction process can exceed your computer's memory capacity.
-
-- [**Recommended limit**](https://github.com/bluerobotics/cockpit/issues/2004): Keep recordings under **30 minutes** for reliable in-app processing
-- **For longer recordings**: Use our [online processing tool](https://cockpit-online-processing.rlehmk.dev/) to process video chunks in batches (e.g. 1000 chunks each time) and then combine the resulting files with an external video editing software, like [LosslessCut](https://mifi.no/losslesscut/)
-- **Processing capability varies** by computer specifications - systems with more RAM can handle longer recordings. Testing before critical missions is encouraged
 
 ### 🚁 **Vehicle Support Gaps**
 - [**PX4 autopilots**](https://github.com/bluerobotics/cockpit/issues/2008): Currently not supported, though MAVLink communication is implemented
