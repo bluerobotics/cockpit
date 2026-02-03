@@ -1,6 +1,6 @@
 /* eslint-disable jsdoc/require-jsdoc  */
 
-import { type ActionConfig } from '@/libs/joystick/protocols/cockpit-actions'
+import { type ActionConfig } from '@/types/cockpit-actions'
 import { JoystickMapSuggestionGroup } from '@/types/joystick'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 

@@ -1,11 +1,12 @@
 /* eslint-disable vue/max-len */
 /* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
-import { JavascriptActionConfig } from '@/libs/actions/free-javascript'
-import { HttpRequestActionConfig } from '@/libs/actions/http-request'
-import { MavlinkMessageActionConfig } from '@/libs/actions/mavlink-message-actions'
 import { type ArduPilotVehicleModeActionIdPattern } from '@/libs/vehicle/ardupilot/common'
-import { type ProtocolAction,JoystickProtocol } from '@/types/joystick'
+import { type ActionConfig, customActionTypes } from '@/types/cockpit-actions'
+import { type ProtocolAction, JoystickProtocol } from '@/types/joystick'
+
+export type { ActionConfig }
+export { customActionTypes }
 
 /**
  * Possible functions in the MAVLink `MANUAL_CONTROL` message protocol
@@ -147,39 +148,3 @@ export const executeActionCallback = (id: string): void => {
 }
 
 export const availableCockpitActions = cockpitActionsManager.availableActions
-
-/**
- * Action configuration interface
- */
-export interface ActionConfig {
-  /**
-   * Action ID
-   */
-  id: string
-  /**
-   * Action name
-   */
-  name: string
-  /**
-   * Action type
-   */
-  type: customActionTypes
-  /**
-   * Action configuration
-   * Specific to the action type
-   */
-  config: HttpRequestActionConfig | MavlinkMessageActionConfig | JavascriptActionConfig
-  /**
-   * Version of the Action
-   */
-  version?: string
-}
-
-/**
- * Custom action types
- */
-export enum customActionTypes {
-  httpRequest = 'http-request',
-  mavlinkMessage = 'mavlink-message',
-  javascript = 'javascript',
-}

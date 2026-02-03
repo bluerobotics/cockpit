@@ -1,5 +1,5 @@
-import { DataLakeVariable } from '@/libs/actions/data-lake'
 import { CockpitAction } from '@/libs/joystick/protocols/cockpit-actions'
+import { DataLakeVariable } from '@/types/data-lake'
 
 import type { Point2D, SizeRect2D } from './general'
 
