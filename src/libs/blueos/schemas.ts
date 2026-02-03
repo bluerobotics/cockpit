@@ -31,7 +31,7 @@ const ServiceMetadataSchema = z
         cockpit: z.string().optional(),
       })
       .nullish(),
-    worksInRelativePaths: z.boolean().optional(),
+    worksInRelativePaths: z.boolean().nullish(),
     sanitizedName: z.string().optional(),
   })
   .nullish()
