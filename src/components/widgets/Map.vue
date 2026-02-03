@@ -819,8 +819,11 @@ const handleContextMenu = {
 }
 
 const clearMapDrawing = (): void => {
+  const poiMarkers = new Set(Object.values(mapWidgetPoiMarkers.value))
+
   map.value?.eachLayer((l) => {
     if (l instanceof L.Marker || (l instanceof L.Polyline && l.options.color === '#358AC3')) {
+      if (poiMarkers.has(l as L.Marker)) return
       map.value!.removeLayer(l)
     }
   })
