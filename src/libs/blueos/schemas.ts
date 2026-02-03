@@ -1,9 +1,8 @@
 import camelcaseKeys from 'camelcase-keys'
 import { z } from 'zod'
 
-import { HttpRequestMethod } from '@/libs/actions/http-request'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { customActionTypes } from '@/libs/joystick/protocols/cockpit-actions'
+import { customActionTypes, HttpRequestMethod } from '@/types/cockpit-actions'
 import { CockpitModifierKeyOption, JoystickProtocol } from '@/types/joystick'
 
 /**

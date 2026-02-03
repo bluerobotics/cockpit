@@ -1,5 +1,5 @@
-import { CockpitAction } from '@/libs/joystick/protocols/cockpit-actions'
 import { DataLakeVariable } from '@/types/data-lake'
+import { ProtocolAction } from '@/types/joystick'
 
 import type { Point2D, SizeRect2D } from './general'
 
@@ -261,7 +261,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Action parameter
        */
-      cockpitAction: CockpitAction
+      cockpitAction: ProtocolAction
       /**
        * Layout options
        */
