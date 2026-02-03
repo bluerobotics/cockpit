@@ -1099,7 +1099,8 @@ const checkForBlueOSActions = async (): Promise<void> => {
  */
 const checkForBlueOSJoystickSuggestions = async (): Promise<void> => {
   try {
-    const suggestions = await getJoystickSuggestionsFromBlueOS()
+    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+    const suggestions = await getJoystickSuggestionsFromBlueOS(vehicleAddress)
     discoveredJoystickSuggestions.value = suggestions
   } catch (error) {
     console.error('Failed to fetch joystick suggestions from BlueOS:', error)
