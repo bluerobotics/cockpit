@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, screen } from 'electron'
+import { app, BrowserWindow, protocol, screen, session } from 'electron'
 import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
@@ -33,6 +33,7 @@ function createWindow(): void {
       preload: join(ROOT_PATH.dist, 'electron/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: !process.env.VITE_DEV_SERVER_URL, // Disable CORS in dev mode - workaround for BlueOS extensions with broken CORS headers
     },
     autoHideMenuBar: true,
     width: store.get('windowBounds')?.width ?? screen.getPrimaryDisplay().workAreaSize.width,
@@ -98,6 +99,24 @@ setupVideoRecordingService()
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
   console.log(`Cockpit version: ${app.getVersion()}`)
+
+  // TODO: Remove this workaround once BlueOS extensions fix their CORS headers
+  // This fixes extensions that send duplicate 'Access-Control-Allow-Origin: *, *' headers
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const responseHeaders = { ...details.responseHeaders }
+
+    // Normalize CORS headers - some extensions send duplicate values like "*, *"
+    const corsHeader = responseHeaders['Access-Control-Allow-Origin'] || responseHeaders['access-control-allow-origin']
+    if (corsHeader) {
+      const headerKey = responseHeaders['Access-Control-Allow-Origin']
+        ? 'Access-Control-Allow-Origin'
+        : 'access-control-allow-origin'
+      // Take only the first value if there are duplicates
+      responseHeaders[headerKey] = [corsHeader[0].split(',')[0].trim()]
+    }
+
+    callback({ responseHeaders })
+  })
 
   console.log('Creating window...')
   createWindow()
