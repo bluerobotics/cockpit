@@ -13,7 +13,7 @@ import {
   type Service,
   NoPathInBlueOsErrorName,
 } from '@/types/blueos'
-import { JoystickMapSuggestionGroupsFromExtension } from '@/types/joystick'
+import { JoystickMapSuggestionsFromExtension } from '@/types/joystick'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 
 const defaultTimeout = 10000
@@ -131,7 +131,7 @@ export const getJoystickSuggestionsFromBlueOS = async (
   vehicleAddress: string
 ): Promise<JoystickMapSuggestionsFromExtension[]> => {
   const services = await getServicesFromBlueOS(vehicleAddress)
-  const suggestionGroupsMap = new Map<string, JoystickMapSuggestionGroupsFromExtension>()
+  const suggestionsMap = new Map<string, JoystickMapSuggestionsFromExtension>()
 
   await Promise.all(
     services.map(async (service) => {
@@ -140,9 +140,12 @@ export const getJoystickSuggestionsFromBlueOS = async (
         if (extraJson !== null && extraJson.joystickSuggestions) {
           const extensionName = service.metadata?.sanitizedName || 'Unknown Extension'
 
-          suggestionGroupsMap.set(extensionName, {
+          // Flatten all suggestion groups into a single suggestions array
+          const suggestions = extraJson.joystickSuggestions.flatMap((group) => group.buttonMappingSuggestions)
+
+          suggestionsMap.set(extensionName, {
             extensionName,
-            suggestionGroups: extraJson.joystickSuggestions,
+            suggestions,
           })
         }
       } catch (error) {
@@ -153,7 +156,7 @@ export const getJoystickSuggestionsFromBlueOS = async (
     })
   )
 
-  return Array.from(suggestionGroupsMap.values())
+  return Array.from(suggestionsMap.values())
 }
 
 export const setBagOfHoldingOnVehicle = async (
