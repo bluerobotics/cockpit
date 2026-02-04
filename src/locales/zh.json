@@ -229,6 +229,8 @@
         "statsForNerds": "技术统计信息",
         "rotateLeft": "向左旋转",
         "rotateRight": "向右旋转",
+        "hideDetails": "隐藏详情",
+        "showDetails": "显示详情",
         "autoplay": "自动播放",
         "controls": "显示控件",
         "externalStreamName": "外部视频流名称",

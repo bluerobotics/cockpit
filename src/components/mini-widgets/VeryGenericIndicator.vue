@@ -14,7 +14,7 @@
         <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
       </div>
       <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden">
-        {{ miniWidget.options.displayName }}
+        {{ translatedDisplayName }}
       </span>
     </div>
   </div>
@@ -32,14 +32,14 @@
             :class="{ 'bg-[#FFFFFF22]': currentTab === 'presets' }"
             @click="currentTab = 'presets'"
           >
-            Presets
+            {{ $t('veryGenericIndicator.presets') }}
           </div>
           <div
             class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-[#FFFFFF33]"
             :class="{ 'bg-[#FFFFFF22]': currentTab === 'custom' }"
             @click="currentTab = 'custom'"
           >
-            Custom
+            {{ $t('veryGenericIndicator.custom') }}
           </div>
         </div>
       </v-card-title>
@@ -47,11 +47,11 @@
       <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
         <div class="flex w-full gap-x-10">
           <div class="flex flex-col items-center justify-between w-3/4 mt-3">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Display name</span>
+            <span class="w-full mb-1 text-sm text-slate-100/50">{{ $t('veryGenericIndicator.displayName') }}</span>
             <input v-model="miniWidget.options.displayName" class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]" />
           </div>
           <div class="flex flex-col items-center justify-between w-1/4 mt-3">
-            <span class="w-full text-sm text-slate-100/50">Display Width</span>
+            <span class="w-full text-sm text-slate-100/50">{{ $t('veryGenericIndicator.displayWidth') }}</span>
             <input
               v-model="miniWidget.options.widgetWidth"
               type="number"
@@ -60,14 +60,14 @@
           </div>
         </div>
         <div class="flex flex-col items-center justify-between w-full mt-3">
-          <span class="w-full mb-1 text-sm text-slate-100/50">Variable</span>
+          <span class="w-full mb-1 text-sm text-slate-100/50">{{ $t('veryGenericIndicator.variable') }}</span>
           <div class="relative w-full">
             <button
               class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-[#FFFFFF12] hover:bg-slate-400"
               @click="showVariableChooseModal = !showVariableChooseModal"
             >
               <p class="text-ellipsis overflow-x-clip">
-                {{ miniWidget.options.variableName || 'Click to choose...' }}
+                {{ miniWidget.options.variableName || $t('miniWidgets.veryGenericIndicator.clickToChoose') }}
               </p>
             </button>
             <span
@@ -80,7 +80,7 @@
           <div v-if="showVariableChooseModal" class="flex flex-col justify-center w-full mx-1 my-3 align-center">
             <input
               v-model="variableNameSearchString"
-              placeholder="Search variable..."
+              :placeholder="$t('miniWidgets.veryGenericIndicator.searchVariable')"
               class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
             />
             <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
@@ -103,16 +103,16 @@
             class="mr-2 w-4 h-4 rounded bg-[#FFFFFF12] border-gray-300 focus:ring-blue-500"
           />
           <label for="useStringVariable" class="text-sm text-slate-100/75">
-            Use string variable (don't parse as number)
+            {{ $t('veryGenericIndicator.useStringVariable') }}
           </label>
         </div>
         <div class="flex items-center justify-between w-full mt-2">
           <div class="flex flex-col items-center justify-between w-full mx-5">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Unit</span>
+            <span class="w-full mb-1 text-sm text-slate-100/50">{{ $t('veryGenericIndicator.unit') }}</span>
             <input v-model="miniWidget.options.variableUnit" class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]" />
           </div>
           <div class="flex flex-col items-center justify-between w-full mx-5">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Multiplier</span>
+            <span class="w-full mb-1 text-sm text-slate-100/50">{{ $t('veryGenericIndicator.multiplier') }}</span>
             <input
               v-model="miniWidget.options.variableMultiplier"
               :disabled="miniWidget.options.useStringVariable"
@@ -121,27 +121,29 @@
             />
           </div>
           <div class="flex flex-col items-center justify-between w-full mx-5">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Decimal Places</span>
+            <span class="w-full mb-1 text-sm text-slate-100/50">{{ $t('veryGenericIndicator.decimalPlaces') }}</span>
             <input
               v-model="miniWidget.options.decimalPlaces"
               :disabled="miniWidget.options.useStringVariable"
               type="number"
               min="0"
               max="5"
-              placeholder="Auto-formatting"
+              :placeholder="$t('miniWidgets.veryGenericIndicator.autoFormatting')"
               class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12] disabled:cursor-not-allowed"
               :class="{ 'opacity-50': miniWidget.options.useStringVariable }"
             />
           </div>
         </div>
         <div class="flex flex-col items-center justify-between w-full mt-3">
-          <span class="w-full mb-1 text-sm text-slate-100/50">Icon</span>
+          <span class="w-full mb-1 text-sm text-slate-100/50">{{ $t('veryGenericIndicator.icon') }}</span>
           <div class="relative w-full">
             <button
               class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-[#FFFFFF12] hover:bg-slate-400"
               @click="showIconChooseModal = !showIconChooseModal"
             >
-              <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.iconName || 'Click to choose...' }}</p>
+              <p class="text-ellipsis overflow-x-clip">
+                {{ miniWidget.options.iconName || $t('miniWidgets.veryGenericIndicator.clickToChoose') }}
+              </p>
             </button>
             <span
               class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi"
@@ -155,7 +157,7 @@
               <input
                 v-model="iconSearchString"
                 class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
-                placeholder="Search icons..."
+                :placeholder="$t('miniWidgets.veryGenericIndicator.searchIcons')"
               />
             </div>
             <RecycleScroller
@@ -196,7 +198,9 @@
             <span class="text-xl font-semibold leading-6 w-fit">
               {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }} {{ template.variableUnit }}
             </span>
-            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ template.displayName }}</span>
+            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{
+              translateIndicatorName(template.displayName)
+            }}</span>
           </div>
         </div>
       </div>
@@ -209,6 +213,7 @@ import * as MdiExports from '@mdi/js/mdi'
 import { watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
@@ -226,6 +231,27 @@ import type { MiniWidget } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
+
+// Translation mapping for indicator display names
+const translateIndicatorName = (displayName: string): string => {
+  const nameMap: Record<string, string> = {
+    'Cam Tilt': t('indicators.camTilt'),
+    'Cam Pan': t('indicators.camPan'),
+    'Water Temp': t('indicators.waterTemp'),
+    'Tether Turns': t('indicators.tetherTurns'),
+    'Lights (1)': t('indicators.lights1'),
+    'Lights (2)': t('indicators.lights2'),
+    'Pilot Gain': t('indicators.pilotGain'),
+    'Input Hold': t('indicators.inputHold'),
+    'Roll Pitch': t('indicators.rollPitch'),
+    'Altitude': t('indicators.altitude'),
+    'Depth': t('indicators.depth'),
+    'Speed (GPS)': t('indicators.speed'),
+    'sats': t('indicators.sats'),
+  }
+  return nameMap[displayName] || displayName
+}
 
 const props = defineProps<{
   /**
@@ -234,6 +260,11 @@ const props = defineProps<{
   miniWidget: MiniWidget
 }>()
 const miniWidget = toRefs(props).miniWidget
+
+// Computed property to get the translated display name
+const translatedDisplayName = computed(() => {
+  return translateIndicatorName(miniWidget.value.options.displayName || '')
+})
 
 onBeforeMount(() => {
   if (Object.keys(miniWidget.value.options).length === 0) {

@@ -1,7 +1,7 @@
 <template>
   <InteractionDialog
     v-model="showArchWarningDialog"
-    title="Performance Warning"
+    :title="$t('architectureWarning.title')"
     variant="text-only"
     :actions="dialogActions"
     max-width="820"
@@ -10,16 +10,14 @@
       <div class="flex items-center justify-center mb-2">
         <v-icon class="text-yellow text-[60px] mx-8">mdi-alert-rhombus</v-icon>
         <div class="flex flex-col font-medium gap-y-3 w-full">
-          You are running the x64 version of Cockpit on an Apple Silicon Mac (M series), which causes severely degraded
-          performance, including:
+          {{ $t('architectureWarning.runningWrongVersion') }}
           <ul class="mt- ml-4">
-            <li>- 3-4x slower application startup times</li>
-            <li>- 2x the memory usage</li>
-            <li>- Reduced overall performance</li>
+            <li>- {{ $t('architectureWarning.slowerStartup') }}</li>
+            <li>- {{ $t('architectureWarning.doubleMemory') }}</li>
+            <li>- {{ $t('architectureWarning.reducedPerformance') }}</li>
           </ul>
           <p class="text-sm text-gray-600 mt-2">
-            This warning cannot be disabled - we strongly recommend that you download and install the intended version
-            for your system.
+            {{ $t('architectureWarning.cannotDisable') }}
           </p>
         </div>
       </div>
@@ -29,22 +27,24 @@
 
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
 import { isElectron } from '@/libs/utils'
 import { PlatformUtils } from '@/types/platform'
 
+const { t } = useI18n()
 const showArchWarningDialog = ref(false)
 
-const dialogActions = [
+const dialogActions: Action[] = [
   {
-    text: 'Dismiss',
+    text: t('architectureWarning.dismiss'),
     action: () => {
       showArchWarningDialog.value = false
     },
   },
   {
-    text: 'Download ARM64 Version',
+    text: t('architectureWarning.downloadARM'),
     action: () => {
       window.open('https://github.com/bluerobotics/cockpit/releases/', '_blank')
       showArchWarningDialog.value = false

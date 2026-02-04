@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <v-dialog v-model="isVisible" class="dialog">
     <div class="flex">
       <div class="video-modal" :style="interfaceStore.globalGlassMenuStyles">
@@ -53,10 +53,14 @@
                   >
                     <div class="flex flex-col p-2 gap-y-2">
                       <div>
-                        <strong>Computer:</strong> Command+click, Ctrl+click or Long click to select multiple videos.
+                        <strong>{{ $t('components.VideoLibraryModal.computer') }}:</strong>
+                        {{ $t('components.VideoLibraryModal.computerMultiSelect') }}
                       </div>
 
-                      <div><strong>Mobile:</strong> Long press to select multiple videos.</div>
+                      <div>
+                        <strong>{{ $t('components.VideoLibraryModal.mobile') }}:</strong>
+                        {{ $t('components.VideoLibraryModal.mobileMultiSelect') }}
+                      </div>
                     </div>
                   </v-tooltip>
                 </button>
@@ -68,7 +72,7 @@
                 >
                   <v-icon class="text-[18px]">mdi-close</v-icon>
                 </div>
-                <div class="text-sm">Close</div>
+                <div class="text-sm">{{ $t('common.close') }}</div>
               </button>
             </div>
           </div>
@@ -134,9 +138,17 @@
                 <div>
                   <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
                     <v-tooltip open-delay="500" activator="parent" location="bottom">
-                      Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
+                      {{
+                        isMultipleSelectionMode
+                          ? $t('components.VideoLibraryModal.selectSingleFiles')
+                          : $t('components.VideoLibraryModal.selectMultipleFiles')
+                      }}
                     </v-tooltip>
-                    {{ isMultipleSelectionMode ? 'Single selection' : 'Multi selection' }}
+                    {{
+                      isMultipleSelectionMode
+                        ? $t('components.VideoLibraryModal.singleSelection')
+                        : $t('components.VideoLibraryModal.multiSelection')
+                    }}
                   </v-btn>
                   <v-btn
                     variant="text"
@@ -147,9 +159,13 @@
                     "
                   >
                     <v-tooltip open-delay="500" activator="parent" location="bottom">
-                      Select {{ selectedPicSet.size === availablePictures.length ? 'none' : 'all files' }}
+                      {{
+                        selectedPicSet.size === availablePictures.length
+                          ? $t('components.VideoLibraryModal.selectNone')
+                          : $t('components.VideoLibraryModal.selectAllFiles')
+                      }}
                     </v-tooltip>
-                    {{ selectedPicSet.size === availablePictures.length ? 'None' : 'All' }}
+                    {{ selectedPicSet.size === availablePictures.length ? $t('common.none') : $t('common.all') }}
                   </v-btn>
                 </div>
                 <div>
@@ -207,9 +223,13 @@
                   <div class="flex flex-col h-full">
                     <div class="mx-5 pt-4">
                       <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium">Processed Videos</h3>
+                        <h3 class="text-lg font-medium">
+                          {{ $t('components.VideoLibraryModal.processedVideos') }}
+                        </h3>
                         <div class="flex items-center gap-4">
-                          <span class="text-sm text-white/70">Final videos with telemetry overlay</span>
+                          <span class="text-sm text-white/70">{{
+                            $t('components.VideoLibraryModal.finalVideosWithTelemetry')
+                          }}</span>
                         </div>
                       </div>
                     </div>
@@ -239,7 +259,9 @@
                           <!-- Video Info -->
                           <div class="flex-1 ml-4">
                             <div class="font-medium text-white">
-                              {{ parseDateFromTitle(video.fileName) || 'Cockpit video' }}
+                              {{
+                                parseDateFromTitle(video.fileName) || $t('components.VideoLibraryModal.cockpitVideo')
+                              }}
                             </div>
                             <div class="text-sm text-white/70 mt-1">
                               {{ video.fileName }}
@@ -276,7 +298,9 @@
                               size="small"
                               @click.stop="playVideoInDefaultPlayer(video.fileName)"
                             >
-                              <v-tooltip open-delay="500" activator="parent" location="bottom"> Play video </v-tooltip>
+                              <v-tooltip open-delay="500" activator="parent" location="bottom">
+                                {{ $t('components.VideoLibraryModal.playVideo') }}
+                              </v-tooltip>
                               <v-icon size="22">mdi-play</v-icon>
                             </v-btn>
                             <v-btn
@@ -380,12 +404,14 @@
                     <!-- Fixed Header with Expandable Instructions -->
                     <div class="px-4 pt-6 pb-3">
                       <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium">Raw Video Chunks</h3>
+                        <h3 class="text-lg font-medium">{{ $t('components.VideoLibraryModal.rawVideoChunks') }}</h3>
                         <div
                           class="flex items-center gap-2 cursor-pointer"
                           @click="isInstructionsExpanded = !isInstructionsExpanded"
                         >
-                          <span class="text-sm text-white/70">Browser Version Instructions</span>
+                          <span class="text-sm text-white/70">{{
+                            $t('components.VideoLibraryModal.browserVersionInstructions')
+                          }}</span>
                           <v-icon
                             class="text-white/70 transition-transform duration-200"
                             :class="{ 'rotate-180': isInstructionsExpanded }"
@@ -406,32 +432,32 @@
                             <v-icon class="text-white/70 mt-1">mdi-information</v-icon>
                             <div class="text-white/80 text-sm space-y-1">
                               <p>
-                                These are raw video chunks that need to be processed. The processing can be done
-                                exclusively in the standalone version of Cockpit. The browser version can only record
-                                the video chunks.
+                                {{ $t('components.VideoLibraryModal.rawChunksInfo') }}
                               </p>
                               <div>
-                                <p class="font-medium mb-2">To process your videos:</p>
+                                <p class="font-medium mb-2">
+                                  {{ $t('components.VideoLibraryModal.toProcessYourVideos') }}
+                                </p>
                                 <ol class="space-y-0">
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">1.</span>
-                                    <span>Download your video chunks using the download buttons</span>
+                                    <span>{{ $t('components.VideoLibraryModal.downloadChunksStep') }}</span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">2.</span>
-                                    <span>Open the standalone version of Cockpit (desktop app)</span>
+                                    <span>{{ $t('components.VideoLibraryModal.openStandaloneStep') }}</span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">3.</span>
-                                    <span>Go to the "Processing" tab in the video library</span>
+                                    <span>{{ $t('components.VideoLibraryModal.goToProcessingTabStep') }}</span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">4.</span>
-                                    <span>Select and process your downloaded ZIP files</span>
+                                    <span>{{ $t('components.VideoLibraryModal.selectAndProcessStep') }}</span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">5.</span>
-                                    <span>Once sure the video is processed, delete the raw video chunks from here</span>
+                                    <span>{{ $t('components.VideoLibraryModal.deleteChunksStep') }}</span>
                                   </li>
                                 </ol>
                               </div>
@@ -494,8 +520,12 @@
                       <div class="max-w-md mx-auto">
                         <template v-if="chunkLoadingData">
                           <v-progress-circular indeterminate color="white" size="60" width="3" class="mb-4" />
-                          <h4 class="text-lg font-medium text-white mb-2">Loading Video Chunks</h4>
-                          <p class="text-white/70 text-sm">Counting chunks and calculating sizes...</p>
+                          <h4 class="text-lg font-medium text-white mb-2">
+                            {{ $t('components.VideoLibraryModal.loadingChunks') }}
+                          </h4>
+                          <p class="text-white/70 text-sm">
+                            {{ $t('components.VideoLibraryModal.countingChunks') }}
+                          </p>
                         </template>
                         <template v-else>
                           <v-icon size="60" class="text-white/30 mb-4">mdi-folder-multiple-outline</v-icon>
@@ -533,7 +563,9 @@
                         <div class="flex justify-between items-center mb-4">
                           <h3 class="text-lg font-medium">Raw Video Chunks</h3>
                           <div class="flex items-center gap-4">
-                            <span class="text-sm text-white/70">Backup raw data</span>
+                            <span class="text-sm text-white/70">{{
+                              $t('components.VideoLibraryModal.backupRawData')
+                            }}</span>
                           </div>
                         </div>
                       </div>
@@ -629,13 +661,19 @@
                         <div class="max-w-md mx-auto">
                           <template v-if="chunkLoadingData">
                             <v-progress-circular indeterminate color="white" size="60" width="3" class="mb-4" />
-                            <h4 class="text-lg font-medium text-white mb-2">Loading Video Chunks</h4>
-                            <p class="text-white/70 text-sm">Counting chunks and calculating sizes...</p>
+                            <h4 class="text-lg font-medium text-white mb-2">
+                              {{ $t('components.VideoLibraryModal.loadingChunks') }}
+                            </h4>
+                            <p class="text-white/70 text-sm">
+                              {{ $t('components.VideoLibraryModal.countingChunks') }}
+                            </p>
                           </template>
                           <template v-else>
                             <v-icon size="60" class="text-white/30 mb-4">mdi-folder-multiple-outline</v-icon>
                             <h4 class="text-lg font-medium text-white mb-2">No Raw Chunks Found</h4>
-                            <p class="text-white/70 text-sm">Start recording videos to create raw chunks.</p>
+                            <p class="text-white/70 text-sm">
+                              {{ $t('components.VideoLibraryModal.startRecording') }}
+                            </p>
                           </template>
                         </div>
                       </div>
@@ -659,9 +697,13 @@
                     <!-- Processing Container (Top) -->
                     <div class="flex-1 overflow-y-auto px-4 py-6">
                       <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium">Process ZIP Files</h3>
+                        <h3 class="text-lg font-medium">
+                          {{ $t('components.VideoLibraryModal.processZipFilesTitle') }}
+                        </h3>
                         <div class="flex items-center gap-4">
-                          <span class="text-sm text-white/70">Process raw chunks from Cockpit Lite (web version)</span>
+                          <span class="text-sm text-white/70">{{
+                            $t('components.VideoLibraryModal.processRawChunksFromWeb')
+                          }}</span>
                         </div>
                       </div>
 
@@ -669,7 +711,9 @@
                       <div v-if="isProcessingZip" class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 mb-4">
                         <div class="flex items-center gap-3 mb-3">
                           <v-progress-circular indeterminate color="blue" size="24" width="2" />
-                          <span class="text-blue-200 font-medium">Processing ZIP file...</span>
+                          <span class="text-blue-200 font-medium">{{
+                            $t('components.VideoLibraryModal.processingZip')
+                          }}</span>
                         </div>
                         <div class="text-blue-100 text-sm">
                           {{ zipProcessingMessage }}
@@ -691,19 +735,21 @@
                       >
                         <div class="flex items-center gap-3 mb-3">
                           <v-icon color="green" size="24">mdi-check-circle</v-icon>
-                          <span class="text-green-200 font-medium">Processing Complete!</span>
+                          <span class="text-green-200 font-medium">{{
+                            $t('components.VideoLibraryModal.processingComplete')
+                          }}</span>
                         </div>
                         <div class="text-green-100 text-sm">
-                          The ZIP file has been successfully processed. The video is now available in the Videos tab.
+                          {{ $t('components.VideoLibraryModal.zipProcessedSuccess') }}
                         </div>
                         <div class="mt-4 flex gap-2">
                           <v-btn variant="outlined" size="small" @click="processAnotherZip">
                             <v-icon class="mr-2">mdi-plus</v-icon>
-                            Process Another ZIP File
+                            {{ $t('components.VideoLibraryModal.processAnotherZip') }}
                           </v-btn>
                           <v-btn variant="outlined" size="small" @click="currentVideoSubTab = 'processed'">
                             <v-icon class="mr-2">mdi-video</v-icon>
-                            View Videos
+                            {{ $t('components.VideoLibraryModal.viewVideos') }}
                           </v-btn>
                         </div>
                       </div>
@@ -715,13 +761,15 @@
                       >
                         <div class="text-center">
                           <v-icon size="48" class="text-slate-400 mb-3">mdi-zip-box</v-icon>
-                          <h4 class="text-lg font-medium text-white mb-2">Process ZIP File</h4>
+                          <h4 class="text-lg font-medium text-white mb-2">
+                            {{ $t('components.VideoLibraryModal.processZipFile') }}
+                          </h4>
                           <p class="text-white/70 text-sm mb-4">
-                            Select a ZIP file containing raw video chunks downloaded from the browser version.
+                            {{ $t('components.VideoLibraryModal.selectZipDescription') }}
                           </p>
                           <v-btn variant="outlined" size="large" @click="handleProcessVideoChunksZip">
                             <v-icon class="mr-2">mdi-folder-open</v-icon>
-                            Select and Process ZIP File
+                            {{ $t('components.VideoLibraryModal.selectAndProcessZip') }}
                           </v-btn>
                         </div>
                       </div>
@@ -732,23 +780,25 @@
                       <div class="flex items-start gap-3">
                         <v-icon class="mt-1 text-white/70">mdi-information</v-icon>
                         <div class="flex flex-col w-full">
-                          <h4 class="text-white font-medium mb-3">Processing Instructions</h4>
+                          <h4 class="text-white font-medium mb-3">
+                            {{ $t('components.VideoLibraryModal.processingInstructions') }}
+                          </h4>
                           <ol class="text-white/80 text-sm space-y-2">
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">1.</span>
-                              <span>Download raw video chunks from the browser version's "Raw" tab</span>
+                              <span>{{ $t('components.VideoLibraryModal.downloadFromRawTab') }}</span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">2.</span>
-                              <span>Select the ZIP file containing the chunks</span>
+                              <span>{{ $t('components.VideoLibraryModal.selectZipFile') }}</span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">3.</span>
-                              <span>Click "Process ZIP" to convert chunks to MP4 video</span>
+                              <span>{{ $t('components.VideoLibraryModal.clickProcessZip') }}</span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">4.</span>
-                              <span>The processed video will appear in the "Videos" tab</span>
+                              <span>{{ $t('components.VideoLibraryModal.videoAppearsInTab') }}</span>
                             </li>
                           </ol>
                         </div>
@@ -824,6 +874,7 @@
 <script setup lang="ts">
 import * as Hammer from 'hammerjs'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
@@ -836,6 +887,7 @@ import { SnapshotLibraryFile } from '@/types/snapshot'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
 import { videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
 
+const { t } = useI18n()
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
 const snapshotStore = useSnapshotStore()
@@ -943,14 +995,16 @@ const videoSubTabs = [
     label: 'Raw',
     icon: 'mdi-folder-multiple-outline',
     disabled: false,
-    tooltip: 'Manage raw video chunks',
+    tooltip: t('components.VideoLibraryModal.manageRawChunks'),
   },
   {
     name: 'processing',
     label: 'Processing',
     icon: 'mdi-cog-outline',
     disabled: !isElectron(),
-    tooltip: isElectron() ? 'Process ZIP files with raw video chunks' : 'Only available in standalone version',
+    tooltip: isElectron()
+      ? t('components.VideoLibraryModal.processZipFiles')
+      : t('components.VideoLibraryModal.onlyAvailableStandalone'),
   },
 ]
 
@@ -959,7 +1013,7 @@ const openVideoFolder = (): void => {
     window.electronAPI?.openVideoFolder()
   } else {
     openSnackbar({
-      message: 'This feature is only available in the desktop version of Cockpit.',
+      message: t('errors.desktopFeatureOnly'),
       duration: 3000,
       variant: 'error',
       closeButton: true,
@@ -971,7 +1025,7 @@ const playVideoInDefaultPlayer = (fileName: string): void => {
   if (isElectron() && window.electronAPI) {
     window.electronAPI?.openVideoFile(fileName)
   } else {
-    openSnackbar({ message: 'This feature is only available in the desktop version of Cockpit.', variant: 'error' })
+    openSnackbar({ message: t('errors.desktopFeatureOnly'), variant: 'error' })
   }
 }
 
@@ -985,7 +1039,7 @@ const deletePictures = async (pictureFileName?: string): Promise<void> => {
     deleteButtonLoading.value = true
     await snapshotStore.deleteSnapshotFiles(pictureFileName ? [pictureFileName] : selectedPictures.value)
     openSnackbar({
-      message: 'Snapshots deleted successfully.',
+      message: t('success.snapshotsDeleted'),
       duration: 3000,
       variant: 'success',
       closeButton: true,
@@ -1036,7 +1090,7 @@ const handleDeleteVideos = (videos: VideoLibraryFile[]): void => {
   showDialog({
     variant: 'warning',
     title: `Delete ${videoCount} ${videoText}?`,
-    message: 'Are you sure you want to delete the selected videos?',
+    message: t('warning.deleteSelectedVideos'),
     actions: [
       {
         text: 'Cancel',
@@ -1059,7 +1113,7 @@ const downloadPictures = async (pictureFileName?: string): Promise<void> => {
   try {
     await snapshotStore.downloadFilesFromSnapshotDB(pictureFileName ? [pictureFileName] : selectedPictures.value)
     openSnackbar({
-      message: 'Pictures downloaded successfully.',
+      message: t('success.picturesDownloaded'),
       duration: 3000,
       variant: 'success',
       closeButton: true,

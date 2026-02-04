@@ -22,21 +22,25 @@
         </template>
 
         <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-          <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+          <v-list-item class="py-0" :title="$t('components.widgets.Map.saveVisibleEsriTiles')" @click="saveEsri" />
           <v-divider />
-          <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+          <v-list-item class="py-0" :title="$t('components.widgets.Map.saveVisibleOSMTiles')" @click="saveOSM" />
           <v-divider />
-          <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
+          <v-list-item
+            class="py-0"
+            :title="$t('components.widgets.Map.saveVisibleSeamarksTiles')"
+            @click="saveSeamarks"
+          />
         </v-list>
       </v-menu>
-      <v-tooltip location="top" text="Switch to Mission Planning mode">
+      <v-tooltip location="top" :text="$t('components.widgets.Map.switchToMissionPlanning')">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
             class="absolute right-[265px] w-[140px] mb-[14px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
-            text="Edit mission"
+            :text="$t('components.widgets.Map.editMission')"
             append-icon="mdi-map-marker-radius-outline"
             style="z-index: 1002; border-radius: 0px"
             :style="interfaceStore.globalGlassMenuStyles"
@@ -134,19 +138,19 @@
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Map widget settings</v-card-title>
+      <v-card-title class="text-center">{{ $t('components.widgets.Map.mapWidgetSettings') }}</v-card-title>
       <v-card-text>
         <v-switch
           v-model="widget.options.showVehiclePath"
           class="my-1"
-          label="Show vehicle path"
+          :label="$t('components.widgets.Map.showVehiclePath')"
           :color="widget.options.showVehiclePath ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.showCoordinateGrid"
           class="my-1"
-          label="Show coordinate grid"
+          :label="$t('components.widgets.Map.showCoordinateGrid')"
           :color="widget.options.showCoordinateGrid ? 'white' : undefined"
           hide-details
         />
@@ -168,7 +172,7 @@
     :style="{ top: topProgressBarDisplacement }"
     class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
   >
-    Loading mission...
+    {{ $t('missionDownload.loadingMission') }}
   </p>
 
   <PoiManager ref="poiManagerMapWidgetRef" />
@@ -190,8 +194,7 @@
     :style="interfaceStore.globalGlassMenuStyles"
   >
     <p>
-      Saving offline map content
-      <span v-if="savingLayerName">({{ savingLayerName }})</span>:&nbsp;
+      {{ $t('missionPlanning.savingOfflineMapContent', { layerName: savingLayerName || '' }) }}:&nbsp;
       {{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%
     </p>
   </div>
@@ -200,20 +203,11 @@
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useRefHistory } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
+import { enUS, zhCN } from 'date-fns/locale'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
-import {
-  computed,
-  nextTick,
-  onBeforeMount,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  shallowRef,
-  toRefs,
-  watch,
-} from 'vue'
+import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, shallowRef, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import copterMarkerImage from '@/assets/arducopter-top-view.png'
@@ -253,6 +247,7 @@ const props = defineProps<{ widget: Widget }>()
 const widget = toRefs(props).widget
 const interfaceStore = useAppInterfaceStore()
 const { showDialog, closeDialog } = useInteractionDialog()
+const { t, locale } = useI18n()
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
@@ -484,7 +479,11 @@ const overlays = {
 const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
-const zoomControl = L.control.zoom({ position: 'bottomright' })
+const zoomControl = L.control.zoom({
+  position: 'bottomright',
+  zoomInTitle: t('components.widgets.Map.zoomIn'),
+  zoomOutTitle: t('components.widgets.Map.zoomOut'),
+})
 const layerControl = L.control.layers(baseMaps, overlays)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 
@@ -740,13 +739,13 @@ const confirmDownloadDialog =
   (status: SaveStatus, ok: () => void): void => {
     showDialog({
       variant: 'info',
-      message: `Save ${status._tilesforSave.length} ${layerLabel} tiles for offline use?`,
+      message: t('missionPlanning.saveTilesConfirmation', { count: status._tilesforSave.length, layerLabel }),
       persistent: false,
       maxWidth: '450px',
       actions: [
-        { text: 'Cancel', color: 'white', action: closeDialog },
+        { text: t('common.cancel'), color: 'white', action: closeDialog },
         {
-          text: 'Save tiles',
+          text: t('missionPlanning.saveTiles'),
           color: 'white',
           action: () => {
             ok()
@@ -773,7 +772,7 @@ const deleteDownloadedTilesDialog =
           action: () => {
             ok()
             closeDialog()
-            openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
+            openSnackbar({ message: t('info.offlineTilesRemoved', { layerLabel }), variant: 'info', duration: 3000 })
           },
         },
       ] as DialogActions[],
@@ -800,13 +799,17 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
     tilesTotal.value = e?._tilesforSave?.length ?? 0
     savingLayerName.value = layerName
     isSavingOfflineTiles.value = true
-    openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
+    openSnackbar({
+      message: t('info.savingTiles', { count: tilesTotal.value, layerName }),
+      variant: 'info',
+      duration: 2000,
+    })
   })
 
   layer.on('loadtileend', () => {
     tilesSaved.value += 1
     if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
-      openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
+      openSnackbar({ message: t('success.offlineTilesSaved', { layerName }), variant: 'success', duration: 3000 })
       isSavingOfflineTiles.value = false
       savingLayerName.value = ''
       tilesSaved.value = 0
@@ -952,7 +955,11 @@ const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehic
 // Calculate time since last vehicle heartbeat
 const timeAgoSeenText = computed(() => {
   const lastBeat = vehicleStore.lastHeartbeat
-  return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
+  if (!lastBeat) return t('components.widgets.Map.never')
+
+  const dateLocale = locale.value === 'zh' ? zhCN : enUS
+  const distance = formatDistanceToNow(lastBeat, { includeSeconds: true, locale: dateLocale })
+  return locale.value === 'zh' ? `${distance}前` : `${distance} ago`
 })
 
 // Save vehicle position history
@@ -1031,15 +1038,17 @@ watch(followerTarget, (newTarget) => {
 })
 
 // Dinamically update data of the vehicle tooltip
-watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isArmed], () => {
+watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isArmed, locale], () => {
   if (vehicleMarker.value === undefined) return
 
   vehicleMarker.value.getTooltip()?.setContent(`
-    <p>Coordinates: ${vehiclePosition.value?.[0].toFixed(6)}, ${vehiclePosition.value?.[1].toFixed(6)}</p>
-    <p>Velocity: ${vehicleStore.velocity.ground?.toFixed(2) ?? 'N/A'} m/s</p>
-    <p>Heading: ${vehicleHeading.value.toFixed(2)}°</p>
-    <p>${vehicleStore.isArmed ? 'Armed' : 'Disarmed'}</p>
-    <p>Last seen: ${timeAgoSeenText.value}</p>
+    <p>${t('components.widgets.Map.coordinates')}: ${vehiclePosition.value?.[0].toFixed(
+    6
+  )}, ${vehiclePosition.value?.[1].toFixed(6)}</p>
+    <p>${t('components.widgets.Map.velocity')}: ${vehicleStore.velocity.ground?.toFixed(2) ?? 'N/A'} m/s</p>
+    <p>${t('components.widgets.Map.heading')}: ${vehicleHeading.value.toFixed(2)}°</p>
+    <p>${vehicleStore.isArmed ? t('components.widgets.Map.armed') : t('components.widgets.Map.disarmed')}</p>
+    <p>${t('components.widgets.Map.lastSeen')}: ${timeAgoSeenText.value}</p>
   `)
 
   // Update the rotation
@@ -1157,25 +1166,25 @@ const globalOriginLatitude = ref(0)
 const globalOriginLongitude = ref(0)
 const globalOriginMarker = shallowRef<L.Marker>()
 
-const menuItems = reactive([
+const menuItems = computed(() => [
   {
-    item: 'Set home waypoint',
+    item: t('missionPlanning.setHomeWaypoint'),
     action: () => onMenuOptionSelect('set-home-waypoint'),
     icon: 'mdi-home-map-marker',
   },
   {
-    item: 'Set Global Origin',
+    item: t('components.widgets.Map.setGlobalOrigin'),
     action: () => onMenuOptionSelect('set-global-origin'),
     icon: 'mdi-crosshairs-question',
   },
   {
-    item: 'Place Point of Interest',
+    item: t('components.widgets.Map.placePointOfInterest'),
     action: () => onMenuOptionSelect('place-poi'),
     icon: 'mdi-map-marker-plus',
   },
-  { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
+  { item: t('components.widgets.Map.goto'), action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
   {
-    item: 'Set default map position',
+    item: t('components.widgets.Map.setDefaultMapPosition'),
     action: () => onMenuOptionSelect('set-default-map-position'),
     icon: 'mdi-map-check',
   },
@@ -1188,7 +1197,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
 
   try {
     await missionStore.setDefaultMapPosition(clickedLocation.value, zoom.value)
-    openSnackbar({ message: 'Default map position set', variant: 'success' })
+    openSnackbar({ message: t('info.defaultMapPositionSet'), variant: 'success' })
 
     const tempMarker = L.marker(clickedLocation.value as LatLngTuple, {
       icon: L.divIcon({
@@ -1227,7 +1236,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
     }, 1500)
   } catch (error) {
     console.error(error)
-    openSnackbar({ message: 'Failed to set default map position', variant: 'error' })
+    openSnackbar({ message: t('errors.failedToSetDefaultMapPosition'), variant: 'error' })
   }
 }
 
@@ -1290,10 +1299,10 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       if (clickedLocation.value && poiManagerMapWidgetRef.value) {
         poiManagerMapWidgetRef.value.openDialog(clickedLocation.value)
       } else if (!clickedLocation.value) {
-        openSnackbar({ message: 'Cannot place Point of Interest without map coordinates.', variant: 'error' })
+        openSnackbar({ message: t('errors.cannotPlacePOIWithoutCoordinates'), variant: 'error' })
         console.error('Cannot open POI dialog without click coordinates for new POI')
       } else if (!poiManagerMapWidgetRef.value) {
-        openSnackbar({ message: 'POI Manager (map widget) is not available.', variant: 'error' })
+        openSnackbar({ message: t('errors.poiManagerNotAvailable'), variant: 'error' })
         console.error('Cannot open POI dialog, POI Manager (map widget) ref is not set.')
       }
       break
@@ -1403,9 +1412,10 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     rebuildMissionSeqMapping(missionItemsInVehicle.value as Waypoint[])
     drawMission(missionItemsInVehicle.value as Waypoint[])
 
-    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
+    openSnackbar({ variant: 'success', message: t('success.missionDownloadSucceeded'), duration: 3000 })
   } catch (error) {
-    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
+    const errorMessage = String(error).replace(/^Error:\s*/, '')
+    showDialog({ variant: 'error', title: t('missionDownload.failed'), message: errorMessage, timer: 5000 })
   } finally {
     fetchingMission.value = false
   }
@@ -1426,7 +1436,7 @@ const executeMissionOnVehicle = async (): Promise<void> => {
   try {
     await vehicleStore.startMission()
   } catch (error) {
-    openSnackbar({ message: 'Failed to start mission.', variant: 'error' })
+    openSnackbar({ message: t('errors.failedToStartMission'), variant: 'error' })
   }
   return
 }
@@ -1451,37 +1461,37 @@ const topProgressBarDisplacement = computed(() => {
 
 const vehicleDownloadMissionButtonTooltipText = computed(() => {
   return vehicleStore.isVehicleOnline
-    ? 'Download the mission that is stored in the vehicle.'
-    : 'Cannot download mission (vehicle offline).'
+    ? t('components.widgets.Map.downloadMissionFromVehicleTooltip')
+    : t('components.widgets.Map.cannotDownloadMission')
 })
 
 const vehicleExecuteMissionButtonTooltipText = computed(() => {
   return vehicleStore.isVehicleOnline
-    ? 'Execute the mission that is stored in the vehicle.'
-    : 'Cannot execute mission (vehicle offline).'
+    ? t('components.widgets.Map.executeMissionFromVehicleTooltip')
+    : t('components.widgets.Map.cannotExecuteMission')
 })
 
 const centerHomeButtonTooltipText = computed(() => {
   if (home.value === undefined) {
-    return 'Cannot center map on home (home position undefined).'
+    return t('components.widgets.Map.cannotCenterOnHome')
   }
   if (followerTarget.value === WhoToFollow.HOME) {
-    return 'Tracking home position. Click to stop tracking.'
+    return t('components.widgets.Map.trackingHome')
   }
-  return 'Click once to center on home or twice to track it.'
+  return t('components.widgets.Map.centerOnHome')
 })
 
 const centerVehicleButtonTooltipText = computed(() => {
   if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
+    return t('components.widgets.Map.cannotCenterOnVehicleOffline')
   }
   if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
+    return t('components.widgets.Map.cannotCenterOnVehiclePosition')
   }
   if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
+    return t('components.widgets.Map.trackingVehicle')
   }
-  return 'Click once to center on vehicle or twice to track it.'
+  return t('components.widgets.Map.centerOnVehicle')
 })
 
 // POI Marker Management Functions for Map Widget

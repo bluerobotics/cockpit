@@ -1,12 +1,12 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Data Lake</template>
+    <template #title>{{ $t('menu.dataLake') }}</template>
     <template #content>
       <div class="flex-col overflow-y-auto ml-[10px] pr-3 -mr-[10px] max-h-[80vh] w-[1200px]">
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Variables monitor</template>
+          <template #title>{{ $t('tools.dataLake.variablesMonitor') }}</template>
           <template #info>
-            <p>View, manage, and create data lake variables.</p>
+            <p>{{ $t('tools.dataLake.viewManageCreate') }}</p>
           </template>
           <template #content>
             <div class="flex justify-center flex-col ml-2 mb-8 mt-2 w-full h-full">
@@ -15,7 +15,7 @@
                   <input
                     v-model="searchQuery"
                     type="text"
-                    placeholder="Search variables..."
+                    :placeholder="$t('tools.dataLake.searchVariables')"
                     class="w-full px-3 py-2 bg-[#FFFFFF22] rounded-md text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <span
@@ -26,11 +26,11 @@
                 </div>
                 <v-btn variant="text" class="rounded-md" @click="openNewVariableDialog">
                   <v-icon start>mdi-plus</v-icon>
-                  Add variable
+                  {{ $t('tools.dataLake.addVariable') }}
                 </v-btn>
                 <v-btn variant="text" class="rounded-md" @click="openNewFunctionDialog">
                   <v-icon start>mdi-function-variant</v-icon>
-                  Add compound variable
+                  {{ $t('tools.dataLake.addCompoundVariable') }}
                 </v-btn>
               </div>
               <v-data-table
@@ -57,7 +57,7 @@
                               ? 'text-green-400 hover:text-green-400'
                               : 'text-gray-400 hover:text-white',
                           ]"
-                          title="Copy ID"
+                          :title="t('tools.dataLake.copyId')"
                           @click="handleCopy(item.id)"
                         >
                           <span class="mdi mdi-content-copy" />
@@ -65,7 +65,7 @@
                             v-if="copiedId === item.id"
                             class="absolute -top-5 left-1/2 translate-x-2 bg-green-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-10"
                           >
-                            Variable ID copied!
+                            {{ t('tools.dataLake.variableIdCopied') }}
                           </div>
                         </button>
 
@@ -89,7 +89,7 @@
                     <td>
                       <div class="flex items-center justify-center rounded-xl mx-1">
                         <p class="w-[120px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
-                          {{ item.source }}
+                          {{ translateSource(item.source) }}
                         </p>
                       </div>
                     </td>
@@ -134,7 +134,7 @@
                 <template #no-data>
                   <tr>
                     <td colspan="5" class="text-center flex items-center justify-center h-[50px] w-full">
-                      <p class="text-[16px] ml-[170px] w-full">No data lake variables found</p>
+                      <p class="text-[16px] ml-[170px] w-full">{{ $t('tools.dataLake.noVariablesFound') }}</p>
                     </td>
                   </tr>
                 </template>
@@ -162,6 +162,7 @@
 <script setup lang="ts">
 import { useThrottle } from '@vueuse/core'
 import { computed, onBeforeMount, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import DataLakeVariableDialog from '@/components/DataLakeVariableDialog.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -188,6 +189,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
+const { t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
 
 type VariableSource = 'Compound' | 'Cockpit internal' | 'User defined'
@@ -203,11 +205,18 @@ interface DataLakeVariableWithSource extends DataLakeVariable {
 }
 
 const tableHeaders = [
-  { title: 'Name', align: 'start', key: 'name', width: '220px', fixed: true, headerProps: { class: 'pl-10' } },
-  { title: 'Type', align: 'center', key: 'type', width: '100px', fixed: true },
-  { title: 'Source', align: 'center', key: 'source', width: '120px', fixed: true },
-  { title: 'Current Value', align: 'start', key: 'value', width: '220px', fixed: true },
-  { title: 'Actions', align: 'end', key: 'actions', width: '100px', fixed: true },
+  {
+    title: t('tools.dataLake.name'),
+    align: 'start',
+    key: 'name',
+    width: '220px',
+    fixed: true,
+    headerProps: { class: 'pl-10' },
+  },
+  { title: t('tools.dataLake.type'), align: 'center', key: 'type', width: '100px', fixed: true },
+  { title: t('tools.dataLake.source'), align: 'center', key: 'source', width: '120px', fixed: true },
+  { title: t('tools.dataLake.currentValue'), align: 'start', key: 'value', width: '220px', fixed: true },
+  { title: t('tools.dataLake.actions'), align: 'end', key: 'actions', width: '100px', fixed: true },
 ] as const
 
 const copiedId = ref<string | null>(null)
@@ -295,6 +304,20 @@ const getVariableSource = (id: string): VariableSource => {
   return 'Cockpit internal'
 }
 
+/**
+ * Translates the source type to localized string
+ * @param {VariableSource} source Source type
+ * @returns {string} Translated source type
+ */
+const translateSource = (source: VariableSource): string => {
+  const sourceMap: Record<VariableSource, string> = {
+    'Compound': t('tools.dataLake.sources.compound'),
+    'Cockpit internal': t('tools.dataLake.sources.cockpitInternal'),
+    'User defined': t('tools.dataLake.sources.userDefined'),
+  }
+  return sourceMap[source] || source
+}
+
 const throttledSearchQuery = useThrottle(searchQuery, 300, true, true)
 
 /**
@@ -355,9 +378,9 @@ const editUserDefinedVariable = (variableId: string): void => {
     idVariableBeingEdited = variableId
     showVariableDialog.value = true
   } else if (variable && !isUserDefinedVariable(variableId)) {
-    openSnackbar({ message: `Variable with ID ${variableId} is not editable`, variant: 'error' })
+    openSnackbar({ message: t('errors.variableNotEditable', { id: variableId }), variant: 'error' })
   } else {
-    openSnackbar({ message: `Variable with ID ${variableId} not found`, variant: 'error' })
+    openSnackbar({ message: t('errors.variableNotFound', { id: variableId }), variant: 'error' })
   }
 }
 
@@ -381,7 +404,7 @@ const deleteVariable = (id: string): void => {
   } else if (isUserDefinedVariable(id)) {
     deleteDataLakeVariable(id)
   } else {
-    openSnackbar({ message: `Variable with ID ${id} cannot be deleted`, variant: 'error' })
+    openSnackbar({ message: t('errors.variableCannotDelete', { id }), variant: 'error' })
   }
 }
 

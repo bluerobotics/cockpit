@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid'
 import { createApp } from 'vue'
 
 import ArmSafetyDialog from '@/components/ArmSafetyDialog.vue'
+import i18n from '@/plugins/i18n'
 import vuetify from '@/plugins/vuetify'
 import { useAlertStore } from '@/stores/alert'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -24,7 +25,7 @@ export const openMainMenuIfSafeOrDesired = (): void => {
   // Skip warning if user has chosen to never show it again or skip for this session
   if (alertStore.neverShowArmedMenuWarning || alertStore.skipArmedMenuWarningThisSession) {
     // Show a snackbar warning instead
-    openSnackbar({ message: 'Take care, your vehicle is armed', variant: 'warning' })
+    openSnackbar({ message: i18n.global.t('warning.vehicleArmed'), variant: 'warning' })
     interfaceStore.isMainMenuVisible = true
     return
   }
@@ -32,6 +33,7 @@ export const openMainMenuIfSafeOrDesired = (): void => {
   const mountPoint = document.createElement('div')
   mountPoint.id = `arm-safety-dialog-${uuid()}`
   document.body.appendChild(mountPoint)
+
   const dialogApp = createApp(ArmSafetyDialog, {
     onConfirmed: () => {
       dialogApp.unmount()
@@ -43,5 +45,6 @@ export const openMainMenuIfSafeOrDesired = (): void => {
     },
   })
   dialogApp.use(vuetify)
+  dialogApp.use(i18n)
   dialogApp.mount(mountPoint)
 }

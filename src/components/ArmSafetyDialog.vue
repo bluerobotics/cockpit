@@ -1,5 +1,11 @@
 <template>
-  <InteractionDialog v-model="show" title="Be careful" variant="text-only" max-width="780px" :persistent="false">
+  <InteractionDialog
+    v-model="show"
+    :title="$t('armSafety.title')"
+    variant="text-only"
+    max-width="780px"
+    :persistent="false"
+  >
     <template #content>
       <div class="flex gap-x-2 absolute top-0 right-0 py-2 pr-3">
         <slot name="help-icon"></slot>
@@ -11,20 +17,19 @@
       <div class="flex items-center justify-center mb-6">
         <v-icon class="text-yellow text-[60px] mx-8">mdi-alert-rhombus</v-icon>
         <p class="w-[560px] text-balance">
-          The vehicle is currently armed, and the main-menu contains configurations and tools that can cause unsafe
-          situations.
+          {{ $t('armSafety.vehicleArmedWarning') }}
         </p>
-        <p class="w-[560px] text-balance">Come back later, or proceed carefully with one of the following options:</p>
+        <p class="w-[560px] text-balance">{{ $t('armSafety.proceedCarefully') }}</p>
       </div>
     </template>
     <template #actions>
       <div class="flex items-center justify-between gap-8 w-full text-md">
-        <button class="option-button" @click="neverAskAgain">Continue and never warn again</button>
+        <button class="option-button" @click="neverAskAgain">{{ $t('armSafety.continueNeverWarn') }}</button>
         <button class="option-button" @click="doNotAskAgainInThisSession">
-          Continue and don't warn again during this session
+          {{ $t('armSafety.continueSessionWarn') }}
         </button>
-        <button class="option-button" @click="continueAnyway">Continue anyway</button>
-        <button class="option-button" @click="disarmVehicle">Disarm vehicle and continue</button>
+        <button class="option-button" @click="continueAnyway">{{ $t('armSafety.continueAnyway') }}</button>
+        <button class="option-button" @click="disarmVehicle">{{ $t('armSafety.disarmAndContinue') }}</button>
       </div>
     </template>
   </InteractionDialog>
@@ -32,12 +37,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { useAlertStore } from '@/stores/alert'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+
+const { t } = useI18n()
 
 const vehicleStore = useMainVehicleStore()
 const alertStore = useAlertStore()
@@ -65,7 +73,7 @@ const neverAskAgain = (): void => {
   continueAnyway()
 
   openSnackbar({
-    message: 'Armed menu warning disabled. You can re-enable it in the Settings > Alerts menu.',
+    message: t('armSafety.warningDisabled'),
     variant: 'info',
     duration: 10000,
     closeButton: true,

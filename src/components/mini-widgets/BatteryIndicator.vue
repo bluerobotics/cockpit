@@ -1,5 +1,9 @@
 <template>
-  <v-tooltip :text="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue + '%'}`">
+  <v-tooltip
+    :text="`${$t('battery.remaining')} ${
+      remainingDisplayValue < 0 ? $t('battery.noData') : remainingDisplayValue + '%'
+    }`"
+  >
     <template #activator="{ props: tooltipProps }">
       <div v-bind="tooltipProps" class="flex items-center w-[95px] h-12 text-white justify-center">
         <div v-if="remainingDisplayValue >= 0" class="relative w-[1.5rem] battery-icon">
@@ -70,7 +74,7 @@
   </v-tooltip>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white w-[400px]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Battery Indicator Config</v-card-title>
+      <v-card-title class="text-center">{{ $t('batteryIndicator.config') }}</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
         <div class="absolute top-2 right-2 z-10">
           <v-btn
@@ -84,11 +88,16 @@
             <i class="mdi mdi-close"></i>
           </v-btn>
         </div>
-        <v-checkbox v-model="miniWidget.options.showCurrent" label="Show Current" hide-details class="-mb-5" />
-        <v-checkbox v-model="miniWidget.options.showPower" label="Show Power" hide-details />
+        <v-checkbox
+          v-model="miniWidget.options.showCurrent"
+          :label="$t('batteryIndicator.showCurrent')"
+          hide-details
+          class="-mb-5"
+        />
+        <v-checkbox v-model="miniWidget.options.showPower" :label="$t('batteryIndicator.showPower')" hide-details />
         <v-text-field
           v-model.number="userSetToggleInterval"
-          label="Toggle Interval (ms)"
+          :label="$t('batteryIndicator.toggleInterval')"
           type="number"
           :min="minInterval"
           step="100"
@@ -102,14 +111,11 @@
         <div class="flex justify-between items-center -mt-1">
           <v-checkbox
             v-model="miniWidget.options.useVoltageToColor"
-            label="Use voltage to color scheme"
+            :label="$t('batteryIndicator.useVoltageToColorScheme')"
             hide-details
             class="mr-1"
           />
-          <v-tooltip
-            location="top"
-            text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
-          >
+          <v-tooltip location="top" :text="$t('batteryIndicator.voltageConfigTooltip')">
             <template #activator="{ props: infoProps }">
               <v-icon
                 v-bind="infoProps"
@@ -124,7 +130,7 @@
         <div class="flex items-center gap-x-2">
           <v-text-field
             v-model.number="batteryThresholds.critical"
-            label="Critical voltage (V)"
+            :label="$t('batteryIndicator.criticalVoltage')"
             type="number"
             density="compact"
             variant="outlined"
@@ -141,7 +147,7 @@
         <div class="flex items-center gap-x-2">
           <v-text-field
             v-model.number="batteryThresholds.low"
-            label="Low voltage (V)"
+            :label="$t('batteryIndicator.lowVoltage')"
             type="number"
             density="compact"
             variant="outlined"
@@ -158,7 +164,7 @@
         <div class="flex items-center gap-x-2">
           <v-text-field
             v-model.number="batteryThresholds.medium"
-            label="Medium voltage (V)"
+            :label="$t('batteryIndicator.mediumVoltage')"
             type="number"
             density="compact"
             variant="outlined"
@@ -175,7 +181,7 @@
         <div class="flex items-center gap-x-2">
           <v-text-field
             v-model.number="batteryThresholds.high"
-            label="High voltage (V)"
+            :label="$t('batteryIndicator.highVoltage')"
             type="number"
             density="compact"
             variant="outlined"

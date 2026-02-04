@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>Mission configuration</template>
+    <template #title>{{ $t('views.ConfigurationMissionView.title') }}</template>
     <template #content>
       <div
         class="flex flex-col justify-between items-start ml-[1vw] max-h-[85vh] overflow-y-auto"
@@ -9,7 +9,7 @@
         <div class="grid grid-cols-3 gap-x-4 mb-4">
           <v-switch
             v-model="missionStore.showChecklistBeforeArm"
-            label="Enable pre-arm checklist"
+            :label="$t('views.ConfigurationMissionView.enablePreArmChecklist')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -17,7 +17,7 @@
           />
           <v-switch
             v-model="missionStore.slideEventsEnabled"
-            label="Enable slide to confirm"
+            :label="$t('views.ConfigurationMissionView.enableSlideToConfirm')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -25,7 +25,7 @@
           />
           <v-switch
             v-model="missionStore.alwaysSwitchToFlightMode"
-            label="Auto switch to flight mode on mission upload"
+            :label="$t('views.ConfigurationMissionView.autoSwitchToFlightMode')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -33,7 +33,7 @@
           />
           <v-switch
             v-model="missionStore.showMissionCreationTips"
-            label="Show mission creation checklist"
+            :label="$t('views.ConfigurationMissionView.showMissionCreationChecklist')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -41,7 +41,7 @@
           />
           <v-switch
             v-model="missionStore.showGridOnMissionPlanning"
-            label="Show coordinate grid on maps"
+            :label="$t('views.ConfigurationMissionView.showCoordinateGrid')"
             color="white"
             hide-details
             base-color="#FFFFFF33"
@@ -49,9 +49,9 @@
           />
         </div>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Enable confirmation on specific categories:</template>
+          <template #title>{{ $t('views.ConfigurationMissionView.enableConfirmationCategories') }}</template>
           <template #info>
-            Add an extra confirmation step for UI elements that can trigger mission critical actions.
+            {{ $t('views.ConfigurationMissionView.enableConfirmationCategoriesInfo') }}
           </template>
           <template #content>
             <div class="flex flex-wrap items-center justify-start">
@@ -64,7 +64,7 @@
                 <v-checkbox
                   v-model="missionStore.slideEventsCategoriesRequired[category]"
                   :disabled="!missionStore.slideEventsEnabled"
-                  :label="category"
+                  :label="translateEventCategory(category)"
                   hide-details
                 ></v-checkbox>
               </div>
@@ -73,18 +73,16 @@
         </ExpansiblePanel>
 
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Map options</template>
+          <template #title>{{ $t('views.ConfigurationMissionView.mapOptions') }}</template>
           <template #info>
-            <strong>Default map position:</strong> Defines the initial center and zoom level for the map. <br />
-            <strong>Max. vehicle position update rate:</strong> Limits how often the vehicle's position is updated on
-            the map to reduce CPU usage.
+            {{ $t('views.ConfigurationMissionView.mapOptionsInfo') }}
           </template>
           <template #content>
             <div class="flex flex-wrap gap-4 px-4 pb-4">
-              <p class="w-full text-md">Default map position</p>
+              <p class="w-full text-md">{{ $t('views.ConfigurationMissionView.defaultMapPosition') }}</p>
               <div class="flex w-[70%] justify-around items-center">
                 <div class="flex flex-col max-w-[9rem]">
-                  <p class="text-sm text-slate-200 mb-2">Latitude</p>
+                  <p class="text-sm text-slate-200 mb-2">{{ $t('views.ConfigurationMissionView.latitude') }}</p>
                   <input
                     v-model.number="defaultMapCenter[0]"
                     type="number"
@@ -93,7 +91,9 @@
                   />
                 </div>
                 <div class="flex flex-col max-w-[9rem]">
-                  <p class="text-sm text-slate-200 mb-2 ml-4">Longitude</p>
+                  <p class="text-sm text-slate-200 mb-2 ml-4">
+                    {{ $t('views.ConfigurationMissionView.longitude') }}
+                  </p>
                   <input
                     v-model.number="defaultMapCenter[1]"
                     type="number"
@@ -102,7 +102,9 @@
                   />
                 </div>
                 <div class="flex flex-col max-w-[9rem]">
-                  <p class="text-sm text-slate-200 mb-2 ml-4">Zoom Level (1-19)</p>
+                  <p class="text-sm text-slate-200 mb-2 ml-4">
+                    {{ $t('views.ConfigurationMissionView.zoomLevel') }}
+                  </p>
                   <input
                     v-model.number="defaultMapZoom"
                     type="number"
@@ -112,10 +114,14 @@
                   />
                 </div>
                 <div class="flex-grow-1" />
-                <v-btn class="mt-7 bg-[#FFFFFF22]" variant="plain" size="small" @click="saveMapPosition">Save</v-btn>
+                <v-btn class="mt-7 bg-[#FFFFFF22]" variant="plain" size="small" @click="saveMapPosition">{{
+                  $t('common.save')
+                }}</v-btn>
               </div>
               <div class="flex w-[63%] justify-between items-center mt-4">
-                <p class="w-full text-md">Max. vehicle position update rate</p>
+                <p class="w-full text-md">
+                  {{ $t('views.ConfigurationMissionView.maxVehiclePositionUpdateRate') }}
+                </p>
                 <div class="flex flex-col max-w-[118px]">
                   <input
                     v-model.number="vehicleStore.vehiclePositionMaxSampleRate"
@@ -124,7 +130,7 @@
                     class="px-2 py-1 rounded-sm bg-[#FFFFFF22]"
                   />
                 </div>
-                <p class="ml-2">ms</p>
+                <p class="ml-2">{{ $t('views.ConfigurationMissionView.milliseconds') }}</p>
               </div>
             </div>
           </template>
@@ -136,6 +142,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { EventCategory } from '@/libs/slide-to-confirm'
@@ -146,9 +153,23 @@ import type { WaypointCoordinates } from '@/types/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
+const { t } = useI18n()
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
+
+// Translate event category names
+const translateEventCategory = (category: string): string => {
+  const mapping: Record<string, string> = {
+    'Arm': t('views.ConfigurationMissionView.arm'),
+    'Disarm': t('views.ConfigurationMissionView.disarm'),
+    'Takeoff': t('views.ConfigurationMissionView.takeoff'),
+    'Altitude Change': t('views.ConfigurationMissionView.altitudeChange'),
+    'Land': t('views.ConfigurationMissionView.land'),
+    'Goto': t('views.ConfigurationMissionView.goto'),
+  }
+  return mapping[category] || category
+}
 
 // Create local reactive copies of the map settings
 const defaultMapCenter = ref<WaypointCoordinates>([...missionStore.defaultMapCenter])

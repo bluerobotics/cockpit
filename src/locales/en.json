@@ -229,6 +229,8 @@
         "statsForNerds": "Stats for nerds",
         "rotateLeft": "Rotate Left",
         "rotateRight": "Rotate Right",
+        "hideDetails": "Hide details",
+        "showDetails": "Show details",
         "autoplay": "Autoplay",
         "controls": "Show controls",
         "externalStreamName": "External stream name",

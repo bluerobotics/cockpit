@@ -2,7 +2,7 @@
   <GlassModal :is-visible="isVisible" position="center">
     <div class="p-4 w-[550px] max-w-[90vw]">
       <div class="flex justify-center items-center mb-4 pb-2">
-        <h2 class="text-xl font-semibold">Available Actions</h2>
+        <h2 class="text-xl font-semibold">{{ $t('actions.availableActions') }}</h2>
       </div>
       <div class="fixed top-1 right-1">
         <v-btn icon="mdi-close" size="small" variant="text" class="text-lg" @click="closeModal"></v-btn>
@@ -51,6 +51,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import GlassModal from '@/components/GlassModal.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -64,6 +65,7 @@ import { getActionsFromBlueOS } from '@/libs/blueos'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { ActionConfig, customActionTypes, customActionTypesNames } from '@/types/cockpit-actions'
 
+const { t: $t } = useI18n()
 const mainVehicleStore = useMainVehicleStore()
 
 const { openSnackbar } = useSnackbar()

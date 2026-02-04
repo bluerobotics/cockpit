@@ -2,11 +2,12 @@ import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import i18n from '@/plugins/i18n'
 
 import { Alert, AlertLevel } from '../types/alert'
 
 export const useAlertStore = defineStore('alert', () => {
-  const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
+  const alerts = reactive([new Alert(AlertLevel.Success, i18n.global.t('stores.alert.started'))])
   const enableVoiceAlerts = useBlueOsStorage('cockpit-enable-voice-alerts', true)
   const neverShowArmedMenuWarning = useBlueOsStorage('cockpit-never-show-armed-menu-warning', false)
   const skipArmedMenuWarningThisSession = ref(false)

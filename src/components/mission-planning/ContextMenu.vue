@@ -16,7 +16,7 @@
       </div>
 
       <div id="button-1" class="orbit-button orbit-button-1">
-        <v-tooltip :text="'Create survey'">
+        <v-tooltip :text="t('missionPlanning.createSurvey')">
           <template #activator="{ props: tooltipProps0 }">
             <v-btn
               v-bind="tooltipProps0"
@@ -35,7 +35,7 @@
       </div>
 
       <div id="button-2" class="orbit-button orbit-button-2">
-        <v-tooltip :text="'Add simple path'">
+        <v-tooltip :text="t('missionPlanning.addSimplePath')">
           <template #activator="{ props: tooltipProps1 }">
             <v-btn
               v-bind="tooltipProps1"
@@ -52,7 +52,7 @@
         </v-tooltip>
       </div>
       <div v-if="enableUndo" id="button-3" class="orbit-button orbit-button-3">
-        <v-tooltip text="Edit survey's polygon">
+        <v-tooltip :text="t('missionPlanning.editSurveyPolygon')">
           <template #activator="{ props: tooltipProps2 }">
             <v-btn
               v-bind="tooltipProps2"
@@ -69,7 +69,7 @@
           </template>
         </v-tooltip>
       </div>
-      <v-tooltip text="Delete survey">
+      <v-tooltip :text="t('missionPlanning.deleteSurvey')">
         <template #activator="{ props: tooltipProps3 }">
           <div
             v-bind="tooltipProps3"
@@ -106,7 +106,7 @@
             color="white"
             class="text-[18px]"
           ></v-icon>
-          <span class="text-white text-sm ml-4">Add waypoint here</span>
+          <span class="text-white text-sm ml-4">{{ t('missionPlanning.addWaypointHere') }}</span>
         </v-list-item>
         <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSurvey">
@@ -142,7 +142,7 @@
             color="white"
             class="text-[16px]"
           ></v-icon>
-          <span class="text-white text-sm ml-4">Place point of interest</span>
+          <span class="text-white text-sm ml-4">{{ t('map.placePointOfInterest') }}</span>
         </v-list-item>
         <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
@@ -154,7 +154,7 @@
             color="white"
             class="text-[16px]"
           ></v-icon>
-          <span class="text-white text-sm ml-4">Set home waypoint</span>
+          <span class="text-white text-sm ml-4">{{ t('missionPlanning.setHomeWaypoint') }}</span>
         </v-list-item>
       </div>
     </div>
@@ -165,10 +165,12 @@
       :style="[interfaceStore.globalGlassMenuStyles, { background: '#333333EE', border: '1px solid #FFFFFF44' }]"
     >
       <div class="flex justify-between items-center pt-1 pb-2 px-2">
-        <p class="text-[14px]">Waypoint {{ missionStore.getWaypointNumber(selectedWaypoint?.id as string) }}</p>
+        <p class="text-[14px]">
+          {{ t('missionPlanning.waypoint') }} {{ missionStore.getWaypointNumber(selectedWaypoint?.id as string) }}
+        </p>
         <div>
           <v-icon
-            v-tooltip="'Set home waypoint'"
+            v-tooltip="t('missionPlanning.setHomeWaypoint')"
             variant="text"
             icon="mdi-home-map-marker"
             rounded="full"
@@ -178,7 +180,7 @@
             @click="handleSetHomePosition"
           ></v-icon>
           <v-icon
-            v-tooltip="'Delete waypoint'"
+            v-tooltip="t('missionPlanning.deleteWaypoint')"
             variant="text"
             icon="mdi-trash-can"
             rounded="full"
@@ -188,7 +190,7 @@
             @click="handleRemoveWaypoint"
           ></v-icon>
           <v-icon
-            v-tooltip="'Edit waypoint'"
+            v-tooltip="t('missionPlanning.editWaypoint')"
             :disabled="interfaceStore.isConfigPanelVisible"
             variant="text"
             icon="mdi-pencil"
@@ -228,6 +230,7 @@
 
 <script setup lang="ts">
 import { computed, defineEmits, defineProps } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -236,6 +239,7 @@ import { ContextMenuTypes, Survey, Waypoint } from '@/types/mission'
 
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
 
 /* eslint-disable jsdoc/require-jsdoc */
 const props = defineProps<{
@@ -280,12 +284,12 @@ const waypointOnMissionStore = computed(() =>
 
 const surveyCreationButtonText = computed(() => {
   if (props.isCreatingSurvey) {
-    return 'Close survey creation'
+    return t('missionPlanning.closeSurveyCreation')
   }
   if (props.surveys.length === 0) {
-    return 'Create survey'
+    return t('missionPlanning.createSurvey')
   }
-  return 'Add survey'
+  return t('missionPlanning.addSurvey')
 })
 
 const handleAddWaypointAtCursor = (): void => {
@@ -295,12 +299,12 @@ const handleAddWaypointAtCursor = (): void => {
 
 const pathCreationButtonText = computed(() => {
   if (props.isCreatingSimplePath) {
-    return 'Close simple path creation'
+    return t('missionPlanning.closeSimplePathCreation')
   }
   if (props.surveys.length === 0) {
-    return 'Create simple path'
+    return t('missionPlanning.createSimplePath')
   }
-  return 'Add simple path'
+  return t('missionPlanning.addSimplePath')
 })
 
 const handleClose = (): void => {

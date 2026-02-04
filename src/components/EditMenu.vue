@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <div
     v-if="editMode"
     class="flex fixed top-[5vh] 2xl:left-[22.5vw] xl:left-[21.5vw] left-[20.7vw] bg-[#334a5755] border-[1px] border-[#ffffff25] text-[#FFFFFF] backdrop-blur-lg elevation-5 pr-4 rounded-full cursor-pointer hover:brightness-125 2xl:scale-90 xl:scale-75 scale-[60%]"
     @click="() => emit('update:editMode', false)"
   >
     <v-btn icon="mdi-close" size="54" class="bg-[#334a5755] text-[#FFFFFFCC] text-[28px] rounded-full elevation-5" />
-    <div class="ml-2 mt-[7px] text-[26px]">Exit</div>
+    <div class="ml-2 mt-[7px] text-[26px]">{{ $t('components.EditMenu.exit') }}</div>
   </div>
   <div v-if="editMode" class="flex fixed top-0 left-0 h-[100vh] w-[22vw] bg-[#031C2B]" />
   <div
@@ -30,7 +30,8 @@
           >
             <span
               class="wrapclass text-none 2xl:text-xl xl:text-[16px] lg:text-md text-sm 2xl:max-w-[230px] xl:max-w-[180px] max-w-[160px]"
-              >{{ store.currentProfile.name }} {{ store.currentProfile.name.endsWith('profile') ? '' : 'profile' }}
+              >{{ translateProfileName(store.currentProfile.name) }}
+              {{ store.currentProfile.name.endsWith('profile') ? '' : t('components.EditMenu.profile') }}
             </span>
           </v-btn>
         </div>
@@ -60,7 +61,8 @@
               />
               <span
                 class="text-nowrap wrapclass text-left 2xl:max-w-[270px] xl:max-w-[240px] lg:max-w-[150px] max-w-[120px] mt-[1px] 2xl:text-[18px] xl:text-[18px] text-[16px]"
-                >{{ profile.name }} {{ profile.name.endsWith('profile') ? '' : 'profile' }}
+                >{{ translateProfileName(profile.name) }}
+                {{ profile.name.endsWith('profile') ? '' : t('components.EditMenu.profile') }}
               </span>
             </div>
           </div>
@@ -87,62 +89,66 @@
           </template>
           <v-list>
             <div class="flex justify-center max-w-[250px] px-2 gap-x-[5px] pb-2">
-              <p class="whitespace-nowrap">Settings -</p>
-              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ store.currentProfile.name }}</p>
+              <p class="whitespace-nowrap">{{ $t('components.EditMenu.settingsFor') }}</p>
+              <p class="overflow-hidden text-ellipsis whitespace-nowrap">
+                {{ translateProfileName(store.currentProfile.name) }}
+              </p>
             </div>
 
             <v-divider />
             <v-list-item class="hover:bg-white/[0.04]">
               <label class="flex w-full h-full cursor-pointer justify-between">
-                <v-list-item-title>Import</v-list-item-title>
+                <v-list-item-title>{{ $t('components.EditMenu.import') }}</v-list-item-title>
                 <input type="file" accept="application/json" hidden @change="(e: Event) => store.importProfile(e)" />
                 <v-icon size="20">mdi-upload</v-icon>
               </label>
             </v-list-item>
             <v-list-item @click="store.exportProfile(store.currentProfile)">
               <div class="flex w-full justify-between">
-                <v-list-item-title>Export</v-list-item-title>
+                <v-list-item-title>{{ $t('components.EditMenu.export') }}</v-list-item-title>
                 <v-icon size="20">mdi-download</v-icon>
               </div>
             </v-list-item>
             <v-list-item @click="store.duplicateProfile(store.currentProfile)">
               <div class="flex w-full justify-between">
-                <v-list-item-title>Duplicate</v-list-item-title>
+                <v-list-item-title>{{ $t('components.EditMenu.duplicate') }}</v-list-item-title>
                 <v-icon size="20">mdi-content-copy</v-icon>
               </div>
             </v-list-item>
             <v-list-item @click="renameProfile(store.currentProfile)">
               <div class="flex w-full justify-between">
-                <v-list-item-title>Config & rename</v-list-item-title>
+                <v-list-item-title>{{ $t('components.EditMenu.configRename') }}</v-list-item-title>
                 <v-icon size="20">mdi-cog</v-icon>
               </div>
             </v-list-item>
             <v-list-item @click="confirmDelete">
               <div class="flex w-full justify-between">
-                <v-list-item-title>Delete</v-list-item-title>
+                <v-list-item-title>{{ $t('common.delete') }}</v-list-item-title>
                 <v-icon size="20">mdi-trash-can</v-icon>
               </div>
             </v-list-item>
             <v-divider class="mb-1" />
             <div class="flex justify-center max-w-[250px] px-2 gap-x-[5px] pb-2 pt-1">
-              <p class="whitespace-nowrap">General profile settings</p>
+              <p class="whitespace-nowrap">{{ $t('components.EditMenu.generalProfileSettings') }}</p>
             </div>
             <v-divider class="mb-1" />
             <v-list-item @click="addNewProfile">
               <div class="flex w-full justify-between mt-[6px]">
-                <v-list-item-title>Add new profile</v-list-item-title>
+                <v-list-item-title>{{ $t('components.EditMenu.addNewProfile') }}</v-list-item-title>
                 <v-icon size="22">mdi-plus</v-icon>
               </div>
             </v-list-item>
             <v-list-item @click="store.snapToGrid = !store.snapToGrid">
               <div class="flex w-full justify-between mt-[6px]">
-                <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
+                <v-list-item-title>{{
+                  store.snapToGrid ? $t('components.EditMenu.disableGrid') : $t('components.EditMenu.enableGrid')
+                }}</v-list-item-title>
                 <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
               </div>
             </v-list-item>
             <v-list-item @click="resetSavedProfiles">
               <div class="flex w-full justify-between mt-[6px]">
-                <v-list-item-title class="mr-6">Reset saved profiles</v-list-item-title>
+                <v-list-item-title class="mr-6">{{ $t('components.EditMenu.resetProfiles') }}</v-list-item-title>
                 <v-icon size="20" class="mt-[2px]">mdi-reload</v-icon>
               </div>
             </v-list-item>
@@ -170,7 +176,9 @@
           class="wrapclass 2xl:w-[129px] xl:w-[108px] lg:w-[84px] 2xl:h-[85px] xl:h-[75px] lg:h-[65px] 2xl:text-[16px] xl:text-[14px] text-[11px] text-none overflow-x-hidden"
           @click="selectView(view)"
         >
-          <span class="wrapclass 2xl:max-w-[119px] xl:max-w-[100px] lg:max-w-[80px]">{{ view.name }}</span>
+          <span class="wrapclass 2xl:max-w-[119px] xl:max-w-[100px] lg:max-w-[80px]">{{
+            translateViewName(view.name)
+          }}</span>
         </v-btn>
       </v-btn-toggle>
       <v-badge
@@ -192,7 +200,7 @@
         <div class="flex justify-center w-full bg-[#CBCBCB09]">
           <div class="flex w-[350px] justify-center py-[2px]">
             <p class="overflow-hidden text-[12px] text-ellipsis whitespace-nowrap opacity-60">
-              Views on {{ store.currentProfile.name }}
+              {{ $t('components.EditMenu.viewsOn') }} {{ translateProfileName(store.currentProfile.name) }}
             </p>
           </div>
         </div>
@@ -203,7 +211,7 @@
           :class="view === store.currentView ? 'bg-[#CBCBCB64]' : 'bg-[#CBCBCB2A]'"
           @click="store.selectView(view)"
         >
-          <p class="overflow-hidden text-sm text-ellipsis ml-3 whitespace-nowrap">{{ view.name }}</p>
+          <p class="overflow-hidden text-sm text-ellipsis ml-3 whitespace-nowrap">{{ translateViewName(view.name) }}</p>
           <div class="grow" />
           <div
             class="icon-btn mdi mdi-eye"
@@ -231,7 +239,7 @@
       <div class="flex justify-center w-full bg-[#CBCBCB09]">
         <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
           <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
-            Widgets in {{ store.currentView.name }}
+            {{ $t('components.EditMenu.widgetsIn') }} {{ translateViewName(store.currentView.name) }}
           </p>
         </div>
       </div>
@@ -248,7 +256,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Main view area
+            {{ $t('components.EditMenu.mainViewArea') }}
             <v-badge
               :content="store.currentView.widgets.length"
               color="#4FA483"
@@ -283,7 +291,7 @@
                   />
                   <v-divider vertical />
                   <p class="ml-3 overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap">
-                    {{ widget.name }}
+                    {{ translateWidgetName(widget.name) }}
                   </p>
                   <div class="grow" />
                   <v-divider vertical class="opacity-10 mr-[2px]" />
@@ -316,7 +324,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Top Bar
+            {{ $t('components.EditMenu.topBar') }}
             <v-badge
               :content="
                 store.miniWidgetContainersInCurrentView.reduce((count, container) => {
@@ -338,7 +346,7 @@
           >
             <div v-if="miniWidgetContainer.name.startsWith('Top')">
               <span class="w-full px-1 2xl:text-sm text-xs text-left select-none text-slate-400">{{
-                miniWidgetContainer.name
+                translateContainerName(miniWidgetContainer.name)
               }}</span>
               <div class="flex flex-col items-center w-full 2xl:px-3 overflow-x-hidden grow">
                 <TransitionGroup name="fade">
@@ -355,7 +363,7 @@
                   >
                     <div class="flex items-center justify-start w-full overflow-auto">
                       <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
-                        {{ widget.name || widget.component }}
+                        {{ translateMiniWidgetName(widget.name || widget.component) }}
                       </p>
                     </div>
                     <v-divider vertical class="opacity-10 mr-1" />
@@ -383,7 +391,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Bottom Bar
+            {{ $t('components.EditMenu.bottomBar') }}
             <v-badge
               :content="
                 store.miniWidgetContainersInCurrentView.reduce((count, container) => {
@@ -405,7 +413,7 @@
           >
             <div v-if="miniWidgetContainer.name.startsWith('Bottom')">
               <span class="w-full px-1 2xl:text-sm text-xs text-left select-none text-slate-400">{{
-                miniWidgetContainer.name
+                translateContainerName(miniWidgetContainer.name)
               }}</span>
               <div class="flex flex-col items-center w-full 2xl:px-3 overflow-x-hidden grow">
                 <TransitionGroup name="fade">
@@ -425,7 +433,7 @@
                   >
                     <div class="flex items-center justify-start w-full overflow-auto">
                       <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
-                        {{ widget.name || widget.component }}
+                        {{ translateMiniWidgetName(widget.name || widget.component) }}
                       </p>
                     </div>
                     <v-divider vertical class="opacity-10 mr-1" />
@@ -456,7 +464,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            {{ miniWidgetContainer.name }}
+            {{ translateContainerName(miniWidgetContainer.name) }}
             <v-badge
               :content="miniWidgetContainer.widgets?.length"
               color="#4FA483"
@@ -483,7 +491,7 @@
                 >
                   <div class="flex items-center justify-start w-full overflow-auto">
                     <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
-                      {{ widget.name || widget.component }}
+                      {{ translateMiniWidgetName(widget.name || widget.component) }}
                     </p>
                   </div>
                   <v-divider vertical class="opacity-10 mr-1" />
@@ -507,13 +515,15 @@
       class="flex flex-col justify-around items-center 2xl:w-[30%] w-[25%] max-w-[240px] h-full text-white 2xl:pr-2 px-1 2xl:py-5 xl:py-4 lg:py-1"
     >
       <div>
-        <p class="2xl:text-md text-xs ml-1">Widget type:</p>
+        <p class="2xl:text-md text-xs ml-1">{{ $t('components.EditMenu.widgetType') }}</p>
         <v-select
           v-model="widgetMode"
           theme="dark"
           variant="filled"
           density="compact"
-          :items="['Regular', 'Mini', 'Input']"
+          :items="widgetModeOptions"
+          item-title="title"
+          item-value="value"
           class="bg-[#27384255] 2xl:scale-100 scale-[80%]"
           hide-details
           @change="widgetMode = $event"
@@ -521,19 +531,23 @@
       </div>
       <div class="flex flex-col items-center justify-start w-full pl-2">
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
-          To be placed on the main view area
+          {{ $t('components.EditMenu.toMainView') }}
         </div>
-        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
+        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">
+          {{ $t('components.EditMenu.dragToAdd') }}
+        </div>
         <div v-show="widgetMode === 'Mini'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
-          To be placed on the top and bottom bars
+          {{ $t('components.EditMenu.toTopBottomBars') }}
         </div>
-        <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
+        <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">
+          {{ $t('components.EditMenu.dragToAdd') }}
+        </div>
         <div v-show="widgetMode === 'Input'">
           <v-btn
             type="flat"
             class="bg-[#FFFFFF33] text-white w-[95%]"
             @click="store.addWidget(makeNewWidget(WidgetType.CollapsibleContainer), store.currentView)"
-            >Add new container
+            >{{ $t('components.EditMenu.addNewContainer') }}
           </v-btn>
         </div>
       </div>
@@ -559,10 +573,10 @@
           v-if="widget.isExternal"
           class="absolute top-0 left-0 bg-[#135da3] text-white text-xs px-1 py-0.5 rounded-tl-md rounded-br-md"
         >
-          External
+          {{ $t('components.EditMenu.external') }}
         </div>
 
-        <v-tooltip text="Drag to add" location="top" theme="light">
+        <v-tooltip :text="$t('components.EditMenu.dragToAddTooltip')" location="top" theme="light">
           <template #activator="{ props: tooltipProps }">
             <div />
             <img v-bind="tooltipProps" :src="widget.icon" alt="widget-icon" class="p-4 max-h-[75%] max-w-[95%]" />
@@ -570,9 +584,7 @@
               class="flex items-center justify-center w-full p-1 transition-all rounded-b-md text-white"
               :class="{ 'bg-[#135da3]': widget.isExternal, 'bg-[#4fa483]': !widget.isExternal }"
             >
-              <span class="whitespace-normal text-center">{{
-                widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
-              }}</span>
+              <span class="whitespace-normal text-center">{{ translateWidgetName(widget.name) }}</span>
             </div>
           </template>
         </v-tooltip>
@@ -601,8 +613,7 @@
           class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#4FA483] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
-            miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
-            'Very generic indicator'
+            translateMiniWidgetName(miniWidget.name) || 'Very generic indicator'
           }}</span>
         </div>
       </div>
@@ -629,8 +640,7 @@
           class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#4FA483] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
-            miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
-            'Very generic indicator'
+            translateMiniWidgetName(miniWidget.name) || 'Very generic indicator'
           }}</span>
         </div>
       </div>
@@ -640,19 +650,19 @@
     <GlassModal :is-visible="viewRenameDialogRevealed" class="rounded-lg">
       <v-card class="bg-transparent text-white w-[36rem] pt-6 px-4 pb-2">
         <v-card-text>
-          <p>New view name</p>
+          <p>{{ $t('components.EditMenu.newViewName') }}</p>
           <v-text-field v-model="newViewName" counter="25" variant="filled" />
           <v-switch
             v-model="store.currentView.showBottomBarOnBoot"
-            label="Show bottom bar on boot"
+            :label="$t('components.EditMenu.showBottomBarOnBoot')"
             class="mt-2 mx-2"
             :color="store.currentView.showBottomBarOnBoot ? 'white' : undefined"
           />
         </v-card-text>
         <v-divider />
         <v-card-actions class="flex justify-between pt-3">
-          <v-btn @click="viewRenameDialog.cancel">Cancel</v-btn>
-          <v-btn @click="viewRenameDialog.confirm">Save</v-btn>
+          <v-btn @click="viewRenameDialog.cancel">{{ $t('common.cancel') }}</v-btn>
+          <v-btn @click="viewRenameDialog.confirm">{{ $t('common.save') }}</v-btn>
         </v-card-actions>
       </v-card>
     </GlassModal>
@@ -661,9 +671,9 @@
     <GlassModal :is-visible="profileConfigDialogRevealed" class="rounded-lg">
       <v-card class="bg-transparent text-white w-[36rem] pt-6 px-4 pb-2">
         <v-card-text>
-          <p>New profile name</p>
+          <p>{{ $t('views.ConfigurationJoystickView.newProfileName') }}</p>
           <v-text-field v-model="newProfileName" counter="25" variant="filled" density="compact" />
-          <p>Vehicle types that use this profile by default:</p>
+          <p>{{ $t('views.ConfigurationJoystickView.vehicleTypesDefaultProfile') }}</p>
           <v-combobox
             v-model="vehicleTypesAssignedToCurrentProfile"
             :items="availableVehicleTypes"
@@ -677,8 +687,8 @@
         </v-card-text>
         <v-divider />
         <v-card-actions class="flex justify-between pt-3">
-          <v-btn @click="profileConfigDialog.cancel">Cancel</v-btn>
-          <v-btn @click="profileConfigDialog.confirm">Save</v-btn>
+          <v-btn @click="profileConfigDialog.cancel">{{ $t('common.cancel') }}</v-btn>
+          <v-btn @click="profileConfigDialog.confirm">{{ $t('common.save') }}</v-btn>
         </v-card-actions>
       </v-card>
     </GlassModal>
@@ -695,6 +705,9 @@ import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
+import { useI18n } from 'vue-i18n'
+
+const { t: $t } = useI18n()
 
 import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
 import BoatThumb from '@/assets/vehicles/BlueBoat_thumb.png'
@@ -751,6 +764,77 @@ const { showDialog, closeDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
 const store = useWidgetManagerStore()
 const mainVehicleStore = useMainVehicleStore()
+const { t } = useI18n()
+
+// Translation mapping for view names
+const translateViewName = (viewName: string): string => {
+  const nameMap: Record<string, string> = {
+    'Video View': t('views.ConfigurationVideoView.videoView'),
+    'Map View': t('views.ConfigurationVideoView.mapView'),
+    'HUD View': t('views.ConfigurationVideoView.hudView'),
+    'Map view': t('views.ConfigurationVideoView.mapView'), // Handle lowercase variant
+  }
+  return nameMap[viewName] || viewName
+}
+
+// Translation mapping for profile names
+const translateProfileName = (profileName: string): string => {
+  const nameMap: Record<string, string> = {
+    'ROV default': t('components.EditMenu.rovDefault'),
+    'Boat default': t('components.EditMenu.boatDefault'),
+    'MAV default': t('components.EditMenu.mavDefault'),
+  }
+  return nameMap[profileName] || profileName
+}
+
+// Translation mapping for container names
+const translateContainerName = (containerName: string): string => {
+  const nameMap: Record<string, string> = {
+    'Top-left container': t('components.EditMenu.topLeftContainer'),
+    'Top-center container': t('components.EditMenu.topCenterContainer'),
+    'Top-right container': t('components.EditMenu.topRightContainer'),
+    'Bottom-left container': t('components.EditMenu.bottomLeftContainer'),
+    'Bottom-center container': t('components.EditMenu.bottomCenterContainer'),
+    'Bottom-right container': t('components.EditMenu.bottomRightContainer'),
+  }
+  return nameMap[containerName] || containerName
+}
+
+// Translation helper for widget names
+const translateWidgetName = (name: string): string => {
+  // Check if translation exists for this widget type
+  const translationKey = `widgets.${name}`
+  const translated = t(translationKey)
+  // Return translation if it exists and is different from the key
+  return translated !== translationKey ? translated : name
+}
+
+// Translation helper for mini-widget names
+const translateMiniWidgetName = (name: string): string => {
+  // First, check if translation exists for this mini-widget type
+  const miniWidgetKey = `miniWidgets.${name}`
+  const miniWidgetTranslated = t(miniWidgetKey)
+  if (miniWidgetTranslated !== miniWidgetKey) {
+    return miniWidgetTranslated
+  }
+
+  // Also check for generic indicator display names
+  const indicatorNameMap: Record<string, string> = {
+    'Pilot Gain': t('indicators.pilotGain'),
+    'Lights (1)': t('indicators.lights1'),
+    'Lights (2)': t('indicators.lights2'),
+    'Cam Tilt': t('indicators.camTilt'),
+    'Cam Pan': t('indicators.camPan'),
+    'Water Temp': t('indicators.waterTemp'),
+    'Tether Turns': t('indicators.tetherTurns'),
+    'Input Hold': t('indicators.inputHold'),
+    'Roll Pitch': t('indicators.rollPitch'),
+    'Altitude': t('indicators.altitude'),
+    'Speed (GPS)': t('indicators.speed'),
+  }
+
+  return indicatorNameMap[name] || name
+}
 
 const miniWidgetsBars = computed(() => {
   let regularContainers = store.miniWidgetContainersInCurrentView.filter(
@@ -936,7 +1020,7 @@ const selectView = (view: View): void => {
 const confirmDelete = async (): Promise<void> => {
   showDialog({
     maxWidth: '500px',
-    message: 'Permanently delete profile?',
+    message: t('errors.permanentlyDeleteProfile'),
     actions: [
       {
         text: 'cancel',
@@ -1053,7 +1137,7 @@ const renameView = (view: View): void => {
 const toggleViewVisibility = (view: View): void => {
   if (view.visible && view === store.currentView) {
     showDialog({
-      message: 'You cannot hide the current view.',
+      message: t('errors.cannotHideCurrentView'),
       variant: 'error',
       maxWidth: 400,
     })
@@ -1070,16 +1154,16 @@ const renameProfile = (profile: Profile): void => {
 
 const resetSavedProfiles = (): void => {
   showDialog({
-    message: 'Are you sure you want to reset your profiles to the default ones?',
+    message: t('editPanel.confirmResetProfiles'),
     actions: [
       {
-        text: 'cancel',
+        text: t('common.cancel'),
         action: () => {
           closeDialog()
         },
       },
       {
-        text: 'reset profiles',
+        text: t('editPanel.resetProfiles'),
         action: () => {
           store.resetSavedProfiles()
           closeDialog()
@@ -1107,8 +1191,7 @@ const getExternalWidgetSetupInfos = async (): Promise<void> => {
     const vehicleAddress = await mainVehicleStore.getVehicleAddress()
     ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS(vehicleAddress)
   } catch (error) {
-    const errorMessage = 'Error getting info around external widgets from BlueOS.'
-    openSnackbar({ message: errorMessage, variant: 'error', closeButton: true })
+    openSnackbar({ message: t('alerts.errorGettingExternalWidgetsInfo'), variant: 'error', closeButton: true })
   }
 }
 
@@ -1151,6 +1234,13 @@ onMounted(() => {
 })
 
 const widgetMode = ref('Regular')
+
+// Computed property for translated widget mode options
+const widgetModeOptions = computed(() => [
+  { title: t('editPanel.regular'), value: 'Regular' },
+  { title: t('editPanel.mini'), value: 'Mini' },
+  { title: t('editPanel.input'), value: 'Input' },
+])
 
 // Resize mini widgets so they fit the layout when the widget mode is set to mini widgets
 const miniWidgetContainers = ref<Record<string, HTMLElement>>({})
