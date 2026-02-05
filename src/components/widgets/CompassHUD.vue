@@ -1,28 +1,106 @@
 <template>
   <div class="main">
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
+    <!-- POI icons container -->
+    <div v-if="widget.options.poi?.showPoiOnHUD" ref="poiIconsContainer">
+      <div
+        v-for="poiMarker in poiMarkers"
+        :key="poiMarker.poiId"
+        class="poi-icon-marker"
+        :style="poiMarker.style"
+        @click="handlePoiClick(poiMarker.poiId)"
+      >
+        <div
+          :class="['mdi', poiMarker.icon, { 'poi-marker-reached': poiMarker.isReached }]"
+          :style="{ backgroundColor: poiMarker.color, fontSize: poiMarker.size + 'px' }"
+        ></div>
+        <div
+          v-if="shouldShowDistanceTag(poiMarker.poiId)"
+          class="poi-distance-label"
+          :style="{
+            fontSize: poiMarker.distanceFontSize + 'px',
+            ...(poiMarker.distanceLabelOpacity !== undefined && { opacity: poiMarker.distanceLabelOpacity }),
+            ...(poiMarker.distanceLabelZIndex !== undefined && { zIndex: poiMarker.distanceLabelZIndex }),
+          }"
+        >
+          {{ poiMarker.distanceText }}
+        </div>
+      </div>
+      <!-- POI distance box for onHudSide mode -->
+      <div
+        v-if="
+          widget.options.poi?.showPoiOnHUD && widget.options.poi?.showDistances === 'onHudSide' && highlightedPoiMarker
+        "
+        ref="poiSideDistanceBox"
+        class="poi-side-distance-box"
+        :style="interfaceStore.globalGlassMenuStyles"
+      >
+        <div class="poi-side-distance-name">{{ highlightedPoiMarker.name }}</div>
+        <div class="poi-side-distance-label" :class="{ 'poi-reached-blink': highlightedPoiMarker.isReached }">
+          {{ highlightedPoiMarker.distanceText }}
+        </div>
+      </div>
+    </div>
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
-    <v-card class="px-8 pb-6 pt-2" :style="interfaceStore.globalGlassMenuStyles">
+    <v-card class="px-8 pb-2 pt-2" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">HUD Compass widget config</v-card-title>
+      <v-btn
+        class="absolute top-3 right-0 text-lg rounded-full"
+        variant="text"
+        size="small"
+        @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false"
+      >
+        <v-icon>mdi-close</v-icon>
+      </v-btn>
       <v-card-text>
-        <v-switch
-          class="ma-1"
-          label="Show yaw value"
-          :color="widget.options.showYawValue ? 'white' : undefined"
-          :model-value="widget.options.showYawValue"
-          hide-details
-          @change="widget.options.showYawValue = !widget.options.showYawValue"
-        />
-        <v-switch
-          class="ma-1"
-          label="Use -180/+180 range"
-          :color="widget.options.useNegativeRange ? 'white' : undefined"
-          :model-value="widget.options.useNegativeRange"
-          hide-details
-          @change="widget.options.useNegativeRange = !widget.options.useNegativeRange"
-        />
-        <v-expansion-panels theme="dark">
+        <div class="flex w-full justify-between">
+          <v-switch
+            class="ma-1"
+            label="Show yaw value"
+            :color="widget.options.showYawValue ? 'white' : undefined"
+            :model-value="widget.options.showYawValue"
+            hide-details
+            @change="widget.options.showYawValue = !widget.options.showYawValue"
+          />
+          <v-switch
+            class="ma-1"
+            label="Use -180/+180 range"
+            :color="widget.options.useNegativeRange ? 'white' : undefined"
+            :model-value="widget.options.useNegativeRange"
+            hide-details
+            @change="widget.options.useNegativeRange = !widget.options.useNegativeRange"
+          />
+        </div>
+        <v-divider class="mb-3 opacity-5" />
+        <div class="flex w-full justify-between">
+          <v-switch
+            class="ma-1 w-[220px]"
+            label="Show POIs on HUD"
+            :color="widget.options.poi?.showPoiOnHUD ? 'white' : undefined"
+            :model-value="widget.options.poi?.showPoiOnHUD ?? true"
+            hide-details
+            @change="
+              widget.options.poi = { ...widget.options.poi, showPoiOnHUD: !(widget.options.poi?.showPoiOnHUD ?? true) }
+            "
+          />
+          <v-select
+            v-if="widget.options.poi?.showPoiOnHUD"
+            v-model="widget.options.poi.showDistances"
+            :items="[
+              { title: 'All markers', value: 'all' },
+              { title: 'Highlighted marker only', value: 'highlightedMarker' },
+              { title: 'Box on HUD side', value: 'onHudSide' },
+              { title: 'No distance tags', value: 'none' },
+            ]"
+            label="Show distance tags"
+            class="mt-2 max-w-[280px]"
+            density="compact"
+            hide-details
+          />
+        </div>
+        <v-divider class="mt-3 opacity-5" />
+        <v-expansion-panels theme="dark" class="mt-3">
           <v-expansion-panel class="bg-[#FFFFFF11] text-white mt-2">
             <v-expansion-panel-title>Color</v-expansion-panel-title>
             <v-expansion-panel-text>
@@ -38,25 +116,37 @@
           </v-expansion-panel>
         </v-expansion-panels>
       </v-card-text>
+      <div class="flex justify-center w-full">
+        <v-divider class="opacity-20 border-[#fafafa]"></v-divider>
+      </div>
+      <v-card-actions>
+        <div class="flex w-full h-full justify-end items-center pt-1">
+          <v-btn class="-mr-4" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">Close</v-btn>
+        </div>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { useElementVisibility, useWindowSize } from '@vueuse/core'
+import { useDebounceFn, useElementVisibility, useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
 import gsap from 'gsap'
-import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { HighlightedPoiMarker, HighlightedPoiMarkerDisplay, PoiMarker, ReachedPoiMarker } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
+const missionStore = useMissionStore()
 
 datalogger.registerUsage(DatalogVariable.heading)
 const store = useMainVehicleStore()
@@ -118,12 +208,27 @@ onBeforeMount(() => {
       showYawValue: true,
       hudColor: colorSwatches.value[0][0],
       useNegativeRange: false,
+      poi: {
+        showPoiOnHUD: true,
+        showDistances: 'onHudSide',
+      },
+    }
+  }
+  // Initialize POI options if they don't exist
+  if (!widget.value.options.poi) {
+    widget.value.options.poi = {
+      showPoiOnHUD: true,
+      showDistances: 'onHudSide',
     }
   }
 })
 onMounted(() => {
   yawAngles.forEach((angle: number) => (renderVars.yawLinesX[angle] = angleX(angle)))
   renderCanvas()
+  // Start animation loop if widget is visible
+  if (widgetStore.isWidgetVisible(widget.value)) {
+    startAnimationLoop()
+  }
 })
 
 // Make canvas size follows window resizing
@@ -157,8 +262,97 @@ const angleX = (angle: number): number => {
   return -x
 }
 
+// Calculate bearing from vehicle position to POI
+const calculateBearing = (vehicleLat: number, vehicleLng: number, poiLat: number, poiLng: number): number => {
+  const lat1 = radians(vehicleLat)
+  const lat2 = radians(poiLat)
+  const dLng = radians(poiLng - vehicleLng)
+
+  const y = Math.sin(dLng) * Math.cos(lat2)
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
+
+  let bearing = degrees(Math.atan2(y, x))
+  bearing = (bearing + 360) % 360
+  return bearing
+}
+
+// Get POI data with bearing and distance relative to vehicle
+const poiData = computed(() => {
+  if (!store.coordinates.latitude || !store.coordinates.longitude) return []
+
+  return missionStore.pointsOfInterest.map((poi) => {
+    const distance = calculateHaversineDistance(
+      [store.coordinates.latitude!, store.coordinates.longitude!],
+      poi.coordinates
+    )
+    const bearing = calculateBearing(
+      store.coordinates.latitude!,
+      store.coordinates.longitude!,
+      poi.coordinates[0],
+      poi.coordinates[1]
+    )
+
+    return {
+      poi,
+      distance,
+      bearing,
+    }
+  })
+})
+
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
+const poiMarkers = ref<PoiMarker[]>([])
+const highlightedMarkers = ref<Map<string, HighlightedPoiMarker>>(new Map())
+const highlightedPoiMarker = ref<HighlightedPoiMarkerDisplay | null>(null)
+const markersOnHeading = ref<Set<string>>(new Set())
+const reachedMarkers = ref<Map<string, ReachedPoiMarker>>(new Map())
+
+// Check if a POI is on the heading of the vehicle, within 3 degrees
+const isMarkerOnHeading = (bearing: number, currentYaw: number): boolean => {
+  let relativeBearing = bearing - currentYaw
+  if (relativeBearing < -180) relativeBearing += 360
+  if (relativeBearing > 180) relativeBearing -= 360
+  return Math.abs(relativeBearing) <= 3
+}
+
+const handlePoiClick = (poiId: string): void => {
+  const marker = poiMarkers.value.find((m) => m.poiId === poiId)
+  if (!marker) return
+  // How long to highlight the marker after a click on it (20 seconds)
+  const now = Date.now()
+  highlightedMarkers.value.set(poiId, {
+    poiId,
+    highlightedAt: now,
+    expiresAt: now + 20000,
+  })
+
+  if (widget.value.options.poi?.showDistances === 'onHudSide') {
+    highlightedPoiMarker.value = {
+      name: marker.name,
+      distanceText: marker.distanceText,
+      isReached: marker.isReached,
+    }
+  }
+}
+
+const cleanupExpired = (): void => {
+  const now = Date.now()
+  for (const [poiId, highlight] of highlightedMarkers.value.entries()) {
+    if (highlight.expiresAt < now) highlightedMarkers.value.delete(poiId)
+  }
+  for (const [poiId, reached] of reachedMarkers.value.entries()) {
+    if (reached.expiresAt < now) reachedMarkers.value.delete(poiId)
+  }
+}
+
+const shouldShowDistanceTag = (poiId: string): boolean => {
+  const mode = widget.value.options.poi?.showDistances ?? 'all'
+  if (mode === 'none' || mode === 'onHudSide') return false
+  if (mode === 'all') return true
+  return markersOnHeading.value.has(poiId) || highlightedMarkers.value.has(poiId)
+}
+
 const renderCanvas = (): void => {
   if (canvasRef.value === undefined || canvasRef.value === null) return
   if (canvasContext.value === undefined) {
@@ -237,6 +431,152 @@ const renderCanvas = (): void => {
   ctx.fillRect(0, 0, canvasSize.value.width, halfCanvasHeight * 2)
 }
 
+const updatePoiMarkers = (): void => {
+  if (!widget.value.options.poi?.showPoiOnHUD || !store.coordinates.latitude || !store.coordinates.longitude) {
+    poiMarkers.value = []
+    return
+  }
+
+  const width = canvasSize.value.width
+  const halfWidth = width * 0.5
+  const now = Date.now()
+  const markers: PoiMarker[] = []
+  const onHeading = new Set<string>()
+
+  poiData.value.forEach(({ poi, distance, bearing }) => {
+    let relativeBearing = bearing - yaw.value
+    if (relativeBearing < -180) relativeBearing += 360
+    if (relativeBearing > 180) relativeBearing -= 360
+
+    if (Math.abs(relativeBearing) > 90) return
+
+    if (isMarkerOnHeading(bearing, yaw.value)) {
+      onHeading.add(poi.id)
+    }
+
+    const x = halfWidth + ((2 * halfWidth) / Math.PI) * Math.sin(radians(relativeBearing))
+    const isReachedNow = distance <= 1
+    // How long the POI will stay marked as reached (blinking animation)
+    if (isReachedNow) {
+      reachedMarkers.value.set(poi.id, {
+        poiId: poi.id,
+        reachedAt: now,
+        expiresAt: now + 20000,
+      })
+    }
+
+    const reachedData = reachedMarkers.value.get(poi.id)
+    const isReached = isReachedNow || (reachedData !== undefined && now < reachedData.expiresAt)
+    // How far from a POI to mark as reached (2 meters)
+    const distanceText = isReached
+      ? 'Reached'
+      : distance >= 2000
+      ? `${(distance / 1000).toFixed(1)}km`
+      : `${Math.round(distance)}m`
+
+    const mode = widget.value.options.poi?.showDistances
+    const isHighlighted = highlightedMarkers.value.has(poi.id)
+    const isOnHeadingNow = onHeading.has(poi.id)
+    let distanceLabelOpacity: string | undefined
+    let distanceLabelZIndex: string | undefined
+    let zIndex: string | undefined
+
+    if (mode === 'highlightedMarker') {
+      const angularDist = Math.abs(relativeBearing)
+      const opacity = angularDist <= 60 ? (1.0 - (angularDist / 60) * 0.6).toFixed(2) : '0.4'
+      distanceLabelOpacity = isHighlighted || isOnHeadingNow ? '1.0' : opacity
+    }
+
+    markers.push({
+      poiId: poi.id,
+      name: poi.name,
+      icon: poi.icon,
+      color: poi.color || '#FF0000',
+      size: 10,
+      distanceText,
+      distanceFontSize: 9,
+      ...(distanceLabelOpacity && { distanceLabelOpacity }),
+      ...(distanceLabelZIndex && { distanceLabelZIndex }),
+      ...(isReached && { isReached: true }),
+      style: {
+        left: `${x}px`,
+        top: '38%',
+        transform: 'translate(-50%, -50%)',
+        ...(zIndex && { zIndex }),
+      },
+    })
+  })
+
+  markersOnHeading.value = onHeading
+  // How long to highlight the marker for after it is on heading
+  for (const poiId of onHeading) {
+    if (!highlightedMarkers.value.has(poiId)) {
+      highlightedMarkers.value.set(poiId, {
+        poiId,
+        highlightedAt: now,
+        expiresAt: now + 5000,
+      })
+    }
+  }
+
+  cleanupExpired()
+
+  if (widget.value.options.poi?.showDistances === 'onHudSide') {
+    const onHeadingArray = Array.from(onHeading)
+    let selectedId: string | null = null
+
+    if (onHeadingArray.length > 0) {
+      const highlights = Array.from(highlightedMarkers.value.values())
+        .filter((h) => onHeadingArray.includes(h.poiId))
+        .sort((a, b) => b.highlightedAt - a.highlightedAt)
+      selectedId = highlights[0]?.poiId ?? onHeadingArray[0]
+    } else {
+      const lastHighlighted = Array.from(highlightedMarkers.value.values()).sort(
+        (a, b) => b.highlightedAt - a.highlightedAt
+      )[0]
+      selectedId = lastHighlighted?.poiId ?? null
+    }
+
+    if (selectedId) {
+      const marker = markers.find((m) => m.poiId === selectedId) ?? poiMarkers.value.find((m) => m.poiId === selectedId)
+      if (marker) {
+        highlightedPoiMarker.value = {
+          name: marker.name,
+          distanceText: marker.distanceText,
+          isReached: marker.isReached,
+        }
+      } else {
+        const poi = missionStore.pointsOfInterest.find((p) => p.id === selectedId)
+        if (poi && store.coordinates.latitude && store.coordinates.longitude) {
+          const distance = calculateHaversineDistance(
+            [store.coordinates.latitude, store.coordinates.longitude],
+            poi.coordinates
+          )
+          // How far from a POI to mark as reached
+          highlightedPoiMarker.value = {
+            name: poi.name,
+            distanceText:
+              distance <= 1
+                ? 'Reached'
+                : distance >= 2000
+                ? `${(distance / 1000).toFixed(1)}km`
+                : `${Math.round(distance)}m`,
+            isReached: distance <= 1,
+          }
+        } else {
+          highlightedPoiMarker.value = null
+        }
+      }
+    } else {
+      highlightedPoiMarker.value = null
+    }
+  } else {
+    highlightedPoiMarker.value = null
+  }
+
+  poiMarkers.value = markers
+}
+
 // Update the X position of each line in the render variables with GSAP to smooth the transition
 watch(yaw, () => {
   yawAngles.forEach((angle: number) => {
@@ -251,15 +591,58 @@ watch(yaw, () => {
   })
 })
 
-// Update canvas whenever reference variables changes
+// Update canvas and POI markers whenever reference variables changes
+let animationFrameId: number | null = null
+let isAnimating = false
+
+const animationLoop = (): void => {
+  if (widgetStore.isWidgetVisible(widget.value)) {
+    renderCanvas()
+  }
+  if (isAnimating) {
+    animationFrameId = requestAnimationFrame(animationLoop)
+  }
+}
+
+const startAnimationLoop = (): void => {
+  if (!isAnimating) {
+    isAnimating = true
+    animationFrameId = requestAnimationFrame(animationLoop)
+  }
+}
+
+const stopAnimationLoop = (): void => {
+  if (isAnimating) {
+    isAnimating = false
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId)
+      animationFrameId = null
+    }
+  }
+}
+
+const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
+watch([poiData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
+
+// Start both canvas and POI markers animation loop when widget becomes visible or data changes
 watch([renderVars, canvasSize, widget.value.options], () => {
-  if (!widgetStore.isWidgetVisible(widget.value)) return
-  nextTick(() => renderCanvas())
+  if (widgetStore.isWidgetVisible(widget.value)) {
+    startAnimationLoop()
+  }
 })
 
 const canvasVisible = useElementVisibility(canvasRef)
 watch(canvasVisible, (isVisible, wasVisible) => {
-  if (isVisible && !wasVisible) renderCanvas()
+  if (isVisible && !wasVisible) {
+    renderCanvas()
+    startAnimationLoop()
+  } else if (!isVisible && wasVisible) {
+    stopAnimationLoop()
+  }
+})
+
+onBeforeUnmount(() => {
+  stopAnimationLoop()
 })
 </script>
 
@@ -274,5 +657,102 @@ watch(canvasVisible, (isVisible, wasVisible) => {
   position: relative;
   min-width: 200px;
   min-height: 60px;
+}
+
+.poi-icons-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.poi-icon-marker {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.poi-icon-marker .mdi {
+  line-height: 1;
+  border: 1px solid white;
+  border-radius: 50%;
+  color: white;
+  padding: 4px;
+}
+
+.poi-distance-label {
+  color: black;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  white-space: nowrap;
+  margin-top: -4px;
+  background-color: #ffffff;
+  padding-inline: 2px;
+  border-radius: 4px;
+  border: 1px solid black;
+}
+
+.poi-side-distance-box {
+  display: flex;
+  flex-direction: column;
+  border-color: #ffffff44 !important;
+  border-radius: 4px;
+  padding: 4px 12px;
+  padding-top: 6px;
+  margin: 0 auto;
+  margin-left: 850px;
+  margin-top: -60px;
+  z-index: 10;
+  max-width: 200px;
+  gap: 4px;
+}
+
+.poi-side-distance-name {
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.poi-side-distance-label {
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.poi-marker-reached {
+  animation: poi-blink 1s ease-in-out infinite;
+}
+
+.poi-reached-blink {
+  animation: poi-blink 1s ease-in-out infinite;
+}
+
+@keyframes poi-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 </style>

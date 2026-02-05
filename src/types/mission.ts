@@ -258,6 +258,120 @@ export interface PointOfInterest {
   timestamp: number
 }
 
+/**
+ * CSS style properties for positioning a POI marker inside HUD components
+ */
+export interface PoiMarkerStyle {
+  /**
+   * Left position in pixels
+   */
+  left: string
+  /**
+   * Top position in pixels
+   */
+  top: string
+  /**
+   * CSS transform property
+   */
+  transform: string
+  /**
+   * Z-index for the marker
+   */
+  zIndex?: string
+}
+
+/**
+ * Extended PointOfInterest interface with UI-specific rendering properties for use on HUD components
+ */
+export interface PoiMarker extends Omit<PointOfInterest, 'id' | 'description' | 'timestamp' | 'coordinates'> {
+  /**
+   * POI identifier (alias for PointOfInterest.id)
+   */
+  poiId: string
+  /**
+   * Size of the marker icon in pixels
+   */
+  size: number
+  /**
+   * Text to display for the distance to the POI
+   */
+  distanceText: string
+  /**
+   * Font size for the distance label in pixels
+   */
+  distanceFontSize: number
+  /**
+   * Opacity of the distance label (0-1 as string)
+   */
+  distanceLabelOpacity?: string
+  /**
+   * Z-index of the distance label
+   */
+  distanceLabelZIndex?: string
+  /**
+   * Whether the POI has been reached (within 1 meter)
+   */
+  isReached?: boolean
+  /**
+   * CSS style properties for positioning the marker on the HUD
+   */
+  style: PoiMarkerStyle
+}
+
+/**
+ * Information about a highlighted POI marker
+ */
+export interface HighlightedPoiMarker {
+  /**
+   * POI identifier
+   */
+  poiId: string
+  /**
+   * Timestamp when the marker was highlighted
+   */
+  highlightedAt: number
+  /**
+   * Timestamp when the highlight expires
+   */
+  expiresAt: number
+}
+
+/**
+ * Display information for a highlighted POI marker shown on the HUD side
+ */
+export interface HighlightedPoiMarkerDisplay {
+  /**
+   * Name of the POI
+   */
+  name: string
+  /**
+   * Text to display for the distance to the POI
+   */
+  distanceText: string
+  /**
+   * Whether the POI has been reached (within 1 meter)
+   */
+  isReached?: boolean
+}
+
+/**
+ * Information about a reached POI marker
+ */
+export interface ReachedPoiMarker {
+  /**
+   * POI identifier
+   */
+  poiId: string
+  /**
+   * Timestamp when the POI was reached
+   */
+  reachedAt: number
+  /**
+   * Timestamp when the reached status expires
+   */
+  expiresAt: number
+}
+
 export type ClosestSegmentInfo = {
   /**
    * Index of the segment in the polyline.
