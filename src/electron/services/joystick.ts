@@ -159,6 +159,8 @@ export const checkJoystickState = (deviceId: number): void => {
     throw new Error(`Joystick with id '${deviceId}' is closed.`)
   }
 
+  console.log('Joystick axes:', instance.axes)
+
   const buttonsWithHatsMerged = structuredClone(instance.buttons)
   instance.hats.forEach((hat) => {
     buttonsWithHatsMerged.push(
@@ -201,6 +203,8 @@ export const checkControllerState = (deviceId: number): void => {
   if (instance.closed) {
     throw new Error(`Controller with id '${deviceId}' is closed.`)
   }
+
+  console.log('Controller axes:', instance.axes)
 
   const state = { buttons: structuredClone(instance.buttons), axes: structuredClone(instance.axes) }
   state.axes.leftTrigger = state.axes.leftTrigger > 0 ? scale(state.axes.leftTrigger, 0.5, 1, 0, 1) : 0
