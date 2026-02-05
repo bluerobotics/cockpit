@@ -120,6 +120,21 @@
           />
         </template>
       </v-tooltip>
+      <!-- POI Edge Arrows -->
+      <template v-if="mapReady">
+        <div v-for="arrow in poiEdgeArrows" :key="arrow.poiId" class="poi-edge-arrow" :style="arrow.style">
+          <v-tooltip location="top" :text="arrow.tooltipText" content-class="poi-arrow-tooltip">
+            <template #activator="{ props: tooltipProps }">
+              <div v-bind="tooltipProps" class="poi-arrow-container" @click.stop="centerMapOnPoi(arrow.poiId)">
+                <i
+                  class="mdi mdi-arrow-up-bold poi-arrow-icon"
+                  :style="{ transform: `rotate(${arrow.angle}deg)`, color: arrow.color }"
+                ></i>
+              </div>
+            </template>
+          </v-tooltip>
+        </div>
+      </template>
     </div>
   </div>
 
@@ -198,7 +213,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useElementHover, useRefHistory } from '@vueuse/core'
+import { useDebounceFn, useElementHover, useRefHistory, useThrottleFn } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
@@ -226,6 +241,7 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
 import { createGridOverlay, TargetFollower, WhoToFollow } from '@/libs/utils-map'
@@ -236,9 +252,12 @@ import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { DialogActions } from '@/types/general'
 import type {
+  Edge,
+  EdgeIntersection,
   IconDimensions,
   MapTileProvider,
   MarkerSizes,
+  PoiEdgeArrow,
   PointOfInterest,
   Waypoint,
   WaypointCoordinates,
@@ -260,8 +279,8 @@ const router = useRouter()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
-const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
-const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
+const zoom = ref(missionStore.defaultMapZoom)
+const mapCenter = ref<WaypointCoordinates>(missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
@@ -518,14 +537,6 @@ watch(
   }
 )
 
-const saveLastMapPositionDebounced = useDebounceFn(
-  () => {
-    missionStore.saveLastMapPosition(zoom.value, mapCenter.value)
-  },
-  3000,
-  { maxWait: 8000 }
-)
-
 // Watch for zoom/move changes to update grid and scale
 watch([zoom, mapCenter], () => {
   if (widget.value.options.showCoordinateGrid && map.value) {
@@ -534,7 +545,6 @@ watch([zoom, mapCenter], () => {
   if (showButtons.value && map.value) {
     createScaleControl()
   }
-  saveLastMapPositionDebounced()
 })
 
 // Watch for reached mission item sequences to update marker styles
@@ -683,6 +693,12 @@ onMounted(async () => {
     setTimeout(() => (isDragging.value = false), 200)
   })
 
+  map.value.on('move', () => {
+    if (mapReady.value && map.value && map.value instanceof L.Map) {
+      throttledUpdateArrows()
+    }
+  })
+
   // Update zoom value after zooming
   map.value.on('zoomend', () => {
     contextMenuVisible.value = false
@@ -726,12 +742,6 @@ onMounted(async () => {
   }
 
   mapReady.value = true
-
-  if (missionStore.followVehicleOnMap === true) {
-    targetFollower.follow(WhoToFollow.VEHICLE)
-  } else {
-    targetFollower.unFollow()
-  }
   await refreshMission()
 })
 
@@ -1022,12 +1032,10 @@ watch(vehicleStore.coordinates, () => {
   vehicleMarker.value.setLatLng(vehiclePosition.value)
 })
 
-watch(followerTarget, (newTarget) => {
-  if (newTarget === WhoToFollow.VEHICLE) {
-    missionStore.followVehicleOnMap = true
-  } else {
-    missionStore.followVehicleOnMap = false
-  }
+// If vehicle position was not available and now it is, start following it
+watch(vehiclePosition, (_, oldPosition) => {
+  if (followerTarget.value === WhoToFollow.VEHICLE || oldPosition !== undefined) return
+  targetFollower.follow(WhoToFollow.VEHICLE)
 })
 
 // Dinamically update data of the vehicle tooltip
@@ -1513,7 +1521,12 @@ const addPoiMarkerToMapWidget = (poi: PointOfInterest): void => {
     ${poi.description ? poi.description + '<br>' : ''}
     Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
   `
-  const tooltipConfig = { permanent: false, direction: 'top', offset: [0, -40], className: 'poi-tooltip-widget' }
+  const tooltipConfig = {
+    permanent: false,
+    direction: 'top' as const,
+    offset: [0, -40] as [number, number],
+    className: 'poi-tooltip-widget',
+  }
   marker.bindTooltip(tooltipContent, tooltipConfig)
 
   marker.on('drag', (event) => {
@@ -1617,6 +1630,239 @@ watch(
   },
   { immediate: true }
 )
+
+const poiEdgeArrows = ref<PoiEdgeArrow[]>([])
+
+// Calculate intersection with map edges
+const calculateMapEdgesIntersections = (
+  centerPoint: L.Point,
+  distanceX: number,
+  distanceY: number,
+  width: number,
+  height: number,
+  topEdgeY: number,
+  validYMin: number
+): EdgeIntersection[] => {
+  const intersections: EdgeIntersection[] = []
+  // Top edge
+  if (distanceY < 0) {
+    const t = (topEdgeY - centerPoint.y) / distanceY
+    if (t > 0) {
+      const x = centerPoint.x + distanceX * t
+      if (x >= -1 && x <= width + 1) {
+        intersections.push({ t, edge: 'top', x, y: topEdgeY })
+      }
+    }
+  }
+  // Bottom edge
+  if (distanceY > 0) {
+    const t = (height - centerPoint.y) / distanceY
+    if (t > 0) {
+      const x = centerPoint.x + distanceX * t
+      if (x >= -1 && x <= width + 1) {
+        intersections.push({ t, edge: 'bottom', x, y: height })
+      }
+    }
+  }
+  // Left edge
+  if (distanceX < 0) {
+    const t = -centerPoint.x / distanceX
+    if (t > 0) {
+      const y = centerPoint.y + distanceY * t
+      if (y >= validYMin - 1 && y <= height + 1) {
+        intersections.push({ t, edge: 'left', x: 0, y })
+      }
+    }
+  }
+  // Right edge
+  if (distanceX > 0) {
+    const t = (width - centerPoint.x) / distanceX
+    if (t > 0) {
+      const y = centerPoint.y + distanceY * t
+      if (y >= validYMin - 1 && y <= height + 1) {
+        intersections.push({ t, edge: 'right', x: width, y })
+      }
+    }
+  }
+  return intersections
+}
+
+// Handle POI Arrow corner cases for smooth edge transitions
+const handleMapEdgeCorners = (
+  intersections: EdgeIntersection[],
+  edgeX: number,
+  edgeY: number,
+  width: number,
+  height: number,
+  cornerThreshold: number
+): EdgeIntersection | null => {
+  const isNearBottomRight = edgeX > width - cornerThreshold && edgeY > height - cornerThreshold - 30
+  const isNearBottomLeft = edgeX < cornerThreshold && edgeY > height - cornerThreshold - 30
+
+  if (isNearBottomRight) {
+    const right = intersections.find((i) => i.edge === 'right')
+    const bottom = intersections.find((i) => i.edge === 'bottom')
+    if (right && bottom && right.t <= bottom.t * 1.15) return right
+  } else if (isNearBottomLeft) {
+    const left = intersections.find((i) => i.edge === 'left')
+    const bottom = intersections.find((i) => i.edge === 'bottom')
+    if (left && bottom && left.t <= bottom.t * 1.15) return left
+  }
+  return null
+}
+
+// Generate CSS style for POI Arrow based on edge
+const getPoiArrowStyle = (
+  edge: Edge,
+  x: number,
+  y: number,
+  topEdgeY: number,
+  isFullscreen: boolean
+): PoiEdgeArrow['style'] => {
+  const bottomOffset = isFullscreen ? '22px' : '-25px'
+  const styles: Record<Edge, PoiEdgeArrow['style']> = {
+    top: { top: `${topEdgeY + 2}px`, left: `${x}px`, transform: 'translate(-50%, -25%)' },
+    bottom: { bottom: bottomOffset, left: `${x}px`, transform: 'translate(-50%, -50%)' },
+    left: { left: '5px', top: `${y}px`, transform: 'translate(-25%, -50%)' },
+    right: { right: '5px', top: `${y}px`, transform: 'translate(25%, -50%)' },
+  }
+  return styles[edge]
+}
+
+// Calculate POI arrow angle and position to be placed on the edges of the map
+const calculatePoiEdgeArrows = (): void => {
+  if (!mapReady.value || !map.value || !(map.value instanceof L.Map)) {
+    poiEdgeArrows.value = []
+    return
+  }
+
+  const container = map.value.getContainer()
+  if (!container) {
+    poiEdgeArrows.value = []
+    return
+  }
+
+  let bounds: L.LatLngBounds
+  let containerSize: L.Point
+  let center: L.LatLng
+
+  try {
+    bounds = map.value.getBounds()
+    containerSize = map.value.getSize()
+    center = map.value.getCenter()
+  } catch {
+    poiEdgeArrows.value = []
+    return
+  }
+
+  const width = containerSize.x
+  const height = containerSize.y
+  const isFullscreen = widgetStore.isFullScreen(widget.value)
+  const topEdgeY = isFullscreen ? widgetStore.currentTopBarHeightPixels : 0
+  const bottomEdgeY = isFullscreen ? height - widgetStore.currentBottomBarHeightPixels : height
+  const validYMin = topEdgeY
+  const validYMax = bottomEdgeY
+  const cornerThreshold = 40
+  const arrows: PoiEdgeArrow[] = []
+
+  missionStore.pointsOfInterest.forEach((poi) => {
+    const poiLatLng = L.latLng(poi.coordinates[0], poi.coordinates[1])
+    if (bounds.contains(poiLatLng) || !map.value) return
+
+    const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
+    const distanceText =
+      distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
+    let poiPoint: L.Point
+    let centerPoint: L.Point
+
+    try {
+      poiPoint = map.value.latLngToContainerPoint(poiLatLng)
+      centerPoint = map.value.latLngToContainerPoint(center)
+    } catch {
+      return
+    }
+
+    const distanceX = poiPoint.x - centerPoint.x
+    const distanceY = poiPoint.y - centerPoint.y
+
+    if (Math.abs(distanceX) < 0.001 && Math.abs(distanceY) < 0.001) return
+
+    const intersections = calculateMapEdgesIntersections(
+      centerPoint,
+      distanceX,
+      distanceY,
+      width,
+      height,
+      topEdgeY,
+      validYMin
+    )
+    if (intersections.length === 0) return
+
+    const closest = intersections.reduce((min: EdgeIntersection, current: EdgeIntersection) =>
+      current.t < min.t ? current : min
+    )
+    let selectedIntersection = closest
+
+    // Handle corner cases
+    const cornerIntersection = handleMapEdgeCorners(intersections, closest.x, closest.y, width, height, cornerThreshold)
+    if (cornerIntersection) selectedIntersection = cornerIntersection
+
+    // Clamp positions to contain the arrow within the map container
+    let edgeX = Math.max(0, Math.min(width, selectedIntersection.x))
+    let edgeY = selectedIntersection.y
+
+    if (selectedIntersection.edge === 'bottom') {
+      edgeY = Math.max(0, Math.min(height, edgeY))
+    } else if (selectedIntersection.edge === 'left' || selectedIntersection.edge === 'right') {
+      edgeY = Math.max(validYMin, Math.min(validYMax - 10, edgeY))
+    } else {
+      edgeY = Math.max(validYMin, Math.min(validYMax, edgeY))
+    }
+
+    const angle = ((Math.atan2(distanceY, distanceX) * 180) / Math.PI + 360) % 360
+
+    arrows.push({
+      poiId: poi.id,
+      style: getPoiArrowStyle(selectedIntersection.edge, edgeX, edgeY, topEdgeY, isFullscreen),
+      angle: angle + 90,
+      tooltipText: `${poi.name} - ${distanceText}`,
+      color: poi.color,
+    })
+  })
+
+  poiEdgeArrows.value = arrows
+}
+
+// Prevent poi arrows calculation from overloading the UI
+const debouncedUpdateArrows = useDebounceFn(calculatePoiEdgeArrows, 150)
+const throttledUpdateArrows = useThrottleFn(calculatePoiEdgeArrows, 15) // Max 60fps
+
+// Watch for map changes and POI changes
+watch(
+  [mapCenter, zoom, () => missionStore.pointsOfInterest],
+  () => {
+    if (mapReady.value && map.value && map.value instanceof L.Map) {
+      debouncedUpdateArrows()
+    }
+  },
+  { immediate: true }
+)
+
+// Update POI Edge Arrows when map becomes ready
+watch(mapReady, (ready) => {
+  if (ready && map.value && map.value instanceof L.Map) {
+    debouncedUpdateArrows()
+  }
+})
+
+const centerMapOnPoi = (poiId: string): void => {
+  if (!map.value) return
+
+  const poi = missionStore.pointsOfInterest.find((p) => p.id === poiId)
+  if (!poi) return
+
+  map.value.setView(poi.coordinates as LatLngTuple, map.value.getZoom(), { animate: true })
+}
 </script>
 
 <style scoped>
@@ -1834,5 +2080,45 @@ watch(
 
 :deep(.leaflet-control-layers label) {
   color: var(--glass-color) !important;
+}
+
+.poi-edge-arrow {
+  position: absolute;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.poi-arrow-container {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.poi-arrow-container:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.3);
+}
+
+.poi-arrow-icon {
+  font-size: 36px;
+  font-weight: 900;
+  -webkit-text-stroke: 1px white;
+  transition: transform 0.2s ease;
+  text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white, 0 -1px 0 white, 0 1px 0 white,
+    -1px 0 0 white, 1px 0 0 white;
+}
+
+:deep(.poi-arrow-tooltip) {
+  background-color: rgba(255, 255, 255) !important;
+  color: black !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 5px 8px !important;
 }
 </style>
