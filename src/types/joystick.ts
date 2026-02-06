@@ -1,4 +1,4 @@
-import { JoystickModel } from '@/libs/joystick/manager'
+import { JoystickModel } from '@/types/joystick-model'
 
 import { SDLControllerState, SDLJoystickState } from './sdl'
 
@@ -529,4 +529,84 @@ export const convertSDLJoystickStateToGamepadState = (sdlState: SDLJoystickState
     buttons: sdlState.buttons.map((button) => (button ? 1 : 0)),
     axes: sdlState.axes,
   }
+}
+
+/**
+ * Joystick map suggestion from BlueOS extensions
+ */
+export interface JoystickMapSuggestion {
+  /**
+   * Unique identifier for this suggestion
+   */
+  id: string
+  /**
+   * Protocol of the action to be mapped (e.g. cockpit-action, data-lake-variable, etc.)
+   */
+  actionProtocol: JoystickProtocol
+  /**
+   * Human-readable name of the action to be mapped
+   */
+  actionName: string
+  /**
+   * Unique identifier for the action to be mapped
+   */
+  actionId: string
+  /**
+   * The button number (in Cockpit standard mapping) to map the action to
+   */
+  button: number
+  /**
+   * The modifier key for this suggestion (regular or shift)
+   */
+  modifier: CockpitModifierKeyOption
+  /**
+   * Optional description of what the action does
+   */
+  description?: string
+}
+
+/**
+ * A group of joystick button mapping suggestions
+ */
+export interface JoystickMapSuggestionGroup {
+  /**
+   * Unique identifier for the suggestion group
+   */
+  id: string
+  /**
+   * Display name for the suggestion group
+   */
+  name: string
+  /**
+   * List of button mapping suggestions in this group
+   */
+  buttonMappingSuggestions: JoystickMapSuggestion[]
+}
+
+/**
+ * Joystick map suggestions grouped by extension
+ */
+export interface JoystickMapSuggestionsFromExtension {
+  /**
+   * Name of the extension offering these suggestions
+   */
+  extensionName: string
+  /**
+   * Array of suggestions from this extension
+   */
+  suggestions: JoystickMapSuggestion[]
+}
+
+/**
+ * Joystick map suggestion groups from extension
+ */
+export interface JoystickMapSuggestionGroupsFromExtension {
+  /**
+   * Name of the extension offering these suggestion groups
+   */
+  extensionName: string
+  /**
+   * Array of suggestion groups from this extension
+   */
+  suggestionGroups: JoystickMapSuggestionGroup[]
 }

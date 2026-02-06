@@ -1,5 +1,5 @@
-import { DataLakeVariable } from '@/libs/actions/data-lake'
-import { CockpitAction } from '@/libs/joystick/protocols/cockpit-actions'
+import { DataLakeVariable } from '@/types/data-lake'
+import { ProtocolAction } from '@/types/joystick'
 
 import type { Point2D, SizeRect2D } from './general'
 
@@ -15,12 +15,32 @@ export interface ExternalWidgetSetupInfo {
    * The URL at which the widget is located
    * This is expected to be an absolute url
    */
-  iframe_url: string
+  iframeUrl: string
 
   /**
    * The icon of the widget, this is displayed on the widget browser
    */
-  iframe_icon: string
+  iframeIcon: string
+
+  /**
+   * The name of the collapsed container, this is displayed on the widget browser
+   */
+  collapsibleContainerName?: string
+
+  /**
+   * Version of the widget (optional)
+   */
+  version?: string
+
+  /**
+   * Whether the widget should start collapsed (optional)
+   */
+  startCollapsed?: boolean
+
+  /**
+   * Whether to use vehicle address as base URL for the widget (optional)
+   */
+  useVehicleAddressAsBaseUrl?: boolean
 }
 
 /**
@@ -241,7 +261,7 @@ export type CustomWidgetElementOptions = {
       /**
        * Action parameter
        */
-      cockpitAction: CockpitAction
+      cockpitAction: ProtocolAction
       /**
        * Layout options
        */

@@ -2,7 +2,11 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
 import { type ArduPilotVehicleModeActionIdPattern } from '@/libs/vehicle/ardupilot/common'
+import { type ActionConfig, customActionTypes } from '@/types/cockpit-actions'
 import { type ProtocolAction, JoystickProtocol } from '@/types/joystick'
+
+export type { ActionConfig }
+export { customActionTypes }
 
 /**
  * Possible functions in the MAVLink `MANUAL_CONTROL` message protocol
@@ -144,35 +148,3 @@ export const executeActionCallback = (id: string): void => {
 }
 
 export const availableCockpitActions = cockpitActionsManager.availableActions
-
-/**
- * Action configuration interface
- */
-export interface ActionConfig {
-  /**
-   * Action ID
-   */
-  id: string
-  /**
-   * Action name
-   */
-  name: string
-  /**
-   * Action type
-   */
-  type: customActionTypes
-  /**
-   * Action configuration
-   * Specific to the action type
-   */
-  config: any
-}
-
-/**
- * Custom action types
- */
-export enum customActionTypes {
-  httpRequest = 'http-request',
-  mavlinkMessage = 'mavlink-message',
-  javascript = 'javascript',
-}
