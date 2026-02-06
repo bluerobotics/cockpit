@@ -121,7 +121,7 @@
         </template>
       </v-tooltip>
       <!-- POI Edge Arrows -->
-      <template v-if="mapReady">
+      <template v-if="mapReady && widget.options.showPoiArrows">
         <div v-for="arrow in poiEdgeArrows" :key="arrow.poiId" class="poi-edge-arrow" :style="arrow.style">
           <v-tooltip location="top" :text="arrow.tooltipText" content-class="poi-arrow-tooltip">
             <template #activator="{ props: tooltipProps }">
@@ -136,7 +136,7 @@
         </div>
       </template>
       <!-- Vehicle Edge Arrow -->
-      <template v-if="mapReady">
+      <template v-if="mapReady && vehicleEdgeArrow">
         <div class="poi-edge-arrow" :style="vehicleEdgeArrow.style">
           <v-tooltip location="top" :text="vehicleEdgeArrow.tooltipText" content-class="poi-arrow-tooltip">
             <template #activator="{ props: tooltipProps }">
@@ -155,7 +155,7 @@
         </div>
       </template>
       <!-- Home Edge Arrow -->
-      <template v-if="mapReady">
+      <template v-if="mapReady && homeEdgeArrow">
         <div class="poi-edge-arrow" :style="homeEdgeArrow.style">
           <v-tooltip location="top" :text="homeEdgeArrow.tooltipText" content-class="poi-arrow-tooltip">
             <template #activator="{ props: tooltipProps }">
@@ -186,24 +186,75 @@
   </ContextMenu>
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
-    <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Map widget settings</v-card-title>
+    <v-card class="pa-2 max-w-[800px]" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="flex justify-between items-center">
+        <span class="text-center flex-1">Map widget settings</span>
+        <v-btn
+          icon="mdi-close"
+          size="small"
+          variant="text"
+          class="absolute right-2 top-2 text-lg"
+          @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false"
+        />
+      </v-card-title>
       <v-card-text>
-        <v-switch
-          v-model="widget.options.showVehiclePath"
-          class="my-1"
-          label="Show vehicle path"
-          :color="widget.options.showVehiclePath ? 'white' : undefined"
-          hide-details
-        />
-        <v-switch
-          v-model="widget.options.showCoordinateGrid"
-          class="my-1"
-          label="Show coordinate grid"
-          :color="widget.options.showCoordinateGrid ? 'white' : undefined"
-          hide-details
-        />
+        <ExpansiblePanel compact :is-expanded="!interfaceStore.isOnSmallScreen" no-bottom-divider no-top-divider>
+          <template #title>Display</template>
+          <template #content>
+            <v-row>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showVehiclePath"
+                  class="my-1"
+                  label="Vehicle path"
+                  :color="widget.options.showVehiclePath ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showCoordinateGrid"
+                  class="my-1"
+                  label="Coordinate grid"
+                  :color="widget.options.showCoordinateGrid ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showPoiArrows"
+                  class="my-1"
+                  label="Point of Interest arrows"
+                  :color="widget.options.showPoiArrows ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showHomeArrow"
+                  class="my-1"
+                  label="Home arrow"
+                  :color="widget.options.showHomeArrow ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showVehicleArrow"
+                  class="my-1"
+                  label="Vehicle arrow"
+                  :color="widget.options.showVehicleArrow ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+            </v-row>
+          </template>
+        </ExpansiblePanel>
       </v-card-text>
+      <v-divider class="mx-10" />
+      <v-card-actions class="flex justify-end pt-3">
+        <v-btn @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">Close</v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 
@@ -273,6 +324,7 @@ import copterMarkerImage from '@/assets/arducopter-top-view.png'
 import blueboatMarkerImage from '@/assets/blueboat-marker.png'
 import brov2MarkerImage from '@/assets/brov2-marker.png'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
+import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
@@ -487,11 +539,23 @@ onBeforeMount(() => {
     widget.value.options = {
       showVehiclePath: true,
       showCoordinateGrid: false,
+      showPoiArrows: true,
+      showHomeArrow: true,
+      showVehicleArrow: true,
     }
   }
   // Ensure new options exist for existing widgets
   if (widget.value.options.showCoordinateGrid === undefined) {
     widget.value.options.showCoordinateGrid = false
+  }
+  if (widget.value.options.showPoiArrows === undefined) {
+    widget.value.options.showPoiArrows = true
+  }
+  if (widget.value.options.showHomeArrow === undefined) {
+    widget.value.options.showHomeArrow = true
+  }
+  if (widget.value.options.showVehicleArrow === undefined) {
+    widget.value.options.showVehicleArrow = true
   }
   targetFollower.enableAutoUpdate()
 })
