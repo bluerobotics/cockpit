@@ -1,6 +1,6 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -51,6 +51,8 @@ export const useMissionStore = defineStore('mission', () => {
     'cockpit-user-last-map-tile-provider',
     'Esri World Imagery'
   )
+  const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
+  const mapClearMapDrawing = ref<(() => void) | null>(null)
 
   const { showDialog } = useInteractionDialog()
 
@@ -232,6 +234,150 @@ export const useMissionStore = defineStore('mission', () => {
     userLastMapCenter.value = mapCenter
   }
 
+  // Maps waypoints on MAVLink mission to their corresponding mission item seq (ignoring NON_NAV commands)
+  const navMissionSeqByWaypointIndex = computed<number[]>(() => {
+    const navigationSequence: number[] = []
+    navigationSequence[0] = 0
+    let seq = 1
+
+    if (vehicleMission.value.length <= 1) {
+      return navigationSequence
+    }
+
+    for (let idx = 1; idx < vehicleMission.value.length; idx += 1) {
+      const waypoint = vehicleMission.value[idx]
+      const commands = waypoint?.commands ?? []
+
+      if (commands.length === 0) {
+        navigationSequence[idx] = seq
+        seq += 1
+        continue
+      }
+
+      const startSeq = seq
+      let navSeqForThisWp: number | undefined = undefined
+
+      commands.forEach((cmd) => {
+        if (cmd.type === 'MAVLINK_NAV_COMMAND' && navSeqForThisWp === undefined) {
+          navSeqForThisWp = seq
+        }
+        seq += 1
+      })
+
+      navigationSequence[idx] = navSeqForThisWp ?? startSeq
+    }
+
+    return navigationSequence
+  })
+
+  const isMissionRunning = computed<boolean>(
+    () => mainVehicleStore.mode === 'AUTO' || mainVehicleStore.mode === 'GUIDED'
+  )
+
+  // Keeps track of the current active waypoint on the mission
+  const currentWpIndex = computed<number>(() => {
+    const currentSeq = mainVehicleStore.currentMissionSeq ?? 0
+    const navigationSequence = navMissionSeqByWaypointIndex.value
+    let waypointIndex = 0
+    1
+    if (navigationSequence.length === 0) return 0
+
+    for (let i = 0; i < navigationSequence.length; i += 1) {
+      if (navigationSequence[i] <= currentSeq) {
+        waypointIndex = i
+      } else {
+        break
+      }
+    }
+
+    return waypointIndex
+  })
+
+  const currentWaypointOnMission = computed<number>(() => {
+    return currentWpIndex.value
+  })
+
+  // Enables skipping back waypoints button
+  const canSkipToPrevWp = computed<boolean>(() => {
+    if (!mainVehicleStore.isVehicleOnline) return false
+    return currentWaypointOnMission.value > 1
+  })
+
+  // Enables skipping forward waypoints button
+  const canSkipToNextWp = computed<boolean>(() => {
+    const navigationSequence = navMissionSeqByWaypointIndex.value
+
+    if (!mainVehicleStore.isVehicleOnline || navigationSequence.length <= 1) return false
+
+    return currentWaypointOnMission.value < navigationSequence.length - 1
+  })
+
+  const skipToWaypoint = async (delta: number): Promise<boolean> => {
+    const navigationSequence = navMissionSeqByWaypointIndex.value
+    const currentWp = currentWpIndex.value
+    const maxWp = navigationSequence.length - 1
+    const targetWp = Math.max(0, Math.min(maxWp, currentWp + delta))
+    const targetSeq = navigationSequence[targetWp]
+
+    if (!mainVehicleStore.isVehicleOnline) return false
+    if (navigationSequence.length <= 1) return false
+    if (targetWp === currentWp) return false
+    if (targetSeq === undefined) return false
+
+    try {
+      await mainVehicleStore.setMissionCurrent(targetSeq)
+    } catch (err) {
+      return false
+    }
+
+    return true
+  }
+
+  const stopMission = async (): Promise<boolean> => {
+    if (!mainVehicleStore.isVehicleOnline) return false
+    try {
+      await mainVehicleStore.pauseMission()
+      await mainVehicleStore.setMissionCurrent(1)
+      return true
+    } catch (err) {
+      return false
+    }
+  }
+
+  // Allow executing missions
+  const executeMissionOnVehicle = async (): Promise<boolean> => {
+    try {
+      await mainVehicleStore.startMission()
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  const registerMapMissionActions = (payload: {
+    /**
+     * Download the mission from the vehicle
+     */
+    downloadMissionFromVehicle: () => Promise<void>
+    /**
+     * Clear the map drawing
+     */
+    clearMapDrawing: () => void
+  }): void => {
+    mapDownloadMissionFromVehicle.value = payload.downloadMissionFromVehicle
+    mapClearMapDrawing.value = payload.clearMapDrawing
+  }
+
+  const callMapDownloadMissionFromVehicle = async (): Promise<void> => {
+    if (!mapDownloadMissionFromVehicle.value) return
+    await mapDownloadMissionFromVehicle.value()
+  }
+
+  const callMapClearMapDrawing = (): void => {
+    if (!mapClearMapDrawing.value) return
+    mapClearMapDrawing.value()
+  }
+
   watch(
     () => [...currentPlanningWaypoints],
     (wps) => persistDraft(wps),
@@ -281,5 +427,16 @@ export const useMissionStore = defineStore('mission', () => {
     defaultCruiseSpeed,
     userLastMapTileProvider,
     followVehicleOnMap,
+    stopMission,
+    executeMissionOnVehicle,
+    skipToWaypoint,
+    isMissionRunning,
+    currentWpIndex,
+    canSkipToPrevWp,
+    canSkipToNextWp,
+    currentWaypointOnMission,
+    registerMapMissionActions,
+    callMapDownloadMissionFromVehicle,
+    callMapClearMapDrawing,
   }
 })

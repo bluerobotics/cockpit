@@ -26,6 +26,7 @@ import {
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
 import { isEqual, sequentialArray } from '@/libs/utils'
+import { useMissionStore } from '@/stores/mission'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import {
   type MiniWidget,
@@ -49,6 +50,7 @@ const { showDialog } = useInteractionDialog()
 export const savedProfilesKey = 'cockpit-saved-profiles-v8'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
+  const missionStore = useMissionStore()
   const editingMode = ref(false)
   const snapToGrid = ref(true)
   const gridInterval = ref(0.01)
@@ -797,6 +799,62 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const selectPrevViewCBId = registerActionCallback(availableCockpitActions.go_to_previous_view, selectPreviousView)
   onBeforeUnmount(() => unregisterActionCallback(selectPrevViewCBId))
 
+  // Keep track of users that have been migrated to MissionControlPanel
+  const usersMigratedMissionControlPanel = useStorage<string[]>('cockpit-users-migrated-mission-control-panel', [])
+  // Migrate from default mission control on map to MissionControlPanel widget (user-based)
+  const migrateMissionControlPanelForCurrentUser = (): void => {
+    const currentUsername = missionStore.username
+    if (!currentUsername || usersMigratedMissionControlPanel.value.includes(currentUsername)) {
+      return
+    }
+
+    // Gets the MissionControlPanel widget template from defaults.ts
+    const missionControlPanelTemplate = widgetProfiles
+      .flatMap((profile) => profile.views)
+      .flatMap((view) => view.widgets)
+      .find((widget) => widget.component === WidgetType.MissionControlPanel)
+
+    if (missionControlPanelTemplate) {
+      let hasChanges = false
+      savedProfiles.value.forEach((profile) => {
+        profile.views.forEach((view) => {
+          const hasMap = view.widgets.some((w) => w.component === WidgetType.Map)
+          const hasMissionCP = view.widgets.some((w) => w.component === WidgetType.MissionControlPanel)
+          // Only add the MissionControlPanel widget if there is a Map widget and no MissionControlPanel widget yet
+          if (hasMap && !hasMissionCP) {
+            addWidget(
+              {
+                component: missionControlPanelTemplate.component,
+                name: missionControlPanelTemplate.name,
+                options: missionControlPanelTemplate.options,
+                icon: '',
+              },
+              view
+            )
+            const addedWidget = view.widgets[0]
+            if (addedWidget && addedWidget.component === WidgetType.MissionControlPanel) {
+              addedWidget.position = missionControlPanelTemplate.position
+              addedWidget.size = missionControlPanelTemplate.size
+            }
+            hasChanges = true
+          }
+        })
+      })
+
+      if (hasChanges) {
+        usersMigratedMissionControlPanel.value.push(currentUsername)
+      }
+    }
+  }
+
+  // Watch for username changes and migrate MissionControlPanel widget for the current user
+  watch(
+    () => missionStore.username,
+    () => {
+      migrateMissionControlPanelForCurrentUser()
+    }
+  )
+
   // Profile migrations
   // TODO: remove on first stable release
   onBeforeMount(() => {
@@ -854,6 +912,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         alreadyUsedMiniWidgetHashes.push(w.hash)
       })
     })
+
+    // Migrate MissionControlPanel widget for the current user
+    migrateMissionControlPanelForCurrentUser()
   })
 
   const setMiniWidgetLastValue = (miniWidgetHash: string, lastValue: any): void => {

@@ -58,15 +58,16 @@ export interface ExternalWidgetSetupInfo {
  */
 export enum WidgetType {
   Attitude = 'Attitude',
+  CollapsibleContainer = 'CollapsibleContainer',
   Compass = 'Compass',
   CompassHUD = 'CompassHUD',
-  CollapsibleContainer = 'CollapsibleContainer',
   DepthHUD = 'DepthHUD',
   DoItYourself = 'DoItYourself',
   IFrame = 'IFrame',
   ImageView = 'ImageView',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
+  MissionControlPanel = 'MissionControlPanel',
   Plotter = 'Plotter',
   URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',
@@ -84,20 +85,21 @@ export enum MiniWidgetType {
   BatteryIndicator = 'BatteryIndicator',
   ChangeAltitudeCommander = 'ChangeAltitudeCommander',
   Clock = 'Clock',
-  GoFullScreen = 'GoFullScreen',
-  EnterEditMode = 'EnterEditMode',
   DepthIndicator = 'DepthIndicator',
+  EkfStateIndicator = 'EkfStateIndicator',
+  EnterEditMode = 'EnterEditMode',
+  GoFullScreen = 'GoFullScreen',
+  JoystickCommIndicator = 'JoystickCommIndicator',
+  MiniMissionControlPanel = 'MiniMissionControlPanel',
+  MiniVideoRecorder = 'MiniVideoRecorder',
   MissionIdentifier = 'MissionIdentifier',
+  ModeSelector = 'ModeSelector',
   RelativeAltitudeIndicator = 'RelativeAltitudeIndicator',
+  SatelliteIndicator = 'SatelliteIndicator',
+  SnapshotTool = 'SnapshotTool',
   TakeoffLandCommander = 'TakeoffLandCommander',
   VeryGenericIndicator = 'VeryGenericIndicator',
-  JoystickCommIndicator = 'JoystickCommIndicator',
-  MiniVideoRecorder = 'MiniVideoRecorder',
-  ModeSelector = 'ModeSelector',
-  EkfStateIndicator = 'EkfStateIndicator',
-  SatelliteIndicator = 'SatelliteIndicator',
   ViewSelector = 'ViewSelector',
-  SnapshotTool = 'SnapshotTool',
 }
 
 /**
@@ -571,6 +573,10 @@ export type WidgetManagerVars = {
    */
   allowMoving: boolean
   /**
+   * If the widget should be allowed to resize
+   */
+  allowResizing: boolean
+  /**
    * Last widget X position when it wasn't maximized
    */
   lastNonMaximizedX: number
@@ -828,6 +834,7 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
   [WidgetType.URLVideoPlayer]: true,
   [WidgetType.VideoPlayer]: true,
   [WidgetType.VirtualHorizon]: false,
+  [WidgetType.MissionControlPanel]: false,
 }
 
 export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
@@ -851,6 +858,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.SatelliteIndicator]: false,
   [MiniWidgetType.ViewSelector]: false,
   [MiniWidgetType.SnapshotTool]: true,
+  [MiniWidgetType.MiniMissionControlPanel]: false,
 }
 
 export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
@@ -868,6 +876,7 @@ export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
   [WidgetType.URLVideoPlayer]: false,
   [WidgetType.VideoPlayer]: false,
   [WidgetType.VirtualHorizon]: false,
+  [WidgetType.MissionControlPanel]: false,
 }
 
 /**
