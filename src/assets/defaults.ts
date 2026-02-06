@@ -938,8 +938,7 @@ export const defaultBatteryLevelColorScheme: Record<BatteryLevel, string> = {
 
 // Values based on Blue Robotics standard 4s Li-Ion battery pack voltages
 export const defaultBatteryLevelThresholds: BatteryLevelThresholds = {
-  high: 15.2,
-  medium: 14.0,
-  low: 12.8,
-  critical: 12.0,
+  medium: 15.2,
+  low: 14.0,
+  critical: 12.8,
 }

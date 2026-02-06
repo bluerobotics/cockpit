@@ -102,91 +102,104 @@
         <div class="flex justify-between items-center -mt-1">
           <v-checkbox
             v-model="miniWidget.options.useVoltageToColor"
-            label="Use voltage to color scheme"
+            label="Change color by voltage"
             hide-details
             class="mr-1"
           />
-          <v-tooltip
-            location="top"
-            text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
-          >
-            <template #activator="{ props: infoProps }">
-              <v-icon
-                v-bind="infoProps"
-                icon="mdi-information-outline"
-                class="ml-1 text-yellow-300 cursor-pointer"
-                size="18"
-              />
-            </template>
-          </v-tooltip>
+          <div class="flex items-center gap-x-1">
+            <v-tooltip
+              location="top"
+              text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
+            >
+              <template #activator="{ props: infoProps }">
+                <v-icon
+                  v-bind="infoProps"
+                  icon="mdi-information-outline"
+                  class="ml-1 text-yellow-300 cursor-pointer"
+                  size="18"
+                />
+              </template>
+            </v-tooltip>
+            <v-tooltip location="top" text="Reset colors and voltage thresholds to default values">
+              <template #activator="{ props: resetProps }">
+                <v-btn v-bind="resetProps" icon size="small" variant="text" class="text-white" @click="resetToDefaults">
+                  <v-icon icon="mdi-restore" size="18" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+          </div>
         </div>
 
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.critical"
-            label="Critical voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.critical"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
-        </div>
-
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.low"
-            label="Low voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.low"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
-        </div>
-
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.medium"
-            label="Medium voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.medium"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
-        </div>
-
-        <div class="flex items-center gap-x-2">
-          <v-text-field
-            v-model.number="batteryThresholds.high"
-            label="High voltage (V)"
-            type="number"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <input
-            v-model="miniWidget.options.voltageToColorScheme.high"
-            type="color"
-            theme="dark"
-            class="w-8 h-8 rounded border border-white/30 bg-transparent cursor-pointer"
-          />
+        <div class="flex items-start gap-x-2">
+          <div class="flex flex-1 min-w-0 flex-col gap-y-4">
+            <div class="h-3 shrink-0" />
+            <v-text-field
+              v-model.number="batteryThresholds.medium"
+              label="Medium threshold (V)"
+              type="number"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+            <v-text-field
+              v-model.number="batteryThresholds.low"
+              label="Low threshold (V)"
+              type="number"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+            <v-text-field
+              v-model.number="batteryThresholds.critical"
+              label="Critical threshold (V)"
+              type="number"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+          </div>
+          <div class="flex shrink-0 flex-col gap-y-4">
+            <v-menu :close-on-content-click="false">
+              <template #activator="{ props: colorProps }">
+                <div
+                  v-bind="colorProps"
+                  class="w-10 h-10 rounded border border-white/30 cursor-pointer shrink-0"
+                  :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.high }"
+                />
+              </template>
+              <v-color-picker v-model="miniWidget.options.voltageToColorScheme.high" hide-inputs theme="dark" />
+            </v-menu>
+            <v-menu :close-on-content-click="false">
+              <template #activator="{ props: colorProps }">
+                <div
+                  v-bind="colorProps"
+                  class="w-10 h-10 rounded border border-white/30 cursor-pointer shrink-0"
+                  :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.medium }"
+                />
+              </template>
+              <v-color-picker v-model="miniWidget.options.voltageToColorScheme.medium" hide-inputs theme="dark" />
+            </v-menu>
+            <v-menu :close-on-content-click="false">
+              <template #activator="{ props: colorProps }">
+                <div
+                  v-bind="colorProps"
+                  class="w-10 h-10 rounded border border-white/30 cursor-pointer shrink-0"
+                  :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.low }"
+                />
+              </template>
+              <v-color-picker v-model="miniWidget.options.voltageToColorScheme.low" hide-inputs theme="dark" />
+            </v-menu>
+            <v-menu :close-on-content-click="false">
+              <template #activator="{ props: colorProps }">
+                <div
+                  v-bind="colorProps"
+                  class="w-10 h-10 rounded border border-white/30 cursor-pointer shrink-0"
+                  :style="{ backgroundColor: miniWidget.options.voltageToColorScheme.critical }"
+                />
+              </template>
+              <v-color-picker v-model="miniWidget.options.voltageToColorScheme.critical" hide-inputs theme="dark" />
+            </v-menu>
+          </div>
         </div>
 
         <p class="text-red-500 text-center text-sm w-[full]">{{ errorMessage }}</p>
@@ -241,22 +254,32 @@ miniWidget.value.options.batteryThresholds ??= Object.assign({}, defaultBatteryL
 
 const batteryThresholds = computed<BatteryLevelThresholds>(() => miniWidget.value.options.batteryThresholds)
 
-const rawVoltage = computed<number | null>(() => store?.powerSupply?.voltage ?? null)
+const resetToDefaults = (): void => {
+  miniWidget.value.options.voltageToColorScheme = Object.assign({}, defaultBatteryLevelColorScheme)
+  miniWidget.value.options.batteryThresholds = Object.assign({}, defaultBatteryLevelThresholds)
+}
+
+// Round voltage to 0.1V precision for values < 100V, integer precision for >= 100V
+const roundedVoltage = computed(() => {
+  const voltage = store?.powerSupply?.voltage
+  if (voltage === undefined || voltage === null) return null
+  return Math.abs(voltage) >= 100 ? Math.round(voltage) : Math.round(voltage * 10) / 10
+})
+
 // Keeps a stable voltage reading for 4 seconds to avoid rapid battery level changes
-const debouncedVoltage = useDebounce(rawVoltage, 4000)
+const debouncedVoltage = useDebounce(roundedVoltage, 4000)
 
 const currentBatteryLevel = computed<BatteryLevel>(() => {
   const voltage = debouncedVoltage.value
 
   if (voltage == null) return 'unknown'
 
-  const { critical, low, medium, high } = batteryThresholds.value
+  const { critical, low, medium } = batteryThresholds.value
 
-  if (voltage >= high) return 'high'
-  if (voltage >= medium) return 'medium'
-  if (voltage >= low) return 'low'
-  if (voltage >= critical) return 'critical'
-  if (voltage < critical) return 'critical'
+  if (voltage <= critical) return 'critical'
+  if (voltage <= low) return 'low'
+  if (voltage <= medium) return 'medium'
+  if (voltage > medium) return 'high'
   return 'unknown'
 })
 
@@ -266,10 +289,9 @@ const currentBatteryColor = computed(() => {
 })
 
 const voltageDisplayValue = computed(() => {
-  if (store?.powerSupply?.voltage === undefined) return '--'
-  return Math.abs(store.powerSupply.voltage) >= 100
-    ? store.powerSupply.voltage.toFixed(0)
-    : store.powerSupply.voltage.toFixed(1)
+  const voltage = roundedVoltage.value
+  if (voltage === null) return '--'
+  return Math.abs(voltage) >= 100 ? voltage.toFixed(0) : voltage.toFixed(1)
 })
 
 const currentDisplayValue = computed(() => {
