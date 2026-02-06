@@ -422,3 +422,25 @@ export type EdgeIntersection = {
    */
   y: number
 }
+
+/**
+ * Edge arrow for a generic target (vehicle, home waypoint, or a second vehicle).
+ */
+export interface TargetEdgeArrow {
+  /**
+   * CSS style object for the arrow.
+   */
+  style: PoiEdgeArrow['style']
+  /**
+   * Angle of the arrow in degrees.
+   */
+  angle: number
+  /**
+   * Tooltip text for the arrow.
+   */
+  tooltipText: string
+  /**
+   * Color of the arrow.
+   */
+  color: string
+}

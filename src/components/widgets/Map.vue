@@ -135,6 +135,44 @@
           </v-tooltip>
         </div>
       </template>
+      <!-- Vehicle Edge Arrow -->
+      <template v-if="mapReady">
+        <div class="poi-edge-arrow" :style="vehicleEdgeArrow.style">
+          <v-tooltip location="top" :text="vehicleEdgeArrow.tooltipText" content-class="poi-arrow-tooltip">
+            <template #activator="{ props: tooltipProps }">
+              <div
+                v-bind="tooltipProps"
+                class="poi-arrow-container"
+                @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+              >
+                <i
+                  class="mdi mdi-send-variant poi-arrow-icon"
+                  :style="{ transform: `rotate(${vehicleEdgeArrow.angle}deg)`, color: vehicleEdgeArrow.color }"
+                ></i>
+              </div>
+            </template>
+          </v-tooltip>
+        </div>
+      </template>
+      <!-- Home Edge Arrow -->
+      <template v-if="mapReady">
+        <div class="poi-edge-arrow" :style="homeEdgeArrow.style">
+          <v-tooltip location="top" :text="homeEdgeArrow.tooltipText" content-class="poi-arrow-tooltip">
+            <template #activator="{ props: tooltipProps }">
+              <div
+                v-bind="tooltipProps"
+                class="poi-arrow-container"
+                @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+              >
+                <i
+                  class="mdi mdi-home poi-arrow-icon"
+                  :style="{ transform: `rotate(${homeEdgeArrow.angle + 90}deg)`, color: homeEdgeArrow.color }"
+                ></i>
+              </div>
+            </template>
+          </v-tooltip>
+        </div>
+      </template>
     </div>
   </div>
 
@@ -259,6 +297,7 @@ import type {
   MarkerSizes,
   PoiEdgeArrow,
   PointOfInterest,
+  TargetEdgeArrow,
   Waypoint,
   WaypointCoordinates,
 } from '@/types/mission'
@@ -696,6 +735,7 @@ onMounted(async () => {
   map.value.on('move', () => {
     if (mapReady.value && map.value && map.value instanceof L.Map) {
       throttledUpdateArrows()
+      throttledUpdateVehicleAndHomeArrows()
     }
   })
 
@@ -1632,6 +1672,8 @@ watch(
 )
 
 const poiEdgeArrows = ref<PoiEdgeArrow[]>([])
+const vehicleEdgeArrow = ref<TargetEdgeArrow | null>(null)
+const homeEdgeArrow = ref<TargetEdgeArrow | null>(null)
 
 // Calculate intersection with map edges
 const calculateMapEdgesIntersections = (
@@ -1729,6 +1771,116 @@ const getPoiArrowStyle = (
   return styles[edge]
 }
 
+// Calculate edge arrow for a generic target (vehicle, home waypoint, or a second vehicle).
+const calculateTargetEdgeArrow = (
+  targetPosition: WaypointCoordinates | undefined,
+  targetName: string,
+  targetColor: string
+): TargetEdgeArrow | null => {
+  if (!mapReady.value || !map.value || !(map.value instanceof L.Map) || !targetPosition) {
+    return null
+  }
+
+  const container = map.value.getContainer()
+  if (!container) {
+    return null
+  }
+
+  let bounds: L.LatLngBounds
+  let containerSize: L.Point
+  let center: L.LatLng
+
+  try {
+    bounds = map.value.getBounds()
+    containerSize = map.value.getSize()
+    center = map.value.getCenter()
+  } catch {
+    return null
+  }
+
+  const targetLatLng = L.latLng(targetPosition[0], targetPosition[1])
+
+  const width = containerSize.x
+  const height = containerSize.y
+  const isFullscreen = widgetStore.isFullScreen(widget.value)
+  const topEdgeY = isFullscreen ? widgetStore.currentTopBarHeightPixels : 0
+  const bottomEdgeY = isFullscreen ? height - widgetStore.currentBottomBarHeightPixels : height
+  const validYMin = topEdgeY
+  const validYMax = bottomEdgeY
+  const cornerThreshold = 40
+
+  let targetPoint: L.Point
+  let centerPoint: L.Point
+
+  try {
+    targetPoint = map.value.latLngToContainerPoint(targetLatLng)
+    centerPoint = map.value.latLngToContainerPoint(center)
+  } catch {
+    return null
+  }
+
+  // Check if target is visible on the map (within container bounds)
+  if (
+    targetPoint.x >= 0 &&
+    targetPoint.x <= width &&
+    targetPoint.y >= validYMin &&
+    targetPoint.y <= validYMax &&
+    bounds.contains(targetLatLng)
+  ) {
+    return null
+  }
+
+  const distanceMeters = calculateHaversineDistance([center.lat, center.lng], targetPosition)
+  const distanceText =
+    distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
+
+  const distanceX = targetPoint.x - centerPoint.x
+  const distanceY = targetPoint.y - centerPoint.y
+
+  if (Math.abs(distanceX) < 0.001 && Math.abs(distanceY) < 0.001) return null
+
+  const intersections = calculateMapEdgesIntersections(
+    centerPoint,
+    distanceX,
+    distanceY,
+    width,
+    height,
+    topEdgeY,
+    validYMin
+  )
+  if (intersections.length === 0) return null
+
+  const closest = intersections.reduce((min: EdgeIntersection, current: EdgeIntersection) =>
+    current.t < min.t ? current : min
+  )
+  let selectedIntersection = closest
+
+  // Handle corner cases
+  const cornerIntersection = handleMapEdgeCorners(intersections, closest.x, closest.y, width, height, cornerThreshold)
+  if (cornerIntersection) selectedIntersection = cornerIntersection
+
+  // Clamp positions to contain the arrow within the map container
+  let edgeX = Math.max(0, Math.min(width, selectedIntersection.x))
+  let edgeY = selectedIntersection.y
+
+  if (selectedIntersection.edge === 'bottom') {
+    edgeY = Math.max(0, Math.min(height, edgeY))
+  } else if (selectedIntersection.edge === 'left' || selectedIntersection.edge === 'right') {
+    edgeY = Math.max(validYMin, Math.min(validYMax - 10, edgeY))
+  } else {
+    edgeY = Math.max(validYMin, Math.min(validYMax, edgeY))
+  }
+
+  const angle = ((Math.atan2(distanceY, distanceX) * 180) / Math.PI + 360) % 360
+
+  return {
+    style: getPoiArrowStyle(selectedIntersection.edge, edgeX, edgeY, topEdgeY, isFullscreen),
+    angle,
+    tooltipText: `${targetName} - ${distanceText}`,
+    color: targetColor,
+  }
+}
+
 // Calculate POI arrow angle and position to be placed on the edges of the map
 const calculatePoiEdgeArrows = (): void => {
   if (!mapReady.value || !map.value || !(map.value instanceof L.Map)) {
@@ -1767,11 +1919,8 @@ const calculatePoiEdgeArrows = (): void => {
 
   missionStore.pointsOfInterest.forEach((poi) => {
     const poiLatLng = L.latLng(poi.coordinates[0], poi.coordinates[1])
-    if (bounds.contains(poiLatLng) || !map.value) return
+    if (!map.value) return
 
-    const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
-    const distanceText =
-      distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
     let poiPoint: L.Point
     let centerPoint: L.Point
 
@@ -1781,6 +1930,21 @@ const calculatePoiEdgeArrows = (): void => {
     } catch {
       return
     }
+
+    // Check if POI is visible on the map (within container bounds)
+    if (
+      poiPoint.x >= 0 &&
+      poiPoint.x <= width &&
+      poiPoint.y >= validYMin &&
+      poiPoint.y <= validYMax &&
+      bounds.contains(poiLatLng)
+    ) {
+      return
+    }
+
+    const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
+    const distanceText =
+      distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
 
     const distanceX = poiPoint.x - centerPoint.x
     const distanceY = poiPoint.y - centerPoint.y
@@ -1833,9 +1997,19 @@ const calculatePoiEdgeArrows = (): void => {
   poiEdgeArrows.value = arrows
 }
 
+/**
+ * Calculate and update edge arrows for vehicle and home waypoint.
+ */
+const calculateVehicleAndHomeEdgeArrows = (): void => {
+  vehicleEdgeArrow.value = calculateTargetEdgeArrow(vehiclePosition.value, 'Vehicle', '#1e498f')
+  homeEdgeArrow.value = calculateTargetEdgeArrow(home.value, 'Home', '#1e498f')
+}
+
 // Prevent poi arrows calculation from overloading the UI
 const debouncedUpdateArrows = useDebounceFn(calculatePoiEdgeArrows, 150)
 const throttledUpdateArrows = useThrottleFn(calculatePoiEdgeArrows, 15) // Max 60fps
+const debouncedUpdateVehicleAndHomeArrows = useDebounceFn(calculateVehicleAndHomeEdgeArrows, 150)
+const throttledUpdateVehicleAndHomeArrows = useThrottleFn(calculateVehicleAndHomeEdgeArrows, 15)
 
 // Watch for map changes and POI changes
 watch(
@@ -1843,6 +2017,7 @@ watch(
   () => {
     if (mapReady.value && map.value && map.value instanceof L.Map) {
       debouncedUpdateArrows()
+      throttledUpdateVehicleAndHomeArrows()
     }
   },
   { immediate: true }
@@ -1852,8 +2027,20 @@ watch(
 watch(mapReady, (ready) => {
   if (ready && map.value && map.value instanceof L.Map) {
     debouncedUpdateArrows()
+    debouncedUpdateVehicleAndHomeArrows()
   }
 })
+
+// Watch for vehicle and home position changes
+watch(
+  [vehiclePosition, home, mapCenter, zoom],
+  () => {
+    if (mapReady.value && map.value && map.value instanceof L.Map) {
+      throttledUpdateVehicleAndHomeArrows()
+    }
+  },
+  { immediate: true }
+)
 
 const centerMapOnPoi = (poiId: string): void => {
   if (!map.value) return
