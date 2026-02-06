@@ -166,6 +166,17 @@ export interface SDLControllerDevice {
 }
 
 /**
+ * Options for opening SDL devices
+ */
+export interface SDLOpenOptions {
+  /**
+   * When true, axis values are normalized without SDL's initial state calibration.
+   * This avoids incorrect zero-point calibration when joysticks aren't centered at startup.
+   */
+  rawAxisMode?: boolean
+}
+
+/**
  * SDL joystick module type
  */
 export interface SDLJoystickModule {
@@ -175,8 +186,11 @@ export interface SDLJoystickModule {
   devices: SDLJoystickDevice[]
   /**
    * Enable a joystick device by its device identification
+   * @param device - The joystick device to open
+   * @param options - Optional settings for opening the device
+   * @returns {SDLJoystickInstance} The opened joystick instance
    */
-  openDevice: (device: SDLJoystickDevice) => SDLJoystickInstance
+  openDevice: (device: SDLJoystickDevice, options?: SDLOpenOptions) => SDLJoystickInstance
 }
 
 /**
@@ -203,8 +217,11 @@ export interface SDLControllerModule {
   devices: SDLControllerDevice[]
   /**
    * Open a controller device
+   * @param device - The controller device to open
+   * @param options - Optional settings for opening the device
+   * @returns {SDLControllerInstance} The opened controller instance
    */
-  openDevice: (device: SDLControllerDevice) => SDLControllerInstance
+  openDevice: (device: SDLControllerDevice, options?: SDLOpenOptions) => SDLControllerInstance
 }
 
 export interface SDLStatus {

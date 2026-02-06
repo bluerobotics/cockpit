@@ -11,7 +11,7 @@ import {
   SDLStatus,
 } from '@/types/sdl'
 
-import { decimalToHex, scale } from '../utils'
+import { decimalToHex } from '../utils'
 
 /**
  * Open joystick device type
@@ -80,7 +80,7 @@ export function loadSDL(): SDLModule {
  */
 export const openController = (sdl: SDLModule, device: SDLControllerDevice): void => {
   try {
-    const instance = sdl.controller.openDevice(device)
+    const instance = sdl.controller.openDevice(device, { rawAxisMode: true })
 
     if (!instance) {
       throw new Error('Could not open controller.')
@@ -116,7 +116,7 @@ export const openController = (sdl: SDLModule, device: SDLControllerDevice): voi
  */
 export const openJoystick = (sdl: SDLModule, device: SDLJoystickDevice): void => {
   try {
-    const instance = sdl.joystick.openDevice(device)
+    const instance = sdl.joystick.openDevice(device, { rawAxisMode: true })
 
     if (!instance) {
       throw new Error('Could not open joystick.')
@@ -158,6 +158,8 @@ export const checkJoystickState = (deviceId: number): void => {
   if (instance.closed) {
     throw new Error(`Joystick with id '${deviceId}' is closed.`)
   }
+
+  console.log('Joystick axes:', instance.axes)
 
   const buttonsWithHatsMerged = structuredClone(instance.buttons)
   instance.hats.forEach((hat) => {
@@ -202,9 +204,9 @@ export const checkControllerState = (deviceId: number): void => {
     throw new Error(`Controller with id '${deviceId}' is closed.`)
   }
 
+  console.log('Controller axes:', instance.axes)
+
   const state = { buttons: structuredClone(instance.buttons), axes: structuredClone(instance.axes) }
-  state.axes.leftTrigger = state.axes.leftTrigger > 0 ? scale(state.axes.leftTrigger, 0.5, 1, 0, 1) : 0
-  state.axes.rightTrigger = state.axes.rightTrigger > 0 ? scale(state.axes.rightTrigger, 0.5, 1, 0, 1) : 0
   state.buttons.extra = state.buttons[''] ?? false
   delete state.buttons['']
 
