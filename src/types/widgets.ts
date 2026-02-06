@@ -65,6 +65,7 @@ export enum WidgetType {
   DoItYourself = 'DoItYourself',
   IFrame = 'IFrame',
   ImageView = 'ImageView',
+  Webcam = 'Webcam',
   Map = 'Map',
   MiniWidgetsBar = 'MiniWidgetsBar',
   Plotter = 'Plotter',
