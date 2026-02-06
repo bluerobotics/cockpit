@@ -352,3 +352,95 @@ export type IconDimensions = {
 }
 
 export type MarkerSizes = 'xs' | 'sm' | 'md'
+
+// POI Edge Arrows - Show arrows for POIs that are out of view
+/**
+ *
+ */
+export interface PoiEdgeArrow {
+  /**
+   * Unique identification for the POI.
+   */
+  poiId: string
+  /**
+   * CSS style object for the arrow.
+   */
+  style: {
+    /**
+     * Top position of the arrow.
+     */
+    top?: string
+    /**
+     * Bottom position of the arrow.
+     */
+    bottom?: string
+    /**
+     * Left position of the arrow.
+     */
+    left?: string
+    /**
+     * Right position of the arrow.
+     */
+    right?: string
+    /**
+     * Transform property for the arrow.
+     */
+    transform?: string
+  }
+  /**
+   * Angle of the arrow.
+   */
+  angle: number
+  /**
+   * Tooltip text for the arrow.
+   */
+  tooltipText: string
+  /**
+   *
+   */
+  color: string
+}
+
+export type Edge = 'top' | 'bottom' | 'left' | 'right'
+
+// Edge intersection type for the edges of the map
+export type EdgeIntersection = {
+  /**
+   * Intersection parameter
+   */
+  t: number
+  /**
+   * Edge name
+   */
+  edge: Edge
+  /**
+   * X coordinate
+   */
+  x: number
+  /**
+   * Y coordinate
+   */
+  y: number
+}
+
+/**
+ * Edge arrow for a generic target (vehicle, home waypoint, or a second vehicle).
+ */
+export interface TargetEdgeArrow {
+  /**
+   * CSS style object for the arrow.
+   */
+  style: PoiEdgeArrow['style']
+  /**
+   * Angle of the arrow in degrees.
+   */
+  angle: number
+  /**
+   * Tooltip text for the arrow.
+   */
+  tooltipText: string
+  /**
+   * Color of the arrow.
+   */
+  color: string
+}
