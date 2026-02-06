@@ -85,26 +85,6 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
   const messageName = data.type as string
   const messagePathWithId = getMessagePathWithId(messageName, data)
 
-  // Special handling for NAMED_VALUE_FLOAT messages
-  if (messageName === 'NAMED_VALUE_FLOAT') {
-    const name = (data.name as string[]).join('').replace(/\0/g, '')
-    return [
-      {
-        path: `${messagePathWithId}/${name}`,
-        type: 'number',
-        value: data.value as number,
-      },
-      ...Object.entries(data)
-        .filter(([key]) => !['name', 'value', 'type'].includes(key))
-        .map(([key, value]) => ({
-          path: `${messagePathWithId}/${key}`,
-          type: typeof value as 'string' | 'number' | 'boolean',
-          value: value as string | number | boolean,
-        })),
-    ]
-  }
-
-  // For all other messages
   return Object.entries(data)
     .filter(([key]) => key !== 'type')
     .flatMap(([key, value]) => {
