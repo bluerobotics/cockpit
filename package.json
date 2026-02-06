@@ -115,7 +115,7 @@
     "c8": "^7.11.3",
     "cross-env": "^10.1.0",
     "dotenv": "^16.5.0",
-    "electron": "^29.2.0",
+    "electron": "37.9.0",
     "electron-builder": "^25.1.8",
     "eslint": "^8.5.0",
     "eslint-plugin-jsdoc": "^43.1.1",
