@@ -3,7 +3,7 @@
     <div class="flex flex-col px-3 my-2 bg-[#EEEEEE22] text-white rounded-md">
       <!-- Command Type Selection -->
       <div class="flex flex-col w-full justify-between items-center text-[12px] border-b border-white/10 py-2">
-        <p class="w-full text-center">Type</p>
+        <p class="w-full text-center">{{ t('missionPlanning.commandType') }}</p>
         <v-select
           v-model="selectedCommandType"
           :items="commandTypeOptions"
@@ -20,7 +20,7 @@
 
       <!-- MAVLink Command Selection -->
       <div v-if="selectedCommandType" class="flex flex-col w-full justify-between items-center text-[12px] py-2">
-        <p class="w-full text-center">Command</p>
+        <p class="w-full text-center">{{ t('missionPlanning.command') }}</p>
         <v-select
           v-model="selectedMavCommand"
           :items="availableMavCommands"
@@ -38,7 +38,7 @@
       <!-- Parameter Inputs -->
       <div v-if="selectedMavCommand" class="flex flex-col">
         <v-divider class="border-black w-full" />
-        <div class="text-[11px] font-semibold text-center py-2">Parameters</div>
+        <div class="text-[11px] font-semibold text-center py-2">{{ t('missionPlanning.parameters') }}</div>
 
         <!-- Nav Command Parameters (4 params) -->
         <template v-if="selectedCommandType === MissionCommandType.MAVLINK_NAV_COMMAND">
@@ -48,7 +48,7 @@
             class="flex w-full gap-x-4 justify-between items-center text-[11px]"
             :class="{ 'border-b border-white/10': paramNum < 4 }"
           >
-            <p class="w-[80px] text-start opacity-75">Param {{ paramNum }}:</p>
+            <p class="w-[80px] text-start opacity-75">{{ t('missionPlanning.param') }} {{ paramNum }}:</p>
             <div class="flex w-full pr-2 h-[28px] items-center">
               <v-text-field
                 v-model.number="commandParams[`param${paramNum}`]"
@@ -72,7 +72,8 @@
             :class="{ 'border-b border-white/10': paramNum < 7 }"
           >
             <p class="w-[120px] text-start opacity-75">
-              Param {{ paramNum }} {{ paramNum === 5 ? '(x)' : paramNum === 6 ? '(y)' : paramNum === 7 ? '(z)' : '' }}:
+              {{ t('missionPlanning.param') }} {{ paramNum }}
+              {{ paramNum === 5 ? '(x)' : paramNum === 6 ? '(y)' : paramNum === 7 ? '(z)' : '' }}:
             </p>
             <div class="flex w-full pr-2 h-[28px] items-center">
               <v-text-field
@@ -93,9 +94,9 @@
 
       <!-- Action Buttons -->
       <div class="flex w-full justify-between py-2">
-        <v-btn size="small" variant="outlined" @click="cancelCommand"> Cancel </v-btn>
+        <v-btn size="small" variant="outlined" @click="cancelCommand"> {{ t('common.cancel') }} </v-btn>
         <v-btn v-if="selectedMavCommand" size="small" variant="outlined" @click="addCommand">
-          {{ isEditing ? 'Update' : 'Add' }}
+          {{ isEditing ? t('missionPlanning.update') : t('missionPlanning.add') }}
         </v-btn>
       </div>
     </div>
@@ -104,6 +105,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MissionCommand, MissionCommandType } from '@/types/mission'
@@ -124,6 +126,8 @@ const emit = defineEmits<{
   (event: 'cancel'): void
 }>()
 
+const { t } = useI18n()
+
 const selectedCommandType = ref<MissionCommandType | null>(null)
 const selectedMavCommand = ref<MavCmd | null>(null)
 
@@ -138,13 +142,26 @@ const commandParams = reactive<Record<string, number>>({
 })
 
 const commandTypeOptions = [
-  { name: 'MAVLink Navigation Command', value: MissionCommandType.MAVLINK_NAV_COMMAND },
-  { name: 'MAVLink Non-Navigation Command', value: MissionCommandType.MAVLINK_NON_NAV_COMMAND },
+  { name: t('missionPlanning.mavlinkNavigationCommand'), value: MissionCommandType.MAVLINK_NAV_COMMAND },
+  { name: t('missionPlanning.mavlinkNonNavigationCommand'), value: MissionCommandType.MAVLINK_NON_NAV_COMMAND },
 ]
 
 // Helper function to convert MAV_CMD enum to display name
 const formatCommandName = (command: string): string => {
-  return command.replace('MAV_CMD_', '').replace('NAV_', ' ')
+  // Remove MAV_CMD_ and NAV_ prefixes
+  let simpleName = command.replace('MAV_CMD_NAV_', '').replace('MAV_CMD_', '')
+
+  // Try to get translation from the map
+  const translationKey = `missionPlanning.mavCommands.${simpleName}`
+  if (t(translationKey) !== translationKey) {
+    return t(translationKey)
+  }
+
+  // Fallback: format the name nicely (replace underscores with spaces and title case)
+  return simpleName
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
 }
 
 // Generate command options from MavCmd enum

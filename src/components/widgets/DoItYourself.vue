@@ -19,20 +19,22 @@
         <v-icon class="absolute top-[12px] right-[12px] cursor-pointer" @click="showHelp = !showHelp">
           mdi-help-circle-outline
         </v-icon>
-        <v-card-title class="w-full text-center mt-2">DIY widget configuration</v-card-title>
+        <v-card-title class="w-full text-center mt-2">{{
+          $t('widgets.doItYourself.widgetConfiguration')
+        }}</v-card-title>
         <v-card-text class="mx-2 flex flex-col gap-y-3">
           <v-expand-transition>
             <div v-if="showHelp" class="help-panel mb-4 p-4 rounded bg-white/5">
-              <h3 class="text-lg mb-2">Editor instructions</h3>
+              <h3 class="text-lg mb-2">{{ $t('widgets.doItYourself.editorInstructions') }}</h3>
               <ul class="text-sm text-white/70 list-disc pl-4 space-y-1">
-                <li>Use the HTML, CSS, and JS editors to create your custom widget</li>
-                <li>Changes are applied when you click Apply or press Cmd/Ctrl + Enter/S</li>
-                <li>Navigate between editors using Cmd/Ctrl + Option/Alt + ↑/↓</li>
-                <li>Reset to last saved state using the Reset button</li>
-                <li>Your code runs in the widget's context and has access to the DOM</li>
-                <li>You can use the console to debug your code</li>
+                <li>{{ $t('widgets.doItYourself.instruction1') }}</li>
+                <li>{{ $t('widgets.doItYourself.instruction2') }}</li>
+                <li>{{ $t('widgets.doItYourself.instruction3') }}</li>
+                <li>{{ $t('widgets.doItYourself.instruction4') }}</li>
+                <li>{{ $t('widgets.doItYourself.instruction5') }}</li>
+                <li>{{ $t('widgets.doItYourself.instruction6') }}</li>
                 <li>
-                  You can use the data-lake system to inject or consume data from Cockpit. Check the docs for more
+                  {{ $t('widgets.doItYourself.instruction7') }}
                   information around this.
                 </li>
                 <li>Click on each editor's header to expand it to full size</li>
@@ -63,10 +65,16 @@
             </v-expansion-panel>
           </v-expansion-panels>
 
-          <v-checkbox v-model="autoSave" label="Auto Save" density="compact" class="-mb-2" hide-details />
+          <v-checkbox
+            v-model="autoSave"
+            :label="$t('doItYourself.autoSave')"
+            density="compact"
+            class="-mb-2"
+            hide-details
+          />
           <v-checkbox
             v-model="widget.options.inheritCockpitStyles"
-            label="Inherit Cockpit interface styles"
+            :label="$t('doItYourself.inheritStyles')"
             density="compact"
             class="-mb-2"
             hide-details
@@ -76,16 +84,26 @@
           <div class="flex justify-between items-center px-4 w-full h-full">
             <v-btn class="text-white/60" variant="text" @click="closeDialog">Close</v-btn>
             <div class="flex gap-x-3">
-              <v-btn class="text-white/60" variant="text" title="Export configuration" @click="exportConfig">
+              <v-btn
+                class="text-white/60"
+                variant="text"
+                :title="$t('doItYourself.exportConfig')"
+                @click="exportConfig"
+              >
                 <v-icon class="mr-1 mt-[2px]">mdi-download</v-icon>
-                Export
+                {{ $t('doItYourself.export') }}
               </v-btn>
-              <v-btn class="text-white/60 mr-10" variant="text" title="Import configuration" @click="importConfig">
+              <v-btn
+                class="text-white/60 mr-10"
+                variant="text"
+                :title="$t('doItYourself.importConfig')"
+                @click="importConfig"
+              >
                 <v-icon class="mr-1 mt-[2px]">mdi-upload</v-icon>
-                Import
+                {{ $t('doItYourself.import') }}
               </v-btn>
-              <v-btn class="text-white/60" variant="text" @click="resetChanges">Reset</v-btn>
-              <v-btn class="text-white" variant="text" @click="applyChanges">Apply</v-btn>
+              <v-btn class="text-white/60" variant="text" @click="resetChanges">{{ $t('common.reset') }}</v-btn>
+              <v-btn class="text-white" variant="text" @click="applyChanges">{{ $t('common.apply') }}</v-btn>
             </div>
           </div>
         </v-card-actions>
@@ -96,6 +114,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
@@ -103,6 +122,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
+const { t: $t } = useI18n()
 const autoSave = useBlueOsStorage('diy-widget-auto-save', false)
 
 const interfaceStore = useAppInterfaceStore()
@@ -129,7 +149,7 @@ let jsEditor: monaco.editor.IStandaloneCodeEditor | null = null
 const defaultOptions = {
   html: `<!-- Write your HTML code here -->
 <div id="diy-container">
-  <span>Create your own widget!</span>
+  <span>{{ $t('widgets.doItYourself.createYourOwn') }}</span>
 </div>`,
   css: `/* Write your CSS code here */
 #diy-container {

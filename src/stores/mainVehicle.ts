@@ -3,6 +3,7 @@ import { useThrottleFn } from '@vueuse/core'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { defaultGlobalAddress, defaultVehicleBatteryPack } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -77,6 +78,7 @@ const defaultRtcConfiguration = {
 const { openSnackbar } = useSnackbar()
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
+  const { t } = useI18n()
   const controllerStore = useControllerStore()
   const widgetStore = useWidgetManagerStore()
   const ws_protocol = location?.protocol === 'https:' ? 'wss' : 'ws'
@@ -294,7 +296,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function arm(): Promise<void> {
     if (!mainVehicle.value) {
-      throw new Error('No vehicle available to arm.')
+      throw new Error(t('errors.noVehicleToArm'))
     }
 
     await mainVehicle.value.arm()
@@ -307,7 +309,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function disarm(): Promise<void> {
     if (!mainVehicle.value) {
-      throw new Error('No vehicle available to disarm.')
+      throw new Error(t('errors.noVehicleToDisarm'))
     }
 
     await mainVehicle.value.disarm()
@@ -342,7 +344,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function land(): Promise<void> {
     if (!mainVehicle.value) {
-      throw new Error('No vehicle available to land.')
+      throw new Error(t('errors.noVehicleToLand'))
     }
 
     await mainVehicle.value.land()
@@ -370,7 +372,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     alt: number
   ): Promise<void> {
     if (!mainVehicle.value) {
-      throw new Error('No vehicle available to execute go to command.')
+      throw new Error(t('errors.noVehicleToGoTo'))
     }
 
     if (mainVehicle.value.firmware() !== Vehicle.Firmware.ArduPilot) {
@@ -456,7 +458,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function fetchHomeWaypoint(): Promise<Waypoint> {
     if (!mainVehicle.value) {
-      throw new Error('No vehicle available to fetch home waypoint.')
+      throw new Error(t('errors.noVehicleToFetchHome'))
     }
     if (mainVehicle.value.firmware() !== Vehicle.Firmware.ArduPilot) {
       throw new Error('Home waypoint retrieval is only supported for ArduPilot vehicles.')
@@ -472,7 +474,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function setHomeWaypoint(coordinate: [number, number], height: number): Promise<void> {
     if (!mainVehicle.value) {
-      throw new Error('No vehicle available to set home waypoint.')
+      throw new Error(t('errors.noVehicleToSetHome'))
     }
     await mainVehicle.value.setHomeWaypoint(coordinate, height)
   }
@@ -489,7 +491,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    * Start mission that is on the vehicle
    */
   async function startMission(): Promise<void> {
-    if (!mainVehicle.value) throw new Error('No vehicle available to start mission.')
+    if (!mainVehicle.value) throw new Error(t('errors.noVehicleToStartMission'))
 
     await mainVehicle.value.startMission()
   }
@@ -849,14 +851,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   const listenToIncomingMessages = (messageType: string, callback: (pack: Package) => void): void => {
     if (!mainVehicle.value) {
-      throw new Error('No vehicle available to listen for incoming messages.')
+      throw new Error(t('errors.noVehicleToListenIncoming'))
     }
     mainVehicle.value?.onIncomingMAVLinkMessage.add(messageType, callback)
   }
 
   const listenToOutgoingMessages = (messageType: string, callback: (pack: Package) => void): void => {
     if (!mainVehicle.value) {
-      throw new Error('No vehicle available to listen for outgoing messages.')
+      throw new Error(t('errors.noVehicleToListenOutgoing'))
     }
     mainVehicle.value?.onOutgoingMAVLinkMessage.add(messageType, callback)
   }
@@ -920,7 +922,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function updateMessageInterval(messageType: string, options: MessageIntervalOptions): Promise<void> {
     if (mainVehicle.value === undefined || !isVehicleOnline.value) {
-      throw new Error('No vehicle available to update message interval.')
+      throw new Error(t('errors.noVehicleToUpdateInterval'))
     }
 
     // Store the interval options in storage
@@ -935,7 +937,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function resetMessageIntervalsToCockpitDefault(): Promise<void> {
     if (mainVehicle.value === undefined || !isVehicleOnline.value) {
-      throw new Error('No vehicle available to reset message intervals.')
+      throw new Error(t('errors.noVehicleToResetIntervals'))
     }
 
     // Reset storage to defaults

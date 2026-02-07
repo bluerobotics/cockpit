@@ -9,7 +9,7 @@
         </span>
       </div>
       <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden">
-        Depth
+        {{ $t('indicators.depth') }}
       </span>
     </div>
   </div>

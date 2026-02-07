@@ -2,22 +2,27 @@
   <div ref="videoWidget" class="video-widget">
     <statsForNerds v-if="widget.options.statsForNerds" :stream-name="externalStreamId" />
     <div v-if="nameSelectedStream === undefined" class="no-video-alert">
-      <span>No video stream selected.</span>
+      <span>{{ $t('components.widgets.VideoPlayer.noVideoStreamSelected') }}</span>
     </div>
     <div
       v-else-if="!namesAvailableStreams.isEmpty() && !namesAvailableStreams.includes(nameSelectedStream)"
       class="no-video-alert"
     >
-      <p>The selected stream "{{ nameSelectedStream }}" is not available.</p>
-      <p>Available ones are: {{ namesAvailableStreams.map((name) => `"${name}"`).join(', ') }}.</p>
-      <br />
+      <p>{{ $t('components.widgets.VideoPlayer.streamNotAvailable', { streamName: nameSelectedStream }) }}</p>
       <p>
-        This can happen if you changed vehicles and the stream name in the new one is different from the former, or if
-        the source is not available at all.
+        {{
+          $t('components.widgets.VideoPlayer.availableStreams', {
+            streams: namesAvailableStreams.map((name) => `"${name}"`).join(', '),
+          })
+        }}
       </p>
       <br />
       <p>
-        Please open this video player configuration and select a new stream from the ones available, or check your
+        {{ $t('components.widgets.VideoPlayer.streamChangeInfo') }}
+      </p>
+      <br />
+      <p>
+        {{ $t('components.widgets.VideoPlayer.selectNewStream') }}
         source for issues.
       </p>
     </div>
@@ -49,7 +54,7 @@
           class="mt-3 toggle-details-btn"
           @click="toggleVerboseLoading"
         >
-          {{ shouldShowVerboseLoading ? 'Hide details' : 'Show details' }}
+          {{ shouldShowVerboseLoading ? $t('components.widgets.VideoPlayer.hideDetails') : $t('components.widgets.VideoPlayer.showDetails') }}
         </v-btn>
       </div>
     </Transition>
@@ -59,51 +64,53 @@
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Video widget config</v-card-title>
+      <v-card-title class="text-center">{{ $t('components.widgets.VideoPlayer.widgetConfig') }}</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
         <v-select
           v-model="nameSelectedStream"
-          label="Stream name"
+          :label="$t('components.widgets.VideoPlayer.streamName')"
           class="my-3"
           :items="namesAvailableStreams"
           item-title="name"
           density="compact"
           variant="outlined"
-          no-data-text="No streams available."
+          :no-data-text="$t('components.widgets.VideoPlayer.noStreamsAvailable')"
           hide-details
           return-object
         />
         <v-select
           v-model="widget.options.videoFitStyle"
-          label="Fit style"
+          :label="$t('components.widgets.VideoPlayer.fitStyle')"
           class="my-3"
           :items="['cover', 'fill', 'contain']"
           item-title="style"
           density="compact"
           variant="outlined"
-          no-data-text="No streams available."
+          :no-data-text="$t('components.widgets.VideoPlayer.noStreamsAvailable')"
           hide-details
           return-object
         />
-        <v-banner-text>Saved stream name: "{{ widget.options.internalStreamName }}"</v-banner-text>
+        <v-banner-text>{{
+          $t('components.widgets.VideoPlayer.savedStreamName', { name: widget.options.internalStreamName })
+        }}</v-banner-text>
         <v-switch
           v-model="widget.options.flipHorizontally"
           class="my-1"
-          label="Flip horizontally"
+          :label="$t('components.widgets.VideoPlayer.flipHorizontally')"
           :color="widget.options.flipHorizontally ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.flipVertically"
           class="my-1"
-          label="Flip vertically"
+          :label="$t('components.widgets.VideoPlayer.flipVertically')"
           :color="widget.options.flipVertically ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.statsForNerds"
           class="my-1"
-          label="Stats for nerds"
+          :label="$t('components.widgets.VideoPlayer.statsForNerds')"
           :color="widget.options.statsForNerds ? 'white' : undefined"
           hide-details
         />
@@ -115,8 +122,12 @@
           hide-details
         />
         <div class="flex-wrap justify-center d-flex ga-5">
-          <v-btn prepend-icon="mdi-file-rotate-left" variant="outlined" @click="rotateVideo(-90)"> Rotate Left</v-btn>
-          <v-btn prepend-icon="mdi-file-rotate-right" variant="outlined" @click="rotateVideo(+90)"> Rotate Right</v-btn>
+          <v-btn prepend-icon="mdi-file-rotate-left" variant="outlined" @click="rotateVideo(-90)">
+            {{ $t('components.widgets.VideoPlayer.rotateLeft') }}</v-btn
+          >
+          <v-btn prepend-icon="mdi-file-rotate-right" variant="outlined" @click="rotateVideo(+90)">
+            {{ $t('components.widgets.VideoPlayer.rotateRight') }}</v-btn
+          >
         </div>
       </v-card-text>
     </v-card>

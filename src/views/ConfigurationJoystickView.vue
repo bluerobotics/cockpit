@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>Joystick configuration </template>
+    <template #title>{{ $t('views.ConfigurationJoystickView.title') }}</template>
     <template #content>
       <div
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'"
@@ -11,34 +11,24 @@
           class="px-6 pb-2 flex-centered flex-column position-relative"
           :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
-          <p class="text-base text-center font-bold mt-6 mb-4">Connect a joystick and press any key.</p>
+          <p class="text-base text-center font-bold mt-6 mb-4">
+            {{ $t('views.ConfigurationJoystickView.connectJoystick') }}
+          </p>
         </div>
         <div v-else>
           <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
-            <template #title>General settings</template>
+            <template #title>{{ $t('views.ConfigurationJoystickView.generalSettings') }}</template>
             <template #info>
               <div class="flex flex-col items-start px-5 font-medium">
-                <li>
-                  View and configure your controller button and joystick behaviors, in a diagram and/or table display.
-                </li>
-                <li>
-                  Button presses and joystick movements are highlighted, and can be assigned to vehicle functions or
-                  Cockpit Actions.
-                </li>
-                <li>Advanced configuration is available for setting axis limits.</li>
+                <p>{{ $t('views.ConfigurationJoystickView.generalSettingsInfo') }}</p>
               </div>
             </template>
             <template v-if="showJoystickWarningMessage" #warning>
               <div class="text-center text-yellow-200">
-                <p class="font-semibold">System update is recommended</p>
+                <p class="font-semibold">{{ $t('joystickWarning.updateRecommended') }}</p>
                 <br />
                 <p class="font-medium">
-                  It seems like you're running versions of Mavlink2Rest (BlueOS) and/or ArduPilot that do not support
-                  the extended MAVLink MANUAL_CONTROL message. We strongly suggest upgrading both so you can have
-                  support for additional buttons and axes on the joystick. This is especially important if you sometimes
-                  use other control station software, like QGroundControl, as Cockpit can preferentially use the
-                  extended buttons to reduce configuration clashes. We recommend using BlueOS &ge; 1.2.0, and &ge;
-                  version 4.1.2 for ArduPilot-based autopilot firmware.
+                  {{ $t('joystickWarning.extendedMavlinkInfo') }}
                 </p>
                 <p />
               </div>
@@ -52,10 +42,9 @@
                     "
                     class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
                   >
-                    <p>Could not stablish communication with the vehicle.</p>
+                    <p>{{ $t('joystickWarning.couldNotEstablishComm') }}</p>
                     <p>
-                      Button functions will appear as numbers. If connection is restablished, function names will
-                      appear.
+                      {{ $t('joystickWarning.buttonFunctionsAsNumbers') }}
                     </p>
                   </div>
 
@@ -63,7 +52,7 @@
                     <v-combobox
                       v-model="vehicleTypesAssignedToCurrentProfile"
                       :items="availableVehicleTypes"
-                      label="Vehicle types that use this profile by default:"
+                      :label="$t('views.ConfigurationJoystickView.vehicleTypesDefaultProfile')"
                       chips
                       multiple
                       density="compact"
@@ -75,7 +64,7 @@
 
                     <v-switch
                       v-model="controllerStore.holdLastInputWhenWindowHidden"
-                      label="Hold last joystick input when window is hidden (tab changed or window minimized)"
+                      :label="$t('views.ConfigurationJoystickView.holdLastInput')"
                       class="scale-[85%] -mb-4"
                     />
                   </div>
@@ -98,9 +87,11 @@
                           }"
                           @click="selectProfile(functionMapping)"
                         >
-                          {{ functionMapping.name }}
+                          {{ translateProfileName(functionMapping.name) }}
                         </v-btn>
-                        <span class="text-xs text-gray-300 mt-1">Currently Active Profile</span>
+                        <span class="text-xs text-gray-300 mt-1">{{
+                          $t('views.ConfigurationJoystickView.currentlyActiveProfile')
+                        }}</span>
                       </div>
 
                       <!-- Regular profile button -->
@@ -113,7 +104,7 @@
                           }"
                           @click="selectProfile(functionMapping)"
                         >
-                          {{ functionMapping.name }}
+                          {{ translateProfileName(functionMapping.name) }}
                         </v-btn>
 
                         <!-- Small switch button for selected non-active profile -->
@@ -126,7 +117,11 @@
                         >
                           <v-icon size="14">mdi-swap-horizontal</v-icon>
                           <v-tooltip activator="parent" location="top">
-                            Switch to "{{ selectedProfile.name }}" profile
+                            {{
+                              $t('views.ConfigurationJoystickView.switchToProfile', {
+                                name: translateProfileName(selectedProfile.name),
+                              })
+                            }}
                           </v-tooltip>
                         </v-btn>
                       </div>
@@ -139,8 +134,8 @@
                     class="w-full h-full my-3 rounded-lg elevation-2 bg-[#FFFFFF23]"
                     theme="dark"
                   >
-                    <v-tab value="svg">Visual</v-tab>
-                    <v-tab value="table">Table</v-tab>
+                    <v-tab value="svg">{{ $t('views.ConfigurationJoystickView.visual') }}</v-tab>
+                    <v-tab value="table">{{ $t('views.ConfigurationJoystickView.table') }}</v-tab>
                     <div class="flex w-full h-[46px] justify-end align-center mr-[5px]">
                       <div />
                       <div class="flex justify-between mr-5">
@@ -162,7 +157,7 @@
                             ]"
                             @click="changeModifierKeyTab(button.id as CockpitModifierKeyOption)"
                           >
-                            {{ button.name }}
+                            {{ translateModifierKeyName(button.name) }}
                           </v-btn>
                         </div>
                       </div>
@@ -170,7 +165,7 @@
                         class="flex border-[1px] border-[#FFFFFF22] rounded-md elevation-1 mb-[2px] mr-[4px]"
                         :style="interfaceStore.globalGlassMenuStyles"
                       >
-                        <v-tooltip location="top" text="Download joystick mappings">
+                        <v-tooltip location="top" :text="$t('views.ConfigurationJoystickView.downloadMappings')">
                           <template #activator="{ props }">
                             <v-btn
                               v-bind="props"
@@ -182,7 +177,7 @@
                           /></template>
                         </v-tooltip>
                         <v-divider vertical />
-                        <v-tooltip location="top" text="Upload joystick mappings">
+                        <v-tooltip location="top" :text="$t('views.ConfigurationJoystickView.uploadMappings')">
                           <template #activator="{ props }">
                             <label v-bind="props">
                               <input
@@ -206,11 +201,17 @@
                   :key="key"
                   class="w-[95%] h-full flex-centered flex-column position-relative"
                 >
-                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
+                  <p class="text-md font-semibold -mt-8">
+                    {{ joystick.model }} {{ $t('views.ConfigurationJoystickView.controller') }}
+                  </p>
                   <div class="flex items-center gap-2 -mb-8">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
-                      :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
+                      :label="
+                        controllerStore.disabledJoysticks.includes(joystick.model)
+                          ? $t('common.disabled')
+                          : $t('common.enabled')
+                      "
                       hide-details
                       class="-mt-2"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
@@ -256,7 +257,7 @@
                     class="flex flex-row items-start justify-end w-full gap-4 -mr-8 mb-[20px]"
                   >
                     <div class="flex w-[60%] flex-col items-center">
-                      <p class="text-xs font-semibold opacity-80 mb-2">Additional buttons</p>
+                      <p class="text-xs font-semibold opacity-80 mb-2">{{ $t('joystickWarning.additionalButtons') }}</p>
                       <div class="grid grid-cols-3 sm:grid-cols-3 xl:grid-cols-4 gap-3 w-full">
                         <div
                           v-for="buttonId in getButtonsNotInSvg(joystick)"
@@ -291,7 +292,7 @@
                     </div>
                     <v-divider vertical />
                     <div v-if="getAxesNotInSvg(joystick).length" class="flex-1 w-1 /5 flex flex-col items-center">
-                      <p class="text-xs font-semibold opacity-80 mb-2">Additional axes</p>
+                      <p class="text-xs font-semibold opacity-80 mb-2">{{ $t('joystickWarning.additionalAxes') }}</p>
                       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                         <div
                           v-for="axisId in getAxesNotInSvg(joystick)"
@@ -322,17 +323,25 @@
                   :key="key"
                   class="w-full flex-centered flex-column position-relative"
                 >
-                  <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
+                  <span class="text-md font-semibold w-full text-center -mt-8"
+                    >{{ joystick.model }} {{ $t('views.ConfigurationJoystickView.controller') }}</span
+                  >
                   <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
-                      :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
+                      :label="
+                        controllerStore.disabledJoysticks.includes(joystick.model)
+                          ? $t('common.disabled')
+                          : $t('common.enabled')
+                      "
                       hide-details
                       class="-mt-2 -mb-1"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
                     />
                   </div>
-                  <p class="text-start text-sm font-bold w-[93%] mb-1">Axes</p>
+                  <p class="text-start text-sm font-bold w-[93%] mb-1">
+                    {{ $t('views.ConfigurationJoystickView.axes') }}
+                  </p>
                   <v-data-table
                     v-if="controllerStore.joysticks && controllerStore.joysticks.size"
                     :items="tableItems"
@@ -343,22 +352,34 @@
                   >
                     <template #headers>
                       <tr>
-                        <th class="w-[100px] text-center"><p class="text-[16px] font-bold">Name</p></th>
-                        <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Preview</p></th>
-                        <th class="w-[50px] text-center"><p class="text-[16px] font-bold">Direction</p></th>
-                        <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Min</p></th>
-                        <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Axis</p></th>
-                        <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Max</p></th>
+                        <th class="w-[100px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('common.name') }}</p>
+                        </th>
+                        <th class="w-[120px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('views.ConfigurationJoystickView.preview') }}</p>
+                        </th>
+                        <th class="w-[50px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('views.ConfigurationJoystickView.direction') }}</p>
+                        </th>
+                        <th class="w-[110px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('views.ConfigurationJoystickView.min') }}</p>
+                        </th>
+                        <th class="w-[120px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('views.ConfigurationJoystickView.axis') }}</p>
+                        </th>
+                        <th class="w-[110px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('views.ConfigurationJoystickView.max') }}</p>
+                        </th>
                       </tr>
                       <p v-if="tableItems.length === 0" class="fixed top-[67%] left-[40%]">
-                        Press a key or move an axis
+                        {{ $t('views.ConfigurationJoystickView.pressKeyOrMove') }}
                       </p>
                     </template>
                     <template #item="{ item }">
                       <tr v-if="item.type === 'axis'">
                         <td class="w-[100px] text-center">
                           <div class="flex items-center justify-center gap-x-4">
-                            <p>{{ item.type }}</p>
+                            <p>{{ $t('views.ConfigurationJoystickView.axis') }}</p>
                             <p>{{ item.id }}</p>
                           </div>
                         </td>
@@ -401,7 +422,14 @@
                             variant="plain"
                             theme="dark"
                             return-object
-                          />
+                          >
+                            <template #selection="{ item: selectItem }">
+                              {{ translateActionName(selectItem.raw) }}
+                            </template>
+                            <template #item="{ props, item: selectItem }">
+                              <v-list-item v-bind="props" :title="translateActionName(selectItem.raw)"></v-list-item>
+                            </template>
+                          </v-select>
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
@@ -429,7 +457,9 @@
                     ></template>
                   </v-data-table>
 
-                  <p class="text-start text-sm font-bold w-[93%] mb-1">Buttons</p>
+                  <p class="text-start text-sm font-bold w-[93%] mb-1">
+                    {{ $t('views.ConfigurationJoystickView.buttons') }}
+                  </p>
                   <v-data-table
                     v-if="currentJoystick && currentJoystick?.gamepadToCockpitMap?.buttons"
                     :headers="headers"
@@ -441,20 +471,30 @@
                   >
                     <template #headers>
                       <tr>
-                        <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Name</p></th>
+                        <th class="w-[120px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('common.name') }}</p>
+                        </th>
                         <th class="w-[120px] text-center">
                           <div
                             class="flex justify-center w-full"
                             :class="{ '-mr-3': currentModifierKey.id !== 'regular' }"
                           >
-                            <p class="text-[16px] font-bold">Function</p>
+                            <p class="text-[16px] font-bold">
+                              {{ $t('views.ConfigurationJoystickView.function') }}
+                            </p>
                             <p v-if="currentModifierKey.id !== 'regular'" class="text-[10px] text-end ml-2">
                               ({{ currentModifierKey.id }})
                             </p>
                           </div>
                         </th>
-                        <th class="w-[150px] text-center"><p class="text-[16px] font-bold">Custom label</p></th>
-                        <th class="w-[50px] text-center"><p class="text-[16px] font-bold">Actions</p></th>
+                        <th class="w-[150px] text-center">
+                          <p class="text-[16px] font-bold">
+                            {{ $t('views.ConfigurationJoystickView.customLabel') }}
+                          </p>
+                        </th>
+                        <th class="w-[50px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('views.ConfigurationJoystickView.actions') }}</p>
+                        </th>
                       </tr>
                     </template>
                     <template #item="{ item }">
@@ -466,14 +506,14 @@
                                 item.type === 'button' && isButtonPressed(item.id as JoystickButton) ? 'bg-[#2c99ce]' : 'bg-transparent'
                               "
                           >
-                            <p>{{ item.type }}</p>
+                            <p>{{ $t('views.ConfigurationJoystickView.button') }}</p>
                             <p>{{ item.id }}</p>
                           </div>
                         </td>
                         <td class="w-[120px]">
                           <div>
                             <p class="text-center">
-                              {{ currentButtonActions[item.id as JoystickButton]?.action.name }}
+                              {{ translateActionName(currentButtonActions[item.id as JoystickButton]?.action) }}
                             </p>
                           </div>
                         </td>
@@ -489,14 +529,14 @@
                         </td>
                         <td class="text-center w-[50px]">
                           <v-btn
-                            v-tooltip:top="'Unmap'"
+                            v-tooltip:top="$t('views.ConfigurationJoystickView.unmapInput')"
                             icon="mdi-delete-circle"
                             variant="text"
                             @click="unbindCurrentInput(item as JoystickButtonInput)"
                           >
                           </v-btn>
                           <v-btn
-                            v-tooltip="'Map function to button'"
+                            v-tooltip="$t('views.ConfigurationJoystickView.mapFunctionToButton')"
                             icon="mdi-circle-edit-outline"
                             variant="text"
                             class="text-[16px]"
@@ -513,14 +553,11 @@
             </template>
           </ExpansiblePanel>
           <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
-            <template #title>Axis Calibration</template>
+            <template #title>{{ $t('views.ConfigurationJoystickView.axisCalibration') }}</template>
             <template #info>
               <div class="flex flex-col items-start px-5 font-medium">
-                <li>Calibrate your joystick to ensure accurate axis inputs.</li>
-                <li>
-                  Click the button to open the calibration dialog, then follow the instructions to calibrate your
-                  joystick axes.
-                </li>
+                <li>{{ $t('views.ConfigurationJoystickView.calibrateJoystick') }}</li>
+                <li>{{ $t('views.ConfigurationJoystickView.clickToCalibrate') }}</li>
               </div>
             </template>
             <template #content>
@@ -542,7 +579,9 @@
       persistent
     >
       <template #title>
-        <div class="flex justify-center w-full font-bold mt-1">Input mapping</div>
+        <div class="flex justify-center w-full font-bold mt-1">
+          {{ $t('views.ConfigurationJoystickView.inputMapping') }}
+        </div>
       </template>
       <template #content>
         <v-icon class="fixed top-3 right-3 cursor-pointer" @click="closeInputMappingDialog">mdi-close</v-icon>
@@ -562,29 +601,29 @@
                   class="bg-[#FFFFFF33]"
                   @click="updateButtonAction(input, shiftFunction as ProtocolAction)"
                 >
-                  Assign as Shift
+                  {{ $t('views.ConfigurationJoystickView.assignAsShift') }}
                 </v-btn>
                 <v-btn
                   variant="elevated"
                   class="bg-[#FFFFFF33]"
                   @click="unbindCurrentInput(input as JoystickButtonInput)"
                 >
-                  Unmap Input
+                  {{ $t('views.ConfigurationJoystickView.unmapInput') }}
                 </v-btn>
               </div>
               <div class="flex-1"></div>
               <div class="flex flex-col items-start text-sm font-semibold gap-y-1">
                 <div class="flex items-center">
                   <img src="@/assets/cockpit-logo.png" class="w-4 h-4 mr-2" alt="Cockpit" />
-                  <span>Cockpit Action</span>
+                  <span>{{ $t('views.ConfigurationJoystickView.cockpitAction') }}</span>
                 </div>
                 <div class="flex items-center">
                   <img src="@/assets/mavlink-logo.png" class="w-4 h-4 mr-2 ml-[1px] mt-[4px]" alt="MAVLink" />
-                  <span>MAVLink Manual Control</span>
+                  <span>{{ $t('views.ConfigurationJoystickView.mavlinkManualControl') }}</span>
                 </div>
                 <div class="flex items-center">
                   <v-icon icon="mdi-database" size="small" class="mr-2" />
-                  <span>Data Lake Variable</span>
+                  <span>{{ $t('views.ConfigurationJoystickView.dataLakeVariable') }}</span>
                 </div>
               </div>
             </div>
@@ -596,7 +635,7 @@
                   variant="outlined"
                   theme="dark"
                   type="text"
-                  placeholder="Search actions..."
+                  :placeholder="$t('views.ConfigurationJoystickView.searchActions')"
                   class="mb-1"
                   hide-details
                 />
@@ -628,7 +667,7 @@
                       />
                     </div>
                     <p class="text-center text-xs px-8">
-                      {{ action.name }}
+                      {{ translateActionName(action as ProtocolAction) }}
                     </p>
                   </Button>
                 </div>
@@ -636,7 +675,9 @@
             </div>
           </div>
           <template v-if="currentAxisInputs.length > 0">
-            <p class="flex items-center justify-center w-full text-lg font-semibold mb-2 mt-2">Axis mapping</p>
+            <p class="flex items-center justify-center w-full text-lg font-semibold mb-2 mt-2">
+              {{ $t('joystickWarning.axisMapping') }}
+            </p>
           </template>
           <div class="flex flex-col items-center justify-between my-2">
             <Transition>
@@ -657,7 +698,7 @@
             <v-text-field
               v-model.number="selectedProfileAxesCorrespondencies[input.id].min"
               class="bg-transparent w-[110px]"
-              label="Min"
+              :label="$t('views.ConfigurationJoystickView.min')"
               type="number"
               density="compact"
               variant="outlined"
@@ -673,11 +714,18 @@
               class="bg-transparent w-[120px] mx-2"
               theme="dark"
               return-object
-            />
+            >
+              <template #selection="{ item }">
+                {{ translateActionName(item.raw) }}
+              </template>
+              <template #item="{ props, item }">
+                <v-list-item v-bind="props" :title="translateActionName(item.raw)"></v-list-item>
+              </template>
+            </v-select>
             <v-text-field
               v-model.number="selectedProfileAxesCorrespondencies[input.id].max"
               class="bg-transparent w-[110px]"
-              label="Max"
+              :label="$t('views.ConfigurationJoystickView.max')"
               type="number"
               density="compact"
               variant="outlined"
@@ -688,7 +736,7 @@
       </template>
       <template #actions>
         <div class="flex justify-end w-full">
-          <v-btn variant="text" class="m-1" @click="closeInputMappingDialog"> Close </v-btn>
+          <v-btn variant="text" class="m-1" @click="closeInputMappingDialog">{{ $t('common.close') }}</v-btn>
         </div>
       </template>
     </InteractionDialog>
@@ -697,7 +745,7 @@
   <!-- Profile Switch Confirmation Dialog -->
   <InteractionDialog
     v-model:show-dialog="showProfileSwitchDialog"
-    title="Confirm Joystick Profile Switch"
+    :title="$t('views.ConfigurationJoystickView.confirmProfileSwitch')"
     variant="text-only"
     :max-width="820"
     :persistent="true"
@@ -707,38 +755,51 @@
         <v-icon icon="mdi-alert-rhombus" size="60px" color="yellow" class="mx-4" />
         <div class="flex flex-col items-start px-5 font-medium gap-y-3 mb-6">
           <p>
-            Switching joystick configuration from "{{ activeProfileName }}" (<span class="font-bold">{{
+            {{
+              $t('views.ConfigurationJoystickView.switchingFromTo', {
+                from: activeProfileName,
+                to: selectedProfile.name,
+                vehicleType: vehicleType.replace('MAV_TYPE_', '').replace('_', ' ').toLowerCase(),
+              })
+            }}
+          </p>
+          <p>
+            <span class="font-bold">{{ activeProfileName }}</span
+            >:
+            {{
               getVehicleTypesForProfile(activeProfileHash)
                 .join(', ')
                 .replace('MAV_TYPE_', '')
                 .replace('_', ' ')
                 .toLowerCase()
-            }}</span
-            >) to "{{ selectedProfile.name }}" (<span class="font-bold">{{
+            }}
+          </p>
+          <p>
+            <span class="font-bold">{{ selectedProfile.name }}</span
+            >:
+            {{
               getVehicleTypesForProfile(selectedProfile.hash)
                 .join(', ')
                 .replace('MAV_TYPE_', '')
                 .replace('_', ' ')
                 .toLowerCase()
-            }}</span
-            >), while connected to a
-            <span class="font-bold">{{ vehicleType.replace('MAV_TYPE_', '').replace('_', ' ').toLowerCase() }}</span>
-            vehicle.
+            }}
           </p>
           <p v-if="getVehicleTypesForProfile(selectedProfile.hash).includes(vehicleType)">
-            As the selected mapping set matches your vehicle type, it's probably safe to switch.
+            {{ $t('views.ConfigurationJoystickView.profileMatchesVehicle') }}
           </p>
           <p v-else>
-            As the selected mapping set does not match your vehicle type, your motors will likely start spinning as soon
-            as you close this configuration page!
+            {{ $t('views.ConfigurationJoystickView.profileDoesNotMatch') }}
           </p>
         </div>
       </div>
     </template>
     <template #actions>
       <div class="flex justify-between w-full">
-        <v-btn variant="text" class="m-1" @click="cancelProfileSwitch"> Cancel </v-btn>
-        <v-btn variant="text" class="m-1" @click="confirmProfileSwitch"> Switch </v-btn>
+        <v-btn variant="text" class="m-1" @click="cancelProfileSwitch"> {{ $t('common.cancel') }} </v-btn>
+        <v-btn variant="text" class="m-1" @click="confirmProfileSwitch">
+          {{ $t('views.ConfigurationJoystickView.switchProfile') }}
+        </v-btn>
       </div>
     </template>
   </InteractionDialog>
@@ -747,6 +808,7 @@
 <script setup lang="ts">
 import semver from 'semver'
 import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -761,7 +823,7 @@ import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
-import { modifierKeyActions } from '@/libs/joystick/protocols/other'
+import { getModifierKeyActions, modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
 import { getVehicleTypeFromMavType, getVehicleTypeFromModeActionId } from '@/libs/vehicle/ardupilot/common'
@@ -788,6 +850,7 @@ const controllerStore = useControllerStore()
 const { globalAddress, vehicleType } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
+const { t } = useI18n()
 
 const showJoystickWarningMessage = ref(false)
 const searchText = ref('')
@@ -816,7 +879,7 @@ const justRemappedInput = ref<boolean>()
 const justRemappedAxisInput = ref<boolean>()
 const inputClickedDialog = ref(false)
 const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
-const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
+const availableModifierKeys = computed(() => Object.values(getModifierKeyActions()))
 const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
 const maxVisibleInputs = 64
@@ -1056,7 +1119,7 @@ const currentButtonActions = computed(
 const unbindCurrentInput = (input: JoystickButtonInput): void => {
   const actions: ProtocolAction = {
     id: 'no_function',
-    name: 'No function',
+    name: t('views.ConfigurationJoystickView.noFunction'),
     protocol: JoystickProtocol.CockpitAction,
   }
   updateButtonAction(input, actions)
@@ -1070,7 +1133,7 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
     showJoystickLayout.value = false
     nextTick(() => (showJoystickLayout.value = true))
   }, 1000)
-  openSnackbar({ message: `Button ${input.id} remapped to function '${action.name}'.`, variant: 'success' })
+  openSnackbar({ message: t('success.buttonRemapped', { id: input.id, name: action.name }), variant: 'success' })
 }
 
 // Automatically set the current joystick when it changes for the first time
@@ -1184,6 +1247,55 @@ const toggleJoystickEnabling = (joystickModel: string): void => {
   }
 }
 
+// Translate profile names
+const translateProfileName = (name: string): string => {
+  const nameMap: Record<string, string> = {
+    'ROV functions mapping': t('views.ConfigurationJoystickView.rovFunctionsMapping'),
+    'Boat functions mapping': t('views.ConfigurationJoystickView.boatFunctionsMapping'),
+    'MAV functions mapping': t('views.ConfigurationJoystickView.mavFunctionsMapping'),
+  }
+  return nameMap[name] || name
+}
+
+// Translate modifier key names
+const translateModifierKeyName = (name: string): string => {
+  const nameMap: Record<string, string> = {
+    Regular: t('views.ConfigurationJoystickView.regular'),
+    Shift: t('views.ConfigurationJoystickView.shift'),
+  }
+  return nameMap[name] || name
+}
+
+// Translate action names dynamically based on action ID
+const translateActionName = (action: ProtocolAction): string => {
+  if (!action) return ''
+
+  // Handle special cases by ID
+  const idToKeyMap: Record<string, string> = {
+    no_function: 'views.ConfigurationJoystickView.noFunction',
+    go_to_next_view: 'views.ConfigurationJoystickView.goToNextView',
+    go_to_previous_view: 'views.ConfigurationJoystickView.goToPreviousView',
+    toggle_full_screen: 'views.ConfigurationJoystickView.toggleFullScreen',
+    mavlink_arm: 'views.ConfigurationJoystickView.mavlinkArm',
+    mavlink_disarm: 'views.ConfigurationJoystickView.mavlinkDisarm',
+    toggle_bottom_bar: 'views.ConfigurationJoystickView.toggleBottomBar',
+    toggle_top_bar: 'views.ConfigurationJoystickView.toggleTopBar',
+    start_recording_all_streams: 'views.ConfigurationJoystickView.startRecordingAllStreams',
+    stop_recording_all_streams: 'views.ConfigurationJoystickView.stopRecordingAllStreams',
+    toggle_recording_all_streams: 'views.ConfigurationJoystickView.toggleRecordingAllStreams',
+    take_snapshot: 'views.ConfigurationJoystickView.takeSnapshot',
+    hold_to_confirm: 'views.ConfigurationJoystickView.holdToConfirm',
+  }
+
+  const translationKey = idToKeyMap[action.id]
+  if (translationKey) {
+    return t(translationKey)
+  }
+
+  // For other actions, return the name as is
+  return action.name
+}
+
 // Select a profile for viewing without activating it
 const selectProfile = (functionMapping: any): void => {
   const mappingIndex = controllerStore.protocolMappings.findIndex((p) => p.name === functionMapping.name)
@@ -1205,7 +1317,7 @@ const switchToSelectedProfile = (): void => {
 
 const confirmProfileSwitch = (): void => {
   controllerStore.loadProtocolMapping(selectedProfile.value)
-  openSnackbar({ message: `Switched to profile '${selectedProfile.value.name}'.`, variant: 'success' })
+  openSnackbar({ message: t('success.switchedToProfile', { name: selectedProfile.value.name }), variant: 'success' })
   showProfileSwitchDialog.value = false
 }
 

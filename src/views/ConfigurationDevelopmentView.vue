@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>Development configuration</template>
+    <template #title>{{ $t('views.ConfigurationDevelopmentView.title') }}</template>
     <template #content>
       <div
         class="max-h-[85vh] overflow-y-auto -mr-2 mb-2"
@@ -13,14 +13,14 @@
           <div class="flex flex-row gap-x-[40px]">
             <v-switch
               v-model="devStore.developmentMode"
-              label="Development mode"
+              :label="$t('views.ConfigurationDevelopmentView.developmentMode')"
               color="white"
               hide-details
               class="min-w-[155px]"
             />
             <v-switch
               v-model="devStore.enableBlueOsSettingsSync"
-              label="BlueOS settings sync"
+              :label="$t('views.ConfigurationDevelopmentView.blueOsSettingsSync')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -28,7 +28,7 @@
             />
             <v-switch
               v-model="devStore.enableUsageStatisticsTelemetry"
-              label="Usage statistics telemetry"
+              :label="$t('views.ConfigurationDevelopmentView.usageStatisticsTelemetry')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -36,7 +36,7 @@
             />
             <v-switch
               v-model="devStore.enableSystemLogging"
-              label="Enable system logging"
+              :label="$t('views.ConfigurationDevelopmentView.enableSystemLogging')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -46,7 +46,7 @@
           <div class="flex flex-row w-full justify-start gap-x-[40px]">
             <v-switch
               v-model="devStore.showSplashScreenOnStartup"
-              label="Show splashscreen on startup"
+              :label="$t('views.ConfigurationDevelopmentView.showSplashscreenOnStartup')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -54,7 +54,7 @@
           </div>
           <v-slider
             v-model="devStore.widgetDevInfoBlurLevel"
-            label="Dev info blur level"
+            :label="$t('views.ConfigurationDevelopmentView.devInfoBlurLevel')"
             min="0"
             max="10"
             class="w-[350px]"
@@ -66,9 +66,9 @@
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
           <template #title>
             <div class="flex justify-between">
-              <span>System logs</span>
+              <span>{{ $t('views.ConfigurationDevelopmentView.systemLogs') }}</span>
               <span class="text-sm text-gray-300 cursor-pointer" @click.stop="deleteOldLogs">
-                <v-tooltip text="Delete old logs">
+                <v-tooltip :text="$t('views.ConfigurationDevelopmentView.deleteOldLogs')">
                   <template #activator="{ props }">
                     <v-icon left class="mr-2" v-bind="props">mdi-delete-sweep</v-icon>
                   </template>
@@ -118,6 +118,7 @@ import { parse } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { onBeforeMount, onBeforeUnmount } from 'vue'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import {
@@ -133,6 +134,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
+const { t } = useI18n()
 const devStore = useDevelopmentStore()
 const interfaceStore = useAppInterfaceStore()
 
@@ -160,10 +162,10 @@ interface CurrentLogInfo {
 /* eslint-enable jsdoc/require-jsdoc */
 
 const headers = [
-  { title: 'Name', key: 'name', sortable: false },
-  { title: 'Date/Time', key: 'dateTimeMs', sortable: true },
-  { title: 'Size', key: 'sizeBytes', sortable: true },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: t('common.name'), key: 'name', sortable: false },
+  { title: t('views.ConfigurationDevelopmentView.dateTime'), key: 'dateTimeMs', sortable: true },
+  { title: t('views.ConfigurationDevelopmentView.size'), key: 'sizeBytes', sortable: true },
+  { title: t('views.ConfigurationDevelopmentView.actions'), key: 'actions', sortable: false },
 ]
 
 const updateCurrentSessionLogSize = async (): Promise<void> => {

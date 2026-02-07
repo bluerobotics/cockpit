@@ -1,5 +1,12 @@
-<template>
-  <v-tooltip :text="store.isVehicleOnline ? 'Vehicle connected' : 'Vehicle disconnected'" location="top">
+﻿<template>
+  <v-tooltip
+    :text="
+      store.isVehicleOnline
+        ? $t('components.mini-widgets.BaseCommIndicator.connected')
+        : $t('components.mini-widgets.BaseCommIndicator.disconnected')
+    "
+    location="top"
+  >
     <template #activator="{ props: tooltipProps }">
       <div class="relative" :class="store.isVehicleOnline ? 'text-slate-50' : 'text-gray-700'" v-bind="tooltipProps">
         <FontAwesomeIcon icon="fa-solid fa-arrow-right-arrow-left" size="xl" />

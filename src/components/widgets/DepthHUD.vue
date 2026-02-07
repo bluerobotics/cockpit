@@ -4,11 +4,11 @@
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Depth HUD config</v-card-title>
+      <v-card-title class="text-center">{{ $t('depthHUD.widgetConfig') }}</v-card-title>
       <v-card-text>
         <v-switch
           class="ma-1"
-          label="Show height value"
+          :label="$t('depthHUD.showDepthValue')"
           :model-value="widget.options.showDepthValue"
           :color="widget.options.showDepthValue ? 'white' : undefined"
           hide-details
@@ -16,7 +16,7 @@
         />
         <v-expansion-panels theme="dark">
           <v-expansion-panel class="bg-[#FFFFFF11] text-white">
-            <v-expansion-panel-title>Color</v-expansion-panel-title>
+            <v-expansion-panel-title>{{ $t('common.color') }}</v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-color-picker
                 v-model="widget.options.hudColor"

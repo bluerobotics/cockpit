@@ -145,54 +145,28 @@ const isDecember = (): boolean => getMonth(new Date()) === 11
 
 import { useFullscreen } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { isElectron } from '@/libs/utils'
+
+const { tm } = useI18n()
 
 const randomLightHeartedMessage = ref<string>('')
 let timerId: ReturnType<typeof setTimeout>
 
-const startupLightHeartedMessages: string[] = [
-  'Distributing dolphins for sonar translations...',
-  'Observing octopuses to optimize dark mode...',
-  'Persuading Poseidon to trade us his trident...',
-  'Sailing the seas, in sync with the breeze...',
-  'Jiggling jellyfish to frost up the UI...',
-  'Corralling coral for calibration...',
-  'Languishing in life-jackets...',
-  'Salvaging shipwrecks...',
-  'Searching for Nemo...',
-  'Singing with whales...',
-  'Tuning harps for carp...',
-  'Stargazing with starfish...',
-  'Recharging electric eels...',
-  'Swaying at the seaweed disco...',
-  'Fencing in the swordfish showdown...',
-  'Assembling AUVs into a single-file line...',
-  'Polishing portholes for crystal-clear viewports...',
-  'Convincing crabs to stop double-clicking everything...',
-  'Syncing compass with the stars (hold still, Orion)...',
-  'Kowtowing to kelp for a greener UI theme...',
-  'Warming up thrusters — and the coffee machine...',
-  'Updating barnacle firmware — this might tickle...',
-  'Deploying rubber ducks for safety certification...',
-  'Filling ballast tanks with fresh ideas...',
-  'Mapping ocean puns… depth-level humor detected...',
-  'Rendering waves pixel by pixel — surf’s almost up...',
-  'Teaching seagulls the latest hover gestures...',
-  'Checking tide tables to schedule snack breaks...',
-  'Swapping batteries in the sea turtles (just kidding)...',
-  'Dusting off code gremlins  —  please keep arms inside the Cockpit...',
-  'Aligning gyros — because spin is only fun on dance floors...',
-]
+const getStartupMessages = (): string[] => {
+  const messages = tm('splash.messages')
+  return Array.isArray(messages) ? messages : []
+}
 
-const remainingMessages = ref<string[]>([...startupLightHeartedMessages])
+const remainingMessages = ref<string[]>([...getStartupMessages()])
 
 const scheduleNextMessage = (): void => {
   const randomIndex = Math.floor(Math.random() * remainingMessages.value.length)
   const delay = Math.random() * 5000 + 3000
 
   if (remainingMessages.value.length === 0) {
-    remainingMessages.value = [...startupLightHeartedMessages]
+    remainingMessages.value = [...getStartupMessages()]
   }
   randomLightHeartedMessage.value = remainingMessages.value.splice(randomIndex, 1)[0]
   timerId = setTimeout(scheduleNextMessage, delay)

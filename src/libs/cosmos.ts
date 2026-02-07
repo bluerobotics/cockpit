@@ -393,6 +393,12 @@ declare global {
         processArch: string
       }>
       /**
+       * Update the application menu language
+       * @param locale - The locale code (e.g., 'en', 'zh')
+       * @returns Promise resolving when menu is updated
+       */
+      updateMenuLanguage: (locale: string) => Promise<void>
+      /**
        * Start live video streaming process with FFmpeg
        * @param firstChunk - The first video chunk blob
        * @param recordingHash - Unique identifier for this recording

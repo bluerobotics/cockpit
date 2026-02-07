@@ -26,6 +26,7 @@ import {
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
 import { isEqual, sequentialArray } from '@/libs/utils'
+import i18n from '@/plugins/i18n'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import {
   type MiniWidget,
@@ -111,7 +112,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const showElementPropsDrawer = (customWidgetElementHash: string): void => {
     const customWidgetElement = getElementByHash(customWidgetElementHash)
     if (!customWidgetElement) {
-      openSnackbar({ variant: 'error', message: 'Could not find element with the given hash.', duration: 3000 })
+      openSnackbar({ variant: 'error', message: i18n.global.t('stores.widgetManager.elementNotFound'), duration: 3000 })
       return
     }
     elementToShowOnDrawer.value = customWidgetElement
@@ -154,7 +155,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const widgetIndex = currentViewWidgets.findIndex((widget) => widget.hash === widgetHash)
 
     if (widgetIndex === -1) {
-      openSnackbar({ variant: 'error', message: 'Widget not found with the given hash.', duration: 3000 })
+      openSnackbar({ variant: 'error', message: i18n.global.t('stores.widgetManager.widgetNotFound'), duration: 3000 })
       return
     }
 
@@ -165,7 +166,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     loadedWidget.position = currentPosition
     currentViewWidgets[widgetIndex] = loadedWidget
 
-    openSnackbar({ variant: 'success', message: 'Widget loaded successfully with new hash.', duration: 3000 })
+    openSnackbar({
+      variant: 'success',
+      message: i18n.global.t('stores.widgetManager.widgetLoadedSuccessfully'),
+      duration: 3000,
+    })
   }
 
   const reassignHashesToWidget = (widget: Widget): void => {
@@ -262,7 +267,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       const profilesHashes = savedProfiles.value.map((p) => p.hash)
 
       if (!profilesHashes.includes(newValue.hash)) {
-        showDialog({ variant: 'error', message: 'Could not find profile.', timer: 3000 })
+        showDialog({ variant: 'error', message: i18n.global.t('stores.widgetManager.profileNotFound'), timer: 3000 })
         return
       }
 
@@ -368,7 +373,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   function loadProfile(profile: Profile): void {
     const profileIndex = savedProfiles.value.findIndex((p) => p.hash === profile.hash)
     if (profileIndex === -1) {
-      showDialog({ message: 'Could not find profile.', variant: 'error', timer: 3000 })
+      showDialog({ message: i18n.global.t('stores.widgetManager.profileNotFound'), variant: 'error', timer: 3000 })
       return
     }
     currentProfileIndex.value = profileIndex
@@ -452,7 +457,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   function deleteProfile(profile: Profile): void {
     if (!isUserProfile(profile)) {
-      showDialog({ variant: 'error', message: 'Could not find profile.', timer: 3000 })
+      showDialog({ variant: 'error', message: i18n.global.t('stores.widgetManager.profileNotFound'), timer: 3000 })
       return
     }
 
@@ -512,7 +517,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   function renameView(view: View, name: string): void {
     const index = currentProfile.value.views.indexOf(view)
     if (name.length === 0) {
-      showDialog({ variant: 'error', message: 'View name cannot be blank.', timer: 2000 })
+      showDialog({
+        variant: 'error',
+        message: i18n.global.t('stores.widgetManager.viewNameCannotBeBlank'),
+        timer: 2000,
+      })
       return
     }
     currentProfile.value.views[index].name = name
@@ -524,7 +533,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   const selectView = (view: View): void => {
     if (!view.visible) {
-      showDialog({ variant: 'error', message: 'Cannot select a view that is not visible.', timer: 5000 })
+      showDialog({
+        variant: 'error',
+        message: i18n.global.t('stores.widgetManager.cannotSelectInvisibleView'),
+        timer: 5000,
+      })
       return
     }
     const index = currentProfile.value.views.indexOf(view)
@@ -634,7 +647,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return
     }
 
-    showDialog({ variant: 'error', message: 'Mini-widget container not found.' })
+    showDialog({ variant: 'error', message: i18n.global.t('stores.widgetManager.miniWidgetContainerNotFound') })
   }
 
   const customWidgetContainers = computed<MiniWidgetContainer[]>(() =>

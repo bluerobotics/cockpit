@@ -1,3 +1,4 @@
+import i18n from '@/plugins/i18n'
 import { type ProtocolAction, CockpitModifierKeyOption, JoystickProtocol } from '@/types/joystick'
 
 /**
@@ -7,23 +8,29 @@ export enum OtherProtocol {
   no_function = 'no_function',
 }
 
-export const otherAvailableActions: { [key in OtherProtocol]: ProtocolAction } = {
+export const getOtherAvailableActions = (): { [key in OtherProtocol]: ProtocolAction } => ({
   [OtherProtocol.no_function]: {
     protocol: JoystickProtocol.Other,
     id: OtherProtocol.no_function,
-    name: 'No function',
+    name: i18n.global.t('configuration.joystick.noFunction'),
   },
-}
+})
 
-export const modifierKeyActions: { [key in CockpitModifierKeyOption]: ProtocolAction } = {
+// For backward compatibility
+export const otherAvailableActions = getOtherAvailableActions()
+
+export const getModifierKeyActions = (): { [key in CockpitModifierKeyOption]: ProtocolAction } => ({
   [CockpitModifierKeyOption.regular]: {
     protocol: JoystickProtocol.CockpitModifierKey,
     id: CockpitModifierKeyOption.regular,
-    name: 'Regular',
+    name: i18n.global.t('configuration.joystick.regular'),
   },
   [CockpitModifierKeyOption.shift]: {
     protocol: JoystickProtocol.CockpitModifierKey,
     id: CockpitModifierKeyOption.shift,
-    name: 'Shift',
+    name: i18n.global.t('configuration.joystick.shift'),
   },
-}
+})
+
+// For backward compatibility
+export const modifierKeyActions = getModifierKeyActions()

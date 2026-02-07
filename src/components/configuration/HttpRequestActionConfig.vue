@@ -2,13 +2,13 @@
   <v-dialog v-model="actionDialog.show" max-width="500px">
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">{{
-        editMode ? 'Edit action' : 'Create new action'
+        editMode ? $t('actions.editAction') : $t('actions.createNewAction')
       }}</v-card-title>
       <v-card-text class="px-8">
         <v-form class="d-flex flex-column gap-2" @submit.prevent="createActionConfig">
           <v-text-field
             v-model="newActionConfig.name"
-            label="Action Name"
+            :label="$t('actions.actionName')"
             required
             variant="outlined"
             density="compact"
@@ -16,7 +16,7 @@
           <v-select
             v-model="newActionConfig.method"
             :items="availableHttpRequestMethods"
-            label="Request Type"
+            :label="$t('actions.requestType')"
             required
             variant="outlined"
             density="compact"
@@ -24,17 +24,17 @@
           />
           <v-text-field
             v-model="newActionConfig.url"
-            label="URL"
+            :label="$t('common.url')"
             required
             variant="outlined"
             density="compact"
           ></v-text-field>
 
           <div class="d-flex align-center justify-space-between">
-            <h3 class="text-subtitle-2 font-weight-bold">URL Parameters</h3>
+            <h3 class="text-subtitle-2 font-weight-bold">{{ $t('actions.urlParameters') }}</h3>
             <v-btn variant="text" class="px-2 py-1" density="compact" @click="openUrlParamDialog">
               <v-icon size="small">mdi-plus</v-icon>
-              Add
+              {{ $t('common.add') }}
             </v-btn>
           </div>
           <div v-if="Object.keys(newActionConfig.urlParams).length > 0" class="mb-2">
@@ -53,10 +53,10 @@
           </div>
 
           <div class="d-flex align-center justify-space-between">
-            <h3 class="text-subtitle-2 font-weight-bold">Headers</h3>
+            <h3 class="text-subtitle-2 font-weight-bold">{{ $t('actions.headers') }}</h3>
             <v-btn variant="text" class="px-2 py-1" density="compact" @click="openHeaderDialog">
               <v-icon size="small">mdi-plus</v-icon>
-              Add
+              {{ $t('common.add') }}
             </v-btn>
           </div>
           <div v-if="Object.keys(newActionConfig.headers).length > 0" class="mb-2">
@@ -75,10 +75,10 @@
           </div>
 
           <div class="d-flex align-center justify-space-between">
-            <h3 class="text-subtitle-2 font-weight-bold">JSON Body</h3>
+            <h3 class="text-subtitle-2 font-weight-bold">{{ $t('actions.jsonBody') }}</h3>
             <v-btn variant="text" class="px-2 py-1" density="compact" @click="openJsonDialog">
               <v-icon size="small">mdi-code-json</v-icon>
-              Edit
+              {{ $t('common.edit') }}
             </v-btn>
           </div>
         </v-form>
@@ -86,11 +86,11 @@
       <v-divider class="mt-2 mx-10" />
       <v-card-actions>
         <div class="flex justify-between items-center pa-2 w-full h-full">
-          <v-btn color="white" variant="text" @click="closeActionDialog">Cancel</v-btn>
+          <v-btn color="white" variant="text" @click="closeActionDialog">{{ $t('common.cancel') }}</v-btn>
           <div class="flex gap-x-10">
-            <v-btn variant="text" @click="resetNewAction">Reset</v-btn>
+            <v-btn variant="text" @click="resetNewAction">{{ $t('common.reset') }}</v-btn>
             <v-btn :disabled="!isFormValid" variant="text" @click="saveActionConfig">
-              {{ editMode ? 'Save' : 'Create' }}
+              {{ editMode ? $t('common.save') : $t('common.create') }}
             </v-btn>
           </div>
         </div>
@@ -101,12 +101,12 @@
   <!-- URL Parameter Dialog -->
   <v-dialog v-model="urlParamDialog.show" max-width="400px">
     <v-card class="rounded-lg px-6 py-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-h6 text-center font-weight-bold pb-6">Add URL parameter</v-card-title>
+      <v-card-title class="text-h6 text-center font-weight-bold pb-6">{{ $t('actions.addUrlParameter') }}</v-card-title>
       <v-card-text class="pa-2">
         <v-form class="d-flex flex-column gap-2" @submit.prevent="addUrlParameter">
           <v-text-field
             v-model="urlParamDialog.key"
-            label="Parameter Key"
+            :label="$t('actions.parameterKey')"
             required
             variant="outlined"
             density="compact"
@@ -114,7 +114,7 @@
           <v-select
             v-model="urlParamDialog.valueType"
             :items="paramValueOptions"
-            label="Parameter Value"
+            :label="$t('actions.parameterValue')"
             required
             variant="outlined"
             density="compact"
@@ -123,19 +123,21 @@
           <v-text-field
             v-if="urlParamDialog.valueType === 'fixed'"
             v-model="urlParamDialog.fixedValue"
-            label="Fixed Value"
+            :label="$t('actions.fixedValue')"
             required
             variant="outlined"
             density="compact"
-            placeholder="Non-dynamic value."
+            :placeholder="$t('actions.nonDynamicValue')"
           ></v-text-field>
         </v-form>
       </v-card-text>
       <v-divider class="m-2" />
       <v-card-actions class="pa-2 -mb-1">
         <div class="flex w-full justify-between">
-          <v-btn color="white" variant="text" size="small" @click="closeUrlParamDialog">Cancel</v-btn>
-          <v-btn color="white" size="small" @click="addUrlParameter()"> Save </v-btn>
+          <v-btn color="white" variant="text" size="small" @click="closeUrlParamDialog">{{
+            $t('common.cancel')
+          }}</v-btn>
+          <v-btn color="white" size="small" @click="addUrlParameter()"> {{ $t('common.save') }} </v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -144,12 +146,12 @@
   <!-- Header Dialog -->
   <v-dialog v-model="headerDialog.show" max-width="400px">
     <v-card class="rounded-lg p-3" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-h6 font-weight-bold pb-4 text-center">Add header</v-card-title>
+      <v-card-title class="text-h6 font-weight-bold pb-4 text-center">{{ $t('actions.addHeader') }}</v-card-title>
       <v-card-text class="pa-4">
         <v-form class="d-flex flex-column gap-2" @submit.prevent="addHeader">
           <v-text-field
             v-model="headerDialog.key"
-            label="Header Key"
+            :label="$t('actions.headerKey')"
             required
             variant="outlined"
             :error-messages="headerDialog.error"
@@ -157,7 +159,7 @@
           ></v-text-field>
           <v-text-field
             v-model="headerDialog.value"
-            label="Header Value"
+            :label="$t('actions.headerValue')"
             variant="outlined"
             density="compact"
           ></v-text-field>
@@ -171,8 +173,7 @@
             class="mt-2"
           >
             <div class="text-body-2">
-              <strong>Note:</strong> Specifying the User-Agent header only works in the standalone Electron version of
-              the application, not in the browser/extension version.
+              {{ $t('actions.userAgentNote') }}
             </div>
           </v-alert>
         </v-form>
@@ -180,8 +181,8 @@
       <v-divider class="m-2" />
       <v-card-actions class="pa-2 -mb-1">
         <div class="flex w-full justify-between">
-          <v-btn color="white" variant="text" size="small" @click="closeHeaderDialog">Cancel</v-btn>
-          <v-btn color="white" size="small" @click="addHeader">Save</v-btn>
+          <v-btn color="white" variant="text" size="small" @click="closeHeaderDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="white" size="small" @click="addHeader">{{ $t('common.save') }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -190,13 +191,15 @@
   <!-- JSON Body Dialog -->
   <v-dialog v-model="bodyDialog.show" max-width="520px">
     <v-card class="rounded-lg p-3" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-h6 font-weight-bold pa-2 text-center">Edit JSON body template</v-card-title>
+      <v-card-title class="text-h6 font-weight-bold pa-2 text-center">{{
+        $t('actions.editJsonBodyTemplate')
+      }}</v-card-title>
       <v-card-text class="px-6">
         <v-form class="d-flex flex-column gap-2" @submit.prevent="saveJsonBody">
           <v-textarea
             v-model="bodyDialog.bodyText"
-            label="JSON Body Template"
-            hint="Use {{ inputId }} for dynamic values."
+            :label="$t('actions.jsonBodyTemplate')"
+            :hint="$t('actions.useDynamicValuesHint')"
             persistent-hint
             :error-messages="bodyDialog.error"
             rows="12"
@@ -209,8 +212,8 @@
       <v-divider class="m-2" />
       <v-card-actions class="pa-2 -mb-1">
         <div class="flex w-full justify-between">
-          <v-btn color="white" variant="text" @click="closeJsonDialog">Cancel</v-btn>
-          <v-btn color="white" :disabled="!bodyDialog.isValid" @click="saveJsonBody">Save</v-btn>
+          <v-btn color="white" variant="text" @click="closeJsonDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="white" :disabled="!bodyDialog.isValid" @click="saveJsonBody">{{ $t('common.save') }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -219,6 +222,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
 import {
@@ -238,6 +242,7 @@ const emit = defineEmits<{
 }>()
 
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
 
 const defaultActionConfig = {
   name: 'New HTTP Action',
@@ -276,7 +281,7 @@ const headerDialog = ref({
 })
 
 const paramValueOptions = computed(() => {
-  const options = [{ title: 'Fixed (specify below)', value: 'fixed' }]
+  const options = [{ title: t('actions.fixedOption'), value: 'fixed' }]
   const availableInputParameters = getAllDataLakeVariablesInfo()
   Object.values(availableInputParameters).forEach((parameter) => {
     options.push({ title: parameter.id, value: parameter.id })

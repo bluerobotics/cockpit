@@ -4,11 +4,11 @@
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
     <v-card class="px-8 pb-6 pt-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">HUD Compass widget config</v-card-title>
+      <v-card-title class="text-center">{{ $t('compassHUD.widgetConfig') }}</v-card-title>
       <v-card-text>
         <v-switch
           class="ma-1"
-          label="Show yaw value"
+          :label="$t('compassHUD.showYawValue')"
           :color="widget.options.showYawValue ? 'white' : undefined"
           :model-value="widget.options.showYawValue"
           hide-details
@@ -16,7 +16,7 @@
         />
         <v-switch
           class="ma-1"
-          label="Use -180/+180 range"
+          :label="$t('compassHUD.useNegativeRange')"
           :color="widget.options.useNegativeRange ? 'white' : undefined"
           :model-value="widget.options.useNegativeRange"
           hide-details
@@ -24,7 +24,7 @@
         />
         <v-expansion-panels theme="dark">
           <v-expansion-panel class="bg-[#FFFFFF11] text-white mt-2">
-            <v-expansion-panel-title>Color</v-expansion-panel-title>
+            <v-expansion-panel-title>{{ $t('common.color') }}</v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-color-picker
                 v-model="widget.options.hudColor"

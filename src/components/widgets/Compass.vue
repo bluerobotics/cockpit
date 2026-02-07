@@ -12,7 +12,7 @@
     class="flex pa-4 bg-[#ffffff10] text-white backdrop-blur-2xl border-[1px] border-[#FAFAFA12]"
   >
     <div class="flex items-center">
-      <span class="mr-3 text-slate-100">Heading style</span>
+      <span class="mr-3 text-slate-100">{{ $t('compass.headingStyle') }}</span>
       <div class="w-40"><Dropdown v-model="widget.options.headingStyle" :options="headingOptions" /></div>
     </div>
   </Dialog>
@@ -27,6 +27,7 @@ import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas, sequentialArray } from '@/libs/utils'
+import { t } from '@/plugins/i18n'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -60,7 +61,7 @@ enum HeadingStyle {
   NORTH_UP = 'North Up',
   HEAD_UP = 'Head Up',
 }
-const headingOptions = Object.values(HeadingStyle)
+const headingOptions = computed(() => [t('compass.northUp'), t('compass.headUp')])
 
 const props = defineProps<{
   /**
@@ -74,7 +75,7 @@ onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (Object.keys(widget.value.options).length === 0) {
     widget.value.options = {
-      headingStyle: headingOptions[0],
+      headingStyle: headingOptions.value[0],
     }
   }
 })
@@ -129,7 +130,7 @@ const renderCanvas = (): void => {
   ctx.rotate(radians(-90))
 
   // Draw line and identification for each cardinal and sub-cardinal angle
-  if (widget.value.options.headingStyle == HeadingStyle.HEAD_UP) {
+  if (widget.value.options.headingStyle == t('compass.headUp')) {
     ctx.rotate(-radians(renderVariables.yawAngleDegrees))
   }
   for (const [angleDegrees, angleName] of Object.entries(mainAngles)) {

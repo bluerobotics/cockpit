@@ -21,11 +21,13 @@
       <v-card min-width="420" min-height="280" class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
         <v-card-text class="pa-3">
           <div v-if="dataStatus === 'error'" class="text-center mb-3">
-            <v-alert type="warning" density="compact" class="text-sm"> No EKF data - Check vehicle connection </v-alert>
+            <v-alert type="warning" density="compact" class="text-sm">{{
+              $t('miniWidgets.ekfStateIndicator.noData')
+            }}</v-alert>
           </div>
           <div v-else-if="dataStatus === 'loading'" class="text-center mb-3">
             <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
-            <span class="text-sm text-white opacity-70">Waiting for EKF data...</span>
+            <span class="text-sm text-white opacity-70">{{ $t('miniWidgets.ekfStateIndicator.waitingForData') }}</span>
           </div>
           <div class="d-flex">
             <!-- EKF Bars Section -->

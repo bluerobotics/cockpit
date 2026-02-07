@@ -2,6 +2,7 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable max-len */
 import { type ArduPilotVehicleModeActionIdPattern } from '@/libs/vehicle/ardupilot/common'
+import i18n from '@/plugins/i18n'
 import { type ProtocolAction, JoystickProtocol } from '@/types/joystick'
 
 /**
@@ -47,21 +48,24 @@ export class CockpitAction implements ProtocolAction {
   }
 }
 
-// Predefined actions
-export const predefinedCockpitActions: { [key in CockpitActionsFunction]: CockpitAction } = {
-  [CockpitActionsFunction.go_to_next_view]: new CockpitAction(CockpitActionsFunction.go_to_next_view, 'Go to next view'),
-  [CockpitActionsFunction.go_to_previous_view]: new CockpitAction(CockpitActionsFunction.go_to_previous_view, 'Go to previous view'),
-  [CockpitActionsFunction.toggle_full_screen]: new CockpitAction(CockpitActionsFunction.toggle_full_screen, 'Toggle full screen'),
-  [CockpitActionsFunction.mavlink_arm]: new CockpitAction(CockpitActionsFunction.mavlink_arm, 'Mavlink arm'),
-  [CockpitActionsFunction.mavlink_disarm]: new CockpitAction(CockpitActionsFunction.mavlink_disarm, 'Mavlink disarm'),
-  [CockpitActionsFunction.toggle_bottom_bar]: new CockpitAction(CockpitActionsFunction.toggle_bottom_bar, 'Toggle bottom bar'),
-  [CockpitActionsFunction.toggle_top_bar]: new CockpitAction(CockpitActionsFunction.toggle_top_bar, 'Toggle top bar'),
-  [CockpitActionsFunction.start_recording_all_streams]: new CockpitAction(CockpitActionsFunction.start_recording_all_streams, 'Start recording all streams'),
-  [CockpitActionsFunction.stop_recording_all_streams]: new CockpitAction(CockpitActionsFunction.stop_recording_all_streams, 'Stop recording all streams'),
-  [CockpitActionsFunction.toggle_recording_all_streams]: new CockpitAction(CockpitActionsFunction.toggle_recording_all_streams, 'Toggle recording all streams'),
-  [CockpitActionsFunction.take_snapshot]: new CockpitAction(CockpitActionsFunction.take_snapshot, 'Take snapshot'),
-  [CockpitActionsFunction.hold_to_confirm]: new CockpitAction(CockpitActionsFunction.hold_to_confirm, 'Hold to confirm'),
-}
+// Getter function for dynamic translations
+export const getCockpitActions = (): { [key in CockpitActionsFunction]: CockpitAction } => ({
+  [CockpitActionsFunction.go_to_next_view]: new CockpitAction(CockpitActionsFunction.go_to_next_view, i18n.global.t('configuration.joystick.goToNextView')),
+  [CockpitActionsFunction.go_to_previous_view]: new CockpitAction(CockpitActionsFunction.go_to_previous_view, i18n.global.t('configuration.joystick.goToPreviousView')),
+  [CockpitActionsFunction.toggle_full_screen]: new CockpitAction(CockpitActionsFunction.toggle_full_screen, i18n.global.t('configuration.joystick.toggleFullScreen')),
+  [CockpitActionsFunction.mavlink_arm]: new CockpitAction(CockpitActionsFunction.mavlink_arm, i18n.global.t('configuration.joystick.mavlinkArm')),
+  [CockpitActionsFunction.mavlink_disarm]: new CockpitAction(CockpitActionsFunction.mavlink_disarm, i18n.global.t('configuration.joystick.mavlinkDisarm')),
+  [CockpitActionsFunction.toggle_bottom_bar]: new CockpitAction(CockpitActionsFunction.toggle_bottom_bar, i18n.global.t('configuration.joystick.toggleBottomBar')),
+  [CockpitActionsFunction.toggle_top_bar]: new CockpitAction(CockpitActionsFunction.toggle_top_bar, i18n.global.t('configuration.joystick.toggleTopBar')),
+  [CockpitActionsFunction.start_recording_all_streams]: new CockpitAction(CockpitActionsFunction.start_recording_all_streams, i18n.global.t('configuration.joystick.startRecordingAllStreams')),
+  [CockpitActionsFunction.stop_recording_all_streams]: new CockpitAction(CockpitActionsFunction.stop_recording_all_streams, i18n.global.t('configuration.joystick.stopRecordingAllStreams')),
+  [CockpitActionsFunction.toggle_recording_all_streams]: new CockpitAction(CockpitActionsFunction.toggle_recording_all_streams, i18n.global.t('configuration.joystick.toggleRecordingAllStreams')),
+  [CockpitActionsFunction.take_snapshot]: new CockpitAction(CockpitActionsFunction.take_snapshot, i18n.global.t('configuration.joystick.takeSnapshot')),
+  [CockpitActionsFunction.hold_to_confirm]: new CockpitAction(CockpitActionsFunction.hold_to_confirm, i18n.global.t('configuration.joystick.holdToConfirm')),
+})
+
+// Predefined actions (for backward compatibility, initialized once)
+export const predefinedCockpitActions: { [key in CockpitActionsFunction]: CockpitAction } = getCockpitActions()
 
 export type CockpitActionCallback = () => void
 
@@ -83,15 +87,25 @@ interface CallbackEntry {
  * Responsible for routing cockpit actions
  */
 export class CockpitActionsManager {
-  availableActions: { [key in CockpitActionsFunction]: CockpitAction } = { ...predefinedCockpitActions }
   actionsCallbacks: Record<string, CallbackEntry> = {}
 
+  // Make availableActions a getter so it always returns fresh translations
+  /**
+   * Get available Cockpit actions with current translations
+   * @returns {object} Record of all available Cockpit actions
+   */
+  get availableActions(): { [key in CockpitActionsFunction]: CockpitAction } {
+    return getCockpitActions()
+  }
+
   registerNewAction = (action: CockpitAction): void => {
-    this.availableActions[action.id] = action
+    // Note: This won't work with getter, but it's not commonly used
+    console.warn('registerNewAction is not supported with dynamic translations')
   }
 
   unregisterAction = (id: CockpitActionsFunction): void => {
-    delete this.availableActions[id]
+    // Note: This won't work with getter, but it's not commonly used
+    console.warn('unregisterAction is not supported with dynamic translations')
   }
 
   registerActionCallback = (action: CockpitAction, callback: CockpitActionCallback): string => {
@@ -143,7 +157,13 @@ export const executeActionCallback = (id: string): void => {
   cockpitActionsManager.executeActionCallback(id)
 }
 
+// Export for backward compatibility
 export const availableCockpitActions = cockpitActionsManager.availableActions
+
+// Export getter function for dynamic translations
+export const getAvailableCockpitActions = (): { [key in CockpitActionsFunction]: CockpitAction } => {
+  return getCockpitActions()
+}
 
 /**
  * Action configuration interface

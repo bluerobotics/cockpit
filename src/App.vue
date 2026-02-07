@@ -149,6 +149,8 @@
 <script setup lang="ts">
 import { useStorage, useWindowSize } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useLocale } from 'vuetify'
 
 import ActionDiscoveryModal from '@/components/ActionDiscoveryModal.vue'
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
@@ -193,6 +195,30 @@ const missionStore = useMissionStore()
 
 // Initialize the snapshot store to register action callbacks
 useSnapshotStore()
+
+// Sync Vuetify locale with vue-i18n
+const { locale: i18nLocale, t } = useI18n()
+const { current: vuetifyLocale } = useLocale()
+
+// Map vue-i18n locales to Vuetify locales
+const localeMap: Record<string, string> = {
+  en: 'en',
+  zh: 'zhHans',
+}
+
+// Watch for i18n locale changes and update Vuetify
+watch(
+  i18nLocale,
+  (newLocale) => {
+    vuetifyLocale.value = localeMap[newLocale] || 'en'
+
+    // Update Electron menu language if running in Electron
+    if (window.electronAPI?.updateMenuLanguage) {
+      window.electronAPI.updateMenuLanguage(newLocale)
+    }
+  },
+  { immediate: true }
+)
 
 const showAboutDialog = ref(false)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
@@ -297,7 +323,7 @@ watch(
   (isOnline) => {
     if (!isOnline) {
       openSnackbar({
-        message: 'Vehicle connection lost: reestablishing',
+        message: t('errors.vehicleConnectionLost'),
         variant: 'error',
         duration: 3000,
         closeButton: false,
@@ -308,7 +334,7 @@ watch(
       return
     }
 
-    openSnackbar({ message: 'Vehicle connected', variant: 'success', duration: 3000, closeButton: false })
+    openSnackbar({ message: t('errors.vehicleConnected'), variant: 'success', duration: 3000, closeButton: false })
     connectionStatusFeedback.value = { border: '3px solid green' }
 
     resetConnectionStatusFeedback()

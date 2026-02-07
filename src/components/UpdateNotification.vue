@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <InteractionDialog
     v-model="showUpdateDialog"
     :title="dialogTitle"
@@ -9,10 +9,10 @@
   >
     <template #content>
       <div v-if="updateInfo" class="mt-2">
-        <strong>Update Details:</strong>
-        <p>Current Version: {{ app_version.version }}</p>
-        <p>New Version: {{ updateInfo.version }}</p>
-        <p>Release Date: {{ formatDate(updateInfo.releaseDate) }}</p>
+        <strong>{{ $t('update.updateDetails') }}:</strong>
+        <p>{{ $t('views.ConfigurationGeneralView.video.currentVersion') }}: {{ app_version.version }}</p>
+        <p>{{ $t('views.ConfigurationGeneralView.video.newVersion') }}: {{ updateInfo.version }}</p>
+        <p>{{ $t('views.ConfigurationGeneralView.video.releaseDate') }}: {{ formatDate(updateInfo.releaseDate) }}</p>
       </div>
       <v-progress-linear
         v-if="showProgress"
@@ -33,10 +33,13 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
 import { onBeforeMount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
+
+const { t } = useI18n()
 
 const showUpdateDialog = ref(false)
 const dialogTitle = ref('')
@@ -70,8 +73,8 @@ onBeforeMount(() => {
   // Listen for update events
   window.electronAPI.onCheckingForUpdate(() => {
     console.log('Checking if there are updates for the Electron app...')
-    dialogTitle.value = 'Checking for Updates'
-    dialogMessage.value = 'Looking for new versions of the application...'
+    dialogTitle.value = t('update.checkingForUpdates')
+    dialogMessage.value = t('update.checkingMessage')
     dialogVariant.value = 'info'
     dialogActions.value = []
     showProgress.value = false
@@ -80,12 +83,12 @@ onBeforeMount(() => {
 
   window.electronAPI.onUpdateNotAvailable(() => {
     console.log('No updates available for the Electron app.')
-    dialogTitle.value = 'No Updates Available'
-    dialogMessage.value = 'You are running the latest version of the application.'
+    dialogTitle.value = t('update.noUpdatesAvailable')
+    dialogMessage.value = t('update.noUpdatesMessage')
     dialogVariant.value = 'success'
     dialogActions.value = [
       {
-        text: 'OK',
+        text: t('common.ok'),
         action: () => {
           showUpdateDialog.value = false
         },
@@ -96,13 +99,13 @@ onBeforeMount(() => {
 
   window.electronAPI.onUpdateAvailable((info) => {
     console.log('Update available for the Electron app.', info)
-    dialogTitle.value = 'Update Available'
-    dialogMessage.value = 'A new version of the application is available. Would you like to download it now?'
+    dialogTitle.value = t('update.updateAvailable')
+    dialogMessage.value = t('update.updateAvailableMessage')
     dialogVariant.value = 'info'
     updateInfo.value = { ...info }
     dialogActions.value = [
       {
-        text: 'Ignore This Version',
+        text: t('update.ignoreThisVersion'),
         action: () => {
           console.log(`User chose to ignore version ${updateInfo.value.version}`)
           ignoredUpdateVersions.value.push(updateInfo.value.version)
@@ -111,25 +114,25 @@ onBeforeMount(() => {
         },
       },
       {
-        text: 'Download',
+        text: t('update.download'),
         action: () => {
           window.electronAPI!.downloadUpdate()
           showProgress.value = true
           dialogActions.value = [
             {
-              text: 'Cancel',
+              text: t('common.cancel'),
               action: () => {
                 console.log('User chose to cancel the update for the Electron app.')
                 window.electronAPI!.cancelUpdate()
                 showUpdateDialog.value = false
-                dialogMessage.value = 'Downloading update...'
+                dialogMessage.value = t('update.downloadingUpdate')
               },
             },
           ]
         },
       },
       {
-        text: 'Not Now',
+        text: t('update.notNow'),
         action: () => {
           window.electronAPI!.cancelUpdate()
           showUpdateDialog.value = false
@@ -153,14 +156,13 @@ onBeforeMount(() => {
 
   window.electronAPI.onUpdateDownloaded(() => {
     console.log('Finished downloading the update for the Electron app.')
-    dialogTitle.value = 'Update Ready to Install'
-    dialogMessage.value =
-      'The update has been downloaded. Would you like to install it now? The application will restart during installation.'
+    dialogTitle.value = t('update.updateReadyToInstall')
+    dialogMessage.value = t('update.updateDownloadedMessage')
     dialogVariant.value = 'info'
     showProgress.value = false
     dialogActions.value = [
       {
-        text: 'Install Now',
+        text: t('update.installNow'),
         action: () => {
           console.log('User chose to install the update for the Electron app now.')
           window.electronAPI!.installUpdate()
@@ -168,7 +170,7 @@ onBeforeMount(() => {
         },
       },
       {
-        text: 'Later',
+        text: t('update.later'),
         action: () => {
           console.log('User chose to install the update for the Electron app later.')
           showUpdateDialog.value = false
