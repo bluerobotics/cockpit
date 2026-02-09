@@ -1231,7 +1231,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       target_component: 1,
       seq: 0,
       frame: { type: MavFrame.MAV_FRAME_GLOBAL_RELATIVE_ALT },
-      command: { type: MavCmd.MAV_CMD_GET_HOME_POSITION },
+      command: { type: MavCmd.MAV_CMD_NAV_WAYPOINT },
       current: 1,
       autocontinue: 1,
       param1: 0,
