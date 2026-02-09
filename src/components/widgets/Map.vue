@@ -225,7 +225,7 @@ import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
-import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
 import { createGridOverlay, TargetFollower, WhoToFollow } from '@/libs/utils-map'
@@ -874,9 +874,98 @@ const refreshMission = async (): Promise<void> => {
   }
 }
 
+//   There are small differences in the waypoint data between the one downloaded from the vehicle and the stored mission.
+//   This function normalizes that to make them comparable.
+const normalizeWaypointForCompare = (wp: Waypoint): Record<string, unknown> => {
+  return {
+    coordinates: [normalizeNumber(wp.coordinates?.[0], 7), normalizeNumber(wp.coordinates?.[1], 7)] as [number, number],
+    altitude: normalizeNumber(wp.altitude, 2),
+    altitudeReferenceType: wp.altitudeReferenceType,
+    commands: (wp.commands ?? []).map((rawCmd) => {
+      const cmd = normalizeNavWaypointDefaults(rawCmd)
+      const base = {
+        type: cmd.type,
+        command: cmd.command,
+        param1: normalizeNumber(cmd.param1, 3),
+        param2: normalizeNumber(cmd.param2, 3),
+        param3: normalizeNumber(cmd.param3, 3),
+        param4: normalizeNumber(cmd.param4, 3),
+      }
+      return cmd.type === 'MAVLINK_NON_NAV_COMMAND'
+        ? {
+            ...base,
+            x: normalizeNumber((cmd as any).x, 3),
+            y: normalizeNumber((cmd as any).y, 3),
+            z: normalizeNumber((cmd as any).z, 3),
+          }
+        : base
+    }),
+  }
+}
+
+const normalizeNumber = (v: number | undefined | null, decimals: number): number => {
+  if (v == null || Number.isNaN(v)) return 0
+  const factor = 10 ** decimals
+  return Math.round(v * factor) / factor
+}
+
+const normalizeNavWaypointDefaults = (cmd: any): any => {
+  if (cmd?.command !== MavCmd.MAV_CMD_NAV_WAYPOINT) return cmd
+  return {
+    ...cmd,
+    param2: cmd.param2 || 5,
+    param4: cmd.param4 || 999,
+  }
+}
+
+const missionSignature = (mission: Waypoint[]): string => {
+  return JSON.stringify((mission ?? []).map(normalizeWaypointForCompare))
+}
+
+let missionChangeCheckInFlight: Promise<void> | undefined
+let lastKnownVehicleMissionSignature = ''
+
+const checkIfMissionChanged = async (): Promise<void> => {
+  if (!vehicleStore.isVehicleOnline || missionStore.vehicleMission.length === 0 || missionChangeCheckInFlight) return
+
+  missionChangeCheckInFlight = (async () => {
+    const downloadedMission = await vehicleStore.fetchMission(async () => Promise.resolve())
+    const downloadedSig = missionSignature(downloadedMission)
+    const storedSig = missionSignature(missionStore.vehicleMission)
+
+    if (downloadedSig === lastKnownVehicleMissionSignature) return
+    if (storedSig !== downloadedSig) {
+      lastKnownVehicleMissionSignature = downloadedSig
+      missionStore.vehicleMission = downloadedMission
+
+      openSnackbar({
+        message: 'Mission changed on the vehicle. Using vehicle mission.',
+        variant: 'info',
+        duration: 2500,
+      })
+      clearMapDrawing()
+      rebuildMissionSeqMapping(downloadedMission)
+      drawMission(downloadedMission)
+    } else {
+      lastKnownVehicleMissionSignature = storedSig
+    }
+  })().finally(() => {
+    missionChangeCheckInFlight = undefined
+  })
+
+  return missionChangeCheckInFlight
+}
+
+// When back online, checks if there is a stored mission, verify if it matches the one on the vehicle. If not, get from the vehicle
 watch(
   () => vehicleStore.isVehicleOnline,
-  () => {
+  async () => {
+    if (!mapReady.value || !vehicleStore.isVehicleOnline) return
+    if (missionStore.vehicleMission.length) {
+      await checkIfMissionChanged()
+      return
+    }
+
     refreshMission()
   }
 )
