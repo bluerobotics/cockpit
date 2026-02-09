@@ -3237,6 +3237,8 @@ onMounted(async () => {
   } else {
     targetFollower.unFollow()
   }
+  await nextTick()
+  await tryFetchHome()
 })
 
 watch(followerTarget, (newTarget) => {
@@ -3246,6 +3248,17 @@ watch(followerTarget, (newTarget) => {
     missionStore.followVehicleOnMap = false
   }
 })
+
+// Fetch home position when vehicle comes online
+watch(
+  () => vehicleStore.isVehicleOnline,
+  async (isOnline) => {
+    if (!isOnline) return
+    await nextTick()
+    await tryFetchHome()
+  },
+  { immediate: true }
+)
 
 onUnmounted(() => {
   targetFollower.disableAutoUpdate()
