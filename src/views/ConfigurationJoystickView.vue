@@ -5,6 +5,7 @@
       <div
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'"
         class="overflow-y-auto"
+        style="scrollbar-gutter: stable"
       >
         <div
           v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
