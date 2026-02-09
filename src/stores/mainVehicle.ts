@@ -49,7 +49,7 @@ import type {
 import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
-import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
+import type { MissionLoadingCallback, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 import { useControllerStore } from './controller'
 import { useWidgetManagerStore } from './widgetManager'
@@ -127,6 +127,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const velocity: Velocity = reactive({} as Velocity)
   const mainVehicle = ref<ArduPilot | undefined>(undefined)
   const isArmed = ref<boolean | undefined>(undefined)
+
+  const vehiclePositionHistory = reactive<WaypointCoordinates[]>([])
+
+  const clearVehicleHistory = (): void => {
+    vehiclePositionHistory.splice(0)
+  }
   const flying = ref<boolean | undefined>(undefined)
   const icon = ref<string | undefined>(undefined)
   const configurationPages = ref<PageDescription[]>([])
@@ -572,6 +578,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       const wasArmed = isArmed.value
       isArmed.value = armed
 
+      // Clear vehicle history on disarm/arm transition
+      if (wasArmed !== undefined && wasArmed !== armed) {
+        clearVehicleHistory()
+      }
+
       // If the vehicle was already in the desired state or it's the first time we are checking, do not capture an event
       if (wasArmed === undefined || wasArmed === armed) return
 
@@ -886,6 +897,16 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     applyThrottledCoordinates = useThrottleFn((nc: Coordinates) => Object.assign(coordinates, nc), ms, true, true)
   })
 
+  // Track vehicle position history
+  watch(
+    () => [coordinates.latitude, coordinates.longitude] as const,
+    ([lat, lng]) => {
+      if (lat && lng) {
+        vehiclePositionHistory.push([lat, lng] as WaypointCoordinates)
+      }
+    }
+  )
+
   const mavlinkManualControlManager = new MavlinkManualControlManager()
   controllerStore.registerControllerUpdateCallback(mavlinkManualControlManager.updateControllerData)
 
@@ -987,6 +1008,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     isArmed,
     flying,
     isVehicleOnline,
+    vehiclePositionHistory,
+    clearVehicleHistory,
     icon,
     configurationPages,
     rtcConfiguration,
