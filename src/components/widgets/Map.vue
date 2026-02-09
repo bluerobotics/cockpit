@@ -198,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useElementHover, useRefHistory } from '@vueuse/core'
+import { useDebounceFn, useElementHover } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
@@ -733,6 +733,14 @@ onMounted(async () => {
     targetFollower.unFollow()
   }
   await refreshMission()
+
+  // Initialize vehicle history polyline if exists
+  if (map.value && vehicleStore.vehiclePositionHistory.length > 0) {
+    if (vehicleHistoryPolyline.value === undefined) {
+      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
+    }
+    vehicleHistoryPolyline.value.setLatLngs(vehicleStore.vehiclePositionHistory as L.LatLngExpression[])
+  }
 })
 
 const confirmDownloadDialog =
@@ -955,9 +963,6 @@ const timeAgoSeenText = computed(() => {
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
 })
 
-// Save vehicle position history
-const { history: vehiclePositionHistory } = useRefHistory(vehiclePosition)
-
 // Update home position when location is available
 // Try to update home position based on browser geolocation
 navigator?.geolocation?.watchPosition(
@@ -1135,16 +1140,19 @@ watch(
 
 // Create polyline for the vehicle path
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
-watch(vehiclePositionHistory, (newPoints) => {
-  if (map.value === undefined || newPoints === undefined) return
+watch(
+  () => vehicleStore.vehiclePositionHistory,
+  (newPoints) => {
+    if (map.value === undefined || newPoints === undefined || newPoints.length === 0) return
 
-  if (vehicleHistoryPolyline.value === undefined) {
-    vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
-  }
+    if (vehicleHistoryPolyline.value === undefined) {
+      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
+    }
 
-  const latLongHistory = newPoints.filter((posHis) => posHis.snapshot !== undefined).map((posHis) => posHis.snapshot)
-  vehicleHistoryPolyline.value.setLatLngs(latLongHistory as L.LatLngExpression[])
-})
+    vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
+  },
+  { deep: true }
+)
 
 // Handle context menu toggling and selection
 const contextMenuVisible = ref(false)
