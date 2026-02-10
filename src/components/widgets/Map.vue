@@ -856,13 +856,21 @@ const clearMapDrawing = (): void => {
 
 const refreshMission = async (): Promise<void> => {
   if (!mapReady.value) return
-  clearMapDrawing()
 
-  if (vehicleStore.isVehicleOnline) {
-    await downloadMissionFromVehicle()
-  } else if (missionStore.vehicleMission.length) {
+  // Load the stored mission if it exists
+  if (missionStore.vehicleMission.length > 0) {
+    clearMapDrawing()
     rebuildMissionSeqMapping(missionStore.vehicleMission)
     drawMission(missionStore.vehicleMission)
+  }
+
+  // If vehicle is online, check if its mission differs from stored/loaded mission
+  if (vehicleStore.isVehicleOnline) {
+    if (missionStore.vehicleMission.length === 0) {
+      await downloadMissionFromVehicle()
+    } else {
+      await checkIfMissionChanged()
+    }
   }
 }
 
@@ -928,7 +936,7 @@ const checkIfMissionChanged = async (): Promise<void> => {
     if (downloadedSig === lastKnownVehicleMissionSignature) return
     if (storedSig !== downloadedSig) {
       lastKnownVehicleMissionSignature = downloadedSig
-      missionStore.vehicleMission = downloadedMission
+      missionStore.bumpVehicleMissionRevision(downloadedMission)
 
       openSnackbar({
         message: 'Mission changed on the vehicle. Using vehicle mission.',
