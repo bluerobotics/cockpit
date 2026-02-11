@@ -295,8 +295,7 @@
                           v-model="newMessage"
                           variant="outlined"
                           autofocus
-                          width="400px"
-                          class="mt-2"
+                          class="mt-2 w-full"
                           @keyup.enter="addCustomMessageElement()"
                         />
                       </div>
