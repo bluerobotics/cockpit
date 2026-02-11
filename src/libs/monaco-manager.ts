@@ -248,6 +248,8 @@ export interface EditorOptions {
    * - undefined: No data lake completions
    */
   dataLakeCompletionType?: DataLakeCompletionType
+  /** Optional Monaco editor construction option overrides (e.g. lineNumbers, fontSize, padding) */
+  editorOverrides?: monaco.editor.IStandaloneEditorConstructionOptions
 }
 
 /**
@@ -278,6 +280,7 @@ export function createMonacoEditor(
     padding: { top: 12, bottom: 12 },
     autoClosingBrackets: options.language === 'javascript' ? 'never' : 'languageDefined',
     autoClosingQuotes: options.language === 'javascript' ? 'never' : 'languageDefined',
+    ...options.editorOverrides,
   })
 
   // Register completion type for this editor's model
