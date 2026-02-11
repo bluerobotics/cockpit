@@ -321,7 +321,12 @@
                         <v-icon right class="ml-2" @click.stop="removeCustomMessageElement(index)">mdi-close</v-icon>
                       </v-chip>
                     </div>
-                    <v-menu :key="customMessageElements.length" :close-on-content-click="false" offset-y>
+                    <v-menu
+                      :key="customMessageElements.length"
+                      v-model="customMessageMenuOpen"
+                      :close-on-content-click="false"
+                      offset-y
+                    >
                       <template #activator="{ props }">
                         <GlassButton
                           v-bind="props"
@@ -333,20 +338,26 @@
                         />
                       </template>
                       <div
-                        class="frosted-button backdrop-blur-md rounded-lg overflow-hidden w-[400px] flex flex-col px-4 pt-2 elevation-2"
+                        class="frosted-button backdrop-blur-md rounded-lg overflow-visible w-[400px] flex flex-col px-4 pt-2 pb-3 elevation-2"
                       >
                         <span class="text-sm font-bold text-white text-center w-full">Enter message</span>
                         <span v-pre class="text-[10px] text-slate-400 text-center w-full mt-1"
-                          >Use {{ variableId }} for live data lake values</span
+                          >Type {{ to autocomplete data lake variables</span
                         >
-                        <v-text-field
-                          v-model="newMessage"
-                          variant="outlined"
-                          autofocus
-                          placeholder="e.g. Speed: {{ my-var-id }} m/s"
-                          class="mt-2 w-full"
-                          @keyup.enter="addCustomMessageElement()"
+                        <div
+                          ref="messageEditorContainer"
+                          class="h-[60px] w-full mt-2 border border-[#FFFFFF33] rounded-lg"
+                          style="overflow: visible"
                         />
+                        <v-btn
+                          size="small"
+                          variant="tonal"
+                          class="mt-2 self-end"
+                          prepend-icon="mdi-plus"
+                          @click="addCustomMessageElement()"
+                        >
+                          Add
+                        </v-btn>
                       </div>
                     </v-menu>
                   </VueDraggable>
@@ -445,7 +456,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import type * as monacoTypes from 'monaco-editor'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -456,6 +468,7 @@ import {
   getDataLakeVariableInfo,
   listenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
+import { createMonacoEditor } from '@/libs/monaco-manager'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -518,7 +531,9 @@ const otherLoggingElements = ref(otherAvailableLoggingElements)
 const originalOtherLoggingElements = ref(otherAvailableLoggingElements)
 const newFrequency = ref(datalogger.frequency)
 const customMessageElements = ref<string[]>([])
-const newMessage = ref('')
+const customMessageMenuOpen = ref(false)
+const messageEditorContainer = ref<HTMLElement | null>(null)
+let messageEditor: monacoTypes.editor.IStandaloneCodeEditor | null = null
 const dataLakeSearch = ref('')
 const allDataLakeVarIds = ref<string[]>([])
 const dataLakeVarsForDisplay = ref<string[]>([])
@@ -553,6 +568,49 @@ const updateDataLakeVarsList = (): void => {
 }
 
 watch(dataLakeSearch, updateDataLakeVarsList)
+
+const initMessageEditor = (): void => {
+  if (!messageEditorContainer.value || messageEditor) return
+  messageEditor = createMonacoEditor(messageEditorContainer.value, {
+    language: 'plaintext',
+    value: '',
+    dataLakeCompletionType: 'use-bracket-parser',
+    editorOverrides: {
+      lineNumbers: 'off',
+      glyphMargin: false,
+      folding: false,
+      lineDecorationsWidth: 0,
+      lineNumbersMinChars: 0,
+      fontSize: 13,
+      padding: { top: 6, bottom: 6 },
+      renderLineHighlight: 'none',
+      overviewRulerLanes: 0,
+      scrollbar: { vertical: 'hidden', horizontal: 'auto' },
+      fixedOverflowWidgets: false,
+      quickSuggestions: false,
+      wordBasedSuggestions: 'off',
+      suggestOnTriggerCharacters: true,
+      autoClosingBrackets: 'never',
+    },
+  })
+}
+
+const disposeMessageEditor = (): void => {
+  if (messageEditor) {
+    messageEditor.dispose()
+    messageEditor = null
+  }
+}
+
+watch(customMessageMenuOpen, (open) => {
+  if (open) {
+    nextTick(initMessageEditor)
+  } else {
+    disposeMessageEditor()
+  }
+})
+
+onBeforeUnmount(disposeMessageEditor)
 
 type GridKey =
   | 'LeftTop'
@@ -641,9 +699,11 @@ const removeChipFromGrid = (quadrantKey: string, chip: string): void => {
 }
 
 const addCustomMessageElement = (): void => {
-  if (newMessage.value.trim() !== '') {
-    customMessageElements.value.push(newMessage.value)
-    newMessage.value = ''
+  if (!messageEditor) return
+  const value = messageEditor.getValue().trim()
+  if (value !== '') {
+    customMessageElements.value.push(value)
+    messageEditor.setValue('')
   }
 }
 
@@ -733,5 +793,10 @@ const newFrequencyString = computed({
 }
 . input[type='number']::-webkit-inner-spin-button {
   margin-left: 6px;
+}
+</style>
+<style>
+.monaco-editor .suggest-widget {
+  width: 600px !important;
 }
 </style>
