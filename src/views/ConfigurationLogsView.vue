@@ -791,7 +791,7 @@ const newFrequencyString = computed({
 .mock-screen {
   position: absolute;
 }
-. input[type='number']::-webkit-inner-spin-button {
+.input[type='number']::-webkit-inner-spin-button {
   margin-left: 6px;
 }
 </style>
