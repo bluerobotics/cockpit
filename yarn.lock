@@ -1236,10 +1236,9 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@kmamal/sdl@0.11.9":
-  version "0.11.9"
-  resolved "https://registry.yarnpkg.com/@kmamal/sdl/-/sdl-0.11.9.tgz#aadbb0e74888149a61244d354d9d4490841d615d"
-  integrity sha512-rTGtrKTrkj5rwS2dWrcWpMcg85oQL3J4aK/yuxPMe4209D1K1wXK35nCBbWnvhnjZJfH74566qr7hxSROAwfww==
+"@kmamal/sdl@github:rafaellehmkuhl/node-sdl#dd1b97aa75bb84a2c899be40b0c48fcb135a4f88":
+  version "0.11.13-rawaxis.1"
+  resolved "https://codeload.github.com/rafaellehmkuhl/node-sdl/tar.gz/dd1b97aa75bb84a2c899be40b0c48fcb135a4f88"
   dependencies:
     tar "^7.4.3"
 
