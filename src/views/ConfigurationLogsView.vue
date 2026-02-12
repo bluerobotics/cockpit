@@ -248,6 +248,51 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+                <template #title>Data Lake Variables</template>
+                <template #content>
+                  <v-text-field
+                    v-model="dataLakeSearch"
+                    placeholder="Search variables..."
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    clearable
+                    class="mt-2 mb-1"
+                    prepend-inner-icon="mdi-magnify"
+                  />
+                  <VueDraggable
+                    v-model="dataLakeVarsForDisplay"
+                    tag="div"
+                    :sort="true"
+                    class="flex flex-col items-start w-full min-h-[50px] max-h-[200px] overflow-x-hidden py-2 overflow-y-auto"
+                    :animation="150"
+                    :group="{ name: 'availableDataElements', put: false }"
+                  >
+                    <div v-for="variable in dataLakeVarsForDisplay" :key="variable" class="w-full">
+                      <v-chip
+                        :size="
+                          interfaceStore.isOnSmallScreen
+                            ? 'x-small'
+                            : interfaceStore.isOnVeryLargeScreen
+                            ? 'large'
+                            : 'small'
+                        "
+                        :class="
+                          interfaceStore.isOnSmallScreen
+                            ? 'data-lake-variable-chip'
+                            : 'my-[2px] data-lake-variable-chip'
+                        "
+                        :title="variable"
+                        label
+                        class="cursor-grab elevation-1 w-full justify-start"
+                      >
+                        <span class="data-lake-variable-label">{{ resolveDisplayName(variable) }}</span>
+                      </v-chip>
+                    </div>
+                  </VueDraggable>
+                </template>
+              </ExpansiblePanel>
+              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
                 <template #title>Custom Messages</template>
                 <template #content>
                   <VueDraggable
@@ -288,13 +333,17 @@
                         />
                       </template>
                       <div
-                        class="frosted-button backdrop-blur-md rounded-lg overflow-hidden w-[400px] px-4 pt-2 elevation-2"
+                        class="frosted-button backdrop-blur-md rounded-lg overflow-hidden w-[400px] flex flex-col px-4 pt-2 elevation-2"
                       >
                         <span class="text-sm font-bold text-white text-center w-full">Enter message</span>
+                        <span v-pre class="text-[10px] text-slate-400 text-center w-full mt-1"
+                          >Use {{ variableId }} for live data lake values</span
+                        >
                         <v-text-field
                           v-model="newMessage"
                           variant="outlined"
                           autofocus
+                          placeholder="e.g. Speed: {{ my-var-id }} m/s"
                           class="mt-2 w-full"
                           @keyup.enter="addCustomMessageElement()"
                         />
@@ -379,7 +428,7 @@
                       "
                       class="cursor-grab elevation-1"
                       :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
-                      >{{ variable }}
+                      >{{ resolveDisplayName(variable) }}
                       <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)">
                         mdi-close
                       </v-icon>
@@ -402,6 +451,11 @@ import { VueDraggable } from 'vue-draggable-plus'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlassButton from '@/components/GlassButton.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import {
+  getAllDataLakeVariablesInfo,
+  getDataLakeVariableInfo,
+  listenToDataLakeVariablesInfoChanges,
+} from '@/libs/actions/data-lake'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -427,6 +481,7 @@ const updateVariables = (): void => {
   // Filter variables that are already in the telemetry display grid
   loggedVariables.value = loggedVariables.value.filter((variable) => !allTelemetryValues.has(variable))
   otherLoggingElements.value = otherLoggingElements.value.filter((element) => !allTelemetryValues.has(element))
+  updateDataLakeVarsList()
 }
 
 const telemetryDisplayData = reactive(datalogger.telemetryDisplayData)
@@ -445,7 +500,15 @@ watch(telemetryDisplayOptions, (newVal) => {
   updateVariables()
 })
 
-onMounted(updateVariables)
+onMounted(() => {
+  const initialVars = getAllDataLakeVariablesInfo()
+  allDataLakeVarIds.value = Object.keys(initialVars)
+  updateVariables()
+  listenToDataLakeVariablesInfoChanges((variables) => {
+    allDataLakeVarIds.value = Object.keys(variables)
+    updateDataLakeVarsList()
+  })
+})
 
 const otherAvailableLoggingElements = ['Mission name', 'Time', 'Date']
 
@@ -456,7 +519,40 @@ const originalOtherLoggingElements = ref(otherAvailableLoggingElements)
 const newFrequency = ref(datalogger.frequency)
 const customMessageElements = ref<string[]>([])
 const newMessage = ref('')
+const dataLakeSearch = ref('')
+const allDataLakeVarIds = ref<string[]>([])
+const dataLakeVarsForDisplay = ref<string[]>([])
 const dragPosition = ref(0)
+
+const resolveDisplayName = (entry: string): string => {
+  const name = getDataLakeVariableInfo(entry)?.name ?? entry
+  if (entry.includes('mavlink/') && name.includes('(')) {
+    return name.substring(0, name.lastIndexOf('(')).trim()
+  }
+  return name
+}
+
+const updateDataLakeVarsList = (): void => {
+  const allTelemetryValues = new Set<string>()
+  Object.values(telemetryDisplayData).forEach((arr) => arr.forEach((v) => allTelemetryValues.add(v)))
+
+  let filtered = allDataLakeVarIds.value.filter((id) => {
+    if (allTelemetryValues.has(id)) return false
+    const name = getDataLakeVariableInfo(id)?.name ?? id
+    if (name.includes('(Legacy)')) return false
+    return true
+  })
+
+  if (dataLakeSearch.value.trim()) {
+    const search = dataLakeSearch.value.toLowerCase()
+    filtered = filtered.filter((id) => resolveDisplayName(id).toLowerCase().includes(search))
+  }
+
+  filtered.sort((a, b) => resolveDisplayName(a).localeCompare(resolveDisplayName(b)))
+  dataLakeVarsForDisplay.value = filtered
+}
+
+watch(dataLakeSearch, updateDataLakeVarsList)
 
 type GridKey =
   | 'LeftTop'
@@ -536,6 +632,8 @@ const removeChipFromGrid = (quadrantKey: string, chip: string): void => {
       loggedVariables.value.push(chip)
     } else if (originalOtherLoggingElements.value.includes(chip)) {
       otherLoggingElements.value.push(chip)
+    } else if (allDataLakeVarIds.value.includes(chip)) {
+      // Data lake variable - will reappear in the list via updateDataLakeVarsList
     } else if (!CurrentlyLoggedVariables.getAllVariables().includes(chip)) {
       customMessageElements.value.push(chip)
     }
@@ -561,6 +659,7 @@ const resetAllChips = (): void => {
   Object.values(telemetryDisplayData).forEach((displayGridArray) => {
     displayGridArray.forEach((variable) => {
       if (CurrentlyLoggedVariables.getAllVariables().includes(variable)) return
+      if (allDataLakeVarIds.value.includes(variable)) return
       customMessageElementsBackup.push(variable)
     })
   })
@@ -596,6 +695,26 @@ const newFrequencyString = computed({
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.data-lake-variable-chip {
+  height: auto !important;
+  min-height: 24px;
+}
+.data-lake-variable-label {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-wrap: wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+:deep(.data-lake-variable-chip .v-chip__content) {
+  display: block;
+  width: 100%;
+  line-height: 1.25;
+  padding: 4px 0;
 }
 .frosted-button {
   background-color: rgba(255, 255, 255, 0.2);

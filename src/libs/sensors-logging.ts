@@ -7,9 +7,11 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
+import { getDataLakeVariableData, getDataLakeVariableInfo } from './actions/data-lake'
 import { settingsManager } from './settings-management'
 import { unitAbbreviation } from './units'
 import { degrees } from './utils'
+import { findDataLakeInputsInString, replaceDataLakeInputsInString } from './utils-data-lake'
 
 /**
  * Variables data can be datalogged
@@ -341,6 +343,9 @@ class DataLogger {
       const veryGenericData = this.collectVeryGenericData(timeNowObj)
       variablesData = { ...variablesData, ...veryGenericData }
 
+      const dataLakeData = this.collectDataLakeData(variablesData, timeNowObj)
+      variablesData = { ...variablesData, ...dataLakeData }
+
       const logPoint: CockpitStandardLogPoint = {
         epoch: timeNow.getTime(),
         data: structuredClone(variablesData),
@@ -372,6 +377,52 @@ class DataLogger {
         lastChanged: data.lastChanged,
       }
     })
+    return result
+  }
+
+  /**
+   * Collects data from data lake variables in the telemetry display grid that are not already covered
+   * by standard variables or VeryGenericIndicator data.
+   * Also resolves {{ variableId }} templates in custom messages.
+   * @param {ExtendedVariablesData} currentData - Already collected variables data (standard + VGI)
+   * @param {{ lastChanged: number }} timeInfo - Timestamp info for the log point
+   * @param {number} timeInfo.lastChanged - Linux epoch stating when this value was last changed
+   * @returns {ExtendedVariablesData} Resolved data lake variable values
+   */
+  collectDataLakeData(currentData: ExtendedVariablesData, timeInfo: { lastChanged: number }): ExtendedVariablesData {
+    const result: ExtendedVariablesData = {}
+
+    for (const gridEntries of Object.values(this.telemetryDisplayData)) {
+      for (const entry of gridEntries) {
+        if (currentData[entry]) continue
+
+        if (findDataLakeInputsInString(entry).length > 0) {
+          result[entry] = {
+            value: replaceDataLakeInputsInString(entry),
+            displayName: '',
+            ...timeInfo,
+          }
+          continue
+        }
+
+        const variableInfo = getDataLakeVariableInfo(entry)
+        if (variableInfo) {
+          const value = getDataLakeVariableData(entry)
+          let displayName = variableInfo.name ?? entry
+
+          // If the variable is a MAVLink variable, remove the (MAVLink / System: <systemId> / Component: <componentId>) suffix
+          if (entry.includes('mavlink/') && displayName.includes('(')) {
+            displayName = displayName.substring(0, displayName.lastIndexOf('(')).trim()
+          }
+          result[entry] = {
+            value: value !== undefined ? String(value) : 'N/A',
+            displayName,
+            ...timeInfo,
+          }
+        }
+      }
+    }
+
     return result
   }
 
