@@ -160,7 +160,7 @@ function rebuildVariablesCache(): void {
 function registerCompletionProviders(): void {
   // Data lake variable completion provider - triggered on '{' (for '{{' syntax)
   // Behavior depends on the completion type registered for each editor model
-  monaco.languages.registerCompletionItemProvider('javascript', {
+  const dataLakeCompletionProvider: monaco.languages.CompletionItemProvider = {
     triggerCharacters: ['{'],
     provideCompletionItems: (model, position) => {
       const textUntilPosition = model.getValueInRange({
@@ -226,7 +226,10 @@ function registerCompletionProviders(): void {
 
       return { suggestions: [] }
     },
-  })
+  }
+
+  monaco.languages.registerCompletionItemProvider('javascript', dataLakeCompletionProvider)
+  monaco.languages.registerCompletionItemProvider('plaintext', dataLakeCompletionProvider)
 }
 
 // =============================================================================
