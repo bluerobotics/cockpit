@@ -71,10 +71,6 @@ type VeryGenericData = {
    * Linux epoch stating when this value was last changed
    */
   lastChanged?: number
-  /**
-   * Current view of the variable
-   */
-  hideLabel?: boolean
 }
 
 /**
@@ -88,7 +84,7 @@ export type ExtendedVariablesData = {
   [key: string]: {
     value: string
     lastChanged: number
-    hideLabel?: boolean
+    displayName: string
   }
 }
 
@@ -324,21 +320,21 @@ class DataLogger {
 
       /* eslint-disable vue/max-len, prettier/prettier, max-len */
       let variablesData: ExtendedVariablesData = {
-        [DatalogVariable.roll]: { value: `${degrees(vehicleStore.attitude.roll)?.toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.pitch]: { value: `${degrees(vehicleStore.attitude.pitch)?.toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.heading]: { value: `${degrees(vehicleStore.attitude.yaw)?.toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.depth]: { value: `${depthValue} ${depthUnit}`, ...timeNowObj },
-        [DatalogVariable.mode]: { value: vehicleStore.mode || 'Unknown', ...timeNowObj },
-        [DatalogVariable.batteryVoltage]: { value: `${vehicleStore.powerSupply.voltage?.toFixed(2)} V` || 'Unknown', ...timeNowObj },
-        [DatalogVariable.batteryCurrent]: { value: `${vehicleStore.powerSupply.current?.toFixed(2)} A` || 'Unknown', ...timeNowObj },
-        [DatalogVariable.gpsVisibleSatellites]: { value: vehicleStore.statusGPS.visibleSatellites?.toFixed(0) || 'Unknown', ...timeNowObj },
-        [DatalogVariable.gpsFixType]: { value: vehicleStore.statusGPS.fixType, ...timeNowObj },
-        [DatalogVariable.latitude]: { value: `${vehicleStore.coordinates.latitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
-        [DatalogVariable.longitude]: { value: `${vehicleStore.coordinates.longitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
-        [DatalogVariable.missionName]: { value: missionStore.missionName || 'Cockpit', hideLabel: true, ...timeNowObj },
-        [DatalogVariable.time]: { value: format(timeNow, 'HH:mm:ss O'), hideLabel: true, ...timeNowObj },
-        [DatalogVariable.date]: { value: format(timeNow, 'LLL dd, yyyy'), hideLabel: true, ...timeNowObj },
-        [DatalogVariable.instantaneousPower]: { value: `${vehicleStore.instantaneousWatts?.toFixed(1)} W` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.roll]: { displayName: DatalogVariable.roll, value: `${degrees(vehicleStore.attitude.roll)?.toFixed(1)} °`, ...timeNowObj },
+        [DatalogVariable.pitch]: { displayName: DatalogVariable.pitch, value: `${degrees(vehicleStore.attitude.pitch)?.toFixed(1)} °`, ...timeNowObj },
+        [DatalogVariable.heading]: { displayName: DatalogVariable.heading, value: `${degrees(vehicleStore.attitude.yaw)?.toFixed(1)} °`, ...timeNowObj },
+        [DatalogVariable.depth]: { displayName: DatalogVariable.depth, value: `${depthValue} ${depthUnit}`, ...timeNowObj },
+        [DatalogVariable.mode]: { displayName: DatalogVariable.mode, value: vehicleStore.mode || 'Unknown', ...timeNowObj },
+        [DatalogVariable.batteryVoltage]: { displayName: DatalogVariable.batteryVoltage, value: `${vehicleStore.powerSupply.voltage?.toFixed(2)} V` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.batteryCurrent]: { displayName: DatalogVariable.batteryCurrent, value: `${vehicleStore.powerSupply.current?.toFixed(2)} A` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.gpsVisibleSatellites]: { displayName: DatalogVariable.gpsVisibleSatellites, value: vehicleStore.statusGPS.visibleSatellites?.toFixed(0) || 'Unknown', ...timeNowObj },
+        [DatalogVariable.gpsFixType]: { displayName: DatalogVariable.gpsFixType, value: vehicleStore.statusGPS.fixType, ...timeNowObj },
+        [DatalogVariable.latitude]: { displayName: DatalogVariable.latitude, value: `${vehicleStore.coordinates.latitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.longitude]: { displayName: DatalogVariable.longitude, value: `${vehicleStore.coordinates.longitude?.toFixed(6)} °` || 'Unknown', ...timeNowObj },
+        [DatalogVariable.missionName]: { displayName: '', value: missionStore.missionName || 'Cockpit', ...timeNowObj },
+        [DatalogVariable.time]: { displayName: '', value: format(timeNow, 'HH:mm:ss O'), ...timeNowObj },
+        [DatalogVariable.date]: { displayName: '', value: format(timeNow, 'LLL dd, yyyy'), ...timeNowObj },
+        [DatalogVariable.instantaneousPower]: { displayName: DatalogVariable.instantaneousPower, value: `${vehicleStore.instantaneousWatts?.toFixed(1)} W` || 'Unknown', ...timeNowObj },
       }
 
       /* eslint-enable vue/max-len, prettier/prettier, max-len */
@@ -372,6 +368,7 @@ class DataLogger {
     this.veryGenericIndicators.forEach((indicator) => {
       result[indicator.displayName] = {
         value: indicator.variableValue,
+        displayName: indicator.displayName,
         lastChanged: data.lastChanged,
       }
     })
@@ -572,7 +569,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
         .map((variable) => {
           const variableData = logPoint.data[variable]
           if (variableData) {
-            return `${variableData.hideLabel ? '' : `${variable}:`} ${variableData.value}`
+            return variableData.displayName ? `${variableData.displayName}: ${variableData.value}` : variableData.value
           } else {
             return `${variable}`
           }
