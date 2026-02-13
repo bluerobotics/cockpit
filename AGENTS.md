@@ -58,6 +58,7 @@ gh issue list --repo bluerobotics/cockpit
 - Use examples when needed, specially when implementing complex logics
 - Always create docs for the @returns, unless when 
 - Always include the types of the @returns and @params
+- Make sure none of the added entries you added in the JSDocs are empty
 
 ## Code Quality
 
