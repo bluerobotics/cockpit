@@ -73,3 +73,4 @@ This command fixes all the linting issues that are automatically fixable, but it
 
 - If implementing a feature that needs cannot be fully supported in both Standalone (Electron) and Lite (Web) version, the limitations should be specified in the `README.md` table, and there should exist information elements in the UI explaining that to the users.
 - When implementing new widgets, or adding/removing entries in the Options object of existing widgets, use the object merging approach (use `src/components/widgets/Plotter.vue` as a reference) to merge a default-options object with the persistent one. This ensures the new entries are added to existing widgets from the users persistence.
+- If a new Cockpit local-storage setting is being created or modified (be it directly using the settings-management.ts backend or the useBlueOsStorage composable), make sure it starts with `cockpit-` so its correctly tracked and parsed in our backend and UIs.
