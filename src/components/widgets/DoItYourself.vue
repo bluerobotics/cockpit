@@ -103,7 +103,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
-const autoSave = useBlueOsStorage('diy-widget-auto-save', false)
+const autoSave = useBlueOsStorage('cockpit-diy-widget-auto-save', false)
 
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
