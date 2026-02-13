@@ -154,7 +154,7 @@ function rebuildVariablesCache(): void {
 }
 
 /**
- * Register completion providers for JavaScript.
+ * Register completion providers for JavaScript and plaintext.
  * The provider checks the model's registered completion type to determine behavior.
  */
 function registerCompletionProviders(): void {
@@ -193,8 +193,9 @@ function registerCompletionProviders(): void {
           endColumn: position.column,
         }
 
+        const nonLegacy = Object.entries(cachedVariablesMap).filter(([, v]) => !(v.name || '').includes('(Legacy)'))
         return {
-          suggestions: Object.entries(cachedVariablesMap).map(([id, variable]) => ({
+          suggestions: nonLegacy.map(([id, variable]) => ({
             label: variable.name || id,
             kind: monaco.languages.CompletionItemKind.Variable,
             documentation: `${variable.type}${variable.description ? ` - ${variable.description}` : ''} (${id})`,
@@ -212,8 +213,9 @@ function registerCompletionProviders(): void {
           endColumn: position.column,
         }
 
+        const nonLegacy = Object.entries(cachedVariablesMap).filter(([, v]) => !(v.name || '').includes('(Legacy)'))
         return {
-          suggestions: Object.entries(cachedVariablesMap).map(([id, variable]) => ({
+          suggestions: nonLegacy.map(([id, variable]) => ({
             label: variable.name || id,
             kind: monaco.languages.CompletionItemKind.Variable,
             insertText: ` ${id} }}`,
