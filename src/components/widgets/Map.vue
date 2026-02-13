@@ -85,6 +85,18 @@
           />
         </template>
       </v-tooltip>
+      <PoiMapArrows
+        :map-ready="mapReady"
+        :show-poi-arrows="widget.options.showPoiArrows"
+        :show-home-arrow="widget.options.showHomeArrow"
+        :show-vehicle-arrow="widget.options.showVehicleArrow"
+        :vehicle-position="vehiclePosition"
+        :home="home"
+        :map-center="mapCenter"
+        :zoom="zoom"
+        :widget="widget"
+        :target-follower="targetFollower"
+      />
     </div>
   </div>
   <ContextMenu
@@ -101,27 +113,58 @@
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">Map widget settings</v-card-title>
       <v-card-text>
-        <v-switch
-          v-model="widget.options.showVehiclePath"
-          class="my-1"
-          label="Show vehicle path"
-          :color="widget.options.showVehiclePath ? 'white' : undefined"
-          hide-details
-        />
-        <v-switch
-          v-model="widget.options.showCoordinateGrid"
-          class="my-1"
-          label="Show coordinate grid"
-          :color="widget.options.showCoordinateGrid ? 'white' : undefined"
-          hide-details
-        />
-        <v-switch
-          v-model="widget.options.showMissionControlPanel"
-          class="my-1"
-          label="Show mission control panel"
-          :color="widget.options.showMissionControlPanel ? 'white' : undefined"
-          hide-details
-        />
+        <ExpansiblePanel compact :is-expanded="!interfaceStore.isOnSmallScreen" no-bottom-divider no-top-divider>
+          <template #title>Display</template>
+          <template #content>
+            <v-row>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showVehiclePath"
+                  class="my-1"
+                  label="Vehicle path"
+                  :color="widget.options.showVehiclePath ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showCoordinateGrid"
+                  class="my-1"
+                  label="Coordinate grid"
+                  :color="widget.options.showCoordinateGrid ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showPoiArrows"
+                  class="my-1"
+                  label="Point of Interest arrows"
+                  :color="widget.options.showPoiArrows ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showHomeArrow"
+                  class="my-1"
+                  label="Home arrow"
+                  :color="widget.options.showHomeArrow ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showVehicleArrow"
+                  class="my-1"
+                  label="Vehicle arrow"
+                  :color="widget.options.showVehicleArrow ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+            </v-row>
+          </template>
+        </ExpansiblePanel>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -203,7 +246,9 @@ import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.png'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
+import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { setMapLayer } from '@/composables/map/useMapLayer'
 import { openSnackbar } from '@/composables/snackbar'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
@@ -240,6 +285,7 @@ const router = useRouter()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
+
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref()
@@ -439,6 +485,15 @@ onBeforeMount(() => {
   if (widget.value.options.showMissionControlPanel === undefined) {
     widget.value.options.showMissionControlPanel = true
   }
+  if (widget.value.options.showPoiArrows === undefined) {
+    widget.value.options.showPoiArrows = true
+  }
+  if (widget.value.options.showHomeArrow === undefined) {
+    widget.value.options.showHomeArrow = true
+  }
+  if (widget.value.options.showVehicleArrow === undefined) {
+    widget.value.options.showVehicleArrow = true
+  }
   targetFollower.enableAutoUpdate()
 })
 
@@ -611,6 +666,9 @@ onMounted(async () => {
     layers: [initialBaseLayer, seamarks, marineProfile],
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+
+  // Set map layer in composable for child components
+  setMapLayer(map.value)
 
   // Listen for base layer changes to save user preference
   map.value.on('baselayerchange', (event: LayersControlEvent) => {
@@ -1016,6 +1074,8 @@ onBeforeUnmount(() => {
     downloadMissionFromVehicle: async () => Promise.resolve(),
     clearMapDrawing: async () => Promise.resolve(),
   })
+  // Clear map layer from composable
+  setMapLayer(undefined)
 })
 
 // Pan when variables change
