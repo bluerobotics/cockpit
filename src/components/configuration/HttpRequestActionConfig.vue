@@ -225,11 +225,10 @@ import {
   availableHttpRequestMethods,
   deleteHttpRequestActionConfig,
   getHttpRequestActionConfig,
-  HttpRequestActionConfig,
-  HttpRequestMethod,
   registerHttpRequestActionConfig,
 } from '@/libs/actions/http-request'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { HttpRequestActionConfig, HttpRequestMethod } from '@/types/cockpit-actions'
 import { ValidationFunctionReturn } from '@/types/general'
 
 const emit = defineEmits<{

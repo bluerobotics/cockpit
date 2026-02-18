@@ -1,6 +1,7 @@
+import { MavlinkMessageActionConfig, MavlinkMessageConfig, MessageFieldType } from '@/types/cockpit-actions'
+
 import { sendMavlinkMessage } from '../communication/mavlink'
 import type { Message } from '../connection/m2r/messages/mavlink2rest'
-import { MAVLinkType } from '../connection/m2r/messages/mavlink2rest-enum'
 import {
   availableCockpitActions,
   CockpitAction,
@@ -18,45 +19,6 @@ import {
 } from '../utils-data-lake'
 import { getDataLakeVariableData } from './data-lake'
 const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
-
-/**
- * Enum with the possible message field types
- */
-export enum MessageFieldType {
-  NUMBER = 'number',
-  STRING = 'string',
-  BOOLEAN = 'boolean',
-  TYPE_STRUCT_ENUM = 'type_struct_enum',
-}
-
-export type MavlinkMessageConfigField = {
-  /**
-   * The type of the field
-   * Determines how the value is processed
-   */
-  type: MessageFieldType
-  /**
-   * The value of the field
-   */
-  value: any
-}
-
-export type MavlinkMessageConfig = Record<string, MavlinkMessageConfigField> | string
-
-export type MavlinkMessageActionConfig = {
-  /**
-   * The name of the action
-   */
-  name: string
-  /**
-   * The type of MAVLink message to send
-   */
-  messageType: MAVLinkType
-  /**
-   * The key-value pairs of the message fields
-   */
-  messageConfig: MavlinkMessageConfig
-}
 
 let registeredMavlinkMessageActionConfigs: Record<string, MavlinkMessageActionConfig> = {}
 

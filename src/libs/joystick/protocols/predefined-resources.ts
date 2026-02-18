@@ -3,11 +3,11 @@ import { createDataLakeVariable, DataLakeVariableType } from '@/libs/actions/dat
 import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import {
   getAllMavlinkMessageActionConfigs,
-  MessageFieldType,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
 import { MavCmd, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { getUnindentedString } from '@/libs/utils'
+import { MessageFieldType } from '@/types/cockpit-actions'
 import { customActionTypes } from '@/types/cockpit-actions'
 
 export let mavlinkCameraZoomActionId: string | undefined = undefined

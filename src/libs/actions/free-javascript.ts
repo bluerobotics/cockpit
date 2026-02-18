@@ -1,3 +1,5 @@
+import { JavascriptActionConfig } from '@/types/cockpit-actions'
+
 import {
   CockpitAction,
   CockpitActionsFunction,
@@ -8,17 +10,6 @@ import {
 import { settingsManager } from '../settings-management'
 
 const javascriptActionIdPrefix = 'javascript-action'
-
-export type JavascriptActionConfig = {
-  /**
-   * The name of the action
-   */
-  name: string
-  /**
-   * The JavaScript code to execute
-   */
-  code: string
-}
 
 let registeredJavascriptActionConfigs: Record<string, JavascriptActionConfig> = {}
 
