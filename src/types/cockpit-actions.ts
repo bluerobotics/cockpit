@@ -141,5 +141,5 @@ export interface ActionConfig {
    * Action configuration
    * Specific to the action type
    */
-  config: any
+  config: HttpRequestActionConfig | MavlinkMessageActionConfig | JavascriptActionConfig
 }
