@@ -15,7 +15,7 @@
             mdi-drag
           </v-icon>
           <div class="select-none">
-            {{ widget.options.containerName || 'iframe' }}
+            {{ widget.options.containerName }}
           </div>
           <v-btn
             :icon="widget.options.startCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up'"
@@ -254,6 +254,7 @@ onBeforeMount((): void => {
     source: 'http://' + defaultBlueOsAddress,
     useVehicleAddressAsBase: false,
     startCollapsed: false,
+    containerName: 'iframe',
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 
