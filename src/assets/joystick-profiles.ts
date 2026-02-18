@@ -1,5 +1,4 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { JoystickModel } from '@/libs/joystick/manager'
 import { availableCockpitActions } from '@/libs/joystick/protocols/cockpit-actions'
 import {
   availableMavlinkManualControlButtonFunctions,
@@ -10,7 +9,6 @@ import { getVehicleModeAction } from '@/libs/vehicle/ardupilot/common'
 import { RoverMode } from '@/libs/vehicle/ardupilot/types/modes'
 import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 import {
-  type GamepadToCockpitStdMapping,
   type JoystickProtocolActionsMapping,
   CockpitModifierKeyOption,
   JoystickAxis,
@@ -186,114 +184,3 @@ export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
     },
   },
 ]
-
-/**
- * Follows the standard controller in the Gamepad API: https://www.w3.org/TR/gamepad/#dfn-standard-gamepad
- * buttons[0] Bottom button in right cluster
- * buttons[1] Right button in right cluster
- * buttons[2] Left button in right cluster
- * buttons[3] Top button in right cluster
- * buttons[4] Top left front button
- * buttons[5] Top right front button
- * buttons[6] Bottom left front button
- * buttons[7] Bottom right front button
- * buttons[8] Left button in center cluster
- * buttons[9] Right button in center cluster
- * buttons[10] Left stick pressed button
- * buttons[11] Right stick pressed button
- * buttons[12] Top button in left cluster
- * buttons[13] Bottom button in left cluster
- * buttons[14] Left button in left cluster
- * buttons[15] Right button in left cluster
- * buttons[16] Center button in center cluster
- * buttons[17-31]	Extra non-standard buttons
- * axes[0] Horizontal axis for left stick (negative left/positive right)
- * axes[1] Vertical axis for left stick (negative up/positive down)
- * axes[2] Horizontal axis for right stick (negative left/positive right)
- * axes[3] Vertical axis for right stick (negative up/positive down)
- * axes[4-7] Extra non-standard axes
- */
-export const availableGamepadToCockpitMaps: { [key in JoystickModel]: GamepadToCockpitStdMapping } = {
-  [JoystickModel.DualSense]: {
-    name: 'DualSense',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-  },
-  [JoystickModel.DualShock4]: {
-    name: 'DualShock4',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-  },
-  [JoystickModel.IpegaPG9023]: {
-    name: 'Ipega9023',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-  },
-  [JoystickModel.XboxOne_Wireless]: {
-    name: 'Xbox One Wireless',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-  },
-  [JoystickModel.XboxOne_Wired]: {
-    name: 'Xbox One (wired)',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-  },
-  [JoystickModel.XboxOneS_Bluetooth]: {
-    name: 'Xbox One S (bluetooth)',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-  },
-  [JoystickModel.XboxController_Bluetooth]: {
-    name: 'Xbox Controller (bluetooth)',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 16],
-  },
-  [JoystickModel.XboxController_Wired]: {
-    name: 'Xbox Controller (wired)',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-  },
-  [JoystickModel.XboxController_360]: {
-    name: JoystickModel.XboxController_360,
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-  },
-  [JoystickModel.LogitechExtreme3DPro]: {
-    name: JoystickModel.XboxController_360,
-    axes: [0, 1, 5, 6, 7, 2, 3, 8, 9, 4],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-  },
-  [JoystickModel.SteamDeckLCD]: {
-    name: 'Steam Deck LCD',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-  },
-  [JoystickModel.SteamDeckOLED]: {
-    name: 'Steam Deck OLED',
-    axes: [0, 1, 2, 3],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-  },
-  [JoystickModel.EightBitDoUltimate2C]: {
-    name: '8BitDo Ultimate 2C',
-    axes: [0, 1, 2, 3, 4, 5],
-    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-  },
-  [JoystickModel.ThrustmasterSimTaskFarmStick]: {
-    name: 'Thrustmaster SimTask FarmStick',
-    axes: [0, 1, 2, 3, 4, 5, 6, 7],
-    buttons: [
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-      31, 32,
-    ],
-  },
-  [JoystickModel.Unknown]: {
-    name: 'Standard gamepad',
-    axes: [0, 1, 2, 3, 4, 5, 6, 7],
-    buttons: [
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-      31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58,
-      59, 60, 61, 62, 63,
-    ],
-  },
-}
