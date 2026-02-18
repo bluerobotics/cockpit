@@ -1,4 +1,4 @@
-import { JoystickModel } from '@/libs/joystick/manager'
+import { JoystickModel } from '@/types/joystick-model-defs'
 
 import { SDLControllerState, SDLJoystickState } from './sdl'
 

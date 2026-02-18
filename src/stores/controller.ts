@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
 import { defaultJoystickCalibration } from '@/assets/defaults'
-import { availableGamepadToCockpitMaps, blankMapping } from '@/assets/joystick-profiles'
+import { blankMapping } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
@@ -34,6 +34,7 @@ import {
   JoystickCalibrationOptions,
   JoystickProtocol,
 } from '@/types/joystick'
+import { availableGamepadToCockpitMaps } from '@/types/joystick-model-defs'
 
 import { useMainVehicleStore } from './mainVehicle'
 
