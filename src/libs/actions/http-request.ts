@@ -1,3 +1,5 @@
+import { HttpRequestActionConfig, HttpRequestMethod } from '@/types/cockpit-actions'
+
 import {
   availableCockpitActions,
   CockpitAction,
@@ -11,45 +13,7 @@ import { isElectron } from '../utils'
 import { replaceDataLakeInputsInJsonString, replaceDataLakeInputsInString } from '../utils-data-lake'
 
 const httpRequestActionIdPrefix = 'http-request-action'
-
-/**
- * The types of HTTP methods that can be used.
- */
-export enum HttpRequestMethod {
-  GET = 'GET',
-  POST = 'POST',
-  PUT = 'PUT',
-  DELETE = 'DELETE',
-  PATCH = 'PATCH',
-}
 export const availableHttpRequestMethods: HttpRequestMethod[] = Object.values(HttpRequestMethod)
-
-export type HttpRequestActionConfig = {
-  /**
-   * The name of the action.
-   */
-  name: string
-  /**
-   * The URL to send the request to.
-   */
-  url: string
-  /**
-   * The HTTP method to use.
-   */
-  method: HttpRequestMethod
-  /**
-   * The headers to send with the request.
-   */
-  headers: Record<string, string>
-  /**
-   * The URL parameters to send with the request.
-   */
-  urlParams: Record<string, string>
-  /**
-   * The body of the request.
-   */
-  body: string
-}
 
 let registeredHttpRequestActionConfigs: Record<string, HttpRequestActionConfig> = {}
 

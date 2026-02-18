@@ -1,5 +1,6 @@
+import { MessageFieldType } from '@/types/cockpit-actions'
+
 import { MAVLinkType } from '../connection/m2r/messages/mavlink2rest-enum'
-import { MessageFieldType } from './mavlink-message-actions'
 
 /* eslint-disable jsdoc/require-jsdoc */
 interface MessageField {

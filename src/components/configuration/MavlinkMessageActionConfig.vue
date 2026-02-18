@@ -73,7 +73,6 @@
 import { computed, ref } from 'vue'
 
 import {
-  type MavlinkMessageActionConfig,
   deleteMavlinkMessageActionConfig,
   getMavlinkMessageActionConfig,
   registerMavlinkMessageActionConfig,
@@ -81,6 +80,7 @@ import {
 import { messageFieldDefinitions } from '@/libs/actions/mavlink-message-actions-message-definitions'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { MavlinkMessageActionConfig } from '@/types/cockpit-actions'
 
 const emit = defineEmits<{
   (e: 'action-saved'): void
