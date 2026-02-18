@@ -9,13 +9,12 @@ import {
 import { JoystickMapVidPid, JoystickModel } from '@/types/joystick-model-defs'
 
 import { settingsManager } from '../settings-management'
+import { isElectron } from '../utils'
 import { applyCalibration } from './calibration'
 
 export { JoystickModel }
 
 export const joystickCalibrationOptionsKey = 'cockpit-joystick-calibration-options'
-
-import { isElectron } from '../utils'
 
 /**
  * Possible events from GamepadListener
