@@ -1,6 +1,7 @@
 /* eslint-disable vue/max-len, prettier/prettier, max-len */
 import { v4 as uuidv4 } from 'uuid'
 
+import { NoPathInBlueOsErrorName } from '@/types/blueos'
 import {
   CockpitSetting,
   KeyValueVehicleUpdateQueue,
@@ -16,11 +17,7 @@ import {
   VehicleSettings,
 } from '@/types/settings-management'
 
-import {
-  getKeyDataFromCockpitVehicleStorage,
-  NoPathInBlueOsErrorName,
-  setKeyDataOnCockpitVehicleStorage,
-} from './blueos'
+import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from './blueos'
 import { deserialize, isEqual, sleep, tryACoupleOfTimes } from './utils'
 
 export const localOldStyleSettingsKey = 'cockpit-settings-v1-backup'
