@@ -4,6 +4,7 @@ import { join } from 'path'
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
+import { setupGo2RTCService } from './services/go2rtc'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
 import { setupNetworkService } from './services/network'
@@ -94,6 +95,7 @@ setupUserAgentService()
 setupWorkspaceService()
 setupJoystickMonitoring()
 setupVideoRecordingService()
+setupGo2RTCService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')

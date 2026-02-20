@@ -7,6 +7,7 @@ import { NetworkInfo } from '@/types/network'
 import { SDLStatus } from '@/types/sdl'
 import type { SerialData } from '@/types/serial'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
+import type { Go2RTCStreamInfo } from '@/types/video'
 
 import {
   createDataLakeVariable,
@@ -424,6 +425,27 @@ declare global {
        * @param processId - The ID of the streaming process
        */
       finalizeVideoRecording: (processId: string) => Promise<void>
+      /**
+       * Register an RTSP stream with the go2rtc sidecar for WebRTC consumption
+       * @param name - Unique stream name used for WebRTC signaling
+       * @param rtspUrl - Full RTSP URL including optional credentials
+       */
+      go2rtcAddStream: (name: string, rtspUrl: string) => Promise<void>
+      /**
+       * Remove an RTSP stream from the go2rtc sidecar
+       * @param name - The stream name to remove
+       */
+      go2rtcRemoveStream: (name: string) => Promise<void>
+      /**
+       * Query go2rtc for parsed info about all registered streams
+       * @returns {Promise<Record<string, Go2RTCStreamInfo>>} Stream name to info map
+       */
+      go2rtcGetStreamsInfo: () => Promise<Record<string, Go2RTCStreamInfo>>
+      /**
+       * Get the port the go2rtc sidecar is listening on, starting it if necessary
+       * @returns {Promise<number>} The port number
+       */
+      go2rtcGetPort: () => Promise<number>
       /**
        * Extract video chunks from ZIP file
        * @param zipFilePath - Path to the ZIP file

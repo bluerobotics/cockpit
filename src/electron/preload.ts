@@ -54,6 +54,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke('append-chunk-to-video-recording', processId, chunkData, chunkNumber)
   },
   finalizeVideoRecording: (processId: string) => ipcRenderer.invoke('finalize-video-recording', processId),
+  go2rtcAddStream: (name: string, rtspUrl: string) => ipcRenderer.invoke('go2rtc-add-stream', name, rtspUrl),
+  go2rtcRemoveStream: (name: string) => ipcRenderer.invoke('go2rtc-remove-stream', name),
+  go2rtcGetStreamsInfo: () => ipcRenderer.invoke('go2rtc-get-streams-info'),
+  go2rtcGetPort: () => ipcRenderer.invoke('go2rtc-get-port'),
   extractVideoChunksZip: (zipFilePath: string) => ipcRenderer.invoke('extract-video-chunks-zip', zipFilePath),
   readChunkFile: (chunkPath: string) => ipcRenderer.invoke('read-chunk-file', chunkPath),
   copyTelemetryFile: (assFilePath: string, outputVideoPath: string) =>
