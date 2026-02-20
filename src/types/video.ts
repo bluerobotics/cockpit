@@ -1,5 +1,6 @@
 import type { ChildProcess } from 'child_process'
 
+import type { Go2RTCManager } from '@/composables/go2rtc'
 import { WebRTCManager } from '@/composables/webRTC'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 
@@ -12,9 +13,13 @@ export interface StreamData {
    */
   stream: Stream | undefined
   /**
-   * The responsible for its management
+   * WebRTC manager for standard mavlink-camera-manager streams
    */
-  webRtcManager: WebRTCManager
+  webRtcManager?: WebRTCManager
+  /**
+   * go2rtc manager for RTSP streams served via the go2rtc sidecar
+   */
+  go2rtcManager?: Go2RTCManager
   /**
    * MediaStream object, if WebRTC stream is chosen
    */
@@ -32,6 +37,63 @@ export interface StreamData {
    * Date object with info on when a recording was started, if so
    */
   timeRecordingStart: Date | undefined
+}
+
+export type VideoStreamProtocol = 'webrtc' | 'rtsp'
+
+/**
+ * Info about a stream's RTCPeerConnection, used for stats monitoring
+ */
+/**
+ * Parsed stream info from go2rtc for display purposes
+ */
+export interface Go2RTCStreamInfo {
+  /**
+   * Video codec name (e.g. "H264", "H265")
+   */
+  codec: string
+  /**
+   * Video width in pixels, or undefined if not yet available
+   */
+  width?: number
+  /**
+   * Video height in pixels, or undefined if not yet available
+   */
+  height?: number
+  /**
+   * Framerate as reported by the source (e.g. "30")
+   */
+  fps: string
+  /**
+   * Transport protocol (e.g. "rtsp+tcp")
+   */
+  protocol: string
+  /**
+   * Live ingest bitrate from the RTSP source in kbps
+   */
+  bitrateKbps: number
+  /**
+   * Live packet rate from the RTSP source in packets/sec
+   */
+  packetsPerSec: number
+}
+
+/**
+ * Info about a stream's RTCPeerConnection, used for stats monitoring
+ */
+export interface StreamPeerConnectionInfo {
+  /**
+   * The RTCPeerConnection object
+   */
+  peerConnection: RTCPeerConnection
+  /**
+   * The peer ID
+   */
+  peerId: string
+  /**
+   * The session ID
+   */
+  sessionId: string
 }
 
 /**
@@ -189,6 +251,8 @@ export type WebRTCStatsEvent = {
 export type VideoStreamCorrespondency = {
   name: string
   externalId: string
+  protocol?: VideoStreamProtocol
+  rtspUrl?: string
 }
 
 export type FilesToZip = {
