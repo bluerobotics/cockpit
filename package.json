@@ -21,7 +21,7 @@
     "dev:electron": "cross-env ELECTRON=true vite --host",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "lint:fix": "eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
-    "postinstall": "node scripts/download-ffmpeg.js",
+    "postinstall": "node scripts/download-ffmpeg.js && node scripts/download-go2rtc.js",
     "preview": "vite preview --port 5050",
     "serve": "vite preview",
     "test:ci": "vitest --coverage --run",
@@ -155,6 +155,13 @@
       {
         "from": "binaries/ffmpeg/",
         "to": "ffmpeg/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "binaries/go2rtc/",
+        "to": "go2rtc/",
         "filter": [
           "**/*"
         ]
