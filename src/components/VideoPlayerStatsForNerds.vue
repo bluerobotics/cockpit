@@ -9,8 +9,19 @@ import { WebRTCStats } from '@peermetrics/webrtc-stats'
 import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useVideoStore } from '@/stores/video'
+import type { Go2RTCStreamInfo } from '@/types/video'
 import { WebRTCStatsEvent } from '@/types/video'
 const videoStore = useVideoStore()
+
+const rtspInfo = ref<Go2RTCStreamInfo | undefined>()
+let rtspInfoInterval: ReturnType<typeof setInterval> | null = null
+const rtspBitrateData = ref<number[]>([])
+const rtspPacketRateData = ref<number[]>([])
+const rtspStallData = ref<number[]>([])
+let maxRtspBitrate = 1000
+let maxRtspPacketRate = 100
+let rtspStallCount = 0
+let rtspStartTime = 0
 
 const props = defineProps({
   width: {
@@ -30,6 +41,11 @@ const props = defineProps({
     default: '',
   },
 })
+
+const isRtspStream = (): boolean => {
+  if (!props.streamName) return false
+  return videoStore.getStreamProtocol(props.streamName) === 'rtsp'
+}
 
 const canvasRef = ref(null)
 const framerateData = ref([])
@@ -104,32 +120,61 @@ function draw(): void {
     ctx.stroke()
   }
 
-  // Draw the plots
-  drawPlot(bitrateData.value, 'rgb(255, 165, 0)', maxBitrateReceived)
-  drawPlot(framerateData.value, 'rgb(0, 255, 0)', maxFramerateReceived)
-  drawPlot(packetLostData.value, 'rgb(255, 0, 0)', maxPacketLost)
-
-  // Print text stats
-  const color = connectionLost ? 'red' : 'white'
-  const stats = [
-    { label: 'Stream', value: props.streamName, color: color },
-    { label: 'Size', value: videoHeight ? `${videoHeight}p` : 'N/A', color: color },
-    { label: 'Packets Lost', value: `${packetsLost} (${packetLossPercentage.toFixed(0)}%)`, color: color },
-    { label: 'Frame drops', value: framedrops, color: color },
-    { label: 'Nack', value: nackCount, color: color },
-    { label: 'Pli', value: pliCount, color: color },
-    { label: 'Fir', value: firCount, color: color },
-    { label: 'Processing ', value: `${processingDelayDelta.toFixed(0)}ms`, color: color },
-    { label: 'Freezes', value: `${freezes}(${frozenTime.toFixed(1)}s)`, color: color },
-    { label: 'Bitrate', value: `${bitrate.toFixed(0)}kbps`, color: 'rgb(255, 165, 0)' },
-    { label: 'FPS', value: framerate.toFixed(2), color: 'rgb(0, 255, 0)' },
-  ]
-
   ctx.font = '10px Arial'
-  stats.forEach((stat, index) => {
-    ctx.fillStyle = stat.color
-    ctx.fillText(`${stat.label}: ${stat.value}`, 5, 12 + index * 12)
-  })
+
+  // Draw stats and plots for both types of streams.
+  // The stats and plots are different from one to another since RTSP and WebRTC streams provide different types of information.
+  if (isRtspStream()) {
+    drawPlot(rtspBitrateData.value, 'rgb(255, 165, 0)', maxRtspBitrate)
+    drawPlot(rtspPacketRateData.value, 'rgb(100, 200, 255)', maxRtspPacketRate)
+    drawPlot(rtspStallData.value, 'rgb(255, 0, 0)', 1)
+
+    const info = rtspInfo.value
+    const isStalled = info?.bitrateKbps === 0
+    const statusColor = isStalled ? 'red' : 'white'
+    const bitrateStr = info?.bitrateKbps ? `${info.bitrateKbps}kbps` : '...'
+    const ppsStr = info?.packetsPerSec ? `${info.packetsPerSec}/s` : '...'
+    const stats = [
+      { label: 'Stream', value: props.streamName, color: statusColor },
+      { label: 'Source', value: 'Direct RTSP', color: statusColor },
+      { label: 'Codec', value: info?.codec ?? '...', color: statusColor },
+      { label: 'Size', value: info?.width ? `${info.width}x${info.height}` : '...', color: statusColor },
+      { label: 'Transport', value: info?.protocol ?? '...', color: statusColor },
+      { label: 'FPS', value: info?.fps ?? '...', color: 'rgb(0, 255, 0)' },
+      { label: 'Bitrate', value: bitrateStr, color: 'rgb(255, 165, 0)' },
+      { label: 'Packets', value: ppsStr, color: 'rgb(100, 200, 255)' },
+      { label: 'Stalls', value: rtspStallCount, color: rtspStallCount > 0 ? 'rgb(255, 0, 0)' : 'white' },
+    ]
+
+    stats.forEach((stat, index) => {
+      ctx.fillStyle = stat.color
+      ctx.fillText(`${stat.label}: ${stat.value}`, 5, 12 + index * 12)
+    })
+  } else {
+    drawPlot(bitrateData.value, 'rgb(255, 165, 0)', maxBitrateReceived)
+    drawPlot(framerateData.value, 'rgb(0, 255, 0)', maxFramerateReceived)
+    drawPlot(packetLostData.value, 'rgb(255, 0, 0)', maxPacketLost)
+
+    const color = connectionLost ? 'red' : 'white'
+    const stats = [
+      { label: 'Stream', value: props.streamName, color: color },
+      { label: 'Size', value: videoHeight ? `${videoHeight}p` : 'N/A', color: color },
+      { label: 'Packets Lost', value: `${packetsLost} (${packetLossPercentage.toFixed(0)}%)`, color: color },
+      { label: 'Frame drops', value: framedrops, color: color },
+      { label: 'Nack', value: nackCount, color: color },
+      { label: 'Pli', value: pliCount, color: color },
+      { label: 'Fir', value: firCount, color: color },
+      { label: 'Processing ', value: `${processingDelayDelta.toFixed(0)}ms`, color: color },
+      { label: 'Freezes', value: `${freezes}(${frozenTime.toFixed(1)}s)`, color: color },
+      { label: 'Bitrate', value: `${bitrate.toFixed(0)}kbps`, color: 'rgb(255, 165, 0)' },
+      { label: 'FPS', value: framerate.toFixed(2), color: 'rgb(0, 255, 0)' },
+    ]
+
+    stats.forEach((stat, index) => {
+      ctx.fillStyle = stat.color
+      ctx.fillText(`${stat.label}: ${stat.value}`, 5, 12 + index * 12)
+    })
+  }
 
   animationFrameId = requestAnimationFrame(draw)
 }
@@ -146,31 +191,60 @@ function update(): void {
   if (framerateData.value.length > maxDataPoints) framerateData.value.shift()
   if (bitrateData.value.length > maxDataPoints) bitrateData.value.shift()
   if (packetLostData.value.length > maxDataPoints) packetLostData.value.shift()
-
-  // Update max values
-  maxBitrateReceived = Math.max(maxBitrateReceived, ...bitrateData.value)
-  maxFramerateReceived = Math.max(maxFramerateReceived, ...framerateData.value)
-  maxFramerateReceived = Math.min(maxFramerateReceived, absoluteMaxFrameRate)
+  maxBitrateReceived = Math.max(1000, ...bitrateData.value)
+  maxFramerateReceived = Math.min(Math.max(30, ...framerateData.value), absoluteMaxFrameRate)
 }
 
 watch(videoStore.activeStreams, (streams): void => {
   Object.keys(streams).forEach((streamName) => {
     if (streamName !== props.streamName) return
-    const session = streams[streamName]?.webRtcManager.session
-    if (!session || !session.peerConnection) return
-    if (webrtcStats.peersToMonitor[session.consumerId]) return
+    const pcInfo = videoStore.getStreamPeerConnection(streamName)
+    if (!pcInfo) return
+    if (webrtcStats.peersToMonitor[pcInfo.peerId]) return
     webrtcStats.addConnection({
-      pc: session.peerConnection,
-      peerId: session.consumerId,
-      connectionId: session.id,
+      pc: pcInfo.peerConnection,
+      peerId: pcInfo.peerId,
+      connectionId: pcInfo.sessionId,
       remote: false,
     })
   })
 })
 
+const fetchRtspInfo = async (): Promise<void> => {
+  if (!isRtspStream() || !window.electronAPI) return
+  try {
+    const allInfo = await window.electronAPI.go2rtcGetStreamsInfo()
+    const info = allInfo[props.streamName]
+    rtspInfo.value = info
+    if (info) {
+      if (rtspStartTime === 0) rtspStartTime = Date.now()
+      const warmUp = Date.now() - rtspStartTime < 5000
+      const isStalled = !warmUp && info.bitrateKbps === 0 ? 1 : 0
+      if (isStalled) rtspStallCount++
+
+      rtspBitrateData.value.push(info.bitrateKbps)
+      rtspPacketRateData.value.push(info.packetsPerSec)
+      rtspStallData.value.push(isStalled)
+      if (rtspBitrateData.value.length > maxDataPoints) rtspBitrateData.value.shift()
+      if (rtspPacketRateData.value.length > maxDataPoints) rtspPacketRateData.value.shift()
+      if (rtspStallData.value.length > maxDataPoints) rtspStallData.value.shift()
+      maxRtspBitrate = Math.max(1000, ...rtspBitrateData.value)
+      maxRtspPacketRate = Math.max(100, ...rtspPacketRateData.value)
+    }
+  } catch {
+    // go2rtc may not be running yet
+  }
+}
+
 onMounted(() => {
   intervalId = setInterval(update, props.updateInterval)
   draw()
+
+  if (isRtspStream()) {
+    fetchRtspInfo()
+    rtspInfoInterval = setInterval(fetchRtspInfo, 100)
+  }
+
   webrtcStats.on('stats', (ev: WebRTCStatsEvent) => {
     try {
       const videoData = ev.data.video.inbound[0]
@@ -205,6 +279,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   clearInterval(intervalId)
+  if (rtspInfoInterval) clearInterval(rtspInfoInterval)
   cancelAnimationFrame(animationFrameId)
 })
 
