@@ -183,7 +183,7 @@ watch(
   () => variable.name,
   (newName) => {
     if (!isManualIdEnabled.value && !editMode.value) {
-      variable.id = machinizeString(newName)
+      variable.id = 'user/custom/' + machinizeString(newName)
     }
   }
 )
@@ -196,19 +196,6 @@ watch(
   (isPersistent) => {
     if (!isPersistent) {
       variable.persistValue = false
-    }
-  }
-)
-
-/**
- * Watch for changes to variable.id
- * If manual ID editing is not enabled, update variable.name to match the new ID
- */
-watch(
-  () => variable.id,
-  (newId) => {
-    if (!isManualIdEnabled.value && !editMode.value) {
-      variable.id = 'user/custom/' + machinizeString(newId)
     }
   }
 )
