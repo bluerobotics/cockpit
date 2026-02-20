@@ -58,7 +58,7 @@
                     <td>
                       <div class="flex items-center justify-center">
                         <ScrollingText
-                          :text="getStreamInfo(item.externalId)?.sourceName || 'Unknown'"
+                          :text="getStreamDisplayInfo(item.externalId).source"
                           max-width="120px"
                           class="text-sm text-gray-300"
                         />
@@ -68,14 +68,13 @@
                       <div class="flex items-center justify-center">
                         <div class="text-center">
                           <p class="text-sm text-gray-300 leading-tight">
-                            {{
-                              getStreamInfo(item.externalId)
-                                ? `${getStreamInfo(item.externalId)?.width}x${getStreamInfo(item.externalId)?.height}`
-                                : 'Unknown'
-                            }}
+                            {{ getStreamDisplayInfo(item.externalId).resolution }}
                           </p>
-                          <p class="text-xs text-gray-400 leading-tight">
-                            {{ getStreamInfo(item.externalId) ? `@ ${getStreamInfo(item.externalId)?.fps}fps` : '' }}
+                          <p
+                            v-if="getStreamDisplayInfo(item.externalId).fps"
+                            class="text-xs text-gray-400 leading-tight"
+                          >
+                            @ {{ getStreamDisplayInfo(item.externalId).fps }}
                           </p>
                         </div>
                       </div>
@@ -129,6 +128,25 @@
                 <span v-if="ignoredStreamExternalIds.length > 0" class="text-gray-400 text-sm ml-2">
                   ({{ ignoredStreamExternalIds.length }} ignored)
                 </span>
+              </div>
+              <div v-if="isElectron()" class="mt-4 mr-2 mb-2 w-[95%]">
+                <div class="text-sm text-gray-300 mb-2">Add direct RTSP stream (Standalone)</div>
+                <div class="flex items-end gap-2 w-full">
+                  <v-text-field
+                    v-model="rtspUrlInput"
+                    label="RTSP URL"
+                    density="compact"
+                    variant="outlined"
+                    class="flex-1 min-w-0"
+                    hide-details
+                    @keyup.enter="addRtspStream"
+                    @input="rtspInputError = ''"
+                  />
+                  <v-btn variant="text" class="shrink-0 mb-[3px]" @click="addRtspStream">Add</v-btn>
+                </div>
+                <div v-if="rtspInputError" class="text-red-300 text-sm mt-2">
+                  {{ rtspInputError }}
+                </div>
               </div>
             </div>
           </template>
@@ -444,7 +462,10 @@ const unavailableStreamId = ref('')
 
 const showIgnoredStreams = ref(false)
 const streamInformation = ref<ProcessedStreamInfo[]>([])
+const go2rtcStreamInfo = ref<Record<string, import('@/types/video').Go2RTCStreamInfo>>({})
 let fetchInterval: ReturnType<typeof setInterval> | null = null
+const rtspUrlInput = ref('rtsp://user:password@camera-ip:554/stream')
+const rtspInputError = ref('')
 
 const streamsToShow = computed(() => {
   return [
@@ -479,6 +500,20 @@ const cancelEditDialog = (): void => {
   editingStream.value = null
   newStreamName.value = ''
   editDialogError.value = ''
+}
+
+const addRtspStream = (): void => {
+  try {
+    rtspInputError.value = ''
+    if (!rtspUrlInput.value.trim()) {
+      rtspInputError.value = 'Please provide an RTSP URL.'
+      return
+    }
+    videoStore.addRtspStreamCorrespondency(rtspUrlInput.value.trim())
+    rtspUrlInput.value = ''
+  } catch (error) {
+    rtspInputError.value = (error as Error).message
+  }
 }
 
 const deleteStream = (item: VideoStreamCorrespondency): void => {
@@ -519,18 +554,27 @@ const fetchStreamInformation = async (): Promise<void> => {
   }
 }
 
+const fetchGo2rtcStreamInfo = async (): Promise<void> => {
+  if (!window.electronAPI) return
+  try {
+    go2rtcStreamInfo.value = await window.electronAPI.go2rtcGetStreamsInfo()
+  } catch (error) {
+    console.error('Failed to fetch go2rtc stream info:', error)
+  }
+}
+
 const startStreamInfoFetching = (): void => {
   // Clear any existing interval
   if (fetchInterval) {
     clearInterval(fetchInterval)
   }
 
-  // Fetch immediately
   fetchStreamInformation()
+  fetchGo2rtcStreamInfo()
 
-  // Set up interval to fetch every 5 seconds
   fetchInterval = setInterval(() => {
     fetchStreamInformation()
+    fetchGo2rtcStreamInfo()
   }, 5000)
 }
 
@@ -541,15 +585,49 @@ const stopStreamInfoFetching = (): void => {
   }
 }
 
-const getStreamInfo = (externalId: string): ProcessedStreamInfo | undefined => {
-  return streamInformation.value.find((info) => info.name === externalId)
+const getStreamDisplayInfo = (
+  externalId: string
+): {
+  /**
+   * The source of the stream
+   */
+  source: string
+  /**
+   * The resolution of the stream
+   */
+  resolution: string
+  /**
+   * The FPS of the stream
+   */
+  fps: string
+} => {
+  if (videoStore.getStreamProtocol(externalId) === 'rtsp') {
+    const info = go2rtcStreamInfo.value[externalId]
+    return {
+      source: info ? `RTSP (${info.codec})` : 'RTSP (...)',
+      resolution: info?.width ? `${info.width}x${info.height}` : '...',
+      fps: info?.fps ? `${info.fps}fps` : '',
+    }
+  }
+
+  const info = streamInformation.value.find((i) => i.name === externalId)
+  return {
+    source: info?.sourceName ?? 'Unknown',
+    resolution: info ? `${info.width}x${info.height}` : 'Unknown',
+    fps: info?.fps ? `${info.fps}fps` : '',
+  }
 }
 
 // eslint-disable-next-line
 const getStreamStatus = (externalId: string): { status: 'Available' | 'Unavailable' | 'Offline' | 'Unknown'; icon: string; color: string } => {
+  if (videoStore.getStreamProtocol(externalId) === 'rtsp') {
+    return isElectron()
+      ? { status: 'Available', icon: 'mdi-check-circle', color: '#297e1944' }
+      : { status: 'Unavailable', icon: 'mdi-close-circle', color: '#ff000044' }
+  }
+
   const isInAvailableList = videoStore.namesAvailableStreams.includes(externalId)
-  const streamInfo = getStreamInfo(externalId)
-  const isRunning = streamInfo?.running ?? false
+  const isRunning = streamInformation.value.find((i) => i.name === externalId)?.running ?? false
 
   if (isInAvailableList && isRunning) {
     return { status: 'Available', icon: 'mdi-check-circle', color: '#297e1944' }

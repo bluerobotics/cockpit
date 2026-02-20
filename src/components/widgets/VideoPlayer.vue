@@ -286,7 +286,7 @@ const transformStyle = computed(() => {
 
 const serverStatus = computed(() => {
   if (externalStreamId.value === undefined) return 'Unknown.'
-  return videoStore.getStreamData(externalStreamId.value)?.webRtcManager.signallerStatus ?? 'Unknown.'
+  return videoStore.getSignallerStatus(externalStreamId.value)
 })
 
 const streamStatus = computed(() => {
@@ -297,7 +297,7 @@ const streamStatus = computed(() => {
     return `Stream is coming from IPs [${availableSources.join(', ')}], which are not in the list of allowed sources
       [${videoStore.allowedIceIps.join(', ')}].\\n Please check your configuration.`
   }
-  return videoStore.getStreamData(externalStreamId.value)?.webRtcManager.streamStatus ?? 'Unknown.'
+  return videoStore.getStreamStatus(externalStreamId.value)
 })
 
 const shouldShowVerboseLoading = computed(() => {

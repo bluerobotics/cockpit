@@ -187,7 +187,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   // Monitor the active streams to add the connections to the WebRTC statistics
   watch(videoStore.activeStreams, (streams) => {
     Object.keys(streams).forEach((streamName) => {
-      const session = streams[streamName]?.webRtcManager.session
+      const session = streams[streamName]?.webRtcManager?.session
       if (!session || !session.peerConnection) return
 
       if (webrtcStreamStats[streamName] === undefined) {

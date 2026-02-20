@@ -7,6 +7,7 @@ import { v4 as uuid } from 'uuid'
 import { computed, ref, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
+import { Go2RTCManager } from '@/composables/go2rtc'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
@@ -29,7 +30,9 @@ import { Alert, AlertLevel } from '@/types/alert'
 import {
   type DownloadProgressCallback,
   type StreamData,
+  type StreamPeerConnectionInfo,
   type UnprocessedVideoInfo,
+  type VideoStreamProtocol,
   FilesToZip,
   VideoExtensionContainer,
   VideoStreamCorrespondency,
@@ -64,7 +67,16 @@ export const useVideoStore = defineStore('video', () => {
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
 
-  const namesAvailableStreams = computed(() => mainWebRTCManager.availableStreams.value.map((stream) => stream.name))
+  const namesAvailableWebRTCStreams = computed(() =>
+    mainWebRTCManager.availableStreams.value.map((stream) => stream.name)
+  )
+
+  const namesAvailableStreams = computed(() => {
+    const rtspStreams = streamsCorrespondency.value
+      .filter((stream) => (stream.protocol ?? 'webrtc') === 'rtsp')
+      .map((stream) => stream.externalId)
+    return [...new Set([...namesAvailableWebRTCStreams.value, ...rtspStreams])]
+  })
 
   const namessAvailableAbstractedStreams = computed(() => {
     return streamsCorrespondency.value.map((stream) => stream.name)
@@ -75,12 +87,25 @@ export const useVideoStore = defineStore('video', () => {
     return corr ? corr.externalId : undefined
   }
 
+  const getStreamCorrespondency = (externalId: string): VideoStreamCorrespondency | undefined => {
+    return streamsCorrespondency.value.find((stream) => stream.externalId === externalId)
+  }
+
+  const getStreamProtocol = (externalId: string): VideoStreamProtocol => {
+    return getStreamCorrespondency(externalId)?.protocol ?? 'webrtc'
+  }
+
+  const getRtspUrl = (externalId: string): string | undefined => {
+    if (getStreamProtocol(externalId) !== 'rtsp') return undefined
+    return getStreamCorrespondency(externalId)?.rtspUrl
+  }
+
   const initializeStreamsCorrespondency = (): void => {
     // Get list of external streams that are already mapped
     const alreadyMappedExternalIds = streamsCorrespondency.value.map((corr) => corr.externalId)
 
-    // Find external streams that don't have a mapping yet and are not ignored
-    const unmappedExternalStreams = namesAvailableStreams.value.filter((streamName) => {
+    // Only auto-map WebRTC streams (RTSP streams are added manually)
+    const unmappedExternalStreams = namesAvailableWebRTCStreams.value.filter((streamName) => {
       return !alreadyMappedExternalIds.includes(streamName) && !ignoredStreamExternalIds.value.includes(streamName)
     })
 
@@ -116,9 +141,12 @@ export const useVideoStore = defineStore('video', () => {
     initializeStreamsCorrespondency()
   })
 
-  // If the allowed ICE IPs are updated, all the streams should be reconnected
+  // If the allowed ICE IPs are updated, all WebRTC streams should be reconnected (not RTSP/go2rtc)
   watch([allowedIceIps, allowedIceProtocols], () => {
-    Object.keys(activeStreams.value).forEach((streamName) => (activeStreams.value[streamName] = undefined))
+    Object.keys(activeStreams.value).forEach((streamName) => {
+      if (getStreamProtocol(streamName) !== 'webrtc') return
+      activeStreams.value[streamName] = undefined
+    })
   })
 
   /**
@@ -153,6 +181,11 @@ export const useVideoStore = defineStore('video', () => {
   setInterval(() => {
     Object.keys(activeStreams.value).forEach((streamName) => {
       if (activeStreams.value[streamName] === undefined) return
+
+      // If the stream is an RTSP stream, skip the update
+      if (getStreamProtocol(streamName) === 'rtsp') return
+      if (!activeStreams.value[streamName]?.webRtcManager) return
+
       // Update the list of available remote ICE Ips with those available for each stream
       // @ts-ignore: availableICEIPs is not reactive here, for some yet to know reason
       const newIps = activeStreams.value[streamName].webRtcManager.availableICEIPs.filter(
@@ -189,6 +222,8 @@ export const useVideoStore = defineStore('video', () => {
     })
   }, 300)
 
+  const rtspActivating = new Set<string>()
+
   /**
    * Activates a stream by starting it and storing it's variables inside a common object.
    * This way multiple consumers will always access the same resource, so we don't consume unnecessary
@@ -196,6 +231,51 @@ export const useVideoStore = defineStore('video', () => {
    * @param {string} streamName - Unique name for the stream, common between the multiple consumers
    */
   const activateStream = (streamName: string): void => {
+    if (getStreamProtocol(streamName) === 'rtsp') {
+      if (rtspActivating.has(streamName)) return
+      if (activeStreams.value[streamName]?.go2rtcManager) return
+
+      const rtspUrl = getRtspUrl(streamName)
+      if (!rtspUrl) {
+        showDialog({ message: `RTSP URL for stream '${streamName}' is missing.`, variant: 'error' })
+        return
+      }
+      if (!window.electronAPI) {
+        showDialog({ message: 'RTSP streams are only available in the standalone version.', variant: 'error' })
+        return
+      }
+
+      rtspActivating.add(streamName)
+
+      void (async () => {
+        try {
+          const port = await window.electronAPI!.go2rtcGetPort()
+          await window.electronAPI!.go2rtcAddStream(streamName, rtspUrl)
+
+          const manager = new Go2RTCManager(port, streamName)
+          const { mediaStream, connected } = manager.start()
+
+          activeStreams.value[streamName] = {
+            stream: undefined,
+            go2rtcManager: manager,
+            // @ts-ignore: This is actually not reactive
+            mediaStream: mediaStream,
+            // @ts-ignore: This is actually not reactive
+            connected: connected,
+            mediaRecorder: undefined,
+            timeRecordingStart: undefined,
+          }
+          console.debug(`Activated RTSP stream '${streamName}' via go2rtc.`)
+        } catch (error) {
+          console.error(`Failed to activate RTSP stream '${streamName}':`, error)
+          showDialog({ message: `Failed to start RTSP stream '${streamName}'.`, variant: 'error' })
+        } finally {
+          rtspActivating.delete(streamName)
+        }
+      })()
+      return
+    }
+
     const stream = ref()
     const webRtcManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
     const { mediaStream, connected } = webRtcManager.startStream(
@@ -228,6 +308,41 @@ export const useVideoStore = defineStore('video', () => {
       activateStream(streamName)
     }
     return activeStreams.value[streamName]
+  }
+
+  /**
+   * Get the signaller/connection status string for a stream, abstracting over manager type
+   * @param {string} streamName - Name of the stream
+   * @returns {string} Human-readable signaller status
+   */
+  const getSignallerStatus = (streamName: string): string => {
+    const data = getStreamData(streamName)
+    return data?.go2rtcManager?.signallerStatus.value ?? data?.webRtcManager?.signallerStatus.value ?? 'Unknown.'
+  }
+
+  /**
+   * Get the stream status string for a stream, abstracting over manager type
+   * @param {string} streamName - Name of the stream
+   * @returns {string} Human-readable stream status
+   */
+  const getStreamStatus = (streamName: string): string => {
+    const data = getStreamData(streamName)
+    if (data?.go2rtcManager) return data.go2rtcManager.streamStatus.value ?? 'Unknown.'
+    return data?.webRtcManager?.streamStatus.value ?? 'Unknown.'
+  }
+
+  /**
+   * Get the RTCPeerConnection for stats monitoring, if available
+   * @param {string} streamName - Name of the stream
+   * @returns {StreamPeerConnectionInfo | undefined}
+   */
+  const getStreamPeerConnection = (streamName: string): StreamPeerConnectionInfo | undefined => {
+    const data = activeStreams.value[streamName]
+    const session = data?.webRtcManager?.session
+    if (session?.peerConnection) {
+      return { peerConnection: session.peerConnection, peerId: session.consumerId, sessionId: session.id }
+    }
+    return undefined
   }
 
   /**
@@ -809,9 +924,10 @@ export const useVideoStore = defineStore('video', () => {
 
     if (streamIndex !== -1) {
       const stream = streamsCorrespondency.value[streamIndex]
+      const streamProtocol = stream.protocol ?? 'webrtc'
 
       // Add to ignored list
-      if (!ignoredStreamExternalIds.value.includes(externalId)) {
+      if (streamProtocol !== 'rtsp' && !ignoredStreamExternalIds.value.includes(externalId)) {
         ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, externalId]
       }
 
@@ -845,11 +961,24 @@ export const useVideoStore = defineStore('video', () => {
           }
         }
 
+        if (externalStreamData?.go2rtcManager) {
+          externalStreamData.go2rtcManager.close(`Stream '${externalId}' deleted by user`)
+          if (window.electronAPI) {
+            void window.electronAPI.go2rtcRemoveStream(externalId).catch((error) => {
+              console.warn(`Error removing go2rtc stream '${externalId}':`, error)
+            })
+          }
+        }
+
         delete activeStreams.value[externalId]
         console.log(`Cleaned up all resources for external stream '${externalId}'`)
       }
 
-      openSnackbar({ variant: 'success', message: `Stream '${stream.name}' deleted and added to ignored list.` })
+      const successMessage =
+        streamProtocol === 'rtsp'
+          ? `RTSP stream '${stream.name}' deleted.`
+          : `Stream '${stream.name}' deleted and added to ignored list.`
+      openSnackbar({ variant: 'success', message: successMessage })
     } else {
       openSnackbar({ variant: 'warning', message: `Stream with external ID '${externalId}' not found.` })
     }
@@ -873,6 +1002,51 @@ export const useVideoStore = defineStore('video', () => {
     } else {
       openSnackbar({ variant: 'warning', message: `Stream with external ID '${externalId}' not on ignored list.` })
     }
+  }
+
+  /**
+   * Add a new RTSP stream to the correspondency list (Electron/standalone only)
+   * @param {string} rtspUrl - Full RTSP URL
+   * @returns {VideoStreamCorrespondency} The created correspondency entry
+   */
+  const addRtspStreamCorrespondency = (rtspUrl: string): VideoStreamCorrespondency => {
+    if (!window.electronAPI) {
+      throw new Error('RTSP streams are only available in the standalone version.')
+    }
+
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(rtspUrl)
+    } catch {
+      throw new Error('Invalid RTSP URL.')
+    }
+
+    if (!['rtsp:', 'rtsps:'].includes(parsedUrl.protocol)) {
+      throw new Error('RTSP URL must start with rtsp:// or rtsps://')
+    }
+
+    const normalizedRtspUrl = rtspUrl.trim()
+    const duplicate = streamsCorrespondency.value.find((stream) => stream.rtspUrl === normalizedRtspUrl)
+    if (duplicate) {
+      throw new Error('This RTSP URL is already added.')
+    }
+
+    const existingInternalNames = streamsCorrespondency.value.map((corr) => corr.name)
+    let i = 1
+    let internalName = `RTSP Stream ${i}`
+    while (existingInternalNames.includes(internalName)) {
+      i++
+      internalName = `RTSP Stream ${i}`
+    }
+
+    const newCorrespondency: VideoStreamCorrespondency = {
+      name: internalName,
+      externalId: normalizedRtspUrl,
+      protocol: 'rtsp',
+      rtspUrl: normalizedRtspUrl,
+    }
+    streamsCorrespondency.value = [...streamsCorrespondency.value, newCorrespondency]
+    return newCorrespondency
   }
 
   registerActionCallback(
@@ -901,9 +1075,14 @@ export const useVideoStore = defineStore('video', () => {
     ignoredStreamExternalIds,
     namessAvailableAbstractedStreams,
     externalStreamId,
+    getStreamProtocol,
+    getRtspUrl,
     discardProcessedFilesFromVideoDB,
     getMediaStream,
     getStreamData,
+    getSignallerStatus,
+    getStreamStatus,
+    getStreamPeerConnection,
     isRecording,
     stopRecording,
     startRecording,
@@ -916,6 +1095,7 @@ export const useVideoStore = defineStore('video', () => {
     lastRenamedStreamName,
     deleteStreamCorrespondency,
     restoreIgnoredStream,
+    addRtspStreamCorrespondency,
     enableLiveProcessing,
     keepRawVideoChunksAsBackup,
   }
