@@ -2,7 +2,7 @@
   <GlassModal :is-visible="isVisible" position="center">
     <div class="p-4 w-[550px] max-w-[90vw]">
       <div class="flex justify-center items-center mb-4 pb-2">
-        <h2 class="text-xl font-semibold">Available Actions</h2>
+        <h2 class="text-xl font-semibold">{{ $t('actions.availableActions') }}</h2>
       </div>
       <div class="fixed top-1 right-1">
         <v-btn icon="mdi-close" size="small" variant="text" class="text-lg" @click="closeModal"></v-btn>
@@ -10,11 +10,11 @@
 
       <div v-if="filteredActions.length === 0" class="text-center py-8">
         <v-icon size="50" color="grey" class="mb-3">mdi-lightning-bolt-outline</v-icon>
-        <p class="text-grey-lighten-1">No new actions available.</p>
+        <p class="text-grey-lighten-1">{{ $t('actions.noNewActions') }}</p>
       </div>
 
       <div v-else class="actions-container">
-        <p class="mb-4">The following actions are available from BlueOS extensions:</p>
+        <p class="mb-4">{{ $t('actions.extensionActionsAvailable') }}</p>
 
         <v-list class="bg-transparent">
           <v-list-item v-for="action in filteredActions" :key="action.id" class="mb-3 p-0">
@@ -51,6 +51,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import GlassModal from '@/components/GlassModal.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -64,6 +65,7 @@ import { getActionsFromBlueOS } from '@/libs/blueos'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { ActionConfig, customActionTypes, customActionTypesNames } from '@/types/cockpit-actions'
 
+const { t: $t } = useI18n()
 const mainVehicleStore = useMainVehicleStore()
 
 const { openSnackbar } = useSnackbar()

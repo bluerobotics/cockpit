@@ -1,7 +1,7 @@
 <template>
   <div class="mission-planning" :style="glassMenuCssVars">
     <div id="planningMap" ref="planningMap" class="relative" />
-    <v-tooltip location="top" text="Generate waypoints">
+    <v-tooltip location="top" :text="t('views.MissionPlanningView.generateWaypoints')">
       <template #activator="{ props }">
         <div
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
@@ -15,7 +15,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" text="Scan spacing">
+    <v-tooltip location="top" :text="t('views.MissionPlanningView.scanSpacing')">
       <template #activator="{ props }">
         <div
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
@@ -33,7 +33,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" text="Clear survey">
+    <v-tooltip location="top" :text="t('views.MissionPlanningView.clearSurvey')">
       <template #activator="{ props }">
         <div
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
@@ -81,7 +81,11 @@
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSurvey"
         >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SURVEY' : 'CREATE SURVEY' }}
+          {{
+            missionStore.currentPlanningWaypoints.length > 0
+              ? $t('views.MissionPlanningView.addSurvey')
+              : $t('views.MissionPlanningView.createSurvey')
+          }}
         </button>
         <button
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
@@ -89,13 +93,17 @@
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSimplePath"
         >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
+          {{
+            missionStore.currentPlanningWaypoints.length > 0
+              ? $t('views.MissionPlanningView.addSimplePath')
+              : $t('views.MissionPlanningView.createSimplePath')
+          }}
         </button>
         <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-row justify-between items-center mx-4 my-1"
         >
-          <p class="text-sm">Cruise speed</p>
+          <p class="text-sm">{{ $t('views.MissionPlanningView.cruiseSpeed') }}</p>
           <input
             v-model="missionStore.defaultCruiseSpeed"
             class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
@@ -108,7 +116,9 @@
           class="flex flex-col px-4 py-3 gap-y-2 ma-2 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#00000022]"
         >
           <div class="flex justify-between my-[1px]">
-            <p class="self-center text-sm font-bold -mt-1 text-start">New mission checklist</p>
+            <p class="self-center text-sm font-bold -mt-1 text-start">
+              {{ $t('views.MissionPlanningView.newMissionChecklist') }}
+            </p>
             <v-icon class="text-sm -mr-[5px] cursor-pointer -mt-[1px]" @click="showMissionCreationTips = false"
               >mdi-close</v-icon
             >
@@ -118,7 +128,7 @@
             <v-icon v-if="home === undefined" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
             <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
             <p :class="{ 'cursor-pointer hover:underline': home === undefined }" @click="handleAddHomeWaypointByClick">
-              Set home waypoint
+              {{ $t('views.MissionPlanningView.setHomeWaypoint') }}
             </p>
           </div>
           <div class="text-sm flex justify-start items-center">
@@ -130,7 +140,7 @@
               :class="{ 'cursor-pointer hover:underline': missionStore.currentPlanningWaypoints.length === 0 }"
               @click="missionStore.currentPlanningWaypoints.length === 0 ? toggleSimplePath() : undefined"
             >
-              Create mission path
+              {{ $t('views.MissionPlanningView.createMissionPath') }}
             </p>
           </div>
           <div class="text-sm flex justify-start items-center">
@@ -140,7 +150,7 @@
               :class="{ 'cursor-pointer hover:underline': !hasUploadedMission }"
               @click="!hasUploadedMission ? uploadMissionToVehicle() : undefined"
             >
-              Upload to the vehicle
+              {{ $t('views.MissionPlanningView.uploadToVehicle') }}
             </p>
           </div>
         </div>
@@ -149,7 +159,7 @@
           class="flex flex-row justify-between px-3 py-1 my-2 mx-6 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#ffad4322] cursor-pointer opacity-60 elevation-4"
           @click="handleDoNotShowTipsAgain"
         >
-          <p class="text-sm">Don't show again</p>
+          <p class="text-sm">{{ $t('views.MissionPlanningView.dontShowAgain') }}</p>
           <p class="text-sm">{{ countdownToHideTips }}</p>
         </div>
         <div
@@ -161,20 +171,22 @@
           <p
             class="text-sm flex justify-start items-center bg-[#1e498f] rounded-full pl-3 pr-1 py-1 border-[1px] border-[#FFFFFF44] elevation-2 cursor-pointer"
           >
-            <span>Set home waypoint</span>
+            <span>{{ t('views.MissionPlanningView.setHomeWaypoint') }}</span>
             <v-icon class="text-md ml-2">mdi-home-circle</v-icon>
           </p>
         </div>
         <v-divider v-if="!isCreatingSimplePath" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
-          <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">
+            {{ t('views.MissionPlanningView.distanceBetweenLines') }}
+          </p>
           <input
             v-model.number="distanceBetweenSurveyLines"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
             min="1"
           />
-          <p class="m-1 overflow-visible text-sm text-slate-200">Lines angle (degrees)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">{{ t('views.MissionPlanningView.linesAngle') }}</p>
           <input
             v-model.number="surveyLinesAngleDisplay"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
@@ -190,7 +202,7 @@
             class="h-auto py-2 px-2 m-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
             @click="generateWaypointsFromSurvey"
           >
-            GENERATE WAYPOINTS
+            {{ t('views.MissionPlanningView.generateWaypointsButton') }}
           </button>
           <div class="flex w-full justify-end">
             <v-btn
@@ -199,7 +211,7 @@
               class="h-auto my-1 font-medium text-xs rounded-md transition-colors duration-200"
               @click="clearSurveyPath"
             >
-              Clear Path
+              {{ t('views.MissionPlanningView.clearPath') }}
             </v-btn>
           </div>
           <button
@@ -208,26 +220,26 @@
             class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
             @click="toggleSurvey"
           >
-            Cancel Survey
+            {{ t('views.MissionPlanningView.cancelSurvey') }}
           </button>
         </div>
         <v-divider v-if="isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSimplePath" class="flex flex-col w-full h-full p-2">
-          <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
+          <p class="overflow-visible my-1 text-sm text-slate-200">{{ t('views.MissionPlanningView.altitudeM') }}</p>
           <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
-          <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
+          <p class="overflow-visible mt-2 text-sm text-slate-200">{{ t('views.MissionPlanningView.altitudeType') }}</p>
           <select
             v-model="currentWaypointAltitudeRefType"
             class="h-auto py-2 px-2 my-2 mx-5 font-medium text-sm rounded-sm bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           >
             <option :value="AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
+              {{ t('views.MissionPlanningView.absoluteRelativeToMSL') }}
             </option>
             <option :value="AltitudeReferenceType.RELATIVE_TO_HOME" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
+              {{ t('views.MissionPlanningView.relativeToHome') }}
             </option>
             <option :value="AltitudeReferenceType.RELATIVE_TO_TERRAIN" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
+              {{ t('views.MissionPlanningView.relativeToTerrain') }}
             </option>
           </select>
           <v-divider class="my-2" />
@@ -237,7 +249,7 @@
             :class="{ 'bg-[#FFFFFF11] text-[#FFFFFF22]': missionStore.currentPlanningWaypoints.length < 2 }"
             @click="toggleSimplePath"
           >
-            END SIMPLE PATH
+            {{ t('views.MissionPlanningView.endSimplePath') }}
           </button>
         </div>
 
@@ -245,7 +257,11 @@
           <div class="flex w-full justify-between my-2 px-1">
             <v-tooltip
               location="top"
-              :text="isMissionEstimatesVisible ? 'Hide mission estimates' : 'Show mission estimates'"
+              :text="
+                isMissionEstimatesVisible
+                  ? $t('missionEstimates.hideMissionEstimates')
+                  : $t('missionEstimates.showMissionEstimates')
+              "
             >
               <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
                 <v-btn
@@ -260,7 +276,7 @@
               </template>
             </v-tooltip>
             <v-divider v-if="missionStore.currentPlanningWaypoints.length > 0" vertical />
-            <v-tooltip location="top" text="Save mission to file">
+            <v-tooltip location="top" :text="t('views.MissionPlanningView.saveMissionToFile')">
               <template v-if="missionStore.currentPlanningWaypoints.length > 0" #activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -273,7 +289,7 @@
               </template>
             </v-tooltip>
             <v-divider v-if="missionStore.currentPlanningWaypoints.length > 0" vertical />
-            <v-tooltip location="top" text="Load mission from file">
+            <v-tooltip location="top" :text="t('views.MissionPlanningView.loadMissionFromFile')">
               <template #activator="{ props }">
                 <label v-bind="props">
                   <input type="file" accept=".cmp" hidden @change="(e) => loadMissionFromFile(e)" />
@@ -282,7 +298,7 @@
               </template>
             </v-tooltip>
             <v-divider vertical />
-            <v-tooltip location="top" text="Clear mission on vehicle">
+            <v-tooltip location="top" :text="t('views.MissionPlanningView.clearMissionOnVehicle')">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -296,7 +312,7 @@
               </template>
             </v-tooltip>
             <v-divider vertical />
-            <v-tooltip location="top" text="Mission Settings">
+            <v-tooltip location="top" :text="t('views.MissionPlanningView.missionSettings')">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -321,7 +337,7 @@
           class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
           @click="uploadMissionToVehicle"
         >
-          UPLOAD MISSION TO VEHICLE
+          {{ $t('views.MissionPlanningView.uploadToVehicle').toUpperCase() }}
         </button>
         <button
           v-if="missionStore.currentPlanningWaypoints.length > 0"
@@ -330,7 +346,7 @@
           @click="openCLearMissionDialog"
         >
           <v-progress-circular v-if="loading" size="20" class="py-4" />
-          <p v-else>CLEAR CURRENT MISSION</p>
+          <p v-else>{{ $t('views.MissionPlanningView.clearCurrentMission') }}</p>
         </button>
         <button
           :disabled="loading || !vehicleStore.isVehicleOnline"
@@ -339,17 +355,17 @@
           @click="downloadMissionFromVehicle"
         >
           <v-progress-circular v-if="loading" size="20" class="py-4" />
-          <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
+          <p v-else>{{ $t('views.MissionPlanningView.downloadMissionFromVehicle') }}</p>
         </button>
       </div>
     </div>
-    <v-tooltip location="top" text="Switch to Flight mode">
+    <v-tooltip location="top" :text="$t('views.MissionPlanningView.switchToFlightMode')">
       <template #activator="{ props: tooltipProps }">
         <v-btn
           v-bind="tooltipProps"
           class="absolute right-[180px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
           elevation="8"
-          text="Flight mode"
+          :text="$t('views.MissionPlanningView.flightMode')"
           append-icon="mdi-send"
           :style="interfaceStore.globalGlassMenuStyles"
           hide-details
@@ -358,7 +374,7 @@
         />
       </template>
     </v-tooltip>
-    <v-tooltip location="top center" text="Download map tiles">
+    <v-tooltip location="top center" :text="$t('components.widgets.Map.downloadMapTiles')">
       <template #activator="{ props: tooltipProps }">
         <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
           <template #activator="{ props: menuProps }">
@@ -372,9 +388,9 @@
           </template>
 
           <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-            <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+            <v-list-item class="py-0" :title="$t('components.widgets.Map.saveVisibleEsriTiles')" @click="saveEsri" />
             <v-divider />
-            <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+            <v-list-item class="py-0" :title="$t('components.widgets.Map.saveVisibleOSMTiles')" @click="saveOSM" />
           </v-list>
         </v-menu>
       </template>
@@ -424,7 +440,7 @@
       v-if="uploadingMission"
       class="fixed top-[58px] left-[7px] flex text-md font-bold text-white z-30 drop-shadow-md"
     >
-      Uploading mission to vehicle...
+      {{ $t('missionDownload.uploadingMission') }}
     </p>
   </div>
 
@@ -488,14 +504,18 @@
     :style="{ top: '48px' }"
     class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
   >
-    Loading mission...
+    {{ $t('missionDownload.loadingMission') }}
   </p>
   <div
     v-if="isSavingOfflineTiles"
     class="absolute top-14 left-2 flex justify-start items-center text-white text-md py-2 px-4 rounded-lg"
     :style="interfaceStore.globalGlassMenuStyles"
   >
-    <p>Saving offline map content:&nbsp;{{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%</p>
+    <p>
+      {{ $t('views.MissionPlanningView.savingOfflineMapContent', { layerName: savingLayerName }) }}:&nbsp;{{
+        tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0
+      }}%
+    </p>
   </div>
   <MissionEstimatesPanel v-model="isMissionEstimatesVisible" />
 </template>
@@ -505,11 +525,13 @@ import 'leaflet/dist/leaflet.css'
 import { useDebounceFn, useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
+import { enUS, zhCN } from 'date-fns/locale'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
@@ -566,6 +588,7 @@ const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const missionEstimates = useMissionEstimates()
 const { height: windowHeight } = useWindowSize()
+const { t, locale } = useI18n()
 
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
@@ -649,7 +672,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
-    const message = 'Go to Flight Mode and click the “play” button to start the mission.'
+    const message = 'Go to Flight Mode and click the “play�?button to start the mission.'
 
     if (missionStore.alwaysSwitchToFlightMode) {
       router.push('/')
@@ -659,28 +682,27 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     }
     showDialog({
       variant: 'success',
-      title: 'Mission upload succeeded',
+      title: t('views.MissionPlanningView.missionUploadSucceeded'),
       message,
       persistent: false,
       timer: undefined,
       maxWidth: '750px',
       actions: [
-        { text: 'Close', color: 'white', action: closeDialog },
+        { text: t('common.close'), color: 'white', action: closeDialog },
         {
-          text: 'Always switch to Flight Mode',
+          text: t('views.MissionPlanningView.alwaysSwitchToFlightMode'),
           color: 'white',
           action: () => {
             missionStore.alwaysSwitchToFlightMode = true
             openSnackbar({
               variant: 'info',
-              message:
-                'You will be switched to Flight Mode automatically in the future. To change this, go to Mission Planning settings.',
+              message: t('views.MissionPlanningView.autoSwitchNotification'),
               duration: 5000,
             })
             router.push('/')
           },
         },
-        { text: 'Switch to Flight Mode', color: 'white', action: () => router.push('/') },
+        { text: t('views.MissionPlanningView.switchToFlightMode'), color: 'white', action: () => router.push('/') },
       ],
     })
     hasUploadedMission.value = true
@@ -724,9 +746,19 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     })
     updateWaypointMarkers()
 
-    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
+    openSnackbar({
+      variant: 'success',
+      message: t('views.MissionPlanningView.missionDownloadSucceeded'),
+      duration: 3000,
+    })
   } catch (error) {
-    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
+    const errorMessage = String(error).replace(/^Error:\s*/, '')
+    showDialog({
+      variant: 'error',
+      title: t('views.MissionPlanningView.missionDownloadFailed'),
+      message: errorMessage,
+      timer: 5000,
+    })
   } finally {
     loading.value = false
     fetchingMission.value = false
@@ -988,7 +1020,7 @@ const isCtrlDown = ref(false)
 const isShiftDown = ref(false)
 const cursorLivePositionX = ref(0)
 const cursorLivePositionY = ref(0)
-const cursorSymbol = computed(() => (isCtrlDown.value ? '+' : isShiftDown.value ? '−' : ''))
+const cursorSymbol = computed(() => (isCtrlDown.value ? '+' : isShiftDown.value ? '◎' : ''))
 const showCursorDeco = computed(() => isCtrlDown.value || isShiftDown.value)
 
 let cursorDecoEl: HTMLDivElement | null = null
@@ -1014,7 +1046,7 @@ const handleDoNotShowTipsAgain = (): void => {
   missionStore.showMissionCreationTips = false
   openSnackbar({
     variant: 'info',
-    message: 'Mission checklist will not be shown again. You can enable them back in the settings.',
+    message: t('info.missionChecklistDisabled'),
     duration: 5000,
   })
 }
@@ -1024,7 +1056,7 @@ const handleAddHomeWaypointByClick = (): void => {
   isSettingHomeWaypoint.value = true
   openSnackbar({
     variant: 'info',
-    message: 'Click anywhere on the map to set the home position',
+    message: t('info.clickMapToSetHome'),
     duration: 5000,
   })
 }
@@ -1062,25 +1094,25 @@ const clearCurrentMission = (): void => {
 
 const openCLearMissionDialog = (): void => {
   showDialog({
-    message: 'Clear current mission?',
+    message: t('warning.clearCurrentMission'),
     maxWidth: '400px',
     variant: 'warning',
     persistent: false,
     actions: [
       {
-        text: 'Cancel',
+        text: t('common.cancel'),
         action: () => {
           closeDialog()
         },
       },
       {
-        text: 'Clear',
+        text: t('views.MissionPlanningView.clear'),
         action: () => {
           clearCurrentMission()
           closeDialog()
           openSnackbar({
             variant: 'success',
-            message: 'Current mission cleared',
+            message: t('views.MissionPlanningView.currentMissionCleared'),
           })
         },
       },
@@ -1590,12 +1622,15 @@ const setHomePosition = async (): Promise<void> => {
     await vehicleStore.setHomeWaypoint(newHome, 0)
     openSnackbar({
       variant: 'success',
-      message: `Home position set to ${newHome[0].toFixed(2)}, ${newHome[1].toFixed(2)}`,
+      message: t('views.MissionPlanningView.homePositionSet', {
+        lat: newHome[0].toFixed(2),
+        lon: newHome[1].toFixed(2),
+      }),
     })
   } catch (error) {
     openSnackbar({
       variant: 'error',
-      message: `Failed to set home position: ${error}`,
+      message: t('views.MissionPlanningView.failedToSetHomePosition', { error: String(error) }),
     })
   }
 }
@@ -1772,13 +1807,17 @@ const clearSurveyCreation = (): void => {
 const deleteSelectedSurvey = (): void => {
   const surveyId = selectedSurveyId.value
   if (!surveyId) {
-    openSnackbar({ variant: 'error', message: 'No survey selected to delete.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('views.MissionPlanningView.noSurveySelectedToDelete'), duration: 2000 })
     return
   }
 
   const surveyIndex = surveys.value.findIndex((s) => s.id === surveyId)
   if (surveyIndex === -1) {
-    openSnackbar({ variant: 'error', message: 'Selected survey does not exist.', duration: 2000 })
+    openSnackbar({
+      variant: 'error',
+      message: t('views.MissionPlanningView.selectedSurveyDoesNotExist'),
+      duration: 2000,
+    })
     return
   }
 
@@ -1825,7 +1864,7 @@ const deleteSelectedSurvey = (): void => {
     removeSurveyAreaSquareMeters(surveyId)
   }
 
-  openSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
+  openSnackbar({ variant: 'success', message: t('views.MissionPlanningView.surveyDeleted'), duration: 2000 })
   hideContextMenu()
   updateWaypointMarkers()
 }
@@ -1834,7 +1873,7 @@ const homeWaypointCursor =
   'url("data:image/svg+xml;utf8,' +
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>" +
   "<circle cx='12' cy='12' r='11' fill='%231e498f' stroke='%23ffffff55' stroke-width='1'/>" +
-  // scale path to 90 % and re-center ( (24 − 24×0.9) / 2 = 1.2 )
+  // scale path to 90 % and re-center ( (24 �?24×0.9) / 2 = 1.2 )
   "<g transform='translate(4 3) scale(0.7)'>" +
   "<path fill='%23ffffff' d='M12,3L2,12H5V20H19V12H22L12,3M12,7.7C14.1,7.7 15.8,9.4 15.8,11.5C15.8,14.5 " +
   '12,18 12,18C12,18 8.2,14.5 8.2,11.5C8.2,9.4 9.9,7.7 12,7.7M12,10A1.5,1.5 0 0,0 10.5,11.5A1.5,1.5 ' +
@@ -2065,7 +2104,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     const contents = event.target.result
     const maybeMission = JSON.parse(contents)
     if (!instanceOfCockpitMission(maybeMission)) {
-      showDialog({ variant: 'error', message: 'Invalid mission file.', timer: 3000 })
+      showDialog({ variant: 'error', message: t('views.MissionPlanningView.invalidMissionFile'), timer: 3000 })
       return
     }
     mapCenter.value = maybeMission['settings']['mapCenter']
@@ -2230,7 +2269,7 @@ const createSurveyPath = (): void => {
     if (continuousPath.length === 0) {
       showDialog({
         variant: 'error',
-        message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
+        message: t('errors.noValidSurveyPath'),
         timer: 5000,
       })
       return
@@ -2249,7 +2288,7 @@ const createSurveyPath = (): void => {
   } catch (error) {
     showDialog({
       variant: 'error',
-      message: `Failed to generate survey path: ${(error as Error).message}`,
+      message: t('views.MissionPlanningView.failedToGenerateSurveyPath', { error: (error as Error).message }),
       timer: 5000,
     })
   }
@@ -2399,7 +2438,7 @@ const refreshSurveyEntryExitMarkers = (): void => {
 
 const generateWaypointsFromSurvey = (): void => {
   if (!surveyPathLayer.value) {
-    showDialog({ variant: 'error', message: 'No survey path to generate waypoints from.', timer: 2000 })
+    showDialog({ variant: 'error', message: t('views.MissionPlanningView.noSurveyPathToGenerate'), timer: 2000 })
     return
   }
 
@@ -2425,7 +2464,7 @@ const generateWaypointsFromSurvey = (): void => {
   if (!continuousPath.length) {
     showDialog({
       variant: 'error',
-      message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
+      message: t('errors.noValidSurveyPath'),
       timer: 3000,
     })
     return
@@ -2470,7 +2509,11 @@ const generateWaypointsFromSurvey = (): void => {
     lastMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
   }
 
-  openSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
+  openSnackbar({
+    variant: 'success',
+    message: t('views.MissionPlanningView.waypointsGeneratedFromSurvey'),
+    duration: 1000,
+  })
 }
 
 // Helper function to create waypoint marker HTML with command count indicator
@@ -2534,7 +2577,7 @@ const updateWaypointMarkers = (): void => {
 
 const regenerateSurveyWaypoints = (angle?: number): void => {
   if (!selectedSurveyId.value) {
-    openSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('views.MissionPlanningView.noSurveySelected'), duration: 2000 })
     return
   }
 
@@ -2556,7 +2599,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
 
     if (!continuousPath.length) {
       openSnackbar({
-        message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
+        message: t('errors.noValidSurveyPath'),
         variant: 'error',
         duration: 2000,
       })
@@ -2576,7 +2619,11 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     )
 
     if (firstOldWaypointIndex === -1) {
-      openSnackbar({ variant: 'error', message: 'Failed to find old waypoints.', duration: 2000 })
+      openSnackbar({
+        variant: 'error',
+        message: t('views.MissionPlanningView.failedToFindOldWaypoints'),
+        duration: 2000,
+      })
       return
     }
 
@@ -2668,7 +2715,7 @@ const undoGenerateWaypoints = (): void => {
   const surveyId = selectedSurveyId.value
 
   if (!surveyId || !canUndo.value[surveyId] || !lastSurveyState.value[surveyId]) {
-    openSnackbar({ variant: 'error', message: 'Nothing to undo.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('views.MissionPlanningView.nothingToUndo'), duration: 2000 })
     undoIsInProgress.value = false
     return
   }
@@ -2760,7 +2807,7 @@ const undoGenerateWaypoints = (): void => {
   isDrawingSurveyPolygon.value = false
 
   createSurveyPath()
-  openSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
+  openSnackbar({ variant: 'success', message: t('views.MissionPlanningView.undoSuccessful'), duration: 1000 })
   undoIsInProgress.value = false
   removeSurveyAreaSquareMeters(surveyId)
 }
@@ -2904,7 +2951,7 @@ const tryFetchHome = async (): Promise<void> => {
       home.value = [...wp.coordinates] as [number, number]
       clearInterval(homeRetryTimer!)
     } catch (err) {
-      console.warn('HOME fetch failed, will retry…', err)
+      console.warn('HOME fetch failed, will retry...', err)
     }
   }
   if (++attempts >= MAX_ATTEMPTS) {
@@ -2927,9 +2974,13 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
       await tryFetchHome()
       homeRetryTimer = setInterval(tryFetchHome, 1000)
     }
-    openSnackbar({ variant: 'success', message: 'Draft mission loaded.', duration: 2000 })
+    openSnackbar({ variant: 'success', message: t('views.MissionPlanningView.draftMissionLoaded'), duration: 2000 })
   } catch (error) {
-    openSnackbar({ variant: 'error', message: `Failed to load draft mission: ${error}`, duration: 3000 })
+    openSnackbar({
+      variant: 'error',
+      message: t('views.MissionPlanningView.failedToLoadDraftMission', { error: String(error) }),
+      duration: 3000,
+    })
   }
 }
 
@@ -3033,13 +3084,13 @@ const confirmDownloadDialog =
   (status: SaveStatus, ok: () => void): void => {
     showDialog({
       variant: 'info',
-      message: `Save ${status._tilesforSave.length} ${layerLabel} tiles for offline use?`,
+      message: t('views.MissionPlanningView.saveTilesConfirmation', { count: status._tilesforSave.length, layerLabel }),
       persistent: false,
       maxWidth: '450px',
       actions: [
-        { text: 'Cancel', color: 'white', action: closeDialog },
+        { text: t('common.cancel'), color: 'white', action: closeDialog },
         {
-          text: 'Save tiles',
+          text: t('views.MissionPlanningView.saveTiles'),
           color: 'white',
           action: () => {
             ok()
@@ -3055,18 +3106,22 @@ const deleteDownloadedTilesDialog =
   (_status: SaveStatus, ok: () => void): void => {
     showDialog({
       variant: 'warning',
-      message: `Remove all saved ${layerLabel} tiles for this layer?`,
+      message: t('views.MissionPlanningView.removeTilesConfirmation', { layerLabel }),
       persistent: false,
       maxWidth: '450px',
       actions: [
-        { text: 'Cancel', color: 'white', action: closeDialog },
+        { text: t('common.cancel'), color: 'white', action: closeDialog },
         {
-          text: 'Remove tiles',
+          text: t('views.MissionPlanningView.removeTiles'),
           color: 'white',
           action: () => {
             ok()
             closeDialog()
-            openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
+            openSnackbar({
+              message: t('views.MissionPlanningView.offlineTilesRemoved', { layerLabel }),
+              variant: 'info',
+              duration: 3000,
+            })
           },
         },
       ] as DialogActions[],
@@ -3093,13 +3148,21 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
     tilesTotal.value = e?._tilesforSave?.length ?? 0
     savingLayerName.value = layerName
     isSavingOfflineTiles.value = true
-    openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
+    openSnackbar({
+      message: t('views.MissionPlanningView.savingOfflineTiles', { count: tilesTotal.value, layerName }),
+      variant: 'info',
+      duration: 2000,
+    })
   })
 
   layer.on('loadtileend', () => {
     tilesSaved.value += 1
     if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
-      openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
+      openSnackbar({
+        message: t('views.MissionPlanningView.offlineTilesSaved', { layerName }),
+        variant: 'success',
+        duration: 3000,
+      })
       isSavingOfflineTiles.value = false
       savingLayerName.value = ''
       tilesSaved.value = 0
@@ -3130,15 +3193,24 @@ onMounted(async () => {
 
   const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
 
-  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
-    mapCenter.value as LatLngTuple,
-    zoom.value
-  )
+  planningMap.value = L.map('planningMap', {
+    layers: [initialBaseLayer],
+    zoomControl: false,
+  }).setView(mapCenter.value as LatLngTuple, zoom.value)
+
+  // Add zoom control with translated text
+  L.control
+    .zoom({
+      position: 'bottomright',
+      zoomInTitle: t('components.widgets.Map.zoomIn'),
+      zoomOutTitle: t('components.widgets.Map.zoomOut'),
+    })
+    .addTo(planningMap.value)
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(planningMap.value)
-  planningMap.value.zoomControl.setPosition('bottomright')
 
   const pane = planningMap.value!.createPane('measurePane')
   pane.style.zIndex = '640'
@@ -3325,7 +3397,11 @@ const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehic
 // Calculate time since last vehicle heartbeat
 const timeAgoSeenText = computed(() => {
   const lastBeat = vehicleStore.lastHeartbeat
-  return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
+  if (!lastBeat) return t('components.widgets.Map.never')
+
+  const dateLocale = locale.value === 'zh' ? zhCN : enUS
+  const distance = formatDistanceToNow(lastBeat, { includeSeconds: true, locale: dateLocale })
+  return locale.value === 'zh' ? `${distance}前` : `${distance} ago`
 })
 
 // Dinamically update data of the vehicle tooltip
@@ -3333,11 +3409,13 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
   if (vehicleMarker.value === undefined) return
 
   vehicleMarker.value.getTooltip()?.setContent(`
-    <p>Coordinates: ${vehiclePosition.value?.[0].toFixed(6)}, ${vehiclePosition.value?.[1].toFixed(6)}</p>
-    <p>Velocity: ${vehicleStore.velocity.ground?.toFixed(2) ?? 'N/A'} m/s</p>
-    <p>Heading: ${vehicleHeading.value.toFixed(2)}°</p>
-    <p>${vehicleStore.isArmed ? 'Armed' : 'Disarmed'}</p>
-    <p>Last seen: ${timeAgoSeenText.value}</p>
+    <p>${t('components.widgets.Map.coordinates')}: ${vehiclePosition.value?.[0].toFixed(
+    6
+  )}, ${vehiclePosition.value?.[1].toFixed(6)}</p>
+    <p>${t('components.widgets.Map.velocity')}: ${vehicleStore.velocity.ground?.toFixed(2) ?? 'N/A'} m/s</p>
+    <p>${t('components.widgets.Map.heading')}: ${vehicleHeading.value.toFixed(2)}°</p>
+    <p>${vehicleStore.isArmed ? t('components.widgets.Map.armed') : t('components.widgets.Map.disarmed')}</p>
+    <p>${t('components.widgets.Map.lastSeen')}: ${timeAgoSeenText.value}</p>
   `)
 
   // Update the rotation
@@ -3529,35 +3607,39 @@ watch(
 
 const centerHomeButtonTooltipText = computed(() => {
   if (home.value === undefined) {
-    return 'Cannot center map on home (home position undefined).'
+    return t('components.widgets.Map.cannotCenterOnHome')
   }
   if (followerTarget.value === WhoToFollow.HOME) {
-    return 'Tracking home position. Click to stop tracking.'
+    return t('components.widgets.Map.trackingHome')
   }
-  return 'Click once to center on home or twice to track it.'
+  return t('components.widgets.Map.centerOnHome')
 })
 
 const centerVehicleButtonTooltipText = computed(() => {
   if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
+    return t('components.widgets.Map.cannotCenterOnVehicleOffline')
   }
   if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
+    return t('components.widgets.Map.cannotCenterOnVehiclePosition')
   }
   if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
+    return t('components.widgets.Map.trackingVehicle')
   }
-  return 'Click once to center on vehicle or twice to track it.'
+  return t('components.widgets.Map.centerOnVehicle')
 })
 
 const openPoiDialog = (): void => {
   if (cursorCoordinates.value && poiManagerRef.value) {
     poiManagerRef.value.openDialog(cursorCoordinates.value)
   } else if (!cursorCoordinates.value) {
-    showDialog({ variant: 'error', title: 'Error', message: 'Cannot place Point of Interest without map coordinates.' })
+    showDialog({ variant: 'error', title: t('common.error'), message: t('components.widgets.Map.cannotPlacePOI') })
     console.error('Cannot open POI dialog without click coordinates for new POI')
   } else if (!poiManagerRef.value) {
-    showDialog({ variant: 'error', title: 'Error', message: 'POI Manager is not available.' })
+    showDialog({
+      variant: 'error',
+      title: t('common.error'),
+      message: t('components.widgets.Map.poiManagerNotAvailable'),
+    })
     console.error('Cannot open POI dialog, POI Manager ref is not set.')
   }
   hideContextMenu()

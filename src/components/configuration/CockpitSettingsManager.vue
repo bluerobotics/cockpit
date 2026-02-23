@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <v-dialog v-model="openConfigDialog" width="800px" persistent>
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">
         <div class="flex justify-between w-full -mt-1">
           <div class="w-10" />
-          Cockpit settings manager
+          {{ $t('settingsManager.title') }}
           <v-icon class="self-end" @click="closeConfigDialog">mdi-close</v-icon>
         </div>
       </v-card-title>
@@ -27,7 +27,7 @@
                 <v-select
                   v-model="selectedVehicleId"
                   :items="availableVehicles"
-                  label="Vehicle"
+                  :label="$t('common.vehicle')"
                   density="compact"
                   variant="outlined"
                   hide-details
@@ -39,13 +39,13 @@
               <div v-if="interfaceStore.pirateMode" class="flex flex-wrap gap-x-4">
                 <v-checkbox
                   v-model="showLegacyInternalKeys"
-                  label="Show legacy/internal keys"
+                  :label="$t('settingsManager.showLegacyInternalKeys')"
                   density="compact"
                   hide-details
                 />
                 <v-checkbox
                   v-model="showAllKeyPairs"
-                  label="Show all localStorage key-pairs"
+                  :label="$t('settingsManager.showAllLocalStorageKeys')"
                   density="compact"
                   hide-details
                 />
@@ -57,8 +57,12 @@
             <table class="w-full border-collapse">
               <thead>
                 <tr class="bg-[#00000022]">
-                  <th class="text-center border-b border-b-[rgba(255,255,255,0.3)]">Setting</th>
-                  <th class="text-center w-[518px] p-2 border-b border-b-[rgba(255,255,255,0.3)]">Value</th>
+                  <th class="text-center border-b border-b-[rgba(255,255,255,0.3)]">
+                    {{ $t('settingsManager.setting') }}
+                  </th>
+                  <th class="text-center w-[518px] p-2 border-b border-b-[rgba(255,255,255,0.3)]">
+                    {{ $t('settingsManager.value') }}
+                  </th>
                 </tr>
               </thead>
             </table>
@@ -68,12 +72,12 @@
             <template v-if="!isLoaded">
               <div class="flex flex-row w-full h-full justify-center items-center text-center py-4">
                 <v-circular-progress size="40" color="white" />
-                <p>Loading settings...</p>
+                <p>{{ $t('settingsManager.loadingSettings') }}</p>
               </div>
             </template>
             <template v-else-if="settingsArray.length === 0">
               <div class="flex flex-row w-full h-full justify-center items-center text-center py-4">
-                <p>No settings available for current selection.</p>
+                <p>{{ $t('settingsManager.noSettingsAvailable') }}</p>
               </div>
             </template>
             <template v-else>
@@ -102,7 +106,7 @@
                               <template v-if="editedValues[item.originalKey] === null">
                                 <input
                                   v-model="editedValues[item.originalKey]"
-                                  placeholder="Enter value"
+                                  :placeholder="$t('settingsManager.enterValue')"
                                   class="text-right bg-[#00000022] w-[160px] h-[40px] -mr-8"
                                 />
                               </template>
@@ -122,12 +126,13 @@
                               <template v-else-if="typeof editedValues[item.originalKey] === 'string'">
                                 <input
                                   v-model="editedValues[item.originalKey]"
-                                  placeholder="Enter value"
+                                  :placeholder="$t('settingsManager.enterValue')"
                                   class="text-right bg-[#00000022] w-[160px] h-[40px] -mr-8"
                                 />
                               </template>
                               <div>
-                                <v-tooltip location="top" text="Cancel">
+                                <!-- Save/Cancel buttons -->
+                                <v-tooltip location="top" :text="$t('common.cancel')">
                                   <template #activator="{ props: tooltipProps }">
                                     <v-btn
                                       size="x-small"
@@ -140,7 +145,7 @@
                                     />
                                   </template>
                                 </v-tooltip>
-                                <v-tooltip location="top" text="Save">
+                                <v-tooltip location="top" :text="$t('common.save')">
                                   <template #activator="{ props: tooltipProps }">
                                     <v-btn
                                       size="x-small"
@@ -161,7 +166,7 @@
                             <div class="flex w-full justify-between">
                               <div />
                               <p class="mt-[3px]">{{ editedValues[item.originalKey] }}</p>
-                              <v-tooltip location="top" text="Edit value">
+                              <v-tooltip location="top" :text="$t('settingsManager.editValue')">
                                 <template #activator="{ props: tooltipProps }">
                                   <v-btn
                                     v-bind="tooltipProps"
@@ -194,7 +199,7 @@
                               :disabled="saving[item.originalKey]"
                               @click="cancelJsonEditing()"
                             >
-                              close
+                              {{ $t('common.close') }}
                             </v-btn>
                             <v-btn
                               size="x-small"
@@ -204,7 +209,7 @@
                               :disabled="saving[item.originalKey]"
                               @click="finishInlineJsonEditing(item.originalKey)"
                             >
-                              Save
+                              {{ $t('common.save') }}
                             </v-btn>
                           </div>
                         </div>
@@ -214,7 +219,7 @@
                             <p class="cursor-pointer mt-1" @dblclick="startInlineJsonEditing(item.originalKey)">
                               {...}
                             </p>
-                            <v-tooltip location="top" text="Edit value">
+                            <v-tooltip location="top" :text="$t('settingsManager.editValue')">
                               <template #activator="{ props: tooltipProps }">
                                 <v-btn
                                   v-bind="tooltipProps"
@@ -242,7 +247,7 @@
           >
             <v-text-field
               v-model="searchTerm"
-              placeholder="Search settings"
+              :placeholder="$t('settingsManager.searchSettings')"
               variant="plain"
               density="compact"
               hide-details
@@ -261,14 +266,14 @@
               </template>
             </v-text-field>
             <v-divider vertical class="mr-6 my-2" />
-            <v-tooltip location="top" text="Upload and apply config file">
+            <v-tooltip location="top" :text="$t('settingsManager.uploadConfig')">
               <template #activator="{ props: tooltipProps }">
                 <v-btn icon variant="text" class="bg-transparent" v-bind="tooltipProps" @click="uploadConfigFile">
                   <v-icon>mdi-upload-outline</v-icon>
                 </v-btn>
               </template>
             </v-tooltip>
-            <v-tooltip location="top" text="Save config file">
+            <v-tooltip location="top" :text="$t('settingsManager.downloadConfig')">
               <template #activator="{ props: tooltipProps }">
                 <v-btn icon variant="text" class="bg-transparent" v-bind="tooltipProps" @click="downloadConfigFile">
                   <v-icon>mdi-download</v-icon>
@@ -281,8 +286,8 @@
 
       <v-card-actions>
         <div class="flex justify-between items-center p-2 w-full h-full text-[rgba(255,255,255,0.5)]">
-          <v-btn @click="resetAllCockpitSettings">Reset to defaults</v-btn>
-          <v-btn class="text-white" @click="closeConfigDialog">Close</v-btn>
+          <v-btn @click="resetAllCockpitSettings">{{ $t('views.ConfigurationUIView.resetToDefaults') }}</v-btn>
+          <v-btn class="text-white" @click="closeConfigDialog">{{ $t('common.close') }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -291,6 +296,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
@@ -343,6 +349,7 @@ const emits = defineEmits(['update:openConfigDialog'])
 
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
+const { t } = useI18n()
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
 
@@ -620,7 +627,7 @@ const finishInlineJsonEditing = async (key: string): Promise<void> => {
     if (row) await commitChanges(row)
   } catch (error: any) {
     JsonEditError.value = true
-    openSnackbar({ message: 'Invalid JSON: ' + error.message, variant: 'error', duration: 5000 })
+    openSnackbar({ message: t('errors.invalidJSON', { error: error.message }), variant: 'error', duration: 5000 })
   }
 }
 
@@ -675,7 +682,7 @@ const uploadConfigFile = (): void => {
           editedValues[row.originalKey] = json[row.setting]
           await commitChanges(row)
         }
-        openSnackbar({ message: 'Configuration file applied successfully.', variant: 'success', duration: 5000 })
+        openSnackbar({ message: t('success.configurationApplied'), variant: 'success', duration: 5000 })
       } catch (error: any) {
         console.error('Error parsing configuration file: ' + error.message)
         openSnackbar({
@@ -707,7 +714,7 @@ const resetAllCockpitSettings = (): void => {
         text: 'Reset settings',
         action: () => {
           localStorage.clear()
-          openSnackbar({ message: 'All settings have been reset to default values.', variant: 'success' })
+          openSnackbar({ message: t('success.settingsReset'), variant: 'success' })
           closeDialog()
           reloadCockpitAndWarnUser()
         },

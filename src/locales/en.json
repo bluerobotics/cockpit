@@ -38,7 +38,8 @@
     "color": "Color",
     "background": "Background",
     "message": "Message",
-    "configuration": "Configuration"
+    "configuration": "Configuration",
+    "vehicle": "Vehicle"
   },
   "stores": {
     "video": {
@@ -69,6 +70,7 @@
       "videoProcessingCompleted": "Video processing completed.",
       "failedToProcessVideo": "Failed to process video.",
       "failedToGenerateTelemetryOverlay": "Failed to generate telemetry overlay.",
+      "rtspStreamDeleted": "RTSP stream '{{streamName}}' deleted.",
       "streamDeletedAndIgnored": "Stream '{{streamName}}' has been deleted and added to the ignored list.",
       "streamNotFound": "Stream with external id '{{externalId}}' not found.",
       "streamNotAvailable": "Stream '{{externalId}}' is no longer available.",
@@ -109,12 +111,32 @@
       "disconnected": "Vehicle disconnected",
       "armed": "Vehicle armed",
       "disarmed": "Vehicle disarmed",
-      "modeChanged": "Vehicle mode changed to {{mode}}."
+      "modeChanged": "Vehicle mode changed to {{mode}}.",
+      "vehicleAddress": "Vehicle Address",
+      "mavlink2restHttpEndpoint": "MAVLink2REST HTTP Endpoint",
+      "cpuTemperature": "CPU Temperature",
+      "blueOsCpuUsageAverage": "BlueOS CPU Usage (average)",
+      "blueOsCpuFrequencyAverage": "BlueOS CPU Frequency (average)",
+      "blueOsCpuUsage": "BlueOS CPU '{name}' usage",
+      "blueOsCpuFrequency": "BlueOS CPU '{name}' frequency",
+      "blueOsNetworkTotalReceived": "BlueOS network '{name}' total received (MB)",
+      "blueOsNetworkTotalTransmitted": "BlueOS network '{name}' total transmitted (MB)",
+      "blueOsNetworkUploadSpeed": "BlueOS network '{name}' upload speed (Mbps)",
+      "blueOsNetworkDownloadSpeed": "BlueOS network '{name}' download speed (Mbps)"
+    },
+    "omniscientLogger": {
+      "cockpitMemoryUsage": "Cockpit Memory Usage",
+      "cockpitMainMemory": "Cockpit Main Memory (Electron)",
+      "cockpitRenderersMemory": "Cockpit Renderers Memory (Electron)",
+      "cockpitGpuMemory": "Cockpit GPU Memory (Electron)",
+      "cockpitCpuUsage": "Cockpit CPU Usage (Electron)",
+      "cockpitAppFrameRate": "Cockpit App Frame Rate"
     }
   },
   "components": {
     "mini-widgets": {
       "JoystickCommIndicator": {
+        "name": "Joystick Comm Indicator",
         "connected": "Joystick connected",
         "disconnected": "Joystick disconnected",
         "close": "Close",
@@ -124,6 +146,7 @@
         "commandsPaused": "Commands paused"
       },
       "ArmerButton": {
+        "name": "Arm/Disarm Button",
         "armed": "Armed",
         "disarmed": "Disarmed",
         "armRequestFailed": "Arm request failed",
@@ -131,11 +154,13 @@
         "noVehicleAvailableToArm": "No vehicle available to arm."
       },
       "SnapshotTool": {
+        "name": "Snapshot Tool",
         "openLibrary": "Open snapshot library",
         "singleCapture": "Single capture",
         "timedMultiCapture": "Timed multi-capture"
       },
       "BaseCommIndicator": {
+        "name": "Base Comm Indicator",
         "connected": "Vehicle connected",
         "disconnected": "Vehicle disconnected",
         "connect": "Connect vehicle",
@@ -145,6 +170,7 @@
         "disarm": "Disarm"
       },
       "BatteryIndicator": {
+        "name": "Battery Indicator",
         "config": "Battery Indicator Config",
         "showCurrent": "Show Current",
         "showPower": "Show Power",
@@ -154,15 +180,18 @@
         "criticalVoltage": "Critical voltage (V)",
         "lowVoltage": "Low voltage (V)",
         "mediumVoltage": "Medium voltage (V)",
-        "highVoltage": "High voltage (V)"
+        "highVoltage": "High voltage (V)",
+        "resetToDefaults": "Reset colors and voltage thresholds to default values"
       },
       "Alerter": {
+        "name": "Alerter",
         "options": "Alerter options",
         "enableColorCodedAlerts": "Enable color coded alerts",
         "enableVoiceAlerts": "Enable voice alerts",
         "alertVolume": "Alert volume"
       },
       "VeryGenericIndicator": {
+        "name": "Very Generic Indicator",
         "presets": "Presets",
         "custom": "Custom",
         "displayName": "Display name",
@@ -175,10 +204,12 @@
         "icon": "Icon"
       },
       "GoFullScreen": {
+        "name": "Go Full Screen",
         "enter": "Go full screen",
         "exit": "Exit full screen"
       },
       "EnterEditMode": {
+        "name": "Enter Edit Mode",
         "enter": "Enter edit mode",
         "exit": "Exit edit mode"
       },
@@ -187,30 +218,67 @@
       "TakeoffLandCommander": "Takeoff Land Commander",
       "changeAlt": "Change Alt",
       "ekfStateIndicator": {
+        "name": "EKF State Indicator",
         "waitingForData": "Waiting for EKF data...",
         "noData": "No EKF data - Check vehicle connection"
       },
       "miniVideoRecorder": {
+        "name": "Mini Video Recorder",
         "chooseStream": "Choose a stream to record",
         "streamName": "Stream name",
         "noStreamsAvailable": "No streams available."
       },
       "snapshotTool": {
+        "name": "Snapshot Tool",
         "settings": "Snapshot settings",
         "streamsToCapture": "Streams to capture",
         "noStreamsAvailable": "No streams available.",
         "captureWorkspace": "Capture Cockpit work area (Electron only)",
-        "timedSnapshotInterval": "Timed snapshot interval (seconds)"
+        "timedSnapshotInterval": "Timed snapshot interval (seconds)",
+        "electronOnlyFeatures": "Some features like \"Capturing Cockpit work area\" are only available in the Electron version."
       },
       "veryGenericIndicator": {
+        "name": "Very Generic Indicator",
         "searchVariable": "Search variable...",
         "autoFormatting": "Auto-formatting",
         "clickToChoose": "Click to choose...",
         "searchIcons": "Search icons..."
+      },
+      "Clock": {
+        "name": "Clock"
+      },
+      "DepthIndicator": {
+        "name": "Depth Indicator"
+      },
+      "EkfStateIndicator": {
+        "name": "EKF State Indicator"
+      },
+      "ChangeAltitudeCommander": {
+        "name": "Change Altitude"
+      },
+      "MiniVideoRecorder": {
+        "name": "Mini Video Recorder"
+      },
+      "ModeSelector": {
+        "name": "Mode Selector"
+      },
+      "SatelliteIndicator": {
+        "name": "Satellite Indicator"
+      },
+      "ViewSelector": {
+        "name": "View Selector"
+      },
+      "MiniMissionControlPanel": {
+        "name": "Mini Mission Control Panel",
+        "currentWaypoint": "Current WP"
       }
+    },
+    "custom-widget-elements": {
+      "displayModeTooltip": "This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
     },
     "widgets": {
       "VideoPlayer": {
+        "name": "Video Player",
         "noVideoStreamSelected": "No video stream selected.",
         "loadingStream": "Loading stream...",
         "streamNotAvailable": "The selected stream \"{streamName}\" is not available.",
@@ -235,9 +303,11 @@
         "externalStreamName": "External stream name",
         "internalStreamName": "Internal stream name",
         "loop": "Loop",
-        "muted": "Muted"
+        "muted": "Muted",
+        "verboseLoadingStatus": "Verbose loading status"
       },
       "Plotter": {
+        "name": "Plotter",
         "pleaseSelectVariable": "Please open the Plotter widget configuration menu to select a variable to be plotted.",
         "dataSource": "Data Source",
         "searchVariables": "Search variables...",
@@ -273,6 +343,7 @@
         "maxValue": "Max value"
       },
       "Map": {
+        "name": "Map",
         "coordinates": "Coordinates",
         "velocity": "Velocity",
         "heading": "Heading",
@@ -307,23 +378,36 @@
         "zoomIn": "Zoom in",
         "zoomOut": "Zoom out",
         "editMission": "Edit mission",
-        "switchToMissionPlanning": "Switch to Mission Planning mode"
+        "switchToMissionPlanning": "Switch to Mission Planning mode",
+        "showMissionControlPanel": "Show mission control panel",
+        "downloadTilesForOfflineUse": "Download tiles for offline use",
+        "clearVehiclePathHistory": "Clear vehicle path history"
       },
       "Compass": {
+        "name": "Compass",
         "headingStyle": "Heading style",
         "northUp": "North Up",
         "headUp": "Head Up"
       },
       "CompassHUD": {
+        "name": "Compass HUD",
         "widgetConfig": "HUD Compass widget config",
         "showYawValue": "Show yaw value",
-        "useNegativeRange": "Use -180/+180 range"
+        "useNegativeRange": "Use -180/+180 range",
+        "showPoisOnHud": "Show POIs on HUD",
+        "showDistanceTags": "Show distance tags",
+        "allMarkers": "All markers",
+        "highlightedMarkerOnly": "Highlighted marker only",
+        "boxOnHudSide": "Box on HUD side",
+        "noDistanceTags": "No distance tags"
       },
       "DepthHUD": {
+        "name": "Depth HUD",
         "widgetConfig": "Depth HUD config",
         "showDepthValue": "Show height value"
       },
       "Attitude": {
+        "name": "Attitude",
         "widgetConfig": "Attitude widget config",
         "showRollPitchValues": "Show roll/pitch values",
         "showCenterAim": "Show center aim",
@@ -332,26 +416,43 @@
         "centerCircleRadius": "Center circle radius"
       },
       "ImageView": {
+        "name": "Image View",
         "widgetConfig": "Image URL",
         "imageURL": "Image URL",
         "fitStyle": "Fit style"
       },
       "URLVideoPlayer": {
+        "name": "URL Video Player",
         "widgetConfig": "Video Source",
-        "videoSource": "Video Source"
+        "videoSource": "Video Source",
+        "fitStyle": "Fit style"
+      },
+      "IFrame": {
+        "name": "IFrame",
+        "iframeSource": "IFrame source",
+        "invalidURL": "Invalid URL",
+        "urlNotValid": "URL is not valid",
+        "urlUpdatedSuccessfully": "URL updated to {url}",
+        "transparency": "Transparency",
+        "advancedOptions": "Advanced options",
+        "useVehicleAddress": "Use vehicle address as base URL",
+        "collapsibleContainer": "Collapsible container",
+        "containerName": "Container name"
       },
       "CollapsibleContainer": {
+        "name": "Collapsible Container",
         "cloneToAnotherView": "Clone to another view",
         "customWidgetOptions": "Custom Widget options",
-        "name": "Name:",
         "backgroundColor": "Background color",
         "backgroundOpacity": "Background opacity:",
         "backgroundBlur": "Background blur:",
         "cloneWidgetTo": "Clone widget to",
-        "options": "Options"
+        "options": "Options",
+        "load": "Load"
       },
       "MiniWidgetsBar": "Mini Widgets Bar",
       "doItYourself": {
+        "name": "Do It Yourself",
         "editorInstructions": "Editor instructions",
         "instruction1": "Use the HTML, CSS, and JS editors to create your custom widget",
         "instruction2": "Changes are applied when you click Apply or press Cmd/Ctrl + Enter/S",
@@ -360,8 +461,30 @@
         "instruction5": "Your code runs in the widget's context and has access to the DOM",
         "instruction6": "You can use the console to debug your code",
         "instruction7": "You can use the data-lake system to inject or consume data from Cockpit. Check the docs for more",
+        "instruction8": "Click on each editor's header to expand it to full size",
         "createYourOwn": "Create your own widget!",
-        "widgetConfiguration": "Do It Yourself Widget Configuration"
+        "widgetConfiguration": "Do It Yourself Widget Configuration",
+        "autoSave": "Auto-save",
+        "export": "Export",
+        "exportConfig": "Export widget configuration",
+        "import": "Import",
+        "importConfig": "Import widget configuration",
+        "inheritStyles": "Inherit Cockpit styles"
+      },
+      "MissionControlPanel": {
+        "name": "Mission Control Panel",
+        "title": "Mission control panel",
+        "skipToPreviousWaypoint": "Skip to previous waypoint",
+        "pauseMission": "Pause mission",
+        "startResumeMission": "Start / resume mission",
+        "skipToNextWaypoint": "Skip to next waypoint",
+        "stopMissionAndReturn": "Stop mission and return to first waypoint",
+        "currentWaypoint": "Curr. WP",
+        "downloadMissionFromVehicle": "Download mission from vehicle",
+        "clearMissionOnMap": "Clear mission on map"
+      },
+      "VirtualHorizon": {
+        "name": "Virtual Horizon"
       }
     },
     "VideoLibraryModal": {
@@ -410,7 +533,14 @@
       "singleSelection": "Single",
       "multiSelection": "Multi",
       "selectNone": "Select none",
-      "selectAllFiles": "Select all files"
+      "selectAllFiles": "Select all files",
+      "noVideoChunksFound": "No Video Chunks Found",
+      "noRawChunksFound": "No Raw Chunks Found",
+      "processVideoChunks": "Process video chunks",
+      "downloadChunkGroupZip": "Download chunk group as ZIP",
+      "deleteChunkGroup": "Delete chunk group",
+      "deleteAllRawChunks": "Delete all raw chunks",
+      "openRawChunksFolder": "Open raw chunks folder"
     },
     "DataLakeVariableDialog": {
       "editVariable": "Edit Variable",
@@ -440,19 +570,8 @@
       "expressionTip3": "Remember to set the type accordingly",
       "descriptionPlaceholder": "Optional description of what this transformation does"
     },
-    "About": {
-      "pageTitle": "This is an about page",
-      "description1": "Cockpit is an intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
-      "description2": "It was created by Blue Robotics and is entirely open-source.",
-      "description3": "It currently supports Ardupilot-based vehicles, but has plans to support any generic vehicle, be it communicating MAVLink or not.",
-      "version": "Version",
-      "released": "Released",
-      "createdBy": "Created by Blue Robotics",
-      "license": "Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom"
-    },
     "Tutorial": {
       "previous": "Previous",
-      "next": "Next",
       "start": "Start",
       "close": "Close",
       "showOnStartup": "Show on startup",
@@ -550,8 +669,7 @@
       "vehiclesFound": "Vehicles found!",
       "noVehicles": "No vehicles found in your network.",
       "canStillSearch": "You can still search for vehicles in the general configuration menu.",
-      "dontShowAgain": "Don't show again",
-      "close": "Close"
+      "dontShowAgain": "Don't show again"
     },
     "UserNameInputDialog": {
       "title": "Manage users on:",
@@ -627,6 +745,19 @@
       "dontShowChecklistAgain": "Don't show this checklist again",
       "surveyPolygonVertices": "Survey Polygon Vertices",
       "armVehicle": "Arm Vehicle"
+    },
+    "VideoPlayerStatsForNerds": {
+      "stream": "Stream",
+      "size": "Resolution",
+      "packetsLost": "Packets Lost",
+      "frameDrops": "Frame Drops",
+      "nack": "Negative Acknowledgment (NACK)",
+      "pli": "Picture Loss Indication (PLI)",
+      "fir": "Full Intra Frame Request (FIR)",
+      "processing": "Processing",
+      "freezes": "Freezes",
+      "bitrate": "Bitrate",
+      "fps": "Frames Per Second (FPS)"
     },
     "EditMenu": {
       "exit": "Exit",
@@ -704,7 +835,11 @@
         "time": "Time",
         "date": "Date",
         "instantaneousPower": "Instantaneous power"
-      }
+      },
+      "dataLakeVariables": "Data Lake Variables"
+    },
+    "About": {
+      "pageTitle": "About"
     }
   },
   "views": {
@@ -722,6 +857,7 @@
       "manageCockpitSettings": "Manage Cockpit settings",
       "enablePirateMode": "Enable pirate mode",
       "disablePirateMode": "Disable pirate mode",
+      "cockpitFolderLocation": "Cockpit folder location:",
       "vehicleConnection": "Vehicle network connection (global address)",
       "currentAddress": "Current address",
       "connectionInfo": "Sets the network address for device communication. E.g: blueos.local",
@@ -903,7 +1039,9 @@
       "saveBackupRawChunksDisabled": "Disabled: Raw chunks are automatically deleted after successful processing, using minimal storage space.",
       "saveBackupRawChunksManual": "You can always manually clean up backup chunks later using the \"Temporary\" tab in the Video Library.",
       "saveBackupRawChunksBrowser": "For the browser version the chunks are always saved by default.",
-      "zipMultipleFiles": "Zip multiple files"
+      "zipMultipleFiles": "Zip multiple files",
+      "addDirectRtspStream": "Add direct RTSP stream (Standalone)",
+      "addRtsp": "Add"
     },
     "ConfigurationInterfaceView": {
       "title": "Interface configuration",
@@ -1081,27 +1219,7 @@
         "messageConfiguration": "Message Configuration",
         "messageFieldsObject": "Message fields object",
         "messageFieldsHint": "Insert a JSON object with the message fields here. Use {{ data_lake_key }} for dynamic values. Use { type: 'ENUM_VALUE' } for enum values (e.g.: MAV_CMD_COMPONENT_ARM_DISARM).",
-        "fieldRequired": "This field is required",
-        "create": "Create",
-        "fieldDescriptions": {
-          "target_system": "System ID of target system",
-          "target_component": "Component ID of target component",
-          "command": "Command ID",
-          "confirmation": "Confirmation value (0: first transmission, 1-255: confirmations)",
-          "param1": "Parameter 1",
-          "param2": "Parameter 2",
-          "param3": "Parameter 3",
-          "param4": "Parameter 4",
-          "param5": "Parameter 5",
-          "param6": "Parameter 6",
-          "param7": "Parameter 7",
-          "frame": "Coordinate frame",
-          "current": "Current sequence number",
-          "autocontinue": "Autocontinue bit",
-          "x": "Latitude",
-          "y": "Longitude",
-          "z": "Altitude"
-        }
+        "fieldRequired": "This field is required"
       },
       "JavascriptActionConfig": {
         "javascriptCode": "JavaScript Code",
@@ -1218,11 +1336,32 @@
       "cancelSurvey": "Cancel Survey",
       "altitudeM": "Altitude (m)",
       "altitudeType": "Altitude type:",
-      "endSimplePath": "END SIMPLE PATH"
+      "endSimplePath": "END SIMPLE PATH",
+      "savingOfflineMapContent": "Saving {layerName} offline tiles"
     },
     "WidgetsView": {
       "noWidgets": "You currently have no widgets!",
       "openEditMode": "Open edit mode to start tweaking this view."
+    },
+    "ConfigurationLogsView": {
+      "enterMessage": "Enter message",
+      "gridPositions": {
+        "leftTop": "Left Top",
+        "centerTop": "Center Top",
+        "rightTop": "Right Top",
+        "leftMid": "Left Mid",
+        "centerMid": "Center Mid",
+        "rightMid": "Right Mid",
+        "leftBottom": "Left Bottom",
+        "centerBottom": "Center Bottom",
+        "rightBottom": "Right Bottom"
+      },
+      "videoConfigHelp": "Access video configuration to configure recording and streaming options.",
+      "videoConfigHelpDetails": {
+        "telemetryConfig": "On this screen, you can configure the telemetry data that will be displayed on the subtitle file for recorded videos. You can change the font size, color, and style, as well as the position of each variable on the screen. You can also add custom messages that will be displayed on the video player screen.",
+        "dragAndDrop": "Drag and drop variables from the left panel to the desired position on the Telemetry Data Display.",
+        "moreHelp": "For additional Help, refer to documentation or contact us."
+      }
     }
   },
   "libs": {
@@ -1307,7 +1446,12 @@
     "streamNotConnected": "Stream is not connected",
     "variableNameAlreadyExists": "Variable name already exists",
     "vehicleConnected": "Vehicle is connected",
-    "vehicleConnectionLost": "Vehicle connection lost"
+    "vehicleConnectionLost": "Vehicle connection lost",
+    "anotherConfirmationInProgress": "Another confirmation is already in progress for command: {command}",
+    "failedToSetGlobalOrigin": "Failed to set global origin: {error}",
+    "variableCannotDelete": "Variable '{id}' cannot be deleted",
+    "variableNotEditable": "Variable '{id}' is not editable",
+    "variableNotFound": "Variable '{id}' was not found"
   },
   "success": {
     "widgetLoadedSuccessfully": "Widget loaded successfully with new hash.",
@@ -1638,7 +1782,10 @@
     "searchSettings": "Search settings",
     "uploadConfig": "Upload and apply config file",
     "downloadConfig": "Download current config",
-    "editValue": "Edit value"
+    "editValue": "Edit value",
+    "noSettingsAvailable": "No settings available for current selection.",
+    "showLegacyInternalKeys": "Show legacy/internal keys",
+    "showAllLocalStorageKeys": "Show all localStorage key-pairs"
   },
   "commonPlaceholders": {
     "searchIcons": "Search icons...",
@@ -1672,6 +1819,9 @@
       "noFunction": "No function",
       "regular": "Regular",
       "shift": "Shift"
+    },
+    "interface": {
+      "restartingCockpit": "Restarting Cockpit in {seconds} seconds..."
     }
   },
   "customWidgetElements": {
@@ -1752,9 +1902,7 @@
     "Solving the Nautical Enigma"
   ],
   "missionPlanning": {
-    "add": "Add",
     "addWaypointHere": "Add waypoint here",
-    "altitude": "Altitude",
     "appendNewCommand": "Append new command",
     "closeSimplePathCreation": "Close simple path creation",
     "closeSurveyCreation": "Close survey creation",
@@ -1792,8 +1940,6 @@
     "editSurveyPolygon": "Edit survey polygon",
     "editWaypoint": "Edit waypoint",
     "home": "Home",
-    "latitude": "Latitude",
-    "longitude": "Longitude",
     "mavFrame": "MAV Frame",
     "mavlinkNavigationCommand": "MAVLink Navigation Command",
     "mavlinkNonNavigationCommand": "MAVLink Non-Navigation Command",
@@ -1828,6 +1974,7 @@
     "removeTilesConfirmation": "Remove all saved {layerLabel} tiles for this layer?",
     "newMissionChecklist": "New mission checklist",
     "setHomeWaypoint": "Set home waypoint",
+    "clearVehiclePathHistory": "Clear vehicle path history",
     "createMissionPath": "Create mission path",
     "uploadToVehicle": "Upload to the vehicle",
     "dontShowAgain": "Don't show again",
@@ -2064,86 +2211,10 @@
     "useDynamicValuesHint": "Use dynamic values from the data lake by wrapping variable names in double curly braces",
     "userAgentNote": "Note: User-Agent header is automatically set",
     "fixedValue": "Fixed value",
-    "nonDynamicValue": "Non-dynamic value"
-  },
-  "alerter": {
-    "alertVolume": "Alert volume",
-    "enableColorCodedAlerts": "Enable color coded alerts",
-    "enableVoiceAlerts": "Enable voice alerts",
-    "options": "Alerter options"
-  },
-  "architectureWarning": {
-    "cannotDisable": "This warning cannot be disabled - we strongly recommend that you download and install the intended version for your system.",
-    "dismiss": "Dismiss",
-    "doubleMemory": "2x the memory usage",
-    "downloadARM": "Download ARM version",
-    "reducedPerformance": "Reduced overall performance",
-    "runningWrongVersion": "You are running the x64 version of Cockpit on an Apple Silicon Mac (M series), which causes severely degraded performance, including:",
-    "slowerStartup": "3-4x slower application startup times",
-    "title": "Performance Warning"
-  },
-  "armSafety": {
-    "continueAnyway": "Continue anyway",
-    "continueNeverWarn": "Continue and never warn again",
-    "continueSessionWarn": "Continue and don't warn again during this session",
-    "disarmAndContinue": "Disarm vehicle and continue",
-    "proceedCarefully": "Come back later, or proceed carefully with one of the following options:",
-    "title": "Vehicle Armed Warning",
-    "vehicleArmedWarning": "The vehicle is currently armed, and the main-menu contains configurations and tools that can cause unsafe situations.",
-    "warningDisabled": "This warning is disabled"
-  },
-  "attitude": {
-    "cameraVerticalFOV": "Camera vertical FOV",
-    "centerCircleRadius": "Center circle radius",
-    "showCenterAim": "Show center aim",
-    "showPitchLines": "Show pitch lines",
-    "showRollPitchValues": "Show roll/pitch values",
-    "widgetConfig": "Attitude widget config"
-  },
-  "batteryIndicator": {
-    "config": "Battery Indicator Config",
-    "criticalVoltage": "Critical voltage (V)",
-    "highVoltage": "High voltage (V)",
-    "lowVoltage": "Low voltage (V)",
-    "mediumVoltage": "Medium voltage (V)",
-    "showCurrent": "Show Current",
-    "showPower": "Show Power",
-    "toggleInterval": "Toggle Interval (ms)",
-    "useVoltageToColorScheme": "Use voltage to color scheme",
-    "voltageConfigTooltip": "Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
-  },
-  "collapsibleContainer": {
-    "backgroundBlur": "Background blur:",
-    "backgroundColor": "Background color",
-    "backgroundOpacity": "Background opacity:",
-    "cloneToAnotherView": "Clone to another view",
-    "cloneWidgetTo": "Clone widget to",
-    "customWidgetOptions": "Custom Widget options",
-    "name": "Name:",
-    "options": "Options"
-  },
-  "compass": {
-    "headingStyle": "Heading style",
-    "northUp": "North Up",
-    "headUp": "Head Up"
-  },
-  "compassHUD": {
-    "showYawValue": "Show yaw value",
-    "useNegativeRange": "Use -180/+180 range",
-    "widgetConfig": "HUD Compass widget config"
-  },
-  "depthHUD": {
-    "showDepthValue": "Show depth value",
-    "widgetConfig": "Depth HUD config"
-  },
-  "imageView": {
-    "fitStyle": "Fit style",
-    "imageURL": "Image URL",
-    "widgetConfig": "Image View Config"
-  },
-  "javascriptAction": {
-    "autocompleteHint": "Type {{ to autocomplete data lake variables",
-    "javascriptCode": "JavaScript Code"
+    "nonDynamicValue": "Non-dynamic value",
+    "fixedOption": "Fixed value",
+    "noNewActions": "No new actions available.",
+    "extensionActionsAvailable": "The following actions are available from BlueOS extensions:"
   },
   "joystickWarning": {
     "additionalAxes": "Additional axes",
@@ -2153,405 +2224,5 @@
     "couldNotEstablishComm": "Could not establish communication with the vehicle.",
     "extendedMavlinkInfo": "It seems like you're running versions of Mavlink2Rest (BlueOS) and/or ArduPilot that do not support the extended MAVLink MANUAL_CONTROL message. We strongly suggest upgrading both so you can have support for additional buttons and axes on the joystick. This is especially important if you sometimes use other control station software, like QGroundControl, as Cockpit can preferentially use the extended buttons to reduce configuration clashes. We recommend using BlueOS ≥ 1.2.0, and ≥ version 4.1.2 for ArduPilot-based autopilot firmware.",
     "updateRecommended": "System update is recommended"
-  },
-  "map": {
-    "downloadMapTiles": "Download map tiles",
-    "editMission": "Edit mission",
-    "mapWidgetSettings": "Map widget settings",
-    "placePointOfInterest": "Place point of interest",
-    "saveVisibleEsriTiles": "Save visible Esri tiles",
-    "saveVisibleOSMTiles": "Save visible OSM tiles",
-    "saveVisibleSeamarksTiles": "Save visible Seamarks tiles",
-    "showCoordinateGrid": "Show coordinate grid",
-    "showVehiclePath": "Show vehicle path",
-    "switchToMissionPlanning": "Switch to Mission Planning mode"
-  },
-  "mini-widgets": {
-    "changeAlt": "Change Alt",
-    "ekfStateIndicator": {
-      "noData": "No EKF data - Check vehicle connection",
-      "waitingForData": "Waiting for EKF data..."
-    },
-    "miniVideoRecorder": {
-      "chooseStream": "Choose a stream to record",
-      "noStreamsAvailable": "No streams available.",
-      "streamName": "Stream name"
-    },
-    "snapshotTool": {
-      "captureWorkspace": "Capture Cockpit work area (Electron only)",
-      "noStreamsAvailable": "No streams available.",
-      "settings": "Snapshot settings",
-      "streamsToCapture": "Streams to capture",
-      "timedSnapshotInterval": "Timed snapshot interval (seconds)"
-    },
-    "veryGenericIndicator": {
-      "autoFormatting": "Auto-formatting",
-      "clickToChoose": "Click to choose...",
-      "searchIcons": "Search icons...",
-      "searchVariable": "Search variable..."
-    }
-  },
-  "miniWidgets": {
-    "Alerter": "Alerter",
-    "ArmerButton": "Armer Button",
-    "BaseCommIndicator": "Base Comm Indicator",
-    "BatteryIndicator": "Battery Indicator",
-    "ChangeAltitudeCommander": "Change Altitude",
-    "changeAlt": "Change Alt",
-    "Clock": "Clock",
-    "GoFullScreen": "Go Full Screen",
-    "EnterEditMode": "Enter Edit Mode",
-    "DepthIndicator": "Depth Indicator",
-    "MissionIdentifier": "Mission Identifier",
-    "RelativeAltitudeIndicator": "Relative Altitude Indicator",
-    "TakeoffLandCommander": "Takeoff/Land Commander",
-    "VeryGenericIndicator": "Very Generic Indicator",
-    "JoystickCommIndicator": "Joystick Comm Indicator",
-    "MiniVideoRecorder": "Mini Video Recorder",
-    "ModeSelector": "Mode Selector",
-    "EkfStateIndicator": "EKF State Indicator",
-    "SatelliteIndicator": "Satellite Indicator",
-    "ViewSelector": "View Selector",
-    "SnapshotTool": "Snapshot Tool",
-    "ekfStateIndicator": {
-      "noData": "No EKF data - Check vehicle connection",
-      "waitingForData": "Waiting for EKF data..."
-    },
-    "miniVideoRecorder": {
-      "chooseStream": "Choose a stream to record",
-      "noStreamsAvailable": "No streams available.",
-      "streamName": "Stream name"
-    },
-    "snapshotTool": {
-      "captureWorkspace": "Capture Cockpit work area (Electron only)",
-      "noStreamsAvailable": "No streams available.",
-      "settings": "Snapshot settings",
-      "streamsToCapture": "Streams to capture",
-      "timedSnapshotInterval": "Timed snapshot interval (seconds)"
-    },
-    "veryGenericIndicator": {
-      "autoFormatting": "Auto-formatting",
-      "clickToChoose": "Click to choose...",
-      "searchIcons": "Search icons...",
-      "searchVariable": "Search variable..."
-    }
-  },
-  "widgets": {
-    "Attitude": "Attitude",
-    "Compass": "Compass",
-    "CompassHUD": "Compass HUD",
-    "CollapsibleContainer": "Collapsible Container",
-    "DepthHUD": "Depth HUD",
-    "DoItYourself": "Do It Yourself",
-    "IFrame": "IFrame",
-    "ImageView": "Image View",
-    "Map": "Map",
-    "MiniWidgetsBar": "Mini Widgets Bar",
-    "Plotter": "Plotter",
-    "URLVideoPlayer": "URL Video Player",
-    "VideoPlayer": "Video Player",
-    "VirtualHorizon": "Virtual Horizon",
-    "doItYourself": {
-      "editorInstructions": "Editor Instructions",
-      "instruction1": "Use the HTML, CSS and JS editors to create your custom widget",
-      "instruction2": "Changes will be applied when you click Apply or press Cmd/Ctrl + Enter/S",
-      "instruction3": "Use Cmd/Ctrl + Option/Alt + ↑/↓ to navigate between editors",
-      "instruction4": "Use the reset button to reset to the last saved state",
-      "instruction5": "Your code runs in the context of the widget and has access to the DOM",
-      "instruction6": "You can use the console to debug your code",
-      "instruction7": "You can use the data lake system to inject or consume data from Cockpit. Check the documentation for more information",
-      "createYourOwn": "Create your own widget!",
-      "widgetConfiguration": "Widget configuration"
-    }
-  },
-  "plotter": {
-    "appearance": "Appearance",
-    "avg": "Avg",
-    "backgroundColor": "Background color",
-    "current": "Current",
-    "dataLakeVariable": "Data Lake variable",
-    "dataPoints": "Data Points",
-    "dataSource": "Data Source",
-    "decimalPlaces": "Decimal Places",
-    "decimalPlacesHint": "Number of decimal places to be displayed",
-    "fixedMaximum": "Fixed maximum",
-    "fixedMinimum": "Fixed minimum",
-    "limitSamples": "Limit number of samples",
-    "line": "Line",
-    "lineColor": "Line color",
-    "lineThickness": "Line thickness",
-    "max": "Max",
-    "maxSamples": "Maximum samples",
-    "maxSamplesHint": "Higher values will show more history but may impact performance",
-    "maxValue": "Max value",
-    "median": "Median",
-    "min": "Min",
-    "minValue": "Min value",
-    "mustBeGreaterThan": "Must be greater than {value}",
-    "mustBeZeroOrGreater": "Must be 0 or greater",
-    "pleaseSelectVariable": "Please open the Plotter widget configuration menu to select a variable to be plotted.",
-    "searchVariables": "Search variables...",
-    "selectVariable": "Select a variable to be plotted",
-    "showTitle": "Show title",
-    "statisticsDisplay": "Statistics Display",
-    "stdDev": "Std Dev",
-    "updateOnConstantValue": "Update on constant value",
-    "updateOnConstantValueHint": "Advance graph when value is unchanged (shows horizontal lines for constant values)",
-    "verticalRange": "Vertical Range"
-  },
-  "telemetryOverlay": {
-    "bold": "Bold",
-    "customMessages": "Custom Messages",
-    "dataLakeVariables": "Data Lake Variables",
-    "fontColor": "Font color",
-    "fontSize": "Font size",
-    "italic": "Italic",
-    "missionVariables": "Mission Variables",
-    "outlineColor": "Outline color",
-    "overlayOptions": "Overlay Options",
-    "resetPositions": "Reset Positions",
-    "settings": "Settings",
-    "shadowColor": "Shadow color",
-    "shadowSize": "Shadow size",
-    "strikethrough": "Strikethrough",
-    "telemetryFrequency": "Telemetry frequency - 1 to 100 Hz (default 1 Hz)",
-    "title": "On screen telemetry data",
-    "underline": "Underline",
-    "variables": {
-      "batteryCurrent": "Battery Current",
-      "batteryVoltage": "Battery Voltage",
-      "date": "Date",
-      "depth": "Depth",
-      "gpsFixType": "GPS Fix Type",
-      "gpsVisibleSatellites": "GPS Visible Satellites",
-      "heading": "Heading",
-      "instantaneousPower": "Instantaneous Power",
-      "latitude": "Latitude",
-      "longitude": "Longitude",
-      "missionName": "Mission Name",
-      "mode": "Mode",
-      "pitch": "Pitch",
-      "roll": "Roll",
-      "time": "Time"
-    },
-    "vehicleVariables": "Vehicle Variables"
-  },
-  "tutorial": {
-    "dontShowAgain": "Don't show again",
-    "next": "Next",
-    "previous": "Previous",
-    "showOnStartup": "Show on startup",
-    "start": "Start",
-    "steps": {
-      "1": {
-        "content": "Thank you for trying our control station software - we hope you make it your own!",
-        "opposite": "This guide will assist you in connecting to your vehicle, and walk you through the available menu pages.",
-        "title": "Welcome to Cockpit!"
-      },
-      "2": {
-        "content": "Cockpit's configuration options and tools are accessed through its sidebar.",
-        "opposite": "Open it by clicking the highlighted tab on the left side of the screen.",
-        "title": "Main Menu"
-      },
-      "3": {
-        "opposite": "The 'Settings' menu allows configuring Cockpit's connections and behavior.",
-        "title": "Connections and Behaviour"
-      },
-      "4": {
-        "content": "The 'General' page allows switching the active user, and the vehicle connection settings.",
-        "opposite": "Each user can have their own settings, interface profiles, and joystick mappings, which can be stored on and synchronized through the connected vehicle.",
-        "title": "General Configuration"
-      },
-      "5": {
-        "content": "Cockpit connects to a vehicle's network using a global address.",
-        "opposite": "This is usually found automatically, but if necessary you can specify a custom domain to connect to and search for the relevant vehicle components.",
-        "title": "Vehicle Address"
-      },
-      "6": {
-        "opposite": "Here, you'll find options to control the interface style, move the sidebar access point, and switch the display units between imperial and metric, for widgets that support it.",
-        "title": "Interface Configuration"
-      },
-      "7": {
-        "content": "Connect a controller and move a joystick or press a button to see the current function mapping.",
-        "opposite": "Fully supported joysticks have a visual configuration interface available, but there's also a mapping table provided for custom or uncommon controllers. Actions can be related to vehicle functions.",
-        "title": "Joystick Configuration"
-      },
-      "8": {
-        "content": "Video sources (from MAVLink Camera Manager / BlueOS) can be given custom names, and you can configure Cockpit's receiver settings to improve performance.",
-        "opposite": "There are also preferences for the video recording library, to automatically process recorded chunks into video files, and zip together files when downloading multiple videos or a video with telemetry subtitles.",
-        "title": "Video Configuration"
-      },
-      "9": {
-        "opposite": "Subtitle overlays of telemetry data can be recorded with videos. This panel allows choosing which variables to include, where they appear on the screen, how the subtitles are styled, and the update rate.",
-        "title": "Telemetry Recording"
-      },
-      "10": {
-        "opposite": "Voice alerts can announce notifications and issues during operation, without covering the screen. The voice and reported alert severities can be configured here.",
-        "title": "Alerts Configuration"
-      },
-      "11": {
-        "content": "This section includes settings and Cockpit logs to help with development and advanced troubleshooting.",
-        "opposite": "We recommend leaving the default values, but if you prefer to you can stop Cockpit from synchronizing its settings with BlueOS vehicles, and/or disable sending the anonymous usage statistics and error messages that help the development team to find performance issues and bugs.",
-        "title": "Dev Settings"
-      },
-      "12": {
-        "opposite": "This panel allows selecting which vehicle commands require an extra confirmation step before sending, to avoid triggering mission- or safety-critical functions accidentally.",
-        "title": "Mission Configuration"
-      },
-      "13": {
-        "content": "You're ready to go!",
-        "opposite": "If you want to see it again, this guide can be reopened through 'Settings' > 'General'. For further support, please reach out through the channels listed in the 'About' section of the sidebar.",
-        "title": "Tutorial Completed"
-      }
-    },
-    "vehicleConnected": "Vehicle Connected"
-  },
-  "veryGenericIndicator": {
-    "custom": "Custom",
-    "decimalPlaces": "Decimal Places",
-    "displayName": "Display name",
-    "displayWidth": "Display Width",
-    "icon": "Icon",
-    "multiplier": "Multiplier",
-    "presets": "Presets",
-    "unit": "Unit",
-    "useStringVariable": "Use string variable (don't parse as number)",
-    "variable": "Variable"
-  },
-  "widgetsView": {
-    "noWidgets": "You currently have no widgets!",
-    "openEditMode": "Open edit mode to start tweaking this view."
-  },
-  "doItYourself": {
-    "autoSave": "Auto-save",
-    "export": "Export",
-    "exportConfig": "Export widget configuration",
-    "import": "Import",
-    "importConfig": "Import widget configuration",
-    "inheritStyles": "Inherit Cockpit styles"
-  },
-  "editPanel": {
-    "regular": "Regular",
-    "mini": "Mini",
-    "input": "Input",
-    "confirmResetProfiles": "Are you sure you want to reset all profiles? This action cannot be undone.",
-    "resetProfiles": "Reset Profiles"
-  },
-  "globalOrigin": {
-    "altitude": "Altitude",
-    "altitudeHint": "Altitude in meters (MSL)",
-    "altitudeRequired": "Altitude is required",
-    "description": "Configure the global origin for your mission",
-    "latitude": "Latitude",
-    "latitudeHint": "Latitude in degrees (-90 to 90)",
-    "latitudeRange": "Latitude must be between -90 and 90",
-    "latitudeRequired": "Latitude is required",
-    "longitude": "Longitude",
-    "longitudeHint": "Longitude in degrees (-180 to 180)",
-    "longitudeRange": "Longitude must be between -180 and 180",
-    "longitudeRequired": "Longitude is required",
-    "saving": "Saving global origin...",
-    "title": "Global Origin"
-  },
-  "iframe": {
-    "advancedOptions": "Advanced options",
-    "collapsibleContainer": "Collapsible container",
-    "containerName": "Container name",
-    "iframeSource": "IFrame source",
-    "invalidURL": "Invalid URL",
-    "transparency": "Transparency",
-    "urlNotValid": "URL is not valid",
-    "useVehicleAddress": "Use vehicle address as base URL"
-  },
-  "logs": {
-    "enterMessage": "Enter message",
-    "gridPositions": {
-      "leftTop": "Left Top",
-      "centerTop": "Center Top",
-      "rightTop": "Right Top",
-      "leftMid": "Left Mid",
-      "centerMid": "Center Mid",
-      "rightMid": "Right Mid",
-      "leftBottom": "Left Bottom",
-      "centerBottom": "Center Bottom",
-      "rightBottom": "Right Bottom"
-    },
-    "videoConfigHelp": "Access video configuration to configure recording and streaming options.",
-    "videoConfigHelpDetails": {
-      "telemetryConfig": "On this screen, you can configure the telemetry data that will be displayed on the subtitle file for recorded videos. You can change the font size, color, and style, as well as the position of each variable on the screen. You can also add custom messages that will be displayed on the video player screen.",
-      "dragAndDrop": "Drag and drop variables from the left panel to the desired position on the Telemetry Data Display.",
-      "moreHelp": "For additional Help, refer to documentation or contact us."
-    }
-  },
-  "update": {
-    "checkingForUpdates": "Checking for updates...",
-    "checkingMessage": "Checking for new versions...",
-    "download": "Download",
-    "downloadingUpdate": "Downloading update...",
-    "ignoreThisVersion": "Ignore this version",
-    "installNow": "Install now",
-    "later": "Later",
-    "notNow": "Not now",
-    "noUpdatesAvailable": "No updates available",
-    "noUpdatesMessage": "You are using the latest version.",
-    "updateAvailable": "Update available",
-    "updateAvailableMessage": "A new version is available. Would you like to download it now?",
-    "updateDetails": "Update details",
-    "updateDownloadedMessage": "Update has been downloaded and is ready to install.",
-    "updateReadyToInstall": "Update is ready to install"
-  },
-  "urlVideoPlayer": {
-    "videoSource": "Video source",
-    "widgetConfig": "URL Video Player config"
-  },
-  "usernameDialog": {
-    "addNewUser": "Add new user",
-    "adminMode": "Admin mode",
-    "autoSyncWarning": "If you don't set a username, auto-sync with the vehicle won't work.",
-    "cannotDeleteCurrent": "Cannot delete current user",
-    "canSetLater": "Can be set or changed later in the general menu.",
-    "currentVehicle": "Current vehicle",
-    "deleteUserFailed": "Failed to delete user",
-    "deleteWarning": "Be careful when deleting users from the vehicle - this process cannot be undone",
-    "noUsersYet": "You don't have any users stored on this vehicle yet.",
-    "selectOrEdit": "Select a user below, or switch to admin mode to create or edit users",
-    "title": "Username",
-    "userDeleted": "User deleted",
-    "username": "Username",
-    "usernameInfo": "This username will be used to store your settings on the vehicle.",
-    "validationCharacters": "Only letters, numbers, hyphens, and underscores",
-    "validationLowercase": "Must be all lowercase",
-    "validationMaxLength": "Maximum {max} characters",
-    "validationMinLength": "At least {min} characters",
-    "validationNoCockpit": "Cannot contain 'cockpit'",
-    "validationNoFallback": "Cannot be 'fallback'",
-    "validationNoSpaces": "Cannot contain spaces"
-  },
-  "vehicleDiscovery": {
-    "canStillSearch": "You can still search for vehicles in the general configuration menu.",
-    "close": "Close",
-    "description": "Search for vehicles on your network",
-    "dontShowAgain": "Don't show again",
-    "noVehicles": "No vehicles found on your network.",
-    "notConnected": "Looks like you're not connected to a vehicle yet!",
-    "searchAgain": "Search again",
-    "searchButton": "Search for vehicles",
-    "searching": "Searching for vehicles...",
-    "searching_status": "Searching for vehicles on your network...",
-    "title": "Vehicle Discovery",
-    "vehiclesFound": "Vehicles found"
-  },
-  "videoStats": {
-    "bitrate": "Bitrate",
-    "fir": "Full Intra Frame Request (FIR)",
-    "fps": "Frames Per Second (FPS)",
-    "frameDrops": "Frame Drops",
-    "freezes": "Freezes",
-    "nack": "Negative Acknowledgment (NACK)",
-    "packetsLost": "Packets Lost",
-    "pli": "Picture Loss Indication (PLI)",
-    "processing": "Processing",
-    "size": "Resolution",
-    "stream": "Stream"
   }
 }

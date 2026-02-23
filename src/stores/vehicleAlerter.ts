@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { watch } from 'vue'
 
+import i18n from '@/plugins/i18n'
 import { useAlertStore } from '@/stores/alert'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { Alert, AlertLevel } from '@/types/alert'
@@ -16,14 +17,17 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
 
   watch(
     () => vehicleStore.mode,
-    () => alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle mode changed to ${vehicleStore.mode}.`))
+    () =>
+      alertStore.pushAlert(
+        new Alert(AlertLevel.Info, i18n.global.t('stores.mainVehicle.modeChanged', { mode: vehicleStore.mode }))
+      )
   )
 
   watch(
     () => vehicleStore.isArmed,
     (isArmedNow) => {
       const state = isArmedNow ? 'armed' : 'disarmed'
-      alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle ${state}`))
+      alertStore.pushAlert(new Alert(AlertLevel.Info, i18n.global.t(`vehicle.${state}`)))
     }
   )
 
@@ -32,7 +36,7 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
     (isOnlineNow) => {
       const alertLevel = isOnlineNow ? AlertLevel.Success : AlertLevel.Error
       const alertMessage = isOnlineNow ? 'connected' : 'disconnected'
-      alertStore.pushAlert(new Alert(alertLevel, `Vehicle ${alertMessage}`))
+      alertStore.pushAlert(new Alert(alertLevel, i18n.global.t(`vehicle.${alertMessage}`)))
     }
   )
 })

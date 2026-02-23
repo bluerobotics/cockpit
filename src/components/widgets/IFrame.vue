@@ -51,10 +51,10 @@
     </div>
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="600" max-width="45%">
       <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-        <v-card-title class="text-center">Settings</v-card-title>
+        <v-card-title class="text-center">{{ $t('common.settings') }}</v-card-title>
         <v-card-text>
           <div>
-            <p>Iframe Source</p>
+            <p>{{ $t('components.widgets.IFrame.iframeSource') }}</p>
             <div class="flex items-center justify-between mt-2 gap-1">
               <v-text-field
                 v-model="inputURL"
@@ -78,14 +78,20 @@
             </div>
           </div>
           <div class="mt-2 mb-2 w-[95%]">
-            <v-slider v-model="transparency" label="Transparency" color="white" :min="0" :max="90" />
+            <v-slider
+              v-model="transparency"
+              :label="$t('components.widgets.IFrame.transparency')"
+              color="white"
+              :min="0"
+              :max="90"
+            />
           </div>
           <ExpansiblePanel compact :is-expanded="true" no-bottom-divider no-top-divider>
-            <template #title>Advanced options</template>
+            <template #title>{{ $t('components.widgets.IFrame.advancedOptions') }}</template>
             <template #content>
               <v-switch
                 v-model="widget.options.useVehicleAddressAsBase"
-                label="Use vehicle address as base URL"
+                :label="$t('components.widgets.IFrame.useVehicleAddress')"
                 color="white"
                 density="compact"
                 hide-details
@@ -95,14 +101,14 @@
               <div class="flex justify-between">
                 <v-switch
                   v-model="widget.options.isCollapsible"
-                  label="Collapsible container"
+                  :label="$t('components.widgets.IFrame.collapsibleContainer')"
                   color="white"
                   class="ml-2"
                 />
                 <div v-if="widget.options.isCollapsible">
                   <v-text-field
                     v-model="widget.options.containerName"
-                    label="Container name"
+                    :label="$t('components.widgets.IFrame.containerName')"
                     item-title="name"
                     density="compact"
                     variant="outlined"
@@ -130,6 +136,7 @@
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
 import { computed, defineProps, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
 import { openSnackbar } from '@/composables/snackbar'
@@ -142,6 +149,8 @@ import type { Widget } from '@/types/widgets'
 import ExpansiblePanel from '../ExpansiblePanel.vue'
 const interfaceStore = useAppInterfaceStore()
 
+const { width: windowWidth } = useWindowSize()
+const { t } = useI18n()
 const widgetStore = useWidgetManagerStore()
 const iframe = ref()
 const props = defineProps<{
@@ -198,17 +207,20 @@ const canvasSize = computed(() => ({
 }))
 
 const validateURL = (url: string): true | string => {
-  return isValidURL(url) ? true : 'URL is not valid.'
+  return isValidURL(url) ? true : t('components.widgets.IFrame.urlNotValid')
 }
 
 const updateURL = (): void => {
   const urlValidationResult = validateURL(composedURL(inputURL.value, widget.value.options.useVehicleAddressAsBase))
   if (urlValidationResult !== true) {
-    openSnackbar({ message: `${urlValidationResult} Please enter a valid URL.`, variant: 'error' })
+    openSnackbar({ message: t('components.widgets.IFrame.invalidURL'), variant: 'error' })
     return
   }
   widget.value.options.source = inputURL.value
-  openSnackbar({ message: `IFrame URL sucessfully updated to '${toBeUsedURL.value}'.`, variant: 'success' })
+  openSnackbar({
+    message: t('components.widgets.IFrame.urlUpdatedSuccessfully', { url: toBeUsedURL.value }),
+    variant: 'success',
+  })
 }
 
 const handleBaseUrlToggle = (useBaseUrl: boolean): void => {
@@ -282,7 +294,7 @@ onBeforeUnmount((): void => {
   }
 })
 
-const { width: windowWidth, height: windowHeight } = useWindowSize()
+const { height: windowHeight } = useWindowSize()
 
 const iframeStyle = computed<string>(() => {
   let newStyle = ''

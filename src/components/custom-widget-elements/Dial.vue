@@ -1,6 +1,6 @@
 <template>
   <v-tooltip
-    text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
+    :text="$t('components.custom-widget-elements.displayModeTooltip')"
     location="top"
     open-delay="500"
     :disabled="isInput || !isConnected"

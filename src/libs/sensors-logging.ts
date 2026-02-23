@@ -258,7 +258,7 @@ class DataLogger {
 
   set logInterval(value: number) {
     if (value < 1) {
-      showDialog({ message: 'Minimum log interval is 1 millisecond (1000 Hz).', variant: 'error' })
+      showDialog({ message: t('errors.minLogInterval'), variant: 'error' })
       return
     }
 
@@ -272,7 +272,7 @@ class DataLogger {
 
   set frequency(value: number) {
     if (value > 1000 || value < 0.1) {
-      showDialog({ message: 'Log frequency should stay between 0.1 Hz and 1000 Hz.', variant: 'error' })
+      showDialog({ message: t('errors.logFrequencyRange'), variant: 'error' })
       return
     }
 

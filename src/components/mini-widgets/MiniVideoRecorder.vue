@@ -46,15 +46,15 @@
       class="flex flex-col items-center p-2 pt-1 m-5 rounded-md gap-y-4"
       :style="interfaceStore.globalGlassMenuStyles"
     >
-      <p class="text-xl font-semibold m-4">Choose a stream to record</p>
+      <p class="text-xl font-semibold m-4">{{ $t('components.mini-widgets.miniVideoRecorder.chooseStream') }}</p>
       <v-select
         :model-value="nameSelectedStream"
-        label="Stream name"
+        :label="$t('components.mini-widgets.miniVideoRecorder.streamName')"
         :items="namesAvailableStreams"
         item-title="name"
         density="compact"
         variant="outlined"
-        no-data-text="No streams available."
+        :no-data-text="$t('components.mini-widgets.miniVideoRecorder.noStreamsAvailable')"
         hide-details
         return-object
         theme="dark"
@@ -67,7 +67,7 @@
           variant="text"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
-          Close
+          {{ t('stream.close') }}
         </v-btn>
         <v-btn
           class="bg-[#FFFFFF11] hover:bg-[#FFFFFF33]"
@@ -75,7 +75,7 @@
           :class="{ 'opacity-30 pointer-events-none': isLoadingStream }"
           @click="startRecording"
         >
-          <span>Record</span>
+          <span>{{ t('stream.record') }}</span>
           <v-icon v-if="isLoadingStream" class="m-2 animate-spin">mdi-loading</v-icon>
           <div v-else class="w-5 h-5 ml-2 rounded-full bg-red" />
         </v-btn>
@@ -89,6 +89,7 @@ import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { intervalToDuration } from 'date-fns'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { isEqual, sleep } from '@/libs/utils'
@@ -98,6 +99,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
+const { t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const videoStore = useVideoStore()
@@ -249,13 +251,13 @@ function assertStreamIsSelectedAndAvailable(
   nameSelectedStream.value = selectedStream
 
   if (nameSelectedStream.value === undefined) {
-    showDialog({ message: 'No stream selected.', variant: 'error' })
+    showDialog({ message: t('errors.noStreamSelected'), variant: 'error' })
     return
   }
 
   if (namesAvailableStreams.value.includes(nameSelectedStream.value)) return
 
-  const errorMsg = `The selected stream is not available. Please check its source or select another stream.`
+  const errorMsg = t('errors.streamNotAvailable')
   showDialog({ message: errorMsg, variant: 'error' })
   throw new Error(errorMsg)
 }
@@ -278,12 +280,12 @@ const toggleRecording = async (): Promise<void> => {
 
 const startRecording = (): void => {
   if (!selectedExternalId.value) {
-    showDialog({ title: 'Cannot start recording.', message: 'No stream selected.', variant: 'error' })
+    showDialog({ title: t('errors.cannotStartRecording'), message: t('errors.noStreamSelected'), variant: 'error' })
     return
   }
 
   if (!videoStore.getStreamData(selectedExternalId.value)?.connected) {
-    showDialog({ title: 'Cannot start recording.', message: 'Stream is not connected.', variant: 'error' })
+    showDialog({ title: t('errors.cannotStartRecording'), message: t('errors.streamNotConnected'), variant: 'error' })
     return
   }
 
@@ -326,7 +328,7 @@ const updateCurrentStream = async (internalStreamName: string | undefined): Prom
   }
 
   if (isLoadingStream.value) {
-    showDialog({ message: 'Could not load media stream.', variant: 'error' })
+    showDialog({ message: t('errors.mediaStreamNotActive'), variant: 'error' })
     return
   }
 

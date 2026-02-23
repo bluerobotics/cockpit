@@ -1,13 +1,13 @@
 <template>
   <BaseConfigurationView>
-    <template #title>MAVLink</template>
+    <template #title>{{ $t('menu.mavlink') }}</template>
     <template #content>
       <div
         class="max-h-[85vh] overflow-y-auto -mr-4"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[60vw]'"
       >
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider no-bottom-divider>
-          <template #title>Message Inspector</template>
+          <template #title>{{ $t('tools.mavlink.messageInspector') }}</template>
           <template #content>
             <MAVLinkInspector />
           </template>

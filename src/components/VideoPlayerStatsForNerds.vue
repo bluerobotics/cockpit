@@ -7,7 +7,9 @@
 <script lang="ts" setup>
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 import { useVideoStore } from '@/stores/video'
 import type { Go2RTCStreamInfo } from '@/types/video'
 import { WebRTCStatsEvent } from '@/types/video'
@@ -157,17 +159,37 @@ function draw(): void {
 
     const color = connectionLost ? 'red' : 'white'
     const stats = [
-      { label: 'Stream', value: props.streamName, color: color },
-      { label: 'Size', value: videoHeight ? `${videoHeight}p` : 'N/A', color: color },
-      { label: 'Packets Lost', value: `${packetsLost} (${packetLossPercentage.toFixed(0)}%)`, color: color },
-      { label: 'Frame drops', value: framedrops, color: color },
-      { label: 'Nack', value: nackCount, color: color },
-      { label: 'Pli', value: pliCount, color: color },
-      { label: 'Fir', value: firCount, color: color },
-      { label: 'Processing ', value: `${processingDelayDelta.toFixed(0)}ms`, color: color },
-      { label: 'Freezes', value: `${freezes}(${frozenTime.toFixed(1)}s)`, color: color },
-      { label: 'Bitrate', value: `${bitrate.toFixed(0)}kbps`, color: 'rgb(255, 165, 0)' },
-      { label: 'FPS', value: framerate.toFixed(2), color: 'rgb(0, 255, 0)' },
+      { label: t('components.VideoPlayerStatsForNerds.stream'), value: props.streamName, color: color },
+      {
+        label: t('components.VideoPlayerStatsForNerds.size'),
+        value: videoHeight ? `${videoHeight}p` : 'N/A',
+        color: color,
+      },
+      {
+        label: t('components.VideoPlayerStatsForNerds.packetsLost'),
+        value: `${packetsLost} (${packetLossPercentage.toFixed(0)}%)`,
+        color: color,
+      },
+      { label: t('components.VideoPlayerStatsForNerds.frameDrops'), value: framedrops, color: color },
+      { label: t('components.VideoPlayerStatsForNerds.nack'), value: nackCount, color: color },
+      { label: t('components.VideoPlayerStatsForNerds.pli'), value: pliCount, color: color },
+      { label: t('components.VideoPlayerStatsForNerds.fir'), value: firCount, color: color },
+      {
+        label: t('components.VideoPlayerStatsForNerds.processing'),
+        value: `${processingDelayDelta.toFixed(0)}ms`,
+        color: color,
+      },
+      {
+        label: t('components.VideoPlayerStatsForNerds.freezes'),
+        value: `${freezes}(${frozenTime.toFixed(1)}s)`,
+        color: color,
+      },
+      {
+        label: t('components.VideoPlayerStatsForNerds.bitrate'),
+        value: `${bitrate.toFixed(0)}kbps`,
+        color: 'rgb(255, 165, 0)',
+      },
+      { label: t('components.VideoPlayerStatsForNerds.fps'), value: framerate.toFixed(2), color: 'rgb(0, 255, 0)' },
     ]
 
     stats.forEach((stat, index) => {

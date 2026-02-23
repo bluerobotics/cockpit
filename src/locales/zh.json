@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "ok": "确定",
     "cancel": "取消",
@@ -38,7 +38,8 @@
     "color": "颜色",
     "background": "背景",
     "message": "消息",
-    "configuration": "配置"
+    "configuration": "配置",
+    "vehicle": "设备"
   },
   "stores": {
     "video": {
@@ -69,6 +70,7 @@
       "videoProcessingCompleted": "视频处理完成。",
       "failedToProcessVideo": "视频处理失败。",
       "failedToGenerateTelemetryOverlay": "生成遥测叠加失败。",
+      "rtspStreamDeleted": "RTSP 流 '{{streamName}}' 已删除。",
       "streamDeletedAndIgnored": "流 '{{streamName}}' 已删除并添加到忽略列表。",
       "streamNotFound": "未找到外部 ID 为 '{{externalId}}' 的流。",
       "streamNotAvailable": "流 '{{externalId}}' 不再可用。",
@@ -109,12 +111,32 @@
       "disarmed": "已上锁",
       "connected": "设备已连接",
       "disconnected": "设备已断开",
-      "modeChanged": "设备模式已更改为 {{mode}}。"
+      "modeChanged": "设备模式已更改为 {{mode}}。",
+      "vehicleAddress": "设备地址",
+      "mavlink2restHttpEndpoint": "MAVLink2REST HTTP 端点",
+      "cpuTemperature": "CPU 温度",
+      "blueOsCpuUsageAverage": "BlueOS CPU 平均使用率",
+      "blueOsCpuFrequencyAverage": "BlueOS CPU 平均频率",
+      "blueOsCpuUsage": "BlueOS CPU '{name}' 使用率",
+      "blueOsCpuFrequency": "BlueOS CPU '{name}' 频率",
+      "blueOsNetworkTotalReceived": "BlueOS 网络 '{name}' 总接收量 (MB)",
+      "blueOsNetworkTotalTransmitted": "BlueOS 网络 '{name}' 总发送量 (MB)",
+      "blueOsNetworkUploadSpeed": "BlueOS 网络 '{name}' 上传速度 (Mbps)",
+      "blueOsNetworkDownloadSpeed": "BlueOS 网络 '{name}' 下载速度 (Mbps)"
+    },
+    "omniscientLogger": {
+      "cockpitMemoryUsage": "Cockpit 内存用量",
+      "cockpitMainMemory": "Cockpit 主进程内存 (Electron)",
+      "cockpitRenderersMemory": "Cockpit 渲染进程内存 (Electron)",
+      "cockpitGpuMemory": "Cockpit GPU 内存 (Electron)",
+      "cockpitCpuUsage": "Cockpit CPU 占用率 (Electron)",
+      "cockpitAppFrameRate": "Cockpit 应用帧率"
     }
   },
   "components": {
     "mini-widgets": {
       "JoystickCommIndicator": {
+        "name": "手柄通信指示器",
         "connected": "摇杆已连接",
         "disconnected": "摇杆未连接",
         "close": "关闭",
@@ -124,6 +146,7 @@
         "commandsPaused": "命令已暂停"
       },
       "ArmerButton": {
+        "name": "解/上锁按钮",
         "armed": "已解锁",
         "disarmed": "已上锁",
         "armRequestFailed": "解锁请求失败",
@@ -131,11 +154,13 @@
         "noVehicleAvailableToArm": "没有可用设备进行解锁。"
       },
       "SnapshotTool": {
+        "name": "截图工具",
         "openLibrary": "打开快照库",
         "singleCapture": "单次捕获",
         "timedMultiCapture": "定时多次捕获"
       },
       "BaseCommIndicator": {
+        "name": "基站通信指示器",
         "connected": "设备已连接",
         "disconnected": "设备未连接",
         "connect": "连接设备",
@@ -145,6 +170,7 @@
         "disarm": "上锁"
       },
       "BatteryIndicator": {
+        "name": "电池指示器",
         "config": "电池指示器配置",
         "showCurrent": "显示电流",
         "showPower": "显示功率",
@@ -154,15 +180,18 @@
         "criticalVoltage": "严重低电压（V）",
         "lowVoltage": "低电压（V）",
         "mediumVoltage": "中等电压（V）",
-        "highVoltage": "高电压（V）"
+        "highVoltage": "高电压（V）",
+        "resetToDefaults": "重置颜色和电压阈值为默认值"
       },
       "Alerter": {
+        "name": "警报器",
         "options": "警报器选项",
         "enableColorCodedAlerts": "启用颜色编码警报",
         "enableVoiceAlerts": "启用语音警报",
         "alertVolume": "警报音量"
       },
       "VeryGenericIndicator": {
+        "name": "通用指示器",
         "presets": "预设",
         "custom": "自定义",
         "displayName": "显示名称",
@@ -175,10 +204,12 @@
         "icon": "图标"
       },
       "GoFullScreen": {
+        "name": "全屏",
         "enter": "进入全屏",
         "exit": "退出全屏"
       },
       "EnterEditMode": {
+        "name": "进入编辑模式",
         "enter": "进入编辑模式",
         "exit": "退出编辑模式"
       },
@@ -187,30 +218,67 @@
       "TakeoffLandCommander": "起降指令器",
       "changeAlt": "改变高度",
       "ekfStateIndicator": {
+        "name": "EKF 状态指示器",
         "waitingForData": "等待 EKF 数据...",
         "noData": "没有 EKF 数据 - 请检查设备连接"
       },
       "miniVideoRecorder": {
+        "name": "迷你视频录制器",
         "chooseStream": "选择要录制的流",
         "streamName": "流名称",
         "noStreamsAvailable": "没有可用的流。"
       },
       "snapshotTool": {
+        "name": "截图工具",
         "settings": "截图设置",
         "streamsToCapture": "要捕获的流",
         "noStreamsAvailable": "没有可用的流。",
         "captureWorkspace": "捕获 Cockpit 工作区（仅限 Electron）",
-        "timedSnapshotInterval": "定时截图间隔（秒）"
+        "timedSnapshotInterval": "定时截图间隔（秒）",
+        "electronOnlyFeatures": "某些功能（如\"捕获 Cockpit 工作区\"）仅在 Electron 版本中可用。"
       },
       "veryGenericIndicator": {
+        "name": "通用指示器",
         "searchVariable": "搜索变量...",
         "autoFormatting": "自动格式化",
         "clickToChoose": "点击选择...",
         "searchIcons": "搜索图标..."
+      },
+      "Clock": {
+        "name": "时钟"
+      },
+      "DepthIndicator": {
+        "name": "深度指示器"
+      },
+      "EkfStateIndicator": {
+        "name": "EKF 状态指示器"
+      },
+      "ChangeAltitudeCommander": {
+        "name": "改变高度"
+      },
+      "MiniVideoRecorder": {
+        "name": "迷你视频录制器"
+      },
+      "ModeSelector": {
+        "name": "模式选择器"
+      },
+      "SatelliteIndicator": {
+        "name": "卫星指示器"
+      },
+      "ViewSelector": {
+        "name": "视图选择器"
+      },
+      "MiniMissionControlPanel": {
+        "name": "迷你任务控制面板",
+        "currentWaypoint": "当前航点"
       }
+    },
+    "custom-widget-elements": {
+      "displayModeTooltip": "该元素处于显示模式。要使其可交互，请创建或选择一个用户控制的数据池变量"
     },
     "widgets": {
       "VideoPlayer": {
+        "name": "视频播放器",
         "noVideoStreamSelected": "未选择视频流。",
         "loadingStream": "加载流中...",
         "streamNotAvailable": "所选流 \"{streamName}\" 不可用。",
@@ -235,9 +303,11 @@
         "externalStreamName": "外部视频流名称",
         "internalStreamName": "内部视频流名称",
         "loop": "循环播放",
-        "muted": "静音"
+        "muted": "静音",
+        "verboseLoadingStatus": "详细加载状态"
       },
       "Plotter": {
+        "name": "绘图仪",
         "pleaseSelectVariable": "请打开 Plotter 小部件配置菜单以选择要绘制的变量。",
         "dataSource": "数据源",
         "searchVariables": "搜索变量...",
@@ -273,6 +343,7 @@
         "maxValue": "最大值"
       },
       "Map": {
+        "name": "地图",
         "coordinates": "坐标",
         "velocity": "速度",
         "heading": "航向",
@@ -307,23 +378,36 @@
         "zoomIn": "放大",
         "zoomOut": "缩小",
         "editMission": "编辑任务",
-        "switchToMissionPlanning": "切换到任务规划模式"
+        "switchToMissionPlanning": "切换到任务规划模式",
+        "showMissionControlPanel": "显示任务控制面板",
+        "downloadTilesForOfflineUse": "下载离线地图瓦片",
+        "clearVehiclePathHistory": "清除设备历史路径"
       },
       "Compass": {
+        "name": "指南针",
         "headingStyle": "航向模式",
         "northUp": "北向上",
         "headUp": "航向向上"
       },
       "CompassHUD": {
+        "name": "指南针 HUD",
         "widgetConfig": "指南针 HUD 小部件配置",
         "showYawValue": "显示偏航值",
-        "useNegativeRange": "使用 -180/+180 范围"
+        "useNegativeRange": "使用 -180/+180 范围",
+        "showPoisOnHud": "在 HUD 上显示 POI",
+        "showDistanceTags": "显示距离标签",
+        "allMarkers": "所有标记",
+        "highlightedMarkerOnly": "仅高亮标记",
+        "boxOnHudSide": "HUD 侧边框",
+        "noDistanceTags": "不显示距离标签"
       },
       "DepthHUD": {
+        "name": "深度 HUD",
         "widgetConfig": "深度 HUD 配置",
         "showDepthValue": "显示高度值"
       },
       "Attitude": {
+        "name": "姿态",
         "widgetConfig": "姿态小部件配置",
         "showRollPitchValues": "显示横滚/俯仰值",
         "showCenterAim": "显示中心瞄准",
@@ -332,26 +416,43 @@
         "centerCircleRadius": "中心圆半径"
       },
       "ImageView": {
+        "name": "图片视图",
         "widgetConfig": "图像 URL",
         "imageURL": "图像 URL",
         "fitStyle": "适应样式"
       },
       "URLVideoPlayer": {
+        "name": "URL 视频播放器",
         "widgetConfig": "视频源",
-        "videoSource": "视频源"
+        "videoSource": "视频源",
+        "fitStyle": "适应样式"
+      },
+      "IFrame": {
+        "name": "内嵌框架",
+        "iframeSource": "IFrame 源",
+        "invalidURL": "无效的 URL",
+        "urlNotValid": "URL 无效",
+        "urlUpdatedSuccessfully": "URL 已更新为 {url}",
+        "transparency": "透明度",
+        "advancedOptions": "高级选项",
+        "useVehicleAddress": "使用设备地址作为基础 URL",
+        "collapsibleContainer": "可折叠容器",
+        "containerName": "容器名称"
       },
       "CollapsibleContainer": {
+        "name": "可折叠容器",
         "cloneToAnotherView": "克隆到另一个视图",
         "customWidgetOptions": "自定义小部件选项",
-        "name": "名称：",
         "backgroundColor": "背景颜色",
         "backgroundOpacity": "背景不透明度：",
         "backgroundBlur": "背景模糊：",
         "cloneWidgetTo": "克隆小部件到",
-        "options": "选项"
+        "options": "选项",
+        "load": "加载"
       },
       "MiniWidgetsBar": "迷你小部件栏",
       "doItYourself": {
+        "name": "自定义小部件",
         "editorInstructions": "编辑器说明",
         "instruction1": "使用 HTML、CSS 和 JS 编辑器创建您的自定义小部件",
         "instruction2": "当您点击应用或按 Cmd/Ctrl + Enter/S 时，更改将被应用",
@@ -360,8 +461,30 @@
         "instruction5": "您的代码在小部件的上下文中运行，并且可以访问 DOM",
         "instruction6": "您可以使用控制台调试您的代码",
         "instruction7": "您可以使用数据湖系统来注入或消费来自 Cockpit 的数据。有关更多信息，请查看文档",
+        "instruction8": "点击每个编辑器的标题可将其展开至全尺寸",
         "createYourOwn": "创建您自己的小部件！",
-        "widgetConfiguration": "小部件配置"
+        "widgetConfiguration": "小部件配置",
+        "autoSave": "自动保存",
+        "export": "导出",
+        "exportConfig": "导出小部件配置",
+        "import": "导入",
+        "importConfig": "导入小部件配置",
+        "inheritStyles": "继承 Cockpit 样式"
+      },
+      "MissionControlPanel": {
+        "name": "任务控制面板",
+        "title": "任务控制面板",
+        "skipToPreviousWaypoint": "跳转到上一个航点",
+        "pauseMission": "暂停任务",
+        "startResumeMission": "开始 / 恢复任务",
+        "skipToNextWaypoint": "跳转到下一个航点",
+        "stopMissionAndReturn": "停止任务并返回第一个航点",
+        "currentWaypoint": "当前航点",
+        "downloadMissionFromVehicle": "从设备下载任务",
+        "clearMissionOnMap": "清除地图上的任务"
+      },
+      "VirtualHorizon": {
+        "name": "虚拟地平线"
       }
     },
     "VideoLibraryModal": {
@@ -410,7 +533,14 @@
       "singleSelection": "单选",
       "multiSelection": "多选",
       "selectNone": "取消全选",
-      "selectAllFiles": "选择所有文件"
+      "selectAllFiles": "选择所有文件",
+      "noVideoChunksFound": "未找到视频片段",
+      "noRawChunksFound": "未找到原始片段",
+      "processVideoChunks": "处理视频片段",
+      "downloadChunkGroupZip": "以 ZIP 格式下载片段组",
+      "deleteChunkGroup": "删除片段组",
+      "deleteAllRawChunks": "删除所有原始片段",
+      "openRawChunksFolder": "打开原始片段文件夹"
     },
     "DataLakeVariableDialog": {
       "editVariable": "编辑变量",
@@ -440,19 +570,8 @@
       "expressionTip3": "请记得相应地设置类型",
       "descriptionPlaceholder": "此转换功能的可选描述"
     },
-    "About": {
-      "pageTitle": "这是关于页面",
-      "description1": "Cockpit 是一款直观且可定制的跨平台地面控制站，适用于所有类型的远程设备。",
-      "description2": "它由 Blue Robotics 创建，完全开源。",
-      "description3": "它目前支持基于 Ardupilot 的设备，但计划支持任何通用设备，无论是否使用 MAVLink 通信。",
-      "version": "版本",
-      "released": "发布时间",
-      "createdBy": "由 Blue Robotics 创建",
-      "license": "许可证：AGPL-3.0-only 或 LicenseRef-Cockpit-Custom"
-    },
     "Tutorial": {
       "previous": "上一步",
-      "next": "下一步",
       "start": "开始",
       "close": "关闭",
       "showOnStartup": "启动时显示",
@@ -550,8 +669,7 @@
       "vehiclesFound": "找到设备！",
       "noVehicles": "在您的网络中未找到设备。",
       "canStillSearch": "您仍然可以在常规配置菜单中搜索设备。",
-      "dontShowAgain": "不再显示",
-      "close": "关闭"
+      "dontShowAgain": "不再显示"
     },
     "UserNameInputDialog": {
       "title": "管理用户：",
@@ -627,6 +745,19 @@
       "dontShowChecklistAgain": "不再显示此检查列表",
       "surveyPolygonVertices": "调查多边形顶点",
       "armVehicle": "解锁设备"
+    },
+    "VideoPlayerStatsForNerds": {
+      "stream": "流",
+      "size": "分辨率",
+      "packetsLost": "丢包",
+      "frameDrops": "丢帧",
+      "nack": "否定确认 (NACK)",
+      "pli": "图片丢失指示 (PLI)",
+      "fir": "完全内部帧请求 (FIR)",
+      "processing": "处理",
+      "freezes": "冻结",
+      "bitrate": "比特率",
+      "fps": "帧率 (FPS)"
     },
     "EditMenu": {
       "exit": "退出",
@@ -704,7 +835,11 @@
         "time": "时间",
         "date": "日期",
         "instantaneousPower": "瞬时功率"
-      }
+      },
+      "dataLakeVariables": "数据湖变量"
+    },
+    "About": {
+      "pageTitle": "关于"
     }
   },
   "views": {
@@ -722,6 +857,7 @@
       "manageCockpitSettings": "管理 Cockpit 设置",
       "enablePirateMode": "启用海盗模式",
       "disablePirateMode": "禁用海盗模式",
+      "cockpitFolderLocation": "Cockpit 文件夹位置：",
       "vehicleConnection": "设备网络连接（全局地址）",
       "currentAddress": "当前地址",
       "connectionInfo": "设置设备通信的网络地址。例如：blueos.local",
@@ -859,8 +995,8 @@
       },
       "confirmProfileSwitch": "确认配置文件切换",
       "switchingFromTo": "正在从 \"{from}\" 切换到 \"{to}\" 配置文件（{vehicleType}）",
-      "profileMatchesVehicle": "此配置文件已为当前载具类型配置",
-      "profileDoesNotMatch": "此配置文件未为当前载具类型配置。继续可能会导致意外行为。",
+      "profileMatchesVehicle": "此配置文件已为当前设备类型配置",
+      "profileDoesNotMatch": "此配置文件未为当前设备类型配置。继续可能会导致意外行为。",
       "switchProfile": "切换配置文件"
     },
     "ConfigurationVideoView": {
@@ -903,7 +1039,9 @@
       "saveBackupRawChunksDisabled": "禁用：成功处理后自动删除原始块，使用最少的存储空间。",
       "saveBackupRawChunksManual": "您随时可以使用视频库中的'临时'选项卡手动清理备份块。",
       "saveBackupRawChunksBrowser": "对于浏览器版本，块始终默认保存。",
-      "zipMultipleFiles": "压缩多个文件"
+      "zipMultipleFiles": "压缩多个文件",
+      "addDirectRtspStream": "添加直接 RTSP 流（独立版）",
+      "addRtsp": "添加"
     },
     "ConfigurationInterfaceView": {
       "title": "界面配置",
@@ -1082,7 +1220,6 @@
         "messageFieldsObject": "消息字段对象",
         "messageFieldsHint": "在此处插入包含消息字段的 JSON 对象。使用 {{ data_lake_key }} 表示动态值。使用 { type: 'ENUM_VALUE' } 表示枚举值（例如：MAV_CMD_COMPONENT_ARM_DISARM）。",
         "fieldRequired": "此字段为必填项",
-        "create": "创建",
         "fieldDescriptions": {
           "target_system": "目标系统的系统 ID",
           "target_component": "目标组件的组件 ID",
@@ -1218,11 +1355,32 @@
       "cancelSurvey": "取消调查",
       "altitudeM": "高度 (m)",
       "altitudeType": "高度类型：",
-      "endSimplePath": "结束简单路径"
+      "endSimplePath": "结束简单路径",
+      "savingOfflineMapContent": "正在保存 {layerName} 离线瓦片"
     },
     "WidgetsView": {
       "noWidgets": "您当前没有小部件！",
       "openEditMode": "打开编辑模式开始调整此视图。"
+    },
+    "ConfigurationLogsView": {
+      "enterMessage": "输入消息",
+      "gridPositions": {
+        "leftTop": "左上",
+        "centerTop": "中上",
+        "rightTop": "右上",
+        "leftMid": "左中",
+        "centerMid": "中中",
+        "rightMid": "右中",
+        "leftBottom": "左下",
+        "centerBottom": "中下",
+        "rightBottom": "右下"
+      },
+      "videoConfigHelp": "访问视频配置以配置录制和流式传输选项。",
+      "videoConfigHelpDetails": {
+        "telemetryConfig": "在此界面，您可以配置录制视频字幕文件中将显示的遥测数据。您可以更改字体大小、颜色和样式，以及每个变量在屏幕上的位置。您还可以添加将在视频播放器屏幕上显示的自定义消息。",
+        "dragAndDrop": "从左侧面板拖放变量到遥测数据显示的所需位置。",
+        "moreHelp": "如需更多帮助，请参阅文档或联系我们。"
+      }
     }
   },
   "libs": {
@@ -1307,7 +1465,12 @@
     "streamNotConnected": "流未连接",
     "variableNameAlreadyExists": "变量名已存在",
     "vehicleConnected": "设备已连接",
-    "vehicleConnectionLost": "设备连接丢失"
+    "vehicleConnectionLost": "设备连接丢失",
+    "anotherConfirmationInProgress": "命令 {command} 的确认操作正在进行中",
+    "failedToSetGlobalOrigin": "设置全局原点失败：{error}",
+    "variableCannotDelete": "变量 '{id}' 无法删除",
+    "variableNotEditable": "变量 '{id}' 不可编辑",
+    "variableNotFound": "未找到变量 '{id}'"
   },
   "success": {
     "widgetLoadedSuccessfully": "组件已成功加载新哈希值。",
@@ -1638,7 +1801,10 @@
     "searchSettings": "搜索设置",
     "uploadConfig": "上传并应用配置文件",
     "downloadConfig": "下载当前配置",
-    "editValue": "编辑值"
+    "editValue": "编辑值",
+    "noSettingsAvailable": "当前选项无可用设置。",
+    "showLegacyInternalKeys": "显示旧版/内部键",
+    "showAllLocalStorageKeys": "显示所有本地存储键值对"
   },
   "commonPlaceholders": {
     "searchIcons": "搜索图标...",
@@ -1672,6 +1838,9 @@
       "toggleFullScreen": "切换全屏",
       "toggleRecordingAllStreams": "切换录制所有流",
       "toggleTopBar": "切换顶部栏"
+    },
+    "interface": {
+      "restartingCockpit": "正在重启 Cockpit，{seconds} 秒后重启..."
     }
   },
   "customWidgetElements": {
@@ -1752,9 +1921,7 @@
     "解决航海之谜"
   ],
   "missionPlanning": {
-    "add": "添加",
     "addWaypointHere": "在此添加航点",
-    "altitude": "高度",
     "appendNewCommand": "添加新命令",
     "closeSimplePathCreation": "关闭简单路径创建",
     "closeSurveyCreation": "关闭调查创建",
@@ -1792,8 +1959,6 @@
     "editSurveyPolygon": "编辑调查多边形",
     "editWaypoint": "编辑航点",
     "home": "起点",
-    "latitude": "纬度",
-    "longitude": "经度",
     "mavFrame": "MAV 坐标系",
     "mavlinkNavigationCommand": "MAVLink 导航命令",
     "mavlinkNonNavigationCommand": "MAVLink 非导航命令",
@@ -1828,6 +1993,7 @@
     "removeTilesConfirmation": "移除此图层的所有已保存的 {layerLabel} 瓦片？",
     "newMissionChecklist": "新任务检查清单",
     "setHomeWaypoint": "设置起点航点",
+    "clearVehiclePathHistory": "清除设备历史路径",
     "createMissionPath": "创建任务路径",
     "uploadToVehicle": "上传至设备",
     "dontShowAgain": "不再显示",
@@ -2064,86 +2230,10 @@
     "useDynamicValuesHint": "使用双花括号包裹变量名来使用数据湖的动态值",
     "userAgentNote": "注意：User-Agent 请求头会自动设置",
     "fixedValue": "固定值",
-    "nonDynamicValue": "非动态值"
-  },
-  "alerter": {
-    "alertVolume": "警报音量",
-    "enableColorCodedAlerts": "启用颜色编码警报",
-    "enableVoiceAlerts": "启用语音警报",
-    "options": "警报器选项"
-  },
-  "architectureWarning": {
-    "cannotDisable": "此警告无法禁用 - 我们强烈建议您下载并安装适合您系统的正确版本。",
-    "dismiss": "关闭",
-    "doubleMemory": "内存使用量增加 2 倍",
-    "downloadARM": "下载 ARM 版本",
-    "reducedPerformance": "整体性能下降",
-    "runningWrongVersion": "您正在 Apple Silicon Mac（M 系列）上运行 x64 版本的 Cockpit，这会导致性能严重下降，包括：",
-    "slowerStartup": "应用程序启动时间慢 3-4 倍",
-    "title": "性能警告"
-  },
-  "armSafety": {
-    "continueAnyway": "仍然继续",
-    "continueNeverWarn": "继续且不再警告",
-    "continueSessionWarn": "继续且本次会话期间不再警告",
-    "disarmAndContinue": "解除设备锁定并继续",
-    "proceedCarefully": "请稍后再来，或谨慎选择以下选项之一继续：",
-    "title": "设备已解锁警告",
-    "vehicleArmedWarning": "设备当前已解锁，主菜单包含可能导致不安全情况的配置和工具。",
-    "warningDisabled": "此警告已禁用"
-  },
-  "attitude": {
-    "cameraVerticalFOV": "相机垂直视场角",
-    "centerCircleRadius": "中心圆半径",
-    "showCenterAim": "显示中心瞄准",
-    "showPitchLines": "显示俯仰线",
-    "showRollPitchValues": "显示横滚/俯仰值",
-    "widgetConfig": "姿态小部件配置"
-  },
-  "batteryIndicator": {
-    "config": "电池指示器配置",
-    "criticalVoltage": "严重低电压（V）",
-    "highVoltage": "高电压（V）",
-    "lowVoltage": "低电压（V）",
-    "mediumVoltage": "中等电压（V）",
-    "showCurrent": "显示电流",
-    "showPower": "显示功率",
-    "toggleInterval": "切换间隔（毫秒）",
-    "useVoltageToColorScheme": "使用电压颜色方案",
-    "voltageConfigTooltip": "根据您的电池组配置这些电压级别。默认值基于 Blue Robotics 的 4S 锂离子电池组。"
-  },
-  "collapsibleContainer": {
-    "backgroundBlur": "背景模糊：",
-    "backgroundColor": "背景颜色",
-    "backgroundOpacity": "背景不透明度：",
-    "cloneToAnotherView": "克隆到另一个视图",
-    "cloneWidgetTo": "克隆小部件到",
-    "customWidgetOptions": "自定义小部件选项",
-    "name": "名称：",
-    "options": "选项"
-  },
-  "compass": {
-    "headingStyle": "航向模式",
-    "northUp": "北向上",
-    "headUp": "航向向上"
-  },
-  "compassHUD": {
-    "showYawValue": "显示偏航值",
-    "useNegativeRange": "使用 -180/+180 范围",
-    "widgetConfig": "指南针 HUD 小部件配置"
-  },
-  "depthHUD": {
-    "showDepthValue": "显示深度值",
-    "widgetConfig": "深度 HUD 配置"
-  },
-  "imageView": {
-    "fitStyle": "适应样式",
-    "imageURL": "图像 URL",
-    "widgetConfig": "图像视图配置"
-  },
-  "javascriptAction": {
-    "autocompleteHint": "输入 {{ 可自动完成 data lake 变量",
-    "javascriptCode": "JavaScript 代码"
+    "nonDynamicValue": "非动态值",
+    "fixedOption": "固定值",
+    "noNewActions": "暂无可用操作。",
+    "extensionActionsAvailable": "以下操作来自 BlueOS 扩展："
   },
   "joystickWarning": {
     "additionalAxes": "额外轴",
@@ -2153,405 +2243,5 @@
     "couldNotEstablishComm": "无法与设备建立通信。",
     "extendedMavlinkInfo": "您似乎正在运行不支持扩展 MAVLink MANUAL_CONTROL 消息的 Mavlink2Rest（BlueOS）和/或 ArduPilot 版本。我们强烈建议升级两者，以便您能够支持摇杆上的额外按钮和轴。如果您有时使用其他控制站软件（如 QGroundControl），这一点尤其重要，因为 Cockpit 可以优先使用扩展按钮来减少配置冲突。我们建议使用 BlueOS ≥ 1.2.0 和 ArduPilot 固件 ≥ 4.1.2 版本。",
     "updateRecommended": "建议更新系统"
-  },
-  "map": {
-    "downloadMapTiles": "下载地图瓦片",
-    "editMission": "编辑任务",
-    "mapWidgetSettings": "地图小部件设置",
-    "placePointOfInterest": "放置兴趣点",
-    "saveVisibleEsriTiles": "保存可见 Esri 瓦片",
-    "saveVisibleOSMTiles": "保存可见 OSM 瓦片",
-    "saveVisibleSeamarksTiles": "保存可见海图标记瓦片",
-    "showCoordinateGrid": "显示坐标网格",
-    "showVehiclePath": "显示设备路径",
-    "switchToMissionPlanning": "切换到任务规划模式"
-  },
-  "mini-widgets": {
-    "changeAlt": "改变高度",
-    "ekfStateIndicator": {
-      "noData": "没有 EKF 数据 - 请检查设备连接",
-      "waitingForData": "等待 EKF 数据..."
-    },
-    "miniVideoRecorder": {
-      "chooseStream": "选择要录制的流",
-      "noStreamsAvailable": "没有可用的流。",
-      "streamName": "流名称"
-    },
-    "snapshotTool": {
-      "captureWorkspace": "捕获 Cockpit 工作区（仅限 Electron）",
-      "noStreamsAvailable": "没有可用的流。",
-      "settings": "截图设置",
-      "streamsToCapture": "要捕获的流",
-      "timedSnapshotInterval": "定时截图间隔（秒）"
-    },
-    "veryGenericIndicator": {
-      "autoFormatting": "自动格式化",
-      "clickToChoose": "点击选择...",
-      "searchIcons": "搜索图标...",
-      "searchVariable": "搜索变量..."
-    }
-  },
-  "miniWidgets": {
-    "Alerter": "警报器",
-    "ArmerButton": "解锁按钮",
-    "BaseCommIndicator": "基站通信指示器",
-    "BatteryIndicator": "电池指示器",
-    "ChangeAltitudeCommander": "改变高度",
-    "changeAlt": "改变高度",
-    "Clock": "时钟",
-    "GoFullScreen": "全屏",
-    "EnterEditMode": "进入编辑模式",
-    "DepthIndicator": "深度指示器",
-    "MissionIdentifier": "任务标识符",
-    "RelativeAltitudeIndicator": "相对高度指示器",
-    "TakeoffLandCommander": "起降指令器",
-    "VeryGenericIndicator": "通用指示器",
-    "JoystickCommIndicator": "手柄通信指示器",
-    "MiniVideoRecorder": "迷你视频录制器",
-    "ModeSelector": "模式选择器",
-    "EkfStateIndicator": "EKF 状态指示器",
-    "SatelliteIndicator": "卫星指示器",
-    "ViewSelector": "视图选择器",
-    "SnapshotTool": "截图工具",
-    "ekfStateIndicator": {
-      "noData": "没有 EKF 数据 - 请检查设备连接",
-      "waitingForData": "等待 EKF 数据..."
-    },
-    "miniVideoRecorder": {
-      "chooseStream": "选择要录制的流",
-      "noStreamsAvailable": "没有可用的流。",
-      "streamName": "流名称"
-    },
-    "snapshotTool": {
-      "captureWorkspace": "捕获 Cockpit 工作区（仅限 Electron）",
-      "noStreamsAvailable": "没有可用的流。",
-      "settings": "截图设置",
-      "streamsToCapture": "要捕获的流",
-      "timedSnapshotInterval": "定时截图间隔（秒）"
-    },
-    "veryGenericIndicator": {
-      "autoFormatting": "自动格式化",
-      "clickToChoose": "点击选择...",
-      "searchIcons": "搜索图标...",
-      "searchVariable": "搜索变量..."
-    }
-  },
-  "widgets": {
-    "Attitude": "姿态",
-    "Compass": "指南针",
-    "CompassHUD": "指南针 HUD",
-    "CollapsibleContainer": "可折叠容器",
-    "DepthHUD": "深度 HUD",
-    "DoItYourself": "自定义",
-    "IFrame": "内嵌网页",
-    "ImageView": "图像查看器",
-    "Map": "地图",
-    "MiniWidgetsBar": "迷你小部件栏",
-    "Plotter": "绘图器",
-    "URLVideoPlayer": "URL 视频播放器",
-    "VideoPlayer": "视频播放器",
-    "VirtualHorizon": "虚拟地平线",
-    "doItYourself": {
-      "editorInstructions": "编辑器说明",
-      "instruction1": "使用 HTML、CSS 和 JS 编辑器创建您的自定义小部件",
-      "instruction2": "当您点击应用或按 Cmd/Ctrl + Enter/S 时，更改将被应用",
-      "instruction3": "使用 Cmd/Ctrl + Option/Alt + ↑/↓ 在编辑器之间导航",
-      "instruction4": "使用重置按钮重置为上次保存的状态",
-      "instruction5": "您的代码在小部件的上下文中运行，并且可以访问 DOM",
-      "instruction6": "您可以使用控制台调试您的代码",
-      "instruction7": "您可以使用数据湖系统来注入或消费来自 Cockpit 的数据。有关更多信息，请查看文档",
-      "createYourOwn": "创建您自己的小部件！",
-      "widgetConfiguration": "小部件配置"
-    }
-  },
-  "plotter": {
-    "appearance": "外观",
-    "avg": "平均值",
-    "backgroundColor": "背景颜色",
-    "current": "当前值",
-    "dataLakeVariable": "Data Lake 变量",
-    "dataPoints": "数据点",
-    "dataSource": "数据源",
-    "decimalPlaces": "小数位数",
-    "decimalPlacesHint": "要显示的小数位数",
-    "fixedMaximum": "固定最大值",
-    "fixedMinimum": "固定最小值",
-    "limitSamples": "限制样本数量",
-    "line": "线条",
-    "lineColor": "线条颜色",
-    "lineThickness": "线条粗细",
-    "max": "最大值",
-    "maxSamples": "最大样本数",
-    "maxSamplesHint": "较高的值会显示更多历史记录，但可能影响性能",
-    "maxValue": "最大值",
-    "median": "中位数",
-    "min": "最小值",
-    "minValue": "最小值",
-    "mustBeGreaterThan": "必须大于 {value}",
-    "mustBeZeroOrGreater": "必须为 0 或更大",
-    "pleaseSelectVariable": "请打开 Plotter 小部件配置菜单以选择要绘制的变量。",
-    "searchVariables": "搜索变量...",
-    "selectVariable": "选择要绘制的变量",
-    "showTitle": "显示标题",
-    "statisticsDisplay": "统计显示",
-    "stdDev": "标准差",
-    "updateOnConstantValue": "在恒定值时更新",
-    "updateOnConstantValueHint": "当值不变时推进图表（为恒定值显示水平线）",
-    "verticalRange": "垂直范围"
-  },
-  "telemetryOverlay": {
-    "bold": "粗体",
-    "customMessages": "自定义消息",
-    "dataLakeVariables": "数据湖变量",
-    "fontColor": "字体颜色",
-    "fontSize": "字体大小",
-    "italic": "斜体",
-    "missionVariables": "任务变量",
-    "outlineColor": "轮廓颜色",
-    "overlayOptions": "叠加选项",
-    "resetPositions": "重置位置",
-    "settings": "设置",
-    "shadowColor": "阴影颜色",
-    "shadowSize": "阴影大小",
-    "strikethrough": "删除线",
-    "telemetryFrequency": "遥测频率 - 1 到 100 Hz（默认 1 Hz）",
-    "title": "屏幕遥测数据",
-    "underline": "下划线",
-    "variables": {
-      "batteryCurrent": "电池电流",
-      "batteryVoltage": "电池电压",
-      "date": "日期",
-      "depth": "深度",
-      "gpsFixType": "GPS 定位类型",
-      "gpsVisibleSatellites": "GPS 可见卫星",
-      "heading": "航向",
-      "instantaneousPower": "瞬时功率",
-      "latitude": "纬度",
-      "longitude": "经度",
-      "missionName": "任务名称",
-      "mode": "模式",
-      "pitch": "俯仰",
-      "roll": "横滚",
-      "time": "时间"
-    },
-    "vehicleVariables": "设备变量"
-  },
-  "tutorial": {
-    "dontShowAgain": "不再显示",
-    "next": "下一步",
-    "previous": "上一步",
-    "showOnStartup": "启动时显示",
-    "start": "开始",
-    "steps": {
-      "1": {
-        "content": "感谢您试用我们的控制站软件 - 希望您喜欢！",
-        "opposite": "此指南将帮助您连接到您的设备，并引导您浏览可用的菜单页面。",
-        "title": "欢迎使用 Cockpit！"
-      },
-      "2": {
-        "content": "Cockpit 的配置选项和工具可通过侧边栏访问。",
-        "opposite": "单击屏幕左侧突出显示的标签打开它。",
-        "title": "主菜单"
-      },
-      "3": {
-        "opposite": "\"设置\"菜单允许配置 Cockpit 的连接和行为。",
-        "title": "连接和行为"
-      },
-      "4": {
-        "content": "\"通用\"页面允许切换活动用户和设备连接设置。",
-        "opposite": "每个用户都可以有自己的设置、界面配置文件和摇杆映射，这些可以存储在并通过连接的设备同步。",
-        "title": "通用配置"
-      },
-      "5": {
-        "content": "Cockpit 使用全局地址连接到设备的网络。",
-        "opposite": "这通常会自动找到，但如果必要，您可以指定自定义域进行连接并搜索相关的设备组件。",
-        "title": "设备地址"
-      },
-      "6": {
-        "opposite": "在这里，您将找到控制界面样式、移动侧边栏访问点以及在英制和公制单位之间切换的选项（对于支持的小部件）。",
-        "title": "界面配置"
-      },
-      "7": {
-        "content": "连接控制器并移动摇杆或按下按钮以查看当前的功能映射。",
-        "opposite": "完全支持的摇杆有可视化配置界面，但也为自定义或不常见的控制器提供了映射表。操作可以与设备功能相关。",
-        "title": "摇杆配置"
-      },
-      "8": {
-        "content": "视频源(来自 MAVLink 相机管理器 / BlueOS)可以赋予自定义名称,您可以配置 Cockpit 的接收器设置以提高性能。",
-        "opposite": "还有视频录制库的首选项,可以自动将录制的块处理为视频文件,并在下载多个视频或带遥测字幕的视频时将文件压缩在一起。",
-        "title": "视频配置"
-      },
-      "9": {
-        "opposite": "遥测数据的字幕叠加可以与视频一起录制。此面板允许选择要包含的变量、它们在屏幕上的显示位置、字幕样式以及更新频率。",
-        "title": "遥测记录"
-      },
-      "10": {
-        "opposite": "语音警报可以在操作期间宣布通知和问题,而不会覆盖屏幕。可以在此处配置语音和报告的警报严重性。",
-        "title": "警报配置"
-      },
-      "11": {
-        "content": "本节包括设置和 Cockpit 日志,以帮助开发和高级故障排除。",
-        "opposite": "我们建议保留默认值,但如果您愿意,可以停止 Cockpit 与 BlueOS 设备同步其设置,和/或禁用发送匿名使用统计信息和错误消息,这些信息可帮助开发团队发现性能问题和错误。",
-        "title": "开发设置"
-      },
-      "12": {
-        "opposite": "此面板允许选择哪些设备命令在发送前需要额外的确认步骤,以避免意外触发任务或安全关键功能。",
-        "title": "任务配置"
-      },
-      "13": {
-        "content": "您已准备就绪!",
-        "opposite": "如果您想再次查看,可以通过\"设置\">\"通用\"重新打开此指南。如需进一步支持,请通过侧边栏\"关于\"部分列出的渠道联系我们。",
-        "title": "教程已完成"
-      }
-    },
-    "vehicleConnected": "设备已连接"
-  },
-  "veryGenericIndicator": {
-    "custom": "自定义",
-    "decimalPlaces": "小数位数",
-    "displayName": "显示名称",
-    "displayWidth": "显示宽度",
-    "icon": "图标",
-    "multiplier": "乘数",
-    "presets": "预设",
-    "unit": "单位",
-    "useStringVariable": "使用字符串变量（不解析为数字）",
-    "variable": "变量"
-  },
-  "widgetsView": {
-    "noWidgets": "您当前没有小部件！",
-    "openEditMode": "打开编辑模式开始调整此视图。"
-  },
-  "doItYourself": {
-    "autoSave": "自动保存",
-    "export": "导出",
-    "exportConfig": "导出小部件配置",
-    "import": "导入",
-    "importConfig": "导入小部件配置",
-    "inheritStyles": "继承 Cockpit 样式"
-  },
-  "editPanel": {
-    "regular": "常规",
-    "mini": "迷你",
-    "input": "输入",
-    "confirmResetProfiles": "确定要重置所有配置文件吗？此操作无法撤销。",
-    "resetProfiles": "重置配置文件"
-  },
-  "globalOrigin": {
-    "altitude": "高度",
-    "altitudeHint": "高度，以米为单位 (MSL)",
-    "altitudeRequired": "高度为必填项",
-    "description": "配置任务的全局原点",
-    "latitude": "纬度",
-    "latitudeHint": "纬度，以度为单位 (-90 至 90)",
-    "latitudeRange": "纬度必须在 -90 和 90 之间",
-    "latitudeRequired": "纬度为必填项",
-    "longitude": "经度",
-    "longitudeHint": "经度，以度为单位 (-180 至 180)",
-    "longitudeRange": "经度必须在 -180 和 180 之间",
-    "longitudeRequired": "经度为必填项",
-    "saving": "正在保存全局原点...",
-    "title": "全局原点"
-  },
-  "iframe": {
-    "advancedOptions": "高级选项",
-    "collapsibleContainer": "可折叠容器",
-    "containerName": "容器名称",
-    "iframeSource": "IFrame 源",
-    "invalidURL": "无效的 URL",
-    "transparency": "透明度",
-    "urlNotValid": "URL 无效",
-    "useVehicleAddress": "使用载具地址作为基础 URL"
-  },
-  "logs": {
-    "enterMessage": "输入消息",
-    "gridPositions": {
-      "leftTop": "左上",
-      "centerTop": "中上",
-      "rightTop": "右上",
-      "leftMid": "左中",
-      "centerMid": "中中",
-      "rightMid": "右中",
-      "leftBottom": "左下",
-      "centerBottom": "中下",
-      "rightBottom": "右下"
-    },
-    "videoConfigHelp": "访问视频配置以配置录制和流式传输选项。",
-    "videoConfigHelpDetails": {
-      "telemetryConfig": "在此界面，您可以配置录制视频字幕文件中将显示的遥测数据。您可以更改字体大小、颜色和样式，以及每个变量在屏幕上的位置。您还可以添加将在视频播放器屏幕上显示的自定义消息。",
-      "dragAndDrop": "从左侧面板拖放变量到遥测数据显示的所需位置。",
-      "moreHelp": "如需更多帮助，请参阅文档或联系我们。"
-    }
-  },
-  "update": {
-    "checkingForUpdates": "检查更新中...",
-    "checkingMessage": "正在检查新版本...",
-    "download": "下载",
-    "downloadingUpdate": "下载更新中...",
-    "ignoreThisVersion": "忽略此版本",
-    "installNow": "立即安装",
-    "later": "稍后",
-    "notNow": "暂时不要",
-    "noUpdatesAvailable": "无可用更新",
-    "noUpdatesMessage": "您正在使用最新版本。",
-    "updateAvailable": "有可用更新",
-    "updateAvailableMessage": "有新版本可用。您想现在下载吗？",
-    "updateDetails": "更新详情",
-    "updateDownloadedMessage": "更新已下载完成，准备安装。",
-    "updateReadyToInstall": "更新已准备好安装"
-  },
-  "urlVideoPlayer": {
-    "videoSource": "视频源",
-    "widgetConfig": "URL 视频播放器配置"
-  },
-  "usernameDialog": {
-    "addNewUser": "添加新用户",
-    "adminMode": "管理员模式",
-    "autoSyncWarning": "如果您不设置用户名，与设备的自动同步将无法工作。",
-    "cannotDeleteCurrent": "无法删除当前用户",
-    "canSetLater": "可以在后续的通用菜单中设置或更改用户。",
-    "currentVehicle": "当前设备",
-    "deleteUserFailed": "删除用户失败",
-    "deleteWarning": "从设备中删除用户时请小心 - 此过程无法撤销",
-    "noUsersYet": "您在此设备上还没有存储任何用户。",
-    "selectOrEdit": "在下面选择一个用户，或切换到管理员模式以创建或编辑用户",
-    "title": "用户名",
-    "userDeleted": "用户已删除",
-    "username": "用户名",
-    "usernameInfo": "此用户名将用于在设备中存储您的设置。",
-    "validationCharacters": "只能包含字母、数字、连字符和下划线",
-    "validationLowercase": "必须全部小写",
-    "validationMaxLength": "最多 {max} 个字符",
-    "validationMinLength": "至少 {min} 个字符",
-    "validationNoCockpit": "不能包含 'cockpit'",
-    "validationNoFallback": "不能是 'fallback'",
-    "validationNoSpaces": "不能包含空格"
-  },
-  "vehicleDiscovery": {
-    "canStillSearch": "您仍然可以在常规配置菜单中搜索设备。",
-    "close": "关闭",
-    "description": "在您的网络中搜索设备",
-    "dontShowAgain": "不再显示",
-    "noVehicles": "在您的网络中未找到设备。",
-    "notConnected": "看起来您尚未连接到设备！",
-    "searchAgain": "再次搜索",
-    "searchButton": "搜索设备",
-    "searching": "正在搜索设备...",
-    "searching_status": "正在您的网络中搜索设备...",
-    "title": "设备发现",
-    "vehiclesFound": "找到设备："
-  },
-  "videoStats": {
-    "bitrate": "比特率",
-    "fir": "完全内部帧请求 (FIR)",
-    "fps": "帧率 (FPS)",
-    "frameDrops": "丢帧",
-    "freezes": "冻结",
-    "nack": "否定确认 (NACK)",
-    "packetsLost": "丢包",
-    "pli": "图片丢失指示 (PLI)",
-    "processing": "处理",
-    "size": "分辨率",
-    "stream": "流"
   }
 }

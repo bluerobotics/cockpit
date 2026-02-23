@@ -2,8 +2,15 @@
   <v-dialog v-model="openDialog" max-width="600" scrollable persistent>
     <v-card :style="interfaceStore.globalGlassMenuStyles" class="rounded-lg">
       <v-card-title class="text-center relative pt-3">
-        <h6 class="ml-4">Warning! Your vehicle is about to be armed</h6>
-        <v-btn icon variant="text" color="white" class="absolute right-1 top-1" aria-label="Close" @click="onCancel">
+        <h6 class="ml-4">{{ $t('missionPlanning.armWarningTitle') }}</h6>
+        <v-btn
+          icon
+          variant="text"
+          color="white"
+          class="absolute right-1 top-1"
+          :aria-label="$t('common.close')"
+          @click="onCancel"
+        >
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
@@ -45,7 +52,7 @@
               class="elevation-1 bg-[#FFFFFF15] hover:bg-[#FFFFFF22]"
               @click="isOnEditMode = true"
             >
-              Edit Items
+              {{ $t('missionPlanning.editItems') }}
             </v-btn>
           </div>
           <div v-else class="flex w-full items-center">
@@ -56,7 +63,7 @@
               :disabled="!missionStore.showChecklistBeforeArm"
               variant="filled"
               density="compact"
-              placeholder="Type an item and press Enter"
+              :placeholder="$t('missionPlanning.typeItemAndEnter')"
               hide-details
               class="ml-6 w-[80%]"
               append-inner-icon="mdi-plus"
@@ -76,7 +83,7 @@
                   addItem()
                 }
               "
-              >Done</v-btn
+              >{{ $t('missionPlanning.done') }}</v-btn
             >
           </div>
         </div>
@@ -84,7 +91,7 @@
       <v-divider class="flex center w-[80%]" inset />
       <v-card-actions>
         <div class="flex justify-between w-full py-1 px-2 pt-3">
-          <v-btn variant="text" @click="onCancel">Cancel</v-btn>
+          <v-btn variant="text" @click="onCancel">{{ $t('common.cancel') }}</v-btn>
           <div class="flex items-center">
             <v-checkbox
               :model-value="!missionStore.showChecklistBeforeArm"
@@ -93,7 +100,7 @@
               density="compact"
               @update:model-value="(val) => (missionStore.showChecklistBeforeArm = !val)"
             />
-            <p class="text-xs text-center ml-2">Don't show this checklist again</p>
+            <p class="text-xs text-center ml-2">{{ $t('missionPlanning.dontShowChecklistAgain') }}</p>
           </div>
           <v-btn
             color="#ffffff33"
@@ -101,7 +108,7 @@
             variant="flat"
             :disabled="!isArmingEnabled"
             @click="onConfirm"
-            >Go</v-btn
+            >{{ $t('missionPlanning.go') }}</v-btn
           >
         </div>
       </v-card-actions>
@@ -112,12 +119,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 
+const { t: $t } = useI18n()
 type ChecklistItem = {
   /**
    * Unique identifier for the checklist item
