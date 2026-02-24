@@ -3130,10 +3130,10 @@ onMounted(async () => {
 
   const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
 
-  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
-    mapCenter.value as LatLngTuple,
-    zoom.value
-  )
+  planningMap.value = L.map('planningMap', {
+    layers: [initialBaseLayer],
+    wheelPxPerZoomLevel: 120,
+  }).setView(mapCenter.value as LatLngTuple, zoom.value)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',

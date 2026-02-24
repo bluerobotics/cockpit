@@ -614,6 +614,7 @@ onMounted(async () => {
   map.value = L.map(mapId.value, {
     layers: [initialBaseLayer, seamarks, marineProfile],
     attributionControl: false,
+    wheelPxPerZoomLevel: 120,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Listen for base layer changes to save user preference
