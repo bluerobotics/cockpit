@@ -295,6 +295,12 @@ The development server will start at `http://localhost:5173` with hot reloading 
 > git submodule update --init --recursive
 > ```
 
+### Testing PR Builds on ARM-based macOS machines (Apple Silicon)
+PR builds are not code-signed by Apple, so macOS will block them by default via Gatekeeper. To bypass that, after installing the `.dmg`, run the following command:
+```bash
+xattr -d com.apple.quarantine /Applications/Cockpit.app
+```
+
 ### Backend Services (Optional)
 For video support, Cockpit relies on a backend service called [mavlink-camera-manager](https://github.com/mavlink/mavlink-camera-manager).
 This service is included by default on [BlueOS](https://github.com/bluerobotics/blueos), but if you want to use Cockpit without BlueOS installed on your vehicle, you should install it in the vehicle or in your top-side computer.
