@@ -3801,10 +3801,10 @@ onMounted(async () => {
       : missionStore.defaultMapTileProvider
   const initialBaseLayer = baseMaps[preferredProvider] || esri
 
-  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
-    mapCenter.value as LatLngTuple,
-    zoom.value
-  )
+  planningMap.value = L.map('planningMap', {
+    layers: [initialBaseLayer],
+    wheelPxPerZoomLevel: 120,
+  }).setView(mapCenter.value as LatLngTuple, zoom.value)
 
   // Expose the Leaflet instance to descendant components via the map context
   mapContext.map.value = planningMap.value
