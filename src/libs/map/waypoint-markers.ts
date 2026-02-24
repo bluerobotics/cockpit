@@ -1,6 +1,6 @@
 import * as L from 'leaflet'
 
-import type { IconDimensions, MarkerSizes } from '@/types/mission'
+import type { IconDimensions, MarkerSizes, Waypoint } from '@/types/mission'
 
 /**
  * Size bucket to render waypoint markers at for a given zoom level.
@@ -26,6 +26,23 @@ export const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensio
     return { iconSize: [12, 12], iconAnchor: [6, 6] }
   }
   return { iconSize: [26, 26], iconAnchor: [13, 13] } // md size
+}
+
+/**
+ * Display number of each waypoint, keyed by waypoint id. The count advances by the number of
+ * commands a waypoint carries, so it matches the mission-item sequence rather than the waypoint
+ * index.
+ * @param {Waypoint[]} waypoints - The ordered mission waypoints.
+ * @returns {Record<string, number>} The display number for every waypoint id.
+ */
+export const waypointNumbersById = (waypoints: Waypoint[]): Record<string, number> => {
+  const numbers: Record<string, number> = {}
+  let nextNumber = 1
+  waypoints.forEach((waypoint) => {
+    numbers[waypoint.id] = nextNumber
+    nextNumber += waypoint.commands.length
+  })
+  return numbers
 }
 
 /**
