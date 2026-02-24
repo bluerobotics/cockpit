@@ -79,3 +79,20 @@ select:focus {
     0% { background-color: rgba(255, 234, 43, 0.438); }
     100% { background-color: transparent; }
 }
+
+/* Container-qualified so it outranks leaflet's .leaflet-tooltip regardless of stylesheet order. */
+.leaflet-container .waypoint-hover-tooltip {
+    background-color: #1e498f;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: -12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.leaflet-container .waypoint-hover-tooltip.leaflet-tooltip-top::before {
+    border-top-color: #1e498f;
+}
