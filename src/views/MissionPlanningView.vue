@@ -741,6 +741,7 @@ const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
+const waypointNumbers = ref<{ [id: string]: number }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
@@ -1045,6 +1046,7 @@ const clearCurrentMission = (): void => {
     planningMap.value?.removeLayer(marker)
   })
   waypointMarkers.value = {}
+  waypointNumbers.value = {}
   if (missionWaypointsPolyline.value) {
     planningMap.value?.removeLayer(missionWaypointsPolyline.value)
     missionWaypointsPolyline.value = null
@@ -1800,6 +1802,7 @@ const deleteSelectedSurvey = (): void => {
     if (waypointMarker) {
       planningMap.value?.removeLayer(waypointMarker)
       delete waypointMarkers.value[waypoint.id]
+      delete waypointNumbers.value[waypoint.id]
     }
   })
 
@@ -1941,6 +1944,20 @@ const addWaypoint = (
 
   const newMarker = L.marker(coordinates, { draggable: true })
   // @ts-ignore - onMove is a valid LeafletMouseEvent
+  newMarker.on('dragstart', () => {
+    // Ensure tooltip stays visible during drag
+    const markerSize = getMarkerSizeFromZoom(zoom.value)
+    if (markerSize === 'md') {
+      const tooltip = newMarker.getTooltip()
+      if (tooltip && tooltip.options.permanent) {
+        const tooltipElement = tooltip.getElement()
+        if (tooltipElement) {
+          tooltipElement.style.display = 'block'
+          tooltipElement.style.opacity = '1'
+        }
+      }
+    }
+  })
   newMarker.on('drag', () => {
     const latlng = newMarker.getLatLng()
     missionStore.moveWaypoint(waypointId, [latlng.lat, latlng.lng])
@@ -1951,6 +1968,14 @@ const addWaypoint = (
     const latlng = newMarker.getLatLng()
     missionStore.moveWaypoint(waypointId, [latlng.lat, latlng.lng])
     isDraggingMarker.value = false
+    // Ensure tooltip is still visible after drag
+    const markerSize = getMarkerSizeFromZoom(zoom.value)
+    if (markerSize === 'md') {
+      const tooltip = newMarker.getTooltip()
+      if (tooltip && tooltip.options.permanent) {
+        newMarker.openTooltip()
+      }
+    }
   })
   newMarker.on('contextmenu', (e: L.LeafletMouseEvent) => {
     const oldId = selectedWaypoint.value?.id
@@ -2007,6 +2032,7 @@ const removeSelectedWaypoint = (): void => {
   if (marker) {
     planningMap.value?.removeLayer(marker)
     delete waypointMarkers.value[waypoint.id]
+    delete waypointNumbers.value[waypoint.id]
   } else {
     console.warn(`No marker found for waypoint id: ${waypoint.id}`)
   }
@@ -2474,18 +2500,20 @@ const generateWaypointsFromSurvey = (): void => {
 }
 
 // Helper function to create waypoint marker HTML with command count indicator
-const createWaypointMarkerHtml = (commandCount: number, isSelected = false): string => {
+const createWaypointMarkerHtml = (commandCount: number, isSelected = false, waypointNumber?: number): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
   const size = getMarkerSizeFromZoom(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
   const showSmallCommandCount = size !== 'md' && commandCount > 1
   const showCommandCount = size === 'md' && commandCount > 1
+  const showWaypointNumber = isSelected && waypointNumber !== undefined && (size === 'xs' || size === 'sm')
 
   return `
     <div class="${markerSizeClass}">
       <div class="${baseClass} waypoint-main-marker"></div>
       ${showCommandCount ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
       ${showSmallCommandCount ? `<div class="command-count-indicator small">${commandCount}</div>` : ''}
+      ${showWaypointNumber ? `<div class="waypoint-number-indicator">${waypointNumber}</div>` : ''}
     </div>
   `
 }
@@ -2500,13 +2528,17 @@ const updateWaypointMarkers = (): void => {
   missionStore.currentPlanningWaypoints.forEach((wp) => {
     const marker = waypointMarkers.value[wp.id]
     if (marker) {
+      // Store waypoint number for tooltips and selected marker display
+      waypointNumbers.value[wp.id] = cumulativeCommandCount
+
       // Update marker icon to show command count
       const isSelected = selectedWaypoint.value?.id === wp.id
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
+      const waypointNumber = waypointNumbers.value[wp.id]
 
       marker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(wp.commands.length, isSelected),
+          html: createWaypointMarkerHtml(wp.commands.length, isSelected, waypointNumber),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -2514,15 +2546,38 @@ const updateWaypointMarkers = (): void => {
       )
 
       // Update tooltip visibility and content based on size
-      const tooltip = marker.getTooltip()
-      if (tooltip) {
-        if (markerSize === 'xs' || markerSize === 'sm') {
-          tooltip.setContent('')
-          tooltip.setOpacity(0)
-        } else {
-          tooltip.setContent(`${cumulativeCommandCount}`)
-          tooltip.setOpacity(1)
+      marker.off('mouseover')
+      marker.off('mouseout')
+      marker.unbindTooltip()
+      if (markerSize === 'xs' || markerSize === 'sm') {
+        // For small markers, use hover tooltip (but not if selected)
+        if (!isSelected) {
+          const hoverTooltip = L.tooltip({
+            content: `${cumulativeCommandCount}`,
+            permanent: false,
+            direction: 'top',
+            className: 'waypoint-hover-tooltip',
+            interactive: false,
+          })
+          marker.bindTooltip(hoverTooltip)
+          marker.on('mouseover', () => {
+            marker.openTooltip()
+          })
+          marker.on('mouseout', () => {
+            marker.closeTooltip()
+          })
         }
+      } else {
+        // For medium markers, always use permanent tooltip (even when selected)
+        const permanentTooltip = L.tooltip({
+          content: `${cumulativeCommandCount}`,
+          permanent: true,
+          direction: 'center',
+          className: 'waypoint-tooltip',
+          opacity: 1,
+        })
+        marker.bindTooltip(permanentTooltip)
+        marker.openTooltip()
       }
 
       cumulativeCommandCount += wp.commands.length
@@ -2544,6 +2599,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
       if (marker) {
         planningMap.value?.removeLayer(marker)
         delete waypointMarkers.value[waypoint.id]
+        delete waypointNumbers.value[waypoint.id]
       }
     })
 
@@ -2683,6 +2739,7 @@ const undoGenerateWaypoints = (): void => {
       if (marker) {
         planningMap.value?.removeLayer(marker)
         delete waypointMarkers.value[waypoint.id]
+        delete waypointNumbers.value[waypoint.id]
       }
     })
   }
@@ -2770,6 +2827,20 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
 
   const newMarker = L.marker(waypoint.coordinates, { draggable: true })
 
+  newMarker.on('dragstart', () => {
+    // Ensure tooltip stays visible during drag
+    const markerSize = getMarkerSizeFromZoom(zoom.value)
+    if (markerSize === 'md') {
+      const tooltip = newMarker.getTooltip()
+      if (tooltip && tooltip.options.permanent) {
+        const tooltipElement = tooltip.getElement()
+        if (tooltipElement) {
+          tooltipElement.style.display = 'block'
+          tooltipElement.style.opacity = '1'
+        }
+      }
+    }
+  })
   newMarker.on('drag', () => {
     const latlng = newMarker.getLatLng()
     missionStore.moveWaypoint(waypoint.id, [latlng.lat, latlng.lng])
@@ -2780,6 +2851,14 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     const latlng = newMarker.getLatLng()
     missionStore.moveWaypoint(waypoint.id, [latlng.lat, latlng.lng])
     isDraggingMarker.value = false
+    // Ensure tooltip is still visible after drag
+    const markerSize = getMarkerSizeFromZoom(zoom.value)
+    if (markerSize === 'md') {
+      const tooltip = newMarker.getTooltip()
+      if (tooltip && tooltip.options.permanent) {
+        newMarker.openTooltip()
+      }
+    }
   })
 
   newMarker.on('contextmenu', (event: LeafletMouseEvent) => {
@@ -2837,6 +2916,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
 
   newMarker.addTo(planningMap.value)
   waypointMarkers.value[waypoint.id] = newMarker
+  updateWaypointMarkers()
 }
 
 const getMarkerSizeFromZoom = (zoomLevel: number): MarkerSizes => {
@@ -2864,14 +2944,47 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
     if (oldMarker) {
       const oldWp = missionStore.currentPlanningWaypoints.find((w) => w.id === oldWaypointId)
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
+      const oldWaypointNumber = waypointNumbers.value[oldWaypointId]
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false),
+          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false, oldWaypointNumber),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
         })
       )
+
+      if (markerSize === 'xs' || markerSize === 'sm') {
+        oldMarker.off('mouseover')
+        oldMarker.off('mouseout')
+        oldMarker.unbindTooltip()
+        const hoverTooltip = L.tooltip({
+          content: `${oldWaypointNumber}`,
+          permanent: false,
+          direction: 'top',
+          className: 'waypoint-hover-tooltip',
+          interactive: false,
+        })
+        oldMarker.bindTooltip(hoverTooltip)
+        oldMarker.on('mouseover', () => {
+          oldMarker.openTooltip()
+        })
+        oldMarker.on('mouseout', () => {
+          oldMarker.closeTooltip()
+        })
+      } else if (markerSize === 'md') {
+        const tooltip = oldMarker.getTooltip()
+        if (tooltip && tooltip.options.permanent) {
+          oldMarker.openTooltip()
+          nextTick(() => {
+            const tooltipElement = tooltip.getElement()
+            if (tooltipElement) {
+              tooltipElement.style.display = 'block'
+              tooltipElement.style.opacity = '1'
+            }
+          })
+        }
+      }
     }
   }
 
@@ -2880,14 +2993,33 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
     if (newMarker) {
       const newWp = missionStore.currentPlanningWaypoints.find((w) => w.id === newWaypointId)
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
+      const newWaypointNumber = waypointNumbers.value[newWaypointId]
       newMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true),
+          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true, newWaypointNumber),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
         })
       )
+
+      if (markerSize === 'xs' || markerSize === 'sm') {
+        newMarker.off('mouseover')
+        newMarker.off('mouseout')
+        newMarker.unbindTooltip()
+      } else if (markerSize === 'md') {
+        const tooltip = newMarker.getTooltip()
+        if (tooltip && tooltip.options.permanent) {
+          newMarker.openTooltip()
+          nextTick(() => {
+            const tooltipElement = tooltip.getElement()
+            if (tooltipElement) {
+              tooltipElement.style.display = 'block'
+              tooltipElement.style.opacity = '1'
+            }
+          })
+        }
+      }
     }
   }
 
@@ -2945,14 +3077,47 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
     if (oldMarker) {
       const markerSize = getMarkerSizeFromZoom(zoom.value)
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
+      const oldWaypointNumber = waypointNumbers.value[oldWaypoint.id]
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false, oldWaypointNumber),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
         })
       )
+
+      if (markerSize === 'xs' || markerSize === 'sm') {
+        oldMarker.off('mouseover')
+        oldMarker.off('mouseout')
+        oldMarker.unbindTooltip()
+        const hoverTooltip = L.tooltip({
+          content: `${oldWaypointNumber}`,
+          permanent: false,
+          direction: 'top',
+          className: 'waypoint-hover-tooltip',
+          interactive: false,
+        })
+        oldMarker.bindTooltip(hoverTooltip)
+        oldMarker.on('mouseover', () => {
+          oldMarker.openTooltip()
+        })
+        oldMarker.on('mouseout', () => {
+          oldMarker.closeTooltip()
+        })
+      } else if (markerSize === 'md') {
+        const tooltip = oldMarker.getTooltip()
+        if (tooltip && tooltip.options.permanent) {
+          oldMarker.openTooltip()
+          nextTick(() => {
+            const tooltipElement = tooltip.getElement()
+            if (tooltipElement) {
+              tooltipElement.style.display = 'block'
+              tooltipElement.style.opacity = '1'
+            }
+          })
+        }
+      }
     }
   }
 
@@ -3154,12 +3319,66 @@ onMounted(async () => {
     missionStore.userLastMapTileProvider = event.name as MapTileProvider
   })
 
+  // Keep tooltips open during map drag
+  let tooltipReopenTimeout: ReturnType<typeof setTimeout> | undefined
+  const keepWaypointTooltipsVisible = (): void => {
+    const markerSize = getMarkerSizeFromZoom(zoom.value)
+    if (markerSize === 'md') {
+      missionStore.currentPlanningWaypoints.forEach((wp) => {
+        const marker = waypointMarkers.value[wp.id]
+        if (marker) {
+          const tooltip = marker.getTooltip()
+          if (tooltip && tooltip.options.permanent) {
+            marker.openTooltip()
+            const tooltipElement = tooltip.getElement()
+            if (tooltipElement) {
+              tooltipElement.style.display = 'block'
+              tooltipElement.style.opacity = '1'
+            }
+          }
+        }
+      })
+    }
+  }
+
+  planningMap.value.on('movestart', () => {
+    keepWaypointTooltipsVisible()
+  })
+
+  planningMap.value.on('dragstart', () => {
+    keepWaypointTooltipsVisible()
+  })
+
+  planningMap.value.on('move', () => {
+    const markerSize = getMarkerSizeFromZoom(zoom.value)
+    if (markerSize === 'md') {
+      // Throttle tooltip reopening during move
+      if (tooltipReopenTimeout) {
+        clearTimeout(tooltipReopenTimeout)
+      }
+      tooltipReopenTimeout = setTimeout(() => {
+        keepWaypointTooltipsVisible()
+      }, 50)
+    }
+  })
+
   planningMap.value.on('moveend', () => {
+    if (tooltipReopenTimeout) {
+      clearTimeout(tooltipReopenTimeout)
+      tooltipReopenTimeout = undefined
+    }
     if (planningMap.value === undefined) return
     let { lat, lng } = planningMap.value.getCenter()
     if (lat && lng) {
       mapCenter.value = [lat, lng]
     }
+    // Reopen tooltips for markers at md zoom level after map drag
+    keepWaypointTooltipsVisible()
+  })
+
+  planningMap.value.on('dragend', () => {
+    // Reopen tooltips after drag ends
+    keepWaypointTooltipsVisible()
   })
   planningMap.value.on('zoomstart', clearLiveMeasure)
   planningMap.value.on('zoomend', () => {
@@ -3735,10 +3954,15 @@ watch(
 }
 
 .wp-marker-xs .selected-marker {
+  width: 14px;
+  height: 14px;
+  top: -4px;
+  left: -4px;
   border: 1px solid #ffff0099;
   box-shadow: 0 0 2px 1px rgba(255, 235, 59, 0.2);
   filter: drop-shadow(0 0 2px rgba(255, 235, 59, 0.1));
   outline: none;
+  padding: 5px;
 }
 
 .wp-marker-sm .waypoint-main-marker {
@@ -3749,6 +3973,10 @@ watch(
 }
 
 .wp-marker-sm .selected-marker {
+  width: 20px;
+  height: 20px;
+  top: -4px;
+  left: -4px;
   border: 1.5px solid #ffff0099;
   box-shadow: 0 0 3px 1.5px rgba(255, 235, 59, 0.2), 0 0 9px 4px rgba(255, 193, 7, 0.12);
   filter: drop-shadow(0 0 3px rgba(255, 235, 59, 0.1));
@@ -3811,6 +4039,35 @@ watch(
   border: 1px solid white;
   top: -2px;
   right: -2px;
+}
+.waypoint-number-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 8px;
+  font-weight: bold;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 300 !important;
+}
+.wp-marker-xs .waypoint-number-indicator {
+  font-size: 8px;
+}
+.wp-marker-sm .waypoint-number-indicator {
+  font-size: 10px;
+}
+.waypoint-hover-tooltip {
+  background-color: #1e498f;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: -12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 .waypoint-tooltip {
   background-color: transparent;
