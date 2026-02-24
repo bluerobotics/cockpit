@@ -253,6 +253,11 @@ import {
   TargetFollower,
   WhoToFollow,
 } from '@/libs/map/utils-map'
+import {
+  bindWaypointNumberTooltip,
+  getIconDimensionsFromMarkerSize,
+  getMarkerSizeFromZoom,
+} from '@/libs/map/waypoint-markers'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { copyToClipboard, degrees } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
@@ -260,13 +265,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type {
-  IconDimensions,
-  MarkerSizes,
-  ResolvedPointOfInterest,
-  Waypoint,
-  WaypointCoordinates,
-} from '@/types/mission'
+import type { ResolvedPointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
@@ -309,6 +308,7 @@ const showButtons = computed(
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
 const reachedWaypoints = shallowRef<Record<number, L.Marker>>({})
+const persistentTooltipSeq = ref<number | undefined>(undefined)
 const contextMenuRef = ref()
 const isDragging = ref(false)
 const isPinching = ref(false)
@@ -392,22 +392,6 @@ const getReachedWaypointIndices = computed(() => {
   return waypointIndices
 })
 
-const getMarkerSizeFromZoom = (zoomLevel: number): MarkerSizes => {
-  if (zoomLevel <= 17) return 'xs'
-  if (zoomLevel > 17 && zoomLevel <= 19) return 'sm'
-  return 'md'
-}
-
-const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
-  if (size === 'xs') {
-    return { iconSize: [6, 6], iconAnchor: [3, 3] }
-  }
-  if (size === 'sm') {
-    return { iconSize: [12, 12], iconAnchor: [6, 6] }
-  }
-  return { iconSize: [26, 26], iconAnchor: [13, 13] } // md size
-}
-
 const createWaypointMarkerHtml = (isReached: boolean, isCurrent = false): string => {
   let baseClass = 'marker-icon'
   if (isReached) {
@@ -437,47 +421,50 @@ const createWaypointMarkerIcon = (isReached: boolean, isCurrent = false): L.DivI
   })
 }
 
+const waypointTooltipClass = (isReached: boolean, isCurrent: boolean): string => {
+  if (isReached) return 'waypoint-tooltip waypoint-tooltip--reached'
+  if (isCurrent) return 'waypoint-tooltip waypoint-tooltip--current-waypoint'
+  return 'waypoint-tooltip'
+}
+
 const applyWaypointMarkerStyle = (seq: number): void => {
   const marker = reachedWaypoints.value[seq]
   if (!marker) return
   const isReached = getReachedWaypointIndices.value.has(seq)
   const idx = seq - 1
   const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
-  const markerSize = getMarkerSizeFromZoom(zoom.value)
-  const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
-  marker.setIcon(
-    L.divIcon({
-      html: createWaypointMarkerHtml(isReached, isCurrent),
-      className: 'waypoint-marker-icon',
-      iconSize: dimensions.iconSize,
-      iconAnchor: dimensions.iconAnchor,
-    })
-  )
+  marker.setIcon(createWaypointMarkerIcon(isReached, isCurrent))
 
-  // Updates the tooltip class for reached/current waypoints and visibility based on size
-  const tooltip = marker.getTooltip()
-  if (tooltip) {
-    if (markerSize === 'xs' || markerSize === 'sm') {
-      tooltip.setOpacity(0)
-    } else {
-      tooltip.setOpacity(1)
-    }
-
-    const tooltipElement = tooltip.getElement()
-    if (tooltipElement) {
-      tooltipElement.classList.remove('waypoint-tooltip--reached', 'waypoint-tooltip--current-waypoint')
-      if (isReached) {
-        tooltipElement.classList.add('waypoint-tooltip--reached')
-      } else if (isCurrent) {
-        tooltipElement.classList.add('waypoint-tooltip--current-waypoint')
-      }
-    }
-  }
+  bindWaypointNumberTooltip(marker, {
+    label: seq.toString(),
+    size: getMarkerSizeFromZoom(zoom.value),
+    permanentClassName: waypointTooltipClass(isReached, isCurrent),
+    compactClassName: 'waypoint-hover-tooltip',
+    pinned: persistentTooltipSeq.value === seq,
+  })
 }
 
 const refreshReachedWaypointMarkerStyles = (): void => {
   Object.keys(reachedWaypoints.value).forEach((k) => applyWaypointMarkerStyle(Number(k)))
+}
+
+// Pins the number tooltip of a waypoint too small to show it inline, restyling only the two markers
+// whose pinned state actually changed.
+const togglePersistentTooltip = (seq: number): void => {
+  if (getMarkerSizeFromZoom(zoom.value) === 'md') return
+  const previousSeq = persistentTooltipSeq.value
+  persistentTooltipSeq.value = previousSeq === seq ? undefined : seq
+  logUserAction(`${persistentTooltipSeq.value === seq ? 'Pinned' : 'Unpinned'} the tooltip of waypoint ${seq}`)
+  if (previousSeq !== undefined) applyWaypointMarkerStyle(previousSeq)
+  if (persistentTooltipSeq.value !== undefined) applyWaypointMarkerStyle(persistentTooltipSeq.value)
+}
+
+const clearPersistentTooltip = (): void => {
+  const pinnedSeq = persistentTooltipSeq.value
+  if (pinnedSeq === undefined) return
+  persistentTooltipSeq.value = undefined
+  applyWaypointMarkerStyle(pinnedSeq)
 }
 
 const poiManagerMapWidgetRef = ref<typeof PoiManager | null>(null)
@@ -744,6 +731,7 @@ onMounted(async () => {
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
     poiPopupRef.value?.close()
+    clearPersistentTooltip()
   })
 
   // Update center value after panning
@@ -1313,6 +1301,9 @@ watch(mapWaypoints, (newWaypoints) => {
   mapWaypointMarkers.value.forEach((m) => m.remove())
   mapWaypointMarkers.value = []
 
+  // Waypoint numbers are positional, so a surviving pin would migrate to whichever waypoint now holds its seq
+  persistentTooltipSeq.value = undefined
+
   // Add a marker for each point
   newWaypoints.forEach((waypoint, idx) => {
     const seq = idx + 1
@@ -1324,68 +1315,30 @@ watch(mapWaypoints, (newWaypoints) => {
       marker = L.marker(waypoint.coordinates, { icon: markerIcon })
       reachedWaypoints.value[seq] = marker
 
-      const markerSizeForTooltip = getMarkerSizeFromZoom(zoom.value)
-      const markerTooltip = L.tooltip({
-        content: seq.toString(),
-        permanent: true,
-        direction: 'center',
-        className: isReached
-          ? 'waypoint-tooltip waypoint-tooltip--reached'
-          : isCurrent
-          ? 'waypoint-tooltip waypoint-tooltip--current-waypoint'
-          : 'waypoint-tooltip',
-        opacity: markerSizeForTooltip === 'md' ? 1 : 0,
+      marker.on('click', (event: L.LeafletMouseEvent) => {
+        L.DomEvent.stopPropagation(event)
+        poiPopupRef.value?.close()
+        togglePersistentTooltip(seq)
       })
 
-      marker.bindTooltip(markerTooltip)
       marker.on('contextmenu', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e)
         e.originalEvent.stopPropagation()
         e.originalEvent.preventDefault()
         openContextMenuAt(e.originalEvent, seq)
       })
+
       map.value?.addLayer(marker)
     } else {
       marker.setLatLng(waypoint.coordinates as LatLngTuple)
-      const markerSizeForUpdate = getMarkerSizeFromZoom(zoom.value)
-      const tooltip = marker.getTooltip()
-      if (tooltip) {
-        if (markerSizeForUpdate === 'xs' || markerSizeForUpdate === 'sm') {
-          tooltip.setOpacity(0)
-        } else {
-          tooltip.setContent(seq.toString())
-          tooltip.setOpacity(1)
-        }
-      }
-      applyWaypointMarkerStyle(seq)
     }
+    applyWaypointMarkerStyle(seq)
   })
 })
 
 // Keep an eye on the current mission status and update the waypoint markers accordingly
 watch([getReachedWaypointIndices, currentMapWpIndex], () => {
-  Object.entries(reachedWaypoints.value).forEach(([seqStr, marker]) => {
-    const seq = Number(seqStr)
-    const idx = seq - 1
-    const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
-    const isReached = getReachedWaypointIndices.value.has(seq)
-
-    applyWaypointMarkerStyle(seq)
-
-    const tooltip = marker.getTooltip()
-    if (tooltip) {
-      const tooltipElement = tooltip.getElement()
-      if (tooltipElement) {
-        tooltipElement.classList.remove('waypoint-tooltip--reached', 'waypoint-tooltip--current-waypoint')
-        if (isReached) {
-          tooltipElement.classList.add('waypoint-tooltip--reached')
-        } else if (isCurrent) {
-          tooltipElement.classList.add('waypoint-tooltip--current-waypoint')
-        }
-      }
-      tooltip.update()
-    }
-  })
+  refreshReachedWaypointMarkerStyles()
 })
 
 // Create polyline for the vehicle path using a dedicated Canvas renderer to prevent performance issues
@@ -1889,6 +1842,18 @@ const centerOnMission = (): void => {
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
 }
 
+:deep(.waypoint-hover-tooltip) {
+  background-color: #1e498f;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: -12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
 :global(.marker-icon) {
   background-color: #1e498f;
   border: 1px solid #ffffff55;
@@ -1920,6 +1885,7 @@ const centerOnMission = (): void => {
  * the waypoint marker DOM elements. Singular icon tooltips (home, goto, global origin,
  * default-position) are kept visible. */
 :global(.leaflet-container.cockpit-drag-active .waypoint-tooltip:not(.waypoint-tooltip--icon)),
+:global(.leaflet-container.cockpit-drag-active .waypoint-hover-tooltip),
 :global(.leaflet-container.cockpit-drag-active .waypoint-marker-icon) {
   display: none !important;
 }
