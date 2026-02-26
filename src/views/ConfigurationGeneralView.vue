@@ -45,15 +45,6 @@
                   Show tutorial
                 </v-btn>
                 <v-btn
-                  v-if="isElectron()"
-                  size="x-small"
-                  class="bg-[#FFFFFF22] shadow-1"
-                  variant="flat"
-                  @click="openCockpitFolder"
-                >
-                  Open Cockpit folder
-                </v-btn>
-                <v-btn
                   size="x-small"
                   class="bg-[#FFFFFF22] shadow-1"
                   variant="flat"
@@ -69,6 +60,51 @@
                 >
                   {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
                 </v-btn>
+              </div>
+              <v-divider v-if="isElectron()" class="w-full opacity-[0.08]" />
+              <div v-if="isElectron()" class="flex flex-col w-full py-4 gap-1">
+                <span class="text-md mb-1 text-slate-200">Cockpit folder location:</span>
+                <div class="flex items-center gap-6">
+                  <v-tooltip
+                    :text="cockpitFolderPath"
+                    :disabled="cockpitFolderPath !== defaultCockpitFolderPath"
+                    location="bottom"
+                    open-delay="300"
+                  >
+                    <template #activator="{ props: tooltipProps }">
+                      <v-text-field
+                        v-bind="tooltipProps"
+                        :model-value="cockpitFolderPath"
+                        variant="filled"
+                        density="compact"
+                        hide-details
+                        readonly
+                        class="cursor-pointer"
+                        @click="browseCockpitFolder"
+                      >
+                        <template #append-inner>
+                          <v-icon
+                            v-if="cockpitFolderPath !== defaultCockpitFolderPath"
+                            v-tooltip.bottom="'Reset to default folder location'"
+                            color="white"
+                            @click.stop="resetCockpitFolderPath"
+                          >
+                            mdi-restore
+                          </v-icon>
+                        </template>
+                      </v-text-field>
+                    </template>
+                  </v-tooltip>
+                  <v-btn
+                    size="small"
+                    append-icon="mdi-folder-open-outline"
+                    class="bg-[#FFFFFF22] shadow-2"
+                    variant="flat"
+                    @click="openCockpitFolder"
+                  >
+                    Open folder
+                  </v-btn>
+                </div>
               </div>
             </div>
           </template>
@@ -392,6 +428,7 @@ import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
@@ -416,11 +453,75 @@ const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const { openSnackbar } = useSnackbar()
+const { showDialog, closeDialog } = useInteractionDialog()
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
 const newGlobalAddress = ref(mainVehicleStore.globalAddress)
 const showCockpitSettingsDialog = ref(false)
+
+const cockpitFolderPath = ref('')
+const defaultCockpitFolderPath = ref('')
+
+const loadCockpitFolderPath = async (): Promise<void> => {
+  if (!isElectron() || !window.electronAPI) return
+  cockpitFolderPath.value = await window.electronAPI.getCockpitFolderPath()
+  defaultCockpitFolderPath.value = await window.electronAPI.getDefaultCockpitFolderPath()
+}
+
+const applyFolderPath = async (path: string): Promise<void> => {
+  if (!window.electronAPI) return
+  await window.electronAPI.setCockpitFolderPath(path)
+  cockpitFolderPath.value = path
+}
+
+const browseCockpitFolder = async (): Promise<void> => {
+  if (!window.electronAPI) return
+  const selected = await window.electronAPI.selectCockpitFolder()
+  if (!selected) return
+
+  const folderName = selected.split(/[/\\]/).filter(Boolean).pop()
+  if (folderName === 'Cockpit') {
+    await applyFolderPath(selected)
+    return
+  }
+
+  const selectedName = selected.split(/[/\\]/).filter(Boolean).pop() ?? ''
+  showDialog({
+    title: 'Cockpit folder location',
+    message:
+      `The selected folder is not named "Cockpit". Would you like to use ` +
+      `${selected} directly, or create and use a Cockpit subfolder inside it?`,
+    variant: 'info',
+    persistent: true,
+    maxWidth: 700,
+    actions: [
+      { text: 'Cancel', size: 'small', action: () => closeDialog() },
+      {
+        text: `Use ${selectedName}`,
+        size: 'small',
+        action: () => {
+          closeDialog()
+          applyFolderPath(selected)
+        },
+      },
+      {
+        text: `Use ${selectedName}/Cockpit`,
+        size: 'small',
+        action: () => {
+          closeDialog()
+          applyFolderPath(`${selected}/Cockpit`)
+        },
+      },
+    ],
+  })
+}
+
+const resetCockpitFolderPath = async (): Promise<void> => {
+  if (!window.electronAPI) return
+  await window.electronAPI.setCockpitFolderPath(defaultCockpitFolderPath.value)
+  cockpitFolderPath.value = defaultCockpitFolderPath.value
+}
 
 const setGlobalAddress = async (): Promise<void> => {
   await globalAddressForm.value.validate()
@@ -643,6 +744,7 @@ const newGenericWebSocketUrl = ref(exampleGenericWebSocketUrl)
 let unsubscribeGenericWebSocket: (() => void) | null = null
 
 onMounted(() => {
+  loadCockpitFolderPath()
   tryToPrettifyRtcConfig()
   unsubscribeGenericWebSocket = listenToGenericWebSocketConnections((connections) => {
     genericWebSocketConnections.value = connections
