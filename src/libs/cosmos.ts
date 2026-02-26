@@ -279,6 +279,27 @@ declare global {
        */
       openCockpitFolder: () => void
       /**
+       * Get the current Cockpit folder path
+       * @returns {Promise<string>} The current folder path
+       */
+      getCockpitFolderPath: () => Promise<string>
+      /**
+       * Get the default Cockpit folder path
+       * @returns {Promise<string>} The default folder path
+       */
+      getDefaultCockpitFolderPath: () => Promise<string>
+      /**
+       * Set a new Cockpit folder path
+       * @param {string} newPath - The new folder path
+       * @returns {Promise<void>}
+       */
+      setCockpitFolderPath: (newPath: string) => Promise<void>
+      /**
+       * Open a native folder picker to select a Cockpit folder
+       * @returns {Promise<string | null>} The selected path, or null if cancelled
+       */
+      selectCockpitFolder: () => Promise<string | null>
+      /**
        * Open video folder
        */
       openVideoFolder: () => void

@@ -1,6 +1,9 @@
 import Store from 'electron-store'
 
 const electronStoreSchema = {
+  cockpitFolderPath: {
+    type: 'string',
+  },
   windowBounds: {
     type: 'object',
     properties: {
@@ -25,6 +28,10 @@ const electronStoreSchema = {
  * Stores configuration data
  */
 export interface ElectronStoreSchema {
+  /**
+   * Custom Cockpit folder path, overriding the default ~/Cockpit
+   */
+  cockpitFolderPath: string | undefined
   /**
    * Window bounds
    */
