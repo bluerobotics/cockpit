@@ -13,7 +13,7 @@ import type { LiveConcatProcessResult, LiveStreamProcess, ZipExtractionResult } 
 
 import { videoFilename, videoThumbnailFilename } from '../../utils/video'
 import { getFFmpegPath } from './ffmpeg-path'
-import { cockpitFolderPath, filesystemStorage } from './storage'
+import { filesystemStorage, getCockpitFolderPath } from './storage'
 
 /**
  * Live video streaming service for Electron
@@ -72,7 +72,7 @@ const startVideoRecording = async (
   const tempDir = await createTempDirectory(`cockpit_video_recording_${recordingHash}`)
 
   // Get video folder path and construct output path
-  const videosPath = join(cockpitFolderPath, 'videos')
+  const videosPath = join(getCockpitFolderPath(), 'videos')
   await fs.mkdir(videosPath, { recursive: true })
 
   // Output directly as MP4 with fragmented format
@@ -553,7 +553,7 @@ const createVideoChunksZip = async (hash: string): Promise<string> => {
   console.debug(`Creating ZIP file for chunk group ${hash}`)
 
   // Find all chunk files for this hash
-  const tempChunksPath = join(cockpitFolderPath, 'videos', 'temporary-video-chunks')
+  const tempChunksPath = join(getCockpitFolderPath(), 'videos', 'temporary-video-chunks')
 
   let chunkFiles: string[] = []
   try {
@@ -603,7 +603,7 @@ const createVideoChunksZip = async (hash: string): Promise<string> => {
   }
 
   // Generate ZIP filename
-  const tempChunksFolderPath = join(cockpitFolderPath, 'videos', 'temporary-video-chunks')
+  const tempChunksFolderPath = join(getCockpitFolderPath(), 'videos', 'temporary-video-chunks')
   const zipFilename = `${defaultFileName}.zip`
   const zipFilePath = join(tempChunksFolderPath, zipFilename)
 
@@ -653,7 +653,7 @@ const createVideoChunksZip = async (hash: string): Promise<string> => {
 
     // Add .ass telemetry file if found - ALWAYS process this regardless of chunk failures
     if (assFileName) {
-      const assFilePath = join(cockpitFolderPath, 'videos', assFileName)
+      const assFilePath = join(getCockpitFolderPath(), 'videos', assFileName)
 
       fs.access(assFilePath)
         .then(() => fs.stat(assFilePath))

@@ -1,13 +1,16 @@
 import { dialog, ipcMain, shell } from 'electron'
 import { app } from 'electron'
+import { mkdirSync } from 'fs'
 import * as fs from 'fs/promises'
 import { dirname, join } from 'path'
 
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 
-// Create a new storage interface for filesystem
-export const cockpitFolderPath = join(app.getPath('home'), 'Cockpit')
-fs.mkdir(cockpitFolderPath, { recursive: true })
+import store from './config-store'
+
+const defaultCockpitFolderPath = join(app.getPath('home'), 'Cockpit')
+let cockpitFolderPath = store.get('cockpitFolderPath') ?? defaultCockpitFolderPath
+mkdirSync(cockpitFolderPath, { recursive: true })
 
 export const filesystemStorage = {
   async setItem(key: string, value: ArrayBuffer, subFolders?: string[]): Promise<void> {
@@ -88,6 +91,28 @@ export const setupFilesystemStorage = (): void => {
     await shell.openPath(tempChunksFolderPath)
   })
 
+  ipcMain.handle('get-cockpit-folder-path', () => cockpitFolderPath)
+
+  ipcMain.handle('get-default-cockpit-folder-path', () => defaultCockpitFolderPath)
+
+  ipcMain.handle('set-cockpit-folder-path', async (_, newPath: string) => {
+    cockpitFolderPath = newPath
+    await fs.mkdir(cockpitFolderPath, { recursive: true })
+    store.set('cockpitFolderPath', cockpitFolderPath)
+  })
+
+  ipcMain.handle('select-cockpit-folder', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Select Cockpit folder',
+      defaultPath: cockpitFolderPath,
+    })
+    if (result.canceled || result.filePaths.length === 0) {
+      return null
+    }
+    return result.filePaths[0]
+  })
+
   /**
    * Get file stats for a file
    * @param pathOrKey - Either a full file path, or a key (filename) if subFolders is provided
@@ -135,3 +160,9 @@ export const setupFilesystemStorage = (): void => {
     return result.filePaths[0]
   })
 }
+
+/**
+ * Returns the current Cockpit folder path
+ * @returns {string} The active Cockpit folder path
+ */
+export const getCockpitFolderPath = (): string => cockpitFolderPath
