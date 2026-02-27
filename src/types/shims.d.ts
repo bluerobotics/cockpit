@@ -1,4 +1,14 @@
 /* eslint-disable jsdoc/require-jsdoc */
+
+interface NavigatorUAData {
+  platform: string
+  getHighEntropyValues(hints: string[]): Promise<{ architecture?: string; [key: string]: unknown }>
+}
+
+interface Navigator {
+  userAgentData?: NavigatorUAData
+}
+
 declare module '@vue-leaflet/vue-leaflet'
 declare module 'gamepad.js'
 declare module 'vuetify'

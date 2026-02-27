@@ -2,7 +2,9 @@ import ky from 'ky'
 import localforage from 'localforage'
 import posthog from 'posthog-js'
 
+import { app_version } from '../cosmos'
 import { settingsManager } from '../settings-management'
+import { isElectron } from '../utils'
 
 const cockpitTelemetryEnabledKey = 'cockpit-enable-usage-statistics-telemetry'
 
@@ -131,4 +133,94 @@ class EventTracker {
 }
 
 const eventTracker = new EventTracker()
+
+/**
+ * Telemetry data about the system for analytics
+ */
+export interface SystemTelemetryInfo {
+  /**
+   * The version of the application
+   */
+  appVersion: string
+  /**
+   * Whether the application is running in Electron
+   */
+  isElectron: boolean
+  /**
+   * The platform of the system. Possibilities can be found in the Platform enum.
+   */
+  platform: string | null
+  /**
+   * The architecture of the system. Possibilities can be found in the Architecture enum.
+   */
+  arch: string | null
+  /**
+   * The width of the window in pixels
+   */
+  windowWidth: number
+  /**
+   * The height of the window in pixels
+   */
+  windowHeight: number
+  /**
+   * Information about all connected displays
+   */
+  displays: Array<{
+    /**
+     * The width of the display in pixels
+     */
+    width: number
+    /**
+     * The height of the display in pixels
+     */
+    height: number
+    /**
+     * The scale factor of the display (DPI scaling)
+     */
+    scaleFactor?: number
+  }>
+  /**
+   * The locale of the system
+   */
+  locale: string
+}
+
+/**
+ * Get system information for telemetry purposes
+ * @returns {Promise<SystemTelemetryInfo>} System information for analytics
+ */
+export const getSystemInfoForTelemetry = async (): Promise<SystemTelemetryInfo> => {
+  const runningInElectron = isElectron()
+
+  let platform: string | null = null
+  let arch: string | null = null
+  let displays: SystemTelemetryInfo['displays'] = []
+
+  if (runningInElectron && window.electronAPI?.getSystemInfo) {
+    const systemInfo = await window.electronAPI.getSystemInfo()
+    platform = systemInfo.platform
+    arch = systemInfo.arch
+    displays = systemInfo.displays
+  } else {
+    platform = navigator.userAgentData?.platform ?? navigator.platform ?? null
+    try {
+      const uaData = await navigator.userAgentData?.getHighEntropyValues(['architecture'])
+      arch = uaData?.architecture ?? null
+    } catch {
+      arch = null
+    }
+  }
+
+  return {
+    appVersion: app_version.version,
+    isElectron: runningInElectron,
+    platform,
+    arch,
+    windowWidth: window.innerWidth,
+    windowHeight: window.innerHeight,
+    displays,
+    locale: navigator.language,
+  }
+}
+
 export default eventTracker

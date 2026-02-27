@@ -19,7 +19,7 @@ import VueVirtualScroller from 'vue-virtual-scroller'
 
 import { initializeActionAutoRun } from '@/libs/actions/auto-run'
 import { app_version } from '@/libs/cosmos'
-import eventTracker from '@/libs/external-telemetry/event-tracking'
+import eventTracker, { getSystemInfoForTelemetry } from '@/libs/external-telemetry/event-tracking'
 import { setupPredefinedLakeAndActionResources } from '@/libs/joystick/protocols/predefined-resources'
 import { setupPostPiniaConnections } from '@/libs/post-pinia-connections'
 import { datalogger } from '@/libs/sensors-logging'
@@ -40,7 +40,9 @@ loadFonts()
 
 const app = createApp(App)
 
-eventTracker.capture('App started')
+getSystemInfoForTelemetry().then((systemInfo) => {
+  eventTracker.capture('App started', { ...systemInfo })
+})
 
 // Initialize Sentry for error tracking
 // Only track usage statistics if the user has not opted out and the app is not in development mode
