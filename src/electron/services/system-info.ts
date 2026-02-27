@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, screen } from 'electron'
 import * as os from 'os'
 
 import type { BasicSystemInfo } from '@/types/platform'
@@ -8,10 +8,17 @@ import type { BasicSystemInfo } from '@/types/platform'
  * @returns {BasicSystemInfo} Basic system information
  */
 export const getSystemInfo = (): BasicSystemInfo => {
+  const displays = screen.getAllDisplays().map((display) => ({
+    width: display.size.width,
+    height: display.size.height,
+    scaleFactor: display.scaleFactor,
+  }))
+
   return {
     platform: os.platform(),
     arch: os.arch(),
     processArch: process.arch,
+    displays,
   }
 }
 

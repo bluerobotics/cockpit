@@ -19,6 +19,24 @@ export enum Architecture {
 }
 
 /**
+ * Display information
+ */
+export interface DisplayInfo {
+  /**
+   * The width of the display in pixels
+   */
+  width: number
+  /**
+   * The height of the display in pixels
+   */
+  height: number
+  /**
+   * The scale factor of the display (DPI scaling)
+   */
+  scaleFactor: number
+}
+
+/**
  * Basic system information from electron
  */
 export interface BasicSystemInfo {
@@ -34,6 +52,10 @@ export interface BasicSystemInfo {
    * The architecture of the process. Possibilities can be found in the Architecture enum.
    */
   processArch: string
+  /**
+   * Information about all connected displays
+   */
+  displays: DisplayInfo[]
 }
 
 /**
