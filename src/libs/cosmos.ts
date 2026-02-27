@@ -413,6 +413,23 @@ declare global {
          * The architecture of the process. Possibilities can be found in the Architecture enum.
          */
         processArch: string
+        /**
+         * Information about all connected displays
+         */
+        displays: Array<{
+          /**
+           * The width of the display in pixels
+           */
+          width: number
+          /**
+           * The height of the display in pixels
+           */
+          height: number
+          /**
+           * The scale factor of the display (DPI scaling)
+           */
+          scaleFactor: number
+        }>
       }>
       /**
        * Start live video streaming process with FFmpeg
