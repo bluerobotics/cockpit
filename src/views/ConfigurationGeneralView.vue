@@ -153,7 +153,7 @@
                 >
                   <template #append-inner>
                     <v-icon v-tooltip.bottom="'Reset global address'" color="white" @click="resetGlobalAddress">
-                      mdi-refresh
+                      mdi-restore
                     </v-icon>
                   </template>
                 </v-text-field>
@@ -209,7 +209,7 @@
                         :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                         @click="resetMainVehicleConnectionURI"
                       >
-                        mdi-refresh
+                        mdi-restore
                       </v-icon>
                     </template>
                   </v-text-field>
@@ -275,7 +275,7 @@
                         :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
                         @click="resetWebRTCSignallingURI"
                       >
-                        mdi-refresh
+                        mdi-restore
                       </v-icon>
                     </template>
                   </v-text-field>
