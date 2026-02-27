@@ -237,6 +237,7 @@ import ConfigurationUIView from '@/views/ConfigurationUIView.vue'
 import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
 import ToolsDataLakeView from '@/views/ToolsDataLakeView.vue'
 import ToolsMAVLinkView from '@/views/ToolsMAVLinkView.vue'
+import ToolsStatsView from '@/views/ToolsStatsView.vue'
 
 const route = useRoute()
 const interfaceStore = useAppInterfaceStore()
@@ -434,6 +435,12 @@ const toolsMenu = computed(() => {
       title: 'Data-lake',
       componentName: SubMenuComponentName.ToolsDataLake,
       component: markRaw(ToolsDataLakeView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-chart-line',
+      title: 'Stats',
+      componentName: SubMenuComponentName.ToolsStats,
+      component: markRaw(ToolsStatsView) as SubMenuComponent,
     },
   ]
 
