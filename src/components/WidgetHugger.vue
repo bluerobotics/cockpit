@@ -114,10 +114,10 @@ const size = ref(widget.value.size)
 
 // Set up watchers to update position and size when widget changes
 watch(
-  () => widget.value,
-  (newWidget) => {
-    position.value = newWidget.position
-    size.value = newWidget.size
+  [() => widget.value.position, () => widget.value.size],
+  ([newPosition, newSize]) => {
+    position.value = newPosition
+    size.value = newSize
   },
   { immediate: true }
 )
