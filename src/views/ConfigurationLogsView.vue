@@ -394,7 +394,7 @@
               <div class="flex justify-end w-full mt-2">
                 <v-btn size="x-small" variant="text" class="mr-2" @click="resetAllChips">
                   Reset Positions
-                  <v-icon size="18" class="ml-2">mdi-refresh</v-icon>
+                  <v-icon size="18" class="ml-2">mdi-restore</v-icon>
                 </v-btn>
               </div>
             </div>
