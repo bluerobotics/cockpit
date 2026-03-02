@@ -72,10 +72,10 @@ import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { constrain, degrees, radians, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
@@ -84,7 +84,6 @@ const interfaceStore = useAppInterfaceStore()
 
 datalogger.registerUsage(DatalogVariable.roll)
 datalogger.registerUsage(DatalogVariable.pitch)
-const store = useMainVehicleStore()
 const props = defineProps<{
   /**
    * Widget reference
@@ -142,14 +141,14 @@ const defaultOptions = {
   desiredAimRadius: 150,
   hudColor: colorSwatches.value[0][0],
   cameraFOV: 64,
+  rollVariableId: '/mavlink/1/1/ATTITUDE/roll',
+  pitchVariableId: '/mavlink/1/1/ATTITUDE/pitch',
+  cameraTiltVariableId: 'cameraTiltDeg',
 }
+
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  Object.entries(defaultOptions).forEach(([key, value]) => {
-    if (widget.value.options[key] === undefined) {
-      widget.value.options[key] = value
-    }
-  })
+  widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 
 onMounted(() => {
@@ -172,27 +171,31 @@ const aimRadius = computed(() => constrain(widget.value.options.desiredAimRadius
  * Deal with high frequency update and decrease cpu usage when drawing
  * low degrees changes
  */
-let oldRoll: number | undefined = undefined
-let oldPitch: number | undefined = undefined
-watch(store.attitude, (attitude) => {
-  const rollDiff = Math.abs(degrees(attitude.roll - (oldRoll || 0)))
-  const pitchDiff = Math.abs(degrees(attitude.pitch - (oldPitch || 0)))
+const { value: rawRoll } = useDataLakeVariable(() => widget.value.options.rollVariableId)
+const { value: rawPitch } = useDataLakeVariable(() => widget.value.options.pitchVariableId)
+const { value: rawCameraTilt } = useDataLakeVariable(() => widget.value.options.cameraTiltVariableId)
 
-  if (rollDiff > 0.1) {
-    oldRoll = attitude.roll
-    rollAngleDeg.value = degrees(store.attitude.roll)
-  }
-
-  if (pitchDiff > 0.1) {
-    oldPitch = attitude.pitch
-    pitchAngleDeg.value = degrees(store.attitude.pitch)
+watch(rawRoll, (newRoll) => {
+  if (newRoll === undefined) return
+  const deg = degrees(newRoll as number)
+  if (Math.abs(deg - rollAngleDeg.value) > 0.1) {
+    rollAngleDeg.value = deg
   }
 })
 
-watch(store.genericVariables, (message: Record<string, unknown>) => {
-  const new_tilt = message.cameraTiltDeg as number
-  if (cameraTiltDeg.value === undefined || Math.abs(new_tilt - cameraTiltDeg.value) > 0.1) {
-    cameraTiltDeg.value = new_tilt
+watch(rawPitch, (newPitch) => {
+  if (newPitch === undefined) return
+  const deg = degrees(newPitch as number)
+  if (Math.abs(deg - pitchAngleDeg.value) > 0.1) {
+    pitchAngleDeg.value = deg
+  }
+})
+
+watch(rawCameraTilt, (newTilt) => {
+  if (newTilt === undefined) return
+  const tilt = newTilt as number
+  if (cameraTiltDeg.value === undefined || Math.abs(tilt - cameraTiltDeg.value) > 0.1) {
+    cameraTiltDeg.value = tilt
   }
 })
 
@@ -328,7 +331,7 @@ const renderCanvas = (): void => {
 // Update the height of each pitch line when the vehicle pitch is updated
 watch(pitchAngleDeg, () => {
   pitchAngles.forEach((angle: number) => {
-    const y = -round(angleY(angle + renderVars.cameraTiltDeg - degrees(store.attitude.pitch)), 2)
+    const y = -round(angleY(angle + renderVars.cameraTiltDeg - pitchAngleDeg.value), 2)
     gsap.to(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
   })
   gsap.to(renderVars, 0.1, { pitchDegrees: pitchAngleDeg.value })
@@ -342,7 +345,7 @@ watch(rollAngleDeg, () => {
 watch(cameraTiltDeg, () => {
   gsap.to(renderVars, 0.1, { cameraTiltDeg: cameraTiltDeg.value })
   pitchAngles.forEach((angle: number) => {
-    const y = -round(angleY(angle + renderVars.cameraTiltDeg - degrees(store.attitude.pitch)), 2)
+    const y = -round(angleY(angle + renderVars.cameraTiltDeg - pitchAngleDeg.value), 2)
     gsap.to(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
   })
 })
