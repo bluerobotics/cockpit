@@ -215,9 +215,10 @@ import { useDebounce } from '@vueuse/core'
 import { computed, onBeforeMount, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import { defaultBatteryLevelColorScheme, defaultBatteryLevelThresholds } from '@/assets/defaults'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { BatteryLevel, BatteryLevelThresholds } from '@/types/general'
 import type { MiniWidget } from '@/types/widgets'
@@ -237,9 +238,11 @@ const defaultOptions = {
   showCurrent: true,
   showPower: true,
   toggleInterval: 1000,
+  voltageVariableId: '/mavlink/{{autopilotSystemId}}/1/SYS_STATUS/voltage_battery',
+  currentVariableId: '/mavlink/{{autopilotSystemId}}/1/SYS_STATUS/current_battery',
+  remainingVariableId: '/mavlink/{{autopilotSystemId}}/1/SYS_STATUS/battery_remaining',
 }
 
-const store = useMainVehicleStore()
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 
@@ -262,11 +265,29 @@ const resetToDefaults = (): void => {
   miniWidget.value.options.batteryThresholds = Object.assign({}, defaultBatteryLevelThresholds)
 }
 
+const resolvedVoltageVariableId = useResolvedDataLakeTemplate(() => miniWidget.value.options.voltageVariableId)
+const resolvedCurrentVariableId = useResolvedDataLakeTemplate(() => miniWidget.value.options.currentVariableId)
+const resolvedRemainingVariableId = useResolvedDataLakeTemplate(() => miniWidget.value.options.remainingVariableId)
+const { value: rawVoltageFromDL } = useDataLakeVariable(resolvedVoltageVariableId)
+const { value: rawCurrentFromDL } = useDataLakeVariable(resolvedCurrentVariableId)
+const { value: rawRemainingFromDL } = useDataLakeVariable(resolvedRemainingVariableId)
+
+const rawVoltage = computed<number | null>(() => {
+  if (rawVoltageFromDL.value === undefined) return null
+  return (rawVoltageFromDL.value as number) / 1000
+})
+
 // Round voltage to 0.1V precision for values < 100V, integer precision for >= 100V
-const roundedVoltage = computed(() => {
-  const voltage = store?.powerSupply?.voltage
+const roundedVoltage = computed<number | null>(() => {
+  const voltage = rawVoltage.value
   if (voltage === undefined || voltage === null) return null
   return Math.abs(voltage) >= 100 ? Math.round(voltage) : Math.round(voltage * 10) / 10
+})
+
+const current = computed<number | undefined>(() => {
+  const raw = rawCurrentFromDL.value as number | undefined
+  if (raw === undefined || raw === -1) return undefined
+  return raw / 100
 })
 
 // Keeps a stable voltage reading for 4 seconds to avoid rapid battery level changes
@@ -298,19 +319,19 @@ const voltageDisplayValue = computed(() => {
 })
 
 const currentDisplayValue = computed(() => {
-  if (store?.powerSupply?.current === undefined) return '--'
-  return Math.abs(store.powerSupply.current) >= 100
-    ? store.powerSupply.current.toFixed(0)
-    : store.powerSupply.current.toFixed(1)
+  if (current.value === undefined) return '--'
+  return Math.abs(current.value) >= 100 ? current.value.toFixed(0) : current.value.toFixed(1)
 })
 
 const instantaneousWattsDisplayValue = computed(() => {
-  return store.instantaneousWatts !== undefined ? store.instantaneousWatts.toFixed(1) : '--'
+  if (rawVoltage.value === null || current.value === undefined) return '--'
+  return (rawVoltage.value * current.value).toFixed(1)
 })
 
 const remainingDisplayValue = computed(() => {
-  if (store?.powerSupply?.remaining === undefined) return -1
-  return Math.abs(store.powerSupply.remaining) > 100 ? 100 : store.powerSupply.remaining
+  const remaining = rawRemainingFromDL.value as number | undefined
+  if (remaining === undefined) return -1
+  return Math.abs(remaining) > 100 ? 100 : remaining
 })
 
 const setupToggleInterval = (): void => {
