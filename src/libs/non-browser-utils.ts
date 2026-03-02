@@ -3,8 +3,25 @@ import { execSync } from 'child_process'
 import type { AppVersionInfo } from './cosmos'
 
 /**
+ * Derives the GitHub link for a given version string.
+ * PR versions (e.g. "0.0.0-1234") link to the pull request page.
+ * Tag versions link to the releases page. Commit hashes link to the commit page.
+ * @param {string} version - The version string
+ * @param {string} repoUrl - The base repository URL
+ * @returns {string} The GitHub link for the version
+ */
+function getVersionLink(version: string, repoUrl: string): string {
+  const prMatch = version.match(/^0\.0\.0-(\d+)$/)
+  if (prMatch) {
+    return `${repoUrl}/pull/${prMatch[1]}`
+  }
+  return `${repoUrl}/releases/tag/v${version}`
+}
+
+/**
  * Returns the version information of the application.
- * Uses git commands to get the version (tag or commit), date, and link to GitHub.
+ * If the COCKPIT_VERSION env var is set (e.g. in CI for PR builds), it is used directly.
+ * Otherwise, uses git commands to get the version (tag or commit), date, and link to GitHub.
  * Returns fallback values if git commands fail.
  * @returns {AppVersionInfo}
  */
@@ -14,6 +31,22 @@ export function getVersion(): AppVersionInfo {
     version: 'unknown',
     date: 'unknown',
     link: repoUrl,
+  }
+
+  const envVersion = process.env.COCKPIT_VERSION
+  if (envVersion) {
+    const date = (() => {
+      try {
+        return execSync('git show -s --format=%ai HEAD', { encoding: 'utf8' }).trim().split(' ')[0]
+      } catch {
+        return new Date().toISOString().split('T')[0]
+      }
+    })()
+    return {
+      version: envVersion,
+      date,
+      link: getVersionLink(envVersion, repoUrl),
+    }
   }
 
   try {

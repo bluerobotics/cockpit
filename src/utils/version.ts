@@ -2,11 +2,17 @@ import { execSync } from 'child_process'
 
 /**
  * Returns the version of the application.
- * Uses the git describe command to get the latest tag, or the commit hash if no tags exist.
- * Returns a fallback version 'unknown' if git commands fails.
+ * If the COCKPIT_VERSION env var is set (e.g. in CI for PR builds), it is used directly.
+ * Otherwise, uses the git describe command to get the latest tag, or the commit hash if no tags exist.
+ * Returns a fallback version 'unknown' if git commands fail.
  * @returns {string}
  */
 export function getVersion(): string {
+  const envVersion = process.env.COCKPIT_VERSION
+  if (envVersion) {
+    return envVersion
+  }
+
   try {
     // Try to get the latest tag
     const latestTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim()

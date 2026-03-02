@@ -132,11 +132,25 @@ jobs:
 
       - name: Set version as environment variable (Windows)
         if: matrix.os == 'windows-latest'
-        run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $env:GITHUB_ENV
+        run: |
+          $TAG = ((git describe --tags --abbrev=0) -replace '^v','').Trim()
+          $VERSION = $TAG
+          if ("${{ github.event_name }}" -eq "pull_request") {
+            $VERSION = "0.0.0-${{ github.event.pull_request.number }}"
+          }
+          echo "VERSION=$VERSION" >> $env:GITHUB_ENV
+          echo "COCKPIT_VERSION=$VERSION" >> $env:GITHUB_ENV
 
       - name: Set version as environment variable (others)
         if: matrix.os != 'windows-latest'
-        run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $GITHUB_ENV
+        run: |
+          TAG=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          VERSION=$TAG
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            VERSION="0.0.0-${{ github.event.pull_request.number }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "COCKPIT_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Install and build
         run: |
@@ -314,8 +328,15 @@ jobs:
           sudo flatpak remote-add --system flathub https://flathub.org/repo/flathub.flatpakrepo
           flatpak remote-add --user flathub https://flathub.org/repo/flathub.flatpakrepo || true
 
-      - name: Set version as environment variable (others)
-        run: echo "VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> $GITHUB_ENV
+      - name: Set version as environment variable
+        run: |
+          TAG=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          VERSION=$TAG
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            VERSION="0.0.0-${{ github.event.pull_request.number }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "COCKPIT_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Build electron (arm)
         if: matrix.os == 'ubuntu-24-arm'
