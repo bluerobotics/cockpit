@@ -301,6 +301,9 @@ const highlightedPoiMarker = ref<HighlightedPoiMarkerDisplay | null>(null)
 const markersOnHeading = ref<Set<string>>(new Set())
 const reachedMarkers = ref<Map<string, ReachedPoiMarker>>(new Map())
 
+const minCardDisplayMs = 2000
+let lastCardShownAt = 0
+
 // Check if a POI is on the heading of the vehicle, within 3 degrees
 const isMarkerOnHeading = (bearing: number, currentYaw: number): boolean => {
   let relativeBearing = bearing - currentYaw
@@ -326,6 +329,7 @@ const handlePoiClick = (poiId: string): void => {
       distanceText: marker.distanceText,
       isReached: marker.isReached,
     }
+    lastCardShownAt = Date.now()
   }
 }
 
@@ -501,18 +505,19 @@ const updatePoiMarkers = (): void => {
   })
 
   markersOnHeading.value = onHeading
+  cleanupExpired()
+
   // How long to highlight the marker for after it is on heading
   for (const poiId of onHeading) {
-    if (!highlightedMarkers.value.has(poiId)) {
+    const existing = highlightedMarkers.value.get(poiId)
+    if (!existing || existing.expiresAt < now + 5000) {
       highlightedMarkers.value.set(poiId, {
         poiId,
-        highlightedAt: now,
+        highlightedAt: existing?.highlightedAt ?? now,
         expiresAt: now + 5000,
       })
     }
   }
-
-  cleanupExpired()
 
   if (widget.value.options.poi?.showDistances === 'onHudSide') {
     const onHeadingArray = Array.from(onHeading)
@@ -538,6 +543,7 @@ const updatePoiMarkers = (): void => {
           distanceText: marker.distanceText,
           isReached: marker.isReached,
         }
+        lastCardShownAt = now
       } else {
         const poi = missionStore.pointsOfInterest.find((p) => p.id === selectedId)
         if (poi && store.coordinates.latitude && store.coordinates.longitude) {
@@ -556,11 +562,12 @@ const updatePoiMarkers = (): void => {
                 : `${Math.round(distance)}m`,
             isReached: distance <= 1,
           }
-        } else {
+          lastCardShownAt = now
+        } else if (now - lastCardShownAt >= minCardDisplayMs) {
           highlightedPoiMarker.value = null
         }
       }
-    } else {
+    } else if (now - lastCardShownAt >= minCardDisplayMs) {
       highlightedPoiMarker.value = null
     }
   } else {
