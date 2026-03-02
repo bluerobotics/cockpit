@@ -42,6 +42,11 @@ const ensureCockpitFolder = (): void => {
 
 ensureCockpitFolder()
 
+const FOLDER_CHECK_INTERVAL_MS = 5000
+app.whenReady().then(() => {
+  setInterval(ensureCockpitFolder, FOLDER_CHECK_INTERVAL_MS)
+})
+
 export const filesystemStorage = {
   async setItem(key: string, value: ArrayBuffer, subFolders?: string[]): Promise<void> {
     ensureCockpitFolder()
