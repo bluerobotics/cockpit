@@ -1,6 +1,6 @@
 import { dialog, ipcMain, shell } from 'electron'
 import { app } from 'electron'
-import { mkdirSync } from 'fs'
+import { existsSync, mkdirSync } from 'fs'
 import * as fs from 'fs/promises'
 import { dirname, join } from 'path'
 
@@ -10,16 +10,48 @@ import store from './config-store'
 
 const defaultCockpitFolderPath = join(app.getPath('home'), 'Cockpit')
 let cockpitFolderPath = store.get('cockpitFolderPath') ?? defaultCockpitFolderPath
-mkdirSync(cockpitFolderPath, { recursive: true })
+let fallbackDialogShown = false
+
+const ensureCockpitFolder = (): void => {
+  if (existsSync(cockpitFolderPath)) return
+  if (cockpitFolderPath === defaultCockpitFolderPath) {
+    mkdirSync(cockpitFolderPath, { recursive: true })
+    return
+  }
+
+  const warnMessage = `The configured folder "${cockpitFolderPath}" is unreachable. Falling back to "${defaultCockpitFolderPath}".`
+  console.warn(warnMessage)
+  cockpitFolderPath = defaultCockpitFolderPath
+  store.delete('cockpitFolderPath')
+  mkdirSync(cockpitFolderPath, { recursive: true })
+
+  if (!fallbackDialogShown) {
+    fallbackDialogShown = true
+    const showWarning = (): void => {
+      dialog.showMessageBox({ type: 'warning', title: 'Cockpit folder unavailable', message: warnMessage }).then(() => {
+        fallbackDialogShown = false
+      })
+    }
+    if (app.isReady()) {
+      showWarning()
+    } else {
+      app.whenReady().then(showWarning)
+    }
+  }
+}
+
+ensureCockpitFolder()
 
 export const filesystemStorage = {
   async setItem(key: string, value: ArrayBuffer, subFolders?: string[]): Promise<void> {
+    ensureCockpitFolder()
     const buffer = Buffer.from(value)
     const filePath = join(cockpitFolderPath, ...(subFolders ?? []), key)
     await fs.mkdir(dirname(filePath), { recursive: true })
     await fs.writeFile(filePath, buffer)
   },
   async getItem(key: string, subFolders?: string[]): Promise<ArrayBuffer | null> {
+    ensureCockpitFolder()
     const filePath = join(cockpitFolderPath, ...(subFolders ?? []), key)
     try {
       const buffer = await fs.readFile(filePath)
@@ -30,21 +62,22 @@ export const filesystemStorage = {
     }
   },
   async removeItem(key: string, subFolders?: string[]): Promise<void> {
+    ensureCockpitFolder()
     const filePath = join(cockpitFolderPath, ...(subFolders ?? []), key)
     try {
       await fs.unlink(filePath)
     } catch (error: any) {
-      // File doesn't exist, which is fine - just ignore it
       if (error.code === 'ENOENT') return
-
       throw error
     }
   },
   async clear(subFolders?: string[]): Promise<void> {
+    ensureCockpitFolder()
     const dirPath = join(cockpitFolderPath, ...(subFolders ?? []))
     await fs.rm(dirPath, { recursive: true })
   },
   async keys(subFolders?: string[]): Promise<string[]> {
+    ensureCockpitFolder()
     const dirPath = join(cockpitFolderPath, ...(subFolders ?? []))
     try {
       return await fs.readdir(dirPath)
@@ -91,7 +124,10 @@ export const setupFilesystemStorage = (): void => {
     await shell.openPath(tempChunksFolderPath)
   })
 
-  ipcMain.handle('get-cockpit-folder-path', () => cockpitFolderPath)
+  ipcMain.handle('get-cockpit-folder-path', () => {
+    ensureCockpitFolder()
+    return cockpitFolderPath
+  })
 
   ipcMain.handle('get-default-cockpit-folder-path', () => defaultCockpitFolderPath)
 
@@ -162,7 +198,10 @@ export const setupFilesystemStorage = (): void => {
 }
 
 /**
- * Returns the current Cockpit folder path
+ * Returns the current Cockpit folder path, falling back to the default if the configured path is unreachable
  * @returns {string} The active Cockpit folder path
  */
-export const getCockpitFolderPath = (): string => cockpitFolderPath
+export const getCockpitFolderPath = (): string => {
+  ensureCockpitFolder()
+  return cockpitFolderPath
+}
