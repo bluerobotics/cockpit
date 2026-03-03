@@ -314,6 +314,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
   return {
     snapshotStorage,
     snapshotThumbStorage,
+    createThumbnail,
     downloadFilesFromSnapshotDB,
     snapshotFilename,
     takeSnapshot,

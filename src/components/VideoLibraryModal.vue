@@ -1222,17 +1222,35 @@ const fetchVideosAndLogData = async (): Promise<void> => {
 
 const fetchPictures = async (): Promise<void> => {
   loadingData.value = true
-  // Fetches only thumb keys for now
-  const thumbKeys = (await snapshotStore.snapshotThumbStorage.keys()).filter((k) => /-thumb$/i.test(k))
+  const snapshotKeys = await snapshotStore.snapshotStorage.keys()
+  const thumbKeysSet = new Set(await snapshotStore.snapshotThumbStorage.keys())
   const entries: SnapshotLibraryFile[] = []
   const chunkSize = 16
 
-  for (let i = 0; i < thumbKeys.length; i += chunkSize) {
-    const batch = thumbKeys.slice(i, i + chunkSize)
+  for (let i = 0; i < snapshotKeys.length; i += chunkSize) {
+    const batch = snapshotKeys.slice(i, i + chunkSize)
     const batchEntries = await Promise.all(
-      batch.map(async (thumbKey) => {
-        const filename = thumbKey.replace(/-thumb$/i, '')
-        const thumbBlob = (await snapshotStore.snapshotThumbStorage.getItem(thumbKey)) as Blob | null
+      batch.map(async (filename) => {
+        const thumbKey = filename + '-thumb'
+        let thumbBlob = thumbKeysSet.has(thumbKey)
+          ? ((await snapshotStore.snapshotThumbStorage.getItem(thumbKey)) as Blob | null)
+          : null
+
+        // Legacy workspace snapshots (captured before thumbnail generation was added) exist in
+        // snapshotStorage but have no corresponding thumbnail. Generate and persist one so they
+        // appear in the library and don't need to be regenerated on future loads.
+        if (!thumbBlob) {
+          const fullBlob = (await snapshotStore.snapshotStorage.getItem(filename)) as Blob | null
+          if (fullBlob) {
+            try {
+              thumbBlob = await snapshotStore.createThumbnail(fullBlob, 200, 113)
+              await snapshotStore.snapshotThumbStorage.setItem(thumbKey, thumbBlob)
+            } catch (err) {
+              console.error(`Failed to create thumbnail for "${filename}"`, err)
+            }
+          }
+        }
+
         const entry: SnapshotLibraryFile = {
           filename,
           streamName: '',
