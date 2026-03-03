@@ -91,47 +91,8 @@
                 variant="outlined"
                 density="compact"
                 :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
-                width="140px"
+                style="max-width: 110px"
                 hide-details
-              />
-            </div>
-          </template>
-        </ExpansiblePanel>
-
-        <!-- Data points section -->
-        <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
-          <template #title>Data Points</template>
-          <template #content>
-            <div class="py-2">
-              <div class="flex flex-wrap gap-x-8 gap-y-2">
-                <v-text-field
-                  v-model.number="widget.options.decimalPlaces"
-                  type="number"
-                  label="Decimal places"
-                  variant="outlined"
-                  density="comfortable"
-                  :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
-                  hint="Number of decimal places to be displayed"
-                  width="100px"
-                />
-                <v-checkbox v-model="widget.options.limitSamples" label="Limit number of samples" />
-                <v-text-field
-                  v-model.number="widget.options.maxSamples"
-                  type="number"
-                  label="Maximum samples"
-                  variant="outlined"
-                  density="comfortable"
-                  :disabled="!widget.options.limitSamples"
-                  :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
-                  hint="Higher values will show more history but may impact performance"
-                  width="150px"
-                />
-              </div>
-              <v-checkbox
-                v-model="widget.options.updateOnConstantValue"
-                label="Update on constant value"
-                hint="Advance graph when value is unchanged (shows horizontal lines for constant values)"
-                persistent-hint
               />
             </div>
           </template>
@@ -141,13 +102,73 @@
         <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
           <template #title>Statistics Display</template>
           <template #content>
-            <div class="flex flex-wrap gap-x-6 py-2">
+            <div class="flex flex-wrap items-center gap-x-6 py-2">
               <v-checkbox v-model="widget.options.showCurrent" label="Current" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showMin" label="Min" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showMedian" label="Median" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showAvg" label="Avg" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showMax" label="Max" hide-details class="-mt-1" />
               <v-checkbox v-model="widget.options.showStdDev" label="Std Dev" hide-details class="-mt-1" />
+              <div class="h-12 border-l border-slate-500"></div>
+              <v-text-field
+                v-model.number="widget.options.decimalPlaces"
+                type="number"
+                label="Decimal places"
+                variant="outlined"
+                density="compact"
+                :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
+                style="max-width: 110px"
+                hide-details
+              />
+              <v-tooltip text="Number of decimal places to be displayed" location="top">
+                <template #activator="{ props: infoProps }">
+                  <v-icon v-bind="infoProps" size="small" class="text-slate-400 -ml-4">mdi-information-outline</v-icon>
+                </template>
+              </v-tooltip>
+            </div>
+          </template>
+        </ExpansiblePanel>
+
+        <!-- Time axis section -->
+        <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #title>Time Axis</template>
+          <template #content>
+            <div class="flex flex-wrap items-center gap-x-4 py-2">
+              <v-checkbox v-model="widget.options.limitSamples" label="Limit samples" hide-details class="-mt-1" />
+              <v-text-field
+                v-model.number="widget.options.maxSamples"
+                type="number"
+                label="Max samples"
+                variant="outlined"
+                density="compact"
+                :disabled="!widget.options.limitSamples"
+                :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
+                style="max-width: 110px"
+                hide-details
+              />
+              <v-tooltip text="Higher values will show more history but may impact performance" location="top">
+                <template #activator="{ props: infoProps }">
+                  <v-icon v-bind="infoProps" size="small" class="text-slate-400 -ml-2">mdi-information-outline</v-icon>
+                </template>
+              </v-tooltip>
+              <div class="h-12 border-l border-slate-500"></div>
+              <v-checkbox
+                v-model="widget.options.updateOnConstantValue"
+                label="Update on constant value"
+                hide-details
+                class="-mt-1"
+              />
+              <v-tooltip
+                text="Advance graph when value is unchanged (shows horizontal lines for constant values)"
+                location="top"
+                max-width="300px"
+              >
+                <template #activator="{ props: infoProps }">
+                  <v-icon v-bind="infoProps" size="small" class="text-slate-400 -ml-2 -mt-1"
+                    >mdi-information-outline</v-icon
+                  >
+                </template>
+              </v-tooltip>
             </div>
           </template>
         </ExpansiblePanel>
@@ -165,7 +186,7 @@
                 variant="outlined"
                 density="compact"
                 :disabled="!widget.options.useFixedMinY"
-                width="100px"
+                style="max-width: 110px"
                 hide-details
               />
               <div class="h-12 border-l border-slate-500"></div>
@@ -177,7 +198,7 @@
                 variant="outlined"
                 density="compact"
                 :disabled="!widget.options.useFixedMaxY"
-                width="100px"
+                style="max-width: 110px"
                 hide-details
               />
             </div>
