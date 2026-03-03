@@ -67,7 +67,7 @@ import {
   Battery,
   CommandAck,
   Coordinates,
-  FixTypeGPS,
+  gpsFixTypeLabels,
   isCommandAckConfirmed,
   Parameter,
   PowerSupply,
@@ -519,18 +519,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         this._statusGPS.visibleSatellites = gpsMessage.satellites_visible
         this._statusGPS.HDOP = round(gpsMessage.eph / 100)
         this._statusGPS.VDOP = round(gpsMessage.epv / 100)
-        const gpsFixTable = {
-          [GpsFixType.GPS_FIX_TYPE_NO_GPS]: FixTypeGPS.NO_GPS,
-          [GpsFixType.GPS_FIX_TYPE_NO_FIX]: FixTypeGPS.NO_FIX,
-          [GpsFixType.GPS_FIX_TYPE_2D_FIX]: FixTypeGPS.FIX_2D,
-          [GpsFixType.GPS_FIX_TYPE_3D_FIX]: FixTypeGPS.FIX_3D,
-          [GpsFixType.GPS_FIX_TYPE_DGPS]: FixTypeGPS.DGPS,
-          [GpsFixType.GPS_FIX_TYPE_RTK_FLOAT]: FixTypeGPS.RTK_FLOAT,
-          [GpsFixType.GPS_FIX_TYPE_RTK_FIXED]: FixTypeGPS.RTK_FIXED,
-          [GpsFixType.GPS_FIX_TYPE_STATIC]: FixTypeGPS.STATIC,
-          [GpsFixType.GPS_FIX_TYPE_PPP]: FixTypeGPS.PPP,
-        }
-        this._statusGPS.fixType = gpsFixTable[(gpsMessage.fix_type as unknown as Type<GpsFixType>).type]
+        this._statusGPS.fixType = gpsFixTypeLabels[(gpsMessage.fix_type as unknown as Type<GpsFixType>).type]
         this.onStatusGPS.emit()
         break
       }
