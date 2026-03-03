@@ -126,6 +126,15 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
           },
         ]
       }
+      if (typeof value === 'object' && value !== null && 'type' in value && typeof (value as any).type === 'string') {
+        return [
+          {
+            path: `${messagePathWithId}/${key}`,
+            type: 'string',
+            value: (value as any).type as string,
+          },
+        ]
+      }
       if (Array.isArray(value)) {
         if (value.length === 0) return []
         if (isNumberArray(value)) {
