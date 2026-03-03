@@ -246,8 +246,8 @@ let shotInterval: ReturnType<typeof setInterval> | null = null
 
 watch(isTakingTimedSnapshot, (newValue) => {
   if (newValue) {
-    // Capture a initial snapshot
-    snapshotStore.takeSnapshot(miniWidget.value.options.nameSelectedStreams, miniWidget.value.options.captureWorkspace)
+    const streams = miniWidget.value.options.nameSelectedStreams ?? []
+    snapshotStore.takeSnapshot(streams, miniWidget.value.options.captureWorkspace)
     flashEffect()
     openSnackbar({
       message: `Timed snapshot started. This will capture the selected interfaces every ${timedSnapshotInterval.value} seconds until you press the camera button again.`,
@@ -258,7 +258,7 @@ watch(isTakingTimedSnapshot, (newValue) => {
     // Capture subsequent timed snapshots
     shotInterval = setInterval(async () => {
       await snapshotStore.takeSnapshot(
-        miniWidget.value.options.nameSelectedStreams,
+        miniWidget.value.options.nameSelectedStreams ?? [],
         miniWidget.value.options.captureWorkspace
       )
       timerProgress.value = 0
@@ -286,12 +286,15 @@ watch(isTakingTimedSnapshot, (newValue) => {
 })
 
 const areSelectedStreamsAreAvailable = (): boolean => {
-  if (
-    miniWidget.value.options.selectedStreams.every((stream: string) =>
-      videoStore.namesAvailableStreams.includes(stream)
-    )
-  ) {
-    miniWidget.value.options.nameSelectedStreams = miniWidget.value.options.selectedStreams
+  const streams = miniWidget.value.options.selectedStreams ?? []
+
+  if (streams.length === 0) {
+    miniWidget.value.options.nameSelectedStreams = []
+    return true
+  }
+
+  if (streams.every((stream: string) => videoStore.namesAvailableStreams.includes(stream))) {
+    miniWidget.value.options.nameSelectedStreams = streams
     return true
   }
 
@@ -306,7 +309,8 @@ onBeforeMount(async () => {
   // Set initial widget options if they don't exist
   if (Object.keys(miniWidget.value.options).length === 0) {
     miniWidget.value.options = {
-      selectedStreams: undefined as string[] | undefined,
+      selectedStreams: [] as string[],
+      nameSelectedStreams: [] as string[],
       captureWorkspace: false,
     }
   }
