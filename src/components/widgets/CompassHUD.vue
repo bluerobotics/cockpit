@@ -141,14 +141,22 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useElementVisibility, useWindowSize } from '@vueuse/core'
+import { useDebounceFn, useElementVisibility, useThrottleFn, useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import { useVehicleHomePosition } from '@/composables/useVehicleHomePosition'
+import { defaultHeadingVariableId, rawHeadingToDegrees } from '@/libs/data-sources/heading'
+import {
+  defaultLatitudeVariableId,
+  defaultLongitudeVariableId,
+  rawCoordinateToDegrees,
+} from '@/libs/data-sources/position'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { formatDistance } from '@/libs/units'
@@ -168,11 +176,11 @@ import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
+const vehicleStore = useMainVehicleStore()
 const { resolvedPointsOfInterest } = usePointsOfInterest()
 const baseStationStore = useBaseStation()
 
 datalogger.registerUsage(DatalogVariable.heading)
-const store = useMainVehicleStore()
 const props = defineProps<{
   /**
    * Widget reference
@@ -224,18 +232,22 @@ while (i < 181) {
   i += 3
 }
 
+const defaultOptions = {
+  showYawValue: true,
+  hudColor: colorSwatches.value[0][0],
+  useNegativeRange: false,
+  showHomeOnHUD: true,
+  yawVariableId: defaultHeadingVariableId,
+  latVariableId: defaultLatitudeVariableId,
+  lonVariableId: defaultLongitudeVariableId,
+  poi: {
+    showPoiOnHUD: true,
+    showDistances: 'onHudSide',
+  },
+}
+
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  const defaultOptions = {
-    showYawValue: true,
-    hudColor: colorSwatches.value[0][0],
-    useNegativeRange: false,
-    showHomeOnHUD: true,
-    poi: {
-      showPoiOnHUD: true,
-      showDistances: 'onHudSide',
-    },
-  }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 
@@ -255,15 +267,42 @@ const canvasSize = computed(() => ({
   height: 64,
 }))
 
+const resolvedYawVariableId = useResolvedDataLakeTemplate(() => widget.value.options.yawVariableId)
+const resolvedLatVariableId = useResolvedDataLakeTemplate(() => widget.value.options.latVariableId)
+const resolvedLonVariableId = useResolvedDataLakeTemplate(() => widget.value.options.lonVariableId)
+const { value: rawYaw } = useDataLakeVariable(resolvedYawVariableId)
+const { value: rawLat } = useDataLakeVariable(resolvedLatVariableId)
+const { value: rawLon } = useDataLakeVariable(resolvedLonVariableId)
+
+const rawVehiclePosition = computed<PointOfInterestCoordinates | undefined>(() => {
+  if (resolvedLatVariableId.value === undefined || resolvedLonVariableId.value === undefined) return undefined
+  if (typeof rawLat.value !== 'number' || typeof rawLon.value !== 'number') return undefined
+  return [
+    rawCoordinateToDegrees(resolvedLatVariableId.value, rawLat.value),
+    rawCoordinateToDegrees(resolvedLonVariableId.value, rawLon.value),
+  ]
+})
+
+// Honour the user's position update-rate limit, as the vehicle store does for its own coordinates.
+const vehiclePosition = ref<PointOfInterestCoordinates>()
+const applyVehiclePosition = useThrottleFn(
+  (position: PointOfInterestCoordinates | undefined) => (vehiclePosition.value = position),
+  () => vehicleStore.vehiclePositionMaxSampleRate,
+  true,
+  true
+)
+watch(rawVehiclePosition, applyVehiclePosition, { immediate: true })
+const vehicleLatitude = computed(() => vehiclePosition.value?.[0])
+const vehicleLongitude = computed(() => vehiclePosition.value?.[1])
+
 // The implementation below makes sure we don't update the Yaw value in the widget whenever
 // the system Yaw (from vehicle) updates, preventing unnecessary performance bottlenecks.
 const yaw = ref(0)
-let oldYaw: number | undefined = undefined
-watch(store.attitude, (attitude) => {
-  const yawDiff = Math.abs(degrees(attitude.yaw - (oldYaw || 0)))
-  if (yawDiff > 0.1) {
-    oldYaw = attitude.yaw
-    yaw.value = degrees(store.attitude.yaw)
+watch(rawYaw, (newYaw) => {
+  if (resolvedYawVariableId.value === undefined || typeof newYaw !== 'number') return
+  const deg = rawHeadingToDegrees(resolvedYawVariableId.value, newYaw)
+  if (Math.abs(deg - yaw.value) > 0.1) {
+    yaw.value = deg
   }
 })
 
@@ -301,10 +340,10 @@ const formatHudDistanceText = (distance: number, isReached: boolean): string =>
 
 // Get POI data with bearing and distance relative to vehicle
 const poiData = computed(() => {
-  if (!store.coordinates.latitude || !store.coordinates.longitude) return []
+  if (!vehicleLatitude.value || !vehicleLongitude.value) return []
 
-  const vehicleLat = store.coordinates.latitude!
-  const vehicleLng = store.coordinates.longitude!
+  const vehicleLat = vehicleLatitude.value
+  const vehicleLng = vehicleLongitude.value
   const hudTargets = resolvedPointsOfInterest.value.map((poi) => {
     const distance = calculateHaversineDistance([vehicleLat, vehicleLng], poi.coordinates)
     const bearing = calculateBearing(vehicleLat, vehicleLng, poi.coordinates[0], poi.coordinates[1])
@@ -401,7 +440,7 @@ type HudMarkerEntry = {
 }
 
 const hudMarkerData = computed((): HudMarkerEntry[] => {
-  if (!store.coordinates.latitude || !store.coordinates.longitude) return []
+  if (!vehicleLatitude.value || !vehicleLongitude.value) return []
 
   const entries: HudMarkerEntry[] = []
 
@@ -415,8 +454,8 @@ const hudMarkerData = computed((): HudMarkerEntry[] => {
     const coords = homeCoordinates.value
     entries.push({
       poi: buildHomeHudPoi(coords),
-      distance: calculateHaversineDistance([store.coordinates.latitude!, store.coordinates.longitude!], coords),
-      bearing: calculateBearing(store.coordinates.latitude!, store.coordinates.longitude!, coords[0], coords[1]),
+      distance: calculateHaversineDistance([vehicleLatitude.value!, vehicleLongitude.value!], coords),
+      bearing: calculateBearing(vehicleLatitude.value!, vehicleLongitude.value!, coords[0], coords[1]),
       markerSize: 12,
     })
   }
@@ -563,8 +602,8 @@ const updatePoiMarkers = (): void => {
   if (!widgetStore.isWidgetVisible(widget.value)) return
   if (
     (!widget.value.options.poi?.showPoiOnHUD && !widget.value.options.showHomeOnHUD) ||
-    !store.coordinates.latitude ||
-    !store.coordinates.longitude
+    !vehicleLatitude.value ||
+    !vehicleLongitude.value
   ) {
     poiMarkers.value = []
     return
@@ -683,11 +722,8 @@ const updatePoiMarkers = (): void => {
         const fallbackName = entry?.poi.name
         const fallbackCoords = entry?.poi.coordinates
 
-        if (fallbackName && fallbackCoords && store.coordinates.latitude && store.coordinates.longitude) {
-          const distance = calculateHaversineDistance(
-            [store.coordinates.latitude, store.coordinates.longitude],
-            fallbackCoords
-          )
+        if (fallbackName && fallbackCoords && vehicleLatitude.value && vehicleLongitude.value) {
+          const distance = calculateHaversineDistance([vehicleLatitude.value, vehicleLongitude.value], fallbackCoords)
           highlightedPoiMarker.value = {
             name: fallbackName,
             distanceText: formatHudDistanceText(distance, distance <= 1),
@@ -757,7 +793,7 @@ const stopAnimationLoop = (): void => {
 
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
 watch(
-  [hudMarkerData, store.coordinates, canvasSize, yaw, () => widgetStore.isWidgetVisible(widget.value)],
+  [hudMarkerData, vehicleLatitude, vehicleLongitude, canvasSize, yaw, () => widgetStore.isWidgetVisible(widget.value)],
   debouncedUpdatePoiMarkers
 )
 
