@@ -203,7 +203,11 @@ export const useSnapshotStore = defineStore('snapshot', () => {
             height: window.innerHeight,
           })
           wsBlob = await maybeEmbedExif(wsBlob, wsExif)
-          await snapshotStorage.setItem(snapshotFilename('workspace'), wsBlob)
+          const thumbBlob = await createThumbnail(wsBlob, 200, 113)
+          const filename = snapshotFilename('workspace')
+          const thumbFilename = filename + '-thumb'
+          await snapshotStorage.setItem(filename, wsBlob)
+          await snapshotThumbStorage.setItem(thumbFilename, thumbBlob)
         } catch (err) {
           throw err as Error
         }
