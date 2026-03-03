@@ -23,22 +23,9 @@
           <template #title>Data Source</template>
           <template #content>
             <div class="py-2">
-              <v-text-field
-                v-model="searchTerm"
-                density="compact"
-                variant="filled"
-                theme="dark"
-                type="text"
-                placeholder="Search variables..."
-                class="mb-4"
-                clearable
-                @update:model-value="menuOpen = true"
-                @click:clear="menuOpen = false"
-                @update:focused="(isFocused: boolean) => (menuOpen = isFocused)"
-              />
-              <v-select
+              <v-autocomplete
                 v-model="widget.options.dataLakeVariableId"
-                :items="filteredDataLakeNumberVariables"
+                :items="availableDataLakeNumberVariables"
                 item-title="name"
                 item-value="id"
                 label="Data Lake variable"
@@ -47,8 +34,8 @@
                 theme="dark"
                 variant="outlined"
                 density="comfortable"
-                :menu-props="{ modelValue: menuOpen }"
-                @click="menuOpen = !menuOpen"
+                clearable
+                prepend-inner-icon="mdi-magnify"
               />
             </div>
           </template>
@@ -305,19 +292,6 @@ const availableDataLakeNumberVariables = computed(() => {
   return availableDataLakeVariables.value.filter((variable) => variable.type === 'number')
 })
 
-const searchTerm = ref('')
-const menuOpen = ref(false)
-
-watch(
-  () => widget.value.options.dataLakeVariableId,
-  () => (menuOpen.value = false)
-)
-
-const filteredDataLakeNumberVariables = computed(() => {
-  const search = (searchTerm.value || '').toLowerCase()
-  return availableDataLakeNumberVariables.value.filter((variable) => variable.name.toLowerCase().includes(search))
-})
-
 // Remove the oldest sample if the number of samples is greater than the max samples
 // Use shift if the number of samples is exactly the max samples + 1 for performance reasons
 const cutExtraSamples = (): void => {
@@ -337,12 +311,9 @@ const pushNewValue = (value: number): void => {
 }
 
 const changeDataLakeVariable = (newId: string, oldId?: string): void => {
-  if (newId === undefined) {
-    console.error('No data lake variable ID provided!')
-    return
-  }
+  if (!newId) return
 
-  if (oldId !== undefined && dataLakeVariableListenerId) {
+  if (oldId && dataLakeVariableListenerId) {
     unlistenDataLakeVariable(oldId, dataLakeVariableListenerId)
   }
 
@@ -398,12 +369,9 @@ const drawText = (ctx: CanvasRenderingContext2D, text: string, x: number, y: num
 }
 
 const renderCanvas = (): void => {
-  if (canvasRef.value === undefined || canvasRef.value === null) return
-  if (canvasContext.value === undefined) {
-    console.debug('Canvas context undefined!')
-    canvasContext.value = canvasRef.value.getContext('2d')
-    return
-  }
+  if (!canvasRef.value) return
+  canvasContext.value = canvasRef.value.getContext('2d')
+  if (!canvasContext.value) return
   const ctx = canvasContext.value
   const canvasWidth = canvasSize.value.width
   const canvasHeight = canvasSize.value.height
