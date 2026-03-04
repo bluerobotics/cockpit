@@ -689,7 +689,7 @@ export class SettingsManager {
   private getVehicleIdFromVehicleOrGenerateAndPushANewOne = async (vehicleAddress: string): Promise<string> => {
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const getVehicleIdFn = (): Promise<string | undefined> => this.vehicle.getKeyData(vehicleAddress, vehicleIdKey)
-    const maybeId = await tryACoupleOfTimes(getVehicleIdFn, 0, 300)
+    const maybeId = await tryACoupleOfTimes(getVehicleIdFn, 10, 300)
     if (typeof maybeId === 'string') {
       return maybeId
     } else {
@@ -709,7 +709,7 @@ export class SettingsManager {
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const setVehicleIdFn = (): Promise<void> => this.vehicle.setKeyData(vehicleAddress, vehicleIdKey, newVehicleId)
-    await tryACoupleOfTimes(setVehicleIdFn, 0, 300)
+    await tryACoupleOfTimes(setVehicleIdFn, 10, 300)
 
     console.log(`Successfully set new vehicle ID '${newVehicleId}' on vehicle '${vehicleAddress}'.`)
 
@@ -811,7 +811,7 @@ export class SettingsManager {
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len, @typescript-eslint/explicit-function-return-type
     const getOldStyleVehicleSettingsBackupFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleOldStyleSettingsBackupKey)
-    const oldStyleVehicleSettingsBackup = await tryACoupleOfTimes(getOldStyleVehicleSettingsBackupFn, 0, 300)
+    const oldStyleVehicleSettingsBackup = await tryACoupleOfTimes(getOldStyleVehicleSettingsBackupFn, 10, 300)
 
     if (oldStyleVehicleSettingsBackup !== undefined) {
       console.info('[SettingsManager] Found old-style settings backup on vehicle. Skipping backup.')
@@ -821,7 +821,7 @@ export class SettingsManager {
     console.info('[SettingsManager] Retrieving old-style vehicle settings.')
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len, @typescript-eslint/explicit-function-return-type
     const getOldStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleOldStyleSettingsKey)
-    const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 0, 300)
+    const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 10, 300)
 
     if (Object.keys(oldStyleVehicleSettings).length === 0) {
       console.warn('[SettingsManager] No old-style vehicle settings found. Skipping backup.')
@@ -831,7 +831,7 @@ export class SettingsManager {
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const setOldStyleVehicleSettingsBackupFn = (): Promise<void> => this.vehicle.setKeyData(vehicleAddress, vehicleOldStyleSettingsBackupKey, oldStyleVehicleSettings)
-    await tryACoupleOfTimes(setOldStyleVehicleSettingsBackupFn, 0, 300)
+    await tryACoupleOfTimes(setOldStyleVehicleSettingsBackupFn, 10, 300)
     console.info('[SettingsManager] Successfully backed up old-style vehicle settings.')
   }
 
@@ -845,7 +845,7 @@ export class SettingsManager {
     console.info('[SettingsManager] Retrieving new-style vehicle settings.')
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const newStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleNewStyleSettingsKey)
-    const newStyleVehicleSettings = await tryACoupleOfTimes(newStyleVehicleSettingsFn, 0, 300)
+    const newStyleVehicleSettings = await tryACoupleOfTimes(newStyleVehicleSettingsFn, 10, 300)
 
     if (newStyleVehicleSettings && this.areVehicleSettingsInNewStyle(newStyleVehicleSettings)) {
       console.info('[SettingsManager] Vehicle settings in the new style already exist. Skipping migration.')
@@ -857,7 +857,7 @@ export class SettingsManager {
     console.info('[SettingsManager] Retrieving old-style vehicle settings.')
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len, @typescript-eslint/explicit-function-return-type
     const getOldStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleOldStyleSettingsKey)
-    const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 0, 300)
+    const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 10, 300)
 
     if (Object.keys(oldStyleVehicleSettings).length === 0) {
       console.warn('[SettingsManager] No old-style vehicle settings found. Skipping migration.')
@@ -873,7 +873,7 @@ export class SettingsManager {
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len, @typescript-eslint/explicit-function-return-type
     const setNewStyleSettingsFn = () => this.vehicle.setKeyData(vehicleAddress, vehicleNewStyleSettingsKey, newStyleMigratedSettings)
-    await tryACoupleOfTimes(setNewStyleSettingsFn, 0, 300)
+    await tryACoupleOfTimes(setNewStyleSettingsFn, 10, 300)
     console.info('[SettingsManager] Successfully migrated old-style vehicle settings to new style.')
   }
 
@@ -894,7 +894,7 @@ export class SettingsManager {
     console.info('[SettingsManager] Retrieving new-style vehicle settings from vehicle.')
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const getNewStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleNewStyleSettingsKey)
-    const newStyleVehicleSettings = await tryACoupleOfTimes(getNewStyleVehicleSettingsFn, 0, 300)
+    const newStyleVehicleSettings = await tryACoupleOfTimes(getNewStyleVehicleSettingsFn, 10, 300)
 
     if (Object.keys(newStyleVehicleSettings).length <= 0) {
       console.info('[SettingsManager] No new-style vehicle settings found. Aborting import.')
