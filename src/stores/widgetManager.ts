@@ -455,6 +455,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return
     }
 
+    if (savedProfiles.value.length <= 1) {
+      showDialog({
+        variant: 'error',
+        message: 'Cannot remove last profile. Please create another before deleting this one.',
+        timer: 4000,
+      })
+      return
+    }
+
     const currentProfileHash = currentProfile.value.hash
     const savedProfileIndex = savedProfiles.value.findIndex((p) => p.hash === profile.hash)
     currentProfileIndex.value = 0
