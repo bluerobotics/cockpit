@@ -936,7 +936,7 @@ const selectView = (view: View): void => {
   store.selectView(view)
 }
 
-const confirmDelete = async (): Promise<void> => {
+const confirmDelete = (): void => {
   showDialog({
     maxWidth: '500px',
     message: 'Permanently delete profile?',
@@ -954,8 +954,6 @@ const confirmDelete = async (): Promise<void> => {
       },
     ],
     variant: 'warning',
-  }).then((result) => {
-    if (result.isConfirmed) store.deleteProfile(store.currentProfile)
   })
 }
 
