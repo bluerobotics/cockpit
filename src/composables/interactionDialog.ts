@@ -3,6 +3,7 @@ import { App, createApp } from 'vue'
 
 import InteractionDialogComponent from '@/components/InteractionDialog.vue'
 import vuetify from '@/plugins/vuetify'
+import router from '@/router'
 import { DialogActions } from '@/types/general'
 
 /**
@@ -112,6 +113,7 @@ export function useInteractionDialog(): {
       },
     })
     dialogApp.use(vuetify)
+    dialogApp.use(router)
     dialogApp.mount(mountPoint)
   }
 
