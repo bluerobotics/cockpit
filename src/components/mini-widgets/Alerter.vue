@@ -24,11 +24,7 @@
           <div
             :title="alert.message"
             class="flex items-center justify-between whitespace-nowrap"
-            :class="{
-              'border-[1px] border-[#dc262699] bg-[#dc262622] pa-1':
-                (alert.level === AlertLevel.Critical || alert.level === AlertLevel.Error) &&
-                miniWidget.options.enableColorCoding,
-            }"
+            :style="alertRowHighlightStyle(alert.level)"
           >
             <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
             <div
@@ -131,6 +127,23 @@ const colorCodeBorderStyle = computed(() => {
   const color = alertLevelColors[currentAlert.value.level]
   return color ? `border: 2px solid ${color};` : 'border: none;'
 })
+
+const highlightedAlertLevels = [AlertLevel.Critical, AlertLevel.Error, AlertLevel.Warning]
+
+/**
+ * Returns inline styles for highlighting an alert row based on its level
+ * @param {AlertLevel} level - The alert level to style
+ * @returns {Record<string, string>} CSS style object with border and background tint
+ */
+const alertRowHighlightStyle = (level: AlertLevel): Record<string, string> => {
+  if (!miniWidget.value.options.enableColorCoding || !highlightedAlertLevels.includes(level)) return {}
+  const color = alertLevelColors[level]
+  return {
+    border: `1px solid ${color}99`,
+    backgroundColor: `${color}22`,
+    padding: '2px',
+  }
+}
 
 const shouldBlinkBorder = computed<boolean>(() => {
   return miniWidget.value.options.enableColorCoding && currentAlert.value.level === AlertLevel.Critical
