@@ -38,7 +38,7 @@
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute right-[148px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
+            class="absolute right-[191px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
             text="Edit mission"
             append-icon="mdi-map-marker-radius-outline"
@@ -141,6 +141,9 @@
         :widget="widget"
         :target-follower="targetFollower"
       />
+    </div>
+    <div v-show="showButtons">
+      <MeasurementTool ref="measurementToolRef" v-model:is-active="isMeasurementMode" :zoom="zoom" />
     </div>
   </div>
   <ContextMenu
@@ -290,6 +293,7 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
+import MeasurementTool from '@/components/mission-planning/MeasurementTool.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
@@ -362,6 +366,8 @@ const downloadMenuOpen = ref(false)
 const speedDialOpen = ref(false)
 const missionItemsInVehicle = ref<Waypoint[]>([])
 const missionSeqToMarkerSeq = shallowRef<Record<number, number>>({})
+const isMeasurementMode = ref(false)
+const measurementToolRef = ref<InstanceType<typeof MeasurementTool> | null>(null)
 
 const glassMenuCssVars = computed(() => ({
   '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
@@ -795,6 +801,15 @@ onMounted(async () => {
 
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
+    if (isMeasurementMode.value && measurementToolRef.value) {
+      measurementToolRef.value.handleMapClick(event)
+    }
+  })
+
+  map.value.on('mousemove', (event: LeafletMouseEvent) => {
+    if (isMeasurementMode.value && measurementToolRef.value) {
+      measurementToolRef.value.handleMapMouseMove(event)
+    }
   })
 
   // Update center value after panning
@@ -1176,6 +1191,12 @@ watch(
     refreshMission()
   }
 )
+
+watch(isMeasurementMode, (isActive) => {
+  if (!map.value) return
+  const container = map.value.getContainer()
+  container.style.cursor = isActive ? 'crosshair' : ''
+})
 
 // - disable auto update for target follower
 // - remove event listeners
@@ -1789,6 +1810,9 @@ const onGlobalOriginSet = (latitude: number, longitude: number): void => {
 
 const onKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
+    if (isMeasurementMode.value) {
+      isMeasurementMode.value = false
+    }
     hideContextMenuAndMarker()
     return
   }
@@ -2280,7 +2304,7 @@ watch(
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 293px; /* Position to the left of the buttons */
+  right: 334px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
