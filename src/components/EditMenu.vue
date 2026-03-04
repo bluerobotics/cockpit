@@ -667,6 +667,7 @@
           <v-combobox
             v-model="vehicleTypesAssignedToCurrentProfile"
             :items="availableVehicleTypes"
+            :menu-props="{ zIndex: 10000 }"
             chips
             density="compact"
             multiple
