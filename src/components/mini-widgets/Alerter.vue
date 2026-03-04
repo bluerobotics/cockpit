@@ -95,7 +95,7 @@ import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { Alert, AlertLevel } from '@/types/alert'
+import { Alert, AlertLevel, alertLevelColors } from '@/types/alert'
 import { MiniWidget } from '@/types/widgets'
 
 import InteractionDialog from '../InteractionDialog.vue'
@@ -127,20 +127,9 @@ const lockAlertsOpened = ref(false)
 const currentDisplayedAlertIndex = ref(alertStore.alerts.length - 1)
 
 const colorCodeBorderStyle = computed(() => {
-  switch (currentAlert.value.level) {
-    case AlertLevel.Critical:
-      return 'border: 2px solid transparent'
-    case AlertLevel.Error:
-      return 'border: 2px solid #dc2626;'
-    case AlertLevel.Warning:
-      return 'border: 2px solid #db9340;'
-    case AlertLevel.Info:
-      return 'border: 2px solid #3b82f655;'
-    case AlertLevel.Success:
-      return 'border: 2px solid #308013;'
-    default:
-      return 'border: none;'
-  }
+  if (currentAlert.value.level === AlertLevel.Critical) return 'border: 2px solid transparent'
+  const color = alertLevelColors[currentAlert.value.level]
+  return color ? `border: 2px solid ${color};` : 'border: none;'
 })
 
 const shouldBlinkBorder = computed<boolean>(() => {
