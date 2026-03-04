@@ -332,7 +332,9 @@ export class SettingsManager {
       this.notifyAllListenersAboutSettingsChange()
 
       this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId!, userId!, key, value, newEpoch)
-      await this.sendKeyValueUpdatesToVehicle(userId!, vehicleId!, this.currentVehicleAddress)
+      if (this.hasVehicleAddress()) {
+        await this.sendKeyValueUpdatesToVehicle(userId!, vehicleId!, this.currentVehicleAddress)
+      }
 
     }, keyValueUpdateDebounceTime)
   }
@@ -875,7 +877,7 @@ export class SettingsManager {
     const getOldStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleOldStyleSettingsKey)
     const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 10, 300)
 
-    if (Object.keys(oldStyleVehicleSettings).length === 0) {
+    if (!oldStyleVehicleSettings || Object.keys(oldStyleVehicleSettings).length === 0) {
       console.warn('[SettingsManager] No old-style vehicle settings found. Skipping backup.')
       return
     }
@@ -911,7 +913,7 @@ export class SettingsManager {
     const getOldStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleOldStyleSettingsKey)
     const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 10, 300)
 
-    if (Object.keys(oldStyleVehicleSettings).length === 0) {
+    if (!oldStyleVehicleSettings || Object.keys(oldStyleVehicleSettings).length === 0) {
       console.warn('[SettingsManager] No old-style vehicle settings found. Skipping migration.')
       return
     }
@@ -948,7 +950,7 @@ export class SettingsManager {
     const getNewStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleNewStyleSettingsKey)
     const newStyleVehicleSettings = await tryACoupleOfTimes(getNewStyleVehicleSettingsFn, 10, 300)
 
-    if (Object.keys(newStyleVehicleSettings).length <= 0) {
+    if (!newStyleVehicleSettings || Object.keys(newStyleVehicleSettings).length <= 0) {
       console.info('[SettingsManager] No new-style vehicle settings found. Aborting import.')
       return
     }
