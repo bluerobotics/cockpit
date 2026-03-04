@@ -13,8 +13,12 @@
       </div>
       <div
         ref="expandedAlertsBar"
-        class="expanded-alerts-bar absolute w-full p-2 transition-all rounded top-12 max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
-        :class="{ 'opacity-0 invisible': !isShowingExpandedAlerts }"
+        class="expanded-alerts-bar absolute w-full p-2 transition-all rounded max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
+        :class="{
+          'opacity-0 invisible': !isShowingExpandedAlerts,
+          'top-14': !shouldExpandUpward,
+          'bottom-14': shouldExpandUpward,
+        }"
       >
         <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
           <div
@@ -84,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementHover, useTimestamp, useToggle } from '@vueuse/core'
+import { useElementBounding, useElementHover, useTimestamp, useToggle, useWindowSize } from '@vueuse/core'
 import { differenceInSeconds, format } from 'date-fns'
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
@@ -193,7 +197,11 @@ const [isShowingExpandedAlerts, toggleExpandedAlerts] = useToggle()
 const showExpandedAlerts = (): boolean => toggleExpandedAlerts(true)
 const hideExpandedAlerts = (): boolean => toggleExpandedAlerts(false)
 
-const currentAlertBar = ref()
+const currentAlertBar = ref<HTMLElement>()
+const { top: barTop } = useElementBounding(currentAlertBar)
+const { height: windowHeight } = useWindowSize()
+const shouldExpandUpward = computed(() => barTop.value > windowHeight.value / 2)
+
 const isCurrentAlertBarHovered = useElementHover(currentAlertBar)
 const expandedAlertsBar = ref()
 const isExpandedAlertsBarHovered = useElementHover(expandedAlertsBar)
