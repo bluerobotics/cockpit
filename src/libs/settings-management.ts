@@ -30,6 +30,7 @@ export const localSyncedSettingsKey = 'cockpit-settings-v2'
 export const cockpitLastConnectedVehicleKey = 'cockpit-last-connected-vehicle-id'
 export const cockpitLastConnectedUserKey = 'cockpit-last-connected-user'
 export const vehicleIdKey = 'cockpit-vehicle-id'
+export const queueStorageKey = 'cockpit-settings-update-queue'
 export const fallbackUsername = 'fallback-user'
 export const fallbackVehicleId = 'fallback-vehicle'
 const nullValue = 'null'
@@ -237,8 +238,49 @@ export class SettingsManager {
     this.vehicle = vehicle || new BlueOSVehicleAdapter()
     console.log('[SettingsManager]', 'Initializing settings manager.')
     this.initLocalSettings()
+    this.loadPersistedQueue()
     this.initialLoadingComplete = true
     console.log('[SettingsManager]', 'Settings manager initialized.')
+  }
+
+  /**
+   * Persists the update queue to localStorage
+   */
+  private persistQueue = (): void => {
+    try {
+      this.storage.setItem(queueStorageKey, JSON.stringify(this.keyValueVehicleUpdateQueue))
+      console.log('[SettingsManager] Persisted update queue to storage')
+    } catch (error) {
+      console.error('[SettingsManager] Failed to persist update queue:', error)
+    }
+  }
+
+  /**
+   * Loads the persisted update queue from localStorage
+   */
+  private loadPersistedQueue = (): void => {
+    try {
+      const stored = this.storage.getItem(queueStorageKey)
+      if (stored) {
+        this.keyValueVehicleUpdateQueue = JSON.parse(stored)
+        console.log('[SettingsManager] Recovered persisted update queue')
+      }
+    } catch (error) {
+      console.error('[SettingsManager] Failed to load persisted queue:', error)
+      this.keyValueVehicleUpdateQueue = {}
+    }
+  }
+
+  /**
+   * Clears the persisted update queue from localStorage
+   */
+  private clearPersistedQueue = (): void => {
+    try {
+      this.storage.removeItem(queueStorageKey)
+      console.log('[SettingsManager] Cleared persisted update queue')
+    } catch (error) {
+      console.error('[SettingsManager] Failed to clear persisted queue:', error)
+    }
   }
 
   /**
@@ -633,6 +675,7 @@ export class SettingsManager {
       this.keyValueVehicleUpdateQueue[vehicleId][userId] = {}
     }
     this.keyValueVehicleUpdateQueue[vehicleId][userId][key] = { value, epochChange }
+    this.persistQueue()
   }
 
   /**
@@ -748,6 +791,7 @@ export class SettingsManager {
           const vehicleSettingIsNewer = vehicleSettings[userId][key].epochLastChangedLocally > update.epochChange
           if (noValue || sameValue || vehicleSettingIsNewer) {
             delete this.keyValueVehicleUpdateQueue[vehicleId][userId][key]
+            this.persistQueue()
             continue
           }
         }
@@ -759,6 +803,7 @@ export class SettingsManager {
           }
           await this.vehicle.setKeyData(vehicleAddress, `${vehicleNewStyleSettingsKey}/${userId}/${key}`, setting)
           delete this.keyValueVehicleUpdateQueue[vehicleId][userId][key]
+          this.persistQueue()
         } catch (error) {
           const msg = `Error sending key '${key}' for user '${userId}' to vehicle '${vehicleId}'.`
           console.error('[SettingsManager]', msg, error)
@@ -766,6 +811,9 @@ export class SettingsManager {
       }
       await sleep(1000)
     }
+
+    // Clear persisted queue after successful sync
+    this.clearPersistedQueue()
   }
 
   /**
