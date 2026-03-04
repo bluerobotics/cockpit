@@ -9,6 +9,15 @@ export enum AlertLevel {
   Critical = 'critical',
 }
 
+/** Color associated with each alert level for consistent UI representation */
+export const alertLevelColors: Record<AlertLevel, string> = {
+  [AlertLevel.Critical]: '#dc2626',
+  [AlertLevel.Error]: '#dc2626',
+  [AlertLevel.Warning]: '#db9340',
+  [AlertLevel.Info]: '#3b82f6',
+  [AlertLevel.Success]: '#308013',
+}
+
 /** Base Alert interface to be used for system-user communication */
 export interface AlertInterface {
   /**
