@@ -76,7 +76,7 @@
     >
       <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
         <button
-          v-if="!isCreatingSimplePath && !isCreatingSurvey"
+          v-if="!isCreatingSimplePath && !isCreatingSurvey && !isMeasurementMode"
           :class="{ ' elevation-4': isCreatingSurvey }"
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSurvey"
@@ -84,7 +84,7 @@
           {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SURVEY' : 'CREATE SURVEY' }}
         </button>
         <button
-          v-if="!isCreatingSurvey && !isCreatingSimplePath"
+          v-if="!isCreatingSurvey && !isCreatingSimplePath && !isMeasurementMode"
           :class="{ ' elevation-4': isCreatingSimplePath }"
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSimplePath"
@@ -347,7 +347,7 @@
       <template #activator="{ props: tooltipProps }">
         <v-btn
           v-bind="tooltipProps"
-          class="absolute right-[180px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
+          class="absolute right-[223px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
           elevation="8"
           text="Flight mode"
           append-icon="mdi-send"
@@ -358,6 +358,7 @@
         />
       </template>
     </v-tooltip>
+    <MeasurementTool ref="measurementToolRef" v-model:is-active="isMeasurementMode" :zoom="zoom" />
     <v-tooltip location="top center" text="Download map tiles">
       <template #activator="{ props: tooltipProps }">
         <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
@@ -516,6 +517,7 @@ import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
+import MeasurementTool from '@/components/mission-planning/MeasurementTool.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
@@ -523,6 +525,7 @@ import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPan
 import PoiManager from '@/components/poi/PoiManager.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { setMapLayer } from '@/composables/map/useMapLayer'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   clearAllSurveyAreas,
@@ -742,6 +745,8 @@ const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
+const isMeasurementMode = ref(false)
+const measurementToolRef = ref<InstanceType<typeof MeasurementTool> | null>(null)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
 const currentCursorGeoCoordinates = ref<[number, number] | null>(null)
@@ -875,6 +880,11 @@ const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
 
 const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   if (!planningMap.value) return
+
+  if (isMeasurementMode.value && measurementToolRef.value) {
+    const handled = measurementToolRef.value.handleMapMouseMove(e)
+    if (handled) return
+  }
 
   const anchor = currentMeasureAnchor()
   const measuring = !!anchor && (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
@@ -1155,7 +1165,7 @@ const setMapCursor = (): void => {
     el.style.cursor = 'pointer'
     return
   }
-  if (isCreatingSurvey.value || isCreatingSimplePath.value) {
+  if (isCreatingSurvey.value || isCreatingSimplePath.value || isMeasurementMode.value) {
     el.style.cursor = 'crosshair'
   } else {
     el.style.cursor = ''
@@ -1605,12 +1615,20 @@ const toggleSimplePath = (): void => {
     isCreatingSimplePath.value = false
     return
   }
+  if (isMeasurementMode.value) {
+    isMeasurementMode.value = false
+    measurementToolRef.value?.clearMeasurement()
+  }
   isCreatingSimplePath.value = true
 }
 
 const toggleSurvey = (): void => {
   if (isCreatingSimplePath.value) {
     isCreatingSimplePath.value = false
+  }
+  if (isMeasurementMode.value) {
+    isMeasurementMode.value = false
+    measurementToolRef.value?.clearMeasurement()
   }
   if (isCreatingSurvey.value) {
     isCreatingSurvey.value = false
@@ -1723,6 +1741,9 @@ const handleKeyDown = (event: KeyboardEvent): void => {
     }
     if (isCreatingSimplePath.value) {
       isCreatingSimplePath.value = false
+    }
+    if (isMeasurementMode.value) {
+      isMeasurementMode.value = false
     }
   }
   if (event.key === 'Enter' && isCreatingSurvey.value) {
@@ -2154,6 +2175,19 @@ watch([isCreatingSurvey, isCreatingSimplePath], (isCreatingNow) => {
     } else {
       mapContainer.classList.remove('survey-cursor')
     }
+  }
+})
+
+watch(isMeasurementMode, (isActive) => {
+  if (!planningMap.value) return
+  const mapContainer = planningMap.value.getContainer()
+
+  if (isActive) {
+    mapContainer.style.cursor = 'crosshair'
+    mapContainer.classList.add('survey-cursor')
+  } else {
+    setMapCursor()
+    mapContainer.classList.remove('survey-cursor')
   }
 })
 
@@ -2992,6 +3026,11 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
     }
   }
 
+  if (isMeasurementMode.value && measurementToolRef.value) {
+    const handled = measurementToolRef.value.handleMapClick(e)
+    if (handled) return
+  }
+
   if (isCreatingSurvey.value && isDrawingSurveyPolygon.value) {
     addSurveyPoint(e.latlng)
     clearLiveMeasure()
@@ -3140,6 +3179,9 @@ onMounted(async () => {
   }).addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
 
+  // Set map layer in composable for child components (after map is created)
+  setMapLayer(planningMap.value)
+
   const pane = planningMap.value!.createPane('measurePane')
   pane.style.zIndex = '640'
   pane.style.pointerEvents = 'none'
@@ -3277,6 +3319,8 @@ onUnmounted(() => {
   }
   planningMap.value?.off('mousemove', handleMapMouseMove)
   clearLiveMeasure()
+  measurementToolRef.value?.clearMeasurement()
+  setMapLayer(undefined)
 })
 
 const vehiclePosition = computed((): [number, number] | undefined =>
@@ -3475,7 +3519,10 @@ watch(
   { deep: true }
 )
 
-watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())
+watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint, isMeasurementMode], () =>
+  setMapCursor()
+)
+
 watch(planningMap, () => setMapCursor())
 
 // Try to update map center position based on browser geolocation
@@ -3945,11 +3992,11 @@ watch(
 
 .delete-popup {
   position: absolute;
-  top: -20px;
-  left: -20px;
+  top: -25px;
+  left: -25px;
   background-color: rgba(239, 68, 68, 0.8);
   border-radius: 50%;
-  padding: 6px;
+  padding: 3px 4px 5px 5px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
@@ -4005,7 +4052,7 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 337px; /* Position to the left of the buttons */
+  right: 378px; /* Position to the left of the buttons */
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
