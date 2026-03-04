@@ -25,9 +25,9 @@ export const unitSystemToDisplayUnit: Record<UnitSystem, DistanceDisplayUnit> = 
 
 /** Unit system selector items (e.g. for dropdowns) */
 export const unitSystemItems: UnitSystemItem[] = [
-  { title: unitPrettyName[unitSystemToDisplayUnit.metric], value: 'metric' },
-  { title: unitPrettyName[unitSystemToDisplayUnit.imperial], value: 'imperial' },
-  { title: unitPrettyName[unitSystemToDisplayUnit.nautical], value: 'nautical' },
+  { title: 'Metric', value: 'metric' },
+  { title: 'Imperial', value: 'imperial' },
+  { title: 'Nautical', value: 'nautical' },
 ]
 
 // Converts meters to the selected unit system
