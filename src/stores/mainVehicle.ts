@@ -1,5 +1,4 @@
-import { useStorage, useTimestamp } from '@vueuse/core'
-import { useThrottleFn } from '@vueuse/core'
+import { useDebounceFn, useStorage, useTimestamp, useThrottleFn } from '@vueuse/core'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
@@ -203,11 +202,22 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return lastHeartbeat.value !== undefined && new Date(timeNow.value).getTime() - lastHeartbeat.value.getTime() < 5000
   })
 
+  // Debounced event dispatchers to prevent rapid firing during connection transitions
+  const debouncedDispatchOnline = useDebounceFn((address: string) => {
+    console.log('[MainVehicle] Dispatching vehicle-online event for address:', address)
+    dispatchEvent(new CustomEvent('vehicle-online', { detail: { vehicleAddress: address } }))
+  }, 500)
+
+  const debouncedDispatchOffline = useDebounceFn(() => {
+    console.log('[MainVehicle] Dispatching vehicle-offline event')
+    dispatchEvent(new CustomEvent('vehicle-offline'))
+  }, 500)
+
   watch(isVehicleOnline, (isOnline) => {
     if (isOnline) {
-      dispatchEvent(new CustomEvent('vehicle-online', { detail: { vehicleAddress: globalAddress.value } }))
+      debouncedDispatchOnline(globalAddress.value)
     } else {
-      dispatchEvent(new CustomEvent('vehicle-offline'))
+      debouncedDispatchOffline()
     }
   })
 

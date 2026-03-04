@@ -227,6 +227,10 @@ export class SettingsManager {
   private cachedSettings: LocalSyncedSettings | null = null
   private storage: StorageAdapter
   private vehicle: VehicleAdapter
+  // Mutex lock for preventing concurrent sync operations
+  private syncInProgress = false
+  private pendingSyncAddress: string | null = null
+  private abortController: AbortController | null = null
 
   /**
    * Constructor for the SettingsManager
@@ -1213,17 +1217,68 @@ export class SettingsManager {
   }
 
   /**
-   * Handles a vehicle getting online
+   * Handles a vehicle getting online with mutex protection
    * @param {string} vehicleAddress - The address of the vehicle
    */
   public handleVehicleGettingOnline = async (vehicleAddress: string): Promise<void> => {
+    // Mutex: prevent concurrent sync operations
+    if (this.syncInProgress) {
+      console.log('[SettingsManager] Sync already in progress, queuing address:', vehicleAddress)
+      this.pendingSyncAddress = vehicleAddress
+      return
+    }
+
+    this.syncInProgress = true
+    // Create new abort controller for this sync operation
+    this.abortController = new AbortController()
+
+    try {
+      await this.doHandleVehicleGettingOnline(vehicleAddress)
+    } finally {
+      this.syncInProgress = false
+      this.abortController = null
+
+      // If there's a pending sync for a different address, process it
+      if (this.pendingSyncAddress && this.pendingSyncAddress !== vehicleAddress) {
+        const nextAddress = this.pendingSyncAddress
+        this.pendingSyncAddress = null
+        console.log('[SettingsManager] Processing pending sync for address:', nextAddress)
+        await this.handleVehicleGettingOnline(nextAddress)
+      } else {
+        this.pendingSyncAddress = null
+      }
+    }
+  }
+
+  /**
+   * Internal implementation of vehicle online handling
+   * @param {string} vehicleAddress - The address of the vehicle
+   */
+  private doHandleVehicleGettingOnline = async (vehicleAddress: string): Promise<void> => {
+    const signal = this.abortController?.signal
     console.log('[SettingsManager]', 'Handling vehicle getting online!')
+
+    // Check if aborted before starting
+    if (signal?.aborted) {
+      console.log('[SettingsManager] Sync aborted before start')
+      return
+    }
 
     // Before anything else, back up old-style vehicle settings in the vehicle, if needed
     await this.backupOldStyleVehicleSettingsIfNeeded(vehicleAddress)
 
+    if (signal?.aborted) {
+      console.log('[SettingsManager] Sync aborted after backup')
+      return
+    }
+
     // Then migrate local old-style settings to the vehicle, if needed
     await this.migrateOldStyleVehicleSettingsIfNeeded(vehicleAddress)
+
+    if (signal?.aborted) {
+      console.log('[SettingsManager] Sync aborted after migration')
+      return
+    }
 
     // Set the current vehicle address
     console.log(`[SettingsManager] Setting current vehicle address to: '${vehicleAddress}'.`)
@@ -1231,6 +1286,12 @@ export class SettingsManager {
 
     // Get ID of the connected vehicle
     const vehicleId = await this.getVehicleIdFromVehicleOrGenerateAndPushANewOne(vehicleAddress)
+
+    if (signal?.aborted) {
+      console.log('[SettingsManager] Sync aborted after getting vehicle ID')
+      return
+    }
+
     console.log(`[SettingsManager] Got vehicle ID '${vehicleId}' from vehicle '${vehicleAddress}'.`)
 
     // Set the current vehicle ID
@@ -1240,6 +1301,11 @@ export class SettingsManager {
     // Import migrated vehicle settings to local storage if we don't have them yet
     // This should happen after we have the vehicle ID, because we need to know to which vehicle we are importing the settings to
     await this.importMigratedVehicleSettingsToLocalStorageIfNeeded(vehicleAddress)
+
+    if (signal?.aborted) {
+      console.log('[SettingsManager] Sync aborted after importing settings')
+      return
+    }
 
     let toBeUsedUser: string | undefined | undefined = undefined
     let toBeUsedVehicle: string | undefined | undefined = undefined
@@ -1287,9 +1353,20 @@ export class SettingsManager {
     // Set the local settings for the user/vehicle combination that we found (or the migrated old-style settings)
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, toBeUsedSettings)
 
+    if (signal?.aborted) {
+      console.log('[SettingsManager] Sync aborted after setting local settings')
+      return
+    }
+
     // Now that we have local settings for the current user and vehicle, we can get the best settings between local and vehicle
     console.log('[SettingsManager]', `Getting best settings between local and vehicle for user '${this.currentUsername}' and vehicle '${this.currentVehicleId}'.`)
     const bestSettingsWithVehicle = await this.getBestSettingsBetweenLocalAndVehicle(vehicleAddress, vehicleId)
+
+    if (signal?.aborted) {
+      console.log('[SettingsManager] Sync aborted after getting best settings')
+      return
+    }
+
     const bestSettingsForCurrentUserAndVehicle = bestSettingsWithVehicle[this.currentUsername][this.currentVehicleId]
     console.debug(`[SettingsManager] Best settings for current user and vehicle:`)
     console.debug(JSON.stringify(bestSettingsForCurrentUserAndVehicle, null, 2))
@@ -1302,6 +1379,11 @@ export class SettingsManager {
 
     // Apply side effect of setting local settings
     this.notifyAllListenersAboutSettingsChange()
+
+    if (signal?.aborted) {
+      console.log('[SettingsManager] Sync aborted before pushing to vehicle')
+      return
+    }
 
     // Push the best settings to the vehicle
     await this.pushSettingsToVehicleUpdateQueue(
@@ -1434,6 +1516,31 @@ export class SettingsManager {
       )
     }
   }
+
+  /**
+   * Handles a vehicle getting offline
+   * Cancels any in-progress operations and persists the queue
+   */
+  public handleVehicleGettingOffline = (): void => {
+    console.log('[SettingsManager]', 'Handling vehicle getting offline')
+
+    // Cancel any in-progress sync operations
+    if (this.abortController) {
+      console.log('[SettingsManager]', 'Aborting in-progress sync operation')
+      this.abortController.abort()
+      this.abortController = null
+    }
+
+    // Reset sync state
+    this.syncInProgress = false
+    this.pendingSyncAddress = null
+
+    // Persist current queue state to ensure no updates are lost
+    this.persistQueue()
+
+    // Clear current vehicle context
+    this.currentVehicleAddress = nullValue
+  }
 }
 
 export const settingsManager = new SettingsManager()
@@ -1445,6 +1552,14 @@ export const settingsManager = new SettingsManager()
 window.addEventListener('vehicle-online', async (event: VehicleOnlineEvent) => {
   console.log('[SettingsManager]', `Vehicle online event received. Will handle vehicle getting online with address '${event.detail.vehicleAddress}'.`)
   await settingsManager.handleVehicleGettingOnline(event.detail.vehicleAddress)
+})
+
+/**
+ * Event handler for when a vehicle goes offline
+ */
+window.addEventListener('vehicle-offline', () => {
+  console.log('[SettingsManager]', 'Vehicle offline event received. Will handle vehicle getting offline.')
+  settingsManager.handleVehicleGettingOffline()
 })
 
 /**
