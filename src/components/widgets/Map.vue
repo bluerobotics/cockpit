@@ -741,12 +741,12 @@ onMounted(async () => {
   }
   await refreshMission()
 
-  // Initialize vehicle history polyline if exists
-  if (map.value && vehicleStore.vehiclePositionHistory.length > 0) {
+  // Initialize vehicle history polyline if vehicle marker is on screen
+  if (map.value && vehicleMarker.value && missionStore.vehiclePositionHistory.length > 0) {
     if (vehicleHistoryPolyline.value === undefined) {
       vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
     }
-    vehicleHistoryPolyline.value.setLatLngs(vehicleStore.vehiclePositionHistory as L.LatLngExpression[])
+    vehicleHistoryPolyline.value.setLatLngs(missionStore.vehiclePositionHistory as L.LatLngExpression[])
   }
   // Register mission actions for map widget
   missionStore.registerMapMissionActions({
@@ -1288,9 +1288,15 @@ watch([vehicleStore.currentMissionSeq, currentVehicleWpIndex, getReachedWaypoint
 // Create polyline for the vehicle path
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
 watch(
-  () => vehicleStore.vehiclePositionHistory,
+  () => missionStore.vehiclePositionHistory,
   (newPoints) => {
-    if (map.value === undefined || newPoints === undefined || newPoints.length === 0) return
+    if (map.value === undefined || !vehicleMarker.value || !newPoints || newPoints.length === 0) {
+      if (vehicleHistoryPolyline.value && map.value) {
+        map.value.removeLayer(vehicleHistoryPolyline.value)
+        vehicleHistoryPolyline.value = undefined
+      }
+      return
+    }
 
     if (vehicleHistoryPolyline.value === undefined) {
       vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
@@ -1333,6 +1339,11 @@ const menuItems = reactive([
     item: 'Set default map position',
     action: () => onMenuOptionSelect('set-default-map-position'),
     icon: 'mdi-map-check',
+  },
+  {
+    item: 'Clear vehicle path history',
+    action: () => onMenuOptionSelect('clear-vehicle-path-history'),
+    icon: 'mdi-gesture',
   },
 ])
 
@@ -1519,6 +1530,11 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       }
       break
     }
+    case 'clear-vehicle-path-history':
+      missionStore.clearVehicleHistory()
+      openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
+      break
+
     default:
       console.warn('Unknown menu option selected:', option)
   }

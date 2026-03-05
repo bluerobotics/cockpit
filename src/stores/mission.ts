@@ -63,6 +63,26 @@ export const useMissionStore = defineStore('mission', () => {
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
+  const persistedPositionHistory = useBlueOsStorage<WaypointCoordinates[]>('cockpit-vehicle-position-history', [])
+  const isVehiclePositionHistoryPersistent = useBlueOsStorage('cockpit-vehicle-position-history-persistent', true)
+  const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
+
+  const flushPositionHistory = (): void => {
+    if (!isVehiclePositionHistoryPersistent.value) return
+    if (vehiclePositionHistory.value.length === persistedPositionHistory.value.length) return
+    persistedPositionHistory.value = [...vehiclePositionHistory.value]
+  }
+
+  const positionHistoryFlushInterval = 10000
+  setInterval(flushPositionHistory, positionHistoryFlushInterval)
+  window.addEventListener('beforeunload', flushPositionHistory)
+
+  const clearVehicleHistory = (): void => {
+    vehiclePositionHistory.value = []
+    if (isVehiclePositionHistoryPersistent.value) {
+      persistedPositionHistory.value = []
+    }
+  }
 
   const moveWaypoint = (id: string, newCoordinates: WaypointCoordinates): void => {
     const waypoint = currentPlanningWaypoints.find((w) => w.id === id)
@@ -384,6 +404,14 @@ export const useMissionStore = defineStore('mission', () => {
     { deep: true }
   )
 
+  watch(
+    () => [mainVehicleStore.coordinates?.latitude, mainVehicleStore.coordinates?.longitude] as const,
+    ([lat, lng]) => {
+      if (!lat || !lng) return
+      vehiclePositionHistory.value = [...vehiclePositionHistory.value, [lat, lng] as WaypointCoordinates]
+    }
+  )
+
   watch(username, () => window.dispatchEvent(new CustomEvent('user-changed', { detail: { username: username.value } })))
 
   return {
@@ -438,5 +466,8 @@ export const useMissionStore = defineStore('mission', () => {
     registerMapMissionActions,
     callMapDownloadMissionFromVehicle,
     callMapClearMapDrawing,
+    vehiclePositionHistory,
+    isVehiclePositionHistoryPersistent,
+    clearVehicleHistory,
   }
 })
