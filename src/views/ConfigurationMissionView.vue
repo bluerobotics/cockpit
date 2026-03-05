@@ -4,7 +4,7 @@
     <template #content>
       <div
         class="flex flex-col justify-between items-start ml-[1vw] max-h-[85vh] overflow-y-auto"
-        :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[75vw]' : 'max-w-[50vw]'"
       >
         <div class="grid grid-cols-3 gap-x-4 mb-4">
           <v-switch
@@ -42,6 +42,14 @@
           <v-switch
             v-model="missionStore.showGridOnMissionPlanning"
             label="Show coordinate grid on maps"
+            color="white"
+            hide-details
+            base-color="#FFFFFF33"
+            class="mt-2 -mb-2 ml-3"
+          />
+          <v-switch
+            v-model="vehicleStore.isVehiclePositionHistoryPersistent"
+            label="Make vehicle history line persistent"
             color="white"
             hide-details
             base-color="#FFFFFF33"

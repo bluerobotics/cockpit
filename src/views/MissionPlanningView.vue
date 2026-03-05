@@ -450,6 +450,7 @@
     @remove-waypoint="removeSelectedWaypoint"
     @place-point-of-interest="openPoiDialog"
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
+    @clear-vehicle-path-history="clearVehiclePathHistory"
   />
   <SideConfigPanel
     v-if="isCreatingSurvey || selectedWaypoint"
@@ -1574,6 +1575,11 @@ const showContextMenu = (event: L.LeafletMouseEvent): void => {
 const hideContextMenu = (): void => {
   contextMenuVisible.value = false
   selectedSurveyId.value = ''
+}
+
+const clearVehiclePathHistory = (): void => {
+  missionStore.clearVehicleHistory()
+  openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
 }
 
 const setHomePosition = async (): Promise<void> => {
@@ -3443,6 +3449,30 @@ watch(
     }
   },
   { immediate: true, deep: true }
+)
+
+// Create polyline for the vehicle history path (only shown when vehicle marker is on screen)
+const vehicleHistoryPolyline = shallowRef<L.Polyline>()
+watch(
+  () => missionStore.vehiclePositionHistory,
+  () => {
+    const newPoints = missionStore.vehiclePositionHistory
+
+    if (!planningMap.value || !vehicleMarker.value || !newPoints || newPoints.length === 0) {
+      if (vehicleHistoryPolyline.value) {
+        planningMap.value?.removeLayer(vehicleHistoryPolyline.value)
+        vehicleHistoryPolyline.value = undefined
+      }
+      return
+    }
+
+    if (vehicleHistoryPolyline.value === undefined) {
+      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(planningMap.value)
+    }
+
+    vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
+  },
+  { deep: true }
 )
 
 watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())

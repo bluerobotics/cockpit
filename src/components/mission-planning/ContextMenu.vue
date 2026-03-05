@@ -156,6 +156,18 @@
           ></v-icon>
           <span class="text-white text-sm ml-4">Set home waypoint</span>
         </v-list-item>
+        <v-divider />
+        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleClearVehiclePathHistory">
+          <v-icon
+            variant="text"
+            icon="mdi-map-marker-path"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px]"
+          ></v-icon>
+          <span class="text-white text-sm ml-4">Clear vehicle path history</span>
+        </v-list-item>
       </div>
     </div>
 
@@ -267,6 +279,7 @@ const emit = defineEmits<{
   (event: 'removeWaypoint'): void
   (event: 'placePointOfInterest'): void
   (event: 'setHomePosition'): void
+  (event: 'clearVehiclePathHistory'): void
 }>()
 
 const menuType = computed(() => props.menuType)
@@ -336,6 +349,11 @@ const handleRemoveWaypoint = (): void => {
 
 const handleSetHomePosition = (): void => {
   emit('setHomePosition')
+  emit('close')
+}
+
+const handleClearVehiclePathHistory = (): void => {
+  emit('clearVehiclePathHistory')
   emit('close')
 }
 
