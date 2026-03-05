@@ -30,6 +30,7 @@ let mainWindow: BrowserWindow | null
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     icon: join(ROOT_PATH.dist, 'pwa-512x512.png'),
+    backgroundColor: '#333333',
     webPreferences: {
       preload: join(ROOT_PATH.dist, 'electron/preload.js'),
       contextIsolation: true,
