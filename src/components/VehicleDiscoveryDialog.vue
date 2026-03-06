@@ -13,11 +13,12 @@
       <div v-else class="flex flex-col items-center justify-center gap-4 min-w-[300px] min-h-[100px]">
         <div v-if="searching" class="flex flex-col items-center gap-2 mb-2">
           <v-progress-circular class="mb-2" indeterminate />
-          <span>Searching for vehicles in your network...</span>
+          <span v-if="vehicles.length === 0">Searching for vehicles in your network...</span>
+          <span v-else> Found {{ vehicles.length }} vehicle{{ vehicles.length > 1 ? 's' : '' }} so far... </span>
         </div>
 
-        <div v-else-if="vehicles.length > 0" class="flex flex-col gap-2 mb-3">
-          <div class="h-4 font-weight-bold text-center mb-5">Vehicles found!</div>
+        <div v-if="vehicles.length > 0" class="flex flex-col gap-2 mb-3">
+          <div v-if="!searching" class="h-4 font-weight-bold text-center mb-5">Vehicles found!</div>
           <div v-for="vehicle in vehicles" :key="vehicle.address" class="flex items-center gap-2">
             <v-btn variant="tonal" class="max-w-[500px] justify-start truncate" @click="selectVehicle(vehicle.address)">
               <span class="max-w-[300px] truncate">{{ vehicle.name }}</span>
@@ -26,7 +27,7 @@
           </div>
         </div>
 
-        <div v-else-if="searched" class="text-sm">No vehicles found in your network.</div>
+        <div v-else-if="searched && !searching" class="text-sm">No vehicles found in your network.</div>
 
         <div v-if="!searching && !searched" class="flex flex-col gap-2 items-center justify-center text-center">
           <p v-if="props.showAutoSearchOption" class="font-bold">It looks like you're not connected to a vehicle!</p>
@@ -112,8 +113,12 @@ watch(isOpen, (value) => {
 
 const searchVehicles = async (): Promise<void> => {
   searching.value = true
+  searched.value = false
+  vehicles.value = []
   disableButtons()
-  vehicles.value = await discoveryService.findVehicles()
+  await discoveryService.findVehicles((vehicle) => {
+    vehicles.value = [...vehicles.value, vehicle]
+  })
   searching.value = false
   enableButtons()
   searched.value = true
