@@ -62,10 +62,11 @@ class VehicleDiscover {
   }
 
   /**
-   * Find vehicles on the local network
-   * @returns {NetworkVehicle[]} The vehicles found
+   * Find vehicles on the local network, optionally reporting each vehicle as it is discovered
+   * @param {Function} onVehicleFound - Optional callback invoked immediately when a vehicle is found
+   * @returns {Promise<NetworkVehicle[]>} All vehicles found after the scan completes
    */
-  public async findVehicles(): Promise<NetworkVehicle[]> {
+  public async findVehicles(onVehicleFound?: (vehicle: NetworkVehicle) => void): Promise<NetworkVehicle[]> {
     if (!isElectron()) {
       throw new Error('For technical reasons, finding vehicles is only available in Electron.')
     }
@@ -92,21 +93,24 @@ class VehicleDiscover {
       }
 
       const vehiclesFound: NetworkVehicle[] = []
+      const allChecks: Promise<void>[] = []
+
       for (const subnet of localSubnets) {
         const topSideAddress = subnet.topSideAddress
         const possibleAddresses = subnet.availableAddresses.filter((address) => address !== topSideAddress)
 
-        const promises: Promise<NetworkVehicle | null>[] = possibleAddresses.map((address) => {
-          return this.checkAddress(address)
-        })
-
-        const vehicles = await Promise.all(promises).then((results) => {
-          return results.filter((result): result is NetworkVehicle => result !== null)
-        })
-
-        vehiclesFound.push(...vehicles)
+        for (const address of possibleAddresses) {
+          const check = this.checkAddress(address).then((vehicle) => {
+            if (vehicle) {
+              vehiclesFound.push(vehicle)
+              onVehicleFound?.(vehicle)
+            }
+          })
+          allChecks.push(check)
+        }
       }
 
+      await Promise.all(allChecks)
       this.currentSearch = undefined
 
       return vehiclesFound
