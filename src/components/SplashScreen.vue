@@ -126,17 +126,17 @@ import { getMonth } from 'date-fns'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
-import blueRoboticsWhiteNameLogo from '../assets/blue-robotics-white-name-logo.png'
-import blueROV from '../assets/blueROV-front.png'
-import blueROVXmas from '../assets/blueROV-front-santa-hat.png'
-import rovSide from '../assets/blueROV-side-dark.png'
-import cockpitLogoName from '../assets/cockpit-name-logo.png'
-import fish from '../assets/fish-transparent.png'
-import lite from '../assets/lite.png'
+import blueRoboticsWhiteNameLogo from '../assets/blue-robotics-white-name-logo.avif'
+import blueROV from '../assets/blueROV-front.avif'
+import blueROVXmas from '../assets/blueROV-front-santa-hat.avif'
+import rovSide from '../assets/blueROV-side-dark.avif'
+import cockpitLogoName from '../assets/cockpit-name-logo.avif'
+import fish from '../assets/fish-transparent.avif'
+import lite from '../assets/lite.avif'
 import xmasTree from '../assets/pulling-xmas-tree.gif'
-import splashBackground from '../assets/splash-background.png'
-import tether from '../assets/tether.png'
-import tetherXmas from '../assets/tether-xmas.png'
+import splashBackground from '../assets/splash-background.avif'
+import tether from '../assets/tether.avif'
+import tetherXmas from '../assets/tether-xmas.avif'
 
 const interfaceStore = useAppInterfaceStore()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()

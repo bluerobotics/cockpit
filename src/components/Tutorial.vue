@@ -87,7 +87,7 @@
 import { useStorage } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import CockpitLogo from '@/assets/cockpit-logo-minimal.png'
+import CockpitLogo from '@/assets/cockpit-logo-minimal.avif'
 import { useSnackbar } from '@/composables/snackbar'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'

@@ -1,5 +1,5 @@
 <div align="center">
-  <img style="width: 20%" src="src/assets/cockpit-logo.png"><br>
+  <img style="width: 20%" src="src/assets/cockpit-logo.avif"><br>
 </div>
 
 <div align="center">
@@ -16,7 +16,7 @@
 <br>
 
 <div align="center">
-  <img style="width: 65%" src="./public/images/screen.png"><br>
+  <img style="width: 65%" src="./public/images/screen.avif"><br>
 </div>
 
 <br>
@@ -138,17 +138,17 @@ ArduCopter support has been physically tested, but the primary development team 
   <table>
     <tr>
       <td align="center">
-        <img src="src/assets/brov2-marker.png" width="80"><br>
+        <img src="src/assets/brov2-marker.avif" width="80"><br>
         <strong>Submarines</strong><br>
         <em>ArduSub</em>
       </td>
       <td align="center">
-        <img src="src/assets/blueboat-marker.png" width="80"><br>
+        <img src="src/assets/blueboat-marker.avif" width="80"><br>
         <strong>Surface Boats</strong><br>
         <em>ArduRover</em>
       </td>
       <td align="center">
-        <img src="src/assets/arducopter-top-view.png" width="80"><br>
+        <img src="src/assets/arducopter-top-view.avif" width="80"><br>
         <strong>Drones</strong><br>
         <em>ArduCopter</em>
       </td>
@@ -339,7 +339,7 @@ See [LICENSE.md](LICENSE.md) for details.
 ## 🏢 About Blue Robotics
 
 <div align="center">
-  <img src="./src/assets/blue-robotics-white-name-logo.png" width="200">
+  <img src="./src/assets/blue-robotics-white-name-logo.avif" width="200">
   <p><strong>On a mission to enable the future of marine robotics</strong></p>
   <p>
     <a href="https://bluerobotics.com">🌐 Website</a> •

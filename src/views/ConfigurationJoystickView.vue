@@ -576,11 +576,11 @@
               <div class="flex-1"></div>
               <div class="flex flex-col items-start text-sm font-semibold gap-y-1">
                 <div class="flex items-center">
-                  <img src="@/assets/cockpit-logo.png" class="w-4 h-4 mr-2" alt="Cockpit" />
+                  <img src="@/assets/cockpit-logo.avif" class="w-4 h-4 mr-2" alt="Cockpit" />
                   <span>Cockpit Action</span>
                 </div>
                 <div class="flex items-center">
-                  <img src="@/assets/mavlink-logo.png" class="w-4 h-4 mr-2 ml-[1px] mt-[4px]" alt="MAVLink" />
+                  <img src="@/assets/mavlink-logo.avif" class="w-4 h-4 mr-2 ml-[1px] mt-[4px]" alt="MAVLink" />
                   <span>MAVLink Manual Control</span>
                 </div>
                 <div class="flex items-center">
@@ -612,13 +612,13 @@
                     <div class="absolute left-3 top-1/2 -translate-y-1/2">
                       <img
                         v-if="action.protocol === JoystickProtocol.CockpitAction"
-                        src="@/assets/cockpit-logo.png"
+                        src="@/assets/cockpit-logo.avif"
                         class="w-4 h-4"
                         alt="Cockpit"
                       />
                       <img
                         v-else-if="action.protocol === JoystickProtocol.MAVLinkManualControl"
-                        src="@/assets/mavlink-logo.png"
+                        src="@/assets/mavlink-logo.avif"
                         class="w-4 h-4 ml-[2px] mt-[3px]"
                         alt="MAVLink"
                       />
