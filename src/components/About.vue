@@ -76,8 +76,8 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue'
 
-import CockpitLogo from '@/assets/cockpit-logo.png'
-import lite from '@/assets/lite.png'
+import CockpitLogo from '@/assets/cockpit-logo.avif'
+import lite from '@/assets/lite.avif'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
