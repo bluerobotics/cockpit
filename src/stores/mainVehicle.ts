@@ -30,6 +30,7 @@ import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-m
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
+import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
 import type { MAVLinkParameterSetData, MessageIntervalOptions } from '@/libs/vehicle/mavlink/types'
 import { MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY } from '@/libs/vehicle/mavlink/vehicle'
@@ -263,6 +264,33 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
           name: 'MAVLink2REST HTTP Endpoint',
           type: 'string',
           description: 'The HTTP endpoint of the vehicle MAVLink2REST service.',
+        })
+      }
+
+      if (!getDataLakeVariableInfo('cockpit/vehicle/type')) {
+        createDataLakeVariable({
+          id: 'cockpit/vehicle/type',
+          name: 'Vehicle Type',
+          type: 'string',
+          description: 'The autopilot type of the vehicle currently being controlled (e.g. "copter", "sub").',
+        })
+      }
+
+      if (!getDataLakeVariableInfo('cockpit/vehicle/firmware_type')) {
+        createDataLakeVariable({
+          id: 'cockpit/vehicle/firmware_type',
+          name: 'Firmware Type',
+          type: 'string',
+          description: 'The autopilot firmware family (e.g. "ArduPilot", "PX4", "Unknown").',
+        })
+      }
+
+      if (!getDataLakeVariableInfo('cockpit/vehicle/firmware_version')) {
+        createDataLakeVariable({
+          id: 'cockpit/vehicle/firmware_version',
+          name: 'Firmware Version',
+          type: 'string',
+          description: 'The autopilot firmware version (major.minor.patch, e.g. "4.5.7").',
         })
       }
 
@@ -643,13 +671,27 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       }
 
       const heartbeat = pack.message as Message.Heartbeat
+      const oldFirmwareType = firmwareType.value
       firmwareType.value = heartbeat.autopilot.type
       const oldVehicleType = vehicleType.value
       vehicleType.value = heartbeat.mavtype.type
       lastHeartbeat.value = new Date()
 
+      if (oldFirmwareType !== firmwareType.value && firmwareType.value !== undefined) {
+        const firmwareFamilyMap: Partial<Record<MavAutopilot, string>> = {
+          [MavAutopilot.MAV_AUTOPILOT_ARDUPILOTMEGA]: 'ArduPilot',
+          [MavAutopilot.MAV_AUTOPILOT_PX4]: 'PX4',
+        }
+        setDataLakeVariableData('cockpit/vehicle/firmware_type', firmwareFamilyMap[firmwareType.value] ?? 'Unknown')
+      }
+
       if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
         console.log('Vehicle type changed to', vehicleType.value)
+
+        const friendlyType = getVehicleTypeFromMavType(vehicleType.value)
+        if (friendlyType) {
+          setDataLakeVariableData('cockpit/vehicle/type', friendlyType)
+        }
 
         try {
           controllerStore.loadDefaultProtocolMappingForVehicle(vehicleType.value)
@@ -665,6 +707,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
           console.error(`Could not load default profile for vehicle type ${vehicleType.value}: ${error}`)
         }
       }
+    })
+    mainVehicle.value.onIncomingMAVLinkMessage.add(MAVLinkType.AUTOPILOT_VERSION, (pack: Package) => {
+      const version = (pack.message as Message.AutopilotVersion).flight_sw_version
+      const major = (version >> 24) & 0xff
+      const minor = (version >> 16) & 0xff
+      const patch = (version >> 8) & 0xff
+      setDataLakeVariableData('cockpit/vehicle/firmware_version', `${major}.${minor}.${patch}`)
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getAutoPilot(vehicles).onMode.add((vehicleMode: any) => {
