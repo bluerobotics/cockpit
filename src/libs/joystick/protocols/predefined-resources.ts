@@ -10,8 +10,35 @@ import { getUnindentedString } from '@/libs/utils'
 import { MessageFieldType } from '@/types/cockpit-actions'
 import { customActionTypes } from '@/types/cockpit-actions'
 
+import { DataLakeVariableAction } from './data-lake'
+
 export let mavlinkCameraZoomActionId: string | undefined = undefined
 export let mavlinkCameraFocusActionId: string | undefined = undefined
+
+// Info required to map joystick axis inputs to MAVLink MANUAL_CONTROL outputs, via the data lake
+const joystickAxisConfig = [
+  { key: 'axis_x', name: 'Axis X', inputId: 'inputs/mavlink/axis-x', outputId: 'outputs/mavlink/axis-x' },
+  { key: 'axis_y', name: 'Axis Y', inputId: 'inputs/mavlink/axis-y', outputId: 'outputs/mavlink/axis-y' },
+  { key: 'axis_z', name: 'Axis Z', inputId: 'inputs/mavlink/axis-z', outputId: 'outputs/mavlink/axis-z' },
+  { key: 'axis_r', name: 'Axis R', inputId: 'inputs/mavlink/axis-r', outputId: 'outputs/mavlink/axis-r' },
+  { key: 'axis_s', name: 'Axis S', inputId: 'inputs/mavlink/axis-s', outputId: 'outputs/mavlink/axis-s' },
+  { key: 'axis_t', name: 'Axis T', inputId: 'inputs/mavlink/axis-t', outputId: 'outputs/mavlink/axis-t' },
+] as const
+
+/**
+ * Pre-built data lake variable actions for joystick axis inputs, used in joystick profile mappings
+ */
+export const joystickInputAxes: Record<(typeof joystickAxisConfig)[number]['key'], DataLakeVariableAction> =
+  Object.fromEntries(
+    joystickAxisConfig.map((axis) => [
+      axis.key,
+      new DataLakeVariableAction({
+        id: axis.inputId,
+        name: axis.name,
+        type: 'number' as DataLakeVariableType,
+      }),
+    ])
+  ) as Record<(typeof joystickAxisConfig)[number]['key'], DataLakeVariableAction>
 
 export const setupMavlinkCameraResources = (): void => {
   const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
@@ -128,6 +155,30 @@ export const setupMavlinkCameraResources = (): void => {
   }
 }
 
+const setupJoystickAxesResources = (): void => {
+  const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
+
+  for (const axis of joystickAxisConfig) {
+    createDataLakeVariable({ id: axis.inputId, name: axis.name, ...commonVariableConfig }, 0)
+
+    try {
+      const existing = getAllTransformingFunctions().find((f) => f.id === axis.outputId)
+      if (!existing) {
+        createTransformingFunction(
+          axis.outputId,
+          `${axis.name} Output`,
+          'number',
+          `{{${axis.inputId}}}`,
+          `Output value for MANUAL_CONTROL ${axis.name}.`
+        )
+      }
+    } catch (error) {
+      console.error(`Error creating transforming function for ${axis.name}:`, error)
+    }
+  }
+}
+
 export const setupPredefinedLakeAndActionResources = (): void => {
   setupMavlinkCameraResources()
+  setupJoystickAxesResources()
 }
