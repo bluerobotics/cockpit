@@ -5,11 +5,12 @@
 import { capitalize } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { sendManualControl } from '@/libs/communication/mavlink'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
-import { round, scale } from '@/libs/utils'
+import { round } from '@/libs/utils'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
-import { type JoystickProtocolActionsMapping, type JoystickState, type ProtocolAction, CockpitModifierKeyOption, JoystickAxis, JoystickButton, JoystickProtocol } from '@/types/joystick'
+import { type JoystickProtocolActionsMapping, type JoystickState, type ProtocolAction, CockpitModifierKeyOption, JoystickButton, JoystickProtocol } from '@/types/joystick'
 
 /**
  * Possible axes in the MAVLink `MANUAL_CONTROL` message protocol
@@ -220,19 +221,6 @@ const manualControlButtonFromParameterName = (name: string): MAVLinkManualContro
 }
 
 /**
- * An axis action meant to be used with MAVLink's `MANUAL_CONTROL` message
- */
-export class MAVLinkManualControlAxisAction implements ProtocolAction {
-  readonly protocol = JoystickProtocol.MAVLinkManualControl
-  /**
-   * Create an axis input
-   * @param {MAVLinkAxisFunction} id Axis identification
-   * @param {string} name Axis human-readable name
-   */
-  constructor(public id: MAVLinkAxisFunction, public name: string) { }
-}
-
-/**
  * A button action meant to be used with MAVLink's `MANUAL_CONTROL` message
  */
 export class MAVLinkManualControlButtonAction implements ProtocolAction {
@@ -243,16 +231,6 @@ export class MAVLinkManualControlButtonAction implements ProtocolAction {
    * @param {string} name Button human-readable name
    */
   constructor(public id: MAVLinkButtonFunction, public name: string) { }
-}
-
-// Available axis actions
-export const mavlinkManualControlAxes: { [key in MAVLinkAxisFunction]: MAVLinkManualControlAxisAction } = {
-  [MAVLinkAxisFunction.X]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.X, 'Axis X'),
-  [MAVLinkAxisFunction.Y]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.Y, 'Axis Y'),
-  [MAVLinkAxisFunction.Z]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.Z, 'Axis Z'),
-  [MAVLinkAxisFunction.R]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.R, 'Axis R'),
-  [MAVLinkAxisFunction.S]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.S, 'Axis S'),
-  [MAVLinkAxisFunction.T]: new MAVLinkManualControlAxisAction(MAVLinkAxisFunction.T, 'Axis T'),
 }
 
 // Available button actions
@@ -500,21 +478,21 @@ export class MavlinkManualControlManager {
       }
     }
 
-    // Calculate axes values
-    const xCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_x.id)
-    const yCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_y.id)
-    const zCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_z.id)
-    const rCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_r.id)
-    const sCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_s.id)
-    const tCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_t.id)
-
-    // Populate MAVLink Manual Control state of axes and buttons
-    this.manualControlState.x = xCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[xCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, xCorrespondency[1].min, xCorrespondency[1].max), 0)
-    this.manualControlState.y = yCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[yCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, yCorrespondency[1].min, yCorrespondency[1].max), 0)
-    this.manualControlState.z = zCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[zCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, zCorrespondency[1].min, zCorrespondency[1].max), 0)
-    this.manualControlState.r = rCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[rCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, rCorrespondency[1].min, rCorrespondency[1].max), 0)
-    this.manualControlState.s = sCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[sCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, sCorrespondency[1].min, sCorrespondency[1].max), 0)
-    this.manualControlState.t = tCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[tCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, tCorrespondency[1].min, tCorrespondency[1].max), 0)
+    // Read axis values from data lake output variables (scaling is handled by the data-lake protocol handler)
+    const xVal = Number(getDataLakeVariableData('outputs/mavlink/axis-x') ?? 0)
+    const yVal = Number(getDataLakeVariableData('outputs/mavlink/axis-y') ?? 0)
+    const zVal = Number(getDataLakeVariableData('outputs/mavlink/axis-z') ?? 0)
+    const rVal = Number(getDataLakeVariableData('outputs/mavlink/axis-r') ?? 0)
+    const sVal = Number(getDataLakeVariableData('outputs/mavlink/axis-s') ?? 0)
+    const tVal = Number(getDataLakeVariableData('outputs/mavlink/axis-t') ?? 0)
+    // Users can modify the inputs arbitrarily, so handle NaN values gracefully.
+    // TODO: replace fallback value (0) with INT16_MAX (ignored) when ArduSub supports it (ArduPilot/ardupilot#32639)
+    this.manualControlState.x = round(Number.isNaN(xVal) ? 0 : xVal, 0)
+    this.manualControlState.y = round(Number.isNaN(yVal) ? 0 : yVal, 0)
+    this.manualControlState.z = round(Number.isNaN(zVal) ? 0 : zVal, 0)
+    this.manualControlState.r = round(Number.isNaN(rVal) ? 0 : rVal, 0)
+    this.manualControlState.s = round(Number.isNaN(sVal) ? 0 : sVal, 0)
+    this.manualControlState.t = round(Number.isNaN(tVal) ? 0 : tVal, 0)
     this.manualControlState.buttons = buttons_int
     this.manualControlState.buttons2 = buttons2_int
   }
@@ -702,4 +680,34 @@ const migrateServoSubButtonsToActuators = (mappings: JoystickProtocolActionsMapp
 
 export const migrateMavlinkManualControlButtons = (mappings: JoystickProtocolActionsMapping[]): JoystickProtocolActionsMapping[] => {
   return migrateServoSubButtonsToActuators(mappings)
+}
+
+const mavlinkAxisToDataLakeMap: Record<string, { id: string; name: string }> = {
+  [MAVLinkAxisFunction.X]: { id: 'inputs/mavlink/axis-x', name: 'Axis X' },
+  [MAVLinkAxisFunction.Y]: { id: 'inputs/mavlink/axis-y', name: 'Axis Y' },
+  [MAVLinkAxisFunction.Z]: { id: 'inputs/mavlink/axis-z', name: 'Axis Z' },
+  [MAVLinkAxisFunction.R]: { id: 'inputs/mavlink/axis-r', name: 'Axis R' },
+  [MAVLinkAxisFunction.S]: { id: 'inputs/mavlink/axis-s', name: 'Axis S' },
+  [MAVLinkAxisFunction.T]: { id: 'inputs/mavlink/axis-t', name: 'Axis T' },
+}
+
+// Migrate any joystick axes configured for (deprecated) direct MAVLink Manual Control to use the Data Lake pipeline instead.
+// Added in v1.19.0 - remove once usage proportion is negligible.
+export const migrateMavlinkManualControlAxes = (mappings: JoystickProtocolActionsMapping[]): JoystickProtocolActionsMapping[] => {
+  const migratedMappings: JoystickProtocolActionsMapping[] = JSON.parse(JSON.stringify(mappings))
+  mappings.forEach((mapping, mappingIndex) => {
+    Object.entries(mapping.axesCorrespondencies).forEach(([axisIndex, axisConfig]) => {
+      if (axisConfig.action.protocol === JoystickProtocol.MAVLinkManualControl) {
+        const replacement = mavlinkAxisToDataLakeMap[axisConfig.action.id]
+        if (replacement) {
+          migratedMappings[mappingIndex].axesCorrespondencies[axisIndex as unknown as number].action = {
+            protocol: JoystickProtocol.DataLakeVariable,
+            id: replacement.id,
+            name: replacement.name,
+          }
+        }
+      }
+    })
+  })
+  return migratedMappings
 }
