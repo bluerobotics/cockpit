@@ -1,5 +1,10 @@
 import { getAllActionLinks, saveActionLink } from '@/libs/actions/action-links'
-import { createDataLakeVariable, DataLakeVariableType } from '@/libs/actions/data-lake'
+import {
+  createDataLakeVariable,
+  DataLakeVariableType,
+  getDataLakeVariableData,
+  setDataLakeVariableData,
+} from '@/libs/actions/data-lake'
 import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import {
   getAllMavlinkMessageActionConfigs,
@@ -10,6 +15,7 @@ import { MavCmd, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest
 import { getUnindentedString } from '@/libs/utils'
 import { customActionTypes } from '@/types/cockpit-actions'
 
+import { availableCockpitActions, registerActionCallback } from './cockpit-actions'
 import { DataLakeVariableAction } from './data-lake'
 
 export let mavlinkCameraZoomActionId: string | undefined = undefined
@@ -186,7 +192,33 @@ export const setupJoystickAxesResources = (): void => {
   }
 }
 
+const reverseVariableId = 'joystick/inputs/reverse'
+
+export const setupReverseResources = (): void => {
+  createDataLakeVariable(
+    {
+      id: reverseVariableId,
+      name: 'Reverse',
+      type: 'boolean' as DataLakeVariableType,
+      description: 'Trigger for user-specified reversing functionality',
+      allowUserToChangeValue: true,
+    },
+    false
+  )
+
+  registerActionCallback(availableCockpitActions.start_reversing, () => {
+    setDataLakeVariableData(reverseVariableId, true)
+  })
+  registerActionCallback(availableCockpitActions.stop_reversing, () => {
+    setDataLakeVariableData(reverseVariableId, false)
+  })
+  registerActionCallback(availableCockpitActions.toggle_reversing, () => {
+    setDataLakeVariableData(reverseVariableId, !getDataLakeVariableData(reverseVariableId))
+  })
+}
+
 export const setupPredefinedLakeAndActionResources = (): void => {
   setupMavlinkCameraResources()
   setupJoystickAxesResources()
+  setupReverseResources()
 }
