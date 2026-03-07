@@ -23,12 +23,12 @@ export let mavlinkCameraZoomActionId: string | undefined = undefined
 export let mavlinkCameraFocusActionId: string | undefined = undefined
 
 const joystickAxisConfig = [
-  { key: 'axis_x' },
-  { key: 'axis_y' },
-  { key: 'axis_z' },
-  { key: 'axis_r' },
-  { key: 'axis_s' },
-  { key: 'axis_t' },
+  { key: 'axis_x', reverseVehicleTypes: ['copter', 'sub'], translationVehicleTypes: ['sub'] },
+  { key: 'axis_y', reverseVehicleTypes: ['copter', 'sub'], translationVehicleTypes: ['sub'] },
+  { key: 'axis_z', reverseVehicleTypes: ['rover'], translationVehicleTypes: ['copter', 'sub', 'rover', 'plane'] },
+  { key: 'axis_r', reverseVehicleTypes: [] as string[], translationVehicleTypes: [] as string[] },
+  { key: 'axis_s', reverseVehicleTypes: ['sub'], translationVehicleTypes: [] as string[] },
+  { key: 'axis_t', reverseVehicleTypes: ['sub'], translationVehicleTypes: [] as string[] },
 ] as const
 
 const axisInputId = (key: string): string => `joystick/inputs/${key.replace('_', '-')}`
@@ -37,6 +37,38 @@ const axisName = (key: string): string =>
     .split('_')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ')
+
+/**
+ * Generates a JavaScript expression that evaluates to -1 when the vehicle type matches
+ * one of the given types and reverse is active, or 1 otherwise
+ * @param {string[]} vehicleTypes - Vehicle types that should trigger reversal
+ * @returns {string} A data-lake expression string
+ */
+const getReverseExpression = (vehicleTypes: readonly string[]): string => {
+  if (vehicleTypes.length === 0) return '1'
+  if (vehicleTypes.length === 1) {
+    return `('{{cockpit/vehicle/type}}' === '${vehicleTypes[0]}' && {{joystick/inputs/reverse}}) ? -1 : 1`
+  }
+  return `([${vehicleTypes
+    .map((t) => `'${t}'`)
+    .join(', ')}].includes('{{cockpit/vehicle/type}}') && {{joystick/inputs/reverse}}) ? -1 : 1`
+}
+
+/**
+ * Generates a JavaScript expression that evaluates to the pilot gain value when the
+ * vehicle type matches one of the given translation types, or 1 otherwise
+ * @param {string[]} vehicleTypes - Vehicle types for which this axis is a translation axis
+ * @returns {string} A data-lake expression string
+ */
+const getGainExpression = (vehicleTypes: readonly string[]): string => {
+  if (vehicleTypes.length === 0) return '1'
+  if (vehicleTypes.length === 1) {
+    return `('{{cockpit/vehicle/type}}' === '${vehicleTypes[0]}') ? {{joystick/inputs/gain}} : 1`
+  }
+  return `([${vehicleTypes
+    .map((t) => `'${t}'`)
+    .join(', ')}].includes('{{cockpit/vehicle/type}}')) ? {{joystick/inputs/gain}} : 1`
+}
 
 /**
  * Pre-built data lake variable actions for joystick axis inputs, used in joystick profile mappings
@@ -173,22 +205,38 @@ export const setupJoystickAxesResources = (): void => {
     const id = axisInputId(axis.key)
     const name = axisName(axis.key)
     const outputId = id.replace('/inputs/', '/outputs/')
+    const scaleId = `${outputId}-scale`
 
     createDataLakeVariable({ id, name, ...commonVariableConfig }, 0)
 
     try {
-      const existing = getAllTransformingFunctions().find((f) => f.id === outputId)
-      if (!existing) {
+      const existingScale = getAllTransformingFunctions().find((f) => f.id === scaleId)
+      if (!existingScale) {
+        createTransformingFunction(
+          scaleId,
+          `${name} Scale`,
+          'number',
+          `(${getReverseExpression(axis.reverseVehicleTypes)}) * (${getGainExpression(axis.translationVehicleTypes)})`,
+          `Scale factor for ${name} combining reverse direction and pilot gain.`
+        )
+      }
+    } catch (error) {
+      console.error(`Error creating scale transforming function for ${name}:`, error)
+    }
+
+    try {
+      const existingOutput = getAllTransformingFunctions().find((f) => f.id === outputId)
+      if (!existingOutput) {
         createTransformingFunction(
           outputId,
           `${name} Output`,
           'number',
-          `{{${id}}}`,
+          `{{${scaleId}}} * {{${id}}}`,
           `Output value for MANUAL_CONTROL ${name}.`
         )
       }
     } catch (error) {
-      console.error(`Error creating transforming function for ${name}:`, error)
+      console.error(`Error creating output transforming function for ${name}:`, error)
     }
   }
 }
@@ -228,7 +276,8 @@ export const setupPilotGainResources = (): void => {
         id: gainVariableId,
         name: 'Pilot Gain',
         type: 'number' as DataLakeVariableType,
-        description: 'Pilot gain multiplier applied to manual control axes (0 to 1)',
+        description:
+          'Pilot gain multiplier applied to manual control axes (0 to 1). By default only applied to vehicle translation axes.',
         allowUserToChangeValue: true,
         persistent: true,
         persistValue: true,
