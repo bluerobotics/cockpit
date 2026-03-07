@@ -4,17 +4,13 @@ import { availableCockpitActions } from './protocols/cockpit-actions'
 import { availableDataLakeActions } from './protocols/data-lake'
 import {
   availableMavlinkManualControlButtonFunctions,
-  mavlinkManualControlAxes,
+  migrateMavlinkManualControlAxes,
   migrateMavlinkManualControlButtons,
 } from './protocols/mavlink-manual-control'
 import { modifierKeyActions, otherAvailableActions } from './protocols/other'
 
 export const allAvailableAxes = (): ProtocolAction[] => {
-  return [
-    ...Object.values(mavlinkManualControlAxes),
-    ...Object.values(availableDataLakeActions()),
-    otherAvailableActions.no_function,
-  ]
+  return [...Object.values(availableDataLakeActions()), otherAvailableActions.no_function]
 }
 
 export const allAvailableButtons = (): ProtocolAction[] => {
@@ -30,5 +26,5 @@ export const allAvailableButtons = (): ProtocolAction[] => {
 export const performJoystickMappingMigrations = (
   mappings: JoystickProtocolActionsMapping[]
 ): JoystickProtocolActionsMapping[] => {
-  return migrateMavlinkManualControlButtons(mappings)
+  return migrateMavlinkManualControlAxes(migrateMavlinkManualControlButtons(mappings))
 }
