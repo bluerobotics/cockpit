@@ -322,6 +322,46 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         })
       }
 
+      if (!getDataLakeVariableInfo('vehicle/type')) {
+        createDataLakeVariable({
+          id: 'vehicle/type',
+          name: 'Vehicle Type',
+          type: 'string',
+          description: 'The autopilot type of the vehicle currently being controlled (e.g. "copter", "sub").',
+          source: 'MAVLink',
+        })
+      }
+
+      if (!getDataLakeVariableInfo('vehicle/firmware_type')) {
+        createDataLakeVariable({
+          id: 'vehicle/firmware_type',
+          name: 'Firmware Type',
+          type: 'string',
+          description: 'The autopilot firmware family (e.g. "ArduPilot", "PX4", "Unknown").',
+          source: 'MAVLink',
+        })
+      }
+
+      if (!getDataLakeVariableInfo('vehicle/firmware_version')) {
+        createDataLakeVariable({
+          id: 'vehicle/firmware_version',
+          name: 'Firmware Version',
+          type: 'string',
+          description: 'The autopilot firmware version (major.minor.patch, e.g. "4.5.7").',
+          source: 'MAVLink',
+        })
+      }
+
+      if (!getDataLakeVariableInfo('vehicle/armed')) {
+        createDataLakeVariable({
+          id: 'vehicle/armed',
+          name: 'Armed',
+          type: 'boolean',
+          description: 'The vehicle armed state.',
+          source: 'MAVLink',
+        })
+      }
+
       // Update the variables with the new address
       setDataLakeVariableData(vehicleAddressVariableId, cleanedAddress)
       setDataLakeVariableData(vehicleMavlink2RestHttpEndpointVariableId, defaultMAVLink2RestHttpURI.value)
@@ -871,6 +911,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
         missionStore.clearVehicleHistory()
       }
 
+      // Expose through data-lake, for use in custom triggers and Actions
+      setDataLakeVariableData('vehicle/armed', armed)
+
       // If the vehicle was already in the desired state or it's the first time we are checking, do not capture an event
       if (wasArmed === undefined || wasArmed === armed) return
 
@@ -917,15 +960,36 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       }
 
       const heartbeat = pack.message as Message.Heartbeat
+      const oldFirmwareType = firmwareType.value
       firmwareType.value = heartbeat.autopilot.type
       const oldVehicleType = vehicleType.value
       vehicleType.value = heartbeat.mavtype.type
       lastHeartbeat.value = new Date()
 
+      if (oldFirmwareType !== firmwareType.value && firmwareType.value !== undefined) {
+        const firmwareFamilyMap: Partial<Record<MavAutopilot, string>> = {
+          [MavAutopilot.MAV_AUTOPILOT_ARDUPILOTMEGA]: 'ArduPilot',
+          [MavAutopilot.MAV_AUTOPILOT_PX4]: 'PX4',
+        }
+        setDataLakeVariableData('vehicle/firmware_type', firmwareFamilyMap[firmwareType.value] ?? 'Unknown')
+      }
+
       if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
         console.log('Vehicle type changed to', vehicleType.value)
         lastConnectedVehicleType.value = vehicleType.value
+
+        const friendlyType = getVehicleTypeFromMavType(vehicleType.value)
+        if (friendlyType) {
+          setDataLakeVariableData('vehicle/type', friendlyType)
+        }
       }
+    })
+    mainVehicle.value.onIncomingMAVLinkMessage.add(MAVLinkType.AUTOPILOT_VERSION, (pack: Package) => {
+      const version = (pack.message as Message.AutopilotVersion).flight_sw_version
+      const major = (version >> 24) & 0xff
+      const minor = (version >> 16) & 0xff
+      const patch = (version >> 8) & 0xff
+      setDataLakeVariableData('vehicle/firmware_version', `${major}.${minor}.${patch}`)
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getAutoPilot(vehicles).onMode.add((vehicleMode: any) => {
