@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full flex items-end">
+  <div class="min-w-[280px] min-h-[95px] flex items-end">
     <div
       class="w-full rounded-lg overflow-hidden -mt-2"
       :class="[isWrapped ? 'h-[42px]' : 'h-full']"
