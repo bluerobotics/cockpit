@@ -1127,7 +1127,12 @@ watch(vehicleStore.coordinates, () => {
       iconAnchor: [32, 32],
     })
 
-    vehicleMarker.value = L.marker(vehiclePosition.value, { icon: vehicleMarkerIcon })
+    if (!map.value.getPane('vehiclePane')) {
+      const vehiclePane = map.value.createPane('vehiclePane')
+      vehiclePane.style.zIndex = '650'
+    }
+
+    vehicleMarker.value = L.marker(vehiclePosition.value, { icon: vehicleMarkerIcon, pane: 'vehiclePane' })
 
     const vehicleMarkerTooltip = L.tooltip({
       content: 'No data available',
