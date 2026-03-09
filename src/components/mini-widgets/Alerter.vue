@@ -1,7 +1,7 @@
 <template>
   <div ref="currentAlertBar" class="flex" :class="{ 'pointer-events-none': widgetStore.editingMode }">
     <div
-      class="mx-1 my-1.5 w-[500px] rounded-md"
+      class="relative mx-1 my-1.5 w-[500px] rounded-md"
       :class="{ 'alert-border-blink': shouldBlinkBorder }"
       :style="miniWidget.options.enableColorCoding ? colorCodeBorderStyle : 'border: none;'"
     >
@@ -13,11 +13,14 @@
       </div>
       <div
         ref="expandedAlertsBar"
-        class="expanded-alerts-bar absolute w-full p-2 transition-all rounded max-h-[30vh] overflow-y-auto text-slate-50 scrollbar-hide bg-slate-800/75 select-none flex flex-col"
+        class="expanded-alerts-bar absolute left-0 right-0 transition-all rounded bg-slate-800/75 select-none flex max-h-[30vh]"
+        style="border: 1px solid #94a3b866"
         :class="{
           'opacity-0 invisible': !isShowingExpandedAlerts,
-          'top-14': !shouldExpandUpward,
-          'bottom-14': shouldExpandUpward,
+          'flex-col': shouldExpandUpward,
+          'flex-col-reverse': !shouldExpandUpward,
+          'top-[46px]': !shouldExpandUpward,
+          'bottom-[46px]': shouldExpandUpward,
         }"
       >
         <div class="p-2 overflow-y-auto text-slate-50 scrollbar-hide flex flex-col">
@@ -45,16 +48,23 @@
             />
           </div>
         </div>
+        <div
+          class="flex items-center justify-center py-0.5 cursor-pointer hover:brightness-125 transition-all"
+          :style="{
+            [shouldExpandUpward ? 'borderTop' : 'borderBottom']: '1px solid #94a3b866',
+            backgroundColor: '#94a3b866',
+          }"
+          @click="toggleExpandedAlertLock()"
+        >
+          <v-icon
+            icon="mdi-arrow-vertical-lock"
+            size="x-small"
+            class="lock-icon transition-colors"
+            :class="lockAlertsOpened ? 'text-slate-200 hover:text-slate-100' : 'text-slate-400 hover:text-slate-200'"
+          />
+        </div>
       </div>
     </div>
-    <v-btn
-      v-if="isShowingExpandedAlerts || lockAlertsOpened"
-      icon="mdi-arrow-vertical-lock"
-      variant="text"
-      :color="lockAlertsOpened ? 'orange ' : 'white'"
-      class="-mr-8 -ml-4 mt-[2px] bg-transparent"
-      @click="toggleExpandedAlertLock()"
-    ></v-btn>
   </div>
 
   <InteractionDialog
