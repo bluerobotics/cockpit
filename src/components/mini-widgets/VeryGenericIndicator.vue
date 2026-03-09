@@ -162,27 +162,32 @@
               v-if="iconSearchString === '' && showIconChooseModal"
               ref="iconGridRef"
               v-slot="{ item }"
-              class="w-full h-40 mt-3 text-[34px]"
+              :class="`w-full h-40 mt-3 text-[${iconGridFontSize}]`"
               :items="iconsNames"
-              :item-size="46"
+              :item-size="iconGridRowHeight"
               :item-secondary-size="iconGridSecondarySize"
-              :grid-items="7"
+              :grid-items="iconGridColumns"
             >
               <span
-                class="block w-full h-full text-center text-white cursor-pointer mdi icon-symbol leading-[46px]"
-                :class="[item]"
+                :class="[
+                  `block w-full h-full text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
+                  item,
+                ]"
                 @click="chooseIcon(item)"
               />
             </RecycleScroller>
             <div
               v-else-if="showIconChooseModal"
-              class="grid w-full h-40 grid-cols-7 mt-3 overflow-x-hidden overflow-y-scroll"
+              :class="`grid w-full h-40 grid-cols-${iconGridColumns} mt-3 overflow-x-hidden overflow-y-scroll text-[${iconGridFontSize}]`"
+              :style="{ gridAutoRows: `${iconGridRowHeight}px` }"
             >
               <span
                 v-for="icon in iconsToShow"
                 :key="icon"
-                class="block text-center text-white cursor-pointer mdi icon-symbol leading-[46px]"
-                :class="[icon]"
+                :class="[
+                  `block text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
+                  icon,
+                ]"
                 @click="chooseIcon(icon)"
               />
             </div>
@@ -423,11 +428,15 @@ const fuseOptions = { includeScore: true, ignoreLocation: true, threshold: 0.3 }
 let iconsNames: string[] = []
 
 // Search for icon using fuzzy-finder
+const iconGridColumns = 7
+const iconGridRowHeight = 46
+const iconGridFontSize = '34px'
+
 const iconGridRef = ref<HTMLElement | null>(null)
 const { width: iconGridWidth } = useElementSize(iconGridRef)
 const iconGridSecondarySize = computed(() => {
-  if (!iconGridWidth.value) return 46
-  return Math.floor(iconGridWidth.value / 7)
+  if (!iconGridWidth.value) return iconGridRowHeight
+  return Math.floor(iconGridWidth.value / iconGridColumns)
 })
 
 const iconSearchString = ref('')
