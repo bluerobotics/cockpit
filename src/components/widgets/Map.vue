@@ -9,16 +9,20 @@
     <div :id="mapId" ref="map" class="map">
       <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
         <template #activator="{ props: menuProps }">
-          <v-btn
-            v-show="showButtons"
-            :style="interfaceStore.globalGlassMenuStyles"
-            v-bind="menuProps"
-            class="absolute right-[135px] m-3 bottom-button bg-slate-50 text-[14px]"
-            elevation="2"
-            size="x-small"
-            style="z-index: 1002; border-radius: 0px"
-            icon="mdi-download-multiple"
-          />
+          <v-tooltip location="top" text="Download tiles for offline use">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                v-show="showButtons"
+                :style="interfaceStore.globalGlassMenuStyles"
+                v-bind="{ ...menuProps, ...tooltipProps }"
+                class="absolute right-[135px] m-3 bottom-button bg-slate-50 text-[14px]"
+                elevation="2"
+                size="x-small"
+                style="z-index: 1002; border-radius: 0px"
+                icon="mdi-download-multiple"
+              />
+            </template>
+          </v-tooltip>
         </template>
 
         <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
