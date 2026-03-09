@@ -20,21 +20,30 @@
           'bottom-14': shouldExpandUpward,
         }"
       >
-        <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
-          <div
-            :title="alert.message"
-            class="flex items-center justify-between whitespace-nowrap"
-            :style="alertRowHighlightStyle(alert.level)"
-          >
-            <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
+        <div class="p-2 overflow-y-auto text-slate-50 scrollbar-hide flex flex-col">
+          <div v-for="(alert, i) in sortedAlertsReversed" :key="alert.time_created.toISOString()">
             <div
-              class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
+              :title="alert.message"
+              class="flex items-center justify-between whitespace-nowrap"
+              :style="alertRowHighlightStyle(alert.level)"
             >
-              <p>{{ formattedDate(alert.time_created || new Date()) }}</p>
-              <p>{{ alert.level.toUpperCase() }}</p>
+              <p class="mx-1 overflow-hidden text-lg font-medium leading-none text-ellipsis">{{ alert.message }}</p>
+              <div
+                class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
+              >
+                <p>{{ formattedDate(alert.time_created || new Date()) }}</p>
+                <p>{{ alert.level.toUpperCase() }}</p>
+              </div>
             </div>
+            <div
+              v-if="i !== alertStore.alerts.length - 1"
+              class="h-px mx-1 mb-2"
+              :style="{
+                backgroundColor: isHighlightedLevel(alert.level) ? `${alertLevelColors[alert.level]}99` : undefined,
+              }"
+              :class="{ 'bg-slate-50/30': !isHighlightedLevel(alert.level) }"
+            />
           </div>
-          <div v-if="i !== alertStore.alerts.length - 1" class="h-px mx-1 mb-2 bg-slate-50/30" />
         </div>
       </div>
     </div>
@@ -135,11 +144,19 @@ const highlightedAlertLevels = [AlertLevel.Critical, AlertLevel.Error, AlertLeve
  * @param {AlertLevel} level - The alert level to style
  * @returns {Record<string, string>} CSS style object with border and background tint
  */
+const isHighlightedLevel = (level: AlertLevel): boolean => {
+  return miniWidget.value.options.enableColorCoding && highlightedAlertLevels.includes(level)
+}
+
+/**
+ * Returns inline styles for highlighting an alert row based on its level
+ * @param {AlertLevel} level - The alert level to style
+ * @returns {Record<string, string>} CSS style object with border and background tint
+ */
 const alertRowHighlightStyle = (level: AlertLevel): Record<string, string> => {
-  if (!miniWidget.value.options.enableColorCoding || !highlightedAlertLevels.includes(level)) return {}
+  if (!isHighlightedLevel(level)) return {}
   const color = alertLevelColors[level]
   return {
-    border: `1px solid ${color}99`,
     backgroundColor: `${color}22`,
     padding: '2px',
   }
