@@ -1,6 +1,12 @@
 <template>
   <div ref="videoWidget" class="video-widget">
-    <statsForNerds v-if="widget.options.statsForNerds" :stream-name="externalStreamId" />
+    <div
+      v-if="widget.options.statsForNerds"
+      class="stats-inverse-wrapper"
+      :style="{ transform: inverseTransformStyle }"
+    >
+      <statsForNerds :stream-name="externalStreamId" />
+    </div>
     <div v-if="nameSelectedStream === undefined" class="no-video-alert">
       <span>No video stream selected.</span>
     </div>
@@ -284,6 +290,13 @@ const transformStyle = computed(() => {
   return `${flipStyle.value} ${rotateStyle.value}`
 })
 
+const inverseTransformStyle = computed(() => {
+  const flipH = widget.value.options.flipHorizontally ? -1 : 1
+  const flipV = widget.value.options.flipVertically ? -1 : 1
+  const angle = -(widget.value.options.rotationAngle ?? 0)
+  return `rotate(${angle}deg) scale(${flipH}, ${flipV})`
+})
+
 const serverStatus = computed(() => {
   if (externalStreamId.value === undefined) return 'Unknown.'
   return videoStore.getSignallerStatus(externalStreamId.value)
@@ -341,6 +354,15 @@ video {
   top: 0;
   left: 0;
   object-fit: v-bind('widget.options.videoFitStyle');
+}
+.stats-inverse-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
 }
 .no-video-alert {
   width: 100%;
