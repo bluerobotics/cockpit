@@ -160,14 +160,19 @@
             </div>
             <RecycleScroller
               v-if="iconSearchString === '' && showIconChooseModal"
+              ref="iconGridRef"
               v-slot="{ item }"
               class="w-full h-40 mt-3 text-[34px]"
               :items="iconsNames"
               :item-size="46"
+              :item-secondary-size="iconGridSecondarySize"
               :grid-items="7"
             >
-              <span class="m-1 text-white cursor-pointer mdi icon-symbol" :class="[item]" @click="chooseIcon(item)">
-              </span>
+              <span
+                class="block w-full h-full text-center text-white cursor-pointer mdi icon-symbol leading-[46px]"
+                :class="[item]"
+                @click="chooseIcon(item)"
+              />
             </RecycleScroller>
             <div
               v-else-if="showIconChooseModal"
@@ -176,7 +181,7 @@
               <span
                 v-for="icon in iconsToShow"
                 :key="icon"
-                class="m-1 text-white cursor-pointer mdi icon-symbol"
+                class="block text-center text-white cursor-pointer mdi icon-symbol leading-[46px]"
                 :class="[icon]"
                 @click="chooseIcon(icon)"
               />
@@ -206,7 +211,7 @@
 
 <script setup lang="ts">
 import * as MdiExports from '@mdi/js/mdi'
-import { watchThrottled } from '@vueuse/core'
+import { useElementSize, watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
@@ -418,6 +423,13 @@ const fuseOptions = { includeScore: true, ignoreLocation: true, threshold: 0.3 }
 let iconsNames: string[] = []
 
 // Search for icon using fuzzy-finder
+const iconGridRef = ref<HTMLElement | null>(null)
+const { width: iconGridWidth } = useElementSize(iconGridRef)
+const iconGridSecondarySize = computed(() => {
+  if (!iconGridWidth.value) return 46
+  return Math.floor(iconGridWidth.value / 7)
+})
+
 const iconSearchString = ref('')
 const iconsToShow = ref<string[]>([])
 watchThrottled(
