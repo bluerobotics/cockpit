@@ -1140,7 +1140,7 @@ watch(vehicleStore.coordinates, () => {
 
     const vehicleMarkerTooltip = L.tooltip({
       content: 'No data available',
-      className: 'waypoint-tooltip',
+      className: 'vehicle-tooltip',
       offset: [40, 0],
     })
     vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
@@ -1920,10 +1920,25 @@ watch(
 .waypoint-tooltip {
   background-color: white;
   padding: 0.75rem;
-  border: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.2);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   color: black;
   z-index: 100;
+}
+
+:deep(.vehicle-tooltip) {
+  background-color: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter);
+  border: var(--glass-border) !important;
+  box-shadow: var(--glass-box-shadow);
+  color: var(--glass-color);
+  padding: 0.75rem;
+  border-radius: 8px;
+  z-index: 100;
+}
+
+:deep(.vehicle-tooltip::before) {
+  border-right-color: var(--glass-background) !important;
 }
 
 :deep(.waypoint-tooltip--current-waypoint) {
