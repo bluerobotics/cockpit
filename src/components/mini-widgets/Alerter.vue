@@ -60,7 +60,11 @@
             icon="mdi-arrow-vertical-lock"
             size="x-small"
             class="lock-icon transition-colors"
-            :class="lockAlertsOpened ? 'text-slate-200 hover:text-slate-100' : 'text-slate-400 hover:text-slate-200'"
+            :class="
+              miniWidget.options.lockExpansion
+                ? 'text-slate-200 hover:text-slate-100'
+                : 'text-slate-400 hover:text-slate-200'
+            "
           />
         </div>
       </div>
@@ -127,6 +131,7 @@ const props = defineProps<{
 const miniWidget = toRefs(props).miniWidget
 
 miniWidget.value.options.enableColorCoding ??= true
+miniWidget.value.options.lockExpansion ??= false
 
 useVehicleAlerterStore()
 const alertStore = useAlertStore()
@@ -138,7 +143,6 @@ const alertPersistencyInterval = 10 // in seconds
 const formattedDate = (datetime: Date): string => format(datetime, 'HH:mm:ss')
 
 const currentAlert = ref(alertStore.alerts[0])
-const lockAlertsOpened = ref(false)
 const currentDisplayedAlertIndex = ref(alertStore.alerts.length - 1)
 
 const colorCodeBorderStyle = computed(() => {
@@ -222,7 +226,7 @@ watch(
   }
 )
 
-const [isShowingExpandedAlerts, toggleExpandedAlerts] = useToggle()
+const [isShowingExpandedAlerts, toggleExpandedAlerts] = useToggle(miniWidget.value.options.lockExpansion)
 const showExpandedAlerts = (): boolean => toggleExpandedAlerts(true)
 const hideExpandedAlerts = (): boolean => toggleExpandedAlerts(false)
 
@@ -235,10 +239,14 @@ const isCurrentAlertBarHovered = useElementHover(currentAlertBar)
 const expandedAlertsBar = ref()
 const isExpandedAlertsBarHovered = useElementHover(expandedAlertsBar)
 watch(isCurrentAlertBarHovered, (isHovered, wasHovered) => {
-  if (lockAlertsOpened.value) return
+  if (miniWidget.value.options.lockExpansion) return
   if (wasHovered && !isHovered) {
     setTimeout(() => {
-      if (!lockAlertsOpened.value && !isExpandedAlertsBarHovered.value && !isCurrentAlertBarHovered.value) {
+      if (
+        !miniWidget.value.options.lockExpansion &&
+        !isExpandedAlertsBarHovered.value &&
+        !isCurrentAlertBarHovered.value
+      ) {
         hideExpandedAlerts()
       }
     }, 250)
@@ -247,16 +255,15 @@ watch(isCurrentAlertBarHovered, (isHovered, wasHovered) => {
   showExpandedAlerts()
 })
 watch(isExpandedAlertsBarHovered, (isHovering, wasHovering) => {
-  if (lockAlertsOpened.value) return
+  if (miniWidget.value.options.lockExpansion) return
   if (!(wasHovering && !isHovering)) return
   hideExpandedAlerts()
 })
 
 const toggleExpandedAlertLock = (): void => {
-  const shouldLock = !lockAlertsOpened.value
-  lockAlertsOpened.value = shouldLock
+  miniWidget.value.options.lockExpansion = !miniWidget.value.options.lockExpansion
 
-  if (shouldLock) {
+  if (miniWidget.value.options.lockExpansion) {
     showExpandedAlerts()
     return
   }
