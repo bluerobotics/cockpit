@@ -245,7 +245,13 @@ const notifyDataLakeVariableListeners = (id: string): void => {
   if (dataLakeVariableListeners[id]) {
     const value = dataLakeVariableData[id]
     if (value === undefined) return
-    Object.values(dataLakeVariableListeners[id]).forEach((listener) => listener.callback(value))
+    Object.entries(dataLakeVariableListeners[id]).forEach(([listenerId, listener]) => {
+      try {
+        listener.callback(value)
+      } catch (error) {
+        console.error(`[DataLake] Error in listener "${listenerId}" for variable "${id}":`, error)
+      }
+    })
   }
 }
 
@@ -253,9 +259,15 @@ const notifyDataLakeVariableTimestampListeners = (id: string): void => {
   if (dataLakeVariableListeners[id]) {
     const value = dataLakeVariableData[id]
     if (value === undefined) return
-    Object.values(dataLakeVariableListeners[id])
-      .filter((listener) => listener.notifyOnTimestampChange)
-      .forEach((listener) => listener.callback(value))
+    Object.entries(dataLakeVariableListeners[id])
+      .filter(([, listener]) => listener.notifyOnTimestampChange)
+      .forEach(([listenerId, listener]) => {
+        try {
+          listener.callback(value)
+        } catch (error) {
+          console.error(`[DataLake] Error in timestamp listener "${listenerId}" for variable "${id}":`, error)
+        }
+      })
   }
 }
 
@@ -293,7 +305,13 @@ const notifyDataLakeVariableInfoListeners = (): void => {
   // Schedule a new notification after the debounce period
   notifyInfoListenersTimeout = setTimeout(() => {
     const updatedVariables = getAllDataLakeVariablesInfo()
-    Object.values(dataLakeVariableInfoListeners).forEach((listener) => listener(updatedVariables))
+    Object.entries(dataLakeVariableInfoListeners).forEach(([listenerId, listener]) => {
+      try {
+        listener(updatedVariables)
+      } catch (error) {
+        console.error(`[DataLake] Error in variable info listener "${listenerId}":`, error)
+      }
+    })
     notifyInfoListenersTimeout = null
   }, notifyInfoDebounceMs)
 }
