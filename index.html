@@ -14,17 +14,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Cockpit Lite</title>
     <meta name="description" content="An intuitive and customizable cross-platform ground control station for remote vehicles of all types.">
-  <script type="module" crossorigin src="./assets/index-StnhJk35.js"></script>
+    <style>
+        #non-app-main {
+            color: #fff;
+            background: #333;
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        #loading-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2.5rem;
+        }
+
+        #loading-logo {
+            width: min(350px, 60vw);
+            filter: brightness(1.25);
+        }
+
+        #loading-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            border-top-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+  <script type="module" crossorigin src="./assets/index-BXbvM_8V.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-BnG-rEhg.css">
 <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body>
     <div id="non-app-main">
-        <div id="browser-overlay">
+        <div id="loading-screen">
+            <img src="./cockpit-name-logo.png" alt="Cockpit" id="loading-logo" />
+            <div id="loading-spinner"></div>
+        </div>
+    </div>
+    <div id="app"></div>
+
+    <!-- Inert templates: parsed but never rendered until cloned into the DOM via JS -->
+    <template id="browser-overlay-template">
+        <div style="display:flex;justify-content:center;align-items:center;flex-direction:column;border:#fff solid 1px;border-radius:5px;margin:1.5rem;padding:1.5rem;">
             <p>Please use Google Chrome or Microsoft Edge for the best experience on our website.</p>
             <button id="proceed-browser-overlay">Proceed Anyway</button>
         </div>
-        <div id="underlying-fallback">
+    </template>
+
+    <template id="fallback-template">
+        <div style="display:flex;justify-content:center;align-items:center;flex-direction:column;border:#fff solid 1px;border-radius:5px;margin:1.5rem;padding:3rem;max-width:65%;">
             <p class="text-3xl">It looks like something went wrong while loading Cockpit.</p>
 
             <p class="text-lg my-4">
@@ -47,121 +102,71 @@
                 <button id="clear-settings-btn">Reset settings</button>
             </div>
         </div>
-    </div>
-    <div id="app"></div>
+    </template>
 
     <script>
         // Start console capture
-        const {
-            backupSettings,
-            importSettings,
-            downloadLogs,
-            resetSettings,
-        } = import('./assets/index-utils-B-_zn4O6.js');
+        const __indexUtils = import('./assets/index-utils-B-_zn4O6.js');
 
-        document.addEventListener("DOMContentLoaded", async function() {
-            // Import utility functions
-            const {
-                backupSettings,
-                importSettings,
-                downloadLogs,
-                resetSettings,
-            } = await import('./assets/index-utils-B-_zn4O6.js');
+        let __appLoaded = false;
+        const __fallbackTimeout = setTimeout(function() {
+            if (__appLoaded) return;
 
-            const overlay = document.getElementById('browser-overlay')
-            const content = document.getElementById('app')
-            const proceedButton = document.getElementById('proceed-browser-overlay');
-            const underlyingFallback = document.getElementById('underlying-fallback');
-            const backupSettingsButton = document.getElementById('backup-settings-btn');
-            const importSettingsButton = document.getElementById('import-settings-btn');
-            const downloadLogsButton = document.getElementById('download-logs-btn');
-            const clearSettingsButton = document.getElementById('clear-settings-btn');
+            const nonAppMain = document.getElementById('non-app-main');
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) loadingScreen.remove();
 
-            const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
-            const isEdge = /Edg/.test(navigator.userAgent)
+            const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+            const isEdge = /Edg/.test(navigator.userAgent);
+            const isElectron = /Electron/.test(navigator.userAgent);
 
-            if (!isChrome && !isEdge) {
-                overlay.style.display = 'flex'
-                content.style.display = 'none'
-            } else {
-                underlyingFallback.style.display = 'flex';
+            if (!isChrome && !isEdge && !isElectron) {
+                const overlayContent = document.getElementById('browser-overlay-template').content.cloneNode(true);
+                nonAppMain.appendChild(overlayContent);
+
+                const appDiv = document.getElementById('app');
+                appDiv.style.display = 'none';
+
+                document.getElementById('proceed-browser-overlay').addEventListener('click', function() {
+                    nonAppMain.firstElementChild.remove();
+                    appDiv.style.display = 'block';
+                });
+                return;
             }
 
-            proceedButton.addEventListener('click', function() {
-                overlay.style.display = 'none';
-                content.style.display = 'block';
-                underlyingFallback.style.display = 'flex';
-            });
+            __indexUtils.then(function(utils) {
+                const fallbackContent = document.getElementById('fallback-template').content.cloneNode(true);
+                nonAppMain.appendChild(fallbackContent);
 
-            // Button event handlers using utility functions
-            backupSettingsButton.addEventListener('click', async function() {
-                const result = await backupSettings();
-                if (!result.success) {
-                    alert(result.message);
-                }
+                document.getElementById('backup-settings-btn').addEventListener('click', function() {
+                    utils.backupSettings().then(function(r) { if (!r.success) alert(r.message); });
+                });
+                document.getElementById('import-settings-btn').addEventListener('click', function() {
+                    utils.importSettings().then(function(r) {
+                        if (!r.success && !r.message.includes('cancelled')) alert(r.message);
+                        location.reload();
+                    });
+                });
+                document.getElementById('download-logs-btn').addEventListener('click', function() {
+                    utils.downloadLogs().then(function(r) { alert(r.message); });
+                });
+                document.getElementById('clear-settings-btn').addEventListener('click', function() {
+                    utils.resetSettings().then(function(r) {
+                        if (!r.success && !r.message.includes('cancelled')) alert(r.message);
+                    });
+                });
             });
+        }, 5000);
 
-            importSettingsButton.addEventListener('click', async function() {
-                const result = await importSettings();
-                if (!result.success && !result.message.includes('cancelled')) {
-                    alert(result.message);
-                }
-                location.reload();
-            });
-
-            downloadLogsButton.addEventListener('click', async function() {
-                const result = await downloadLogs();
-                alert(result.message);
-            });
-
-            clearSettingsButton.addEventListener('click', async function() {
-                const result = await resetSettings();
-                if (!result.success && !result.message.includes('cancelled')) {
-                    alert(result.message);
-                }
-            });
-        })
+        window.addEventListener('cockpit-app-loaded', function() {
+            __appLoaded = true;
+            clearTimeout(__fallbackTimeout);
+            const el = document.getElementById('non-app-main');
+            if (el) el.style.display = 'none';
+        });
     </script>
 
     <style>
-        #non-app-main {
-            color: #fff;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            font-size: 20px;
-            text-align: center;
-        }
-
-        #browser-overlay {
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            border: #fff solid 1px;
-            border-radius: 5px;
-            margin: 1.5rem;
-            padding: 1.5rem;
-        }
-
-        #underlying-fallback {
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            border: #fff solid 1px;
-            border-radius: 5px;
-            margin: 1.5rem;
-            padding: 3rem;
-            max-width: 65%;
-        }
         #non-app-main button {
             background-color: #0486aa;
             border: none;
