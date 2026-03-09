@@ -58,6 +58,10 @@ function createWindow(): void {
     event.preventDefault()
   })
 
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow?.setTitle(`Cockpit (${app.getVersion()})`)
+  })
+
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {
