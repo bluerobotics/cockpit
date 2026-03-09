@@ -16,7 +16,7 @@
         class="expanded-alerts-bar absolute left-0 right-0 transition-all rounded bg-slate-800/75 select-none flex max-h-[30vh]"
         style="border: 1px solid #94a3b866"
         :class="{
-          'opacity-0 invisible': !isShowingExpandedAlerts,
+          'opacity-0 invisible': !isShowingExpandedAlerts || widgetStore.editingMode,
           'flex-col': shouldExpandUpward,
           'flex-col-reverse': !shouldExpandUpward,
           'top-[46px]': !shouldExpandUpward,
