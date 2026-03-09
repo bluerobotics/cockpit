@@ -1,5 +1,7 @@
 <template>
-  <v-tooltip :text="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue + '%'}`">
+  <v-tooltip
+    :text="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue.toFixed(1) + '%'}`"
+  >
     <template #activator="{ props: tooltipProps }">
       <div v-bind="tooltipProps" class="flex items-center w-[95px] h-12 text-white justify-center">
         <div v-if="remainingDisplayValue >= 0" class="relative w-[1.5rem] battery-icon">
