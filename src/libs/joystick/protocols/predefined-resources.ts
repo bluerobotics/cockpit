@@ -3,6 +3,7 @@ import {
   createDataLakeVariable,
   DataLakeVariableType,
   getDataLakeVariableData,
+  getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
 import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
@@ -217,8 +218,54 @@ export const setupReverseResources = (): void => {
   })
 }
 
+const gainVariableId = 'joystick/inputs/gain'
+const gainStepsVariableId = 'joystick/inputs/gain-steps'
+
+export const setupPilotGainResources = (): void => {
+  if (!getDataLakeVariableInfo(gainVariableId)) {
+    createDataLakeVariable(
+      {
+        id: gainVariableId,
+        name: 'Pilot Gain',
+        type: 'number' as DataLakeVariableType,
+        description: 'Pilot gain multiplier applied to manual control axes (0 to 1)',
+        allowUserToChangeValue: true,
+        persistent: true,
+        persistValue: true,
+      },
+      1
+    )
+  }
+  if (!getDataLakeVariableInfo(gainStepsVariableId)) {
+    createDataLakeVariable(
+      {
+        id: gainStepsVariableId,
+        name: 'Pilot Gain Steps',
+        type: 'number' as DataLakeVariableType,
+        description: 'Number of steps from minimum to maximum pilot gain',
+        allowUserToChangeValue: true,
+        persistent: true,
+        persistValue: true,
+      },
+      4
+    )
+  }
+
+  registerActionCallback(availableCockpitActions.increase_pilot_gain, () => {
+    const gain = Number(getDataLakeVariableData(gainVariableId))
+    const steps = Number(getDataLakeVariableData(gainStepsVariableId))
+    setDataLakeVariableData(gainVariableId, Math.min(1, gain + 1 / steps))
+  })
+  registerActionCallback(availableCockpitActions.reduce_pilot_gain, () => {
+    const gain = Number(getDataLakeVariableData(gainVariableId))
+    const steps = Number(getDataLakeVariableData(gainStepsVariableId))
+    setDataLakeVariableData(gainVariableId, Math.max(0, gain - 1 / steps))
+  })
+}
+
 export const setupPredefinedLakeAndActionResources = (): void => {
   setupMavlinkCameraResources()
-  setupJoystickAxesResources()
   setupReverseResources()
+  setupPilotGainResources()
+  setupJoystickAxesResources()
 }
