@@ -1335,6 +1335,33 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Send the vehicle home by setting it to SMART_RTL (preferred) or RTL mode
+   */
+  async returnHome(): Promise<void> {
+    const smartRtlMode = this.modesAvailable().get('SMART_RTL')
+    const rtlMode = this.modesAvailable().get('RTL')
+
+    const homeMode = smartRtlMode ?? rtlMode
+    const homeModeName = smartRtlMode !== undefined ? 'SMART_RTL' : 'RTL'
+
+    if (homeMode === undefined) {
+      throw Error('No return-to-home mode (SMART_RTL or RTL) is available on this vehicle.')
+    }
+
+    await this.setMode(homeMode as Modes)
+
+    const initialTimeHomeModeCheck = new Date().getTime()
+    while (this.mode() !== homeMode && new Date().getTime() - initialTimeHomeModeCheck < 10000) {
+      await this.setMode(homeMode as Modes)
+      await sleep(100)
+    }
+
+    if (this.mode() !== homeMode) {
+      throw Error(`Could not put vehicle in ${homeModeName} mode. Please do it manually.`)
+    }
+  }
+
+  /**
    * Upload mission items to vehicle
    * @param { Waypoint[] } items Mission items that will be sent
    * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
