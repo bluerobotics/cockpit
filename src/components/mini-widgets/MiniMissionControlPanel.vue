@@ -50,16 +50,16 @@
           />
         </template>
       </v-tooltip>
-      <v-tooltip location="top" open-delay="800" text="Stop mission and return to first waypoint">
-        <template #activator="{ props: skipNextProps }">
+      <v-tooltip location="top" open-delay="800" text="Return to home">
+        <template #activator="{ props: homeProps }">
           <v-btn
-            v-bind="skipNextProps"
+            v-bind="homeProps"
             size="x-small"
-            icon="mdi-stop"
+            icon="mdi-home-circle"
             variant="text"
-            class="text-[16px]"
-            :disabled="!missionStore.isMissionRunning"
-            @click.stop="missionStore.stopMission"
+            class="text-[14px]"
+            :disabled="!vehicleStore.isVehicleOnline"
+            @click.stop="handleReturnHome"
           />
         </template>
       </v-tooltip>
@@ -75,10 +75,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
+const { showDialog, closeDialog } = useInteractionDialog()
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 
@@ -91,6 +93,34 @@ const currentWaypointOnMission = computed<string>((): string => {
     return '--'
   return vehicleStore.currentMissionSeq.toString()
 })
+
+const handleReturnHome = (): void => {
+  showDialog({
+    title: 'Return to home',
+    message: 'Are you sure you want to send the vehicle home?',
+    variant: 'warning',
+    actions: [
+      {
+        text: 'Cancel',
+        size: 'small',
+        action: closeDialog,
+      },
+      {
+        text: 'Confirm',
+        size: 'small',
+        action: () => {
+          closeDialog()
+          vehicleStore.returnHome().catch((err) => {
+            openSnackbar({
+              message: `Failed to return home: ${(err as Error).message}`,
+              variant: 'error',
+            })
+          })
+        },
+      },
+    ],
+  })
+}
 
 const handlePlayAndPause = async (): Promise<void> => {
   try {

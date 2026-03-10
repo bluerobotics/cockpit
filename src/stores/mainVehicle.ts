@@ -510,6 +510,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Send the vehicle home (RTL)
+   */
+  async function returnHome(): Promise<void> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to return home.')
+    await mainVehicle.value.returnHome()
+  }
+
+  /**
    * List of available flight modes
    * @returns {Array<string>}
    */
@@ -1005,6 +1013,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     clearMissions,
     startMission,
     pauseMission,
+    returnHome,
     setMissionCurrent,
     getCurrentVehicleName,
     mainVehicle,
