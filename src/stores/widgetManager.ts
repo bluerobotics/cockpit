@@ -57,7 +57,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentProfileIndex = useStorage('cockpit-current-profile-index', 0)
   const desiredTopBarHeightPixels = ref(48)
   const desiredBottomBarHeightPixels = ref(48)
-  const visibleAreaMinClearancePixels = ref(20)
+  const visibleAreaMinClearancePixels = ref(0)
   const vehicleTypeProfileCorrespondency = useBlueOsStorage<typeof defaultProfileVehicleCorrespondency>(
     'cockpit-default-vehicle-type-profiles',
     defaultProfileVehicleCorrespondency
