@@ -185,10 +185,10 @@
     <div
       :key="forceUpdate"
       ref="content"
-      class="bg-[#041e2e99] h-full"
+      class="bg-[#041e2e99]"
       :class="['content-expand-collapse', { expanding: isViewsPanelExpanded, collapsing: !isViewsPanelExpanded }]"
     >
-      <div class="h-full pt-1 bg-[#041e2e99]">
+      <div class="pt-1 bg-[#041e2e99] pb-[50px]">
         <div class="flex justify-center w-full bg-[#CBCBCB09]">
           <div class="flex w-[350px] justify-center py-[2px]">
             <p class="overflow-hidden text-[12px] text-ellipsis whitespace-nowrap opacity-60">
@@ -196,25 +196,32 @@
             </p>
           </div>
         </div>
-        <div
-          v-for="view in store.currentProfile.views"
-          :key="view.hash"
-          class="flex items-center justify-center border-[1px] border-[#FFFFFF24] rounded-md mx-2 my-[3px] 2xl:p-1 pl-1 pr-[2px] py-[2px] cursor-pointer"
-          :class="view === store.currentView ? 'bg-[#CBCBCB64]' : 'bg-[#CBCBCB2A]'"
-          @click="store.selectView(view)"
-        >
-          <p class="overflow-hidden text-sm text-ellipsis ml-3 whitespace-nowrap">{{ view.name }}</p>
-          <div class="grow" />
+        <VueDraggable v-model="store.currentProfile.views" :animation="150" handle=".view-drag-handle">
           <div
-            class="icon-btn mdi mdi-eye"
-            :class="{ 'mdi-eye-closed': !view.visible }"
-            @click.stop="toggleViewVisibility(view)"
-          />
-          <div class="icon-btn mdi mdi-download" @click.stop="store.exportView(view)" />
-          <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateView(view)" />
-          <div class="icon-btn mdi mdi-cog" @click.stop="renameView(view)" />
-          <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteView(view)" />
-        </div>
+            v-for="view in store.currentProfile.views"
+            :key="view.hash"
+            class="flex items-center justify-center border-[1px] border-[#FFFFFF24] rounded-md mx-2 my-[6px] 2xl:p-1 pl-1 pr-[2px] py-[2px] cursor-pointer"
+            :class="view === store.currentView ? 'bg-[#CBCBCB64]' : 'bg-[#CBCBCB2A]'"
+            @click="store.selectView(view)"
+          >
+            <v-icon
+              icon="mdi-drag"
+              class="view-drag-handle cursor-grab mr-1 -ml-[1px] opacity-40 2xl:text-[24px] xl:text-[22px] text-[18px]"
+            />
+            <v-divider vertical />
+            <p class="overflow-hidden text-sm text-ellipsis ml-3 whitespace-nowrap">{{ view.name }}</p>
+            <div class="grow" />
+            <div
+              class="icon-btn mdi mdi-eye"
+              :class="{ 'mdi-eye-closed': !view.visible }"
+              @click.stop="toggleViewVisibility(view)"
+            />
+            <div class="icon-btn mdi mdi-download" @click.stop="store.exportView(view)" />
+            <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateView(view)" />
+            <div class="icon-btn mdi mdi-cog" @click.stop="renameView(view)" />
+            <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteView(view)" />
+          </div>
+        </VueDraggable>
         <div ref="managementContainer" class="flex items-end justify-end w-full gap-x-2 mt-2 mb-2 -ml-3 opacity-80">
           <v-icon size="18" icon="mdi-plus-circle" @click="addNewView" />
           <div>
