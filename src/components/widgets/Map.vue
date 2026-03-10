@@ -1239,6 +1239,12 @@ watch(
         })
 
         marker.bindTooltip(markerTooltip)
+        marker.on('contextmenu', (e: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(e)
+          e.originalEvent.stopPropagation()
+          e.originalEvent.preventDefault()
+          openContextMenuAt(e.originalEvent, seq)
+        })
         map.value?.addLayer(marker)
       } else {
         marker.setLatLng(waypoint.coordinates as LatLngTuple)
@@ -1343,7 +1349,7 @@ const updateSkipToWpMenu = (): void => {
 
   if (want && !lastIsSkip) {
     menuItems.push({
-      item: `Skip mission to this WP (#${contextMenuSelectedWpIndex.value! - 1})`,
+      item: `Skip mission to this Waypoint`,
       action: () => onMenuOptionSelect('skip-to-wp'),
       icon: 'mdi-skip-next-circle',
       _isSkipToWp: true,
@@ -1351,7 +1357,7 @@ const updateSkipToWpMenu = (): void => {
   } else if (!want && lastIsSkip) {
     menuItems.pop()
   } else if (want && lastIsSkip) {
-    last.item = `Skip mission to this WP (#${contextMenuSelectedWpIndex.value! - 1})`
+    last.item = `Skip mission to this Waypoint`
   }
 }
 
