@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :class="{ 'pointer-events-none': widgetStore.editingMode }">
     <Dropdown
       name-key="name"
       :model-value="widgetStore.currentView"
