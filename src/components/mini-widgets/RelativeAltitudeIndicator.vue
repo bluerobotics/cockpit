@@ -20,5 +20,5 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 const store = useMainVehicleStore()
 
 const altitude = ref(0)
-watch(store.altitude, () => (altitude.value = store.altitude.rel))
+watch(store.altitude, () => (altitude.value = Math.max(0, store.altitude.rel)))
 </script>
