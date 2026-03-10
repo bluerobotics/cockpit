@@ -338,25 +338,7 @@ watch(allowMoving, (isAllowing, wasAllowing) => {
 const widgetStore = useWidgetManagerStore()
 const temporaryPosition = computed(() => {
   let tempPos = { x: position.value.x, y: position.value.y }
-  const clearanceOffset = widgetStore.visibleAreaMinClearancePixels
 
-  const barClearances = widgetStore.widgetClearanceForVisibleArea(widget.value)
-
-  // If the widget is under both bars, dont touch it, as it could be full screened by purpose, and if we apply the rules below, it will keep jumping
-  if (barClearances.top < clearanceOffset && barClearances.bottom < clearanceOffset) return tempPos
-
-  // If the widget is partially under the top or bottom bar, move it so that it gets fully visible
-  // Skip these adjustments during active resize to prevent position jumps when resizing from full-screen
-  if (!isResizing.value) {
-    if (barClearances.top < clearanceOffset) {
-      tempPos.y = (widgetStore.currentTopBarHeightPixels + clearanceOffset) / windowHeight.value
-    } else if (barClearances.bottom < clearanceOffset) {
-      const maxBottomEdgePosition = (widgetStore.currentBottomBarHeightPixels + clearanceOffset) / windowHeight.value
-      tempPos.y = 1 - maxBottomEdgePosition - size.value.height
-    }
-  }
-
-  // Use grid to snap to grid
   if (widgetStore.snapToGrid) {
     tempPos.x = Math.round(tempPos.x / widgetStore.gridInterval) * widgetStore.gridInterval
     tempPos.y = Math.round(tempPos.y / widgetStore.gridInterval) * widgetStore.gridInterval
