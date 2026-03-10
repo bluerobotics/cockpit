@@ -162,7 +162,8 @@
               v-if="iconSearchString === '' && showIconChooseModal"
               ref="iconGridRef"
               v-slot="{ item }"
-              :class="`w-full h-40 mt-3 text-[${iconGridFontSize}]`"
+              class="w-full h-40 mt-3"
+              :style="{ fontSize: iconGridFontSize }"
               :items="iconsNames"
               :item-size="iconGridRowHeight"
               :item-secondary-size="iconGridSecondarySize"
@@ -177,9 +178,13 @@
               />
             </RecycleScroller>
             <div
-              v-else-if="showIconChooseModal"
-              :class="`grid w-full h-40 grid-cols-${iconGridColumns} mt-3 overflow-x-hidden overflow-y-scroll text-[${iconGridFontSize}]`"
-              :style="{ gridAutoRows: `${iconGridRowHeight}px` }"
+              v-if="iconSearchString !== '' && showIconChooseModal"
+              class="grid w-full h-40 mt-3 overflow-x-hidden overflow-y-scroll"
+              :style="{
+                gridTemplateColumns: `repeat(${iconGridColumns}, minmax(0, 1fr))`,
+                gridAutoRows: `${iconGridRowHeight}px`,
+                fontSize: iconGridFontSize,
+              }"
             >
               <span
                 v-for="icon in iconsToShow"
@@ -215,7 +220,6 @@
 </template>
 
 <script setup lang="ts">
-import * as MdiExports from '@mdi/js/mdi'
 import { useElementSize, watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
@@ -259,9 +263,19 @@ onBeforeMount(() => {
     })
   }
 
-  iconsNames = Object.keys(MdiExports).map((originalName) => {
-    return originalName.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
-  })
+  iconsNames = []
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        if (rule instanceof CSSStyleRule) {
+          const match = rule.selectorText.match(/^\.(mdi-[a-z0-9-]+)::before$/)
+          if (match) iconsNames.push(match[1])
+        }
+      }
+    } catch {
+      // Skip CORS-restricted stylesheets
+    }
+  }
 })
 
 const widgetStore = useWidgetManagerStore()
