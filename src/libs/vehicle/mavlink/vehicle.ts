@@ -1326,12 +1326,17 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * Pause mission that is on the vehicle
    */
   async pauseMission(): Promise<void> {
-    const autoMode = this.modesAvailable().get('AUTO')
-    const guidedMode = this.modesAvailable().get('GUIDED')
-
-    if ((autoMode && this.mode() === autoMode) || (guidedMode && this.mode() === guidedMode)) {
-      await this.resetMode()
+    let pauseModeName = 'LOITER'
+    if ([Vehicle.Type.Sub, Vehicle.Type.Copter].includes(this._type)) {
+      pauseModeName = this.modesAvailable().has('POSHOLD') ? 'POSHOLD' : pauseModeName
     }
+
+    const pauseMode = this.modesAvailable().get(pauseModeName)
+    if (pauseMode === undefined) {
+      throw Error(`${pauseModeName} mode is not available.`)
+    }
+
+    await this.setMode(pauseMode as Modes)
   }
 
   /**
