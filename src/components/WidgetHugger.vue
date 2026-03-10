@@ -346,11 +346,14 @@ const temporaryPosition = computed(() => {
   if (barClearances.top < clearanceOffset && barClearances.bottom < clearanceOffset) return tempPos
 
   // If the widget is partially under the top or bottom bar, move it so that it gets fully visible
-  if (barClearances.top < clearanceOffset) {
-    tempPos.y = (widgetStore.currentTopBarHeightPixels + clearanceOffset) / windowHeight.value
-  } else if (barClearances.bottom < clearanceOffset) {
-    const maxBottomEdgePosition = (widgetStore.currentBottomBarHeightPixels + clearanceOffset) / windowHeight.value
-    tempPos.y = 1 - maxBottomEdgePosition - size.value.height
+  // Skip these adjustments during active resize to prevent position jumps when resizing from full-screen
+  if (!isResizing.value) {
+    if (barClearances.top < clearanceOffset) {
+      tempPos.y = (widgetStore.currentTopBarHeightPixels + clearanceOffset) / windowHeight.value
+    } else if (barClearances.bottom < clearanceOffset) {
+      const maxBottomEdgePosition = (widgetStore.currentBottomBarHeightPixels + clearanceOffset) / windowHeight.value
+      tempPos.y = 1 - maxBottomEdgePosition - size.value.height
+    }
   }
 
   // Use grid to snap to grid
@@ -391,6 +394,16 @@ const cursorStyle = computed(() => {
 })
 
 const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
+
+const isWidgetFullScreen = computed(() => widgetStore.isFullScreen(widget.value))
+
+const handleTopOffset = computed(() =>
+  isWidgetFullScreen.value ? `${widgetStore.currentTopBarHeightPixels + 5}px` : '-5px'
+)
+const handleBottomOffset = computed(() =>
+  isWidgetFullScreen.value ? `${widgetStore.currentBottomBarHeightPixels + 5}px` : '-5px'
+)
+const handleSideOffset = computed(() => (isWidgetFullScreen.value ? '5px' : '-5px'))
 
 const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.hash).highlighted)
 </script>
@@ -473,52 +486,52 @@ const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.ha
 }
 
 .resize-handle.top-left.allowResizing {
-  top: -5px;
-  left: -5px;
+  top: v-bind('handleTopOffset');
+  left: v-bind('handleSideOffset');
   cursor: nwse-resize;
 }
 
 .resize-handle.top-right.allowResizing {
-  top: -5px;
-  right: -5px;
+  top: v-bind('handleTopOffset');
+  right: v-bind('handleSideOffset');
   cursor: nesw-resize;
 }
 
 .resize-handle.bottom-left.allowResizing {
-  bottom: -5px;
-  left: -5px;
+  bottom: v-bind('handleBottomOffset');
+  left: v-bind('handleSideOffset');
   cursor: nesw-resize;
 }
 
 .resize-handle.bottom-right.allowResizing {
-  bottom: -5px;
-  right: -5px;
+  bottom: v-bind('handleBottomOffset');
+  right: v-bind('handleSideOffset');
   cursor: nwse-resize;
 }
 
 .resize-handle.left.allowResizing {
   top: 50%;
-  left: -5px;
+  left: v-bind('handleSideOffset');
   transform: translateY(-50%);
   cursor: ew-resize;
 }
 
 .resize-handle.right.allowResizing {
   top: 50%;
-  right: -5px;
+  right: v-bind('handleSideOffset');
   transform: translateY(-50%);
   cursor: ew-resize;
 }
 
 .resize-handle.top.allowResizing {
-  top: -5px;
+  top: v-bind('handleTopOffset');
   left: 50%;
   transform: translateX(-50%);
   cursor: ns-resize;
 }
 
 .resize-handle.bottom.allowResizing {
-  bottom: -5px;
+  bottom: v-bind('handleBottomOffset');
   left: 50%;
   transform: translateX(-50%);
   cursor: ns-resize;
