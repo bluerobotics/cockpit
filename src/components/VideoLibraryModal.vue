@@ -88,7 +88,7 @@
                 >
                   <div
                     :class="[
-                      'w-[178px] aspect-video overflow-hidden',
+                      'relative w-[178px] aspect-video overflow-hidden',
                       'border-4 border-white rounded-md cursor-pointer transition duration-75 ease-in',
                       selectedPicSet.has(picture.filename) ? 'border-opacity-40' : 'border-opacity-10',
                     ]"
@@ -1636,11 +1636,11 @@ onBeforeUnmount(() => {
 .fullscreen-button {
   position: absolute;
   display: flex;
-  justify-content: end;
-  align-items: end;
-  top: 32px;
-  right: 65px;
-  border-radius: 6px;
+  justify-content: center;
+  align-items: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: #00000044;
   cursor: pointer;
   opacity: 0.8;
@@ -1656,11 +1656,10 @@ onBeforeUnmount(() => {
 .download-button {
   position: absolute;
   display: flex;
-  justify-content: end;
-  align-items: end;
-  top: 75px;
-  right: 3%;
-  padding: 3px;
+  justify-content: center;
+  align-items: center;
+  bottom: 4px;
+  right: 4px;
   border-radius: 8px;
   background: #00000044;
   cursor: pointer;
@@ -1677,12 +1676,10 @@ onBeforeUnmount(() => {
 .delete-button {
   position: absolute;
   display: flex;
-  justify-content: end;
-  align-items: end;
-  top: 5%;
-  right: 3%;
-  padding: 3px;
-  padding-bottom: 4px;
+  justify-content: center;
+  align-items: center;
+  top: 4px;
+  right: 4px;
   border-radius: 8px;
   background: #00000044;
   cursor: pointer;
