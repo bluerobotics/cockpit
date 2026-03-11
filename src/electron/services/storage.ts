@@ -62,7 +62,7 @@ export const filesystemStorage = {
       const buffer = await fs.readFile(filePath)
       return new Uint8Array(buffer).buffer
     } catch (error) {
-      if (error.code === 'ENOENT') return null
+      if (error.code === 'ENOENT' || error.code === 'EISDIR') return null
       throw error
     }
   },
@@ -85,7 +85,8 @@ export const filesystemStorage = {
     ensureCockpitFolder()
     const dirPath = join(cockpitFolderPath, ...(subFolders ?? []))
     try {
-      return await fs.readdir(dirPath)
+      const entries = await fs.readdir(dirPath, { withFileTypes: true })
+      return entries.filter((e) => e.isFile()).map((e) => e.name)
     } catch (error) {
       if (error.code === 'ENOENT') return []
       throw error
