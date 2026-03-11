@@ -152,7 +152,7 @@
     </div>
     <v-divider class="opacity-20" />
     <div
-      class="flex flex-row max-h-[48px] justify-start relative items-center bg-[#CBCBCB2A] elevation-5 2xl:h-full xl:h-[45px] h-[35px] overflow-hidden"
+      class="flex flex-row justify-start relative items-center bg-[#CBCBCB2A] elevation-5 h-[40px] shrink-0 overflow-hidden"
     >
       <v-icon
         size="sm"
