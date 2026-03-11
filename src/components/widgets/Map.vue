@@ -70,7 +70,7 @@
         </template>
       </v-tooltip>
 
-      <v-tooltip location="top" :text="centerVehicleButtonTooltipText">
+      <v-tooltip location="top" :text="vehicleFollowTooltip">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
@@ -78,14 +78,13 @@
             v-bind="tooltipProps"
             class="absolute m-3 bottom-button right-[44px] bg-slate-50 text-[14px]"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
-            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+            :color="vehicleFollowColor"
             elevation="2"
             style="z-index: 1002; border-radius: 0px"
-            icon="mdi-airplane-marker"
+            :icon="vehicleFollowIcon"
             size="x-small"
             :disabled="!vehiclePosition"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+            @click.stop="cycleVehicleFollowMode"
           />
         </template>
       </v-tooltip>
@@ -179,6 +178,7 @@
       {{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%
     </p>
   </div>
+  <div v-if="isRotatingMap" class="rotate-drag-overlay" />
 </template>
 
 <script setup lang="ts">
@@ -248,12 +248,13 @@ const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
-const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
+const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value || isRotatingMap.value)
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
 const reachedWaypoints = shallowRef<Record<number, L.Marker>>({})
 const contextMenuRef = ref()
 const isDragging = ref(false)
+const isRotatingMap = ref(false)
 const isPinching = ref(false)
 const isMissionChecklistOpen = ref(false)
 const isSavingOfflineTiles = ref(false)
@@ -497,12 +498,44 @@ const layerControl = L.control.layers(baseMaps, overlays)
 const rotateControl = shallowRef<L.Control | undefined>(undefined)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 
+/**
+ * Attaches mousedown listener to the rotate control container to show the drag overlay,
+ * preventing overlapping elements from intercepting the drag events.
+ */
+const attachRotateControlDragOverlay = (): void => {
+  if (!rotateControl.value) return
+  // eslint-disable-next-line jsdoc/require-jsdoc
+  const container = (rotateControl.value as unknown as { _container?: HTMLElement })._container
+  if (!container) return
+  // Use capture phase because leaflet-rotate calls stopPropagation() on the inner link's mousedown.
+  container.addEventListener(
+    'mousedown',
+    () => {
+      const onMouseMove = (): void => {
+        isRotatingMap.value = true
+        document.removeEventListener('mousemove', onMouseMove)
+      }
+      const onMouseUp = (): void => {
+        isRotatingMap.value = false
+        document.removeEventListener('mouseup', onMouseUp)
+        document.removeEventListener('mousemove', onMouseMove)
+      }
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    },
+    true
+  )
+}
+
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
     map.value.addControl(zoomControl)
     map.value.addControl(layerControl)
-    if (rotateControl.value) map.value.addControl(rotateControl.value)
+    if (rotateControl.value) {
+      map.value.addControl(rotateControl.value)
+      attachRotateControlDragOverlay()
+    }
     createScaleControl()
   } else {
     map.value.removeControl(zoomControl)
@@ -603,20 +636,18 @@ const removeScaleControl = (): void => {
   }
 }
 
-let leafletRotateLoaded = false
-
 /**
  * Loads the leaflet-rotate plugin by injecting its source into a script tag.
  * This ensures the IIFE runs in the global scope where it can access window.L.
+ * Skips loading if the plugin is already available on L.control.
  * @returns {Promise<void>} Resolves when the plugin has been loaded and executed
  */
 const loadLeafletRotate = async (): Promise<void> => {
-  if (leafletRotateLoaded) return
+  if ((L.control as unknown as Record<string, unknown>).rotate) return
   const mod = await import('leaflet-rotate/dist/leaflet-rotate.js?raw')
   const script = document.createElement('script')
   script.textContent = (mod as unknown as Record<string, string>).default
   document.head.appendChild(script)
-  leafletRotateLoaded = true
 }
 
 onMounted(async () => {
@@ -748,6 +779,14 @@ onMounted(async () => {
   map.value.on('contextmenu', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
   })
+
+  // Disable heading tracking when user manually rotates the map via the rotation control
+  map.value.on('rotate', () => {
+    if (!programmaticBearingChange && vehicleFollowMode.value === VehicleFollowMode.TRACK_HEADING) {
+      vehicleFollowMode.value = VehicleFollowMode.OFF
+    }
+  })
+
   // Enable auto update for target follower
   targetFollower.enableAutoUpdate()
 
@@ -773,7 +812,7 @@ onMounted(async () => {
   mapReady.value = true
 
   if (missionStore.followVehicleOnMap === true) {
-    targetFollower.follow(WhoToFollow.VEHICLE)
+    vehicleFollowMode.value = VehicleFollowMode.FOLLOW
   } else {
     targetFollower.unFollow()
   }
@@ -1108,6 +1147,96 @@ const vehiclePosition = computed(() =>
 // Calculate live vehicle heading
 const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw) : 0))
 
+/** Leaflet map extended with leaflet-rotate's setBearing method */
+// eslint-disable-next-line jsdoc/require-jsdoc
+type RotatableMap = Map & { setBearing: (bearing: number) => void }
+
+/** Modes for the vehicle follow button's three-state cycle */
+enum VehicleFollowMode {
+  OFF = 'off',
+  FOLLOW = 'follow',
+  TRACK_HEADING = 'trackHeading',
+}
+
+const vehicleFollowMode = ref<VehicleFollowMode>(VehicleFollowMode.OFF)
+
+/**
+ * Cycles the vehicle follow mode through: off → follow → track heading → off
+ */
+const cycleVehicleFollowMode = (): void => {
+  switch (vehicleFollowMode.value) {
+    case VehicleFollowMode.OFF:
+      vehicleFollowMode.value = VehicleFollowMode.FOLLOW
+      break
+    case VehicleFollowMode.FOLLOW:
+      vehicleFollowMode.value = VehicleFollowMode.TRACK_HEADING
+      break
+    case VehicleFollowMode.TRACK_HEADING:
+      vehicleFollowMode.value = VehicleFollowMode.OFF
+      break
+  }
+}
+
+const vehicleFollowIcon = computed(() => {
+  switch (vehicleFollowMode.value) {
+    case VehicleFollowMode.FOLLOW:
+      return 'mdi-crosshairs-gps'
+    case VehicleFollowMode.TRACK_HEADING:
+      return 'mdi-compass-outline'
+    default:
+      return 'mdi-airplane-marker'
+  }
+})
+
+const vehicleFollowColor = computed(() => {
+  switch (vehicleFollowMode.value) {
+    case VehicleFollowMode.FOLLOW:
+      return 'red'
+    case VehicleFollowMode.TRACK_HEADING:
+      return 'blue'
+    default:
+      return ''
+  }
+})
+
+const vehicleFollowTooltip = computed(() => {
+  if (!vehicleStore.isVehicleOnline) return 'Cannot follow vehicle (vehicle offline).'
+  if (!vehiclePosition.value) return 'Cannot follow vehicle (position undefined).'
+  switch (vehicleFollowMode.value) {
+    case VehicleFollowMode.FOLLOW:
+      return 'Following vehicle. Click to track heading.'
+    case VehicleFollowMode.TRACK_HEADING:
+      return 'Tracking vehicle heading. Click to stop.'
+    default:
+      return 'Click to switch between vehicle tracking modes.'
+  }
+})
+
+// Sync map bearing with vehicle heading in track-heading mode
+let programmaticBearingChange = false
+
+// React to vehicle follow mode changes and reset bearing when leaving track-heading
+watch(vehicleFollowMode, (mode, oldMode) => {
+  if (mode === VehicleFollowMode.FOLLOW || mode === VehicleFollowMode.TRACK_HEADING) {
+    targetFollower.follow(WhoToFollow.VEHICLE)
+  } else {
+    targetFollower.unFollow()
+  }
+
+  if (map.value && oldMode === VehicleFollowMode.TRACK_HEADING && mode !== VehicleFollowMode.TRACK_HEADING) {
+    programmaticBearingChange = true
+    ;(map.value as RotatableMap).setBearing(0)
+    programmaticBearingChange = false
+  }
+})
+
+watch(vehicleHeading, (heading) => {
+  if (!map.value || vehicleFollowMode.value !== VehicleFollowMode.TRACK_HEADING) return
+  programmaticBearingChange = true
+  ;(map.value as RotatableMap).setBearing(-heading)
+  programmaticBearingChange = false
+})
+
 // Calculate time since last vehicle heartbeat
 const timeAgoSeenText = computed(() => {
   const lastBeat = vehicleStore.lastHeartbeat
@@ -1188,6 +1317,10 @@ watch(followerTarget, (newTarget) => {
     missionStore.followVehicleOnMap = true
   } else {
     missionStore.followVehicleOnMap = false
+    // Reset vehicle follow mode when the follower stops (e.g. user pans the map)
+    if (vehicleFollowMode.value !== VehicleFollowMode.OFF) {
+      vehicleFollowMode.value = VehicleFollowMode.OFF
+    }
   }
 })
 
@@ -1203,10 +1336,11 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
     <p>Last seen: ${timeAgoSeenText.value}</p>
   `)
 
-  // Update the rotation
+  // When tracking heading, the map rotates so the icon should always point up (0°)
   const iconElement = vehicleMarker.value.getElement()?.querySelector('img')
   if (iconElement) {
-    iconElement.style.transform = `rotate(${vehicleHeading.value}deg)`
+    const iconAngle = vehicleFollowMode.value === VehicleFollowMode.TRACK_HEADING ? 0 : vehicleHeading.value
+    iconElement.style.transform = `rotate(${iconAngle}deg)`
   }
 })
 
@@ -1734,19 +1868,6 @@ const centerHomeButtonTooltipText = computed(() => {
   return 'Click once to center on home or twice to track it.'
 })
 
-const centerVehicleButtonTooltipText = computed(() => {
-  if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
-  }
-  if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
-  }
-  if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
-  }
-  return 'Click once to center on vehicle or twice to track it.'
-})
-
 // POI Marker Management Functions for Map Widget
 const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
   const poiIconHtml = `
@@ -1887,6 +2008,13 @@ watch(
 </script>
 
 <style scoped>
+.rotate-drag-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  cursor: grabbing;
+}
+
 .page-base {
   min-height: 100vh;
   display: flex;
