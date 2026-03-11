@@ -370,6 +370,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       showDialog({ message: 'Could not find profile.', variant: 'error', timer: 3000 })
       return
     }
+    if (currentProfileIndex.value === profileIndex) return
     currentProfileIndex.value = profileIndex
     currentViewIndex.value = 0
   }
