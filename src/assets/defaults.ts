@@ -22,6 +22,24 @@ export const defaultProfileVehicleCorrespondency = {
   [MavType.MAV_TYPE_QUADROTOR]: defaultMavProfileHash,
 }
 
+/**
+ * Human-readable names for the vehicle types that have default profiles.
+ */
+export const vehicleTypeDisplayNames: Partial<Record<MavType, string>> = {
+  [MavType.MAV_TYPE_SUBMARINE]: 'Submarine / ROV',
+  [MavType.MAV_TYPE_SURFACE_BOAT]: 'Boat',
+  [MavType.MAV_TYPE_QUADROTOR]: 'Aerial (MAV)',
+}
+
+/**
+ * Returns a human-readable name for a given MavType, falling back to the enum key.
+ * @param {MavType} mavType - The MavType to get a display name for
+ * @returns {string} The human-readable name
+ */
+export const getVehicleTypeDisplayName = (mavType: MavType): string => {
+  return vehicleTypeDisplayNames[mavType] ?? mavType
+}
+
 export const defaultWidgetManagerVars: WidgetManagerVars = {
   everMounted: false,
   configMenuOpen: false,
