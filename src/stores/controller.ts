@@ -546,6 +546,34 @@ export const useControllerStore = defineStore('controller', () => {
     availableAxesActions.value = allAvailableAxes()
   }, 1000)
 
+  /**
+   * Deletes a protocol mapping from the store by hash.
+   * If the currently active mapping is deleted, switches to the first remaining mapping.
+   * @param {string} mappingHash - Hash of the mapping to delete
+   */
+  const deleteProtocolMapping = (mappingHash: string): void => {
+    const mappingIndex = protocolMappings.value.findIndex((m) => m.hash === mappingHash)
+    if (mappingIndex === -1) return
+
+    if (protocolMappings.value.length <= 1) {
+      showDialog({
+        variant: 'error',
+        message: 'Cannot remove last joystick mapping. Please create another before deleting this one.',
+        timer: 4000,
+      })
+      return
+    }
+
+    const wasActive = protocolMapping.value.hash === mappingHash
+    protocolMappings.value.splice(mappingIndex, 1)
+
+    if (wasActive) {
+      protocolMappingIndex.value = 0
+    } else if (protocolMappingIndex.value >= protocolMappings.value.length) {
+      protocolMappingIndex.value = 0
+    }
+  }
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -569,5 +597,6 @@ export const useControllerStore = defineStore('controller', () => {
     currentMainJoystick,
     disabledJoysticks,
     checkForOtherManualControlSources,
+    deleteProtocolMapping,
   }
 })
