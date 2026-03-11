@@ -65,6 +65,7 @@
     "jest-diff": "^29.7.0",
     "ky": "^1.2.0",
     "leaflet": "1.9.3",
+    "leaflet-rotate": "^0.2.8",
     "leaflet.offline": "^3.1.0",
     "localforage": "^1.10.0",
     "mathjs": "^13.0.3",
