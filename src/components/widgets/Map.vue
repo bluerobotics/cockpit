@@ -494,6 +494,7 @@ const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
 const layerControl = L.control.layers(baseMaps, overlays)
+const rotateControl = shallowRef<L.Control | undefined>(undefined)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 
 watch(showButtons, () => {
@@ -501,10 +502,12 @@ watch(showButtons, () => {
   if (showButtons.value) {
     map.value.addControl(zoomControl)
     map.value.addControl(layerControl)
+    if (rotateControl.value) map.value.addControl(rotateControl.value)
     createScaleControl()
   } else {
     map.value.removeControl(zoomControl)
     map.value.removeControl(layerControl)
+    if (rotateControl.value) map.value.removeControl(rotateControl.value)
     removeScaleControl()
   }
 })
@@ -600,11 +603,33 @@ const removeScaleControl = (): void => {
   }
 }
 
+let leafletRotateLoaded = false
+
+/**
+ * Loads the leaflet-rotate plugin by injecting its source into a script tag.
+ * This ensures the IIFE runs in the global scope where it can access window.L.
+ * @returns {Promise<void>} Resolves when the plugin has been loaded and executed
+ */
+const loadLeafletRotate = async (): Promise<void> => {
+  if (leafletRotateLoaded) return
+  const mod = await import('leaflet-rotate/dist/leaflet-rotate.js?raw')
+  const script = document.createElement('script')
+  script.textContent = (mod as unknown as Record<string, string>).default
+  document.head.appendChild(script)
+  leafletRotateLoaded = true
+}
+
 onMounted(async () => {
   reachedWaypoints.value = {}
   missionItemsInVehicle.value = []
   missionSeqToMarkerSeq.value = {}
   vehicleStore.clearReachedMissionItems()
+
+  // leaflet-rotate patches the global L object via an IIFE that references window.L.
+  // Vite's ESM bundling doesn't expose L globally, so we set it manually and load
+  // the plugin via a script tag to ensure it executes in the global scope.
+  ;(window as unknown as Record<string, unknown>).L = L
+  await loadLeafletRotate()
 
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
@@ -614,7 +639,10 @@ onMounted(async () => {
   map.value = L.map(mapId.value, {
     layers: [initialBaseLayer, seamarks, marineProfile],
     attributionControl: false,
-  }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+    rotate: true,
+    touchRotate: true,
+    rotateControl: false,
+  } as L.MapOptions).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Listen for base layer changes to save user preference
   map.value.on('baselayerchange', (event: LayersControlEvent) => {
@@ -627,6 +655,12 @@ onMounted(async () => {
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
+
+  // Create rotate control (managed alongside zoom/layer controls via showButtons)
+  rotateControl.value = (L.control as unknown as Record<string, CallableFunction>).rotate({
+    closeOnZeroBearing: false,
+    position: 'bottomright',
+  }) as L.Control
 
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
@@ -2108,5 +2142,30 @@ watch(
 
 :deep(.leaflet-control-layers label) {
   color: var(--glass-color) !important;
+}
+
+/* Style the Leaflet rotate control — positioned bottom-right, above zoom */
+:deep(.leaflet-control-rotate.leaflet-bar) {
+  position: absolute !important;
+  right: 0;
+  bottom: calc(v-bind('bottomButtonsDisplacement') + 74px);
+  margin-right: 10px !important;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  color: var(--glass-color);
+  border: var(--glass-border);
+  border-radius: 2px;
+  z-index: 1002;
+}
+
+:deep(.leaflet-control-rotate .leaflet-control-rotate-toggle) {
+  background: transparent !important;
+  border: none;
+  color: var(--glass-color);
+}
+
+:deep(.leaflet-control-rotate .leaflet-control-rotate-arrow) {
+  filter: invert(1);
 }
 </style>
