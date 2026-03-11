@@ -1,6 +1,6 @@
 import '@/libs/cosmos'
 
-import { useStorage, useWindowSize } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
@@ -53,7 +53,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const gridInterval = ref(0.01)
   const currentMiniWidgetsProfile = useBlueOsStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
   const savedProfiles = useBlueOsStorage<Profile[]>(savedProfilesKey, [])
-  const currentViewIndex = useStorage('cockpit-current-view-index', 0)
+  const lastViewIndexPerProfile = useBlueOsStorage<Record<string, number>>('cockpit-last-view-index-per-profile', {})
   const currentProfileIndex = useBlueOsStorage<number>('cockpit-current-profile-index', 0)
   const desiredTopBarHeightPixels = ref(48)
   const desiredBottomBarHeightPixels = ref(48)
@@ -271,6 +271,21 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     },
   })
 
+  const currentViewIndex = computed({
+    get() {
+      const profile = savedProfiles.value[currentProfileIndex.value]
+      if (!profile) return 0
+      const saved = lastViewIndexPerProfile.value[profile.hash] ?? 0
+      return saved < profile.views.length ? saved : 0
+    },
+    set(newIndex: number) {
+      const profileHash = savedProfiles.value[currentProfileIndex.value]?.hash
+      if (profileHash) {
+        lastViewIndexPerProfile.value[profileHash] = newIndex
+      }
+    },
+  })
+
   const viewsToShow = computed((): View[] => {
     const viewsOnShowOrder = currentProfile.value.views.slice()
     viewsOnShowOrder.splice(currentViewIndex.value, 1)
@@ -372,7 +387,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
     if (currentProfileIndex.value === profileIndex) return
     currentProfileIndex.value = profileIndex
-    currentViewIndex.value = 0
+    const lastViewIndex = lastViewIndexPerProfile.value[profile.hash] ?? 0
+    currentViewIndex.value = lastViewIndex < profile.views.length ? lastViewIndex : 0
   }
 
   /**
@@ -723,9 +739,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     loadProfile(savedProfiles.value[0])
   }
 
-  // Make sure the interface is not booting with a profile or view that does not exist
+  // Make sure the interface is not booting with a profile that does not exist
   if (currentProfileIndex.value >= savedProfiles.value.length) currentProfileIndex.value = 0
-  if (currentViewIndex.value >= currentProfile.value.views.length) currentViewIndex.value = 0
 
   const resetWidgetsEditingState = (forcedState?: boolean): void => {
     currentProfile.value.views.forEach((view) => {
