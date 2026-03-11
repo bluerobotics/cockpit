@@ -3108,6 +3108,22 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
   })
 }
 
+let leafletRotateLoaded = false
+
+/**
+ * Loads the leaflet-rotate plugin by injecting its source into a script tag.
+ * This ensures the IIFE runs in the global scope where it can access window.L.
+ * @returns {Promise<void>} Resolves when the plugin has been loaded and executed
+ */
+const loadLeafletRotate = async (): Promise<void> => {
+  if (leafletRotateLoaded) return
+  const mod = await import('leaflet-rotate/dist/leaflet-rotate.js?raw')
+  const script = document.createElement('script')
+  script.textContent = (mod as unknown as Record<string, string>).default
+  document.head.appendChild(script)
+  leafletRotateLoaded = true
+}
+
 onMounted(async () => {
   const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 23,
@@ -3130,10 +3146,18 @@ onMounted(async () => {
 
   const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
 
-  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
-    mapCenter.value as LatLngTuple,
-    zoom.value
-  )
+  // leaflet-rotate patches the global L object via an IIFE that references window.L.
+  // Vite's ESM bundling doesn't expose L globally, so we set it manually and load
+  // the plugin via a script tag to ensure it executes in the global scope.
+  ;(window as unknown as Record<string, unknown>).L = L
+  await loadLeafletRotate()
+
+  planningMap.value = L.map('planningMap', {
+    layers: [initialBaseLayer],
+    rotate: true,
+    touchRotate: true,
+    rotateControl: false,
+  } as L.MapOptions).setView(mapCenter.value as LatLngTuple, zoom.value)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -3221,6 +3245,13 @@ onMounted(async () => {
 
   const layerControl = L.control.layers(baseMaps)
   planningMap.value.addControl(layerControl)
+
+  // Add rotate control
+  const rotateCtl = (L.control as unknown as Record<string, CallableFunction>).rotate({
+    closeOnZeroBearing: false,
+    position: 'bottomright',
+  }) as L.Control
+  planningMap.value.addControl(rotateCtl)
 
   // Initialize scale control (always show)
   createScaleControl()
@@ -4068,5 +4099,30 @@ watch(
 
 :deep(.leaflet-control-layers label) {
   color: var(--glass-color) !important;
+}
+
+/* Style the Leaflet rotate control — positioned bottom-right, above zoom */
+:deep(.leaflet-control-rotate.leaflet-bar) {
+  position: absolute !important;
+  right: 0;
+  bottom: 125px;
+  margin-right: 10px !important;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  color: var(--glass-color);
+  border: var(--glass-border);
+  border-radius: 2px;
+  z-index: 1002;
+}
+
+:deep(.leaflet-control-rotate .leaflet-control-rotate-toggle) {
+  background: transparent !important;
+  border: none;
+  color: var(--glass-color);
+}
+
+:deep(.leaflet-control-rotate .leaflet-control-rotate-arrow) {
+  filter: invert(1);
 }
 </style>
