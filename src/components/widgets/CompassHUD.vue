@@ -2,7 +2,7 @@
   <div class="main">
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
     <!-- POI icons container -->
-    <div v-if="widget.options.poi?.showPoiOnHUD" ref="poiIconsContainer">
+    <div v-if="widget.options.poi?.showPoiOnHUD || widget.options.showHomeOnHUD" ref="poiIconsContainer">
       <div
         v-for="poiMarker in poiMarkers"
         :key="poiMarker.poiId"
@@ -29,7 +29,9 @@
       <!-- POI distance box for onHudSide mode -->
       <div
         v-if="
-          widget.options.poi?.showPoiOnHUD && widget.options.poi?.showDistances === 'onHudSide' && highlightedPoiMarker
+          (widget.options.poi?.showPoiOnHUD || widget.options.showHomeOnHUD) &&
+          widget.options.poi?.showDistances === 'onHudSide' &&
+          highlightedPoiMarker
         "
         ref="poiSideDistanceBox"
         class="poi-side-distance-box"
@@ -76,6 +78,16 @@
         <div class="flex w-full justify-between">
           <v-switch
             class="ma-1 w-[220px]"
+            label="Show home on HUD"
+            :color="widget.options.showHomeOnHUD ? 'white' : undefined"
+            :model-value="widget.options.showHomeOnHUD"
+            hide-details
+            @change="widget.options.showHomeOnHUD = !widget.options.showHomeOnHUD"
+          />
+        </div>
+        <div class="flex w-full justify-between">
+          <v-switch
+            class="ma-1 w-[220px]"
             label="Show POIs on HUD"
             :color="widget.options.poi?.showPoiOnHUD ? 'white' : undefined"
             :model-value="widget.options.poi?.showPoiOnHUD ?? true"
@@ -85,7 +97,7 @@
             "
           />
           <v-select
-            v-if="widget.options.poi?.showPoiOnHUD"
+            v-if="widget.options.poi?.showPoiOnHUD || widget.options.showHomeOnHUD"
             v-model="widget.options.poi.showDistances"
             :items="[
               { title: 'All markers', value: 'all' },
@@ -141,7 +153,13 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type { HighlightedPoiMarker, HighlightedPoiMarkerDisplay, PoiMarker, ReachedPoiMarker } from '@/types/mission'
+import type {
+  HighlightedPoiMarker,
+  HighlightedPoiMarkerDisplay,
+  PoiMarker,
+  PointOfInterest,
+  ReachedPoiMarker,
+} from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
@@ -207,6 +225,7 @@ onBeforeMount(() => {
     showYawValue: true,
     hudColor: colorSwatches.value[0][0],
     useNegativeRange: false,
+    showHomeOnHUD: true,
     poi: {
       showPoiOnHUD: true,
       showDistances: 'onHudSide',
@@ -292,6 +311,70 @@ const poiData = computed(() => {
     }
   })
 })
+
+const homeCoordinates = computed(() => missionStore.homeMarkerPosition)
+const homeMarkerId = '__home__'
+
+type HudMarkerEntry = {
+  /**
+   * Point of interest data
+   */
+  poi: PointOfInterest
+  /**
+   * Distance to the POI
+   */
+  distance: number
+  /**
+   * Bearing to the POI
+   */
+  bearing: number
+  /**
+   * Size of the marker icon in pixels
+   */
+  markerSize: number
+}
+
+const hudMarkerData = computed((): HudMarkerEntry[] => {
+  if (!store.coordinates.latitude || !store.coordinates.longitude) return []
+
+  const entries: HudMarkerEntry[] = []
+
+  if (widget.value.options.poi?.showPoiOnHUD) {
+    for (const item of poiData.value) {
+      entries.push({ ...item, markerSize: 10 })
+    }
+  }
+
+  if (widget.value.options.showHomeOnHUD && homeCoordinates.value) {
+    const coords = homeCoordinates.value
+    entries.push({
+      poi: {
+        id: homeMarkerId,
+        name: 'Home',
+        description: '',
+        coordinates: coords,
+        icon: 'mdi-home',
+        color: '#1E88E5',
+        timestamp: 0,
+      },
+      distance: calculateHaversineDistance([store.coordinates.latitude!, store.coordinates.longitude!], coords),
+      bearing: calculateBearing(store.coordinates.latitude!, store.coordinates.longitude!, coords[0], coords[1]),
+      markerSize: 12,
+    })
+  }
+
+  return entries
+})
+
+const tryFetchHomeForHud = async (): Promise<void> => {
+  if (!widget.value.options.showHomeOnHUD || missionStore.homeMarkerPosition) return
+  if (!store.isVehicleOnline) return
+  try {
+    await store.fetchHomeWaypoint()
+  } catch {
+    return
+  }
+}
 
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
@@ -429,7 +512,11 @@ const renderCanvas = (): void => {
 }
 
 const updatePoiMarkers = (): void => {
-  if (!widget.value.options.poi?.showPoiOnHUD || !store.coordinates.latitude || !store.coordinates.longitude) {
+  if (
+    (!widget.value.options.poi?.showPoiOnHUD && !widget.value.options.showHomeOnHUD) ||
+    !store.coordinates.latitude ||
+    !store.coordinates.longitude
+  ) {
     poiMarkers.value = []
     return
   }
@@ -440,7 +527,7 @@ const updatePoiMarkers = (): void => {
   const markers: PoiMarker[] = []
   const onHeading = new Set<string>()
 
-  poiData.value.forEach(({ poi, distance, bearing }) => {
+  hudMarkerData.value.forEach(({ poi, distance, bearing, markerSize }) => {
     let relativeBearing = bearing - yaw.value
     if (relativeBearing < -180) relativeBearing += 360
     if (relativeBearing > 180) relativeBearing -= 360
@@ -489,7 +576,7 @@ const updatePoiMarkers = (): void => {
       name: poi.name,
       icon: poi.icon,
       color: poi.color || '#FF0000',
-      size: 10,
+      size: markerSize,
       distanceText,
       distanceFontSize: 9,
       ...(distanceLabelOpacity && { distanceLabelOpacity }),
@@ -545,15 +632,17 @@ const updatePoiMarkers = (): void => {
         }
         lastCardShownAt = now
       } else {
-        const poi = missionStore.pointsOfInterest.find((p) => p.id === selectedId)
-        if (poi && store.coordinates.latitude && store.coordinates.longitude) {
+        const entry = hudMarkerData.value.find((e) => e.poi.id === selectedId)
+        const fallbackName = entry?.poi.name
+        const fallbackCoords = entry?.poi.coordinates
+
+        if (fallbackName && fallbackCoords && store.coordinates.latitude && store.coordinates.longitude) {
           const distance = calculateHaversineDistance(
             [store.coordinates.latitude, store.coordinates.longitude],
-            poi.coordinates
+            fallbackCoords
           )
-          // How far from a POI to mark as reached
           highlightedPoiMarker.value = {
-            name: poi.name,
+            name: fallbackName,
             distanceText:
               distance <= 1
                 ? 'Reached'
@@ -625,7 +714,15 @@ const stopAnimationLoop = (): void => {
 }
 
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
-watch([poiData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
+watch([hudMarkerData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
+
+watch(
+  [() => widget.value.options.showHomeOnHUD, () => store.isVehicleOnline],
+  ([showHome]) => {
+    if (showHome) tryFetchHomeForHud()
+  },
+  { immediate: true }
+)
 
 // Start both canvas and POI markers animation loop when widget becomes visible or data changes
 watch([renderVars, canvasSize, widget.value.options], () => {
