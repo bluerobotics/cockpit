@@ -21,7 +21,7 @@
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
-          class="absolute mt-[73px] ml-[10px] rounded-lg elevation-4"
+          class="absolute mt-[46px] ml-[10px] rounded-lg elevation-4"
           variant="text"
         >
           <input
@@ -33,13 +33,49 @@
         </div>
       </template>
     </v-tooltip>
+    <v-tooltip location="top" text="Turnaround distance">
+      <template #activator="{ props }">
+        <div
+          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="confirmButtonStyle"
+          class="absolute mt-[76px] ml-[10px] rounded-lg elevation-4"
+          variant="text"
+        >
+          <input
+            v-model.number="turnaroundDistance"
+            class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
+            type="number"
+          />
+        </div>
+      </template>
+    </v-tooltip>
+    <v-tooltip location="top" text="Cruise speed">
+      <template #activator="{ props }">
+        <div
+          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="confirmButtonStyle"
+          class="absolute mt-[106px] ml-[10px] rounded-lg elevation-4"
+          variant="text"
+        >
+          <input
+            v-model.number="missionStore.defaultCruiseSpeed"
+            class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
+            type="number"
+            min="1"
+            step="0.5"
+          />
+        </div>
+      </template>
+    </v-tooltip>
     <v-tooltip location="top" text="Clear survey">
       <template #activator="{ props }">
         <div
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
-          class="absolute text-[14px] mt-[130px] ml-[3px] bg-transparent rounded-full cursor-pointer elevation-4"
+          class="absolute text-[14px] mt-[140px] ml-[3px] bg-transparent rounded-full cursor-pointer elevation-4"
           variant="text"
           @click="clearSurveyCreation"
         >
@@ -181,6 +217,12 @@
             type="number"
             min="0"
             max="359"
+          />
+          <p class="m-1 overflow-visible text-sm text-slate-200">Turnaround distance (m)</p>
+          <input
+            v-model.number="turnaroundDistance"
+            class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]"
+            type="number"
           />
           <button
             :class="{
@@ -557,6 +599,7 @@ import {
   MissionCommandType,
   PointOfInterest,
   Survey,
+  SurveyPath,
   SurveyPolygon,
 } from '@/types/mission'
 
@@ -2082,6 +2125,7 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
 const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
 const rawDistanceBetweenSurveyLines = ref(10)
 const rawSurveyLinesAngle = ref(0)
+const rawTurnaroundDistance = ref(0)
 const existingWaypoints = ref<Waypoint[]>([])
 const surveyWaypoints = ref<Waypoint[]>([])
 
@@ -2089,6 +2133,11 @@ const surveyWaypoints = ref<Waypoint[]>([])
 const distanceBetweenSurveyLines = computed({
   get: () => Math.max(1, rawDistanceBetweenSurveyLines.value),
   set: (value) => (rawDistanceBetweenSurveyLines.value = Math.max(1, value)), // Ensure the distance is at least 1
+})
+
+const turnaroundDistance = computed({
+  get: () => rawTurnaroundDistance.value,
+  set: (value) => (rawTurnaroundDistance.value = value),
 })
 
 // Angle of the survey path lines
@@ -2111,6 +2160,7 @@ const onSurveyLinesAngleChange = (angle: number): void => {
 }
 
 const surveyPathLayer = shallowRef<L.Polyline | null>(null)
+const surveyTurnaroundLayers = shallowRef<L.Polyline[]>([])
 const surveyPolygonLayer = shallowRef<L.Polygon | null>(null)
 
 const clearSurveyPath = (): void => {
@@ -2118,6 +2168,8 @@ const clearSurveyPath = (): void => {
     planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     surveyPathLayer.value = null
   }
+  surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
+  surveyTurnaroundLayers.value = []
   if (surveyPolygonLayer.value) {
     disablePolygonDragging()
     planningMap.value?.removeLayer(surveyPolygonLayer.value as unknown as L.Layer)
@@ -2211,6 +2263,8 @@ const checkAndRemoveSurveyPath = (): void => {
   if (surveyPolygonVertexesPositions.value.length >= 4 || !surveyPathLayer.value) return
   planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
   surveyPathLayer.value = null
+  surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
+  surveyTurnaroundLayers.value = []
 }
 
 const createSurveyPath = (): void => {
@@ -2221,13 +2275,14 @@ const createSurveyPath = (): void => {
 
   try {
     const adjustedAngle = 90 - surveyLinesAngle.value
-    const continuousPath = generateSurveyPath(
+    const result: SurveyPath = generateSurveyPath(
       surveyPolygonVertexesPositions.value,
       distanceBetweenSurveyLines.value,
-      adjustedAngle
+      adjustedAngle,
+      turnaroundDistance.value
     )
 
-    if (continuousPath.length === 0) {
+    if (result.path.length === 0) {
       showDialog({
         variant: 'error',
         message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
@@ -2240,12 +2295,26 @@ const createSurveyPath = (): void => {
       planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     }
 
-    surveyPathLayer.value = L.polyline(continuousPath, {
+    surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
+    surveyTurnaroundLayers.value = []
+
+    surveyPathLayer.value = L.polyline(result.path, {
       color: '#2563EB',
       weight: 3,
       opacity: 0.8,
       className: 'survey-path',
     }).addTo(toRaw(planningMap.value)!)
+
+    if (result.turnaroundSegments.length > 0) {
+      surveyTurnaroundLayers.value = result.turnaroundSegments.map((segment) =>
+        L.polyline(segment, {
+          color: '#F97316',
+          weight: 5,
+          opacity: 0.6,
+          className: 'survey-turnaround-path',
+        }).addTo(toRaw(planningMap.value)!)
+      )
+    }
   } catch (error) {
     showDialog({
       variant: 'error',
@@ -2267,8 +2336,8 @@ watch(
   }
 )
 
-// Watch for changes in distanceBetweenSurveyLines and surveyLinesAngle
-watch([distanceBetweenSurveyLines, surveyLinesAngle], () => createSurveyPath())
+// Watch for changes in distanceBetweenSurveyLines, surveyLinesAngle, and turnaroundDistance
+watch([distanceBetweenSurveyLines, surveyLinesAngle, turnaroundDistance], () => createSurveyPath())
 
 const surveyEdgeAddMarkers: L.Marker[] = []
 
@@ -2416,10 +2485,11 @@ const generateWaypointsFromSurvey = (): void => {
   }
 
   const adjustedAngle = 90 - surveyLinesAngle.value
-  const continuousPath = generateSurveyPath(
+  const { path: continuousPath } = generateSurveyPath(
     surveyPolygonVertexesPositions.value,
     distanceBetweenSurveyLines.value,
-    adjustedAngle
+    adjustedAngle,
+    turnaroundDistance.value
   )
 
   if (!continuousPath.length) {
@@ -2446,6 +2516,7 @@ const generateWaypointsFromSurvey = (): void => {
     polygonCoordinates: polygonCoordinates,
     distanceBetweenLines: distanceBetweenSurveyLines.value,
     surveyLinesAngle: surveyLinesAngle.value,
+    turnaroundDistance: turnaroundDistance.value,
     waypoints: newSurveyWaypoints,
   }
 
@@ -2548,10 +2619,11 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     })
 
     const adjustedAngle = 90 - (angle || selectedSurvey.value.surveyLinesAngle)
-    const continuousPath = generateSurveyPath(
+    const { path: continuousPath } = generateSurveyPath(
       selectedSurvey.value.polygonCoordinates.map((coord) => L.latLng(coord[0], coord[1])),
       selectedSurvey.value.distanceBetweenLines,
-      adjustedAngle
+      adjustedAngle,
+      selectedSurvey.value.turnaroundDistance
     )
 
     if (!continuousPath.length) {

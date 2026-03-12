@@ -170,9 +170,30 @@ export interface Survey {
    */
   surveyLinesAngle: number
   /**
+   * Distance in meters to extend (positive) or inset (negative) from the polygon boundary before
+   * the vehicle turns. Positive values fly past the edges; negative values keep the vehicle away.
+   */
+  turnaroundDistance: number
+  /**
    * Executable mission waypoints.
    */
   waypoints: Waypoint[]
+}
+
+/**
+ * Result of survey path generation, containing the full flight path
+ * and optional turnaround segments at the polygon boundary.
+ */
+export interface SurveyPath {
+  /**
+   * The full continuous flight path including turnaround extensions or insets.
+   */
+  path: L.LatLng[]
+  /**
+   * Polyline segments representing the turnaround portions at the polygon boundary.
+   * Each entry is a polyline connecting boundary ↔ turnaround points.
+   */
+  turnaroundSegments: L.LatLng[][]
 }
 
 // TODO - Replace leaflet types with agnostic types
