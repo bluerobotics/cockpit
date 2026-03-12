@@ -10,8 +10,41 @@ import { MavCmd, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest
 import { getUnindentedString } from '@/libs/utils'
 import { customActionTypes } from '@/types/cockpit-actions'
 
+import { DataLakeVariableAction } from './data-lake'
+
 export let mavlinkCameraZoomActionId: string | undefined = undefined
 export let mavlinkCameraFocusActionId: string | undefined = undefined
+
+const joystickAxisConfig = [
+  { key: 'axis_x' },
+  { key: 'axis_y' },
+  { key: 'axis_z' },
+  { key: 'axis_r' },
+  { key: 'axis_s' },
+  { key: 'axis_t' },
+] as const
+
+const axisInputId = (key: string): string => `joystick/inputs/${key.replace('_', '-')}`
+const axisName = (key: string): string =>
+  key
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+
+/**
+ * Pre-built data lake variable actions for joystick axis inputs, used in joystick profile mappings
+ */
+export const joystickInputAxes: Record<(typeof joystickAxisConfig)[number]['key'], DataLakeVariableAction> =
+  Object.fromEntries(
+    joystickAxisConfig.map((axis) => [
+      axis.key,
+      new DataLakeVariableAction({
+        id: axisInputId(axis.key),
+        name: axisName(axis.key),
+        type: 'number' as DataLakeVariableType,
+      }),
+    ])
+  ) as Record<(typeof joystickAxisConfig)[number]['key'], DataLakeVariableAction>
 
 export const setupMavlinkCameraResources = (): void => {
   const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
@@ -126,6 +159,34 @@ export const setupMavlinkCameraResources = (): void => {
   }
 }
 
+export const setupJoystickAxesResources = (): void => {
+  const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
+
+  for (const axis of joystickAxisConfig) {
+    const id = axisInputId(axis.key)
+    const name = axisName(axis.key)
+    const outputId = id.replace('/inputs/', '/outputs/')
+
+    createDataLakeVariable({ id, name, ...commonVariableConfig }, 0)
+
+    try {
+      const existing = getAllTransformingFunctions().find((f) => f.id === outputId)
+      if (!existing) {
+        createTransformingFunction(
+          outputId,
+          `${name} Output`,
+          'number',
+          `{{${id}}}`,
+          `Output value for MANUAL_CONTROL ${name}.`
+        )
+      }
+    } catch (error) {
+      console.error(`Error creating transforming function for ${name}:`, error)
+    }
+  }
+}
+
 export const setupPredefinedLakeAndActionResources = (): void => {
   setupMavlinkCameraResources()
+  setupJoystickAxesResources()
 }
