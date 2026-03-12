@@ -201,28 +201,27 @@ const flashEffect = async (): Promise<void> => {
   document.body.removeChild(flashOverlay)
 }
 
+const captureSnapshot = async (): Promise<void> => {
+  await snapshotStore.takeSnapshot(
+    miniWidget.value.options.nameSelectedStreams ?? [],
+    miniWidget.value.options.captureWorkspace
+  )
+}
+
 const handleTakeSnapshot = async (): Promise<void> => {
   if (!areSelectedStreamsAreAvailable()) return
   isSnapshotMenuOpen.value = false
 
   try {
     if (snapshotTriggerType.value !== 'timed') {
-      await snapshotStore.takeSnapshot(
-        miniWidget.value.options.nameSelectedStreams,
-        miniWidget.value.options.captureWorkspace
-      )
-
+      await captureSnapshot()
       flashEffect()
-      openSnackbar({
-        message: 'Snapshot recorded successfully.',
-        variant: 'success',
-        duration: 2000,
-      })
+      openSnackbar({ message: 'Snapshot recorded successfully.', variant: 'success', duration: 2000 })
     }
   } catch (error) {
     showDialog({
       title: 'Error taking snapshot',
-      message: `Make sure the streams have finished loading.`,
+      message: 'Make sure the streams have finished loading.',
       variant: 'error',
       persistent: false,
       maxWidth: '550px',
@@ -246,10 +245,17 @@ const handleSelectSnapshotTriggerType = (type: 'single' | 'timed'): void => {
 let progressInterval: ReturnType<typeof setInterval> | null = null
 let shotInterval: ReturnType<typeof setInterval> | null = null
 
+const fireTimedSnapshot = async (): Promise<void> => {
+  try {
+    await captureSnapshot()
+  } catch (error) {
+    openSnackbar({ message: `Timed snapshot failed: ${error}`, variant: 'error', duration: 3000 })
+  }
+}
+
 watch(isTakingTimedSnapshot, (newValue) => {
   if (newValue) {
-    const streams = miniWidget.value.options.nameSelectedStreams ?? []
-    snapshotStore.takeSnapshot(streams, miniWidget.value.options.captureWorkspace)
+    fireTimedSnapshot()
     flashEffect()
     openSnackbar({
       message: `Timed snapshot started. This will capture the selected interfaces every ${timedSnapshotInterval.value} seconds until you press the camera button again.`,
@@ -258,11 +264,8 @@ watch(isTakingTimedSnapshot, (newValue) => {
     })
 
     // Capture subsequent timed snapshots
-    shotInterval = setInterval(async () => {
-      await snapshotStore.takeSnapshot(
-        miniWidget.value.options.nameSelectedStreams ?? [],
-        miniWidget.value.options.captureWorkspace
-      )
+    shotInterval = setInterval(() => {
+      fireTimedSnapshot()
       timerProgress.value = 0
     }, timedSnapshotInterval.value * 1000)
 
