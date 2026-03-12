@@ -834,7 +834,12 @@ import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
 import { SnapshotLibraryFile } from '@/types/snapshot'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
-import { videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
+import {
+  videoSubtitlesFilename,
+  videoTelemetryCsvFilename,
+  videoTelemetryJsonFilename,
+  videoThumbnailFilename,
+} from '@/utils/video'
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
@@ -1146,9 +1151,24 @@ const deselectAllVideos = (): void => {
 // Add the log files to the list of files to be downloaded/discarded
 const addLogDataToFileList = (fileNames: string[]): string[] => {
   const filesWithLogData = fileNames.flatMap((fileName) => {
+    const result = [fileName]
+
     const subtitleFileName = videoSubtitlesFilename(fileName)
-    const subtitleExists = availableLogFiles.value.some((video) => video.fileName === subtitleFileName)
-    return subtitleExists ? [fileName, subtitleFileName] : [fileName]
+    if (availableLogFiles.value.some((video) => video.fileName === subtitleFileName)) {
+      result.push(subtitleFileName)
+    }
+
+    const jsonFileName = videoTelemetryJsonFilename(fileName)
+    if (availableLogFiles.value.some((video) => video.fileName === jsonFileName)) {
+      result.push(jsonFileName)
+    }
+
+    const csvFileName = videoTelemetryCsvFilename(fileName)
+    if (availableLogFiles.value.some((video) => video.fileName === csvFileName)) {
+      result.push(csvFileName)
+    }
+
+    return result
   })
   return filesWithLogData
 }

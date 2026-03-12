@@ -33,6 +33,7 @@ export enum SubMenuComponentName {
   SettingsMAVLink = 'settings-mavlink',
   ToolsMAVLink = 'tools-mavlink',
   ToolsDataLake = 'tools-datalake',
+  ToolsLogs = 'tools-logs',
 }
 
 export const useAppInterfaceStore = defineStore('responsive', {

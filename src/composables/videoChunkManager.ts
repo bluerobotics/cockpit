@@ -4,7 +4,12 @@ import { LiveVideoProcessor } from '@/libs/live-video-processor'
 import { formatBytes, isElectron } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { type FileDescriptor } from '@/types/video'
-import { videoFilename, videoSubtitlesFilename } from '@/utils/video'
+import {
+  videoFilename,
+  videoSubtitlesFilename,
+  videoTelemetryCsvFilename,
+  videoTelemetryJsonFilename,
+} from '@/utils/video'
 
 import { useInteractionDialog } from './interactionDialog'
 import { useSnackbar } from './snackbar'
@@ -501,15 +506,26 @@ export const useVideoChunkManager = (): {
       // Finalize the streaming process
       await window.electronAPI.finalizeVideoRecording(processId)
 
-      // Find and copy telemetry file if it exists
+      // Find and copy telemetry files if they exist (.ass, .json, .csv)
       try {
         const videoKeys = await videoStore.videoStorage.keys()
+
         const assFile = videoKeys.find((key) => key.includes(group.hash) && key.endsWith('.ass'))
         if (assFile) {
           await window.electronAPI.copyTelemetryFile(assFile, videoSubtitlesFilename(outputPath))
         }
+
+        const jsonFile = videoKeys.find((key) => key.includes(group.hash) && key.endsWith('.json'))
+        if (jsonFile) {
+          await window.electronAPI.copyTelemetryFile(jsonFile, videoTelemetryJsonFilename(outputPath))
+        }
+
+        const csvFile = videoKeys.find((key) => key.includes(group.hash) && key.endsWith('.csv'))
+        if (csvFile) {
+          await window.electronAPI.copyTelemetryFile(csvFile, videoTelemetryCsvFilename(outputPath))
+        }
       } catch (error) {
-        console.warn('Failed to copy telemetry file:', error)
+        console.warn('Failed to copy telemetry files:', error)
       }
 
       openSnackbar({

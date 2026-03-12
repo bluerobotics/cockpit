@@ -129,6 +129,40 @@ export interface CockpitStandardLogPoint {
 export type CockpitStandardLog = CockpitStandardLogPoint[]
 
 /**
+ * Information about a data session (detected from raw log entries)
+ */
+export interface DataSessionInfo {
+  /**
+   * Unique identifier for the session
+   */
+  id: string
+  /**
+   * Start time of the session (epoch ms)
+   */
+  startTime: number
+  /**
+   * End time of the session (epoch ms)
+   */
+  endTime: number
+  /**
+   * Formatted date/time string
+   */
+  dateTimeFormatted: string
+  /**
+   * Number of data points in the session
+   */
+  dataPointCount: number
+  /**
+   * Duration of the session in seconds
+   */
+  durationSeconds: number
+  /**
+   * Whether this is the current active session
+   */
+  isCurrentSession: boolean
+}
+
+/**
  * Position for telemetry data on the video overlay
  */
 export interface OverlayGrid {
@@ -213,7 +247,7 @@ export class CurrentlyLoggedVariables {
 /**
  * Manager logging vehicle data and others
  */
-class DataLogger {
+export class DataLogger {
   logRequesters: string[] = []
   datetimeLastLogPoint: Date | null = null
   variablesBeingUsed: DatalogVariable[] = []
@@ -287,7 +321,7 @@ class DataLogger {
     description: 'Local backups of Cockpit sensor logs, to be retrieved in case of failure.',
   })
 
-  cockpitTemporaryLogsDB = localforage.createInstance({
+  static cockpitTemporaryLogsDB = localforage.createInstance({
     driver: localforage.INDEXEDDB,
     name: 'Cockpit - Temporary Sensor Log points',
     storeName: 'cockpit-temporary-sensor-logs-db',
@@ -351,7 +385,7 @@ class DataLogger {
         data: structuredClone(variablesData),
       }
 
-      await this.cockpitTemporaryLogsDB.setItem(`epoch=${logPoint.epoch}`, logPoint)
+      await DataLogger.cockpitTemporaryLogsDB.setItem(`epoch=${logPoint.epoch}`, logPoint)
       this.datetimeLastLogPoint = new Date()
 
       if (this.shouldBeLogging()) {
@@ -501,7 +535,7 @@ class DataLogger {
     const logDateTimeFmt = `${logDateFormat} / HH꞉mm꞉ss O`
     const fileName = `Cockpit (${format(initialTime, logDateTimeFmt)} - ${format(finalTime, logDateTimeFmt)}).clog`
 
-    const availableLogsKeys = await this.cockpitTemporaryLogsDB.keys()
+    const availableLogsKeys = await DataLogger.cockpitTemporaryLogsDB.keys()
 
     // The key is in the format epoch=<epoch>. We extract the epoch and compare it to the initial and final times
     // to see if the log point is in the range of the desired log.
@@ -536,7 +570,7 @@ class DataLogger {
 
     const logPointsInRange: CockpitStandardLogPoint[] = []
     for (const info of infoLogPointsInRange) {
-      const log = (await this.cockpitTemporaryLogsDB.getItem(info.key)) as CockpitStandardLogPoint
+      const log = (await DataLogger.cockpitTemporaryLogsDB.getItem(info.key)) as CockpitStandardLogPoint
 
       // Only consider real log points(objects with an epoch and data property, and non-empty data)
       if (log.epoch === undefined || log.data === undefined || Object.keys(log.data).length === 0) continue
@@ -559,6 +593,62 @@ class DataLogger {
     await this.cockpitLogsDB.setItem(fileName, finalLog)
 
     return finalLog
+  }
+
+  /**
+   * Convert Cockpit standard log to JSON format
+   * @param {CockpitStandardLog} log - The telemetry log data
+   * @returns {string} JSON string representation of the telemetry data
+   */
+  toJson(log: CockpitStandardLog): string {
+    return JSON.stringify(log, null, 2)
+  }
+
+  /**
+   * Convert Cockpit standard log to CSV format
+   * @param {CockpitStandardLog} log - The telemetry log data
+   * @returns {string} CSV string representation of the telemetry data
+   */
+  toCsv(log: CockpitStandardLog): string {
+    if (log.length === 0) return ''
+
+    // Helper to escape CSV values (handle quotes and special characters)
+    const escapeCSV = (value: string | undefined | null): string => {
+      if (value === undefined || value === null) return ''
+      const str = String(value).trim()
+      // Escape quotes by doubling them and wrap in quotes if contains special chars
+      if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+        return `"${str.replace(/"/g, '""')}"`
+      }
+      return str
+    }
+
+    // Get all unique variable names from all log points
+    const allVariables = new Set<string>()
+    log.forEach((logPoint) => {
+      if (logPoint.data) {
+        Object.keys(logPoint.data).forEach((key) => allVariables.add(key))
+      }
+    })
+
+    // Create header row with epoch and all variable names
+    const sortedVariables = Array.from(allVariables).sort()
+    const headers = ['epoch', 'timestamp', ...sortedVariables]
+
+    // Create CSV rows
+    const rows = log.map((logPoint) => {
+      const timestamp = new Date(logPoint.epoch).toISOString()
+      const values = sortedVariables.map((variable) => {
+        const data = logPoint.data?.[variable]
+        if (data && data.value !== undefined) {
+          return escapeCSV(data.value)
+        }
+        return ''
+      })
+      return [logPoint.epoch, timestamp, ...values].join(',')
+    })
+
+    return [headers.join(','), ...rows].join('\n')
   }
 
   /**
@@ -672,6 +762,151 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
     assFile = assFile.concat('\n')
 
     return assFile
+  }
+
+  // Gap threshold to consider a new session (5 minutes of no data)
+  static SESSION_GAP_THRESHOLD_MS = 5 * 60 * 1000
+
+  /**
+   * Get all data sessions detected from raw log entries
+   * Sessions are determined by gaps in the data (>5 minutes between points = new session)
+   * @returns {Promise<DataSessionInfo[]>} Array of session information
+   */
+  static async getDataSessions(): Promise<DataSessionInfo[]> {
+    const allKeys = await DataLogger.cockpitTemporaryLogsDB.keys()
+
+    if (allKeys.length === 0) return []
+
+    // Extract epochs from keys and sort them
+    const epochs = allKeys
+      .map((key) => {
+        const match = key.match(/^epoch=(\d+)$/)
+        return match ? parseInt(match[1], 10) : null
+      })
+      .filter((epoch): epoch is number => epoch !== null)
+      .sort((a, b) => a - b)
+
+    if (epochs.length === 0) return []
+
+    // Group epochs into sessions based on gaps
+    const sessions: DataSessionInfo[] = []
+    let sessionStart = epochs[0]
+    let sessionEnd = epochs[0]
+    let pointCount = 1
+
+    for (let i = 1; i < epochs.length; i++) {
+      const gap = epochs[i] - epochs[i - 1]
+
+      if (gap > DataLogger.SESSION_GAP_THRESHOLD_MS) {
+        // End current session and start a new one
+        sessions.push({
+          id: `session-${sessionStart}`,
+          startTime: sessionStart,
+          endTime: sessionEnd,
+          dateTimeFormatted: format(new Date(sessionStart), 'LLL dd, yyyy - HH:mm:ss'),
+          dataPointCount: pointCount,
+          durationSeconds: Math.round((sessionEnd - sessionStart) / 1000),
+          isCurrentSession: false,
+        })
+        sessionStart = epochs[i]
+        sessionEnd = epochs[i]
+        pointCount = 1
+      } else {
+        sessionEnd = epochs[i]
+        pointCount++
+      }
+    }
+
+    // Add the last session
+    const lastSession: DataSessionInfo = {
+      id: `session-${sessionStart}`,
+      startTime: sessionStart,
+      endTime: sessionEnd,
+      dateTimeFormatted: format(new Date(sessionStart), 'LLL dd, yyyy - HH:mm:ss'),
+      dataPointCount: pointCount,
+      durationSeconds: Math.round((sessionEnd - sessionStart) / 1000),
+      isCurrentSession: false,
+    }
+
+    // Check if this is the current session (last log point within the last minute)
+    const now = Date.now()
+    if (now - sessionEnd < 60000) {
+      lastSession.isCurrentSession = true
+    }
+
+    sessions.push(lastSession)
+
+    // Sort by date, newest first
+    return sessions.sort((a, b) => b.startTime - a.startTime)
+  }
+
+  /**
+   * Generate a data log from a session's raw data
+   * @param {DataSessionInfo} session - The session to generate log from
+   * @returns {Promise<CockpitStandardLog>} The generated log
+   */
+  static async generateLogFromSession(session: DataSessionInfo): Promise<CockpitStandardLog> {
+    const log: CockpitStandardLog = []
+
+    // Get all keys and filter by session time range
+    const allKeys = await DataLogger.cockpitTemporaryLogsDB.keys()
+
+    for (const key of allKeys) {
+      const match = key.match(/^epoch=(\d+)$/)
+      if (!match) continue
+
+      const epoch = parseInt(match[1], 10)
+      if (epoch >= session.startTime && epoch <= session.endTime) {
+        const logPoint = (await DataLogger.cockpitTemporaryLogsDB.getItem(key)) as CockpitStandardLogPoint | null
+        if (logPoint && logPoint.epoch !== undefined && logPoint.data !== undefined) {
+          log.push(logPoint)
+        }
+      }
+    }
+
+    // Sort by epoch
+    return log.sort((a, b) => a.epoch - b.epoch)
+  }
+
+  /**
+   * Delete a data session's raw data
+   * @param {DataSessionInfo} session - The session to delete
+   */
+  static async deleteDataSession(session: DataSessionInfo): Promise<void> {
+    const allKeys = await DataLogger.cockpitTemporaryLogsDB.keys()
+
+    for (const key of allKeys) {
+      const match = key.match(/^epoch=(\d+)$/)
+      if (!match) continue
+
+      const epoch = parseInt(match[1], 10)
+      if (epoch >= session.startTime && epoch <= session.endTime) {
+        await DataLogger.cockpitTemporaryLogsDB.removeItem(key)
+      }
+    }
+  }
+
+  /**
+   * Delete all data sessions older than a specified number of days
+   * @param {number} daysOld - Number of days (sessions older than this will be deleted)
+   * @returns {Promise<number>} Number of deleted sessions
+   */
+  static async deleteOldDataSessions(daysOld = 1): Promise<number> {
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld)
+    const cutoffMs = cutoffDate.getTime()
+
+    const sessions = await DataLogger.getDataSessions()
+    let deletedCount = 0
+
+    for (const session of sessions) {
+      if (session.endTime < cutoffMs && !session.isCurrentSession) {
+        await DataLogger.deleteDataSession(session)
+        deletedCount++
+      }
+    }
+
+    return deletedCount
   }
 }
 
