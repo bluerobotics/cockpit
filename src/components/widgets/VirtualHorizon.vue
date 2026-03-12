@@ -12,11 +12,11 @@
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
-import { computed, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
@@ -30,9 +30,21 @@ const props = defineProps<{
 }>()
 const widget = toRefs(props).widget
 
+const defaultOptions = {
+  rollVariableId: '/mavlink/1/1/ATTITUDE/roll',
+  pitchVariableId: '/mavlink/1/1/ATTITUDE/pitch',
+}
+
+onBeforeMount(() => {
+  widget.value.options = { ...defaultOptions, ...widget.value.options }
+})
+
 datalogger.registerUsage(DatalogVariable.roll)
 datalogger.registerUsage(DatalogVariable.pitch)
-const store = useMainVehicleStore()
+
+const { value: rawRoll } = useDataLakeVariable(() => widget.value.options.rollVariableId)
+const { value: rawPitch } = useDataLakeVariable(() => widget.value.options.pitchVariableId)
+
 const virtualHorizonRoot = ref()
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
@@ -212,28 +224,19 @@ const renderCanvas = (): void => {
 const rollAngleDeg = ref(0.01)
 const pitchAngleDeg = ref(0.01)
 
-let oldRoll: number | undefined = undefined
-let oldPitch: number | undefined = undefined
-watch(store.attitude, (attitude) => {
-  if (oldRoll === undefined || oldPitch === undefined) {
-    rollAngleDeg.value = degrees(store.attitude.roll)
-    pitchAngleDeg.value = degrees(store.attitude.pitch)
-    oldRoll = attitude.roll
-    oldPitch = attitude.pitch
-    return
+watch(rawRoll, (newRoll) => {
+  if (newRoll === undefined) return
+  const deg = degrees(newRoll as number)
+  if (Math.abs(deg - rollAngleDeg.value) > 0.1) {
+    rollAngleDeg.value = deg
   }
+})
 
-  const rollDiff = Math.abs(degrees(attitude.roll - oldRoll))
-  const pitchDiff = Math.abs(degrees(attitude.pitch - oldPitch))
-
-  if (rollDiff > 0.1) {
-    oldRoll = attitude.roll
-    rollAngleDeg.value = degrees(store.attitude.roll)
-  }
-
-  if (pitchDiff > 0.1) {
-    oldPitch = attitude.pitch
-    pitchAngleDeg.value = degrees(store.attitude.pitch)
+watch(rawPitch, (newPitch) => {
+  if (newPitch === undefined) return
+  const deg = degrees(newPitch as number)
+  if (Math.abs(deg - pitchAngleDeg.value) > 0.1) {
+    pitchAngleDeg.value = deg
   }
 })
 
