@@ -6,7 +6,11 @@
     :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
     :style="glassMenuCssVars"
   >
-    <div :id="mapId" ref="map" class="map">
+    <div class="map-clip-wrapper">
+      <div :id="mapId" ref="map" class="map" />
+    </div>
+    <!-- Map UI buttons live outside the oversized map div so they stay within the visible widget bounds -->
+    <div class="map-buttons-overlay">
       <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
         <template #activator="{ props: menuProps }">
           <v-tooltip location="top" text="Download tiles for offline use">
@@ -70,7 +74,7 @@
         </template>
       </v-tooltip>
 
-      <v-tooltip location="top" :text="centerVehicleButtonTooltipText">
+      <v-tooltip location="top" :text="vehicleFollowTooltip">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
@@ -78,14 +82,13 @@
             v-bind="tooltipProps"
             class="absolute m-3 bottom-button right-[44px] bg-slate-50 text-[14px]"
             :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
-            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+            :color="vehicleFollowColor"
             elevation="2"
             style="z-index: 1002; border-radius: 0px"
-            icon="mdi-airplane-marker"
+            :icon="vehicleFollowIcon"
             size="x-small"
             :disabled="!vehiclePosition"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+            @click.stop="cycleVehicleFollowMode"
           />
         </template>
       </v-tooltip>
@@ -179,6 +182,7 @@
       {{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%
     </p>
   </div>
+  <div v-if="isRotatingMap" class="rotate-drag-overlay" />
 </template>
 
 <script setup lang="ts">
@@ -248,12 +252,13 @@ const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
-const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
+const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value || isRotatingMap.value)
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
 const reachedWaypoints = shallowRef<Record<number, L.Marker>>({})
 const contextMenuRef = ref()
 const isDragging = ref(false)
+const isRotatingMap = ref(false)
 const isPinching = ref(false)
 const isMissionChecklistOpen = ref(false)
 const isSavingOfflineTiles = ref(false)
@@ -446,11 +451,15 @@ onBeforeMount(() => {
   targetFollower.enableAutoUpdate()
 })
 
+// Extra tile buffer to keep around the viewport so rotated views don't show white gaps
+const rotationTileBuffer = 10
+
 // Configure the available map tile providers
 const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 23,
   maxNativeZoom: 19,
   attribution: '© OpenStreetMap',
+  keepBuffer: rotationTileBuffer,
 })
 
 const esri = tileLayerOffline(
@@ -459,6 +468,7 @@ const esri = tileLayerOffline(
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© Esri World Imagery',
+    keepBuffer: rotationTileBuffer,
   }
 )
 
@@ -466,6 +476,7 @@ const esri = tileLayerOffline(
 const seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
   maxZoom: 18,
   attribution: '© OpenSeaMap contributors',
+  keepBuffer: rotationTileBuffer,
 })
 
 const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserver/gwc/service/wms', {
@@ -476,6 +487,7 @@ const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserve
   attribution: '© GEBCO, OpenSeaMap',
   tileSize: 256,
   maxZoom: 19,
+  keepBuffer: rotationTileBuffer,
 })
 
 const baseMaps = {
@@ -494,17 +506,52 @@ const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
 const layerControl = L.control.layers(baseMaps, overlays)
+const rotateControl = shallowRef<L.Control | undefined>(undefined)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
+
+/**
+ * Attaches mousedown listener to the rotate control container to show the drag overlay,
+ * preventing overlapping elements from intercepting the drag events.
+ */
+const attachRotateControlDragOverlay = (): void => {
+  if (!rotateControl.value) return
+  // eslint-disable-next-line jsdoc/require-jsdoc
+  const container = (rotateControl.value as unknown as { _container?: HTMLElement })._container
+  if (!container) return
+  // Use capture phase because leaflet-rotate calls stopPropagation() on the inner link's mousedown.
+  container.addEventListener(
+    'mousedown',
+    () => {
+      const onMouseMove = (): void => {
+        isRotatingMap.value = true
+        document.removeEventListener('mousemove', onMouseMove)
+      }
+      const onMouseUp = (): void => {
+        isRotatingMap.value = false
+        document.removeEventListener('mouseup', onMouseUp)
+        document.removeEventListener('mousemove', onMouseMove)
+      }
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    },
+    true
+  )
+}
 
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
     map.value.addControl(zoomControl)
     map.value.addControl(layerControl)
+    if (rotateControl.value) {
+      map.value.addControl(rotateControl.value)
+      attachRotateControlDragOverlay()
+    }
     createScaleControl()
   } else {
     map.value.removeControl(zoomControl)
     map.value.removeControl(layerControl)
+    if (rotateControl.value) map.value.removeControl(rotateControl.value)
     removeScaleControl()
   }
 })
@@ -600,11 +647,63 @@ const removeScaleControl = (): void => {
   }
 }
 
+/**
+ * Loads the leaflet-rotate plugin by injecting its source into a script tag.
+ * This ensures the IIFE runs in the global scope where it can access window.L.
+ * Skips loading if the plugin is already available on L.control.
+ * @returns {Promise<void>} Resolves when the plugin has been loaded and executed
+ */
+const loadLeafletRotate = async (): Promise<void> => {
+  if ((L.control as unknown as Record<string, unknown>).rotate) return
+  const mod = await import('leaflet-rotate/dist/leaflet-rotate.js?raw')
+  const script = document.createElement('script')
+  script.textContent = (mod as unknown as Record<string, string>).default
+  document.head.appendChild(script)
+
+  const ControlRotate = (
+    L.Control as unknown as Record<
+      string,
+      {
+        /**
+         * Rotate control prototype
+         */
+        prototype: Record<string, CallableFunction>
+      }
+    >
+  ).Rotate
+  if (ControlRotate) {
+    ControlRotate.prototype._handleMouseDown = function (e: MouseEvent): void {
+      L.DomEvent.stop(e)
+      this.dragging = true
+      this.dragstartX = e.pageX
+      this.dragstartY = e.pageY
+      this._startBearing = this._map.getBearing()
+      L.DomEvent.on(document as unknown as HTMLElement, 'mousemove', this._handleMouseDrag, this).on(
+        document as unknown as HTMLElement,
+        'mouseup',
+        this._handleMouseUp,
+        this
+      )
+    }
+    ControlRotate.prototype._handleMouseDrag = function (e: MouseEvent): void {
+      if (!this.dragging) return
+      const deltaX = e.clientX - this.dragstartX
+      this._map.setBearing((this._startBearing || 0) + deltaX)
+    }
+  }
+}
+
 onMounted(async () => {
   reachedWaypoints.value = {}
   missionItemsInVehicle.value = []
   missionSeqToMarkerSeq.value = {}
   vehicleStore.clearReachedMissionItems()
+
+  // leaflet-rotate patches the global L object via an IIFE that references window.L.
+  // Vite's ESM bundling doesn't expose L globally, so we set it manually and load
+  // the plugin via a script tag to ensure it executes in the global scope.
+  ;(window as unknown as Record<string, unknown>).L = L
+  await loadLeafletRotate()
 
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
@@ -614,7 +713,10 @@ onMounted(async () => {
   map.value = L.map(mapId.value, {
     layers: [initialBaseLayer, seamarks, marineProfile],
     attributionControl: false,
-  }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+    rotate: true,
+    touchRotate: true,
+    rotateControl: false,
+  } as L.MapOptions).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Listen for base layer changes to save user preference
   map.value.on('baselayerchange', (event: LayersControlEvent) => {
@@ -627,6 +729,12 @@ onMounted(async () => {
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)
+
+  // Create rotate control (managed alongside zoom/layer controls via showButtons)
+  rotateControl.value = (L.control as unknown as Record<string, CallableFunction>).rotate({
+    closeOnZeroBearing: false,
+    position: 'bottomright',
+  }) as L.Control
 
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
@@ -714,6 +822,14 @@ onMounted(async () => {
   map.value.on('contextmenu', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
   })
+
+  // Disable heading tracking when user manually rotates the map via the rotation control
+  map.value.on('rotate', () => {
+    if (!programmaticBearingChange && vehicleFollowMode.value === VehicleFollowMode.TRACK_HEADING) {
+      vehicleFollowMode.value = VehicleFollowMode.OFF
+    }
+  })
+
   // Enable auto update for target follower
   targetFollower.enableAutoUpdate()
 
@@ -739,7 +855,7 @@ onMounted(async () => {
   mapReady.value = true
 
   if (missionStore.followVehicleOnMap === true) {
-    targetFollower.follow(WhoToFollow.VEHICLE)
+    vehicleFollowMode.value = VehicleFollowMode.FOLLOW
   } else {
     targetFollower.unFollow()
   }
@@ -1074,6 +1190,96 @@ const vehiclePosition = computed(() =>
 // Calculate live vehicle heading
 const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw) : 0))
 
+/** Leaflet map extended with leaflet-rotate's setBearing method */
+// eslint-disable-next-line jsdoc/require-jsdoc
+type RotatableMap = Map & { setBearing: (bearing: number) => void }
+
+/** Modes for the vehicle follow button's three-state cycle */
+enum VehicleFollowMode {
+  OFF = 'off',
+  FOLLOW = 'follow',
+  TRACK_HEADING = 'trackHeading',
+}
+
+const vehicleFollowMode = ref<VehicleFollowMode>(VehicleFollowMode.OFF)
+
+/**
+ * Cycles the vehicle follow mode through: off → follow → track heading → off
+ */
+const cycleVehicleFollowMode = (): void => {
+  switch (vehicleFollowMode.value) {
+    case VehicleFollowMode.OFF:
+      vehicleFollowMode.value = VehicleFollowMode.FOLLOW
+      break
+    case VehicleFollowMode.FOLLOW:
+      vehicleFollowMode.value = VehicleFollowMode.TRACK_HEADING
+      break
+    case VehicleFollowMode.TRACK_HEADING:
+      vehicleFollowMode.value = VehicleFollowMode.OFF
+      break
+  }
+}
+
+const vehicleFollowIcon = computed(() => {
+  switch (vehicleFollowMode.value) {
+    case VehicleFollowMode.FOLLOW:
+      return 'mdi-crosshairs-gps'
+    case VehicleFollowMode.TRACK_HEADING:
+      return 'mdi-compass-outline'
+    default:
+      return 'mdi-airplane-marker'
+  }
+})
+
+const vehicleFollowColor = computed(() => {
+  switch (vehicleFollowMode.value) {
+    case VehicleFollowMode.FOLLOW:
+      return 'red'
+    case VehicleFollowMode.TRACK_HEADING:
+      return 'blue'
+    default:
+      return ''
+  }
+})
+
+const vehicleFollowTooltip = computed(() => {
+  if (!vehicleStore.isVehicleOnline) return 'Cannot follow vehicle (vehicle offline).'
+  if (!vehiclePosition.value) return 'Cannot follow vehicle (position undefined).'
+  switch (vehicleFollowMode.value) {
+    case VehicleFollowMode.FOLLOW:
+      return 'Following vehicle. Click to track heading.'
+    case VehicleFollowMode.TRACK_HEADING:
+      return 'Tracking vehicle heading. Click to stop.'
+    default:
+      return 'Click to switch between vehicle tracking modes.'
+  }
+})
+
+// Sync map bearing with vehicle heading in track-heading mode
+let programmaticBearingChange = false
+
+// React to vehicle follow mode changes and reset bearing when leaving track-heading
+watch(vehicleFollowMode, (mode, oldMode) => {
+  if (mode === VehicleFollowMode.FOLLOW || mode === VehicleFollowMode.TRACK_HEADING) {
+    targetFollower.follow(WhoToFollow.VEHICLE)
+  } else {
+    targetFollower.unFollow()
+  }
+
+  if (map.value && oldMode === VehicleFollowMode.TRACK_HEADING && mode !== VehicleFollowMode.TRACK_HEADING) {
+    programmaticBearingChange = true
+    ;(map.value as RotatableMap).setBearing(0)
+    programmaticBearingChange = false
+  }
+})
+
+watch(vehicleHeading, (heading) => {
+  if (!map.value || vehicleFollowMode.value !== VehicleFollowMode.TRACK_HEADING) return
+  programmaticBearingChange = true
+  ;(map.value as RotatableMap).setBearing(-heading)
+  programmaticBearingChange = false
+})
+
 // Calculate time since last vehicle heartbeat
 const timeAgoSeenText = computed(() => {
   const lastBeat = vehicleStore.lastHeartbeat
@@ -1154,6 +1360,10 @@ watch(followerTarget, (newTarget) => {
     missionStore.followVehicleOnMap = true
   } else {
     missionStore.followVehicleOnMap = false
+    // Reset vehicle follow mode when the follower stops (e.g. user pans the map)
+    if (vehicleFollowMode.value !== VehicleFollowMode.OFF) {
+      vehicleFollowMode.value = VehicleFollowMode.OFF
+    }
   }
 })
 
@@ -1169,10 +1379,11 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
     <p>Last seen: ${timeAgoSeenText.value}</p>
   `)
 
-  // Update the rotation
+  // When tracking heading, the map rotates so the icon should always point up (0°)
   const iconElement = vehicleMarker.value.getElement()?.querySelector('img')
   if (iconElement) {
-    iconElement.style.transform = `rotate(${vehicleHeading.value}deg)`
+    const iconAngle = vehicleFollowMode.value === VehicleFollowMode.TRACK_HEADING ? 0 : vehicleHeading.value
+    iconElement.style.transform = `rotate(${iconAngle}deg)`
   }
 })
 
@@ -1700,19 +1911,6 @@ const centerHomeButtonTooltipText = computed(() => {
   return 'Click once to center on home or twice to track it.'
 })
 
-const centerVehicleButtonTooltipText = computed(() => {
-  if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
-  }
-  if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
-  }
-  if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
-  }
-  return 'Click once to center on vehicle or twice to track it.'
-})
-
 // POI Marker Management Functions for Map Widget
 const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
   const poiIconHtml = `
@@ -1853,6 +2051,13 @@ watch(
 </script>
 
 <style scoped>
+.rotate-drag-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  cursor: grabbing;
+}
+
 .page-base {
   min-height: 100vh;
   display: flex;
@@ -1860,11 +2065,45 @@ watch(
   justify-content: center;
 }
 
+/* The clip wrapper is the visual boundary of the map widget.
+   The actual map element is made larger so Leaflet loads extra tiles
+   that fill in the corners when the map is rotated via leaflet-rotate. */
+.map-clip-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.map-buttons-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.map-buttons-overlay > :deep(*) {
+  pointer-events: auto;
+}
+
 .map {
   position: absolute;
   z-index: 0;
-  height: 100%;
-  width: 100%;
+  /* ~42% larger covers the worst-case diagonal at 45° rotation (sqrt(2) ≈ 1.414) */
+  width: 150%;
+  height: 150%;
+  top: -25%;
+  left: -25%;
+}
+
+/* Reposition Leaflet's control container to match the visible (clipped) area.
+   Since the map div is 150% of the widget, the visible region starts at 1/6 ≈ 16.67% from each edge. */
+:deep(.leaflet-control-container) {
+  position: absolute !important;
+  top: 16.67%;
+  left: 16.67%;
+  right: 16.67%;
+  bottom: 16.67%;
 }
 
 .waypoint-marker-icon {
@@ -2108,5 +2347,30 @@ watch(
 
 :deep(.leaflet-control-layers label) {
   color: var(--glass-color) !important;
+}
+
+/* Style the Leaflet rotate control — positioned bottom-right, above zoom */
+:deep(.leaflet-control-rotate.leaflet-bar) {
+  position: absolute !important;
+  right: 0;
+  bottom: calc(v-bind('bottomButtonsDisplacement') + 74px);
+  margin-right: 10px !important;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  color: var(--glass-color);
+  border: var(--glass-border);
+  border-radius: 2px;
+  z-index: 1002;
+}
+
+:deep(.leaflet-control-rotate .leaflet-control-rotate-toggle) {
+  background: transparent !important;
+  border: none;
+  color: var(--glass-color);
+}
+
+:deep(.leaflet-control-rotate .leaflet-control-rotate-arrow) {
+  filter: invert(1);
 }
 </style>

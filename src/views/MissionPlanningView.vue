@@ -1,6 +1,8 @@
 <template>
   <div class="mission-planning" :style="glassMenuCssVars">
-    <div id="planningMap" ref="planningMap" class="relative" />
+    <div class="map-clip-wrapper">
+      <div id="planningMap" ref="planningMap" class="planning-map" />
+    </div>
     <v-tooltip location="top" text="Generate waypoints">
       <template #activator="{ props }">
         <div
@@ -3108,11 +3110,59 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
   })
 }
 
+/**
+ * Loads the leaflet-rotate plugin by injecting its source into a script tag.
+ * This ensures the IIFE runs in the global scope where it can access window.L.
+ * Skips loading if the plugin is already available on L.control.
+ * @returns {Promise<void>} Resolves when the plugin has been loaded and executed
+ */
+const loadLeafletRotate = async (): Promise<void> => {
+  if ((L.control as unknown as Record<string, unknown>).rotate) return
+  const mod = await import('leaflet-rotate/dist/leaflet-rotate.js?raw')
+  const script = document.createElement('script')
+  script.textContent = (mod as unknown as Record<string, string>).default
+  document.head.appendChild(script)
+
+  const ControlRotate = (
+    L.Control as unknown as Record<
+      string,
+      {
+        /**
+         * Rotate control prototype
+         */
+        prototype: Record<string, CallableFunction>
+      }
+    >
+  ).Rotate
+  if (ControlRotate) {
+    ControlRotate.prototype._handleMouseDown = function (e: MouseEvent): void {
+      L.DomEvent.stop(e)
+      this.dragging = true
+      this.dragstartX = e.pageX
+      this.dragstartY = e.pageY
+      this._startBearing = this._map.getBearing()
+      L.DomEvent.on(document as unknown as HTMLElement, 'mousemove', this._handleMouseDrag, this).on(
+        document as unknown as HTMLElement,
+        'mouseup',
+        this._handleMouseUp,
+        this
+      )
+    }
+    ControlRotate.prototype._handleMouseDrag = function (e: MouseEvent): void {
+      if (!this.dragging) return
+      const deltaX = e.clientX - this.dragstartX
+      this._map.setBearing((this._startBearing || 0) + deltaX)
+    }
+  }
+}
+
 onMounted(async () => {
+  const rotationTileBuffer = 10
   const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© OpenStreetMap',
+    keepBuffer: rotationTileBuffer,
   })
   const esri = tileLayerOffline(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -3120,6 +3170,7 @@ onMounted(async () => {
       maxZoom: 23,
       maxNativeZoom: 19,
       attribution: '© Esri World Imagery',
+      keepBuffer: rotationTileBuffer,
     }
   )
 
@@ -3130,10 +3181,18 @@ onMounted(async () => {
 
   const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
 
-  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
-    mapCenter.value as LatLngTuple,
-    zoom.value
-  )
+  // leaflet-rotate patches the global L object via an IIFE that references window.L.
+  // Vite's ESM bundling doesn't expose L globally, so we set it manually and load
+  // the plugin via a script tag to ensure it executes in the global scope.
+  ;(window as unknown as Record<string, unknown>).L = L
+  await loadLeafletRotate()
+
+  planningMap.value = L.map('planningMap', {
+    layers: [initialBaseLayer],
+    rotate: true,
+    touchRotate: true,
+    rotateControl: false,
+  } as L.MapOptions).setView(mapCenter.value as LatLngTuple, zoom.value)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -3221,6 +3280,13 @@ onMounted(async () => {
 
   const layerControl = L.control.layers(baseMaps)
   planningMap.value.addControl(layerControl)
+
+  // Add rotate control
+  const rotateCtl = (L.control as unknown as Record<string, CallableFunction>).rotate({
+    closeOnZeroBearing: false,
+    position: 'bottomright',
+  }) as L.Control
+  planningMap.value.addControl(rotateCtl)
 
   // Initialize scale control (always show)
   createScaleControl()
@@ -3706,8 +3772,20 @@ watch(
 #planningMap {
   position: absolute;
   z-index: 0;
-  height: 100%;
-  width: 100%;
+  width: 150%;
+  height: 150%;
+  top: -25%;
+  left: -25%;
+}
+
+/* Reposition Leaflet's control container to match the visible (clipped) area.
+   Since the map div is 150% of the widget, the visible region starts at 1/6 ≈ 16.67% from each edge. */
+#planningMap .leaflet-control-container {
+  position: absolute !important;
+  top: 16.67%;
+  left: 16.67%;
+  right: 16.67%;
+  bottom: 16.67%;
 }
 .mission-planning {
   min-height: 100vh;
@@ -3715,6 +3793,17 @@ watch(
   align-items: center;
   justify-content: center;
 }
+
+/* The clip wrapper is the visual boundary of the map.
+   The actual map element is made larger so Leaflet loads extra tiles
+   that fill in the corners when the map is rotated via leaflet-rotate. */
+.map-clip-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
 .waypoint-marker-icon {
   background: none;
   border: none;
@@ -4068,5 +4157,30 @@ watch(
 
 :deep(.leaflet-control-layers label) {
   color: var(--glass-color) !important;
+}
+
+/* Style the Leaflet rotate control — positioned bottom-right, above zoom */
+:deep(.leaflet-control-rotate.leaflet-bar) {
+  position: absolute !important;
+  right: 0;
+  bottom: 125px;
+  margin-right: 10px !important;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  color: var(--glass-color);
+  border: var(--glass-border);
+  border-radius: 2px;
+  z-index: 1002;
+}
+
+:deep(.leaflet-control-rotate .leaflet-control-rotate-toggle) {
+  background: transparent !important;
+  border: none;
+  color: var(--glass-color);
+}
+
+:deep(.leaflet-control-rotate .leaflet-control-rotate-arrow) {
+  filter: invert(1);
 }
 </style>
