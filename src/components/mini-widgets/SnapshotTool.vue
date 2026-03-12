@@ -303,16 +303,14 @@ const areSelectedStreamsAreAvailable = (): boolean => {
   return false
 }
 
-onBeforeMount(async () => {
-  // Set initial widget options if they don't exist
-  if (Object.keys(miniWidget.value.options).length === 0) {
-    miniWidget.value.options = {
-      selectedStreams: [] as string[],
-      nameSelectedStreams: [] as string[],
-      captureWorkspace: false,
-      snapshotTriggerType: 'single' as 'single' | 'timed',
-    }
+onBeforeMount(() => {
+  const defaultOptions = {
+    selectedStreams: [] as string[],
+    nameSelectedStreams: [] as string[],
+    captureWorkspace: false,
+    snapshotTriggerType: 'single' as 'single' | 'timed',
   }
+  miniWidget.value.options = { ...defaultOptions, ...miniWidget.value.options }
 })
 
 onMounted(() => {
