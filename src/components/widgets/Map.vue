@@ -6,7 +6,11 @@
     :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
     :style="glassMenuCssVars"
   >
-    <div :id="mapId" ref="map" class="map">
+    <div class="map-clip-wrapper">
+      <div :id="mapId" ref="map" class="map" />
+    </div>
+    <!-- Map UI buttons live outside the oversized map div so they stay within the visible widget bounds -->
+    <div class="map-buttons-overlay">
       <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
         <template #activator="{ props: menuProps }">
           <v-tooltip location="top" text="Download tiles for offline use">
@@ -447,11 +451,15 @@ onBeforeMount(() => {
   targetFollower.enableAutoUpdate()
 })
 
+// Extra tile buffer to keep around the viewport so rotated views don't show white gaps
+const rotationTileBuffer = 10
+
 // Configure the available map tile providers
 const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 23,
   maxNativeZoom: 19,
   attribution: '© OpenStreetMap',
+  keepBuffer: rotationTileBuffer,
 })
 
 const esri = tileLayerOffline(
@@ -460,6 +468,7 @@ const esri = tileLayerOffline(
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© Esri World Imagery',
+    keepBuffer: rotationTileBuffer,
   }
 )
 
@@ -467,6 +476,7 @@ const esri = tileLayerOffline(
 const seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
   maxZoom: 18,
   attribution: '© OpenSeaMap contributors',
+  keepBuffer: rotationTileBuffer,
 })
 
 const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserver/gwc/service/wms', {
@@ -477,6 +487,7 @@ const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserve
   attribution: '© GEBCO, OpenSeaMap',
   tileSize: 256,
   maxZoom: 19,
+  keepBuffer: rotationTileBuffer,
 })
 
 const baseMaps = {
@@ -648,6 +659,38 @@ const loadLeafletRotate = async (): Promise<void> => {
   const script = document.createElement('script')
   script.textContent = (mod as unknown as Record<string, string>).default
   document.head.appendChild(script)
+
+  const ControlRotate = (
+    L.Control as unknown as Record<
+      string,
+      {
+        /**
+         * Rotate control prototype
+         */
+        prototype: Record<string, CallableFunction>
+      }
+    >
+  ).Rotate
+  if (ControlRotate) {
+    ControlRotate.prototype._handleMouseDown = function (e: MouseEvent): void {
+      L.DomEvent.stop(e)
+      this.dragging = true
+      this.dragstartX = e.pageX
+      this.dragstartY = e.pageY
+      this._startBearing = this._map.getBearing()
+      L.DomEvent.on(document as unknown as HTMLElement, 'mousemove', this._handleMouseDrag, this).on(
+        document as unknown as HTMLElement,
+        'mouseup',
+        this._handleMouseUp,
+        this
+      )
+    }
+    ControlRotate.prototype._handleMouseDrag = function (e: MouseEvent): void {
+      if (!this.dragging) return
+      const deltaX = e.clientX - this.dragstartX
+      this._map.setBearing((this._startBearing || 0) + deltaX)
+    }
+  }
 }
 
 onMounted(async () => {
@@ -2022,11 +2065,45 @@ watch(
   justify-content: center;
 }
 
+/* The clip wrapper is the visual boundary of the map widget.
+   The actual map element is made larger so Leaflet loads extra tiles
+   that fill in the corners when the map is rotated via leaflet-rotate. */
+.map-clip-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.map-buttons-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.map-buttons-overlay > :deep(*) {
+  pointer-events: auto;
+}
+
 .map {
   position: absolute;
   z-index: 0;
-  height: 100%;
-  width: 100%;
+  /* ~42% larger covers the worst-case diagonal at 45° rotation (sqrt(2) ≈ 1.414) */
+  width: 150%;
+  height: 150%;
+  top: -25%;
+  left: -25%;
+}
+
+/* Reposition Leaflet's control container to match the visible (clipped) area.
+   Since the map div is 150% of the widget, the visible region starts at 1/6 ≈ 16.67% from each edge. */
+:deep(.leaflet-control-container) {
+  position: absolute !important;
+  top: 16.67%;
+  left: 16.67%;
+  right: 16.67%;
+  bottom: 16.67%;
 }
 
 .waypoint-marker-icon {
