@@ -216,23 +216,28 @@ export const useSnapshotStore = defineStore('snapshot', () => {
       }
     }
 
-    if (streamNames.length > 0) {
-      for (const streamName of streamNames) {
-        try {
-          let stBlob = await captureStreamFrame(streamName)
-          const thumbBlob = await createThumbnail(stBlob, 200, 113)
-          const { width, height } = videoStore.getMediaStream(streamName)?.getVideoTracks()[0].getSettings() || {}
-          const stExif = buildExif({ latitude, longitude, yaw, pitch, roll, width, height })
-          stBlob = await maybeEmbedExif(stBlob, stExif)
-          const filename = snapshotFilename(streamName.replace(/[\\/]/g, '_') || 'workspace')
-          const thumbFilename = snapshotFilename(streamName.replace(/[\\/]/g, '_') || 'workspace') + '-thumb'
+    const errors: string[] = []
 
-          await snapshotStorage.setItem(filename, stBlob)
-          await snapshotThumbStorage.setItem(thumbFilename, thumbBlob)
-        } catch (err) {
-          throw err as Error
-        }
+    for (const streamName of streamNames) {
+      try {
+        let stBlob = await captureStreamFrame(streamName)
+        const thumbBlob = await createThumbnail(stBlob, 200, 113)
+        const { width, height } = videoStore.getMediaStream(streamName)?.getVideoTracks()[0].getSettings() || {}
+        const stExif = buildExif({ latitude, longitude, yaw, pitch, roll, width, height })
+        stBlob = await maybeEmbedExif(stBlob, stExif)
+        const filename = snapshotFilename(streamName.replace(/[\\/]/g, '_') || 'workspace')
+        const thumbFilename = snapshotFilename(streamName.replace(/[\\/]/g, '_') || 'workspace') + '-thumb'
+
+        await snapshotStorage.setItem(filename, stBlob)
+        await snapshotThumbStorage.setItem(thumbFilename, thumbBlob)
+      } catch (err) {
+        console.error(`Failed to capture snapshot for stream '${streamName}':`, err)
+        errors.push(streamName)
       }
+    }
+
+    if (errors.length > 0) {
+      throw new Error(`Snapshot capture failed for streams: ${errors.join(', ')}`)
     }
   }
 
