@@ -135,10 +135,9 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
 import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -168,7 +167,12 @@ const snapshotTypeIcon = ref<'mdi-video-image' | 'mdi-timer-outline'>(
   snapshotTriggerType.value === 'timed' ? 'mdi-timer-outline' : 'mdi-video-image'
 )
 const isSnapshotMenuOpen = ref<boolean>(false)
-const timedSnapshotInterval = useBlueOsStorage('cockpit-snapshot-timed-interval', 5)
+const timedSnapshotInterval = computed({
+  get: () => miniWidget.value.options.timedSnapshotInterval ?? 5,
+  set: (val: number) => {
+    miniWidget.value.options.timedSnapshotInterval = val
+  },
+})
 const isTakingTimedSnapshot = ref<boolean>(false)
 const timerProgress = ref<number>(50)
 
@@ -309,6 +313,7 @@ onBeforeMount(() => {
     nameSelectedStreams: [] as string[],
     captureWorkspace: false,
     snapshotTriggerType: 'single' as 'single' | 'timed',
+    timedSnapshotInterval: 5,
   }
   miniWidget.value.options = { ...defaultOptions, ...miniWidget.value.options }
 })
