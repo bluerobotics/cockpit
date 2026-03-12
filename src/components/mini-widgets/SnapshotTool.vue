@@ -203,13 +203,12 @@ const flashEffect = async (): Promise<void> => {
 
 const captureSnapshot = async (): Promise<void> => {
   await snapshotStore.takeSnapshot(
-    miniWidget.value.options.nameSelectedStreams ?? [],
+    miniWidget.value.options.selectedStreams ?? [],
     miniWidget.value.options.captureWorkspace
   )
 }
 
 const handleTakeSnapshot = async (): Promise<void> => {
-  if (!areSelectedStreamsAreAvailable()) return
   isSnapshotMenuOpen.value = false
 
   try {
@@ -290,30 +289,9 @@ watch(isTakingTimedSnapshot, (newValue) => {
   timerProgress.value = 0
 })
 
-const areSelectedStreamsAreAvailable = (): boolean => {
-  const streams = miniWidget.value.options.selectedStreams ?? []
-
-  if (streams.length === 0) {
-    miniWidget.value.options.nameSelectedStreams = []
-    return true
-  }
-
-  if (streams.every((stream: string) => videoStore.namesAvailableStreams.includes(stream))) {
-    miniWidget.value.options.nameSelectedStreams = streams
-    return true
-  }
-
-  showDialog({
-    message: 'Selected streams are not available anymore. Please check the currently available options.',
-    variant: 'warning',
-  })
-  return false
-}
-
 onBeforeMount(() => {
   const defaultOptions = {
     selectedStreams: [] as string[],
-    nameSelectedStreams: [] as string[],
     captureWorkspace: false,
     snapshotTriggerType: 'single' as 'single' | 'timed',
     timedSnapshotInterval: 5,
