@@ -163,8 +163,10 @@ const miniWidget = toRefs(props).miniWidget
 const isElectronEnv = isElectron()
 
 const recorderWidget = ref()
-const snapshotTypeIcon = ref<'mdi-video-image' | 'mdi-timer-outline'>('mdi-video-image')
-const snapshotTriggerType = ref<'single' | 'timed'>('single')
+const snapshotTriggerType = ref<'single' | 'timed'>(miniWidget.value.options.snapshotTriggerType ?? 'single')
+const snapshotTypeIcon = ref<'mdi-video-image' | 'mdi-timer-outline'>(
+  snapshotTriggerType.value === 'timed' ? 'mdi-timer-outline' : 'mdi-video-image'
+)
 const isSnapshotMenuOpen = ref<boolean>(false)
 const timedSnapshotInterval = useBlueOsStorage('cockpit-snapshot-timed-interval', 5)
 const isTakingTimedSnapshot = ref<boolean>(false)
@@ -231,13 +233,9 @@ const handleOpenSnapshotLibrary = (): void => {
 }
 
 const handleSelectSnapshotTriggerType = (type: 'single' | 'timed'): void => {
-  if (type === 'single') {
-    snapshotTriggerType.value = 'single'
-    snapshotTypeIcon.value = 'mdi-video-image'
-  } else if (type === 'timed') {
-    snapshotTriggerType.value = 'timed'
-    snapshotTypeIcon.value = 'mdi-timer-outline'
-  }
+  snapshotTriggerType.value = type
+  snapshotTypeIcon.value = type === 'timed' ? 'mdi-timer-outline' : 'mdi-video-image'
+  miniWidget.value.options.snapshotTriggerType = type
   isSnapshotMenuOpen.value = false
 }
 
@@ -312,6 +310,7 @@ onBeforeMount(async () => {
       selectedStreams: [] as string[],
       nameSelectedStreams: [] as string[],
       captureWorkspace: false,
+      snapshotTriggerType: 'single' as 'single' | 'timed',
     }
   }
 })
