@@ -363,6 +363,14 @@ export interface ZipExtractionResult {
    */
   assFilePath?: string
   /**
+   * Path to extracted telemetry .json file (if exists)
+   */
+  jsonFilePath?: string
+  /**
+   * Path to extracted telemetry .csv file (if exists)
+   */
+  csvFilePath?: string
+  /**
    * Recording hash extracted from chunk filenames
    */
   hash: string

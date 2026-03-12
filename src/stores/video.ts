@@ -37,7 +37,13 @@ import {
   VideoExtensionContainer,
   VideoStreamCorrespondency,
 } from '@/types/video'
-import { videoFilename, videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
+import {
+  videoFilename,
+  videoSubtitlesFilename,
+  videoTelemetryCsvFilename,
+  videoTelemetryJsonFilename,
+  videoThumbnailFilename,
+} from '@/utils/video'
 
 import { useAlertStore } from './alert'
 const { openSnackbar } = useSnackbar()
@@ -346,7 +352,7 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
-   * Generate .ass telemetry overlay file for a video recording
+   * Generate telemetry files (.ass, .json, .csv) for a video recording
    * @param {string} recordingHash - The hash of the recording
    */
   const generateTelemetryOverlay = async (recordingHash: string): Promise<void> => {
@@ -360,16 +366,25 @@ export const useVideoStore = defineStore('video', () => {
       const telemetryLog = await datalogger.generateLog(recordingData.dateStart!, recordingData.dateFinish!)
 
       if (telemetryLog !== undefined) {
+        // Generate and save .ass overlay file
         const assLog = datalogger.toAssOverlay(
           telemetryLog,
           recordingData.vWidth!,
           recordingData.vHeight!,
           recordingData.dateStart!.getTime()
         )
-        const logBlob = new Blob([assLog], { type: 'text/plain' })
+        const assBlob = new Blob([assLog], { type: 'text/plain' })
+        await videoStorage.setItem(videoSubtitlesFilename(recordingData.fileName), assBlob)
 
-        // Save the .ass file
-        await videoStorage.setItem(videoSubtitlesFilename(recordingData.fileName), logBlob)
+        // Generate and save .json data file
+        const jsonLog = datalogger.toJson(telemetryLog)
+        const jsonBlob = new Blob([jsonLog], { type: 'application/json' })
+        await videoStorage.setItem(videoTelemetryJsonFilename(recordingData.fileName), jsonBlob)
+
+        // Generate and save .csv data file
+        const csvLog = datalogger.toCsv(telemetryLog)
+        const csvBlob = new Blob([csvLog], { type: 'text/csv' })
+        await videoStorage.setItem(videoTelemetryCsvFilename(recordingData.fileName), csvBlob)
       }
     } catch (error) {
       throw new Error(`Failed to generate telemetry for recording '${recordingHash}': ${error}`)

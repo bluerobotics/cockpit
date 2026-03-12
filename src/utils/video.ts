@@ -41,3 +41,23 @@ export const videoThumbnailFilename = (videoFileName: string): string => {
 export const videoSubtitlesFilename = (videoFileName: string): string => {
   return `${videoFilenameWithoutExtension(videoFileName)}.ass`
 }
+
+/**
+ * Returns the filename for the JSON telemetry data of a video.
+ * Can be used with complete paths or just the filename. It will just replace the extension with .json.
+ * @param {string} videoFileName - The filename of the video, with or without the extension.
+ * @returns {string} The filename for the JSON telemetry data of the video.
+ */
+export const videoTelemetryJsonFilename = (videoFileName: string): string => {
+  return `${videoFilenameWithoutExtension(videoFileName)}.json`
+}
+
+/**
+ * Returns the filename for the CSV telemetry data of a video.
+ * Can be used with complete paths or just the filename. It will just replace the extension with .csv.
+ * @param {string} videoFileName - The filename of the video, with or without the extension.
+ * @returns {string} The filename for the CSV telemetry data of the video.
+ */
+export const videoTelemetryCsvFilename = (videoFileName: string): string => {
+  return `${videoFilenameWithoutExtension(videoFileName)}.csv`
+}

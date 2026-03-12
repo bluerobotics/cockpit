@@ -1,6 +1,6 @@
 import { isElectron } from '@/libs/utils'
 import type { VideoChunkQueueItem, ZipExtractionResult } from '@/types/video'
-import { videoSubtitlesFilename } from '@/utils/video'
+import { videoSubtitlesFilename, videoTelemetryCsvFilename, videoTelemetryJsonFilename } from '@/utils/video'
 
 /**
  * Error class for LiveVideoProcessor initialization errors
@@ -237,7 +237,7 @@ export class LiveVideoProcessor {
 
       // Extract ZIP and get chunk information
       const extractionResult: ZipExtractionResult = await window.electronAPI.extractVideoChunksZip(zipFilePath)
-      const { chunkPaths, assFilePath, hash, fileName, tempDir } = extractionResult
+      const { chunkPaths, assFilePath, jsonFilePath, csvFilePath, hash, fileName, tempDir } = extractionResult
 
       console.log(`Extracted ${chunkPaths.length} chunks from ZIP file`)
       onProgress?.(30, 'Starting video processing...')
@@ -276,10 +276,18 @@ export class LiveVideoProcessor {
       // Finalize the streaming process
       await window.electronAPI.finalizeVideoRecording(processId)
 
-      // Copy telemetry file if it exists (using the full output path)
-      if (assFilePath) {
-        onProgress?.(95, 'Copying telemetry file...')
-        await window.electronAPI.copyTelemetryFile(assFilePath, videoSubtitlesFilename(outputPath))
+      // Copy telemetry files if they exist (using the full output path)
+      if (assFilePath || jsonFilePath || csvFilePath) {
+        onProgress?.(95, 'Copying telemetry files...')
+        if (assFilePath) {
+          await window.electronAPI.copyTelemetryFile(assFilePath, videoSubtitlesFilename(outputPath))
+        }
+        if (jsonFilePath) {
+          await window.electronAPI.copyTelemetryFile(jsonFilePath, videoTelemetryJsonFilename(outputPath))
+        }
+        if (csvFilePath) {
+          await window.electronAPI.copyTelemetryFile(csvFilePath, videoTelemetryCsvFilename(outputPath))
+        }
       }
 
       // Clean up temporary extraction directory
