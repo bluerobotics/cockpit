@@ -106,6 +106,15 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     const mediaStream = videoStore.getMediaStream(streamName)
     if (!mediaStream) return Promise.reject(new Error(`Media stream not found for stream name: ${streamName}`))
 
+    const track = mediaStream.getVideoTracks()[0]
+    if (!track) return Promise.reject(new Error(`No video track found for stream '${streamName}'`))
+    if (track.readyState === 'ended') {
+      return Promise.reject(new Error(`Video track for stream '${streamName}' has ended`))
+    }
+    if (track.muted) {
+      return Promise.reject(new Error(`Video track for stream '${streamName}' is muted (no data flowing)`))
+    }
+
     const video = document.createElement('video')
     video.srcObject = mediaStream
     video.playsInline = true
@@ -114,7 +123,6 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     document.body.appendChild(video)
 
     await video.play()
-    const track = mediaStream.getVideoTracks()[0]
     const { width = video.videoWidth, height = video.videoHeight } = track.getSettings()
     video.width = width
     video.height = height
