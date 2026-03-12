@@ -72,6 +72,7 @@ export enum WidgetType {
   URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',
   VirtualHorizon = 'VirtualHorizon',
+  WebRTCStats = 'WebRTCStats',
 }
 
 /**
@@ -830,11 +831,12 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
   [WidgetType.ImageView]: true,
   [WidgetType.Map]: true,
   [WidgetType.MiniWidgetsBar]: false,
+  [WidgetType.MissionControlPanel]: false,
   [WidgetType.Plotter]: true,
   [WidgetType.URLVideoPlayer]: true,
   [WidgetType.VideoPlayer]: true,
   [WidgetType.VirtualHorizon]: false,
-  [WidgetType.MissionControlPanel]: false,
+  [WidgetType.WebRTCStats]: true,
 }
 
 export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
@@ -872,11 +874,12 @@ export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
   [WidgetType.ImageView]: false,
   [WidgetType.Map]: true,
   [WidgetType.MiniWidgetsBar]: false,
+  [WidgetType.MissionControlPanel]: false,
   [WidgetType.Plotter]: false,
   [WidgetType.URLVideoPlayer]: false,
   [WidgetType.VideoPlayer]: false,
   [WidgetType.VirtualHorizon]: false,
-  [WidgetType.MissionControlPanel]: false,
+  [WidgetType.WebRTCStats]: false,
 }
 
 /**
@@ -897,6 +900,7 @@ export const widgetDefaultSizes: Partial<Record<WidgetType, SizeRect2D>> = {
   [WidgetType.URLVideoPlayer]: { width: 0.5, height: 0.4 },
   [WidgetType.VideoPlayer]: { width: 1, height: 1 },
   [WidgetType.VirtualHorizon]: { width: 0.062, height: 0.118 },
+  [WidgetType.WebRTCStats]: { width: 0.35, height: 0.5 },
 }
 
 export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
