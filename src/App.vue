@@ -129,6 +129,7 @@
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
+  <BlankViewDialog />
   <ActionDiscoveryModal auto-check-on-mount />
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
@@ -152,6 +153,7 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 
 
 import ActionDiscoveryModal from '@/components/ActionDiscoveryModal.vue'
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
+import BlankViewDialog from '@/components/BlankViewDialog.vue'
 import GlassModal from '@/components/GlassModal.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
