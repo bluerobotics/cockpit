@@ -53,6 +53,7 @@ export const useMissionStore = defineStore('mission', () => {
   )
   const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
   const mapClearMapDrawing = ref<(() => void) | null>(null)
+  const homeMarkerPosition = ref<WaypointCoordinates | undefined>(undefined)
 
   const { showDialog } = useInteractionDialog()
 
@@ -469,5 +470,6 @@ export const useMissionStore = defineStore('mission', () => {
     vehiclePositionHistory,
     isVehiclePositionHistoryPersistent,
     clearVehicleHistory,
+    homeMarkerPosition,
   }
 })
