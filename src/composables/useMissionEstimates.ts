@@ -7,6 +7,7 @@ import {
   computeMissionDurationSecondsFromLegs,
   polygonAreaSquareMeters,
 } from '@/libs/mission/general-estimates'
+import { formatArea, formatDistance } from '@/libs/units'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { MissionEstimatesByVehicleConfig, MissionLeg, VehicleMissionEstimate } from '@/types/mission'
@@ -123,7 +124,7 @@ export const useMissionEstimates = (): {
         const isDuplicate = distanceToClose === 0
         const ring = (isDuplicate ? wps.slice(0, -1) : wps).map((w) => w.coordinates as [number, number])
         const area = polygonAreaSquareMeters(ring)
-        return formatArea(area)
+        return formatAreaLocal(area)
       }
     }
     return '—'
@@ -135,9 +136,7 @@ export const useMissionEstimates = (): {
   })
 
   const formatMetersShort = (distance: number): string => {
-    if (!isFinite(distance) || distance <= 0) return '—'
-    if (distance < 1000) return `${distance.toFixed(0)} m`
-    return `${(distance / 1000).toFixed(2)} km`
+    return formatDistance(distance, missionStore.userUnitSystem)
   }
 
   const formatSeconds = (s: number): string => {
@@ -152,15 +151,13 @@ export const useMissionEstimates = (): {
 
   const formatWh = (energy: number): string => (energy <= 0 || !isFinite(energy) ? '—' : `${energy.toFixed(2)} Wh`)
 
-  const formatArea = (area: number): string => {
-    if (area <= 0 || !isFinite(area)) return '—'
-    if (area < 1e6) return `${area.toFixed(0)} m²`
-    return `${(area / 1e6).toFixed(3)} km²`
+  const formatAreaLocal = (area: number): string => {
+    return formatArea(area, missionStore.userUnitSystem)
   }
 
   // Basic mission stats - no vehicle-specific estimates
   const totalMissionLength = computed(() => formatMetersShort(missionLengthMeters.value))
-  const totalSurveyCoverage = computed(() => formatArea(totalSurveyCoverageSquareMeters.value))
+  const totalSurveyCoverage = computed(() => formatAreaLocal(totalSurveyCoverageSquareMeters.value))
 
   // Mission duration (s), with vehicle-specific estimates if available
   const totalMissionDuration = computed(() => {
@@ -184,7 +181,7 @@ export const useMissionEstimates = (): {
     totalMissionEnergy,
     missionLegsWithSpeed,
     formatMetersShort,
-    formatArea,
+    formatArea: formatAreaLocal,
     formatSeconds,
     formatWh,
   }

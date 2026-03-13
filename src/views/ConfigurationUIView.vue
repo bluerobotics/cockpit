@@ -147,8 +147,9 @@
 <script setup lang="ts">
 import { defaultUIGlassColor } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import { DistanceDisplayUnit, unitPrettyName } from '@/libs/units'
+import { unitPrettyName } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { DistanceDisplayUnit } from '@/types/units'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 

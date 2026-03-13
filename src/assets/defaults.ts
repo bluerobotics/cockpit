@@ -1,8 +1,9 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { OverlayGrid } from '@/libs/sensors-logging'
-import { DistanceDisplayUnit } from '@/libs/units'
 import { BatteryLevel, BatteryLevelThresholds } from '@/types/general'
 import { JoystickCalibration } from '@/types/joystick'
+import { MeasurementOptions } from '@/types/mission'
+import { DistanceDisplayUnit } from '@/types/units'
 import {
   type MiniWidgetProfile,
   type Profile,
@@ -955,4 +956,16 @@ export const defaultBatteryLevelThresholds: BatteryLevelThresholds = {
   medium: 15.2,
   low: 14.0,
   critical: 12.8,
+}
+
+// Default measurement tool options
+export const defaultMeasurementOptions: MeasurementOptions = {
+  unitSystem: 'metric',
+  showDistanceTags: true,
+  showAngleTags: true,
+  tagSize: 10,
+  distanceTagColor: { r: 25, g: 25, b: 25, a: 1 },
+  angleTagColor: { r: 18, g: 34, b: 42, a: 1 },
+  lineColor: { r: 176, g: 224, b: 230, a: 0.8 },
+  opacity: 1,
 }

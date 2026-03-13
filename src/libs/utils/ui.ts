@@ -2,6 +2,8 @@
  * UI utilities for consistent styling across components
  */
 
+import { RgbaColor } from '@/types/user-interface'
+
 /**
  * Connection status type for WebSocket and other connections
  */
@@ -45,3 +47,10 @@ export const getLoadingStatusColor = (status: string): string => {
 export const getLoadingStatusIcon = (status: string): string => {
   return LoadingStatusIcons[status as keyof typeof LoadingStatusIcons] ?? LoadingStatusIcons.unknown
 }
+
+/**
+ * Converts an RgbaColor object to a CSS rgba() string
+ * @param {RgbaColor} c - The RGBA color object
+ * @returns {string} CSS rgba string
+ */
+export const rgbaToCss = (c: RgbaColor): string => `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`

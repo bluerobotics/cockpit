@@ -4,6 +4,8 @@ import * as L from 'leaflet'
 
 import type { WaypointCoordinates } from '@/types/mission'
 
+import { bearingBetween } from './mission/general-estimates'
+
 /**
  * Default target follower update interval in milliseconds.
  * @constant {number}
@@ -413,4 +415,64 @@ export const createGridOverlay = (map: L.Map, gridLayer?: L.LayerGroup): L.Layer
 
   newGridLayer.addTo(map)
   return newGridLayer
+}
+
+const compassDirections: [string, string][] = [
+  ['N', 'north'],
+  ['NNE', 'north-northeast'],
+  ['NE', 'northeast'],
+  ['ENE', 'east-northeast'],
+  ['E', 'east'],
+  ['ESE', 'east-southeast'],
+  ['SE', 'southeast'],
+  ['SSE', 'south-southeast'],
+  ['S', 'south'],
+  ['SSW', 'south-southwest'],
+  ['SW', 'southwest'],
+  ['WSW', 'west-southwest'],
+  ['W', 'west'],
+  ['WNW', 'west-northwest'],
+  ['NW', 'northwest'],
+  ['NNW', 'north-northwest'],
+]
+
+/**
+ * Snaps an angle to the nearest 22.5 degree increment to match wind rose headings
+ * @param {number} angle - Angle in degrees (0-360)
+ * @returns {number} Snapped angle in degrees
+ */
+export const snapAngle = (angle: number): number => {
+  const normalizedAngle = ((angle % 360) + 360) % 360
+  const step = 22.5
+  return (Math.round(normalizedAngle / step) * step) % 360
+}
+
+/**
+ * Converts bearing in degrees to compass direction using nearest 22.5 degree sector
+ * @param {number} bearing - Bearing in degrees (0-360)
+ * @param {boolean} useFullName - Whether to use full names (e.g., "south-southwest") or abbreviations (e.g., "SSW")
+ * @returns {string} Compass direction string
+ */
+export const bearingToCompassDirection = (bearing: number, useFullName: boolean): string => {
+  const index = Math.round((((bearing % 360) + 360) % 360) / 22.5) % 16
+  return useFullName ? compassDirections[index][1] : compassDirections[index][0]
+}
+
+/**
+ * Calculates a snapped position based on the last point and cursor position,
+ * constraining the bearing to the nearest 22.5 degree increment
+ * @param {L.LatLng} lastPoint - The last measurement point
+ * @param {L.LatLng} cursorLatlng - The cursor position
+ * @returns {L.LatLng} Snapped LatLng position
+ */
+export const calculateSnappedPosition = (lastPoint: L.LatLng, cursorLatlng: L.LatLng): L.LatLng => {
+  const bearing = bearingBetween([lastPoint.lat, lastPoint.lng], [cursorLatlng.lat, cursorLatlng.lng])
+  const snappedBearing = snapAngle(bearing)
+  const distance = lastPoint.distanceTo(cursorLatlng)
+
+  const rad = (snappedBearing * Math.PI) / 180
+  const latOffset = (distance / 111320) * Math.cos(rad)
+  const lngOffset = (distance / (111320 * Math.cos((lastPoint.lat * Math.PI) / 180))) * Math.sin(rad)
+
+  return L.latLng(lastPoint.lat + latOffset, lastPoint.lng + lngOffset)
 }

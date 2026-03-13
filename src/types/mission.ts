@@ -1,6 +1,8 @@
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { BatteryChemistry } from '@/libs/vehicle/types'
 
+import { RgbaColor } from './user-interface'
+
 /**
  * Possible types for mission commands.
  */
@@ -466,3 +468,41 @@ export type IconDimensions = {
 }
 
 export type MarkerSizes = 'xs' | 'sm' | 'md'
+
+/**
+ * Measurement tool options
+ */
+export interface MeasurementOptions {
+  /**
+   * Unit system for displaying distances and areas
+   */
+  unitSystem: 'imperial' | 'metric' | 'nautical'
+  /**
+   * Whether to show distance tags on measurement lines
+   */
+  showDistanceTags: boolean
+  /**
+   * Whether to show angle tags on measurement vertices
+   */
+  showAngleTags: boolean
+  /**
+   * Size of the tags in pixels
+   */
+  tagSize: number
+  /**
+   * Background color for distance tags
+   */
+  distanceTagColor: RgbaColor
+  /**
+   * Background color for angle tags
+   */
+  angleTagColor: RgbaColor
+  /**
+   * Color for measurement lines
+   */
+  lineColor: RgbaColor
+  /**
+   * Global opacity multiplier for all measurement elements (0 to 1)
+   */
+  opacity: number
+}
