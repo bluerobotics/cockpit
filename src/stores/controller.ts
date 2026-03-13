@@ -7,6 +7,7 @@ import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { defaultJoystickCalibration } from '@/assets/defaults'
 import {
   availableGamepadToCockpitMaps,
+  blankMapping,
   cockpitStandardToProtocols,
   defaultProtocolMappingVehicleCorrespondency,
 } from '@/assets/joystick-profiles'
@@ -60,7 +61,7 @@ export const useControllerStore = defineStore('controller', () => {
   const mainVehicleStore = useMainVehicleStore()
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
+  const protocolMappings = useBlueOsStorage(protocolMappingsKey, [blankMapping])
   const protocolMappingIndex = useBlueOsStorage(protocolMappingIndexKey, 0)
   const userCustomCockpitStdMappings = useBlueOsStorage<{ [key in JoystickModel]?: GamepadToCockpitStdMapping }>(
     cockpitStdMappingsKey,
