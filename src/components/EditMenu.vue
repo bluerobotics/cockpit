@@ -955,7 +955,7 @@ const confirmDelete = (): void => {
       {
         text: 'delete',
         action: () => {
-          store.deleteProfile(store.currentProfile)
+          store.deleteProfile(store.currentProfile.hash)
           closeDialog()
         },
       },

@@ -458,16 +458,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     addView()
   }
 
-  const isUserProfile = (profile: Profile): boolean => {
-    return savedProfiles.value.map((p) => p.hash).includes(profile.hash)
-  }
-
   /**
-   * Deletes a profile from the store
-   * @param { Profile } profile - Profile
+   * Deletes a profile from the store by hash.
+   * If the currently active profile is deleted, switches to the first remaining profile.
+   * @param {string} profileHash - Hash of the profile to delete
    */
-  function deleteProfile(profile: Profile): void {
-    if (!isUserProfile(profile)) {
+  function deleteProfile(profileHash: string): void {
+    const profileIndex = savedProfiles.value.findIndex((p) => p.hash === profileHash)
+    if (profileIndex === -1) {
       showDialog({ variant: 'error', message: 'Could not find profile.', timer: 3000 })
       return
     }
@@ -481,12 +479,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return
     }
 
-    const currentProfileHash = currentProfile.value.hash
-    const savedProfileIndex = savedProfiles.value.findIndex((p) => p.hash === profile.hash)
-    currentProfileIndex.value = 0
-    savedProfiles.value.splice(savedProfileIndex, 1)
-    if (currentProfileHash !== profile.hash) {
-      currentProfileIndex.value = savedProfiles.value.findIndex((p) => p.hash === currentProfileHash)
+    const wasActive = currentProfile.value.hash === profileHash
+    savedProfiles.value.splice(profileIndex, 1)
+
+    if (wasActive) {
+      currentProfileIndex.value = 0
+    } else if (currentProfileIndex.value >= savedProfiles.value.length) {
+      currentProfileIndex.value = 0
     }
   }
 
