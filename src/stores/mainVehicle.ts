@@ -464,7 +464,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     if (mainVehicle.value.firmware() !== Vehicle.Firmware.ArduPilot) {
       throw new Error('Home waypoint retrieval is only supported for ArduPilot vehicles.')
     }
-    return await mainVehicle.value.fetchHomeWaypoint()
+    const homeWaypoint = await mainVehicle.value.fetchHomeWaypoint()
+    missionStore.homeMarkerPosition = homeWaypoint.coordinates
+    return homeWaypoint
   }
 
   /**
@@ -478,6 +480,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to set home waypoint.')
     }
     await mainVehicle.value.setHomeWaypoint(coordinate, height)
+    missionStore.homeMarkerPosition = coordinate
   }
 
   /**

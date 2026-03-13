@@ -2,7 +2,7 @@
   <div class="main">
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
     <!-- POI icons container -->
-    <div v-if="widget.options.poi?.showPoiOnHUD" ref="poiIconsContainer">
+    <div v-if="widget.options.poi?.showPoiOnHUD || widget.options.showHomeOnHUD" ref="poiIconsContainer">
       <div
         v-for="poiMarker in poiMarkers"
         :key="poiMarker.poiId"
@@ -29,7 +29,9 @@
       <!-- POI distance box for onHudSide mode -->
       <div
         v-if="
-          widget.options.poi?.showPoiOnHUD && widget.options.poi?.showDistances === 'onHudSide' && highlightedPoiMarker
+          (widget.options.poi?.showPoiOnHUD || widget.options.showHomeOnHUD) &&
+          widget.options.poi?.showDistances === 'onHudSide' &&
+          highlightedPoiMarker
         "
         ref="poiSideDistanceBox"
         class="poi-side-distance-box"
@@ -76,6 +78,16 @@
         <div class="flex w-full justify-between">
           <v-switch
             class="ma-1 w-[220px]"
+            label="Show home on HUD"
+            :color="widget.options.showHomeOnHUD ? 'white' : undefined"
+            :model-value="widget.options.showHomeOnHUD"
+            hide-details
+            @change="widget.options.showHomeOnHUD = !widget.options.showHomeOnHUD"
+          />
+        </div>
+        <div class="flex w-full justify-between">
+          <v-switch
+            class="ma-1 w-[220px]"
             label="Show POIs on HUD"
             :color="widget.options.poi?.showPoiOnHUD ? 'white' : undefined"
             :model-value="widget.options.poi?.showPoiOnHUD ?? true"
@@ -85,7 +97,7 @@
             "
           />
           <v-select
-            v-if="widget.options.poi?.showPoiOnHUD"
+            v-if="widget.options.poi?.showPoiOnHUD || widget.options.showHomeOnHUD"
             v-model="widget.options.poi.showDistances"
             :items="[
               { title: 'All markers', value: 'all' },
@@ -207,6 +219,7 @@ onBeforeMount(() => {
     showYawValue: true,
     hudColor: colorSwatches.value[0][0],
     useNegativeRange: false,
+    showHomeOnHUD: true,
     poi: {
       showPoiOnHUD: true,
       showDistances: 'onHudSide',
@@ -292,6 +305,9 @@ const poiData = computed(() => {
     }
   })
 })
+
+const homeCoordinates = computed(() => missionStore.homeMarkerPosition)
+const homeMarkerId = '__home__'
 
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
@@ -429,7 +445,11 @@ const renderCanvas = (): void => {
 }
 
 const updatePoiMarkers = (): void => {
-  if (!widget.value.options.poi?.showPoiOnHUD || !store.coordinates.latitude || !store.coordinates.longitude) {
+  if (
+    (!widget.value.options.poi?.showPoiOnHUD && !widget.value.options.showHomeOnHUD) ||
+    !store.coordinates.latitude ||
+    !store.coordinates.longitude
+  ) {
     poiMarkers.value = []
     return
   }
@@ -440,69 +460,139 @@ const updatePoiMarkers = (): void => {
   const markers: PoiMarker[] = []
   const onHeading = new Set<string>()
 
-  poiData.value.forEach(({ poi, distance, bearing }) => {
+  if (widget.value.options.poi?.showPoiOnHUD) {
+    poiData.value.forEach(({ poi, distance, bearing }) => {
+      let relativeBearing = bearing - yaw.value
+      if (relativeBearing < -180) relativeBearing += 360
+      if (relativeBearing > 180) relativeBearing -= 360
+
+      if (Math.abs(relativeBearing) > 90) return
+
+      if (isMarkerOnHeading(bearing, yaw.value)) {
+        onHeading.add(poi.id)
+      }
+
+      const x = halfWidth + ((2 * halfWidth) / Math.PI) * Math.sin(radians(relativeBearing))
+      const isReachedNow = distance <= 1
+      // How long the POI will stay marked as reached (blinking animation)
+      if (isReachedNow) {
+        reachedMarkers.value.set(poi.id, {
+          poiId: poi.id,
+          reachedAt: now,
+          expiresAt: now + 20000,
+        })
+      }
+
+      const reachedData = reachedMarkers.value.get(poi.id)
+      const isReached = isReachedNow || (reachedData !== undefined && now < reachedData.expiresAt)
+      // How far from a POI to mark as reached (2 meters)
+      const distanceText = isReached
+        ? 'Reached'
+        : distance >= 2000
+        ? `${(distance / 1000).toFixed(1)}km`
+        : `${Math.round(distance)}m`
+
+      const mode = widget.value.options.poi?.showDistances
+      const isHighlighted = highlightedMarkers.value.has(poi.id)
+      const isOnHeadingNow = onHeading.has(poi.id)
+      let distanceLabelOpacity: string | undefined
+      let distanceLabelZIndex: string | undefined
+      let zIndex: string | undefined
+
+      if (mode === 'highlightedMarker') {
+        const angularDist = Math.abs(relativeBearing)
+        const opacity = angularDist <= 60 ? (1.0 - (angularDist / 60) * 0.6).toFixed(2) : '0.4'
+        distanceLabelOpacity = isHighlighted || isOnHeadingNow ? '1.0' : opacity
+      }
+
+      markers.push({
+        poiId: poi.id,
+        name: poi.name,
+        icon: poi.icon,
+        color: poi.color || '#FF0000',
+        size: 10,
+        distanceText,
+        distanceFontSize: 9,
+        ...(distanceLabelOpacity && { distanceLabelOpacity }),
+        ...(distanceLabelZIndex && { distanceLabelZIndex }),
+        ...(isReached && { isReached: true }),
+        style: {
+          left: `${x}px`,
+          top: '38%',
+          transform: 'translate(-50%, -50%)',
+          ...(zIndex && { zIndex }),
+        },
+      })
+    })
+  }
+
+  if (widget.value.options.showHomeOnHUD && homeCoordinates.value) {
+    const distance = calculateHaversineDistance(
+      [store.coordinates.latitude!, store.coordinates.longitude!],
+      homeCoordinates.value
+    )
+    const bearing = calculateBearing(
+      store.coordinates.latitude!,
+      store.coordinates.longitude!,
+      homeCoordinates.value[0],
+      homeCoordinates.value[1]
+    )
     let relativeBearing = bearing - yaw.value
     if (relativeBearing < -180) relativeBearing += 360
     if (relativeBearing > 180) relativeBearing -= 360
 
-    if (Math.abs(relativeBearing) > 90) return
+    if (Math.abs(relativeBearing) <= 90) {
+      if (isMarkerOnHeading(bearing, yaw.value)) {
+        onHeading.add(homeMarkerId)
+      }
 
-    if (isMarkerOnHeading(bearing, yaw.value)) {
-      onHeading.add(poi.id)
-    }
+      const x = halfWidth + ((2 * halfWidth) / Math.PI) * Math.sin(radians(relativeBearing))
+      const isReachedNow = distance <= 1
+      if (isReachedNow) {
+        reachedMarkers.value.set(homeMarkerId, {
+          poiId: homeMarkerId,
+          reachedAt: now,
+          expiresAt: now + 20000,
+        })
+      }
 
-    const x = halfWidth + ((2 * halfWidth) / Math.PI) * Math.sin(radians(relativeBearing))
-    const isReachedNow = distance <= 1
-    // How long the POI will stay marked as reached (blinking animation)
-    if (isReachedNow) {
-      reachedMarkers.value.set(poi.id, {
-        poiId: poi.id,
-        reachedAt: now,
-        expiresAt: now + 20000,
+      const reachedData = reachedMarkers.value.get(homeMarkerId)
+      const isReached = isReachedNow || (reachedData !== undefined && now < reachedData.expiresAt)
+      const distanceText = isReached
+        ? 'Reached'
+        : distance >= 2000
+        ? `${(distance / 1000).toFixed(1)}km`
+        : `${Math.round(distance)}m`
+
+      const mode = widget.value.options.poi?.showDistances
+      const isHighlighted = highlightedMarkers.value.has(homeMarkerId)
+      const isOnHeadingNow = onHeading.has(homeMarkerId)
+      let distanceLabelOpacity: string | undefined
+
+      if (mode === 'highlightedMarker') {
+        const angularDist = Math.abs(relativeBearing)
+        const opacity = angularDist <= 60 ? (1.0 - (angularDist / 60) * 0.6).toFixed(2) : '0.4'
+        distanceLabelOpacity = isHighlighted || isOnHeadingNow ? '1.0' : opacity
+      }
+
+      markers.push({
+        poiId: homeMarkerId,
+        name: 'Home',
+        icon: 'mdi-home',
+        color: '#1E88E5',
+        size: 12,
+        distanceText,
+        distanceFontSize: 9,
+        ...(distanceLabelOpacity && { distanceLabelOpacity }),
+        ...(isReached && { isReached: true }),
+        style: {
+          left: `${x}px`,
+          top: '38%',
+          transform: 'translate(-50%, -50%)',
+        },
       })
     }
-
-    const reachedData = reachedMarkers.value.get(poi.id)
-    const isReached = isReachedNow || (reachedData !== undefined && now < reachedData.expiresAt)
-    // How far from a POI to mark as reached (2 meters)
-    const distanceText = isReached
-      ? 'Reached'
-      : distance >= 2000
-      ? `${(distance / 1000).toFixed(1)}km`
-      : `${Math.round(distance)}m`
-
-    const mode = widget.value.options.poi?.showDistances
-    const isHighlighted = highlightedMarkers.value.has(poi.id)
-    const isOnHeadingNow = onHeading.has(poi.id)
-    let distanceLabelOpacity: string | undefined
-    let distanceLabelZIndex: string | undefined
-    let zIndex: string | undefined
-
-    if (mode === 'highlightedMarker') {
-      const angularDist = Math.abs(relativeBearing)
-      const opacity = angularDist <= 60 ? (1.0 - (angularDist / 60) * 0.6).toFixed(2) : '0.4'
-      distanceLabelOpacity = isHighlighted || isOnHeadingNow ? '1.0' : opacity
-    }
-
-    markers.push({
-      poiId: poi.id,
-      name: poi.name,
-      icon: poi.icon,
-      color: poi.color || '#FF0000',
-      size: 10,
-      distanceText,
-      distanceFontSize: 9,
-      ...(distanceLabelOpacity && { distanceLabelOpacity }),
-      ...(distanceLabelZIndex && { distanceLabelZIndex }),
-      ...(isReached && { isReached: true }),
-      style: {
-        left: `${x}px`,
-        top: '38%',
-        transform: 'translate(-50%, -50%)',
-        ...(zIndex && { zIndex }),
-      },
-    })
-  })
+  }
 
   markersOnHeading.value = onHeading
   cleanupExpired()
@@ -545,15 +635,25 @@ const updatePoiMarkers = (): void => {
         }
         lastCardShownAt = now
       } else {
-        const poi = missionStore.pointsOfInterest.find((p) => p.id === selectedId)
-        if (poi && store.coordinates.latitude && store.coordinates.longitude) {
+        let fallbackName: string | undefined
+        let fallbackCoords: [number, number] | undefined
+
+        if (selectedId === homeMarkerId) {
+          fallbackName = 'Home'
+          fallbackCoords = homeCoordinates.value
+        } else {
+          const poi = missionStore.pointsOfInterest.find((p) => p.id === selectedId)
+          fallbackName = poi?.name
+          fallbackCoords = poi?.coordinates
+        }
+
+        if (fallbackName && fallbackCoords && store.coordinates.latitude && store.coordinates.longitude) {
           const distance = calculateHaversineDistance(
             [store.coordinates.latitude, store.coordinates.longitude],
-            poi.coordinates
+            fallbackCoords
           )
-          // How far from a POI to mark as reached
           highlightedPoiMarker.value = {
-            name: poi.name,
+            name: fallbackName,
             distanceText:
               distance <= 1
                 ? 'Reached'
@@ -622,7 +722,7 @@ const stopAnimationLoop = (): void => {
 }
 
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
-watch([poiData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
+watch([poiData, store.coordinates, canvasSize, yaw, homeCoordinates], debouncedUpdatePoiMarkers)
 
 // Start both canvas and POI markers animation loop when widget becomes visible or data changes
 watch([renderVars, canvasSize, widget.value.options], () => {

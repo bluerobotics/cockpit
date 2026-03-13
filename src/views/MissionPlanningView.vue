@@ -735,7 +735,6 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 
 const planningMap = shallowRef<Map | undefined>()
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
-const home = ref<WaypointCoordinates | undefined>(undefined)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
@@ -789,6 +788,13 @@ let measureLineEl: SVGLineElement | null = null
 let measureTextEl: HTMLDivElement | null = null
 const surveyAreaMarkers = shallowRef<Record<string, L.Marker>>({})
 const liveSurveyAreaMarker = shallowRef<L.Marker | null>(null)
+
+const home = computed({
+  get: () => missionStore.homeMarkerPosition,
+  set: (value: WaypointCoordinates | undefined) => {
+    missionStore.homeMarkerPosition = value
+  },
+})
 
 const glassMenuCssVars = computed(() => ({
   '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
