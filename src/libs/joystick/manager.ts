@@ -6,13 +6,15 @@ import {
   convertSDLControllerStateToGamepadState,
   convertSDLJoystickStateToGamepadState,
 } from '@/types/joystick'
+import { JoystickMapVidPid, JoystickModel } from '@/types/joystick-model-defs'
 
 import { settingsManager } from '../settings-management'
+import { isElectron } from '../utils'
 import { applyCalibration } from './calibration'
 
-export const joystickCalibrationOptionsKey = 'cockpit-joystick-calibration-options'
+export { JoystickModel }
 
-import { isElectron } from '../utils'
+export const joystickCalibrationOptionsKey = 'cockpit-joystick-calibration-options'
 
 /**
  * Possible events from GamepadListener
@@ -25,45 +27,6 @@ export enum EventType {
   Axis = 'axis',
   Button = 'button',
 }
-
-/**
- * Supported joystick models
- */
-export enum JoystickModel {
-  DualSense = 'DualSense (PS5)',
-  DualShock4 = 'DualShock (PS4)',
-  XboxOne_Wireless = 'Xbox One Wireless Controller',
-  XboxOne_Wired = 'Xbox One Wired Controller',
-  XboxOneS_Bluetooth = 'Xbox One S (bluetooth)',
-  XboxController_Bluetooth = 'Xbox controller (bluetooth)',
-  XboxController_Wired = 'Xbox controller (wired)',
-  XboxController_360 = 'Xbox 360 controller',
-  LogitechExtreme3DPro = 'Logitech Extreme 3D Pro',
-  IpegaPG9023 = 'Ipega PG-9023',
-  SteamDeckLCD = 'Steam Deck LCD',
-  SteamDeckOLED = 'Steam Deck OLED',
-  EightBitDoUltimate2C = '8BitDo Ultimate 2C',
-  ThrustmasterSimTaskFarmStick = 'Thrustmaster SimTask FarmStick',
-  Unknown = 'Unknown',
-}
-
-const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
-  // Sony
-  ['054c:0ce6', JoystickModel.DualSense],
-  ['054c:09cc', JoystickModel.DualShock4],
-  ['045e:02ea', JoystickModel.XboxOne_Wired],
-  ['045e:02e0', JoystickModel.XboxOne_Wireless],
-  ['045e:02fd', JoystickModel.XboxOneS_Bluetooth],
-  ['045e:0b13', JoystickModel.XboxController_Bluetooth],
-  ['045e:0b12', JoystickModel.XboxController_Wired],
-  ['28de:11ff', JoystickModel.XboxController_360],
-  ['046d:c215', JoystickModel.LogitechExtreme3DPro],
-  ['1949:0402', JoystickModel.IpegaPG9023],
-  ['28de:11ff', JoystickModel.SteamDeckLCD],
-  ['28de:1205', JoystickModel.SteamDeckOLED],
-  ['2dc8:301b', JoystickModel.EightBitDoUltimate2C],
-  ['044f:0416', JoystickModel.ThrustmasterSimTaskFarmStick],
-])
 
 // Necessary to add functions
 // eslint-disable-next-line @typescript-eslint/no-namespace

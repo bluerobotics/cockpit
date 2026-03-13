@@ -5,11 +5,7 @@ import { v4 as uuid4 } from 'uuid'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
 import { defaultJoystickCalibration } from '@/assets/defaults'
-import {
-  availableGamepadToCockpitMaps,
-  cockpitStandardToProtocols,
-  defaultProtocolMappingVehicleCorrespondency,
-} from '@/assets/joystick-profiles'
+import { cockpitStandardToProtocols, defaultProtocolMappingVehicleCorrespondency } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
@@ -39,6 +35,7 @@ import {
   JoystickCalibrationOptions,
   JoystickProtocol,
 } from '@/types/joystick'
+import { availableGamepadToCockpitMaps } from '@/types/joystick-model-defs'
 
 import { useAlertStore } from './alert'
 import { useMainVehicleStore } from './mainVehicle'

@@ -54,11 +54,11 @@ import {
   deleteJavascriptActionConfig,
   executeActionCode,
   getJavascriptActionConfig,
-  JavascriptActionConfig,
   registerJavascriptActionConfig,
 } from '@/libs/actions/free-javascript'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { JavascriptActionConfig } from '@/types/cockpit-actions'
 
 const emit = defineEmits<{
   (e: 'action-saved'): void
