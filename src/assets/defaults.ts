@@ -879,6 +879,12 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
         name: 'Top-center container',
         widgets: [
           {
+            hash: 'a1f3e8b2-7c4d-4e9a-b5d6-8f2a1c3e7b9d',
+            component: MiniWidgetType.ViewSelector,
+            name: 'ViewSelector',
+            options: {},
+          },
+          {
             hash: 'c3a90d73-32e0-4dbf-bbe6-4d5a27e85b10',
             component: MiniWidgetType.Alerter,
             name: 'Alerter',
