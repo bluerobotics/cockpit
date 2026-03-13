@@ -672,20 +672,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
         console.log('Vehicle type changed to', vehicleType.value)
 
-        try {
-          controllerStore.loadDefaultProtocolMappingForVehicle(vehicleType.value)
-          console.info(`Loaded default joystick protocol mapping for vehicle type ${vehicleType.value}.`)
-        } catch (error) {
-          console.error(`Could not load default protocol mapping for vehicle type ${vehicleType.value}: ${error}`)
-        }
-
-        try {
-          widgetStore.loadDefaultProfileForVehicle(vehicleType.value)
-          console.info(`Loaded default profile for vehicle type ${vehicleType.value}.`)
-        } catch (error) {
-          console.error(`Could not load default profile for vehicle type ${vehicleType.value}: ${error}`)
-        }
-        
         removeMismatchedProfiles(vehicleType.value)
       }
     })
