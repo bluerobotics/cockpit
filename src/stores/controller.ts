@@ -340,6 +340,12 @@ export const useControllerStore = defineStore('controller', () => {
   watch(
     protocolMappings,
     () => {
+      if (protocolMappings.value.length === 0) {
+        protocolMappings.value.push(structuredClone(blankMapping))
+        protocolMappingIndex.value = 0
+        return
+      }
+
       // Check if there's any duplicated axis actions. If so, unmap (set to no_function) the axes that use to have the same action
       const oldMapping = structuredClone(toRaw(lastValidProtocolMapping))
       const newMapping = protocolMappings.value[protocolMappingIndex.value]
@@ -363,7 +369,7 @@ export const useControllerStore = defineStore('controller', () => {
       }
       lastValidProtocolMapping = structuredClone(toRaw(protocolMappings.value[protocolMappingIndex.value]))
     },
-    { deep: true }
+    { deep: true, immediate: true }
   )
 
   setInterval(() => {

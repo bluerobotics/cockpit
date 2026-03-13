@@ -728,13 +728,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
   }
 
-  if (savedProfiles.value.isEmpty()) {
-    const userProfile = structuredClone(blankProfile)
-    userProfile.hash = uuid4()
-    savedProfiles.value.push(userProfile)
-    loadProfile(savedProfiles.value[0])
-  }
-
   // Make sure the interface is not booting with a profile that does not exist
   if (currentProfileIndex.value >= savedProfiles.value.length) currentProfileIndex.value = 0
 
@@ -751,11 +744,19 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   watch(
     savedProfiles,
     () => {
+      if (savedProfiles.value.isEmpty()) {
+        const userProfile = structuredClone(blankProfile)
+        userProfile.hash = uuid4()
+        savedProfiles.value.push(userProfile)
+        currentProfileIndex.value = 0
+        return
+      }
+
       if (currentProfileIndex.value < savedProfiles.value.length) return
       console.warn('Current profile index is out of bounds. Resetting to 0.')
       currentProfileIndex.value = 0
     },
-    { deep: true }
+    { deep: true, immediate: true }
   )
 
   // Closes the side config panel on view change and edit mode exit
