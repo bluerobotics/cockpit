@@ -339,7 +339,6 @@ const map = shallowRef<Map | undefined>()
 
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
-const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = computed(
   () => isMouseOver.value || downloadMenuOpen.value || speedDialOpen.value || widgetStore.isFullScreen(widget.value)
@@ -362,6 +361,13 @@ const downloadMenuOpen = ref(false)
 const speedDialOpen = ref(false)
 const missionItemsInVehicle = ref<Waypoint[]>([])
 const missionSeqToMarkerSeq = shallowRef<Record<number, number>>({})
+
+const home = computed({
+  get: () => missionStore.homeMarkerPosition,
+  set: (value: WaypointCoordinates | undefined) => {
+    missionStore.homeMarkerPosition = value
+  },
+})
 
 const glassMenuCssVars = computed(() => ({
   '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
