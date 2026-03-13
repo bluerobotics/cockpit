@@ -641,6 +641,23 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     mainVehicle.value.onMissionItemReached.add((sequence: number) => {
       markMissionItemAsReached(sequence)
     })
+
+    const removeMismatchedProfiles = (currentVehicleType: MavType): void => {
+      for (const [vType, hash] of Object.entries(widgetStore.vehicleTypeProfileCorrespondency)) {
+        if (!hash || vType === currentVehicleType) continue
+        // @ts-ignore: Enums in TS such
+        widgetStore.vehicleTypeProfileCorrespondency[vType] = undefined
+        widgetStore.deleteProfile(hash)
+      }
+
+      for (const [vType, hash] of Object.entries(controllerStore.vehicleTypeProtocolMappingCorrespondency)) {
+        if (!hash || vType === currentVehicleType) continue
+        // @ts-ignore: Enums in TS such
+        controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] = undefined
+        controllerStore.deleteProtocolMapping(hash)
+      }
+    }
+
     mainVehicle.value.onIncomingMAVLinkMessage.add(MAVLinkType.HEARTBEAT, (pack: Package) => {
       if (pack.header.component_id != 1) {
         return
@@ -655,19 +672,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
         console.log('Vehicle type changed to', vehicleType.value)
 
-        try {
-          controllerStore.loadDefaultProtocolMappingForVehicle(vehicleType.value)
-          console.info(`Loaded default joystick protocol mapping for vehicle type ${vehicleType.value}.`)
-        } catch (error) {
-          console.error(`Could not load default protocol mapping for vehicle type ${vehicleType.value}: ${error}`)
-        }
-
-        try {
-          widgetStore.loadDefaultProfileForVehicle(vehicleType.value)
-          console.info(`Loaded default profile for vehicle type ${vehicleType.value}.`)
-        } catch (error) {
-          console.error(`Could not load default profile for vehicle type ${vehicleType.value}: ${error}`)
-        }
+        removeMismatchedProfiles(vehicleType.value)
       }
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

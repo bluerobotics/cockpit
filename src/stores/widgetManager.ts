@@ -7,6 +7,7 @@ import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeMount, onBeforeUnmount, Ref, ref, toRaw, watch } from 'vue'
 
 import {
+  blankProfile,
   defaultCustomWidgetContainers,
   defaultMiniWidgetManagerVars,
   defaultProfileVehicleCorrespondency,
@@ -52,7 +53,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const snapToGrid = ref(true)
   const gridInterval = ref(0.01)
   const currentMiniWidgetsProfile = useBlueOsStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
-  const savedProfiles = useBlueOsStorage<Profile[]>(savedProfilesKey, [])
+  const savedProfiles = useBlueOsStorage<Profile[]>(savedProfilesKey, [blankProfile])
   const lastViewIndexPerProfile = useBlueOsStorage<Record<string, number>>('cockpit-last-view-index-per-profile', {})
   const currentProfileIndex = useBlueOsStorage<number>('cockpit-current-profile-index', 0)
   const desiredTopBarHeightPixels = ref(48)
@@ -458,16 +459,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     addView()
   }
 
-  const isUserProfile = (profile: Profile): boolean => {
-    return savedProfiles.value.map((p) => p.hash).includes(profile.hash)
-  }
-
   /**
-   * Deletes a profile from the store
-   * @param { Profile } profile - Profile
+   * Deletes a profile from the store by hash.
+   * If the currently active profile is deleted, switches to the first remaining profile.
+   * @param {string} profileHash - Hash of the profile to delete
    */
-  function deleteProfile(profile: Profile): void {
-    if (!isUserProfile(profile)) {
+  function deleteProfile(profileHash: string): void {
+    const profileIndex = savedProfiles.value.findIndex((p) => p.hash === profileHash)
+    if (profileIndex === -1) {
       showDialog({ variant: 'error', message: 'Could not find profile.', timer: 3000 })
       return
     }
@@ -481,12 +480,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return
     }
 
-    const currentProfileHash = currentProfile.value.hash
-    const savedProfileIndex = savedProfiles.value.findIndex((p) => p.hash === profile.hash)
-    currentProfileIndex.value = 0
-    savedProfiles.value.splice(savedProfileIndex, 1)
-    if (currentProfileHash !== profile.hash) {
-      currentProfileIndex.value = savedProfiles.value.findIndex((p) => p.hash === currentProfileHash)
+    const wasActive = currentProfile.value.hash === profileHash
+    savedProfiles.value.splice(profileIndex, 1)
+
+    if (wasActive) {
+      currentProfileIndex.value = 0
+    } else if (currentProfileIndex.value >= savedProfiles.value.length) {
+      currentProfileIndex.value = 0
     }
   }
 
@@ -728,17 +728,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
   }
 
-  // If the user does not have it's own profiles yet, create default ones
-  if (savedProfiles.value.isEmpty()) {
-    widgetProfiles.forEach((profile) => {
-      const userProfile = structuredClone(profile)
-      userProfile.name = userProfile.name.replace('Default', 'User')
-      userProfile.hash = uuid4()
-      savedProfiles.value.push(userProfile)
-    })
-    loadProfile(savedProfiles.value[0])
-  }
-
   // Make sure the interface is not booting with a profile that does not exist
   if (currentProfileIndex.value >= savedProfiles.value.length) currentProfileIndex.value = 0
 
@@ -755,11 +744,19 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   watch(
     savedProfiles,
     () => {
+      if (savedProfiles.value.isEmpty()) {
+        const userProfile = structuredClone(blankProfile)
+        userProfile.hash = uuid4()
+        savedProfiles.value.push(userProfile)
+        currentProfileIndex.value = 0
+        return
+      }
+
       if (currentProfileIndex.value < savedProfiles.value.length) return
       console.warn('Current profile index is out of bounds. Resetting to 0.')
       currentProfileIndex.value = 0
     },
-    { deep: true }
+    { deep: true, immediate: true }
   )
 
   // Closes the side config panel on view change and edit mode exit

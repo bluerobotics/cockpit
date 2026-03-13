@@ -15,11 +15,49 @@ import {
 export const defaultRovProfileHash = 'c2bcf04d-048f-496f-9d78-fc4002608028'
 export const defaultBoatProfileHash = 'adb7d856-f2e5-4980-aaeb-c39c1fa3562b'
 export const defaultMavProfileHash = '2309ffda-896a-449d-a171-7b7fdf80bc95'
+export const blankProfileHash = 'e3b0c442-98fc-4c14-b0d8-6f5e1c3a7b9d'
 
 export const defaultProfileVehicleCorrespondency = {
   [MavType.MAV_TYPE_SUBMARINE]: defaultRovProfileHash,
   [MavType.MAV_TYPE_SURFACE_BOAT]: defaultBoatProfileHash,
   [MavType.MAV_TYPE_QUADROTOR]: defaultMavProfileHash,
+}
+
+export const blankProfile: Profile = {
+  name: 'Custom profile',
+  hash: blankProfileHash,
+  views: [
+    {
+      hash: 'b1a2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      name: 'Main View',
+      showBottomBarOnBoot: true,
+      visible: true,
+      widgets: [],
+      miniWidgetContainers: [
+        { name: 'Bottom-left container', widgets: [] },
+        { name: 'Bottom-center container', widgets: [] },
+        { name: 'Bottom-right container', widgets: [] },
+      ],
+    },
+  ],
+}
+
+/**
+ * Human-readable names for the vehicle types that have default profiles.
+ */
+export const vehicleTypeDisplayNames: Partial<Record<MavType, string>> = {
+  [MavType.MAV_TYPE_SUBMARINE]: 'Submarine / ROV',
+  [MavType.MAV_TYPE_SURFACE_BOAT]: 'Boat',
+  [MavType.MAV_TYPE_QUADROTOR]: 'Aerial (MAV)',
+}
+
+/**
+ * Returns a human-readable name for a given MavType, falling back to the enum key.
+ * @param {MavType} mavType - The MavType to get a display name for
+ * @returns {string} The human-readable name
+ */
+export const getVehicleTypeDisplayName = (mavType: MavType): string => {
+  return vehicleTypeDisplayNames[mavType] ?? mavType
 }
 
 export const defaultWidgetManagerVars: WidgetManagerVars = {
@@ -860,6 +898,12 @@ export const miniWidgetsProfiles: MiniWidgetProfile[] = [
       {
         name: 'Top-center container',
         widgets: [
+          {
+            hash: 'a1f3e8b2-7c4d-4e9a-b5d6-8f2a1c3e7b9d',
+            component: MiniWidgetType.ViewSelector,
+            name: 'ViewSelector',
+            options: {},
+          },
           {
             hash: 'c3a90d73-32e0-4dbf-bbe6-4d5a27e85b10',
             component: MiniWidgetType.Alerter,

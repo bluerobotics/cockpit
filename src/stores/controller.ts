@@ -7,6 +7,7 @@ import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { defaultJoystickCalibration } from '@/assets/defaults'
 import {
   availableGamepadToCockpitMaps,
+  blankMapping,
   cockpitStandardToProtocols,
   defaultProtocolMappingVehicleCorrespondency,
 } from '@/assets/joystick-profiles'
@@ -60,7 +61,7 @@ export const useControllerStore = defineStore('controller', () => {
   const mainVehicleStore = useMainVehicleStore()
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMappings = useBlueOsStorage(protocolMappingsKey, cockpitStandardToProtocols)
+  const protocolMappings = useBlueOsStorage(protocolMappingsKey, [blankMapping])
   const protocolMappingIndex = useBlueOsStorage(protocolMappingIndexKey, 0)
   const userCustomCockpitStdMappings = useBlueOsStorage<{ [key in JoystickModel]?: GamepadToCockpitStdMapping }>(
     cockpitStdMappingsKey,
@@ -339,6 +340,12 @@ export const useControllerStore = defineStore('controller', () => {
   watch(
     protocolMappings,
     () => {
+      if (protocolMappings.value.length === 0) {
+        protocolMappings.value.push(structuredClone(blankMapping))
+        protocolMappingIndex.value = 0
+        return
+      }
+
       // Check if there's any duplicated axis actions. If so, unmap (set to no_function) the axes that use to have the same action
       const oldMapping = structuredClone(toRaw(lastValidProtocolMapping))
       const newMapping = protocolMappings.value[protocolMappingIndex.value]
@@ -362,7 +369,7 @@ export const useControllerStore = defineStore('controller', () => {
       }
       lastValidProtocolMapping = structuredClone(toRaw(protocolMappings.value[protocolMappingIndex.value]))
     },
-    { deep: true }
+    { deep: true, immediate: true }
   )
 
   setInterval(() => {
@@ -452,14 +459,7 @@ export const useControllerStore = defineStore('controller', () => {
     mapping.hash = correspondentDefault?.hash ?? uuid4()
   })
 
-  // Add default mappings that the user does not have
-  const updatedMappings = protocolMappings.value
-  cockpitStandardToProtocols.forEach((defMapping) => {
-    if (protocolMappings.value.find((mapping) => mapping.hash === defMapping.hash)) return
-    updatedMappings.push(defMapping)
-  })
-  protocolMappings.value = updatedMappings
-  protocolMappings.value = performJoystickMappingMigrations(updatedMappings)
+  protocolMappings.value = performJoystickMappingMigrations(protocolMappings.value)
 
   const loadDefaultProtocolMappingForVehicle = (vehicleType: MavType): void => {
     // @ts-ignore: We know that the value is a string
@@ -546,6 +546,34 @@ export const useControllerStore = defineStore('controller', () => {
     availableAxesActions.value = allAvailableAxes()
   }, 1000)
 
+  /**
+   * Deletes a protocol mapping from the store by hash.
+   * If the currently active mapping is deleted, switches to the first remaining mapping.
+   * @param {string} mappingHash - Hash of the mapping to delete
+   */
+  const deleteProtocolMapping = (mappingHash: string): void => {
+    const mappingIndex = protocolMappings.value.findIndex((m) => m.hash === mappingHash)
+    if (mappingIndex === -1) return
+
+    if (protocolMappings.value.length <= 1) {
+      showDialog({
+        variant: 'error',
+        message: 'Cannot remove last joystick mapping. Please create another before deleting this one.',
+        timer: 4000,
+      })
+      return
+    }
+
+    const wasActive = protocolMapping.value.hash === mappingHash
+    protocolMappings.value.splice(mappingIndex, 1)
+
+    if (wasActive) {
+      protocolMappingIndex.value = 0
+    } else if (protocolMappingIndex.value >= protocolMappings.value.length) {
+      protocolMappingIndex.value = 0
+    }
+  }
+
   return {
     registerControllerUpdateCallback,
     enableForwarding,
@@ -569,5 +597,6 @@ export const useControllerStore = defineStore('controller', () => {
     currentMainJoystick,
     disabledJoysticks,
     checkForOtherManualControlSources,
+    deleteProtocolMapping,
   }
 })

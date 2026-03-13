@@ -20,11 +20,65 @@ import {
 export const defaultRovMappingHash = '10b0075a-27a7-4800-ba95-f35fd722d1df'
 export const defaultBoatMappingHash = 'd3427f20-ba28-4cf7-ae24-ec740dd6dce0'
 export const defaultMavMappingHash = 'dd654387-18fc-4674-89a6-4dc4d0bc8240'
+export const blankMappingHash = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
 
 export const defaultProtocolMappingVehicleCorrespondency = {
   [MavType.MAV_TYPE_SUBMARINE]: defaultRovMappingHash,
   [MavType.MAV_TYPE_SURFACE_BOAT]: defaultBoatMappingHash,
   [MavType.MAV_TYPE_QUADROTOR]: defaultMavMappingHash,
+}
+
+export const blankMapping: JoystickProtocolActionsMapping = {
+  name: 'Custom mapping',
+  hash: blankMappingHash,
+  axesCorrespondencies: {
+    [JoystickAxis.A0]: { action: otherAvailableActions.no_function, min: -1000, max: 1000 },
+    [JoystickAxis.A1]: { action: otherAvailableActions.no_function, min: -1000, max: 1000 },
+    [JoystickAxis.A2]: { action: otherAvailableActions.no_function, min: -1000, max: 1000 },
+    [JoystickAxis.A3]: { action: otherAvailableActions.no_function, min: -1000, max: 1000 },
+  },
+  buttonsCorrespondencies: {
+    [CockpitModifierKeyOption.regular]: {
+      [JoystickButton.B0]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B1]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B2]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B3]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B4]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B5]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B6]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B7]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B8]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B9]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B10]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B11]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B12]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B13]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B14]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B15]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B16]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B17]: { action: otherAvailableActions.no_function },
+    },
+    [CockpitModifierKeyOption.shift]: {
+      [JoystickButton.B0]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B1]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B2]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B3]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B4]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B5]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B6]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B7]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B8]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B9]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B10]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B11]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B12]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B13]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B14]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B15]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B16]: { action: otherAvailableActions.no_function },
+      [JoystickButton.B17]: { action: otherAvailableActions.no_function },
+    },
+  },
 }
 
 // TODO: Adjust mapping for PS5 controller
