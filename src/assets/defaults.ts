@@ -15,11 +15,31 @@ import {
 export const defaultRovProfileHash = 'c2bcf04d-048f-496f-9d78-fc4002608028'
 export const defaultBoatProfileHash = 'adb7d856-f2e5-4980-aaeb-c39c1fa3562b'
 export const defaultMavProfileHash = '2309ffda-896a-449d-a171-7b7fdf80bc95'
+export const blankProfileHash = 'e3b0c442-98fc-4c14-b0d8-6f5e1c3a7b9d'
 
 export const defaultProfileVehicleCorrespondency = {
   [MavType.MAV_TYPE_SUBMARINE]: defaultRovProfileHash,
   [MavType.MAV_TYPE_SURFACE_BOAT]: defaultBoatProfileHash,
   [MavType.MAV_TYPE_QUADROTOR]: defaultMavProfileHash,
+}
+
+export const blankProfile: Profile = {
+  name: 'Custom profile',
+  hash: blankProfileHash,
+  views: [
+    {
+      hash: 'b1a2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      name: 'Main View',
+      showBottomBarOnBoot: true,
+      visible: true,
+      widgets: [],
+      miniWidgetContainers: [
+        { name: 'Bottom-left container', widgets: [] },
+        { name: 'Bottom-center container', widgets: [] },
+        { name: 'Bottom-right container', widgets: [] },
+      ],
+    },
+  ],
 }
 
 /**

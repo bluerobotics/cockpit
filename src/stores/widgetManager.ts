@@ -7,6 +7,7 @@ import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeMount, onBeforeUnmount, Ref, ref, toRaw, watch } from 'vue'
 
 import {
+  blankProfile,
   defaultCustomWidgetContainers,
   defaultMiniWidgetManagerVars,
   defaultProfileVehicleCorrespondency,
@@ -52,7 +53,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const snapToGrid = ref(true)
   const gridInterval = ref(0.01)
   const currentMiniWidgetsProfile = useBlueOsStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
-  const savedProfiles = useBlueOsStorage<Profile[]>(savedProfilesKey, [])
+  const savedProfiles = useBlueOsStorage<Profile[]>(savedProfilesKey, [blankProfile])
   const lastViewIndexPerProfile = useBlueOsStorage<Record<string, number>>('cockpit-last-view-index-per-profile', {})
   const currentProfileIndex = useBlueOsStorage<number>('cockpit-current-profile-index', 0)
   const desiredTopBarHeightPixels = ref(48)
@@ -727,14 +728,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
   }
 
-  // If the user does not have it's own profiles yet, create default ones
   if (savedProfiles.value.isEmpty()) {
-    widgetProfiles.forEach((profile) => {
-      const userProfile = structuredClone(profile)
-      userProfile.name = userProfile.name.replace('Default', 'User')
-      userProfile.hash = uuid4()
-      savedProfiles.value.push(userProfile)
-    })
+    const userProfile = structuredClone(blankProfile)
+    userProfile.hash = uuid4()
+    savedProfiles.value.push(userProfile)
     loadProfile(savedProfiles.value[0])
   }
 
