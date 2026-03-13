@@ -85,6 +85,7 @@ export const useMissionStore = defineStore('mission', () => {
 
   const mapClearRequestRevision = ref(0)
   const mapDownloadRequestRevision = ref(0)
+  const homeMarkerPosition = ref<WaypointCoordinates | undefined>(undefined)
 
   const { showDialog } = useInteractionDialog()
 
@@ -698,5 +699,6 @@ export const useMissionStore = defineStore('mission', () => {
     canUndo,
     canRedo,
     clearUndoStack,
+    homeMarkerPosition,
   }
 })
