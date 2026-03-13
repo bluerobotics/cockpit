@@ -252,6 +252,7 @@ const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
 const reachedWaypoints = shallowRef<Record<number, L.Marker>>({})
+const persistentTooltipSeq = ref<number | undefined>(undefined)
 const contextMenuRef = ref()
 const isDragging = ref(false)
 const isPinching = ref(false)
@@ -394,24 +395,102 @@ const applyWaypointMarkerStyle = (seq: number): void => {
     })
   )
 
-  // Updates the tooltip class for reached/current waypoints and visibility based on size
-  const tooltip = marker.getTooltip()
-  if (tooltip) {
-    if (markerSize === 'xs' || markerSize === 'sm') {
-      tooltip.setOpacity(0)
+  // Updates the tooltip for reached/current waypoints and visibility based on size
+  const isPersistent = persistentTooltipSeq.value === seq
+  marker.off('mouseover')
+  marker.off('mouseout')
+  marker.unbindTooltip()
+
+  if (markerSize === 'xs' || markerSize === 'sm') {
+    if (isPersistent) {
+      const permanentTooltip = L.tooltip({
+        content: seq.toString(),
+        permanent: true,
+        direction: 'top',
+        className: 'waypoint-hover-tooltip',
+        opacity: 1,
+        interactive: false,
+      })
+      marker.bindTooltip(permanentTooltip)
+      marker.openTooltip()
     } else {
-      tooltip.setOpacity(1)
+      const hoverTooltip = L.tooltip({
+        content: seq.toString(),
+        permanent: false,
+        direction: 'top',
+        className: 'waypoint-hover-tooltip',
+        interactive: false,
+      })
+      marker.bindTooltip(hoverTooltip)
+      marker.on('mouseover', () => {
+        marker.openTooltip()
+      })
+      marker.on('mouseout', () => {
+        marker.closeTooltip()
+      })
     }
 
-    const tooltipElement = tooltip.getElement()
-    if (tooltipElement) {
-      tooltipElement.classList.remove('waypoint-tooltip--reached', 'waypoint-tooltip--current-waypoint')
-      if (isReached) {
-        tooltipElement.classList.add('waypoint-tooltip--reached')
-      } else if (isCurrent) {
-        tooltipElement.classList.add('waypoint-tooltip--current-waypoint')
+    marker.off('click')
+    marker.on('click', (event: L.LeafletMouseEvent) => {
+      L.DomEvent.stopPropagation(event)
+      persistentTooltipSeq.value = persistentTooltipSeq.value === seq ? undefined : seq
+      refreshReachedWaypointMarkerStyles()
+      if (persistentTooltipSeq.value === seq) {
+        nextTick(() => {
+          const persistentMarker = reachedWaypoints.value[seq]
+          if (persistentMarker) {
+            const tip = persistentMarker.getTooltip()
+            if (tip) {
+              persistentMarker.openTooltip()
+              const tipEl = tip.getElement()
+              if (tipEl) {
+                tipEl.style.display = ''
+                tipEl.style.opacity = '1'
+              }
+            }
+          }
+        })
       }
+    })
+  } else {
+    let tooltipClass = 'waypoint-tooltip'
+    if (isReached) {
+      tooltipClass = 'waypoint-tooltip waypoint-tooltip--reached'
+    } else if (isCurrent) {
+      tooltipClass = 'waypoint-tooltip waypoint-tooltip--current-waypoint'
     }
+
+    const permanentTooltip = L.tooltip({
+      content: seq.toString(),
+      permanent: true,
+      direction: 'center',
+      className: tooltipClass,
+      opacity: 1,
+    })
+    marker.bindTooltip(permanentTooltip)
+
+    marker.off('click')
+    marker.on('click', (event: L.LeafletMouseEvent) => {
+      L.DomEvent.stopPropagation(event)
+      persistentTooltipSeq.value = persistentTooltipSeq.value === seq ? undefined : seq
+      refreshReachedWaypointMarkerStyles()
+      if (persistentTooltipSeq.value === seq) {
+        nextTick(() => {
+          const persistentMarker = reachedWaypoints.value[seq]
+          if (persistentMarker) {
+            const tip = persistentMarker.getTooltip()
+            if (tip) {
+              persistentMarker.openTooltip()
+              const tipEl = tip.getElement()
+              if (tipEl) {
+                tipEl.style.display = ''
+                tipEl.style.opacity = '1'
+              }
+            }
+          }
+        })
+      }
+    })
   }
 }
 
@@ -614,6 +693,7 @@ onMounted(async () => {
   map.value = L.map(mapId.value, {
     layers: [initialBaseLayer, seamarks, marineProfile],
     attributionControl: false,
+    wheelPxPerZoomLevel: 120,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Listen for base layer changes to save user preference
@@ -630,14 +710,65 @@ onMounted(async () => {
 
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
+    if (persistentTooltipSeq.value !== undefined) {
+      persistentTooltipSeq.value = undefined
+      refreshReachedWaypointMarkerStyles()
+    }
+  })
+
+  // Keep persistent tooltips visible during map drag
+  let tooltipReopenTimeout: ReturnType<typeof setTimeout> | undefined
+  const keepPersistentTooltipVisible = (): void => {
+    if (persistentTooltipSeq.value !== undefined) {
+      const marker = reachedWaypoints.value[persistentTooltipSeq.value]
+      if (marker) {
+        const tooltip = marker.getTooltip()
+        if (tooltip) {
+          marker.openTooltip()
+          const tooltipElement = tooltip.getElement()
+          if (tooltipElement) {
+            tooltipElement.style.display = ''
+            tooltipElement.style.opacity = '1'
+          }
+        }
+      }
+    }
+  }
+
+  map.value.on('movestart', () => {
+    keepPersistentTooltipVisible()
+  })
+
+  map.value.on('move', () => {
+    if (persistentTooltipSeq.value !== undefined) {
+      if (tooltipReopenTimeout) {
+        clearTimeout(tooltipReopenTimeout)
+      }
+      tooltipReopenTimeout = setTimeout(() => {
+        keepPersistentTooltipVisible()
+      }, 50)
+    }
   })
 
   // Update center value after panning
   map.value.on('moveend', () => {
+    if (tooltipReopenTimeout) {
+      clearTimeout(tooltipReopenTimeout)
+      tooltipReopenTimeout = undefined
+    }
     if (map.value === undefined) return
     let { lat, lng } = map.value.getCenter()
     if (lat && lng) {
       mapCenter.value = [lat, lng]
+    }
+    if (persistentTooltipSeq.value !== undefined) {
+      const marker = reachedWaypoints.value[persistentTooltipSeq.value]
+      if (marker) {
+        const tooltip = marker.getTooltip()
+        if (tooltip) {
+          marker.openTooltip()
+        }
+      }
     }
   })
 
@@ -685,6 +816,7 @@ onMounted(async () => {
 
   map.value.on('dragstart', () => {
     isDragging.value = true
+    keepPersistentTooltipVisible()
   })
 
   map.value.on('dragend', () => {
@@ -1235,38 +1367,60 @@ watch(
         reachedWaypoints.value[seq] = marker
 
         const markerSizeForTooltip = getMarkerSizeFromZoom(zoom.value)
-        const markerTooltip = L.tooltip({
-          content: seq.toString(),
-          permanent: true,
-          direction: 'center',
-          className: isReached
-            ? 'waypoint-tooltip waypoint-tooltip--reached'
-            : isCurrent
-            ? 'waypoint-tooltip waypoint-tooltip--current-waypoint'
-            : 'waypoint-tooltip',
-          opacity: markerSizeForTooltip === 'md' ? 1 : 0,
+
+        marker.off('click')
+        marker.on('click', (event: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(event)
+          persistentTooltipSeq.value = persistentTooltipSeq.value === seq ? undefined : seq
+          refreshReachedWaypointMarkerStyles()
         })
 
-        marker.bindTooltip(markerTooltip)
         marker.on('contextmenu', (e: L.LeafletMouseEvent) => {
           L.DomEvent.stopPropagation(e)
           e.originalEvent.stopPropagation()
           e.originalEvent.preventDefault()
           openContextMenuAt(e.originalEvent, seq)
         })
+
+        if (markerSizeForTooltip === 'xs' || markerSizeForTooltip === 'sm') {
+          const hoverTooltip = L.tooltip({
+            content: seq.toString(),
+            permanent: false,
+            direction: 'top',
+            className: 'waypoint-hover-tooltip',
+            interactive: false,
+          })
+          marker.bindTooltip(hoverTooltip)
+          marker.on('mouseover', () => {
+            if (persistentTooltipSeq.value !== seq) {
+              marker.openTooltip()
+            }
+          })
+          marker.on('mouseout', () => {
+            if (persistentTooltipSeq.value !== seq) {
+              marker.closeTooltip()
+            }
+          })
+        } else {
+          let tooltipClass = 'waypoint-tooltip'
+          if (isReached) {
+            tooltipClass = 'waypoint-tooltip waypoint-tooltip--reached'
+          } else if (isCurrent) {
+            tooltipClass = 'waypoint-tooltip waypoint-tooltip--current-waypoint'
+          }
+          const permanentTooltip = L.tooltip({
+            content: seq.toString(),
+            permanent: true,
+            direction: 'center',
+            className: tooltipClass,
+            opacity: 1,
+          })
+          marker.bindTooltip(permanentTooltip)
+        }
+
         map.value?.addLayer(marker)
       } else {
         marker.setLatLng(waypoint.coordinates as LatLngTuple)
-        const markerSizeForUpdate = getMarkerSizeFromZoom(zoom.value)
-        const tooltip = marker.getTooltip()
-        if (tooltip) {
-          if (markerSizeForUpdate === 'xs' || markerSizeForUpdate === 'sm') {
-            tooltip.setOpacity(0)
-          } else {
-            tooltip.setContent(seq.toString())
-            tooltip.setOpacity(1)
-          }
-        }
         applyWaypointMarkerStyle(seq)
       }
     })
@@ -1276,28 +1430,7 @@ watch(
 
 // Keep an eye on the current mission status and update the waypoint markers accordingly
 watch([vehicleStore.currentMissionSeq, currentVehicleWpIndex, getReachedWaypointIndices, currentMapWpIndex], () => {
-  Object.entries(reachedWaypoints.value).forEach(([seqStr, marker]) => {
-    const seq = Number(seqStr)
-    const idx = seq - 1
-    const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
-    const isReached = getReachedWaypointIndices.value.has(seq)
-
-    applyWaypointMarkerStyle(seq)
-
-    const tooltip = marker.getTooltip()
-    if (tooltip) {
-      const tooltipElement = tooltip.getElement()
-      if (tooltipElement) {
-        tooltipElement.classList.remove('waypoint-tooltip--reached', 'waypoint-tooltip--current-waypoint')
-        if (isReached) {
-          tooltipElement.classList.add('waypoint-tooltip--reached')
-        } else if (isCurrent) {
-          tooltipElement.classList.add('waypoint-tooltip--current-waypoint')
-        }
-      }
-      tooltip.update()
-    }
-  })
+  refreshReachedWaypointMarkerStyles()
 })
 
 // Create polyline for the vehicle path
@@ -1897,6 +2030,18 @@ watch(
   background-color: #ffff00;
   border: 2px solid #000000dd;
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
+:deep(.waypoint-hover-tooltip) {
+  background-color: #1e498f;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: -12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 :global(.marker-icon) {
