@@ -25,6 +25,7 @@ import { allAvailableAxes, allAvailableButtons, performJoystickMappingMigrations
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { isElectron } from '@/libs/utils'
+import i18n from '@/plugins/i18n'
 import { Alert, AlertLevel } from '@/types/alert'
 import {
   type GamepadToCockpitStdMapping,
@@ -378,7 +379,7 @@ export const useControllerStore = defineStore('controller', () => {
       Object.entries(mapping).forEach(([btn, action]) => {
         const modKeyAction = modifierKeyActions[modKey as CockpitModifierKeyOption]
         if (JSON.stringify(action.action) !== JSON.stringify(modKeyAction)) return
-        showDialog({ message: "Cannot map modifier key to it's own layout.", variant: 'warning' })
+        showDialog({ message: i18n.global.t('stores.controller.cannotMapModifierToOwnLayout'), variant: 'warning' })
         protocolMapping.value.buttonsCorrespondencies[modKey as CockpitModifierKeyOption][
           Number(btn) as JoystickButton
         ].action = otherAvailableActions.no_function
@@ -408,7 +409,11 @@ export const useControllerStore = defineStore('controller', () => {
       const contents = event.target.result
       const maybeProfile = JSON.parse(contents)
       if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
-        showDialog({ variant: 'error', message: 'Invalid joystick mapping file.', timer: 3000 })
+        showDialog({
+          variant: 'error',
+          message: i18n.global.t('stores.controller.invalidJoystickMappingFile'),
+          timer: 3000,
+        })
         return
       }
       cockpitStdMappings.value[joystick.model] = maybeProfile
@@ -433,11 +438,19 @@ export const useControllerStore = defineStore('controller', () => {
         !maybeFunctionsMapping['axesCorrespondencies'] ||
         !maybeFunctionsMapping['buttonsCorrespondencies']
       ) {
-        showDialog({ message: 'Invalid functions mapping file.', variant: 'error', timer: 3000 })
+        showDialog({
+          message: i18n.global.t('stores.controller.invalidFunctionsMappingFile'),
+          variant: 'error',
+          timer: 3000,
+        })
         return
       }
       protocolMapping.value = maybeFunctionsMapping
-      showDialog({ message: 'Functions mapping imported successful.', variant: 'success', timer: 2000 })
+      showDialog({
+        message: i18n.global.t('stores.controller.functionsMappingImported'),
+        variant: 'success',
+        timer: 2000,
+      })
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
     reader.readAsText(e.target.files[0])

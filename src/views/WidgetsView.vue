@@ -6,9 +6,9 @@
           v-if="view.widgets.isEmpty()"
           class="px-10 py-16 rounded-md flex flex-col justify-center align-center bg-slate-400 font-extrabold text-slate-600 w-[480px] text-center text-3xl"
         >
-          <p>You currently have no widgets!</p>
+          <p>{{ $t('views.WidgetsView.noWidgets') }}</p>
           <br />
-          <p>Open edit mode to start tweaking this view.</p>
+          <p>{{ $t('views.WidgetsView.openEditMode') }}</p>
         </div>
       </div>
       <SnappingGrid v-if="store.snapToGrid && store.editingMode" :grid-interval="store.gridInterval" />

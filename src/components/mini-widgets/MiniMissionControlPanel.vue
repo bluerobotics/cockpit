@@ -7,7 +7,11 @@
       class="flex gap-1 items-center overflow-hidden"
       :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
     >
-      <v-tooltip location="top" open-delay="800" text="Skip to previous waypoint">
+      <v-tooltip
+        location="top"
+        open-delay="800"
+        :text="$t('components.widgets.MissionControlPanel.skipToPreviousWaypoint')"
+      >
         <template #activator="{ props: skipPrevProps }">
           <v-btn
             v-bind="skipPrevProps"
@@ -23,7 +27,11 @@
       <v-tooltip
         location="top"
         open-delay="800"
-        :text="missionStore.isMissionRunning ? 'Pause mission' : 'Start / resume mission'"
+        :text="
+          missionStore.isMissionRunning
+            ? $t('components.widgets.MissionControlPanel.pauseMission')
+            : $t('components.widgets.MissionControlPanel.startResumeMission')
+        "
       >
         <template #activator="{ props: playPauseProps }">
           <v-btn
@@ -37,7 +45,11 @@
           />
         </template>
       </v-tooltip>
-      <v-tooltip location="top" open-delay="800" text="Skip to next waypoint">
+      <v-tooltip
+        location="top"
+        open-delay="800"
+        :text="$t('components.widgets.MissionControlPanel.skipToNextWaypoint')"
+      >
         <template #activator="{ props: skipNextProps }">
           <v-btn
             v-bind="skipNextProps"
@@ -50,7 +62,11 @@
           />
         </template>
       </v-tooltip>
-      <v-tooltip location="top" open-delay="800" text="Return to home">
+      <v-tooltip
+        location="top"
+        open-delay="800"
+        :text="$t('components.widgets.MissionControlPanel.stopMissionAndReturn')"
+      >
         <template #activator="{ props: homeProps }">
           <v-btn
             v-bind="homeProps"
@@ -65,7 +81,9 @@
       </v-tooltip>
       <v-divider vertical class="h-[25px] mt-[5px]" />
       <div class="flex flex-col justify-between w-[46px] h-[33px] text-[8px] ml-1 mt-[4px]">
-        <div class="w-full text-nowrap text-center">Current WP</div>
+        <div class="w-full text-nowrap text-center">
+          {{ $t('components.mini-widgets.MiniMissionControlPanel.currentWaypoint') }}
+        </div>
         <div class="mb-1 text-[12px] font-bold">{{ currentWaypointOnMission }}</div>
       </div>
     </div>

@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, ref, toRefs } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ContextMenu from '@/components/ContextMenu.vue'
 import { createDataLakeVariable, getDataLakeVariableInfo } from '@/libs/actions/data-lake'
@@ -36,6 +37,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { type MiniWidget, CustomWidgetElement, isMiniWidgetConfigurable, MiniWidgetType } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
+const { t } = useI18n()
 
 const props = defineProps<{
   /**
@@ -84,7 +86,7 @@ const openWidgetConfig = (): void => {
 }
 
 const contextMenuItems = computed(() =>
-  isConfigMenuDisabled.value ? [] : [{ item: 'Options', action: openWidgetConfig, icon: 'mdi-cog' }]
+  isConfigMenuDisabled.value ? [] : [{ item: t('inputElement.options'), action: openWidgetConfig, icon: 'mdi-cog' }]
 )
 
 const componentFromType = (componentType: string): ReturnType<typeof defineAsyncComponent> => {

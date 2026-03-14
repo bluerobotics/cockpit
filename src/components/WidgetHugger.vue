@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import { useElementHover, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { constrain, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
@@ -163,7 +164,7 @@ const openWidgetConfig = (): void => {
 
 const contextMenuItems = computed(() =>
   isWidgetConfigurable[widget.value.component as WidgetType]
-    ? [{ item: 'Options', action: openWidgetConfig, icon: 'mdi-cog' }]
+    ? [{ item: t('inputElement.options'), action: openWidgetConfig, icon: 'mdi-cog' }]
     : []
 )
 
@@ -336,6 +337,7 @@ watch(allowMoving, (isAllowing, wasAllowing) => {
 })
 
 const widgetStore = useWidgetManagerStore()
+const { t } = useI18n()
 const temporaryPosition = computed(() => {
   let tempPos = { x: position.value.x, y: position.value.y }
 

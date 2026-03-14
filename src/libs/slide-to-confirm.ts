@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 
+import { t } from '@/plugins/i18n'
 import { useMissionStore } from '@/stores/mission'
 
 import {
@@ -74,6 +75,99 @@ export interface ConfirmContent {
    * @type {string}
    */
   expiredText?: string
+}
+
+/**
+ * Get translated confirm text based on command
+ * @param {string} command The command to translate
+ * @returns {string} The translated confirm text
+ */
+function getConfirmText(command: string): string {
+  const commandMap: Record<string, string> = {
+    'Arm': t('libs.slideToConfirm.confirmArm'),
+    'Disarm': t('libs.slideToConfirm.confirmDisarm'),
+    'Takeoff': t('libs.slideToConfirm.confirmTakeoff'),
+    'Land': t('libs.slideToConfirm.confirmLand'),
+    'Goto': t('libs.slideToConfirm.confirmGoto'),
+    'GoTo': t('libs.slideToConfirm.confirmGoto'),
+    'Altitude Change': t('libs.slideToConfirm.confirmAltitudeChange'),
+    'Arm and GoTo': t('libs.slideToConfirm.confirmArmAndGoTo'),
+  }
+  return commandMap[command] || `Confirm ${command}`
+}
+
+/**
+ * Get translated confirmed text based on command
+ * @param {string} command The command to translate
+ * @returns {string} The translated confirmed text
+ */
+function getConfirmedText(command: string): string {
+  const commandMap: Record<string, string> = {
+    'Arm': t('libs.slideToConfirm.armConfirmed'),
+    'Disarm': t('libs.slideToConfirm.disarmConfirmed'),
+    'Takeoff': t('libs.slideToConfirm.takeoffConfirmed'),
+    'Land': t('libs.slideToConfirm.landConfirmed'),
+    'Goto': t('libs.slideToConfirm.gotoConfirmed'),
+    'GoTo': t('libs.slideToConfirm.gotoConfirmed'),
+    'Altitude Change': t('libs.slideToConfirm.altitudeChangeConfirmed'),
+    'Arm and GoTo': t('libs.slideToConfirm.armAndGoToConfirmed'),
+  }
+  return commandMap[command] || `${command} confirmed`
+}
+
+/**
+ * Get translated denied text based on command
+ * @param {string} command The command to translate
+ * @returns {string} The translated denied text
+ */
+function getDeniedText(command: string): string {
+  const commandMap: Record<string, string> = {
+    'Arm': t('libs.slideToConfirm.armDenied'),
+    'Disarm': t('libs.slideToConfirm.disarmDenied'),
+    'Takeoff': t('libs.slideToConfirm.takeoffDenied'),
+    'Land': t('libs.slideToConfirm.landDenied'),
+    'Goto': t('libs.slideToConfirm.gotoDenied'),
+    'GoTo': t('libs.slideToConfirm.gotoDenied'),
+    'Altitude Change': t('libs.slideToConfirm.altitudeChangeDenied'),
+  }
+  return commandMap[command] || `${command} denied`
+}
+
+/**
+ * Get translated expired text based on command
+ * @param {string} command The command to translate
+ * @returns {string} The translated expired text
+ */
+function getExpiredText(command: string): string {
+  const commandMap: Record<string, string> = {
+    'Arm': t('libs.slideToConfirm.armExpired'),
+    'Disarm': t('libs.slideToConfirm.disarmExpired'),
+    'Takeoff': t('libs.slideToConfirm.takeoffExpired'),
+    'Land': t('libs.slideToConfirm.landExpired'),
+    'Goto': t('libs.slideToConfirm.gotoExpired'),
+    'GoTo': t('libs.slideToConfirm.gotoExpired'),
+    'Altitude Change': t('libs.slideToConfirm.altitudeChangeExpired'),
+  }
+  return commandMap[command] || `${command} expired`
+}
+
+/**
+ * Get translated command name
+ * @param {string} command The command to translate
+ * @returns {string} The translated command name
+ */
+function getCommandName(command: string): string {
+  const commandMap: Record<string, string> = {
+    'Arm': t('libs.slideToConfirm.arm'),
+    'Disarm': t('libs.slideToConfirm.disarm'),
+    'Takeoff': t('libs.slideToConfirm.takeoff'),
+    'Land': t('libs.slideToConfirm.land'),
+    'Goto': t('libs.slideToConfirm.goto'),
+    'GoTo': t('libs.slideToConfirm.goto'),
+    'Altitude Change': t('libs.slideToConfirm.altitudeChange'),
+    'Arm and GoTo': t('libs.slideToConfirm.armAndGoTo'),
+  }
+  return commandMap[command] || command
 }
 
 /**
@@ -158,17 +252,17 @@ export function slideToConfirm(content: ConfirmContent, byPass = false): Promise
 
   /** If there is already some confirmation step, deny the action */
   if (showSlideToConfirm.value) {
-    return Promise.reject(new Error(`Cannot confirm ${content.command}. Another confirmation is already in progress.`))
+    return Promise.reject(new Error(t('errors.anotherConfirmationInProgress', { command: content.command })))
   }
 
   // Register the hold to confirm action for joystick listening
   const holdToConfirmCallbackId = registerHoldToConfirm()
 
   // Setup and show the slide to confirm component
-  sliderText.value = content.text ?? `Confirm ${content.command}`
-  confirmationSliderText.value = content.confirmedText ?? `${content.command} confirmed`
-  deniedText.value = content.deniedText ?? `${content.command} denied`
-  expiredText.value = content.expiredText ?? `${content.command} expired`
+  sliderText.value = content.text ?? getConfirmText(content.command)
+  confirmationSliderText.value = content.confirmedText ?? getConfirmedText(content.command)
+  deniedText.value = content.deniedText ?? getDeniedText(content.command)
+  expiredText.value = content.expiredText ?? getExpiredText(content.command)
   showSlideToConfirm.value = true
 
   // Register the callback to call the action
@@ -181,7 +275,7 @@ export function slideToConfirm(content: ConfirmContent, byPass = false): Promise
         return resolve()
       }
 
-      return reject(new Error(`Confirmation of '${content.command}' command ignored or denied by the user.`))
+      return reject(new Error(t('errors.commandIgnoredOrDenied', { command: getCommandName(content.command) })))
     }
   })
 }

@@ -18,7 +18,7 @@
       <v-card class="pa-2 bg-[#20202022] backdrop-blur-2xl text-white rounded-lg">
         <v-card-title class="flex justify-between">
           <div />
-          <div>Mission configuration</div>
+          <div>{{ t('missionPlanning.missionConfiguration') }}</div>
           <v-btn
             icon
             :width="38"
@@ -36,7 +36,7 @@
         </v-card-title>
         <v-card-text>
           <div class="flex flex-col">
-            <p>Mission Name</p>
+            <p>{{ t('missionPlanning.missionName') }}</p>
             <v-text-field
               v-model="store.missionName"
               append-inner-icon="mdi-restore"
@@ -51,7 +51,8 @@
 </template>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
+import { computed, toRefs } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { coolMissionNames } from '@/libs/funny-name/words'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -73,6 +74,12 @@ const miniWidget = toRefs(props).miniWidget
 const store = useMissionStore()
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
+const { t, tm } = useI18n()
 
-const randomMissionName = coolMissionNames.random()
+const randomMissionName = computed(() => {
+  // Get localized mission names array, fallback to English if not available
+  const localizedNames = tm('missionNames')
+  const names = Array.isArray(localizedNames) && localizedNames.length > 0 ? localizedNames : coolMissionNames
+  return names[Math.floor(Math.random() * names.length)] || ''
+})
 </script>

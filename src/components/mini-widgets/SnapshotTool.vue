@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     ref="recorderWidget"
     class="flex justify-around pl-1 pr-[3px] py-1 text-center text-white rounded-lg w-[70px] h-9 align-center bg-slate-800/60"
@@ -16,18 +16,26 @@
           class="bg-[#FFFFFF11] hover:bg-[#FFFFFF22] cursor-pointer text-sm"
           @click="handleOpenSnapshotLibrary"
           ><template #title>
-            <span class="text-white text-[16px] font-bold">Open snapshot library</span>
+            <span class="text-white text-[16px] font-bold">{{
+              $t('components.mini-widgets.SnapshotTool.openLibrary')
+            }}</span>
           </template>
         </v-list-item>
         <v-divider />
-        <v-list-item title="Single capture" @click="handleSelectSnapshotTriggerType('single')">
+        <v-list-item
+          :title="$t('components.mini-widgets.SnapshotTool.singleCapture')"
+          @click="handleSelectSnapshotTriggerType('single')"
+        >
           <template #append>
             <v-icon size="22" icon="mdi-video-image" />
           </template>
         </v-list-item>
         <v-divider />
         <v-divider />
-        <v-list-item title="Timed multi-capture" @click="handleSelectSnapshotTriggerType('timed')">
+        <v-list-item
+          :title="$t('components.mini-widgets.SnapshotTool.timedMultiCapture')"
+          @click="handleSelectSnapshotTriggerType('timed')"
+        >
           <template #append> <v-icon size="20" icon="mdi-timer-outline" /> </template>
         </v-list-item>
       </v-list>
@@ -58,7 +66,7 @@
       class="flex flex-col items-center p-2 px-4 pt-1 m-5 rounded-md gap-y-4"
       :style="interfaceStore.globalGlassMenuStyles"
     >
-      <p class="text-xl font-semibold mt-2 mb-4">Snapshot settings</p>
+      <p class="text-xl font-semibold mt-2 mb-4">{{ $t('components.mini-widgets.snapshotTool.settings') }}</p>
       <div class="absolute top-0 right-0">
         <v-tooltip
           location="bottom"
@@ -77,7 +85,7 @@
             />
           </template>
 
-          <span> Some features like “Capturing Cockpit work area” are only available in the Electron version. </span>
+          <span>{{ $t('components.mini-widgets.snapshotTool.electronOnlyFeatures') }}</span>
         </v-tooltip>
       </div>
       <v-select
@@ -86,9 +94,9 @@
         density="compact"
         multiple
         clearable
-        label="Streams to capture"
+        :label="$t('components.mini-widgets.snapshotTool.streamsToCapture')"
         variant="outlined"
-        no-data-text="No streams available."
+        :no-data-text="$t('components.mini-widgets.snapshotTool.noStreamsAvailable')"
         hide-details
         theme="dark"
         class="w-[90%]"
@@ -105,12 +113,12 @@
           @update:model-value="(val) => (miniWidget.options.captureWorkspace = val)"
         />
         <p class="ml-[4px] -mb-[2px] text-sm" :class="{ 'opacity-20 pointer-events-none': !isElectronEnv }">
-          Capture Cockpit work area (Electron only)
+          {{ $t('components.mini-widgets.snapshotTool.captureWorkspace') }}
         </p>
       </div>
       <v-text-field
         v-model.number="timedSnapshotInterval"
-        label="Timed snapshot interval (seconds)"
+        :label="$t('components.mini-widgets.snapshotTool.timedSnapshotInterval')"
         type="number"
         density="compact"
         variant="outlined"
@@ -136,6 +144,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
@@ -147,6 +156,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
+const { t } = useI18n()
 const snapshotStore = useSnapshotStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
@@ -277,7 +287,7 @@ watch(isTakingTimedSnapshot, (newValue) => {
     }, PROGRESS_TICK)
     return
   }
-  openSnackbar({ message: 'Timed snapshot stopped.', variant: 'info', duration: 2000 })
+  openSnackbar({ message: t('info.timedSnapshotStopped'), variant: 'info', duration: 2000 })
   if (shotInterval) {
     clearInterval(shotInterval)
     shotInterval = null

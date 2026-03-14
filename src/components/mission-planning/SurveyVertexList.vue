@@ -13,7 +13,7 @@
       :is-expanded="true"
     >
       <template #title>
-        <p class="ml-10 text-center text-[13px] font-normal">Survey Polygon Vertices</p>
+        <p class="ml-10 text-center text-[13px] font-normal">{{ $t('missionPlanning.surveyPolygonVertices') }}</p>
       </template>
       <template #content>
         <div class="flex flex-col gap-y-1 p-2 overflow-y-auto max-h-[calc(100vh-150px)]">
@@ -66,10 +66,12 @@
 
 <script setup lang="ts">
 import L from 'leaflet'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
+const { t: $t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps<{

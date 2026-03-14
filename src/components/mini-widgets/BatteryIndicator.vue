@@ -1,6 +1,8 @@
 <template>
   <v-tooltip
-    :text="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue.toFixed(1) + '%'}`"
+    :text="`${$t('battery.remaining')} ${
+      remainingDisplayValue < 0 ? $t('battery.noData') : remainingDisplayValue.toFixed(1) + '%'
+    }`"
   >
     <template #activator="{ props: tooltipProps }">
       <div v-bind="tooltipProps" class="flex items-center w-[95px] h-12 text-white justify-center">
@@ -72,7 +74,7 @@
   </v-tooltip>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white w-[400px]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Battery Indicator Config</v-card-title>
+      <v-card-title class="text-center">{{ $t('components.mini-widgets.BatteryIndicator.config') }}</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
         <div class="absolute top-2 right-2 z-10">
           <v-btn
@@ -86,11 +88,20 @@
             <i class="mdi mdi-close"></i>
           </v-btn>
         </div>
-        <v-checkbox v-model="miniWidget.options.showCurrent" label="Show Current" hide-details class="-mb-5" />
-        <v-checkbox v-model="miniWidget.options.showPower" label="Show Power" hide-details />
+        <v-checkbox
+          v-model="miniWidget.options.showCurrent"
+          :label="$t('components.mini-widgets.BatteryIndicator.showCurrent')"
+          hide-details
+          class="-mb-5"
+        />
+        <v-checkbox
+          v-model="miniWidget.options.showPower"
+          :label="$t('components.mini-widgets.BatteryIndicator.showPower')"
+          hide-details
+        />
         <v-text-field
           v-model.number="userSetToggleInterval"
-          label="Toggle Interval (ms)"
+          :label="$t('components.mini-widgets.BatteryIndicator.toggleInterval')"
           type="number"
           :min="minInterval"
           step="100"
@@ -104,15 +115,12 @@
         <div class="flex justify-between items-center -mt-1">
           <v-checkbox
             v-model="miniWidget.options.useVoltageToColor"
-            label="Change color by voltage"
+            :label="$t('components.mini-widgets.BatteryIndicator.useVoltageToColorScheme')"
             hide-details
             class="mr-1"
           />
           <div class="flex items-center gap-x-1">
-            <v-tooltip
-              location="top"
-              text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
-            >
+            <v-tooltip location="top" :text="$t('components.mini-widgets.BatteryIndicator.voltageConfigTooltip')">
               <template #activator="{ props: infoProps }">
                 <v-icon
                   v-bind="infoProps"
@@ -122,7 +130,7 @@
                 />
               </template>
             </v-tooltip>
-            <v-tooltip location="top" text="Reset colors and voltage thresholds to default values">
+            <v-tooltip location="top" :text="$t('components.mini-widgets.BatteryIndicator.resetToDefaults')">
               <template #activator="{ props: resetProps }">
                 <v-btn v-bind="resetProps" icon size="small" variant="text" class="text-white" @click="resetToDefaults">
                   <v-icon icon="mdi-restore" size="18" />
@@ -137,7 +145,7 @@
             <div class="h-3 shrink-0" />
             <v-text-field
               v-model.number="batteryThresholds.medium"
-              label="Medium threshold (V)"
+              :label="$t('components.mini-widgets.BatteryIndicator.mediumVoltage')"
               type="number"
               density="compact"
               variant="outlined"
@@ -145,7 +153,7 @@
             />
             <v-text-field
               v-model.number="batteryThresholds.low"
-              label="Low threshold (V)"
+              :label="$t('components.mini-widgets.BatteryIndicator.lowVoltage')"
               type="number"
               density="compact"
               variant="outlined"
@@ -153,7 +161,7 @@
             />
             <v-text-field
               v-model.number="batteryThresholds.critical"
-              label="Critical threshold (V)"
+              :label="$t('components.mini-widgets.BatteryIndicator.criticalVoltage')"
               type="number"
               density="compact"
               variant="outlined"
