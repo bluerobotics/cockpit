@@ -22,6 +22,25 @@ export const defaultProfileVehicleCorrespondency = {
   [MavType.MAV_TYPE_QUADROTOR]: defaultMavProfileHash,
 }
 
+export const blankViewsGroup: Profile = {
+  name: 'Default',
+  hash: '00000000-0000-0000-0000-000000000000',
+  views: [
+    {
+      hash: '00000000-0000-0000-0000-000000000001',
+      name: 'Main View',
+      showBottomBarOnBoot: true,
+      visible: true,
+      widgets: [],
+      miniWidgetContainers: [
+        { name: 'Bottom-left container', widgets: [] },
+        { name: 'Bottom-center container', widgets: [] },
+        { name: 'Bottom-right container', widgets: [] },
+      ],
+    },
+  ],
+}
+
 export const defaultWidgetManagerVars: WidgetManagerVars = {
   everMounted: false,
   configMenuOpen: false,

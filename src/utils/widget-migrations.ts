@@ -29,29 +29,28 @@ const performMapMissionControlPanelMigration = (username: string): void => {
   if (!missionControlPanelTemplate) return
 
   let hasChanges = false
-  widgetStore.savedProfiles.forEach((profile) => {
-    profile.views.forEach((view) => {
-      const hasMap = view.widgets.some((w) => w.component === WidgetType.Map)
-      const hasMissionCP = view.widgets.some((w) => w.component === WidgetType.MissionControlPanel)
+  const profile = widgetStore.currentProfile
+  profile.views.forEach((view) => {
+    const hasMap = view.widgets.some((w) => w.component === WidgetType.Map)
+    const hasMissionCP = view.widgets.some((w) => w.component === WidgetType.MissionControlPanel)
 
-      if (hasMap && !hasMissionCP) {
-        widgetStore.addWidget(
-          {
-            component: missionControlPanelTemplate.component,
-            name: missionControlPanelTemplate.name,
-            options: missionControlPanelTemplate.options,
-            icon: '',
-          },
-          view
-        )
-        const addedWidget = view.widgets[0]
-        if (addedWidget?.component === WidgetType.MissionControlPanel) {
-          addedWidget.position = missionControlPanelTemplate.position
-          addedWidget.size = missionControlPanelTemplate.size
-        }
-        hasChanges = true
+    if (hasMap && !hasMissionCP) {
+      widgetStore.addWidget(
+        {
+          component: missionControlPanelTemplate.component,
+          name: missionControlPanelTemplate.name,
+          options: missionControlPanelTemplate.options,
+          icon: '',
+        },
+        view
+      )
+      const addedWidget = view.widgets[0]
+      if (addedWidget?.component === WidgetType.MissionControlPanel) {
+        addedWidget.position = missionControlPanelTemplate.position
+        addedWidget.size = missionControlPanelTemplate.size
       }
-    })
+      hasChanges = true
+    }
   })
 
   if (hasChanges) {

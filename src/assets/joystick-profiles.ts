@@ -27,6 +27,25 @@ export const defaultProtocolMappingVehicleCorrespondency = {
   [MavType.MAV_TYPE_QUADROTOR]: defaultMavMappingHash,
 }
 
+export const blankMapping: JoystickProtocolActionsMapping = {
+  name: 'Custom mapping',
+  hash: '00000000-0000-0000-0000-000000000002',
+  axesCorrespondencies: {
+    [JoystickAxis.A0]: { action: otherAvailableActions.no_function, min: -1000, max: 1000 },
+    [JoystickAxis.A1]: { action: otherAvailableActions.no_function, min: -1000, max: 1000 },
+    [JoystickAxis.A2]: { action: otherAvailableActions.no_function, min: -1000, max: 1000 },
+    [JoystickAxis.A3]: { action: otherAvailableActions.no_function, min: -1000, max: 1000 },
+  },
+  buttonsCorrespondencies: {
+    [CockpitModifierKeyOption.regular]: Object.fromEntries(
+      Array.from({ length: 18 }, (_, i) => [i, { action: otherAvailableActions.no_function }])
+    ),
+    [CockpitModifierKeyOption.shift]: Object.fromEntries(
+      Array.from({ length: 18 }, (_, i) => [i, { action: otherAvailableActions.no_function }])
+    ),
+  },
+}
+
 // TODO: Adjust mapping for PS5 controller
 export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
   {
