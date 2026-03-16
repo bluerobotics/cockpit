@@ -12,91 +12,55 @@
     class="relative flex flex-col justify-start overflow-y-auto text-white edit-panel left-panel h-full"
     :class="{ active: editMode }"
   >
-    <div
-      class="flex flex-row justify-start relative items-center bg-[#CBCBCB2A] elevation-5 h-[40px] shrink-0 overflow-hidden"
-    >
-      <v-icon
-        size="sm"
-        :icon="isViewsPanelExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-        class="ml-1 mr-[6px] 2xl:text-[26px] xl:text-[24px] text-[20px]"
-        @click="toggleViewsPanel"
-      />
-      <v-divider vertical />
-      <v-btn-toggle theme="dark" tile divided>
-        <v-btn
-          v-for="view in store.currentProfile.views"
-          :key="view.hash"
-          size="sm"
-          :class="view === store.currentView ? 'bg-[#4FA483]' : 'bg-transparent'"
-          class="wrapclass 2xl:w-[129px] xl:w-[108px] lg:w-[84px] 2xl:h-[85px] xl:h-[75px] lg:h-[65px] 2xl:text-[16px] xl:text-[14px] text-[11px] text-none overflow-x-hidden"
-          @click="selectView(view)"
-        >
-          <span class="wrapclass 2xl:max-w-[119px] xl:max-w-[100px] lg:max-w-[80px]">{{ view.name }}</span>
-        </v-btn>
-      </v-btn-toggle>
-      <div class="flex-grow" />
-      <v-menu offset-y theme="dark">
-        <template #activator="{ props: buttonProps }">
-          <v-btn
-            icon="mdi-dots-vertical"
-            size="xs"
-            variant="text"
-            class="2xl:text-lg xl:text-md text-sm mr-1"
-            v-bind="buttonProps"
-          />
-        </template>
-        <v-list>
-          <div class="flex justify-center max-w-[250px] px-2 gap-x-[5px] pb-2">
-            <p class="whitespace-nowrap">Settings</p>
+    <div :key="forceUpdate" class="bg-[#041e2e99]">
+      <div class="pt-1 bg-[#041e2e99] pb-2">
+        <div class="flex justify-center w-full bg-[#CBCBCB09] relative">
+          <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
+            <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">Views</p>
           </div>
-          <v-divider />
-          <v-list-item class="hover:bg-white/[0.04]">
-            <label class="flex w-full h-full cursor-pointer justify-between">
-              <v-list-item-title>Import views</v-list-item-title>
-              <input type="file" accept="application/json" hidden @change="(e: Event) => store.importViewsGroup(e)" />
-              <v-icon size="20">mdi-upload</v-icon>
-            </label>
-          </v-list-item>
-          <v-list-item @click="store.exportViewsGroup(store.currentProfile)">
-            <div class="flex w-full justify-between">
-              <v-list-item-title>Export views</v-list-item-title>
-              <v-icon size="20">mdi-download</v-icon>
-            </div>
-          </v-list-item>
-          <v-list-item @click="store.snapToGrid = !store.snapToGrid">
-            <div class="flex w-full justify-between mt-[6px]">
-              <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
-              <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
-            </div>
-          </v-list-item>
-          <v-list-item @click="resetViewsGroup">
-            <div class="flex w-full justify-between mt-[6px]">
-              <v-list-item-title class="mr-6">Reset to default</v-list-item-title>
-              <v-icon size="20" class="mt-[2px]">mdi-reload</v-icon>
-            </div>
-          </v-list-item>
-        </v-list>
-      </v-menu>
-      <v-badge
-        v-if="store.currentProfile.views.length > 3"
-        :content="`+${store.currentProfile.views.length - 3}`"
-        color="#ad1f83"
-        overlap
-        class="absolute right-4 top-[9px] mr-0 elevation-4 cursor-pointer elevation-3 scale-[85%]"
-        @click="toggleViewsPanel"
-      />
-    </div>
-    <div
-      :key="forceUpdate"
-      ref="content"
-      class="bg-[#041e2e99]"
-      :class="['content-expand-collapse', { expanding: isViewsPanelExpanded, collapsing: !isViewsPanelExpanded }]"
-    >
-      <div class="pt-1 bg-[#041e2e99] pb-[50px]">
-        <div class="flex justify-center w-full bg-[#CBCBCB09]">
-          <div class="flex w-[350px] justify-center py-[2px]">
-            <p class="overflow-hidden text-[12px] text-ellipsis whitespace-nowrap opacity-60">Views</p>
-          </div>
+          <v-menu offset-y theme="dark">
+            <template #activator="{ props: buttonProps }">
+              <v-btn
+                icon="mdi-dots-vertical"
+                size="xs"
+                variant="text"
+                class="text-sm absolute right-1 top-1/2 -translate-y-1/2"
+                v-bind="buttonProps"
+              />
+            </template>
+            <v-list>
+              <v-list-item class="hover:bg-white/[0.04]">
+                <label class="flex w-full h-full cursor-pointer justify-between">
+                  <v-list-item-title>Import views</v-list-item-title>
+                  <input
+                    type="file"
+                    accept="application/json"
+                    hidden
+                    @change="(e: Event) => store.importViewsGroup(e)"
+                  />
+                  <v-icon size="20">mdi-upload</v-icon>
+                </label>
+              </v-list-item>
+              <v-list-item @click="store.exportViewsGroup(store.currentProfile)">
+                <div class="flex w-full justify-between">
+                  <v-list-item-title>Export views</v-list-item-title>
+                  <v-icon size="20">mdi-download</v-icon>
+                </div>
+              </v-list-item>
+              <v-list-item @click="store.snapToGrid = !store.snapToGrid">
+                <div class="flex w-full justify-between mt-[6px]">
+                  <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
+                  <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
+                </div>
+              </v-list-item>
+              <v-list-item @click="resetViewsGroup">
+                <div class="flex w-full justify-between mt-[6px]">
+                  <v-list-item-title class="mr-6">Reset to default</v-list-item-title>
+                  <v-icon size="20" class="mt-[2px]">mdi-reload</v-icon>
+                </div>
+              </v-list-item>
+            </v-list>
+          </v-menu>
         </div>
         <VueDraggable v-model="store.currentProfile.views" :animation="150" handle=".view-drag-handle">
           <div
@@ -136,14 +100,14 @@
       </div>
     </div>
     <v-divider />
-    <div id="view-widgets-list" class="overflow-y-scroll h-full">
-      <div class="flex justify-center w-full bg-[#CBCBCB09]">
-        <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
-          <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
-            Widgets in {{ store.currentView.name }}
-          </p>
-        </div>
+    <div class="flex justify-center w-full bg-[#CBCBCB09] shrink-0">
+      <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
+        <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
+          Widgets in {{ store.currentView.name }}
+        </p>
       </div>
+    </div>
+    <div id="view-widgets-list" class="overflow-y-scroll h-full">
       <ExpansiblePanel
         :key="forceUpdate"
         :compact="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? true : false"
@@ -799,40 +763,6 @@ const widgetImages = {
   VirtualHorizon: VirtualHorizonImg,
 }
 
-const selectView = (view: View): void => {
-  if (view === store.currentView) {
-    toggleViewsPanel()
-    return
-  }
-  store.selectView(view)
-}
-
-const isViewsPanelExpanded = ref(false)
-const toggleViewsPanel = (): void => {
-  isViewsPanelExpanded.value = !isViewsPanelExpanded.value
-}
-
-const content = ref<HTMLElement | null>(null)
-
-watch(isViewsPanelExpanded, (newValue) => {
-  if (content.value) {
-    if (newValue) {
-      content.value.style.maxHeight = content.value.scrollHeight + 'px'
-    } else {
-      content.value.style.maxHeight = content.value.scrollHeight + 'px'
-      setTimeout(() => {
-        content.value!.style.maxHeight = '0px'
-      }, 0)
-    }
-  }
-})
-
-onMounted(() => {
-  if (content.value && !isViewsPanelExpanded.value) {
-    content.value.style.maxHeight = '0px'
-  }
-})
-
 const widgetAddMenuGroupOptions = {
   name: 'generalGroup',
   pull: 'clone',
@@ -1211,21 +1141,6 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
   border-radius: 0.125rem;
   cursor: pointer;
   opacity: 0.8;
-}
-
-.content-expand-collapse {
-  width: 100%;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.content-expand-collapse.expanding {
-  max-height: 10000px; /* Set a large enough value to cover the content */
-}
-
-.content-expand-collapse.collapsing {
-  max-height: 0;
 }
 
 .wrapclass {
