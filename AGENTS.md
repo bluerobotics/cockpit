@@ -28,7 +28,8 @@ xxx
 When writing code:
 - Follow existing patterns in the codebase exactly
 - Follow the rules specified on `eslintrc.cjs`
-- No comments unless explaining "why", never "what"
+- No new comments unless explaining "why", never "what"
+- Do not modify or delete existing comments unless they are incorrect (e.g. due to logical changes of the code they refer to)
 - Prefer editing existing files over creating new ones
 - Use optional chaining (`?.`) when possible in typescript
 
