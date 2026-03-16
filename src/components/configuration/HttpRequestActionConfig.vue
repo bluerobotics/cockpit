@@ -81,6 +81,64 @@
               Edit
             </v-btn>
           </div>
+
+          <!-- Data Lake Configuration (GET requests only) -->
+          <div v-if="newActionConfig.method === HttpRequestMethod.GET" class="mt-4">
+            <v-divider class="mb-4" />
+            <div class="d-flex align-center justify-space-between mb-2">
+              <h3 class="text-subtitle-2 font-weight-bold">Data Lake Parsers</h3>
+              <v-btn variant="text" class="px-2 py-1" density="compact" @click="openDataLakeParserDialog">
+                <v-icon size="small">mdi-plus</v-icon>
+                Add Parser
+              </v-btn>
+            </div>
+
+            <div
+              v-if="newActionConfig.dataLakeParsers && newActionConfig.dataLakeParsers.length > 0"
+              class="-mb-4 overflow-y-auto"
+              style="max-height: 180px"
+            >
+              <div
+                v-for="(parser, index) in newActionConfig.dataLakeParsers"
+                :key="`parser-${index}`"
+                class="d-flex align-center justify-space-between py-2 px-3 mb-1 rounded"
+                style="background: rgba(255, 255, 255, 0.05)"
+              >
+                <div class="flex-grow-1 overflow-hidden mr-2">
+                  <div class="text-body-2 font-weight-medium text-truncate">
+                    {{ getDataLakeVariableName(parser.dataLakeVariableId) }}
+                  </div>
+                  <div class="text-caption text-truncate" style="color: rgba(255, 255, 255, 0.5)">
+                    {{ parser.responseParser || 'Full response' }}
+                  </div>
+                </div>
+                <div class="d-flex align-center" style="gap: 6px">
+                  <v-btn
+                    icon="mdi-pencil"
+                    size="x-small"
+                    variant="outlined"
+                    class="rounded-full"
+                    @click="editDataLakeParser(index)"
+                  />
+                  <v-btn
+                    icon="mdi-trash-can-outline"
+                    size="x-small"
+                    variant="outlined"
+                    class="rounded-full"
+                    @click="removeDataLakeParser(index)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-else
+              class="text-body-2 py-3 px-4 rounded text-center"
+              style="background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.7)"
+            >
+              No parsers configured. Click "Add Parser" to add one.
+            </div>
+          </div>
         </v-form>
       </v-card-text>
       <v-divider class="mt-2 mx-10" />
@@ -215,6 +273,48 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Data Lake Parser Dialog -->
+  <v-dialog v-model="dataLakeParserDialog.show" max-width="500px">
+    <v-card class="rounded-lg p-3" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="text-h6 font-weight-bold pb-4 text-center">
+        {{ dataLakeParserDialog.editIndex !== -1 ? 'Edit Data Lake Parser' : 'Add Data Lake Parser' }}
+      </v-card-title>
+      <v-card-text class="pa-4">
+        <v-form class="d-flex flex-column gap-2" @submit.prevent="saveDataLakeParser">
+          <v-select
+            v-model="dataLakeParserDialog.dataLakeVariableId"
+            :items="dataLakeVariableOptions"
+            label="Data Lake Variable"
+            hint="Select the variable to populate with the response data"
+            persistent-hint
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+
+          <v-text-field
+            v-model="dataLakeParserDialog.responseParser"
+            label="Response Parser (optional)"
+            hint="JSON path to extract data (e.g., 'response.coco' or 'response.xixi[2]'). Leave empty to use full response."
+            persistent-hint
+            variant="outlined"
+            density="compact"
+            placeholder="response.propertyName"
+          />
+        </v-form>
+      </v-card-text>
+      <v-divider class="m-2" />
+      <v-card-actions class="pa-2 -mb-1">
+        <div class="flex w-full justify-between">
+          <v-btn color="white" variant="text" @click="closeDataLakeParserDialog">Cancel</v-btn>
+          <v-btn color="white" :disabled="!dataLakeParserDialog.dataLakeVariableId" @click="saveDataLakeParser">
+            {{ dataLakeParserDialog.editIndex !== -1 ? 'Save' : 'Add' }}
+          </v-btn>
+        </div>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
@@ -223,6 +323,7 @@ import { computed, ref } from 'vue'
 import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
 import {
   availableHttpRequestMethods,
+  DataLakeParser,
   deleteHttpRequestActionConfig,
   getHttpRequestActionConfig,
   HttpRequestActionConfig,
@@ -248,6 +349,7 @@ const defaultActionConfig = {
   },
   urlParams: {},
   body: '',
+  dataLakeParsers: [] as DataLakeParser[],
 }
 
 const newActionConfig = ref<HttpRequestActionConfig>(defaultActionConfig)
@@ -275,6 +377,13 @@ const headerDialog = ref({
   error: '',
 })
 
+const dataLakeParserDialog = ref({
+  show: false,
+  dataLakeVariableId: '',
+  responseParser: '',
+  editIndex: -1,
+})
+
 const paramValueOptions = computed(() => {
   const options = [{ title: 'Fixed (specify below)', value: 'fixed' }]
   const availableInputParameters = getAllDataLakeVariablesInfo()
@@ -284,19 +393,40 @@ const paramValueOptions = computed(() => {
   return options
 })
 
+const dataLakeVariableOptions = computed(() => {
+  const availableVariables = getAllDataLakeVariablesInfo()
+  return Object.values(availableVariables).map((variable) => ({
+    title: `${variable.name} (${variable.id})`,
+    value: variable.id,
+  }))
+})
+
+const getDataLakeVariableName = (id: string): string => {
+  const availableVariables = getAllDataLakeVariablesInfo()
+  const variable = Object.values(availableVariables).find((v) => v.id === id)
+  return variable ? variable.name : id
+}
+
 const isFormValid = computed(() => {
   return isValidRequestConfig(newActionConfig.value)
 })
 
 const isValidRequestConfig = (config: HttpRequestActionConfig): boolean => {
-  return (
+  const basicValidation =
     !!config.name &&
     !!config.method &&
     !!config.url &&
     isValidUrlParams(config.urlParams) &&
     isValidHeaders(config.headers).isValid &&
     isValidJsonTemplate(config.body)
-  )
+
+  // Additional validation for data lake parsers (GET requests only)
+  if (config.method === HttpRequestMethod.GET && config.dataLakeParsers && config.dataLakeParsers.length > 0) {
+    const hasValidParsers = config.dataLakeParsers.every((parser) => !!parser.dataLakeVariableId)
+    return basicValidation && hasValidParsers
+  }
+
+  return basicValidation
 }
 
 const validateJsonTemplate = (template: string): ValidationFunctionReturn => {
@@ -448,6 +578,60 @@ const removeHeader = (key: string): void => {
   delete newActionConfig.value.headers[key]
 }
 
+const openDataLakeParserDialog = (): void => {
+  dataLakeParserDialog.value = {
+    show: true,
+    dataLakeVariableId: '',
+    responseParser: '',
+    editIndex: -1,
+  }
+}
+
+const closeDataLakeParserDialog = (): void => {
+  dataLakeParserDialog.value.show = false
+}
+
+const editDataLakeParser = (index: number): void => {
+  if (newActionConfig.value.dataLakeParsers && newActionConfig.value.dataLakeParsers[index]) {
+    const parser = newActionConfig.value.dataLakeParsers[index]
+    dataLakeParserDialog.value = {
+      show: true,
+      dataLakeVariableId: parser.dataLakeVariableId,
+      responseParser: parser.responseParser || '',
+      editIndex: index,
+    }
+  }
+}
+
+const saveDataLakeParser = (): void => {
+  if (!dataLakeParserDialog.value.dataLakeVariableId) return
+
+  const parser: DataLakeParser = {
+    dataLakeVariableId: dataLakeParserDialog.value.dataLakeVariableId,
+    responseParser: dataLakeParserDialog.value.responseParser || undefined,
+  }
+
+  if (!newActionConfig.value.dataLakeParsers) {
+    newActionConfig.value.dataLakeParsers = []
+  }
+
+  if (dataLakeParserDialog.value.editIndex !== -1) {
+    // Edit existing parser
+    newActionConfig.value.dataLakeParsers[dataLakeParserDialog.value.editIndex] = parser
+  } else {
+    // Add new parser
+    newActionConfig.value.dataLakeParsers.push(parser)
+  }
+
+  closeDataLakeParserDialog()
+}
+
+const removeDataLakeParser = (index: number): void => {
+  if (newActionConfig.value.dataLakeParsers) {
+    newActionConfig.value.dataLakeParsers.splice(index, 1)
+  }
+}
+
 const editMode = ref(false)
 
 const createActionConfig = (): void => {
@@ -505,7 +689,14 @@ const openEditDialog = (id: string): void => {
   const action = getHttpRequestActionConfig(id)
   if (action) {
     editMode.value = true
-    newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
+    const actionCopy = JSON.parse(JSON.stringify(action)) // Deep copy
+
+    // Ensure dataLakeParsers exists for backward compatibility
+    if (actionCopy.dataLakeParsers === undefined) {
+      actionCopy.dataLakeParsers = []
+    }
+
+    newActionConfig.value = actionCopy
     actionDialog.value.show = true
   }
 }
