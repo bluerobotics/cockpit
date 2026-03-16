@@ -61,19 +61,6 @@
                   </div>
 
                   <div v-if="availableModifierKeys" class="flex flex-row items-center mt-2 mb-3">
-                    <v-combobox
-                      v-model="vehicleTypesAssignedToCurrentProfile"
-                      :items="availableVehicleTypes"
-                      label="Vehicle types that use this profile by default:"
-                      chips
-                      multiple
-                      density="compact"
-                      hide-details
-                      variant="outlined"
-                      class="w-10/12 scale-90"
-                      theme="dark"
-                    />
-
                     <v-switch
                       v-model="controllerStore.holdLastInputWhenWindowHidden"
                       label="Hold last joystick input when window is hidden (tab changed or window minimized)"
@@ -81,57 +68,9 @@
                     />
                   </div>
                   <div class="flex w-full justify-center mb-2">
-                    <div
-                      v-for="functionMapping in controllerStore.protocolMappings"
-                      :key="functionMapping.name"
-                      class="relative mx-2"
-                    >
-                      <!-- Container for active profile -->
-                      <div
-                        v-if="activeProfileName === functionMapping.name"
-                        class="flex flex-col items-center bg-[#FFFFFF15] rounded-lg p-2 border border-[#FFFFFF30]"
-                      >
-                        <v-btn
-                          class="text-md bg-[#FFFFFF23]"
-                          :class="{
-                            'bg-[#FFFFFF43]': selectedProfile.name === functionMapping.name,
-                            'text-sm': interfaceStore.isOnSmallScreen,
-                          }"
-                          @click="selectProfile(functionMapping)"
-                        >
-                          {{ functionMapping.name }}
-                        </v-btn>
-                        <span class="text-xs text-gray-300 mt-1">Currently Active Profile</span>
-                      </div>
-
-                      <!-- Regular profile button -->
-                      <div v-else class="relative mt-2">
-                        <v-btn
-                          class="text-md bg-[#FFFFFF23] px-6"
-                          :class="{
-                            'bg-[#FFFFFF43]': selectedProfile.name === functionMapping.name,
-                            'text-sm': interfaceStore.isOnSmallScreen,
-                          }"
-                          @click="selectProfile(functionMapping)"
-                        >
-                          {{ functionMapping.name }}
-                        </v-btn>
-
-                        <!-- Small switch button for selected non-active profile -->
-                        <v-btn
-                          v-if="selectedProfile.name === functionMapping.name && isSelectedProfileDifferentFromActive"
-                          icon
-                          size="x-small"
-                          class="absolute top-3 -right-3 text-white bg-[#51565B] rounded-full"
-                          @click.stop="switchToSelectedProfile"
-                        >
-                          <v-icon size="14">mdi-swap-horizontal</v-icon>
-                          <v-tooltip activator="parent" location="top">
-                            Switch to "{{ selectedProfile.name }}" profile
-                          </v-tooltip>
-                        </v-btn>
-                      </div>
-                    </div>
+                    <span class="text-lg font-medium" :class="{ 'text-sm': interfaceStore.isOnSmallScreen }">
+                      {{ controllerStore.protocolMapping.name }}
+                    </span>
                   </div>
                 </div>
                 <div class="flex w-full h-[47px]">
@@ -694,55 +633,6 @@
       </template>
     </InteractionDialog>
   </teleport>
-
-  <!-- Profile Switch Confirmation Dialog -->
-  <InteractionDialog
-    v-model:show-dialog="showProfileSwitchDialog"
-    title="Confirm Joystick Profile Switch"
-    variant="text-only"
-    :max-width="820"
-    :persistent="true"
-  >
-    <template #content>
-      <div class="flex items-center justify-center">
-        <v-icon icon="mdi-alert-rhombus" size="60px" color="yellow" class="mx-4" />
-        <div class="flex flex-col items-start px-5 font-medium gap-y-3 mb-6">
-          <p>
-            Switching joystick configuration from "{{ activeProfileName }}" (<span class="font-bold">{{
-              getVehicleTypesForProfile(activeProfileHash)
-                .join(', ')
-                .replace('MAV_TYPE_', '')
-                .replace('_', ' ')
-                .toLowerCase()
-            }}</span
-            >) to "{{ selectedProfile.name }}" (<span class="font-bold">{{
-              getVehicleTypesForProfile(selectedProfile.hash)
-                .join(', ')
-                .replace('MAV_TYPE_', '')
-                .replace('_', ' ')
-                .toLowerCase()
-            }}</span
-            >), while connected to a
-            <span class="font-bold">{{ vehicleType.replace('MAV_TYPE_', '').replace('_', ' ').toLowerCase() }}</span>
-            vehicle.
-          </p>
-          <p v-if="getVehicleTypesForProfile(selectedProfile.hash).includes(vehicleType)">
-            As the selected mapping set matches your vehicle type, it's probably safe to switch.
-          </p>
-          <p v-else>
-            As the selected mapping set does not match your vehicle type, your motors will likely start spinning as soon
-            as you close this configuration page!
-          </p>
-        </div>
-      </div>
-    </template>
-    <template #actions>
-      <div class="flex justify-between w-full">
-        <v-btn variant="text" class="m-1" @click="cancelProfileSwitch"> Cancel </v-btn>
-        <v-btn variant="text" class="m-1" @click="confirmProfileSwitch"> Switch </v-btn>
-      </div>
-    </template>
-  </InteractionDialog>
 </template>
 
 <script setup lang="ts">
@@ -759,13 +649,11 @@ import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
-import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
-import { getVehicleTypeFromMavType, getVehicleTypeFromModeActionId } from '@/libs/vehicle/ardupilot/common'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -786,14 +674,12 @@ import {
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
-const { globalAddress, vehicleType } = useMainVehicleStore()
+const { globalAddress } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
 
 const showJoystickWarningMessage = ref(false)
 const searchText = ref('')
-
-const showProfileSwitchDialog = ref(false)
 
 onMounted(async () => {
   controllerStore.enableForwarding = false
@@ -825,9 +711,6 @@ const maxVisibleInputs = 64
 // Track buttons and axes that are represented in the SVG joystick layouts
 const svgButtons = new Set<number>(Object.values(JoystickButton).filter((btn) => typeof btn === 'number') as number[])
 const svgAxes = new Set<JoystickAxis>([JoystickAxis.A0, JoystickAxis.A1, JoystickAxis.A2, JoystickAxis.A3])
-
-// Track the currently selected profile (for viewing) vs the active profile (for actual joystick control)
-const selectedProfileIndex = ref(0)
 
 // Throttled button states implementation for performance optimization
 const throttledButtonStates = ref<Record<number, number | undefined>>({})
@@ -924,13 +807,6 @@ const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void
   }
 }
 
-// Get the vehicle types (as VehicleType) that are assigned to the selected profile
-const allowedVehicleTypesForProfile = computed(() => {
-  return vehicleTypesAssignedToCurrentProfile.value
-    .map((mavType) => getVehicleTypeFromMavType(mavType))
-    .filter((vt): vt is NonNullable<typeof vt> => vt !== undefined)
-})
-
 const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
   const allowedProtocols = [
     JoystickProtocol.MAVLinkManualControl,
@@ -947,13 +823,6 @@ const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
       return dataLakeVariableInfo.allowUserToChangeValue && dataLakeVariableInfo.type !== 'string'
     })
     .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
-    .filter((action: JoystickAction) => {
-      // Filter mode actions to only show those matching the profile's vehicle types
-      const modeVehicleType = getVehicleTypeFromModeActionId(action.id)
-      if (!modeVehicleType) return true // Not a mode action, keep it
-      if (allowedVehicleTypesForProfile.value.length === 0) return true // No vehicle types assigned, show all
-      return allowedVehicleTypesForProfile.value.includes(modeVehicleType)
-    })
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 })
 
@@ -1119,52 +988,8 @@ const buttonActionsToShow = computed(() =>
   })
 )
 
-const availableVehicleTypes = computed(() => Object.keys(MavType))
-
-// Get the currently selected profile for viewing (not necessarily the active one)
-const selectedProfile = computed(() => controllerStore.protocolMappings[selectedProfileIndex.value])
-
-// Get the currently active profile name and hash
-const activeProfileName = computed(() => controllerStore.protocolMapping.name)
-const activeProfileHash = computed(() => controllerStore.protocolMapping.hash)
-
-// Check if the selected profile is different from the active one
-const isSelectedProfileDifferentFromActive = computed(() => selectedProfile.value.name !== activeProfileName.value)
-
-// Initialize selected profile to match active profile
-watch(
-  () => controllerStore.protocolMappingIndex,
-  (newIndex) => {
-    selectedProfileIndex.value = newIndex
-  },
-  { immediate: true }
-)
-
-// Computed properties for the selected profile data
-const selectedProfileAxesCorrespondencies = computed(() => selectedProfile.value.axesCorrespondencies)
-const selectedProfileButtonsCorrespondencies = computed(() => selectedProfile.value.buttonsCorrespondencies)
-
-const vehicleTypesAssignedToCurrentProfile = computed({
-  get() {
-    return Object.keys(controllerStore.vehicleTypeProtocolMappingCorrespondency).filter((vType) => {
-      // @ts-ignore: Enums in TS such
-      return controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === selectedProfile.value.hash
-    })
-  },
-  set(selectedVehicleTypes: string[]) {
-    availableVehicleTypes.value.forEach((vType) => {
-      // @ts-ignore: Enums in TS such
-      if (controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === selectedProfile.value.hash) {
-        // @ts-ignore: Enums in TS such
-        controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] = undefined
-      }
-      if (selectedVehicleTypes.includes(vType)) {
-        // @ts-ignore: Enums in TS such
-        controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] = selectedProfile.value.hash
-      }
-    })
-  },
-})
+const selectedProfileAxesCorrespondencies = computed(() => controllerStore.protocolMapping.axesCorrespondencies)
+const selectedProfileButtonsCorrespondencies = computed(() => controllerStore.protocolMapping.buttonsCorrespondencies)
 
 const closeInputMappingDialog = (): void => {
   inputClickedDialog.value = false
@@ -1183,34 +1008,5 @@ const toggleJoystickEnabling = (joystickModel: string): void => {
   } else {
     controllerStore.disabledJoysticks.push(joystickModel)
   }
-}
-
-// Select a profile for viewing without activating it
-const selectProfile = (functionMapping: any): void => {
-  const mappingIndex = controllerStore.protocolMappings.findIndex((p) => p.name === functionMapping.name)
-  if (mappingIndex !== -1) {
-    selectedProfileIndex.value = mappingIndex
-  }
-}
-
-const getVehicleTypesForProfile = (profileHash: string): string[] => {
-  return Object.keys(controllerStore.vehicleTypeProtocolMappingCorrespondency).filter((vType) => {
-    // @ts-ignore: Enums in TS such
-    return controllerStore.vehicleTypeProtocolMappingCorrespondency[vType] === profileHash
-  })
-}
-
-const switchToSelectedProfile = (): void => {
-  showProfileSwitchDialog.value = true
-}
-
-const confirmProfileSwitch = (): void => {
-  controllerStore.loadProtocolMapping(selectedProfile.value)
-  openSnackbar({ message: `Switched to profile '${selectedProfile.value.name}'.`, variant: 'success' })
-  showProfileSwitchDialog.value = false
-}
-
-const cancelProfileSwitch = (): void => {
-  showProfileSwitchDialog.value = false
 }
 </script>
