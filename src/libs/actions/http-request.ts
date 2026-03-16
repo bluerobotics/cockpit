@@ -17,8 +17,14 @@ export const availableHttpRequestMethods: HttpRequestMethod[] = Object.values(Ht
 
 let registeredHttpRequestActionConfigs: Record<string, HttpRequestActionConfig> = {}
 
-export const registerHttpRequestActionConfig = (action: HttpRequestActionConfig): string => {
-  const id = `${httpRequestActionIdPrefix} (${action.name})`
+/**
+ * Register a new HTTP request action config and create a cockpit action for it
+ * @param {HttpRequestActionConfig} action - The action config to register
+ * @param {string} customId - Optional explicit ID (e.g. from an extension manifest). Falls back to a generated ID.
+ * @returns {string} The ID under which the action was registered
+ */
+export const registerHttpRequestActionConfig = (action: HttpRequestActionConfig, customId?: string): string => {
+  const id = customId ?? `${httpRequestActionIdPrefix} (${action.name})`
   registeredHttpRequestActionConfigs[id] = action
   saveHttpRequestActionConfigs()
   updateCockpitActions()
@@ -34,6 +40,7 @@ export const getAllHttpRequestActionConfigs = (): Record<string, HttpRequestActi
 }
 
 export const deleteHttpRequestActionConfig = (id: string): void => {
+  deleteAction(id as CockpitActionsFunction)
   delete registeredHttpRequestActionConfigs[id]
   saveHttpRequestActionConfigs()
   updateCockpitActions()
@@ -52,8 +59,8 @@ export const updateCockpitActions = (): void => {
     }
   })
 
-  const httpResquestActions = getAllHttpRequestActionConfigs()
-  for (const [id, action] of Object.entries(httpResquestActions)) {
+  const httpRequestActions = getAllHttpRequestActionConfigs()
+  for (const [id, action] of Object.entries(httpRequestActions)) {
     try {
       const cockpitAction = new CockpitAction(id as CockpitActionsFunction, action.name)
       registerNewAction(cockpitAction)

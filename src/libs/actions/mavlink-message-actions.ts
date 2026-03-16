@@ -22,8 +22,14 @@ const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
 
 let registeredMavlinkMessageActionConfigs: Record<string, MavlinkMessageActionConfig> = {}
 
-export const registerMavlinkMessageActionConfig = (action: MavlinkMessageActionConfig): string => {
-  const id = `${mavlinkMessageActionIdPrefix} (${action.name})`
+/**
+ * Register a new MAVLink message action config and create a cockpit action for it
+ * @param {MavlinkMessageActionConfig} action - The action config to register
+ * @param {string} customId - Optional explicit ID (e.g. from an extension manifest). Falls back to a generated ID.
+ * @returns {string} The ID under which the action was registered
+ */
+export const registerMavlinkMessageActionConfig = (action: MavlinkMessageActionConfig, customId?: string): string => {
+  const id = customId ?? `${mavlinkMessageActionIdPrefix} (${action.name})`
   registeredMavlinkMessageActionConfigs[id] = action
   saveMavlinkMessageActionConfigs()
   updateCockpitActions()
@@ -39,6 +45,7 @@ export const getAllMavlinkMessageActionConfigs = (): Record<string, MavlinkMessa
 }
 
 export const deleteMavlinkMessageActionConfig = (id: string): void => {
+  deleteAction(id as CockpitActionsFunction)
   delete registeredMavlinkMessageActionConfigs[id]
   saveMavlinkMessageActionConfigs()
   updateCockpitActions()
