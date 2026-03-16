@@ -12,145 +12,6 @@
     class="relative flex flex-col justify-start overflow-y-auto text-white edit-panel left-panel h-full"
     :class="{ active: editMode }"
   >
-    <div class="flex justify-between items-center w-full bg-[#CBCBCB2A] relative">
-      <img
-        :src="pickVehicleImage(store.currentProfile.name)"
-        alt="current-vehicle"
-        class="ml-2 my-1 p-1 mr-2 2xl:w-[60px] xl:w-[50px] w-[40px] aspect-square"
-      />
-      <div ref="dropdownMenuRef" class="flex justify-between items-center relative">
-        <div class="flex text-start 2xl:w-[260px] xl:w-[220px] w-[170px]">
-          <v-btn
-            id="profile"
-            variant="text"
-            :size="interfaceStore.is2xl ? 'x-large' : 'large'"
-            class="2xl:w-[260px] xl:w-[220px] w-[170px]"
-            :class="isDialOpen ? 'bg-[#49697c] p-3 border-b-2 border-[#041e2e55]' : 'bg-[#273842]'"
-            @click="toggleDial"
-          >
-            <span
-              class="wrapclass text-none 2xl:text-xl xl:text-[16px] lg:text-md text-sm 2xl:max-w-[230px] xl:max-w-[180px] max-w-[160px]"
-              >{{ store.currentProfile.name }} {{ store.currentProfile.name.endsWith('profile') ? '' : 'profile' }}
-            </span>
-          </v-btn>
-        </div>
-        <div
-          v-if="isDialOpen"
-          class="absolute flex justify-start flex-col top-full -mt-[1px] bg-transparent backdrop-blur-2xl z-10"
-        >
-          <div
-            v-for="profile in store.savedProfiles.filter((p) => p.hash !== store.currentProfile.hash)"
-            :key="profile.hash"
-            variant="text"
-            size="x-large"
-            class="bg-[#FFFFFF33] 2xl:w-[280px] xl:w-[240px] w-[210px] p-3 text-white mb-[1px] border-[1px] border-[#FFFFFF11] text-none flex-nowrap rounded-sm hover:brightness-90 cursor-pointer"
-            @click="
-              () => {
-                store.loadProfile(profile)
-                toggleDial()
-                isViewsPanelExpanded = false
-              }
-            "
-          >
-            <div class="flex">
-              <img
-                :src="pickVehicleImage(profile.name)"
-                alt="current-vehicle"
-                class="mr-3 2xl:w-[30px] w-[25px] 2xl:h-[30px] h-[25px] aspect-square"
-              />
-              <span
-                class="text-nowrap wrapclass text-left 2xl:max-w-[270px] xl:max-w-[240px] lg:max-w-[150px] max-w-[120px] mt-[1px] 2xl:text-[18px] xl:text-[18px] text-[16px]"
-                >{{ profile.name }} {{ profile.name.endsWith('profile') ? '' : 'profile' }}
-              </span>
-            </div>
-          </div>
-        </div>
-        <v-btn
-          id="select-profile"
-          size="20px"
-          class="bg-transparent 2xl:text-xl xl:text-md text-sm"
-          variant="text"
-          @click="toggleDial"
-          ><v-icon class="-mt-[1px]">mdi-menu-down</v-icon></v-btn
-        >
-      </div>
-      <div class="flex justify-end items-center 2xl:w-[75px] xl:w-[60px] w-[55px]">
-        <v-menu offset-y theme="dark">
-          <template #activator="{ props: buttonProps }">
-            <v-btn
-              icon="mdi-dots-vertical"
-              size="xs"
-              variant="text"
-              class="2xl:text-lg xl:text-md text-sm 2xl:mr-[6px] xl:mr-[5px] mr-[2px] 2xl:mb-[5px] xl:mb-[2px] mb-[2px]"
-              v-bind="buttonProps"
-            />
-          </template>
-          <v-list>
-            <div class="flex justify-center max-w-[250px] px-2 gap-x-[5px] pb-2">
-              <p class="whitespace-nowrap">Settings -</p>
-              <p class="overflow-hidden text-ellipsis whitespace-nowrap">{{ store.currentProfile.name }}</p>
-            </div>
-
-            <v-divider />
-            <v-list-item class="hover:bg-white/[0.04]">
-              <label class="flex w-full h-full cursor-pointer justify-between">
-                <v-list-item-title>Import</v-list-item-title>
-                <input type="file" accept="application/json" hidden @change="(e: Event) => store.importProfile(e)" />
-                <v-icon size="20">mdi-upload</v-icon>
-              </label>
-            </v-list-item>
-            <v-list-item @click="store.exportProfile(store.currentProfile)">
-              <div class="flex w-full justify-between">
-                <v-list-item-title>Export</v-list-item-title>
-                <v-icon size="20">mdi-download</v-icon>
-              </div>
-            </v-list-item>
-            <v-list-item @click="store.duplicateProfile(store.currentProfile)">
-              <div class="flex w-full justify-between">
-                <v-list-item-title>Duplicate</v-list-item-title>
-                <v-icon size="20">mdi-content-copy</v-icon>
-              </div>
-            </v-list-item>
-            <v-list-item @click="renameProfile(store.currentProfile)">
-              <div class="flex w-full justify-between">
-                <v-list-item-title>Config & rename</v-list-item-title>
-                <v-icon size="20">mdi-cog</v-icon>
-              </div>
-            </v-list-item>
-            <v-list-item @click="confirmDelete">
-              <div class="flex w-full justify-between">
-                <v-list-item-title>Delete</v-list-item-title>
-                <v-icon size="20">mdi-trash-can</v-icon>
-              </div>
-            </v-list-item>
-            <v-divider class="mb-1" />
-            <div class="flex justify-center max-w-[250px] px-2 gap-x-[5px] pb-2 pt-1">
-              <p class="whitespace-nowrap">General profile settings</p>
-            </div>
-            <v-divider class="mb-1" />
-            <v-list-item @click="addNewProfile">
-              <div class="flex w-full justify-between mt-[6px]">
-                <v-list-item-title>Add new profile</v-list-item-title>
-                <v-icon size="22">mdi-plus</v-icon>
-              </div>
-            </v-list-item>
-            <v-list-item @click="store.snapToGrid = !store.snapToGrid">
-              <div class="flex w-full justify-between mt-[6px]">
-                <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
-                <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
-              </div>
-            </v-list-item>
-            <v-list-item @click="resetSavedProfiles">
-              <div class="flex w-full justify-between mt-[6px]">
-                <v-list-item-title class="mr-6">Reset saved profiles</v-list-item-title>
-                <v-icon size="20" class="mt-[2px]">mdi-reload</v-icon>
-              </div>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-      </div>
-    </div>
-    <v-divider class="opacity-20" />
     <div
       class="flex flex-row justify-start relative items-center bg-[#CBCBCB2A] elevation-5 h-[40px] shrink-0 overflow-hidden"
     >
@@ -173,6 +34,49 @@
           <span class="wrapclass 2xl:max-w-[119px] xl:max-w-[100px] lg:max-w-[80px]">{{ view.name }}</span>
         </v-btn>
       </v-btn-toggle>
+      <div class="flex-grow" />
+      <v-menu offset-y theme="dark">
+        <template #activator="{ props: buttonProps }">
+          <v-btn
+            icon="mdi-dots-vertical"
+            size="xs"
+            variant="text"
+            class="2xl:text-lg xl:text-md text-sm mr-1"
+            v-bind="buttonProps"
+          />
+        </template>
+        <v-list>
+          <div class="flex justify-center max-w-[250px] px-2 gap-x-[5px] pb-2">
+            <p class="whitespace-nowrap">Settings</p>
+          </div>
+          <v-divider />
+          <v-list-item class="hover:bg-white/[0.04]">
+            <label class="flex w-full h-full cursor-pointer justify-between">
+              <v-list-item-title>Import views</v-list-item-title>
+              <input type="file" accept="application/json" hidden @change="(e: Event) => store.importViewsGroup(e)" />
+              <v-icon size="20">mdi-upload</v-icon>
+            </label>
+          </v-list-item>
+          <v-list-item @click="store.exportViewsGroup(store.currentProfile)">
+            <div class="flex w-full justify-between">
+              <v-list-item-title>Export views</v-list-item-title>
+              <v-icon size="20">mdi-download</v-icon>
+            </div>
+          </v-list-item>
+          <v-list-item @click="store.snapToGrid = !store.snapToGrid">
+            <div class="flex w-full justify-between mt-[6px]">
+              <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
+              <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
+            </div>
+          </v-list-item>
+          <v-list-item @click="resetViewsGroup">
+            <div class="flex w-full justify-between mt-[6px]">
+              <v-list-item-title class="mr-6">Reset to default</v-list-item-title>
+              <v-icon size="20" class="mt-[2px]">mdi-reload</v-icon>
+            </div>
+          </v-list-item>
+        </v-list>
+      </v-menu>
       <v-badge
         v-if="store.currentProfile.views.length > 3"
         :content="`+${store.currentProfile.views.length - 3}`"
@@ -191,9 +95,7 @@
       <div class="pt-1 bg-[#041e2e99] pb-[50px]">
         <div class="flex justify-center w-full bg-[#CBCBCB09]">
           <div class="flex w-[350px] justify-center py-[2px]">
-            <p class="overflow-hidden text-[12px] text-ellipsis whitespace-nowrap opacity-60">
-              Views on {{ store.currentProfile.name }}
-            </p>
+            <p class="overflow-hidden text-[12px] text-ellipsis whitespace-nowrap opacity-60">Views</p>
           </div>
         </div>
         <VueDraggable v-model="store.currentProfile.views" :animation="150" handle=".view-drag-handle">
@@ -664,33 +566,6 @@
       </v-card>
     </GlassModal>
   </teleport>
-  <teleport to="body">
-    <GlassModal :is-visible="profileConfigDialogRevealed" class="rounded-lg">
-      <v-card class="bg-transparent text-white w-[36rem] pt-6 px-4 pb-2">
-        <v-card-text>
-          <p>New profile name</p>
-          <v-text-field v-model="newProfileName" counter="25" variant="filled" density="compact" />
-          <p>Vehicle types that use this profile by default:</p>
-          <v-combobox
-            v-model="vehicleTypesAssignedToCurrentProfile"
-            :items="availableVehicleTypes"
-            :menu-props="{ zIndex: 10000 }"
-            chips
-            density="compact"
-            multiple
-            theme="dark"
-            variant="filled"
-            class="w-3/4"
-          />
-        </v-card-text>
-        <v-divider />
-        <v-card-actions class="flex justify-between pt-3">
-          <v-btn @click="profileConfigDialog.cancel">Cancel</v-btn>
-          <v-btn @click="profileConfigDialog.confirm">Save</v-btn>
-        </v-card-actions>
-      </v-card>
-    </GlassModal>
-  </teleport>
 
   <SideConfigPanel position="right" hide-button>
     <ElementConfigPanel v-if="store.elementToShowOnDrawer?.hash" />
@@ -698,16 +573,13 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useConfirmDialog } from '@vueuse/core'
+import { useConfirmDialog } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
 
 import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
-import BoatThumb from '@/assets/vehicles/BlueBoat_thumb.png'
-import BlueRoboticsLogo from '@/assets/vehicles/BlueRoboticsLogo.png'
-import RovThumb from '@/assets/vehicles/BlueROV_thumb.png'
 import AttitudeImg from '@/assets/widgets/Attitude.png'
 import CollapsibleContainerImg from '@/assets/widgets/CollapsibleContainer.png'
 import CompassImg from '@/assets/widgets/Compass.png'
@@ -726,14 +598,12 @@ import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { getWidgetsFromBlueOS } from '@/libs/blueos'
-import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { isHorizontalScroll } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import {
-  type Profile,
   type View,
   type Widget,
   CustomWidgetElementContainer,
@@ -791,12 +661,6 @@ const trashList = ref<Widget[]>([])
 watch(trashList, () => {
   nextTick(() => (trashList.value = []))
 })
-
-const isDialOpen = ref(false)
-
-const toggleDial = (): void => {
-  isDialOpen.value = !isDialOpen.value
-}
 
 const forceUpdate = ref(0)
 
@@ -943,44 +807,6 @@ const selectView = (view: View): void => {
   store.selectView(view)
 }
 
-const confirmDelete = (): void => {
-  showDialog({
-    maxWidth: '500px',
-    message: 'Permanently delete profile?',
-    actions: [
-      {
-        text: 'cancel',
-        action: () => closeDialog(),
-      },
-      {
-        text: 'delete',
-        action: () => {
-          store.deleteProfile(store.currentProfile)
-          closeDialog()
-        },
-      },
-    ],
-    variant: 'warning',
-  })
-}
-
-const pickVehicleImage = (profileName: string): string => {
-  const name = profileName.toLowerCase()
-  if (name.includes('rov')) return RovThumb
-  if (name.includes('boat')) return BoatThumb
-  return BlueRoboticsLogo
-}
-
-const currentImage = ref('')
-
-watch(
-  () => store.currentProfile.name,
-  (newName) => {
-    currentImage.value = pickVehicleImage(newName)
-  },
-  { immediate: true }
-)
-
 const isViewsPanelExpanded = ref(false)
 const toggleViewsPanel = (): void => {
   isViewsPanelExpanded.value = !isViewsPanelExpanded.value
@@ -1016,7 +842,6 @@ const widgetAddMenuGroupOptions = {
 
 const editMode = toRefs(props).editMode
 
-const dropdownMenuRef = ref(null)
 const viewBeingRenamed = ref(store.currentView)
 const newViewName = ref('')
 const viewRenameDialogRevealed = ref(false)
@@ -1026,30 +851,12 @@ viewRenameDialog.onConfirm(() => {
   newViewName.value = ''
 })
 
-const profileBeingConfigured = ref(store.currentProfile)
-const newProfileName = ref('')
-const profileConfigDialogRevealed = ref(false)
-const profileConfigDialog = useConfirmDialog(profileConfigDialogRevealed)
-profileConfigDialog.onConfirm(() => {
-  profileBeingConfigured.value.name = newProfileName.value
-  newProfileName.value = ''
-})
-
-onClickOutside(dropdownMenuRef, () => {
-  isDialOpen.value = false
-})
-
 const addNewView = (): void => {
   if (!viewRenameDialogRevealed.value) {
     store.addView()
     forceUpdate.value++
     renameView(store.currentView)
   }
-}
-
-const addNewProfile = (): void => {
-  store.addProfile()
-  renameProfile(store.currentProfile)
 }
 
 const renameView = (view: View): void => {
@@ -1070,15 +877,9 @@ const toggleViewVisibility = (view: View): void => {
   view.visible = !view.visible
 }
 
-const renameProfile = (profile: Profile): void => {
-  profileBeingConfigured.value = profile
-  newProfileName.value = profile.name
-  profileConfigDialogRevealed.value = true
-}
-
-const resetSavedProfiles = (): void => {
+const resetViewsGroup = (): void => {
   showDialog({
-    message: 'Are you sure you want to reset your profiles to the default ones?',
+    message: 'Are you sure you want to reset your views to the defaults?',
     actions: [
       {
         text: 'cancel',
@@ -1087,9 +888,9 @@ const resetSavedProfiles = (): void => {
         },
       },
       {
-        text: 'reset profiles',
+        text: 'reset',
         action: () => {
-          store.resetSavedProfiles()
+          store.resetViewsGroup()
           closeDialog()
         },
       },
@@ -1356,30 +1157,6 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
   cachedMainViewRect = null
   cachedWidgetSize = null
 }
-
-const availableVehicleTypes = computed(() => Object.keys(MavType))
-
-const vehicleTypesAssignedToCurrentProfile = computed({
-  get() {
-    return Object.keys(store.vehicleTypeProfileCorrespondency).filter((vType) => {
-      // @ts-ignore: Enums in TS such
-      return store.vehicleTypeProfileCorrespondency[vType] === profileBeingConfigured.value.hash
-    })
-  },
-  set(selectedVehicleTypes: string[]) {
-    availableVehicleTypes.value.forEach((vType) => {
-      // @ts-ignore: Enums in TS such
-      if (store.vehicleTypeProfileCorrespondency[vType] === profileBeingConfigured.value.hash) {
-        // @ts-ignore: Enums in TS such
-        store.vehicleTypeProfileCorrespondency[vType] = undefined
-      }
-      if (selectedVehicleTypes.includes(vType)) {
-        // @ts-ignore: Enums in TS such
-        store.vehicleTypeProfileCorrespondency[vType] = profileBeingConfigured.value.hash
-      }
-    })
-  },
-})
 </script>
 
 <style scoped>
