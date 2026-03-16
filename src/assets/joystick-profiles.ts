@@ -1,11 +1,9 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { availableCockpitActions } from '@/libs/joystick/protocols/cockpit-actions'
-import {
-  availableMavlinkManualControlButtonFunctions,
-  mavlinkManualControlAxes,
-} from '@/libs/joystick/protocols/mavlink-manual-control'
+import { availableMavlinkManualControlButtonFunctions } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import { joystickInputAxes } from '@/libs/joystick/protocols/predefined-resources'
 import { getVehicleModeAction } from '@/libs/vehicle/ardupilot/common'
 import { RoverMode } from '@/libs/vehicle/ardupilot/types/modes'
 import { Type as VehicleType } from '@/libs/vehicle/vehicle'
@@ -33,10 +31,10 @@ export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
     name: 'ROV functions mapping',
     hash: defaultRovMappingHash,
     axesCorrespondencies: {
-      [JoystickAxis.A0]: { action: mavlinkManualControlAxes.axis_y, min: -1000, max: +1000 },
-      [JoystickAxis.A1]: { action: mavlinkManualControlAxes.axis_x, min: +1000, max: -1000 },
-      [JoystickAxis.A2]: { action: mavlinkManualControlAxes.axis_r, min: -1000, max: +1000 },
-      [JoystickAxis.A3]: { action: mavlinkManualControlAxes.axis_z, min: +1000, max: 0 },
+      [JoystickAxis.A0]: { action: joystickInputAxes.axis_y, min: -1000, max: +1000 },
+      [JoystickAxis.A1]: { action: joystickInputAxes.axis_x, min: +1000, max: -1000 },
+      [JoystickAxis.A2]: { action: joystickInputAxes.axis_r, min: -1000, max: +1000 },
+      [JoystickAxis.A3]: { action: joystickInputAxes.axis_z, min: +1000, max: 0 },
     },
     buttonsCorrespondencies: {
       [CockpitModifierKeyOption.regular]: {
@@ -85,10 +83,10 @@ export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
     name: 'Boat functions mapping',
     hash: defaultBoatMappingHash,
     axesCorrespondencies: {
-      [JoystickAxis.A0]: { action: mavlinkManualControlAxes.axis_y, min: -1000, max: +1000 },
-      [JoystickAxis.A1]: { action: mavlinkManualControlAxes.axis_x, min: +1000, max: -1000 },
-      [JoystickAxis.A2]: { action: mavlinkManualControlAxes.axis_r, min: -1000, max: +1000 },
-      [JoystickAxis.A3]: { action: mavlinkManualControlAxes.axis_z, min: +1000, max: -1000 },
+      [JoystickAxis.A0]: { action: joystickInputAxes.axis_y, min: -1000, max: +1000 },
+      [JoystickAxis.A1]: { action: joystickInputAxes.axis_x, min: +1000, max: -1000 },
+      [JoystickAxis.A2]: { action: joystickInputAxes.axis_r, min: -1000, max: +1000 },
+      [JoystickAxis.A3]: { action: joystickInputAxes.axis_z, min: +1000, max: -1000 },
     },
     buttonsCorrespondencies: {
       [CockpitModifierKeyOption.regular]: {
@@ -137,10 +135,10 @@ export const cockpitStandardToProtocols: JoystickProtocolActionsMapping[] = [
     name: 'MAV functions mapping',
     hash: defaultMavMappingHash,
     axesCorrespondencies: {
-      [JoystickAxis.A0]: { action: mavlinkManualControlAxes.axis_r, min: -1000, max: +1000 },
-      [JoystickAxis.A1]: { action: mavlinkManualControlAxes.axis_z, min: +1000, max: 0 },
-      [JoystickAxis.A2]: { action: mavlinkManualControlAxes.axis_y, min: -1000, max: +1000 },
-      [JoystickAxis.A3]: { action: mavlinkManualControlAxes.axis_x, min: +1000, max: -1000 },
+      [JoystickAxis.A0]: { action: joystickInputAxes.axis_r, min: -1000, max: +1000 },
+      [JoystickAxis.A1]: { action: joystickInputAxes.axis_z, min: +1000, max: 0 },
+      [JoystickAxis.A2]: { action: joystickInputAxes.axis_y, min: -1000, max: +1000 },
+      [JoystickAxis.A3]: { action: joystickInputAxes.axis_x, min: +1000, max: -1000 },
     },
     buttonsCorrespondencies: {
       [CockpitModifierKeyOption.regular]: {

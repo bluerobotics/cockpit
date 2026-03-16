@@ -20,6 +20,11 @@ export const CockpitActionsFunction = {
   toggle_recording_all_streams: 'toggle_recording_all_streams',
   take_snapshot: 'take_snapshot',
   hold_to_confirm: 'hold_to_confirm',
+  start_reversing: 'start_reversing',
+  stop_reversing: 'stop_reversing',
+  toggle_reversing: 'toggle_reversing',
+  increase_pilot_gain: 'increase_pilot_gain',
+  reduce_pilot_gain: 'reduce_pilot_gain',
 } as const
 
 /**
@@ -61,6 +66,11 @@ export const predefinedCockpitActions: { [key in CockpitActionsFunction]: Cockpi
   [CockpitActionsFunction.toggle_recording_all_streams]: new CockpitAction(CockpitActionsFunction.toggle_recording_all_streams, 'Toggle recording all streams'),
   [CockpitActionsFunction.take_snapshot]: new CockpitAction(CockpitActionsFunction.take_snapshot, 'Take snapshot'),
   [CockpitActionsFunction.hold_to_confirm]: new CockpitAction(CockpitActionsFunction.hold_to_confirm, 'Hold to confirm'),
+  [CockpitActionsFunction.start_reversing]: new CockpitAction(CockpitActionsFunction.start_reversing, 'Start Reversing'),
+  [CockpitActionsFunction.stop_reversing]: new CockpitAction(CockpitActionsFunction.stop_reversing, 'Stop Reversing'),
+  [CockpitActionsFunction.toggle_reversing]: new CockpitAction(CockpitActionsFunction.toggle_reversing, 'Toggle Reversing'),
+  [CockpitActionsFunction.increase_pilot_gain]: new CockpitAction(CockpitActionsFunction.increase_pilot_gain, 'Increase Pilot Gain'),
+  [CockpitActionsFunction.reduce_pilot_gain]: new CockpitAction(CockpitActionsFunction.reduce_pilot_gain, 'Reduce Pilot Gain'),
 }
 
 export type CockpitActionCallback = () => void
