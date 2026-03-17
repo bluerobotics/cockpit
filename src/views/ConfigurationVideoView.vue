@@ -3,7 +3,7 @@
     <template #help-icon> </template>
     <template #title>Video configuration</template>
     <template #content>
-      <div class="flex-col h-full ml-[1vw] w-[840px] max-h-[85vh] overflow-y-auto pr-3">
+      <div class="flex-col h-full ml-[1vw] w-[920px] max-h-[85vh] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Streams mapping</template>
           <template #info>
@@ -30,6 +30,9 @@
                       <p class="text-[16px] font-bold">External name</p>
                     </th>
                     <th class="text-center">
+                      <p class="text-[16px] font-bold">Type</p>
+                    </th>
+                    <th class="text-center">
                       <p class="text-[16px] font-bold">Video source</p>
                     </th>
                     <th class="text-center">
@@ -53,6 +56,19 @@
                     <td>
                       <div class="flex items-center justify-center">
                         <ScrollingText :text="item.externalId" max-width="120px" class="text-sm text-gray-300" />
+                      </div>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-center">
+                        <v-chip
+                          size="small"
+                          :color="videoStore.getStreamProtocol(item.externalId) === 'rtsp' ? '#e67e22' : '#3498db'"
+                          variant="flat"
+                          label
+                          class="text-white text-xs font-medium"
+                        >
+                          {{ videoStore.getStreamDisplayInfo(item.externalId).protocolLabel }}
+                        </v-chip>
                       </div>
                     </td>
                     <td>
@@ -424,15 +440,13 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import ScrollingText from '@/components/ScrollingText.vue'
-import { type ProcessedStreamInfo, getStreamInformationFromVehicle } from '@/libs/blueos'
 import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
 import { VideoStreamCorrespondency } from '@/types/video'
@@ -447,7 +461,6 @@ const availableICEProtocols = ['udp', 'tcp']
 
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
-const mainVehicleStore = useMainVehicleStore()
 const snapshotStore = useSnapshotStore()
 
 // Edit dialog state
@@ -461,9 +474,6 @@ const showUnavailableStreamDialog = ref(false)
 const unavailableStreamId = ref('')
 
 const showIgnoredStreams = ref(false)
-const streamInformation = ref<ProcessedStreamInfo[]>([])
-const go2rtcStreamInfo = ref<Record<string, import('@/types/video').Go2RTCStreamInfo>>({})
-let fetchInterval: ReturnType<typeof setInterval> | null = null
 const rtspUrlInput = ref('rtsp://user:password@camera-ip:554/stream')
 const rtspInputError = ref('')
 
@@ -543,79 +553,17 @@ const deleteStreamPermanently = (): void => {
   closeUnavailableStreamDialog()
 }
 
-const fetchStreamInformation = async (): Promise<void> => {
-  if (!mainVehicleStore.globalAddress) return
-
-  try {
-    streamInformation.value = await getStreamInformationFromVehicle(mainVehicleStore.globalAddress)
-  } catch (error) {
-    console.error('Failed to fetch stream information:', error)
-    streamInformation.value = []
-  }
-}
-
-const fetchGo2rtcStreamInfo = async (): Promise<void> => {
-  if (!window.electronAPI) return
-  try {
-    go2rtcStreamInfo.value = await window.electronAPI.go2rtcGetStreamsInfo()
-  } catch (error) {
-    console.error('Failed to fetch go2rtc stream info:', error)
-  }
-}
-
-const startStreamInfoFetching = (): void => {
-  // Clear any existing interval
-  if (fetchInterval) {
-    clearInterval(fetchInterval)
-  }
-
-  fetchStreamInformation()
-  fetchGo2rtcStreamInfo()
-
-  fetchInterval = setInterval(() => {
-    fetchStreamInformation()
-    fetchGo2rtcStreamInfo()
-  }, 5000)
-}
-
-const stopStreamInfoFetching = (): void => {
-  if (fetchInterval) {
-    clearInterval(fetchInterval)
-    fetchInterval = null
-  }
-}
-
 const getStreamDisplayInfo = (
   externalId: string
 ): {
-  /**
-   * The source of the stream
-   */
+  /** Video source description */
   source: string
-  /**
-   * The resolution of the stream
-   */
+  /** Resolution string */
   resolution: string
-  /**
-   * The FPS of the stream
-   */
+  /** FPS string */
   fps: string
 } => {
-  if (videoStore.getStreamProtocol(externalId) === 'rtsp') {
-    const info = go2rtcStreamInfo.value[externalId]
-    return {
-      source: info ? `RTSP (${info.codec})` : 'RTSP (...)',
-      resolution: info?.width ? `${info.width}x${info.height}` : '...',
-      fps: info?.fps ? `${info.fps}fps` : '',
-    }
-  }
-
-  const info = streamInformation.value.find((i) => i.name === externalId)
-  return {
-    source: info?.sourceName ?? 'Unknown',
-    resolution: info ? `${info.width}x${info.height}` : 'Unknown',
-    fps: info?.fps ? `${info.fps}fps` : '',
-  }
+  return videoStore.getStreamDisplayInfo(externalId)
 }
 
 // eslint-disable-next-line
@@ -627,7 +575,7 @@ const getStreamStatus = (externalId: string): { status: 'Available' | 'Unavailab
   }
 
   const isInAvailableList = videoStore.namesAvailableStreams.includes(externalId)
-  const isRunning = streamInformation.value.find((i) => i.name === externalId)?.running ?? false
+  const isRunning = videoStore.streamInformation.find((i) => i.name === externalId)?.running ?? false
 
   if (isInAvailableList && isRunning) {
     return { status: 'Available', icon: 'mdi-check-circle', color: '#297e1944' }
@@ -644,11 +592,6 @@ onMounted(async () => {
   if (allowedIceProtocols.value.length === 0) {
     allowedIceProtocols.value = availableICEProtocols
   }
-  startStreamInfoFetching()
-})
-
-onUnmounted(() => {
-  stopStreamInfoFetching()
 })
 
 const openVideoLibrary = (): void => {
