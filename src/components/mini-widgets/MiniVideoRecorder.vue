@@ -49,18 +49,55 @@
       <p class="text-xl font-semibold m-4">Choose a stream to record</p>
       <v-select
         :model-value="nameSelectedStream"
-        label="Stream name"
-        :items="namesAvailableStreams"
-        item-title="name"
+        label="Stream"
+        :items="enrichedStreamItems"
+        item-value="internalName"
         density="compact"
         variant="outlined"
         no-data-text="No streams available."
         hide-details
-        return-object
         theme="dark"
         class="w-[90%]"
         @update:model-value="updateCurrentStream"
-      />
+      >
+        <template #selection="{ item }">
+          <div class="flex items-center gap-2">
+            <span class="text-sm">{{ item.raw.internalName }}</span>
+            <v-chip
+              size="x-small"
+              :color="item.raw.protocolLabel === 'RTSP' ? '#e67e22' : '#3498db'"
+              variant="flat"
+              label
+              class="text-white"
+            >
+              {{ item.raw.protocolLabel }}
+            </v-chip>
+          </div>
+        </template>
+        <template #item="{ item, props: itemProps }">
+          <v-list-item v-bind="itemProps" :title="undefined">
+            <div class="flex items-center justify-between w-full py-1">
+              <div class="flex flex-col min-w-0 mr-3">
+                <span class="text-sm font-medium text-white">{{ item.raw.internalName }}</span>
+                <span class="text-xs text-gray-400 truncate">{{ item.raw.externalName }}</span>
+                <span v-if="item.raw.resolution !== 'Unknown'" class="text-xs text-gray-500">
+                  {{ item.raw.resolution }}
+                  <template v-if="item.raw.fps"> @ {{ item.raw.fps }}</template>
+                </span>
+              </div>
+              <v-chip
+                size="x-small"
+                :color="item.raw.protocolLabel === 'RTSP' ? '#e67e22' : '#3498db'"
+                variant="flat"
+                label
+                class="text-white shrink-0"
+              >
+                {{ item.raw.protocolLabel }}
+              </v-chip>
+            </div>
+          </v-list-item>
+        </template>
+      </v-select>
       <div class="flex w-full justify-between items-center mt-4">
         <v-btn
           class="w-auto text-uppercase"
@@ -112,6 +149,20 @@ const miniWidget = toRefs(props).miniWidget
 
 const nameSelectedStream = ref<string | undefined>()
 const { namessAvailableAbstractedStreams: namesAvailableStreams } = storeToRefs(videoStore)
+
+const enrichedStreamItems = computed(() => {
+  return videoStore.streamsCorrespondency.map((corr) => {
+    const displayInfo = videoStore.getStreamDisplayInfo(corr.externalId)
+    return {
+      internalName: corr.name,
+      externalName: corr.externalId,
+      resolution: displayInfo.resolution,
+      fps: displayInfo.fps,
+      source: displayInfo.source,
+      protocolLabel: displayInfo.protocolLabel,
+    }
+  })
+})
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
 const isVideoLibraryDialogOpen = ref(false)
