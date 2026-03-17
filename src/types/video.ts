@@ -253,6 +253,7 @@ export type VideoStreamCorrespondency = {
   externalId: string
   protocol?: VideoStreamProtocol
   rtspUrl?: string
+  autoDiscovered?: boolean
 }
 
 export type FilesToZip = {

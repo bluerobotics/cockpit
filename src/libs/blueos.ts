@@ -191,13 +191,15 @@ type StreamConfiguration = {
   }
 }
 
+type VideoSourceEntry = {
+  name: string
+  source?: Record<string, string>
+  device_path?: string
+  type?: any
+}
+
 type VideoSource = {
-  [key: string]: {
-    name: string
-    source?: any
-    device_path?: string
-    type?: any
-  }
+  [key: string]: VideoSourceEntry
 }
 
 type StreamInfo = {
@@ -218,10 +220,12 @@ type StreamInfo = {
 export type ProcessedStreamInfo = {
   name: string
   sourceName: string
+  encode: string
   width: number
   height: number
   fps: number
   running: boolean
+  rtspSourceUrl: string | undefined
 }
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -461,13 +465,30 @@ export const getStreamInformationFromVehicle = async (vehicleAddress: string): P
         fps = config.frame_interval.denominator / config.frame_interval.numerator
       }
 
+      // Extract the direct RTSP source URL from the video source (the camera's own feed).
+      // The source field is a type-keyed object, e.g. { "Onvif": "rtsp://192.168.0.10:554/stream_0" }
+      let rtspSourceUrl: string | undefined
+      if (sourceKeys.length > 0) {
+        const sourceObj = videoSource[sourceKeys[0]].source
+        if (sourceObj) {
+          for (const sourceUrl of Object.values(sourceObj)) {
+            if (sourceUrl.startsWith('rtsp://') || sourceUrl.startsWith('rtsps://')) {
+              rtspSourceUrl = sourceUrl
+              break
+            }
+          }
+        }
+      }
+
       return {
         name: stream.video_and_stream.name,
         sourceName,
+        encode: config.encode,
         width: config.width,
         height: config.height,
         fps,
         running: stream.running,
+        rtspSourceUrl,
       }
     })
   } catch (error) {
