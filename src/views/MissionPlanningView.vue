@@ -495,6 +495,16 @@
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
   />
+  <Teleport to="#planningMap">
+    <RadialMenu
+      :visible="segmentRadialMenuVisible"
+      :x="segmentRadialMenuPosition.x"
+      :y="segmentRadialMenuPosition.y"
+      :items="segmentRadialMenuItems"
+      @select="onSegmentRadialMenuSelect"
+      @dismiss="dismissSegmentRadialMenu"
+    />
+  </Teleport>
   <SideConfigPanel
     v-if="isCreatingSurvey || selectedWaypoint"
     position="right"
@@ -564,6 +574,7 @@ import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.v
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
+import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
@@ -1026,6 +1037,13 @@ let knobShowTimer: number | null = null
 let knobFadeOutTimer: number | null = null
 let lastHoverSegmentIndex: number | null = null
 let knobPendingShow = false
+const segmentRadialMenuVisible = ref(false)
+const segmentRadialMenuPosition = ref({ x: 0, y: 0 })
+const segmentRadialMenuItems: RadialMenuItem[] = [
+  { icon: 'mdi-vector-polyline', tooltip: 'Add waypoint' },
+  { icon: 'mdi-transit-connection-variant', tooltip: 'Insert survey here' },
+]
+const segmentSurveyInsertIndex = ref<number | null>(null)
 
 const isCtrlDown = ref(false)
 const isShiftDown = ref(false)
@@ -1097,6 +1115,7 @@ const clearCurrentMission = (): void => {
   lastSelectedSurveyId.value = ''
   undoWaypointInsertIndex.value = null
   undoSurveyInsertIndex.value = null
+  segmentSurveyInsertIndex.value = null
   interfaceStore.configPanelVisible = false
   clearLiveMeasure()
   clearAllSurveyAreas()
@@ -1303,8 +1322,7 @@ const showSegmentAddKnobAt = (midpoint: L.LatLng, segmentIndex: number): void =>
     knob.addEventListener('click', (ev) => {
       ev.stopPropagation()
       if (mapActionsKnobSegmentIndex !== null) {
-        insertWaypointAtSegmentMidpoint(mapActionsKnobSegmentIndex)
-        hideSegmentAddKnob()
+        showSegmentRadialMenu()
       }
     })
     mapActionsOverlayEl!.appendChild(knob)
@@ -1350,6 +1368,7 @@ const showSegmentAddKnobAt = (midpoint: L.LatLng, segmentIndex: number): void =>
 }
 
 const hideSegmentAddKnob = (): void => {
+  if (segmentRadialMenuVisible.value) return
   if (!mapActionsKnobEl) return
 
   if (knobShowTimer) {
@@ -1370,6 +1389,39 @@ const hideSegmentAddKnob = (): void => {
   }, 180)
 
   mapActionsKnobSegmentIndex = null
+}
+
+let radialMenuSegmentIndex: number | null = null
+
+const showSegmentRadialMenu = (): void => {
+  if (!mapActionsKnobEl) return
+  radialMenuSegmentIndex = mapActionsKnobSegmentIndex
+  segmentRadialMenuPosition.value = {
+    x: parseInt(mapActionsKnobEl.style.left),
+    y: parseInt(mapActionsKnobEl.style.top),
+  }
+  segmentRadialMenuVisible.value = true
+}
+
+const dismissSegmentRadialMenu = (): void => {
+  if (segmentRadialMenuVisible.value) {
+    segmentRadialMenuVisible.value = false
+    hideSegmentAddKnob()
+  }
+}
+
+const onSegmentRadialMenuSelect = (index: number): void => {
+  if (index === 0) {
+    if (radialMenuSegmentIndex !== null) insertWaypointAtSegmentMidpoint(radialMenuSegmentIndex)
+  } else if (index === 1) {
+    if (radialMenuSegmentIndex !== null) {
+      segmentSurveyInsertIndex.value = radialMenuSegmentIndex + 1
+    }
+    dismissSegmentRadialMenu()
+    toggleSurvey()
+    return
+  }
+  dismissSegmentRadialMenu()
 }
 
 const getClosestMissionPathSegmentInfo = (segmentLatLngs: L.LatLng[], mouseLatLng: L.LatLng): ClosestSegmentInfo => {
@@ -1653,6 +1705,7 @@ const toggleSurvey = (): void => {
   if (isCreatingSurvey.value) {
     isCreatingSurvey.value = false
     isDrawingSurveyPolygon.value = false
+    segmentSurveyInsertIndex.value = null
     return
   }
   isCreatingSurvey.value = true
@@ -1800,6 +1853,7 @@ const clearSurveyCreation = (): void => {
   clearSurveyPath()
   isCreatingSurvey.value = false
   isDrawingSurveyPolygon.value = false
+  segmentSurveyInsertIndex.value = null
   clearLiveMeasure()
 }
 
@@ -2518,13 +2572,16 @@ const generateWaypointsFromSurvey = (): void => {
     commands: makeDefaultNavCommands(),
   }))
 
+  const segInsertIdx = segmentSurveyInsertIndex.value
   const waypointInsertIdx = undoWaypointInsertIndex.value
   const surveyInsertIdx = undoSurveyInsertIndex.value
+  segmentSurveyInsertIndex.value = null
   undoWaypointInsertIndex.value = null
   undoSurveyInsertIndex.value = null
 
-  if (waypointInsertIdx !== null) {
-    missionStore.currentPlanningWaypoints.splice(waypointInsertIdx, 0, ...newSurveyWaypoints)
+  const effectiveInsertIdx = segInsertIdx ?? waypointInsertIdx
+  if (effectiveInsertIdx !== null) {
+    missionStore.currentPlanningWaypoints.splice(effectiveInsertIdx, 0, ...newSurveyWaypoints)
   } else {
     missionStore.currentPlanningWaypoints.push(...newSurveyWaypoints)
   }
