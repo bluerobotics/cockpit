@@ -1043,10 +1043,9 @@ export const useVideoStore = defineStore('video', () => {
 
     if (streamIndex !== -1) {
       const stream = streamsCorrespondency.value[streamIndex]
-      const streamProtocol = stream.protocol ?? 'webrtc'
 
       // Add to ignored list
-      if (streamProtocol !== 'rtsp' && !ignoredStreamExternalIds.value.includes(externalId)) {
+      if (!ignoredStreamExternalIds.value.includes(externalId)) {
         ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, externalId]
       }
 
@@ -1093,11 +1092,7 @@ export const useVideoStore = defineStore('video', () => {
         console.log(`Cleaned up all resources for external stream '${externalId}'`)
       }
 
-      const successMessage =
-        streamProtocol === 'rtsp'
-          ? `RTSP stream '${stream.name}' deleted.`
-          : `Stream '${stream.name}' deleted and added to ignored list.`
-      openSnackbar({ variant: 'success', message: successMessage })
+      openSnackbar({ variant: 'success', message: `Stream '${stream.name}' deleted and added to ignored list.` })
     } else {
       openSnackbar({ variant: 'warning', message: `Stream with external ID '${externalId}' not found.` })
     }
@@ -1110,8 +1105,10 @@ export const useVideoStore = defineStore('video', () => {
       // Remove from ignored list
       ignoredStreamExternalIds.value.splice(ignoredIndex, 1)
 
-      if (namesAvailableStreams.value.includes(externalId)) {
-        // Trigger re-initialization to add it back to correspondency if it's still available
+      const isRtsp = externalId.startsWith('rtsp://') || externalId.startsWith('rtsps://')
+      if (isRtsp) {
+        initializeRtspStreamsCorrespondency()
+      } else if (namesAvailableStreams.value.includes(externalId)) {
         initializeStreamsCorrespondency()
       } else {
         openSnackbar({ variant: 'warning', message: `Stream '${externalId}' not available anymore.` })

@@ -62,12 +62,20 @@
                       <div class="flex items-center justify-center">
                         <v-chip
                           size="small"
-                          :color="videoStore.getStreamProtocol(item.externalId) === 'rtsp' ? '#e67e22' : '#3498db'"
+                          :color="
+                            (item.protocol ?? videoStore.getStreamProtocol(item.externalId)) === 'rtsp'
+                              ? '#e67e22'
+                              : '#3498db'
+                          "
                           variant="flat"
                           label
                           class="text-white text-xs font-medium"
                         >
-                          {{ videoStore.getStreamDisplayInfo(item.externalId).protocolLabel }}
+                          {{
+                            (item.protocol ?? videoStore.getStreamProtocol(item.externalId)) === 'rtsp'
+                              ? 'RTSP'
+                              : 'WebRTC'
+                          }}
                         </v-chip>
                       </div>
                     </td>
@@ -100,13 +108,13 @@
                         <div class="flex items-center justify-center border-[1px] border-[#ffffff44] rounded-md">
                           <div
                             class="flex items-center rounded-md p-1 text-[#ffffffa5]"
-                            :style="{ backgroundColor: getStreamStatus(item.externalId).color }"
+                            :style="{ backgroundColor: getStreamStatus(item).color }"
                           >
                             <v-icon size="small">
-                              {{ getStreamStatus(item.externalId).icon }}
+                              {{ getStreamStatus(item).icon }}
                             </v-icon>
                             <span class="text-xs ml-1">
-                              {{ getStreamStatus(item.externalId).status }}
+                              {{ getStreamStatus(item).status }}
                             </span>
                           </div>
                         </div>
@@ -481,7 +489,12 @@ const streamsToShow = computed(() => {
   return [
     ...videoStore.streamsCorrespondency.map((item) => ({ ...item, isIgnored: false })),
     ...(showIgnoredStreams.value
-      ? ignoredStreamExternalIds.value.map((id) => ({ name: '--', externalId: id, isIgnored: true }))
+      ? ignoredStreamExternalIds.value.map((id) => ({
+          name: '--',
+          externalId: id,
+          isIgnored: true,
+          protocol: id.startsWith('rtsp://') || id.startsWith('rtsps://') ? ('rtsp' as const) : undefined,
+        }))
       : []),
   ].filter((item) => item.name !== '')
 })
@@ -531,7 +544,8 @@ const deleteStream = (item: VideoStreamCorrespondency): void => {
 }
 
 const restoreIgnoredStream = (externalId: string): void => {
-  const isStreamAvailable = videoStore.namesAvailableStreams.includes(externalId)
+  const isRtsp = externalId.startsWith('rtsp://') || externalId.startsWith('rtsps://')
+  const isStreamAvailable = isRtsp || videoStore.namesAvailableStreams.includes(externalId)
 
   // If the stream is available, restore normally, otherwise ask the user to confirm they want to delete it permanently
   if (isStreamAvailable) {
@@ -567,15 +581,16 @@ const getStreamDisplayInfo = (
 }
 
 // eslint-disable-next-line
-const getStreamStatus = (externalId: string): { status: 'Available' | 'Unavailable' | 'Offline' | 'Unknown'; icon: string; color: string } => {
-  if (videoStore.getStreamProtocol(externalId) === 'rtsp') {
+const getStreamStatus = (item: { externalId: string; protocol?: string }): { status: 'Available' | 'Unavailable' | 'Offline' | 'Unknown'; icon: string; color: string } => {
+  const protocol = item.protocol ?? videoStore.getStreamProtocol(item.externalId)
+  if (protocol === 'rtsp') {
     return isElectron()
       ? { status: 'Available', icon: 'mdi-check-circle', color: '#297e1944' }
       : { status: 'Unavailable', icon: 'mdi-close-circle', color: '#ff000044' }
   }
 
-  const isInAvailableList = videoStore.namesAvailableStreams.includes(externalId)
-  const isRunning = videoStore.streamInformation.find((i) => i.name === externalId)?.running ?? false
+  const isInAvailableList = videoStore.namesAvailableStreams.includes(item.externalId)
+  const isRunning = videoStore.streamInformation.find((i) => i.name === item.externalId)?.running ?? false
 
   if (isInAvailableList && isRunning) {
     return { status: 'Available', icon: 'mdi-check-circle', color: '#297e1944' }
