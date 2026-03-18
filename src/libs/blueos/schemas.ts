@@ -50,7 +50,7 @@ const ExternalWidgetSetupInfoSchema = z.object({
   collapsibleContainerName: z.string().optional(),
   version: z.string().optional(),
   startCollapsed: z.boolean().optional(),
-  useVehicleAddressAsBaseUrl: z.boolean().optional(),
+  useExtensionPathAsBaseUrl: z.boolean().optional(),
 })
 
 const HttpRequestActionConfigSchema = z.object({

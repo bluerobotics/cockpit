@@ -38,9 +38,11 @@ export interface ExternalWidgetSetupInfo {
   startCollapsed?: boolean
 
   /**
-   * Whether to use vehicle address as base URL for the widget (optional)
+   * Whether to prepend the extension's service path to the widget URLs (optional).
+   * When true, the extension path (e.g. /extensionv2/servicename) is prepended to iframeUrl and the icon URL,
+   * and the IFrame widget's useVehicleAddressAsBase option is set to true.
    */
-  useVehicleAddressAsBaseUrl?: boolean
+  useExtensionPathAsBaseUrl?: boolean
 }
 
 /**

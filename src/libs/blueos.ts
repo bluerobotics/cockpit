@@ -87,12 +87,15 @@ export const getWidgetsFromBlueOS = async (vehicleAddress: string): Promise<Exte
         const extraJson = await getExtrasJsonFromBlueOsService(vehicleAddress, service)
         const baseUrl = blueOsServiceUrl(vehicleAddress, service)
         if (extraJson !== null) {
+          const extensionPath = new URL(baseUrl).pathname
           widgets.push(
             ...extraJson.widgets.map((widget) => {
+              const useExtPath = widget.useExtensionPathAsBaseUrl ?? false
+
               return {
                 ...widget,
-                iframeUrl: baseUrl + widget.iframeUrl,
-                iframeIcon: baseUrl + widget.iframeIcon,
+                iframeUrl: useExtPath ? extensionPath + widget.iframeUrl : widget.iframeUrl,
+                iframeIcon: useExtPath ? baseUrl + widget.iframeIcon : widget.iframeIcon,
               }
             })
           )
