@@ -51,11 +51,28 @@
           </template>
         </v-tooltip>
       </div>
-      <div v-if="enableUndo" id="button-3" class="orbit-button orbit-button-3">
-        <v-tooltip text="Edit survey's polygon">
+      <div id="button-3" class="orbit-button orbit-button-3">
+        <v-tooltip text="Swap start and end point of the survey">
           <template #activator="{ props: tooltipProps2 }">
             <v-btn
               v-bind="tooltipProps2"
+              variant="elevated"
+              icon="mdi-swap-horizontal"
+              :style="{ backgroundColor: '#333333EE' }"
+              rounded="full"
+              size="x-small"
+              color="#FFFFFF22"
+              class="text-[13px] rotate-[200deg]"
+              @click="handleSwapSurveyEntryExit"
+            ></v-btn>
+          </template>
+        </v-tooltip>
+      </div>
+      <div v-if="enableUndo" id="button-4" class="orbit-button orbit-button-4">
+        <v-tooltip text="Edit survey's polygon">
+          <template #activator="{ props: tooltipProps3 }">
+            <v-btn
+              v-bind="tooltipProps3"
               variant="elevated"
               icon="mdi-pencil"
               :style="{ backgroundColor: '#333333EE' }"
@@ -63,7 +80,7 @@
               :disabled="undoIsInProgress"
               size="x-small"
               color="#FFFFFF22"
-              class="text-[13px] rotate-[220deg]"
+              class="text-[13px] rotate-[230deg]"
               @click="handleUndoGenerateWaypoints"
             ></v-btn>
           </template>
@@ -276,6 +293,7 @@ const emit = defineEmits<{
   (event: 'undoGeneratedWaypoints'): void
   (event: 'surveyLinesAngle', angle: number): void
   (event: 'regenerateSurveyWaypoints', angle: number): void
+  (event: 'swapSurveyEntryExit'): void
   (event: 'removeWaypoint'): void
   (event: 'placePointOfInterest'): void
   (event: 'setHomePosition'): void
@@ -337,6 +355,10 @@ const handlePlacePointOfInterest = (): void => {
 
 const handleUndoGenerateWaypoints = (): void => {
   emit('undoGeneratedWaypoints')
+}
+
+const handleSwapSurveyEntryExit = (): void => {
+  emit('swapSurveyEntryExit')
 }
 
 const handleDeleteSelectedSurvey = (): void => {
@@ -423,6 +445,11 @@ const handleOpenPanel = (): void => {
   animation-delay: 0.05s;
 }
 
+.orbit-button-4 {
+  animation: orbit-4 0.05s ease-out forwards;
+  animation-delay: 0.05s;
+}
+
 @keyframes orbit-1 {
   0% {
     transform: translate(-50%, -50%) rotate(0deg) translateX(0);
@@ -440,7 +467,7 @@ const handleOpenPanel = (): void => {
     opacity: 0;
   }
   100% {
-    transform: translate(-50%, -50%) rotate(-541deg) translateX(90px);
+    transform: translate(-50%, -50%) rotate(-530deg) translateX(90px);
     opacity: 1;
   }
 }
@@ -451,7 +478,18 @@ const handleOpenPanel = (): void => {
     opacity: 0;
   }
   100% {
-    transform: translate(-50%, -50%) rotate(-580deg) translateX(90px);
+    transform: translate(-50%, -50%) rotate(-560deg) translateX(90px);
+    opacity: 1;
+  }
+}
+
+@keyframes orbit-4 {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-590deg) translateX(90px);
     opacity: 1;
   }
 }

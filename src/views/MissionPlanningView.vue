@@ -484,6 +484,7 @@
     @set-home-position="setHomePosition"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
+    @swap-survey-entry-exit="swapSurveyEntryExit"
     @toggle-survey="toggleSurvey"
     @toggle-simple-path="toggleSimplePath"
     @undo-generated-waypoints="undoGenerateWaypoints"
@@ -1855,6 +1856,31 @@ const deleteSelectedSurvey = (): void => {
   openSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
   hideContextMenu()
   updateWaypointMarkers()
+}
+
+const swapSurveyEntryExit = (): void => {
+  const surveyId = selectedSurveyId.value
+  if (!surveyId) return
+
+  const survey = surveys.value.find((s) => s.id === surveyId)
+  if (!survey || survey.waypoints.length < 2) return
+
+  const firstWpId = survey.waypoints[0].id
+  const insertIndex = missionStore.currentPlanningWaypoints.findIndex((wp) => wp.id === firstWpId)
+  if (insertIndex === -1) return
+
+  survey.waypoints.forEach((wp) => {
+    const idx = missionStore.currentPlanningWaypoints.findIndex((w) => w.id === wp.id)
+    if (idx !== -1) missionStore.currentPlanningWaypoints.splice(idx, 1)
+  })
+
+  survey.waypoints.reverse()
+  missionStore.currentPlanningWaypoints.splice(insertIndex, 0, ...survey.waypoints)
+  updateSurvey(surveyId, { waypoints: survey.waypoints })
+
+  updateWaypointMarkers()
+  refreshSurveyEntryExitMarkers()
+  hideContextMenu()
 }
 
 const homeWaypointCursor =
