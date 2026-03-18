@@ -91,11 +91,12 @@ export const getWidgetsFromBlueOS = async (vehicleAddress: string): Promise<Exte
           widgets.push(
             ...extraJson.widgets.map((widget) => {
               const useExtPath = widget.useExtensionPathAsBaseUrl ?? false
+              const iconUrl = widget.iconUrl ?? widget.iframeIcon ?? ''
 
               return {
                 ...widget,
                 iframeUrl: useExtPath ? extensionPath + widget.iframeUrl : widget.iframeUrl,
-                iframeIcon: useExtPath ? baseUrl + widget.iframeIcon : widget.iframeIcon,
+                iframeIcon: useExtPath ? baseUrl + iconUrl : iconUrl,
               }
             })
           )

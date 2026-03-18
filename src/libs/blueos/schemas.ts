@@ -43,15 +43,20 @@ export const ServiceSchema = preprocessCamelCase(
   })
 )
 
-const ExternalWidgetSetupInfoSchema = z.object({
-  name: z.string(),
-  iframeUrl: z.string(),
-  iframeIcon: z.string(),
-  collapsibleContainerName: z.string().optional(),
-  version: z.string().optional(),
-  startCollapsed: z.boolean().optional(),
-  useExtensionPathAsBaseUrl: z.boolean().optional(),
-})
+const ExternalWidgetSetupInfoSchema = z
+  .object({
+    name: z.string(),
+    iframeUrl: z.string(),
+    iconUrl: z.string().optional(),
+    iframeIcon: z.string().optional(),
+    collapsibleContainerName: z.string().optional(),
+    version: z.string().optional(),
+    startCollapsed: z.boolean().optional(),
+    useExtensionPathAsBaseUrl: z.boolean().optional(),
+  })
+  .refine((data) => data.iconUrl !== undefined || data.iframeIcon !== undefined, {
+    message: 'Either iconUrl or iframeIcon must be provided',
+  })
 
 const HttpRequestActionConfigSchema = z.object({
   name: z.string(),

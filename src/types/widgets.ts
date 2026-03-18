@@ -18,9 +18,14 @@ export interface ExternalWidgetSetupInfo {
   iframeUrl: string
 
   /**
-   * The icon of the widget, this is displayed on the widget browser
+   * The icon URL of the widget, displayed on the widget browser
    */
-  iframeIcon: string
+  iconUrl?: string
+
+  /**
+   * @deprecated Use iconUrl instead
+   */
+  iframeIcon?: string
 
   /**
    * The name of the collapsed container, this is displayed on the widget browser
