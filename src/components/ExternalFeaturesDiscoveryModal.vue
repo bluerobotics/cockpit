@@ -979,6 +979,8 @@ const applyAllSuggestions = (): void => {
       suggestionDiffersFromCurrentMapping(s)
   )
 
+  const failedSuggestionNames: string[] = []
+
   suggestions.forEach((suggestion) => {
     const matchingAction = availableActions.find(
       (action) => action.id === suggestion.actionId && action.protocol === suggestion.actionProtocol
@@ -992,6 +994,8 @@ const applyAllSuggestions = (): void => {
 
       addAppliedSuggestionId(suggestion.id)
       appliedCount++
+    } else {
+      failedSuggestionNames.push(suggestion.actionName)
     }
   })
 
@@ -999,10 +1003,22 @@ const applyAllSuggestions = (): void => {
   acceptAllDialog.value = false
   acceptAllExtensionName.value = null
   acceptAllGroup.value = null
-  openSnackbar({
-    message: `Applied ${appliedCount} joystick mapping(s) from "${groupName}".`,
-    variant: 'success',
-  })
+
+  if (appliedCount > 0) {
+    openSnackbar({
+      message: `Applied ${appliedCount} joystick mapping(s) from "${groupName}".`,
+      variant: 'success',
+      duration: 5000,
+    })
+  }
+
+  if (failedSuggestionNames.length > 0) {
+    openSnackbar({
+      message: `Could not apply ${failedSuggestionNames.length} mapping(s) from "${groupName}". Please add the necessary actions first.`,
+      variant: 'warning',
+      duration: 10000,
+    })
+  }
 }
 
 /**
