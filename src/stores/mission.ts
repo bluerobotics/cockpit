@@ -13,6 +13,7 @@ import {
   MissionCommand,
   PointOfInterest,
   PointOfInterestCoordinates,
+  Survey,
   Waypoint,
   WaypointCoordinates,
 } from '@/types/mission'
@@ -63,6 +64,7 @@ export const useMissionStore = defineStore('mission', () => {
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
+  const currentPlanningSurveys = reactive<Survey[]>([])
   const persistedPositionHistory = useBlueOsStorage<WaypointCoordinates[]>('cockpit-vehicle-position-history', [])
   const isVehiclePositionHistoryPersistent = useBlueOsStorage('cockpit-vehicle-position-history-persistent', true)
   const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
@@ -134,6 +136,7 @@ export const useMissionStore = defineStore('mission', () => {
 
   const clearMission = (): void => {
     currentPlanningWaypoints.splice(0)
+    currentPlanningSurveys.splice(0)
     missionName.value = ''
     missionStartTime.value = new Date()
   }
@@ -207,6 +210,7 @@ export const useMissionStore = defineStore('mission', () => {
         defaultCruiseSpeed: defaultCruiseSpeed.value,
       },
       waypoints,
+      surveys: [...currentPlanningSurveys],
     }
   }
 
@@ -422,6 +426,7 @@ export const useMissionStore = defineStore('mission', () => {
     lastMissionName,
     missionStartTime,
     currentPlanningWaypoints,
+    currentPlanningSurveys,
     slideEventsEnabled,
     slideEventsCategoriesRequired,
     moveWaypoint,

@@ -794,7 +794,7 @@ const isDrawingSurveyPolygon = ref(false)
 const selectedSurveyId = ref<string>('')
 const surveyPolygonLayers = ref<{ [key: string]: Polygon }>({})
 const lastSelectedSurveyId = ref('')
-const surveys = ref<Survey[]>([])
+const surveys = computed(() => missionStore.currentPlanningSurveys)
 const undoIsInProgress = ref(false)
 const undoWaypointInsertIndex = ref<number | null>(null)
 const undoSurveyInsertIndex = ref<number | null>(null)
@@ -1092,7 +1092,6 @@ const clearCurrentMission = (): void => {
     missionWaypointsPolyline.value = null
   }
   clearSurveyPath()
-  surveys.value = []
   selectedSurveyId.value = ''
   lastSelectedSurveyId.value = ''
   undoWaypointInsertIndex.value = null
@@ -2063,6 +2062,7 @@ const saveMissionToFile = async (): Promise<void> => {
       defaultCruiseSpeed: missionStore.defaultCruiseSpeed,
     },
     waypoints: missionStore.currentPlanningWaypoints,
+    surveys: [...missionStore.currentPlanningSurveys],
   }
   const blob = new Blob([JSON.stringify(cockpitMissionFile, null, 2)], {
     type: 'application/json',
@@ -2102,6 +2102,9 @@ const loadMissionFromFile = async (e: Event): Promise<void> => {
     currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
     missionStore.defaultCruiseSpeed = maybeMission['settings']['defaultCruiseSpeed']
     drawMissionOnTheMap(maybeMission['waypoints'])
+    if (maybeMission['surveys']?.length) {
+      missionStore.currentPlanningSurveys.push(...maybeMission['surveys'])
+    }
   }
   // @ts-ignore: We know the event type and need refactor of the event typing
   reader.readAsText(e.target.files[0])
@@ -2992,6 +2995,11 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
     missionStore.defaultCruiseSpeed = mission.settings.defaultCruiseSpeed
 
     drawMissionOnTheMap(mission.waypoints)
+
+    if (mission.surveys?.length) {
+      missionStore.currentPlanningSurveys.push(...mission.surveys)
+    }
+
     if (!home.value) {
       await tryFetchHome()
       homeRetryTimer = setInterval(tryFetchHome, 1000)

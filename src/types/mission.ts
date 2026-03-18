@@ -147,6 +147,10 @@ export type CockpitMission = {
    * The waypoints of the mission
    */
   waypoints: Waypoint[]
+  /**
+   * Survey data associated with this mission.
+   */
+  surveys?: Survey[]
 }
 
 /**
