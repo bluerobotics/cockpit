@@ -174,12 +174,40 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const initializeStreamsCorrespondency = (): void => {
+    // Move already-mapped RadCam WebRTC streams to the ignored list
+    // TODO: This whole logic around auto-ignoring RadCam WebRTC streams should be removed once the MCM stutter problem is fixed
+    const radCamMapped = streamsCorrespondency.value.filter(
+      (corr) =>
+        (corr.protocol ?? 'webrtc') === 'webrtc' &&
+        corr.externalId.toLowerCase().includes('radcam') &&
+        !userRestoredStreamIds.value.includes(corr.externalId)
+    )
+    if (radCamMapped.length > 0) {
+      const idsToMove = radCamMapped.map((corr) => corr.externalId)
+      streamsCorrespondency.value = streamsCorrespondency.value.filter((corr) => !idsToMove.includes(corr.externalId))
+      const newIgnored = idsToMove.filter((id) => !ignoredStreamExternalIds.value.includes(id))
+      if (newIgnored.length > 0) {
+        ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, ...newIgnored]
+      }
+    }
+
     // Get list of external streams that are already mapped
     const alreadyMappedExternalIds = streamsCorrespondency.value.map((corr) => corr.externalId)
 
+    const radCamToIgnore: string[] = []
     const unmappedExternalStreams = namesAvailableWebRTCStreams.value.filter((streamName) => {
-      return !alreadyMappedExternalIds.includes(streamName) && !ignoredStreamExternalIds.value.includes(streamName)
+      if (alreadyMappedExternalIds.includes(streamName)) return false
+      if (ignoredStreamExternalIds.value.includes(streamName)) return false
+      if (streamName.toLowerCase().includes('radcam') && !userRestoredStreamIds.value.includes(streamName)) {
+        radCamToIgnore.push(streamName)
+        return false
+      }
+      return true
     })
+
+    if (radCamToIgnore.length > 0) {
+      ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, ...radCamToIgnore]
+    }
 
     if (unmappedExternalStreams.length === 0) return
 
