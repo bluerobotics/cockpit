@@ -224,6 +224,27 @@
             class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
           />
+          <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
+          <input
+            v-model.number="currentWaypointAltitude"
+            class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
+            type="number"
+          />
+          <p class="m-1 overflow-visible text-sm text-slate-200">Altitude type:</p>
+          <select
+            v-model="currentWaypointAltitudeRefType"
+            class="h-auto py-2 px-2 my-2 mx-5 font-medium text-sm rounded-sm bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
+          >
+            <option :value="AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL" class="bg-[#00000099]">
+              {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
+            </option>
+            <option :value="AltitudeReferenceType.RELATIVE_TO_HOME" class="bg-[#00000099]">
+              {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
+            </option>
+            <option :value="AltitudeReferenceType.RELATIVE_TO_TERRAIN" class="bg-[#00000099]">
+              {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
+            </option>
+          </select>
           <button
             :class="{
               'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
