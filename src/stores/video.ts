@@ -66,6 +66,7 @@ export const useVideoStore = defineStore('video', () => {
   const liveProcessors = ref<{ [key: string]: LiveVideoProcessor }>({})
   const enableLiveProcessing = useBlueOsStorage('cockpit-enable-live-processing', true)
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
+  const userRestoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-restored-stream-ids', [])
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
 
   const streamInformation = ref<ProcessedStreamInfo[]>([])
@@ -1044,10 +1045,11 @@ export const useVideoStore = defineStore('video', () => {
     if (streamIndex !== -1) {
       const stream = streamsCorrespondency.value[streamIndex]
 
-      // Add to ignored list
+      // Add to ignored list and clear user-restored status so auto-ignore can re-apply
       if (!ignoredStreamExternalIds.value.includes(externalId)) {
         ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, externalId]
       }
+      userRestoredStreamIds.value = userRestoredStreamIds.value.filter((id) => id !== externalId)
 
       // Remove from correspondency list
       streamsCorrespondency.value.splice(streamIndex, 1)
@@ -1104,6 +1106,11 @@ export const useVideoStore = defineStore('video', () => {
     if (ignoredIndex !== -1) {
       // Remove from ignored list
       ignoredStreamExternalIds.value.splice(ignoredIndex, 1)
+
+      // Track that the user explicitly restored this stream so auto-ignore won't re-ignore it
+      if (!userRestoredStreamIds.value.includes(externalId)) {
+        userRestoredStreamIds.value = [...userRestoredStreamIds.value, externalId]
+      }
 
       const isRtsp = externalId.startsWith('rtsp://') || externalId.startsWith('rtsps://')
       if (isRtsp) {
