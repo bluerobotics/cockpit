@@ -13,6 +13,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { WebRTCManager } from '@/composables/webRTC'
 import { getIpsInformationFromVehicle } from '@/libs/blueos'
+import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import {
@@ -47,7 +48,7 @@ export const useVideoStore = defineStore('video', () => {
   const alertStore = useAlertStore()
   const { showDialog } = useInteractionDialog()
 
-  const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
+  const { globalAddress, mainVehicle, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
   const streamsCorrespondency = useBlueOsStorage<VideoStreamCorrespondency[]>('cockpit-streams-correspondency', [])
@@ -422,6 +423,10 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.mediaRecorder!.stop()
 
+    mainVehicle.value?.sendCommandLong(MavCmd.MAV_CMD_VIDEO_STOP_CAPTURE, 0, 0).catch((error) => {
+      console.warn('Failed to send MAV_CMD_VIDEO_STOP_CAPTURE to vehicle:', error)
+    })
+
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
 
@@ -719,6 +724,10 @@ export const useVideoStore = defineStore('video', () => {
     }
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
+
+    mainVehicle.value?.sendCommandLong(MavCmd.MAV_CMD_VIDEO_START_CAPTURE, 0, 0, 0).catch((error) => {
+      console.warn('Failed to send MAV_CMD_VIDEO_START_CAPTURE to vehicle:', error)
+    })
   }
 
   // Used to discard a file from the video recovery database
