@@ -47,6 +47,7 @@ export const useMissionStore = defineStore('mission', () => {
   const showMissionCreationTips = useBlueOsStorage('cockpit-show-mission-creation-tips', true)
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
+  const showMissionEstimates = useBlueOsStorage('cockpit-show-mission-estimates', true)
   const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
   const userLastMapTileProvider = useBlueOsStorage<MapTileProvider>(
     'cockpit-user-last-map-tile-provider',
@@ -65,6 +66,92 @@ export const useMissionStore = defineStore('mission', () => {
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
   const currentPlanningSurveys = reactive<Survey[]>([])
+
+  type MissionSnapshot = {
+    /**
+     *
+     */
+    waypoints: Waypoint[]
+    /**
+     *
+     */
+    surveys: Survey[]
+  }
+  const MAX_UNDO_STACK_SIZE = 50
+  const undoStack: MissionSnapshot[] = []
+  const redoStack: MissionSnapshot[] = []
+  const undoCount = ref(0)
+  const redoCount = ref(0)
+
+  const syncCounts = (): void => {
+    undoCount.value = undoStack.length
+    redoCount.value = redoStack.length
+  }
+
+  const takeSnapshot = (): MissionSnapshot => ({
+    waypoints: JSON.parse(JSON.stringify(currentPlanningWaypoints)) as Waypoint[],
+    surveys: JSON.parse(JSON.stringify(currentPlanningSurveys)) as Survey[],
+  })
+
+  /**
+   * Captures a deep snapshot of the current waypoints and surveys for undo.
+   * Clears the redo stack since a new action invalidates the redo history.
+   */
+  const pushUndoSnapshot = (): void => {
+    undoStack.push(takeSnapshot())
+    if (undoStack.length > MAX_UNDO_STACK_SIZE) {
+      undoStack.shift()
+    }
+    redoStack.length = 0
+    syncCounts()
+  }
+
+  /**
+   * Pops and returns the most recent undo snapshot, or undefined if empty.
+   * Pushes the current state onto the redo stack before returning.
+   * @returns {MissionSnapshot | undefined} The snapshot
+   */
+  const popUndoSnapshot = (): MissionSnapshot | undefined => {
+    if (undoStack.length === 0) return undefined
+    redoStack.push(takeSnapshot())
+    const snapshot = undoStack.pop()
+    syncCounts()
+    return snapshot
+  }
+
+  /**
+   * Pops and returns the most recent redo snapshot, or undefined if empty.
+   * Pushes the current state onto the undo stack before returning.
+   * @returns {MissionSnapshot | undefined} The snapshot
+   */
+  const popRedoSnapshot = (): MissionSnapshot | undefined => {
+    if (redoStack.length === 0) return undefined
+    undoStack.push(takeSnapshot())
+    const snapshot = redoStack.pop()
+    syncCounts()
+    return snapshot
+  }
+
+  /**
+   * Whether the undo stack has any snapshots to restore.
+   * @returns {boolean} True if undo is available
+   */
+  const canUndo = computed(() => undoCount.value > 0)
+
+  /**
+   * Whether the redo stack has any snapshots to restore.
+   * @returns {boolean} True if redo is available
+   */
+  const canRedo = computed(() => redoCount.value > 0)
+
+  /**
+   * Clears all undo and redo history.
+   */
+  const clearUndoStack = (): void => {
+    undoStack.length = 0
+    redoStack.length = 0
+    syncCounts()
+  }
   const persistedPositionHistory = useBlueOsStorage<WaypointCoordinates[]>('cockpit-vehicle-position-history', [])
   const isVehiclePositionHistoryPersistent = useBlueOsStorage('cockpit-vehicle-position-history-persistent', true)
   const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
@@ -454,6 +541,7 @@ export const useMissionStore = defineStore('mission', () => {
     showMissionCreationTips,
     showChecklistBeforeArm,
     showGridOnMissionPlanning,
+    showMissionEstimates,
     addCommandToWaypoint,
     removeCommandFromWaypoint,
     updateWaypointCommand,
@@ -474,5 +562,11 @@ export const useMissionStore = defineStore('mission', () => {
     vehiclePositionHistory,
     isVehiclePositionHistoryPersistent,
     clearVehicleHistory,
+    pushUndoSnapshot,
+    popUndoSnapshot,
+    popRedoSnapshot,
+    canUndo,
+    canRedo,
+    clearUndoStack,
   }
 })

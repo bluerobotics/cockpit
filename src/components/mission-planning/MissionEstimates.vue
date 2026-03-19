@@ -7,6 +7,13 @@
     <p class="text-sm font-semibold mb-[6px]">Mission estimates</p>
     <v-divider class="mb-2" />
     <v-icon
+      icon="mdi-eye-off-outline"
+      class="absolute top-[10px] cursor-pointer opacity-80"
+      :class="isOptionsIconVisible ? 'right-[30px]' : 'right-[10px]'"
+      size="14"
+      @click="handleHideMissionEstimates"
+    />
+    <v-icon
       v-if="isOptionsIconVisible"
       icon="mdi-cog"
       class="absolute top-[10px] right-[10px] cursor-pointer opacity-80"
@@ -143,6 +150,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { openSnackbar } from '@/composables/snackbar'
 import { useMissionEstimates } from '@/composables/useMissionEstimates'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -154,7 +162,8 @@ defineProps<{
    */
   modelValue: boolean
 }>()
-defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
+
+const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
@@ -184,5 +193,15 @@ const batteryChemistryItems = [
 
 const openSettings = (): void => {
   isSettingsOpen.value = true
+}
+
+const handleHideMissionEstimates = (): void => {
+  emit('update:modelValue', false)
+  openSnackbar({
+    variant: 'info',
+    message:
+      'You can show the mission estimates again on the Main menu -> Settings -> Mission -> Show mission estimates.',
+    duration: 5000,
+  })
 }
 </script>

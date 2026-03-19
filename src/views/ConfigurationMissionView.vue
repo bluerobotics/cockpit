@@ -48,6 +48,14 @@
             class="mt-2 -mb-2 ml-3"
           />
           <v-switch
+            v-model="missionStore.showMissionEstimates"
+            label="Show mission estimates panel"
+            color="white"
+            hide-details
+            base-color="#FFFFFF33"
+            class="mt-2 -mb-2 ml-3"
+          />
+          <v-switch
             v-model="vehicleStore.isVehiclePositionHistoryPersistent"
             label="Make vehicle history line persistent"
             color="white"
