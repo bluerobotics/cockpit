@@ -209,6 +209,7 @@ type VideoSource = {
 type StreamInfo = {
   id: string
   running: boolean
+  state?: string
   error: string | null
   video_and_stream: {
     name: string
@@ -491,7 +492,7 @@ export const getStreamInformationFromVehicle = async (vehicleAddress: string): P
         width: config.width,
         height: config.height,
         fps,
-        running: stream.running,
+        running: stream.running || stream.state === 'idle' || stream.state === 'running',
         rtspSourceUrl,
       }
     })
