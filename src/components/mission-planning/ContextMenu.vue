@@ -1,8 +1,9 @@
 <template>
   <div
     v-if="visible"
-    :style="{ top: `${position.y}px`, left: `${position.x}px` }"
-    class="context-menu absolute flex justify-center items-center z-[1000] text-white rounded-lg w-auto h-auto"
+    ref="menuEl"
+    :style="{ top: `${clampedPosition.y}px`, left: `${clampedPosition.x}px` }"
+    class="context-menu absolute flex justify-center items-center z-[1000] text-white rounded-lg w-max"
   >
     <div v-if="menuType === 'survey'" class="relative orbit-container">
       <div class="central-element flex justify-start items-start">
@@ -90,7 +91,7 @@
         <template #activator="{ props: tooltipProps3 }">
           <div
             v-bind="tooltipProps3"
-            class="absolute text-[14px] mt-[10px] ml-[85px] bg-transparent rounded-full cursor-pointer elevation-4"
+            class="absolute text-[14px] mt-[10px] ml-[85px] bg-transparent rounded-full cursor-pointer elevation-4 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]"
             variant="text"
             @click="handleDeleteSelectedSurvey"
           >
@@ -256,7 +257,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineEmits, defineProps } from 'vue'
+import { computed, defineEmits, defineProps, nextTick, ref, watch } from 'vue'
 
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -265,6 +266,7 @@ import { ContextMenuTypes, Survey, Waypoint } from '@/types/mission'
 
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
+const menuEl = ref<HTMLElement | null>(null)
 
 /* eslint-disable jsdoc/require-jsdoc */
 const props = defineProps<{
@@ -304,6 +306,32 @@ const menuType = computed(() => props.menuType)
 const selectedWaypoint = computed<Waypoint | undefined>(() => props.selectedWaypoint)
 const visible = computed(() => props.visible)
 const angle = computed(() => props.surveys.find((survey) => survey.id === props.selectedSurveyId)?.surveyLinesAngle)
+
+const clampedPosition = ref({ x: 0, y: 0 })
+
+watch(
+  () => [props.visible, props.position] as const,
+  ([isVisible, pos]) => {
+    clampedPosition.value = { ...pos }
+    if (!isVisible) return
+    nextTick(() => {
+      const el = menuEl.value
+      if (!el) return
+      const margin = 8
+      const elW = el.offsetWidth
+      const elH = el.offsetHeight
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      let { x, y } = pos
+      if (x + elW > vw - margin) x = vw - elW - margin
+      if (y + elH > vh - margin) y = vh - elH - margin
+      if (x < margin) x = margin
+      if (y < margin) y = margin
+      clampedPosition.value = { x, y }
+    })
+  },
+  { immediate: true }
+)
 
 const waypointOnMissionStore = computed(() =>
   missionStore.currentPlanningWaypoints.find((waypoint) => waypoint.id === selectedWaypoint.value?.id)
@@ -394,7 +422,7 @@ const handleOpenPanel = (): void => {
 </script>
 <style scoped>
 .context-menu {
-  transform-origin: center;
+  transform-origin: top left;
   opacity: 0;
   animation: bloom 0.3s ease-out forwards;
 }
@@ -421,6 +449,7 @@ const handleOpenPanel = (): void => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
 }
 
 .orbit-button {
@@ -429,6 +458,7 @@ const handleOpenPanel = (): void => {
   left: 50%;
   transform-origin: center;
   opacity: 0;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
 }
 
 .orbit-button-1 {
