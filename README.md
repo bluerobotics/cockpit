@@ -25,6 +25,7 @@
 ![Downloads](https://img.shields.io/github/downloads/bluerobotics/cockpit/total?label=Downloads)
 [![Latest Beta](https://img.shields.io/github/v/tag/bluerobotics/cockpit.svg?label=Latest%20Beta)](https://github.com/bluerobotics/cockpit/releases)
 [![Docker](https://img.shields.io/docker/v/bluerobotics/cockpit?label=Docker)](https://hub.docker.com/r/bluerobotics/cockpit/tags)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bluerobotics/cockpit)
 
 ---
 
