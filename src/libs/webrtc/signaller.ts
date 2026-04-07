@@ -503,11 +503,10 @@ export class Signaller {
     this.removeAllListeners('close', false)
     this.removeAllListeners('message', false)
 
-    if (this.ws.readyState !== this.ws.OPEN) {
-      return
+    if (this.ws.readyState === this.ws.OPEN || this.ws.readyState === this.ws.CONNECTING) {
+      console.debug(`[WebRTC] [Signaller] Closing WebSocket. Reason: ${reason}`)
+      this.ws.close()
     }
-    console.debug(`[WebRTC] [Signaller] Closing WebSocket. Reason: ${reason}`)
-    this.ws.close()
   }
 
   /**
