@@ -12,7 +12,7 @@ import { availableCockpitActions, registerActionCallback } from '@/libs/joystick
 import { isElectron } from '@/libs/utils'
 import { snapshotStorage, snapshotThumbStorage } from '@/libs/videoStorage'
 import { StorageDB } from '@/types/general'
-import { EIXFType, SnapshotExif, SnapshotFileDescriptor } from '@/types/snapshot'
+import { EIXFType, SnapshotExif, SnapshotFileDescriptor, SnapshotResult } from '@/types/snapshot'
 import { DownloadProgressCallback, FileDescriptor } from '@/types/video'
 
 import { useMainVehicleStore } from './mainVehicle'
@@ -193,9 +193,18 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     })
   }
 
-  const takeSnapshot = async (streamNames: string[], captureWorkspace?: boolean): Promise<void> => {
+  /**
+   * Captures snapshots from the given streams and optionally the workspace.
+   * @param {string[]} streamNames - Names of the video streams to capture
+   * @param {boolean} captureWorkspace - Whether to also capture the Cockpit workspace
+   * @returns {{ succeeded: string[]; failed: string[] }} Per-source capture results
+   */
+  const takeSnapshot = async (streamNames: string[], captureWorkspace?: boolean): Promise<SnapshotResult> => {
     const { yaw, pitch, roll } = vehicleStore.attitude
     const { latitude, longitude } = vehicleStore.coordinates
+
+    const succeeded: string[] = []
+    const failed: string[] = []
 
     if (captureWorkspace) {
       if (isElectron() && window.electronAPI) {
@@ -216,15 +225,13 @@ export const useSnapshotStore = defineStore('snapshot', () => {
           const thumbFilename = filename + '-thumb'
           await snapshotStorage.setItem(filename, wsBlob)
           await snapshotThumbStorage.setItem(thumbFilename, thumbBlob)
+          succeeded.push('workspace')
         } catch (err) {
-          throw err as Error
+          console.error('Failed to capture workspace snapshot:', err)
+          failed.push('workspace')
         }
-      } else {
-        throw new Error('Workspace capture requires Electron')
       }
     }
-
-    const errors: string[] = []
 
     for (const streamName of streamNames) {
       try {
@@ -238,15 +245,14 @@ export const useSnapshotStore = defineStore('snapshot', () => {
 
         await snapshotStorage.setItem(filename, stBlob)
         await snapshotThumbStorage.setItem(thumbFilename, thumbBlob)
+        succeeded.push(streamName)
       } catch (err) {
         console.error(`Failed to capture snapshot for stream '${streamName}':`, err)
-        errors.push(streamName)
+        failed.push(streamName)
       }
     }
 
-    if (errors.length > 0) {
-      throw new Error(`Snapshot capture failed for streams: ${errors.join(', ')}`)
-    }
+    return { succeeded, failed }
   }
 
   const createZipAndDownload = async (
@@ -312,12 +318,12 @@ export const useSnapshotStore = defineStore('snapshot', () => {
   }
 
   const takeSnapshotAction = async (): Promise<void> => {
-    try {
-      // Take a snapshot of all available streams
-      await takeSnapshot(videoStore.namesAvailableStreams, isElectron())
-      console.log('Snapshot taken successfully via action')
-    } catch (error) {
-      console.error('Error taking snapshot via action:', error)
+    const { succeeded, failed } = await takeSnapshot(videoStore.namesAvailableStreams, isElectron())
+    if (failed.length > 0) {
+      console.error(`Snapshot action failed for: ${failed.join(', ')}`)
+    }
+    if (succeeded.length > 0) {
+      console.log(`Snapshot taken successfully via action for: ${succeeded.join(', ')}`)
     }
   }
 
