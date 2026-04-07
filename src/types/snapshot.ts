@@ -68,6 +68,20 @@ export interface EIXFType {
   height?: number
 }
 
+/**
+ * Result of a snapshot capture operation, reporting which sources succeeded and which failed
+ */
+export interface SnapshotResult {
+  /**
+   * Names of sources that were captured successfully
+   */
+  succeeded: string[]
+  /**
+   * Names of sources that failed to capture
+   */
+  failed: string[]
+}
+
 type ExifBlock = Record<number, string | number | number[][] | undefined>
 
 /**
