@@ -24,6 +24,9 @@ export class Signaller {
     Map<(type: WebSocketEventMap[keyof WebSocketEventMap]) => void, boolean | AddEventListenerOptions | undefined>
   >
   private shouldReconnect: boolean
+  private boundOnOpen: (event: Event) => void
+  private boundOnError: (event: Event) => void
+  private boundOnClose: (event: CloseEvent) => void
   /**
    * Creates a new Signaller instance
    * @param {URL} url - URL of the signalling server
@@ -37,6 +40,9 @@ export class Signaller {
     this.listeners = new Map()
     this.shouldReconnect = shouldReconnect
     this.url = url
+    this.boundOnOpen = this.onOpenCallback.bind(this)
+    this.boundOnError = this.onErrorCallback.bind(this)
+    this.boundOnClose = this.onCloseCallback.bind(this)
 
     const status = `Connecting to signalling server on ${url}`
     console.debug('[WebRTC] [Signaller] ' + status)
@@ -487,9 +493,9 @@ export class Signaller {
    */
   public end(reason: string): void {
     // Unregister basic listeners
-    this.ws.removeEventListener('open', this.onOpenCallback.bind(this))
-    this.ws.removeEventListener('error', this.onErrorCallback.bind(this))
-    this.ws.removeEventListener('close', this.onCloseCallback.bind(this))
+    this.ws.removeEventListener('open', this.boundOnOpen)
+    this.ws.removeEventListener('error', this.boundOnError)
+    this.ws.removeEventListener('close', this.boundOnClose)
 
     // Unregister all additional listeners
     this.removeAllListeners('open', false)
@@ -512,9 +518,9 @@ export class Signaller {
     const ws = new WebSocket(this.url.toString())
 
     // Register basic listeners
-    ws.addEventListener('open', this.onOpenCallback.bind(this))
-    ws.addEventListener('error', this.onErrorCallback.bind(this))
-    ws.addEventListener('close', this.onCloseCallback.bind(this))
+    ws.addEventListener('open', this.boundOnOpen)
+    ws.addEventListener('error', this.boundOnError)
+    ws.addEventListener('close', this.boundOnClose)
 
     // re-register all additional listeners
     for (const [type, listenerMap] of this.listeners) {
