@@ -185,6 +185,7 @@ const timedSnapshotInterval = computed({
   },
 })
 const isTakingTimedSnapshot = ref<boolean>(false)
+const isFailureDialogOpen = ref(false)
 const timerProgress = ref<number>(50)
 
 const flashEffect = async (): Promise<void> => {
@@ -238,6 +239,9 @@ const handleSnapshotResult = (result: SnapshotResult): void => {
     return
   }
 
+  if (isFailureDialogOpen.value) return
+
+  isFailureDialogOpen.value = true
   showDialog({
     title: 'Error taking snapshot',
     message:
@@ -247,6 +251,8 @@ const handleSnapshotResult = (result: SnapshotResult): void => {
     variant: 'error',
     persistent: false,
     maxWidth: '550px',
+  }).finally(() => {
+    isFailureDialogOpen.value = false
   })
 }
 
