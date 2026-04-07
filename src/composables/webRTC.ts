@@ -75,9 +75,10 @@ export class WebRTCManager {
    * @param {string} reason
    */
   public close(reason: string): void {
+    this.hasEnded = true
+    this.signaller.onOpen = undefined
     this.stopSession(reason)
     this.signaller.end(reason)
-    this.hasEnded = true
   }
 
   /**
@@ -182,6 +183,8 @@ export class WebRTCManager {
    *
    */
   private startConsumer(): void {
+    if (this.hasEnded) return
+
     this.hasEnded = false
     // Requests a new consumer ID
     if (this.consumerId === undefined) {
@@ -289,13 +292,15 @@ export class WebRTCManager {
    *
    */
   private startSession(): void {
+    if (this.hasEnded) return
     if (this.waitingForSessionStart) {
       return
     }
     this.waitingForSessionStart = true
 
     window.setTimeout(() => {
-      if (!this.waitingForSessionStart) {
+      if (!this.waitingForSessionStart || this.hasEnded) {
+        this.waitingForSessionStart = false
         return
       }
 
