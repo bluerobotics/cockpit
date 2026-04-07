@@ -7,6 +7,9 @@ import { Session } from '@/libs/webrtc/session'
 import { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 
+const FRAME_WATCHDOG_CHECK_INTERVAL_MS = 1000
+const FRAME_WATCHDOG_TIMEOUT_MS = 5000
+
 /**
  *
  */
@@ -51,6 +54,9 @@ export class WebRTCManager {
   private signaller: Signaller
   private waitingForAvailableStreamsAnswer = false
   private waitingForSessionStart = false
+  private frameWatchdogInterval: ReturnType<typeof setInterval> | undefined
+  private lastFrameCount = 0
+  private lastFrameChangeTime = 0
 
   /**
    *
@@ -75,6 +81,7 @@ export class WebRTCManager {
    * @param {string} reason
    */
   public close(reason: string): void {
+    this.stopFrameWatchdog()
     this.stopSession(reason)
     this.signaller.end(reason)
     this.hasEnded = true
@@ -258,6 +265,58 @@ export class WebRTCManager {
    */
   private onPeerConnected(): void {
     this.connected.value = true
+    this.startFrameWatchdog()
+  }
+
+  /**
+   * Starts a periodic check for incoming video frames. Restarts the session if no new frames
+   * are received for {@link FRAME_WATCHDOG_TIMEOUT_MS} after frames were previously flowing.
+   * This handles cases where the server-side pipeline restarts without a clean EndSession signal.
+   */
+  private startFrameWatchdog(): void {
+    this.stopFrameWatchdog()
+    this.lastFrameCount = 0
+    this.lastFrameChangeTime = Date.now()
+
+    this.frameWatchdogInterval = setInterval(async () => {
+      if (!this.session?.peerConnection || this.hasEnded) {
+        return
+      }
+
+      try {
+        const stats = await this.session.peerConnection.getStats()
+        let currentFrameCount = 0
+        stats.forEach((report) => {
+          if (report.type === 'inbound-rtp' && report.kind === 'video') {
+            currentFrameCount = report.framesReceived ?? 0
+          }
+        })
+
+        const now = Date.now()
+        if (currentFrameCount > this.lastFrameCount) {
+          this.lastFrameCount = currentFrameCount
+          this.lastFrameChangeTime = now
+          return
+        }
+
+        if (this.lastFrameCount > 0 && now - this.lastFrameChangeTime > FRAME_WATCHDOG_TIMEOUT_MS) {
+          console.warn(`[WebRTC] No new frames received for ${FRAME_WATCHDOG_TIMEOUT_MS}ms, restarting session`)
+          this.onSessionClosed('No frames received (watchdog timeout)')
+        }
+      } catch {
+        // Session may have been closed between the guard check and getStats() resolving
+      }
+    }, FRAME_WATCHDOG_CHECK_INTERVAL_MS)
+  }
+
+  /**
+   * Stops the frame watchdog interval
+   */
+  private stopFrameWatchdog(): void {
+    if (this.frameWatchdogInterval !== undefined) {
+      clearInterval(this.frameWatchdogInterval)
+      this.frameWatchdogInterval = undefined
+    }
   }
 
   /**
@@ -370,9 +429,8 @@ export class WebRTCManager {
 
     // Registers Session callback for the Signaller endSession parser
     this.signaller.parseEndSessionQuestion(this.consumerId!, producerId, this.session.id, (sessionId, reason) => {
-      console.debug(`[WebRTC] Session ${sessionId} ended. Reason: ${reason}`)
-      this.session = undefined
-      this.hasEnded = true
+      console.debug(`[WebRTC] Session ${sessionId} ended by server. Reason: ${reason}`)
+      this.onSessionClosed(reason)
     })
 
     // Registers Session callbacks for the Signaller Negotiation parser
@@ -394,6 +452,7 @@ export class WebRTCManager {
    * @param {string} reason
    */
   private stopSession(reason: string): void {
+    this.stopFrameWatchdog()
     if (this.session === undefined) {
       console.debug('[WebRTC] Stopping an undefined session, probably it was already stopped?')
       return
