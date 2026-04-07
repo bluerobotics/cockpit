@@ -3,7 +3,7 @@ import { ipcMain } from 'electron'
 import { promises as fs } from 'fs'
 import { createWriteStream } from 'fs'
 import { tmpdir } from 'os'
-import { basename, dirname, join } from 'path'
+import { basename, dirname, isAbsolute, join } from 'path'
 import { pipeline } from 'stream'
 import { v4 as uuid } from 'uuid'
 import * as yauzl from 'yauzl'
@@ -465,13 +465,17 @@ const extractVideoChunksZip = async (zipFilePath: string): Promise<ZipExtraction
 }
 
 /**
- * Copy telemetry file to video output directory
- * @param {string} originAssFilePath - Path to the .ass file
+ * Copy telemetry file to video output directory.
+ * If originAssFilePath is not absolute, it is resolved relative to the videos directory.
+ * @param {string} originAssFilePath - Absolute path or filename of the .ass file
  * @param {string} destAssFilePath - Path where to put the ass file
  */
 const copyTelemetryFile = async (originAssFilePath: string, destAssFilePath: string): Promise<void> => {
   try {
-    await fs.copyFile(originAssFilePath, destAssFilePath)
+    const resolvedOrigin = isAbsolute(originAssFilePath)
+      ? originAssFilePath
+      : join(getCockpitFolderPath(), 'videos', originAssFilePath)
+    await fs.copyFile(resolvedOrigin, destAssFilePath)
     console.log(`Copied telemetry file to '${destAssFilePath}'.`)
   } catch (error) {
     console.warn(`Failed to copy telemetry file:`, error)
