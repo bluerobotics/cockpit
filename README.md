@@ -235,6 +235,16 @@ While Cockpit is a powerful and feature-rich ground control station, there are s
 
 ---
 
+## 📚 Documentation & Support
+
+- **📖 User Documentation**: [blueos.cloud/docs/extensions/cockpit](https://blueos.cloud/cockpit/docs)
+- **💬 Community Forum**: [discuss.bluerobotics.com](https://discuss.bluerobotics.com/c/bluerobotics-software/cockpit)
+- **🐛 Issue Tracker**: [GitHub Issues](https://github.com/bluerobotics/cockpit/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/bluerobotics/cockpit/discussions)
+- **🛠️ Auto-generated Developer Documentation**: [DeepWiki](https://deepwiki.com/bluerobotics/cockpit)
+
+---
+
 ## 🏗️ Architecture
 
 Cockpit is built with modern web technologies, which help us advance development quickly and easily receive external contributions. Here you can find part of our stack:
@@ -314,16 +324,6 @@ docker-compose -f sim.yml --profile ardusub up
 
 # Other profiles: arducopter, ardurover, arduplane
 ```
-
----
-
-
-## 📚 Documentation & Support
-
-- **📖 User Documentation**: [blueos.cloud/docs/extensions/cockpit](https://blueos.cloud/cockpit/docs)
-- **💬 Community Forum**: [discuss.bluerobotics.com](https://discuss.bluerobotics.com/c/bluerobotics-software/cockpit)
-- **🐛 Issue Tracker**: [GitHub Issues](https://github.com/bluerobotics/cockpit/issues)
-- **💡 Feature Requests**: [GitHub Discussions](https://github.com/bluerobotics/cockpit/discussions)
 
 ---
 
