@@ -504,7 +504,8 @@ export const useVideoStore = defineStore('video', () => {
         throw new Error(`Recording '${recordingHash}' not found.`)
       }
 
-      // Generate telemetry log
+      console.info(`Generating telemetry overlay for recording '${recordingHash}'...`)
+
       const telemetryLog = await datalogger.generateLog(recordingData.dateStart!, recordingData.dateFinish!)
 
       if (telemetryLog !== undefined) {
@@ -516,8 +517,9 @@ export const useVideoStore = defineStore('video', () => {
         )
         const logBlob = new Blob([assLog], { type: 'text/plain' })
 
-        // Save the .ass file
-        await videoStorage.setItem(videoSubtitlesFilename(recordingData.fileName), logBlob)
+        const subtitlesFileName = videoSubtitlesFilename(recordingData.fileName)
+        await videoStorage.setItem(subtitlesFileName, logBlob)
+        console.info(`Telemetry overlay saved as '${subtitlesFileName}' (${logBlob.size} bytes).`)
       }
     } catch (error) {
       throw new Error(`Failed to generate telemetry for recording '${recordingHash}': ${error}`)
@@ -830,6 +832,15 @@ export const useVideoStore = defineStore('video', () => {
 
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
       const info = unprocessedVideos.value[recordingHash]
+      if (!info) {
+        const errorMessage = `Failed to generate telemetry overlay: recording metadata for '${recordingHash}' not found.`
+        openSnackbar({ message: errorMessage, variant: 'error' })
+        delete liveProcessors.value[recordingHash]
+        if (activeStreams.value[streamName]) {
+          activeStreams.value[streamName]!.mediaRecorder = undefined
+        }
+        return
+      }
 
       // Register that the recording finished
       info.dateFinish = new Date()
@@ -851,8 +862,6 @@ export const useVideoStore = defineStore('video', () => {
           alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamName}.`))
         } finally {
           delete liveProcessors.value[recordingHash]
-
-          activeStreams.value[streamName]!.mediaRecorder = undefined
         }
       }
 
@@ -860,10 +869,14 @@ export const useVideoStore = defineStore('video', () => {
       try {
         await generateTelemetryOverlay(recordingHash)
       } catch (telemetryError) {
-        openSnackbar({ message: 'Failed to generate telemetry overlay.', variant: 'error' })
+        openSnackbar({ message: `Failed to generate telemetry overlay: ${telemetryError}`, variant: 'error' })
       }
 
-      activeStreams.value[streamName]!.mediaRecorder = undefined
+      if (activeStreams.value[streamName]) {
+        activeStreams.value[streamName]!.mediaRecorder = undefined
+      } else {
+        console.warn(`Stream '${streamName}' was removed during video processing finalization.`)
+      }
     }
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
