@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 
 import { LiveVideoProcessor } from '@/libs/live-video-processor'
+import { datalogger } from '@/libs/sensors-logging'
 import { formatBytes, isElectron } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { type FileDescriptor } from '@/types/video'
@@ -446,6 +447,94 @@ export const useVideoChunkManager = (): {
   }
 
   /**
+   * Generate an .ass telemetry blob from a datalogger log, save it to video storage, and copy it
+   * to the output path on the filesystem.
+   * @param {Awaited<ReturnType<typeof datalogger.generateLog>>} telemetryLog - The generated log
+   * @param {number} videoWidth - Video width in pixels
+   * @param {number} videoHeight - Video height in pixels
+   * @param {number} startEpoch - Video start epoch in milliseconds
+   * @param {string} subtitlesFileName - The filename (key) under which to store the .ass file
+   * @param {string} outputPath - Full filesystem path of the processed video
+   * @returns {Promise<void>}
+   */
+  const saveAndCopyTelemetry = async (
+    telemetryLog: Awaited<ReturnType<typeof datalogger.generateLog>>,
+    videoWidth: number,
+    videoHeight: number,
+    startEpoch: number,
+    subtitlesFileName: string,
+    outputPath: string
+  ): Promise<void> => {
+    const assContent = datalogger.toAssOverlay(telemetryLog, videoWidth, videoHeight, startEpoch)
+    const logBlob = new Blob([assContent], { type: 'text/plain' })
+    await videoStore.videoStorage.setItem(subtitlesFileName, logBlob)
+    await window.electronAPI!.copyTelemetryFile(subtitlesFileName, videoSubtitlesFilename(outputPath))
+  }
+
+  /**
+   * Attempts to resolve telemetry for a processed chunk group using a 3-tier fallback:
+   *   1. Copy an existing .ass file from video storage
+   *   2. Generate from unprocessedVideos metadata (dateStart/dateFinish/resolution)
+   *   3. Reconstruct the time range from chunk timestamps
+   * Throws if all tiers fail.
+   * @param {ChunkGroup} group - The chunk group being processed
+   * @param {string} outputPath - Full filesystem path of the processed video
+   * @returns {Promise<void>}
+   */
+  const copyOrGenerateTelemetryOverlayFile = async (group: ChunkGroup, outputPath: string): Promise<void> => {
+    const subtitlesFileName = videoSubtitlesFilename(group.fileName || videoFilename(group.hash, group.firstChunkDate))
+
+    // Tier 1: Try to find and copy an existing .ass file
+    try {
+      const videoKeys = await videoStore.videoStorage.keys()
+      const existingAssFile = videoKeys.find((key) => key.includes(group.hash) && key.endsWith('.ass'))
+      if (existingAssFile) {
+        await window.electronAPI!.copyTelemetryFile(existingAssFile, videoSubtitlesFilename(outputPath))
+        console.info(`Tier 1: Copied existing telemetry file for ${group.hash}.`)
+        return
+      }
+      console.info(`Tier 1: No existing .ass file found for ${group.hash}. Trying metadata generation...`)
+    } catch (error) {
+      console.warn(`Tier 1: Failed to copy existing telemetry for ${group.hash}:`, error)
+    }
+
+    // Tier 2: Try to generate from unprocessedVideos metadata
+    try {
+      const recordingData = videoStore.unprocessedVideos[group.hash]
+      if (recordingData?.dateStart && recordingData?.dateFinish) {
+        const dateStart = new Date(recordingData.dateStart)
+        const dateFinish = new Date(recordingData.dateFinish)
+        console.info(`Tier 2: Generating telemetry from recording metadata for ${group.hash}...`)
+
+        const telemetryLog = await datalogger.generateLog(dateStart, dateFinish)
+        const vWidth = recordingData.vWidth ?? 1920
+        const vHeight = recordingData.vHeight ?? 1080
+        await saveAndCopyTelemetry(telemetryLog, vWidth, vHeight, dateStart.getTime(), subtitlesFileName, outputPath)
+        console.info(`Tier 2: Telemetry generated from metadata for ${group.hash}.`)
+        return
+      }
+      console.info(`Tier 2: No recording metadata found for ${group.hash}. Trying timestamp reconstruction...`)
+    } catch (error) {
+      console.warn(`Tier 2: Failed to generate telemetry from metadata for ${group.hash}:`, error)
+    }
+
+    // Tier 3: Reconstruct time range from chunk timestamps
+    const validChunks = group.chunks.filter((c) => c.timestamp.getTime() > 0)
+    if (validChunks.length === 0) {
+      throw new Error(`No valid chunk timestamps available for ${group.hash}`)
+    }
+
+    const sortedByTime = [...validChunks].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+    const estimatedStart = sortedByTime[0].timestamp
+    const estimatedEnd = new Date(sortedByTime[sortedByTime.length - 1].timestamp.getTime() + 1000)
+    console.info(`Tier 3: Reconstructing telemetry from chunk timestamps for ${group.hash}...`)
+
+    const telemetryLog = await datalogger.generateLog(estimatedStart, estimatedEnd)
+    await saveAndCopyTelemetry(telemetryLog, 1920, 1080, estimatedStart.getTime(), subtitlesFileName, outputPath)
+    console.info(`Tier 3: Telemetry reconstructed from chunk timestamps for ${group.hash}.`)
+  }
+
+  /**
    * Process a chunk group using the live video processor
    * @param {ChunkGroup} group
    * @returns {Promise<void>} Promise that resolves when processing is complete
@@ -501,15 +590,12 @@ export const useVideoChunkManager = (): {
       // Finalize the streaming process
       await window.electronAPI.finalizeVideoRecording(processId)
 
-      // Find and copy telemetry file if it exists
+      // Find and copy (if it exists) or generate (if it doesn't) telemetry overlay file
       try {
-        const videoKeys = await videoStore.videoStorage.keys()
-        const assFile = videoKeys.find((key) => key.includes(group.hash) && key.endsWith('.ass'))
-        if (assFile) {
-          await window.electronAPI.copyTelemetryFile(assFile, videoSubtitlesFilename(outputPath))
-        }
-      } catch (error) {
-        console.warn('Failed to copy telemetry file:', error)
+        await copyOrGenerateTelemetryOverlayFile(group, outputPath)
+      } catch (telemetryError) {
+        const errorMessage = `Could not generate telemetry overlay for the processed video: ${telemetryError}`
+        openSnackbar({ message: errorMessage, variant: 'error' })
       }
 
       openSnackbar({
