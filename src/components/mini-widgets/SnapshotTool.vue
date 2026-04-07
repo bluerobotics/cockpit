@@ -324,7 +324,7 @@ onBeforeMount(() => {
   const defaultOptions = {
     snapshotAllAvailableSources: true,
     selectedStreams: [] as string[],
-    captureWorkspace: false,
+    captureWorkspace: true,
     snapshotTriggerType: 'single' as 'single' | 'timed',
     timedSnapshotInterval: 5,
   }
