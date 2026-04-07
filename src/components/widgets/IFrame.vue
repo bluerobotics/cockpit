@@ -11,17 +11,19 @@
     >
       <div class="flex flex-col justify-start items-center h-auto pt-2 cursor-pointer">
         <div class="flex justify-between w-full h-[25px] px-2">
-          <v-icon class="cursor-grab opacity-40" @mousedown="enableMovingOnDrag" @mouseup="disableMovingOnDrag">
-            mdi-drag
-          </v-icon>
-          <div class="select-none">
-            {{ widget.options.containerName }}
+          <div
+            class="flex items-center gap-1 flex-1 min-w-0 cursor-grab select-none"
+            @mousedown="enableMovingOnDrag"
+            @mouseup="disableMovingOnDrag"
+          >
+            <v-icon class="opacity-40 flex-shrink-0">mdi-drag</v-icon>
+            <span class="flex-1 text-center truncate">{{ widget.options.containerName }}</span>
           </div>
           <v-btn
             :icon="widget.options.startCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up'"
             variant="text"
             size="36"
-            class="mt-[-6px] opacity-60"
+            class="mt-[-6px] opacity-60 flex-shrink-0"
             @click="widget.options.startCollapsed = !widget.options.startCollapsed"
           />
         </div>
