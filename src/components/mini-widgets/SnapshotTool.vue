@@ -80,9 +80,19 @@
           <span> Some features like “Capturing Cockpit work area” are only available in the Electron version. </span>
         </v-tooltip>
       </div>
+      <div class="flex items-center justify-start w-[90%] -mb-2">
+        <v-checkbox
+          v-model="miniWidget.options.snapshotAllAvailableSources"
+          density="compact"
+          hide-details
+          theme="dark"
+        />
+        <p class="ml-[4px] -mb-[2px] text-sm">Snapshot all available sources</p>
+      </div>
       <v-select
         v-model="miniWidget.options.selectedStreams"
         :items="videoStore.namesAvailableStreams || []"
+        :disabled="miniWidget.options.snapshotAllAvailableSources"
         density="compact"
         multiple
         clearable
@@ -144,6 +154,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { SnapshotResult } from '@/types/snapshot'
 import type { MiniWidget } from '@/types/widgets'
 
 const { showDialog } = useInteractionDialog()
@@ -201,31 +212,49 @@ const flashEffect = async (): Promise<void> => {
   document.body.removeChild(flashOverlay)
 }
 
-const captureSnapshot = async (): Promise<void> => {
-  await snapshotStore.takeSnapshot(
-    miniWidget.value.options.selectedStreams ?? [],
-    miniWidget.value.options.captureWorkspace
-  )
+const captureSnapshot = async (): Promise<SnapshotResult> => {
+  const streamNames = miniWidget.value.options.snapshotAllAvailableSources
+    ? videoStore.namesAvailableStreams
+    : miniWidget.value.options.selectedStreams ?? []
+  return snapshotStore.takeSnapshot(streamNames, miniWidget.value.options.captureWorkspace)
+}
+
+const handleSnapshotResult = (result: SnapshotResult): void => {
+  const { succeeded, failed } = result
+
+  if (succeeded.length > 0 && failed.length === 0) {
+    flashEffect()
+    openSnackbar({ message: 'Snapshot recorded successfully.', variant: 'success', duration: 2000 })
+    return
+  }
+
+  if (succeeded.length > 0 && failed.length > 0) {
+    flashEffect()
+    openSnackbar({
+      message: `Snapshot captured, but failed for: ${failed.join(', ')}.`,
+      variant: 'warning',
+      duration: 4000,
+    })
+    return
+  }
+
+  showDialog({
+    title: 'Error taking snapshot',
+    message:
+      failed.length > 0
+        ? `Failed to capture: ${failed.join(', ')}. Make sure the streams have finished loading.`
+        : 'No sources available for capture. Make sure streams are connected or select specific ones in the widget settings.',
+    variant: 'error',
+    persistent: false,
+    maxWidth: '550px',
+  })
 }
 
 const handleTakeSnapshot = async (): Promise<void> => {
   isSnapshotMenuOpen.value = false
-
-  try {
-    if (snapshotTriggerType.value !== 'timed') {
-      await captureSnapshot()
-      flashEffect()
-      openSnackbar({ message: 'Snapshot recorded successfully.', variant: 'success', duration: 2000 })
-    }
-  } catch (error) {
-    showDialog({
-      title: 'Error taking snapshot',
-      message: 'Make sure the streams have finished loading.',
-      variant: 'error',
-      persistent: false,
-      maxWidth: '550px',
-    })
-  }
+  if (snapshotTriggerType.value === 'timed') return
+  const result = await captureSnapshot()
+  handleSnapshotResult(result)
 }
 
 const handleOpenSnapshotLibrary = (): void => {
@@ -245,17 +274,13 @@ let progressInterval: ReturnType<typeof setInterval> | null = null
 let shotInterval: ReturnType<typeof setInterval> | null = null
 
 const fireTimedSnapshot = async (): Promise<void> => {
-  try {
-    await captureSnapshot()
-  } catch (error) {
-    openSnackbar({ message: `Timed snapshot failed: ${error}`, variant: 'error', duration: 3000 })
-  }
+  const result = await captureSnapshot()
+  handleSnapshotResult(result)
 }
 
 watch(isTakingTimedSnapshot, (newValue) => {
   if (newValue) {
     fireTimedSnapshot()
-    flashEffect()
     openSnackbar({
       message: `Timed snapshot started. This will capture the selected interfaces every ${timedSnapshotInterval.value} seconds until you press the camera button again.`,
       variant: 'info',
@@ -291,6 +316,7 @@ watch(isTakingTimedSnapshot, (newValue) => {
 
 onBeforeMount(() => {
   const defaultOptions = {
+    snapshotAllAvailableSources: true,
     selectedStreams: [] as string[],
     captureWorkspace: false,
     snapshotTriggerType: 'single' as 'single' | 'timed',
