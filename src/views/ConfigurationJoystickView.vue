@@ -512,7 +512,7 @@
                   Unmap Input
                 </v-btn>
               </div>
-              <div class="flex-1"></div>
+              <div class="flex-1 my-4"></div>
               <div class="flex flex-col items-start text-sm font-semibold gap-y-1">
                 <div class="flex items-center">
                   <img src="@/assets/cockpit-logo.avif" class="w-4 h-4 mr-2" alt="Cockpit" />
