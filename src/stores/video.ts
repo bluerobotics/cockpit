@@ -46,7 +46,7 @@ const { openSnackbar } = useSnackbar()
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
   const alertStore = useAlertStore()
-  const { showDialog } = useInteractionDialog()
+  const { showDialog, closeDialog } = useInteractionDialog()
 
   const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
@@ -68,6 +68,7 @@ export const useVideoStore = defineStore('video', () => {
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
   const userRestoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-restored-stream-ids', [])
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
+  const suppressNotGrowingDialogs = ref(false)
 
   const streamInformation = ref<ProcessedStreamInfo[]>([])
   const go2rtcStreamInfo = ref<Record<string, Go2RTCStreamInfo>>({})
@@ -638,6 +639,19 @@ export const useVideoStore = defineStore('video', () => {
     }
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
+    // Common configuration for the not growing dialogs
+    const suppressNotGrowingDialog = (): void => {
+      suppressNotGrowingDialogs.value = true
+      closeDialog()
+    }
+    const notGrowingDialogConfig = {
+      variant: 'error',
+      actions: [
+        { text: "Don't show again during this session", size: 'small', action: suppressNotGrowingDialog },
+        { text: 'Close', size: 'small', action: closeDialog },
+      ],
+    }
+
     // On Electron, we can get the size of the video output file in real time
     // This is useful to detect if the output file is growing, which is an indication that the recording is still ongoing.
     // On Web, we can only know if the number of chunks is growing, which is an indication that the recording is still ongoing.
@@ -664,8 +678,10 @@ export const useVideoStore = defineStore('video', () => {
         }
         const lastKnownFileSize = unprocessedVideos.value[recordingHash].lastKnownFileSize
         if (fileStats.size! <= lastKnownFileSize!) {
-          const msg = 'The video output file is not growing. This can indicate a problem with the recording.'
-          showDialog({ message: msg, variant: 'error' })
+          if (!suppressNotGrowingDialogs.value) {
+            const msg = 'The video output file is not growing. This can indicate a problem with the recording.'
+            showDialog({ ...notGrowingDialogConfig, message: msg })
+          }
           return
         }
         unprocessedVideos.value[recordingHash].lastKnownFileSize = fileStats.size
@@ -686,8 +702,10 @@ export const useVideoStore = defineStore('video', () => {
         const numberOfChunks = await tempVideoStorage.localForage.length()
         const lastKnownNumberOfChunks = unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks
         if (numberOfChunks <= lastKnownNumberOfChunks!) {
-          const msg = 'The number of video chunks is not growing. This can indicate a problem with the recording.'
-          showDialog({ message: msg, variant: 'error' })
+          if (!suppressNotGrowingDialogs.value) {
+            const msg = 'The number of video chunks is not growing. This can indicate a problem with the recording.'
+            showDialog({ ...notGrowingDialogConfig, message: msg })
+          }
           return
         }
         unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks = numberOfChunks
