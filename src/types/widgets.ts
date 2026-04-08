@@ -665,9 +665,14 @@ export type Widget = {
    */
   name: string
   /**
-   * Internal options of the widget
+   * User-facing configuration options of the widget
    */
   options: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  /**
+   * Persisted internal state managed by the widget itself (not user-facing).
+   * Use this for values that must survive page refreshes but are not user settings.
+   */
+  persistentInternalState?: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export type MiniWidget = {

@@ -483,13 +483,14 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   function addWidget(widget: InternalWidgetSetupInfo, view: View, dropPosition?: Point2D): void {
     const widgetHash = uuid4()
 
-    const newWidget = {
+    const newWidget: Widget = {
       hash: widgetHash,
       name: widget.name,
       component: widget.component,
       position: dropPosition ?? widget.defaultPosition ?? { x: 0.4, y: 0.32 },
       size: widget.defaultSize ?? { width: 0.2, height: 0.36 },
       options: widget.options,
+      persistentInternalState: {},
     }
 
     if (widget.component === WidgetType.CollapsibleContainer) {
