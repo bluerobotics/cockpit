@@ -3,14 +3,16 @@
     <div
       v-if="widget.options.isCollapsible"
       ref="iframe-container"
-      class="w-full rounded-lg overflow-hidden -mt-2"
-      :class="[widget.options.startCollapsed ? 'h-[42px]' : 'h-full']"
+      class="w-full h-full rounded-lg overflow-hidden"
       :width="canvasSize.width"
       :height="canvasSize.height"
       :style="interfaceStore.globalGlassMenuStyles"
     >
-      <div class="flex flex-col justify-start items-center h-auto pt-2 cursor-pointer">
-        <div class="flex justify-between w-full h-[25px] px-2">
+      <div class="flex flex-col justify-between h-full cursor-pointer">
+        <div
+          class="flex justify-between w-full h-[42px] shrink-0 items-center px-2"
+          :class="expandsUpward ? 'order-2' : 'order-1'"
+        >
           <div
             class="flex items-center gap-1 flex-1 min-w-0 cursor-grab select-none"
             @mousedown="enableMovingOnDrag"
@@ -20,19 +22,23 @@
             <span class="flex-1 text-center truncate">{{ widget.options.containerName }}</span>
           </div>
           <v-btn
-            :icon="widget.options.startCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+            :icon="collapseToggleIcon"
             variant="text"
             size="36"
-            class="mt-[-6px] opacity-60 flex-shrink-0"
-            @click="widget.options.startCollapsed = !widget.options.startCollapsed"
+            class="opacity-60 flex-shrink-0"
+            @click="toggleCollapse"
           />
         </div>
-        <div v-show="!widget.options.startCollapsed" class="pt-2">
+        <div
+          v-show="!widget.options.startCollapsed"
+          class="flex-1 min-h-0 w-full"
+          :class="expandsUpward ? 'order-1' : 'order-2'"
+        >
           <iframe
             v-show="iframe_loaded"
             ref="iframe"
             :src="toBeUsedURL"
-            :style="iframeStyle"
+            :style="collapsibleIframeStyle"
             frameborder="0"
             @load="loadFinished"
           />
@@ -94,26 +100,39 @@
                 class="ml-3 my-2"
                 @update:model-value="handleBaseUrlToggle"
               />
-              <div class="flex justify-between">
+              <div class="flex items-center gap-2">
                 <v-switch
                   v-model="widget.options.isCollapsible"
-                  label="Collapsible container"
+                  label="Collapsible"
                   color="white"
                   class="ml-2"
+                  hide-details
                 />
-                <div v-if="widget.options.isCollapsible">
-                  <v-text-field
-                    v-model="widget.options.containerName"
-                    label="Container name"
-                    item-title="name"
-                    density="compact"
-                    variant="outlined"
-                    no-data-text="iframe"
-                    hide-details
-                    theme="dark"
-                    class="w-[300px] mt-2"
-                  />
-                </div>
+                <v-select
+                  v-if="widget.options.isCollapsible"
+                  v-model="widget.options.expandDirection"
+                  :items="expandDirectionOptions"
+                  item-title="label"
+                  item-value="value"
+                  label="Expand direction"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  theme="dark"
+                  class="max-w-[120px] ml-4"
+                />
+                <v-text-field
+                  v-if="widget.options.isCollapsible"
+                  v-model="widget.options.containerName"
+                  label="Container name"
+                  item-title="name"
+                  density="compact"
+                  variant="outlined"
+                  no-data-text="iframe"
+                  hide-details
+                  theme="dark"
+                  class="ml-2"
+                />
               </div>
             </template>
           </ExpansiblePanel>
@@ -131,7 +150,7 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import { computed, defineProps, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
 import { openSnackbar } from '@/composables/snackbar'
@@ -153,6 +172,26 @@ const props = defineProps<{
   widget: Widget
 }>()
 const widget = toRefs(props).widget
+
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+const collapsedHeaderHeightPx = 42
+const expandDirectionOptions = [
+  { label: 'Auto', value: 'auto' },
+  { label: 'Down', value: 'down' },
+  { label: 'Up', value: 'up' },
+]
+
+/**
+ * Returns the widget's persistent internal state, initializing it if absent (e.g. for legacy widgets).
+ * @returns {Record<string, any>} The persistent internal state object
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getInternalState = (): Record<string, any> => {
+  if (!widget.value.persistentInternalState) {
+    widget.value.persistentInternalState = {}
+  }
+  return widget.value.persistentInternalState
+}
 
 const iframe_loaded = ref(false)
 const transparency = ref(0)
@@ -187,6 +226,87 @@ const disableMovingOnDrag = (): void => {
   widgetStore.allowMovingAndResizing(widget.value.hash, false)
   window.removeEventListener('mouseup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
+}
+
+const lockedExpandDirection = ref<'up' | 'down' | undefined>(undefined)
+
+/**
+ * Computes the expand direction from the widget's current position.
+ * If the title bar center is below the viewport midpoint, returns 'up'.
+ * @returns {'up' | 'down'} The direction based on position
+ */
+const computeDirectionFromPosition = (): 'up' | 'down' => {
+  const collapsedHeightNormalized = collapsedHeaderHeightPx / windowHeight.value
+  const titleBarCenter = widget.value.position.y + collapsedHeightNormalized / 2
+  return titleBarCenter > 0.5 ? 'up' : 'down'
+}
+
+/**
+ * The effective expand direction. When the user has chosen a fixed direction, that is used directly.
+ * In 'auto' mode, while collapsed the direction is computed from the widget's position (title bar
+ * in the bottom half -> up, otherwise down). While expanded, the direction is locked to the value
+ * that was computed at expand time so it stays consistent until collapsed again.
+ * @returns {'up' | 'down'} The resolved direction
+ */
+const effectiveExpandDirection = computed((): 'up' | 'down' => {
+  const direction = widget.value.options.expandDirection ?? 'auto'
+  if (direction !== 'auto') return direction
+
+  if (lockedExpandDirection.value) return lockedExpandDirection.value
+
+  return computeDirectionFromPosition()
+})
+
+/**
+ * Whether the widget currently expands (or will expand) upward.
+ * Used to flip the layout so the title bar stays at the bottom.
+ * @returns {boolean} True if expanding upward
+ */
+const expandsUpward = computed((): boolean => effectiveExpandDirection.value === 'up')
+
+/**
+ * Icon for the collapse/expand button, reflecting the direction the content will move.
+ * @returns {string} The MDI icon name
+ */
+const collapseToggleIcon = computed((): string => {
+  const isCollapsed = widget.value.options.startCollapsed
+  const direction = effectiveExpandDirection.value
+  if (isCollapsed) {
+    return direction === 'up' ? 'mdi-chevron-up' : 'mdi-chevron-down'
+  }
+  return direction === 'up' ? 'mdi-chevron-down' : 'mdi-chevron-up'
+})
+
+/**
+ * Toggles the collapsible container between collapsed and expanded states.
+ * Adjusts widget position and size so the container expands in the correct direction.
+ */
+const toggleCollapse = (): void => {
+  const isCurrentlyCollapsed = widget.value.options.startCollapsed
+  const collapsedHeightNormalized = collapsedHeaderHeightPx / windowHeight.value
+  const direction = effectiveExpandDirection.value
+
+  if (isCurrentlyCollapsed) {
+    lockedExpandDirection.value = direction
+    const expandedHeight = getInternalState().expandedHeight ?? widget.value.size.height
+
+    if (direction === 'up') {
+      const heightDelta = expandedHeight - collapsedHeightNormalized
+      widget.value.position.y = Math.max(0, widget.value.position.y - heightDelta)
+    }
+    widget.value.size.height = expandedHeight
+  } else {
+    getInternalState().expandedHeight = widget.value.size.height
+
+    if (direction === 'up') {
+      const heightDelta = widget.value.size.height - collapsedHeightNormalized
+      widget.value.position.y = Math.min(1 - collapsedHeightNormalized, widget.value.position.y + heightDelta)
+    }
+    widget.value.size.height = collapsedHeightNormalized
+    lockedExpandDirection.value = undefined
+  }
+
+  widget.value.options.startCollapsed = !isCurrentlyCollapsed
 }
 
 const canvasSize = computed(() => ({
@@ -251,14 +371,23 @@ let vehicleAddressListenerId: string | undefined
 onBeforeMount((): void => {
   window.addEventListener('message', apiEventCallback, true)
 
-  // Merge default options with existing widget options
   const defaultOptions = {
     source: 'http://' + defaultBlueOsAddress,
     useVehicleAddressAsBase: false,
     startCollapsed: false,
     containerName: 'iframe',
+    expandDirection: 'auto' as 'auto' | 'up' | 'down',
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
+
+  if (widget.value.options.isCollapsible && widget.value.options.startCollapsed) {
+    if (!getInternalState().expandedHeight) {
+      getInternalState().expandedHeight = widget.value.size.height
+    }
+    widget.value.size.height = collapsedHeaderHeightPx / windowHeight.value
+  } else if (widget.value.options.isCollapsible) {
+    lockedExpandDirection.value = computeDirectionFromPosition()
+  }
 
   // Get initial vehicle address from data lake
   const vehicleAddressData = getDataLakeVariableData('vehicle-address')
@@ -281,7 +410,16 @@ onBeforeUnmount((): void => {
   }
 })
 
-const { width: windowWidth, height: windowHeight } = useWindowSize()
+const collapsibleIframeStyle = computed<string>(() => {
+  let newStyle = ''
+  if (widgetStore.editingMode) {
+    newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
+  }
+  if (!widgetStore.isWidgetVisible(widget.value)) {
+    newStyle = newStyle.concat(' ', 'display: none;')
+  }
+  return newStyle
+})
 
 const iframeStyle = computed<string>(() => {
   let newStyle = ''
