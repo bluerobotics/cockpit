@@ -13,10 +13,12 @@ import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { isElectron } from '@/libs/utils'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
+import { useMainVehicleStore } from './mainVehicle'
 import { useVideoStore } from './video'
 
 export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   const videoStore = useVideoStore()
+  const mainVehicleStore = useMainVehicleStore()
 
   // Routine to log the memory usage of the application
   const cockpitMemoryUsageVariable = {
@@ -272,8 +274,55 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   const storedKeys = [...cumulativeKeys, ...averageKeys] // Keys to store in the history
 
   // Routine to send a ping event to the event tracking system every 5 minutes
+
+  /**
+   * Information about the ping event
+   */
+  interface PingInfo extends Record<string, unknown> {
+    /**
+     * The running time of the application in seconds
+     */
+    runningTimeInSeconds: number
+    /**
+     * Whether a vehicle is connected
+     */
+    isVehicleConnected: boolean
+    /**
+     * Information about the connected vehicle
+     */
+    connectedVehicleInfo?: {
+      /**
+       * The firmware type of the connected vehicle
+       * e.g. "MAV_AUTOPILOT_ARDUPILOTMEGA" or "MAV_AUTOPILOT_PX4"
+       */
+      firmwareType: string | null
+      /**
+       * The MAVLink vehicle type of the connected vehicle
+       * e.g. "MAV_TYPE_SUBMARINE", "MAV_TYPE_HELICOPTER", "MAV_TYPE_FIXED_WING", etc.
+       */
+      vehicleType: string | null
+      /**
+       * The ID of the connected vehicle
+       */
+      vehicleId: string | null
+    }
+  }
+
   const initialTimestamp = new Date()
   setInterval(() => {
-    eventTracker.capture('Ping', { runningTimeInSeconds: differenceInSeconds(new Date(), initialTimestamp) })
+    const pingInfo: PingInfo = {
+      runningTimeInSeconds: differenceInSeconds(new Date(), initialTimestamp),
+      isVehicleConnected: mainVehicleStore.isVehicleOnline,
+    }
+
+    if (mainVehicleStore.isVehicleOnline) {
+      pingInfo.connectedVehicleInfo = {
+        firmwareType: mainVehicleStore.firmwareType ?? null,
+        vehicleType: mainVehicleStore.vehicleType ?? null,
+        vehicleId: mainVehicleStore.currentlyConnectedVehicleId ?? null,
+      }
+    }
+
+    eventTracker.capture('Ping', pingInfo)
   }, 1000 * 60 * 5)
 })
