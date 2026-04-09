@@ -81,6 +81,7 @@
     "slugify": "^1.6.6",
     "strip-ansi": "^6.0.1",
     "sweetalert2": "^11.7.1",
+    "systeminformation": "^5.31.5",
     "tailwind-scrollbar-hide": "^1.1.7",
     "uuid": "^8.3.2",
     "vue": "^3.4.21",
