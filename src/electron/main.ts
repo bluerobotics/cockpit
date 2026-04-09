@@ -25,6 +25,7 @@ export const ROOT_PATH = {
 let mainWindow: BrowserWindow | null
 
 let appSuspensionPowerSaveBlockerId: number | undefined
+let displaySleepPowerSaveBlockerId: number | undefined
 
 /**
  * Create electron window
@@ -110,6 +111,7 @@ app.whenReady().then(async () => {
   createWindow()
 
   appSuspensionPowerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension')
+  displaySleepPowerSaveBlockerId = powerSaveBlocker.start('prevent-display-sleep')
 
   setTimeout(() => {
     setupAutoUpdater(mainWindow as BrowserWindow)
@@ -120,6 +122,10 @@ app.on('before-quit', () => {
   if (appSuspensionPowerSaveBlockerId !== undefined && powerSaveBlocker.isStarted(appSuspensionPowerSaveBlockerId)) {
     powerSaveBlocker.stop(appSuspensionPowerSaveBlockerId)
     appSuspensionPowerSaveBlockerId = undefined
+  }
+  if (displaySleepPowerSaveBlockerId !== undefined && powerSaveBlocker.isStarted(displaySleepPowerSaveBlockerId)) {
+    powerSaveBlocker.stop(displaySleepPowerSaveBlockerId)
+    displaySleepPowerSaveBlockerId = undefined
   }
 
   // @ts-ignore: import.meta.env does not exist in the types
