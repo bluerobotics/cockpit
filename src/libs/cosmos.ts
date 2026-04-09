@@ -4,6 +4,7 @@ import { type ElectronLog } from '@/types/electron-general'
 import { ElectronStorageDB } from '@/types/general'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
 import { NetworkInfo } from '@/types/network'
+import type { TelemetrySystemHardwareInfo } from '@/types/platform'
 import { SDLStatus } from '@/types/sdl'
 import type { SerialData } from '@/types/serial'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
@@ -431,6 +432,11 @@ declare global {
           scaleFactor: number
         }>
       }>
+      /**
+       * Hardware snapshot for telemetry (main process / systeminformation)
+       * @returns {Promise<TelemetrySystemHardwareInfo>} Serializable hardware fields
+       */
+      getHardwareTelemetryInfo: () => Promise<TelemetrySystemHardwareInfo>
       /**
        * Start live video streaming process with FFmpeg
        * @param firstChunk - The first video chunk blob

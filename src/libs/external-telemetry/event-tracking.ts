@@ -2,6 +2,8 @@ import ky from 'ky'
 import localforage from 'localforage'
 import posthog from 'posthog-js'
 
+import type { TelemetrySystemHardwareInfo } from '@/types/platform'
+
 import { app_version } from '../cosmos'
 import { settingsManager } from '../settings-management'
 import { isElectron } from '../utils'
@@ -187,6 +189,10 @@ export interface SystemTelemetryInfo {
    * Whether the host reports touch input capability (touchscreen, tablet, etc.)
    */
   hasTouchSupport: boolean
+  /**
+   * Hardware details from the Electron main process; null in the web build
+   */
+  hardware: TelemetrySystemHardwareInfo | null
 }
 
 /**
@@ -217,6 +223,15 @@ export const getSystemInfoForTelemetry = async (): Promise<SystemTelemetryInfo> 
 
   const hasTouchSupport = navigator.maxTouchPoints > 0 || window.matchMedia('(any-pointer: coarse)').matches
 
+  let hardware: TelemetrySystemHardwareInfo | null = null
+  if (runningInElectron && window.electronAPI?.getHardwareTelemetryInfo) {
+    try {
+      hardware = await window.electronAPI.getHardwareTelemetryInfo()
+    } catch {
+      hardware = null
+    }
+  }
+
   return {
     appVersion: app_version.version,
     isElectron: runningInElectron,
@@ -227,6 +242,7 @@ export const getSystemInfoForTelemetry = async (): Promise<SystemTelemetryInfo> 
     displays,
     locale: navigator.language,
     hasTouchSupport,
+    hardware,
   }
 }
 

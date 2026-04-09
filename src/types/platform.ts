@@ -59,6 +59,60 @@ export interface BasicSystemInfo {
 }
 
 /**
+ * Hardware-oriented fields collected in the Electron main process for usage telemetry (browser build omits this).
+ */
+export interface TelemetrySystemHardwareInfo {
+  /**
+   * Device / system manufacturer when reported by the OS
+   */
+  deviceManufacturer: string | null
+  /**
+   * Device / system model when reported by the OS
+   */
+  deviceModel: string | null
+  /**
+   * CPU vendor / manufacturer string
+   */
+  cpuManufacturer: string | null
+  /**
+   * CPU marketing model name (e.g. Core i7, Apple M1)
+   */
+  cpuModel: string | null
+  /**
+   * Number of physical CPU packages (sockets) when available
+   */
+  cpuPackageCount: number | null
+  /**
+   * Count of physical CPU cores
+   */
+  cpuPhysicalCoreCount: number | null
+  /**
+   * Count of logical CPUs (threads)
+   */
+  cpuLogicalCoreCount: number | null
+  /**
+   * Maximum advertised CPU clock speed in GHz when available
+   */
+  cpuSpeedMaxGHz: number | null
+  /**
+   * Installed RAM in bytes
+   */
+  totalPhysicalMemoryBytes: number | null
+  /**
+   * Sum of physical disk capacities reported by disk layout (bytes)
+   */
+  totalPhysicalStorageBytes: number | null
+  /**
+   * Primary GPU vendor string when available
+   */
+  gpuManufacturer: string | null
+  /**
+   * Primary GPU model name when available
+   */
+  gpuModel: string | null
+}
+
+/**
  * Utility functions for platform detection
  */
 export class PlatformUtils {

@@ -5,6 +5,7 @@ import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupGo2RTCService } from './services/go2rtc'
+import { setupHardwareTelemetryService } from './services/hardware-telemetry'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
 import { setupNetworkService } from './services/network'
@@ -93,6 +94,7 @@ setupFilesystemStorage()
 setupNetworkService()
 setupResourceMonitoringService()
 setupSystemInfoService()
+setupHardwareTelemetryService()
 setupUserAgentService()
 setupWorkspaceService()
 setupJoystickMonitoring()

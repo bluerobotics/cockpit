@@ -94,4 +94,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   restoreUserAgent: () => ipcRenderer.invoke('restore-user-agent'),
   getCurrentUserAgent: () => ipcRenderer.invoke('get-current-user-agent'),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
+  getHardwareTelemetryInfo: () => ipcRenderer.invoke('get-hardware-telemetry-info'),
 })
