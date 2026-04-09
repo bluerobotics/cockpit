@@ -37,6 +37,7 @@ function createWindow(): void {
       preload: join(ROOT_PATH.dist, 'electron/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
       webSecurity: !process.env.VITE_DEV_SERVER_URL, // Disable CORS in dev mode so we don't have to deal with per-system workarounds
     },
     autoHideMenuBar: true,
