@@ -45,78 +45,33 @@
 
       <div ref="routerSection" class="router-view">
         <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }" :style="connectionStatusFeedback">
-          <div
+          <WidgetBar
             v-show="showTopBarNow"
             id="mainTopBar"
-            class="bar top-bar"
-            :style="[
-              interfaceStore.globalGlassMenuStyles,
-              interfaceStore.isOnSmallScreen && interfaceStore.isOnSmallScreen ? topBarScaleStyle : undefined,
-            ]"
+            position="top"
+            :containers="widgetStore.currentMiniWidgetsProfile.containers"
           >
-            <button
-              v-if="interfaceStore.mainMenuStyleTrigger === 'burger'"
-              class="flex items-center justify-center h-full mr-2 aspect-square top-bar-hamburger"
-              @click="toggleMainMenu"
-            >
-              <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
-            </button>
-            <div class="flex-1">
-              <MiniWidgetContainer
-                :container="widgetStore.currentMiniWidgetsProfile.containers[0]"
-                :allow-editing="widgetStore.editingMode"
-                align="start"
-              />
-            </div>
-            <div class="grow" />
-            <div class="flex-1">
-              <MiniWidgetContainer
-                :container="widgetStore.currentMiniWidgetsProfile.containers[1]"
-                :allow-editing="widgetStore.editingMode"
-                align="center"
-              />
-            </div>
-            <div class="grow" />
-            <div class="flex-1">
-              <MiniWidgetContainer
-                :container="widgetStore.currentMiniWidgetsProfile.containers[2]"
-                :allow-editing="widgetStore.editingMode"
-                align="end"
-              />
-            </div>
-          </div>
+            <template #prepend>
+              <button
+                v-if="interfaceStore.mainMenuStyleTrigger === 'burger'"
+                class="flex items-center justify-center h-full mr-2 aspect-square top-bar-hamburger"
+                @click="toggleMainMenu"
+              >
+                <span class="text-3xl transition-all mdi mdi-menu text-slate-300 hover:text-slate-50" />
+              </button>
+            </template>
+          </WidgetBar>
           <AltitudeSlider />
           <div class="bottom-container">
             <SlideToConfirm />
           </div>
           <div v-for="view in widgetStore.viewsToShow" :key="view.name">
             <Transition name="fade">
-              <div
+              <WidgetBar
                 v-show="view.name === currentSelectedViewName && showBottomBarNow"
-                class="bar bottom-bar"
-                :style="[
-                  interfaceStore.globalGlassMenuStyles,
-                  interfaceStore.isOnSmallScreen ? bottomBarScaleStyle : undefined,
-                ]"
-              >
-                <MiniWidgetContainer
-                  :container="view.miniWidgetContainers[0]"
-                  :allow-editing="widgetStore.editingMode"
-                  align="start"
-                />
-                <div />
-                <MiniWidgetContainer
-                  :container="view.miniWidgetContainers[1]"
-                  :allow-editing="widgetStore.editingMode"
-                  align="center"
-                />
-                <div />
-                <MiniWidgetContainer
-                  :container="view.miniWidgetContainers[2]"
-                  :allow-editing="widgetStore.editingMode"
-                  align="end"
-                />
-              </div>
+                position="bottom"
+                :containers="view.miniWidgetContainers"
+              />
             </Transition>
           </div>
           <router-view />
@@ -147,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage, useWindowSize } from '@vueuse/core'
+import { useStorage } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
@@ -171,9 +126,9 @@ import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
 import EditMenu from './components/EditMenu.vue'
 import MainMenu from './components/MainMenu.vue'
-import MiniWidgetContainer from './components/MiniWidgetContainer.vue'
 import SlideToConfirm from './components/SlideToConfirm.vue'
 import SplashScreen from './components/SplashScreen.vue'
+import WidgetBar from './components/WidgetBar.vue'
 import { openMainMenuIfSafeOrDesired } from './composables/armSafetyDialog'
 import { useSnackbar } from './composables/snackbar'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
@@ -203,8 +158,6 @@ const handleShowAboutDialog = (): void => {
 
 // Main menu
 const isSlidingOut = ref(false)
-
-const { width: windowWidth } = useWindowSize()
 
 // Check if the user data in browser storage is the same as on blueOS; if not, keep the splash screen open for a maximum of 20 seconds.
 onBeforeMount(async () => {
@@ -241,10 +194,6 @@ watch(
     }
   }
 )
-
-const topBottomBarScale = computed(() => {
-  return windowWidth.value / originalBarWidth
-})
 
 const toggleMainMenu = (): void => {
   if (interfaceStore.isMainMenuVisible) {
@@ -317,23 +266,6 @@ watch(
 
 const routerSection = ref()
 const currentSelectedViewName = computed(() => widgetStore.currentView.name)
-const originalBarWidth = 1800
-
-const topBarScaleStyle = computed(() => {
-  return {
-    transform: `scale(${topBottomBarScale.value})`,
-    transformOrigin: 'top left',
-    width: `${originalBarWidth}px`,
-  }
-})
-
-const bottomBarScaleStyle = computed(() => {
-  return {
-    transform: `scale(${topBottomBarScale.value})`,
-    transformOrigin: 'bottom left',
-    width: `${originalBarWidth}px`,
-  }
-})
 
 // Control showing mouse
 let hideMouseTimeoutId: ReturnType<typeof setInterval>
@@ -370,7 +302,6 @@ onBeforeUnmount(() => {
 })
 
 // Dynamic styles
-const currentTopBarHeightPixels = computed(() => `${widgetStore.currentTopBarHeightPixels}px`)
 const currentBottomBarHeightPixels = computed(() => `${widgetStore.currentBottomBarHeightPixels}px`)
 
 const showDiscoveryDialog = ref(false)
@@ -446,32 +377,10 @@ body.hide-cursor {
   z-index: 60;
 }
 
-.bar {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  z-index: 60;
-  position: absolute;
-}
-
 .menu-trigger {
   position: fixed;
   left: 0;
   transform: translateY(-50%);
   z-index: 1050;
-}
-
-.bottom-bar {
-  bottom: 0;
-  height: v-bind('currentBottomBarHeightPixels');
-}
-
-.top-bar {
-  top: 0;
-  height: v-bind('currentTopBarHeightPixels');
-}
-
-.top-bar-hamburger {
-  outline: none;
 }
 </style>
