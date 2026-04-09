@@ -183,6 +183,10 @@ export interface SystemTelemetryInfo {
    * The locale of the system
    */
   locale: string
+  /**
+   * Whether the host reports touch input capability (touchscreen, tablet, etc.)
+   */
+  hasTouchSupport: boolean
 }
 
 /**
@@ -211,6 +215,8 @@ export const getSystemInfoForTelemetry = async (): Promise<SystemTelemetryInfo> 
     }
   }
 
+  const hasTouchSupport = navigator.maxTouchPoints > 0 || window.matchMedia('(any-pointer: coarse)').matches
+
   return {
     appVersion: app_version.version,
     isElectron: runningInElectron,
@@ -220,6 +226,7 @@ export const getSystemInfoForTelemetry = async (): Promise<SystemTelemetryInfo> 
     windowHeight: window.innerHeight,
     displays,
     locale: navigator.language,
+    hasTouchSupport,
   }
 }
 
