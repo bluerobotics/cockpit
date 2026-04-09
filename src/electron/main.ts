@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, screen } from 'electron'
+import { app, BrowserWindow, powerSaveBlocker, protocol, screen } from 'electron'
 import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
@@ -23,6 +23,8 @@ export const ROOT_PATH = {
 }
 
 let mainWindow: BrowserWindow | null
+
+let appSuspensionPowerSaveBlockerId: number | undefined
 
 /**
  * Create electron window
@@ -106,12 +108,19 @@ app.whenReady().then(async () => {
   console.log('Creating window...')
   createWindow()
 
+  appSuspensionPowerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension')
+
   setTimeout(() => {
     setupAutoUpdater(mainWindow as BrowserWindow)
   }, 5000)
 })
 
 app.on('before-quit', () => {
+  if (appSuspensionPowerSaveBlockerId !== undefined && powerSaveBlocker.isStarted(appSuspensionPowerSaveBlockerId)) {
+    powerSaveBlocker.stop(appSuspensionPowerSaveBlockerId)
+    appSuspensionPowerSaveBlockerId = undefined
+  }
+
   // @ts-ignore: import.meta.env does not exist in the types
   if (import.meta.env.DEV) {
     app.exit()
