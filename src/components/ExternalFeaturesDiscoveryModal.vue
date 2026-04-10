@@ -1474,12 +1474,7 @@ const checkForBlueOSJoystickSuggestions = async (): Promise<void> => {
 }
 
 /**
- * Whether the modal was opened manually by the user (vs auto-opened on mount)
- */
-const openedManually = ref(false)
-
-/**
- * Guard to prevent the isVisible watcher from treating an auto-open as manual
+ * Guard to prevent the isVisible watcher from re-fetching when auto-opened on mount
  */
 let isAutoOpening = false
 
@@ -1503,13 +1498,9 @@ onMounted(async () => {
 })
 
 watch(isVisible, (visible, oldVisible) => {
-  if (!visible) {
-    openedManually.value = false
-    return
-  }
+  if (!visible) return
   actionRegistryVersion.value++
   if (!oldVisible && !isAutoOpening) {
-    openedManually.value = true
     fetchBlueOSFeatures()
   }
   isAutoOpening = false
@@ -1517,12 +1508,6 @@ watch(isVisible, (visible, oldVisible) => {
 
 watch(activeTab, () => {
   actionRegistryVersion.value++
-})
-
-watch(hasPendingBlueOSFeatures, (hasPending) => {
-  if (!hasPending && !openedManually.value) {
-    isVisible.value = false
-  }
 })
 </script>
 
