@@ -602,10 +602,12 @@ const ignoredActionIds = computed(() => handledActions.value.ignored)
 const appliedSuggestionIds = computed(() => handledSuggestions.value.applied ?? [])
 const ignoredSuggestionIds = computed(() => handledSuggestions.value.ignored ?? [])
 
-/**
- * Track the visibility of the modal
- */
-const isVisible = ref(false)
+const isVisible = computed({
+  get: () => interfaceStore.isExternalFeaturesModalVisible,
+  set: (v: boolean) => {
+    interfaceStore.isExternalFeaturesModalVisible = v
+  },
+})
 
 /**
  * Active tab for the tabs component

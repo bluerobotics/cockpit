@@ -60,6 +60,9 @@
                 >
                   {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
                 </v-btn>
+                <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openExternalFeaturesModal">
+                  Extension features
+                </v-btn>
               </div>
               <v-divider v-if="isElectron()" class="w-full opacity-[0.08]" />
               <div v-if="isElectron()" class="flex flex-col w-full py-4 gap-1">
@@ -731,6 +734,14 @@ const tryToPrettifyRtcConfig = (): void => {
 const openTutorial = (): void => {
   interfaceStore.isMainMenuVisible = false
   interfaceStore.isTutorialVisible = true
+}
+
+const openExternalFeaturesModal = (): void => {
+  interfaceStore.isMainMenuVisible = false
+  interfaceStore.mainMenuCurrentStep = 1
+  interfaceStore.currentSubMenuName = null
+  interfaceStore.currentSubMenuComponentName = null
+  interfaceStore.isExternalFeaturesModalVisible = true
 }
 
 watch(customRtcConfiguration, () => tryToPrettifyRtcConfig())
