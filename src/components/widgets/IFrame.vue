@@ -8,7 +8,7 @@
       :height="canvasSize.height"
       :style="interfaceStore.globalGlassMenuStyles"
     >
-      <div class="flex flex-col justify-between h-full cursor-pointer">
+      <div class="flex flex-col justify-between h-full">
         <div
           class="flex justify-between w-full h-[42px] shrink-0 items-center px-2"
           :class="expandsUpward ? 'order-2' : 'order-1'"
