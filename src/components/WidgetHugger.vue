@@ -518,4 +518,8 @@ const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.ha
   transform: translateX(-50%);
   cursor: ns-resize;
 }
+
+html.widget-dragging iframe {
+  pointer-events: none !important;
+}
 </style>
