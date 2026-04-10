@@ -231,20 +231,18 @@
             type="number"
           />
           <p class="m-1 overflow-visible text-sm text-slate-200">Altitude type:</p>
-          <select
+          <v-select
             v-model="currentWaypointAltitudeRefType"
-            class="h-auto py-2 px-2 my-2 mx-5 font-medium text-sm rounded-sm bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          >
-            <option :value="AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
-            </option>
-            <option :value="AltitudeReferenceType.RELATIVE_TO_HOME" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
-            </option>
-            <option :value="AltitudeReferenceType.RELATIVE_TO_TERRAIN" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
-            </option>
-          </select>
+            :items="availableFrames"
+            item-title="name"
+            item-value="value"
+            hide-details
+            attach
+            density="compact"
+            theme="dark"
+            variant="outlined"
+            class="mx-5 my-1 text-sm"
+          />
           <button
             :class="{
               'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
@@ -279,20 +277,18 @@
           <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
           <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
           <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
-          <select
+          <v-select
             v-model="currentWaypointAltitudeRefType"
-            class="h-auto py-2 px-2 my-2 mx-5 font-medium text-sm rounded-sm bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          >
-            <option :value="AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }}
-            </option>
-            <option :value="AltitudeReferenceType.RELATIVE_TO_HOME" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.RELATIVE_TO_HOME }}
-            </option>
-            <option :value="AltitudeReferenceType.RELATIVE_TO_TERRAIN" class="bg-[#00000099]">
-              {{ AltitudeReferenceType.RELATIVE_TO_TERRAIN }}
-            </option>
-          </select>
+            :items="availableFrames"
+            item-title="name"
+            item-value="value"
+            hide-details
+            attach
+            density="compact"
+            theme="dark"
+            variant="outlined"
+            class="mx-5 my-1 text-sm"
+          />
           <v-divider class="my-2" />
           <button
             :disabled="missionStore.currentPlanningWaypoints.length < 2"
@@ -834,6 +830,10 @@ const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const followerTarget = ref<WhoToFollow | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
+const availableFrames = Object.values(AltitudeReferenceType).map((value: AltitudeReferenceType) => ({
+  name: value,
+  value,
+}))
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
