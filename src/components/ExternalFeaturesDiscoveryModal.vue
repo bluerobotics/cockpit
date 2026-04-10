@@ -393,7 +393,12 @@
                           <div
                             v-for="suggestion in group.buttonMappingSuggestions"
                             :key="suggestion.id"
-                            class="suggestion-item-compact p-3 border border-green-500/30 rounded-lg bg-green-900/10"
+                            class="suggestion-item-compact p-3 rounded-lg"
+                            :class="
+                              suggestionDiffersFromCurrentMapping(suggestion)
+                                ? 'border border-orange-500/30 bg-orange-900/10'
+                                : 'border border-green-500/30 bg-green-900/10'
+                            "
                           >
                             <div class="text-center mb-3">
                               <h4 class="font-medium text-white mb-1">{{ suggestion.actionName }}</h4>
@@ -410,9 +415,45 @@
                               </div>
                             </div>
                             <div class="flex justify-center">
-                              <v-chip color="green" variant="tonal" prepend-icon="mdi-check" size="small">
+                              <v-chip
+                                v-if="!suggestionDiffersFromCurrentMapping(suggestion)"
+                                color="green"
+                                variant="tonal"
+                                prepend-icon="mdi-check"
+                                size="small"
+                              >
                                 Applied
                               </v-chip>
+                              <v-chip
+                                v-else
+                                color="orange"
+                                variant="tonal"
+                                prepend-icon="mdi-alert-outline"
+                                size="small"
+                              >
+                                Applied but changed
+                              </v-chip>
+                            </div>
+                            <div
+                              v-if="suggestionDiffersFromCurrentMapping(suggestion)"
+                              class="flex justify-center gap-4 mt-3"
+                            >
+                              <v-btn
+                                variant="text"
+                                prepend-icon="mdi-close"
+                                size="small"
+                                @click="moveAppliedSuggestionToIgnored(suggestion)"
+                              >
+                                Ignore
+                              </v-btn>
+                              <v-btn
+                                variant="tonal"
+                                prepend-icon="mdi-plus-circle-outline"
+                                size="small"
+                                @click="openJoystickSuggestionDialog(suggestion, extensionGroup.extensionName)"
+                              >
+                                Re-apply
+                              </v-btn>
                             </div>
                           </div>
                         </div>
@@ -1095,6 +1136,19 @@ const ignoreSuggestion = (suggestion: JoystickMapSuggestion): void => {
 }
 
 /**
+ * Move an applied suggestion to the ignored list
+ * @param {JoystickMapSuggestion} suggestion - The suggestion to move
+ */
+const moveAppliedSuggestionToIgnored = (suggestion: JoystickMapSuggestion): void => {
+  handledSuggestions.value.applied = handledSuggestions.value.applied.filter((id) => id !== suggestion.id)
+  addIgnoredSuggestionIds([suggestion.id])
+  openSnackbar({
+    message: `Mapping "${suggestion.actionName}" moved to ignored.`,
+    variant: 'info',
+  })
+}
+
+/**
  * Ignore all currently visible suggestions from an extension
  * @param {FilteredExtensionGroups} extensionGroup - Extension with filtered remaining suggestions
  */
@@ -1356,25 +1410,13 @@ const restoreAllIgnoredSuggestions = (extensionName: string): void => {
 
   const suggestionsToRestore = getAllSuggestionsFromExtension(extensionGroup)
 
-  if (suggestionsToRestore.length === 0) {
-    openSnackbar({
-      message: `No ignored suggestions found for ${extensionName}.`,
-      variant: 'info',
-    })
-    return
-  }
+  if (suggestionsToRestore.length === 0) return
 
-  const confirmed = confirm(
-    `Are you sure you want to restore all ${suggestionsToRestore.length} ignored joystick mappings from ${extensionName}? They will appear in the New Suggestions section.`
-  )
-
-  if (confirmed) {
-    removeIgnoredSuggestionIds(suggestionsToRestore.map((suggestion) => suggestion.id))
-    openSnackbar({
-      message: `Restored ${suggestionsToRestore.length} ignored joystick mappings from ${extensionName}.`,
-      variant: 'success',
-    })
-  }
+  removeIgnoredSuggestionIds(suggestionsToRestore.map((suggestion) => suggestion.id))
+  openSnackbar({
+    message: `Restored ${suggestionsToRestore.length} ignored joystick mappings from ${extensionName}.`,
+    variant: 'success',
+  })
 }
 
 /**
@@ -1382,22 +1424,11 @@ const restoreAllIgnoredSuggestions = (extensionName: string): void => {
  * @param {JoystickMapSuggestion} suggestion - The suggestion to restore
  */
 const restoreIgnoredSuggestion = (suggestion: JoystickMapSuggestion): void => {
-  const extensionGroup = ignoredJoystickSuggestionsByExtension.value.find((ext) =>
-    getAllSuggestionsFromExtension(ext).some((s) => s.id === suggestion.id)
-  )
-  const extensionName = extensionGroup?.extensionName || 'Unknown Extension'
-
-  const confirmed = confirm(
-    `Are you sure you want to restore the ignored joystick mapping "${suggestion.actionName}" from ${extensionName}? It will appear in the New Suggestions section.`
-  )
-
-  if (confirmed) {
-    removeIgnoredSuggestionIds([suggestion.id])
-    openSnackbar({
-      message: `Restored ignored joystick mapping "${suggestion.actionName}" from ${extensionName}.`,
-      variant: 'success',
-    })
-  }
+  removeIgnoredSuggestionIds([suggestion.id])
+  openSnackbar({
+    message: `Mapping "${suggestion.actionName}" restored.`,
+    variant: 'success',
+  })
 }
 
 /**
