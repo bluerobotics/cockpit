@@ -457,7 +457,7 @@ const enableMovingOnDrag = (): void => {
 
 const disableMovingOnDrag = (): void => {
   updateWrapDirection()
-  widgetStore.allowMovingAndResizing(currentWidget.value.hash, false)
+  widgetStore.allowMovingAndResizing(currentWidget.value.hash, widgetStore.editingMode)
   window.removeEventListener('mouseup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
 }

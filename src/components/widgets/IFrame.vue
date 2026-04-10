@@ -223,7 +223,7 @@ const enableMovingOnDrag = (): void => {
 }
 
 const disableMovingOnDrag = (): void => {
-  widgetStore.allowMovingAndResizing(widget.value.hash, false)
+  widgetStore.allowMovingAndResizing(widget.value.hash, widgetStore.editingMode)
   window.removeEventListener('mouseup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
 }
