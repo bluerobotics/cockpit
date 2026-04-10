@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { useElementHover, useWindowSize } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { constrain, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
@@ -184,20 +184,31 @@ watch([hoveringWidgetOrOverlay, allowMoving], () => {
 const draggingWidget = ref(false)
 const isResizing = ref(false)
 const resizeHandle = ref<EventTarget | null>(null)
-const viewSize = computed(() => ({
+const getViewSize = (): {
+  /**
+   * Width of the view
+   */
+  width: number
+  /**
+   * Height of the view
+   */
+  height: number
+} => ({
   width: widgetView.value?.getBoundingClientRect().width || 1,
   height: widgetView.value?.getBoundingClientRect().height || 1,
-}))
+})
 const initialMousePos = ref<Point2D | undefined>(undefined)
-const initialWidgetPos = ref(props.widget.position)
-const initialWidgetSize = ref(props.widget.size)
+const initialWidgetPos = ref({ ...props.widget.position })
+const initialWidgetSize = ref({ ...props.widget.size })
 
 const handleDragStart = (event: MouseEvent): void => {
-  if (!allowMoving.value || isResizing.value || !outerWidgetRef.value) return
+  const storeAllowMoving = widgetStore.widgetManagerVars(widget.value.hash).allowMoving
+  if ((!allowMoving.value && !storeAllowMoving) || isResizing.value || !outerWidgetRef.value) return
   draggingWidget.value = true
   initialMousePos.value = { x: event.clientX, y: event.clientY }
-  initialWidgetPos.value = position.value
+  initialWidgetPos.value = { x: position.value.x, y: position.value.y }
   outerWidgetRef.value.style.cursor = 'grabbing'
+  document.documentElement.classList.add('widget-dragging')
   event.stopPropagation()
   event.preventDefault()
 }
@@ -207,8 +218,8 @@ const handleResizeStart = (event: MouseEvent): void => {
   isResizing.value = true
   resizeHandle.value = event.target
   initialMousePos.value = { x: event.clientX, y: event.clientY }
-  initialWidgetPos.value = position.value
-  initialWidgetSize.value = size.value
+  initialWidgetPos.value = { x: position.value.x, y: position.value.y }
+  initialWidgetSize.value = { width: size.value.width, height: size.value.height }
   event.stopPropagation()
   event.preventDefault()
 }
@@ -216,20 +227,27 @@ const handleResizeStart = (event: MouseEvent): void => {
 const handleDrag = (event: MouseEvent): void => {
   if (!draggingWidget.value || !initialMousePos.value) return
 
-  const dx = (event.clientX - initialMousePos.value.x) / viewSize.value.width
-  const dy = (event.clientY - initialMousePos.value.y) / viewSize.value.height
+  const viewSize = getViewSize()
+  const dx = (event.clientX - initialMousePos.value.x) / viewSize.width
+  const dy = (event.clientY - initialMousePos.value.y) / viewSize.height
+
+  const topBarNormalized = widgetStore.currentTopBarHeightPixels / windowHeight.value
+  const bottomBarNormalized = widgetStore.currentBottomBarHeightPixels / windowHeight.value
+  const minY = topBarNormalized
+  const maxY = Math.max(minY, 1 - size.value.height - bottomBarNormalized)
 
   position.value = {
     x: constrain(initialWidgetPos.value.x + dx, 0, 1 - size.value.width),
-    y: constrain(initialWidgetPos.value.y + dy, 0, 1 - size.value.height),
+    y: constrain(initialWidgetPos.value.y + dy, minY, maxY),
   }
 }
 
 const handleResize = (event: MouseEvent): void => {
   if (!isResizing.value || !initialMousePos.value || !resizeHandle.value) return
 
-  const dx = (event.clientX - initialMousePos.value.x) / viewSize.value.width
-  const dy = (event.clientY - initialMousePos.value.y) / viewSize.value.height
+  const viewSize = getViewSize()
+  const dx = (event.clientX - initialMousePos.value.x) / viewSize.width
+  const dy = (event.clientY - initialMousePos.value.y) / viewSize.height
 
   let newLeft = initialWidgetPos.value.x
   let newTop = initialWidgetPos.value.y
@@ -279,6 +297,7 @@ const handleEnd = (): void => {
   if (draggingWidget.value) {
     draggingWidget.value = false
     outerWidgetRef.value.style.cursor = 'grab'
+    document.documentElement.classList.remove('widget-dragging')
   } else if (isResizing.value) {
     isResizing.value = false
     resizeHandle.value = null
@@ -324,6 +343,13 @@ onMounted(async () => {
   document.addEventListener('mousemove', handleDrag)
   document.addEventListener('mousemove', handleResize)
   document.addEventListener('mouseup', handleEnd)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousemove', handleDrag)
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', handleEnd)
+  document.documentElement.classList.remove('widget-dragging')
 })
 
 // Change cursor when moving is allowed or disallowed, preventing the cursor to be a grab on exit of edit-mode
