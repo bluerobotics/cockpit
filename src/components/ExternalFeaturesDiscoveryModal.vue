@@ -16,43 +16,171 @@
       <v-tabs-window v-model="activeTab">
         <!-- Actions Tab -->
         <v-tabs-window-item value="actions">
-          <div v-if="filteredActions.length === 0" class="text-center py-8">
-            <v-icon size="50" color="grey" class="mb-3">mdi-lightning-bolt-outline</v-icon>
-            <p class="text-grey-lighten-1">No new actions available.</p>
-          </div>
+          <div class="actions-container">
+            <div
+              v-if="filteredActions.length === 0 && appliedActions.length === 0 && ignoredActions.length === 0"
+              class="text-center py-8"
+            >
+              <v-icon size="50" color="grey" class="mb-3">mdi-lightning-bolt-outline</v-icon>
+              <p class="text-grey-lighten-1">No actions available from extensions.</p>
+            </div>
 
-          <div v-else class="actions-container">
-            <p class="mb-2">The following actions are offered to be added by BlueOS extensions:</p>
+            <!-- New Actions -->
+            <div v-if="filteredActions.length > 0" class="mb-4">
+              <div class="flex items-center gap-2 mb-2">
+                <v-icon size="24" color="blue">mdi-lightning-bolt-outline</v-icon>
+                <h2 class="text-xl font-semibold">New Actions</h2>
+              </div>
+              <p class="mb-2 text-grey-lighten-1">
+                The following actions are offered to be added by BlueOS extensions:
+              </p>
+              <v-list class="bg-transparent">
+                <v-list-item v-for="action in filteredActions" :key="action.id" class="mb-3 p-0">
+                  <v-card variant="outlined" class="w-full action-card">
+                    <v-card-item>
+                      <v-card-title class="font-medium pb-0">{{ action.name }}</v-card-title>
+                      <v-card-subtitle class="text-grey-lighten-1">
+                        {{ getActionTypeName(action.type) }}
+                      </v-card-subtitle>
+                      <v-card-text v-if="getActionDescription(action)" class="pt-1 text-sm">
+                        {{ getActionDescription(action) }}
+                      </v-card-text>
+                      <div class="flex justify-between items-center mt-2">
+                        <v-btn variant="text" prepend-icon="mdi-close" size="small" @click="ignoreAction(action)">
+                          Ignore
+                        </v-btn>
+                        <span class="text-xs text-grey-lighten-1">from {{ action.extensionName }}</span>
+                        <v-btn
+                          variant="tonal"
+                          prepend-icon="mdi-plus-circle-outline"
+                          size="small"
+                          @click="addAction(action)"
+                        >
+                          Add Action
+                        </v-btn>
+                      </div>
+                    </v-card-item>
+                  </v-card>
+                </v-list-item>
+              </v-list>
+            </div>
 
-            <v-list class="bg-transparent">
-              <v-list-item v-for="action in filteredActions" :key="action.id" class="mb-3 p-0">
-                <v-card variant="outlined" class="w-full action-card">
-                  <v-card-item>
-                    <v-card-title class="font-medium pb-0">{{ action.name }}</v-card-title>
-                    <v-card-subtitle class="text-grey-lighten-1">
-                      {{ getActionTypeName(action.type) }}
-                    </v-card-subtitle>
-                    <v-card-text v-if="getActionDescription(action)" class="pt-1 text-sm">
-                      {{ getActionDescription(action) }}
-                    </v-card-text>
-                    <div class="flex justify-between items-center mt-2">
-                      <v-btn variant="text" prepend-icon="mdi-close" size="small" @click="ignoreAction(action)">
-                        Ignore
-                      </v-btn>
-                      <span class="text-xs text-grey-lighten-1">from {{ action.extensionName }}</span>
-                      <v-btn
-                        variant="tonal"
-                        prepend-icon="mdi-plus-circle-outline"
-                        size="small"
-                        @click="addAction(action)"
-                      >
-                        Add Action
-                      </v-btn>
-                    </div>
-                  </v-card-item>
-                </v-card>
-              </v-list-item>
-            </v-list>
+            <!-- Applied Actions -->
+            <div v-if="appliedActions.length > 0" class="mb-4">
+              <v-btn
+                variant="text"
+                color="grey-lighten-1"
+                class="opacity-70 hover:opacity-100"
+                :prepend-icon="showAppliedActions ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                @click="showAppliedActions = !showAppliedActions"
+              >
+                {{ showAppliedActions ? 'Hide applied actions' : 'Show applied actions' }}
+              </v-btn>
+              <div v-if="showAppliedActions" class="mt-2">
+                <v-list class="bg-transparent">
+                  <v-list-item v-for="action in appliedActions" :key="action.id" class="mb-3 p-0">
+                    <v-card
+                      variant="outlined"
+                      class="w-full"
+                      :class="existingActionNames.has(action.name) ? 'border-green-500/30' : 'border-orange-500/30'"
+                    >
+                      <v-card-item>
+                        <v-card-title class="font-medium pb-0">{{ action.name }}</v-card-title>
+                        <v-card-subtitle class="text-grey-lighten-1">
+                          {{ getActionTypeName(action.type) }}
+                        </v-card-subtitle>
+                        <div class="flex justify-between items-center mt-2">
+                          <v-chip
+                            v-if="existingActionNames.has(action.name)"
+                            color="green"
+                            variant="tonal"
+                            prepend-icon="mdi-check"
+                            size="small"
+                          >
+                            Applied
+                          </v-chip>
+                          <v-chip v-else color="orange" variant="tonal" prepend-icon="mdi-alert-outline" size="small">
+                            Applied but removed
+                          </v-chip>
+                          <span class="text-xs text-grey-lighten-1">from {{ action.extensionName }}</span>
+                        </div>
+                        <div v-if="!existingActionNames.has(action.name)" class="flex justify-center gap-4 mt-3">
+                          <v-btn
+                            variant="text"
+                            prepend-icon="mdi-close"
+                            size="small"
+                            @click="moveAppliedToIgnored(action)"
+                          >
+                            Ignore
+                          </v-btn>
+                          <v-btn
+                            variant="tonal"
+                            prepend-icon="mdi-plus-circle-outline"
+                            size="small"
+                            @click="reAddAction(action)"
+                          >
+                            Re-add
+                          </v-btn>
+                        </div>
+                      </v-card-item>
+                    </v-card>
+                  </v-list-item>
+                </v-list>
+              </div>
+            </div>
+
+            <!-- Ignored Actions -->
+            <div v-if="ignoredActions.length > 0" class="mb-4">
+              <v-btn
+                variant="text"
+                color="grey-lighten-1"
+                class="opacity-70 hover:opacity-100"
+                :prepend-icon="showIgnoredActions ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                @click="showIgnoredActions = !showIgnoredActions"
+              >
+                {{ showIgnoredActions ? 'Hide ignored actions' : 'Show ignored actions' }}
+              </v-btn>
+              <div v-if="showIgnoredActions" class="mt-2">
+                <div class="flex justify-end mb-2">
+                  <v-btn
+                    variant="tonal"
+                    color="blue"
+                    prepend-icon="mdi-restore"
+                    size="small"
+                    @click="restoreAllIgnoredActions"
+                  >
+                    Restore All
+                  </v-btn>
+                </div>
+                <v-list class="bg-transparent">
+                  <v-list-item v-for="action in ignoredActions" :key="action.id" class="mb-3 p-0">
+                    <v-card variant="outlined" class="w-full border-orange-500/30">
+                      <v-card-item>
+                        <v-card-title class="font-medium pb-0">{{ action.name }}</v-card-title>
+                        <v-card-subtitle class="text-grey-lighten-1">
+                          {{ getActionTypeName(action.type) }}
+                        </v-card-subtitle>
+                        <div class="flex justify-between items-center mt-2">
+                          <v-chip color="orange" variant="tonal" prepend-icon="mdi-close-circle" size="small">
+                            Ignored
+                          </v-chip>
+                          <span class="text-xs text-grey-lighten-1">from {{ action.extensionName }}</span>
+                          <v-btn
+                            variant="tonal"
+                            color="blue"
+                            prepend-icon="mdi-restore"
+                            size="small"
+                            @click="restoreIgnoredAction(action)"
+                          >
+                            Restore
+                          </v-btn>
+                        </div>
+                      </v-card-item>
+                    </v-card>
+                  </v-list-item>
+                </v-list>
+              </div>
+            </div>
           </div>
         </v-tabs-window-item>
 
@@ -625,6 +753,16 @@ const showAppliedMappings = ref(false)
 const showIgnoredMappings = ref(false)
 
 /**
+ * Controls visibility of applied actions section
+ */
+const showAppliedActions = ref(false)
+
+/**
+ * Controls visibility of ignored actions section
+ */
+const showIgnoredActions = ref(false)
+
+/**
  * Action with extension name
  */
 type ActionWithExtensionName = ActionConfig & {
@@ -762,12 +900,46 @@ const acceptAllGroupSuggestionDiffRows = computed(() => {
 })
 
 /**
- * Filter out actions that have already been applied or ignored
+ * Reactive trigger to force re-evaluation of existingActionNames after registration changes
+ */
+const actionRegistryVersion = ref(0)
+
+/**
+ * Names of actions already registered in the app
+ */
+const existingActionNames = computed(() => {
+  void actionRegistryVersion.value
+  return new Set([
+    ...Object.values(getAllHttpRequestActionConfigs()).map((a) => a.name),
+    ...Object.values(getAllMavlinkMessageActionConfigs()).map((a) => a.name),
+    ...Object.values(getAllJavascriptActionConfigs()).map((a) => a.name),
+  ])
+})
+
+/**
+ * New actions not yet applied, ignored, or already registered in the app
  */
 const filteredActions = computed(() => {
   return discoveredActions.value.filter(
-    (action) => !appliedActionIds.value.includes(action.id) && !ignoredActionIds.value.includes(action.id)
+    (action) =>
+      !appliedActionIds.value.includes(action.id) &&
+      !ignoredActionIds.value.includes(action.id) &&
+      !existingActionNames.value.has(action.name)
   )
+})
+
+/**
+ * Actions that have been applied
+ */
+const appliedActions = computed(() => {
+  return discoveredActions.value.filter((action) => appliedActionIds.value.includes(action.id))
+})
+
+/**
+ * Actions that have been ignored
+ */
+const ignoredActions = computed(() => {
+  return discoveredActions.value.filter((action) => ignoredActionIds.value.includes(action.id))
 })
 
 /**
@@ -1112,6 +1284,28 @@ const addAction = (action: ActionConfig): void => {
 }
 
 /**
+ * Re-add a previously applied action that was removed from the app
+ * @param {ActionConfig} action - The action to re-add
+ */
+const reAddAction = (action: ActionConfig): void => {
+  addAction(action)
+  actionRegistryVersion.value++
+}
+
+/**
+ * Move an action from the applied list to the ignored list
+ * @param {ActionWithExtensionName} action - The action to move
+ */
+const moveAppliedToIgnored = (action: ActionWithExtensionName): void => {
+  handledActions.value.applied = handledActions.value.applied.filter((id) => id !== action.id)
+  handledActions.value.ignored.push(action.id)
+  openSnackbar({
+    message: `Action "${action.name}" moved to ignored.`,
+    variant: 'info',
+  })
+}
+
+/**
  * Ignore an action
  * @param {ActionConfig} action - The action to ignore
  */
@@ -1120,6 +1314,33 @@ const ignoreAction = (action: ActionConfig): void => {
   openSnackbar({
     message: `Action "${action.name}" has been ignored.`,
     variant: 'info',
+  })
+}
+
+/**
+ * Restore a single ignored action back to the new actions list
+ * @param {ActionWithExtensionName} action - The action to restore
+ */
+const restoreIgnoredAction = (action: ActionWithExtensionName): void => {
+  handledActions.value.ignored = handledActions.value.ignored.filter((id) => id !== action.id)
+  openSnackbar({
+    message: `Action "${action.name}" restored.`,
+    variant: 'success',
+  })
+}
+
+/**
+ * Restore all ignored actions back to the new actions list
+ */
+const restoreAllIgnoredActions = (): void => {
+  const count = ignoredActions.value.length
+  if (count === 0) return
+
+  const idsToRestore = ignoredActions.value.map((a) => a.id)
+  handledActions.value.ignored = handledActions.value.ignored.filter((id) => !idsToRestore.includes(id))
+  openSnackbar({
+    message: `Restored ${count} ignored action(s).`,
+    variant: 'success',
   })
 }
 
@@ -1202,27 +1423,7 @@ const checkForBlueOSActions = async (): Promise<void> => {
       }))
     )
 
-    if (actions.length > 0) {
-      // Get all existing actions from the app
-      const existingHttpActions = getAllHttpRequestActionConfigs()
-      const existingMavlinkActions = getAllMavlinkMessageActionConfigs()
-      const existingJavascriptActions = getAllJavascriptActionConfigs()
-
-      // Extract names of existing actions
-      const existingActionNames = new Set([
-        ...Object.values(existingHttpActions).map((action) => action.name),
-        ...Object.values(existingMavlinkActions).map((action) => action.name),
-        ...Object.values(existingJavascriptActions).map((action) => action.name),
-      ])
-
-      // Filter out actions that have the same name as existing ones
-      const actionsToDisplay = actions.filter((action) => !existingActionNames.has(action.name))
-
-      if (actionsToDisplay.length > 0) {
-        // Actions now include extension names from the getActionsFromBlueOS function
-        discoveredActions.value = actionsToDisplay
-      }
-    }
+    discoveredActions.value = actions
   } catch (error) {
     console.error('Failed to fetch actions from BlueOS:', error)
   }
@@ -1242,30 +1443,53 @@ const checkForBlueOSJoystickSuggestions = async (): Promise<void> => {
 }
 
 /**
- * Check for both actions and joystick suggestions
+ * Whether the modal was opened manually by the user (vs auto-opened on mount)
  */
-const checkForBlueOSFeatures = async (): Promise<void> => {
-  await Promise.all([checkForBlueOSActions(), checkForBlueOSJoystickSuggestions()])
+const openedManually = ref(false)
 
-  // Show modal if there are any features available
+/**
+ * Guard to prevent the isVisible watcher from treating an auto-open as manual
+ */
+let isAutoOpening = false
+
+/**
+ * Fetch features from BlueOS without changing modal visibility
+ */
+const fetchBlueOSFeatures = async (): Promise<void> => {
+  await Promise.all([checkForBlueOSActions(), checkForBlueOSJoystickSuggestions()])
+}
+
+onMounted(async () => {
+  if (!props.autoCheckOnMount) return
+  await fetchBlueOSFeatures()
   if (hasPendingBlueOSFeatures.value) {
+    isAutoOpening = true
     isVisible.value = true
-    // Set active tab based on what's available
     if (filteredJoystickSuggestionsByExtension.value.length > 0 && filteredActions.value.length === 0) {
       activeTab.value = 'joystick-suggestions'
     }
   }
-}
+})
 
-// Check for features on mount if autoCheckOnMount is true
-onMounted(() => {
-  if (props.autoCheckOnMount) {
-    checkForBlueOSFeatures()
+watch(isVisible, (visible, oldVisible) => {
+  if (!visible) {
+    openedManually.value = false
+    return
   }
+  actionRegistryVersion.value++
+  if (!oldVisible && !isAutoOpening) {
+    openedManually.value = true
+    fetchBlueOSFeatures()
+  }
+  isAutoOpening = false
+})
+
+watch(activeTab, () => {
+  actionRegistryVersion.value++
 })
 
 watch(hasPendingBlueOSFeatures, (hasPending) => {
-  if (!hasPending) {
+  if (!hasPending && !openedManually.value) {
     isVisible.value = false
   }
 })
