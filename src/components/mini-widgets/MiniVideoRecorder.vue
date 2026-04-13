@@ -402,6 +402,14 @@ if (widgetStore.isRealMiniWidget(miniWidget.value.hash)) {
         mediaStream.value = updatedMediaStream
       }
     }
+
+    if (!namesAvailableStreams.value.isEmpty() && !namesAvailableStreams.value.includes(nameSelectedStream.value!)) {
+      if (videoStore.lastRenamedStreamName !== '') {
+        nameSelectedStream.value = videoStore.lastRenamedStreamName
+        return
+      }
+      nameSelectedStream.value = namesAvailableStreams.value[0]
+    }
   }, 1000)
 }
 onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
