@@ -397,6 +397,10 @@ let streamConnectionRoutine: ReturnType<typeof setInterval> | undefined = undefi
 
 if (widgetStore.isRealMiniWidget(miniWidget.value.hash)) {
   streamConnectionRoutine = setInterval(() => {
+    if (miniWidget.value.options.internalStreamName !== nameSelectedStream.value) {
+      nameSelectedStream.value = miniWidget.value.options.internalStreamName
+    }
+
     // If the video recording widget is cold booted, assign the first stream to it
     if (miniWidget.value.options.internalStreamName === undefined && !namesAvailableStreams.value.isEmpty()) {
       miniWidget.value.options.internalStreamName = namesAvailableStreams.value[0]
