@@ -209,6 +209,15 @@ watch(nameSelectedStream, () => {
 })
 
 watch(
+  () => miniWidget.value.options.internalStreamName,
+  (newName) => {
+    if (newName !== nameSelectedStream.value) {
+      nameSelectedStream.value = newName
+    }
+  }
+)
+
+watch(
   () => videoStore.streamsCorrespondency,
   (newStreamsCorrespondency) => {
     if (!selectedExternalId.value) return
