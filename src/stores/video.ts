@@ -1242,6 +1242,7 @@ export const useVideoStore = defineStore('video', () => {
     allowedIceProtocols,
     jitterBufferTarget,
     namesAvailableStreams,
+    namesAvailableWebRTCStreams,
     videoStorage,
     tempVideoStorage,
     streamsCorrespondency,

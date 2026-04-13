@@ -84,6 +84,7 @@
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
+  <CameraReplacementDialog />
   <ExternalFeaturesDiscoveryModal auto-check-on-mount />
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
@@ -106,6 +107,7 @@ import { useStorage } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
+import CameraReplacementDialog from '@/components/CameraReplacementDialog.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import GlassModal from '@/components/GlassModal.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
