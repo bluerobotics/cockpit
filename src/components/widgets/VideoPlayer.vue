@@ -298,6 +298,15 @@ watch(nameSelectedStream, () => {
   if (successTimeoutId) clearTimeout(successTimeoutId)
 })
 
+watch(
+  () => widget.value.options.internalStreamName,
+  (newName) => {
+    if (newName !== nameSelectedStream.value) {
+      nameSelectedStream.value = newName
+    }
+  }
+)
+
 watch(mediaStream, () => {
   if (!videoElement.value || !mediaStream.value) {
     videoPlaying.value = false
