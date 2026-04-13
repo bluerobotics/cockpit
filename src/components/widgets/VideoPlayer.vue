@@ -256,6 +256,10 @@ watch(
 )
 
 const streamConnectionRoutine = setInterval(() => {
+  if (widget.value.options.internalStreamName !== nameSelectedStream.value) {
+    nameSelectedStream.value = widget.value.options.internalStreamName
+  }
+
   // If the video player widget is cold booted, assign the first stream to it
   if (widget.value.options.internalStreamName === undefined && !namesAvailableStreams.value.isEmpty()) {
     widget.value.options.internalStreamName = namesAvailableStreams.value[0]
