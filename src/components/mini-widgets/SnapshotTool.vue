@@ -91,7 +91,8 @@
       </div>
       <v-select
         v-model="miniWidget.options.selectedStreams"
-        :items="videoStore.namesAvailableStreams || []"
+        :items="enrichedStreamItems"
+        item-value="externalName"
         :disabled="miniWidget.options.snapshotAllAvailableSources"
         density="compact"
         multiple
@@ -102,7 +103,45 @@
         hide-details
         theme="dark"
         class="w-[90%]"
-      />
+      >
+        <template #selection="{ item }">
+          <v-chip size="small" class="mr-1 pa-3">
+            <span class="text-xs">{{ item.raw.internalName }}</span>
+            <v-chip
+              size="x-small"
+              :color="item.raw.protocolLabel === 'RTSP' ? '#e67e22' : '#3498db'"
+              variant="flat"
+              label
+              class="text-white ml-1 pa-1"
+            >
+              {{ item.raw.protocolLabel }}
+            </v-chip>
+          </v-chip>
+        </template>
+        <template #item="{ item, props: itemProps }">
+          <v-list-item v-bind="itemProps" :title="undefined">
+            <div class="flex items-center justify-between w-full py-1">
+              <div class="flex flex-col min-w-0 mr-3">
+                <span class="text-sm font-medium text-white">{{ item.raw.internalName }}</span>
+                <span class="text-xs text-gray-400 truncate">{{ item.raw.externalName }}</span>
+                <span v-if="item.raw.resolution !== 'Unknown'" class="text-xs text-gray-500">
+                  {{ item.raw.resolution }}
+                  <template v-if="item.raw.fps"> @ {{ item.raw.fps }}</template>
+                </span>
+              </div>
+              <v-chip
+                size="x-small"
+                :color="item.raw.protocolLabel === 'RTSP' ? '#e67e22' : '#3498db'"
+                variant="flat"
+                label
+                class="text-white shrink-0"
+              >
+                {{ item.raw.protocolLabel }}
+              </v-chip>
+            </div>
+          </v-list-item>
+        </template>
+      </v-select>
       <div class="flex items-center justify-start w-[90%] -mt-3 mb-2">
         <v-checkbox
           v-model="miniWidget.options.captureWorkspace"
@@ -171,6 +210,20 @@ const props = defineProps<{
 }>()
 const miniWidget = toRefs(props).miniWidget
 const isElectronEnv = isElectron()
+
+const enrichedStreamItems = computed(() => {
+  return videoStore.streamsCorrespondency.map((corr) => {
+    const displayInfo = videoStore.getStreamDisplayInfo(corr.externalId)
+    return {
+      internalName: corr.name,
+      externalName: corr.externalId,
+      resolution: displayInfo.resolution,
+      fps: displayInfo.fps,
+      source: displayInfo.source,
+      protocolLabel: displayInfo.protocolLabel,
+    }
+  })
+})
 
 const recorderWidget = ref()
 const snapshotTriggerType = ref<'single' | 'timed'>(miniWidget.value.options.snapshotTriggerType ?? 'single')
