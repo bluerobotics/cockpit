@@ -173,6 +173,10 @@
                       Delete
                     </v-btn>
                   </template>
+                  <v-btn icon variant="text" class="mb-1" @click="openSnapshotFolder">
+                    <v-tooltip open-delay="500" activator="parent" location="bottom"> Open snapshots folder </v-tooltip>
+                    <v-icon>mdi-folder-open-outline</v-icon>
+                  </v-btn>
                 </div>
               </div>
             </div>
@@ -833,9 +837,9 @@ const videoSubTabs = [
   },
 ]
 
-const openVideoFolder = (): void => {
+const openElectronFolder = (opener: () => void): void => {
   if (isElectron() && window.electronAPI) {
-    window.electronAPI?.openVideoFolder()
+    opener()
   } else {
     openSnackbar({
       message: 'This feature is only available in the desktop version of Cockpit.',
@@ -845,6 +849,9 @@ const openVideoFolder = (): void => {
     })
   }
 }
+
+const openVideoFolder = (): void => openElectronFolder(() => window.electronAPI?.openVideoFolder())
+const openSnapshotFolder = (): void => openElectronFolder(() => window.electronAPI?.openSnapshotFolder())
 
 const playVideoInDefaultPlayer = (fileName: string): void => {
   if (isElectron() && window.electronAPI) {

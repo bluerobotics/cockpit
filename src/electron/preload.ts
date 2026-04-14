@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDefaultCockpitFolderPath: (): Promise<string> => ipcRenderer.invoke('get-default-cockpit-folder-path'),
   setCockpitFolderPath: (newPath: string): Promise<void> => ipcRenderer.invoke('set-cockpit-folder-path', newPath),
   selectCockpitFolder: (): Promise<string | null> => ipcRenderer.invoke('select-cockpit-folder'),
+  openSnapshotFolder: () => ipcRenderer.invoke('open-snapshot-folder'),
   openVideoFolder: () => ipcRenderer.invoke('open-video-folder'),
   openVideoFile: (fileName: string) => ipcRenderer.invoke('open-video-file', fileName),
   openVideoChunksFolder: () => ipcRenderer.invoke('open-temp-video-chunks-folder'),

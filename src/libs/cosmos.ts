@@ -301,6 +301,10 @@ declare global {
        */
       selectCockpitFolder: () => Promise<string | null>
       /**
+       * Open the snapshots folder in the system file manager
+       */
+      openSnapshotFolder: () => void
+      /**
        * Open video folder
        */
       openVideoFolder: () => void
