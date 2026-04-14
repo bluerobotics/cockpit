@@ -24,6 +24,10 @@ import { useMainVehicleStore } from './mainVehicle'
 const DEFAULT_MAP_CENTER: WaypointCoordinates = [-27.5935, -48.55854]
 const DEFAULT_MAP_ZOOM = 15
 
+// Default cap on the vehicle position history. At 5Hz (default sampling rate), 50k samples is about 3 hours.
+export const DEFAULT_MAX_POSITION_HISTORY_SIZE = 50000
+export const MIN_MAX_POSITION_HISTORY_SIZE = 100
+
 export const useMissionStore = defineStore('mission', () => {
   const username = useStorage<string>('cockpit-username', fallbackUsername)
   const lastConnectedUser = localStorage.getItem(cockpitLastConnectedUserKey) || undefined
@@ -156,9 +160,12 @@ export const useMissionStore = defineStore('mission', () => {
   const isVehiclePositionHistoryPersistent = useBlueOsStorage('cockpit-vehicle-position-history-persistent', true)
   const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
 
+  let positionHistoryDirty = false
+
   const flushPositionHistory = (): void => {
     if (!isVehiclePositionHistoryPersistent.value) return
-    if (vehiclePositionHistory.value.length === persistedPositionHistory.value.length) return
+    if (!positionHistoryDirty) return
+    positionHistoryDirty = false
     persistedPositionHistory.value = [...vehiclePositionHistory.value]
   }
 
@@ -168,6 +175,7 @@ export const useMissionStore = defineStore('mission', () => {
 
   const clearVehicleHistory = (): void => {
     vehiclePositionHistory.value = []
+    positionHistoryDirty = false
     if (isVehiclePositionHistoryPersistent.value) {
       persistedPositionHistory.value = []
     }
@@ -495,11 +503,21 @@ export const useMissionStore = defineStore('mission', () => {
     { deep: true }
   )
 
+  // Maximum number of positions to store in the vehicle position history
+  const maxPositionHistorySize = useBlueOsStorage(
+    'cockpit-vehicle-position-history-max-size',
+    DEFAULT_MAX_POSITION_HISTORY_SIZE
+  )
+
   watch(
     () => [mainVehicleStore.coordinates?.latitude, mainVehicleStore.coordinates?.longitude] as const,
     ([lat, lng]) => {
       if (!lat || !lng) return
-      vehiclePositionHistory.value = [...vehiclePositionHistory.value, [lat, lng] as WaypointCoordinates]
+      vehiclePositionHistory.value.push([lat, lng] as WaypointCoordinates)
+      if (vehiclePositionHistory.value.length > maxPositionHistorySize.value) {
+        vehiclePositionHistory.value.shift()
+      }
+      positionHistoryDirty = true
     }
   )
 
@@ -561,6 +579,7 @@ export const useMissionStore = defineStore('mission', () => {
     callMapClearMapDrawing,
     vehiclePositionHistory,
     isVehiclePositionHistoryPersistent,
+    maxPositionHistorySize,
     clearVehicleHistory,
     pushUndoSnapshot,
     popUndoSnapshot,

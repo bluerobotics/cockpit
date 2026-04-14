@@ -55,14 +55,6 @@
             base-color="#FFFFFF33"
             class="mt-2 -mb-2 ml-3"
           />
-          <v-switch
-            v-model="vehicleStore.isVehiclePositionHistoryPersistent"
-            label="Make vehicle history line persistent"
-            color="white"
-            hide-details
-            base-color="#FFFFFF33"
-            class="mt-2 -mb-2 ml-3"
-          />
         </div>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Enable confirmation on specific categories:</template>
@@ -145,6 +137,48 @@
             </div>
           </template>
         </ExpansiblePanel>
+
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Vehicle options</template>
+          <template #info>
+            <strong>Max. displayed path points:</strong> Once the limit is reached, the last third of the mission trail
+            will be simplified. Keep this value reasonable — larger histories use more memory and may affect performance
+            over long missions, especially when using high frequency positioning data (e.g. from a DVL or RTK setup).
+          </template>
+          <template #content>
+            <div class="flex flex-col gap-y-3 px-4 pb-4 pt-2">
+              <div class="flex items-center gap-x-16">
+                <v-switch
+                  v-model="missionStore.isVehiclePositionHistoryPersistent"
+                  label="Make vehicle history line persistent"
+                  color="white"
+                  hide-details
+                  base-color="#FFFFFF33"
+                  class="-my-1"
+                />
+                <div class="flex items-center gap-x-2 ml-4">
+                  <span class="text-white text-sm whitespace-nowrap">Max. path points</span>
+                  <input
+                    v-model.number="missionStore.maxPositionHistorySize"
+                    type="number"
+                    :min="MIN_MAX_POSITION_HISTORY_SIZE"
+                    step="100"
+                    class="px-2 py-1 w-24 rounded-sm bg-[#FFFFFF22] text-white text-sm"
+                    @change="clampMaxPositionHistorySize"
+                  />
+                  <v-icon
+                    v-tooltip.bottom="'Reset to default'"
+                    icon="mdi-restore"
+                    size="14"
+                    color="white"
+                    class="cursor-pointer opacity-70 hover:opacity-100"
+                    @click="resetMaxPositionHistorySize"
+                  />
+                </div>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -157,7 +191,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { EventCategory } from '@/libs/slide-to-confirm'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import { useMissionStore } from '@/stores/mission'
+import { DEFAULT_MAX_POSITION_HISTORY_SIZE, MIN_MAX_POSITION_HISTORY_SIZE, useMissionStore } from '@/stores/mission'
 import type { WaypointCoordinates } from '@/types/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
@@ -187,5 +221,16 @@ watch(
 
 const saveMapPosition = (): void => {
   missionStore.setDefaultMapPosition(defaultMapCenter.value, defaultMapZoom.value)
+}
+
+const clampMaxPositionHistorySize = (): void => {
+  const value = missionStore.maxPositionHistorySize
+  if (!Number.isFinite(value) || value < MIN_MAX_POSITION_HISTORY_SIZE) {
+    missionStore.maxPositionHistorySize = MIN_MAX_POSITION_HISTORY_SIZE
+  }
+}
+
+const resetMaxPositionHistorySize = (): void => {
+  missionStore.maxPositionHistorySize = DEFAULT_MAX_POSITION_HISTORY_SIZE
 }
 </script>
