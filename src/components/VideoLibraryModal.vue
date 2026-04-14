@@ -75,9 +75,10 @@
           <v-divider vertical class="h-[92%] mt-4 opacity-[0.1]"></v-divider>
           <!-- Right Content -->
           <template v-if="currentTab === 'snapshots'">
-            <div v-if="availablePictures.length > 0" class="flex flex-col justify-start py-6 px-4 flex-1 h-full">
+            <div class="flex flex-col flex-1 min-h-0 min-w-0 h-full">
               <div
-                class="grid gap-4 overflow-y-auto w-full h-full px-2 content-start"
+                v-if="availablePictures.length > 0"
+                class="grid gap-4 flex-1 min-h-0 overflow-y-auto w-full pt-6 px-6 content-start"
                 style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr))"
               >
                 <div
@@ -127,55 +128,53 @@
                   </div>
                 </div>
               </div>
-              <div
-                v-if="availablePictures.length > 1"
-                class="flex flex-row align-center justify-between h-[40px] w-full mb-[-19px] border-t-[1px] border-t-[#ffffff06]"
-              >
-                <div>
-                  <v-btn variant="text" size="small" class="mt-[5px]" @click="toggleSelectionMode">
-                    <v-tooltip open-delay="500" activator="parent" location="bottom">
-                      Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
-                    </v-tooltip>
-                    {{ isMultipleSelectionMode ? 'Single selection' : 'Multi selection' }}
-                  </v-btn>
-                  <v-btn
-                    variant="text"
-                    size="small"
-                    class="mt-[5px]"
-                    @click="
-                      selectedPicSet.size === availablePictures.length ? deselectAllPictures() : selectAllPictures()
-                    "
-                  >
-                    <v-tooltip open-delay="500" activator="parent" location="bottom">
-                      Select {{ selectedPicSet.size === availablePictures.length ? 'none' : 'all files' }}
-                    </v-tooltip>
-                    {{ selectedPicSet.size === availablePictures.length ? 'None' : 'All' }}
-                  </v-btn>
+              <div v-else class="flex flex-1 min-h-0 pt-6 items-center justify-center text-xl text-center px-6">
+                {{ loadingData ? 'Loading' : 'No pictures found' }}
+              </div>
+              <div class="shrink-0 h-14 flex justify-between items-center px-4 border-t border-white/10">
+                <div class="flex items-center gap-2">
+                  <template v-if="availablePictures.length > 1">
+                    <v-btn variant="text" size="small" @click="toggleSelectionMode">
+                      <v-tooltip open-delay="500" activator="parent" location="bottom">
+                        Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
+                      </v-tooltip>
+                      {{ isMultipleSelectionMode ? 'Single selection' : 'Multi selection' }}
+                    </v-btn>
+                    <v-btn
+                      variant="text"
+                      size="small"
+                      @click="
+                        selectedPicSet.size === availablePictures.length ? deselectAllPictures() : selectAllPictures()
+                      "
+                    >
+                      <v-tooltip open-delay="500" activator="parent" location="bottom">
+                        Select {{ selectedPicSet.size === availablePictures.length ? 'none' : 'all files' }}
+                      </v-tooltip>
+                      {{ selectedPicSet.size === availablePictures.length ? 'None' : 'All' }}
+                    </v-btn>
+                  </template>
                 </div>
-                <div>
-                  <v-btn
-                    variant="text"
-                    size="small"
-                    class="mt-[5px]"
-                    :disabled="selectedPictures.length === 0"
-                    @click="downloadPictures()"
-                  >
-                    Download
-                  </v-btn>
-                  <v-btn
-                    variant="text"
-                    size="small"
-                    class="mt-[5px] ml-2"
-                    :disabled="selectedPictures.length === 0"
-                    @click="handleDeletePictures()"
-                  >
-                    Delete
-                  </v-btn>
+                <div class="flex items-center gap-2">
+                  <template v-if="availablePictures.length > 1">
+                    <v-btn
+                      variant="text"
+                      size="small"
+                      :disabled="selectedPictures.length === 0"
+                      @click="downloadPictures()"
+                    >
+                      Download
+                    </v-btn>
+                    <v-btn
+                      variant="text"
+                      size="small"
+                      :disabled="selectedPictures.length === 0"
+                      @click="handleDeletePictures()"
+                    >
+                      Delete
+                    </v-btn>
+                  </template>
                 </div>
               </div>
-            </div>
-            <div v-else class="flex justify-center items-center w-full h-full text-xl text-center">
-              {{ loadingData ? 'Loading' : 'No pictures found' }}
             </div>
           </template>
           <template v-if="currentTab === 'videos'">
@@ -204,8 +203,8 @@
               <div class="flex-1 overflow-hidden">
                 <!-- Final Videos Tab (Electron only) -->
                 <template v-if="currentVideoSubTab === 'processed'">
-                  <div class="flex flex-col h-full">
-                    <div class="mx-5 pt-4">
+                  <div class="flex flex-col h-full min-h-0">
+                    <div class="mx-5 pt-4 shrink-0">
                       <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium">Processed Videos</h3>
                         <div class="flex items-center gap-4">
@@ -215,7 +214,7 @@
                     </div>
 
                     <!-- Scrollable Videos List -->
-                    <div v-if="availableVideos.length > 0" class="flex-1 overflow-y-auto px-4 py-2">
+                    <div v-if="availableVideos.length > 0" class="flex-1 min-h-0 overflow-y-auto px-4 py-2">
                       <div class="space-y-3">
                         <div
                           v-for="video in availableVideos"
@@ -296,78 +295,61 @@
                       </div>
                     </div>
 
+                    <div v-else class="flex flex-1 min-h-0 items-center justify-center text-xl text-center px-4">
+                      {{ loadingData ? 'Loading' : 'No videos on storage' }}
+                    </div>
+
                     <!-- Fixed Bottom Controls -->
-                    <div
-                      v-if="availableVideos.length > 0"
-                      class="flex justify-between items-center px-4 py-3 border-t border-white/10"
-                    >
+                    <div class="shrink-0 h-14 flex justify-between items-center px-4 border-t border-white/10">
                       <div class="flex items-center gap-2">
-                        <v-btn variant="text" size="small" @click="toggleSelectionMode">
-                          <v-tooltip open-delay="500" activator="parent" location="bottom">
-                            Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
-                          </v-tooltip>
-                          {{ isMultipleSelectionMode ? 'Single' : 'Multi' }}
-                        </v-btn>
-                        <v-btn
-                          variant="text"
-                          size="small"
-                          @click="
-                            selectedVideos.length === availableVideos.length ? deselectAllVideos() : selectAllVideos()
-                          "
-                        >
-                          <v-tooltip open-delay="500" activator="parent" location="bottom">
-                            Select {{ selectedVideos.length === availableVideos.length ? 'none' : 'all files' }}
-                          </v-tooltip>
-                          {{ selectedVideos.length === availableVideos.length ? 'None' : 'All' }}
-                        </v-btn>
+                        <template v-if="availableVideos.length > 0">
+                          <v-btn variant="text" size="small" @click="toggleSelectionMode">
+                            <v-tooltip open-delay="500" activator="parent" location="bottom">
+                              Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
+                            </v-tooltip>
+                            {{ isMultipleSelectionMode ? 'Single' : 'Multi' }}
+                          </v-btn>
+                          <v-btn
+                            variant="text"
+                            size="small"
+                            @click="
+                              selectedVideos.length === availableVideos.length ? deselectAllVideos() : selectAllVideos()
+                            "
+                          >
+                            <v-tooltip open-delay="500" activator="parent" location="bottom">
+                              Select {{ selectedVideos.length === availableVideos.length ? 'none' : 'all files' }}
+                            </v-tooltip>
+                            {{ selectedVideos.length === availableVideos.length ? 'None' : 'All' }}
+                          </v-btn>
+                        </template>
                       </div>
 
-                      <!-- Action Buttons -->
                       <div class="flex items-center gap-2">
-                        <!-- Selection Count Text -->
-                        <span v-if="selectedVideos.length > 1" class="text-sm text-white/70">
-                          {{ selectedVideos.length }} videos selected
-                        </span>
+                        <template v-if="availableVideos.length > 0">
+                          <span v-if="selectedVideos.length > 1" class="text-sm text-white/70">
+                            {{ selectedVideos.length }} videos selected
+                          </span>
 
-                        <!-- Delete Selected Button (only visible when multiple videos selected) -->
-                        <v-btn
-                          v-if="selectedVideos.length > 1"
-                          icon
-                          variant="outlined"
-                          size="small"
-                          :disabled="isPreparingDownload"
-                          @click="handleDeleteVideos(selectedVideos)"
-                        >
-                          <v-tooltip open-delay="500" activator="parent" location="bottom">
-                            Delete {{ selectedVideos.length }} selected videos
-                          </v-tooltip>
-                          <v-icon>mdi-delete</v-icon>
-                        </v-btn>
+                          <v-btn
+                            v-if="selectedVideos.length > 1"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            :disabled="isPreparingDownload"
+                            @click="handleDeleteVideos(selectedVideos)"
+                          >
+                            <v-tooltip open-delay="500" activator="parent" location="bottom">
+                              Delete {{ selectedVideos.length }} selected videos
+                            </v-tooltip>
+                            <v-icon>mdi-delete</v-icon>
+                          </v-btn>
+                        </template>
 
-                        <!-- Open Folder Button (always visible) -->
-                        <v-btn icon variant="outlined" size="small" @click="openVideoFolder">
+                        <v-btn icon variant="text" class="mb-1" @click="openVideoFolder">
                           <v-tooltip open-delay="500" activator="parent" location="bottom">
                             Open videos folder
                           </v-tooltip>
                           <v-icon>mdi-folder-open-outline</v-icon>
-                        </v-btn>
-                      </div>
-                    </div>
-
-                    <!-- No Videos Message with Open Folder Button -->
-                    <div v-else class="flex flex-col h-full">
-                      <!-- Empty State Message -->
-                      <div class="flex justify-center items-center flex-1 text-xl text-center">
-                        {{ loadingData ? 'Loading' : 'No videos on storage' }}
-                      </div>
-
-                      <!-- Fixed Bottom Controls (always visible) -->
-                      <div class="flex justify-end items-center px-4 py-3 border-t border-white/10">
-                        <v-btn icon variant="outlined" size="small" @click="openVideoFolder">
-                          <v-tooltip open-delay="500" activator="parent" location="bottom">
-                            Open videos folder
-                          </v-tooltip>
-                          <v-icon>mdi-folder-outline</v-icon>
                         </v-btn>
                       </div>
                     </div>
@@ -376,9 +358,9 @@
 
                 <!-- Raw Tab -->
                 <template v-if="currentVideoSubTab === 'raw'">
-                  <div v-if="!isElectron()" class="flex flex-col h-full">
-                    <!-- Fixed Header with Expandable Instructions -->
-                    <div class="px-4 pt-6 pb-3">
+                  <div class="flex flex-col h-full min-h-0">
+                    <!-- Browser: expandable instructions header -->
+                    <div v-if="!isElectron()" class="px-4 pt-6 pb-3 shrink-0">
                       <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium">Raw Video Chunks</h3>
                         <div
@@ -395,8 +377,6 @@
                           </v-icon>
                         </div>
                       </div>
-
-                      <!-- Expandable Instructions Content -->
                       <v-expand-transition>
                         <div
                           v-show="isInstructionsExpanded"
@@ -440,13 +420,20 @@
                         </div>
                       </v-expand-transition>
                     </div>
+                    <!-- Electron: simple header -->
+                    <div v-else class="mx-5 pt-4 shrink-0">
+                      <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium">Raw Video Chunks</h3>
+                        <span class="text-sm text-white/70">Backup raw data</span>
+                      </div>
+                    </div>
 
-                    <!-- Scrollable Content -->
-                    <div v-if="chunkGroups.length > 0" class="flex-1 overflow-y-auto px-4">
+                    <!-- Chunk groups list -->
+                    <div v-if="chunkGroups.length > 0" class="flex-1 min-h-0 overflow-y-auto px-4">
                       <div
                         v-for="group in chunkGroups"
                         :key="group.hash"
-                        class="mb-2 px-4 py-2 border border-white/20 rounded-lg bg-white/5"
+                        class="mb-2 px-4 pt-3 pb-1 border border-white/20 rounded-lg bg-white/5"
                       >
                         <div class="flex justify-between items-start mb-2">
                           <div class="flex-1">
@@ -459,7 +446,20 @@
                               {{ formatBytes(group.totalSize) }}
                             </div>
                           </div>
-                          <div class="flex gap-2 mt-5">
+                          <div class="flex gap-2 mt-4">
+                            <v-btn
+                              v-if="isElectron()"
+                              icon
+                              variant="outlined"
+                              size="small"
+                              :disabled="isProcessingChunks"
+                              @click="processChunkGroup(group)"
+                            >
+                              <v-tooltip open-delay="500" activator="parent" location="bottom">
+                                Process video chunks
+                              </v-tooltip>
+                              <v-icon>mdi-file-cog</v-icon>
+                            </v-btn>
                             <v-btn
                               icon
                               variant="outlined"
@@ -468,7 +468,7 @@
                               @click="downloadChunkGroup(group)"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
-                                Download chunk group
+                                {{ isElectron() ? 'Download chunk group as ZIP' : 'Download chunk group' }}
                               </v-tooltip>
                               <v-icon>mdi-download</v-icon>
                             </v-btn>
@@ -489,8 +489,8 @@
                       </div>
                     </div>
 
-                    <!-- Empty State -->
-                    <div v-else class="flex flex-col justify-center items-center flex-1 text-center px-4">
+                    <!-- Empty state -->
+                    <div v-else class="flex flex-1 min-h-0 items-center justify-center text-center px-4">
                       <div class="max-w-md mx-auto">
                         <template v-if="chunkLoadingData">
                           <v-progress-circular indeterminate color="white" size="60" width="3" class="mb-4" />
@@ -499,156 +499,35 @@
                         </template>
                         <template v-else>
                           <v-icon size="60" class="text-white/30 mb-4">mdi-folder-multiple-outline</v-icon>
-                          <h4 class="text-lg font-medium text-white mb-2">No Video Chunks Found</h4>
+                          <h4 class="text-lg font-medium text-white mb-2">
+                            {{ isElectron() ? 'No Raw Chunks Found' : 'No Video Chunks Found' }}
+                          </h4>
                           <p class="text-white/70 text-sm">
-                            Start recording videos to create chunks that can be downloaded.
+                            {{
+                              isElectron()
+                                ? 'Start recording videos to create raw chunks.'
+                                : 'Start recording videos to create chunks that can be downloaded.'
+                            }}
                           </p>
                         </template>
                       </div>
                     </div>
 
-                    <!-- Fixed Bottom Controls (always visible) -->
-                    <div class="flex justify-end items-center gap-4 px-4 py-3 border-t border-white/10">
+                    <!-- Footer -->
+                    <div class="shrink-0 h-14 flex justify-end items-center gap-4 px-4 border-t border-white/10">
                       <span class="text-sm text-white/70">Total: {{ formatBytes(totalChunkSize) }}</span>
-                      <v-btn
-                        icon
-                        variant="outlined"
-                        size="small"
-                        :disabled="isProcessingChunks"
-                        @click="deleteAllChunks"
-                      >
+                      <v-btn icon variant="text" class="mb-1" :disabled="isProcessingChunks" @click="deleteAllChunks">
                         <v-tooltip open-delay="500" activator="parent" location="bottom">
                           Delete all raw chunks
                         </v-tooltip>
                         <v-icon>mdi-delete</v-icon>
                       </v-btn>
-                    </div>
-                  </div>
-
-                  <!-- Electron Version -->
-                  <div v-else class="flex flex-col h-full">
-                    <div v-if="chunkGroups.length > 0" class="flex flex-col h-full">
-                      <!-- Fixed Header -->
-                      <div class="mx-5 pt-4">
-                        <div class="flex justify-between items-center mb-4">
-                          <h3 class="text-lg font-medium">Raw Video Chunks</h3>
-                          <div class="flex items-center gap-4">
-                            <span class="text-sm text-white/70">Backup raw data</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Scrollable Content -->
-                      <div class="flex-1 overflow-y-auto px-4">
-                        <div
-                          v-for="group in chunkGroups"
-                          :key="group.hash"
-                          class="mb-2 px-4 pt-3 pb-1 border border-white/20 rounded-lg bg-white/5"
-                        >
-                          <div class="flex justify-between items-start mb-2">
-                            <div class="flex-1">
-                              <div class="font-medium text-white">{{ group.fileName || group.hash }}</div>
-                              <div class="text-sm text-white/70 mt-1">
-                                {{ formatDate(group.firstChunkDate) }}
-                              </div>
-                              <div class="text-sm text-white/50 mt-1">
-                                {{ group.chunkCount }} chunks • ~{{ group.estimatedDuration }}s duration •
-                                {{ formatBytes(group.totalSize) }}
-                              </div>
-                            </div>
-                            <div class="flex gap-2 mt-4">
-                              <v-btn
-                                icon
-                                variant="outlined"
-                                size="small"
-                                :disabled="isProcessingChunks"
-                                @click="processChunkGroup(group)"
-                              >
-                                <v-tooltip open-delay="500" activator="parent" location="bottom">
-                                  Process video chunks
-                                </v-tooltip>
-                                <v-icon>mdi-file-cog</v-icon>
-                              </v-btn>
-                              <v-btn
-                                icon
-                                variant="outlined"
-                                size="small"
-                                :disabled="isProcessingChunks"
-                                @click="downloadChunkGroup(group)"
-                              >
-                                <v-tooltip open-delay="500" activator="parent" location="bottom">
-                                  Download chunk group as ZIP
-                                </v-tooltip>
-                                <v-icon>mdi-download</v-icon>
-                              </v-btn>
-                              <v-btn
-                                icon
-                                variant="outlined"
-                                size="small"
-                                :disabled="isProcessingChunks"
-                                @click="deleteChunkGroup(group)"
-                              >
-                                <v-tooltip open-delay="500" activator="parent" location="bottom">
-                                  Delete chunk group
-                                </v-tooltip>
-                                <v-icon>mdi-delete</v-icon>
-                              </v-btn>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Fixed Bottom Controls -->
-                      <div class="flex justify-end items-center gap-4 px-4 py-3 border-t border-white/10">
-                        <span class="text-sm text-white/70">Total: {{ formatBytes(totalChunkSize) }}</span>
-                        <v-btn
-                          icon
-                          variant="outlined"
-                          size="small"
-                          :disabled="isProcessingChunks"
-                          @click="deleteAllChunks"
-                        >
-                          <v-tooltip open-delay="500" activator="parent" location="bottom">
-                            Delete all raw chunks
-                          </v-tooltip>
-                          <v-icon>mdi-delete</v-icon>
-                        </v-btn>
-                        <v-btn icon variant="outlined" size="small" @click="openVideoChunksFolder">
-                          <v-tooltip open-delay="500" activator="parent" location="bottom">
-                            Open raw chunks folder
-                          </v-tooltip>
-                          <v-icon>mdi-folder-open-outline</v-icon>
-                        </v-btn>
-                      </div>
-                    </div>
-
-                    <!-- Empty State -->
-                    <div v-else class="flex flex-col h-full">
-                      <!-- Empty State Message -->
-                      <div class="flex flex-col justify-center items-center flex-1 text-center px-4">
-                        <div class="max-w-md mx-auto">
-                          <template v-if="chunkLoadingData">
-                            <v-progress-circular indeterminate color="white" size="60" width="3" class="mb-4" />
-                            <h4 class="text-lg font-medium text-white mb-2">Loading Video Chunks</h4>
-                            <p class="text-white/70 text-sm">Counting chunks and calculating sizes...</p>
-                          </template>
-                          <template v-else>
-                            <v-icon size="60" class="text-white/30 mb-4">mdi-folder-multiple-outline</v-icon>
-                            <h4 class="text-lg font-medium text-white mb-2">No Raw Chunks Found</h4>
-                            <p class="text-white/70 text-sm">Start recording videos to create raw chunks.</p>
-                          </template>
-                        </div>
-                      </div>
-
-                      <!-- Fixed Bottom Controls (always visible) -->
-                      <div class="flex justify-end items-center px-4 py-3 border-t border-white/10">
-                        <v-btn icon variant="outlined" size="small" @click="openVideoChunksFolder">
-                          <v-tooltip open-delay="500" activator="parent" location="bottom">
-                            Open raw chunks folder
-                          </v-tooltip>
-                          <v-icon>mdi-folder-open-outline</v-icon>
-                        </v-btn>
-                      </div>
+                      <v-btn v-if="isElectron()" icon variant="text" class="mb-1" @click="openVideoChunksFolder">
+                        <v-tooltip open-delay="500" activator="parent" location="bottom">
+                          Open raw chunks folder
+                        </v-tooltip>
+                        <v-icon>mdi-folder-open-outline</v-icon>
+                      </v-btn>
                     </div>
                   </div>
                 </template>
