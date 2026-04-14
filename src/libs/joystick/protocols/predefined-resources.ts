@@ -18,12 +18,12 @@ export const setupMavlinkCameraResources = (): void => {
   // Initialize camera zoom variables
   createDataLakeVariable({ id: 'camera-zoom-decrease', name: 'Camera Zoom Decrease', ...commonVariableConfig }, 0)
   createDataLakeVariable({ id: 'camera-zoom-increase', name: 'Camera Zoom Increase', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-zoom-speed', name: 'Camera Zoom Speed', ...commonVariableConfig }, 1)
+  createDataLakeVariable({ id: 'camera-zoom-speed', name: 'Camera Zoom Speed', ...commonVariableConfig }, 3)
 
   // Initialize camera focus variables
   createDataLakeVariable({ id: 'camera-focus-decrease', name: 'Camera Focus Decrease', ...commonVariableConfig }, 0)
   createDataLakeVariable({ id: 'camera-focus-increase', name: 'Camera Focus Increase', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-focus-speed', name: 'Camera Focus Speed', ...commonVariableConfig }, 1)
+  createDataLakeVariable({ id: 'camera-focus-speed', name: 'Camera Focus Speed', ...commonVariableConfig }, 3)
 
   // Initialize camera zoom transforming function
   try {
