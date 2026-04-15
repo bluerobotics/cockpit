@@ -649,7 +649,10 @@
     class="absolute top-14 left-2 flex justify-start items-center text-white text-md py-2 px-4 rounded-lg"
     :style="interfaceStore.globalGlassMenuStyles"
   >
-    <p>Saving offline map content:&nbsp;{{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%</p>
+    <p>
+      Saving offline map content
+      <span v-if="savingLayerName">({{ savingLayerName }})</span>:&nbsp; {{ savePercentage }}%
+    </p>
   </div>
   <MissionEstimatesPanel v-if="!speedDialOpen" v-model="missionStore.showMissionEstimates" />
 </template>
@@ -662,7 +665,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
-import { SaveStatus, savetiles, tileLayerOffline } from 'leaflet.offline'
+import { tileLayerOffline } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
 
@@ -688,6 +691,7 @@ import {
   setSurveyAreaSquareMeters,
   useMissionEstimates,
 } from '@/composables/useMissionEstimates'
+import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
@@ -701,7 +705,7 @@ import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/store
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { DialogActions, Point2D } from '@/types/general'
+import { Point2D } from '@/types/general'
 import {
   type CockpitMission,
   type Waypoint,
@@ -730,6 +734,8 @@ const { height: windowHeight } = useWindowSize()
 
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
+const { isSavingOfflineTiles, savingLayerName, savePercentage, downloadOfflineMapTiles, attachOfflineProgress } =
+  useOfflineTiles({ showDialog, closeDialog, openSnackbar })
 
 const clearMissionOnVehicle = (): void => {
   vehicleStore.clearMissions()
@@ -979,10 +985,6 @@ const cruiseSpeedStatus = computed<'invalid' | 'unchanged' | 'valid'>(() => {
   return 'valid'
 })
 const isSettingHomeWaypoint = ref(false)
-const isSavingOfflineTiles = ref(false)
-const tilesSaved = ref(0)
-const tilesTotal = ref(0)
-const savingLayerName = ref<string>('')
 const downloadMenuOpen = ref(false)
 const speedDialOpen = ref(false)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
@@ -3686,86 +3688,6 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
     }
     clearLiveMeasure()
   }
-}
-
-const confirmDownloadDialog =
-  (layerLabel: string) =>
-  (status: SaveStatus, ok: () => void): void => {
-    showDialog({
-      variant: 'info',
-      message: `Save ${status._tilesforSave.length} ${layerLabel} tiles for offline use?`,
-      persistent: false,
-      maxWidth: '450px',
-      actions: [
-        { text: 'Cancel', color: 'white', action: closeDialog },
-        {
-          text: 'Save tiles',
-          color: 'white',
-          action: () => {
-            ok()
-            closeDialog()
-          },
-        },
-      ] as DialogActions[],
-    })
-  }
-
-const deleteDownloadedTilesDialog =
-  (layerLabel: string) =>
-  (_status: SaveStatus, ok: () => void): void => {
-    showDialog({
-      variant: 'warning',
-      message: `Remove all saved ${layerLabel} tiles for this layer?`,
-      persistent: false,
-      maxWidth: '450px',
-      actions: [
-        { text: 'Cancel', color: 'white', action: closeDialog },
-        {
-          text: 'Remove tiles',
-          color: 'white',
-          action: () => {
-            ok()
-            closeDialog()
-            openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
-          },
-        },
-      ] as DialogActions[],
-    })
-  }
-
-const downloadOfflineMapTiles = (layer: any, layerLabel: string, maxZoom: number): L.Control => {
-  return savetiles(layer, {
-    saveWhatYouSee: true,
-    maxZoom,
-    alwaysDownload: false,
-    position: 'topright',
-    parallel: 20,
-    confirm: confirmDownloadDialog(layerLabel),
-    confirmRemoval: deleteDownloadedTilesDialog(layerLabel),
-    saveText: `<i class="mdi mdi-download" title="Save ${layerLabel} tiles"></i>`,
-    rmText: `<i class="mdi mdi-trash-can" title="Remove ${layerLabel} tiles"></i>`,
-  })
-}
-
-const attachOfflineProgress = (layer: any, layerName: string): void => {
-  layer.on('savestart', (e: any) => {
-    tilesSaved.value = 0
-    tilesTotal.value = e?._tilesforSave?.length ?? 0
-    savingLayerName.value = layerName
-    isSavingOfflineTiles.value = true
-    openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
-  })
-
-  layer.on('loadtileend', () => {
-    tilesSaved.value += 1
-    if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
-      openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
-      isSavingOfflineTiles.value = false
-      savingLayerName.value = ''
-      tilesSaved.value = 0
-      tilesTotal.value = 0
-    }
-  })
 }
 
 let detachTileFallbacks: (() => void)[] = []
