@@ -259,6 +259,9 @@
     <p>
       Saving offline map content
       <span v-if="savingLayerName">({{ savingLayerName }})</span>:&nbsp; {{ savePercentage }}%
+      <span v-if="estimatedDownloadedMB && estimatedTotalMB">
+        (~{{ estimatedDownloadedMB }} / {{ estimatedTotalMB }} MB)
+      </span>
     </p>
   </div>
 </template>
@@ -325,8 +328,15 @@ const props = defineProps<{ widget: Widget }>()
 const widget = toRefs(props).widget
 const interfaceStore = useAppInterfaceStore()
 const { showDialog, closeDialog } = useInteractionDialog()
-const { isSavingOfflineTiles, savingLayerName, savePercentage, downloadOfflineMapTiles, attachOfflineProgress } =
-  useOfflineTiles({ showDialog, closeDialog, openSnackbar })
+const {
+  isSavingOfflineTiles,
+  savingLayerName,
+  estimatedTotalMB,
+  estimatedDownloadedMB,
+  savePercentage,
+  downloadOfflineMapTiles,
+  attachOfflineProgress,
+} = useOfflineTiles({ showDialog, closeDialog, openSnackbar })
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()

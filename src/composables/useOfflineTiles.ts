@@ -1,5 +1,5 @@
 import L from 'leaflet'
-import { type SaveStatus, savetiles } from 'leaflet.offline'
+import { type SaveStatus, type TileInfo, downloadTile, savetiles } from 'leaflet.offline'
 import { computed, ref } from 'vue'
 
 import { type DialogOptions, type DialogResult } from '@/composables/interactionDialog'
@@ -24,9 +24,37 @@ interface OfflineTilesDeps {
   openSnackbar: (options: SnackbarOptions) => void
 }
 
+const SAMPLE_COUNT = 3
+
+/**
+ * Estimates the average byte size of tiles by downloading a small sample.
+ * @param {TileInfo[]} tiles - The array of tile info objects to sample from
+ * @param {number} count - How many tiles to sample
+ * @returns {Promise<number>} Average tile size in bytes, or 0 on failure
+ */
+async function estimateAvgTileSize(tiles: TileInfo[], count: number = SAMPLE_COUNT): Promise<number> {
+  const samples = tiles.slice(0, Math.min(count, tiles.length))
+  if (samples.length === 0) return 0
+  try {
+    const blobs = await Promise.all(samples.map((t) => downloadTile(t.url)))
+    return blobs.reduce((sum, b) => sum + b.size, 0) / blobs.length
+  } catch {
+    return 0
+  }
+}
+
+/**
+ * Formats a byte value into a human-readable MB string.
+ * @param {number} bytes - Size in bytes
+ * @returns {string} Formatted size string (e.g. "12.3 MB")
+ */
+function formatMB(bytes: number): string {
+  return (bytes / (1024 * 1024)).toFixed(1)
+}
+
 /**
  * Composable that encapsulates offline tile download logic including
- * confirmation dialogs and download progress tracking.
+ * size estimation, confirmation dialogs, and download progress tracking.
  * @param {OfflineTilesDeps} deps - Dialog and snackbar functions from the consuming component
  * @returns {object} Reactive state and helper functions for offline tile management
  */
@@ -38,6 +66,17 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
   const tilesSaved = ref(0)
   const tilesTotal = ref(0)
   const savingLayerName = ref('')
+  const avgTileSize = ref(0)
+
+  const estimatedTotalMB = computed(() => {
+    if (avgTileSize.value <= 0 || tilesTotal.value <= 0) return ''
+    return formatMB(avgTileSize.value * tilesTotal.value)
+  })
+
+  const estimatedDownloadedMB = computed(() => {
+    if (avgTileSize.value <= 0) return ''
+    return formatMB(avgTileSize.value * tilesSaved.value)
+  })
 
   const savePercentage = computed(() => {
     if (tilesTotal.value <= 0) return 0
@@ -46,10 +85,22 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
 
   const confirmDownloadDialog =
     (layerLabel: string) =>
-    (status: SaveStatus, ok: () => void): void => {
+    async (status: SaveStatus, ok: () => void): Promise<void> => {
+      const tileCount = status._tilesforSave.length
+      let sizeInfo = ''
+      try {
+        const avg = await estimateAvgTileSize(status._tilesforSave)
+        if (avg > 0) {
+          avgTileSize.value = avg
+          sizeInfo = ` (~${formatMB(avg * tileCount)} MB)`
+        }
+      } catch {
+        // Fall back to count-only display
+      }
+
       showDialog({
         variant: 'info',
-        message: `Save ${status._tilesforSave.length} ${layerLabel} tiles for offline use?`,
+        message: `Save ${tileCount} ${layerLabel} tiles${sizeInfo} for offline use?`,
         persistent: false,
         maxWidth: '450px',
         actions: [
@@ -90,7 +141,7 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
     }
 
   /**
-   * Creates a savetiles control for the given layer.
+   * Creates a savetiles control for the given layer with download size estimation.
    * @param {any} layer - The TileLayerOffline instance
    * @param {string} layerLabel - Human-readable label for the layer (e.g. "Esri")
    * @param {number} maxZoom - Maximum zoom level to save
@@ -132,6 +183,7 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
         savingLayerName.value = ''
         tilesSaved.value = 0
         tilesTotal.value = 0
+        avgTileSize.value = 0
       }
     })
   }
@@ -141,6 +193,9 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
     tilesSaved,
     tilesTotal,
     savingLayerName,
+    avgTileSize,
+    estimatedTotalMB,
+    estimatedDownloadedMB,
     savePercentage,
     downloadOfflineMapTiles,
     attachOfflineProgress,
