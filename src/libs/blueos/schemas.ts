@@ -111,12 +111,10 @@ const JoystickMapSuggestionGroupSchema = z.object({
   version: z.string().optional(),
 })
 
-export const ExtrasJsonSchema = preprocessCamelCase(
-  z.object({
-    targetCockpitApiVersion: z.string(),
-    targetSystem: z.string(),
-    widgets: z.array(ExternalWidgetSetupInfoSchema).default([]),
-    actions: z.array(ActionConfigSchema).default([]),
-    joystickSuggestions: z.array(JoystickMapSuggestionGroupSchema).optional(),
-  })
-)
+export const ExtrasJsonSchema = z.object({
+  targetCockpitApiVersion: z.string(),
+  targetSystem: z.string(),
+  widgets: z.array(ExternalWidgetSetupInfoSchema).default([]),
+  actions: z.array(ActionConfigSchema).default([]),
+  joystickSuggestions: z.array(JoystickMapSuggestionGroupSchema).optional(),
+})
