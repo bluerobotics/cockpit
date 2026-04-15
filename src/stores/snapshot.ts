@@ -318,7 +318,10 @@ export const useSnapshotStore = defineStore('snapshot', () => {
   }
 
   const takeSnapshotAction = async (): Promise<void> => {
-    const { succeeded, failed } = await takeSnapshot(videoStore.namesAvailableStreams, isElectron())
+    const activeStreams = videoStore.namesAvailableStreams.filter(
+      (name: string) => !videoStore.ignoredStreamExternalIds.includes(name)
+    )
+    const { succeeded, failed } = await takeSnapshot(activeStreams, isElectron())
     if (failed.length > 0) {
       console.error(`Snapshot action failed for: ${failed.join(', ')}`)
     }

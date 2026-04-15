@@ -267,9 +267,10 @@ const flashEffect = async (): Promise<void> => {
 }
 
 const captureSnapshot = async (): Promise<SnapshotResult> => {
-  const streamNames = miniWidget.value.options.snapshotAllAvailableSources
+  const allStreamNames = miniWidget.value.options.snapshotAllAvailableSources
     ? videoStore.namesAvailableStreams
     : miniWidget.value.options.selectedStreams ?? []
+  const streamNames = allStreamNames.filter((name) => !videoStore.ignoredStreamExternalIds.includes(name))
   return snapshotStore.takeSnapshot(streamNames, miniWidget.value.options.captureWorkspace)
 }
 
