@@ -1,11 +1,13 @@
 <template>
-  <div class="relative mb-10">
-    <object
-      :class="component_name"
-      type="image/svg+xml"
-      :data="joystick_svg_path"
-      class="w-[140%] h-[120%] -ml-[21%]"
-    />
+  <div class="relative mb-0 px-4 py-8">
+    <div class="overflow-hidden rounded-lg">
+      <object
+        :class="component_name"
+        type="image/svg+xml"
+        :data="joystick_svg_path"
+        class="w-[140%] h-[120%] -ml-[21%]"
+      />
+    </div>
     <!-- Modifier indicator in bottom left corner -->
     <div
       class="absolute bottom-2 left-2 text-white text-xs px-2 py-1 rounded-full font-bold uppercase"
@@ -92,11 +94,28 @@ const highlightButton = (): void => {
     svg?.getElementById(buttonId.replace('path', 'text'))?.setAttribute('visibility', 'hidden')
   })
 
-  // Highlight the specific button with appropriate color
   const targetButtonId = buttonPath[props.buttonNumber as JoystickButton]
   if (targetButtonId) {
-    svg?.getElementById(targetButtonId)?.setAttribute('fill', highlightColor.value)
-    // Keep the lines and text labels hidden even for the highlighted button
+    const el = svg?.getElementById(targetButtonId) as SVGGraphicsElement | null
+    if (el) {
+      el.setAttribute('fill', highlightColor.value)
+      el.setAttribute('opacity', '1')
+
+      const bbox = el.getBBox()
+      const ctm = el.getCTM()
+      if (ctm) {
+        const rootCx = bbox.x + bbox.width / 2 + ctm.e
+        const rootCy = bbox.y + bbox.height / 2 + ctm.f
+        const zoomW = 600
+        const zoomH = 312
+        const svgEl = svg?.documentElement
+        if (svgEl) {
+          const vbX = Math.max(0, Math.min(rootCx - zoomW / 2, 1250 - zoomW))
+          const vbY = Math.max(0, Math.min(rootCy - zoomH / 2, 650 - zoomH))
+          svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${zoomW} ${zoomH}`)
+        }
+      }
+    }
     svg?.getElementById(targetButtonId.replace('path', 'path_line'))?.setAttribute('visibility', 'hidden')
     svg?.getElementById(targetButtonId.replace('path', 'text'))?.setAttribute('visibility', 'hidden')
   }
