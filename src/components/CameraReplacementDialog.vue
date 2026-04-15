@@ -191,10 +191,19 @@ const allMiniVideoRecorders = computed((): MiniWidget[] => {
     .filter((w) => w.component === MiniWidgetType.MiniVideoRecorder)
 })
 
+const allSnapshotTools = computed((): MiniWidget[] => {
+  const fixedContainers = widgetStore.currentMiniWidgetsProfile.containers
+  const viewContainers = widgetStore.currentProfile.views.flatMap((v) => v.miniWidgetContainers)
+  return [...fixedContainers, ...viewContainers]
+    .flatMap((c) => c.widgets)
+    .filter((w) => w.component === MiniWidgetType.SnapshotTool)
+})
+
 const allWidgetStreamNames = computed((): string[] => {
   return [
     ...allVideoPlayerWidgets.value.map((w) => w.options.internalStreamName as string | undefined),
     ...allMiniVideoRecorders.value.map((w) => w.options.internalStreamName as string | undefined),
+    ...allSnapshotTools.value.flatMap((w) => (w.options.selectedStreams as string[] | undefined) ?? []),
   ].filter((name): name is string => name !== undefined && name !== null)
 })
 
@@ -306,6 +315,14 @@ const replaceStreams = (): void => {
     for (const miniWidget of allMiniVideoRecorders.value) {
       if (miniWidget.options.internalStreamName === orphan.internalName) {
         miniWidget.options.internalStreamName = newInternalName
+      }
+    }
+    for (const snapshotWidget of allSnapshotTools.value) {
+      const streams = snapshotWidget.options.selectedStreams as string[] | undefined
+      if (!streams) continue
+      const idx = streams.indexOf(orphan.internalName)
+      if (idx !== -1) {
+        streams[idx] = newInternalName
       }
     }
   }
