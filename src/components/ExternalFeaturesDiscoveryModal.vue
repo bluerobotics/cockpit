@@ -21,37 +21,42 @@
               v-if="filteredActions.length === 0 && appliedActions.length === 0 && ignoredActions.length === 0"
               class="text-center py-8"
             >
-              <v-icon size="50" color="grey" class="mb-3">mdi-lightning-bolt-outline</v-icon>
-              <p class="text-grey-lighten-1">No actions available from extensions.</p>
+              <v-icon size="50" class="mb-3 opacity-50">mdi-lightning-bolt-outline</v-icon>
+              <p class="opacity-70">No actions available from extensions.</p>
             </div>
 
             <!-- New Actions -->
             <div v-if="filteredActions.length > 0" class="mb-4">
               <div class="flex items-center gap-2 mb-2">
-                <v-icon size="24" color="blue">mdi-lightning-bolt-outline</v-icon>
+                <v-icon size="24">mdi-lightning-bolt-outline</v-icon>
                 <h2 class="text-xl font-semibold">New Actions</h2>
               </div>
-              <p class="mb-2 text-grey-lighten-1">
-                The following actions are offered to be added by BlueOS extensions:
-              </p>
+              <p class="mb-2 opacity-70">The following actions are offered to be added by BlueOS extensions:</p>
               <v-list class="bg-transparent">
                 <v-list-item v-for="action in filteredActions" :key="action.id" class="mb-3 p-0">
                   <v-card variant="outlined" class="w-full action-card">
                     <v-card-item>
                       <v-card-title class="font-medium pb-0">{{ action.name }}</v-card-title>
-                      <v-card-subtitle class="text-grey-lighten-1">
+                      <v-card-subtitle class="opacity-70">
                         {{ getActionTypeName(action.type) }}
                       </v-card-subtitle>
                       <v-card-text v-if="getActionDescription(action)" class="pt-1 text-sm">
                         {{ getActionDescription(action) }}
                       </v-card-text>
-                      <div class="flex justify-between items-center mt-2">
-                        <v-btn variant="text" prepend-icon="mdi-close" size="small" @click="ignoreAction(action)">
+                      <div class="flex justify-between items-center my-2">
+                        <v-btn
+                          class="bg-[#FFFFFF22]"
+                          variant="flat"
+                          prepend-icon="mdi-close"
+                          size="small"
+                          @click="ignoreAction(action)"
+                        >
                           Ignore
                         </v-btn>
-                        <span class="text-xs text-grey-lighten-1">from {{ action.extensionName }}</span>
+                        <span class="text-xs opacity-70">from {{ action.extensionName }}</span>
                         <v-btn
-                          variant="tonal"
+                          class="bg-[#FFFFFF22]"
+                          variant="flat"
                           prepend-icon="mdi-plus-circle-outline"
                           size="small"
                           @click="addAction(action)"
@@ -69,9 +74,8 @@
             <div v-if="appliedActions.length > 0" class="mb-4">
               <v-btn
                 variant="text"
-                color="grey-lighten-1"
-                class="opacity-70 hover:opacity-100"
                 :prepend-icon="showAppliedActions ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                size="small"
                 @click="showAppliedActions = !showAppliedActions"
               >
                 {{ showAppliedActions ? 'Hide applied actions' : 'Show applied actions' }}
@@ -79,34 +83,37 @@
               <div v-if="showAppliedActions" class="mt-2">
                 <v-list class="bg-transparent">
                   <v-list-item v-for="action in appliedActions" :key="action.id" class="mb-3 p-0">
-                    <v-card
-                      variant="outlined"
-                      class="w-full"
-                      :class="existingActionNames.has(action.name) ? 'border-green-500/30' : 'border-orange-500/30'"
-                    >
+                    <v-card variant="outlined" class="w-full">
                       <v-card-item>
                         <v-card-title class="font-medium pb-0">{{ action.name }}</v-card-title>
-                        <v-card-subtitle class="text-grey-lighten-1">
+                        <v-card-subtitle class="opacity-70">
                           {{ getActionTypeName(action.type) }}
                         </v-card-subtitle>
                         <div class="flex justify-between items-center mt-2">
                           <v-chip
                             v-if="existingActionNames.has(action.name)"
-                            color="green"
-                            variant="tonal"
+                            class="bg-[#FFFFFF22]"
+                            variant="flat"
                             prepend-icon="mdi-check"
                             size="small"
                           >
                             Applied
                           </v-chip>
-                          <v-chip v-else color="orange" variant="tonal" prepend-icon="mdi-alert-outline" size="small">
+                          <v-chip
+                            v-else
+                            class="bg-[#FFFFFF22]"
+                            variant="flat"
+                            prepend-icon="mdi-alert-outline"
+                            size="small"
+                          >
                             Applied but removed
                           </v-chip>
-                          <span class="text-xs text-grey-lighten-1">from {{ action.extensionName }}</span>
+                          <span class="text-xs opacity-70">from {{ action.extensionName }}</span>
                         </div>
-                        <div v-if="!existingActionNames.has(action.name)" class="flex justify-center gap-4 mt-3">
+                        <div v-if="!existingActionNames.has(action.name)" class="flex justify-center gap-4 my-2">
                           <v-btn
-                            variant="text"
+                            class="bg-[#FFFFFF22]"
+                            variant="flat"
                             prepend-icon="mdi-close"
                             size="small"
                             @click="moveAppliedToIgnored(action)"
@@ -114,7 +121,8 @@
                             Ignore
                           </v-btn>
                           <v-btn
-                            variant="tonal"
+                            class="bg-[#FFFFFF22]"
+                            variant="flat"
                             prepend-icon="mdi-plus-circle-outline"
                             size="small"
                             @click="reAddAction(action)"
@@ -133,9 +141,8 @@
             <div v-if="ignoredActions.length > 0" class="mb-4">
               <v-btn
                 variant="text"
-                color="grey-lighten-1"
-                class="opacity-70 hover:opacity-100"
                 :prepend-icon="showIgnoredActions ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                size="small"
                 @click="showIgnoredActions = !showIgnoredActions"
               >
                 {{ showIgnoredActions ? 'Hide ignored actions' : 'Show ignored actions' }}
@@ -143,8 +150,8 @@
               <div v-if="showIgnoredActions" class="mt-2">
                 <div class="flex justify-end mb-2">
                   <v-btn
-                    variant="tonal"
-                    color="blue"
+                    class="bg-[#FFFFFF22]"
+                    variant="flat"
                     prepend-icon="mdi-restore"
                     size="small"
                     @click="restoreAllIgnoredActions"
@@ -154,20 +161,20 @@
                 </div>
                 <v-list class="bg-transparent">
                   <v-list-item v-for="action in ignoredActions" :key="action.id" class="mb-3 p-0">
-                    <v-card variant="outlined" class="w-full border-orange-500/30">
+                    <v-card variant="outlined" class="w-full">
                       <v-card-item>
                         <v-card-title class="font-medium pb-0">{{ action.name }}</v-card-title>
-                        <v-card-subtitle class="text-grey-lighten-1">
+                        <v-card-subtitle class="opacity-70">
                           {{ getActionTypeName(action.type) }}
                         </v-card-subtitle>
-                        <div class="flex justify-between items-center mt-2">
-                          <v-chip color="orange" variant="tonal" prepend-icon="mdi-close-circle" size="small">
+                        <div class="flex justify-between items-center my-2">
+                          <v-chip class="bg-[#FFFFFF22]" variant="flat" prepend-icon="mdi-close-circle" size="small">
                             Ignored
                           </v-chip>
-                          <span class="text-xs text-grey-lighten-1">from {{ action.extensionName }}</span>
+                          <span class="text-xs opacity-70">from {{ action.extensionName }}</span>
                           <v-btn
-                            variant="tonal"
-                            color="blue"
+                            class="bg-[#FFFFFF22]"
+                            variant="flat"
                             prepend-icon="mdi-restore"
                             size="small"
                             @click="restoreIgnoredAction(action)"
@@ -194,20 +201,18 @@
             "
             class="text-center py-8"
           >
-            <v-icon size="50" color="grey" class="mb-3">mdi-gamepad-variant-outline</v-icon>
-            <p class="text-grey-lighten-1">No joystick mapping suggestions available.</p>
+            <v-icon size="50" class="mb-3 opacity-50">mdi-gamepad-variant-outline</v-icon>
+            <p class="opacity-70">No joystick mapping suggestions available.</p>
           </div>
 
           <div v-else class="actions-container">
             <!-- New Suggestions Section -->
             <div v-if="filteredJoystickSuggestionsByExtension.length > 0" class="mb-8">
               <div class="flex items-center gap-2 mb-4">
-                <v-icon size="24" color="blue">mdi-gamepad-variant-outline</v-icon>
+                <v-icon size="24">mdi-gamepad-variant-outline</v-icon>
                 <h2 class="text-xl font-semibold">New Suggestions</h2>
               </div>
-              <p class="mb-2 text-grey-lighten-1">
-                The following joystick mappings are suggested by BlueOS extensions:
-              </p>
+              <p class="mb-2 opacity-70">The following joystick mappings are suggested by BlueOS extensions:</p>
 
               <!-- Group suggestions by extension -->
               <div
@@ -220,12 +225,12 @@
                   <!-- Extension header -->
                   <div class="flex items-center justify-between p-4 bg-slate-700/30 rounded-t-lg">
                     <div class="flex items-center gap-2">
-                      <v-icon size="20" color="blue">mdi-puzzle-outline</v-icon>
+                      <v-icon size="20">mdi-puzzle-outline</v-icon>
                       <h3 class="text-lg font-semibold">{{ extensionGroup.extensionName }}</h3>
                     </div>
                     <v-btn
-                      variant="text"
-                      color="orange-lighten-1"
+                      class="bg-[#FFFFFF22]"
+                      variant="flat"
                       prepend-icon="mdi-close-circle-multiple-outline"
                       size="x-small"
                       @click="ignoreRemainingSuggestionsFromExtension(extensionGroup)"
@@ -243,11 +248,11 @@
                     >
                       <v-expansion-panel-title class="py-2">
                         <div class="flex items-center gap-2 flex-grow">
-                          <v-icon size="16" color="blue-lighten-2">mdi-folder-outline</v-icon>
-                          <span class="text-sm font-semibold text-grey-lighten-1">{{ group.name }}</span>
+                          <v-icon size="16">mdi-folder-outline</v-icon>
+                          <span class="text-sm font-semibold opacity-70">{{ group.name }}</span>
                           <v-tooltip v-if="group.description" location="top" max-width="320">
                             <template #activator="{ props: tooltipProps }">
-                              <v-icon v-bind="tooltipProps" size="14" color="grey-lighten-1" class="cursor-help">
+                              <v-icon v-bind="tooltipProps" size="14" class="cursor-help opacity-70">
                                 mdi-information-outline
                               </v-icon>
                             </template>
@@ -258,18 +263,17 @@
                           </v-chip>
                           <v-spacer />
                           <v-btn
-                            variant="tonal"
-                            color="green"
+                            class="bg-[#FFFFFF22] mr-2"
+                            variant="flat"
                             prepend-icon="mdi-check-all"
                             size="x-small"
-                            class="mr-2"
                             @click.stop="acceptAllGroupSuggestions(extensionGroup.extensionName, group)"
                           >
                             Accept All
                           </v-btn>
                           <v-btn
-                            variant="text"
-                            color="orange-lighten-1"
+                            class="bg-[#FFFFFF22]"
+                            variant="flat"
                             prepend-icon="mdi-close-circle-multiple-outline"
                             size="x-small"
                             @click.stop="ignoreAllGroupSuggestions(group)"
@@ -283,12 +287,12 @@
                           <div
                             v-for="suggestion in group.buttonMappingSuggestions"
                             :key="suggestion.id"
-                            class="suggestion-item-compact p-3 border border-gray-600 rounded-lg bg-gray-800/20 hover:bg-gray-700/30 transition-colors"
+                            class="suggestion-item-compact px-5 py-3 border border-gray-600 rounded-lg bg-gray-800/20 hover:bg-gray-700/30 transition-colors"
                           >
                             <div class="text-center mb-3">
                               <h4 class="font-medium text-white mb-1">{{ suggestion.actionName }}</h4>
                             </div>
-                            <div class="flex justify-center mb-3">
+                            <div class="flex justify-center mt-auto mb-5">
                               <div class="joystick-svg-container-small">
                                 <JoystickButtonIndicator
                                   :button-number="suggestion.button"
@@ -298,7 +302,8 @@
                             </div>
                             <div class="flex w-full justify-between">
                               <v-btn
-                                variant="text"
+                                class="bg-[#FFFFFF22]"
+                                variant="flat"
                                 prepend-icon="mdi-close"
                                 size="small"
                                 @click="ignoreSuggestion(suggestion)"
@@ -306,7 +311,8 @@
                                 Ignore
                               </v-btn>
                               <v-btn
-                                variant="tonal"
+                                class="bg-[#FFFFFF22]"
+                                variant="flat"
                                 prepend-icon="mdi-plus-circle-outline"
                                 size="small"
                                 @click="openJoystickSuggestionDialog(suggestion, extensionGroup.extensionName)"
@@ -326,9 +332,8 @@
             <div v-if="appliedJoystickSuggestionsByExtension.length > 0" class="mb-4">
               <v-btn
                 variant="text"
-                color="grey-lighten-1"
-                class="opacity-70 hover:opacity-100"
                 :prepend-icon="showAppliedMappings ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                size="small"
                 @click="showAppliedMappings = !showAppliedMappings"
               >
                 {{ showAppliedMappings ? 'Hide applied mappings' : 'Show applied mappings' }}
@@ -338,10 +343,10 @@
             <!-- Applied Suggestions Section -->
             <div v-if="showAppliedMappings && appliedJoystickSuggestionsByExtension.length > 0" class="mb-8">
               <div class="flex items-center gap-2 mb-4">
-                <v-icon size="24" color="green">mdi-check-circle</v-icon>
+                <v-icon size="24">mdi-check-circle</v-icon>
                 <h2 class="text-xl font-semibold">Applied Mappings</h2>
               </div>
-              <p class="mb-4 text-grey-lighten-1">These joystick mappings have been applied from BlueOS extensions:</p>
+              <p class="mb-4 opacity-70">These joystick mappings have been applied from BlueOS extensions:</p>
 
               <!-- Group applied suggestions by extension -->
               <div
@@ -356,7 +361,7 @@
                     class="flex items-center justify-between mb-4 p-4 bg-green-900/20 rounded-t-lg border-b border-green-500/30"
                   >
                     <div class="flex items-center gap-2">
-                      <v-icon size="20" color="green">mdi-check-circle</v-icon>
+                      <v-icon size="20">mdi-check-circle</v-icon>
                       <h3 class="text-lg font-semibold">{{ extensionGroup.extensionName }}</h3>
                     </div>
                   </div>
@@ -370,30 +375,30 @@
                     >
                       <v-expansion-panel-title class="py-2">
                         <div class="flex items-center gap-2">
-                          <v-icon size="16" color="green-lighten-2">mdi-folder-outline</v-icon>
-                          <span class="text-sm font-semibold text-grey-lighten-1">{{ group.name }}</span>
+                          <v-icon size="16">mdi-folder-outline</v-icon>
+                          <span class="text-sm font-semibold opacity-70">{{ group.name }}</span>
                           <v-tooltip v-if="group.description" location="top" max-width="320">
                             <template #activator="{ props: tooltipProps }">
-                              <v-icon v-bind="tooltipProps" size="14" color="grey-lighten-1" class="cursor-help">
+                              <v-icon v-bind="tooltipProps" size="14" class="cursor-help opacity-70">
                                 mdi-information-outline
                               </v-icon>
                             </template>
                             <span class="text-xs">{{ group.description }}</span>
                           </v-tooltip>
-                          <v-chip size="x-small" variant="outlined" color="green">
+                          <v-chip size="x-small" variant="flat" class="bg-[#FFFFFF22] font-bold">
                             {{ group.buttonMappingSuggestions.length }}
                           </v-chip>
                         </div>
                       </v-expansion-panel-title>
                       <v-expansion-panel-text>
-                        <p v-if="group.description" class="text-sm text-grey-lighten-1 mb-3">
+                        <p v-if="group.description" class="text-sm opacity-70 mb-3">
                           {{ group.description }}
                         </p>
                         <div class="flex flex-wrap gap-4 justify-start pt-2">
                           <div
                             v-for="suggestion in group.buttonMappingSuggestions"
                             :key="suggestion.id"
-                            class="suggestion-item-compact p-3 rounded-lg"
+                            class="suggestion-item-compact px-5 py-3 rounded-lg"
                             :class="
                               suggestionDiffersFromCurrentMapping(suggestion)
                                 ? 'border border-orange-500/30 bg-orange-900/10'
@@ -402,11 +407,11 @@
                           >
                             <div class="text-center mb-3">
                               <h4 class="font-medium text-white mb-1">{{ suggestion.actionName }}</h4>
-                              <p v-if="suggestion.description" class="text-sm text-grey-lighten-1">
+                              <p v-if="suggestion.description" class="text-sm opacity-70">
                                 {{ suggestion.description }}
                               </p>
                             </div>
-                            <div class="flex justify-center mb-3">
+                            <div class="flex justify-center mt-auto mb-5">
                               <div class="joystick-svg-container-small">
                                 <JoystickButtonIndicator
                                   :button-number="suggestion.button"
@@ -417,8 +422,8 @@
                             <div class="flex justify-center">
                               <v-chip
                                 v-if="!suggestionDiffersFromCurrentMapping(suggestion)"
-                                color="green"
-                                variant="tonal"
+                                class="bg-[#FFFFFF22]"
+                                variant="flat"
                                 prepend-icon="mdi-check"
                                 size="small"
                               >
@@ -426,8 +431,8 @@
                               </v-chip>
                               <v-chip
                                 v-else
-                                color="orange"
-                                variant="tonal"
+                                class="bg-[#FFFFFF22]"
+                                variant="flat"
                                 prepend-icon="mdi-alert-outline"
                                 size="small"
                               >
@@ -435,11 +440,12 @@
                               </v-chip>
                             </div>
                             <div
-                              v-if="suggestionDiffersFromCurrentMapping(suggestion)"
-                              class="flex justify-center gap-4 mt-3"
+                              class="flex justify-center gap-4 mt-5"
+                              :class="{ invisible: !suggestionDiffersFromCurrentMapping(suggestion) }"
                             >
                               <v-btn
-                                variant="text"
+                                class="bg-[#FFFFFF22]"
+                                variant="flat"
                                 prepend-icon="mdi-close"
                                 size="small"
                                 @click="moveAppliedSuggestionToIgnored(suggestion)"
@@ -447,7 +453,8 @@
                                 Ignore
                               </v-btn>
                               <v-btn
-                                variant="tonal"
+                                class="bg-[#FFFFFF22]"
+                                variant="flat"
                                 prepend-icon="mdi-plus-circle-outline"
                                 size="small"
                                 @click="openJoystickSuggestionDialog(suggestion, extensionGroup.extensionName)"
@@ -468,9 +475,8 @@
             <div v-if="ignoredJoystickSuggestionsByExtension.length > 0" class="mb-4">
               <v-btn
                 variant="text"
-                color="grey-lighten-1"
-                class="opacity-70 hover:opacity-100"
                 :prepend-icon="showIgnoredMappings ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                size="small"
                 @click="showIgnoredMappings = !showIgnoredMappings"
               >
                 {{ showIgnoredMappings ? 'Hide ignored mappings' : 'Show ignored mappings' }}
@@ -480,10 +486,10 @@
             <!-- Ignored Suggestions Section -->
             <div v-if="showIgnoredMappings && ignoredJoystickSuggestionsByExtension.length > 0" class="mb-8">
               <div class="flex items-center gap-2 mb-4">
-                <v-icon size="24" color="orange">mdi-close-circle</v-icon>
+                <v-icon size="24">mdi-close-circle</v-icon>
                 <h2 class="text-xl font-semibold">Ignored Mappings</h2>
               </div>
-              <p class="mb-4 text-grey-lighten-1">These joystick mappings have been ignored:</p>
+              <p class="mb-4 opacity-70">These joystick mappings have been ignored:</p>
 
               <!-- Group ignored suggestions by extension -->
               <div
@@ -498,12 +504,12 @@
                     class="flex items-center justify-between mb-4 p-4 bg-orange-900/20 rounded-t-lg border-b border-orange-500/30"
                   >
                     <div class="flex items-center gap-2">
-                      <v-icon size="20" color="orange">mdi-close-circle</v-icon>
+                      <v-icon size="20">mdi-close-circle</v-icon>
                       <h3 class="text-lg font-semibold">{{ extensionGroup.extensionName }}</h3>
                     </div>
                     <v-btn
-                      variant="tonal"
-                      color="blue"
+                      class="bg-[#FFFFFF22]"
+                      variant="flat"
                       prepend-icon="mdi-restore"
                       size="small"
                       @click="restoreAllIgnoredSuggestions(extensionGroup.extensionName)"
@@ -521,38 +527,38 @@
                     >
                       <v-expansion-panel-title class="py-2">
                         <div class="flex items-center gap-2">
-                          <v-icon size="16" color="orange-lighten-2">mdi-folder-outline</v-icon>
-                          <span class="text-sm font-semibold text-grey-lighten-1">{{ group.name }}</span>
+                          <v-icon size="16">mdi-folder-outline</v-icon>
+                          <span class="text-sm font-semibold opacity-70">{{ group.name }}</span>
                           <v-tooltip v-if="group.description" location="top" max-width="320">
                             <template #activator="{ props: tooltipProps }">
-                              <v-icon v-bind="tooltipProps" size="14" color="grey-lighten-1" class="cursor-help">
+                              <v-icon v-bind="tooltipProps" size="14" class="cursor-help opacity-70">
                                 mdi-information-outline
                               </v-icon>
                             </template>
                             <span class="text-xs">{{ group.description }}</span>
                           </v-tooltip>
-                          <v-chip size="x-small" variant="outlined" color="orange">
+                          <v-chip size="x-small" variant="flat" class="bg-[#FFFFFF22] font-bold">
                             {{ group.buttonMappingSuggestions.length }}
                           </v-chip>
                         </div>
                       </v-expansion-panel-title>
                       <v-expansion-panel-text>
-                        <p v-if="group.description" class="text-sm text-grey-lighten-1 mb-3">
+                        <p v-if="group.description" class="text-sm opacity-70 mb-3">
                           {{ group.description }}
                         </p>
                         <div class="flex flex-wrap gap-4 justify-start pt-2">
                           <div
                             v-for="suggestion in group.buttonMappingSuggestions"
                             :key="suggestion.id"
-                            class="suggestion-item-compact p-3 border border-orange-500/30 rounded-lg bg-orange-900/10"
+                            class="suggestion-item-compact px-5 py-3 border border-orange-500/30 rounded-lg bg-orange-900/10"
                           >
                             <div class="text-center mb-3">
                               <h4 class="font-medium text-white mb-1">{{ suggestion.actionName }}</h4>
-                              <p v-if="suggestion.description" class="text-sm text-grey-lighten-1">
+                              <p v-if="suggestion.description" class="text-sm opacity-70">
                                 {{ suggestion.description }}
                               </p>
                             </div>
-                            <div class="flex justify-center mb-3">
+                            <div class="flex justify-center mt-auto mb-5">
                               <div class="joystick-svg-container-small">
                                 <JoystickButtonIndicator
                                   :button-number="suggestion.button"
@@ -562,8 +568,8 @@
                             </div>
                             <div class="flex justify-center">
                               <v-btn
-                                variant="tonal"
-                                color="blue"
+                                class="bg-[#FFFFFF22]"
+                                variant="flat"
                                 prepend-icon="mdi-restore"
                                 size="small"
                                 @click="restoreIgnoredSuggestion(suggestion)"
