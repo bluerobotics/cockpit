@@ -652,6 +652,9 @@
     <p>
       Saving offline map content
       <span v-if="savingLayerName">({{ savingLayerName }})</span>:&nbsp; {{ savePercentage }}%
+      <span v-if="estimatedDownloadedMB && estimatedTotalMB">
+        (~{{ estimatedDownloadedMB }} / {{ estimatedTotalMB }} MB)
+      </span>
     </p>
   </div>
   <MissionEstimatesPanel v-if="!speedDialOpen" v-model="missionStore.showMissionEstimates" />
@@ -734,8 +737,15 @@ const { height: windowHeight } = useWindowSize()
 
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
-const { isSavingOfflineTiles, savingLayerName, savePercentage, downloadOfflineMapTiles, attachOfflineProgress } =
-  useOfflineTiles({ showDialog, closeDialog, openSnackbar })
+const {
+  isSavingOfflineTiles,
+  savingLayerName,
+  estimatedTotalMB,
+  estimatedDownloadedMB,
+  savePercentage,
+  downloadOfflineMapTiles,
+  attachOfflineProgress,
+} = useOfflineTiles({ showDialog, closeDialog, openSnackbar })
 
 const clearMissionOnVehicle = (): void => {
   vehicleStore.clearMissions()
