@@ -1,3 +1,4 @@
+import * as turf from '@turf/turf'
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
@@ -24,8 +25,8 @@ import { useMainVehicleStore } from './mainVehicle'
 const DEFAULT_MAP_CENTER: WaypointCoordinates = [-27.5935, -48.55854]
 const DEFAULT_MAP_ZOOM = 15
 
-// Default cap on the vehicle position history. At 5Hz (default sampling rate), 50k samples is about 3 hours.
-export const DEFAULT_MAX_POSITION_HISTORY_SIZE = 50000
+// Default cap on the vehicle position history. At 5Hz (default sampling rate), 500k samples is about 30 hours.
+export const DEFAULT_MAX_POSITION_HISTORY_SIZE = 500000
 export const MIN_MAX_POSITION_HISTORY_SIZE = 100
 
 export const useMissionStore = defineStore('mission', () => {
@@ -161,6 +162,7 @@ export const useMissionStore = defineStore('mission', () => {
   const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
 
   let positionHistoryDirty = false
+  let simplifiedBoundary = 0
 
   const flushPositionHistory = (): void => {
     if (!isVehiclePositionHistoryPersistent.value) return
@@ -176,6 +178,7 @@ export const useMissionStore = defineStore('mission', () => {
   const clearVehicleHistory = (): void => {
     vehiclePositionHistory.value = []
     positionHistoryDirty = false
+    simplifiedBoundary = 0
     if (isVehiclePositionHistoryPersistent.value) {
       persistedPositionHistory.value = []
     }
@@ -503,11 +506,40 @@ export const useMissionStore = defineStore('mission', () => {
     { deep: true }
   )
 
-  // Maximum number of positions to store in the vehicle position history
+  // Maximum number of positions to store in the vehicle position history before simplifying
   const maxPositionHistorySize = useBlueOsStorage(
     'cockpit-vehicle-position-history-max-size',
     DEFAULT_MAX_POSITION_HISTORY_SIZE
   )
+
+  /**
+   * Simplifies the next unsimplified chunk of the vehicle position history using the
+   * Ramer-Douglas-Peucker algorithm. The chunk starts at `simplifiedBoundary` and spans
+   * one third of `maxPositionHistorySize`, ensuring each portion of the history is only
+   * ever simplified once.
+   * @returns {boolean} True if a chunk was simplified, false if no unsimplified data is available.
+   */
+  const simplifyNextChunk = (): boolean => {
+    const history = vehiclePositionHistory.value
+    const chunkSize = Math.floor(maxPositionHistorySize.value / 3)
+    const chunkEnd = simplifiedBoundary + chunkSize
+
+    if (simplifiedBoundary >= history.length - chunkSize || chunkEnd > history.length) return false
+
+    const alreadySimplified = history.slice(0, simplifiedBoundary)
+    const chunkSegment = history.slice(simplifiedBoundary, chunkEnd)
+    const recentSegment = history.slice(chunkEnd)
+
+    if (chunkSegment.length < 2) return false
+
+    const line = turf.lineString(chunkSegment.map(([lat, lng]) => [lng, lat]))
+    const simplified = turf.simplify(line, { tolerance: 0.000001, highQuality: true })
+    const simplifiedPoints = simplified.geometry.coordinates.map(([lng, lat]) => [lat, lng] as WaypointCoordinates)
+
+    vehiclePositionHistory.value = [...alreadySimplified, ...simplifiedPoints, ...recentSegment]
+    simplifiedBoundary += simplifiedPoints.length
+    return true
+  }
 
   watch(
     () => [mainVehicleStore.coordinates?.latitude, mainVehicleStore.coordinates?.longitude] as const,
@@ -515,7 +547,12 @@ export const useMissionStore = defineStore('mission', () => {
       if (!lat || !lng) return
       vehiclePositionHistory.value.push([lat, lng] as WaypointCoordinates)
       if (vehiclePositionHistory.value.length > maxPositionHistorySize.value) {
-        vehiclePositionHistory.value.shift()
+        const didSimplify = simplifyNextChunk()
+        // Fallback: if no unsimplified chunk was available or RDP freed nothing, drop oldest point
+        if (!didSimplify || vehiclePositionHistory.value.length > maxPositionHistorySize.value) {
+          vehiclePositionHistory.value.shift()
+          if (simplifiedBoundary > 0) simplifiedBoundary -= 1
+        }
       }
       positionHistoryDirty = true
     }
