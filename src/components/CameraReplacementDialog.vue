@@ -325,6 +325,8 @@ const replaceStreams = (): void => {
         streams[idx] = newInternalName
       }
     }
+
+    videoStore.deleteStreamCorrespondency(orphan.externalId)
   }
 
   markDismissed()
