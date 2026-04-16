@@ -92,7 +92,7 @@
       <v-select
         v-model="miniWidget.options.selectedStreams"
         :items="enrichedStreamItems"
-        item-value="externalName"
+        item-value="internalName"
         :disabled="miniWidget.options.snapshotAllAvailableSources"
         density="compact"
         multiple
@@ -267,11 +267,17 @@ const flashEffect = async (): Promise<void> => {
 }
 
 const captureSnapshot = async (): Promise<SnapshotResult> => {
-  const allStreamNames = miniWidget.value.options.snapshotAllAvailableSources
+  const allExternalIds = miniWidget.value.options.snapshotAllAvailableSources
     ? videoStore.namesAvailableStreams
-    : miniWidget.value.options.selectedStreams ?? []
-  const streamNames = allStreamNames.filter((name) => !videoStore.ignoredStreamExternalIds.includes(name))
+    : ((miniWidget.value.options.selectedStreams as string[]) ?? [])
+        .map((name: string) => videoStore.externalStreamId(name))
+        .filter((id): id is string => !!id)
+  const streamNames = allExternalIds.filter((id) => !videoStore.ignoredStreamExternalIds.includes(id))
   return snapshotStore.takeSnapshot(streamNames, miniWidget.value.options.captureWorkspace)
+}
+
+const toInternalName = (externalId: string): string => {
+  return videoStore.streamsCorrespondency.find((c) => c.externalId === externalId)?.name ?? externalId
 }
 
 const handleSnapshotResult = (result: SnapshotResult): void => {
@@ -283,10 +289,12 @@ const handleSnapshotResult = (result: SnapshotResult): void => {
     return
   }
 
+  const failedNames = failed.map(toInternalName).join(', ')
+
   if (succeeded.length > 0 && failed.length > 0) {
     flashEffect()
     openSnackbar({
-      message: `Snapshot captured, but failed for: ${failed.join(', ')}.`,
+      message: `Snapshot captured, but failed for: ${failedNames}.`,
       variant: 'warning',
       duration: 4000,
     })
@@ -300,7 +308,7 @@ const handleSnapshotResult = (result: SnapshotResult): void => {
     title: 'Error taking snapshot',
     message:
       failed.length > 0
-        ? `Failed to capture: ${failed.join(', ')}. Make sure the streams have finished loading.`
+        ? `Failed to capture: ${failedNames}. Make sure the streams have finished loading.`
         : 'No sources available for capture. Make sure streams are connected or select specific ones in the widget settings.',
     variant: 'error',
     persistent: false,
@@ -374,6 +382,15 @@ watch(isTakingTimedSnapshot, (newValue) => {
   timerProgress.value = 0
 })
 
+const migrateSelectedStreamsToInternalNames = (): void => {
+  const streams = miniWidget.value.options.selectedStreams as string[] | undefined
+  if (!streams || streams.length === 0) return
+  miniWidget.value.options.selectedStreams = streams.map((name: string) => {
+    const corr = videoStore.streamsCorrespondency.find((c) => c.externalId === name)
+    return corr ? corr.name : name
+  })
+}
+
 onBeforeMount(() => {
   const defaultOptions = {
     snapshotAllAvailableSources: true,
@@ -383,6 +400,7 @@ onBeforeMount(() => {
     timedSnapshotInterval: 5,
   }
   miniWidget.value.options = { ...defaultOptions, ...miniWidget.value.options }
+  migrateSelectedStreamsToInternalNames()
 })
 
 onMounted(() => {
