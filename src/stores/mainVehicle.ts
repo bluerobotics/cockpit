@@ -655,13 +655,18 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
         console.log('Vehicle type changed to', vehicleType.value)
 
-        const defaults = importDefaultsForVehicle(
-          vehicleType.value,
-          widgetStore.viewsGroup,
-          controllerStore.protocolMapping
-        )
-        if (defaults.viewsGroup) widgetStore.viewsGroup = defaults.viewsGroup
-        if (defaults.mapping) controllerStore.protocolMapping = defaults.mapping
+        // A failure in the defaults import must never wipe the user's current profile, so we isolate it
+        try {
+          const defaults = importDefaultsForVehicle(
+            vehicleType.value,
+            widgetStore.viewsGroup,
+            controllerStore.protocolMapping
+          )
+          if (defaults.viewsGroup) widgetStore.viewsGroup = defaults.viewsGroup
+          if (defaults.mapping) controllerStore.protocolMapping = defaults.mapping
+        } catch (error) {
+          console.error('Failed to import defaults for vehicle type.', error)
+        }
       }
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
