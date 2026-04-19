@@ -2,6 +2,7 @@ import { defaultProfileVehicleCorrespondency } from '@/assets/defaults'
 import { defaultProtocolMappingVehicleCorrespondency } from '@/assets/joystick-profiles'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { settingsManager } from '@/libs/settings-management'
+import { deserialize } from '@/libs/utils'
 import type { JoystickProtocolActionsMapping } from '@/types/joystick'
 import type { Profile } from '@/types/widgets'
 
@@ -13,6 +14,21 @@ const legacyMappingIndexKey = 'cockpit-protocol-mapping-index-v1'
 const legacyMappingCorrespondencyKey = 'cockpit-default-vehicle-type-protocol-mappings'
 
 /**
+ * Reads a legacy key preferring the new settings-management store and falling back to raw localStorage.
+ * Cockpit versions prior to settings-management V2 (<= 1.17.x) wrote these keys straight to localStorage via
+ * vueuse's `useStorage`, so after an upgrade the data is still there even though it was never promoted into
+ * `cockpit-settings-v2`.
+ * @param {string} key - The legacy key to read
+ * @returns {T | undefined} The stored value (parsed), or undefined if the key is not present anywhere
+ */
+const readLegacy = <T>(key: string): T | undefined => {
+  const fromV2 = settingsManager.getKeyValue<T>(key)
+  if (fromV2 !== undefined) return fromV2
+  const raw = localStorage.getItem(key)
+  return raw ? (deserialize(raw) as T) : undefined
+}
+
+/**
  * Reads legacy ViewsGroup data and returns the best profile.
  * Uses the vehicle type correspondency to find the right profile if a vehicle type is provided.
  * Falls back to the active profile index.
@@ -21,12 +37,12 @@ const legacyMappingCorrespondencyKey = 'cockpit-default-vehicle-type-protocol-ma
  * @returns {Profile | undefined} The chosen profile, or undefined if no legacy data
  */
 export const migrateLegacyViewsGroup = (vehicleType?: MavType): Profile | undefined => {
-  const profiles = settingsManager.getKeyValue<Profile[]>(legacySavedProfilesKey)
+  const profiles = readLegacy<Profile[]>(legacySavedProfilesKey)
   if (!profiles || profiles.length === 0) return undefined
 
   if (vehicleType) {
     const correspondency =
-      settingsManager.getKeyValue<typeof defaultProfileVehicleCorrespondency>(legacyProfileCorrespondencyKey) ??
+      readLegacy<typeof defaultProfileVehicleCorrespondency>(legacyProfileCorrespondencyKey) ??
       defaultProfileVehicleCorrespondency
     // @ts-ignore: We know that the value is a string
     const matchHash = correspondency[vehicleType]
@@ -37,7 +53,7 @@ export const migrateLegacyViewsGroup = (vehicleType?: MavType): Profile | undefi
     }
   }
 
-  const activeIndex = settingsManager.getKeyValue<number>(legacyProfileIndexKey) ?? 0
+  const activeIndex = readLegacy<number>(legacyProfileIndexKey) ?? 0
   const idx = Math.min(activeIndex, profiles.length - 1)
   const chosen = structuredClone(profiles[Math.max(idx, 0)])
 
@@ -54,12 +70,12 @@ export const migrateLegacyViewsGroup = (vehicleType?: MavType): Profile | undefi
  * @returns {JoystickProtocolActionsMapping | undefined} The chosen mapping, or undefined if no legacy data
  */
 export const migrateLegacyJoystickMapping = (vehicleType?: MavType): JoystickProtocolActionsMapping | undefined => {
-  const mappings = settingsManager.getKeyValue<JoystickProtocolActionsMapping[]>(legacyProtocolMappingsKey)
+  const mappings = readLegacy<JoystickProtocolActionsMapping[]>(legacyProtocolMappingsKey)
   if (!mappings || mappings.length === 0) return undefined
 
   if (vehicleType) {
     const correspondency =
-      settingsManager.getKeyValue<typeof defaultProtocolMappingVehicleCorrespondency>(legacyMappingCorrespondencyKey) ??
+      readLegacy<typeof defaultProtocolMappingVehicleCorrespondency>(legacyMappingCorrespondencyKey) ??
       defaultProtocolMappingVehicleCorrespondency
     // @ts-ignore: We know that the value is a string
     const matchHash = correspondency[vehicleType]
@@ -70,7 +86,7 @@ export const migrateLegacyJoystickMapping = (vehicleType?: MavType): JoystickPro
     }
   }
 
-  const activeIndex = settingsManager.getKeyValue<number>(legacyMappingIndexKey) ?? 0
+  const activeIndex = readLegacy<number>(legacyMappingIndexKey) ?? 0
   const idx = Math.min(activeIndex, mappings.length - 1)
   const chosen = structuredClone(mappings[Math.max(idx, 0)])
 
