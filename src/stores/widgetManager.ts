@@ -25,6 +25,7 @@ import {
 import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
 import { settingsManager } from '@/libs/settings-management'
 import { isEqual, sequentialArray } from '@/libs/utils'
+import { isViewsGroupBlank } from '@/migration/default-profile-importer'
 import { legacySavedProfilesKey, migrateLegacyViewsGroup } from '@/migration/profile-migrations'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Point2D, SizeRect2D } from '@/types/general'
@@ -56,9 +57,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const viewsGroup = useBlueOsStorage<Profile>(viewsGroupKey, migrateLegacyViewsGroup() ?? blankViewsGroup)
   const currentViewIndex = useBlueOsStorage<number>('cockpit-current-view-index-v1', 0)
 
-  // Re-run migration when the vehicle context changes, but only if this vehicle has no data in the new key yet
+  // Self-heal: if we booted with a blank ViewsGroup but legacy data is reachable now (e.g. from raw localStorage or
+  // from a late settings-manager import), migrate it in place so the user doesn't have to lose their profile.
+  if (isViewsGroupBlank(viewsGroup.value)) {
+    const migrated = migrateLegacyViewsGroup()
+    if (migrated) viewsGroup.value = migrated
+  }
+
+  // Re-run migration when the vehicle sync pulls the legacy key into local storage, as long as we haven't already
+  // received a real (non-blank) ViewsGroup from the user / vehicle.
   settingsManager.registerListener(legacySavedProfilesKey, () => {
-    if (settingsManager.getKeyValue(viewsGroupKey)) return
+    if (!isViewsGroupBlank(viewsGroup.value)) return
     const vehicleType = useMainVehicleStore().vehicleType
     const migrated = migrateLegacyViewsGroup(vehicleType)
     if (migrated) viewsGroup.value = migrated

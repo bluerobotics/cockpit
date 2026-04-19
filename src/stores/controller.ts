@@ -20,6 +20,7 @@ import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/p
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { settingsManager } from '@/libs/settings-management'
 import { isElectron } from '@/libs/utils'
+import { isMappingBlank } from '@/migration/default-profile-importer'
 import { legacyProtocolMappingsKey, migrateLegacyJoystickMapping } from '@/migration/profile-migrations'
 import {
   type GamepadToCockpitStdMapping,
@@ -67,9 +68,17 @@ export const useControllerStore = defineStore('controller', () => {
   const preventJoystickForwarding = ref(false)
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
 
-  // Re-run migration when the vehicle context changes, but only if this vehicle has no data in the new key yet
+  // Self-heal: if we booted with a blank mapping but legacy data is reachable now (e.g. from raw localStorage or
+  // from a late settings-manager import), migrate it in place so the user doesn't have to lose their bindings.
+  if (isMappingBlank(protocolMapping.value)) {
+    const migrated = migrateLegacyJoystickMapping()
+    if (migrated) protocolMapping.value = migrated
+  }
+
+  // Re-run migration when the vehicle sync pulls the legacy key into local storage, as long as we haven't already
+  // received a real (non-blank) mapping from the user / vehicle.
   settingsManager.registerListener(legacyProtocolMappingsKey, () => {
-    if (settingsManager.getKeyValue(joystickFunctionsMappingKey)) return
+    if (!isMappingBlank(protocolMapping.value)) return
     const migrated = migrateLegacyJoystickMapping(mainVehicleStore.vehicleType)
     if (migrated) protocolMapping.value = migrated
   })

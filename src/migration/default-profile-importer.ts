@@ -32,7 +32,7 @@ const getDefaultMapping = (vehicleType: MavType): JoystickProtocolActionsMapping
   return cockpitStandardToProtocols.find((m) => m.hash === hash)
 }
 
-const isViewsGroupBlank = (profile: Profile): boolean => {
+export const isViewsGroupBlank = (profile: Profile): boolean => {
   if (profile.views.length !== blankViewsGroup.views.length) return false
   for (let i = 0; i < profile.views.length; i++) {
     const view = profile.views[i]
@@ -45,10 +45,11 @@ const isViewsGroupBlank = (profile: Profile): boolean => {
   return true
 }
 
-const isMappingBlank = (mapping: JoystickProtocolActionsMapping): boolean => {
+export const isMappingBlank = (mapping: JoystickProtocolActionsMapping): boolean => {
   for (const [axisKey, corr] of Object.entries(mapping.axesCorrespondencies)) {
     if (corr.action.id !== OtherProtocol.no_function) return false
-    const blankCorr = blankMapping.axesCorrespondencies[axisKey as unknown as keyof typeof blankMapping.axesCorrespondencies]
+    const blankCorr =
+      blankMapping.axesCorrespondencies[axisKey as unknown as keyof typeof blankMapping.axesCorrespondencies]
     if (blankCorr && (corr.min !== blankCorr.min || corr.max !== blankCorr.max)) return false
   }
   for (const buttons of Object.values(mapping.buttonsCorrespondencies)) {
