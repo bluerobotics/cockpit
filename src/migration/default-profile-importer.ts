@@ -1,4 +1,5 @@
 import { v4 as uuid4 } from 'uuid'
+import { toRaw } from 'vue'
 
 import { blankViewsGroup, defaultProfileVehicleCorrespondency, widgetProfiles } from '@/assets/defaults'
 import {
@@ -12,6 +13,10 @@ import { OtherProtocol } from '@/libs/joystick/protocols/other'
 import { settingsManager } from '@/libs/settings-management'
 import type { JoystickProtocolActionsMapping } from '@/types/joystick'
 import type { Profile } from '@/types/widgets'
+
+// Proxy-safe deep clone; structuredClone can't handle Vue reactivity wrappers or function references that
+// may end up inside the stored mappings/views (seen in the wild when importing defaults crashes the renderer).
+const safeClone = <T>(value: T): T => JSON.parse(JSON.stringify(toRaw(value)))
 
 const defaultsImportedKey = 'cockpit-defaults-imported-for-vehicle-type'
 
@@ -75,9 +80,9 @@ const mergeJoystickMappings = (
   userMapping: JoystickProtocolActionsMapping,
   defaultMapping: JoystickProtocolActionsMapping
 ): JoystickProtocolActionsMapping => {
-  const merged = structuredClone(userMapping)
+  const merged = safeClone(userMapping)
 
-  merged.axesCorrespondencies = structuredClone(defaultMapping.axesCorrespondencies)
+  merged.axesCorrespondencies = safeClone(defaultMapping.axesCorrespondencies)
 
   for (const modKey of Object.keys(merged.buttonsCorrespondencies)) {
     const userButtons = merged.buttonsCorrespondencies[modKey as keyof typeof merged.buttonsCorrespondencies]
@@ -96,7 +101,7 @@ const mergeJoystickMappings = (
       const defaultAction = defaultButtons[btnIdx as unknown as number]?.action
       if (!defaultAction || defaultAction.id === OtherProtocol.no_function) continue
       if (usedActionIds.has(defaultAction.id)) continue
-      btn.action = structuredClone(defaultAction)
+      btn.action = safeClone(defaultAction)
       usedActionIds.add(defaultAction.id)
     }
   }
@@ -112,8 +117,8 @@ const mergeJoystickMappings = (
  * @returns {Profile} The merged profile
  */
 const mergeViewsGroups = (userProfile: Profile, defaultProfile: Profile): Profile => {
-  const merged = structuredClone(userProfile)
-  const defaultViews = structuredClone(defaultProfile.views)
+  const merged = safeClone(userProfile)
+  const defaultViews = safeClone(defaultProfile.views)
   for (const view of defaultViews) {
     view.hash = uuid4()
   }
@@ -164,7 +169,7 @@ export const importDefaultsForVehicle = (
 
   if (defaultVG) {
     if (isViewsGroupBlank(currentViewsGroup)) {
-      const imported = structuredClone(defaultVG)
+      const imported = safeClone(defaultVG)
       imported.hash = uuid4()
       imported.name = defaultVG.name.replace('default', 'User').replace('Default', 'User')
       for (const view of imported.views) {
@@ -184,7 +189,7 @@ export const importDefaultsForVehicle = (
 
   if (defaultMap) {
     if (isMappingBlank(currentMapping)) {
-      result.mapping = structuredClone(defaultMap)
+      result.mapping = safeClone(defaultMap)
       openSnackbar({
         message: `Imported default joystick mapping for ${name}.`,
         variant: 'success',
