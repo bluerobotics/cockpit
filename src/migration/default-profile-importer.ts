@@ -41,10 +41,10 @@ const isViewsGroupBlank = (profile: Profile): boolean => {
 }
 
 const isMappingBlank = (mapping: JoystickProtocolActionsMapping): boolean => {
-  for (const corr of Object.values(mapping.axesCorrespondencies)) {
+  for (const [axisKey, corr] of Object.entries(mapping.axesCorrespondencies)) {
     if (corr.action.id !== OtherProtocol.no_function) return false
-    const blankCorr = Object.values(blankMapping.axesCorrespondencies)[0]
-    if (corr.min !== blankCorr.min || corr.max !== blankCorr.max) return false
+    const blankCorr = blankMapping.axesCorrespondencies[axisKey as unknown as keyof typeof blankMapping.axesCorrespondencies]
+    if (blankCorr && (corr.min !== blankCorr.min || corr.max !== blankCorr.max)) return false
   }
   for (const buttons of Object.values(mapping.buttonsCorrespondencies)) {
     for (const btn of Object.values(buttons)) {
