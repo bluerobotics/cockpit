@@ -8,6 +8,12 @@ on:
   # Run every 6 days to help us stay on our toes
   - cron: '0 0 */6 * *'
 
+env:
+  # Raise Node's V8 old-space limit so `vite build` doesn't OOM.
+  # The bundle sits near the default ~2 GB cap on every platform and
+  # intermittently crashes (seen most often on macos-15 arm64).
+  NODE_OPTIONS: --max-old-space-size=6144
+
 jobs:
   test:
     name: Test
