@@ -9,8 +9,13 @@
       </div>
 
       <v-tabs v-model="activeTab" class="mb-4">
-        <v-tab value="actions">Actions</v-tab>
-        <v-tab value="joystick-suggestions">Joystick Mappings</v-tab>
+        <v-tab value="actions" :class="{ 'tab-blink': activeTab !== 'actions' && hasPendingActions }">Actions</v-tab>
+        <v-tab
+          value="joystick-suggestions"
+          :class="{ 'tab-blink': activeTab !== 'joystick-suggestions' && hasPendingJoystickSuggestions }"
+        >
+          Joystick Mappings
+        </v-tab>
       </v-tabs>
 
       <v-tabs-window v-model="activeTab">
@@ -1096,10 +1101,20 @@ const ignoredJoystickSuggestionsByExtension = computed(() => {
 })
 
 /**
+ * Whether there are new actions pending user action
+ */
+const hasPendingActions = computed(() => filteredActions.value.length > 0)
+
+/**
+ * Whether there are new joystick suggestions pending user action
+ */
+const hasPendingJoystickSuggestions = computed(() => filteredJoystickSuggestionsByExtension.value.length > 0)
+
+/**
  * Whether there are new extension features that still need user action
  */
 const hasPendingBlueOSFeatures = computed(() => {
-  return filteredActions.value.length > 0 || filteredJoystickSuggestionsByExtension.value.length > 0
+  return hasPendingActions.value || hasPendingJoystickSuggestions.value
 })
 
 /**
@@ -1521,6 +1536,32 @@ watch(activeTab, () => {
 .features-modal {
   width: 600px;
   transition: width 0.2s ease;
+}
+
+.tab-blink {
+  position: relative;
+}
+
+.tab-blink::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  background-color: #ffffff22;
+  animation: tab-blink 1.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes tab-blink {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .features-modal:has(.v-expansion-panels) {
