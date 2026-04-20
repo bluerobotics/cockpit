@@ -49,6 +49,7 @@ jobs:
           REPO: ${{ github.repository }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: "claude-opus-4-6"
           max_turns: "40"
           allowed_tools: "Bash(gh:*),Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),View,GlobTool,GrepTool,BatchTool"
           system_prompt: |
