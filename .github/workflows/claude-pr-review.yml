@@ -51,7 +51,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           model: "claude-opus-4-6"
           max_turns: "40"
-          allowed_tools: "Bash(gh:*),Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),View,GlobTool,GrepTool,BatchTool"
+          allowed_tools: "Bash(gh:*),Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),View,GlobTool,GrepTool,BatchTool,Write"
           system_prompt: |
             You are an automated code review agent running inside a GitHub Actions workflow for the `bluerobotics/cockpit` repository.
 
