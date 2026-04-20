@@ -358,8 +358,17 @@ watch(
   [stabilizationDone, orphanedWidgetStreams, unusedAvailableStreams],
   () => {
     if (!stabilizationDone.value) return
+
+    const hasOrphans = orphanedWidgetStreams.value.length > 0
+    const hasReplacements = unusedAvailableStreams.value.length > 0
+
+    if (!hasOrphans || !hasReplacements) {
+      if (showDialog.value) showDialog.value = false
+      dialogTriggered.value = false
+      return
+    }
+
     if (dialogTriggered.value) return
-    if (orphanedWidgetStreams.value.length === 0 || unusedAvailableStreams.value.length === 0) return
 
     dialogTriggered.value = true
     initReplacementMap()
