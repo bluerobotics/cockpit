@@ -1,11 +1,11 @@
 <template>
-  <GlassModal :is-visible="isVisible" position="center">
+  <GlassModal :is-visible="isVisible" position="center" @outside-click="requestCloseModal">
     <div class="features-modal p-4 max-w-[95vw]">
       <div class="flex justify-center items-center mb-2">
         <h2 class="text-xl font-semibold">BlueOS Extension Features</h2>
       </div>
       <div class="fixed top-1 right-1">
-        <v-btn icon="mdi-close" size="small" variant="text" class="text-lg" @click="closeModal"></v-btn>
+        <v-btn icon="mdi-close" size="small" variant="text" class="text-lg" @click="requestCloseModal"></v-btn>
       </div>
 
       <v-tabs v-model="activeTab" class="mb-4">
@@ -697,6 +697,70 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- Close Confirmation Dialog -->
+      <v-dialog v-model="closeConfirmationDialog" max-width="500px">
+        <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
+          <v-card-title class="text-center pt-4 pb-0">
+            <div class="flex items-center justify-center gap-2">
+              <v-icon color="warning" size="24">mdi-alert</v-icon>
+              <h2 class="text-xl font-semibold">Pending Extension Features</h2>
+            </div>
+          </v-card-title>
+          <v-btn
+            icon="mdi-close"
+            size="small"
+            variant="text"
+            class="absolute top-2 right-2 text-lg"
+            @click="closeConfirmationDialog = false"
+          ></v-btn>
+
+          <v-card-text class="px-6 pb-4">
+            <p class="text-center text-sm text-gray-300 mb-4">
+              There are still extension features pending your decision. Please accept or ignore each suggestion from
+              your BlueOS extensions. Otherwise, this dialog will open automatically again the next time you start
+              Cockpit.
+            </p>
+
+            <div class="max-h-[260px] overflow-y-auto pr-1 space-y-3">
+              <div v-if="filteredActions.length > 0">
+                <div class="flex items-center gap-2 mb-1">
+                  <v-icon size="16">mdi-lightning-bolt-outline</v-icon>
+                  <h3 class="text-sm font-semibold">Pending actions ({{ filteredActions.length }})</h3>
+                </div>
+                <ul class="list-disc list-inside text-xs text-gray-300 space-y-0.5">
+                  <li v-for="action in filteredActions" :key="action.id">
+                    {{ action.name }} <span class="opacity-60">— from {{ action.extensionName }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div v-if="pendingJoystickSuggestions.length > 0">
+                <div class="flex items-center gap-2 mb-1">
+                  <v-icon size="16">mdi-gamepad-variant-outline</v-icon>
+                  <h3 class="text-sm font-semibold">
+                    Pending joystick mappings ({{ pendingJoystickSuggestions.length }})
+                  </h3>
+                </div>
+                <ul class="list-disc list-inside text-xs text-gray-300 space-y-0.5">
+                  <li v-for="item in pendingJoystickSuggestions" :key="item.id">
+                    {{ item.actionName }} <span class="opacity-60">— from {{ item.extensionName }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </v-card-text>
+
+          <div class="flex justify-center w-full px-6 pb-2">
+            <v-divider style="border-color: #ffffff14"></v-divider>
+          </div>
+
+          <v-card-actions class="px-6 pb-4 justify-space-between">
+            <v-btn variant="text" @click="confirmCloseModal">Close anyway</v-btn>
+            <v-btn @click="closeConfirmationDialog = false">Keep reviewing</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </div>
   </GlassModal>
 </template>
@@ -1118,6 +1182,20 @@ const hasPendingBlueOSFeatures = computed(() => {
 })
 
 /**
+ * Flat list of pending joystick suggestions with their extension names
+ */
+const pendingJoystickSuggestions = computed((): JoystickSuggestionWithExtensionName[] => {
+  return filteredJoystickSuggestionsByExtension.value.flatMap((ext) =>
+    ext.suggestionGroups.flatMap((group) =>
+      group.buttonMappingSuggestions.map((suggestion) => ({
+        ...suggestion,
+        extensionName: ext.extensionName,
+      }))
+    )
+  )
+})
+
+/**
  * Get the human-readable name for an action type
  * @param {customActionTypes} type - The action type
  * @returns {string} The human-readable name for the action type
@@ -1453,11 +1531,35 @@ const restoreIgnoredSuggestion = (suggestion: JoystickMapSuggestion): void => {
 }
 
 /**
+ * Controls visibility of the close confirmation dialog
+ */
+const closeConfirmationDialog = ref(false)
+
+/**
  * Close the modal
  */
 const closeModal = (): void => {
   isVisible.value = false
   emit('close')
+}
+
+/**
+ * Request to close the modal. If there are still pending items to decide upon, ask the user to confirm first.
+ */
+const requestCloseModal = (): void => {
+  if (hasPendingBlueOSFeatures.value) {
+    closeConfirmationDialog.value = true
+    return
+  }
+  closeModal()
+}
+
+/**
+ * Confirm closing the modal from the confirmation dialog
+ */
+const confirmCloseModal = (): void => {
+  closeConfirmationDialog.value = false
+  closeModal()
 }
 
 /**
