@@ -560,6 +560,18 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
+  <PoiMapArrows
+    :map-ready="mapReady"
+    :force-full-screen="true"
+    :show-poi-arrows="true"
+    :show-home-arrow="true"
+    :show-vehicle-arrow="true"
+    :vehicle-position="vehiclePosition"
+    :home="home"
+    :map-center="mapCenter"
+    :zoom="zoom"
+    :target-follower="targetFollower"
+  />
 
   <v-progress-linear
     v-if="fetchingMission"
@@ -609,6 +621,7 @@ import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.v
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
+import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -827,6 +840,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 
 const planningMap = shallowRef<Map | undefined>()
 const mapContext = provideMapContext()
+const { mapReady } = mapContext
 
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref<WaypointCoordinates | undefined>(undefined)
