@@ -74,7 +74,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } fr
 import { constrain, round } from '@/libs/utils'
 import { useDevelopmentStore } from '@/stores/development'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type { Point2D } from '@/types/general'
+import type { Point2D, SizeRect2D } from '@/types/general'
 import { type Widget, isWidgetConfigurable, widgetHasOwnContextMenu, WidgetType } from '@/types/widgets'
 
 import ContextMenu from './ContextMenu.vue'
@@ -224,6 +224,31 @@ const handleResizeStart = (event: MouseEvent): void => {
   event.preventDefault()
 }
 
+/**
+ * Clamps a desired position to a valid range that keeps the widget within the viewport.
+ * When the widget is taller than the visible area between bars, it cannot fit between them,
+ * so the clamp switches to [0, 1 - size.height] to avoid snapping past the viewport (issue #2608).
+ * @param {Point2D} desiredPos - The candidate position to clamp
+ * @param {SizeRect2D} widgetSize - The widget's size used for bounds calculation
+ * @returns {Point2D} The position clamped to the valid range
+ */
+const clampPositionToValidArea = (desiredPos: Point2D, widgetSize: SizeRect2D): Point2D => {
+  const topBarNormalized = widgetStore.currentTopBarHeightPixels / windowHeight.value
+  const bottomBarNormalized = widgetStore.currentBottomBarHeightPixels / windowHeight.value
+  const visibleAreaHeight = 1 - topBarNormalized - bottomBarNormalized
+
+  const widgetTallerThanVisibleArea = widgetSize.height >= visibleAreaHeight
+  const minY = widgetTallerThanVisibleArea ? 0 : topBarNormalized
+  const maxY = widgetTallerThanVisibleArea
+    ? Math.max(0, 1 - widgetSize.height)
+    : Math.max(minY, 1 - widgetSize.height - bottomBarNormalized)
+
+  return {
+    x: constrain(desiredPos.x, 0, Math.max(0, 1 - widgetSize.width)),
+    y: constrain(desiredPos.y, minY, maxY),
+  }
+}
+
 const handleDrag = (event: MouseEvent): void => {
   if (!draggingWidget.value || !initialMousePos.value) return
 
@@ -231,15 +256,10 @@ const handleDrag = (event: MouseEvent): void => {
   const dx = (event.clientX - initialMousePos.value.x) / viewSize.width
   const dy = (event.clientY - initialMousePos.value.y) / viewSize.height
 
-  const topBarNormalized = widgetStore.currentTopBarHeightPixels / windowHeight.value
-  const bottomBarNormalized = widgetStore.currentBottomBarHeightPixels / windowHeight.value
-  const minY = topBarNormalized
-  const maxY = Math.max(minY, 1 - size.value.height - bottomBarNormalized)
-
-  position.value = {
-    x: constrain(initialWidgetPos.value.x + dx, 0, 1 - size.value.width),
-    y: constrain(initialWidgetPos.value.y + dy, minY, maxY),
-  }
+  position.value = clampPositionToValidArea(
+    { x: initialWidgetPos.value.x + dx, y: initialWidgetPos.value.y + dy },
+    size.value
+  )
 }
 
 const handleResize = (event: MouseEvent): void => {
@@ -325,6 +345,14 @@ onMounted(async () => {
     resizeWidgetToMinimalSize()
   }
   widgetStore.widgetManagerVars(widget.value.hash).everMounted = true
+
+  // Sanitize persisted layouts so widgets that were previously dragged past the
+  // visible area (e.g., covering the top/bottom bar) get snapped back into bounds
+  // automatically on load, without requiring the user to drag them (issue #2608).
+  const sanitizedPosition = clampPositionToValidArea(position.value, size.value)
+  if (sanitizedPosition.x !== position.value.x || sanitizedPosition.y !== position.value.y) {
+    position.value = sanitizedPosition
+  }
 
   if (widgetResizeHandles.value) {
     for (let i = 0; i < widgetResizeHandles.value.length; i++) {
