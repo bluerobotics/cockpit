@@ -77,6 +77,7 @@
           variant="outlined"
           no-data-text="No streams available."
           hide-details
+          theme="dark"
         >
           <template #selection="{ item }">
             <div class="flex items-center gap-2">
