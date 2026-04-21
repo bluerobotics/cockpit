@@ -42,6 +42,12 @@ const props = defineProps<{
    */
   isPersistent?: boolean
   /**
+   * If true, the modal will not emit `outside-click` when the user clicks outside of it.
+   * Useful when the modal hosts Vuetify dialogs that are teleported to the document body,
+   * whose clicks would otherwise be interpreted as outside clicks of the modal.
+   */
+  noCloseOnOutsideClick?: boolean
+  /**
    * The overflow property of the modal.
    */
   overflow?: 'auto' | 'hidden' | 'scroll' | 'visible' | 'inherit' | 'initial' | 'unset'
@@ -177,7 +183,7 @@ const closeModal = (): void => {
 }
 
 onClickOutside(modal, () => {
-  if (!isPersistent.value) {
+  if (!isPersistent.value && !props.noCloseOnOutsideClick) {
     closeModal()
   }
   if (!isAlwaysOnTop.value) {
