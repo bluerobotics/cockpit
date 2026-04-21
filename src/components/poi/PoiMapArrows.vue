@@ -115,6 +115,10 @@ interface Props {
    * Target follower instance
    */
   targetFollower: TargetFollower
+  /**
+   * Force the top and bottom bar-offset compensation on regardless of the widget state.
+   */
+  forceFullScreen?: boolean
 }
 
 const props = defineProps<Props>()
@@ -282,7 +286,7 @@ const calculateTargetEdgeArrow = (
 
   const width = containerSize.x
   const height = containerSize.y
-  const isFullscreen = props.widget ? widgetStore.isFullScreen(props.widget) : false
+  const isFullscreen = props.forceFullScreen || (props.widget ? widgetStore.isFullScreen(props.widget) : false)
   const topEdgeY = isFullscreen ? widgetStore.currentTopBarHeightPixels : 0
   const bottomEdgeY = isFullscreen ? height - widgetStore.currentBottomBarHeightPixels : height
   const validYMin = topEdgeY
@@ -398,7 +402,7 @@ const calculatePoiEdgeArrows = (): void => {
 
   const width = containerSize.x
   const height = containerSize.y
-  const isFullscreen = props.widget ? widgetStore.isFullScreen(props.widget) : false
+  const isFullscreen = props.forceFullScreen || (props.widget ? widgetStore.isFullScreen(props.widget) : false)
   const topEdgeY = isFullscreen ? widgetStore.currentTopBarHeightPixels : 0
   const bottomEdgeY = isFullscreen ? height - widgetStore.currentBottomBarHeightPixels : height
   const validYMin = topEdgeY
