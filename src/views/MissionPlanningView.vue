@@ -588,6 +588,7 @@
 </template>
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
+import 'leaflet-edgebuffer'
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
@@ -3642,10 +3643,13 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
 }
 
 onMounted(async () => {
+  const tileBufferOptions = { edgeBufferTiles: 2, keepBuffer: 8, updateWhenIdle: false } as const
+
   const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© OpenStreetMap',
+    ...tileBufferOptions,
   })
   const esri = tileLayerOffline(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -3653,6 +3657,7 @@ onMounted(async () => {
       maxZoom: 23,
       maxNativeZoom: 19,
       attribution: '© Esri World Imagery',
+      ...tileBufferOptions,
     }
   )
 
@@ -3670,6 +3675,7 @@ onMounted(async () => {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    ...tileBufferOptions,
   }).addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
 

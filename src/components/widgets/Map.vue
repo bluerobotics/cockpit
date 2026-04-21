@@ -225,6 +225,8 @@
 </template>
 
 <script setup lang="ts">
+import 'leaflet-edgebuffer'
+
 import { useDebounceFn, useElementHover } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
@@ -501,11 +503,14 @@ onBeforeMount(() => {
   targetFollower.enableAutoUpdate()
 })
 
+const tileBufferOptions = { edgeBufferTiles: 2, keepBuffer: 8, updateWhenIdle: false } as const
+
 // Configure the available map tile providers
 const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 23,
   maxNativeZoom: 19,
   attribution: '© OpenStreetMap',
+  ...tileBufferOptions,
 })
 
 const esri = tileLayerOffline(
@@ -514,6 +519,7 @@ const esri = tileLayerOffline(
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© Esri World Imagery',
+    ...tileBufferOptions,
   }
 )
 
@@ -521,6 +527,7 @@ const esri = tileLayerOffline(
 const seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
   maxZoom: 18,
   attribution: '© OpenSeaMap contributors',
+  ...tileBufferOptions,
 })
 
 const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserver/gwc/service/wms', {
@@ -531,6 +538,7 @@ const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserve
   attribution: '© GEBCO, OpenSeaMap',
   tileSize: 256,
   maxZoom: 19,
+  ...tileBufferOptions,
 })
 
 const baseMaps = {
