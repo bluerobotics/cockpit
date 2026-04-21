@@ -30,6 +30,11 @@
               <p class="opacity-70">No actions available from extensions.</p>
             </div>
 
+            <div v-else-if="filteredActions.length === 0" class="text-center py-6">
+              <v-icon size="40" class="mb-2 opacity-50">mdi-check-circle-outline</v-icon>
+              <p class="opacity-70 max-w-[70%] mx-auto">No new actions — all extension actions have been reviewed.</p>
+            </div>
+
             <!-- New Actions -->
             <div v-if="filteredActions.length > 0" class="mb-4">
               <div class="flex items-center gap-2 mb-2">
@@ -211,6 +216,13 @@
           </div>
 
           <div v-else class="actions-container">
+            <div v-if="filteredJoystickSuggestionsByExtension.length === 0" class="text-center py-6">
+              <v-icon size="40" class="mb-2 opacity-50">mdi-check-circle-outline</v-icon>
+              <p class="opacity-70 max-w-[70%] mx-auto">
+                No new suggestions — all joystick mapping suggestions have been reviewed.
+              </p>
+            </div>
+
             <!-- New Suggestions Section -->
             <div v-if="filteredJoystickSuggestionsByExtension.length > 0" class="mb-8">
               <div class="flex items-center gap-2 mb-4">
