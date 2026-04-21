@@ -1,5 +1,5 @@
 <template>
-  <GlassModal :is-visible="isVisible" position="center" @outside-click="requestCloseModal">
+  <GlassModal :is-visible="isVisible" position="center" no-close-on-outside-click @outside-click="requestCloseModal">
     <div class="features-modal p-4 max-w-[95vw]">
       <div class="flex justify-center items-center mb-2">
         <h2 class="text-xl font-semibold">BlueOS Extension Features</h2>
