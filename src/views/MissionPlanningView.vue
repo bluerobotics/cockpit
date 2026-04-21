@@ -611,6 +611,7 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { provideMapContext } from '@/composables/map/useMapContext'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   clearAllSurveyAreas,
@@ -824,6 +825,8 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 }
 
 const planningMap = shallowRef<Map | undefined>()
+const mapContext = provideMapContext()
+
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref<WaypointCoordinates | undefined>(undefined)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
@@ -3667,6 +3670,11 @@ onMounted(async () => {
     mapCenter.value as LatLngTuple,
     zoom.value
   )
+
+  // Expose the Leaflet instance to descendant components via the map context
+  mapContext.map.value = planningMap.value
+  mapContext.mapReady.value = true
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -3812,6 +3820,10 @@ onUnmounted(() => {
   }
   planningMap.value?.off('mousemove', handleMapMouseMove)
   clearLiveMeasure()
+
+  // Reset the map context so descendants stop reacting to the destroyed instance
+  mapContext.mapReady.value = false
+  mapContext.map.value = undefined
 })
 
 const vehiclePosition = computed((): [number, number] | undefined =>

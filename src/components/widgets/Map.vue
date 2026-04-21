@@ -252,7 +252,7 @@ import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { setMapLayer } from '@/composables/map/useMapLayer'
+import { provideMapContext } from '@/composables/map/useMapContext'
 import { openSnackbar } from '@/composables/snackbar'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
@@ -286,6 +286,8 @@ const { showDialog, closeDialog } = useInteractionDialog()
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const router = useRouter()
+
+const mapContext = provideMapContext()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
@@ -671,8 +673,9 @@ onMounted(async () => {
     attributionControl: false,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
-  // Set map layer in composable for child components
-  setMapLayer(map.value)
+  // Expose the Leaflet instance to descendant components via the map context
+  mapContext.map.value = map.value
+  mapContext.mapReady.value = true
 
   // Listen for base layer changes to save user preference
   map.value.on('baselayerchange', (event: LayersControlEvent) => {
@@ -1078,8 +1081,11 @@ onBeforeUnmount(() => {
     downloadMissionFromVehicle: async () => Promise.resolve(),
     clearMapDrawing: async () => Promise.resolve(),
   })
-  // Clear map layer from composable
-  setMapLayer(undefined)
+  // Tear down the Leaflet instance and reset the map context
+  mapContext.mapReady.value = false
+  map.value?.remove()
+  map.value = undefined
+  mapContext.map.value = undefined
 })
 
 // Pan when variables change
