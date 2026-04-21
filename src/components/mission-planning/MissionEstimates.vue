@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="modelValue"
-    class="absolute right-4 bottom-36 rounded-[10px] px-3 py-2"
+    class="absolute right-[55px] bottom-[105px] rounded-[10px] px-3 py-2 mission-estimates-container"
     :style="[interfaceStore.globalGlassMenuStyles, { width: '250px' }]"
   >
     <p class="text-sm font-semibold mb-[6px]">Mission estimates</p>
@@ -205,3 +205,12 @@ const handleHideMissionEstimates = (): void => {
   })
 }
 </script>
+
+<style scoped>
+.mission-estimates-container {
+  position: absolute !important;
+  bottom: 105px;
+  right: 55px;
+  top: auto;
+}
+</style>
