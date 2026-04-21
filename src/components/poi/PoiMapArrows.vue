@@ -62,7 +62,7 @@ import { useDebounceFn, useThrottleFn } from '@vueuse/core'
 import L, { type LatLngTuple } from 'leaflet'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { useMapLayer } from '@/composables/map/useMapLayer'
+import { useMapContext } from '@/composables/map/useMapContext'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { useMissionStore } from '@/stores/mission'
@@ -107,9 +107,10 @@ interface Props {
    */
   zoom: number
   /**
-   * Parent widget instance
+   * Parent widget instance. Optional: when absent (e.g. used inside a full-page
+   * view instead of a Map widget), fullscreen-aware edge insets are disabled.
    */
-  widget: Widget
+  widget?: Widget
   /**
    * Target follower instance
    */
@@ -122,7 +123,7 @@ const missionStore = useMissionStore()
 const widgetStore = useWidgetManagerStore()
 
 // Get map instance from composable
-const { mapLayer } = useMapLayer()
+const { map: mapLayer } = useMapContext()
 const map = computed(() => mapLayer.value ?? null)
 
 const poiEdgeArrows = ref<PoiEdgeArrow[]>([])
@@ -281,7 +282,7 @@ const calculateTargetEdgeArrow = (
 
   const width = containerSize.x
   const height = containerSize.y
-  const isFullscreen = widgetStore.isFullScreen(props.widget)
+  const isFullscreen = props.widget ? widgetStore.isFullScreen(props.widget) : false
   const topEdgeY = isFullscreen ? widgetStore.currentTopBarHeightPixels : 0
   const bottomEdgeY = isFullscreen ? height - widgetStore.currentBottomBarHeightPixels : height
   const validYMin = topEdgeY
@@ -397,7 +398,7 @@ const calculatePoiEdgeArrows = (): void => {
 
   const width = containerSize.x
   const height = containerSize.y
-  const isFullscreen = widgetStore.isFullScreen(props.widget)
+  const isFullscreen = props.widget ? widgetStore.isFullScreen(props.widget) : false
   const topEdgeY = isFullscreen ? widgetStore.currentTopBarHeightPixels : 0
   const bottomEdgeY = isFullscreen ? height - widgetStore.currentBottomBarHeightPixels : height
   const validYMin = topEdgeY
