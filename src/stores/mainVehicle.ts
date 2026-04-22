@@ -217,6 +217,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
     if (isOnline) return
     currentlyConnectedVehicleId.value = undefined
+    isArmed.value = undefined
   })
 
   watch(enableDatalakeVariablesFromOtherSystems, (newValue) => {
