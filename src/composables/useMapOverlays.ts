@@ -61,7 +61,7 @@ export function useMapOverlays(map: Ref<L.Map | undefined>, layerControl: Ref<L.
     if (timeSinceLastFetch < 1000) return
 
     const bounds = mapBounds.value
-    const url = `https://map.galvanicloop.com/api/images/bounds/?min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lon=${bounds.getWest()}&max_lon=${bounds.getEast()}`
+    const url = `https://logtools.cloud/api/images/bounds/?min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lon=${bounds.getWest()}&max_lon=${bounds.getEast()}`
 
     try {
       lastFetchTime.value = now
@@ -71,7 +71,7 @@ export function useMapOverlays(map: Ref<L.Map | undefined>, layerControl: Ref<L.
         id: overlay.id,
         title: overlay.title,
         description: overlay.description,
-        url: `https://map.galvanicloop.com/api/images/${overlay.id}/tiles/{z}/{x}/{y}.png`,
+        url: `https://logtools.cloud/api/images/${overlay.id}/tiles/{z}/{x}/{y}.png`,
       }))
       updateOverlays()
     } catch (error) {
