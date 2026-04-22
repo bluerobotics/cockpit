@@ -627,6 +627,7 @@ import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useSnackbar } from '@/composables/snackbar'
+import { useMapOverlays } from '@/composables/useMapOverlays'
 import {
   clearAllSurveyAreas,
   removeSurveyAreaSquareMeters,
@@ -663,8 +664,6 @@ import {
   SurveyPath,
 } from '@/types/mission'
 import { ScreenBounds } from '@/types/user-interface'
-
-import { useMapOverlays } from '@/composables/useMapOverlays'
 
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
@@ -3682,23 +3681,6 @@ onMounted(async () => {
       ...tileBufferOptions,
     }
   )
-
-  // Default overlays
-  const defaultOverlays = {
-    'Marine Profile': L.tileLayer.wms('https://geoserver.openseamap.org/geoserver/gwc/service/wms', {
-      layers: 'gebco2021:gebco_2021',
-      format: 'image/png',
-      transparent: true,
-      version: '1.1.1',
-      attribution: '© GEBCO, OpenSeaMap',
-      tileSize: 256,
-      maxZoom: 19,
-    }),
-    'Seamarks': L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '© OpenSeaMap contributors',
-    })
-  }
 
   const baseMaps = {
     'OpenStreetMap': osm,

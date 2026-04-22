@@ -256,6 +256,7 @@ import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { openSnackbar } from '@/composables/snackbar'
+import { useMapOverlays } from '@/composables/useMapOverlays'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
@@ -275,7 +276,6 @@ import type {
   WaypointCoordinates,
 } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
-import { useMapOverlays } from '@/composables/useMapOverlays'
 
 import ContextMenu from '../ContextMenu.vue'
 

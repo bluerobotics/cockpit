@@ -1,6 +1,7 @@
 import L from 'leaflet'
-import { ref, type Ref } from 'vue'
+import { type Ref, ref } from 'vue'
 
+/* eslint-disable jsdoc/require-jsdoc */
 interface Overlay {
   id: string
   title: string
@@ -8,7 +9,28 @@ interface Overlay {
   url: string
 }
 
-export function useMapOverlays(map: Ref<L.Map | undefined>, layerControl: Ref<L.Control.Layers | undefined>) {
+/**
+ * Composable that manages dynamic, bounds-driven map tile overlays fetched from a remote server.
+ * Registers map event handlers to refetch overlays on pan/zoom and keeps the provided
+ * layer control in sync with the overlays currently in view.
+ * @param {Ref<L.Map | undefined>} map Reactive reference to the Leaflet map instance.
+ * @param {Ref<L.Control.Layers | undefined>} layerControl Reactive reference to the Leaflet layer control used to toggle overlays.
+ * @returns {{
+ *   setupMapOverlays: (leafletMap: L.Map) => void,
+ *   mapBounds: Ref<L.LatLngBounds | undefined>,
+ *   dynamicOverlays: Ref<Record<string, L.Layer>>,
+ *   overlaysInView: Ref<Overlay[]>,
+ * }} An object exposing the setup function and reactive overlay state.
+ */
+export function useMapOverlays(
+  map: Ref<L.Map | undefined>,
+  layerControl: Ref<L.Control.Layers | undefined>
+): {
+  setupMapOverlays: (leafletMap: L.Map) => void
+  mapBounds: Ref<L.LatLngBounds | undefined>
+  dynamicOverlays: Ref<Record<string, L.Layer>>
+  overlaysInView: Ref<Overlay[]>
+} {
   const mapBounds = ref<L.LatLngBounds>()
   const dynamicOverlays = ref<Record<string, L.Layer>>({})
   const overlaysInView = ref<Overlay[]>([])
@@ -105,4 +127,4 @@ export function useMapOverlays(map: Ref<L.Map | undefined>, layerControl: Ref<L.
     dynamicOverlays,
     overlaysInView,
   }
-} 
+}
