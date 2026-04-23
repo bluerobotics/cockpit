@@ -1,7 +1,11 @@
 <template>
   <v-tooltip :text="store.isVehicleOnline ? 'Vehicle connected' : 'Vehicle disconnected'" location="top">
     <template #activator="{ props: tooltipProps }">
-      <div class="relative" :class="store.isVehicleOnline ? 'text-slate-50' : 'text-gray-700'" v-bind="tooltipProps">
+      <div
+        class="relative"
+        :class="store.isVehicleOnline ? 'text-slate-50' : 'text-red-500 disconnected-pulse'"
+        v-bind="tooltipProps"
+      >
         <FontAwesomeIcon icon="fa-solid fa-arrow-right-arrow-left" size="xl" />
         <FontAwesomeIcon v-if="!store.isVehicleOnline" icon="fa-slash" size="xl" class="absolute -left-1" />
       </div>
@@ -14,3 +18,20 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const store = useMainVehicleStore()
 </script>
+
+<style scoped>
+.disconnected-pulse {
+  animation: comm-indicator-pulse 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.8));
+}
+
+@keyframes comm-indicator-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+</style>
