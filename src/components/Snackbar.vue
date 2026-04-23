@@ -21,18 +21,22 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
+import { closeSnackbar as removeSnackbar } from '@/composables/snackbar'
+
 const props = defineProps({
+  id: { type: Number, default: undefined },
   showSnackbar: { type: Boolean, default: true },
   closeButton: { type: Boolean, default: true },
   message: { type: String, default: '' },
   duration: { type: Number, default: 3000 },
   variant: { type: String, default: 'info' },
+  persistent: { type: Boolean, default: false },
 })
 
 const emits = defineEmits(['update:showSnackbar'])
 
 const visibility = ref(props.showSnackbar)
-const messageDuration = ref(props.duration || 3000)
+const messageDuration = ref(props.persistent ? -1 : props.duration || 3000)
 const selectedVariantColor = ref('')
 
 const setVariantColor = (variant: string): void => {
@@ -65,6 +69,7 @@ watch(
 const closeSnackbar = (): void => {
   visibility.value = false
   emits('update:showSnackbar', false)
+  if (props.id !== undefined) removeSnackbar(props.id)
 }
 
 watch(
