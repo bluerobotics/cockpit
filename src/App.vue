@@ -44,11 +44,7 @@
       </teleport>
 
       <div ref="routerSection" class="router-view">
-        <div
-          class="main-view"
-          :class="{ 'edit-mode': widgetStore.editingMode, 'vehicle-disconnected': !vehicleStore.isVehicleOnline }"
-          :style="connectionStatusFeedback"
-        >
+        <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }">
           <WidgetBar
             v-show="showTopBarNow"
             id="mainTopBar"
@@ -84,6 +80,11 @@
       </div>
     </v-main>
   </v-app>
+  <div
+    class="vehicle-connection-overlay"
+    :class="{ 'is-disconnected': !vehicleStore.isVehicleOnline, 'is-reconnected': showReconnectedFeedback }"
+    aria-hidden="true"
+  />
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
@@ -235,22 +236,17 @@ onBeforeUnmount(() => {
 })
 
 /* eslint-disable jsdoc/require-jsdoc  */
-const connectionStatusFeedback = ref<{ border: string; transition?: string }>({ border: '0px' })
-
-// Fades the border out a few seconds after the vehicle reconnects, so the success feedback is not permanent.
-const fadeOutConnectionStatusFeedback = (): void => {
-  setTimeout(() => {
-    connectionStatusFeedback.value = {
-      border: '0px solid transparent',
-      transition: 'border 4s ease-out',
-    }
-  }, 4000)
-}
+// Drives the brief green flash shown right after the vehicle reconnects; the persistent red pulse
+// while disconnected is handled purely via CSS on the overlay element.
+const showReconnectedFeedback = ref(false)
+let reconnectedFeedbackTimeout: ReturnType<typeof setTimeout> | undefined
 
 // Connection monitoring and visual feedback
 watch(
   () => vehicleStore.isVehicleOnline,
   (isOnline) => {
+    if (reconnectedFeedbackTimeout) clearTimeout(reconnectedFeedbackTimeout)
+
     if (!isOnline) {
       openSnackbar({
         message: 'Vehicle connection lost: reestablishing',
@@ -258,15 +254,13 @@ watch(
         duration: 3000,
         closeButton: false,
       })
-      connectionStatusFeedback.value = { border: '3px solid red' }
-
+      showReconnectedFeedback.value = false
       return
     }
 
     openSnackbar({ message: 'Vehicle connected', variant: 'success', duration: 3000, closeButton: false })
-    connectionStatusFeedback.value = { border: '3px solid green' }
-
-    fadeOutConnectionStatusFeedback()
+    showReconnectedFeedback.value = true
+    reconnectedFeedbackTimeout = setTimeout(() => (showReconnectedFeedback.value = false), 4000)
   }
 )
 
@@ -362,17 +356,32 @@ body.hide-cursor {
   top: -11%;
 }
 
-.main-view.vehicle-disconnected {
+.vehicle-connection-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  /* Matches the rounded corners of the OS window so the border is not clipped at the vertices. */
+  border-radius: 0 0 12px 12px;
+  box-shadow: inset 0 0 0 0 transparent;
+  transition: box-shadow 1s ease-out;
+}
+
+.vehicle-connection-overlay.is-disconnected {
   animation: vehicle-disconnected-pulse 1.6s ease-in-out infinite;
+}
+
+.vehicle-connection-overlay.is-reconnected {
+  box-shadow: inset 0 0 0 3px rgb(34, 197, 94), inset 0 0 24px 4px rgba(34, 197, 94, 0.45);
 }
 
 @keyframes vehicle-disconnected-pulse {
   0%,
   100% {
-    box-shadow: inset 0 0 0 0 rgba(255, 0, 0, 0);
+    box-shadow: inset 0 0 0 3px rgba(239, 68, 68, 0), inset 0 0 0 0 rgba(239, 68, 68, 0);
   }
   50% {
-    box-shadow: inset 0 0 24px 4px rgba(255, 0, 0, 0.55);
+    box-shadow: inset 0 0 0 3px rgb(239, 68, 68), inset 0 0 32px 6px rgba(239, 68, 68, 0.65);
   }
 }
 
