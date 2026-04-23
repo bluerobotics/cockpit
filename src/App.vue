@@ -44,7 +44,11 @@
       </teleport>
 
       <div ref="routerSection" class="router-view">
-        <div class="main-view" :class="{ 'edit-mode': widgetStore.editingMode }" :style="connectionStatusFeedback">
+        <div
+          class="main-view"
+          :class="{ 'edit-mode': widgetStore.editingMode, 'vehicle-disconnected': !vehicleStore.isVehicleOnline }"
+          :style="connectionStatusFeedback"
+        >
           <WidgetBar
             v-show="showTopBarNow"
             id="mainTopBar"
@@ -233,7 +237,8 @@ onBeforeUnmount(() => {
 /* eslint-disable jsdoc/require-jsdoc  */
 const connectionStatusFeedback = ref<{ border: string; transition?: string }>({ border: '0px' })
 
-const resetConnectionStatusFeedback = (): void => {
+// Fades the border out a few seconds after the vehicle reconnects, so the success feedback is not permanent.
+const fadeOutConnectionStatusFeedback = (): void => {
   setTimeout(() => {
     connectionStatusFeedback.value = {
       border: '0px solid transparent',
@@ -255,14 +260,13 @@ watch(
       })
       connectionStatusFeedback.value = { border: '3px solid red' }
 
-      resetConnectionStatusFeedback()
       return
     }
 
     openSnackbar({ message: 'Vehicle connected', variant: 'success', duration: 3000, closeButton: false })
     connectionStatusFeedback.value = { border: '3px solid green' }
 
-    resetConnectionStatusFeedback()
+    fadeOutConnectionStatusFeedback()
   }
 )
 
@@ -356,6 +360,20 @@ body.hide-cursor {
   transform: scale(0.78);
   right: -11%;
   top: -11%;
+}
+
+.main-view.vehicle-disconnected {
+  animation: vehicle-disconnected-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes vehicle-disconnected-pulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0 rgba(255, 0, 0, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 24px 4px rgba(255, 0, 0, 0.55);
+  }
 }
 
 .fade-enter-active,
