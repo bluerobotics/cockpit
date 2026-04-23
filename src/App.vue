@@ -82,7 +82,10 @@
   </v-app>
   <div
     class="vehicle-connection-overlay"
-    :class="{ 'is-disconnected': !vehicleStore.isVehicleOnline, 'is-reconnected': showReconnectedFeedback }"
+    :class="{
+      'is-disconnected': vehicleStore.isVehicleConnectionLost,
+      'is-reconnected': showReconnectedFeedback,
+    }"
     aria-hidden="true"
   />
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
@@ -236,8 +239,8 @@ onBeforeUnmount(() => {
 })
 
 /* eslint-disable jsdoc/require-jsdoc  */
-// Drives the brief green flash shown right after the vehicle reconnects; the persistent red pulse
-// while disconnected is handled purely via CSS on the overlay element.
+// Drives the brief green flash on reconnect. The red border pulse (when connection was lost) is CSS-only
+// on the overlay; the overlay uses isVehicleConnectionLost so idle sessions without a link stay neutral.
 const showReconnectedFeedback = ref(false)
 let reconnectedFeedbackTimeout: ReturnType<typeof setTimeout> | undefined
 
@@ -248,13 +251,14 @@ watch(
     if (reconnectedFeedbackTimeout) clearTimeout(reconnectedFeedbackTimeout)
 
     if (!isOnline) {
+      showReconnectedFeedback.value = false
+      if (!vehicleStore.isVehicleConnectionLost) return
       openSnackbar({
         message: 'Vehicle connection lost: reestablishing',
         variant: 'error',
         duration: 3000,
         closeButton: false,
       })
-      showReconnectedFeedback.value = false
       return
     }
 

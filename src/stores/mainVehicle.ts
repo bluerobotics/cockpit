@@ -119,6 +119,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const currentlyConnectedVehicleId = ref<string | undefined>()
 
   const lastHeartbeat = ref<Date>()
+
+  /**
+   * Set to true the first time {@link isVehicleOnline} becomes true in this app session, and not reset
+   * until a full page reload. Used to distinguish "never had a link" from "had a link, now lost".
+   */
+  const hasVehicleBeenOnlineThisSession = ref(false)
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
   const altitude: Altitude = reactive({} as Altitude)
@@ -209,13 +215,22 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return lastHeartbeat.value !== undefined && new Date(timeNow.value).getTime() - lastHeartbeat.value.getTime() < 5000
   })
 
+  /**
+   * True when a vehicle was online in this session (heartbeats received) and is now offline. Use for
+   * alarming disconnection UI; omit when the user never established a link this session.
+   * @returns {boolean} True if the user should see connection-lost (red border, pulsing comm indicator, etc.)
+   */
+  const isVehicleConnectionLost = computed(() => {
+    return hasVehicleBeenOnlineThisSession.value && !isVehicleOnline.value
+  })
+
   watch(isVehicleOnline, (isOnline) => {
     if (isOnline) {
+      hasVehicleBeenOnlineThisSession.value = true
       dispatchEvent(new CustomEvent('vehicle-online', { detail: { vehicleAddress: globalAddress.value } }))
-    } else {
-      dispatchEvent(new CustomEvent('vehicle-offline'))
+      return
     }
-    if (isOnline) return
+    dispatchEvent(new CustomEvent('vehicle-offline'))
     currentlyConnectedVehicleId.value = undefined
   })
 
@@ -1027,6 +1042,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     isArmed,
     flying,
     isVehicleOnline,
+    isVehicleConnectionLost,
     icon,
     configurationPages,
     rtcConfiguration,
