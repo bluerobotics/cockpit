@@ -53,7 +53,7 @@
       @click="isTakingTimedSnapshot = !isTakingTimedSnapshot"
     />
   </div>
-  <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="450">
+  <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="500">
     <div
       class="flex flex-col items-center p-2 px-4 pt-1 m-5 rounded-md gap-y-4"
       :style="interfaceStore.globalGlassMenuStyles"
@@ -154,7 +154,7 @@
           @update:model-value="(val) => (miniWidget.options.captureWorkspace = val)"
         />
         <p class="ml-[4px] -mb-[2px] text-sm" :class="{ 'opacity-20 pointer-events-none': !isElectronEnv }">
-          Capture Cockpit work area (Electron only)
+          Capture Cockpit work area (Desktop-only feature)
         </p>
       </div>
       <v-text-field
