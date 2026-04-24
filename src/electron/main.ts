@@ -9,6 +9,7 @@ import { setupHardwareTelemetryService } from './services/hardware-telemetry'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
 import { setupNetworkService } from './services/network'
+import { setupOsmRefererService } from './services/osm-referer'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
 import { setupSystemInfoService } from './services/system-info'
@@ -108,6 +109,10 @@ setupGo2RTCService()
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
   console.log(`Cockpit version: ${app.getVersion()}`)
+
+  // Inject a Referer header for OSM tile requests before the first tile is fetched, so the
+  // standalone build (loaded from file://) complies with the OSM tile usage policy.
+  setupOsmRefererService()
 
   console.log('Creating window...')
   createWindow()
