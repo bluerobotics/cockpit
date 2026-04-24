@@ -512,6 +512,9 @@ const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
   maxZoom: 23,
   maxNativeZoom: 19,
   attribution: '© OpenStreetMap',
+  // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
+  // See https://wiki.openstreetmap.org/wiki/Referer
+  referrerPolicy: 'strict-origin-when-cross-origin',
   ...tileBufferOptions,
 })
 
