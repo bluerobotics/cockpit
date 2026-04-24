@@ -3662,7 +3662,7 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
 onMounted(async () => {
   const tileBufferOptions = { edgeBufferTiles: 2, keepBuffer: 8, updateWhenIdle: false } as const
 
-  const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const osm = tileLayerOffline('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© OpenStreetMap',
@@ -3697,7 +3697,7 @@ onMounted(async () => {
   mapContext.map.value = planningMap.value
   mapContext.mapReady.value = true
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
