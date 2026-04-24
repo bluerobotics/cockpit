@@ -3666,6 +3666,9 @@ onMounted(async () => {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© OpenStreetMap',
+    // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
+    // See https://wiki.openstreetmap.org/wiki/Referer
+    referrerPolicy: 'strict-origin-when-cross-origin',
     ...tileBufferOptions,
   })
   const esri = tileLayerOffline(
@@ -3697,6 +3700,9 @@ onMounted(async () => {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
+    // See https://wiki.openstreetmap.org/wiki/Referer
+    referrerPolicy: 'strict-origin-when-cross-origin',
     ...tileBufferOptions,
   }).addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
