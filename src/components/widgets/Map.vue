@@ -508,7 +508,7 @@ onBeforeMount(() => {
 const tileBufferOptions = { edgeBufferTiles: 2, keepBuffer: 8, updateWhenIdle: false } as const
 
 // Configure the available map tile providers
-const osm = tileLayerOffline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const osm = tileLayerOffline('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 23,
   maxNativeZoom: 19,
   attribution: '© OpenStreetMap',
