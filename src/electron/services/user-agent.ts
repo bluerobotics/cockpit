@@ -1,60 +1,44 @@
 import { ipcMain, session } from 'electron'
 
 let originalUserAgent: string | null = null
-let currentCustomUserAgent: string | null = null
-let webRequestListener: ((details: any, callback: any) => void) | null = null
 
 /**
- * Set a custom User-Agent for HTTP requests
+ * Set a custom User-Agent for HTTP requests on the default Electron session.
  * @param {string} userAgent The custom User-Agent string
+ * @returns {void}
  */
 const setUserAgent = (userAgent: string): void => {
   if (!originalUserAgent) {
     originalUserAgent = session.defaultSession.getUserAgent()
   }
-
-  currentCustomUserAgent = userAgent
-
-  // Remove any existing listener
-  if (webRequestListener) {
-    session.defaultSession.webRequest.onBeforeSendHeaders(null)
-  }
-
-  // Create a new listener that modifies the User-Agent header
-  webRequestListener = (details, callback) => {
-    if (currentCustomUserAgent) {
-      details.requestHeaders['User-Agent'] = currentCustomUserAgent
-    }
-    callback({ requestHeaders: details.requestHeaders })
-  }
-
-  // Add the listener for all URLs
-  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['*://*/*'] }, webRequestListener)
+  session.defaultSession.setUserAgent(userAgent)
 }
 
 /**
- * Restore the original User-Agent
+ * Restore the original User-Agent recorded at the time of the first override.
+ * @returns {void}
  */
 const restoreUserAgent = (): void => {
-  currentCustomUserAgent = null
-
-  // Remove the web request listener
-  if (webRequestListener) {
-    session.defaultSession.webRequest.onBeforeSendHeaders(null)
-    webRequestListener = null
+  if (originalUserAgent) {
+    session.defaultSession.setUserAgent(originalUserAgent)
   }
 }
 
 /**
- * Get the current User-Agent
+ * Get the current User-Agent applied to the default session.
  * @returns {string} The current User-Agent string
  */
 const getCurrentUserAgent = (): string => {
-  return currentCustomUserAgent || originalUserAgent || session.defaultSession.getUserAgent()
+  return session.defaultSession.getUserAgent()
 }
 
 /**
- * Setup the User-Agent service
+ * Setup the User-Agent service.
+ *
+ * Uses `session.setUserAgent` (instead of a webRequest interceptor) so the single
+ * `onBeforeSendHeaders` listener slot stays free for other header manipulations
+ * (e.g. Referer injection for OSM tile requests).
+ * @returns {void}
  */
 export const setupUserAgentService = (): void => {
   ipcMain.handle('set-user-agent', (_event, userAgent: string) => {
