@@ -11,6 +11,7 @@ import { app_version } from '@/libs/cosmos'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { isElectron, sanitizeFilenameComponent } from '@/libs/utils'
 import { snapshotStorage, snapshotThumbStorage } from '@/libs/videoStorage'
+import { useMissionStore } from '@/stores/mission'
 import { StorageDB } from '@/types/general'
 import { EIXFType, SnapshotExif, SnapshotFileDescriptor, SnapshotResult } from '@/types/snapshot'
 import { DownloadProgressCallback, FileDescriptor } from '@/types/video'
@@ -21,6 +22,7 @@ import { useVideoStore } from './video'
 export const useSnapshotStore = defineStore('snapshot', () => {
   const videoStore = useVideoStore()
   const vehicleStore = useMainVehicleStore()
+  const missionStore = useMissionStore()
   const { showDialog } = useInteractionDialog()
 
   const zipMultipleFiles = useBlueOsStorage('cockpit-zip-multiple-video-files', false)
@@ -157,10 +159,11 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     return new Blob([pngBuffer], { type: 'image/png' })
   }
 
-  const snapshotFilename = (streamName: string): string => {
-    const timestamp = format(new Date(), 'LLL dd, yyyy - HH꞉mm꞉ss O')
-    const safeName = sanitizeFilenameComponent(streamName) || 'workspace'
-    return `(${timestamp})_Cockpit_${safeName}.jpeg`
+  const snapshotFilename = (streamName: string, missionName = 'Cockpit'): string => {
+    const timeString = format(new Date(), 'LLL dd, yyyy - HH꞉mm꞉ss O')
+    const safeMissionName = sanitizeFilenameComponent(missionName) || 'Cockpit'
+    const safeStreamName = sanitizeFilenameComponent(streamName) || 'workspace'
+    return `${safeMissionName} (${timeString}) #${safeStreamName}.jpeg`
   }
 
   const createThumbnail = (blob: Blob, width: number, height: number): Promise<Blob> => {
@@ -203,6 +206,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
   const takeSnapshot = async (streamNames: string[], captureWorkspace?: boolean): Promise<SnapshotResult> => {
     const { yaw, pitch, roll } = vehicleStore.attitude
     const { latitude, longitude } = vehicleStore.coordinates
+    const missionName = missionStore.missionName || 'Cockpit'
 
     const succeeded: string[] = []
     const failed: string[] = []
@@ -222,7 +226,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
           })
           wsBlob = await maybeEmbedExif(wsBlob, wsExif)
           const thumbBlob = await createThumbnail(wsBlob, 200, 113)
-          const filename = snapshotFilename('workspace')
+          const filename = snapshotFilename('workspace', missionName)
           const thumbFilename = filename + '-thumb'
           await snapshotStorage.setItem(filename, wsBlob)
           await snapshotThumbStorage.setItem(thumbFilename, thumbBlob)
@@ -241,7 +245,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
         const { width, height } = videoStore.getMediaStream(streamName)?.getVideoTracks()[0].getSettings() || {}
         const stExif = buildExif({ latitude, longitude, yaw, pitch, roll, width, height })
         stBlob = await maybeEmbedExif(stBlob, stExif)
-        const filename = snapshotFilename(streamName)
+        const filename = snapshotFilename(streamName, missionName)
         const thumbFilename = filename + '-thumb'
 
         await snapshotStorage.setItem(filename, stBlob)
