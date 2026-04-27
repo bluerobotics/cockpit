@@ -4,6 +4,14 @@ import { getBeaconInfo, getStatus, getVehicleName } from '../blueos'
 import { isElectron } from '../utils'
 
 /**
+ * Maximum number of address checks performed in parallel during discovery.
+ * Firing all addresses at once saturates Chromium's renderer socket pool and
+ * the OS ARP cache, causing legitimate vehicles to time out before their
+ * request gets a socket.
+ */
+const MAX_CONCURRENT_ADDRESS_CHECKS = 100
+
+/**
  * A vehicle found on the network
  */
 export interface NetworkVehicle {
@@ -92,25 +100,30 @@ class VehicleDiscover {
         throw new Error('Failed to get information about the local subnets.')
       }
 
-      const vehiclesFound: NetworkVehicle[] = []
-      const allChecks: Promise<void>[] = []
-
+      const addressesToCheck: string[] = []
       for (const subnet of localSubnets) {
         const topSideAddress = subnet.topSideAddress
-        const possibleAddresses = subnet.availableAddresses.filter((address) => address !== topSideAddress)
-
-        for (const address of possibleAddresses) {
-          const check = this.checkAddress(address).then((vehicle) => {
-            if (vehicle) {
-              vehiclesFound.push(vehicle)
-              onVehicleFound?.(vehicle)
-            }
-          })
-          allChecks.push(check)
+        for (const address of subnet.availableAddresses) {
+          if (address !== topSideAddress) addressesToCheck.push(address)
         }
       }
 
-      await Promise.all(allChecks)
+      const vehiclesFound: NetworkVehicle[] = []
+      const concurrency = Math.min(MAX_CONCURRENT_ADDRESS_CHECKS, addressesToCheck.length)
+
+      let nextIndex = 0
+      const worker = async (): Promise<void> => {
+        while (nextIndex < addressesToCheck.length) {
+          const address = addressesToCheck[nextIndex++]
+          const vehicle = await this.checkAddress(address)
+          if (vehicle) {
+            vehiclesFound.push(vehicle)
+            onVehicleFound?.(vehicle)
+          }
+        }
+      }
+      await Promise.all(Array.from({ length: concurrency }, () => worker()))
+
       this.currentSearch = undefined
 
       return vehiclesFound
