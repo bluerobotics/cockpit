@@ -309,6 +309,7 @@ onBeforeUnmount(() => {
 const currentBottomBarHeightPixels = computed(() => `${widgetStore.currentBottomBarHeightPixels}px`)
 
 const showDiscoveryDialog = ref(false)
+const discoveryDialogAutoOpened = ref(false)
 const preventAutoSearch = useStorage('cockpit-prevent-auto-vehicle-discovery-dialog', false)
 
 onMounted(() => {
@@ -317,6 +318,7 @@ onMounted(() => {
     setTimeout(() => {
       if (vehicleStore.isVehicleOnline) return
       showDiscoveryDialog.value = true
+      discoveryDialogAutoOpened.value = true
     }, 5000)
   }
 
@@ -326,6 +328,23 @@ onMounted(() => {
     }, 6000)
   }
 })
+
+watch(showDiscoveryDialog, (isOpen) => {
+  if (!isOpen) discoveryDialogAutoOpened.value = false
+})
+
+// Auto-close the discovery dialog if the vehicle comes online while it's open, but only when the
+// dialog was opened automatically (not when the user explicitly opened it). Handles cases where the
+// first heartbeat arrives late (e.g. slow mDNS resolution of `blueos-avahi.local`), so the dialog
+// gets auto-opened even though the configured address would have connected on its own.
+watch(
+  () => vehicleStore.isVehicleOnline,
+  (isOnline) => {
+    if (isOnline && showDiscoveryDialog.value && discoveryDialogAutoOpened.value) {
+      showDiscoveryDialog.value = false
+    }
+  }
+)
 </script>
 
 <style>
