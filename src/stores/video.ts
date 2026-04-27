@@ -118,6 +118,11 @@ export const useVideoStore = defineStore('video', () => {
     return corr ? corr.externalId : undefined
   }
 
+  const internalStreamNameFromExternal = (externalId: string): string | undefined => {
+    const corr = streamsCorrespondency.value.find((stream) => stream.externalId === externalId)
+    return corr ? corr.name : undefined
+  }
+
   const getStreamCorrespondency = (externalId: string): VideoStreamCorrespondency | undefined => {
     return streamsCorrespondency.value.find((stream) => stream.externalId === externalId)
   }
@@ -1263,6 +1268,7 @@ export const useVideoStore = defineStore('video', () => {
     ignoredStreamExternalIds,
     namessAvailableAbstractedStreams,
     externalStreamId,
+    internalStreamNameFromExternal,
     getStreamProtocol,
     getStreamDisplayInfo,
     getRtspUrl,

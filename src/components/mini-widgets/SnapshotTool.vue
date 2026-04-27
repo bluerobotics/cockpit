@@ -277,7 +277,7 @@ const captureSnapshot = async (): Promise<SnapshotResult> => {
 }
 
 const toInternalName = (externalId: string): string => {
-  return videoStore.streamsCorrespondency.find((c) => c.externalId === externalId)?.name ?? externalId
+  return videoStore.internalStreamNameFromExternal(externalId) ?? externalId
 }
 
 const handleSnapshotResult = (result: SnapshotResult): void => {
@@ -386,8 +386,7 @@ const migrateSelectedStreamsToInternalNames = (): void => {
   const streams = miniWidget.value.options.selectedStreams as string[] | undefined
   if (!streams || streams.length === 0) return
   miniWidget.value.options.selectedStreams = streams.map((name: string) => {
-    const corr = videoStore.streamsCorrespondency.find((c) => c.externalId === name)
-    return corr ? corr.name : name
+    return videoStore.internalStreamNameFromExternal(name) ?? name
   })
 }
 
