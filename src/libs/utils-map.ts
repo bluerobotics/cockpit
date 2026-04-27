@@ -2,7 +2,7 @@ import * as turf from '@turf/turf'
 import type { Feature, Polygon } from 'geojson'
 import * as L from 'leaflet'
 
-import type { SurveyPath, WaypointCoordinates } from '@/types/mission'
+import type { MapTileProvider, SurveyPath, WaypointCoordinates } from '@/types/mission'
 
 /**
  * Default target follower update interval in milliseconds.
@@ -469,4 +469,141 @@ export const createGridOverlay = (map: L.Map, gridLayer?: L.LayerGroup): L.Layer
 
   newGridLayer.addTo(map)
   return newGridLayer
+}
+
+const communityProvidersButtonClass = 'cockpit-leaflet-enable-community-providers-btn'
+
+/**
+ * Builds a Leaflet tile layer for Google Maps' roadmap tiles.
+ *
+ * Google Maps is a community-sourced provider (not officially supported by Google for direct
+ * tile access), so it must be opted-in via the layer selector before being shown.
+ * @param {L.TileLayerOptions} extraOptions - Additional Leaflet options to merge into the layer.
+ * @returns {L.TileLayer} A Leaflet tile layer pointing at Google Maps' roadmap tiles.
+ */
+export const createGoogleMapsTileLayer = (extraOptions: L.TileLayerOptions = {}): L.TileLayer => {
+  return L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    subdomains: ['0', '1', '2', '3'],
+    maxZoom: 23,
+    maxNativeZoom: 21,
+    attribution: '© Google',
+    ...extraOptions,
+  })
+}
+
+/**
+ * Builds a Leaflet tile layer for Google Satellite (imagery) tiles.
+ *
+ * Like `createGoogleMapsTileLayer`, this is a community-sourced provider and must be opted-in via
+ * the layer selector before being shown.
+ * @param {L.TileLayerOptions} extraOptions - Additional Leaflet options to merge into the layer.
+ * @returns {L.TileLayer} A Leaflet tile layer pointing at Google's satellite imagery tiles.
+ */
+export const createGoogleSatelliteTileLayer = (extraOptions: L.TileLayerOptions = {}): L.TileLayer => {
+  return L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    subdomains: ['0', '1', '2', '3'],
+    maxZoom: 23,
+    maxNativeZoom: 21,
+    attribution: '© Google',
+    ...extraOptions,
+  })
+}
+
+/**
+ * Options for the community-aware Leaflet layers control factory.
+ */
+interface CommunityLayersControlOptions {
+  /**
+   * Base layers to expose unconditionally in the layers control.
+   */
+  baseMaps: Record<string, L.Layer>
+  /**
+   * Optional overlays for the layers control.
+   */
+  overlays?: Record<string, L.Layer>
+  /**
+   * Reactive accessor that returns whether community providers are currently enabled.
+   */
+  isEnabled: () => boolean
+  /**
+   * Callback invoked when the user clicks the "Enable community map providers" button.
+   */
+  onEnableClick: () => void
+}
+
+/**
+ * Creates a Leaflet `L.Control.Layers` instance that, while community providers are disabled,
+ * renders an "Enable community map providers" button at the bottom of the layer list.
+ *
+ * The button is re-rendered every time the control is added to a map, so it stays in sync with
+ * the latest opt-in state across mouse-hover add/remove cycles.
+ * @param {CommunityLayersControlOptions} options - Configuration for the layers control.
+ * @returns {L.Control.Layers} The configured Leaflet layers control instance.
+ */
+export const createLayersControlWithCommunityToggle = (options: CommunityLayersControlOptions): L.Control.Layers => {
+  const ExtendedLayersControl = L.Control.Layers.extend({
+    onAdd(this: L.Control.Layers, map: L.Map): HTMLElement {
+      const baseOnAdd = L.Control.Layers.prototype.onAdd as (m: L.Map) => HTMLElement
+      const container = baseOnAdd.call(this, map)
+      container.querySelectorAll('.' + communityProvidersButtonClass).forEach((el) => el.remove())
+      if (options.isEnabled()) return container
+
+      // Append below the overlays section so the button only shows while the layers control is expanded.
+      const list = container.querySelector('.leaflet-control-layers-list') as HTMLElement | null
+      if (!list) return container
+
+      const separator = document.createElement('div')
+      separator.className = 'leaflet-control-layers-separator ' + communityProvidersButtonClass
+
+      const btn = document.createElement('button')
+      btn.className = communityProvidersButtonClass
+      btn.type = 'button'
+      btn.textContent = 'Enable community map providers'
+      Object.assign(btn.style, {
+        display: 'block',
+        width: '100%',
+        padding: '6px 8px',
+        margin: '8px 0 0 1px',
+        borderRadius: '4px',
+        background: '#f5f5f522',
+        cursor: 'pointer',
+        font: 'bold',
+        color: '#fff',
+        boxShadow: '1px 1px 2px 0 rgba(0, 0, 0, 0.2)',
+      } satisfies Partial<CSSStyleDeclaration>)
+      L.DomEvent.disableClickPropagation(btn)
+      L.DomEvent.on(btn, 'click', () => options.onEnableClick())
+
+      list.appendChild(separator)
+      list.appendChild(btn)
+      return container
+    },
+  })
+  return new (ExtendedLayersControl as unknown as typeof L.Control.Layers)(options.baseMaps, options.overlays)
+}
+
+/**
+ * Adds the given community providers to an existing Leaflet layers control and removes the
+ * "Enable community map providers" button (if present) from its DOM container.
+ * @param {L.Control.Layers} layerControl - The Leaflet layers control to update.
+ * @param {{ name: MapTileProvider, layer: L.Layer }[]} providers - Community providers to expose
+ * as base layers.
+ * @returns {void}
+ */
+export const addCommunityProvidersToLayerControl = (
+  layerControl: L.Control.Layers,
+  providers: {
+    /**
+     *
+     */
+    name: MapTileProvider
+    /**
+     *
+     */
+    layer: L.Layer
+  }[]
+): void => {
+  providers.forEach((p) => layerControl.addBaseLayer(p.layer, p.name))
+  const container = layerControl.getContainer?.()
+  container?.querySelectorAll('.' + communityProvidersButtonClass).forEach((el) => el.remove())
 }

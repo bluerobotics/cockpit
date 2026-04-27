@@ -475,9 +475,15 @@ export interface VehicleMissionEstimate {
 }
 
 /**
+ * Names of map tile providers that come from community sources and require explicit user opt-in
+ * before being shown in the map layer selector.
+ */
+export const communityMapTileProviders = ['Google Maps', 'Google Satellite'] as const
+
+/**
  * Types of map tile providers supported.
  */
-export type MapTileProvider = 'Esri World Imagery' | 'OpenStreetMap'
+export type MapTileProvider = 'Esri World Imagery' | 'OpenStreetMap' | (typeof communityMapTileProviders)[number]
 
 export type IconDimensions = {
   /**
