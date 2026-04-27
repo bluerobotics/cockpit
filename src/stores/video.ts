@@ -21,7 +21,7 @@ import {
   LiveVideoProcessorInitializationError,
 } from '@/libs/live-video-processor'
 import { datalogger } from '@/libs/sensors-logging'
-import { isElectron, isEqual, sleep } from '@/libs/utils'
+import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -620,7 +620,8 @@ export const useVideoStore = defineStore('video', () => {
       refreshHash = hashOnDB || hashOnRegistry
     }
 
-    const fileName = videoFilename(recordingHash, streamData.timeRecordingStart!, missionStore.missionName || 'Cockpit')
+    const safeMissionName = sanitizeFilenameComponent(missionStore.missionName) || 'Cockpit'
+    const fileName = videoFilename(recordingHash, streamData.timeRecordingStart!, safeMissionName)
     activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
 
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
