@@ -9,7 +9,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { app_version } from '@/libs/cosmos'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
-import { isElectron } from '@/libs/utils'
+import { isElectron, sanitizeFilenameComponent } from '@/libs/utils'
 import { snapshotStorage, snapshotThumbStorage } from '@/libs/videoStorage'
 import { StorageDB } from '@/types/general'
 import { EIXFType, SnapshotExif, SnapshotFileDescriptor, SnapshotResult } from '@/types/snapshot'
@@ -159,7 +159,8 @@ export const useSnapshotStore = defineStore('snapshot', () => {
 
   const snapshotFilename = (streamName: string): string => {
     const timestamp = format(new Date(), 'LLL dd, yyyy - HH꞉mm꞉ss O')
-    return `(${timestamp})_Cockpit_${streamName}.jpeg`
+    const safeName = sanitizeFilenameComponent(streamName) || 'workspace'
+    return `(${timestamp})_Cockpit_${safeName}.jpeg`
   }
 
   const createThumbnail = (blob: Blob, width: number, height: number): Promise<Blob> => {
@@ -240,8 +241,8 @@ export const useSnapshotStore = defineStore('snapshot', () => {
         const { width, height } = videoStore.getMediaStream(streamName)?.getVideoTracks()[0].getSettings() || {}
         const stExif = buildExif({ latitude, longitude, yaw, pitch, roll, width, height })
         stBlob = await maybeEmbedExif(stBlob, stExif)
-        const filename = snapshotFilename(streamName.replace(/[\\/]/g, '_') || 'workspace')
-        const thumbFilename = snapshotFilename(streamName.replace(/[\\/]/g, '_') || 'workspace') + '-thumb'
+        const filename = snapshotFilename(streamName)
+        const thumbFilename = filename + '-thumb'
 
         await snapshotStorage.setItem(filename, stBlob)
         await snapshotThumbStorage.setItem(thumbFilename, thumbBlob)
