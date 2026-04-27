@@ -56,12 +56,23 @@ class VehicleDiscover {
 
       // Check if the vehicle is a BlueOS vehicle
       const beaconResponse = await getBeaconInfo(address)
-      if (!beaconResponse.ok) return null
+      if (!beaconResponse.ok) {
+        console.warn(
+          `[VehicleDiscovery] [${address}] Host responded to /status but /beacon/ returned ${beaconResponse.status}; not a BlueOS vehicle.`
+        )
+        return null
+      }
       const beaconText = await beaconResponse.text()
-      if (!beaconText.toLowerCase().includes('beacon')) return null
+      if (!beaconText.toLowerCase().includes('beacon')) {
+        console.warn(
+          `[VehicleDiscovery] [${address}] Host responded to /beacon/ but body lacks the 'beacon' marker; ignoring.`
+        )
+        return null
+      }
 
       // Try to get the vehicle name
       const name = await getVehicleName(address)
+      console.info(`[VehicleDiscovery] Found vehicle '${name}' at ${address}.`)
       return { address, name }
     } catch {
       // If we can't get the name, it's because it's not a vehicle (or maybe BlueOS's Beacon service is not running)
@@ -84,6 +95,9 @@ class VehicleDiscover {
     }
 
     const search = async (): Promise<NetworkVehicle[]> => {
+      const searchStart = Date.now()
+      console.info('[VehicleDiscovery] Starting vehicle discovery scan...')
+
       if (!isElectron() || !window.electronAPI?.getInfoOnSubnets) {
         const msg = 'For technical reasons, getting information about the local subnet is only available in Electron.'
         throw new Error(msg)
@@ -93,10 +107,12 @@ class VehicleDiscover {
       try {
         localSubnets = await window.electronAPI.getInfoOnSubnets()
       } catch (error) {
+        console.error(`[VehicleDiscovery] Failed to get information about the local subnets: ${error}`)
         throw new Error(`Failed to get information about the local subnets. ${error}`)
       }
 
       if (localSubnets.length === 0) {
+        console.error('[VehicleDiscovery] Got an empty list of subnets from Electron.')
         throw new Error('Failed to get information about the local subnets.')
       }
 
@@ -110,6 +126,10 @@ class VehicleDiscover {
 
       const vehiclesFound: NetworkVehicle[] = []
       const concurrency = Math.min(MAX_CONCURRENT_ADDRESS_CHECKS, addressesToCheck.length)
+      console.info(
+        `[VehicleDiscovery] Scanning ${addressesToCheck.length} address(es) across ${localSubnets.length} subnet(s) ` +
+          `with up to ${concurrency} concurrent checks.`
+      )
 
       let nextIndex = 0
       const worker = async (): Promise<void> => {
@@ -125,6 +145,10 @@ class VehicleDiscover {
       await Promise.all(Array.from({ length: concurrency }, () => worker()))
 
       this.currentSearch = undefined
+
+      console.info(
+        `[VehicleDiscovery] Scan complete in ${Date.now() - searchStart}ms. Found ${vehiclesFound.length} vehicle(s).`
+      )
 
       return vehiclesFound
     }
