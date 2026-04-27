@@ -245,7 +245,8 @@ export const useSnapshotStore = defineStore('snapshot', () => {
         const { width, height } = videoStore.getMediaStream(streamName)?.getVideoTracks()[0].getSettings() || {}
         const stExif = buildExif({ latitude, longitude, yaw, pitch, roll, width, height })
         stBlob = await maybeEmbedExif(stBlob, stExif)
-        const filename = snapshotFilename(streamName, missionName)
+        const internalStreamName = videoStore.internalStreamNameFromExternal(streamName) ?? streamName
+        const filename = snapshotFilename(internalStreamName, missionName)
         const thumbFilename = filename + '-thumb'
 
         await snapshotStorage.setItem(filename, stBlob)
