@@ -220,6 +220,25 @@ export const machinizeString = (str: string): string => {
 }
 
 /**
+ * Sanitizes a value for use as a filename component on every supported platform.
+ * Windows is the strictest target: it forbids `<`, `>`, `:`, `"`, `/`, `\`, `|`, `?`, `*`
+ * and control characters, and disallows trailing dots/spaces. Without this, values like
+ * RTSP URLs (used as snapshot stream names) or mission names containing colons produce
+ * paths that fail with ENOENT on NTFS.
+ * @param {string} value
+ * @returns {string} Filesystem-safe representation of the value
+ */
+export const sanitizeFilenameComponent = (value: string): string => {
+  return (
+    value
+      // eslint-disable-next-line no-control-regex
+      .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^[. ]+|[. ]+$/g, '')
+  )
+}
+
+/**
  * Get an unindented string
  * Trims all lines by the same amount of whitespace, so that the string is not indented
  * @param {string} str The string to unindent
