@@ -60,7 +60,7 @@
           variant="text"
         >
           <input
-            v-model.number="missionStore.defaultCruiseSpeed"
+            v-model.number="localCruiseSpeed"
             class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
             type="number"
             min="1"
@@ -108,7 +108,7 @@
     <div
       v-show="!interfaceStore.isMainMenuVisible"
       class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-y-auto z-[200]"
-      :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '270px' }]"
+      :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '320px' }]"
     >
       <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
         <button
@@ -129,13 +129,16 @@
         </button>
         <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
-          class="flex flex-row justify-between items-center mx-4 my-1"
+          class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
         >
           <p class="text-sm">Cruise speed</p>
           <input
-            v-model="missionStore.defaultCruiseSpeed"
+            v-model.number="localCruiseSpeed"
             class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
             type="number"
+            min="0"
+            step="0.5"
+            @change="cruiseSpeedTouched = true"
           />
           <p class="text-sm">m/s</p>
         </div>
@@ -168,6 +171,26 @@
             >
               Create mission path
             </p>
+          </div>
+          <div class="text-sm flex justify-start items-center">
+            <v-icon v-if="cruiseSpeedStatus === 'invalid'" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
+            <v-icon v-else-if="cruiseSpeedStatus === 'unchanged'" class="text-sm mr-4 text-[#d38d32]"
+              >mdi-alert-circle</v-icon
+            >
+            <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
+            <p class="mr-2">Set cruise speed</p>
+
+            <v-tooltip v-if="isSurfaceBoat" location="right">
+              <template #activator="{ props }">
+                <v-icon v-bind="props" class="ml-4 text-slate-400 text-sm cursor-help">mdi-information-outline</v-icon>
+              </template>
+              <div class="text-sm pa-1">
+                <p class="mb-1 text-center"><strong>Tested BlueBoat speeds:</strong></p>
+                <p class="mb-[3px]">Safe: 1 to 1.5 m/s</p>
+                <p class="mb-[3px]">Average: 2 m/s</p>
+                <p>Max: 3 m/s (heavily depends on wind, waves and stream)</p>
+              </div>
+            </v-tooltip>
           </div>
           <div class="text-sm flex justify-start items-center">
             <v-icon v-if="!hasUploadedMission" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
@@ -731,7 +754,10 @@ const uploadMissionToVehicle = async (): Promise<void> => {
 
   missionItemsToUpload.unshift(homeWaypoint)
 
-  if (missionStore.defaultCruiseSpeed !== 1 && missionItemsToUpload.length > 1) {
+  // Commit the local cruise speed back to the store so the chosen value persists across sessions.
+  missionStore.defaultCruiseSpeed = localCruiseSpeed.value
+
+  if (localCruiseSpeed.value !== 1 && missionItemsToUpload.length > 1) {
     const firstMissionItem = missionItemsToUpload[1]
     const existing = Array.isArray(firstMissionItem.commands) ? firstMissionItem.commands : []
 
@@ -741,7 +767,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
         type: MissionCommandType.MAVLINK_NAV_COMMAND,
         command: MavCmd.MAV_CMD_DO_CHANGE_SPEED,
         param1: 1,
-        param2: Number(missionStore.defaultCruiseSpeed),
+        param2: localCruiseSpeed.value,
         param3: -1,
         param4: 0,
       },
@@ -898,6 +924,26 @@ const missionFetchProgress = ref(0)
 const loading = ref(false)
 const showMissionCreationTips = ref(missionStore.showMissionCreationTips)
 const countdownToHideTips = ref<number | undefined>(undefined)
+const isSurfaceBoat = computed(() => vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT)
+
+const localCruiseSpeed = ref<number>(Number(missionStore.defaultCruiseSpeed))
+watch(
+  () => missionStore.defaultCruiseSpeed,
+  (newVal) => {
+    const num = Number(newVal)
+    if (Number.isFinite(num) && num !== localCruiseSpeed.value) {
+      localCruiseSpeed.value = num
+    }
+  }
+)
+
+const cruiseSpeedTouched = ref(false)
+const cruiseSpeedStatus = computed<'invalid' | 'unchanged' | 'valid'>(() => {
+  const value = localCruiseSpeed.value
+  if (!Number.isFinite(value) || value <= 0 || value > 3) return 'invalid'
+  if (value === Number(missionStore.defaultCruiseSpeed) && !cruiseSpeedTouched.value) return 'unchanged'
+  return 'valid'
+})
 const isSettingHomeWaypoint = ref(false)
 const isSavingOfflineTiles = ref(false)
 const tilesSaved = ref(0)
@@ -2535,6 +2581,9 @@ const handleShouldUpdateWaypoints = (): void => {
 }
 
 const saveMissionToFile = async (): Promise<void> => {
+  // Commit the local cruise speed back to the store so the chosen value persists across sessions.
+  missionStore.defaultCruiseSpeed = localCruiseSpeed.value
+
   const cockpitMissionFile: CockpitMission = {
     version: 0,
     settings: {
@@ -2542,7 +2591,7 @@ const saveMissionToFile = async (): Promise<void> => {
       zoom: zoom.value,
       currentWaypointAltitude: currentWaypointAltitude.value,
       currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
-      defaultCruiseSpeed: missionStore.defaultCruiseSpeed,
+      defaultCruiseSpeed: localCruiseSpeed.value,
     },
     waypoints: missionStore.currentPlanningWaypoints,
     surveys: [...missionStore.currentPlanningSurveys],
