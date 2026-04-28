@@ -1,6 +1,9 @@
 import { type Ref, ref } from 'vue'
 
 const RECONNECT_DELAY_MS = 3000
+// Time we give the peer connection to reach 'connected' before assuming go2rtc is stuck waiting for an
+// unavailable source (e.g. camera not yet on the network) and forcing a reconnect.
+const CONNECT_WATCHDOG_MS = 8000
 
 /**
  * Manages a WebRTC connection to a go2rtc stream.
@@ -17,6 +20,7 @@ export class Go2RTCManager {
   private ws: WebSocket | null = null
   private closed = false
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private connectWatchdog: ReturnType<typeof setTimeout> | null = null
 
   /**
    * @param {number} go2rtcPort - The port go2rtc is listening on
@@ -94,6 +98,7 @@ export class Go2RTCManager {
 
       switch (state) {
         case 'connected':
+          this.clearConnectWatchdog()
           this.connected.value = true
           break
         case 'disconnected':
@@ -106,6 +111,8 @@ export class Go2RTCManager {
           break
       }
     }
+
+    this.armConnectWatchdog()
 
     const wsUrl = `ws://127.0.0.1:${this.go2rtcPort}/api/ws?src=${encodeURIComponent(this.streamName)}`
     const ws = new WebSocket(wsUrl)
@@ -190,6 +197,35 @@ export class Go2RTCManager {
   }
 
   /**
+   * Arm a watchdog that forces a reconnect if the peer connection does not reach 'connected' in time.
+   * Required because go2rtc keeps the WebSocket open without ever answering when the source (e.g. an
+   * RTSP camera) is not yet reachable, leaving the RTCPeerConnection stuck in 'new' state forever.
+   */
+  private armConnectWatchdog(): void {
+    this.clearConnectWatchdog()
+    this.connectWatchdog = setTimeout(() => {
+      this.connectWatchdog = null
+      if (this.closed || this.connected.value) return
+      console.warn(
+        `[go2rtc] Stream '${this.streamName}' did not connect within ${CONNECT_WATCHDOG_MS}ms. Forcing reconnect.`
+      )
+      this.streamStatus.value = 'Source unavailable'
+      this.cleanup()
+      this.scheduleReconnect()
+    }, CONNECT_WATCHDOG_MS)
+  }
+
+  /**
+   * Clear the connection watchdog timer if it is set
+   */
+  private clearConnectWatchdog(): void {
+    if (this.connectWatchdog) {
+      clearTimeout(this.connectWatchdog)
+      this.connectWatchdog = null
+    }
+  }
+
+  /**
    * Clean up the current PeerConnection and WebSocket without closing the manager
    */
   private cleanup(): void {
@@ -197,6 +233,8 @@ export class Go2RTCManager {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
+
+    this.clearConnectWatchdog()
 
     if (this.ws) {
       this.ws.onopen = null
