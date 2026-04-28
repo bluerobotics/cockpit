@@ -287,6 +287,7 @@ const { showDialog, closeDialog } = useInteractionDialog()
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
+const widgetStore = useWidgetManagerStore()
 const router = useRouter()
 
 const mapContext = provideMapContext()
@@ -298,7 +299,9 @@ const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
-const showButtons = computed(() => isMouseOver.value || downloadMenuOpen.value)
+const showButtons = computed(
+  () => isMouseOver.value || downloadMenuOpen.value || widgetStore.isFullScreen(widget.value)
+)
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
 const reachedWaypoints = shallowRef<Record<number, L.Marker>>({})
@@ -809,6 +812,13 @@ onMounted(async () => {
   }
 
   mapReady.value = true
+
+  // Apply the current showButtons state to the leaflet controls
+  if (showButtons.value && map.value) {
+    map.value.addControl(zoomControl)
+    map.value.addControl(layerControl)
+    createScaleControl()
+  }
 
   if (missionStore.followVehicleOnMap === true) {
     targetFollower.follow(WhoToFollow.VEHICLE)
@@ -1758,7 +1768,6 @@ const tryToStartMission = async (): Promise<void> => {
 }
 
 // Set dynamic styles for correct displacement of the bottom buttons when the widget is below the bottom bar
-const widgetStore = useWidgetManagerStore()
 const bottomButtonsDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).bottom, 0)}px`
 })
