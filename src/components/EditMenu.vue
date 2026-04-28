@@ -854,10 +854,23 @@ const getExternalWidgetSetupInfos = async (): Promise<void> => {
     const vehicleAddress = await mainVehicleStore.getVehicleAddress()
     ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS(vehicleAddress)
   } catch (error) {
-    const errorMessage = 'Error getting info around external widgets from BlueOS.'
-    openSnackbar({ message: errorMessage, variant: 'error', closeButton: true })
+    console.error('Could not fetch external widgets from BlueOS:', error)
+    // Only surface the error to the user when the vehicle is reachable; while it is offline we
+    // expect the fetch to fail and a retry will run automatically once it comes online (issue #2650).
+    if (mainVehicleStore.isVehicleOnline) {
+      const errorMessage = 'Error getting info around external widgets from BlueOS.'
+      openSnackbar({ message: errorMessage, variant: 'error', closeButton: true })
+    }
   }
 }
+
+watch(
+  () => mainVehicleStore.isVehicleOnline,
+  (isOnline) => {
+    if (!isOnline) return
+    getExternalWidgetSetupInfos()
+  }
+)
 
 // @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
 const customWidgetElementContainerOptions = ref<UseDraggableOptions>({
