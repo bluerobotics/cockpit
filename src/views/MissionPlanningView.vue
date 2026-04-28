@@ -637,7 +637,15 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
 import { degrees } from '@/libs/utils'
-import { createGridOverlay, TargetFollower, WhoToFollow } from '@/libs/utils-map'
+import {
+  addCommunityProvidersToLayerControl,
+  createGoogleMapsTileLayer,
+  createGoogleSatelliteTileLayer,
+  createGridOverlay,
+  createLayersControlWithCommunityToggle,
+  TargetFollower,
+  WhoToFollow,
+} from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -3681,9 +3689,29 @@ onMounted(async () => {
     }
   )
 
-  const baseMaps = {
+  const googleMaps = createGoogleMapsTileLayer(tileBufferOptions)
+  const googleSatellite = createGoogleSatelliteTileLayer(tileBufferOptions)
+
+  const communityProviders: {
+    /**
+     * Display name of the community map tile provider, used as the entry label in Leaflet's layers control.
+     */
+    name: MapTileProvider
+    /**
+     * Leaflet layer instance to register as a base layer once community providers are enabled.
+     */
+    layer: L.Layer
+  }[] = [
+    { name: 'Google Maps', layer: googleMaps },
+    { name: 'Google Satellite', layer: googleSatellite },
+  ]
+
+  const baseMaps: Record<string, L.Layer> = {
     'OpenStreetMap': osm,
     'Esri World Imagery': esri,
+  }
+  if (missionStore.communityMapProvidersEnabled) {
+    communityProviders.forEach((p) => (baseMaps[p.name] = p.layer))
   }
 
   const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
@@ -3786,8 +3814,25 @@ onMounted(async () => {
     onMapClick(e)
   })
 
-  const layerControl = L.control.layers(baseMaps)
+  const layerControl = createLayersControlWithCommunityToggle({
+    baseMaps,
+    isEnabled: () => missionStore.communityMapProvidersEnabled,
+    onEnableClick: () => {
+      if (missionStore.communityMapProvidersEnabled) return
+      missionStore.communityMapProvidersEnabled = true
+      openSnackbar({ message: 'Community map layers enabled', variant: 'success', duration: 3000 })
+    },
+  })
   planningMap.value.addControl(layerControl)
+
+  watch(
+    () => missionStore.communityMapProvidersEnabled,
+    (enabled, prev) => {
+      if (enabled && !prev) {
+        addCommunityProvidersToLayerControl(layerControl, communityProviders)
+      }
+    }
+  )
 
   // Initialize scale control (always show)
   createScaleControl()
@@ -4670,6 +4715,9 @@ watch(
 
 :deep(.leaflet-control-layers-selector) {
   accent-color: var(--glass-color) !important;
+  vertical-align: middle !important;
+  margin-top: 0 !important;
+  top: 0 !important;
 }
 
 :deep(.leaflet-control-layers label) {

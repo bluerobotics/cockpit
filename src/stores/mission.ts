@@ -58,6 +58,7 @@ export const useMissionStore = defineStore('mission', () => {
     'cockpit-user-last-map-tile-provider',
     'Esri World Imagery'
   )
+  const communityMapProvidersEnabled = useBlueOsStorage<boolean>('cockpit-community-map-providers-enabled', false)
   const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
   const mapClearMapDrawing = ref<(() => void) | null>(null)
 
@@ -602,6 +603,7 @@ export const useMissionStore = defineStore('mission', () => {
     updateWaypointCommand,
     defaultCruiseSpeed,
     userLastMapTileProvider,
+    communityMapProvidersEnabled,
     followVehicleOnMap,
     stopMission,
     executeMissionOnVehicle,

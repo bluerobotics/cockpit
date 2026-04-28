@@ -259,7 +259,15 @@ import { openSnackbar } from '@/composables/snackbar'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
-import { createGridOverlay, TargetFollower, WhoToFollow } from '@/libs/utils-map'
+import {
+  addCommunityProvidersToLayerControl,
+  createGoogleMapsTileLayer,
+  createGoogleSatelliteTileLayer,
+  createGridOverlay,
+  createLayersControlWithCommunityToggle,
+  TargetFollower,
+  WhoToFollow,
+} from '@/libs/utils-map'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -546,9 +554,29 @@ const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserve
   ...tileBufferOptions,
 })
 
-const baseMaps = {
+const googleMaps = createGoogleMapsTileLayer(tileBufferOptions)
+const googleSatellite = createGoogleSatelliteTileLayer(tileBufferOptions)
+
+const communityProviders: {
+  /**
+   * Display name of the community map tile provider, used as the entry label in Leaflet's layers control.
+   */
+  name: MapTileProvider
+  /**
+   * Leaflet layer instance to register as a base layer once community providers are enabled.
+   */
+  layer: L.Layer
+}[] = [
+  { name: 'Google Maps', layer: googleMaps },
+  { name: 'Google Satellite', layer: googleSatellite },
+]
+
+const baseMaps: Record<string, L.Layer> = {
   'OpenStreetMap': osm,
   'Esri World Imagery': esri,
+}
+if (missionStore.communityMapProvidersEnabled) {
+  communityProviders.forEach((p) => (baseMaps[p.name] = p.layer))
 }
 
 const overlays = {
@@ -561,7 +589,25 @@ const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
-const layerControl = L.control.layers(baseMaps, overlays)
+const layerControl = createLayersControlWithCommunityToggle({
+  baseMaps,
+  overlays,
+  isEnabled: () => missionStore.communityMapProvidersEnabled,
+  onEnableClick: () => {
+    if (missionStore.communityMapProvidersEnabled) return
+    missionStore.communityMapProvidersEnabled = true
+    openSnackbar({ message: 'Community map layers enabled', variant: 'success', duration: 3000 })
+  },
+})
+
+watch(
+  () => missionStore.communityMapProvidersEnabled,
+  (enabled, prev) => {
+    if (enabled && !prev) {
+      addCommunityProvidersToLayerControl(layerControl, communityProviders)
+    }
+  }
+)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 
 watch(showButtons, () => {
@@ -2181,6 +2227,9 @@ watch(
 
 :deep(.leaflet-control-layers-selector) {
   accent-color: var(--glass-color) !important;
+  vertical-align: middle !important;
+  margin-top: 0 !important;
+  top: 0 !important;
 }
 
 :deep(.leaflet-control-layers label) {
