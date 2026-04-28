@@ -172,6 +172,31 @@ export class TargetFollower {
 }
 
 /**
+ * Adjusts the given map view so that all the provided waypoint coordinates
+ * are visible at once. Coordinates with invalid lat/lng values are ignored.
+ * @param {L.Map} map - Leaflet map instance to adjust.
+ * @param {WaypointCoordinates[]} coordinates - List of `[latitude, longitude]` tuples to fit.
+ * @param {L.FitBoundsOptions} [options] - Optional Leaflet `fitBounds` options. A sensible
+ *   default padding is applied when none is provided.
+ * @returns {boolean} `true` if the map view was adjusted, `false` if there were no valid
+ *   coordinates to fit.
+ */
+export const fitMapToWaypoints = (
+  map: L.Map,
+  coordinates: WaypointCoordinates[],
+  options?: L.FitBoundsOptions
+): boolean => {
+  const validCoordinates = coordinates.filter(
+    (coord) => Array.isArray(coord) && Number.isFinite(coord[0]) && Number.isFinite(coord[1])
+  )
+  if (validCoordinates.length === 0) return false
+
+  const bounds = L.latLngBounds(validCoordinates.map((coord) => L.latLng(coord[0], coord[1])))
+  map.fitBounds(bounds, { padding: [20, 20], maxZoom: 22, animate: true, ...(options ?? {}) })
+  return true
+}
+
+/**
  * Generates a survey path based on the given polygon and parameters.
  * @param {L.LatLng[]} polygonPoints - The points of the polygon.
  * @param {number} distanceBetweenLines - The distance between survey lines in meters.
