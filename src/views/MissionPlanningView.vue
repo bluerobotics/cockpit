@@ -423,7 +423,7 @@
       <template #activator="{ props: tooltipProps }">
         <v-btn
           v-bind="tooltipProps"
-          class="absolute right-[180px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
+          class="absolute right-[135px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
           elevation="8"
           text="Flight mode"
           append-icon="mdi-send"
@@ -440,7 +440,7 @@
           <template #activator="{ props: menuProps }">
             <v-btn
               v-bind="{ ...menuProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[133px] text-[14px]"
+              class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[88px] text-[14px]"
               :style="interfaceStore.globalGlassMenuStyles"
               size="x-small"
               icon="mdi-download-multiple"
@@ -455,38 +455,71 @@
         </v-menu>
       </template>
     </v-tooltip>
-    <v-tooltip location="top center" :text="centerHomeButtonTooltipText">
-      <template #activator="{ props: tooltipProps }">
-        <v-btn
-          class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[88px] text-[14px]"
-          :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
-          :class="[!home ? 'active-events-on-disabled' : '']"
-          :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-          icon="mdi-home-search"
-          size="x-small"
-          v-bind="tooltipProps"
-          :disabled="!home"
-          @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-          @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-        />
+    <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
+      <template #activator="{ props: activatorProps }">
+        <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              v-bind="{ ...activatorProps, ...tooltipProps }"
+              class="absolute m-3 rounded-sm shadow-sm bottom-12 right-[44px] bg-slate-50 text-[14px]"
+              :style="interfaceStore.globalGlassMenuStyles"
+              :color="followerTarget !== undefined ? 'red' : ''"
+              icon="mdi-crosshairs-gps"
+              size="x-small"
+            />
+          </template>
+        </v-tooltip>
       </template>
-    </v-tooltip>
-    <v-tooltip location="top center" :text="centerVehicleButtonTooltipText">
-      <template #activator="{ props: tooltipProps }">
-        <v-btn
-          class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[44px] text-[14px]"
-          :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
-          :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
-          :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-          icon="mdi-airplane-marker"
-          size="x-small"
-          v-bind="tooltipProps"
-          :disabled="!vehiclePosition"
-          @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-          @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-        />
-      </template>
-    </v-tooltip>
+      <v-tooltip location="left" :text="centerMissionButtonTooltipText">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            key="mission"
+            v-bind="tooltipProps"
+            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+            :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
+            :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
+            icon="mdi-map-marker-path"
+            size="x-small"
+            :disabled="!hasMissionWaypoints"
+            @click.stop="centerOnMission"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="left" :text="centerHomeButtonTooltipText">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            key="home"
+            v-bind="tooltipProps"
+            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+            :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
+            :class="[!home ? 'active-events-on-disabled' : '']"
+            :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+            icon="mdi-home-search"
+            size="x-small"
+            :disabled="!home"
+            @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+            @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            key="vehicle"
+            v-bind="tooltipProps"
+            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+            :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
+            :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
+            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+            icon="mdi-airplane-marker"
+            size="x-small"
+            :disabled="!vehiclePosition"
+            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+          />
+        </template>
+      </v-tooltip>
+    </v-speed-dial>
     <v-progress-linear
       v-if="uploadingMission"
       :model-value="missionUploadProgress"
@@ -596,7 +629,7 @@
   >
     <p>Saving offline map content:&nbsp;{{ tilesTotal ? Math.round((tilesSaved / tilesTotal) * 100) : 0 }}%</p>
   </div>
-  <MissionEstimatesPanel v-model="missionStore.showMissionEstimates" />
+  <MissionEstimatesPanel v-if="!speedDialOpen" v-model="missionStore.showMissionEstimates" />
 </template>
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
@@ -637,7 +670,7 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
 import { degrees } from '@/libs/utils'
-import { createGridOverlay, TargetFollower, WhoToFollow } from '@/libs/utils-map'
+import { createGridOverlay, fitMapToWaypoints, TargetFollower, WhoToFollow } from '@/libs/utils-map'
 import { generateSurveyPath } from '@/libs/utils-map'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -904,6 +937,7 @@ const tilesSaved = ref(0)
 const tilesTotal = ref(0)
 const savingLayerName = ref<string>('')
 const downloadMenuOpen = ref(false)
+const speedDialOpen = ref(false)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
@@ -4123,6 +4157,36 @@ const centerVehicleButtonTooltipText = computed(() => {
   return 'Click once to center on vehicle or twice to track it.'
 })
 
+const missionFitCoordinates = computed<WaypointCoordinates[]>(() => {
+  const waypointCoords = missionStore.currentPlanningWaypoints.map((wp) => wp.coordinates)
+  const surveyCoords = missionStore.currentPlanningSurveys.flatMap((survey) => [
+    ...survey.polygonCoordinates,
+    ...survey.waypoints.map((wp) => wp.coordinates),
+  ])
+  return [...waypointCoords, ...surveyCoords]
+})
+
+const hasMissionWaypoints = computed(() => missionFitCoordinates.value.length > 0)
+
+const centerMissionButtonTooltipText = computed(() => {
+  if (!hasMissionWaypoints.value) {
+    return 'Cannot center map on mission (no waypoints defined).'
+  }
+  return 'Click to center the map on the current mission.'
+})
+
+const centerActivatorTooltipText = computed(() => {
+  if (followerTarget.value === WhoToFollow.HOME) return 'Tracking home position. Open to change target.'
+  if (followerTarget.value === WhoToFollow.VEHICLE) return 'Tracking vehicle position. Open to change target.'
+  return 'Center map on home, vehicle or mission.'
+})
+
+const centerOnMission = (): void => {
+  if (!planningMap.value || !hasMissionWaypoints.value) return
+  targetFollower.unFollow()
+  fitMapToWaypoints(planningMap.value, missionFitCoordinates.value)
+}
+
 const openPoiDialog = (): void => {
   if (cursorCoordinates.value && poiManagerRef.value) {
     poiManagerRef.value.openDialog(cursorCoordinates.value)
@@ -4611,7 +4675,7 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 337px; /* Position to the left of the buttons */
+  right: 293px; /* Position to the left of the buttons */
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
