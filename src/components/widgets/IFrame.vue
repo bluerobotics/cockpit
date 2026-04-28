@@ -31,10 +31,11 @@
         </div>
         <div
           v-show="!widget.options.startCollapsed"
-          class="flex-1 min-h-0 w-full"
+          class="relative flex-1 min-h-0 w-full"
           :class="expandsUpward ? 'order-1' : 'order-2'"
         >
           <iframe
+            v-if="urlCheckStatus === 'ok'"
             v-show="iframe_loaded"
             ref="iframe"
             :src="toBeUsedURL"
@@ -42,12 +43,38 @@
             frameborder="0"
             @load="loadFinished"
           />
+          <div v-else class="iframe-status-overlay flex flex-col items-center justify-center text-center px-4 gap-2">
+            <template v-if="urlCheckStatus === 'waiting'">
+              <v-icon size="48" class="opacity-80">mdi-progress-clock</v-icon>
+              <p class="text-base font-semibold">{{ waitingTitle }}</p>
+              <p class="text-sm opacity-70">
+                Trying again in {{ retryCountdownSeconds }}
+                {{ retryCountdownSeconds === 1 ? 'second' : 'seconds' }}
+              </p>
+              <v-progress-linear
+                :model-value="retryRemainingPercent"
+                color="white"
+                height="4"
+                rounded
+                reverse
+                class="!max-w-[60%] mt-2"
+              />
+            </template>
+            <template v-else-if="urlCheckStatus === 'retrying'">
+              <v-progress-circular indeterminate color="white" size="48" width="3" />
+              <p class="text-base font-semibold">Retrying...</p>
+            </template>
+            <template v-else>
+              <v-progress-circular indeterminate color="white" size="32" width="3" />
+            </template>
+          </div>
         </div>
       </div>
     </div>
     <div v-else>
       <teleport to=".widgets-view">
         <iframe
+          v-if="urlCheckStatus === 'ok'"
           v-show="iframe_loaded"
           ref="iframe"
           :src="toBeUsedURL"
@@ -55,6 +82,35 @@
           frameborder="0"
           @load="loadFinished"
         />
+        <div
+          v-else
+          class="iframe-status-overlay flex flex-col items-center justify-center text-center px-4 gap-2"
+          :style="[iframeStyle, { position: 'absolute' }]"
+        >
+          <template v-if="urlCheckStatus === 'waiting'">
+            <v-icon size="48" class="opacity-80">mdi-progress-clock</v-icon>
+            <p class="text-base font-semibold">{{ waitingTitle }}</p>
+            <p class="text-sm opacity-70">
+              Trying again in {{ retryCountdownSeconds }}
+              {{ retryCountdownSeconds === 1 ? 'second' : 'seconds' }}
+            </p>
+            <v-progress-linear
+              :model-value="retryRemainingPercent"
+              color="white"
+              height="4"
+              rounded
+              reverse
+              class="!max-w-[60%] mt-2"
+            />
+          </template>
+          <template v-else-if="urlCheckStatus === 'retrying'">
+            <v-progress-circular indeterminate color="white" size="48" width="3" />
+            <p class="text-base font-semibold">Retrying...</p>
+          </template>
+          <template v-else>
+            <v-progress-circular indeterminate color="white" size="32" width="3" />
+          </template>
+        </div>
       </teleport>
     </div>
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="600" max-width="45%">
@@ -202,6 +258,126 @@ const lastUsedURL = ref<Record<string, string>>({
   notUsingVehicleAddressAsBase: '',
 })
 
+type UrlCheckStatus = 'checking' | 'ok' | 'waiting' | 'retrying'
+
+const urlCheckTimeoutMs = 10000
+const urlCheckRetryDelayMs = 5000
+const minRetryingDisplayMs = 1000
+const countdownTickMs = 100
+
+const urlCheckStatus = ref<UrlCheckStatus>('checking')
+const retryCountdownMs = ref(0)
+
+let countdownIntervalId: ReturnType<typeof setInterval> | undefined
+
+const retryCountdownSeconds = computed(() => Math.ceil(retryCountdownMs.value / 1000))
+const retryRemainingPercent = computed(() => (retryCountdownMs.value / urlCheckRetryDelayMs) * 100)
+const waitingTitle = computed(() =>
+  toBeUsedURL.value.includes('extensionv2') ? 'BlueOS extension not ready yet' : 'Page not ready yet'
+)
+
+const clearUrlCheckTimers = (): void => {
+  if (countdownIntervalId !== undefined) {
+    clearInterval(countdownIntervalId)
+    countdownIntervalId = undefined
+  }
+}
+
+/**
+ * Probes a URL with `mode: 'no-cors'` to tell apart "server unreachable" from "server up but
+ * CORS blocking the read". A no-cors GET only throws on actual network failures; when the
+ * server replies (with any status), it resolves with an opaque response. This lets us decide
+ * whether to retry the URL check or just let the iframe load directly.
+ * @param {string} url URL to probe.
+ * @returns {Promise<boolean>} True if the server responded at all; false on network failure.
+ */
+const isServerReachable = async (url: string): Promise<boolean> => {
+  try {
+    await fetch(url, {
+      method: 'GET',
+      mode: 'no-cors',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(urlCheckTimeoutMs),
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Schedules the next URL check after a fixed interval, animating a countdown so the user has
+ * clear feedback about when the next attempt will happen.
+ */
+const startWaitingCountdown = (): void => {
+  clearUrlCheckTimers()
+  urlCheckStatus.value = 'waiting'
+  retryCountdownMs.value = urlCheckRetryDelayMs
+
+  const startTime = Date.now()
+  countdownIntervalId = setInterval(() => {
+    const remaining = Math.max(0, urlCheckRetryDelayMs - (Date.now() - startTime))
+    retryCountdownMs.value = remaining
+    if (remaining <= 0) {
+      clearUrlCheckTimers()
+      checkUrlStatus()
+    }
+  }, countdownTickMs)
+}
+
+/**
+ * Pre-fetches the iframe URL to verify the page is reachable before mounting the iframe.
+ *
+ * On any 4xx/5xx response, or when the server is unreachable (e.g. the vehicle is rebooting),
+ * we keep retrying every few seconds and show a "page not ready" overlay with a countdown to
+ * the next attempt. CORS failures — detected via a no-cors probe that confirms the server is
+ * alive — fall back to 'ok' so arbitrary external URLs still render as before.
+ *
+ * The 'retrying' state (active fetch on a non-initial attempt) is held for at least
+ * `minRetryingDisplayMs` so the user always sees a clear "we are trying" indicator, even
+ * when the fetch resolves quickly.
+ * @returns {Promise<void>} Resolves once the URL check (and any retry scheduling) is settled.
+ */
+const checkUrlStatus = async (): Promise<void> => {
+  clearUrlCheckTimers()
+
+  const isInitialCheck = urlCheckStatus.value === 'checking'
+  if (!isInitialCheck) {
+    urlCheckStatus.value = 'retrying'
+  }
+
+  const urlAtCheckStart = toBeUsedURL.value
+  const startTime = Date.now()
+
+  let outcome: 'ok' | 'retry'
+  try {
+    const response = await fetch(urlAtCheckStart, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(urlCheckTimeoutMs),
+    })
+    outcome = response.ok ? 'ok' : 'retry'
+  } catch {
+    if (toBeUsedURL.value !== urlAtCheckStart) return
+    outcome = (await isServerReachable(urlAtCheckStart)) ? 'ok' : 'retry'
+  }
+
+  if (!isInitialCheck) {
+    const elapsed = Date.now() - startTime
+    if (elapsed < minRetryingDisplayMs) {
+      await new Promise<void>((resolve) => setTimeout(resolve, minRetryingDisplayMs - elapsed))
+    }
+  }
+
+  if (toBeUsedURL.value !== urlAtCheckStart) return
+
+  if (outcome === 'ok') {
+    urlCheckStatus.value = 'ok'
+  } else {
+    startWaitingCountdown()
+  }
+}
+
 const vehicleBaseUrl = computed(() => {
   const protocol = window.location.protocol.includes('file') ? 'http:' : window.location.protocol
   const vehicleAddress = vehicleAddressFromDataLake.value || defaultBlueOsAddress
@@ -346,24 +522,18 @@ const apiEventCallback = (event: MessageEvent): void => {
   }
   const { variable } = event.data
   listenDataLakeVariable(variable, (value) => {
-    iframe.value.contentWindow.postMessage({ type: 'cockpit:datalakeVariable', variable, value }, '*')
+    iframe.value?.contentWindow?.postMessage({ type: 'cockpit:datalakeVariable', variable, value }, '*')
   })
 }
 
-// Watch for changes in vehicle address to reload iframe when necessary
-watch(
-  [vehicleAddressFromDataLake, () => widget.value.options.useVehicleAddressAsBase],
-  () => {
-    if (widget.value.options.useVehicleAddressAsBase) {
-      // Force iframe reload by setting loaded to false
-      iframe_loaded.value = false
-      setTimeout(() => {
-        iframe_loaded.value = true
-      }, 100)
-    }
-  },
-  { deep: true }
-)
+// Re-run the URL check whenever the composed iframe URL changes (user-edited source, vehicle
+// address change, or toggling the "use vehicle address as base" option). The iframe is kept
+// hidden until the new URL passes the check and finishes loading.
+watch(toBeUsedURL, () => {
+  iframe_loaded.value = false
+  urlCheckStatus.value = 'checking'
+  checkUrlStatus()
+})
 
 // Listen to vehicle address changes from data lake
 let vehicleAddressListenerId: string | undefined
@@ -401,6 +571,8 @@ onBeforeMount((): void => {
       vehicleAddressFromDataLake.value = value
     }
   })
+
+  checkUrlStatus()
 })
 
 onBeforeUnmount((): void => {
@@ -408,6 +580,7 @@ onBeforeUnmount((): void => {
   if (vehicleAddressListenerId) {
     unlistenDataLakeVariable('vehicle-address', vehicleAddressListenerId)
   }
+  clearUrlCheckTimers()
 })
 
 const collapsibleIframeStyle = computed<string>(() => {
@@ -474,5 +647,15 @@ iframe {
   margin: 0;
   padding: 0;
   opacity: calc(v-bind('iframeOpacity'));
+}
+
+.iframe-status-overlay {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  border-radius: 8px;
+  pointer-events: none;
+  user-select: none;
 }
 </style>
