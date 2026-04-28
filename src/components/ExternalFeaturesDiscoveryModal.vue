@@ -1614,23 +1614,47 @@ const checkForBlueOSJoystickSuggestions = async (): Promise<void> => {
 let isAutoOpening = false
 
 /**
+ * Whether the modal has already been auto-opened in this session, so transient
+ * vehicle reconnections don't re-pop the modal after the user has dismissed it.
+ */
+let hasAutoOpened = false
+
+/**
  * Fetch features from BlueOS without changing modal visibility
  */
 const fetchBlueOSFeatures = async (): Promise<void> => {
   await Promise.all([checkForBlueOSActions(), checkForBlueOSJoystickSuggestions()])
 }
 
+/**
+ * Auto-open the modal if there are pending features and it has not been auto-opened yet
+ */
+const autoOpenIfPending = (): void => {
+  if (hasAutoOpened || !hasPendingBlueOSFeatures.value) return
+  hasAutoOpened = true
+  isAutoOpening = true
+  isVisible.value = true
+  if (filteredJoystickSuggestionsByExtension.value.length > 0 && filteredActions.value.length === 0) {
+    activeTab.value = 'joystick-suggestions'
+  }
+}
+
 onMounted(async () => {
   if (!props.autoCheckOnMount) return
   await fetchBlueOSFeatures()
-  if (hasPendingBlueOSFeatures.value) {
-    isAutoOpening = true
-    isVisible.value = true
-    if (filteredJoystickSuggestionsByExtension.value.length > 0 && filteredActions.value.length === 0) {
-      activeTab.value = 'joystick-suggestions'
-    }
-  }
+  autoOpenIfPending()
 })
+
+// Retry fetching BlueOS features when the vehicle becomes reachable, since the
+// initial fetch on app boot may have failed if BlueOS was not yet up (issue #2650).
+watch(
+  () => mainVehicleStore.isVehicleOnline,
+  async (isOnline) => {
+    if (!isOnline) return
+    await fetchBlueOSFeatures()
+    if (props.autoCheckOnMount) autoOpenIfPending()
+  }
+)
 
 watch(isVisible, (visible, oldVisible) => {
   if (!visible) return
