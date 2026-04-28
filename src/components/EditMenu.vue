@@ -435,19 +435,23 @@
           External
         </div>
 
-        <v-tooltip text="Drag to add" location="top" theme="light">
+        <v-tooltip location="top" theme="light">
           <template #activator="{ props: tooltipProps }">
             <div />
             <img v-bind="tooltipProps" :src="widget.icon" alt="widget-icon" class="p-4 max-h-[75%] max-w-[95%]" />
             <div
-              class="flex items-center justify-center w-full p-1 transition-all rounded-b-md text-white"
+              class="flex items-center justify-center w-full p-1 transition-all rounded-b-md text-white overflow-hidden"
               :class="{ 'bg-[#135da3]': widget.isExternal, 'bg-[#4fa483]': !widget.isExternal }"
             >
-              <span class="whitespace-normal text-center">{{
+              <span class="whitespace-normal text-center break-words leading-tight 2xl:text-sm text-xs px-1">{{
                 widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
               }}</span>
             </div>
           </template>
+          <div class="text-center">
+            <div v-if="widget.isExternal">{{ widget.name }}</div>
+            <div>Drag to add</div>
+          </div>
         </v-tooltip>
       </div>
     </div>
