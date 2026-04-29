@@ -128,6 +128,33 @@
           {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
         </button>
         <div
+          v-if="!isCreatingSurvey && !isCreatingSimplePath && !vehicleStore.isVehicleOnline"
+          class="flex flex-col mx-4 my-2 gap-y-1"
+        >
+          <div class="flex flex-row justify-between items-center">
+            <p class="text-sm">Planning for</p>
+            <v-tooltip
+              location="top"
+              text="No vehicle connected. Pick the vehicle type so vehicle-specific planning features show up."
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-icon v-bind="tooltipProps" size="14" class="opacity-70">mdi-information-outline</v-icon>
+              </template>
+            </v-tooltip>
+          </div>
+          <v-select
+            v-model="missionStore.plannedVehicleType"
+            :items="plannedVehicleTypeItems"
+            item-title="label"
+            item-value="value"
+            hide-details
+            density="compact"
+            theme="dark"
+            variant="outlined"
+            class="text-sm"
+          />
+        </div>
+        <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
         >
@@ -696,8 +723,7 @@ import {
   useMissionEstimates,
 } from '@/composables/useMissionEstimates'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
-import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import { createGridOverlay, fitMapToWaypoints, TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
@@ -929,6 +955,12 @@ const availableFrames = Object.values(AltitudeReferenceType).map((value: Altitud
   name: value,
   value,
 }))
+const plannedVehicleTypeItems = [
+  { label: 'Surface Boat', value: MavType.MAV_TYPE_SURFACE_BOAT },
+  { label: 'Submarine', value: MavType.MAV_TYPE_SUBMARINE },
+  { label: 'UAV', value: MavType.MAV_TYPE_QUADROTOR },
+  { label: 'Ground Rover', value: MavType.MAV_TYPE_GROUND_ROVER },
+]
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)

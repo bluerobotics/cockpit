@@ -54,7 +54,7 @@ export const useMissionEstimates = (): {
   const vehicleStore = useMainVehicleStore()
 
   const normalizedVehicleType = computed<MavType>(() => {
-    const raw = vehicleStore.vehicleType as unknown
+    const raw = missionStore.effectiveVehicleType as unknown
     if (typeof raw === 'number') return (raw as unknown as MavType) ?? MavType.MAV_TYPE_GENERIC
     if (typeof raw === 'string') return (MavType as any)[raw] ?? MavType.MAV_TYPE_GENERIC
     return MavType.MAV_TYPE_GENERIC
@@ -65,7 +65,10 @@ export const useMissionEstimates = (): {
     [MavType.MAV_TYPE_SURFACE_BOAT]: blueBoatMissionEstimate,
   }
 
+  // Vehicle-specific estimators need payload data (battery, drag sensor, extra payload) that is
+  // only available when a real vehicle is connected; fall back to the generic estimator otherwise.
   const currentEstimator = computed<VehicleMissionEstimate | null>(() => {
+    if (!vehicleStore.isVehicleOnline) return null
     return estimatorsByType[normalizedVehicleType.value] ?? null
   })
 
