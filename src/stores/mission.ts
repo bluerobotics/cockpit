@@ -7,6 +7,7 @@ import { defaultMapFallbackBaseColor, defaultMapFallbackNoiseIntensity } from '@
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
@@ -87,6 +88,9 @@ export const useMissionStore = defineStore('mission', () => {
   const mapClearRequestRevision = ref(0)
   const mapDownloadRequestRevision = ref(0)
   const homeMarkerPosition = ref<WaypointCoordinates | undefined>(undefined)
+
+  // Fallback vehicle type used by vehicle-specific planning features when no vehicle is connected.
+  const plannedVehicleType = useBlueOsStorage<MavType | undefined>('cockpit-planned-vehicle-type', undefined)
 
   const { showDialog } = useInteractionDialog()
 
@@ -659,6 +663,16 @@ export const useMissionStore = defineStore('mission', () => {
 
   watch(username, () => window.dispatchEvent(new CustomEvent('user-changed', { detail: { username: username.value } })))
 
+  // Prefers the connected vehicle's type and falls back to the planned type for offline planning.
+  // The fallback is gated on `isVehicleOnline` because `mainVehicleStore.vehicleType` is set on
+  // heartbeat but never cleared on disconnect, so a plain `??` would keep returning the stale
+  // last-connected type after the user goes offline.
+  const effectiveVehicleType = computed<MavType | undefined>(() => {
+    return mainVehicleStore.isVehicleOnline
+      ? (mainVehicleStore.vehicleType as MavType | undefined)
+      : plannedVehicleType.value
+  })
+
   return {
     username,
     lastConnectedUser,
@@ -738,5 +752,7 @@ export const useMissionStore = defineStore('mission', () => {
     canRedo,
     clearUndoStack,
     homeMarkerPosition,
+    plannedVehicleType,
+    effectiveVehicleType,
   }
 })
