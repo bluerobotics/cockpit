@@ -45,6 +45,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     configModalVisibility: false,
     videoLibraryVisibility: false,
     videoLibraryMode: 'videos',
+    missionLibraryVisibility: false,
     UIGlassEffect: useBlueOsStorage('cockpit-ui-glass-effect', {
       opacity: 0.9,
       bgColor: '#63636354',
@@ -129,6 +130,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     },
     isConfigModalVisible: (state) => state.configModalVisibility,
     isVideoLibraryVisible: (state) => state.videoLibraryVisibility,
+    isMissionLibraryVisible: (state) => state.missionLibraryVisibility,
     getUIGlassEffect: (state) => {
       state.UIGlassEffect
     },
