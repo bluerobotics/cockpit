@@ -209,7 +209,9 @@ export type SavedMission = CockpitMission & {
    */
   updatedAt: number
   /**
-   * Inline base64-encoded thumbnail (image/svg+xml or image/png) representing the mission path.
+   * @deprecated Thumbnails are now stored in a separate storage map keyed by mission id
+   * (see `savedMissionThumbnails` in the mission store). Field kept for backwards
+   * compatibility with previously persisted entries.
    */
   thumbnail?: string
   /**
