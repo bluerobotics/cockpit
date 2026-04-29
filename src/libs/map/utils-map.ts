@@ -13,6 +13,18 @@ const defaultUpdateIntervalMs = 500
 // Minimum distance, in pixels, the user must drag the map before tracking stops, so small or accidental drags don't disable following.
 const defaultUnfollowDragThresholdPx = 150
 
+// Raise wheelPxPerZoomLevel so a single wheel notch/pinch step advances exactly one zoom level
+// (Leaflet's default 60 lets a typical ~100px deltaY round up to 2 levels with zoomSnap: 1).
+export const singleStepZoomMapOptions: Pick<
+  L.MapOptions,
+  'wheelPxPerZoomLevel' | 'wheelDebounceTime' | 'zoomSnap' | 'zoomDelta'
+> = {
+  wheelPxPerZoomLevel: 100,
+  wheelDebounceTime: 100,
+  zoomSnap: 1,
+  zoomDelta: 1,
+}
+
 /**
  * Enum for the different types of targets that can be followed.
  * @enum {string}
