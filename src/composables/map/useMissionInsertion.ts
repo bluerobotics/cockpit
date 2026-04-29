@@ -120,10 +120,11 @@ export const useMissionInsertion = (
   }
 
   // Splices the mission at `segmentIndex + 1` so it sits between waypoint `segmentIndex` and
-  // waypoint `segmentIndex + 1`.
+  // waypoint `segmentIndex + 1`. Use `-1` to insert at the very start of the planning.
+  // Appending after the last waypoint uses appendMissionToPlanning, so the upper bound is exclusive.
   const insertMissionIntoSegment = (mission: CockpitMission, segmentIndex: number): void => {
     const planning = missionStore.currentPlanningWaypoints
-    if (segmentIndex < 0 || segmentIndex >= planning.length - 1) {
+    if (segmentIndex < -1 || segmentIndex >= planning.length - 1) {
       openSnackbar({ variant: 'error', message: 'Cannot insert mission: invalid segment.', duration: 2500 })
       return
     }
@@ -136,17 +137,18 @@ export const useMissionInsertion = (
 
     const { newWaypoints, newSurveys } = cloneMissionForPlanning(mission)
 
-    missionStore.currentPlanningWaypoints.splice(segmentIndex + 1, 0, ...newWaypoints)
+    const spliceIndex = segmentIndex + 1
+    missionStore.currentPlanningWaypoints.splice(spliceIndex, 0, ...newWaypoints)
     newWaypoints.forEach((wp) => options.addWaypointMarker(wp))
     options.updateWaypointMarkers()
 
     newSurveys.forEach((survey) => missionStore.currentPlanningSurveys.push(survey))
 
-    openSnackbar({
-      variant: 'success',
-      message: `Mission inserted between waypoints ${segmentIndex + 1} and ${segmentIndex + 2}.`,
-      duration: 2500,
-    })
+    const message =
+      segmentIndex === -1
+        ? 'Mission inserted at the start of the planning.'
+        : `Mission inserted between waypoints ${segmentIndex + 1} and ${segmentIndex + 2}.`
+    openSnackbar({ variant: 'success', message, duration: 2500 })
   }
 
   // Routes a placed library mission to the right outcome: segment insert when triggered from a
