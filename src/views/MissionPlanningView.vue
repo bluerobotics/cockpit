@@ -689,6 +689,7 @@
     :enable-undo="enableUndoForCurrentSurvey"
     :selected-waypoint="selectedWaypoint"
     :menu-type="contextMenuType"
+    :can-save-current="canSaveCurrentMissionToLibrary"
     @set-home-position="setHomePosition"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
@@ -702,6 +703,8 @@
     @place-point-of-interest="openPoiDialog"
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
+    @add-mission-from-library="openMissionLibrary"
+    @save-mission-to-library="openMissionLibraryWithSaveDialog"
   />
   <Teleport to="#planningMap">
     <RadialMenu
@@ -782,6 +785,7 @@
     :current-mission-snapshot="currentMissionSnapshot"
     :current-mission-estimates="currentMissionEstimatesSnapshot"
     :effective-vehicle-type="missionStore.effectiveVehicleType"
+    :open-save-on-mount="missionLibraryOpenSaveOnMount"
     @load-mission="handleLoadMissionFromLibrary"
   />
 </template>
@@ -1815,8 +1819,9 @@ const onSegmentRadialMenuSelect = (index: number): void => {
     return
   } else if (index === 2) {
     if (radialMenuSegmentIndex !== null) {
-      pendingSegmentInsertIndex.value = radialMenuSegmentIndex
-      interfaceStore.missionLibraryVisibility = true
+      const segmentIndex = radialMenuSegmentIndex
+      openMissionLibrary()
+      pendingSegmentInsertIndex.value = segmentIndex
     }
     dismissSegmentRadialMenu()
     return
@@ -2814,9 +2819,24 @@ const currentMissionEstimatesSnapshot = computed<MissionEstimatesSnapshot>(() =>
   missionCoverageArea: missionEstimates.missionCoverageAreaSquareMeters.value,
 }))
 
+// When true, the next mount of `MissionLibraryModal` opens its "Save current mission" dialog.
+const missionLibraryOpenSaveOnMount = ref(false)
+
+const canSaveCurrentMissionToLibrary = computed(
+  () => missionStore.currentPlanningWaypoints.length > 0 || missionStore.currentPlanningSurveys.length > 0
+)
+
 const openMissionLibrary = (): void => {
   // Clear any pending intent so a toolbar-triggered open always uses the standard placement flow.
   pendingSegmentInsertIndex.value = null
+  missionLibraryOpenSaveOnMount.value = false
+  interfaceStore.missionLibraryVisibility = true
+}
+
+const openMissionLibraryWithSaveDialog = (): void => {
+  if (!canSaveCurrentMissionToLibrary.value) return
+  pendingSegmentInsertIndex.value = null
+  missionLibraryOpenSaveOnMount.value = true
   interfaceStore.missionLibraryVisibility = true
 }
 
