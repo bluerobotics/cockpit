@@ -132,7 +132,7 @@
         class="flex flex-col rounded-md"
         :style="[interfaceStore.globalGlassMenuStyles, { background: '#333333EE', border: '1px solid #FFFFFF44' }]"
       >
-        <v-list-item v-if="!isCreatingSurvey" class="flex items-center gap-x-2 pb-2" @click="handleAddWaypointAtCursor">
+        <v-list-item v-if="!isCreatingSurvey" class="flex items-center gap-x-2 pb-2" @click="handleAddHereClick">
           <v-icon
             variant="text"
             icon="mdi-plus-circle-outline"
@@ -141,7 +141,9 @@
             color="white"
             class="text-[18px]"
           ></v-icon>
-          <span class="text-white text-sm ml-4">Add waypoint here</span>
+          <span class="text-white text-sm ml-4">{{
+            nearestSegmentIndex !== null ? 'Add element here' : 'Add waypoint here'
+          }}</span>
         </v-list-item>
         <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSurvey">
@@ -369,12 +371,14 @@ const props = defineProps<{
   selectedWaypoint: Waypoint | undefined
   menuType: ContextMenuTypes
   canSaveCurrent: boolean
+  nearestSegmentIndex: number | null
 }>()
 /* eslint-enable jsdoc/require-jsdoc */
 
 const emit = defineEmits<{
   (event: 'close'): void
   (event: 'add-waypoint-at-cursor'): void
+  (event: 'open-segment-radial-menu', segmentIndex: number): void
   (event: 'toggleSurvey'): void
   (event: 'toggleSimplePath'): void
   (event: 'deleteSelectedSurvey'): void
@@ -441,8 +445,12 @@ const surveyCreationButtonText = computed(() => {
   return 'Add survey'
 })
 
-const handleAddWaypointAtCursor = (): void => {
-  emit('add-waypoint-at-cursor')
+const handleAddHereClick = (): void => {
+  if (props.nearestSegmentIndex !== null) {
+    emit('open-segment-radial-menu', props.nearestSegmentIndex)
+  } else {
+    emit('add-waypoint-at-cursor')
+  }
   emit('close')
 }
 

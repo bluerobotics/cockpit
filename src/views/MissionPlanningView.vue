@@ -634,12 +634,13 @@
     :selected-waypoint="selectedWaypoint"
     :menu-type="contextMenuType"
     :can-save-current="canSaveCurrentMissionToLibrary"
+    :nearest-segment-index="contextMenuNearestSegmentIndex"
     @set-home-position="setHomePosition"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
     @swap-survey-entry-exit="swapSurveyEntryExit"
-    @toggle-survey="toggleSurvey"
-    @toggle-simple-path="toggleSimplePath"
+    @toggle-survey="addSurveyFromContextMenu"
+    @toggle-simple-path="addSimplePathFromContextMenu"
     @undo-generated-waypoints="undoGenerateWaypoints"
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
     @toggle-crosshatch="toggleSurveyCrosshatch"
@@ -647,9 +648,10 @@
     @remove-waypoint="removeSelectedWaypoint"
     @place-point-of-interest="openPoiDialog"
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
+    @open-segment-radial-menu="openSegmentRadialMenuFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
     @open-map-overlays="overlaysDialogOpen = true"
-    @add-mission-from-library="openMissionLibrary"
+    @add-mission-from-library="addMissionFromLibraryContextMenu"
     @save-mission-to-library="openMissionLibraryWithSaveDialog"
   />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
@@ -1049,6 +1051,7 @@ const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
+const contextMenuNearestSegmentIndex = ref<number | null>(null)
 const currentCursorGeoCoordinates = ref<[number, number] | null>(null)
 const confirmButtonStyle = ref<Record<string, string>>({})
 const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
@@ -1153,8 +1156,12 @@ const clearLiveMeasure = (): void => {
 const currentMeasureAnchor = (): L.LatLng | null => {
   if (!planningMap.value) return null
   if (isCreatingSimplePath.value && missionStore.currentPlanningWaypoints.length > 0) {
-    const last = missionStore.currentPlanningWaypoints[missionStore.currentPlanningWaypoints.length - 1]
-    return L.latLng(last.coordinates[0], last.coordinates[1])
+    // Anchor at index 0 when the session was started near the start endpoint, so subsequent
+    // inserts extend the path outward from whichever waypoint sits at the start of the array.
+    const wps = missionStore.currentPlanningWaypoints
+    const anchor = pendingSimplePathInsertIndex.value !== null ? wps[0] : wps[wps.length - 1]
+    if (!anchor) return null
+    return L.latLng(anchor.coordinates[0], anchor.coordinates[1])
   }
   if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length > 0) {
     const last = surveyPolygonVertexesPositions.value[surveyPolygonVertexesPositions.value.length - 1]
@@ -1236,10 +1243,13 @@ const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
   return !!el.closest('.custom-div-icon, .edge-marker, .delete-popup, .delete-button')
 }
 
-const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
+// `evt` is optional so callers triggered without a mousemove (e.g. right after a context-menu
+// action) can still draw the line; hover hit-testing (against survey handles or the last
+// waypoint) is skipped in that case.
+const renderMeasureOverlay = (cursorLatLng: L.LatLng, evt: L.LeafletMouseEvent | null): void => {
   if (!planningMap.value) return
 
-  lastMeasureCursor = e
+  if (evt) lastMeasureCursor = evt
 
   const anchor = currentMeasureAnchor()
   const draggingExistingNode = isDraggingMarker.value || isDraggingPolygon.value
@@ -1256,13 +1266,12 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   const map = planningMap.value
   ensureMeasureOverlay(map)
 
-  // NEW: hide/show the live pill when hovering survey nodes/add/delete UI
   if (measureTextEl) {
-    measureTextEl.style.display = isOverSurveyHandle(e) ? 'none' : 'block'
+    measureTextEl.style.display = evt && isOverSurveyHandle(evt) ? 'none' : 'block'
   }
 
   const a = map.latLngToContainerPoint(anchor!)
-  const b = map.latLngToContainerPoint(e.latlng)
+  const b = map.latLngToContainerPoint(cursorLatLng)
 
   if (measureLineEl) {
     measureLineEl.setAttribute('x1', String(a.x))
@@ -1273,11 +1282,11 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
 
   const midX = (a.x + b.x) / 2
   const midY = (a.y + b.y) / 2
-  const dist = anchor!.distanceTo(e.latlng)
+  const dist = anchor!.distanceTo(cursorLatLng)
 
-  const hidePill = isOverSurveyHandle(e) || isOverLastWaypointMarker(e) || dist < 1 // hide if closer than 1 meter to last wp on the array
+  const hidePill = (evt && (isOverSurveyHandle(evt) || isOverLastWaypointMarker(evt))) || dist < 1 // hide if closer than 1 meter to last wp on the array
 
-  const bearing = bearingBetween([anchor!.lat, anchor!.lng], [e.latlng.lat, e.latlng.lng])
+  const bearing = bearingBetween([anchor!.lat, anchor!.lng], [cursorLatLng.lat, cursorLatLng.lng])
   const text = `${formatMetersShort(dist)} · ${formatBearing(bearing)}`
   if (measureTextEl) {
     measureTextEl.textContent = text
@@ -1291,7 +1300,7 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
     angleOverlay.renderVertexAngle(
       [prevAnchor.lat, prevAnchor.lng],
       [anchor!.lat, anchor!.lng],
-      [e.latlng.lat, e.latlng.lng]
+      [cursorLatLng.lat, cursorLatLng.lng]
     )
   } else {
     angleOverlay.clearVertexAngles()
@@ -1310,6 +1319,10 @@ const refreshLiveMeasureOnMapMove = (): void => {
     const latlng = map.containerPointToLatLng(containerPoint)
     handleMapMouseMove({ ...lastMeasureCursor, latlng, containerPoint })
   })
+}
+
+const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
+  renderMeasureOverlay(e.latlng, e)
 }
 
 const saveEsri = (): void => {
@@ -1384,6 +1397,10 @@ const segmentRadialMenuItems: RadialMenuItem[] = [
 ]
 const segmentSurveyInsertIndex = ref<number | null>(null)
 const pendingSegmentInsertIndex = ref<number | null>(null)
+// Non-null when simple-path mode was started from the context menu near the start endpoint.
+// While set, every click inserts at this index (typically `0`) so the path extends outward from
+// the start. Reset to null when leaving simple-path mode.
+const pendingSimplePathInsertIndex = ref<number | null>(null)
 
 const isCtrlDown = ref(false)
 const isShiftDown = ref(false)
@@ -1833,6 +1850,19 @@ const showSegmentRadialMenu = (): void => {
   segmentRadialMenuVisible.value = true
 }
 
+const openSegmentRadialMenuFromContextMenu = (segmentIndex: number): void => {
+  const map = planningMap.value
+  const wps = missionStore.currentPlanningWaypoints
+  if (!map || segmentIndex < 0 || segmentIndex + 1 >= wps.length) return
+  const a = wps[segmentIndex].coordinates
+  const b = wps[segmentIndex + 1].coordinates
+  const midpoint = L.latLng((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+  const pt = map.latLngToContainerPoint(midpoint)
+  radialMenuSegmentIndex = segmentIndex
+  segmentRadialMenuPosition.value = { x: pt.x, y: pt.y }
+  segmentRadialMenuVisible.value = true
+}
+
 const dismissSegmentRadialMenu = (): void => {
   if (segmentRadialMenuVisible.value) {
     segmentRadialMenuVisible.value = false
@@ -1953,10 +1983,66 @@ const addWaypointFromClick = (latlng: L.LatLng): void => {
   updateWaypointMarkers()
 }
 
+// Returns `0` when the cursor is closer to the first waypoint (so the new item is inserted at
+// the start of the planning), or `null` to fall back to append-to-end behaviour.
+const getEndpointSplicePositionForLatLng = (latlng: L.LatLng): number | null => {
+  const wps = missionStore.currentPlanningWaypoints
+  if (wps.length < 2) return null
+  const first = L.latLng(wps[0].coordinates[0], wps[0].coordinates[1])
+  const last = L.latLng(wps[wps.length - 1].coordinates[0], wps[wps.length - 1].coordinates[1])
+  return latlng.distanceTo(first) < latlng.distanceTo(last) ? 0 : null
+}
+
 const addWaypointFromContextMenu = (): void => {
   if (!currentCursorGeoCoordinates.value) return
+  logUserAction('Added a waypoint from the map context menu')
   const ll = L.latLng(currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1])
-  addWaypointFromClick(ll)
+
+  const insertIndex = getEndpointSplicePositionForLatLng(ll) ?? undefined
+  addWaypoint(
+    [ll.lat, ll.lng],
+    currentWaypointAltitude.value,
+    currentWaypointAltitudeRefType.value,
+    undefined,
+    insertIndex
+  )
+  updateWaypointMarkers()
+}
+
+const getContextMenuEndpointSplicePosition = (): number | null => {
+  if (!currentCursorGeoCoordinates.value) return null
+  const ll = L.latLng(currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1])
+  return getEndpointSplicePositionForLatLng(ll)
+}
+
+const addSimplePathFromContextMenu = (): void => {
+  logUserAction('Started a simple path from the map context menu')
+  const insertIndex = getContextMenuEndpointSplicePosition()
+  if (insertIndex !== null) pendingSimplePathInsertIndex.value = insertIndex
+  toggleSimplePath()
+  // Draw the live measure line right away using the live cursor position (not the menu-open
+  // coords), so it has visible length even when the menu was opened next to the anchor waypoint.
+  if (isCreatingSimplePath.value && planningMap.value) {
+    const map = planningMap.value
+    const rect = map.getContainer().getBoundingClientRect()
+    const containerPt = L.point(cursorLivePositionX.value - rect.left, cursorLivePositionY.value - rect.top)
+    const ll = map.containerPointToLatLng(containerPt)
+    nextTick(() => renderMeasureOverlay(ll, null))
+  }
+}
+
+const addSurveyFromContextMenu = (): void => {
+  logUserAction('Started a survey from the map context menu')
+  const insertIndex = getContextMenuEndpointSplicePosition()
+  if (insertIndex !== null) segmentSurveyInsertIndex.value = insertIndex
+  toggleSurvey()
+}
+
+const addMissionFromLibraryContextMenu = (): void => {
+  // Prepend (segment -1) when the click sits closer to the mission's start endpoint; otherwise let
+  // the placement flow append. The intent is passed in the same call that opens the library.
+  const insertIndex = getContextMenuEndpointSplicePosition()
+  openMissionLibrary({ segmentInsertIndex: insertIndex === 0 ? -1 : undefined })
 }
 
 const makeAreaMarker = (at: L.LatLng, text: string): L.Marker => {
@@ -2097,6 +2183,15 @@ const showContextMenu = (event: L.LeafletMouseEvent): void => {
   cursorCoordinates.value = [event.latlng.lat, event.latlng.lng]
   event.originalEvent.preventDefault()
 
+  contextMenuNearestSegmentIndex.value = null
+  if (contextMenuType.value === 'map' && missionStore.currentPlanningWaypoints.length >= 2) {
+    const latlngs = missionStore.currentPlanningWaypoints.map((w) => L.latLng(w.coordinates[0], w.coordinates[1]))
+    const { segmentIndex, distanceInPixels } = getClosestMissionPathSegmentInfo(latlngs, event.latlng)
+    if (segmentIndex >= 0 && distanceInPixels <= nearMissionPathTolerance) {
+      contextMenuNearestSegmentIndex.value = segmentIndex
+    }
+  }
+
   let x = event.originalEvent.clientX
   let y = event.originalEvent.clientY
 
@@ -2149,6 +2244,7 @@ const showContextMenu = (event: L.LeafletMouseEvent): void => {
 
 const hideContextMenu = (): void => {
   contextMenuVisible.value = false
+  contextMenuNearestSegmentIndex.value = null
   selectedSurveyId.value = ''
 }
 
@@ -2178,6 +2274,7 @@ const setHomePosition = async (): Promise<void> => {
 const toggleSimplePath = (): void => {
   if (isCreatingSimplePath.value) {
     isCreatingSimplePath.value = false
+    pendingSimplePathInsertIndex.value = null
     return
   }
   isCreatingSimplePath.value = true
@@ -2186,6 +2283,7 @@ const toggleSimplePath = (): void => {
 const toggleSurvey = (): void => {
   if (isCreatingSimplePath.value) {
     isCreatingSimplePath.value = false
+    pendingSimplePathInsertIndex.value = null
   }
   if (isCreatingSurvey.value) {
     isCreatingSurvey.value = false
@@ -2513,6 +2611,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
     }
     if (isCreatingSimplePath.value) {
       isCreatingSimplePath.value = false
+      pendingSimplePathInsertIndex.value = null
     }
   }
   if (event.key === 'Enter' && isCreatingSurvey.value) {
@@ -2733,7 +2832,8 @@ const addWaypoint = (
   coordinates: WaypointCoordinates,
   altitude: number,
   altitudeReferenceType: AltitudeReferenceType,
-  commands?: MissionCommand[]
+  commands?: MissionCommand[],
+  insertIndex?: number
 ): void => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
 
@@ -2748,7 +2848,11 @@ const addWaypoint = (
     commands: cloneCommands(commands),
   }
 
-  missionStore.currentPlanningWaypoints.push(waypoint)
+  if (insertIndex !== undefined) {
+    missionStore.currentPlanningWaypoints.splice(insertIndex, 0, waypoint)
+  } else {
+    missionStore.currentPlanningWaypoints.push(waypoint)
+  }
 
   const newMarker = L.marker(coordinates, { draggable: true })
 
@@ -2778,7 +2882,7 @@ const addWaypoint = (
   const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
   const iconDimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    html: createWaypointMarkerHtml(waypoint.commands.length, false, isEndpointWaypoint(waypointId)),
     className: 'waypoint-marker-icon',
     iconSize: iconDimensions.iconSize,
     iconAnchor: iconDimensions.iconAnchor,
@@ -3467,8 +3571,9 @@ const generateWaypointsFromSurvey = (): void => {
 }
 
 // Helper function to create waypoint marker HTML with command count indicator
-const createWaypointMarkerHtml = (commandCount: number, isSelected = false): string => {
+const createWaypointMarkerHtml = (commandCount: number, isSelected = false, isEndpoint = false): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
+  const endpointClass = isEndpoint ? ' endpoint-marker' : ''
   const size = getMarkerSizeFromZoom(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
   const showSmallCommandCount = size !== 'md' && commandCount > 1
@@ -3476,11 +3581,17 @@ const createWaypointMarkerHtml = (commandCount: number, isSelected = false): str
 
   return `
     <div class="${markerSizeClass}">
-      <div class="${baseClass} waypoint-main-marker"></div>
+      <div class="${baseClass} waypoint-main-marker${endpointClass}"></div>
       ${showCommandCount ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
       ${showSmallCommandCount ? `<div class="command-count-indicator small">${commandCount}</div>` : ''}
     </div>
   `
+}
+
+const isEndpointWaypoint = (waypointId: string): boolean => {
+  const wps = missionStore.currentPlanningWaypoints
+  if (wps.length === 0) return false
+  return waypointId === wps[0].id || waypointId === wps[wps.length - 1].id
 }
 
 const updateWaypointMarkers = (): void => {
@@ -3490,16 +3601,18 @@ const updateWaypointMarkers = (): void => {
   const currentZoom = zoom.value
   const markerSize = getMarkerSizeFromZoom(currentZoom)
 
-  missionStore.currentPlanningWaypoints.forEach((wp) => {
+  const wps = missionStore.currentPlanningWaypoints
+  wps.forEach((wp, idx) => {
     const marker = waypointMarkers.value[wp.id]
     if (marker) {
       // Update marker icon to show command count
       const isSelected = selectedWaypoint.value?.id === wp.id
+      const isEndpoint = idx === 0 || idx === wps.length - 1
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
       marker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(wp.commands.length, isSelected),
+          html: createWaypointMarkerHtml(wp.commands.length, isSelected, isEndpoint),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3813,7 +3926,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    html: createWaypointMarkerHtml(waypoint.commands.length, false, isEndpointWaypoint(waypoint.id)),
     className: 'waypoint-marker-icon',
     iconSize: dimensions.iconSize,
     iconAnchor: dimensions.iconAnchor,
@@ -3861,7 +3974,7 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false),
+          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false, isEndpointWaypoint(oldWaypointId)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3877,7 +3990,7 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       newMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true),
+          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true, isEndpointWaypoint(newWaypointId)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -4073,7 +4186,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false, isEndpointWaypoint(oldWaypoint.id)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -4148,7 +4261,17 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       !interfaceStore.configPanelVisible &&
       isCreatingSimplePath.value
     ) {
-      addWaypoint([e.latlng.lat, e.latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
+      const insertIndex = pendingSimplePathInsertIndex.value
+      addWaypoint(
+        [e.latlng.lat, e.latlng.lng],
+        currentWaypointAltitude.value,
+        currentWaypointAltitudeRefType.value,
+        undefined,
+        insertIndex ?? undefined
+      )
+      // Refresh so the previous start waypoint loses its endpoint visual and the live measure
+      // line anchors to the just-added waypoint (now at index 0).
+      updateWaypointMarkers()
     }
     clearLiveMeasure()
   }
@@ -4584,6 +4707,7 @@ watch(
   (step) => {
     if (step > 1) {
       isCreatingSimplePath.value = false
+      pendingSimplePathInsertIndex.value = null
       isCreatingSurvey.value = false
       return
     }
@@ -4904,6 +5028,12 @@ watch(
   border-radius: 50%;
   border: 2px solid #ffffff99;
   background-color: #034103;
+}
+
+.endpoint-marker {
+  background-color: #ff9800 !important;
+  transform: scale(1.25);
+  transform-origin: center;
 }
 
 .command-count-indicator {
