@@ -159,6 +159,7 @@ import { useMissionEstimates } from '@/composables/useMissionEstimates'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 
 defineProps<{
   /**
@@ -171,6 +172,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
+const missionStore = useMissionStore()
 
 const {
   totalMissionLength,
@@ -182,7 +184,9 @@ const {
   missionCoverageAreaSquareMeters,
 } = useMissionEstimates()
 
-const isOptionsIconVisible = computed(() => vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT)
+const isOptionsIconVisible = computed(
+  () => vehicleStore.isVehicleOnline && missionStore.effectiveVehicleType === MavType.MAV_TYPE_SURFACE_BOAT
+)
 
 const maxDistance = computed(() => totalMaxDistance.value)
 const missionDuration = computed(() => totalMissionDuration.value)
