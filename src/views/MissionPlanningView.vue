@@ -2718,7 +2718,7 @@ const addWaypoint = (
   const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
   const iconDimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    html: createWaypointMarkerHtml(waypoint.commands.length, false, isEndpointWaypoint(waypointId)),
     className: 'waypoint-marker-icon',
     iconSize: iconDimensions.iconSize,
     iconAnchor: iconDimensions.iconAnchor,
@@ -4129,8 +4129,9 @@ const generateWaypointsFromSurvey = (): void => {
 }
 
 // Helper function to create waypoint marker HTML with command count indicator
-const createWaypointMarkerHtml = (commandCount: number, isSelected = false): string => {
+const createWaypointMarkerHtml = (commandCount: number, isSelected = false, isEndpoint = false): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
+  const endpointClass = isEndpoint ? ' endpoint-marker' : ''
   const size = getMarkerSizeFromZoom(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
   const showSmallCommandCount = size !== 'md' && commandCount > 1
@@ -4138,11 +4139,17 @@ const createWaypointMarkerHtml = (commandCount: number, isSelected = false): str
 
   return `
     <div class="${markerSizeClass}">
-      <div class="${baseClass} waypoint-main-marker"></div>
+      <div class="${baseClass} waypoint-main-marker${endpointClass}"></div>
       ${showCommandCount ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
       ${showSmallCommandCount ? `<div class="command-count-indicator small">${commandCount}</div>` : ''}
     </div>
   `
+}
+
+const isEndpointWaypoint = (waypointId: string): boolean => {
+  const wps = missionStore.currentPlanningWaypoints
+  if (wps.length === 0) return false
+  return waypointId === wps[0].id || waypointId === wps[wps.length - 1].id
 }
 
 const updateWaypointMarkers = (): void => {
@@ -4152,16 +4159,18 @@ const updateWaypointMarkers = (): void => {
   const currentZoom = zoom.value
   const markerSize = getMarkerSizeFromZoom(currentZoom)
 
-  missionStore.currentPlanningWaypoints.forEach((wp) => {
+  const wps = missionStore.currentPlanningWaypoints
+  wps.forEach((wp, idx) => {
     const marker = waypointMarkers.value[wp.id]
     if (marker) {
       // Update marker icon to show command count
       const isSelected = selectedWaypoint.value?.id === wp.id
+      const isEndpoint = idx === 0 || idx === wps.length - 1
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
       marker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(wp.commands.length, isSelected),
+          html: createWaypointMarkerHtml(wp.commands.length, isSelected, isEndpoint),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -4456,7 +4465,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    html: createWaypointMarkerHtml(waypoint.commands.length, false, isEndpointWaypoint(waypoint.id)),
     className: 'waypoint-marker-icon',
     iconSize: dimensions.iconSize,
     iconAnchor: dimensions.iconAnchor,
@@ -4504,7 +4513,7 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false),
+          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false, isEndpointWaypoint(oldWaypointId)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -4520,7 +4529,7 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       newMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true),
+          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true, isEndpointWaypoint(newWaypointId)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -4596,7 +4605,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false, isEndpointWaypoint(oldWaypoint.id)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -5490,6 +5499,12 @@ watch(
   border-radius: 50%;
   border: 2px solid #ffffff99;
   background-color: #034103;
+}
+
+.endpoint-marker {
+  background-color: #ff9800 !important;
+  transform: scale(1.25);
+  transform-origin: center;
 }
 
 .command-count-indicator {
