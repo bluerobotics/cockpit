@@ -150,6 +150,34 @@
           {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
         </button>
         <div
+          v-if="!isCreatingSurvey && !isCreatingSimplePath && !vehicleStore.isVehicleOnline"
+          class="flex flex-col mx-4 my-2 gap-y-1"
+        >
+          <div class="flex flex-row justify-between items-center">
+            <p class="text-sm">Planning for</p>
+            <v-tooltip
+              location="top"
+              text="No vehicle connected. Pick the vehicle type so vehicle-specific planning features show up."
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-icon v-bind="tooltipProps" size="14" class="opacity-70">mdi-information-outline</v-icon>
+              </template>
+            </v-tooltip>
+          </div>
+          <v-select
+            v-model="missionStore.plannedVehicleType"
+            :items="plannedVehicleTypeItems"
+            item-title="label"
+            item-value="value"
+            hide-details
+            density="compact"
+            theme="dark"
+            variant="outlined"
+            class="text-sm"
+            @update:model-value="onPlannedVehicleTypeChange"
+          />
+        </div>
+        <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
         >
@@ -758,6 +786,7 @@ import {
   formatMetersShort,
   polygonAreaSquareMeters,
 } from '@/libs/mission/general-estimates'
+import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
 import { degrees } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -996,6 +1025,11 @@ const availableFrames = Object.values(AltitudeReferenceType).map((value: Altitud
   name: value,
   value,
 }))
+const plannedVehicleTypeItems = PLANNABLE_VEHICLE_TYPES
+
+const onPlannedVehicleTypeChange = (value?: MavType): void => {
+  logUserAction(`Selected "${vehicleTypeLabel(value)}" as the planning vehicle type`)
+}
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
