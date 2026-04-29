@@ -633,6 +633,7 @@
     :enable-undo="enableUndoForCurrentSurvey"
     :selected-waypoint="selectedWaypoint"
     :menu-type="contextMenuType"
+    :can-save-current="canSaveCurrentMissionToLibrary"
     @set-home-position="setHomePosition"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
@@ -648,6 +649,8 @@
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
     @open-map-overlays="overlaysDialogOpen = true"
+    @add-mission-from-library="openMissionLibrary"
+    @save-mission-to-library="openMissionLibraryWithSaveDialog"
   />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
   <Teleport to="#planningMap">
@@ -729,6 +732,7 @@
     :current-mission-snapshot="currentMissionSnapshot"
     :current-mission-estimates="currentMissionEstimatesSnapshot"
     :effective-vehicle-type="missionStore.effectiveVehicleType"
+    :open-save-on-mount="missionLibraryOpenSaveOnMount"
     @load-mission="handleLoadMissionFromLibrary"
   />
 </template>
@@ -2852,6 +2856,18 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
   updateWaypointMarkers()
 }
 
+// When true, the next mount of `MissionLibraryModal` opens its "Save current mission" dialog.
+const missionLibraryOpenSaveOnMount = ref(false)
+
+const canSaveCurrentMissionToLibrary = computed(
+  () => missionStore.currentPlanningWaypoints.length > 0 || missionStore.currentPlanningSurveys.length > 0
+)
+
+const openMissionLibraryWithSaveDialog = (): void => {
+  if (!canSaveCurrentMissionToLibrary.value) return
+  openMissionLibrary({ openSaveDialog: true })
+}
+
 // Merges a placed/loaded library mission into the current planning (append, segment-insert, or
 // fresh load). The insert-segment intent is carried on `placementInsertSegmentIndex` so both
 // placement outcomes ("Reposition" and "Keep original") route to the requested segment.
@@ -3972,13 +3988,18 @@ const openMissionLibrary = (
   options: {
     /** Segment index to splice the loaded mission into; omit for a normal placement. */
     segmentInsertIndex?: number | null
+    /** Open the library straight into the "save current mission" form. */
+    openSaveDialog?: boolean
   } = {}
 ): void => {
-  // Set the segment-insert intent in the same call that opens the library, so callers never have
-  // to poke `pendingSegmentInsertIndex` around the open; a plain toolbar open clears it.
+  // Set the segment-insert / save intent in the same call that opens the library, so callers never
+  // have to poke `pendingSegmentInsertIndex` around the open; a plain toolbar open clears it.
   pendingSegmentInsertIndex.value = options.segmentInsertIndex ?? null
+  missionLibraryOpenSaveOnMount.value = options.openSaveDialog ?? false
   logUserAction(
-    options.segmentInsertIndex != null
+    options.openSaveDialog
+      ? 'Opened the mission library to save the current mission'
+      : options.segmentInsertIndex != null
       ? 'Opened the mission library to insert a mission into a segment'
       : 'Opened the mission library'
   )

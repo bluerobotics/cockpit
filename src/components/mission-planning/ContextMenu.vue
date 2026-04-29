@@ -168,6 +168,59 @@
           <span class="text-white text-sm ml-4">{{ pathCreationButtonText }}</span>
         </v-list-item>
         <v-divider />
+        <v-menu open-on-hover location="end" :close-on-content-click="false" :open-delay="50" :close-delay="120">
+          <template #activator="{ props: libraryActivator }">
+            <v-list-item v-bind="libraryActivator" class="flex items-center gap-x-2 pb-2 cursor-pointer">
+              <v-icon
+                variant="text"
+                icon="mdi-bookshelf"
+                rounded="full"
+                size="x-small"
+                color="white"
+                class="text-[16px]"
+              ></v-icon>
+              <span class="text-white text-sm ml-4">Mission library</span>
+              <template #append>
+                <v-icon color="white" class="absolute right-1 text-[21px] self-center -mb-[2px]"
+                  >mdi-chevron-right</v-icon
+                >
+              </template>
+            </v-list-item>
+          </template>
+          <div
+            class="flex flex-col rounded-md ml-1"
+            :style="[interfaceStore.globalGlassMenuStyles, { background: '#333333EE', border: '1px solid #FFFFFF44' }]"
+          >
+            <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleAddMissionFromLibrary">
+              <v-icon
+                variant="text"
+                icon="mdi-map-plus"
+                rounded="full"
+                size="x-small"
+                color="white"
+                class="text-[16px]"
+              ></v-icon>
+              <span class="text-white text-sm ml-4">Add mission from library</span>
+            </v-list-item>
+            <v-divider />
+            <v-list-item
+              class="flex items-center gap-x-2 pb-2"
+              :disabled="!canSaveCurrent"
+              @click="handleSaveMissionToLibrary"
+            >
+              <v-icon
+                variant="text"
+                icon="mdi-content-save-plus"
+                rounded="full"
+                size="x-small"
+                color="white"
+                class="text-[16px]"
+              ></v-icon>
+              <span class="text-white text-sm ml-4">Save mission to library</span>
+            </v-list-item>
+          </div>
+        </v-menu>
+        <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handlePlacePointOfInterest">
           <v-icon
             variant="text"
@@ -315,6 +368,7 @@ const props = defineProps<{
   enableUndo: boolean
   selectedWaypoint: Waypoint | undefined
   menuType: ContextMenuTypes
+  canSaveCurrent: boolean
 }>()
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -334,6 +388,8 @@ const emit = defineEmits<{
   (event: 'setHomePosition'): void
   (event: 'clearVehiclePathHistory'): void
   (event: 'openMapOverlays'): void
+  (event: 'addMissionFromLibrary'): void
+  (event: 'saveMissionToLibrary'): void
 }>()
 
 const menuType = computed(() => props.menuType)
@@ -451,6 +507,17 @@ const handleSetHomePosition = (): void => {
 
 const handleClearVehiclePathHistory = (): void => {
   emit('clearVehiclePathHistory')
+  emit('close')
+}
+
+const handleAddMissionFromLibrary = (): void => {
+  emit('addMissionFromLibrary')
+  emit('close')
+}
+
+const handleSaveMissionToLibrary = (): void => {
+  if (!props.canSaveCurrent) return
+  emit('saveMissionToLibrary')
   emit('close')
 }
 
