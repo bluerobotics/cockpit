@@ -1922,10 +1922,37 @@ const addWaypointFromClick = (latlng: L.LatLng): void => {
   updateWaypointMarkers()
 }
 
+const getEndpointInsertIndexForLatLng = (latlng: L.LatLng): number | undefined => {
+  const wps = missionStore.currentPlanningWaypoints
+  if (wps.length < 2) return undefined
+  const first = L.latLng(wps[0].coordinates[0], wps[0].coordinates[1])
+  const last = L.latLng(wps[wps.length - 1].coordinates[0], wps[wps.length - 1].coordinates[1])
+  return latlng.distanceTo(first) < latlng.distanceTo(last) ? 0 : undefined
+}
+
 const addWaypointFromContextMenu = (): void => {
   if (!currentCursorGeoCoordinates.value) return
   const ll = L.latLng(currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1])
-  addWaypointFromClick(ll)
+
+  // Honor segment-proximity insertion (split the path) when the cursor is on/near it.
+  if (missionStore.currentPlanningWaypoints.length >= 2) {
+    const latlngs = missionStore.currentPlanningWaypoints.map((w) => L.latLng(w.coordinates[0], w.coordinates[1]))
+    const { segmentIndex, distanceInPixels } = getClosestMissionPathSegmentInfo(latlngs, ll)
+    if (segmentIndex >= 0 && distanceInPixels <= nearMissionPathTolerance) {
+      insertWaypointAtSegmentMidpoint(segmentIndex)
+      return
+    }
+  }
+
+  const insertIndex = getEndpointInsertIndexForLatLng(ll)
+  addWaypoint(
+    [ll.lat, ll.lng],
+    currentWaypointAltitude.value,
+    currentWaypointAltitudeRefType.value,
+    undefined,
+    insertIndex
+  )
+  updateWaypointMarkers()
 }
 
 const makeAreaMarker = (at: L.LatLng, text: string): L.Marker => {
@@ -2675,7 +2702,8 @@ const addWaypoint = (
   coordinates: WaypointCoordinates,
   altitude: number,
   altitudeReferenceType: AltitudeReferenceType,
-  commands?: MissionCommand[]
+  commands?: MissionCommand[],
+  insertIndex?: number
 ): void => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
 
@@ -2690,7 +2718,11 @@ const addWaypoint = (
     commands: cloneCommands(commands),
   }
 
-  missionStore.currentPlanningWaypoints.push(waypoint)
+  if (insertIndex !== undefined) {
+    missionStore.currentPlanningWaypoints.splice(insertIndex, 0, waypoint)
+  } else {
+    missionStore.currentPlanningWaypoints.push(waypoint)
+  }
 
   const newMarker = L.marker(coordinates, { draggable: true })
 
