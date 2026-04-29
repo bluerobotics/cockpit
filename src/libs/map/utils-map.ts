@@ -36,6 +36,34 @@ export const distanceInMeters = (from: WaypointCoordinates, to: WaypointCoordina
   L.latLng(from[0], from[1]).distanceTo(L.latLng(to[0], to[1]))
 
 /**
+ * A pointer position expressed both in a map container's pixel space and as a geographic coordinate.
+ */
+export type MapPointerPosition = {
+  /**
+   * Position relative to the map container's top-left corner, in pixels.
+   */
+  containerPoint: L.Point
+  /**
+   * Geographic coordinate under that position.
+   */
+  latlng: L.LatLng
+}
+
+/**
+ * Resolves a viewport-space (client) pixel position against a map, which is what a pointer position
+ * cached outside a leaflet mouse handler needs before it can be treated as a coordinate.
+ * @param {L.Map} map - Map whose container the client position is measured against.
+ * @param {number} clientX - Viewport-space horizontal position, in pixels.
+ * @param {number} clientY - Viewport-space vertical position, in pixels.
+ * @returns {MapPointerPosition} The position in container space and the coordinate under it.
+ */
+export const mapPointerPositionFromClient = (map: L.Map, clientX: number, clientY: number): MapPointerPosition => {
+  const rect = map.getContainer().getBoundingClientRect()
+  const containerPoint = L.point(clientX - rect.left, clientY - rect.top)
+  return { containerPoint, latlng: map.containerPointToLatLng(containerPoint) }
+}
+
+/**
  * Enum for the different types of targets that can be followed.
  * @enum {string}
  */
