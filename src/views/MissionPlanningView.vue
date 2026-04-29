@@ -700,7 +700,13 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
-import { createGridOverlay, fitMapToWaypoints, TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
+import {
+  createGridOverlay,
+  fitMapToWaypoints,
+  singleStepZoomMapOptions,
+  TargetFollower,
+  WhoToFollow,
+} from '@/libs/map/utils-map'
 import { generateSurveyPath } from '@/libs/map/utils-map'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
 import { degrees } from '@/libs/utils'
@@ -3746,10 +3752,10 @@ onMounted(async () => {
       : missionStore.defaultMapTileProvider
   const initialBaseLayer = baseMaps[preferredProvider] || esri
 
-  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
-    mapCenter.value as LatLngTuple,
-    zoom.value
-  )
+  planningMap.value = L.map('planningMap', {
+    layers: [initialBaseLayer],
+    ...singleStepZoomMapOptions,
+  }).setView(mapCenter.value as LatLngTuple, zoom.value)
 
   // Expose the Leaflet instance to descendant components via the map context
   mapContext.map.value = planningMap.value
