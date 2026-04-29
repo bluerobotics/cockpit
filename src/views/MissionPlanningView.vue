@@ -3746,10 +3746,15 @@ onMounted(async () => {
       : missionStore.defaultMapTileProvider
   const initialBaseLayer = baseMaps[preferredProvider] || esri
 
-  planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
-    mapCenter.value as LatLngTuple,
-    zoom.value
-  )
+  planningMap.value = L.map('planningMap', {
+    layers: [initialBaseLayer],
+    // Raise wheelPxPerZoomLevel so a single wheel notch/pinch step advances exactly one zoom level
+    // (Leaflet's default 60 lets a typical ~100px deltaY round up to 2 levels with zoomSnap: 1).
+    wheelPxPerZoomLevel: 100,
+    wheelDebounceTime: 100,
+    zoomSnap: 1,
+    zoomDelta: 1,
+  }).setView(mapCenter.value as LatLngTuple, zoom.value)
 
   // Expose the Leaflet instance to descendant components via the map context
   mapContext.map.value = planningMap.value
