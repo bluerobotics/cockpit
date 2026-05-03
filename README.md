@@ -66,6 +66,8 @@ We have dedicated builds for every Desktop platform, so make sure you're using t
 - **Linux**: `.AppImage`
 - **Steam OS**: `.Flatpak`
 
+> ℹ️ The Flatpak build uses the host's [speech-dispatcher](https://freebsoft.org/speechd) and a synthesizer like [espeak-ng](https://github.com/espeak-ng/espeak-ng) for voice alerts. These come pre-installed on most desktop Linux distros (Ubuntu, Fedora, Mint, etc.) and on SteamOS 3.7.13 and newer. On minimal installs that don't have them, install with your package manager (e.g. `sudo apt install speech-dispatcher espeak-ng` on Debian/Ubuntu).
+
 #### - Option 3: Install the BlueOS Extension (Lite version!)
 If you're using BlueOS, you can install Cockpit [from the Extensions page](https://blueos.cloud/docs/stable/usage/advanced/#extensions).
 
