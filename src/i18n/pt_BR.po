@@ -736,6 +736,12 @@ msgstr "Adicionar levantamento"
 msgid "Add survey area"
 msgstr "Adicionar área de levantamento"
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid ""
+"Add the voice recorder mini-widget to a view and press its microphone "
+"button."
+msgstr ""
+
 #: src/views/ConfigurationDiyWidgetsView.vue
 msgid "Add to the current view"
 msgstr "Adicionar à visualização atual"
@@ -898,6 +904,7 @@ msgid "Align map to north"
 msgstr "Alinhar mapa ao norte"
 
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "All"
@@ -1323,6 +1330,10 @@ msgstr "Configuração do widget de atitude"
 #: src/components/map/CustomTileProvidersManager.vue
 msgid "Attribution (optional)"
 msgstr "Atribuição (opcional)"
+
+#: src/components/VideoLibraryModal.vue
+msgid "Audio"
+msgstr ""
 
 #: src/components/widgets/IFrame.vue
 msgid "Auto"
@@ -1785,6 +1796,7 @@ msgstr ""
 #: src/components/UpdateNotification.vue
 #: src/components/UserNameInputDialog.vue
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 #: src/components/configuration/ActionLinkConfig.vue
 #: src/components/configuration/CockpitSettingsManager.vue
@@ -2853,6 +2865,11 @@ msgstr "Não foi possível conectar ao dispositivo: ${ 0 }"
 msgid "Could not copy the command. Select it and copy it by hand."
 msgstr "Não foi possível copiar o comando. Selecione-o e copie manualmente."
 
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not delete the voice recordings. ${ 0 }"
+msgstr ""
+
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Could not detect a baud rate with valid GNSS data."
 msgstr "Não foi possível detectar uma taxa de transmissão com dados GNSS válidos."
@@ -2862,6 +2879,11 @@ msgid "Could not download all voices. Check your internet connection and try aga
 msgstr ""
 "Não foi possível baixar todas as vozes. Verifique sua conexão com a "
 "internet e tente novamente."
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not download the voice recordings. ${ 0 }"
+msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Could not expand fence storage"
@@ -2887,12 +2909,26 @@ msgstr ""
 msgid "Could not find element with the given hash."
 msgstr "Não foi possível encontrar o elemento com o hash informado."
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Could not find the selected voice recordings."
+msgstr ""
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not find the voice recording \"${ 0 }\"."
+msgstr ""
+
 #: src/composables/videoChunkManager.ts
 #, javascript-format
 msgid "Could not generate telemetry overlay for the processed video: ${ 0 }"
 msgstr ""
 "Não foi possível gerar a sobreposição de telemetria para o vídeo "
 "processado: ${ 0 }"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not list the voice recordings. ${ 0 }"
+msgstr ""
 
 #: src/components/mini-widgets/MiniVideoRecorder.vue
 #, javascript-format
@@ -2935,6 +2971,11 @@ msgstr ""
 #, javascript-format
 msgid "Could not read ${ 0 }: ${ 1 }"
 msgstr "Não foi possível ler ${ 0 }: ${ 1 }"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not read the voice recording. ${ 0 }"
+msgstr ""
 
 #: src/stores/video.ts
 #, javascript-format
@@ -3435,6 +3476,7 @@ msgstr "Define o centro e o nível de zoom iniciais do mapa."
 #: src/components/MissionLibraryModal.vue
 #: src/components/UserNameInputDialog.vue
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/components/mini-widgets/VeryGenericIndicator.vue
 #: src/components/poi/PoiActionPopup.vue
 #: src/components/poi/PoiManager.vue
@@ -3483,6 +3525,12 @@ msgid "Delete ${ 0 } video?"
 msgid_plural "Delete ${ 0 } videos?"
 msgstr[0] "Excluir ${ 0 } vídeo?"
 msgstr[1] "Excluir ${ 0 } vídeos?"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Delete ${ 0 } voice recording?"
+msgid_plural "Delete ${ 0 } voice recordings?"
+msgstr[0] ""
 
 #: src/composables/videoChunkManager.ts
 msgid "Delete All"
@@ -3857,6 +3905,7 @@ msgstr "Para baixo"
 
 #: src/components/UpdateNotification.vue
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/views/ConfigurationAlertsView.vue
 msgid "Download"
 msgstr "Baixar"
@@ -6440,6 +6489,7 @@ msgid "Loaded overlays"
 msgstr "Sobreposições carregadas"
 
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 msgid "Loading"
 msgstr "Carregando"
 
@@ -7673,6 +7723,10 @@ msgstr "Nenhuma visualização"
 msgid "No visible views other the current one."
 msgstr "Nenhuma visualização visível além da atual."
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "No voice recordings yet"
+msgstr ""
+
 #: src/views/ConfigurationMissionView.vue
 msgid "Noise intensity"
 msgstr "Intensidade do ruído"
@@ -7682,6 +7736,7 @@ msgid "Non-dynamic value."
 msgstr "Valor não dinâmico."
 
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "None"
@@ -7975,6 +8030,10 @@ msgstr "Abrir pasta de vídeos"
 msgid "Open voice recordings"
 msgstr ""
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Open voice recordings folder"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "OpenCellID API information"
 msgstr "Informações da API do OpenCellID"
@@ -8161,6 +8220,10 @@ msgstr "Estacionamento"
 msgid "Pass ${ 0 }/${ 1 } at ${ 2 }ms"
 msgstr "Passagem ${ 0 }/${ 1 } em ${ 2 }ms"
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Pause"
+msgstr ""
+
 #: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Pause mission"
@@ -8273,9 +8336,17 @@ msgstr "ID planejado:"
 msgid "Planning for"
 msgstr "Planejando para"
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Play"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid "Play video"
 msgstr "Reproduzir vídeo"
+
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Playback position"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Please complete or ignore all steps before closing."
@@ -9408,6 +9479,11 @@ msgstr "Procurando veículos..."
 #: src/components/UpdateNotification.vue
 msgid "See update"
 msgstr "Ver atualização"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Select ${ 0 }"
+msgstr ""
 
 #: src/views/ConfigurationActionsView.vue
 msgid "Select Action Type"
@@ -12371,6 +12447,14 @@ msgstr "Alertas por voz:"
 
 #: src/composables/useVoiceRecorder.ts
 msgid "Voice recording not saved"
+msgstr ""
+
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Voice recordings deleted."
+msgstr ""
+
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Voice recordings downloaded."
 msgstr ""
 
 #: src/views/ConfigurationAlertsView.vue
