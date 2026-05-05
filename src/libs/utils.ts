@@ -147,6 +147,20 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
 }
 
 /**
+ * Formats a duration as `mm:ss`, or `h:mm:ss` from one hour up.
+ * @param {number} durationMs - The duration in milliseconds.
+ * @returns {string} The formatted duration.
+ */
+export const formatDuration = (durationMs: number): string => {
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutesAndSeconds = [Math.floor(totalSeconds / 60) % 60, totalSeconds % 60]
+    .map((n) => n.toString().padStart(2, '0'))
+    .join(':')
+  return hours > 0 ? `${hours}:${minutesAndSeconds}` : minutesAndSeconds
+}
+
+/**
  * Check if the wheel event is associated with a horizontal scroll
  * @param {WheelEvent} e The wheel event
  * @returns {boolean} Whether or not the wheel event is associated with a horizontal scroll

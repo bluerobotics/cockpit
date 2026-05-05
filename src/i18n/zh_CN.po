@@ -7476,6 +7476,10 @@ msgstr "打开视频设置"
 msgid "Open videos folder"
 msgstr "打开视频文件夹"
 
+#: src/components/mini-widgets/VoiceRecorder.vue
+msgid "Open voice recordings"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "OpenCellID API information"
 msgstr "OpenCellID API 信息"
@@ -9452,6 +9456,10 @@ msgstr "启动模拟器"
 msgid "Start tour"
 msgstr "开始导览"
 
+#: src/components/mini-widgets/VoiceRecorder.vue
+msgid "Start voice recording"
+msgstr ""
+
 #: src/stores/video.ts
 #, javascript-format
 msgid "Started recording all ${ 0 } stream: ${ 1 }."
@@ -9538,6 +9546,10 @@ msgstr "停止录制"
 #: src/components/development/MAVLinkInspectorItem.vue
 msgid "Stop tracking this message"
 msgstr "停止跟踪此消息"
+
+#: src/components/mini-widgets/VoiceRecorder.vue
+msgid "Stop voice recording"
+msgstr ""
 
 #: src/stores/video.ts
 #, javascript-format
