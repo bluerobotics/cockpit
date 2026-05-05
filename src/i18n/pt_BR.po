@@ -7921,6 +7921,10 @@ msgstr "Abrir configurações de vídeo"
 msgid "Open videos folder"
 msgstr "Abrir pasta de vídeos"
 
+#: src/components/mini-widgets/VoiceRecorder.vue
+msgid "Open voice recordings"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "OpenCellID API information"
 msgstr "Informações da API do OpenCellID"
@@ -8641,6 +8645,10 @@ msgstr "Receitas"
 #: src/views/ToolsDataLakeView.vue
 msgid "Record"
 msgstr "Gravar"
+
+#: src/components/mini-widgets/VoiceRecorder.vue
+msgid "Record a voice note"
+msgstr ""
 
 #: src/stores/video.ts
 #, javascript-format
@@ -10015,6 +10023,10 @@ msgstr "Iniciar o simulador"
 msgid "Start tour"
 msgstr "Iniciar tour"
 
+#: src/components/mini-widgets/VoiceRecorder.vue
+msgid "Start voice recording"
+msgstr ""
+
 #: src/stores/video.ts
 #, javascript-format
 msgid "Started recording all ${ 0 } stream: ${ 1 }."
@@ -10104,6 +10116,10 @@ msgstr "Parar gravação"
 #: src/components/development/MAVLinkInspectorItem.vue
 msgid "Stop tracking this message"
 msgstr "Parar de acompanhar esta mensagem"
+
+#: src/components/mini-widgets/VoiceRecorder.vue
+msgid "Stop voice recording"
+msgstr ""
 
 #: src/stores/video.ts
 #, javascript-format
