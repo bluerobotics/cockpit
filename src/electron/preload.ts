@@ -63,7 +63,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   go2rtcRemoveStream: (name: string) => ipcRenderer.invoke('go2rtc-remove-stream', name),
   go2rtcGetStreamsInfo: () => ipcRenderer.invoke('go2rtc-get-streams-info'),
   go2rtcGetPort: () => ipcRenderer.invoke('go2rtc-get-port'),
-  extractVideoChunksZip: (zipFilePath: string) => ipcRenderer.invoke('extract-video-chunks-zip', zipFilePath),
+  extractVideoChunksZips: (zipFilePaths: string[]) => ipcRenderer.invoke('extract-video-chunks-zips', zipFilePaths),
+  findSiblingChunkZips: (zipFilePath: string) => ipcRenderer.invoke('find-sibling-chunk-zips', zipFilePath),
   readChunkFile: (chunkPath: string) => ipcRenderer.invoke('read-chunk-file', chunkPath),
   copyTelemetryFile: (assFilePath: string, outputVideoPath: string) =>
     ipcRenderer.invoke('copy-telemetry-file', assFilePath, outputVideoPath),

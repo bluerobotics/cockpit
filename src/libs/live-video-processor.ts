@@ -219,27 +219,37 @@ export class LiveVideoProcessor {
   }
 
   /**
-   * Process a ZIP file containing video chunks using the live streaming pipeline
-   * @param {string} zipFilePath - Path to the ZIP file
+   * Process one or more ZIP files containing video chunks using the live streaming pipeline.
+   * When multiple ZIPs are provided (e.g. the multi-part archives produced by the browser
+   * version) they are extracted into a single temporary directory and all chunks are
+   * processed together in chunk-number order, producing a single output video.
+   * @param {string[]} zipFilePaths - Paths to the ZIP file(s); a single-element array is fine
    * @param {(progress: number, message: string) => void} onProgress - Optional progress callback
    * @returns {Promise<string>} Promise that resolves to the output video path
    */
-  static async processZipFile(
-    zipFilePath: string,
+  static async processZipFiles(
+    zipFilePaths: string[],
     onProgress?: (progress: number, message: string) => void
   ): Promise<string> {
     if (!isElectron() || !window.electronAPI) {
       throw new Error('ZIP processing is only available in Electron')
     }
 
-    try {
-      onProgress?.(10, 'Extracting ZIP file...')
+    if (!zipFilePaths || zipFilePaths.length === 0) {
+      throw new Error('No ZIP file paths provided')
+    }
 
-      // Extract ZIP and get chunk information
-      const extractionResult: ZipExtractionResult = await window.electronAPI.extractVideoChunksZip(zipFilePath)
+    try {
+      onProgress?.(
+        10,
+        zipFilePaths.length > 1 ? `Extracting ${zipFilePaths.length} ZIP files...` : 'Extracting ZIP file...'
+      )
+
+      // Extract ZIP(s) and get chunk information
+      const extractionResult: ZipExtractionResult = await window.electronAPI.extractVideoChunksZips(zipFilePaths)
       const { chunkPaths, assFilePath, hash, fileName, tempDir } = extractionResult
 
-      console.log(`Extracted ${chunkPaths.length} chunks from ZIP file`)
+      console.log(`Extracted ${chunkPaths.length} chunks from ${zipFilePaths.length} ZIP file(s)`)
       onProgress?.(30, 'Starting video processing...')
 
       // Read first chunk
