@@ -124,6 +124,11 @@ export const setupFilesystemStorage = (): void => {
     await fs.mkdir(snapshotFolderPath, { recursive: true })
     await shell.openPath(snapshotFolderPath)
   })
+  ipcMain.handle('open-audio-folder', async () => {
+    const audioFolderPath = join(cockpitFolderPath, 'audio')
+    await fs.mkdir(audioFolderPath, { recursive: true })
+    await shell.openPath(audioFolderPath)
+  })
   ipcMain.handle('open-video-file', async (_, fileName: string) => {
     const videoFolderPath = join(cockpitFolderPath, 'videos')
     const videoFilePath = join(videoFolderPath, fileName)
