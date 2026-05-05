@@ -186,6 +186,7 @@
               </div>
             </div>
           </template>
+          <VoiceRecordingsLibrary v-if="currentTab === 'audio'" />
           <template v-if="currentTab === 'videos'">
             <!-- Videos Tab with Sub-tabs -->
             <div class="flex flex-col h-full w-full">
@@ -738,6 +739,7 @@ import * as Hammer from 'hammerjs'
 import { msgid, ngettext, t } from 'ttag'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 
+import VoiceRecordingsLibrary from '@/components/VoiceRecordingsLibrary.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { useVideoChunkManager } from '@/composables/videoChunkManager'
@@ -842,6 +844,7 @@ const getVideoCardClasses = (video: VideoLibraryFile): string => {
 const menuButtons = [
   { name: 'Videos', label: t`Videos`, icon: 'mdi-video-outline', selected: true, disabled: false, tooltip: '' },
   { name: 'Snapshots', label: t`Snapshots`, icon: 'mdi-image-outline', selected: false, disabled: false, tooltip: '' },
+  { name: 'Audio', label: t`Audio`, icon: 'mdi-microphone', selected: false, disabled: false, tooltip: '' },
 ]
 
 const videoSubTabs = [

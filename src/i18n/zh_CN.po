@@ -678,6 +678,12 @@ msgstr "添加测绘"
 msgid "Add survey area"
 msgstr "添加测绘区域"
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid ""
+"Add the voice recorder mini-widget to a view and press its microphone "
+"button."
+msgstr ""
+
 #: src/views/ConfigurationDiyWidgetsView.vue
 msgid "Add to the current view"
 msgstr "添加到当前视图"
@@ -832,6 +838,7 @@ msgid "Align map to north"
 msgstr "地图对齐正北"
 
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "All"
@@ -1219,6 +1226,10 @@ msgstr "姿态小部件配置"
 #: src/components/map/CustomTileProvidersManager.vue
 msgid "Attribution (optional)"
 msgstr "署名（可选）"
+
+#: src/components/VideoLibraryModal.vue
+msgid "Audio"
+msgstr ""
 
 #: src/components/widgets/IFrame.vue
 msgid "Auto"
@@ -1670,6 +1681,7 @@ msgstr ""
 #: src/components/UpdateNotification.vue
 #: src/components/UserNameInputDialog.vue
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 #: src/components/configuration/ActionLinkConfig.vue
 #: src/components/configuration/CockpitSettingsManager.vue
@@ -2651,6 +2663,11 @@ msgstr "无法连接到设备：${ 0 }"
 msgid "Could not copy the command. Select it and copy it by hand."
 msgstr "无法复制命令。请选中后手动复制。"
 
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not delete the voice recordings. ${ 0 }"
+msgstr ""
+
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Could not detect a baud rate with valid GNSS data."
 msgstr "无法检测到可获取有效 GNSS 数据的波特率。"
@@ -2658,6 +2675,11 @@ msgstr "无法检测到可获取有效 GNSS 数据的波特率。"
 #: src/views/ConfigurationAlertsView.vue
 msgid "Could not download all voices. Check your internet connection and try again."
 msgstr "无法下载全部语音。请检查网络连接后重试。"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not download the voice recordings. ${ 0 }"
+msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Could not expand fence storage"
@@ -2679,10 +2701,24 @@ msgstr "找不到与“${ 0 }”匹配的操作。请先添加该操作。"
 msgid "Could not find element with the given hash."
 msgstr "找不到具有给定哈希值的元素。"
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Could not find the selected voice recordings."
+msgstr ""
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not find the voice recording \"${ 0 }\"."
+msgstr ""
+
 #: src/composables/videoChunkManager.ts
 #, javascript-format
 msgid "Could not generate telemetry overlay for the processed video: ${ 0 }"
 msgstr "无法为处理后的视频生成遥测叠加层：${ 0 }"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not list the voice recordings. ${ 0 }"
+msgstr ""
 
 #: src/components/mini-widgets/MiniVideoRecorder.vue
 #, javascript-format
@@ -2719,6 +2755,11 @@ msgstr "无法打开已保存的设备路径历史。先前的路径不会显示
 #, javascript-format
 msgid "Could not read ${ 0 }: ${ 1 }"
 msgstr "无法读取 ${ 0 }：${ 1 }"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Could not read the voice recording. ${ 0 }"
+msgstr ""
 
 #: src/stores/video.ts
 #, javascript-format
@@ -3194,6 +3235,7 @@ msgstr "定义地图的初始中心和缩放级别。"
 #: src/components/MissionLibraryModal.vue
 #: src/components/UserNameInputDialog.vue
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/components/mini-widgets/VeryGenericIndicator.vue
 #: src/components/poi/PoiActionPopup.vue
 #: src/components/poi/PoiManager.vue
@@ -3239,6 +3281,12 @@ msgstr "删除 ${ 0 } 个已选视频"
 msgid "Delete ${ 0 } video?"
 msgid_plural "Delete ${ 0 } videos?"
 msgstr[0] "删除 ${ 0 } 个视频？"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Delete ${ 0 } voice recording?"
+msgid_plural "Delete ${ 0 } voice recordings?"
+msgstr[0] ""
 
 #: src/composables/videoChunkManager.ts
 msgid "Delete All"
@@ -3604,6 +3652,7 @@ msgstr "向下"
 
 #: src/components/UpdateNotification.vue
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/views/ConfigurationAlertsView.vue
 msgid "Download"
 msgstr "下载"
@@ -6017,6 +6066,7 @@ msgid "Loaded overlays"
 msgstr "已加载的叠加层"
 
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 msgid "Loading"
 msgstr "加载中"
 
@@ -7204,6 +7254,10 @@ msgstr "无视图"
 msgid "No visible views other the current one."
 msgstr "除当前视图外没有其他可见视图。"
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "No voice recordings yet"
+msgstr ""
+
 #: src/views/ConfigurationMissionView.vue
 msgid "Noise intensity"
 msgstr "噪声强度"
@@ -7213,6 +7267,7 @@ msgid "Non-dynamic value."
 msgstr "非动态值。"
 
 #: src/components/VideoLibraryModal.vue
+#: src/components/VoiceRecordingsLibrary.vue
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "None"
@@ -7480,6 +7535,10 @@ msgstr "打开视频文件夹"
 msgid "Open voice recordings"
 msgstr ""
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Open voice recordings folder"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "OpenCellID API information"
 msgstr "OpenCellID API 信息"
@@ -7645,6 +7704,10 @@ msgstr "停车场"
 msgid "Pass ${ 0 }/${ 1 } at ${ 2 }ms"
 msgstr "在 ${ 2 }ms 内通过 ${ 0 }/${ 1 }"
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Pause"
+msgstr ""
+
 #: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Pause mission"
@@ -7753,9 +7816,17 @@ msgstr "规划 ID："
 msgid "Planning for"
 msgstr "规划目标"
 
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Play"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid "Play video"
 msgstr "播放视频"
+
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Playback position"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Please complete or ignore all steps before closing."
@@ -8832,6 +8903,11 @@ msgstr "正在搜索设备..."
 #: src/components/UpdateNotification.vue
 msgid "See update"
 msgstr "查看更新"
+
+#: src/components/VoiceRecordingsLibrary.vue
+#, javascript-format
+msgid "Select ${ 0 }"
+msgstr ""
 
 #: src/views/ConfigurationActionsView.vue
 msgid "Select Action Type"
@@ -11501,6 +11577,14 @@ msgstr "语音警报："
 
 #: src/composables/useVoiceRecorder.ts
 msgid "Voice recording not saved"
+msgstr ""
+
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Voice recordings deleted."
+msgstr ""
+
+#: src/components/VoiceRecordingsLibrary.vue
+msgid "Voice recordings downloaded."
 msgstr ""
 
 #: src/views/ConfigurationAlertsView.vue
