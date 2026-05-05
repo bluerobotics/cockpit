@@ -127,6 +127,7 @@ export enum MiniWidgetType {
   TakeoffLandCommander = 'TakeoffLandCommander',
   VeryGenericIndicator = 'VeryGenericIndicator',
   ViewSelector = 'ViewSelector',
+  VoiceRecorder = 'VoiceRecorder',
 }
 
 /**
@@ -891,6 +892,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.ViewSelector]: false,
   [MiniWidgetType.SnapshotTool]: true,
   [MiniWidgetType.MiniMissionControlPanel]: false,
+  [MiniWidgetType.VoiceRecorder]: false,
 }
 
 export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
