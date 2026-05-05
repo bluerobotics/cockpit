@@ -49,7 +49,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openVideoChunksFolder: () => ipcRenderer.invoke('open-temp-video-chunks-folder'),
   getFileStats: (pathOrKey: string, subFolders?: string[]): Promise<FileStats> =>
     ipcRenderer.invoke('get-file-stats', pathOrKey, subFolders),
-  getPathOfSelectedFile: (options?: FileDialogOptions) => ipcRenderer.invoke('get-path-of-selected-file', options),
+  getPathsOfSelectedFiles: (options?: FileDialogOptions) => ipcRenderer.invoke('get-paths-of-selected-files', options),
   startVideoRecording: async (firstChunk: Blob, recordingHash: string, fileName: string, keepChunkBackup?: boolean) => {
     const chunkData = new Uint8Array(await firstChunk.arrayBuffer())
     return ipcRenderer.invoke('start-video-recording', chunkData, recordingHash, fileName, keepChunkBackup)

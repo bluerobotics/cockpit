@@ -54,4 +54,9 @@ export interface FileDialogOptions {
    * The default path of the dialog
    */
   defaultPath?: string
+  /**
+   * Whether the user may select more than one file. Defaults to `true`.
+   * Set to `false` to restrict the dialog to a single-file selection.
+   */
+  allowMultiple?: boolean
 }
