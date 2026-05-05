@@ -481,6 +481,12 @@ msgstr ""
 msgid "A voice download is already running."
 msgstr "Já há um download de voz em andamento."
 
+#: src/composables/useVoiceRecorder.ts
+msgid ""
+"A voice recording is ongoing. Stop it before closing Cockpit, or it will be "
+"lost."
+msgstr ""
+
 #: src/components/mission-planning/WaypointConfigPanel.vue
 msgid "A waypoint must keep a MAV_CMD_NAV_WAYPOINT command"
 msgstr "Um waypoint deve manter um comando MAV_CMD_NAV_WAYPOINT"
@@ -1876,6 +1882,10 @@ msgstr "Não é possível pular (veículo offline ou WP inválido)."
 msgid "Cannot start recording."
 msgstr "Não é possível iniciar a gravação."
 
+#: src/composables/useVoiceRecorder.ts
+msgid "Cannot start voice recording"
+msgstr ""
+
 #: src/components/mini-widgets/SnapshotTool.vue
 msgid "Capture Cockpit work area (standalone-only feature)"
 msgstr "Capturar a área de trabalho do Cockpit (recurso exclusivo do standalone)"
@@ -2773,6 +2783,13 @@ msgstr "Copiar logs visíveis"
 #: src/libs/live-video-processor.ts
 msgid "Copying telemetry file..."
 msgstr "Copiando arquivo de telemetria..."
+
+#: src/composables/useVoiceRecorder.ts
+#, javascript-format
+msgid ""
+"Could not access the microphone. Check that one is connected and Cockpit "
+"may use it. (${ 0 })"
+msgstr ""
 
 #: src/composables/secondaryVehicles.ts
 #, javascript-format
@@ -6762,6 +6779,12 @@ msgstr "As mensagens devem estar no formato"
 msgid "Messages:"
 msgstr "Mensagens:"
 
+#: src/composables/useVoiceRecorder.ts
+msgid ""
+"Microphone access needs the Standalone app, or Cockpit opened over HTTPS or "
+"localhost."
+msgstr ""
+
 #: src/components/joysticks/AxisRangeWarningDialog.vue
 #: src/components/widgets/Plotter.vue
 #: src/views/ConfigurationJoystickView.vue
@@ -9228,6 +9251,11 @@ msgstr ""
 "Salvo neste computador. Será enviado ao veículo assim que ele estiver "
 "online."
 
+#: src/composables/useVoiceRecorder.ts
+#, javascript-format
+msgid "Saved voice recording \"${ 0 }\"."
+msgstr ""
+
 #: src/composables/useOfflineTiles.ts
 #, javascript-format
 msgid "Saving ${ 0 } ${ 1 } tiles..."
@@ -10550,6 +10578,10 @@ msgid ""
 msgstr ""
 "A receita foi feita para ser lida como um todo. Deixar itens de fora pode "
 "impedir que o restante funcione."
+
+#: src/libs/audio-recording.ts
+msgid "The recording has no audio data."
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 #, javascript-format
@@ -12248,6 +12280,10 @@ msgstr "Os alertas por voz vão soar assim."
 #: src/views/ConfigurationAlertsView.vue
 msgid "Voice alerts:"
 msgstr "Alertas por voz:"
+
+#: src/composables/useVoiceRecorder.ts
+msgid "Voice recording not saved"
+msgstr ""
 
 #: src/views/ConfigurationAlertsView.vue
 msgid "Voice set. Raise the alerts volume to hear it."
