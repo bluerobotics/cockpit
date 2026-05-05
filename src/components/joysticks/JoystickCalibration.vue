@@ -97,14 +97,6 @@
             >
               <div class="flex w-full justify-center text-lg font-bold text-white mb-3">Axis {{ index }}</div>
               <div class="w-full h-40 relative">
-                <!-- Axis labels -->
-                <span class="font-mono text-xs text-gray-400 absolute top-[81px] right-[10px]">
-                  in: {{ numberToTwoDigitsSigned(rawAxisValues[index]) }}
-                </span>
-                <span class="font-mono text-xs text-gray-400 absolute top-[-2px] left-[170px]">
-                  out: {{ numberToTwoDigitsSigned(processedAxisValues[index]) }}
-                </span>
-
                 <svg
                   :id="`deadband-svg-${index}`"
                   class="w-full h-full my-4"
@@ -114,6 +106,14 @@
                   <!-- Grid lines -->
                   <line x1="0" y1="60" x2="200" y2="60" stroke="#e5e7eb" stroke-width="1" />
                   <line x1="100" y1="0" x2="100" y2="120" stroke="#e5e7eb" stroke-width="1" />
+
+                  <!-- Axis labels (rendered inside the viewBox so they always align with the gridlines) -->
+                  <text x="102" y="9" class="font-mono" fill="#9ca3af" font-size="9" text-anchor="start">
+                    out: {{ numberToTwoDigitsSigned(processedAxisValues[index]) }}
+                  </text>
+                  <text x="198" y="56" class="font-mono" fill="#9ca3af" font-size="9" text-anchor="end">
+                    in: {{ numberToTwoDigitsSigned(rawAxisValues[index]) }}
+                  </text>
 
                   <!-- Deadband region -->
                   <rect
