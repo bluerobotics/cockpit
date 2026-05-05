@@ -324,11 +324,12 @@ declare global {
        */
       getFileStats: (pathOrKey: string, subFolders?: string[]) => Promise<FileStats>
       /**
-       * Show file dialog to select a file
+       * Show a file dialog to select one or more files. Multi-selection is enabled
+       * by default; pass `allowMultiple: false` to restrict the dialog to a single file.
        * @param options - Optional dialog configuration
-       * @returns The selected file path, or null if cancelled
+       * @returns The selected file paths, or null if cancelled
        */
-      getPathOfSelectedFile: (options?: FileDialogOptions) => Promise<string | null>
+      getPathsOfSelectedFiles: (options?: FileDialogOptions) => Promise<string[] | null>
       /**
        * Capture the workspace area of the application
        */

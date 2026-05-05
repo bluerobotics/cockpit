@@ -188,13 +188,18 @@ export const setupFilesystemStorage = (): void => {
   })
 
   /**
-   * Show file dialog to select a file
+   * Show file dialog to select one or more files. Multi-selection can be disabled
+   * via the `allowMultiple` option for callers that need a single-file picker.
    * @param options - Optional dialog configuration
-   * @returns The selected file path, or null if cancelled
+   * @returns The selected file paths, or null if cancelled
    */
-  ipcMain.handle('get-path-of-selected-file', async (_, options?: FileDialogOptions) => {
+  ipcMain.handle('get-paths-of-selected-files', async (_, options?: FileDialogOptions) => {
+    const allowMultiple = options?.allowMultiple ?? true
+    const properties: Array<'openFile' | 'multiSelections'> = ['openFile']
+    if (allowMultiple) properties.push('multiSelections')
+
     const result = await dialog.showOpenDialog({
-      properties: ['openFile'],
+      properties,
       filters: options?.filters,
       title: options?.title,
       defaultPath: options?.defaultPath,
@@ -204,7 +209,7 @@ export const setupFilesystemStorage = (): void => {
       return null
     }
 
-    return result.filePaths[0]
+    return result.filePaths
   })
 }
 
