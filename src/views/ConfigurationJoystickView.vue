@@ -144,7 +144,7 @@
                 <div
                   v-for="[key, joystick] in controllerStore.joysticks"
                   :key="key"
-                  class="w-[95%] h-full flex-centered flex-column position-relative"
+                  class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
                   <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
                   <div class="flex items-center gap-2 -mb-8">

@@ -1,5 +1,30 @@
 <template>
-  <object :class="[component_name, { 'opacity-50': disabled }]" type="image/svg+xml" :data="joystick_svg_path" />
+  <div ref="wrapperRef" class="relative" :class="{ 'opacity-50': disabled }">
+    <object :class="component_name" type="image/svg+xml" :data="joystick_svg_path" class="w-full block" />
+    <div
+      v-for="label in labelOverlays"
+      :key="label.id"
+      class="absolute pointer-events-none select-none"
+      :style="{
+        top: `${label.anchorY}px`,
+        left: `${label.anchorX}px`,
+        transform: labelTransform(label.textAnchor),
+        fontSize: `${labelFontSize}px`,
+        color: label.color,
+        fontStyle: label.italic ? 'italic' : 'normal',
+        fontFamily: '\'Fira Mono for Powerline\', monospace',
+        fontWeight: '500',
+        lineHeight: '1.15',
+        width: 'max-content',
+        maxWidth: `${labelFontSize * 14}px`,
+        textAlign: labelTextAlign(label.textAnchor),
+        whiteSpace: 'normal',
+        overflowWrap: 'break-word',
+      }"
+    >
+      {{ label.text }}
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -17,6 +42,12 @@ import {
 import { InputType } from '@/types/joystick'
 
 const textColor = 'white'
+
+// Default viewBox width matching the joystick SVG assets in `public/images/`
+// (PS4.svg, PS5.svg, Ipega9023.svg all use `viewBox="0 0 1250 649.99996"`).
+// Used as a safety fallback when the SVG document hasn't fully reported its
+// viewBox dimensions yet on the first paint after load.
+const DEFAULT_VIEWBOX_WIDTH = 1250
 
 /**
  * Joystick SVG models
@@ -133,13 +164,142 @@ let waitTimer: ReturnType<typeof setInterval>
 let svg: Document | null | undefined
 
 const component_name = ref(`joystick-${uuid4()}`)
+const wrapperRef = ref<HTMLDivElement | null>(null)
+const labelFontSize = ref(14)
+
+interface LabelOverlay {
+  id: string
+  buttonId: JoystickButton
+  text: string
+  anchorX: number
+  anchorY: number
+  textAnchor: string
+  color: string
+  italic: boolean
+}
+
+const labelOverlays = ref<LabelOverlay[]>([])
+
+/**
+ * Returns the CSS transform to align the HTML overlay at the same anchor point as the
+ * original SVG text element, replicating SVG's `text-anchor` attribute behaviour.
+ *
+ * @param {string} textAnchor The SVG text-anchor value ('start', 'middle', or 'end').
+ * @returns {string} A CSS transform string.
+ */
+const labelTransform = (textAnchor: string): string => {
+  // `anchorY` is the vertical centre of the original SVG text's rendered rect.
+  // Translating the overlay up by 55% of its own height (rather than 50%) compensates
+  // for the SVG connector lines ending closer to the text baseline than to the rect's
+  // geometric centre, so the line visually meets the middle of the rendered HTML label.
+  switch (textAnchor) {
+    case 'end':
+      return 'translate(-100%, -55%)'
+    case 'middle':
+      return 'translate(-50%, -55%)'
+    default:
+      return 'translateY(-55%)'
+  }
+}
+
+/**
+ * Returns the CSS text-align value matching the SVG text-anchor, so wrapped lines
+ * stay aligned against the same edge as the connector line endpoint.
+ *
+ * @param {string} textAnchor The SVG text-anchor value ('start', 'middle', or 'end').
+ * @returns {string} A CSS text-align value.
+ */
+const labelTextAlign = (textAnchor: string): string => {
+  switch (textAnchor) {
+    case 'end':
+      return 'right'
+    case 'middle':
+      return 'center'
+    default:
+      return 'left'
+  }
+}
+
+/**
+ * Reads each SVG text label's actual rendered rect, converts it to wrapper-relative
+ * pixels by adding the `<object>`'s position in the main document, hides the original
+ * SVG text, and creates a corresponding HTML overlay div. Called once after the SVG
+ * loads and again on every wrapper resize.
+ *
+ * Inside an `<object>`, `getBoundingClientRect()` returns coordinates relative to the
+ * SVG document's viewport — which corresponds 1:1 to pixels inside the `<object>`'s
+ * content box in the main document. Adding `objectRect.left/top` converts to main
+ * document pixels regardless of any preserveAspectRatio padding.
+ *
+ * @returns {void}
+ */
+const computeOverlayPositions = (): void => {
+  if (!svg || !wrapperRef.value) return
+
+  const objectEl = document.querySelector(`.${component_name.value}`) as HTMLObjectElement | null
+  if (!objectEl) return
+
+  const objectRect = objectEl.getBoundingClientRect()
+  const wrapperRect = wrapperRef.value.getBoundingClientRect()
+  const svgRoot = svg.documentElement as SVGSVGElement
+  const viewBoxWidth = svgRoot?.viewBox?.baseVal?.width || DEFAULT_VIEWBOX_WIDTH
+  labelFontSize.value = Math.max(9, Math.round((objectRect.width / viewBoxWidth) * 22))
+
+  const overlays: LabelOverlay[] = []
+
+  Object.values(JoystickButton).forEach((button) => {
+    if (isNaN(Number(button))) return
+    // @ts-ignore: we already check if button is a number and so if button is a valid index
+    const labelId = buttonPath[button].replace('path', 'text')
+    const el = svg?.getElementById(labelId) as SVGTextElement | null
+    if (!el) return
+
+    // Make the original SVG text invisible while keeping it in the layout so
+    // getBoundingClientRect() still returns its computed position.
+    el.style.visibility = 'hidden'
+
+    const elRect = el.getBoundingClientRect()
+    const textAnchor = el.getAttribute('text-anchor') ?? 'start'
+
+    let svgDocX: number
+    switch (textAnchor) {
+      case 'end':
+        svgDocX = elRect.right
+        break
+      case 'middle':
+        svgDocX = (elRect.left + elRect.right) / 2
+        break
+      default:
+        svgDocX = elRect.left
+        break
+    }
+    const svgDocY = (elRect.top + elRect.bottom) / 2
+
+    overlays.push({
+      id: labelId,
+      buttonId: button as JoystickButton,
+      text: '',
+      anchorX: objectRect.left + svgDocX - wrapperRect.left,
+      anchorY: objectRect.top + svgDocY - wrapperRect.top,
+      textAnchor,
+      color: textColor,
+      italic: false,
+    })
+  })
+
+  labelOverlays.value = overlays
+}
 
 const isButtonPath = (element: Element) => element.id.includes('path_b')
+
+let resizeObserver: ResizeObserver | null = null
+let resizeRafId: number | null = null
 
 // Wait for object to be loaded
 waitTimer = setInterval(() => {
   if (svg) return
   svg = (document?.querySelector(`.${component_name.value}`) as HTMLEmbedElement | null)?.getSVGDocument()
+  computeOverlayPositions()
   updateButtonsState()
   updateLabelsState()
   svg?.addEventListener('mouseover', (e) => {
@@ -163,10 +323,26 @@ waitTimer = setInterval(() => {
     if (!isButtonPath(button)) return
     button.setAttribute('fill', 'transparent')
   })
+
+  if (svg && wrapperRef.value) {
+    resizeObserver = new ResizeObserver(() => {
+      // Coalesce rapid resize events into a single recompute per frame to
+      // avoid layout thrashing during continuous window/panel resizing.
+      if (resizeRafId !== null) return
+      resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null
+        computeOverlayPositions()
+        updateLabelsState()
+      })
+    })
+    resizeObserver.observe(wrapperRef.value)
+  }
 }, 100)
 
 onBeforeUnmount(async () => {
   clearInterval(waitTimer)
+  resizeObserver?.disconnect()
+  if (resizeRafId !== null) cancelAnimationFrame(resizeRafId)
 })
 
 watch(
@@ -215,14 +391,13 @@ const updateLabelsState = (): void => {
     const buttonActionCorrespondency = buttonsActionsCorrespondency.value[button as JoystickButton] || undefined
     const functionName =
       buttonActionCorrespondency === undefined ? 'unassigned' : buttonActionCorrespondency.action.name
-    if (!svg) return
     // @ts-ignore: we already check if button is a number and so if button is a valid index
     const labelId = buttonPath[button].replace('path', 'text')
-    if (svg?.getElementById(labelId) === null) return
-    // @ts-ignore: we already check if element exists
-    svg.getElementById(labelId).textContent = functionName
-    // @ts-ignore: we already check if svg is not null
-    svg.getElementById(labelId)?.setAttribute('font-style', functionName === 'unassigned' ? 'italic' : 'normal')
+    const overlay = labelOverlays.value.find((l) => l.id === labelId)
+    if (overlay) {
+      overlay.text = functionName
+      overlay.italic = functionName === 'unassigned'
+    }
   })
 }
 
@@ -259,7 +434,10 @@ function toggleButton(button: JoystickButton, state: boolean): void {
   svg
     ?.getElementById(buttonPath[button].replace('path', 'path_line'))
     ?.setAttribute('stroke', state ? 'red' : textColor)
-  svg?.getElementById(buttonPath[button].replace('path', 'text'))?.setAttribute('fill', state ? 'red' : textColor)
+
+  const labelId = buttonPath[button].replace('path', 'text')
+  const overlay = labelOverlays.value.find((l) => l.id === labelId)
+  if (overlay) overlay.color = state ? 'red' : textColor
 }
 
 /**
