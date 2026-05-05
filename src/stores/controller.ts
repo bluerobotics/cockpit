@@ -271,8 +271,8 @@ export const useControllerStore = defineStore('controller', () => {
     const joystickModel = joystick.model || JoystickModel.Unknown
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]
     const currentState = {
-      axes: [...event.gamepad.axes],
-      buttons: [...event.gamepad.buttons.map((button) => button.value)],
+      axes: [...event.calibratedState.axes],
+      buttons: [...event.calibratedState.buttons],
     }
 
     // If joystick forwarding is disabled, disable the callback processing
