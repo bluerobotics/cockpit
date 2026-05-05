@@ -411,7 +411,11 @@
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">4.</span>
-                                    <span>Select and process your downloaded ZIP files</span>
+                                    <span>
+                                      Select and process your downloaded ZIP files (large recordings are split into
+                                      multiple part-zips — pick them all together, or just one and the rest will be
+                                      auto-detected if they're in the same folder)
+                                    </span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">5.</span>
@@ -552,7 +556,7 @@
                       <div v-if="isProcessingZip" class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 mb-4">
                         <div class="flex items-center gap-3 mb-3">
                           <v-progress-circular indeterminate color="blue" size="24" width="2" />
-                          <span class="text-blue-200 font-medium">Processing ZIP file...</span>
+                          <span class="text-blue-200 font-medium">Processing ZIP file(s)...</span>
                         </div>
                         <div class="text-blue-100 text-sm">
                           {{ zipProcessingMessage }}
@@ -577,12 +581,13 @@
                           <span class="text-green-200 font-medium">Processing Complete!</span>
                         </div>
                         <div class="text-green-100 text-sm">
-                          The ZIP file has been successfully processed. The video is now available in the Videos tab.
+                          The ZIP file(s) have been successfully processed. The video is now available in the Videos
+                          tab.
                         </div>
                         <div class="mt-4 flex gap-2">
                           <v-btn variant="outlined" size="small" @click="processAnotherZip">
                             <v-icon class="mr-2">mdi-plus</v-icon>
-                            Process Another ZIP File
+                            Process More ZIP Files
                           </v-btn>
                           <v-btn variant="outlined" size="small" @click="currentVideoSubTab = 'processed'">
                             <v-icon class="mr-2">mdi-video</v-icon>
@@ -598,13 +603,16 @@
                       >
                         <div class="text-center">
                           <v-icon size="48" class="text-slate-400 mb-3">mdi-zip-box</v-icon>
-                          <h4 class="text-lg font-medium text-white mb-2">Process ZIP File</h4>
+                          <h4 class="text-lg font-medium text-white mb-2">Process ZIP File(s)</h4>
                           <p class="text-white/70 text-sm mb-4">
-                            Select a ZIP file containing raw video chunks downloaded from the browser version.
+                            Select one or more ZIP files containing raw video chunks downloaded from Cockpit Lite.
+                            Recordings larger than 1GB are split into multiple part-zips — select all of them (or just
+                            one and we'll auto-detect the rest in the same folder) so we can stitch every chunk into a
+                            single video.
                           </p>
                           <v-btn variant="outlined" size="large" @click="handleProcessVideoChunksZip">
                             <v-icon class="mr-2">mdi-folder-open</v-icon>
-                            Select and Process ZIP File
+                            Select and Process ZIP File(s)
                           </v-btn>
                         </div>
                       </div>
@@ -623,11 +631,15 @@
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">2.</span>
-                              <span>Select the ZIP file containing the chunks</span>
+                              <span>
+                                Select all ZIP files for the recording (recordings over 1GB are split into multiple
+                                part-zips). Picking a single part-zip is fine too — sibling parts in the same folder are
+                                auto-detected.
+                              </span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">3.</span>
-                              <span>Click "Process ZIP" to convert chunks to MP4 video</span>
+                              <span>Click "Process ZIP" to extract every part and stitch the chunks into one MP4</span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">4.</span>
