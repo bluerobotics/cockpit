@@ -134,12 +134,30 @@ const snapshotsIndexedDB: StorageDB = new LocalForageStorage(
   'Cockpit snapshots taken from video streams or workspace.'
 )
 
+const audioRecordingsIndexedDB: StorageDB = new LocalForageStorage(
+  'Cockpit - Audio Recordings',
+  'cockpit-audio-recordings-db',
+  1.0,
+  'Cockpit voice/audio recordings captured from the local microphone.'
+)
+
+const tempAudioChunksIndexedDB: StorageDB = new LocalForageStorage(
+  'Cockpit - Temporary Audio',
+  'cockpit-temp-audio-db',
+  1.0,
+  'Database for storing the chunks of an ongoing voice recording, to recover it if Cockpit closes mid-recording.'
+)
+
 const electronVideoStorage = new ElectronStorage(['videos'])
 const temporaryElectronVideoStorage = new ElectronStorage(['videos', 'temporary-video-chunks'])
 const electronSnapshotStorage = new ElectronStorage(['snapshots'])
 const snapshotThumbnailsStorage = new ElectronStorage(['snapshots', 'thumbs'])
+const electronAudioStorage = new ElectronStorage(['audio'])
+const temporaryElectronAudioStorage = new ElectronStorage(['audio', 'temporary-audio-chunks'])
 
 export const videoStorage = isElectron() ? electronVideoStorage : videoStoringIndexedDB
 export const tempVideoStorage = isElectron() ? temporaryElectronVideoStorage : tempVideoChunksIndexdedDB
 export const snapshotStorage = isElectron() ? electronSnapshotStorage : snapshotsIndexedDB
 export const snapshotThumbStorage = isElectron() ? snapshotThumbnailsStorage : snapshotThumbnailsIndexedDB
+export const audioStorage = isElectron() ? electronAudioStorage : audioRecordingsIndexedDB
+export const tempAudioStorage = isElectron() ? temporaryElectronAudioStorage : tempAudioChunksIndexedDB
