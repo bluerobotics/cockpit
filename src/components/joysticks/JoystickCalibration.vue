@@ -319,9 +319,7 @@ const cancelCalibration = (): void => {
 
 const saveCalibration = (): void => {
   currentCalibration.value.deadband.thresholds.axes = [...deadzoneThresholds.value]
-  currentCalibration.value.deadband.enabled = true
   currentCalibration.value.exponential.factors.axes = [...exponentialFactors.value]
-  currentCalibration.value.exponential.enabled = true
   showCalibrationModal.value = false
 }
 
