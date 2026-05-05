@@ -404,40 +404,80 @@ export const useVideoChunkManager = (): {
   }
 
   /**
-   * Process a ZIP file containing video chunks using the live streaming pipeline
-   * @param {() => Promise<void>} onComplete
+   * Resolve the final list of ZIPs to process from the user's selection.
+   * When the user picks a single part-zip we look for sibling part-zips with the same
+   * recording hash in the same folder and include them automatically; otherwise the
+   * user's selection is used as-is.
+   * @param {string[]} selectedPaths - Paths returned by the file dialog
+   * @returns {Promise<string[]>} Final list of ZIP paths to process
+   */
+  const resolveZipPathsToProcess = async (selectedPaths: string[]): Promise<string[]> => {
+    if (selectedPaths.length !== 1 || !window.electronAPI?.findSiblingChunkZips) {
+      return selectedPaths
+    }
+
+    try {
+      const siblings = await window.electronAPI.findSiblingChunkZips(selectedPaths[0])
+      if (siblings && siblings.length > 1) {
+        const siblingCount = siblings.length - 1
+        openSnackbar({
+          message: `Detected ${siblingCount} sibling part-zip(s) for this recording — they will be processed together.`,
+          variant: 'info',
+        })
+        return siblings
+      }
+    } catch (error) {
+      console.warn('Failed to look up sibling chunk ZIPs, proceeding with the selected file only:', error)
+    }
+    return selectedPaths
+  }
+
+  /**
+   * Process one or more ZIP files containing video chunks using the live streaming pipeline.
+   * Allows the user to select multiple ZIPs (e.g. the multi-part archives produced by
+   * Cockpit Lite when chunk groups exceed 1GB). When the user picks a single part-zip
+   * we automatically include any sibling part-zips with the same recording hash that live
+   * in the same folder, so all chunks of a recording are processed together.
+   * @param {() => Promise<void>} onComplete - Optional callback invoked after a successful run
    * @returns {Promise<void>} Promise that resolves when processing is complete
    */
   const processVideoChunksZip = async (onComplete?: () => Promise<void>): Promise<void> => {
     if (isProcessingZip.value || !isElectron()) return
 
     try {
-      const zipFilePath = await window.electronAPI?.getPathOfSelectedFile({
-        title: 'Select Video ZIP File',
+      const selectedPaths = await window.electronAPI?.getPathsOfSelectedFiles({
+        title: 'Select Video ZIP File(s)',
         filters: [{ name: 'ZIP Files', extensions: ['zip'] }],
       })
 
-      if (!zipFilePath) return
+      if (!selectedPaths || selectedPaths.length === 0) return
+
+      const zipPathsToProcess = await resolveZipPathsToProcess(selectedPaths)
 
       isProcessingZip.value = true
       zipProcessingComplete.value = false
       zipProcessingProgress.value = 0
-      zipProcessingMessage.value = 'Starting ZIP processing...'
+      zipProcessingMessage.value =
+        zipPathsToProcess.length > 1
+          ? `Starting processing of ${zipPathsToProcess.length} ZIP files...`
+          : 'Starting ZIP processing...'
 
-      // Use the new LiveVideoProcessor static method
-      await LiveVideoProcessor.processZipFile(zipFilePath, (progress: number, message: string) => {
+      await LiveVideoProcessor.processZipFiles(zipPathsToProcess, (progress: number, message: string) => {
         zipProcessingProgress.value = progress
         zipProcessingMessage.value = message
       })
 
-      const msg = 'ZIP file processed successfully! Video is now available in the Videos tab.'
-      openSnackbar({ message: msg, variant: 'success' })
+      const successMessage =
+        zipPathsToProcess.length > 1
+          ? `${zipPathsToProcess.length} ZIP files processed successfully! Video is now available in the Videos tab.`
+          : 'ZIP file processed successfully! Video is now available in the Videos tab.'
+      openSnackbar({ message: successMessage, variant: 'success' })
 
       if (onComplete) await onComplete()
 
       zipProcessingComplete.value = true
     } catch (error) {
-      const msg = `Failed to process ZIP file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      const msg = `Failed to process ZIP file(s): ${error instanceof Error ? error.message : 'Unknown error'}`
       openSnackbar({ message: msg, variant: 'error' })
     } finally {
       isProcessingZip.value = false
