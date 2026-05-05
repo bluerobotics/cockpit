@@ -496,11 +496,21 @@ declare global {
        */
       go2rtcGetPort: () => Promise<number>
       /**
-       * Extract video chunks from ZIP file
-       * @param zipFilePath - Path to the ZIP file
-       * @returns Promise resolving to extraction result with chunk paths and metadata
+       * Extract video chunks from one or more ZIP files into a single temp directory.
+       * Pass a single-element array to process a standalone chunk-group archive, or
+       * multiple paths (typically the part-zips of the same recording) to merge them.
+       * @param zipFilePaths - Paths to the ZIP files
+       * @returns Promise resolving to a unified extraction result with all chunk paths and metadata
        */
-      extractVideoChunksZip: (zipFilePath: string) => Promise<import('@/types/video').ZipExtractionResult>
+      extractVideoChunksZips: (zipFilePaths: string[]) => Promise<import('@/types/video').ZipExtractionResult>
+      /**
+       * Find sibling chunk-group ZIP files in the same folder as the provided ZIP.
+       * Sibling ZIPs share the same recording hash and follow the
+       * `chunks_<hash>_part<N>.zip` (or `chunks_<hash>.zip`) naming convention.
+       * @param zipFilePath - Path to a chunk-group ZIP file
+       * @returns Promise resolving to all sibling ZIP paths, including the input path
+       */
+      findSiblingChunkZips: (zipFilePath: string) => Promise<string[]>
       /**
        * Read chunk file and return as Uint8Array
        * @param chunkPath - Path to the chunk file
