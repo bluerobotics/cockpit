@@ -377,6 +377,7 @@ export const useVideoStore = defineStore('video', () => {
   }, 300)
 
   const rtspActivating = new Set<string>()
+  let rtspUnsupportedWarned = false
 
   /**
    * Activates a stream by starting it and storing it's variables inside a common object.
@@ -395,7 +396,18 @@ export const useVideoStore = defineStore('video', () => {
         return
       }
       if (!window.electronAPI) {
-        showDialog({ message: 'RTSP streams are only available in the standalone version.', variant: 'error' })
+        // Activation is attempted repeatedly (e.g. via VideoPlayer's 1s polling), so guard the dialog
+        // to a single notification per session to avoid spamming the user during boot.
+        if (!rtspUnsupportedWarned) {
+          rtspUnsupportedWarned = true
+          showDialog({
+            message:
+              'It looks like some of your video-related widgets (e.g.: video player, mini video recorder, snapshot tool)' +
+              ' are connected to RTSP streams, which are not supported in Cockpit Lite. To make sure those widgets work,' +
+              ' re-configure them to only use WebRTC, or upgrade to Cockpit Standalone, which supports both WebRTC and RTSP streams.',
+            variant: 'error',
+          })
+        }
         return
       }
 
