@@ -107,6 +107,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Joystick Support** | Only when tab and window are in focus  | ✅ Window can be unfocused and in the background |
 | **Video** | Needs to be downloaded and merged into a working video using the Desktop app | ✅ Final MP4 file saved directly to your folders |
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
+| **Voice Recording** | Needs to be downloaded; requires HTTPS/localhost for microphone access | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
 | **ArduSub Simulator (`sitl://ardusub`)** | Only on the GitHub Pages version, in browsers with cross-origin isolation support (Chrome, Edge, Firefox). Embedded pages, like iframe widgets, may not load while it runs | ❌ Not available |
 | **Serial, UDP and TCP Vehicle Links** | ❌ Not available (needs a vehicle address reachable from the browser) | ✅ Connect straight to an autopilot or telemetry radio |
