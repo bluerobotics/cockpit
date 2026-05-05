@@ -422,6 +422,12 @@ msgstr "某个视频流未开始发送视频，因此未被录制。请检查其
 msgid "A voice download is already running."
 msgstr "已有语音下载正在进行。"
 
+#: src/composables/useVoiceRecorder.ts
+msgid ""
+"A voice recording is ongoing. Stop it before closing Cockpit, so it is "
+"saved in full."
+msgstr ""
+
 #: src/components/mission-planning/WaypointConfigPanel.vue
 msgid "A waypoint must keep a MAV_CMD_NAV_WAYPOINT command"
 msgstr "航点必须保留 MAV_CMD_NAV_WAYPOINT 命令"
@@ -1781,6 +1787,10 @@ msgstr "无法跳过（设备离线或航点无效）。"
 msgid "Cannot start recording."
 msgstr "无法开始录制。"
 
+#: src/composables/useVoiceRecorder.ts
+msgid "Cannot start voice recording"
+msgstr ""
+
 #: src/components/mini-widgets/SnapshotTool.vue
 msgid "Capture Cockpit work area (standalone-only feature)"
 msgstr "捕获 Cockpit 工作区（仅独立版功能）"
@@ -2598,6 +2608,13 @@ msgstr "复制可见日志"
 #: src/libs/live-video-processor.ts
 msgid "Copying telemetry file..."
 msgstr "正在复制遥测文件..."
+
+#: src/composables/useVoiceRecorder.ts
+#, javascript-format
+msgid ""
+"Could not access the microphone. Check that one is connected and Cockpit "
+"may use it. (${ 0 })"
+msgstr ""
 
 #: src/composables/secondaryVehicles.ts
 #, javascript-format
@@ -6371,6 +6388,12 @@ msgstr "消息应为格式"
 msgid "Messages:"
 msgstr "消息数："
 
+#: src/composables/useVoiceRecorder.ts
+msgid ""
+"Microphone access needs the Standalone app, or Cockpit opened over HTTPS or "
+"localhost."
+msgstr ""
+
 #: src/components/joysticks/AxisRangeWarningDialog.vue
 #: src/components/widgets/Plotter.vue
 #: src/views/ConfigurationJoystickView.vue
@@ -8147,6 +8170,12 @@ msgstr "视频流“${ 0 }”的录制意外停止。${ 1 }"
 msgid "Recording ongoing"
 msgstr "录制中"
 
+#: src/composables/useVoiceRecorder.ts
+#, javascript-format
+msgid "Recovered ${ 0 } voice recording interrupted by Cockpit closing."
+msgid_plural "Recovered ${ 0 } voice recordings interrupted by Cockpit closing."
+msgstr[0] ""
+
 #: src/components/mission-planning/ContextMenu.vue
 #: src/components/mission-planning/SurveyShapeControls.vue
 msgid "Rectangle"
@@ -8703,6 +8732,11 @@ msgstr "已保存在此计算机上。BlueOS 设置同步已关闭，因此不�
 #: src/components/map/CustomTileProvidersManager.vue
 msgid "Saved on this computer. Will upload to the vehicle once it's online."
 msgstr "已保存在此计算机上。设备上线后将上传到设备。"
+
+#: src/composables/useVoiceRecorder.ts
+#, javascript-format
+msgid "Saved voice recording \"${ 0 }\"."
+msgstr ""
 
 #: src/composables/useOfflineTiles.ts
 #, javascript-format
@@ -9920,6 +9954,10 @@ msgid ""
 "The recipe is meant to be read as a whole. Leaving items out may stop the "
 "rest from working."
 msgstr "配方应整体阅读。遗漏其中的项目可能导致其余部分无法正常工作。"
+
+#: src/libs/audio-recording.ts
+msgid "The recording has no audio data."
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 #, javascript-format
@@ -11448,6 +11486,10 @@ msgstr "语音警报将如此播放。"
 #: src/views/ConfigurationAlertsView.vue
 msgid "Voice alerts:"
 msgstr "语音警报："
+
+#: src/composables/useVoiceRecorder.ts
+msgid "Voice recording not saved"
+msgstr ""
 
 #: src/views/ConfigurationAlertsView.vue
 msgid "Voice set. Raise the alerts volume to hear it."
