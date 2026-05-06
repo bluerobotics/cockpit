@@ -46,7 +46,7 @@ const loadPersistentVariables = (): void => {
 const savePersistentVariables = (): void => {
   const persistentVariables = Object.values(dataLakeVariableInfo).filter((variable) => variable?.persistent)
 
-  settingsManager.setKeyValue(persistentVariablesKey, JSON.stringify(persistentVariables))
+  settingsManager.setKeyValue(persistentVariablesKey, persistentVariables)
 }
 
 // Save persistent values to localStorage
@@ -61,7 +61,7 @@ const savePersistentValues = (): void => {
       }
     })
 
-  settingsManager.setKeyValue(persistentValuesKey, JSON.stringify(persistentValuesObj))
+  settingsManager.setKeyValue(persistentValuesKey, persistentValuesObj)
 }
 
 export const getAllDataLakeVariablesInfo = (): Record<string, DataLakeVariable> => {
