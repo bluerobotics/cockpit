@@ -7,128 +7,131 @@
     :style="glassMenuCssVars"
   >
     <div :id="mapId" ref="map" class="map">
-      <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
-        <template #activator="{ props: menuProps }">
-          <v-tooltip location="top" text="Download tiles for offline use">
-            <template #activator="{ props: tooltipProps }">
-              <v-btn
-                v-show="showButtons"
-                :style="interfaceStore.globalGlassMenuStyles"
-                v-bind="{ ...menuProps, ...tooltipProps }"
-                class="absolute right-[89px] m-3 bottom-button bg-slate-50 text-[14px]"
-                elevation="2"
-                size="x-small"
-                style="z-index: 1002; border-radius: 0px"
-                icon="mdi-download-multiple"
-              />
-            </template>
-          </v-tooltip>
-        </template>
-
-        <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-          <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
-          <v-divider />
-          <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
-          <v-divider />
-          <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
-        </v-list>
-      </v-menu>
-      <v-tooltip location="top" text="Switch to Mission Planning mode">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            v-if="showButtons"
-            v-bind="tooltipProps"
-            class="absolute right-[148px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
-            elevation="4"
-            text="Edit mission"
-            append-icon="mdi-map-marker-radius-outline"
-            style="z-index: 1002; border-radius: 0px"
-            :style="interfaceStore.globalGlassMenuStyles"
-            hide-details
-            size="small"
-            @click.stop="router.push('/mission-planning')"
-          />
-        </template>
-      </v-tooltip>
-      <v-speed-dial
-        v-model="speedDialOpen"
-        location="top center"
-        transition="slide-y-reverse-transition"
-        content-class="speed-dial-glow"
+      <div
+        v-show="showButtons"
+        class="map-bottom-buttons absolute right-[52px] mb-3 bottom-button flex flex-row items-center"
+        style="z-index: 1002; gap: 10px"
       >
-        <template #activator="{ props: activatorProps }">
-          <v-tooltip location="top" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+        <v-tooltip location="top" text="Switch to Mission Planning mode">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              v-bind="tooltipProps"
+              class="w-[140px] bg-slate-50 text-[12px] font-bold"
+              elevation="4"
+              text="Edit mission"
+              append-icon="mdi-map-marker-radius-outline"
+              style="border-radius: 0px"
+              :style="interfaceStore.globalGlassMenuStyles"
+              hide-details
+              size="small"
+              @click.stop="router.push('/mission-planning')"
+            />
+          </template>
+        </v-tooltip>
+        <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
+          <template #activator="{ props: menuProps }">
+            <v-tooltip location="top" text="Download tiles for offline use">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  :style="interfaceStore.globalGlassMenuStyles"
+                  v-bind="{ ...menuProps, ...tooltipProps }"
+                  class="bg-slate-50 text-[14px]"
+                  elevation="2"
+                  size="x-small"
+                  style="border-radius: 0px"
+                  icon="mdi-download-multiple"
+                />
+              </template>
+            </v-tooltip>
+          </template>
+
+          <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
+            <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+            <v-divider />
+            <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+            <v-divider />
+            <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
+          </v-list>
+        </v-menu>
+        <v-speed-dial
+          v-model="speedDialOpen"
+          location="top center"
+          transition="slide-y-reverse-transition"
+          content-class="speed-dial-glow"
+        >
+          <template #activator="{ props: activatorProps }">
+            <v-tooltip location="top" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="{ ...activatorProps, ...tooltipProps }"
+                  class="bg-slate-50 text-[14px]"
+                  :style="interfaceStore.globalGlassMenuStyles"
+                  :color="followerTarget !== undefined ? 'red' : ''"
+                  elevation="2"
+                  style="border-radius: 0px"
+                  icon="mdi-crosshairs-gps"
+                  size="x-small"
+                />
+              </template>
+            </v-tooltip>
+          </template>
+          <v-tooltip location="left" :text="centerMissionButtonTooltipText">
             <template #activator="{ props: tooltipProps }">
               <v-btn
-                v-if="showButtons"
-                v-bind="{ ...activatorProps, ...tooltipProps }"
-                class="absolute right-[44px] m-3 bottom-button bg-slate-50 text-[14px]"
-                :style="interfaceStore.globalGlassMenuStyles"
-                :color="followerTarget !== undefined ? 'red' : ''"
+                key="mission"
+                v-bind="tooltipProps"
+                class="bg-slate-50 text-[14px]"
+                :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF33' } : {}]"
+                :class="!hasMissionWaypoints ? 'active-events-on-disabled' : ''"
                 elevation="2"
-                style="z-index: 1002; border-radius: 0px"
-                icon="mdi-crosshairs-gps"
+                style="border-radius: 0px"
+                icon="mdi-map-marker-path"
                 size="x-small"
+                :disabled="!hasMissionWaypoints"
+                @click.stop="centerOnMission"
               />
             </template>
           </v-tooltip>
-        </template>
-        <v-tooltip location="left" :text="centerMissionButtonTooltipText">
-          <template #activator="{ props: tooltipProps }">
-            <v-btn
-              key="mission"
-              v-bind="tooltipProps"
-              class="bg-slate-50 text-[14px]"
-              :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF33' } : {}]"
-              :class="!hasMissionWaypoints ? 'active-events-on-disabled' : ''"
-              elevation="2"
-              style="border-radius: 0px"
-              icon="mdi-map-marker-path"
-              size="x-small"
-              :disabled="!hasMissionWaypoints"
-              @click.stop="centerOnMission"
-            />
-          </template>
-        </v-tooltip>
-        <v-tooltip location="left" :text="centerHomeButtonTooltipText">
-          <template #activator="{ props: tooltipProps }">
-            <v-btn
-              key="home"
-              v-bind="tooltipProps"
-              class="bg-slate-50 text-[14px]"
-              :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF33' } : {}]"
-              :class="!home ? 'active-events-on-disabled' : ''"
-              :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-              elevation="2"
-              style="border-radius: 0px"
-              icon="mdi-home-search"
-              size="x-small"
-              :disabled="!home"
-              @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-              @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-            />
-          </template>
-        </v-tooltip>
-        <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
-          <template #activator="{ props: tooltipProps }">
-            <v-btn
-              key="vehicle"
-              v-bind="tooltipProps"
-              class="bg-slate-50 text-[14px]"
-              :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF33' } : {}]"
-              :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
-              :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-              elevation="2"
-              style="border-radius: 0px"
-              icon="mdi-airplane-marker"
-              size="x-small"
-              :disabled="!vehiclePosition"
-              @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-              @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-            />
-          </template>
-        </v-tooltip>
-      </v-speed-dial>
+          <v-tooltip location="left" :text="centerHomeButtonTooltipText">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                key="home"
+                v-bind="tooltipProps"
+                class="bg-slate-50 text-[14px]"
+                :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF33' } : {}]"
+                :class="!home ? 'active-events-on-disabled' : ''"
+                :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+                elevation="2"
+                style="border-radius: 0px"
+                icon="mdi-home-search"
+                size="x-small"
+                :disabled="!home"
+                @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+                @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+              />
+            </template>
+          </v-tooltip>
+          <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                key="vehicle"
+                v-bind="tooltipProps"
+                class="bg-slate-50 text-[14px]"
+                :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF33' } : {}]"
+                :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
+                :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+                elevation="2"
+                style="border-radius: 0px"
+                icon="mdi-airplane-marker"
+                size="x-small"
+                :disabled="!vehiclePosition"
+                @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+                @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+              />
+            </template>
+          </v-tooltip>
+        </v-speed-dial>
+      </div>
       <MapNorthIndicator class="north-indicator" />
       <PoiMapArrows
         :map-ready="mapReady"
