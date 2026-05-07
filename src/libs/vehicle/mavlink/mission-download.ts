@@ -2,6 +2,7 @@ import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType, MavMissionType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import type { SignalTyped } from '@/libs/signal'
+import { isFromMissionType } from '@/libs/vehicle/mavlink/types'
 import { type MissionLoadingCallback, defaultLoadingCallback } from '@/types/mission'
 
 const MISSION = MavMissionType.MAV_MISSION_TYPE_MISSION
@@ -19,7 +20,8 @@ const ITEMS_TIMEOUT = 'Timed out waiting for mission items from the vehicle. Che
 const COUNT_TOO_LARGE = `The vehicle reported more than ${MAX_MISSION_ITEMS} mission items, which Cockpit will not download. Check the mission on the vehicle and try again.`
 
 /**
- * Vehicle surface used to download a regular mission. Matches the methods already on `MAVLinkVehicle`.
+ * Vehicle surface used to download from a mission micro-service. Matches the methods already on
+ * `MAVLinkVehicle`.
  */
 export type MissionDownloadPort = {
   /**
@@ -73,18 +75,20 @@ const fail = (log: string, user: string): never => {
 }
 
 /**
- * Download every regular-mission item.
+ * Download every item of one mission micro-service (regular mission, geofence or rally points).
  *
  * After MISSION_COUNT, keep a window of outstanding `MISSION_REQUEST_INT`s so RTTs overlap,
  * then retry only the in-flight holes after a short idle (with backoff). The old loop asked
  * for one item, waited for it (and at least 250 ms before retrying), then asked for the next.
  * @param {MissionDownloadPort} vehicle Vehicle used to send requests and receive items
+ * @param {MavMissionType} missionType Mission micro-service to download from
  * @param {MissionLoadingCallback} loadingCallback Progress from 0 to 100
  * @param {number} stallTimeoutMs Fail if the count or a new item does not arrive for this long
  * @returns {Promise<Message.MissionItemInt[]>} Items in sequence order
  */
 export const downloadMissionItems = async (
   vehicle: MissionDownloadPort,
+  missionType: MavMissionType = MISSION,
   loadingCallback: MissionLoadingCallback = defaultLoadingCallback,
   stallTimeoutMs = 10000
 ): Promise<Message.MissionItemInt[]> => {
@@ -98,6 +102,7 @@ export const downloadMissionItems = async (
 
   const onCount = (pack: Package): void => {
     if (total !== undefined) return
+    if (!isFromMissionType(pack.message, missionType)) return
     const raw = Number((pack.message as Message.MissionCount).count)
     if (!Number.isFinite(raw) || raw < 0) return
     total = raw
@@ -105,6 +110,7 @@ export const downloadMissionItems = async (
   }
   const onItem = (pack: Package): void => {
     if (total === undefined) return
+    if (!isFromMissionType(pack.message, missionType)) return
     const item = pack.message as Message.MissionItemInt
     const seq = item.seq
     if (!Number.isFinite(seq) || seq < 0 || seq >= total) return
@@ -131,20 +137,20 @@ export const downloadMissionItems = async (
     for (const seq of missing) {
       if (inFlight.size >= IN_FLIGHT) break
       if (inFlight.has(seq)) continue
-      vehicle.requestMissionItem(seq, MISSION)
+      vehicle.requestMissionItem(seq, missionType)
       inFlight.add(seq)
     }
     return missing.length
   }
 
   const retryInFlight = (): void => {
-    for (const seq of inFlight) vehicle.requestMissionItem(seq, MISSION)
+    for (const seq of inFlight) vehicle.requestMissionItem(seq, missionType)
   }
 
   try {
     void loadingCallback(0)
     console.debug('[Mission download] Requesting number of mission items to be downloaded...')
-    vehicle.requestMissionItemsList(MISSION)
+    vehicle.requestMissionItemsList(missionType)
     const countDeadline = Date.now() + stallTimeoutMs
     while (total === undefined) {
       const remaining = countDeadline - Date.now()
@@ -164,7 +170,7 @@ export const downloadMissionItems = async (
     }
     if (total === 0) {
       console.debug('[Mission download] No mission items to download.')
-      vehicle.sendMissionAck(true, MISSION)
+      vehicle.sendMissionAck(true, missionType)
       void loadingCallback(100)
       return []
     }
@@ -196,7 +202,7 @@ export const downloadMissionItems = async (
     const ordered: Message.MissionItemInt[] = []
     for (let seq = 0; seq < total; seq++) ordered.push(items.get(seq) as Message.MissionItemInt)
     console.debug('[Mission download] Successfully downloaded all mission items.')
-    vehicle.sendMissionAck(true, MISSION)
+    vehicle.sendMissionAck(true, missionType)
     void loadingCallback(100)
     return ordered
   } finally {
