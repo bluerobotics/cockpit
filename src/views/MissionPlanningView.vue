@@ -475,107 +475,112 @@
         </button>
       </div>
     </div>
-    <v-tooltip location="top" text="Switch to Flight mode">
-      <template #activator="{ props: tooltipProps }">
-        <v-btn
-          v-bind="tooltipProps"
-          class="absolute right-[135px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
-          elevation="8"
-          text="Flight mode"
-          append-icon="mdi-send"
-          :style="interfaceStore.globalGlassMenuStyles"
-          hide-details
-          size="small"
-          @click.stop="goToFlightView"
-        />
-      </template>
-    </v-tooltip>
-    <v-tooltip location="top center" text="Download map tiles">
-      <template #activator="{ props: tooltipProps }">
-        <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
-          <template #activator="{ props: menuProps }">
-            <v-btn
-              v-bind="{ ...menuProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[88px] text-[14px]"
-              :style="interfaceStore.globalGlassMenuStyles"
-              size="x-small"
-              icon="mdi-download-multiple"
-            />
-          </template>
+    <div
+      class="planning-bottom-buttons absolute right-[52px] mb-3 bottom-12 flex flex-row items-center"
+      style="z-index: 1002; gap: 10px"
+    >
+      <v-tooltip location="top" text="Switch to Flight mode">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-bind="tooltipProps"
+            class="w-[140px] bg-slate-50 text-[12px] font-bold"
+            elevation="8"
+            text="Flight mode"
+            append-icon="mdi-send"
+            :style="interfaceStore.globalGlassMenuStyles"
+            hide-details
+            size="small"
+            @click.stop="goToFlightView"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top center" text="Download map tiles">
+        <template #activator="{ props: tooltipProps }">
+          <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
+            <template #activator="{ props: menuProps }">
+              <v-btn
+                v-bind="{ ...menuProps, ...tooltipProps }"
+                class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+                :style="interfaceStore.globalGlassMenuStyles"
+                size="x-small"
+                icon="mdi-download-multiple"
+              />
+            </template>
 
-          <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-            <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
-            <v-divider />
-            <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
-          </v-list>
-        </v-menu>
-      </template>
-    </v-tooltip>
-    <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
-      <template #activator="{ props: activatorProps }">
-        <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+            <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
+              <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+              <v-divider />
+              <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+            </v-list>
+          </v-menu>
+        </template>
+      </v-tooltip>
+      <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
+        <template #activator="{ props: activatorProps }">
+          <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                v-bind="{ ...activatorProps, ...tooltipProps }"
+                class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+                :style="interfaceStore.globalGlassMenuStyles"
+                :color="followerTarget !== undefined ? 'red' : ''"
+                icon="mdi-crosshairs-gps"
+                size="x-small"
+              />
+            </template>
+          </v-tooltip>
+        </template>
+        <v-tooltip location="left" :text="centerMissionButtonTooltipText">
           <template #activator="{ props: tooltipProps }">
             <v-btn
-              v-bind="{ ...activatorProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 right-[44px] bg-slate-50 text-[14px]"
-              :style="interfaceStore.globalGlassMenuStyles"
-              :color="followerTarget !== undefined ? 'red' : ''"
-              icon="mdi-crosshairs-gps"
+              key="mission"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
+              :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
+              icon="mdi-map-marker-path"
               size="x-small"
+              :disabled="!hasMissionWaypoints"
+              @click.stop="centerOnMission"
             />
           </template>
         </v-tooltip>
-      </template>
-      <v-tooltip location="left" :text="centerMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="mission"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
-            :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
-            icon="mdi-map-marker-path"
-            size="x-small"
-            :disabled="!hasMissionWaypoints"
-            @click.stop="centerOnMission"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerHomeButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="home"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
-            :class="[!home ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-            icon="mdi-home-search"
-            size="x-small"
-            :disabled="!home"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="vehicle"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
-            :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-            icon="mdi-airplane-marker"
-            size="x-small"
-            :disabled="!vehiclePosition"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-          />
-        </template>
-      </v-tooltip>
-    </v-speed-dial>
+        <v-tooltip location="left" :text="centerHomeButtonTooltipText">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              key="home"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
+              :class="[!home ? 'active-events-on-disabled' : '']"
+              :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+              icon="mdi-home-search"
+              size="x-small"
+              :disabled="!home"
+              @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+              @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+            />
+          </template>
+        </v-tooltip>
+        <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              key="vehicle"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
+              :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
+              :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+              icon="mdi-airplane-marker"
+              size="x-small"
+              :disabled="!vehiclePosition"
+              @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+              @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+            />
+          </template>
+        </v-tooltip>
+      </v-speed-dial>
+    </div>
     <MapNorthIndicator class="north-indicator" />
     <v-progress-linear
       v-if="uploadingMission"
@@ -4978,7 +4983,10 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 293px; /* Position to the left of the buttons */
+  /* Sits 10px to the left of the bottom-right buttons flex row.
+     Container right offset = 44px; flex inner width ≈ 224px (140px Flight-mode
+     button + two 32px icon buttons + 2×10px gaps); + 10px gap = 278px. */
+  right: 278px;
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
