@@ -871,6 +871,60 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Request a single onboard parameter from the vehicle by name. The vehicle
+   * will reply with a `PARAM_VALUE` message that bubbles up via `onParameter`.
+   * @param { string } paramName Onboard parameter id (max 16 chars).
+   */
+  requestParameter(paramName: string): void {
+    const param_id: string[] = [...paramName]
+    while (param_id.length < 16) {
+      param_id.push('\0')
+    }
+    const paramRequestReadMessage: Message.ParamRequestRead = {
+      type: MAVLinkType.PARAM_REQUEST_READ,
+      target_system: this.currentSystemId,
+      target_component: 0,
+      param_index: -1,
+      // @ts-ignore: The correct type is indeed a char array
+      param_id,
+    }
+    sendMavlinkMessage(paramRequestReadMessage)
+  }
+
+  /**
+   * Request a single onboard parameter and resolve with its value when the
+   * matching `PARAM_VALUE` reply arrives. Resolves with `undefined` if no
+   * matching reply is received within `timeoutMs`.
+   * @param { string } paramName Onboard parameter id (max 16 chars).
+   * @param { number } timeoutMs Timeout in milliseconds before giving up.
+   * @returns { Promise<number | undefined> } The parameter value, or undefined on timeout.
+   */
+  async requestParameterValue(paramName: string, timeoutMs = 1500): Promise<number | undefined> {
+    return new Promise<number | undefined>((resolve) => {
+      let resolved = false
+      // Slot lifetime is bounded by the timeout: either the matching PARAM_VALUE
+      // arrives and the slot removes itself, or `setTimeout` fires after
+      // `timeoutMs` and removes it. The promise always settles, so the slot is
+      // never left registered on `onParameter`.
+      const slot = ([param]: [Parameter, number | undefined]): void => {
+        if (resolved || param?.name !== paramName) return
+        resolved = true
+        this.onParameter.remove(slot)
+        clearTimeout(timeoutHandle)
+        resolve(param.value)
+      }
+      this.onParameter.add(slot)
+      this.requestParameter(paramName)
+      const timeoutHandle = setTimeout(() => {
+        if (resolved) return
+        resolved = true
+        this.onParameter.remove(slot)
+        resolve(undefined)
+      }, timeoutMs)
+    })
+  }
+
+  /**
    * Request the vehicle to publish its `AUTOPILOT_VERSION` message so the
    * GCS can read the autopilot capability bitmask.
    * @returns { Promise<void> } Resolves when the request command is acknowledged.
