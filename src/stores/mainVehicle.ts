@@ -50,6 +50,7 @@ import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { importDefaultsForVehicle } from '@/migration/default-profile-importer'
+import type { GeoFencePlan } from '@/types/geofence'
 import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
 
 import { useControllerStore } from './controller'
@@ -146,6 +147,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const vehiclePositionMaxSampleRate = useStorage('cockpit-vehicle-position-max-sampling-ms', 200) // Limits the frequency of vehicle position updates
   const reachedMissionItemSequences = ref<number[]>([])
   const currentMissionSeq = ref<number | undefined>(undefined)
+  const capabilities = ref<number | undefined>(undefined)
 
   const markMissionItemAsReached = (sequence: number): void => {
     if (reachedMissionItemSequences.value.includes(sequence)) return
@@ -505,6 +507,47 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Upload a geofence plan to the vehicle.
+   * @param { GeoFencePlan } plan The plan to upload.
+   * @param { MissionLoadingCallback } loadingCallback Callback invoked with upload progress.
+   * @returns { Promise<void> } Resolves when the vehicle acks the upload.
+   */
+  async function uploadFence(plan: GeoFencePlan, loadingCallback: MissionLoadingCallback): Promise<void> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to upload fence.')
+    return await mainVehicle.value.uploadFence(plan, loadingCallback)
+  }
+
+  /**
+   * Download the geofence plan currently stored on the vehicle.
+   * @param { MissionLoadingCallback } loadingCallback Callback invoked with download progress.
+   * @returns { Promise<GeoFencePlan> } The decoded geofence plan from the vehicle.
+   */
+  async function fetchFence(loadingCallback: MissionLoadingCallback): Promise<GeoFencePlan> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to fetch fence.')
+    return await mainVehicle.value.fetchFence(loadingCallback)
+  }
+
+  /**
+   * Clear the geofence currently stored on the vehicle.
+   * @returns { Promise<void> } Resolves once the clear command has been sent.
+   */
+  async function clearFence(): Promise<void> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to clear fence.')
+    await mainVehicle.value.clearFence()
+    openSnackbar({ message: 'Geofence deleted from vehicle', variant: 'info' })
+  }
+
+  /**
+   * Request a single onboard parameter from the vehicle by name.
+   * The reply arrives asynchronously via the standard `PARAM_VALUE` channel.
+   * @param { string } paramName Onboard parameter id (max 16 chars).
+   */
+  function requestParameter(paramName: string): void {
+    if (!mainVehicle.value) return
+    mainVehicle.value.requestParameter(paramName)
+  }
+
+  /**
    * Start mission that is on the vehicle
    */
   async function startMission(): Promise<void> {
@@ -600,6 +643,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     // Set callback for mission's current waypoint updates
     mainVehicle.value.onMissionCurrent.add(MAVLinkType.MISSION_CURRENT, (seq: number) => {
       currentMissionSeq.value = seq
+    })
+
+    // Track autopilot capability bitmask so feature gates (e.g. geofence) can react.
+    capabilities.value = mainVehicle.value.capabilities()
+    mainVehicle.value.onCapabilities.add((bits: number) => {
+      capabilities.value = bits
     })
 
     mainVehicle.value.onAltitude.add((newAltitude: Altitude) => {
@@ -1012,6 +1061,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     fetchMission,
     uploadMission,
     clearMissions,
+    uploadFence,
+    fetchFence,
+    clearFence,
+    requestParameter,
+    capabilities,
     startMission,
     pauseMission,
     returnHome,
