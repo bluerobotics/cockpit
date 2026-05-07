@@ -1,14 +1,15 @@
 import { BlueOsCloudTokens, BlueOsCloudUser, DeviceAuthorizationResponse, TokenResponse } from './types'
 
 export const BLUEOS_CLOUD_AUTH0_DOMAIN = 'bcloud-prod.us.auth0.com'
-export const BLUEOS_CLOUD_AUTH0_CLIENT_ID = '9gVAeMgG9STSliyvBZDqiNqBmN76g5jr'
-export const BLUEOS_CLOUD_AUTH0_AUDIENCE = 'UXVpt5UzHP7v58VeyXl3IHLMSQloBufr'
+export const BLUEOS_CLOUD_AUTH0_CLIENT_ID = '0zWm0LYYxwIzFKXsv84mElKoo601QG4S'
+export const BLUEOS_CLOUD_AUTH0_AUDIENCE = 'https://app.blueos.cloud/api/v1'
 export const BLUEOS_CLOUD_AUTH0_SCOPE = 'openid profile email offline_access'
 
 const TOKEN_REFRESH_SAFETY_MARGIN_MS = 60_000
 
 /**
  * Custom error thrown when the user explicitly cancels or rejects the device authorization request.
+ *
  * Use it to differentiate user-driven aborts from generic network failures in the wizard UI.
  */
 export class DeviceAuthorizationCancelled extends Error {
@@ -51,16 +52,6 @@ export const requestDeviceAuthorization = async (): Promise<DeviceAuthorizationR
   return res.json()
 }
 
-/**
- * Builds a {@link BlueOsCloudTokens} object from an Auth0 token response.
- *
- * Calculates the absolute expiration timestamp (`expiresAt`) from the relative `expires_in` value so it can be checked
- * against `Date.now()` later without keeping track of when the response was received.
- * @param {TokenResponse} response - Token payload returned by Auth0.
- * @param {string | null | undefined} fallbackRefreshToken - Refresh token from a previous response, used when the
- *   current response does not include one.
- * @returns {BlueOsCloudTokens} Token bundle ready to be persisted.
- */
 const buildTokensFromResponse = (
   response: TokenResponse,
   fallbackRefreshToken: string | null | undefined

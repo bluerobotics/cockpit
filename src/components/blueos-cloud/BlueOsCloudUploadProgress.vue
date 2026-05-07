@@ -25,6 +25,16 @@
           <p class="text-xs opacity-70 text-right">{{ Math.round(progress) }}%</p>
           <p v-if="errorMessage" class="text-sm text-red-300">{{ errorMessage }}</p>
           <p v-else-if="isUploadFinished" class="text-sm text-green-300">Upload complete!</p>
+          <a
+            v-if="missionId && isUploadFinished"
+            :href="missionUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-sm text-sky-300 hover:underline inline-flex items-center gap-1"
+          >
+            <v-icon size="14">mdi-open-in-new</v-icon>
+            View mission on BlueOS Cloud
+          </a>
         </div>
       </v-card-text>
       <v-divider class="opacity-20 mx-4" />
@@ -40,9 +50,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import { buildBlueOsCloudMissionUrl } from '@/libs/blueos-cloud/api'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
-defineProps<{
+const props = defineProps<{
   /**
    * Controls dialog visibility.
    */
@@ -55,6 +68,10 @@ defineProps<{
    * Mission to which the file is being uploaded.
    */
   missionName: string
+  /**
+   * Identifier of the mission to which the file is being uploaded; used to render a link to the cloud UI.
+   */
+  missionId?: string
   /**
    * Current progress in the 0-100 range.
    */
@@ -75,4 +92,6 @@ const emit = defineEmits<{
 }>()
 
 const interfaceStore = useAppInterfaceStore()
+
+const missionUrl = computed(() => (props.missionId ? buildBlueOsCloudMissionUrl(props.missionId) : ''))
 </script>

@@ -31,10 +31,10 @@
             No missions yet on your BlueOS Cloud account.
           </div>
           <div v-else class="max-h-[260px] overflow-y-auto pr-1">
-            <button
+            <div
               v-for="mission in cloudStore.missions"
               :key="mission.id"
-              class="w-full text-left px-3 py-2 rounded mb-1 transition-colors"
+              class="w-full flex items-center gap-2 px-3 py-2 rounded mb-1 transition-colors cursor-pointer"
               :class="
                 selectedMissionId === mission.id
                   ? 'bg-[#FFFFFF22] border border-white/30'
@@ -42,18 +42,35 @@
               "
               @click="selectedMissionId = mission.id"
             >
-              <div class="font-medium truncate">{{ mission.title || 'Untitled mission' }}</div>
-              <div class="text-xs opacity-70 truncate">
-                {{ formatMissionMeta(mission) }}
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ mission.title || 'Untitled mission' }}</div>
+                <div class="text-xs opacity-70 truncate">
+                  {{ formatMissionMeta(mission) }}
+                </div>
               </div>
-            </button>
+              <a
+                :href="buildBlueOsCloudMissionUrl(mission.id)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="opacity-70 hover:opacity-100"
+                @click.stop
+              >
+                <v-tooltip activator="parent" location="top" open-delay="300">View on BlueOS Cloud</v-tooltip>
+                <v-icon size="16">mdi-open-in-new</v-icon>
+              </a>
+            </div>
           </div>
         </div>
 
         <div v-if="cloudStore.lastError" class="text-sm text-red-300 mt-3">{{ cloudStore.lastError }}</div>
 
         <v-divider class="opacity-20 my-4" />
-        <div class="text-xs uppercase tracking-wider opacity-70 mb-2">Or create a new mission</div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs uppercase tracking-wider opacity-70">Or create a new mission</span>
+          <v-btn variant="text" size="x-small" @click="showCreateForm = !showCreateForm">
+            {{ showCreateForm ? 'Hide' : 'Show' }} options
+          </v-btn>
+        </div>
         <div class="flex items-center gap-2">
           <v-text-field
             v-model="newMissionName"
@@ -72,6 +89,9 @@
           >
             Create
           </v-btn>
+        </div>
+        <div v-if="showCreateForm" class="mt-3">
+          <BlueOsCloudLocationPicker v-model="newMissionLocation" />
         </div>
       </v-card-text>
       <v-divider class="opacity-20 mx-4" />
@@ -95,10 +115,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import BlueOsCloudLocationPicker from '@/components/blueos-cloud/BlueOsCloudLocationPicker.vue'
 import { useSnackbar } from '@/composables/snackbar'
+import { buildBlueOsCloudMissionUrl } from '@/libs/blueos-cloud/api'
 import { BlueOsCloudMission } from '@/libs/blueos-cloud/types'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
+import { WaypointCoordinates } from '@/types/mission'
 
 const props = withDefaults(
   defineProps<{
@@ -142,6 +165,8 @@ const { openSnackbar } = useSnackbar()
 
 const selectedMissionId = ref<string | null>(null)
 const newMissionName = ref('')
+const newMissionLocation = ref<WaypointCoordinates | null>(null)
+const showCreateForm = ref(false)
 const isCreatingMission = ref(false)
 
 const selectedMission = computed(
@@ -175,9 +200,16 @@ const createNewMission = async (): Promise<void> => {
   if (!name) return
   isCreatingMission.value = true
   try {
-    const created = await cloudStore.createCloudMission({ name })
+    const location = newMissionLocation.value
+    const created = await cloudStore.createCloudMission({
+      name,
+      latitude: location?.[0] ?? null,
+      longitude: location?.[1] ?? null,
+    })
     selectedMissionId.value = created.id
     newMissionName.value = ''
+    newMissionLocation.value = null
+    showCreateForm.value = false
     openSnackbar({
       message: `Mission "${created.title}" created on BlueOS Cloud.`,
       variant: 'success',
@@ -210,6 +242,8 @@ watch(
     if (!visible) return
     selectedMissionId.value = null
     newMissionName.value = props.suggestedMissionName
+    newMissionLocation.value = null
+    showCreateForm.value = false
     if (cloudStore.isAuthenticated) loadMissions()
   },
   { immediate: true }

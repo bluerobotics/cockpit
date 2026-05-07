@@ -40,9 +40,9 @@
               <p>Mission Name</p>
               <v-text-field
                 v-model="store.missionName"
-                append-inner-icon="mdi-restore"
+                append-inner-icon="mdi-close-circle-outline"
                 class="mt-1"
-                @click:append-inner="store.missionName = store.lastMissionName"
+                @click:append-inner="resetMission"
               />
             </div>
             <v-divider class="opacity-20" />
@@ -57,14 +57,23 @@
                     Sign in to BlueOS Cloud to create missions.
                   </span>
                   <span v-else-if="linkedCloudMission" class="text-xs opacity-80">
-                    Linked: {{ linkedCloudMission.title }}
+                    Linked:
+                    <a
+                      :href="linkedCloudMissionUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-sky-300 hover:underline inline-flex items-center gap-1"
+                    >
+                      {{ linkedCloudMission.title }}
+                      <v-icon size="12">mdi-open-in-new</v-icon>
+                    </a>
                   </span>
                   <span v-else class="text-xs opacity-70">
                     Create a mission on BlueOS Cloud to log this session there.
                   </span>
                 </div>
                 <v-btn
-                  v-if="cloudStore.isAuthenticated"
+                  v-if="cloudStore.isAuthenticated && !linkedCloudMission"
                   size="small"
                   variant="flat"
                   class="bg-[#FFFFFF22]"
@@ -72,8 +81,11 @@
                   :disabled="!canCreateCloudMission"
                   @click="createMissionOnCloud"
                 >
-                  {{ linkedCloudMission ? 'Recreate on cloud' : 'Create on BlueOS Cloud' }}
+                  Create on BlueOS Cloud
                 </v-btn>
+              </div>
+              <div v-if="cloudStore.isAuthenticated && !linkedCloudMission" class="mt-1">
+                <BlueOsCloudLocationPicker v-model="cloudMissionLocation" />
               </div>
             </div>
           </div>
@@ -86,12 +98,15 @@
 <script setup lang="ts">
 import { computed, ref, toRefs } from 'vue'
 
+import BlueOsCloudLocationPicker from '@/components/blueos-cloud/BlueOsCloudLocationPicker.vue'
 import { useSnackbar } from '@/composables/snackbar'
+import { buildBlueOsCloudMissionUrl } from '@/libs/blueos-cloud/api'
 import { coolMissionNames } from '@/libs/funny-name/words'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { WaypointCoordinates } from '@/types/mission'
 import type { MiniWidget } from '@/types/widgets'
 
 /**
@@ -114,14 +129,25 @@ const { openSnackbar } = useSnackbar()
 const randomMissionName = coolMissionNames.random()
 const isCreatingCloudMission = ref(false)
 const linkedCloudMissionId = ref<string | null>(null)
+const cloudMissionLocation = ref<WaypointCoordinates | null>(null)
 
 const linkedCloudMission = computed(
   () => cloudStore.missions.find((mission) => mission.id === linkedCloudMissionId.value) ?? null
 )
 
+const linkedCloudMissionUrl = computed(() =>
+  linkedCloudMission.value ? buildBlueOsCloudMissionUrl(linkedCloudMission.value.id) : ''
+)
+
 const canCreateCloudMission = computed(
   () => cloudStore.isAuthenticated && !!store.missionName.trim() && !isCreatingCloudMission.value
 )
+
+const resetMission = (): void => {
+  store.missionName = ''
+  linkedCloudMissionId.value = null
+  cloudMissionLocation.value = null
+}
 
 const createMissionOnCloud = async (): Promise<void> => {
   const name = store.missionName.trim()
@@ -136,7 +162,11 @@ const createMissionOnCloud = async (): Promise<void> => {
   }
   isCreatingCloudMission.value = true
   try {
-    const created = await cloudStore.createCloudMission({ name })
+    const created = await cloudStore.createCloudMission({
+      name,
+      latitude: cloudMissionLocation.value?.[0] ?? null,
+      longitude: cloudMissionLocation.value?.[1] ?? null,
+    })
     linkedCloudMissionId.value = created.id
     openSnackbar({
       message: `Mission "${created.title}" created on BlueOS Cloud.`,

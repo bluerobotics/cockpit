@@ -1,6 +1,15 @@
 import { BlueOsCloudMission, BlueOsCloudPaginatedResponse, PresignedUpload } from './types'
 
 export const BLUEOS_CLOUD_API_BASE = 'https://app.blueos.cloud/api/v1'
+export const BLUEOS_CLOUD_APP_BASE = 'https://app.blueos.cloud'
+
+/**
+ * Returns the public URL where a BlueOS Cloud mission can be viewed in the user's browser.
+ * @param {string} missionId - Identifier of the mission as returned by the API.
+ * @returns {string} Fully-qualified URL pointing at the mission detail page (with trailing slash).
+ */
+export const buildBlueOsCloudMissionUrl = (missionId: string): string =>
+  `${BLUEOS_CLOUD_APP_BASE}/mission/${missionId}/`
 
 const authHeaders = (accessToken: string): Record<string, string> => ({
   Authorization: accessToken,

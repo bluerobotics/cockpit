@@ -23,7 +23,7 @@
             <li>Open the link, sign in to BlueOS Cloud and confirm the code.</li>
             <li>Cockpit will detect the authorization automatically.</li>
           </ol>
-          <p v-if="errorMessage" class="text-sm text-red-300">{{ errorMessage }}</p>
+          <p v-if="errorMessage" class="text-sm text-red-300 break-words">{{ errorMessage }}</p>
         </div>
 
         <div v-else-if="step === 'awaiting'" class="flex flex-col items-center gap-4 text-center">
@@ -48,7 +48,7 @@
             <v-progress-circular indeterminate size="18" width="2" color="white" />
             <span class="text-sm">Waiting for authorization...</span>
           </div>
-          <p v-if="errorMessage" class="text-sm text-red-300">{{ errorMessage }}</p>
+          <p v-if="errorMessage" class="text-sm text-red-300 break-words">{{ errorMessage }}</p>
         </div>
 
         <div v-else-if="step === 'success'" class="flex flex-col items-center gap-3 text-center">
