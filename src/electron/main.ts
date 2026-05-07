@@ -1,4 +1,4 @@
-import { app, BrowserWindow, powerSaveBlocker, protocol, screen, shell } from 'electron'
+import { app, BrowserWindow, net, powerSaveBlocker, protocol, screen, shell } from 'electron'
 import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
@@ -117,9 +117,12 @@ app.on('window-all-closed', () => {
 })
 
 app.on('ready', () => {
-  protocol.registerFileProtocol('file', (i, o) => {
-    o({ path: i.url.substring('file://'.length) })
-  })
+  // Replaces the legacy `protocol.registerFileProtocol`, which was deprecated in Electron 25
+  // and has limited functionality (e.g. broken Windows file-path handling) in newer versions.
+  // `bypassCustomProtocolHandlers` forwards to the built-in file handler; without it `net.fetch`
+  // would re-enter this same handler, recursing forever and leaving the renderer on a grey screen
+  // in packaged builds (which load index.html via `file://`).
+  protocol.handle('file', (request) => net.fetch(request, { bypassCustomProtocolHandlers: true }))
 })
 
 protocol.registerSchemesAsPrivileged([
