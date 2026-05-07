@@ -1,5 +1,6 @@
-import { app, BrowserWindow, powerSaveBlocker, protocol, screen } from 'electron'
+import { app, BrowserWindow, net, powerSaveBlocker, protocol, screen } from 'electron'
 import { join } from 'path'
+import { pathToFileURL } from 'url'
 
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
@@ -85,8 +86,11 @@ app.on('window-all-closed', () => {
 })
 
 app.on('ready', () => {
-  protocol.registerFileProtocol('file', (i, o) => {
-    o({ path: i.url.substring('file://'.length) })
+  // Replaces the legacy `protocol.registerFileProtocol`, which was deprecated in Electron 25
+  // and has limited functionality (e.g. broken Windows file-path handling) in newer versions.
+  protocol.handle('file', (request) => {
+    const filePath = request.url.substring('file://'.length)
+    return net.fetch(pathToFileURL(filePath).toString())
   })
 })
 
