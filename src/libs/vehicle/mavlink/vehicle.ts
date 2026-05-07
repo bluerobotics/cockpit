@@ -86,10 +86,12 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   _vehicleSpecificErrors = [0, 0, 0, 0]
   _messages: MAVLinkMessageDictionary = new Map()
   _currentMissionSeq: number | undefined = undefined
+  _capabilities: number | undefined = undefined
 
   onIncomingMAVLinkMessage = new SignalTyped()
   onOutgoingMAVLinkMessage = new SignalTyped()
   onMissionItemReached = new Signal<number>()
+  onCapabilities = new Signal<number>()
   _flying = false
 
   shouldCreateDatalakeVariablesFromOtherSystems = false
@@ -115,6 +117,13 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       console.error('Failed to request default messages from the vehicle.')
       console.error(error)
     }
+
+    // Request the autopilot capabilities so we know which optional MAVLink
+    // services (geofence, rally points, etc.) the vehicle supports.
+    this.requestAutopilotCapabilities().catch((error) => {
+      console.warn('Failed to request autopilot capabilities. Capability gating will fall back to optimistic mode.')
+      console.warn(error)
+    })
 
     // Create data-lake variables for the vehicle
     this.createPredefinedDataLakeVariables()
@@ -487,6 +496,14 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         break
       }
 
+      case MAVLinkType.AUTOPILOT_VERSION: {
+        const msg = mavlink_message.message as Message.AutopilotVersion
+        const bits = Number(msg.capabilities?.bits ?? 0)
+        this._capabilities = bits
+        this.onCapabilities.emit_value(bits)
+        break
+      }
+
       default:
         break
     }
@@ -851,6 +868,37 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       target_component: 0,
     }
     sendMavlinkMessage(paramRequestMessage)
+  }
+
+  /**
+   * Request the vehicle to publish its `AUTOPILOT_VERSION` message so the
+   * GCS can read the autopilot capability bitmask.
+   * @returns { Promise<void> } Resolves when the request command is acknowledged.
+   */
+  async requestAutopilotCapabilities(): Promise<void> {
+    await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES, 1)
+  }
+
+  /**
+   * Get the cached autopilot capability bitmask from the last received
+   * `AUTOPILOT_VERSION` message.
+   * @returns { number | undefined } The capability bits, or `undefined` if not yet received.
+   */
+  capabilities(): number | undefined {
+    return this._capabilities
+  }
+
+  /**
+   * Check whether a specific capability bit is advertised by the vehicle.
+   * Returns `false` when no `AUTOPILOT_VERSION` has been received yet.
+   * @param { number } bit The capability bit to test, taken from the
+   *   `MAV_PROTOCOL_CAPABILITY_*` enum (e.g. `MISSION_FENCE = 1 << 14`).
+   *   See https://mavlink.io/en/messages/common.html#MAV_PROTOCOL_CAPABILITY.
+   * @returns { boolean } True if the bit is set in the cached capability bitmask.
+   */
+  hasCapability(bit: number): boolean {
+    if (this._capabilities === undefined) return false
+    return (this._capabilities & bit) !== 0
   }
 
   /**
