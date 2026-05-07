@@ -388,6 +388,19 @@
                               <v-icon size="22">mdi-play</v-icon>
                             </v-btn>
                             <v-btn
+                              v-if="cloudStore.isIntegrationEnabled"
+                              icon
+                              variant="outlined"
+                              size="small"
+                              :disabled="isUploadingToCloud"
+                              @click.stop="startUploadToBlueOsCloud(video)"
+                            >
+                              <v-tooltip open-delay="500" activator="parent" location="bottom">
+                                Upload to BlueOS Cloud
+                              </v-tooltip>
+                              <v-icon>mdi-cloud-upload-outline</v-icon>
+                            </v-btn>
+                            <v-btn
                               icon
                               variant="outlined"
                               size="small"
@@ -819,18 +832,41 @@
       </div>
     </div>
   </v-dialog>
+  <BlueOsCloudMissionPicker
+    v-model="showCloudMissionPicker"
+    title="Upload video to BlueOS Cloud"
+    description="Select the mission that should receive the video, or create a new one."
+    confirm-label="Upload"
+    :suggested-mission-name="missionStore.missionName || ''"
+    @selected="onCloudMissionSelected"
+  />
+  <BlueOsCloudUploadProgress
+    v-model="showCloudUploadProgress"
+    :file-name="cloudUploadFileName"
+    :mission-name="cloudUploadMissionName"
+    :progress="cloudUploadProgress"
+    :is-upload-finished="isCloudUploadFinished"
+    :error-message="cloudUploadError"
+    @cancel="cancelCloudUpload"
+  />
 </template>
 
 <script setup lang="ts">
 import * as Hammer from 'hammerjs'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 
+import BlueOsCloudMissionPicker from '@/components/blueos-cloud/BlueOsCloudMissionPicker.vue'
+import BlueOsCloudUploadProgress from '@/components/blueos-cloud/BlueOsCloudUploadProgress.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { useVideoChunkManager } from '@/composables/videoChunkManager'
+import { getPresignedUpload, uploadFileToPresignedUrl } from '@/libs/blueos-cloud/api'
+import { BlueOsCloudMission } from '@/libs/blueos-cloud/types'
 import { formatBytes, formatDate, isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useAudioStore } from '@/stores/audio'
+import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
+import { useMissionStore } from '@/stores/mission'
 import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
 import { AudioLibraryFile } from '@/types/audio'
@@ -842,6 +878,8 @@ const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
 const snapshotStore = useSnapshotStore()
 const audioStore = useAudioStore()
+const cloudStore = useBlueOsCloudStore()
+const missionStore = useMissionStore()
 const { openSnackbar } = useSnackbar()
 
 const { showDialog, closeDialog } = useInteractionDialog()
@@ -1457,6 +1495,87 @@ const openAudioFolder = (): void => openElectronFolder(() => window.electronAPI?
  */
 const handleProcessVideoChunksZip = async (): Promise<void> => {
   await processVideoChunksZip(fetchVideosAndLogData)
+}
+
+const showCloudMissionPicker = ref(false)
+const showCloudUploadProgress = ref(false)
+const cloudUploadFileName = ref('')
+const cloudUploadMissionName = ref('')
+const cloudUploadProgress = ref(0)
+const isCloudUploadFinished = ref(false)
+const isUploadingToCloud = ref(false)
+const cloudUploadError = ref<string | null>(null)
+const pendingCloudUploadVideo = ref<VideoLibraryFile | null>(null)
+let cloudUploadAbortController: AbortController | null = null
+
+const startUploadToBlueOsCloud = (video: VideoLibraryFile): void => {
+  if (!cloudStore.isAuthenticated) {
+    openSnackbar({
+      message: 'Sign in to BlueOS Cloud first to upload videos.',
+      variant: 'warning',
+      duration: 4000,
+      closeButton: true,
+    })
+    return
+  }
+  pendingCloudUploadVideo.value = video
+  showCloudMissionPicker.value = true
+}
+
+const onCloudMissionSelected = async (mission: BlueOsCloudMission): Promise<void> => {
+  const video = pendingCloudUploadVideo.value
+  if (!video) return
+  await uploadVideoToBlueOsCloud(video, mission)
+}
+
+const cancelCloudUpload = (): void => {
+  cloudUploadAbortController?.abort()
+}
+
+const uploadVideoToBlueOsCloud = async (video: VideoLibraryFile, mission: BlueOsCloudMission): Promise<void> => {
+  cloudUploadFileName.value = video.fileName
+  cloudUploadMissionName.value = mission.title
+  cloudUploadProgress.value = 0
+  isCloudUploadFinished.value = false
+  cloudUploadError.value = null
+  isUploadingToCloud.value = true
+  showCloudUploadProgress.value = true
+  cloudUploadAbortController = new AbortController()
+
+  try {
+    const blob = (await videoStore.videoStorage.getItem(video.fileName)) as Blob | null | undefined
+    if (!blob) throw new Error('Could not read video file from local storage.')
+
+    const accessToken = await cloudStore.ensureValidAccessToken()
+    const presigned = await getPresignedUpload(mission.id, video.fileName, accessToken)
+    await uploadFileToPresignedUrl(
+      presigned,
+      blob,
+      video.fileName,
+      (progress) => (cloudUploadProgress.value = progress),
+      cloudUploadAbortController.signal
+    )
+    isCloudUploadFinished.value = true
+    cloudUploadProgress.value = 100
+    openSnackbar({
+      message: `"${video.fileName}" uploaded to BlueOS Cloud mission "${mission.title}".`,
+      variant: 'success',
+      duration: 4000,
+      closeButton: true,
+    })
+  } catch (error) {
+    cloudUploadError.value = (error as Error).message
+    openSnackbar({
+      message: `Failed to upload video to BlueOS Cloud: ${(error as Error).message}`,
+      variant: 'error',
+      duration: 5000,
+      closeButton: true,
+    })
+  } finally {
+    isUploadingToCloud.value = false
+    pendingCloudUploadVideo.value = null
+    cloudUploadAbortController = null
+  }
 }
 
 watch(isVisible, (newValue) => {
