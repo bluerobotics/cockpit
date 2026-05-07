@@ -1,6 +1,7 @@
 import { v4 as uuid } from 'uuid'
 
 import type { MavParamType } from '@/libs/connection/m2r/dialects/ardupilotmega/MavParamType'
+import type { Message as MavlinkMessage } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { round } from '@/libs/utils'
 import { AlertLevel } from '@/types/alert'
@@ -116,6 +117,19 @@ export const convertMavlinkWaypointsToCockpit = (mavlinkWaypoints: Message.Missi
   })
 
   return cockpitWaypoints
+}
+
+/**
+ * Whether a mission-protocol message belongs to the given mission micro-service. Mission, fence
+ * and rally transfers share the same message types, so a reply has to be matched to the transfer
+ * that asked for it. A message without the field counts as a regular mission, the MAVLink default.
+ * @param { MavlinkMessage | undefined } message Mission-protocol message, if any.
+ * @param { MavMissionType } missionType Mission micro-service being talked to.
+ * @returns { boolean } True when the message belongs to that micro-service.
+ */
+export const isFromMissionType = (message: MavlinkMessage | undefined, missionType: MavMissionType): boolean => {
+  if (message === undefined) return false
+  return (message.mission_type?.type ?? MavMissionType.MAV_MISSION_TYPE_MISSION) === missionType
 }
 
 export const alertLevelFromMavSeverity = {
