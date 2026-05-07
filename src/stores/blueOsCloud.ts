@@ -40,6 +40,19 @@ export const useBlueOsCloudStore = defineStore('blueOsCloud', () => {
   const isLoadingMissions = ref(false)
   const lastError = ref<string | null>(null)
 
+  /**
+   * Identifier of the cloud mission currently linked to the active Cockpit session, set from the mission
+   * configuration dialog. Upload pickers read this to auto-select the right mission by default.
+   */
+  const linkedMissionId = useStorage<string | null>('cockpit-blueos-cloud-linked-mission-id', null, undefined, {
+    serializer: {
+      read: (raw) => (raw ? raw : null),
+      write: (value) => value ?? '',
+    },
+  })
+
+  const linkedMission = computed(() => missions.value.find((mission) => mission.id === linkedMissionId.value) ?? null)
+
   const isAuthenticated = computed(() => !!tokens.value && !!user.value)
 
   /**
@@ -49,6 +62,7 @@ export const useBlueOsCloudStore = defineStore('blueOsCloud', () => {
     tokens.value = null
     user.value = null
     missions.value = []
+    linkedMissionId.value = null
   }
 
   /**
@@ -150,6 +164,8 @@ export const useBlueOsCloudStore = defineStore('blueOsCloud', () => {
     missions,
     isLoadingMissions,
     lastError,
+    linkedMissionId,
+    linkedMission,
     isAuthenticated,
     persistSession,
     clearSession,

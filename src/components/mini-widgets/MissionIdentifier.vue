@@ -72,17 +72,21 @@
                     Create a mission on BlueOS Cloud to log this session there.
                   </span>
                 </div>
-                <v-btn
-                  v-if="cloudStore.isAuthenticated && !linkedCloudMission"
-                  size="small"
-                  variant="flat"
-                  class="bg-[#FFFFFF22]"
-                  :loading="isCreatingCloudMission"
-                  :disabled="!canCreateCloudMission"
-                  @click="createMissionOnCloud"
-                >
-                  Create on BlueOS Cloud
-                </v-btn>
+                <div v-if="cloudStore.isAuthenticated && !linkedCloudMission" class="flex items-center gap-2">
+                  <v-btn size="small" variant="text" prepend-icon="mdi-magnify" @click="openExistingMissionPicker">
+                    Select existing
+                  </v-btn>
+                  <v-btn
+                    size="small"
+                    variant="flat"
+                    class="bg-[#FFFFFF22]"
+                    :loading="isCreatingCloudMission"
+                    :disabled="!canCreateCloudMission"
+                    @click="createMissionOnCloud"
+                  >
+                    Create on BlueOS Cloud
+                  </v-btn>
+                </div>
               </div>
               <div v-if="cloudStore.isAuthenticated && !linkedCloudMission" class="mt-1">
                 <BlueOsCloudLocationPicker v-model="cloudMissionLocation" />
@@ -92,6 +96,14 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+    <BlueOsCloudMissionPicker
+      v-model="showExistingMissionPicker"
+      title="Select an existing BlueOS Cloud mission"
+      description="Pick a mission that you want to keep adding files and recordings to."
+      confirm-label="Link mission"
+      :suggested-mission-name="store.missionName || ''"
+      @selected="onExistingMissionSelected"
+    />
   </teleport>
 </template>
 
@@ -99,8 +111,10 @@
 import { computed, ref, toRefs } from 'vue'
 
 import BlueOsCloudLocationPicker from '@/components/blueos-cloud/BlueOsCloudLocationPicker.vue'
+import BlueOsCloudMissionPicker from '@/components/blueos-cloud/BlueOsCloudMissionPicker.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { buildBlueOsCloudMissionUrl } from '@/libs/blueos-cloud/api'
+import { BlueOsCloudMission } from '@/libs/blueos-cloud/types'
 import { coolMissionNames } from '@/libs/funny-name/words'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
@@ -128,12 +142,10 @@ const { openSnackbar } = useSnackbar()
 
 const randomMissionName = coolMissionNames.random()
 const isCreatingCloudMission = ref(false)
-const linkedCloudMissionId = ref<string | null>(null)
 const cloudMissionLocation = ref<WaypointCoordinates | null>(null)
+const showExistingMissionPicker = ref(false)
 
-const linkedCloudMission = computed(
-  () => cloudStore.missions.find((mission) => mission.id === linkedCloudMissionId.value) ?? null
-)
+const linkedCloudMission = computed(() => cloudStore.linkedMission)
 
 const linkedCloudMissionUrl = computed(() =>
   linkedCloudMission.value ? buildBlueOsCloudMissionUrl(linkedCloudMission.value.id) : ''
@@ -145,8 +157,30 @@ const canCreateCloudMission = computed(
 
 const resetMission = (): void => {
   store.missionName = ''
-  linkedCloudMissionId.value = null
+  cloudStore.linkedMissionId = null
   cloudMissionLocation.value = null
+}
+
+const openExistingMissionPicker = async (): Promise<void> => {
+  showExistingMissionPicker.value = true
+  try {
+    if (cloudStore.missions.length === 0) await cloudStore.refreshMissions()
+  } catch {
+    // Errors are surfaced inside the picker via `cloudStore.lastError`.
+  }
+}
+
+const onExistingMissionSelected = (mission: BlueOsCloudMission): void => {
+  cloudStore.linkedMissionId = mission.id
+  if (mission.title && !store.missionName.trim()) {
+    store.missionName = mission.title
+  }
+  openSnackbar({
+    message: `Linked Cockpit to BlueOS Cloud mission "${mission.title}".`,
+    variant: 'success',
+    duration: 3000,
+    closeButton: true,
+  })
 }
 
 const createMissionOnCloud = async (): Promise<void> => {
@@ -167,7 +201,7 @@ const createMissionOnCloud = async (): Promise<void> => {
       latitude: cloudMissionLocation.value?.[0] ?? null,
       longitude: cloudMissionLocation.value?.[1] ?? null,
     })
-    linkedCloudMissionId.value = created.id
+    cloudStore.linkedMissionId = created.id
     openSnackbar({
       message: `Mission "${created.title}" created on BlueOS Cloud.`,
       variant: 'success',

@@ -249,6 +249,19 @@
                         <v-tooltip open-delay="500" activator="parent" location="bottom">Download</v-tooltip>
                         <v-icon>mdi-download</v-icon>
                       </v-btn>
+                      <v-btn
+                        v-if="cloudStore.isIntegrationEnabled"
+                        icon
+                        variant="outlined"
+                        size="small"
+                        :disabled="cloudUpload.isUploading.value"
+                        @click.stop="startUploadAudioToBlueOsCloud(audio)"
+                      >
+                        <v-tooltip open-delay="500" activator="parent" location="bottom">
+                          Upload to BlueOS Cloud
+                        </v-tooltip>
+                        <v-icon>mdi-cloud-upload-outline</v-icon>
+                      </v-btn>
                       <v-btn icon variant="outlined" size="small" @click.stop="handleDeleteAudios(audio.fileName)">
                         <v-tooltip open-delay="500" activator="parent" location="bottom">Delete</v-tooltip>
                         <v-icon>mdi-delete</v-icon>
@@ -1506,6 +1519,19 @@ const startUploadSnapshotToBlueOsCloud = (picture: SnapshotLibraryFile): void =>
     getBlob: async () => {
       const blob = (await snapshotStore.snapshotStorage.getItem(picture.filename)) as Blob | null | undefined
       if (!blob) throw new Error('Could not read snapshot file from local storage.')
+      return blob
+    },
+  })
+}
+
+const startUploadAudioToBlueOsCloud = (audio: AudioLibraryFile): void => {
+  cloudUpload.requestUpload({
+    fileName: audio.fileName,
+    suggestedMissionName: missionStore.missionName || '',
+    capturedAt: audio.dateStart instanceof Date ? audio.dateStart.toISOString() : undefined,
+    getBlob: async () => {
+      const blob = (await audioStore.audioStorage.getItem(audio.fileName)) as Blob | null | undefined
+      if (!blob) throw new Error('Could not read voice recording from local storage.')
       return blob
     },
   })

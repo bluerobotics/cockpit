@@ -31,15 +31,48 @@
             No missions yet on your BlueOS Cloud account.
           </div>
           <div v-else class="max-h-[260px] overflow-y-auto pr-1">
+            <template v-if="pinnedMission">
+              <div
+                :key="pinnedMission.id"
+                class="w-full flex items-center gap-2 px-3 py-2 rounded mb-1 transition-colors cursor-pointer border"
+                :class="getMissionRowClasses(pinnedMission.id)"
+                @click="selectedMissionId = pinnedMission.id"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium truncate flex items-center gap-2">
+                    {{ pinnedMission.title || 'Untitled mission' }}
+                    <span
+                      class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-200 border border-sky-300/40"
+                    >
+                      Active
+                    </span>
+                  </div>
+                  <div class="text-xs opacity-70 truncate">
+                    {{ formatMissionMeta(pinnedMission) }}
+                  </div>
+                </div>
+                <a
+                  :href="buildBlueOsCloudMissionUrl(pinnedMission.id)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="opacity-70 hover:opacity-100"
+                  @click.stop
+                >
+                  <v-tooltip activator="parent" location="top" open-delay="300">View on BlueOS Cloud</v-tooltip>
+                  <v-icon size="16">mdi-open-in-new</v-icon>
+                </a>
+              </div>
+              <div v-if="otherMissions.length > 0" class="flex items-center gap-2 my-2 px-1 opacity-60">
+                <v-divider class="flex-1 opacity-40" />
+                <span class="text-[10px] uppercase tracking-wider">Other missions</span>
+                <v-divider class="flex-1 opacity-40" />
+              </div>
+            </template>
             <div
-              v-for="mission in cloudStore.missions"
+              v-for="mission in otherMissions"
               :key="mission.id"
-              class="w-full flex items-center gap-2 px-3 py-2 rounded mb-1 transition-colors cursor-pointer"
-              :class="
-                selectedMissionId === mission.id
-                  ? 'bg-[#FFFFFF22] border border-white/30'
-                  : 'bg-[#FFFFFF11] hover:bg-[#FFFFFF1A]'
-              "
+              class="w-full flex items-center gap-2 px-3 py-2 rounded mb-1 transition-colors cursor-pointer border"
+              :class="getMissionRowClasses(mission.id)"
               @click="selectedMissionId = mission.id"
             >
               <div class="flex-1 min-w-0">
@@ -173,6 +206,12 @@ const selectedMission = computed(
   () => cloudStore.missions.find((mission) => mission.id === selectedMissionId.value) ?? null
 )
 
+const pinnedMission = computed(
+  () => cloudStore.missions.find((mission) => mission.id === cloudStore.linkedMissionId) ?? null
+)
+
+const otherMissions = computed(() => cloudStore.missions.filter((mission) => mission.id !== cloudStore.linkedMissionId))
+
 const formatMissionMeta = (mission: BlueOsCloudMission): string => {
   const parts: string[] = []
   if (mission.start_time) parts.push(new Date(mission.start_time).toLocaleString())
@@ -180,6 +219,15 @@ const formatMissionMeta = (mission: BlueOsCloudMission): string => {
     parts.push(`${parseFloat(mission.start_latitude).toFixed(4)}, ${parseFloat(mission.start_longitude).toFixed(4)}`)
   }
   return parts.join(' • ') || 'No metadata'
+}
+
+const getMissionRowClasses = (missionId: string): string => {
+  const isSelected = selectedMissionId.value === missionId
+  const isActive = cloudStore.linkedMissionId === missionId
+  if (isSelected && isActive) return 'bg-sky-500/20 border-sky-300/60 hover:bg-sky-500/25'
+  if (isSelected) return 'bg-[#FFFFFF22] border-white/30'
+  if (isActive) return 'bg-sky-500/10 border-sky-300/40 hover:bg-sky-500/15'
+  return 'bg-[#FFFFFF11] border-transparent hover:bg-[#FFFFFF1A]'
 }
 
 const loadMissions = async (): Promise<void> => {
@@ -236,15 +284,26 @@ const confirmSelection = (): void => {
 
 const closeDialog = (): void => emit('update:modelValue', false)
 
+const applyDefaultSelection = (): void => {
+  const linkedId = cloudStore.linkedMissionId
+  if (!linkedId) return
+  const exists = cloudStore.missions.some((mission) => mission.id === linkedId)
+  if (exists) selectedMissionId.value = linkedId
+}
+
 watch(
   () => props.modelValue,
-  (visible) => {
+  async (visible) => {
     if (!visible) return
     selectedMissionId.value = null
     newMissionName.value = props.suggestedMissionName
     newMissionLocation.value = null
     showCreateForm.value = false
-    if (cloudStore.isAuthenticated) loadMissions()
+    applyDefaultSelection()
+    if (cloudStore.isAuthenticated) {
+      await loadMissions()
+      applyDefaultSelection()
+    }
   },
   { immediate: true }
 )
