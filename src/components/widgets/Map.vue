@@ -524,28 +524,15 @@ datalogger.registerUsage(DatalogVariable.longitude)
 // - set initial widget options if they don't exist
 // - enable auto update for target follower
 onBeforeMount(() => {
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      showVehiclePath: true,
-      showCoordinateGrid: false,
-    }
+  const defaultOptions = {
+    showVehiclePath: true,
+    showCoordinateGrid: false,
+    showMissionControlPanel: true,
+    showPoiArrows: true,
+    showHomeArrow: true,
+    showVehicleArrow: true,
   }
-  // Ensure new options exist for existing widgets
-  if (widget.value.options.showCoordinateGrid === undefined) {
-    widget.value.options.showCoordinateGrid = false
-  }
-  if (widget.value.options.showMissionControlPanel === undefined) {
-    widget.value.options.showMissionControlPanel = true
-  }
-  if (widget.value.options.showPoiArrows === undefined) {
-    widget.value.options.showPoiArrows = true
-  }
-  if (widget.value.options.showHomeArrow === undefined) {
-    widget.value.options.showHomeArrow = true
-  }
-  if (widget.value.options.showVehicleArrow === undefined) {
-    widget.value.options.showVehicleArrow = true
-  }
+  widget.value.options = { ...defaultOptions, ...widget.value.options }
   targetFollower.enableAutoUpdate()
 })
 
