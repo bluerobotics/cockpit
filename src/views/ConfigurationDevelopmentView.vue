@@ -27,14 +27,6 @@
               @update:model-value="reloadCockpitAndWarnUser()"
             />
             <v-switch
-              v-model="devStore.enableUsageStatisticsTelemetry"
-              label="Usage statistics telemetry"
-              color="white"
-              hide-details
-              class="min-w-[155px]"
-              @update:model-value="reloadCockpitAndWarnUser()"
-            />
-            <v-switch
               v-model="devStore.enableSystemLogging"
               label="Enable system logging"
               color="white"
