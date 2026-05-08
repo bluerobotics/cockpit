@@ -683,6 +683,7 @@ import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useSnackbar } from '@/composables/snackbar'
+import { useMapOverlays } from '@/composables/useMapOverlays'
 import {
   clearAllSurveyAreas,
   removeSurveyAreaSquareMeters,
@@ -3662,6 +3663,9 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   }
 }
 
+const layerControl = ref<L.Control.Layers>()
+const { setupMapOverlays } = useMapOverlays(planningMap, layerControl)
+
 const confirmDownloadDialog =
   (layerLabel: string) =>
   (status: SaveStatus, ok: () => void): void => {
@@ -3804,17 +3808,20 @@ onMounted(async () => {
     missionStore.userLastMapTileProvider = event.name as MapTileProvider
   })
 
+  // Initialize layer control and setup external overlay fetching
+  layerControl.value = L.control.layers(baseMaps)
+  planningMap.value.addControl(layerControl.value)
+  setupMapOverlays(planningMap.value)
+
   planningMap.value.on('moveend', () => {
-    if (planningMap.value === undefined) return
-    let { lat, lng } = planningMap.value.getCenter()
-    if (lat && lng) {
-      mapCenter.value = [lat, lng]
-    }
+    if (!planningMap.value) return
+    const center = planningMap.value.getCenter()
+    mapCenter.value = [center.lat, center.lng]
   })
   planningMap.value.on('zoomstart', clearLiveMeasure)
   planningMap.value.on('zoomend', () => {
-    if (planningMap.value === undefined) return
-    zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
+    if (!planningMap.value) return
+    zoom.value = planningMap.value.getZoom()
   })
 
   const saveCtlEsri = downloadOfflineMapTiles(esri, 'Esri', 19)
@@ -3868,9 +3875,6 @@ onMounted(async () => {
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
   })
-
-  const layerControl = L.control.layers(baseMaps)
-  planningMap.value.addControl(layerControl)
 
   // Initialize scale control (always show)
   createScaleControl()
