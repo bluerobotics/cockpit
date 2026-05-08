@@ -60,6 +60,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
     isExternalFeaturesModalVisible: false,
+    isDataPrivacyModalVisible: false,
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
     configPanelVisible: false,
     showSplashScreen: true,
