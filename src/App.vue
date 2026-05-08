@@ -89,6 +89,7 @@
     aria-hidden="true"
   />
   <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
+  <DataPrivacyModal />
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
@@ -116,6 +117,7 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 
 
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
 import CameraReplacementDialog from '@/components/CameraReplacementDialog.vue'
+import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import GlassModal from '@/components/GlassModal.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
