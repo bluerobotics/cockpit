@@ -19,7 +19,11 @@ import VueVirtualScroller from 'vue-virtual-scroller'
 
 import { initializeActionAutoRun } from '@/libs/actions/auto-run'
 import { app_version } from '@/libs/cosmos'
-import eventTracker, { getSystemInfoForTelemetry } from '@/libs/external-telemetry/event-tracking'
+import eventTracker, {
+  defaultShareHardwareDetails,
+  getSystemInfoForTelemetry,
+  shareHardwareDetailsKey,
+} from '@/libs/external-telemetry/event-tracking'
 import { setupPredefinedLakeAndActionResources } from '@/libs/joystick/protocols/predefined-resources'
 import { setupPostPiniaConnections } from '@/libs/post-pinia-connections'
 import { datalogger } from '@/libs/sensors-logging'
@@ -40,14 +44,25 @@ loadFonts()
 
 const app = createApp(App)
 
+// Detailed hardware specifications are only attached when the user has not opted out via the
+// data privacy modal.
+const sharesDetailedHardware =
+  settingsManager.getKeyValue<boolean>(shareHardwareDetailsKey) ?? defaultShareHardwareDetails
+
 getSystemInfoForTelemetry().then((systemInfo) => {
-  eventTracker.capture('App started', { ...systemInfo })
+  const payload: Partial<typeof systemInfo> = { ...systemInfo }
+  if (!sharesDetailedHardware) {
+    delete payload.displays
+    delete payload.hardware
+  }
+  eventTracker.capture('App started', payload)
 })
 
-// Initialize Sentry for error tracking
-// Only track usage statistics if the user has not opted out and the app is not in development mode
+// Initialize Sentry for error tracking in production builds. Error reporting is part of the
+// basic telemetry baseline and cannot be opted out of, so it is enabled whenever the app is
+// not running in development mode.
 // @ts-ignore: import.meta.env does not exist in the types
-if (settingsManager.getKeyValue('cockpit-enable-usage-statistics-telemetry') && !import.meta.env.DEV) {
+if (!import.meta.env.DEV) {
   console.log('Initializing Sentry telemetry...')
   Sentry.init({
     app,
