@@ -125,7 +125,8 @@ const steps = [
   {
     id: 4,
     title: 'General Configuration',
-    content: `The 'General' page allows switching the active user, and the vehicle connection settings.`,
+    content: `The 'General' page allows switching the active user, the vehicle connection settings, and what
+      Cockpit shares with the development team.`,
     opposite: `Each user can have their own settings, interface profiles, and joystick mappings, which can be
       stored on and synchronized through the connected vehicle.`,
   },
@@ -175,8 +176,7 @@ const steps = [
     title: 'Dev Settings',
     content: `This section includes settings and Cockpit logs to help with development and advanced troubleshooting.`,
     opposite: `We recommend leaving the default values, but if you prefer to you can stop Cockpit from synchronizing
-      its settings with BlueOS vehicles, and/or disable sending the anonymous usage statistics and error messages that
-      help the development team to find performance issues and bugs.`,
+      its settings with BlueOS vehicles. Telemetry sharing is configured from 'Settings' > 'General' > 'Shared Data'.`,
   },
   {
     id: 12,
