@@ -5,10 +5,23 @@ import posthog from 'posthog-js'
 import type { TelemetrySystemHardwareInfo } from '@/types/platform'
 
 import { app_version } from '../cosmos'
-import { settingsManager } from '../settings-management'
 import { isElectron } from '../utils'
 
-const cockpitTelemetryEnabledKey = 'cockpit-enable-usage-statistics-telemetry'
+/**
+ * Storage key tracking whether detailed hardware specifications are sent alongside the
+ * always-on basic telemetry baseline.
+ */
+export const shareHardwareDetailsKey = 'cockpit-share-hardware-details'
+
+/**
+ * Default state for sharing detailed hardware specifications. Enabled by default;
+ */
+export const defaultShareHardwareDetails = true
+
+/**
+ * Documentation reference shown from the data privacy modal's "View documentation" action.
+ */
+export const telemetryDataPrivacyDocsUrl = 'https://blueos.cloud/cockpit/docs/latest/usage/privacy/'
 
 type EventPayload = {
   /**
@@ -41,10 +54,9 @@ class EventTracker {
    * Initialize the event tracking system
    */
   constructor() {
-    // Only track usage statistics if the user has not opted out and the app is not in development mode
-    const isRunningInProduction = import.meta.env.PROD
-    const userHasExternalTelemetryEnabled = settingsManager.getKeyValue(cockpitTelemetryEnabledKey)
-    EventTracker.enableEventTracking = isRunningInProduction && userHasExternalTelemetryEnabled
+    // The basic telemetry baseline cannot be opted out of, so the tracker is enabled in every
+    // production build. Detailed hardware specifications are gated separately at the call site.
+    EventTracker.enableEventTracking = import.meta.env.PROD
 
     if (!EventTracker.enableEventTracking) {
       console.info('Event tracking is disabled. Not initializing event tracker.')

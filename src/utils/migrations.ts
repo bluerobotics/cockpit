@@ -1,3 +1,6 @@
+import { shareHardwareDetailsKey } from '@/libs/external-telemetry/event-tracking'
+import { settingsManager } from '@/libs/settings-management'
+
 /**
  * Migrate old localStorage keys to new ones
  */
@@ -17,8 +20,27 @@ const migrateRenameOfLocalStorageKeys = (): void => {
 }
 
 /**
+ * Carry over the legacy "usage statistics telemetry" opt-out into the new
+ * {@link shareHardwareDetailsKey} flag.
+ *
+ * Users that had explicitly disabled the legacy boolean and kept all telemetry off; will now
+ * opt out of detailed hardware specifications.
+ */
+const migrateLegacyTelemetryOptOutToHardwareSharing = (): void => {
+  const legacyKey = 'cockpit-enable-usage-statistics-telemetry'
+  const legacyValue = localStorage.getItem(legacyKey)
+  if (legacyValue === null) return
+
+  if (legacyValue === 'false' && settingsManager.getKeyValue(shareHardwareDetailsKey) === undefined) {
+    settingsManager.setKeyValue(shareHardwareDetailsKey, false, 0)
+  }
+  localStorage.removeItem(legacyKey)
+}
+
+/**
  * Run all migrations
  */
 export function runMigrations(): void {
   migrateRenameOfLocalStorageKeys()
+  migrateLegacyTelemetryOptOutToHardwareSharing()
 }
