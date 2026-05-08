@@ -40,7 +40,7 @@
                 </div>
               </div>
               <v-divider class="w-full opacity-[0.08]" />
-              <div class="flex flex-row w-full items-center justify-between py-5 gap-x-2">
+              <div class="flex flex-row w-full items-center justify-between py-3 gap-x-2 gap-y-3 flex-wrap">
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
                   Show tutorial
                 </v-btn>
@@ -62,6 +62,15 @@
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openExternalFeaturesModal">
                   Extension features
+                </v-btn>
+                <v-btn
+                  size="x-small"
+                  class="bg-[#FFFFFF22] shadow-1"
+                  variant="flat"
+                  prepend-icon="mdi-shield-lock-outline"
+                  @click="interfaceStore.isDataPrivacyModalVisible = true"
+                >
+                  Shared Data
                 </v-btn>
               </div>
               <v-divider v-if="isElectron()" class="w-full opacity-[0.08]" />
