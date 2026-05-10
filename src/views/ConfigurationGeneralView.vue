@@ -364,7 +364,7 @@
             </div>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Generic WebSocket connections</template>
           <template #info>
             <div class="w-full">
@@ -426,6 +426,59 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Vehicle connection timeout</template>
+          <template #subtitle>Current value: {{ vehicleConnectionTimeoutSeconds }} s</template>
+          <template #info>
+            <p class="w-full">
+              Time without heartbeats before Cockpit considers the vehicle offline. Increase this value when using
+              high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take longer than the
+              default 5 seconds to arrive. Unrelated to the autopilot's GCS (heartbeat) failsafe.
+            </p>
+          </template>
+          <template #content>
+            <v-form
+              ref="connectionTimeoutForm"
+              v-model="connectionTimeoutFormValid"
+              class="flex w-full mt-2 mb-2"
+              @submit.prevent="setConnectionTimeout"
+            >
+              <div
+                class="flex justify-start items-center w-[86%] mb-4"
+                :class="interfaceStore.isOnSmallScreen ? 'scale-80' : 'scale-100'"
+              >
+                <v-text-field
+                  v-model.number="newVehicleConnectionTimeoutSeconds"
+                  variant="filled"
+                  type="number"
+                  density="compact"
+                  theme="dark"
+                  hint="Heartbeat timeout in seconds (minimum 1)"
+                  hide-details="auto"
+                  class="w-[80%]"
+                  suffix="s"
+                  :rules="[isValidConnectionTimeout]"
+                >
+                  <template #append-inner>
+                    <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetConnectionTimeout">
+                      mdi-restore
+                    </v-icon>
+                  </template>
+                </v-text-field>
+                <v-btn
+                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                  :disabled="!connectionTimeoutFormValid"
+                  class="bg-transparent"
+                  :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
+                  variant="text"
+                  type="submit"
+                >
+                  Apply
+                </v-btn>
+              </div>
+            </v-form>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -434,7 +487,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
@@ -672,6 +725,41 @@ const resetWebRTCSignallingURI = (): void => {
     enabled: false,
     data: mainVehicleStore.defaultWebRTCSignallingURI.toString(),
   }
+}
+
+/** Vehicle connection timeout */
+
+const defaultVehicleConnectionTimeoutSeconds = 5
+const minVehicleConnectionTimeoutSeconds = 1
+
+const connectionTimeoutForm = ref()
+const connectionTimeoutFormValid = ref(true)
+const vehicleConnectionTimeoutSeconds = computed(
+  () => Math.round(mainVehicleStore.vehicleConnectionTimeoutMs / 100) / 10
+)
+const newVehicleConnectionTimeoutSeconds = ref<number>(vehicleConnectionTimeoutSeconds.value)
+
+watch(vehicleConnectionTimeoutSeconds, (value) => (newVehicleConnectionTimeoutSeconds.value = value))
+
+const isValidConnectionTimeout = (value: number | string): boolean | string => {
+  const numericValue = typeof value === 'string' ? Number(value) : value
+  if (!Number.isFinite(numericValue)) return 'Timeout must be a valid number.'
+  if (numericValue < minVehicleConnectionTimeoutSeconds) {
+    return `Timeout must be at least ${minVehicleConnectionTimeoutSeconds} second.`
+  }
+  return true
+}
+
+const setConnectionTimeout = async (): Promise<void> => {
+  const validation = await connectionTimeoutForm.value.validate()
+  if (!validation.valid) return
+
+  mainVehicleStore.vehicleConnectionTimeoutMs = Math.round(newVehicleConnectionTimeoutSeconds.value * 1000)
+}
+
+const resetConnectionTimeout = (): void => {
+  newVehicleConnectionTimeoutSeconds.value = defaultVehicleConnectionTimeoutSeconds
+  mainVehicleStore.vehicleConnectionTimeoutMs = defaultVehicleConnectionTimeoutSeconds * 1000
 }
 
 const isValidHostAddress = (value: string): boolean | string => {
