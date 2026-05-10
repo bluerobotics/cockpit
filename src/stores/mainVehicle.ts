@@ -188,6 +188,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   // Enabled by default for backward compatibility reasons - users with old devices may want to disable this to improve performance
   const enableLegacyDataLakeVariableNames = useBlueOsStorage('cockpit-enable-legacy-datalake-variable-names', true)
 
+  // Maximum time without heartbeats before the vehicle is considered offline. Configurable so users on
+  // high-latency or lossy links (e.g. cellular modems) can extend the window beyond the 5 s default.
+  const vehicleConnectionTimeoutMs = useBlueOsStorage('cockpit-vehicle-connection-timeout-ms', 5000)
+
   const MAVLink2RestWebsocketURI = computed(() => {
     const queryURI = new URLSearchParams(window.location.search).get('MAVLink2RestWebsocketURI')
     const customURI = customMAVLink2RestWebsocketURI.value.enabled
@@ -208,11 +212,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   /**
-   * Check if vehicle is online (no more than 5 seconds passed since last heartbeat)
+   * Check if vehicle is online (no more than {@link vehicleConnectionTimeoutMs} passed since last heartbeat)
    * @returns { boolean } True if vehicle is online
    */
   const isVehicleOnline = computed(() => {
-    return lastHeartbeat.value !== undefined && new Date(timeNow.value).getTime() - lastHeartbeat.value.getTime() < 5000
+    return (
+      lastHeartbeat.value !== undefined &&
+      new Date(timeNow.value).getTime() - lastHeartbeat.value.getTime() < vehicleConnectionTimeoutMs.value
+    )
   })
 
   /**
@@ -1059,6 +1066,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     setHomeWaypoint,
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
+    vehicleConnectionTimeoutMs,
     enableDatalakeVariablesFromOtherSystems,
     enableLegacyDataLakeVariableNames,
     getVehicleAddress,
