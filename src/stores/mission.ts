@@ -8,6 +8,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
+import { polylineLengthMeters, segmentLengthMeters } from '@/libs/map/utils-map'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
@@ -221,6 +222,40 @@ export const useMissionStore = defineStore('mission', () => {
   const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
   // Revision counter for `vehiclePositionHistory` mutations.
   const vehiclePositionHistoryRevision = ref(0)
+  const totalTraveledDistanceMeters = useBlueOsStorage<number>('cockpit-odometer-total-distance-meters', 0)
+  const missionTraveledDistanceMeters = useBlueOsStorage<number>('cockpit-odometer-mission-distance-meters', 0)
+
+  let lastMissionOdometerLat: number | null = null
+  let lastMissionOdometerLng: number | null = null
+
+  type ResetMissionDistanceOptions = {
+    /**
+     * When `true`, skip the `logUserAction` entry. Used by telemetry-driven callers (e.g. the
+     * auto-reset watcher on `currentMissionSeq`) so those resets don't appear as user actions
+     * in the system log. Defaults to `false`.
+     */
+    silent?: boolean
+  }
+
+  /**
+   * Resets the mission odometer back to zero and drops the last recorded mission position so the
+   * next accumulation cycle starts fresh from the vehicle's next reported point.
+   * @param {ResetMissionDistanceOptions} [options] - Reset options; see the type for details.
+   * @returns {void}
+   */
+  const resetMissionDistance = (options: ResetMissionDistanceOptions = {}): void => {
+    if (!options.silent) logUserAction('Reset the mission traveled-distance odometer')
+    missionTraveledDistanceMeters.value = 0
+    lastMissionOdometerLat = null
+    lastMissionOdometerLng = null
+  }
+
+  // Seed the total odometer from the persisted history only on the first run that has no persisted value,
+  // so we don't repeat an O(n) polyline scan (up to `DEFAULT_MAX_POSITION_HISTORY_SIZE` points) on every
+  // session while still back-filling users that already had a long history when the odometer was introduced.
+  if (totalTraveledDistanceMeters.value === 0 && vehiclePositionHistory.value.length > 1) {
+    totalTraveledDistanceMeters.value = polylineLengthMeters(vehiclePositionHistory.value)
+  }
 
   let positionHistoryDirty = false
   let simplifiedBoundary = 0
@@ -241,6 +276,7 @@ export const useMissionStore = defineStore('mission', () => {
     vehiclePositionHistoryRevision.value += 1
     positionHistoryDirty = false
     simplifiedBoundary = 0
+    totalTraveledDistanceMeters.value = 0
     if (isVehiclePositionHistoryPersistent.value) {
       persistedPositionHistory.value = []
     }
@@ -609,51 +645,121 @@ export const useMissionStore = defineStore('mission', () => {
     DEFAULT_MAX_POSITION_HISTORY_SIZE
   )
 
+  type SimplifyChunkResult = {
+    /**
+     * Whether a chunk was actually simplified. `false` when there was no unsimplified data available
+     * or the chunk was too small to run RDP on.
+     */
+    didSimplify: boolean
+    /**
+     * Polyline length shed by RDP within the chunk. Callers can subtract this from the total-distance
+     * odometer instead of recomputing the entire polyline length.
+     */
+    removedLengthMeters: number
+  }
+
   /**
    * Simplifies the next unsimplified chunk of the vehicle position history using the
    * Ramer-Douglas-Peucker algorithm. The chunk starts at `simplifiedBoundary` and spans
    * one third of `maxPositionHistorySize`, ensuring each portion of the history is only
    * ever simplified once.
-   * @returns {boolean} True if a chunk was simplified, false if no unsimplified data is available.
+   * @returns {SimplifyChunkResult} Outcome flag plus the polyline length RDP shed within the chunk.
    */
-  const simplifyNextChunk = (): boolean => {
+  const simplifyNextChunk = (): SimplifyChunkResult => {
     const history = vehiclePositionHistory.value
     const chunkSize = Math.floor(maxPositionHistorySize.value / 3)
     const chunkEnd = simplifiedBoundary + chunkSize
 
-    if (simplifiedBoundary >= history.length - chunkSize || chunkEnd > history.length) return false
+    if (simplifiedBoundary >= history.length - chunkSize || chunkEnd > history.length) {
+      return { didSimplify: false, removedLengthMeters: 0 }
+    }
 
     const alreadySimplified = history.slice(0, simplifiedBoundary)
     const chunkSegment = history.slice(simplifiedBoundary, chunkEnd)
     const recentSegment = history.slice(chunkEnd)
 
-    if (chunkSegment.length < 2) return false
+    if (chunkSegment.length < 2) return { didSimplify: false, removedLengthMeters: 0 }
 
     const line = turf.lineString(chunkSegment.map(([lat, lng]) => [lng, lat]))
     const simplified = turf.simplify(line, { tolerance: 0.000001, highQuality: true })
     const simplifiedPoints = simplified.geometry.coordinates.map(([lng, lat]) => [lat, lng] as WaypointCoordinates)
 
+    // RDP keeps the first and last chunk points, so the only length change is internal to the chunk.
+    const chunkLenBefore = polylineLengthMeters(chunkSegment)
+    const chunkLenAfter = polylineLengthMeters(simplifiedPoints)
+    const removedLengthMeters = Math.max(0, chunkLenBefore - chunkLenAfter)
+
     vehiclePositionHistory.value = [...alreadySimplified, ...simplifiedPoints, ...recentSegment]
     vehiclePositionHistoryRevision.value += 1
     simplifiedBoundary += simplifiedPoints.length
-    return true
+    return { didSimplify: true, removedLengthMeters }
   }
 
   watch(
     () => [mainVehicleStore.coordinates?.latitude, mainVehicleStore.coordinates?.longitude] as const,
     ([lat, lng]) => {
       if (!lat || !lng) return
-      vehiclePositionHistory.value.push([lat, lng] as WaypointCoordinates)
+      const newPoint: WaypointCoordinates = [lat, lng]
+      const previousLast =
+        vehiclePositionHistory.value.length > 0
+          ? vehiclePositionHistory.value[vehiclePositionHistory.value.length - 1]
+          : null
+
+      vehiclePositionHistory.value.push(newPoint)
+
+      if (previousLast !== null) {
+        totalTraveledDistanceMeters.value += segmentLengthMeters(previousLast, newPoint)
+      }
+
       if (vehiclePositionHistory.value.length > maxPositionHistorySize.value) {
-        const didSimplify = simplifyNextChunk()
+        const { didSimplify, removedLengthMeters } = simplifyNextChunk()
+        if (didSimplify) {
+          // Subtract only the length RDP shed within the chunk; avoids an O(n) recompute on the full history.
+          totalTraveledDistanceMeters.value -= removedLengthMeters
+          if (totalTraveledDistanceMeters.value < 0) totalTraveledDistanceMeters.value = 0
+        }
         // Fallback: if no unsimplified chunk was available or RDP freed nothing, drop oldest point
         if (!didSimplify || vehiclePositionHistory.value.length > maxPositionHistorySize.value) {
-          vehiclePositionHistory.value.shift()
+          const updatedHistory = vehiclePositionHistory.value
+          if (updatedHistory.length >= 2) {
+            totalTraveledDistanceMeters.value -= segmentLengthMeters(updatedHistory[0], updatedHistory[1])
+            if (totalTraveledDistanceMeters.value < 0) totalTraveledDistanceMeters.value = 0
+          }
+          updatedHistory.shift()
           if (simplifiedBoundary > 0) simplifiedBoundary -= 1
         }
       }
       vehiclePositionHistoryRevision.value += 1
       positionHistoryDirty = true
+
+      // Mission distance must only accumulate while running an actual waypoint mission (AUTO).
+      // GUIDED is also a "running" mode for the play/pause control but is used for ad-hoc GoTo
+      // commands that should not contribute to the mission odometer.
+      const isMissionAccumulating = mainVehicleStore.mode === 'AUTO' && (mainVehicleStore.currentMissionSeq ?? 0) >= 1
+      if (isMissionAccumulating) {
+        if (lastMissionOdometerLat !== null && lastMissionOdometerLng !== null) {
+          missionTraveledDistanceMeters.value += segmentLengthMeters(
+            [lastMissionOdometerLat, lastMissionOdometerLng],
+            newPoint
+          )
+        }
+        lastMissionOdometerLat = lat
+        lastMissionOdometerLng = lng
+      } else {
+        lastMissionOdometerLat = null
+        lastMissionOdometerLng = null
+      }
+    }
+  )
+
+  // Reset the mission odometer whenever the vehicle (re)starts the mission from the first waypoint.
+  watch(
+    () => mainVehicleStore.currentMissionSeq,
+    (newSeq, oldSeq) => {
+      if (newSeq === 1 && oldSeq !== 1) {
+        // Telemetry-driven, not a user gesture — suppress the [UserAction] log.
+        resetMissionDistance({ silent: true })
+      }
     }
   )
 
@@ -731,6 +837,9 @@ export const useMissionStore = defineStore('mission', () => {
     isVehiclePositionHistoryPersistent,
     maxPositionHistorySize,
     clearVehicleHistory,
+    totalTraveledDistanceMeters,
+    missionTraveledDistanceMeters,
+    resetMissionDistance,
     pushUndoSnapshot,
     popUndoSnapshot,
     popRedoSnapshot,
