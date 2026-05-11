@@ -13,6 +13,7 @@ import { askForUsername } from '@/composables/usernamePrompDialog'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
 import { simplifyPath } from '@/libs/map/path-simplify'
+import { distanceInMeters } from '@/libs/map/utils-map'
 import { loadVehiclePositionHistory, saveVehiclePositionHistory } from '@/libs/map/vehicle-position-history-storage'
 import {
   AUTOMATIC_MISSION_NAME_MIN_IDLE_MS,
@@ -30,6 +31,7 @@ import { generateMissionThumbnailSvg } from '@/libs/mission/library'
 import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { toPlain } from '@/libs/utils'
+import { loadVehicleOdometers, saveVehicleOdometers } from '@/libs/vehicle/odometer-storage'
 import {
   AltitudeReferenceType,
   CockpitMission,
@@ -48,7 +50,11 @@ import {
   Waypoint,
   WaypointCoordinates,
 } from '@/types/mission'
-import { cockpitLastConnectedUserKey, fallbackUsername } from '@/types/settings-management'
+import {
+  cockpitLastConnectedUserKey,
+  cockpitLastConnectedVehicleKey,
+  fallbackUsername,
+} from '@/types/settings-management'
 import {
   clearLegacyVehiclePositionHistory,
   readLegacyVehiclePositionHistory,
@@ -63,6 +69,11 @@ const DEFAULT_MAP_ZOOM = 15
 // Default cap on the vehicle position history. At 5Hz (default sampling rate), 500k samples is about 30 hours.
 export const DEFAULT_MAX_POSITION_HISTORY_SIZE = 500000
 export const MIN_MAX_POSITION_HISTORY_SIZE = 100
+
+// Minimum movement, in meters, between two odometer samples for the distance to be counted; keeps GPS
+// jitter from racking up kilometers while the vehicle sits still. The reference point holds until the
+// threshold is crossed, so genuinely slow travel still adds up.
+const minOdometerSegmentMeters = 1
 
 export const useMissionStore = defineStore('mission', () => {
   const username = useStorage<string>('cockpit-username', fallbackUsername)
@@ -458,6 +469,122 @@ export const useMissionStore = defineStore('mission', () => {
       flushPositionHistory()
       clearLegacyVehiclePositionHistory()
     }
+  }
+
+  const totalTraveledDistanceMeters = ref(0)
+  const missionTraveledDistanceMeters = ref(0)
+
+  // Vehicle whose stored odometers are shown. Until the connected vehicle reports its id, that is the last connected
+  // one, shown but not counted into, so a different vehicle never adds distance to it.
+  const odometerVehicleId = ref<string>()
+  let odometerDirty = false
+  let lastOdometerPoint: WaypointCoordinates | null = null
+
+  // Whether the shown figures belong to the vehicle in front of the user: the connected one once its id is known, or
+  // the last connected one while offline. A vehicle without BlueOS never reports an id, so it never gets figures.
+  const areOdometersAvailable = computed(
+    () =>
+      odometerVehicleId.value !== undefined &&
+      (!mainVehicleStore.isVehicleOnline || odometerVehicleId.value === mainVehicleStore.currentlyConnectedVehicleId)
+  )
+
+  const flushOdometers = async (): Promise<void> => {
+    if (odometerVehicleId.value === undefined || !odometerDirty) return
+    const vehicleId = odometerVehicleId.value
+    const odometers = {
+      totalMeters: totalTraveledDistanceMeters.value,
+      missionMeters: missionTraveledDistanceMeters.value,
+    }
+    odometerDirty = false
+    try {
+      await saveVehicleOdometers(vehicleId, odometers)
+    } catch (error) {
+      console.error('Could not save the traveled distances.', error)
+      if (odometerVehicleId.value === vehicleId) odometerDirty = true
+      warnPositionHistoryStorage(t`Could not save the traveled distances. They may be lost when Cockpit closes.`)
+    }
+  }
+
+  setInterval(flushOdometers, positionHistoryFlushInterval)
+  window.addEventListener('beforeunload', flushOdometers)
+
+  const lastConnectedVehicleId = localStorage.getItem(cockpitLastConnectedVehicleKey) || undefined
+  const odometerTargetVehicleId = (): string | undefined =>
+    mainVehicleStore.currentlyConnectedVehicleId ?? lastConnectedVehicleId
+
+  watch(
+    odometerTargetVehicleId,
+    async (vehicleId) => {
+      flushOdometers()
+      odometerVehicleId.value = undefined
+      lastOdometerPoint = null
+      totalTraveledDistanceMeters.value = 0
+      missionTraveledDistanceMeters.value = 0
+      if (vehicleId === undefined) return
+      try {
+        const stored = await loadVehicleOdometers(vehicleId)
+        if (odometerTargetVehicleId() !== vehicleId) return
+        totalTraveledDistanceMeters.value = stored?.totalMeters ?? 0
+        missionTraveledDistanceMeters.value = stored?.missionMeters ?? 0
+        odometerVehicleId.value = vehicleId
+      } catch (error) {
+        console.error('Could not restore the traveled distances.', error)
+        warnPositionHistoryStorage(t`Could not open the saved traveled distances. They will not be counted or saved.`)
+      }
+    },
+    { immediate: true }
+  )
+
+  const accumulateOdometers = (newPoint: WaypointCoordinates): void => {
+    const vehicleId = odometerVehicleId.value
+    if (vehicleId === undefined || vehicleId !== mainVehicleStore.currentlyConnectedVehicleId) return
+    const segmentMeters = lastOdometerPoint === null ? 0 : distanceInMeters(lastOdometerPoint, newPoint)
+    if (lastOdometerPoint !== null && segmentMeters < minOdometerSegmentMeters) return
+    lastOdometerPoint = newPoint
+    totalTraveledDistanceMeters.value += segmentMeters
+    odometerDirty = true
+
+    // Mission distance must only accumulate while running an actual waypoint mission (AUTO).
+    // GUIDED is also a "running" mode for the play/pause control but is used for ad-hoc GoTo
+    // commands that should not contribute to the mission odometer.
+    if (mainVehicleStore.mode === 'AUTO' && (mainVehicleStore.currentMissionSeq ?? 0) >= 1) {
+      missionTraveledDistanceMeters.value += segmentMeters
+    }
+  }
+
+  type ResetMissionDistanceOptions = {
+    /**
+     * When `true`, skip the `logUserAction` entry. Used by telemetry-driven callers (e.g. the
+     * auto-reset watcher on `currentMissionSeq`) so those resets don't appear as user actions
+     * in the system log. Defaults to `false`.
+     */
+    silent?: boolean
+  }
+
+  /**
+   * Resets the mission odometer back to zero, so it starts counting again from the vehicle's
+   * current position.
+   * @param {ResetMissionDistanceOptions} [options] - Reset options; see the type for details.
+   * @returns {void}
+   */
+  const resetMissionDistance = (options: ResetMissionDistanceOptions = {}): void => {
+    if (!areOdometersAvailable.value) return
+    if (!options.silent) logUserAction('Reset the mission traveled-distance odometer')
+    missionTraveledDistanceMeters.value = 0
+    odometerDirty = true
+  }
+
+  /**
+   * Resets the total odometer back to zero, so it starts counting again from the vehicle's current
+   * position. Unlike the mission odometer this is never reset automatically, so it only ever happens
+   * on an explicit user request.
+   * @returns {void}
+   */
+  const resetTotalDistance = (): void => {
+    if (!areOdometersAvailable.value) return
+    logUserAction('Reset the total traveled-distance odometer')
+    totalTraveledDistanceMeters.value = 0
+    odometerDirty = true
   }
 
   const moveWaypoint = (id: string, newCoordinates: WaypointCoordinates): void => {
@@ -940,7 +1067,8 @@ export const useMissionStore = defineStore('mission', () => {
     () => [mainVehicleStore.coordinates?.latitude, mainVehicleStore.coordinates?.longitude] as const,
     ([lat, lng]) => {
       if (!lat || !lng) return
-      vehiclePositionHistory.value.push([lat, lng] as WaypointCoordinates)
+      const newPoint: WaypointCoordinates = [lat, lng]
+      vehiclePositionHistory.value.push(newPoint)
       if (vehiclePositionHistory.value.length > maxPositionHistorySize.value) {
         const didSimplify = simplifyNextChunk()
         // Fallback: if no unsimplified chunk was available or RDP freed nothing, drop oldest point
@@ -951,6 +1079,18 @@ export const useMissionStore = defineStore('mission', () => {
       }
       vehiclePositionHistoryRevision.value += 1
       positionHistoryDirty = true
+      accumulateOdometers(newPoint)
+    }
+  )
+
+  // Reset the mission odometer whenever the vehicle (re)starts the mission from the first waypoint.
+  watch(
+    () => mainVehicleStore.currentMissionSeq,
+    (newSeq, oldSeq) => {
+      // Telemetry-driven, not a user gesture, so the [UserAction] log is suppressed. An unknown
+      // previous sequence means the first message after a page load or a reconnect, which is not the
+      // vehicle moving onto the first waypoint.
+      if (newSeq === 1 && oldSeq !== undefined && oldSeq !== 1) resetMissionDistance({ silent: true })
     }
   )
 
@@ -1131,6 +1271,11 @@ export const useMissionStore = defineStore('mission', () => {
     isVehiclePositionHistoryPersistent,
     maxPositionHistorySize,
     clearVehicleHistory,
+    totalTraveledDistanceMeters,
+    missionTraveledDistanceMeters,
+    areOdometersAvailable,
+    resetMissionDistance,
+    resetTotalDistance,
     pushUndoSnapshot,
     popUndoSnapshot,
     popRedoSnapshot,
