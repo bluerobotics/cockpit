@@ -7019,6 +7019,7 @@ msgstr ""
 msgid "Mission was not checked against hazard data"
 msgstr "A missão não foi verificada contra os dados de perigo"
 
+#: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Mission:"
 msgstr ""
@@ -8956,6 +8957,7 @@ msgstr "Redefinir endereço global"
 msgid "Reset intervals to Cockpit defaults"
 msgstr "Redefinir intervalos para os padrões do Cockpit"
 
+#: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Reset mission distance"
 msgstr ""
@@ -11272,6 +11274,7 @@ msgid "Total traveled distance reset"
 msgstr ""
 
 #: src/components/VideoLibraryModal.vue
+#: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Total:"
 msgstr "Total:"
