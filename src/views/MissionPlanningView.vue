@@ -4130,9 +4130,11 @@ watch(
 )
 
 // Create polyline for the vehicle history path (only shown when vehicle marker is on screen)
+// Watch a revision counter instead of the array itself so we avoid Vue's deep-walk on every mutation.
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
+let lastDrawnHistoryLen = 0
 watch(
-  () => missionStore.vehiclePositionHistory,
+  () => missionStore.vehiclePositionHistoryRevision,
   () => {
     const newPoints = missionStore.vehiclePositionHistory
 
@@ -4141,16 +4143,26 @@ watch(
         planningMap.value?.removeLayer(vehicleHistoryPolyline.value)
         vehicleHistoryPolyline.value = undefined
       }
+      lastDrawnHistoryLen = 0
       return
     }
 
     if (vehicleHistoryPolyline.value === undefined) {
       vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(planningMap.value)
+      lastDrawnHistoryLen = 0
     }
 
-    vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
-  },
-  { deep: true }
+    if (newPoints.length > lastDrawnHistoryLen && lastDrawnHistoryLen > 0) {
+      // Append only the new points — O(1) per fire instead of O(N) full rebuild.
+      for (let i = lastDrawnHistoryLen; i < newPoints.length; i++) {
+        vehicleHistoryPolyline.value.addLatLng(newPoints[i] as L.LatLngExpression)
+      }
+    } else {
+      // First draw, shrink, or unchanged length — fall back to a full rebuild to stay correct.
+      vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
+    }
+    lastDrawnHistoryLen = newPoints.length
+  }
 )
 
 watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())

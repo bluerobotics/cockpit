@@ -654,13 +654,12 @@ watch([zoom, mapCenter], () => {
   saveLastMapPositionDebounced()
 })
 
-// Watch for reached mission item sequences to update marker styles
+// Shallow watch for reached mission item sequences to update marker styles
 watch(
   () => vehicleStore.reachedMissionItemSequences,
   () => {
     refreshReachedWaypointMarkerStyles()
-  },
-  { deep: true }
+  }
 )
 
 // Grid overlay functions using centralized utilities
@@ -820,10 +819,13 @@ onMounted(async () => {
 
   map.value.on('dragstart', () => {
     isDragging.value = true
+    // While the user drags the map, suppress the permanent waypoint tooltips and the waypoint marker DOM elements via CSS.
+    map.value?.getContainer().classList.add('cockpit-drag-active')
   })
 
   map.value.on('dragend', () => {
     setTimeout(() => (isDragging.value = false), 200)
+    map.value?.getContainer().classList.remove('cockpit-drag-active')
   })
 
   // Update zoom value after zooming
@@ -893,6 +895,7 @@ onMounted(async () => {
       vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
     }
     vehicleHistoryPolyline.value.setLatLngs(missionStore.vehiclePositionHistory as L.LatLngExpression[])
+    lastDrawnHistoryLen = missionStore.vehiclePositionHistory.length
   }
   // Register mission actions for map widget
   missionStore.registerMapMissionActions({
@@ -1340,7 +1343,7 @@ watch(home, () => {
       content: '<i class="mdi mdi-home-map-marker text-[18px] "></i>',
       permanent: true,
       direction: 'center',
-      className: 'waypoint-tooltip',
+      className: 'waypoint-tooltip waypoint-tooltip--icon',
       opacity: 1,
     })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
@@ -1357,69 +1360,65 @@ watch(home, () => {
 
 // Create polyline for the vehicle path
 const missionWaypointsPolyline = shallowRef<L.Polyline>()
-watch(
-  mapWaypoints,
-  (newWaypoints) => {
-    if (!map.value) return
+watch(mapWaypoints, (newWaypoints) => {
+  if (!map.value) return
 
-    if (!missionWaypointsPolyline.value) {
-      missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3', className: 'mission-path' }).addTo(map.value)
-    }
-    missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
+  if (!missionWaypointsPolyline.value) {
+    missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3', className: 'mission-path' }).addTo(map.value)
+  }
+  missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
 
-    mapWaypointMarkers.value.forEach((m) => m.remove())
-    mapWaypointMarkers.value = []
+  mapWaypointMarkers.value.forEach((m) => m.remove())
+  mapWaypointMarkers.value = []
 
-    // Add a marker for each point
-    newWaypoints.forEach((waypoint, idx) => {
-      const seq = idx + 1
-      let marker = reachedWaypoints.value[seq]
-      if (!marker) {
-        const isReached = getReachedWaypointIndices.value.has(seq)
-        const isCurrent = idx === currentMapWpIndex.value
-        const markerIcon = createWaypointMarkerIcon(isReached, isCurrent)
-        marker = L.marker(waypoint.coordinates, { icon: markerIcon })
-        reachedWaypoints.value[seq] = marker
+  // Add a marker for each point
+  newWaypoints.forEach((waypoint, idx) => {
+    const seq = idx + 1
+    let marker = reachedWaypoints.value[seq]
+    if (!marker) {
+      const isReached = getReachedWaypointIndices.value.has(seq)
+      const isCurrent = idx === currentMapWpIndex.value
+      const markerIcon = createWaypointMarkerIcon(isReached, isCurrent)
+      marker = L.marker(waypoint.coordinates, { icon: markerIcon })
+      reachedWaypoints.value[seq] = marker
 
-        const markerSizeForTooltip = getMarkerSizeFromZoom(zoom.value)
-        const markerTooltip = L.tooltip({
-          content: seq.toString(),
-          permanent: true,
-          direction: 'center',
-          className: isReached
-            ? 'waypoint-tooltip waypoint-tooltip--reached'
-            : isCurrent
-            ? 'waypoint-tooltip waypoint-tooltip--current-waypoint'
-            : 'waypoint-tooltip',
-          opacity: markerSizeForTooltip === 'md' ? 1 : 0,
-        })
+      const markerSizeForTooltip = getMarkerSizeFromZoom(zoom.value)
+      const markerTooltip = L.tooltip({
+        content: seq.toString(),
+        permanent: true,
+        direction: 'center',
+        className: isReached
+          ? 'waypoint-tooltip waypoint-tooltip--reached'
+          : isCurrent
+          ? 'waypoint-tooltip waypoint-tooltip--current-waypoint'
+          : 'waypoint-tooltip',
+        opacity: markerSizeForTooltip === 'md' ? 1 : 0,
+      })
 
-        marker.bindTooltip(markerTooltip)
-        marker.on('contextmenu', (e: L.LeafletMouseEvent) => {
-          L.DomEvent.stopPropagation(e)
-          e.originalEvent.stopPropagation()
-          e.originalEvent.preventDefault()
-          openContextMenuAt(e.originalEvent, seq)
-        })
-        map.value?.addLayer(marker)
-      } else {
-        marker.setLatLng(waypoint.coordinates as LatLngTuple)
-        const markerSizeForUpdate = getMarkerSizeFromZoom(zoom.value)
-        const tooltip = marker.getTooltip()
-        if (tooltip) {
-          if (markerSizeForUpdate === 'xs' || markerSizeForUpdate === 'sm') {
-            tooltip.setOpacity(0)
-          } else {
-            tooltip.setContent(seq.toString())
-            tooltip.setOpacity(1)
-          }
+      marker.bindTooltip(markerTooltip)
+      marker.on('contextmenu', (e: L.LeafletMouseEvent) => {
+        L.DomEvent.stopPropagation(e)
+        e.originalEvent.stopPropagation()
+        e.originalEvent.preventDefault()
+        openContextMenuAt(e.originalEvent, seq)
+      })
+      map.value?.addLayer(marker)
+    } else {
+      marker.setLatLng(waypoint.coordinates as LatLngTuple)
+      const markerSizeForUpdate = getMarkerSizeFromZoom(zoom.value)
+      const tooltip = marker.getTooltip()
+      if (tooltip) {
+        if (markerSizeForUpdate === 'xs' || markerSizeForUpdate === 'sm') {
+          tooltip.setOpacity(0)
+        } else {
+          tooltip.setContent(seq.toString())
+          tooltip.setOpacity(1)
         }
-        applyWaypointMarkerStyle(seq)
       }
-    })
-  },
-  { deep: true }
-)
+      applyWaypointMarkerStyle(seq)
+    }
+  })
+})
 
 // Keep an eye on the current mission status and update the waypoint markers accordingly
 watch([getReachedWaypointIndices, currentMapWpIndex], () => {
@@ -1448,25 +1447,39 @@ watch([getReachedWaypointIndices, currentMapWpIndex], () => {
 })
 
 // Create polyline for the vehicle path
+// Watch a revision counter instead of the array itself so we avoid Vue's deep-walk on every mutation.
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
+let lastDrawnHistoryLen = 0
 watch(
-  () => missionStore.vehiclePositionHistory,
-  (newPoints) => {
+  () => missionStore.vehiclePositionHistoryRevision,
+  () => {
+    const newPoints = missionStore.vehiclePositionHistory
     if (map.value === undefined || !vehicleMarker.value || !newPoints || newPoints.length === 0) {
       if (vehicleHistoryPolyline.value && map.value) {
         map.value.removeLayer(vehicleHistoryPolyline.value)
         vehicleHistoryPolyline.value = undefined
       }
+      lastDrawnHistoryLen = 0
       return
     }
 
     if (vehicleHistoryPolyline.value === undefined) {
       vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
+      lastDrawnHistoryLen = 0
     }
 
-    vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
-  },
-  { deep: true }
+    if (newPoints.length > lastDrawnHistoryLen && lastDrawnHistoryLen > 0) {
+      // Append only the new points — O(1) per fire instead of O(N) full rebuild.
+      for (let i = lastDrawnHistoryLen; i < newPoints.length; i++) {
+        vehicleHistoryPolyline.value.addLatLng(newPoints[i] as L.LatLngExpression)
+      }
+    } else {
+      // First draw, or the history shrank (clear/simplify) / stayed same length (push+shift):
+      // fall back to a full rebuild to stay correct.
+      vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
+    }
+    lastDrawnHistoryLen = newPoints.length
+  }
 )
 
 // Handle context menu toggling and selection
@@ -1569,7 +1582,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
       content: '<i class="mdi mdi-map-check text-[18px] border-[1px] rounded-full px-[2px] py-[1px]"></i>',
       permanent: true,
       direction: 'center',
-      className: 'waypoint-tooltip',
+      className: 'waypoint-tooltip waypoint-tooltip--icon',
       opacity: 1,
     })
     tempMarker.bindTooltip(tempTooltip).openTooltip()
@@ -1618,7 +1631,7 @@ const executeGoToOption = async (): Promise<void> => {
     content: '<i class="mdi mdi-crosshairs-gps border-[1px] rounded-full text-[18px] px-[2px] pt-[1px] "></i>',
     permanent: true,
     direction: 'center',
-    className: 'waypoint-tooltip',
+    className: 'waypoint-tooltip waypoint-tooltip--icon',
     opacity: 1,
   })
   gotoMarker.value.bindTooltip(gotoTooltip)
@@ -1729,7 +1742,7 @@ const onGlobalOriginSet = (latitude: number, longitude: number): void => {
     content: '<i class="mdi mdi-axis-arrow text-[18px]"></i>',
     permanent: true,
     direction: 'center',
-    className: 'waypoint-tooltip',
+    className: 'waypoint-tooltip waypoint-tooltip--icon',
     opacity: 1,
   })
 
@@ -1745,14 +1758,17 @@ const onKeydown = (event: KeyboardEvent): void => {
 }
 
 const drawMission = (missionItems: Waypoint[]): void => {
+  const drawn: Waypoint[] = []
   missionItems.forEach((wp, idx) => {
     if (idx === 0) {
       home.value = wp.coordinates
       setHomePosition(wp.coordinates)
     } else {
-      mapWaypoints.value.push(wp)
+      drawn.push(wp)
     }
   })
+  // Avoids paying a deep-walk on every push.
+  mapWaypoints.value = drawn
 }
 
 // Allow fetching missions
@@ -2097,6 +2113,14 @@ watch(
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   color: black;
   z-index: 100;
+}
+
+/* While the user is actively dragging the map, hide the numbered waypoint tooltips and
+ * the waypoint marker DOM elements. Singular icon tooltips (home, goto, global origin,
+ * default-position) are kept visible. */
+:global(.leaflet-container.cockpit-drag-active .waypoint-tooltip:not(.waypoint-tooltip--icon)),
+:global(.leaflet-container.cockpit-drag-active .waypoint-marker-icon) {
+  display: none !important;
 }
 
 :deep(.vehicle-tooltip) {
