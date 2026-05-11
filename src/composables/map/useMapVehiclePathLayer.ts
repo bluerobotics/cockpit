@@ -1,4 +1,4 @@
-import L, { type LatLngExpression, type Map, type Polyline } from 'leaflet'
+import L, { type LatLngExpression, type LayerGroup, type Map, type Polyline } from 'leaflet'
 import { type ShallowRef, onBeforeUnmount, watch } from 'vue'
 
 import { isLeafletMapReady } from '@/libs/map/utils-map'
@@ -26,6 +26,14 @@ export interface UseMapVehiclePathLayerOptions {
 }
 
 /**
+ * What {@link useMapVehiclePathLayer} hands back to its owner.
+ */
+export interface UseMapVehiclePathLayerReturn {
+  /** Group holding the drawn trail segments, for hit-testing the trail from a map click. */
+  layer: LayerGroup
+}
+
+/**
  * One bounded piece of the drawn trail.
  */
 interface VehiclePathSegment {
@@ -43,12 +51,12 @@ interface VehiclePathSegment {
  * hidden, emptied or the owner unmounts.
  * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on; the layer (re)draws once available.
  * @param {UseMapVehiclePathLayerOptions} options - Reactive getters for the path, its revision and visibility.
- * @returns {void}
+ * @returns {UseMapVehiclePathLayerReturn} The group holding the trail segments.
  */
 export const useMapVehiclePathLayer = (
   map: ShallowRef<Map | undefined>,
   options: UseMapVehiclePathLayerOptions
-): void => {
+): UseMapVehiclePathLayerReturn => {
   // A dedicated Canvas renderer keeps the growing trail off the SVG pane, which otherwise stutters as points accumulate.
   const renderer = L.canvas({ pane: VEHICLE_PATH_PANE })
   const group = L.layerGroup()
@@ -163,4 +171,6 @@ export const useMapVehiclePathLayer = (
   )
 
   onBeforeUnmount(removeLine)
+
+  return { layer: group }
 }
