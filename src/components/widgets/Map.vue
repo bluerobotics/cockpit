@@ -295,6 +295,7 @@ import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
+import { useTraveledDistances } from '@/composables/useTraveledDistances'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
@@ -890,6 +891,7 @@ onMounted(async () => {
       vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
         map.value
       )
+      attachHistoryTooltip(vehicleHistoryPolyline.value)
     }
     vehicleHistoryPolyline.value.setLatLngs(missionStore.vehiclePositionHistory as L.LatLngExpression[])
     lastDrawnHistoryLen = missionStore.vehiclePositionHistory.length
@@ -1379,6 +1381,73 @@ watch([getReachedWaypointIndices, currentMapWpIndex], () => {
 const vehicleHistoryRenderer = L.canvas()
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
 let lastDrawnHistoryLen = 0
+
+const { formattedTotalDistance, formattedMissionDistance } = useTraveledDistances()
+
+const historyTooltipContent = computed<string>(() => {
+  const totalLabel = formattedTotalDistance.value
+  const missionLabel = formattedMissionDistance.value
+  return `
+    <div class="history-tooltip-row">
+      <span class="history-tooltip-label">
+        <i class="mdi mdi-counter"></i>
+        Total:
+      </span>
+      <span class="history-tooltip-value">${totalLabel}</span>
+    </div>
+    <div class="history-tooltip-row">
+      <span class="history-tooltip-label">Mission:</span>
+      <span class="history-tooltip-row-value-group">
+        <button
+          type="button"
+          class="history-tooltip-reset"
+          title="Reset mission distance"
+          aria-label="Reset mission distance"
+        >
+          <i class="mdi mdi-restore"></i>
+        </button>
+        <span class="history-tooltip-value">${missionLabel}</span>
+      </span>
+    </div>
+  `
+})
+
+const attachHistoryTooltip = (polyline: L.Polyline): void => {
+  if (polyline.getTooltip()) return
+  // Pass content as a function so every Leaflet re-evaluation reads the latest reactive value.
+  // The watcher below complements this by pushing live updates while the tooltip is already open.
+  polyline.bindTooltip(() => historyTooltipContent.value, {
+    sticky: true,
+    direction: 'top',
+    className: 'history-polyline-tooltip',
+    opacity: 1,
+  })
+  polyline.on('click', (e: L.LeafletMouseEvent) => {
+    polyline.openTooltip(e.latlng)
+  })
+}
+
+watch(historyTooltipContent, (newContent) => {
+  vehicleHistoryPolyline.value?.getTooltip()?.setContent(newContent)
+})
+
+// The tooltip's inner DOM is replaced on every setContent, so we delegate the reset-button
+// click on document instead of binding directly to the button element.
+const onHistoryTooltipResetClick = (event: MouseEvent): void => {
+  const target = event.target as HTMLElement | null
+  if (!target?.closest('.history-tooltip-reset')) return
+  event.stopPropagation()
+  missionStore.resetMissionDistance()
+}
+
+onMounted(() => {
+  document.addEventListener('click', onHistoryTooltipResetClick, true)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onHistoryTooltipResetClick, true)
+})
+
 watch(
   () => missionStore.vehiclePositionHistoryRevision,
   () => {
@@ -1397,6 +1466,7 @@ watch(
         map.value
       )
       lastDrawnHistoryLen = 0
+      attachHistoryTooltip(vehicleHistoryPolyline.value)
     }
 
     if (newPoints.length > lastDrawnHistoryLen && lastDrawnHistoryLen > 0) {
@@ -2073,6 +2143,74 @@ watch(
 
 :deep(.vehicle-tooltip::before) {
   border-right-color: var(--glass-background) !important;
+}
+
+:deep(.leaflet-interactive:focus) {
+  outline: none;
+}
+
+:deep(.history-polyline-tooltip) {
+  background-color: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter);
+  border: var(--glass-border) !important;
+  box-shadow: var(--glass-box-shadow);
+  color: #ffb85b;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  z-index: 100;
+}
+
+:deep(.history-polyline-tooltip::before) {
+  border-top-color: var(--glass-background) !important;
+}
+
+:deep(.history-tooltip-row) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 1.4;
+}
+
+:deep(.history-tooltip-label) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.8;
+}
+
+:deep(.history-tooltip-value) {
+  font-weight: bold;
+}
+
+:deep(.history-tooltip-row-value-group) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+:deep(.history-tooltip-reset) {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #ffb85b;
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 0 1px;
+  font-size: 9px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+:deep(.history-tooltip-reset:hover) {
+  opacity: 1;
+  background-color: rgba(255, 184, 91, 0.15);
 }
 
 :deep(.waypoint-tooltip--current-waypoint) {
