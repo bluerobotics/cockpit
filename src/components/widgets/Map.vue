@@ -294,6 +294,7 @@ import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelec
 import { useMapVehicleMarker } from '@/composables/map/useMapVehicleMarker'
 import { useMapVehiclePathLayer } from '@/composables/map/useMapVehiclePathLayer'
 import { useTrafficOverlay } from '@/composables/map/useTrafficOverlay'
+import { useVehicleHistoryOverlay } from '@/composables/map/useVehicleHistoryOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { useActiveMenuRoute } from '@/composables/menuRouting'
 import { openSnackbar } from '@/composables/snackbar'
@@ -1455,11 +1456,12 @@ useMapMissionLayer(map, {
   className: 'mission-path',
 })
 
-useMapVehiclePathLayer(map, {
+const { layer: vehiclePathLayer } = useMapVehiclePathLayer(map, {
   path: () => missionStore.vehiclePositionHistory,
   revision: () => missionStore.vehiclePositionHistoryRevision,
   show: () => widget.value.options.showVehiclePath && vehicleMarker.value !== undefined,
 })
+useVehicleHistoryOverlay(map, vehiclePathLayer)
 
 // Handle context menu toggling and selection
 const contextMenuVisible = ref(false)
@@ -2143,6 +2145,70 @@ const centerOnMission = (): void => {
 
 :deep(.vehicle-tooltip::before) {
   border-right-color: var(--glass-background) !important;
+}
+
+:deep(.history-polyline-tooltip) {
+  background-color: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter);
+  border: var(--glass-border) !important;
+  box-shadow: var(--glass-box-shadow);
+  color: theme('colors.odometer');
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  z-index: 100;
+}
+
+:deep(.history-polyline-tooltip::before) {
+  border-top-color: var(--glass-background) !important;
+}
+
+:deep(.history-tooltip-row) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 1.4;
+}
+
+:deep(.history-tooltip-label) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.8;
+}
+
+:deep(.history-tooltip-value) {
+  font-weight: bold;
+}
+
+:deep(.history-tooltip-row-value-group) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+:deep(.history-tooltip-reset) {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: theme('colors.odometer');
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 0 1px;
+  font-size: 9px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+:deep(.history-tooltip-reset:hover) {
+  opacity: 1;
+  background-color: theme('colors.odometer / 15%');
 }
 
 :deep(.waypoint-tooltip--current-waypoint) {

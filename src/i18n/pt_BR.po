@@ -7021,6 +7021,7 @@ msgstr "A missão não foi verificada contra os dados de perigo"
 
 #: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
+#: src/composables/map/useVehicleHistoryOverlay.ts
 msgid "Mission:"
 msgstr ""
 
@@ -8959,6 +8960,7 @@ msgstr "Redefinir intervalos para os padrões do Cockpit"
 
 #: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
+#: src/composables/map/useVehicleHistoryOverlay.ts
 msgid "Reset mission distance"
 msgstr ""
 
@@ -11276,6 +11278,7 @@ msgstr ""
 #: src/components/VideoLibraryModal.vue
 #: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
+#: src/composables/map/useVehicleHistoryOverlay.ts
 msgid "Total:"
 msgstr "Total:"
 
