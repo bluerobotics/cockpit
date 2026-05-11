@@ -160,6 +160,8 @@ export const useMissionStore = defineStore('mission', () => {
   const persistedPositionHistory = useBlueOsStorage<WaypointCoordinates[]>('cockpit-vehicle-position-history', [])
   const isVehiclePositionHistoryPersistent = useBlueOsStorage('cockpit-vehicle-position-history-persistent', true)
   const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
+  // Revision counter for `vehiclePositionHistory` mutations.
+  const vehiclePositionHistoryRevision = ref(0)
 
   let positionHistoryDirty = false
   let simplifiedBoundary = 0
@@ -177,6 +179,7 @@ export const useMissionStore = defineStore('mission', () => {
 
   const clearVehicleHistory = (): void => {
     vehiclePositionHistory.value = []
+    vehiclePositionHistoryRevision.value += 1
     positionHistoryDirty = false
     simplifiedBoundary = 0
     if (isVehiclePositionHistoryPersistent.value) {
@@ -537,6 +540,7 @@ export const useMissionStore = defineStore('mission', () => {
     const simplifiedPoints = simplified.geometry.coordinates.map(([lng, lat]) => [lat, lng] as WaypointCoordinates)
 
     vehiclePositionHistory.value = [...alreadySimplified, ...simplifiedPoints, ...recentSegment]
+    vehiclePositionHistoryRevision.value += 1
     simplifiedBoundary += simplifiedPoints.length
     return true
   }
@@ -554,6 +558,7 @@ export const useMissionStore = defineStore('mission', () => {
           if (simplifiedBoundary > 0) simplifiedBoundary -= 1
         }
       }
+      vehiclePositionHistoryRevision.value += 1
       positionHistoryDirty = true
     }
   )
@@ -615,6 +620,7 @@ export const useMissionStore = defineStore('mission', () => {
     callMapDownloadMissionFromVehicle,
     callMapClearMapDrawing,
     vehiclePositionHistory,
+    vehiclePositionHistoryRevision,
     isVehiclePositionHistoryPersistent,
     maxPositionHistorySize,
     clearVehicleHistory,
