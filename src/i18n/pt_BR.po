@@ -2876,6 +2876,12 @@ msgstr ""
 
 #: src/stores/mission.ts
 msgid ""
+"Could not open the saved traveled distances. They will not be counted or "
+"saved."
+msgstr ""
+
+#: src/stores/mission.ts
+msgid ""
 "Could not open the saved vehicle path history. The previous path is not "
 "shown, and this one will not be saved."
 msgstr ""
@@ -2896,6 +2902,10 @@ msgstr "Não foi possível gravar '${ 0 }' novamente: ${ 1 }"
 #: src/views/ConfigurationAlertsView.vue
 msgid "Could not remove the downloaded voices."
 msgstr "Não foi possível remover as vozes baixadas."
+
+#: src/stores/mission.ts
+msgid "Could not save the traveled distances. They may be lost when Cockpit closes."
+msgstr ""
 
 #: src/stores/mission.ts
 msgid ""
