@@ -1,5 +1,5 @@
 <template>
-  <div class="min-w-[290px] min-h-[95px] flex items-end">
+  <div class="min-w-[290px] min-h-[115px] flex items-end">
     <div
       class="w-full rounded-lg overflow-hidden -mt-2"
       :class="[isWrapped ? 'h-[42px]' : 'h-full']"
@@ -20,7 +20,10 @@
           />
         </div>
         <v-divider v-if="!isWrapped" />
-        <div v-show="!isWrapped" class="flex justify-center items-center w-full h-full">
+        <div
+          v-show="!isWrapped"
+          class="flex justify-center items-center w-full h-full bg-[#00000022] shadow-[inset_0_2px_3px_-1px_rgba(0,0,0,0.45)]"
+        >
           <div
             class="flex w-full h-full justify-start items-center overflow-hidden px-1"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
@@ -138,22 +141,57 @@
                   />
                 </template>
 
-                <v-list>
+                <v-list class="py-0">
                   <v-list-item
                     :disabled="!vehicleStore.isVehicleOnline"
                     class="cursor-pointer"
                     @click="handleDownloadMissionOnMap"
                   >
-                    <v-list-item-title>Download mission from vehicle</v-list-item-title>
+                    <v-list-item-title class="text-[14px]">Download mission from vehicle</v-list-item-title>
                   </v-list-item>
-
-                  <v-list-item class="cursor-pointer" @click="handleClearMissionOnMap">
-                    <v-list-item-title>Clear mission on map</v-list-item-title>
+                  <v-divider class="opacity-10" />
+                  <v-list-item
+                    :disabled="!vehicleStore.isVehicleOnline"
+                    class="cursor-pointer py-0"
+                    @click="handleClearMissionOnMap"
+                  >
+                    <v-list-item-title class="text-[14px]">Clear mission on map</v-list-item-title>
+                  </v-list-item>
+                  <v-divider class="opacity-10" />
+                  <v-list-item class="cursor-pointer" @click="missionStore.resetMissionDistance()">
+                    <v-list-item-title class="text-[14px]">Reset mission distance</v-list-item-title>
                   </v-list-item>
                 </v-list>
               </v-menu>
             </div>
           </div>
+        </div>
+        <v-divider v-if="!isWrapped" class="w-full opacity-10" />
+        <div
+          v-if="!isWrapped"
+          class="flex justify-around items-center w-full px-2 py-[2px] text-[11px] tabular-nums select-none"
+        >
+          <v-icon size="14" class="position fixed left-4 opacity-80 text-[#ffb85b]">mdi-map-marker-distance</v-icon>
+          <v-tooltip location="bottom" open-delay="800" text="Total distance the vehicle has traveled">
+            <template #activator="{ props: totalProps }">
+              <div v-bind="totalProps" class="flex items-center gap-1 text-[#ffb85b] pl-6">
+                <span class="opacity-80">Total:</span>
+                <span class="font-bold">{{ formattedTotalDistance }}</span>
+              </div>
+            </template>
+          </v-tooltip>
+          <v-tooltip
+            location="bottom"
+            open-delay="800"
+            text="Distance traveled during the current mission, since waypoint 1"
+          >
+            <template #activator="{ props: missionProps }">
+              <div v-bind="missionProps" class="flex items-center gap-1 text-[#ffb85b] pr-4">
+                <span class="opacity-80">Mission:</span>
+                <span class="font-bold">{{ formattedMissionDistance }}</span>
+              </div>
+            </template>
+          </v-tooltip>
         </div>
       </div>
     </div>
@@ -165,6 +203,7 @@ import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { useTraveledDistances } from '@/composables/useTraveledDistances'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -226,9 +265,11 @@ const disableMovingOnDrag = (): void => {
 }
 
 const widgetSize = {
-  width: 0.14638572402097255,
-  height: 0.09641222207770606,
+  width: 0.152,
+  height: 0.11,
 }
+
+const { formattedTotalDistance, formattedMissionDistance } = useTraveledDistances()
 
 const handleDownloadMissionOnMap = async (): Promise<void> => {
   missionStore.requestMapMissionDownload()
