@@ -388,13 +388,10 @@ const contextMenuSelectedWpIndex = ref<number | null>(null)
 const contextMenuVersion = ref(0)
 const mapWaypointMarkers = ref<L.Marker[]>([])
 
-const currentVehicleWpIndex = computed<number>(() => {
-  return vehicleStore.currentMissionSeq ?? -1
-})
-
-const currentMapWpIndex = computed(() => {
-  if (currentVehicleWpIndex.value === -1 || currentVehicleWpIndex.value === undefined) return -1
-  return Math.max(0, currentVehicleWpIndex.value - 1)
+const currentMapWpIndex = computed<number>(() => {
+  const wpIdx = missionStore.currentWpIndex
+  if (wpIdx === undefined || wpIdx <= 0) return -1
+  return wpIdx - 1
 })
 
 const onTouchStart = (e: TouchEvent): void => {
@@ -1403,7 +1400,7 @@ watch(
 )
 
 // Keep an eye on the current mission status and update the waypoint markers accordingly
-watch([vehicleStore.currentMissionSeq, currentVehicleWpIndex, getReachedWaypointIndices, currentMapWpIndex], () => {
+watch([getReachedWaypointIndices, currentMapWpIndex], () => {
   Object.entries(reachedWaypoints.value).forEach(([seqStr, marker]) => {
     const seq = Number(seqStr)
     const idx = seq - 1
