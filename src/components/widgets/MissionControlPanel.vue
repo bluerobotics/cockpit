@@ -157,13 +157,8 @@ const widget = toRefs(props).widget
 const isWrapped = ref(false)
 
 const currentWaypointOnMission = computed<string>((): string => {
-  if (
-    vehicleStore.currentMissionSeq === undefined ||
-    vehicleStore.currentMissionSeq === null ||
-    vehicleStore.currentMissionSeq === 0
-  )
-    return '--'
-  return vehicleStore.currentMissionSeq.toString()
+  const wpIndex = missionStore.currentWaypointOnMission
+  return wpIndex > 0 ? wpIndex.toString() : '--'
 })
 
 const toggleWrapContainer = (): void => {
