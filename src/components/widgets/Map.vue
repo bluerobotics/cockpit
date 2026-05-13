@@ -720,7 +720,11 @@ onMounted(async () => {
 
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
-  const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
+  const preferredProvider =
+    missionStore.defaultMapTileProvider === 'Use last selected'
+      ? missionStore.userLastMapTileProvider
+      : missionStore.defaultMapTileProvider
+  const initialBaseLayer = baseMaps[preferredProvider] || esri
 
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
@@ -740,6 +744,24 @@ onMounted(async () => {
     }
     missionStore.userLastMapTileProvider = event.name as MapTileProvider
   })
+
+  // React to changes on the default tile provider preference
+  watch(
+    () => missionStore.defaultMapTileProvider,
+    (newPref) => {
+      if (!map.value || newPref === 'Use last selected') return
+      const targetLayer = baseMaps[newPref]
+      if (!targetLayer) return
+      Object.values(baseMaps).forEach((layer) => {
+        if (layer !== targetLayer && map.value?.hasLayer(layer)) {
+          map.value.removeLayer(layer)
+        }
+      })
+      if (!map.value.hasLayer(targetLayer)) {
+        map.value.addLayer(targetLayer)
+      }
+    }
+  )
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)

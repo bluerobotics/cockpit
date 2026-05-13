@@ -11,6 +11,7 @@ import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
   MapTileProvider,
+  MapTileProviderPreference,
   MissionCommand,
   PointOfInterest,
   PointOfInterestCoordinates,
@@ -57,6 +58,10 @@ export const useMissionStore = defineStore('mission', () => {
   const userLastMapTileProvider = useBlueOsStorage<MapTileProvider>(
     'cockpit-user-last-map-tile-provider',
     'Esri World Imagery'
+  )
+  const defaultMapTileProvider = useBlueOsStorage<MapTileProviderPreference>(
+    'cockpit-default-map-tile-provider',
+    'Use last selected'
   )
   const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
   const mapClearMapDrawing = ref<(() => void) | null>(null)
@@ -602,6 +607,7 @@ export const useMissionStore = defineStore('mission', () => {
     updateWaypointCommand,
     defaultCruiseSpeed,
     userLastMapTileProvider,
+    defaultMapTileProvider,
     followVehicleOnMap,
     stopMission,
     executeMissionOnVehicle,

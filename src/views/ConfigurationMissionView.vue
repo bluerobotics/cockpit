@@ -85,7 +85,10 @@
           <template #info>
             <strong>Default map position:</strong> Defines the initial center and zoom level for the map. <br />
             <strong>Max. vehicle position update rate:</strong> Limits how often the vehicle's position is updated on
-            the map to reduce CPU usage.
+            the map to reduce CPU usage. <br />
+            <strong>Map tile provider:</strong> Sets which tile layer is used when the dashboard map and mission
+            planning view open. Choose <em>Use last selected</em> to keep the provider last picked from the map's layer
+            control, or pick a specific provider to always open with it.
           </template>
           <template #content>
             <div class="flex flex-wrap gap-4 px-4 pb-4">
@@ -122,17 +125,32 @@
                 <div class="flex-grow-1" />
                 <v-btn class="mt-7 bg-[#FFFFFF22]" variant="plain" size="small" @click="saveMapPosition">Save</v-btn>
               </div>
-              <div class="flex w-[63%] justify-between items-center mt-4">
-                <p class="w-full text-md">Max. vehicle position update rate</p>
-                <div class="flex flex-col max-w-[118px]">
-                  <input
-                    v-model.number="vehicleStore.vehiclePositionMaxSampleRate"
-                    type="number"
-                    min="0"
-                    class="px-2 py-1 rounded-sm bg-[#FFFFFF22]"
+              <v-divider class="mb-4 mt-1 opacity-5" />
+              <div class="flex w-full items-center -mt-4 gap-4">
+                <div class="flex w-1/2 items-center justify-start pr-2">
+                  <p class="text-md">Max. vehicle position update rate</p>
+                  <div class="flex items-center">
+                    <input
+                      v-model.number="vehicleStore.vehiclePositionMaxSampleRate"
+                      type="number"
+                      min="0"
+                      class="px-2 py-1 w-[80px] rounded-sm bg-[#FFFFFF22] ml-4"
+                    />
+                    <p class="ml-2">ms</p>
+                  </div>
+                </div>
+                <div class="flex w-1/2 items-center justify-between pl-2">
+                  <p class="text-md mr-4">Default map tile provider</p>
+                  <v-select
+                    v-model="missionStore.defaultMapTileProvider"
+                    :items="mapTileProviderOptions"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="w-[180px]"
+                    theme="dark"
                   />
                 </div>
-                <p class="ml-2">ms</p>
               </div>
             </div>
           </template>
@@ -141,9 +159,9 @@
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Vehicle options</template>
           <template #info>
-            <strong>Max. displayed path points:</strong> Once the limit is reached, the last third of the mission trail
-            will be simplified. Keep this value reasonable — larger histories use more memory and may affect performance
-            over long missions, especially when using high frequency positioning data (e.g. from a DVL or RTK setup).
+            <strong>Max. path points:</strong> Once the limit is reached, the last third of the mission trail will be
+            simplified. Keep this value reasonable — larger histories use more memory and may affect performance over
+            long missions, specially when using DVL or RTK positioning data.
           </template>
           <template #content>
             <div class="flex flex-col gap-y-3 px-4 pb-4 pt-2">
@@ -192,13 +210,15 @@ import { EventCategory } from '@/libs/slide-to-confirm'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { DEFAULT_MAX_POSITION_HISTORY_SIZE, MIN_MAX_POSITION_HISTORY_SIZE, useMissionStore } from '@/stores/mission'
-import type { WaypointCoordinates } from '@/types/mission'
+import type { MapTileProviderPreference, WaypointCoordinates } from '@/types/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
+
+const mapTileProviderOptions: MapTileProviderPreference[] = ['Use last selected', 'OpenStreetMap', 'Esri World Imagery']
 
 // Create local reactive copies of the map settings
 const defaultMapCenter = ref<WaypointCoordinates>([...missionStore.defaultMapCenter])

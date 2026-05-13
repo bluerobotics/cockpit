@@ -479,6 +479,13 @@ export interface VehicleMissionEstimate {
  */
 export type MapTileProvider = 'Esri World Imagery' | 'OpenStreetMap'
 
+/**
+ * User preference for the default map tile provider.
+ * When set to 'Use last selected', the map opens with the last provider the user picked via the map's layer control.
+ * Otherwise, the map is forced to open with the specified provider.
+ */
+export type MapTileProviderPreference = MapTileProvider | 'Use last selected'
+
 export type IconDimensions = {
   /**
    * The size of the icon in pixels
