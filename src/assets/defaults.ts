@@ -975,3 +975,7 @@ export const defaultBatteryLevelThresholds: BatteryLevelThresholds = {
   low: 14.0,
   critical: 12.8,
 }
+
+// Defaults for the procedural noise that replaces failed satellite tiles.
+export const defaultMapFallbackBaseColor = '#0f303e'
+export const defaultMapFallbackNoiseIntensity = 0.3

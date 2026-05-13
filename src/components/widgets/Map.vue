@@ -297,6 +297,8 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { openSnackbar } from '@/composables/snackbar'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
+import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import { createGridOverlay, fitMapToWaypoints, TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
@@ -556,15 +558,24 @@ const osm = tileLayerOffline('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
   // See https://wiki.openstreetmap.org/wiki/Referer
   referrerPolicy: 'strict-origin-when-cross-origin',
+  // CORS is required so the noise-fallback utility can read tile pixels via canvas
+  // to detect placeholder tiles that return HTTP 200.
+  crossOrigin: 'anonymous',
   ...tileBufferOptions,
 })
 
 const esri = tileLayerOffline(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  // `blankTile=false` makes ArcGIS return HTTP 404 for missing tiles instead of a
+  // "Map data not yet available" placeholder image. This lets the standard `tileerror`
+  // path drive our procedural-noise fallback.
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false',
   {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© Esri World Imagery',
+    // CORS is required so the noise-fallback utility can read tile pixels via canvas
+    // to detect any remaining provider-side placeholders that still return HTTP 200.
+    crossOrigin: 'anonymous',
     ...tileBufferOptions,
   }
 )
@@ -596,6 +607,26 @@ const overlays = {
   'Seamarks': seamarks,
   'Marine Profile': marineProfile,
 }
+
+// Replace failed tiles with a procedural noise background sampled by lat/lon
+const getTileFallbackOptions = (): NoiseTileOptions => ({
+  baseColor: missionStore.mapFallbackBaseColor,
+  seed: missionStore.mapFallbackSeed,
+  intensity: missionStore.mapFallbackNoiseIntensity,
+})
+const detachTileFallbacks: (() => void)[] = [
+  attachTileNoiseFallback(osm, getTileFallbackOptions),
+  attachTileNoiseFallback(esri, getTileFallbackOptions),
+]
+
+watch(
+  () => [missionStore.mapFallbackBaseColor, missionStore.mapFallbackSeed, missionStore.mapFallbackNoiseIntensity],
+  () => {
+    const options = getTileFallbackOptions()
+    refreshNoiseFallbackTiles(osm, options)
+    refreshNoiseFallbackTiles(esri, options)
+  }
+)
 
 // Show buttons when the mouse is over the widget
 const mapBase = ref<HTMLElement>()
@@ -1149,6 +1180,8 @@ watch(
 onBeforeUnmount(() => {
   targetFollower.disableAutoUpdate()
   window.removeEventListener('keydown', onKeydown)
+
+  detachTileFallbacks.forEach((detach) => detach())
 
   if (map.value) {
     map.value.off('contextmenu')
