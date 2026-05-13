@@ -3,9 +3,11 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
+import { defaultMapFallbackBaseColor, defaultMapFallbackNoiseIntensity } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
+import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
@@ -63,6 +65,23 @@ export const useMissionStore = defineStore('mission', () => {
     'cockpit-default-map-tile-provider',
     'Use last selected'
   )
+  const mapFallbackBaseColor = useBlueOsStorage<string>('cockpit-map-fallback-base-color', defaultMapFallbackBaseColor)
+  const mapFallbackNoiseIntensity = useBlueOsStorage<number>(
+    'cockpit-map-fallback-noise-intensity',
+    defaultMapFallbackNoiseIntensity
+  )
+
+  // Seed used for the map tiles fallback noise pattern.
+  const mapFallbackSeed = ref<number>(generateSessionSeed())
+
+  /**
+   * Generates a new random seed for the fallback noise pattern.
+   * @returns {void}
+   */
+  const reseedMapFallback = (): void => {
+    mapFallbackSeed.value = generateSessionSeed()
+  }
+
   const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
   const mapClearMapDrawing = ref<(() => void) | null>(null)
 
@@ -613,6 +632,10 @@ export const useMissionStore = defineStore('mission', () => {
     defaultCruiseSpeed,
     userLastMapTileProvider,
     defaultMapTileProvider,
+    mapFallbackBaseColor,
+    mapFallbackNoiseIntensity,
+    mapFallbackSeed,
+    reseedMapFallback,
     followVehicleOnMap,
     stopMission,
     executeMissionOnVehicle,

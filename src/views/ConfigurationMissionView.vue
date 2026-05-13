@@ -89,6 +89,9 @@
             <strong>Map tile provider:</strong> Sets which tile layer is used when the dashboard map and mission
             planning view open. Choose <em>Use last selected</em> to keep the provider last picked from the map's layer
             control, or pick a specific provider to always open with it.
+            <strong>Unavailable-tile background:</strong> When satellite imagery is missing (e.g. offshore at high
+            zoom), tiles are replaced with a procedural noise pattern sampled by lat/lon so vehicle motion remains
+            trackable. Customize the base color, texture intensity, and noise seed below.
           </template>
           <template #content>
             <div class="flex flex-wrap gap-4 px-4 pb-4">
@@ -150,6 +153,56 @@
                     class="w-[180px]"
                     theme="dark"
                   />
+                </div>
+              </div>
+              <v-divider class="my-1 opacity-5" />
+              <div class="flex flex-col w-full">
+                <p class="w-full text-md mb-2">Unavailable-tile background</p>
+                <div class="flex w-4/5 items-center justify-between gap-x-6">
+                  <div class="flex items-center gap-x-2">
+                    <p class="text-sm text-slate-200">Base color</p>
+                    <!-- `.lazy` so tiles regenerate only when the picker is dismissed. -->
+                    <input
+                      v-model.lazy="missionStore.mapFallbackBaseColor"
+                      type="color"
+                      class="w-10 h-8 rounded-sm bg-transparent border border-[#FFFFFF33] cursor-pointer"
+                    />
+                    <input
+                      v-model.lazy="missionStore.mapFallbackBaseColor"
+                      type="text"
+                      maxlength="7"
+                      class="px-2 py-1 w-24 rounded-sm bg-[#FFFFFF22] text-white text-sm"
+                    />
+                  </div>
+                  <div class="flex items-center flex-1 min-w-[260px] max-w-[360px]">
+                    <p class="text-sm text-slate-200 mr-4 whitespace-nowrap">Noise intensity</p>
+                    <input
+                      :value="intensityToSliderPercent(pendingNoiseIntensity ?? missionStore.mapFallbackNoiseIntensity)"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      class="flex-1 accent-white"
+                      @input="onNoiseIntensityInput"
+                      @change="onNoiseIntensityChange"
+                    />
+                    <p class="text-xs text-slate-200 w-10 text-right">
+                      {{ intensityToSliderPercent(pendingNoiseIntensity ?? missionStore.mapFallbackNoiseIntensity) }}%
+                    </p>
+                  </div>
+                  <v-tooltip location="top" text="Regenerate noise pattern">
+                    <template #activator="{ props: tooltipProps }">
+                      <v-btn
+                        v-bind="tooltipProps"
+                        icon="mdi-refresh"
+                        size="small"
+                        variant="text"
+                        color="white"
+                        class="opacity-80 hover:opacity-100"
+                        @click="missionStore.reseedMapFallback"
+                      />
+                    </template>
+                  </v-tooltip>
                 </div>
               </div>
             </div>
@@ -223,6 +276,26 @@ const mapTileProviderOptions: MapTileProviderPreference[] = ['Use last selected'
 // Create local reactive copies of the map settings
 const defaultMapCenter = ref<WaypointCoordinates>([...missionStore.defaultMapCenter])
 const defaultMapZoom = ref(missionStore.defaultMapZoom)
+
+// Avoids redundant visual noise above this threshold.
+const MAX_USEFUL_NOISE_INTENSITY = 0.3
+
+const intensityToSliderPercent = (intensity: number): number =>
+  Math.round((intensity / MAX_USEFUL_NOISE_INTENSITY) * 100)
+
+const sliderPercentToIntensity = (sliderPercent: number): number => (sliderPercent / 100) * MAX_USEFUL_NOISE_INTENSITY
+
+// Drives the percentage label live during a drag; the store update waits for release.
+const pendingNoiseIntensity = ref<number | null>(null)
+
+const onNoiseIntensityInput = (event: Event): void => {
+  pendingNoiseIntensity.value = sliderPercentToIntensity(Number((event.target as HTMLInputElement).value))
+}
+
+const onNoiseIntensityChange = (event: Event): void => {
+  missionStore.mapFallbackNoiseIntensity = sliderPercentToIntensity(Number((event.target as HTMLInputElement).value))
+  pendingNoiseIntensity.value = null
+}
 
 // Watch for store changes and update local values
 watch(

@@ -690,6 +690,8 @@ import {
 } from '@/composables/useMissionEstimates'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
+import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import { createGridOverlay, fitMapToWaypoints, TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
 import { generateSurveyPath } from '@/libs/map/utils-map'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
@@ -3755,6 +3757,10 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
   })
 }
 
+let detachTileFallbacks: (() => void)[] = []
+let stopTileFallbackWatcher: (() => void) | undefined
+let fallbackLayers: L.TileLayer[] = []
+
 onMounted(async () => {
   const tileBufferOptions = { edgeBufferTiles: 2, keepBuffer: 8, updateWhenIdle: false } as const
 
@@ -3765,14 +3771,21 @@ onMounted(async () => {
     // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
     // See https://wiki.openstreetmap.org/wiki/Referer
     referrerPolicy: 'strict-origin-when-cross-origin',
+    // CORS is required so the noise-fallback utility can read tile pixels via canvas
+    // to detect placeholder tiles that return HTTP 200.
+    crossOrigin: 'anonymous',
     ...tileBufferOptions,
   })
   const esri = tileLayerOffline(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    // `blankTile=false` makes ArcGIS return HTTP 404 for missing tiles instead of a
+    // "Map data not yet available" placeholder image. This lets the standard `tileerror`
+    // path drive our procedural-noise fallback.
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false',
     {
       maxZoom: 23,
       maxNativeZoom: 19,
       attribution: '© Esri World Imagery',
+      crossOrigin: 'anonymous',
       ...tileBufferOptions,
     }
   )
@@ -3797,15 +3810,33 @@ onMounted(async () => {
   mapContext.map.value = planningMap.value
   mapContext.mapReady.value = true
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const extraOsm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
     // See https://wiki.openstreetmap.org/wiki/Referer
     referrerPolicy: 'strict-origin-when-cross-origin',
+    crossOrigin: 'anonymous',
     ...tileBufferOptions,
   }).addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
+
+  // Replace failed tiles with a procedural noise background sampled by lat/lon, so
+  // operators retain a motion-trackable backdrop where imagery is unavailable.
+  const getTileFallbackOptions = (): NoiseTileOptions => ({
+    baseColor: missionStore.mapFallbackBaseColor,
+    seed: missionStore.mapFallbackSeed,
+    intensity: missionStore.mapFallbackNoiseIntensity,
+  })
+  fallbackLayers = [osm, esri, extraOsm]
+  detachTileFallbacks = fallbackLayers.map((layer) => attachTileNoiseFallback(layer, getTileFallbackOptions))
+  stopTileFallbackWatcher = watch(
+    () => [missionStore.mapFallbackBaseColor, missionStore.mapFallbackSeed, missionStore.mapFallbackNoiseIntensity],
+    () => {
+      const options = getTileFallbackOptions()
+      fallbackLayers.forEach((layer) => refreshNoiseFallbackTiles(layer, options))
+    }
+  )
 
   const pane = planningMap.value!.createPane('measurePane')
   pane.style.zIndex = '640'
@@ -3964,6 +3995,12 @@ onUnmounted(() => {
   }
   planningMap.value?.off('mousemove', handleMapMouseMove)
   clearLiveMeasure()
+
+  detachTileFallbacks.forEach((detach) => detach())
+  detachTileFallbacks = []
+  fallbackLayers = []
+  stopTileFallbackWatcher?.()
+  stopTileFallbackWatcher = undefined
 
   // Reset the map context so descendants stop reacting to the destroyed instance
   mapContext.mapReady.value = false
