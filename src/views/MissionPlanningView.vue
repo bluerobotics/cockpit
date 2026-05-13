@@ -3769,7 +3769,11 @@ onMounted(async () => {
     'Esri World Imagery': esri,
   }
 
-  const initialBaseLayer = baseMaps[missionStore.userLastMapTileProvider] || esri
+  const preferredProvider =
+    missionStore.defaultMapTileProvider === 'Use last selected'
+      ? missionStore.userLastMapTileProvider
+      : missionStore.defaultMapTileProvider
+  const initialBaseLayer = baseMaps[preferredProvider] || esri
 
   planningMap.value = L.map('planningMap', { layers: [initialBaseLayer] }).setView(
     mapCenter.value as LatLngTuple,
@@ -3803,6 +3807,24 @@ onMounted(async () => {
     }
     missionStore.userLastMapTileProvider = event.name as MapTileProvider
   })
+
+  // React to changes on the default tile provider preference
+  watch(
+    () => missionStore.defaultMapTileProvider,
+    (newPref) => {
+      if (!planningMap.value || newPref === 'Use last selected') return
+      const targetLayer = baseMaps[newPref]
+      if (!targetLayer) return
+      Object.values(baseMaps).forEach((layer) => {
+        if (layer !== targetLayer && planningMap.value?.hasLayer(layer)) {
+          planningMap.value.removeLayer(layer)
+        }
+      })
+      if (!planningMap.value.hasLayer(targetLayer)) {
+        planningMap.value.addLayer(targetLayer)
+      }
+    }
+  )
 
   planningMap.value.on('moveend', () => {
     if (planningMap.value === undefined) return
