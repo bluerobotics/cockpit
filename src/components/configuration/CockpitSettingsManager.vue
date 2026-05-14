@@ -294,20 +294,21 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
-import {
-  cockpitLastConnectedUserKey,
-  cockpitLastConnectedVehicleKey,
-  localOldStyleSettingsKey,
-  localSyncedSettingsKey,
-  settingsManager,
-  vehicleIdKey,
-} from '@/libs/settings-management'
+import { settingsManager } from '@/libs/settings-management'
 import { isEqual } from '@/libs/utils'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import { Settings } from '@/types/general'
-import { LocalSyncedSettings, SettingsPackage } from '@/types/settings-management'
+import {
+  cockpitLastConnectedUserKey,
+  cockpitLastConnectedVehicleKey,
+  localOldStyleSettingsKey,
+  LocalSyncedSettings,
+  localSyncedSettingsKey,
+  SettingsPackage,
+  vehicleIdKey,
+} from '@/types/settings-management'
 
 type SettingsRowSource = 'v2' | 'legacy' | 'all-local-storage'
 type SettingsRow = {

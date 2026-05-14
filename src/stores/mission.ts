@@ -6,7 +6,6 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
-import { cockpitLastConnectedUserKey, fallbackUsername } from '@/libs/settings-management'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
@@ -19,6 +18,7 @@ import {
   Waypoint,
   WaypointCoordinates,
 } from '@/types/mission'
+import { cockpitLastConnectedUserKey, fallbackUsername } from '@/types/settings-management'
 
 import { useMainVehicleStore } from './mainVehicle'
 
