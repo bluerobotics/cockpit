@@ -1,3 +1,14 @@
+export const localOldStyleSettingsKey = 'cockpit-settings-v1-backup'
+export const vehicleOldStyleSettingsKey = 'settings'
+export const vehicleOldStyleSettingsBackupKey = 'settings-v1-backup'
+export const vehicleNewStyleSettingsKey = 'settings-v2'
+export const localSyncedSettingsKey = 'cockpit-settings-v2'
+export const cockpitLastConnectedVehicleKey = 'cockpit-last-connected-vehicle-id'
+export const cockpitLastConnectedUserKey = 'cockpit-last-connected-user'
+export const vehicleIdKey = 'cockpit-vehicle-id'
+export const fallbackUsername = 'fallback-user'
+export const fallbackVehicleId = 'fallback-vehicle'
+
 /**
  * An individual setting for a vehicle/user pair
  * Stores the value as well as the epoch time of the last change. The epoch is used to compare with remote values and determine which one is newer.
