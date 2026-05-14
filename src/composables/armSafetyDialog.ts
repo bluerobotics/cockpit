@@ -3,6 +3,7 @@ import { createApp } from 'vue'
 
 import ArmSafetyDialog from '@/components/ArmSafetyDialog.vue'
 import vuetify from '@/plugins/vuetify'
+import router from '@/router'
 import { useAlertStore } from '@/stores/alert'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -43,5 +44,6 @@ export const openMainMenuIfSafeOrDesired = (): void => {
     },
   })
   dialogApp.use(vuetify)
+  dialogApp.use(router)
   dialogApp.mount(mountPoint)
 }

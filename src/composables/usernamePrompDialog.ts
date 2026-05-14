@@ -3,6 +3,7 @@ import { createApp } from 'vue'
 
 import UserNameInputDialog from '@/components/UserNameInputDialog.vue'
 import vuetify from '@/plugins/vuetify'
+import router from '@/router'
 
 export const askForUsername = (): Promise<string | undefined> => {
   return new Promise((resolve, reject) => {
@@ -22,6 +23,7 @@ export const askForUsername = (): Promise<string | undefined> => {
       },
     })
     dialogApp.use(vuetify)
+    dialogApp.use(router)
     dialogApp.mount(mountPoint)
   })
 }
