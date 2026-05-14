@@ -370,7 +370,15 @@ export const checkBlueOsUserDataSimilarity = async (vehicleAddress: string, user
 
 export const getSettingsUsernamesFromBlueOS = async (vehicleAddress: string): Promise<string[]> => {
   const usernames = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleNewStyleSettingsKey)
-  return Object.keys(usernames as string[])
+  // `getKeyDataFromCockpitVehicleStorage` returns `undefined` when the bag does not exist yet
+  // (fresh vehicle, never written to). That is a legitimate "no users yet" state, not a failure.
+  if (usernames === undefined) return []
+  // Anything else that isn't a plain object is an unexpected payload shape; surface it as an
+  // error so the caller can distinguish it from a real empty result.
+  if (typeof usernames !== 'object' || usernames === null || Array.isArray(usernames)) {
+    throw new Error(`Unexpected '${vehicleNewStyleSettingsKey}' payload shape on vehicle '${vehicleAddress}'.`)
+  }
+  return Object.keys(usernames)
 }
 
 export const deleteUsernameOnBlueOS = async (vehicleAddress: string, username: string): Promise<void> => {
