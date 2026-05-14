@@ -3,7 +3,7 @@
     variant="text-only"
     persistent
     :show-dialog="showUserDialog"
-    :title="`Manage users on: ${currentVehicleName}`"
+    :title="dialogTitle"
     :actions="showNewUsernamePrompt || isUsernamesEmpty ? inputDialogActions : regularDialogActions"
     :max-width="700"
   >
@@ -239,6 +239,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleEsc)
 })
 const isUsernamesEmpty = computed(() => !usernamesStoredOnBlueOS.value || usernamesStoredOnBlueOS.value.length === 0)
+const dialogTitle = computed(() =>
+  currentVehicleName.value ? `Manage users on: ${currentVehicleName.value}` : 'Manage users'
+)
 
 const validateUsername = (username: string): true | string => {
   if (username.includes(' ')) {
