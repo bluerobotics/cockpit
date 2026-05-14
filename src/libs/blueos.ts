@@ -14,6 +14,7 @@ import {
   JoystickMapSuggestionGroupsFromExtension,
   NoPathInBlueOsErrorName,
 } from '@/types/blueos'
+import { vehicleNewStyleSettingsKey } from '@/types/settings-management'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
 
 const defaultTimeout = 10000
@@ -368,14 +369,17 @@ export const checkBlueOsUserDataSimilarity = async (vehicleAddress: string, user
 }
 
 export const getSettingsUsernamesFromBlueOS = async (vehicleAddress: string): Promise<string[]> => {
-  const usernames = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, 'settings')
+  const usernames = await getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleNewStyleSettingsKey)
   return Object.keys(usernames as string[])
 }
 
 export const deleteUsernameOnBlueOS = async (vehicleAddress: string, username: string): Promise<void> => {
   let allSettings: Record<string, any> = {}
   try {
-    allSettings = (await getKeyDataFromCockpitVehicleStorage(vehicleAddress, 'settings')) as Record<string, any>
+    allSettings = (await getKeyDataFromCockpitVehicleStorage(vehicleAddress, vehicleNewStyleSettingsKey)) as Record<
+      string,
+      any
+    >
   } catch (err) {
     if ((err as Error).name === NoPathInBlueOsErrorName) return
     throw err
@@ -384,7 +388,7 @@ export const deleteUsernameOnBlueOS = async (vehicleAddress: string, username: s
   if (!(username in allSettings)) return
   delete allSettings[username]
 
-  await setKeyDataOnCockpitVehicleStorage(vehicleAddress, 'settings', allSettings)
+  await setKeyDataOnCockpitVehicleStorage(vehicleAddress, vehicleNewStyleSettingsKey, allSettings)
 }
 
 /**
