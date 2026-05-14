@@ -15,6 +15,13 @@
         <p class="-mt-4 mb-2 w-full text-center"></p>
         <div class="flex flex-col align-center justify-center font-light text-slate-200 w-full h-full transition-all">
           <div
+            v-if="localOnlyNotice"
+            class="mb-3 mx-auto max-w-[560px] rounded-md border border-yellow-400 border-opacity-60 bg-yellow-400 bg-opacity-10 px-3 py-2 text-sm text-yellow-200 flex items-start gap-2"
+          >
+            <v-icon size="18" color="yellow">mdi-alert-circle-outline</v-icon>
+            <span>{{ localOnlyNotice }}</span>
+          </div>
+          <div
             v-if="!isUsernamesEmpty && !showNewUsernamePrompt"
             class="w-full h-full flex flex-col align-center justify-center text-center"
           >
@@ -94,7 +101,7 @@
 
 <script setup lang="ts">
 import slugify from 'slugify'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
@@ -111,6 +118,8 @@ const missionStore = useMissionStore()
 const mainVehicleStore = useMainVehicleStore()
 const { showDialog, closeDialog } = useInteractionDialog()
 
+type BlueOsLoadState = 'idle' | 'loading' | 'loaded' | 'failed' | 'offline'
+
 const showUserDialog = ref(true)
 const showNewUsernamePrompt = ref(false)
 const validationError = ref('')
@@ -119,6 +128,7 @@ const usernamesStoredOnBlueOS = ref<string[] | null>(null)
 const isLoading = ref(true)
 const isOnEditMode = ref(false)
 const currentVehicleName = ref<string | undefined>(undefined)
+const blueOsLoadState = ref<BlueOsLoadState>('idle')
 
 const deleteUser = async (username: string): Promise<void> => {
   if (username === missionStore.username) {
@@ -193,7 +203,14 @@ const loadLocalUsernames = (): void => {
 }
 
 const loadUsernamesFromBlueOS = async (): Promise<void> => {
+  if (!mainVehicleStore.isVehicleOnline) {
+    blueOsLoadState.value = 'offline'
+    isLoading.value = false
+    return
+  }
+
   isLoading.value = true
+  blueOsLoadState.value = 'loading'
 
   try {
     const vehicleAddress = await mainVehicleStore.getVehicleAddress()
@@ -201,20 +218,21 @@ const loadUsernamesFromBlueOS = async (): Promise<void> => {
     if (blueOSUsernames && blueOSUsernames.length) {
       usernamesStoredOnBlueOS.value = [...new Set([...(usernamesStoredOnBlueOS.value ?? []), ...blueOSUsernames])]
     }
+    blueOsLoadState.value = 'loaded'
   } catch (error) {
-    console.error('Failed to load usernames from BlueOS.')
+    console.error('Failed to load usernames from BlueOS.', error)
+    blueOsLoadState.value = 'failed'
   } finally {
     isLoading.value = false
   }
 }
 
 const getVehicleName = async (): Promise<void> => {
-  if (mainVehicleStore.isVehicleOnline) {
-    try {
-      currentVehicleName.value = await mainVehicleStore.getCurrentVehicleName()
-    } catch (error) {
-      console.error('Failed to get vehicle name:', error)
-    }
+  if (!mainVehicleStore.isVehicleOnline) return
+  try {
+    currentVehicleName.value = await mainVehicleStore.getCurrentVehicleName()
+  } catch (error) {
+    console.error('Failed to get vehicle name:', error)
   }
 }
 
@@ -227,13 +245,25 @@ const handleEsc = (e: KeyboardEvent): void => {
 onMounted(() => {
   window.addEventListener('keydown', handleEsc)
   loadLocalUsernames()
-  if (mainVehicleStore.isVehicleOnline) {
-    loadUsernamesFromBlueOS()
-    getVehicleName()
-  } else {
-    isLoading.value = false
-  }
+  loadUsernamesFromBlueOS()
+  getVehicleName()
 })
+
+// Retry fetching vehicle data whenever the vehicle (re)comes online and the previous attempt
+// hasn't succeeded yet. Without this the dialog would forever show only the locally cached users
+// if it was opened while the vehicle was offline.
+watch(
+  () => mainVehicleStore.isVehicleOnline,
+  (isOnline) => {
+    if (!isOnline) return
+    if (blueOsLoadState.value === 'offline' || blueOsLoadState.value === 'failed') {
+      loadUsernamesFromBlueOS()
+    }
+    if (!currentVehicleName.value) {
+      getVehicleName()
+    }
+  }
+)
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleEsc)
@@ -242,6 +272,15 @@ const isUsernamesEmpty = computed(() => !usernamesStoredOnBlueOS.value || userna
 const dialogTitle = computed(() =>
   currentVehicleName.value ? `Manage users on: ${currentVehicleName.value}` : 'Manage users'
 )
+const localOnlyNotice = computed(() => {
+  if (blueOsLoadState.value === 'offline') {
+    return 'Vehicle is offline. Showing locally cached users only - other users saved on the vehicle may not appear here.'
+  }
+  if (blueOsLoadState.value === 'failed') {
+    return "Couldn't load users from the vehicle. Showing locally cached users only - any users saved on the vehicle still exist."
+  }
+  return ''
+})
 
 const validateUsername = (username: string): true | string => {
   if (username.includes(' ')) {
