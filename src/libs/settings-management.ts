@@ -3,9 +3,15 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { NoPathInBlueOsErrorName } from '@/types/blueos'
 import {
+  cockpitLastConnectedUserKey,
+  cockpitLastConnectedVehicleKey,
   CockpitSetting,
+  fallbackUsername,
+  fallbackVehicleId,
   KeyValueVehicleUpdateQueue,
+  localOldStyleSettingsKey,
   LocalSyncedSettings,
+  localSyncedSettingsKey,
   NoVehicleIdErrorName,
   OldCockpitSettingsPackage,
   SettingsListener,
@@ -13,6 +19,10 @@ import {
   SettingsPackage,
   UserChangedEvent,
   UserSettings,
+  vehicleIdKey,
+  vehicleNewStyleSettingsKey,
+  vehicleOldStyleSettingsBackupKey,
+  vehicleOldStyleSettingsKey,
   VehicleOnlineEvent,
   VehicleSettings,
 } from '@/types/settings-management'
@@ -20,16 +30,6 @@ import {
 import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from './blueos'
 import { deserialize, isEqual, sleep, tryACoupleOfTimes } from './utils'
 
-export const localOldStyleSettingsKey = 'cockpit-settings-v1-backup'
-export const vehicleOldStyleSettingsKey = 'settings'
-export const vehicleOldStyleSettingsBackupKey = 'settings-v1-backup'
-export const vehicleNewStyleSettingsKey = 'settings-v2'
-export const localSyncedSettingsKey = 'cockpit-settings-v2'
-export const cockpitLastConnectedVehicleKey = 'cockpit-last-connected-vehicle-id'
-export const cockpitLastConnectedUserKey = 'cockpit-last-connected-user'
-export const vehicleIdKey = 'cockpit-vehicle-id'
-export const fallbackUsername = 'fallback-user'
-export const fallbackVehicleId = 'fallback-vehicle'
 const nullValue = 'null'
 const possibleNullValues = [fallbackUsername, fallbackVehicleId, nullValue, null, undefined, '']
 const keyValueUpdateDebounceTime = 100
