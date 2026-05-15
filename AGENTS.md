@@ -28,10 +28,13 @@ xxx
 When writing code:
 - Follow existing patterns in the codebase exactly
 - Follow the rules specified on `eslintrc.cjs`
-- No new comments unless explaining "why", never "what"
-- Do not modify or delete existing comments unless they are incorrect (e.g. due to logical changes of the code they refer to)
-- Prefer editing existing files over creating new ones
 - Use optional chaining (`?.`) when possible in typescript
+- Prefer editing existing files over creating new ones
+- Do not modify or delete existing comments unless they are incorrect (e.g. due to logical changes of the code they refer to)
+- No new comments unless they will save the reader real time understanding _why_ something was necessary
+- Avoid repeated comments; describe reasoning once only
+- Avoid adding comments to markup (like Vue templates), just describe reasoning where the behavior is actually defined
+- New comments should be brief, concise, and only cover details that are not obvious from the code in nearby lines
 
 When explaining:
 - Be concise and direct
@@ -54,12 +57,13 @@ gh issue list --repo bluerobotics/cockpit
 
 ### 3. Use yarn over npm
 
-### 4. Keeps JSDocs updated
-- Keep explanations clean but informative
-- Use examples when needed, specially when implementing complex logics
-- Always create docs for the @returns, unless when 
+### 4. Keep JSDocs updated
+- Avoid JSDocs on private helpers, consts, and types, when the name + signature are self-describing
+- Keep explanations informative but brief
+- No @example blocks unless the calling pattern is non-obvious
+- Always create docs for the @returns, unless the function has no specified return value
 - Always include the types of the @returns and @params
-- Make sure none of the added entries you added in the JSDocs are empty
+- Make sure none of the JSDocs entries you added are empty
 
 ## Code Quality
 
