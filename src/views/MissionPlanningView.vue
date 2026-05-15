@@ -2651,28 +2651,42 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
   updateWaypointMarkers()
 }
 
-const loadMissionFromFile = async (e: Event): Promise<void> => {
-  const reader = new FileReader()
-  reader.onload = (event: Event) => {
-    // @ts-ignore: We know the event type and need refactor of the event typing
-    const contents = event.target.result
-    const maybeMission = JSON.parse(contents)
-    if (!instanceOfCockpitMission(maybeMission)) {
-      showDialog({ variant: 'error', message: 'Invalid mission file.', timer: 3000 })
-      return
+const loadMissionFromFile = (): void => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.cmp,application/json'
+  input.onchange = (event: Event): void => {
+    const file = (event.target as HTMLInputElement).files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e: ProgressEvent<FileReader>): void => {
+      try {
+        const contents = e.target?.result
+        if (typeof contents !== 'string') {
+          showDialog({ variant: 'error', message: 'File does not appear to be in the correct format.', timer: 3000 })
+          return
+        }
+        const maybeMission = JSON.parse(contents)
+        if (!instanceOfCockpitMission(maybeMission)) {
+          showDialog({ variant: 'error', message: 'Invalid mission file.', timer: 3000 })
+          return
+        }
+        mapCenter.value = maybeMission['settings']['mapCenter']
+        zoom.value = maybeMission['settings']['zoom']
+        currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
+        currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
+        missionStore.defaultCruiseSpeed = maybeMission['settings']['defaultCruiseSpeed']
+        drawMissionOnTheMap(maybeMission['waypoints'])
+        if (maybeMission['surveys']?.length) {
+          missionStore.currentPlanningSurveys.push(...maybeMission['surveys'])
+        }
+      } catch (error) {
+        showDialog({ variant: 'error', message: `Failed to load mission file: ${error}`, timer: 5000 })
+      }
     }
-    mapCenter.value = maybeMission['settings']['mapCenter']
-    zoom.value = maybeMission['settings']['zoom']
-    currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
-    currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
-    missionStore.defaultCruiseSpeed = maybeMission['settings']['defaultCruiseSpeed']
-    drawMissionOnTheMap(maybeMission['waypoints'])
-    if (maybeMission['surveys']?.length) {
-      missionStore.currentPlanningSurveys.push(...maybeMission['surveys'])
-    }
+    reader.readAsText(file)
   }
-  // @ts-ignore: We know the event type and need refactor of the event typing
-  reader.readAsText(e.target.files[0])
+  input.click()
 }
 
 const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
