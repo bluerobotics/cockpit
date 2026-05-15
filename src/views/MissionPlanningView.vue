@@ -373,7 +373,6 @@
                   v-bind="props"
                   icon="mdi-upload"
                   variant="text"
-                  :disabled="missionStore.currentPlanningWaypoints.length === 0"
                   size="24"
                   class="text-[12px]"
                   @click="loadMissionFromFile"
