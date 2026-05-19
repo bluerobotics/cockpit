@@ -923,7 +923,9 @@ onMounted(async () => {
   // Initialize vehicle history polyline if vehicle marker is on screen
   if (map.value && vehicleMarker.value && missionStore.vehiclePositionHistory.length > 0) {
     if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
+      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
+        map.value
+      )
     }
     vehicleHistoryPolyline.value.setLatLngs(missionStore.vehiclePositionHistory as L.LatLngExpression[])
     lastDrawnHistoryLen = missionStore.vehiclePositionHistory.length
@@ -1479,8 +1481,8 @@ watch([getReachedWaypointIndices, currentMapWpIndex], () => {
   })
 })
 
-// Create polyline for the vehicle path
-// Watch a revision counter instead of the array itself so we avoid Vue's deep-walk on every mutation.
+// Create polyline for the vehicle path using a dedicated Canvas renderer to prevent performance issues
+const vehicleHistoryRenderer = L.canvas()
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
 let lastDrawnHistoryLen = 0
 watch(
@@ -1497,7 +1499,9 @@ watch(
     }
 
     if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(map.value)
+      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
+        map.value
+      )
       lastDrawnHistoryLen = 0
     }
 
