@@ -6,6 +6,41 @@
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">Depth HUD config</v-card-title>
       <v-card-text>
+        <v-select
+          v-if="!configUseCustomAltitudeVariable"
+          v-model="configAltitudeVariableId"
+          label="Altitude source"
+          :items="altitudeSourceOptions"
+          item-title="title"
+          item-value="value"
+          hide-details
+          theme="dark"
+          variant="outlined"
+          density="compact"
+          class="mb-2"
+        />
+        <v-autocomplete
+          v-else
+          v-model="configAltitudeVariableId"
+          :items="availableDataLakeNumberVariables"
+          item-title="name"
+          item-value="id"
+          label="Data lake variable"
+          hint="Select any numeric data lake variable"
+          persistent-hint
+          theme="dark"
+          variant="outlined"
+          density="compact"
+          clearable
+          prepend-inner-icon="mdi-magnify"
+          class="mb-2"
+        />
+        <v-checkbox
+          v-model="configUseCustomAltitudeVariable"
+          label="Use custom data lake variable"
+          hide-details
+          class="mb-2"
+        />
         <v-switch
           class="ma-1"
           label="Show height value"
@@ -40,7 +75,13 @@ import gsap from 'gsap'
 import { unit } from 'mathjs'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import {
+  altitudeSourceOptions,
+  defaultDepthAltitudeVariableId,
+  rawAltitudeToMeters,
+} from '@/libs/data-sources/altitude'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { unitAbbreviation } from '@/libs/units'
 import { range, resetCanvas, round } from '@/libs/utils'
@@ -67,8 +108,20 @@ const colorSwatches = ref([['#FF2D2D'], ['#0ADB0ACC'], ['#FFFFFF']])
 const defaultOptions = {
   showDepthValue: true,
   hudColor: '#FFFFFF',
-  altitudeVariableId: '/mavlink/1/1/AHRS2/altitude',
+  altitudeVariableId: defaultDepthAltitudeVariableId,
+  useCustomAltitudeVariable: false,
 }
+
+const {
+  resolvedAltitudeVariableId,
+  configAltitudeVariableId,
+  configUseCustomAltitudeVariable,
+  availableDataLakeNumberVariables,
+} = useAltitudeSourceConfig({
+  widget,
+  isConfigMenuOpen: () => widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen,
+  defaultAltitudeVariableId: defaultDepthAltitudeVariableId,
+})
 
 type RenderVariables = {
   /**
@@ -96,7 +149,7 @@ const currentUnit = computed(() => unitAbbreviation[interfaceStore.displayUnitPr
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  widget.value.options = { ...defaultOptions, ...widget.value.options }
+  widget.value.options = mergeAltitudeVariableOptions(defaultOptions, widget.value.options)
 })
 onMounted(() => {
   depthGraphDistances.value.forEach((distance: number) => (renderVars.depthLinesY[distance] = distanceY(distance)))
@@ -112,11 +165,17 @@ const canvasSize = computed(() => ({
 
 // The implementation below makes sure we don't update the Depth value in the widget whenever
 // the system Depth (from vehicle) updates, preventing unnecessary performance bottlenecks.
-const { value: rawAltitude } = useDataLakeVariable(() => widget.value.options.altitudeVariableId)
+const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
 
-watch(rawAltitude, (newAlt) => {
-  if (newAlt === undefined) return
-  const altMeters = newAlt as number
+// Reset the depth history when the altitude source changes so the graph scale doesn't carry
+// over the previous source's range while new values are still flowing in.
+watch(resolvedAltitudeVariableId, () => {
+  passedDepths.value = Array(10).fill(0)
+})
+
+watch([rawAltitude, resolvedAltitudeVariableId], ([newAlt, resolvedId]) => {
+  if (newAlt === undefined || resolvedId === undefined) return
+  const altMeters = rawAltitudeToMeters(resolvedId, newAlt as number)
   const newDepth = unit(-altMeters, 'm')
 
   const depthDiff = Math.abs(newDepth.value - (depth.value || 0))
