@@ -470,13 +470,37 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return await mainVehicle.value?.uploadMission(items, loadingCallback)
   }
 
+  // Prevent multiple mission fetches from happening at the same time
+  let inflightMissionFetch: Promise<Waypoint[]> | undefined
+  const inflightMissionFetchCallbacks = new Set<MissionLoadingCallback>()
+
   /**
    * Get current mission from vehicle
    * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress
    * @returns { Promise<Waypoint[]> } Mission items that were on the vehicle
    */
   async function fetchMission(loadingCallback: MissionLoadingCallback): Promise<Waypoint[]> {
-    return (await mainVehicle.value?.fetchMission(loadingCallback)) ?? []
+    inflightMissionFetchCallbacks.add(loadingCallback)
+    if (inflightMissionFetch) return inflightMissionFetch
+
+    const fanoutLoadingCallback: MissionLoadingCallback = async (perc) => {
+      await Promise.all(
+        Array.from(inflightMissionFetchCallbacks).map((cb) =>
+          cb(perc).catch((e) => console.warn('Mission loading callback error:', e))
+        )
+      )
+    }
+
+    inflightMissionFetch = (async () => {
+      try {
+        return (await mainVehicle.value?.fetchMission(fanoutLoadingCallback)) ?? []
+      } finally {
+        inflightMissionFetch = undefined
+        inflightMissionFetchCallbacks.clear()
+      }
+    })()
+
+    return inflightMissionFetch
   }
 
   /**
