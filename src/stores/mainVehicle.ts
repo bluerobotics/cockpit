@@ -192,6 +192,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   // high-latency or lossy links (e.g. cellular modems) can extend the window beyond the 5 s default.
   const vehicleConnectionTimeoutMs = useBlueOsStorage('cockpit-vehicle-connection-timeout-ms', 5000)
 
+  // Maximum time the MAVLink websocket may stay open without receiving any message before it is
+  // forcibly recycled. Decoupled from the heartbeat timeout: keeping it shorter than the heartbeat
+  // window lets the socket recover silently before the UI ever flips to "offline" on a brief drop;
+  // keeping it longer trades responsiveness for fewer recycles on high-latency links.
+  const vehicleConnectionWatchdogTimeoutMs = useBlueOsStorage('cockpit-vehicle-connection-watchdog-timeout-ms', 4000)
+
   const MAVLink2RestWebsocketURI = computed(() => {
     const queryURI = new URLSearchParams(window.location.search).get('MAVLink2RestWebsocketURI')
     const customURI = customMAVLink2RestWebsocketURI.value.enabled
@@ -579,7 +585,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
   })
 
-  ConnectionManager.addConnection(MAVLink2RestWebsocketURI.value, Protocol.Type.MAVLink)
+  ConnectionManager.addConnection(MAVLink2RestWebsocketURI.value, Protocol.Type.MAVLink, {
+    websocket: { getWatchdogTimeoutMs: () => vehicleConnectionWatchdogTimeoutMs.value },
+  })
 
   let applyThrottledCoordinates = useThrottleFn(
     (nc: Coordinates) => Object.assign(coordinates, nc),
@@ -1067,6 +1075,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
     vehicleConnectionTimeoutMs,
+    vehicleConnectionWatchdogTimeoutMs,
     enableDatalakeVariablesFromOtherSystems,
     enableLegacyDataLakeVariableNames,
     getVehicleAddress,
