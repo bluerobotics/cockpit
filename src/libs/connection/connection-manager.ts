@@ -3,7 +3,18 @@ import * as Protocol from '@/libs/vehicle/protocol/protocol'
 
 import * as Connection from './connection'
 import { ElectronConnection } from './electron-connection'
-import { WebSocketConnection } from './websocket-connection'
+import { WebSocketConnection, WebSocketConnectionOptions } from './websocket-connection'
+
+/**
+ * Optional, transport-specific configuration accepted by {@link ConnectionManager.addConnection}.
+ */
+export interface AddConnectionOptions {
+  /**
+   * Configuration forwarded to {@link WebSocketConnection} when the connection's URI uses a
+   * websocket scheme. Ignored for other transports.
+   */
+  websocket?: WebSocketConnectionOptions
+}
 
 /**
  * Manager to handle multiple connections
@@ -30,12 +41,13 @@ export class ConnectionManager {
    * Add a specific connection
    * @param  {Connection.URI} uri
    * @param  {Protocol.Type} vehicleProtocol
+   * @param  {AddConnectionOptions} options Optional transport-specific configuration.
    */
-  static addConnection(uri: Connection.URI, vehicleProtocol: Protocol.Type): void {
+  static addConnection(uri: Connection.URI, vehicleProtocol: Protocol.Type, options: AddConnectionOptions = {}): void {
     let connection = undefined
     switch (uri.type()) {
       case Connection.Type.WebSocket:
-        connection = new WebSocketConnection(uri, vehicleProtocol)
+        connection = new WebSocketConnection(uri, vehicleProtocol, options.websocket)
         break
       case Connection.Type.Serial:
       case Connection.Type.TcpIn:
@@ -81,6 +93,10 @@ export class ConnectionManager {
 
     previousConnection?.onRead?.clear()
     previousConnection?.onWrite?.clear()
+    // Stop background activity (watchdog interval, reconnect timer, underlying socket) on the
+    // replaced connection. Otherwise a URI change leaks a ghost connection that keeps reconnecting
+    // and ticking its watchdog forever in the background.
+    previousConnection?.disconnect()
     connection.onRead.add((data: Uint8Array) => this.onRead.emit_value(data))
     connection.onWrite.add((data: Uint8Array) => this.onWrite.emit_value(data))
     ConnectionManager._mainConnection = new WeakRef(connection)

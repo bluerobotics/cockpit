@@ -427,56 +427,102 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle connection timeout</template>
-          <template #subtitle>Current value: {{ vehicleConnectionTimeoutSeconds }} s</template>
+          <template #title>Vehicle connection timeouts</template>
           <template #info>
             <p class="w-full">
-              Time without heartbeats before Cockpit considers the vehicle offline. Increase this value when using
-              high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take longer than the
-              default 5 seconds to arrive. Unrelated to the autopilot's GCS (heartbeat) failsafe.
+              Heartbeat timeout: Time without heartbeats before Cockpit considers the vehicle offline. Increase this
+              value when using high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take
+              longer than the default 5 seconds to arrive. Unrelated to the autopilot's GCS (heartbeat) failsafe.
+            </p>
+            <br />
+            <p class="w-full">
+              Watchdog timeout: Time the MAVLink websocket may stay open without receiving any message before Cockpit
+              forcibly recycles it and reconnects. This is the recovery threshold, not the offline indicator: setting it
+              lower than the heartbeat timeout (above) means a brief link drop can be silently recovered before Cockpit
+              ever flips to "vehicle offline". On high-latency links where short stalls are normal, raise this value so
+              the socket is not torn down on every minor delivery delay.
             </p>
           </template>
           <template #content>
-            <v-form
-              ref="connectionTimeoutForm"
-              v-model="connectionTimeoutFormValid"
-              class="flex w-full mt-2 mb-2"
-              @submit.prevent="setConnectionTimeout"
+            <div
+              class="grid w-full mt-2 pb-2 gap-12"
+              :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'"
             >
-              <div
-                class="flex justify-start items-center w-[86%] mb-4"
-                :class="interfaceStore.isOnSmallScreen ? 'scale-80' : 'scale-100'"
-              >
-                <v-text-field
-                  v-model.number="newVehicleConnectionTimeoutSeconds"
-                  variant="filled"
-                  type="number"
-                  density="compact"
-                  theme="dark"
-                  hint="Heartbeat timeout in seconds (minimum 1)"
-                  hide-details="auto"
-                  class="w-[80%]"
-                  suffix="s"
-                  :rules="[isValidConnectionTimeout]"
+              <div class="min-w-0">
+                <div class="mb-1 text-sm">Heartbeat timeout</div>
+                <v-form
+                  ref="connectionTimeoutForm"
+                  v-model="connectionTimeoutFormValid"
+                  class="w-full"
+                  @submit.prevent="setConnectionTimeout"
                 >
-                  <template #append-inner>
-                    <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetConnectionTimeout">
-                      mdi-restore
-                    </v-icon>
-                  </template>
-                </v-text-field>
-                <v-btn
-                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  :disabled="!connectionTimeoutFormValid"
-                  class="bg-transparent"
-                  :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
-                  variant="text"
-                  type="submit"
-                >
-                  Apply
-                </v-btn>
+                  <div class="flex items-start gap-2">
+                    <v-text-field
+                      v-model.number="newVehicleConnectionTimeoutSeconds"
+                      variant="filled"
+                      type="number"
+                      density="compact"
+                      theme="dark"
+                      class="flex-1"
+                      suffix="s"
+                      :rules="[isValidConnectionTimeout]"
+                    >
+                      <template #append-inner>
+                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetConnectionTimeout">
+                          mdi-restore
+                        </v-icon>
+                      </template>
+                    </v-text-field>
+                    <v-btn
+                      :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                      :disabled="!connectionTimeoutFormValid"
+                      class="bg-transparent mt-1"
+                      variant="text"
+                      type="submit"
+                    >
+                      Apply
+                    </v-btn>
+                  </div>
+                </v-form>
               </div>
-            </v-form>
+              <div class="min-w-0">
+                <div class="mb-1 text-sm">Watchdog timeout</div>
+                <v-form
+                  ref="watchdogTimeoutForm"
+                  v-model="watchdogTimeoutFormValid"
+                  class="w-full"
+                  @submit.prevent="setWatchdogTimeout"
+                >
+                  <div class="flex items-start gap-2">
+                    <v-text-field
+                      v-model.number="newVehicleConnectionWatchdogTimeoutSeconds"
+                      variant="filled"
+                      type="number"
+                      density="compact"
+                      theme="dark"
+                      class="flex-1"
+                      suffix="s"
+                      :rules="[isValidWatchdogTimeout]"
+                    >
+                      <template #append-inner>
+                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetWatchdogTimeout">
+                          mdi-restore
+                        </v-icon>
+                      </template>
+                    </v-text-field>
+                    <v-btn
+                      :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                      :disabled="!watchdogTimeoutFormValid"
+                      class="bg-transparent mt-1"
+                      variant="text"
+                      type="submit"
+                    >
+                      Apply
+                    </v-btn>
+                  </div>
+                </v-form>
+              </div>
+            </div>
           </template>
         </ExpansiblePanel>
       </div>
@@ -633,7 +679,9 @@ const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
   vehicleConnected.value = undefined
   setTimeout(() => (vehicleConnected.value ??= false), 5000)
   try {
-    ConnectionManager.addConnection(new Connection.URI(conn), Protocol.Type.MAVLink)
+    ConnectionManager.addConnection(new Connection.URI(conn), Protocol.Type.MAVLink, {
+      websocket: { getWatchdogTimeoutMs: () => mainVehicleStore.vehicleConnectionWatchdogTimeoutMs },
+    })
   } catch (error) {
     console.error(error)
     alert(`Could not update main connection. ${error}.`)
@@ -745,7 +793,7 @@ const isValidConnectionTimeout = (value: number | string): boolean | string => {
   const numericValue = typeof value === 'string' ? Number(value) : value
   if (!Number.isFinite(numericValue)) return 'Timeout must be a valid number.'
   if (numericValue < minVehicleConnectionTimeoutSeconds) {
-    return `Timeout must be at least ${minVehicleConnectionTimeoutSeconds} second.`
+    return `Minimum timeout is ${minVehicleConnectionTimeoutSeconds} s.`
   }
   return true
 }
@@ -760,6 +808,43 @@ const setConnectionTimeout = async (): Promise<void> => {
 const resetConnectionTimeout = (): void => {
   newVehicleConnectionTimeoutSeconds.value = defaultVehicleConnectionTimeoutSeconds
   mainVehicleStore.vehicleConnectionTimeoutMs = defaultVehicleConnectionTimeoutSeconds * 1000
+}
+
+/** Reconnection watchdog timeout */
+
+const defaultVehicleConnectionWatchdogTimeoutSeconds = 4
+const minVehicleConnectionWatchdogTimeoutSeconds = 1
+
+const watchdogTimeoutForm = ref()
+const watchdogTimeoutFormValid = ref(true)
+const vehicleConnectionWatchdogTimeoutSeconds = computed(
+  () => Math.round(mainVehicleStore.vehicleConnectionWatchdogTimeoutMs / 100) / 10
+)
+const newVehicleConnectionWatchdogTimeoutSeconds = ref<number>(vehicleConnectionWatchdogTimeoutSeconds.value)
+
+watch(vehicleConnectionWatchdogTimeoutSeconds, (value) => (newVehicleConnectionWatchdogTimeoutSeconds.value = value))
+
+const isValidWatchdogTimeout = (value: number | string): boolean | string => {
+  const numericValue = typeof value === 'string' ? Number(value) : value
+  if (!Number.isFinite(numericValue)) return 'Must be a valid number.'
+  if (numericValue < minVehicleConnectionWatchdogTimeoutSeconds) {
+    return `Minimum timeout is ${minVehicleConnectionWatchdogTimeoutSeconds} s.`
+  }
+  return true
+}
+
+const setWatchdogTimeout = async (): Promise<void> => {
+  const validation = await watchdogTimeoutForm.value.validate()
+  if (!validation.valid) return
+
+  mainVehicleStore.vehicleConnectionWatchdogTimeoutMs = Math.round(
+    newVehicleConnectionWatchdogTimeoutSeconds.value * 1000
+  )
+}
+
+const resetWatchdogTimeout = (): void => {
+  newVehicleConnectionWatchdogTimeoutSeconds.value = defaultVehicleConnectionWatchdogTimeoutSeconds
+  mainVehicleStore.vehicleConnectionWatchdogTimeoutMs = defaultVehicleConnectionWatchdogTimeoutSeconds * 1000
 }
 
 const isValidHostAddress = (value: string): boolean | string => {
