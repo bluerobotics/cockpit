@@ -879,7 +879,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.GoFullScreen]: false,
   [MiniWidgetType.EkfStateIndicator]: false,
   [MiniWidgetType.EnterEditMode]: false,
-  [MiniWidgetType.DepthIndicator]: false,
+  [MiniWidgetType.DepthIndicator]: true,
   [MiniWidgetType.MissionIdentifier]: true,
   [MiniWidgetType.RelativeAltitudeIndicator]: false,
   [MiniWidgetType.TakeoffLandCommander]: false,
