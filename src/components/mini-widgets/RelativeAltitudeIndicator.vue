@@ -11,15 +11,69 @@
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">Alt (Rel)</span>
     </div>
   </div>
+  <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
+    <v-card class="pa-4 text-white w-[400px]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="text-center">Relative Altitude Indicator Config</v-card-title>
+      <v-card-text class="flex flex-col gap-y-4">
+        <div class="absolute top-2 right-2 z-10">
+          <v-btn
+            icon
+            size="30"
+            variant="text"
+            class="text-white text-[22px]"
+            aria-label="Close"
+            @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
+          >
+            <i class="mdi mdi-close"></i>
+          </v-btn>
+        </div>
+        <v-select
+          v-if="!configUseCustomAltitudeVariable"
+          v-model="configAltitudeVariableId"
+          label="Altitude source"
+          :items="altitudeSourceOptions"
+          item-title="title"
+          item-value="value"
+          hide-details
+          theme="dark"
+          variant="outlined"
+          density="compact"
+        />
+        <v-autocomplete
+          v-else
+          v-model="configAltitudeVariableId"
+          :items="availableDataLakeNumberVariables"
+          item-title="name"
+          item-value="id"
+          label="Data lake variable"
+          hint="Select any numeric data lake variable"
+          persistent-hint
+          theme="dark"
+          variant="outlined"
+          density="compact"
+          clearable
+          prepend-inner-icon="mdi-magnify"
+        />
+        <v-checkbox v-model="configUseCustomAltitudeVariable" label="Use custom data lake variable" hide-details />
+      </v-card-text>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
 import { unit } from 'mathjs'
-import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, toRefs } from 'vue'
 
+import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import {
+  altitudeSourceOptions,
+  defaultAltitudeIndicatorVariableId,
+  rawAltitudeToMeters,
+} from '@/libs/data-sources/altitude'
 import { unitAbbreviation } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
 
 const props = defineProps<{
@@ -30,25 +84,36 @@ const props = defineProps<{
 }>()
 const miniWidget = toRefs(props).miniWidget
 
+const widgetStore = useWidgetManagerStore()
+const interfaceStore = useAppInterfaceStore()
+const { displayUnitPreferences } = interfaceStore
+
 const defaultOptions = {
-  altitudeVariableId: '/mavlink/1/1/GLOBAL_POSITION_INT/relative_alt',
+  altitudeVariableId: defaultAltitudeIndicatorVariableId,
+  useCustomAltitudeVariable: false,
 }
 
 onBeforeMount(() => {
-  miniWidget.value.options = { ...defaultOptions, ...miniWidget.value.options }
+  miniWidget.value.options = mergeAltitudeVariableOptions(defaultOptions, miniWidget.value.options)
 })
 
-const { displayUnitPreferences } = useAppInterfaceStore()
+const {
+  resolvedAltitudeVariableId,
+  configAltitudeVariableId,
+  configUseCustomAltitudeVariable,
+  availableDataLakeNumberVariables,
+} = useAltitudeSourceConfig({
+  widget: miniWidget,
+  isConfigMenuOpen: () => widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen,
+  defaultAltitudeVariableId: defaultAltitudeIndicatorVariableId,
+})
 
-const { value: rawAltitude } = useDataLakeVariable(() => miniWidget.value.options.altitudeVariableId)
+const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
 
-const currentAltitude = ref<undefined | number>(undefined)
-watch(rawAltitude, (newAlt) => {
-  if (newAlt === undefined) return
-  const altMeters = (newAlt as number) / 1000
-  const altitude = unit(altMeters, 'm')
-  const altitudeConverted = altitude.to(displayUnitPreferences.distance)
-  currentAltitude.value = altitudeConverted.toJSON().value
+const currentAltitude = computed<number | undefined>(() => {
+  if (rawAltitude.value === undefined || resolvedAltitudeVariableId.value === undefined) return undefined
+  const altMeters = rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value as number)
+  return unit(altMeters, 'm').to(displayUnitPreferences.distance).toJSON().value as number
 })
 
 const parsedState = computed(() => {
