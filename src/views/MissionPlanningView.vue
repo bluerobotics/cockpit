@@ -4120,8 +4120,8 @@ watch(
   { immediate: true, deep: true }
 )
 
-// Create polyline for the vehicle history path (only shown when vehicle marker is on screen)
-// Watch a revision counter instead of the array itself so we avoid Vue's deep-walk on every mutation.
+// Create polyline for the vehicle path using a dedicated Canvas renderer to prevent performance issues
+const vehicleHistoryRenderer = L.canvas()
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
 let lastDrawnHistoryLen = 0
 watch(
@@ -4139,7 +4139,9 @@ watch(
     }
 
     if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00' }).addTo(planningMap.value)
+      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
+        planningMap.value
+      )
       lastDrawnHistoryLen = 0
     }
 
