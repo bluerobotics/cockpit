@@ -493,15 +493,51 @@ export const useMissionStore = defineStore('mission', () => {
     }
   }
 
+  let didAutoEndCurrentRun = false
+
   // Allow executing missions
   const executeMissionOnVehicle = async (): Promise<boolean> => {
     try {
+      mainVehicleStore.clearReachedMissionItems()
+      didAutoEndCurrentRun = false
       await mainVehicleStore.startMission()
       return true
     } catch (error) {
       return false
     }
   }
+
+  // Auto-end the run when the last navigation waypoint is reached
+  watch(
+    () => mainVehicleStore.reachedMissionItemSequences,
+    (reachedSeqs) => {
+      if (didAutoEndCurrentRun) return
+      if (!isMissionRunning.value) return
+      if (reachedSeqs.length === 0) return
+
+      const navSeqs = navMissionSeqByWaypointIndex.value
+      if (navSeqs.length <= 1) return
+
+      const lastWpSeq = navSeqs[navSeqs.length - 1]
+      if (lastWpSeq === undefined) return
+      if (!reachedSeqs.includes(lastWpSeq)) return
+
+      didAutoEndCurrentRun = true
+      mainVehicleStore.pauseMission().catch((err) => {
+        console.error('Failed to end mission after reaching last waypoint:', err)
+      })
+    }
+  )
+
+  // Mirror the vehicle store's own arm-transition cleanup of reached items so we re-arm detection
+  watch(
+    () => mainVehicleStore.isArmed,
+    (isNowArmed, wasPreviouslyArmed) => {
+      if (isNowArmed === true && wasPreviouslyArmed !== true) {
+        didAutoEndCurrentRun = false
+      }
+    }
+  )
 
   const registerMapMissionActions = (payload: {
     /**
