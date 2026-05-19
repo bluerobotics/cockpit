@@ -893,7 +893,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.EnterEditMode]: false,
   [MiniWidgetType.DepthIndicator]: true,
   [MiniWidgetType.MissionIdentifier]: true,
-  [MiniWidgetType.RelativeAltitudeIndicator]: false,
+  [MiniWidgetType.RelativeAltitudeIndicator]: true,
   [MiniWidgetType.TakeoffLandCommander]: false,
   [MiniWidgetType.VeryGenericIndicator]: true,
   [MiniWidgetType.JoystickCommIndicator]: true,
