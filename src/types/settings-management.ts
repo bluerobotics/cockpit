@@ -119,6 +119,24 @@ export type VehicleOnlineEvent = CustomEvent<{
 }>
 
 /**
+ * VehicleSyncCompleteEvent is the type of the event for when vehicle sync completes.
+ */
+export type VehicleSyncCompleteEvent = CustomEvent<{
+  /**
+   * The address of the vehicle whose sync finished
+   */
+  vehicleAddress: string
+  /**
+   * The id of the vehicle whose sync finished, if it could be determined
+   */
+  vehicleId: string | undefined
+  /**
+   * Whether the sync pipeline finished without throwing
+   */
+  succeeded: boolean
+}>
+
+/**
  * UserChangedEvent is the type of the event for when a user changes.
  */
 export type UserChangedEvent = CustomEvent<{
@@ -141,6 +159,11 @@ declare global {
      */
     // eslint-disable-next-line jsdoc/require-jsdoc
     'vehicle-online': VehicleOnlineEvent
+    /**
+     * Event triggered when vehicle sync completes
+     */
+    // eslint-disable-next-line jsdoc/require-jsdoc
+    'vehicle-sync-complete': VehicleSyncCompleteEvent
     /**
      * Event triggered when the user changes
      */
