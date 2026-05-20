@@ -61,6 +61,9 @@ export const useAppInterfaceStore = defineStore('responsive', {
     isTutorialVisible: false,
     isExternalFeaturesModalVisible: false,
     isDataPrivacyModalVisible: false,
+    isVehicleDefaultsAutoImportModalVisible: false,
+    isVehicleDefaultsViewsImportModalVisible: false,
+    isVehicleDefaultsJoystickImportModalVisible: false,
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
     configPanelVisible: false,
     showSplashScreen: true,
@@ -82,6 +85,15 @@ export const useAppInterfaceStore = defineStore('responsive', {
     },
     hideSkullAnimation() {
       this.showSkullAnimation = false
+    },
+    openVehicleDefaultsAutoImport(): void {
+      this.isVehicleDefaultsAutoImportModalVisible = true
+    },
+    openVehicleDefaultsViewsImport(): void {
+      this.isVehicleDefaultsViewsImportModalVisible = true
+    },
+    openVehicleDefaultsJoystickImport(): void {
+      this.isVehicleDefaultsJoystickImportModalVisible = true
     },
   },
   getters: {
