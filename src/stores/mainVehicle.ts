@@ -49,12 +49,10 @@ import type {
 import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
-import { importDefaultsForVehicle } from '@/migration/default-profile-importer'
 import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
 
 import { useControllerStore } from './controller'
 import { useMissionStore } from './mission'
-import { useWidgetManagerStore } from './widgetManager'
 /**
  * Custom parameter data description interface
  */
@@ -79,7 +77,6 @@ const { openSnackbar } = useSnackbar()
 
 export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const controllerStore = useControllerStore()
-  const widgetStore = useWidgetManagerStore()
   const missionStore = useMissionStore()
   const ws_protocol = location?.protocol === 'https:' ? 'wss' : 'ws'
   const http_protocol = location?.protocol === 'https:' ? 'https' : 'http'
@@ -685,19 +682,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
       if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
         console.log('Vehicle type changed to', vehicleType.value)
-
-        // A failure in the defaults import must never wipe the user's current profile, so we isolate it
-        try {
-          const defaults = importDefaultsForVehicle(
-            vehicleType.value,
-            widgetStore.viewsGroup,
-            controllerStore.protocolMapping
-          )
-          if (defaults.viewsGroup) widgetStore.viewsGroup = defaults.viewsGroup
-          if (defaults.mapping) controllerStore.protocolMapping = defaults.mapping
-        } catch (error) {
-          console.error('Failed to import defaults for vehicle type.', error)
-        }
       }
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
