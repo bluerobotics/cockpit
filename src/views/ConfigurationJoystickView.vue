@@ -138,6 +138,18 @@
                             </label>
                           </template>
                         </v-tooltip>
+                        <v-divider vertical />
+                        <v-tooltip location="top" text="Import default mapping for this vehicle">
+                          <template #activator="{ props }">
+                            <v-btn
+                              v-bind="props"
+                              icon="mdi-import"
+                              variant="text"
+                              size="24"
+                              class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                              @click="openVehicleDefaultsImportModal"
+                          /></template>
+                        </v-tooltip>
                       </div>
                     </div>
                   </v-tabs>
@@ -1015,6 +1027,10 @@ const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
   const min = selectedProfileAxesCorrespondencies.value[axisId]?.min ?? -1
   const max = selectedProfileAxesCorrespondencies.value[axisId]?.max ?? +1
   return scale(rawValue, -1, 1, min, max)
+}
+
+const openVehicleDefaultsImportModal = (): void => {
+  interfaceStore.openVehicleDefaultsJoystickImport()
 }
 
 const toggleJoystickEnabling = (joystickModel: string): void => {
