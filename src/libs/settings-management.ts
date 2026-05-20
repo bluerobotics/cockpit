@@ -1077,6 +1077,27 @@ export class SettingsManager {
   public handleVehicleGettingOnline = async (vehicleAddress: string): Promise<void> => {
     console.log('[SettingsManager]', 'Handling vehicle getting online!')
 
+    let succeeded = false
+    try {
+      await this.runVehicleGettingOnlinePipeline(vehicleAddress)
+      succeeded = true
+    } catch (error) {
+      console.error('[SettingsManager]', 'Failed to fully handle vehicle getting online.', error)
+    } finally {
+      // Dispatch even on failure so listeners can proceed without a successful BlueOS round-trip.
+      dispatchEvent(
+        new CustomEvent('vehicle-sync-complete', {
+          detail: {
+            vehicleAddress,
+            vehicleId: this.currentVehicleId,
+            succeeded,
+          },
+        })
+      )
+    }
+  }
+
+  private runVehicleGettingOnlinePipeline = async (vehicleAddress: string): Promise<void> => {
     // Before anything else, back up old-style vehicle settings in the vehicle, if needed
     await this.backupOldStyleVehicleSettingsIfNeeded(vehicleAddress)
 
