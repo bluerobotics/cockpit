@@ -1,0 +1,310 @@
+<template>
+  <v-dialog
+    :model-value="modelValue"
+    width="560"
+    persistent
+    @update:model-value="(value) => emit('update:modelValue', value)"
+  >
+    <v-card class="pa-4 text-white rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="flex justify-between items-center">
+        <span class="text-lg font-medium">{{ title }}</span>
+        <v-btn icon="mdi-close" variant="text" size="small" @click="closeDialog" />
+      </v-card-title>
+      <v-divider class="opacity-20 mx-4" />
+      <v-card-text class="px-2 py-4">
+        <p v-if="description" class="text-sm mb-3 opacity-90">{{ description }}</p>
+
+        <div v-if="cloudStore.isLoadingMissions" class="flex justify-center py-6">
+          <v-progress-circular indeterminate color="white" />
+        </div>
+        <div v-else>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs uppercase tracking-wider opacity-70">Missions</span>
+            <v-btn variant="text" size="x-small" @click="loadMissions">
+              <v-icon size="14" class="mr-1">mdi-refresh</v-icon>Refresh
+            </v-btn>
+          </div>
+          <div
+            v-if="cloudStore.missions.length === 0"
+            class="text-sm opacity-70 text-center py-6 border border-dashed border-white/20 rounded"
+          >
+            No missions yet on your BlueOS Cloud account.
+          </div>
+          <div v-else class="max-h-[260px] overflow-y-auto pr-1">
+            <template v-if="pinnedMission">
+              <div
+                :key="pinnedMission.id"
+                class="w-full flex items-center gap-2 px-3 py-2 rounded mb-1 transition-colors cursor-pointer border"
+                :class="getMissionRowClasses(pinnedMission.id)"
+                @click="selectedMissionId = pinnedMission.id"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium truncate flex items-center gap-2">
+                    {{ pinnedMission.title || 'Untitled mission' }}
+                    <span
+                      class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-200 border border-sky-300/40"
+                    >
+                      Active
+                    </span>
+                  </div>
+                  <div class="text-xs opacity-70 truncate">
+                    {{ formatMissionMeta(pinnedMission) }}
+                  </div>
+                </div>
+                <a
+                  :href="buildBlueOsCloudMissionUrl(pinnedMission.id)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="opacity-70 hover:opacity-100"
+                  @click.stop
+                >
+                  <v-tooltip activator="parent" location="top" open-delay="300">View on BlueOS Cloud</v-tooltip>
+                  <v-icon size="16">mdi-open-in-new</v-icon>
+                </a>
+              </div>
+              <div v-if="otherMissions.length > 0" class="flex items-center gap-2 my-2 px-1 opacity-60">
+                <v-divider class="flex-1 opacity-40" />
+                <span class="text-[10px] uppercase tracking-wider">Other missions</span>
+                <v-divider class="flex-1 opacity-40" />
+              </div>
+            </template>
+            <div
+              v-for="mission in otherMissions"
+              :key="mission.id"
+              class="w-full flex items-center gap-2 px-3 py-2 rounded mb-1 transition-colors cursor-pointer border"
+              :class="getMissionRowClasses(mission.id)"
+              @click="selectedMissionId = mission.id"
+            >
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ mission.title || 'Untitled mission' }}</div>
+                <div class="text-xs opacity-70 truncate">
+                  {{ formatMissionMeta(mission) }}
+                </div>
+              </div>
+              <a
+                :href="buildBlueOsCloudMissionUrl(mission.id)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="opacity-70 hover:opacity-100"
+                @click.stop
+              >
+                <v-tooltip activator="parent" location="top" open-delay="300">View on BlueOS Cloud</v-tooltip>
+                <v-icon size="16">mdi-open-in-new</v-icon>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="cloudStore.lastError" class="text-sm text-red-300 mt-3">{{ cloudStore.lastError }}</div>
+
+        <v-divider class="opacity-20 my-4" />
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs uppercase tracking-wider opacity-70">Or create a new mission</span>
+          <v-btn variant="text" size="x-small" @click="showCreateForm = !showCreateForm">
+            {{ showCreateForm ? 'Hide' : 'Show' }} options
+          </v-btn>
+        </div>
+        <div class="flex items-center gap-2">
+          <v-text-field
+            v-model="newMissionName"
+            placeholder="New mission name"
+            density="compact"
+            variant="filled"
+            hide-details
+            @keyup.enter="createNewMission"
+          />
+          <v-btn
+            class="bg-[#FFFFFF22]"
+            variant="flat"
+            :loading="isCreatingMission"
+            :disabled="!newMissionName.trim()"
+            @click="createNewMission"
+          >
+            Create
+          </v-btn>
+        </div>
+        <div v-if="showCreateForm" class="mt-3">
+          <BlueOsCloudLocationPicker v-model="newMissionLocation" />
+        </div>
+      </v-card-text>
+      <v-divider class="opacity-20 mx-4" />
+      <v-card-actions class="px-4 py-3">
+        <v-spacer />
+        <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+        <v-btn
+          color="white"
+          variant="flat"
+          class="bg-[#FFFFFF22]"
+          :disabled="!selectedMission"
+          @click="confirmSelection"
+        >
+          {{ confirmLabel }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+
+import BlueOsCloudLocationPicker from '@/components/blueos-cloud/BlueOsCloudLocationPicker.vue'
+import { useSnackbar } from '@/composables/snackbar'
+import { buildBlueOsCloudMissionUrl } from '@/libs/blueos-cloud/api'
+import { BlueOsCloudMission } from '@/libs/blueos-cloud/types'
+import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
+import { WaypointCoordinates } from '@/types/mission'
+
+const props = withDefaults(
+  defineProps<{
+    /**
+     * Controls dialog visibility.
+     */
+    modelValue: boolean
+    /**
+     * Dialog title shown in the header.
+     */
+    title?: string
+    /**
+     * Optional description displayed above the mission list.
+     */
+    description?: string
+    /**
+     * Label of the confirmation button.
+     */
+    confirmLabel?: string
+    /**
+     * Initial mission name suggested when the user opens the picker (used for the create-new field).
+     */
+    suggestedMissionName?: string
+  }>(),
+  {
+    title: 'Select a BlueOS Cloud mission',
+    description: '',
+    confirmLabel: 'Select',
+    suggestedMissionName: '',
+  }
+)
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'selected', mission: BlueOsCloudMission): void
+}>()
+
+const interfaceStore = useAppInterfaceStore()
+const cloudStore = useBlueOsCloudStore()
+const { openSnackbar } = useSnackbar()
+
+const selectedMissionId = ref<string | null>(null)
+const newMissionName = ref('')
+const newMissionLocation = ref<WaypointCoordinates | null>(null)
+const showCreateForm = ref(false)
+const isCreatingMission = ref(false)
+
+const selectedMission = computed(
+  () => cloudStore.missions.find((mission) => mission.id === selectedMissionId.value) ?? null
+)
+
+const pinnedMission = computed(
+  () => cloudStore.missions.find((mission) => mission.id === cloudStore.linkedMissionId) ?? null
+)
+
+const otherMissions = computed(() => cloudStore.missions.filter((mission) => mission.id !== cloudStore.linkedMissionId))
+
+const formatMissionMeta = (mission: BlueOsCloudMission): string => {
+  const parts: string[] = []
+  if (mission.start_time) parts.push(new Date(mission.start_time).toLocaleString())
+  if (mission.start_latitude && mission.start_longitude) {
+    parts.push(`${parseFloat(mission.start_latitude).toFixed(4)}, ${parseFloat(mission.start_longitude).toFixed(4)}`)
+  }
+  return parts.join(' • ') || 'No metadata'
+}
+
+const getMissionRowClasses = (missionId: string): string => {
+  const isSelected = selectedMissionId.value === missionId
+  const isActive = cloudStore.linkedMissionId === missionId
+  if (isSelected && isActive) return 'bg-sky-500/20 border-sky-300/60 hover:bg-sky-500/25'
+  if (isSelected) return 'bg-[#FFFFFF22] border-white/30'
+  if (isActive) return 'bg-sky-500/10 border-sky-300/40 hover:bg-sky-500/15'
+  return 'bg-[#FFFFFF11] border-transparent hover:bg-[#FFFFFF1A]'
+}
+
+const loadMissions = async (): Promise<void> => {
+  try {
+    await cloudStore.refreshMissions()
+  } catch (error) {
+    openSnackbar({
+      message: `Failed to load BlueOS Cloud missions: ${(error as Error).message}`,
+      variant: 'error',
+      duration: 4000,
+      closeButton: true,
+    })
+  }
+}
+
+const createNewMission = async (): Promise<void> => {
+  const name = newMissionName.value.trim()
+  if (!name) return
+  isCreatingMission.value = true
+  try {
+    const location = newMissionLocation.value
+    const created = await cloudStore.createCloudMission({
+      name,
+      latitude: location?.[0] ?? null,
+      longitude: location?.[1] ?? null,
+    })
+    selectedMissionId.value = created.id
+    newMissionName.value = ''
+    newMissionLocation.value = null
+    showCreateForm.value = false
+    openSnackbar({
+      message: `Mission "${created.title}" created on BlueOS Cloud.`,
+      variant: 'success',
+      duration: 3000,
+      closeButton: true,
+    })
+  } catch (error) {
+    openSnackbar({
+      message: `Failed to create mission: ${(error as Error).message}`,
+      variant: 'error',
+      duration: 4000,
+      closeButton: true,
+    })
+  } finally {
+    isCreatingMission.value = false
+  }
+}
+
+const confirmSelection = (): void => {
+  if (!selectedMission.value) return
+  emit('selected', selectedMission.value)
+  emit('update:modelValue', false)
+}
+
+const closeDialog = (): void => emit('update:modelValue', false)
+
+const applyDefaultSelection = (): void => {
+  const linkedId = cloudStore.linkedMissionId
+  if (!linkedId) return
+  const exists = cloudStore.missions.some((mission) => mission.id === linkedId)
+  if (exists) selectedMissionId.value = linkedId
+}
+
+watch(
+  () => props.modelValue,
+  async (visible) => {
+    if (!visible) return
+    selectedMissionId.value = null
+    newMissionName.value = props.suggestedMissionName
+    newMissionLocation.value = null
+    showCreateForm.value = false
+    applyDefaultSelection()
+    if (cloudStore.isAuthenticated) {
+      await loadMissions()
+      applyDefaultSelection()
+    }
+  },
+  { immediate: true }
+)
+</script>

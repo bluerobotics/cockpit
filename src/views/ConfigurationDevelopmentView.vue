@@ -91,6 +91,12 @@
               <template #item.actions="{ item }">
                 <div class="flex justify-center space-x-2">
                   <div class="cursor-pointer icon-btn mdi mdi-download" @click="downloadLog(item.name)" />
+                  <div
+                    v-if="cloudStore.isIntegrationEnabled"
+                    v-tooltip.bottom="'Upload to BlueOS Cloud'"
+                    class="cursor-pointer icon-btn mdi mdi-cloud-upload-outline"
+                    @click="uploadLogToBlueOsCloud(item.name)"
+                  />
                   <div class="cursor-pointer icon-btn mdi mdi-delete" @click="deleteLog(item.name)" />
                 </div>
               </template>
@@ -112,6 +118,7 @@ import { onBeforeMount, onBeforeUnmount } from 'vue'
 import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { useBlueOsCloudUpload } from '@/composables/blueOsCloudUpload'
 import {
   type SystemLog,
   cockpitSytemLogsDB,
@@ -122,11 +129,16 @@ import {
 import { formatBytes, isElectron } from '@/libs/utils'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
 import { useDevelopmentStore } from '@/stores/development'
+import { useMissionStore } from '@/stores/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 const devStore = useDevelopmentStore()
 const interfaceStore = useAppInterfaceStore()
+const cloudStore = useBlueOsCloudStore()
+const missionStore = useMissionStore()
+const cloudUpload = useBlueOsCloudUpload()
 
 /* eslint-disable jsdoc/require-jsdoc */
 interface SystemLogsData {
@@ -294,6 +306,24 @@ const downloadLogFromDB = async (logName: string): Promise<void> => {
   const logParts = JSON.stringify(log, null, 2)
   const logBlob = new Blob([logParts], { type: 'application/json' })
   saveAs(logBlob, logName)
+}
+
+const uploadLogToBlueOsCloud = (logName: string): void => {
+  cloudUpload.requestUpload({
+    fileName: logName,
+    suggestedMissionName: missionStore.missionName || '',
+    getBlob: async () => {
+      if (isRunningInElectron) {
+        const content = await window.electronAPI?.getElectronLogContent(logName)
+        if (!content) throw new Error('Failed to read Cockpit log content.')
+        return new Blob([content], { type: 'text/plain' })
+      }
+
+      const log = await cockpitSytemLogsDB.getItem(logName)
+      if (!log) throw new Error('Failed to read Cockpit log content.')
+      return new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' })
+    },
+  })
 }
 
 const deleteLog = async (logName: string): Promise<void> => {

@@ -110,6 +110,15 @@
                       <v-icon size="16" class="text-white"> mdi-download </v-icon>
                     </div>
                     <div
+                      v-if="cloudStore.isIntegrationEnabled"
+                      reactive
+                      class="cloud-upload-button"
+                      @click.stop="startUploadSnapshotToBlueOsCloud(picture)"
+                    >
+                      <v-tooltip open-delay="500" activator="parent" location="top"> Upload to BlueOS Cloud </v-tooltip>
+                      <v-icon size="16" class="text-white"> mdi-cloud-upload-outline </v-icon>
+                    </div>
+                    <div
                       v-if="isMultipleSelectionMode"
                       class="checkmark-button"
                       :class="selectedPicSet.has(picture.filename) ? 'bg-green' : 'bg-white'"
@@ -175,6 +184,124 @@
                   </template>
                   <v-btn icon variant="text" class="mb-1" @click="openSnapshotFolder">
                     <v-tooltip open-delay="500" activator="parent" location="bottom"> Open snapshots folder </v-tooltip>
+                    <v-icon>mdi-folder-open-outline</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+          </template>
+          <template v-if="currentTab === 'audio'">
+            <div class="flex flex-col flex-1 min-h-0 min-w-0 h-full">
+              <div class="mx-5 pt-4 shrink-0">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-lg font-medium">Voice Recordings</h3>
+                  <span class="text-sm text-white/70">Captured from this computer's microphone</span>
+                </div>
+              </div>
+              <div v-if="availableAudios.length > 0" class="flex-1 min-h-0 overflow-y-auto px-4 py-2">
+                <div class="space-y-3">
+                  <div
+                    v-for="audio in availableAudios"
+                    :key="audio.fileName"
+                    class="flex items-center p-4 rounded-lg transition-colors"
+                    :class="
+                      selectedAudioFiles.has(audio.fileName)
+                        ? 'border border-white/40 bg-white/15 hover:bg-white/20'
+                        : 'border border-white/20 bg-white/5 hover:bg-white/10'
+                    "
+                  >
+                    <div class="w-10 flex-shrink-0 flex justify-center">
+                      <v-checkbox
+                        :model-value="selectedAudioFiles.has(audio.fileName)"
+                        density="compact"
+                        hide-details
+                        theme="dark"
+                        @update:model-value="toggleAudioSelection(audio.fileName)"
+                      />
+                    </div>
+                    <div class="flex-1 ml-2 min-w-0">
+                      <div class="font-medium text-white">
+                        {{ parseDateFromTitle(audio.fileName) || 'Voice recording' }}
+                      </div>
+                      <div class="text-sm text-white/70 mt-1 truncate">
+                        {{ audio.fileName }}
+                      </div>
+                      <div class="flex items-center gap-3 text-xs text-white/60 mt-1">
+                        <span v-if="audio.durationMs !== undefined">
+                          <v-icon size="12" class="mr-1">mdi-timer-outline</v-icon>
+                          {{ formatAudioDuration(audio.durationMs) }}
+                        </span>
+                        <span v-if="audio.dateStart">
+                          <v-icon size="12" class="mr-1">mdi-clock-outline</v-icon>
+                          {{ formatDate(audio.dateStart) }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 ml-3 shrink-0">
+                      <audio
+                        v-if="audioBlobURLs[audio.fileName]"
+                        :src="audioBlobURLs[audio.fileName]"
+                        controls
+                        preload="metadata"
+                        class="h-10"
+                      />
+                      <v-btn icon variant="outlined" size="small" @click.stop="downloadAudios(audio.fileName)">
+                        <v-tooltip open-delay="500" activator="parent" location="bottom">Download</v-tooltip>
+                        <v-icon>mdi-download</v-icon>
+                      </v-btn>
+                      <v-btn
+                        v-if="cloudStore.isIntegrationEnabled"
+                        icon
+                        variant="outlined"
+                        size="small"
+                        :disabled="cloudUpload.isUploading.value"
+                        @click.stop="startUploadAudioToBlueOsCloud(audio)"
+                      >
+                        <v-tooltip open-delay="500" activator="parent" location="bottom">
+                          Upload to BlueOS Cloud
+                        </v-tooltip>
+                        <v-icon>mdi-cloud-upload-outline</v-icon>
+                      </v-btn>
+                      <v-btn icon variant="outlined" size="small" @click.stop="handleDeleteAudios(audio.fileName)">
+                        <v-tooltip open-delay="500" activator="parent" location="bottom">Delete</v-tooltip>
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="flex flex-1 min-h-0 items-center justify-center text-center px-4">
+                <div class="max-w-md mx-auto">
+                  <v-icon size="60" class="text-white/30 mb-4">mdi-microphone-off</v-icon>
+                  <h4 class="text-lg font-medium text-white mb-2">
+                    {{ loadingAudios ? 'Loading' : 'No voice recordings yet' }}
+                  </h4>
+                  <p v-if="!loadingAudios" class="text-white/70 text-sm">
+                    Add the Voice Recorder mini-widget to your view and click the red dot to start recording.
+                  </p>
+                </div>
+              </div>
+              <div class="shrink-0 h-14 flex justify-between items-center px-4 border-t border-white/10">
+                <div class="flex items-center gap-2">
+                  <template v-if="availableAudios.length > 1">
+                    <v-btn
+                      variant="text"
+                      size="small"
+                      @click="
+                        selectedAudioFiles.size === availableAudios.length ? deselectAllAudios() : selectAllAudios()
+                      "
+                    >
+                      {{ selectedAudioFiles.size === availableAudios.length ? 'None' : 'All' }}
+                    </v-btn>
+                  </template>
+                </div>
+                <div class="flex items-center gap-2">
+                  <template v-if="selectedAudioFiles.size > 0">
+                    <v-btn variant="text" size="small" @click="downloadAudios()">Download</v-btn>
+                    <v-btn variant="text" size="small" @click="handleDeleteAudios()">Delete</v-btn>
+                  </template>
+                  <v-btn v-if="isElectron()" icon variant="text" class="mb-1" @click="openAudioFolder">
+                    <v-tooltip open-delay="500" activator="parent" location="bottom">Open audio folder</v-tooltip>
                     <v-icon>mdi-folder-open-outline</v-icon>
                   </v-btn>
                 </div>
@@ -281,6 +408,19 @@
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom"> Play video </v-tooltip>
                               <v-icon size="22">mdi-play</v-icon>
+                            </v-btn>
+                            <v-btn
+                              v-if="cloudStore.isIntegrationEnabled"
+                              icon
+                              variant="outlined"
+                              size="small"
+                              :disabled="cloudUpload.isUploading.value"
+                              @click.stop="startUploadVideoToBlueOsCloud(video)"
+                            >
+                              <v-tooltip open-delay="500" activator="parent" location="bottom">
+                                Upload to BlueOS Cloud
+                              </v-tooltip>
+                              <v-icon>mdi-cloud-upload-outline</v-icon>
                             </v-btn>
                             <v-btn
                               icon
@@ -720,13 +860,18 @@
 import * as Hammer from 'hammerjs'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 
+import { useBlueOsCloudUpload } from '@/composables/blueOsCloudUpload'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { useVideoChunkManager } from '@/composables/videoChunkManager'
 import { formatBytes, formatDate, isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useAudioStore } from '@/stores/audio'
+import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
+import { useMissionStore } from '@/stores/mission'
 import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
+import { AudioLibraryFile } from '@/types/audio'
 import { SnapshotLibraryFile } from '@/types/snapshot'
 import { VideoLibraryFile, VideoLibraryLogFile } from '@/types/video'
 import { videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
@@ -734,6 +879,10 @@ import { videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
 const videoStore = useVideoStore()
 const interfaceStore = useAppInterfaceStore()
 const snapshotStore = useSnapshotStore()
+const audioStore = useAudioStore()
+const cloudStore = useBlueOsCloudStore()
+const missionStore = useMissionStore()
+const cloudUpload = useBlueOsCloudUpload()
 const { openSnackbar } = useSnackbar()
 
 const { showDialog, closeDialog } = useInteractionDialog()
@@ -796,6 +945,11 @@ const selectedPicSet = shallowRef<Set<string>>(new Set())
 const isInstructionsExpanded = ref(false)
 const showHelpTooltip = ref(false)
 
+const availableAudios = ref<AudioLibraryFile[]>([])
+const audioBlobURLs = reactive<Record<string, string>>({})
+const loadingAudios = ref(false)
+const selectedAudioFiles = shallowRef<Set<string>>(new Set())
+
 const selectedPictures = computed({
   get: () => [...selectedPicSet.value],
   set: (arr: string[]) => {
@@ -823,6 +977,7 @@ const getVideoCardClasses = (video: VideoLibraryFile): string => {
 const menuButtons = [
   { name: 'Videos', icon: 'mdi-video-outline', selected: true, disabled: false, tooltip: '' },
   { name: 'Snapshots', icon: 'mdi-image-outline', selected: false, disabled: false, tooltip: '' },
+  { name: 'Audio', icon: 'mdi-microphone-message', selected: false, disabled: false, tooltip: '' },
 ]
 
 const videoSubTabs = [
@@ -1218,11 +1373,168 @@ const deselectAllPictures = (): void => {
   isMultipleSelectionMode.value = false
 }
 
+const revokeAudioBlobURL = (fileName: string): void => {
+  const url = audioBlobURLs[fileName]
+  if (!url) return
+  URL.revokeObjectURL(url)
+  delete audioBlobURLs[fileName]
+}
+
+const revokeAllAudioBlobURLs = (): void => {
+  Object.keys(audioBlobURLs).forEach(revokeAudioBlobURL)
+}
+
+const fetchAudios = async (): Promise<void> => {
+  loadingAudios.value = true
+  try {
+    const recordings = await audioStore.listAudioRecordings()
+    revokeAllAudioBlobURLs()
+
+    for (const recording of recordings) {
+      const blob = (await audioStore.audioStorage.getItem(recording.fileName)) as Blob | null | undefined
+      if (blob instanceof Blob) {
+        audioBlobURLs[recording.fileName] = URL.createObjectURL(blob)
+      }
+    }
+
+    availableAudios.value = recordings
+  } catch (error) {
+    console.error('Failed to fetch audio recordings:', error)
+  } finally {
+    loadingAudios.value = false
+  }
+}
+
+const toggleAudioSelection = (fileName: string): void => {
+  const next = new Set(selectedAudioFiles.value)
+  if (next.has(fileName)) {
+    next.delete(fileName)
+  } else {
+    next.add(fileName)
+  }
+  selectedAudioFiles.value = next
+}
+
+const selectAllAudios = (): void => {
+  selectedAudioFiles.value = new Set(availableAudios.value.map((a) => a.fileName))
+}
+
+const deselectAllAudios = (): void => {
+  selectedAudioFiles.value = new Set()
+}
+
+const formatAudioDuration = (durationMs?: number): string => {
+  if (durationMs === undefined || isNaN(durationMs)) return ''
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const pad = (n: number): string => n.toString().padStart(2, '0')
+  return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`
+}
+
+const downloadAudios = async (fileName?: string): Promise<void> => {
+  const targets = fileName ? [fileName] : [...selectedAudioFiles.value]
+  if (targets.length === 0) return
+  try {
+    await audioStore.downloadAudioFiles(targets)
+    openSnackbar({
+      message: 'Audio recordings downloaded successfully.',
+      duration: 3000,
+      variant: 'success',
+      closeButton: true,
+    })
+  } catch (error) {
+    const errorMsg = `Error downloading audio: ${(error as Error).message ?? error!.toString()}`
+    console.error(errorMsg)
+    openSnackbar({ message: errorMsg, duration: 3000, variant: 'error', closeButton: true })
+  }
+}
+
+const performDeleteAudios = async (fileNames: string[]): Promise<void> => {
+  try {
+    await audioStore.deleteAudioFiles(fileNames)
+    fileNames.forEach(revokeAudioBlobURL)
+    openSnackbar({
+      message: 'Audio recordings deleted successfully.',
+      duration: 3000,
+      variant: 'success',
+      closeButton: true,
+    })
+    deselectAllAudios()
+    await fetchAudios()
+  } catch (error) {
+    const errorMsg = `Error deleting audio: ${(error as Error).message ?? error!.toString()}`
+    console.error(errorMsg)
+    openSnackbar({ message: errorMsg, duration: 3000, variant: 'error', closeButton: true })
+  }
+}
+
+const handleDeleteAudios = (fileName?: string): void => {
+  const targets = fileName ? [fileName] : [...selectedAudioFiles.value]
+  if (targets.length === 0) return
+
+  showDialog({
+    variant: 'warning',
+    message: `Delete ${targets.length} audio recording(s)?`,
+    actions: [
+      { text: 'Cancel', size: 'small', action: closeDialog },
+      {
+        text: 'Delete',
+        size: 'small',
+        action: () => {
+          performDeleteAudios(targets)
+          closeDialog()
+        },
+      },
+    ],
+  })
+}
+
+const openAudioFolder = (): void => openElectronFolder(() => window.electronAPI?.openAudioFolder())
+
 /**
  * Handle ZIP processing with callback to refresh videos
  */
 const handleProcessVideoChunksZip = async (): Promise<void> => {
   await processVideoChunksZip(fetchVideosAndLogData)
+}
+
+const startUploadVideoToBlueOsCloud = (video: VideoLibraryFile): void => {
+  cloudUpload.requestUpload({
+    fileName: video.fileName,
+    suggestedMissionName: missionStore.missionName || '',
+    getBlob: async () => {
+      const blob = (await videoStore.videoStorage.getItem(video.fileName)) as Blob | null | undefined
+      if (!blob) throw new Error('Could not read video file from local storage.')
+      return blob
+    },
+  })
+}
+
+const startUploadSnapshotToBlueOsCloud = (picture: SnapshotLibraryFile): void => {
+  cloudUpload.requestUpload({
+    fileName: picture.filename,
+    suggestedMissionName: missionStore.missionName || '',
+    getBlob: async () => {
+      const blob = (await snapshotStore.snapshotStorage.getItem(picture.filename)) as Blob | null | undefined
+      if (!blob) throw new Error('Could not read snapshot file from local storage.')
+      return blob
+    },
+  })
+}
+
+const startUploadAudioToBlueOsCloud = (audio: AudioLibraryFile): void => {
+  cloudUpload.requestUpload({
+    fileName: audio.fileName,
+    suggestedMissionName: missionStore.missionName || '',
+    capturedAt: audio.dateStart instanceof Date ? audio.dateStart.toISOString() : undefined,
+    getBlob: async () => {
+      const blob = (await audioStore.audioStorage.getItem(audio.fileName)) as Blob | null | undefined
+      if (!blob) throw new Error('Could not read voice recording from local storage.')
+      return blob
+    },
+  })
 }
 
 watch(isVisible, (newValue) => {
@@ -1337,6 +1649,9 @@ watch(currentTab, async (newTab) => {
   if (newTab === 'raw') {
     await fetchChunkGroups()
   }
+  if (newTab === 'audio') {
+    await fetchAudios()
+  }
 })
 
 watch(currentVideoSubTab, async (newSubTab) => {
@@ -1408,6 +1723,7 @@ onMounted(async () => {
   await fetchVideosAndLogData()
   await fetchPictures()
   await fetchChunkGroups()
+  await fetchAudios()
   if (availableVideos.value.length > 0) {
     await loadVideoBlobIntoPlayer(availableVideos.value[0].fileName)
   }
@@ -1424,6 +1740,7 @@ onBeforeUnmount(() => {
   unloadVideoBlob()
   for (const url of thumbUrlCache.values()) URL.revokeObjectURL(url)
   thumbUrlCache.clear()
+  revokeAllAudioBlobURLs()
 })
 </script>
 
@@ -1583,6 +1900,26 @@ onBeforeUnmount(() => {
 }
 
 .download-button:hover {
+  background: #00000055;
+  opacity: 1;
+  transition: all;
+  transition-duration: 0.4s;
+}
+
+.cloud-upload-button {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  bottom: 4px;
+  left: 4px;
+  border-radius: 8px;
+  background: #00000044;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.cloud-upload-button:hover {
   background: #00000055;
   opacity: 1;
   transition: all;

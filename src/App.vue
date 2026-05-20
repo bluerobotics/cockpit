@@ -97,6 +97,7 @@
   <ExternalFeaturesDiscoveryModal auto-check-on-mount />
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
+  <BlueOsCloudUploadHost />
   <SnackbarContainer />
   <SkullAnimation
     :is-visible="interfaceStore.showSkullAnimation"
@@ -116,6 +117,7 @@ import { useStorage } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
+import BlueOsCloudUploadHost from '@/components/blueos-cloud/BlueOsCloudUploadHost.vue'
 import CameraReplacementDialog from '@/components/CameraReplacementDialog.vue'
 import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'

@@ -105,6 +105,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Joystick Support** | Only when tab and window are in focus  | ✅ Window can be unfocused and in the background |
 | **Video** | Needs to be downloaded and merged into a working video using the Desktop app | ✅ Final MP4 file saved directly to your folders |
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
+| **Voice Recording** | Needs to be downloaded; requires HTTPS/localhost for microphone access | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |

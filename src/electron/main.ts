@@ -1,4 +1,4 @@
-import { app, BrowserWindow, powerSaveBlocker, protocol, screen } from 'electron'
+import { app, BrowserWindow, powerSaveBlocker, protocol, screen, shell } from 'electron'
 import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
@@ -52,6 +52,17 @@ function createWindow(): void {
   })
 
   linkService.setMainWindow(mainWindow)
+
+  // Open external http(s) URLs in the OS default browser instead of spawning a nested Electron window.
+  // This lets users reuse existing browser sessions (e.g. an already-logged-in BlueOS Cloud account) and
+  // matches the behavior of regular desktop apps when handing off OAuth / documentation links.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url)
+      return { action: 'deny' }
+    }
+    return { action: 'allow' }
+  })
 
   mainWindow.on('move', () => {
     const windowBounds = mainWindow!.getBounds()

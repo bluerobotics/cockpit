@@ -364,6 +364,64 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>BlueOS Cloud integration</template>
+          <template #subtitle>
+            <span v-if="cloudStore.isAuthenticated">Signed in as {{ cloudUserDisplayName }}</span>
+            <span v-else>Not connected</span>
+          </template>
+          <template #info>
+            <p class="w-full">
+              Connect Cockpit to your BlueOS Cloud account to create missions and upload recorded videos directly from
+              the app. After enabling the integration you will be guided through a quick login wizard.
+            </p>
+          </template>
+          <template #content>
+            <div class="flex flex-col w-full py-2 gap-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <v-switch
+                    v-model="cloudStore.isIntegrationEnabled"
+                    color="white"
+                    hide-details
+                    base-color="#FFFFFF33"
+                    class="mt-0"
+                    @update:model-value="onCloudIntegrationToggle"
+                  />
+                  <span class="text-sm">Enable BlueOS Cloud integration</span>
+                </div>
+                <v-btn
+                  v-if="cloudStore.isAuthenticated"
+                  size="x-small"
+                  variant="flat"
+                  class="bg-[#FFFFFF22] shadow-1"
+                  @click="signOutFromCloud"
+                >
+                  Sign out
+                </v-btn>
+                <v-btn
+                  v-else-if="cloudStore.isIntegrationEnabled"
+                  size="x-small"
+                  variant="flat"
+                  class="bg-[#FFFFFF22] shadow-1"
+                  @click="showCloudLoginDialog = true"
+                >
+                  Sign in
+                </v-btn>
+              </div>
+              <div v-if="cloudStore.isAuthenticated" class="flex items-center gap-3 px-3 py-2 rounded bg-[#FFFFFF11]">
+                <v-avatar size="36">
+                  <img v-if="cloudStore.user?.picture" :src="cloudStore.user.picture" alt="profile" />
+                  <v-icon v-else>mdi-account</v-icon>
+                </v-avatar>
+                <div class="flex flex-col">
+                  <span class="font-medium">{{ cloudUserDisplayName }}</span>
+                  <span v-if="cloudStore.user?.email" class="text-xs opacity-80">{{ cloudStore.user.email }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Generic WebSocket connections</template>
           <template #info>
@@ -431,12 +489,14 @@
   </BaseConfigurationView>
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" />
   <ManageCockpitSettings v-model:openConfigDialog="showCockpitSettingsDialog" />
+  <BlueOsCloudLoginDialog v-model="showCloudLoginDialog" />
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
+import BlueOsCloudLoginDialog from '@/components/blueos-cloud/BlueOsCloudLoginDialog.vue'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
@@ -456,6 +516,7 @@ import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
@@ -464,8 +525,34 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const mainVehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
+const cloudStore = useBlueOsCloudStore()
 const { openSnackbar } = useSnackbar()
 const { showDialog, closeDialog } = useInteractionDialog()
+
+const showCloudLoginDialog = ref(false)
+
+const cloudUserDisplayName = computed(() => {
+  const user = cloudStore.user
+  if (!user) return ''
+  return user.name || user.nickname || user.email || user.sub
+})
+
+const onCloudIntegrationToggle = (value: boolean | null): void => {
+  if (value && !cloudStore.isAuthenticated) {
+    showCloudLoginDialog.value = true
+  }
+}
+
+const signOutFromCloud = (): void => {
+  cloudStore.clearSession()
+  cloudStore.isIntegrationEnabled = false
+  openSnackbar({
+    message: 'Signed out from BlueOS Cloud.',
+    duration: 3000,
+    variant: 'info',
+    closeButton: true,
+  })
+}
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
