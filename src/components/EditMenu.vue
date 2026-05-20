@@ -47,6 +47,12 @@
                   <v-icon size="20">mdi-download</v-icon>
                 </div>
               </v-list-item>
+              <v-list-item @click="openVehicleDefaultsImportModal">
+                <div class="flex w-full justify-between">
+                  <v-list-item-title class="mr-6">Import vehicle defaults</v-list-item-title>
+                  <v-icon size="20">mdi-import</v-icon>
+                </div>
+              </v-list-item>
               <v-list-item @click="store.snapToGrid = !store.snapToGrid">
                 <div class="flex w-full justify-between mt-[6px]">
                   <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
@@ -598,6 +604,10 @@ const { showDialog, closeDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
 const store = useWidgetManagerStore()
 const mainVehicleStore = useMainVehicleStore()
+
+const openVehicleDefaultsImportModal = (): void => {
+  interfaceStore.openVehicleDefaultsViewsImport()
+}
 
 const miniWidgetsBars = computed(() => {
   let regularContainers = store.miniWidgetContainersInCurrentView.filter(
