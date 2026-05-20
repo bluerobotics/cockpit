@@ -778,7 +778,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import GlassModal from '@/components/GlassModal.vue'
 import JoystickButtonIndicator from '@/components/JoystickButtonIndicator.vue'
@@ -1639,22 +1639,21 @@ const autoOpenIfPending = (): void => {
   }
 }
 
-onMounted(async () => {
+// Wait for settings sync before auto-opening; vehicle-online alone can show stale pending state.
+const onVehicleSyncComplete = async (): Promise<void> => {
   if (!props.autoCheckOnMount) return
   await fetchBlueOSFeatures()
   autoOpenIfPending()
+}
+
+onMounted(() => {
+  if (!props.autoCheckOnMount) return
+  window.addEventListener('vehicle-sync-complete', onVehicleSyncComplete)
 })
 
-// Retry fetching BlueOS features when the vehicle becomes reachable, since the
-// initial fetch on app boot may have failed if BlueOS was not yet up (issue #2650).
-watch(
-  () => mainVehicleStore.isVehicleOnline,
-  async (isOnline) => {
-    if (!isOnline) return
-    await fetchBlueOSFeatures()
-    if (props.autoCheckOnMount) autoOpenIfPending()
-  }
-)
+onBeforeUnmount(() => {
+  window.removeEventListener('vehicle-sync-complete', onVehicleSyncComplete)
+})
 
 watch(isVisible, (visible, oldVisible) => {
   if (!visible) return
