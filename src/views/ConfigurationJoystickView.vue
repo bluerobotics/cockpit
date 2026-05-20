@@ -8,13 +8,16 @@
         style="scrollbar-gutter: stable"
       >
         <div
-          v-if="controllerStore.joysticks && !controllerStore.joysticks.size"
+          v-if="!controllerStore.joysticks.size"
           class="px-6 pb-2 flex-centered flex-column position-relative"
           :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
-          <p class="text-base text-center font-bold mt-6 mb-4">Connect a joystick and press any key.</p>
+          <p class="text-sm text-center opacity-80 mt-2 mb-1">
+            No joystick connected. Live input is unavailable, but you can still configure mappings, import defaults, and
+            import or export joystick configurations below.
+          </p>
         </div>
-        <div v-else>
+        <div>
           <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
             <template #title>General settings</template>
             <template #info>
@@ -141,6 +144,9 @@
                 </div>
               </div>
               <div v-if="currentTabVIew === 'svg'" class="flex flex-col justify-between">
+                <div v-if="!controllerStore.joysticks.size" class="text-center py-12 opacity-70 text-sm">
+                  Connect a joystick to see its visual layout and live input.
+                </div>
                 <div
                   v-for="[key, joystick] in controllerStore.joysticks"
                   :key="key"
@@ -256,11 +262,13 @@
                   </div>
                 </div>
               </div>
-              <div v-if="currentTabVIew === 'table'" class="w-full">
+              <div v-if="currentTabVIew === 'table'" class="w-full flex-centered flex-column position-relative">
+                <!-- Per-joystick header (model name + enable switch). Skipped entirely when no joystick is
+                     connected so the mapping editor below still renders. -->
                 <div
                   v-for="[key, joystick] in controllerStore.joysticks"
                   :key="key"
-                  class="w-full flex-centered flex-column position-relative"
+                  class="w-full flex-centered flex-column"
                 >
                   <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
                   <div class="flex items-center gap-2">
@@ -272,9 +280,11 @@
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
                     />
                   </div>
+                </div>
+
+                <div class="w-full flex-centered flex-column">
                   <p class="text-start text-sm font-bold w-[93%] mb-1">Axes</p>
                   <v-data-table
-                    v-if="controllerStore.joysticks && controllerStore.joysticks.size"
                     :items="tableItems"
                     class="elevation-1 bg-transparent rounded-lg mb-[20px]"
                     theme="dark"
@@ -304,10 +314,11 @@
                         </td>
                         <td class="w-[120px] text-center">
                           <AxisVisualization
-                            v-if="item.type === 'axis' && joystick.state.axes"
-                            :raw-value="joystick.state.axes[item.id as JoystickAxis] || 0"
-                            :processed-value="scaledAxisValue(joystick, item.id as JoystickAxis)"
+                            v-if="item.type === 'axis' && currentJoystick && currentJoystick.state.axes"
+                            :raw-value="currentJoystick.state.axes[item.id as JoystickAxis] || 0"
+                            :processed-value="scaledAxisValue(currentJoystick, item.id as JoystickAxis)"
                           />
+                          <span v-else class="text-xs opacity-50">—</span>
                         </td>
                         <td class="w-[50px] text-center">
                           <v-icon v-if="item.type === 'axis'">
@@ -371,7 +382,6 @@
 
                   <p class="text-start text-sm font-bold w-[93%] mb-1">Buttons</p>
                   <v-data-table
-                    v-if="currentJoystick && currentJoystick?.gamepadToCockpitMap?.buttons"
                     :headers="headers"
                     :items="tableItems"
                     :items-per-page="128"
@@ -440,7 +450,7 @@
                             icon="mdi-circle-edit-outline"
                             variant="text"
                             class="text-[16px]"
-                            @click="setCurrentInputFromTable(joystick, item as JoystickInput)"
+                            @click="setCurrentInputFromTable(currentJoystick ?? null, item as JoystickInput)"
                           >
                           </v-btn>
                         </td>
@@ -474,13 +484,7 @@
     </template>
   </BaseConfigurationView>
   <teleport to="body">
-    <InteractionDialog
-      v-show="currentJoystick"
-      :show-dialog="inputClickedDialog"
-      max-width="auto"
-      variant="text-only"
-      persistent
-    >
+    <InteractionDialog :show-dialog="inputClickedDialog" max-width="auto" variant="text-only" persistent>
       <template #title>
         <div class="flex justify-center w-full font-bold mt-1">Input mapping</div>
       </template>
@@ -855,15 +859,24 @@ const tableItemsCache = ref<{
 } | null>(null)
 
 /**
- * Optimized table items with memoization to reduce object creation
+ * Optimized table items with memoization to reduce object creation. When a joystick is connected
+ * we use its actual axes/buttons counts; otherwise we fall back to the protocol mapping's known
+ * axes/buttons so the mapping editor still renders and is editable without a joystick.
  */
 const tableItems = computed(() => {
-  if (currentJoystick.value === undefined) {
-    return []
+  let axesLength: number
+  let buttonsLength: number
+
+  if (currentJoystick.value) {
+    axesLength = currentJoystick.value.state.axes.length
+    buttonsLength = currentJoystick.value.state.buttons.length
+  } else {
+    axesLength = Object.keys(selectedProfileAxesCorrespondencies.value).length
+    const buttons =
+      selectedProfileButtonsCorrespondencies.value[currentModifierKey.value.id as CockpitModifierKeyOption]
+    buttonsLength = buttons ? Object.keys(buttons).length : 0
   }
 
-  const axesLength = currentJoystick.value.state.axes.length
-  const buttonsLength = currentJoystick.value.state.buttons.length
   const cacheKey = `${axesLength}-${buttonsLength}`
 
   // Check if we can use cached items
@@ -901,13 +914,15 @@ watch(inputClickedDialog, () => {
   justRemappedAxisInput.value = undefined
 })
 
-const setCurrentInputFromTable = (joystick: Joystick, input: JoystickInput): void => {
+const setCurrentInputFromTable = (joystick: Joystick | null, input: JoystickInput): void => {
   const inputs = [input]
   setCurrentInputs(joystick, inputs)
 }
 
-const setCurrentInputs = (joystick: Joystick, inputs: JoystickInput[]): void => {
-  currentJoystick.value = joystick
+const setCurrentInputs = (joystick: Joystick | null, inputs: JoystickInput[]): void => {
+  // Keep the previously-set currentJoystick (if any) when called without one, so the live joystick
+  // reference is preserved across mapping-editor interactions that don't carry a joystick context.
+  if (joystick) currentJoystick.value = joystick
 
   currentButtonInputs.value = inputs
     .filter((i) => i.type === InputType.Button)
