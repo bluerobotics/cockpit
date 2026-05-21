@@ -1,5 +1,9 @@
 <template>
-  <div class="mission-planning" :style="glassMenuCssVars">
+  <div
+    class="mission-planning"
+    :class="{ 'mission-planning--fence-mode': planningMode === 'geofence' }"
+    :style="glassMenuCssVars"
+  >
     <div id="planningMap" ref="planningMap" class="relative" />
     <v-tooltip location="top" text="Generate waypoints">
       <template #activator="{ props }">
@@ -105,45 +109,134 @@
         @regenerate-survey-waypoints="regenerateSurveyWaypoints"
       />
     </div>
+    <v-tooltip location="top" text="Finish polygon fence">
+      <template #activator="{ props }">
+        <div
+          v-if="fenceStore.isDrawingPolygon && fencePolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="fenceConfirmButtonStyle"
+          class="absolute text-[22px] -ml-[10px] -mt-[10px] bg-transparent rounded-full cursor-pointer elevation-4"
+          variant="text"
+          @click="onFinishFencePolygonDrawing"
+        >
+          <v-icon color="green" class="border-2 rounded-full bg-white">mdi-check-circle</v-icon>
+        </div>
+      </template>
+    </v-tooltip>
+    <v-tooltip location="top" text="Discard polygon fence">
+      <template #activator="{ props }">
+        <div
+          v-if="fenceStore.isDrawingPolygon && fencePolygonVertexesPositions.length >= 1"
+          v-bind="props"
+          :style="fenceConfirmButtonStyle"
+          class="absolute text-[14px] mt-[40px] -ml-[7px] bg-transparent rounded-full cursor-pointer elevation-4"
+          variant="text"
+          @click="fenceStore.cancelDrawingPolygon()"
+        >
+          <div color="white" class="border-2 rounded-full bg-red text-[18px] pa-1">
+            <svg width="16" height="16" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2"
+                stroke="white"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+      </template>
+    </v-tooltip>
     <div
       v-show="!interfaceStore.isMainMenuVisible"
-      class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-y-auto z-[200]"
-      :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '320px' }]"
+      class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-hidden z-[200]"
+      :style="[
+        interfaceStore.globalGlassMenuStyles,
+        { height: 'auto', maxHeight: calculatedHeight, width: '320px', borderBottom: 'none' },
+      ]"
     >
+      <div class="flex flex-row w-full elevation-2 z-10">
+        <button
+          class="flex-1 h-11 flex items-center justify-center text-base font-medium transition-colors duration-200"
+          :class="planningMode === 'mission' ? 'bg-[#3B78A8] text-white' : 'bg-[#FFFFFF11] hover:bg-[#FFFFFF22]'"
+          @click="planningMode = 'mission'"
+        >
+          <v-icon size="18" class="mr-1">mdi-map-marker-path</v-icon>
+          Mission
+        </button>
+        <div class="w-px bg-[#FFFFFF22]" />
+        <button
+          class="flex-1 h-11 flex items-center justify-center text-base font-medium transition-colors duration-200"
+          :class="planningMode === 'geofence' ? 'bg-[#3B78A8] text-white' : 'bg-[#FFFFFF11] hover:bg-[#FFFFFF22]'"
+          @click="planningMode = 'geofence'"
+        >
+          <v-icon size="18" class="mr-1">mdi-shield-outline</v-icon>
+          GeoFence
+        </button>
+      </div>
       <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
-        <button
-          v-if="!isCreatingSimplePath && !isCreatingSurvey"
-          :class="{ ' elevation-4': isCreatingSurvey }"
-          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          @click="toggleSurvey"
-        >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SURVEY' : 'CREATE SURVEY' }}
-        </button>
-        <button
-          v-if="!isCreatingSurvey && !isCreatingSimplePath"
-          :class="{ ' elevation-4': isCreatingSimplePath }"
-          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          @click="toggleSimplePath"
-        >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
-        </button>
+        <GeoFenceEditor
+          v-if="planningMode === 'geofence'"
+          :map-center="mapCenter"
+          @mission-loaded="updateWaypointMarkers"
+        />
         <div
-          v-if="!isCreatingSurvey && !isCreatingSimplePath"
-          class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
+          v-if="planningMode === 'mission' && !isCreatingSurvey && !isCreatingSimplePath"
+          class="flex flex-row items-center justify-between m-2 gap-x-2"
         >
-          <p class="text-sm">Cruise speed</p>
-          <input
-            v-model.number="localCruiseSpeed"
-            class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
-            type="number"
-            min="0"
-            step="0.5"
-            @change="cruiseSpeedTouched = true"
-          />
-          <p class="text-sm">m/s</p>
+          <div class="flex flex-row items-center gap-x-1 w-[130px] -ml-1">
+            <p class="text-xs">Cruise speed</p>
+            <input
+              v-model.number="localCruiseSpeed"
+              class="w-[55px] px-1 py-0 rounded-sm bg-[#FFFFFF22] text-sm"
+              type="number"
+              min="0"
+              step="0.5"
+              @change="cruiseSpeedTouched = true"
+            />
+            <p class="text-xs">m/s</p>
+          </div>
+          <v-divider vertical class="opacity-30 mx-1 h-5 self-center" />
+          <div class="flex flex-row items-center gap-x-2">
+            <span class="text-sm font-medium mr-1">
+              {{ missionStore.currentPlanningWaypoints.length > 0 ? 'Add:' : 'New:' }}
+            </span>
+            <v-tooltip
+              location="top"
+              :text="missionStore.currentPlanningWaypoints.length > 0 ? 'Add survey area' : 'Create survey area'"
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  icon="mdi-grid"
+                  variant="elevated"
+                  color="#3B78A8"
+                  size="x-small"
+                  class="rounded-md"
+                  @click="toggleSurvey"
+                />
+              </template>
+            </v-tooltip>
+            <v-tooltip
+              location="top"
+              :text="missionStore.currentPlanningWaypoints.length > 0 ? 'Add simple path' : 'Create simple path'"
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  icon="mdi-vector-polyline"
+                  variant="elevated"
+                  color="#3B78A8"
+                  size="x-small"
+                  class="rounded-md"
+                  @click="toggleSimplePath"
+                />
+              </template>
+            </v-tooltip>
+          </div>
         </div>
         <div
-          v-if="showMissionCreationTips && !isCreatingSurvey && !isCreatingSimplePath"
+          v-if="planningMode === 'mission' && showMissionCreationTips && !isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-col px-4 py-3 gap-y-2 ma-2 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#00000022]"
         >
           <div class="flex justify-between my-[1px]">
@@ -204,7 +297,7 @@
           </div>
         </div>
         <div
-          v-if="countdownToHideTips !== undefined"
+          v-if="planningMode === 'mission' && countdownToHideTips !== undefined"
           class="flex flex-row justify-between px-3 py-1 my-2 mx-6 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#ffad4322] cursor-pointer opacity-60 elevation-4"
           @click="handleDoNotShowTipsAgain"
         >
@@ -212,7 +305,7 @@
           <p class="text-sm">{{ countdownToHideTips }}</p>
         </div>
         <div
-          v-if="home === undefined && !isSettingHomeWaypoint"
+          v-if="planningMode === 'mission' && home === undefined && !isSettingHomeWaypoint"
           class="flex justify-end ma-2"
           @click="handleAddHomeWaypointByClick"
           @dragstart="handleAddHomeWaypointByClick"
@@ -224,8 +317,8 @@
             <v-icon class="text-md ml-2">mdi-home-circle</v-icon>
           </p>
         </div>
-        <v-divider v-if="!isCreatingSimplePath" class="my-2" />
-        <div v-if="isCreatingSurvey" class="flex flex-col">
+        <v-divider v-if="planningMode === 'mission' && !isCreatingSimplePath" class="my-2" />
+        <div v-if="planningMode === 'mission' && isCreatingSurvey" class="flex flex-col">
           <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
           <input
             v-model.number="distanceBetweenSurveyLines"
@@ -295,8 +388,8 @@
             Cancel Survey
           </button>
         </div>
-        <v-divider v-if="isCreatingSurvey" class="my-2" />
-        <div v-if="isCreatingSimplePath" class="flex flex-col w-full h-full p-2">
+        <v-divider v-if="planningMode === 'mission' && isCreatingSurvey" class="my-2" />
+        <div v-if="planningMode === 'mission' && isCreatingSimplePath" class="flex flex-col w-full h-full p-2">
           <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
           <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
           <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
@@ -323,7 +416,7 @@
           </button>
         </div>
 
-        <div>
+        <div v-if="planningMode === 'mission'">
           <div class="flex w-full justify-between my-2 px-1">
             <v-tooltip location="top" text="Undo (Ctrl+Z / Cmd+Z)">
               <template #activator="{ props }">
@@ -408,9 +501,12 @@
             </v-tooltip>
           </div>
         </div>
-        <v-divider v-if="isCreatingSimplePath || isCreatingSurvey" class="my-2" />
+        <v-divider v-if="planningMode === 'mission' && (isCreatingSimplePath || isCreatingSurvey)" class="my-2" />
         <button
-          v-if="isCreatingSimplePath || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0"
+          v-if="
+            planningMode === 'mission' &&
+            (isCreatingSimplePath || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0)
+          "
           :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
           :class="{
             'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
@@ -422,7 +518,7 @@
           UPLOAD MISSION TO VEHICLE
         </button>
         <button
-          v-if="missionStore.currentPlanningWaypoints.length > 0"
+          v-if="planningMode === 'mission' && missionStore.currentPlanningWaypoints.length > 0"
           :disabled="loading"
           class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
           @click="openCLearMissionDialog"
@@ -431,6 +527,7 @@
           <p v-else>CLEAR CURRENT MISSION</p>
         </button>
         <button
+          v-if="planningMode === 'mission'"
           :disabled="loading || !vehicleStore.isVehicleOnline"
           class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
           :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
@@ -441,107 +538,112 @@
         </button>
       </div>
     </div>
-    <v-tooltip location="top" text="Switch to Flight mode">
-      <template #activator="{ props: tooltipProps }">
-        <v-btn
-          v-bind="tooltipProps"
-          class="absolute right-[135px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
-          elevation="8"
-          text="Flight mode"
-          append-icon="mdi-send"
-          :style="interfaceStore.globalGlassMenuStyles"
-          hide-details
-          size="small"
-          @click.stop="router.push('/')"
-        />
-      </template>
-    </v-tooltip>
-    <v-tooltip location="top center" text="Download map tiles">
-      <template #activator="{ props: tooltipProps }">
-        <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
-          <template #activator="{ props: menuProps }">
-            <v-btn
-              v-bind="{ ...menuProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[88px] text-[14px]"
-              :style="interfaceStore.globalGlassMenuStyles"
-              size="x-small"
-              icon="mdi-download-multiple"
-            />
-          </template>
+    <div
+      class="planning-bottom-buttons absolute right-[52px] mb-3 bottom-12 flex flex-row items-center"
+      style="z-index: 1002; gap: 10px"
+    >
+      <v-tooltip location="top" text="Switch to Flight mode">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-bind="tooltipProps"
+            class="w-[140px] bg-slate-50 text-[12px] font-bold"
+            elevation="8"
+            text="Flight mode"
+            append-icon="mdi-send"
+            :style="interfaceStore.globalGlassMenuStyles"
+            hide-details
+            size="small"
+            @click.stop="router.push('/')"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top center" text="Download map tiles">
+        <template #activator="{ props: tooltipProps }">
+          <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
+            <template #activator="{ props: menuProps }">
+              <v-btn
+                v-bind="{ ...menuProps, ...tooltipProps }"
+                class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+                :style="interfaceStore.globalGlassMenuStyles"
+                size="x-small"
+                icon="mdi-download-multiple"
+              />
+            </template>
 
-          <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-            <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
-            <v-divider />
-            <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
-          </v-list>
-        </v-menu>
-      </template>
-    </v-tooltip>
-    <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
-      <template #activator="{ props: activatorProps }">
-        <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+            <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
+              <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+              <v-divider />
+              <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+            </v-list>
+          </v-menu>
+        </template>
+      </v-tooltip>
+      <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
+        <template #activator="{ props: activatorProps }">
+          <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                v-bind="{ ...activatorProps, ...tooltipProps }"
+                class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+                :style="interfaceStore.globalGlassMenuStyles"
+                :color="followerTarget !== undefined ? 'red' : ''"
+                icon="mdi-crosshairs-gps"
+                size="x-small"
+              />
+            </template>
+          </v-tooltip>
+        </template>
+        <v-tooltip location="left" :text="centerMissionButtonTooltipText">
           <template #activator="{ props: tooltipProps }">
             <v-btn
-              v-bind="{ ...activatorProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 right-[44px] bg-slate-50 text-[14px]"
-              :style="interfaceStore.globalGlassMenuStyles"
-              :color="followerTarget !== undefined ? 'red' : ''"
-              icon="mdi-crosshairs-gps"
+              key="mission"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
+              :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
+              icon="mdi-map-marker-path"
               size="x-small"
+              :disabled="!hasMissionWaypoints"
+              @click.stop="centerOnMission"
             />
           </template>
         </v-tooltip>
-      </template>
-      <v-tooltip location="left" :text="centerMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="mission"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
-            :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
-            icon="mdi-map-marker-path"
-            size="x-small"
-            :disabled="!hasMissionWaypoints"
-            @click.stop="centerOnMission"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerHomeButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="home"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
-            :class="[!home ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-            icon="mdi-home-search"
-            size="x-small"
-            :disabled="!home"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="vehicle"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
-            :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-            icon="mdi-airplane-marker"
-            size="x-small"
-            :disabled="!vehiclePosition"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-          />
-        </template>
-      </v-tooltip>
-    </v-speed-dial>
+        <v-tooltip location="left" :text="centerHomeButtonTooltipText">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              key="home"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
+              :class="[!home ? 'active-events-on-disabled' : '']"
+              :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+              icon="mdi-home-search"
+              size="x-small"
+              :disabled="!home"
+              @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+              @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+            />
+          </template>
+        </v-tooltip>
+        <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              key="vehicle"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
+              :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
+              :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+              icon="mdi-airplane-marker"
+              size="x-small"
+              :disabled="!vehiclePosition"
+              @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+              @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+            />
+          </template>
+        </v-tooltip>
+      </v-speed-dial>
+    </div>
     <v-progress-linear
       v-if="uploadingMission"
       :model-value="missionUploadProgress"
@@ -627,6 +729,7 @@
     :zoom="zoom"
     :target-follower="targetFollower"
   />
+  <GeoFenceMapLayer :readonly="planningMode !== 'geofence'" />
 
   <v-progress-linear
     v-if="fetchingMission"
@@ -670,6 +773,8 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
+import GeoFenceEditor from '@/components/mission-planning/GeoFenceEditor.vue'
+import GeoFenceMapLayer from '@/components/mission-planning/GeoFenceMapLayer.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
@@ -698,6 +803,7 @@ import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-
 import { degrees } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
+import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -725,6 +831,7 @@ const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
+const fenceStore = useGeoFenceStore()
 const missionEstimates = useMissionEstimates()
 const { height: windowHeight } = useWindowSize()
 
@@ -764,11 +871,61 @@ const cloneCommands = (commands?: MissionCommand[]): MissionCommand[] => {
   return makeDefaultNavCommands()
 }
 
+/**
+ * Inspects the mission waypoints against the active geofence (the editor
+ * draft when present, falling back to the plan currently uploaded to the
+ * vehicle). When at least one waypoint breaches the fence, prompts the user
+ * with a "Back to mission planning" / "Upload to vehicle anyway" choice and
+ * resolves to whether the upload should continue. No-op (returns true) when
+ * there's no fence to check against or no breach is detected.
+ * @returns { Promise<boolean> } True when the upload should proceed.
+ */
+const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
+  const report = fenceStore.detectMissionBreaches(missionStore.currentPlanningWaypoints)
+  if (!report.hasBreaches) return true
+
+  let confirmed = false
+  await new Promise<void>((resolve) => {
+    showDialog({
+      variant: 'text-only',
+      title: 'Mission breaches geofence',
+      message:
+        `${report.breachedIndices.length} of ${report.totalChecked} waypoints fall outside an inclusion fence ` +
+        'or inside an exclusion fence. Uploading anyway may trigger an in-flight fence breach action ' +
+        '(RTL / Land / Brake, depending on the autopilot configuration).',
+      persistent: false,
+      maxWidth: '720px',
+      actions: [
+        {
+          text: 'Back to mission planning',
+          color: 'white',
+          action: () => {
+            closeDialog()
+            resolve()
+          },
+        },
+        {
+          text: 'Upload to vehicle anyway',
+          color: 'white',
+          action: () => {
+            confirmed = true
+            closeDialog()
+            resolve()
+          },
+        },
+      ],
+    })
+  })
+  return confirmed
+}
+
 const uploadMissionToVehicle = async (): Promise<void> => {
   if (!home.value) {
     showHomePositionNotSetDialog.value = true
     return
   }
+
+  if (!(await confirmMissionFenceBreachIfNeeded())) return
 
   uploadingMission.value = true
   missionUploadProgress.value = 0
@@ -913,11 +1070,44 @@ const availableFrames = Object.values(AltitudeReferenceType).map((value: Altitud
   value,
 }))
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
+const planningMode = ref<'mission' | 'geofence'>('mission')
+
+watch(planningMode, (mode) => {
+  if (mode !== 'geofence' && fenceStore.isDrawingPolygon) {
+    fenceStore.cancelDrawingPolygon()
+  }
+  if (mode !== 'geofence' && fenceStore.isDrawingCircle) {
+    fenceStore.cancelDrawingCircle()
+  }
+})
+
+watch(
+  () => fenceStore.isDrawingPolygon,
+  (drawing) => {
+    if (!drawing) {
+      clearFencePolygonDrawingArtifacts()
+      clearLiveMeasure()
+    }
+    setMapCursor()
+  }
+)
+
+watch(
+  () => fenceStore.isDrawingCircle,
+  (drawing) => {
+    if (!drawing) {
+      clearPendingFenceCircleArtifacts()
+      clearLiveMeasure()
+    }
+    setMapCursor()
+  }
+)
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
 const currentCursorGeoCoordinates = ref<[number, number] | null>(null)
 const confirmButtonStyle = ref<Record<string, string>>({})
+const fenceConfirmButtonStyle = ref<Record<string, string>>({})
 const surveyPolygonVertexesPositions = ref<L.LatLng[]>([])
 const isCreatingSurvey = ref(false)
 const isDrawingSurveyPolygon = ref(false)
@@ -935,6 +1125,25 @@ const surveyPolygonUndoStack: L.LatLng[][] = []
 const surveyPolygonRedoStack: L.LatLng[][] = []
 let undoLimitShown = false
 let redoLimitShown = false
+
+// Fence polygon drawing — mirrors the survey-polygon drawing infrastructure
+// (`surveyPolygonVertexesPositions`, `surveyPolygonVertexesMarkers`, etc.) so
+// the user gets the same UX (crosshair cursor, live measurement on the dashed
+// line, draggable vertex markers, "+" markers on edges to insert vertices,
+// hover-to-delete popup, live area pill at the centroid). Only the visual
+// styling differs (orange fence palette instead of the survey blue).
+const fencePolygonVertexesPositions = ref<L.LatLng[]>([])
+const fencePolygonVertexesMarkers = ref<L.Marker[]>([])
+const fencePolygonLayer = shallowRef<L.Polygon | null>(null)
+const fenceEdgeAddMarkers: L.Marker[] = []
+const liveFencePolygonAreaMarker = shallowRef<L.Marker | null>(null)
+
+// Two-click circle drawing state. The first click sets the center marker,
+// subsequent mouse-moves update the live `pendingFenceCircleLayer` radius
+// (with the existing measure-overlay distance pill repurposed as a radius
+// label), and the second click commits.
+const pendingFenceCircleCenterMarker = shallowRef<L.Marker | null>(null)
+const pendingFenceCircleLayer = shallowRef<L.Circle | null>(null)
 
 const pushSurveyPolygonSnapshot = (): void => {
   surveyPolygonUndoStack.push(surveyPolygonVertexesPositions.value.map((ll) => ll.clone()))
@@ -1019,6 +1228,13 @@ const currentMeasureAnchor = (): L.LatLng | null => {
     const last = surveyPolygonVertexesPositions.value[surveyPolygonVertexesPositions.value.length - 1]
     return L.latLng(last.lat, last.lng)
   }
+  if (fenceStore.isDrawingPolygon && fencePolygonVertexesPositions.value.length > 0) {
+    const last = fencePolygonVertexesPositions.value[fencePolygonVertexesPositions.value.length - 1]
+    return L.latLng(last.lat, last.lng)
+  }
+  if (fenceStore.isDrawingCircle && fenceStore.pendingCircleCenter) {
+    return L.latLng(fenceStore.pendingCircleCenter[0], fenceStore.pendingCircleCenter[1])
+  }
 
   return null
 }
@@ -1077,14 +1293,21 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
 const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
   const el = evt.originalEvent?.target as HTMLElement | null
   if (!el) return false
-  return !!el.closest('.custom-div-icon, .edge-marker, .delete-popup, .delete-button')
+  return !!el.closest(
+    '.custom-div-icon, .edge-marker, .delete-popup, .delete-button, .fence-vertex-div-icon, .fence-edge-marker'
+  )
 }
 
 const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   if (!planningMap.value) return
 
   const anchor = currentMeasureAnchor()
-  const measuring = !!anchor && (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
+  const measuring =
+    !!anchor &&
+    (isCreatingSimplePath.value ||
+      (isCreatingSurvey.value && isDrawingSurveyPolygon.value) ||
+      fenceStore.isDrawingPolygon ||
+      (fenceStore.isDrawingCircle && !!fenceStore.pendingCircleCenter))
   if (!measuring) {
     destroyMeasureOverlay(planningMap.value)
     return
@@ -1120,6 +1343,11 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
     measureTextEl.style.left = `${midX}px`
     measureTextEl.style.top = `${midY}px`
     measureTextEl.style.display = hidePill ? 'none' : 'block'
+  }
+
+  if (fenceStore.isDrawingCircle && fenceStore.pendingCircleCenter) {
+    fenceStore.setPendingCircleRadius(dist)
+    updatePendingFenceCircleLayer()
   }
 }
 
@@ -1439,6 +1667,54 @@ const updateConfirmButtonPosition = (): void => {
   }
 }
 
+const updateFenceConfirmButtonPosition = (): void => {
+  if (!planningMap.value) return
+
+  if (fenceStore.isDrawingPolygon && fencePolygonVertexesPositions.value.length >= 3) {
+    const map = planningMap.value
+    const container = map.getContainer()
+    const cw = container.clientWidth
+    const ch = container.clientHeight
+
+    const pts = fencePolygonVertexesPositions.value.map((ll) => map.latLngToContainerPoint(ll))
+    const bounds = screenBounds(pts)
+
+    const anchorToLeft = 30
+    const anchorToRight = 30
+    const anchorToTop = 10
+    const anchorToBottom = 80
+    const visualW = anchorToLeft + anchorToRight
+    const visualH = anchorToTop + anchorToBottom
+    const gap = 20
+    const margin = 8
+
+    const cx = (bounds.minX + bounds.maxX) / 2
+    const cy = (bounds.minY + bounds.maxY) / 2
+
+    const pos = pickBestPosition(
+      [
+        { x: bounds.maxX + gap, y: cy - visualH / 2 },
+        { x: bounds.minX - gap - visualW, y: cy - visualH / 2 },
+        { x: cx - visualW / 2, y: bounds.maxY + gap },
+        { x: cx - visualW / 2, y: bounds.minY - gap - visualH },
+      ],
+      visualW,
+      visualH,
+      bounds,
+      cw,
+      ch,
+      margin
+    )
+
+    fenceConfirmButtonStyle.value = {
+      left: `${pos.x + anchorToLeft}px`,
+      top: `${pos.y + anchorToTop}px`,
+    }
+  } else {
+    fenceConfirmButtonStyle.value = { display: 'none' }
+  }
+}
+
 const setMapCursor = (): void => {
   const map = planningMap.value as any
   const el: HTMLElement | null = map && typeof map.getContainer === 'function' ? map.getContainer() : null
@@ -1451,7 +1727,12 @@ const setMapCursor = (): void => {
     el.style.cursor = 'pointer'
     return
   }
-  if (isCreatingSurvey.value || isCreatingSimplePath.value) {
+  if (
+    isCreatingSurvey.value ||
+    isCreatingSimplePath.value ||
+    fenceStore.isDrawingPolygon ||
+    fenceStore.isDrawingCircle
+  ) {
     el.style.cursor = 'crosshair'
   } else {
     el.style.cursor = ''
@@ -2290,9 +2571,27 @@ const handleKeyDown = (event: KeyboardEvent): void => {
     if (isCreatingSimplePath.value) {
       isCreatingSimplePath.value = false
     }
+    if (planningMode.value === 'geofence' && fenceStore.isDrawingPolygon) {
+      fenceStore.cancelDrawingPolygon()
+    }
+    if (planningMode.value === 'geofence' && fenceStore.isDrawingCircle) {
+      fenceStore.cancelDrawingCircle()
+    }
   }
   if (event.key === 'Enter' && isCreatingSurvey.value) {
     generateWaypointsFromSurvey()
+  }
+  if (event.key === 'Enter' && planningMode.value === 'geofence' && fenceStore.isDrawingPolygon) {
+    fenceStore.finishDrawingPolygon()
+  }
+  if (
+    event.key === 'Enter' &&
+    planningMode.value === 'geofence' &&
+    fenceStore.isDrawingCircle &&
+    fenceStore.pendingCircleCenter &&
+    fenceStore.pendingCircleRadius >= 1
+  ) {
+    fenceStore.finishDrawingCircle()
   }
   if (event.key === 'Delete' && !interfaceStore.configPanelVisible) {
     if (selectedWaypoint.value) {
@@ -2496,6 +2795,14 @@ watch(
   [surveyPolygonVertexesPositions, isCreatingSurvey],
   () => {
     updateConfirmButtonPosition()
+  },
+  { immediate: true, deep: true }
+)
+
+watch(
+  [fencePolygonVertexesPositions, () => fenceStore.isDrawingPolygon],
+  () => {
+    updateFenceConfirmButtonPosition()
   },
   { immediate: true, deep: true }
 )
@@ -3326,6 +3633,284 @@ const createSurveyVertexMarker = (
     })
 }
 
+const FENCE_DRAW_COLOR = '#FF8800'
+
+const syncFenceVerticesToStore = (): void => {
+  fenceStore.pendingPolygonVertices.splice(
+    0,
+    fenceStore.pendingPolygonVertices.length,
+    ...fencePolygonVertexesPositions.value.map(({ lat, lng }) => [lat, lng] as [number, number])
+  )
+}
+
+const updateLiveFencePolygonAreaLabel = (coords: WaypointCoordinates[]): void => {
+  if (coords.length < 3) {
+    if (liveFencePolygonAreaMarker.value) {
+      planningMap.value?.removeLayer(liveFencePolygonAreaMarker.value)
+      liveFencePolygonAreaMarker.value = null
+    }
+    return
+  }
+
+  const m2 = polygonAreaSquareMeters(coords)
+  const label = missionEstimates.formatArea(m2)
+  const centerTuple = centroidLatLng(coords)
+  if (!Number.isFinite(centerTuple[0]) || !Number.isFinite(centerTuple[1])) return
+  const center = L.latLng(centerTuple[0], centerTuple[1])
+
+  if (!liveFencePolygonAreaMarker.value) {
+    liveFencePolygonAreaMarker.value = makeAreaMarker(center, label)
+    addAreaToMeasureLayer(liveFencePolygonAreaMarker.value)
+  } else {
+    liveFencePolygonAreaMarker.value.setLatLng(center)
+    const el = liveFencePolygonAreaMarker.value.getElement()
+    if (el) el.querySelector('.measure-area-pill')!.textContent = label
+  }
+}
+
+const updateFencePolygonLayer = (): void => {
+  fencePolygonVertexesPositions.value = fencePolygonVertexesMarkers.value.map((marker) => marker.getLatLng())
+
+  if (fencePolygonLayer.value) {
+    fencePolygonLayer.value.setLatLngs(fencePolygonVertexesPositions.value)
+  } else if (fencePolygonVertexesPositions.value.length >= 3) {
+    fencePolygonLayer.value = L.polygon(fencePolygonVertexesPositions.value, {
+      color: FENCE_DRAW_COLOR,
+      fillColor: FENCE_DRAW_COLOR,
+      fillOpacity: 0.15,
+      weight: 2,
+      dashArray: '4 4',
+      className: 'fence-polygon-draft',
+    }).addTo(toRaw(planningMap.value)!)
+  }
+
+  if (fencePolygonLayer.value && fencePolygonVertexesPositions.value.length >= 3) {
+    updateLiveFencePolygonAreaLabel(
+      fencePolygonVertexesPositions.value.map((p) => [p.lat, p.lng] as WaypointCoordinates)
+    )
+  } else if (fencePolygonVertexesPositions.value.length < 3 && fencePolygonLayer.value) {
+    planningMap.value?.removeLayer(fencePolygonLayer.value as unknown as L.Layer)
+    fencePolygonLayer.value = null
+    updateLiveFencePolygonAreaLabel([])
+  }
+
+  syncFenceVerticesToStore()
+  updateFenceConfirmButtonPosition()
+}
+
+const updateFenceEdgeAddMarkers = (): void => {
+  fenceEdgeAddMarkers.forEach((marker) => marker.remove())
+  fenceEdgeAddMarkers.length = 0
+
+  if (fencePolygonVertexesPositions.value.length < 3) return
+
+  for (let i = 0; i < fencePolygonVertexesPositions.value.length; i++) {
+    const start = fencePolygonVertexesPositions.value[i]
+    const end = fencePolygonVertexesPositions.value[(i + 1) % fencePolygonVertexesPositions.value.length]
+    const middle = L.latLng((start.lat + end.lat) / 2, (start.lng + end.lng) / 2)
+
+    const fenceEdgeAddMarker = L.marker(middle, {
+      icon: L.divIcon({
+        html: `
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+              <circle cx="10" cy="10" r="9" fill="white" stroke="${FENCE_DRAW_COLOR}" stroke-width="2"/>
+              <path d="M10 5V15M5 10H15" stroke="${FENCE_DRAW_COLOR}" stroke-width="2"/>
+            </svg>
+          `,
+        className: 'fence-edge-marker',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      }),
+    })
+
+    fenceEdgeAddMarker.on('click', (e: L.LeafletMouseEvent) => addFencePolygonPoint(e.latlng, i))
+    fenceEdgeAddMarker.addTo(toRaw(planningMap.value)!)
+    fenceEdgeAddMarkers.push(fenceEdgeAddMarker)
+  }
+}
+
+const createFenceVertexMarker = (
+  latlng: L.LatLng,
+  onClick: (marker: L.Marker, evt: L.LeafletEvent) => void,
+  onDrag: () => void
+): L.Marker => {
+  let justCreated = true
+
+  return L.marker(latlng, {
+    icon: L.divIcon({
+      html: `
+        <div class="fence-vertex-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5" fill="${FENCE_DRAW_COLOR}" stroke="white" stroke-width="2"/>
+          </svg>
+          <div class="delete-popup" style="display: none;">
+            <button class="delete-button">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 4h12M4 4v10a2 2 0 002 2h4a2 2 0 002-2V4M6 4V2h4v2"
+                      stroke="white" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+          </div>
+        </div>
+      `,
+      className: 'fence-vertex-div-icon',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    }),
+    draggable: true,
+  })
+    .on('drag', () => {
+      onDrag()
+    })
+    .on('mouseover', (event: L.LeafletEvent) => {
+      if (justCreated) {
+        justCreated = false
+        return
+      }
+      const target = event.target as L.Marker
+      const popup = target.getElement()?.querySelector('.delete-popup') as HTMLDivElement
+      if (popup) popup.style.display = 'block'
+    })
+    .on('mouseout', (event: L.LeafletEvent) => {
+      const target = event.target as L.Marker
+      const popup = target.getElement()?.querySelector('.delete-popup') as HTMLDivElement
+      if (popup) popup.style.display = 'none'
+    })
+    .on('click', (event: L.LeafletEvent) => {
+      const target = event.target as L.Marker
+      onClick(target, event)
+    })
+}
+
+const onRemoveFencePolygonVertex = (index: number): void => {
+  const marker = fencePolygonVertexesMarkers.value[index]
+  if (!marker) return
+  fencePolygonVertexesPositions.value.splice(index, 1)
+  fencePolygonVertexesMarkers.value.splice(index, 1)
+  marker.remove()
+  updateFencePolygonLayer()
+  updateFenceEdgeAddMarkers()
+}
+
+const addFencePolygonPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefined): void => {
+  if (!fenceStore.isDrawingPolygon) return
+
+  if (edgeIndex === undefined) {
+    fencePolygonVertexesPositions.value.push(latlng)
+  } else {
+    fencePolygonVertexesPositions.value.splice(edgeIndex + 1, 0, latlng)
+  }
+
+  const newMarker = createFenceVertexMarker(
+    latlng,
+    (marker) => {
+      const idx = fencePolygonVertexesMarkers.value.indexOf(marker)
+      if (idx !== -1) onRemoveFencePolygonVertex(idx)
+    },
+    () => {
+      updateFencePolygonLayer()
+      updateFenceEdgeAddMarkers()
+    }
+  ).addTo(toRaw(planningMap.value)!)
+
+  if (edgeIndex === undefined) {
+    fencePolygonVertexesMarkers.value.push(newMarker)
+  } else {
+    fencePolygonVertexesMarkers.value.splice(edgeIndex + 1, 0, newMarker)
+  }
+
+  updateFencePolygonLayer()
+  updateFenceEdgeAddMarkers()
+}
+
+const onFinishFencePolygonDrawing = (): void => {
+  if (fencePolygonVertexesPositions.value.length < 3) return
+  syncFenceVerticesToStore()
+  fenceStore.finishDrawingPolygon()
+}
+
+const clearFencePolygonDrawingArtifacts = (): void => {
+  if (fencePolygonLayer.value) {
+    planningMap.value?.removeLayer(fencePolygonLayer.value as unknown as L.Layer)
+    fencePolygonLayer.value = null
+  }
+  if (liveFencePolygonAreaMarker.value) {
+    planningMap.value?.removeLayer(liveFencePolygonAreaMarker.value)
+    liveFencePolygonAreaMarker.value = null
+  }
+  fencePolygonVertexesMarkers.value.forEach((marker) => marker.remove())
+  fenceEdgeAddMarkers.forEach((marker) => marker.remove())
+  fenceEdgeAddMarkers.length = 0
+  fencePolygonVertexesMarkers.value = []
+  fencePolygonVertexesPositions.value = []
+}
+
+const setPendingFenceCircleCenter = (latlng: L.LatLng): void => {
+  if (!fenceStore.isDrawingCircle) return
+  fenceStore.setPendingCircleCenter([latlng.lat, latlng.lng])
+
+  if (pendingFenceCircleCenterMarker.value) {
+    pendingFenceCircleCenterMarker.value.setLatLng(latlng)
+  } else {
+    pendingFenceCircleCenterMarker.value = L.marker(latlng, {
+      icon: L.divIcon({
+        html: `
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="7" cy="7" r="5" fill="${FENCE_DRAW_COLOR}" stroke="white" stroke-width="2"/>
+          </svg>
+        `,
+        className: 'fence-vertex-div-icon',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      }),
+      interactive: false,
+      keyboard: false,
+    }).addTo(toRaw(planningMap.value)!)
+  }
+}
+
+const updatePendingFenceCircleLayer = (): void => {
+  if (!planningMap.value) return
+  const center = fenceStore.pendingCircleCenter
+  const radius = fenceStore.pendingCircleRadius
+  if (!center || radius < 1) {
+    if (pendingFenceCircleLayer.value) {
+      planningMap.value.removeLayer(pendingFenceCircleLayer.value as unknown as L.Layer)
+      pendingFenceCircleLayer.value = null
+    }
+    return
+  }
+
+  const latlng = L.latLng(center[0], center[1])
+  if (pendingFenceCircleLayer.value) {
+    pendingFenceCircleLayer.value.setLatLng(latlng)
+    pendingFenceCircleLayer.value.setRadius(radius)
+  } else {
+    pendingFenceCircleLayer.value = L.circle(latlng, {
+      radius,
+      color: FENCE_DRAW_COLOR,
+      fillColor: FENCE_DRAW_COLOR,
+      fillOpacity: 0.15,
+      weight: 2,
+      dashArray: '4 4',
+      className: 'fence-circle-draft',
+      interactive: false,
+    }).addTo(toRaw(planningMap.value)!)
+  }
+}
+
+const clearPendingFenceCircleArtifacts = (): void => {
+  if (pendingFenceCircleLayer.value) {
+    planningMap.value?.removeLayer(pendingFenceCircleLayer.value as unknown as L.Layer)
+    pendingFenceCircleLayer.value = null
+  }
+  if (pendingFenceCircleCenterMarker.value) {
+    planningMap.value?.removeLayer(pendingFenceCircleCenterMarker.value)
+    pendingFenceCircleCenterMarker.value = null
+  }
+}
+
 const undoGenerateWaypoints = (): void => {
   if (undoIsInProgress.value) return
   contextMenuVisible.value = false
@@ -3588,6 +4173,22 @@ onMounted(() => {
 
 const onMapClick = (e: L.LeafletMouseEvent): void => {
   hideContextMenu()
+
+  if (planningMode.value === 'geofence' && fenceStore.isDrawingPolygon) {
+    addFencePolygonPoint(e.latlng)
+    clearLiveMeasure()
+    return
+  }
+
+  if (planningMode.value === 'geofence' && fenceStore.isDrawingCircle) {
+    if (!fenceStore.pendingCircleCenter) {
+      setPendingFenceCircleCenter(e.latlng)
+    } else if (fenceStore.pendingCircleRadius >= 1) {
+      fenceStore.finishDrawingCircle()
+    }
+    return
+  }
+
   const oldWaypoint = selectedWaypoint.value
   if (oldWaypoint) {
     const oldMarker = waypointMarkers.value[oldWaypoint.id]
@@ -3930,6 +4531,8 @@ onMounted(async () => {
   })
 
   planningMap.value.on('drag', updateConfirmButtonPosition)
+  planningMap.value.on('drag', updateFenceConfirmButtonPosition)
+  planningMap.value.on('zoom', updateFenceConfirmButtonPosition)
   planningMap.value.on('mousemove', handleMapMouseMove)
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
@@ -4774,6 +5377,17 @@ watch(
 </style>
 
 <style scoped>
+.mission-planning--fence-mode :deep(.leaflet-marker-pane > *:not(.fence-breach-return-icon)),
+.mission-planning--fence-mode
+  :deep(
+    .leaflet-overlay-pane
+      > svg
+      path:not(.leaflet-interactive[stroke='#FF8800']):not(.leaflet-interactive[stroke='#3B78A8'])
+  ) {
+  opacity: 0.45;
+  filter: saturate(0.5);
+}
+
 .speed-dial-group {
   display: flex;
   align-items: center;
@@ -4810,7 +5424,10 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 293px; /* Position to the left of the buttons */
+  /* Sits 10px to the left of the bottom-right buttons flex row.
+     Container right offset = 44px; flex inner width ≈ 224px (140px Flight-mode
+     button + two 32px icon buttons + 2×10px gaps); + 10px gap = 278px. */
+  right: 278px;
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
