@@ -69,6 +69,43 @@ export interface NetworkVehicle {
 }
 
 /**
+ * A progress update emitted while a discovery scan is running. The renderer
+ * uses this to drive the "Searching for vehicles..." UI state.
+ */
+export interface DiscoveryProgress {
+  /**
+   * Interface tier currently being scanned. See `interfaceScanTier` in
+   * src/electron/services/network.ts for the tier map.
+   */
+  tier: number
+  /**
+   * Interface names being scanned together in this tier (e.g. ["en0"] or
+   * ["feth1752", "zt7nhpvfgz"]).
+   */
+  interfaces: string[]
+  /**
+   * 1-indexed pass number within the tier (overlay tiers use multiple passes).
+   */
+  passIndex: number
+  /**
+   * Total number of passes scheduled for this tier.
+   */
+  totalPasses: number
+  /**
+   * TCP-probe timeout used by the current pass, in milliseconds.
+   */
+  passTimeoutMs: number
+  /**
+   * Number of candidate addresses being probed in this pass.
+   */
+  addressesInPass: number
+  /**
+   * Vehicles already reported in this scan so far.
+   */
+  vehiclesFound: number
+}
+
+/**
  * A service for discovering vehicles on the network
  */
 class VehicleDiscover {
@@ -211,9 +248,13 @@ class VehicleDiscover {
   /**
    * Find vehicles on the local network, optionally reporting each vehicle as it is discovered
    * @param {Function} onVehicleFound - Optional callback invoked immediately when a vehicle is found
+   * @param {Function} onProgress - Optional callback invoked before each pre-filter pass with status info
    * @returns {Promise<NetworkVehicle[]>} All vehicles found after the scan completes
    */
-  public async findVehicles(onVehicleFound?: (vehicle: NetworkVehicle) => void): Promise<NetworkVehicle[]> {
+  public async findVehicles(
+    onVehicleFound?: (vehicle: NetworkVehicle) => void,
+    onProgress?: (progress: DiscoveryProgress) => void
+  ): Promise<NetworkVehicle[]> {
     if (!isElectron()) {
       throw new Error('For technical reasons, finding vehicles is only available in Electron.')
     }
@@ -278,6 +319,15 @@ class VehicleDiscover {
         for (let i = 0; i < passes.length && remaining.length > 0; i++) {
           const { timeoutMs, concurrency } = passes[i]
           const passLabel = `${label} pass ${i + 1}/${passes.length} @${timeoutMs}ms`
+          onProgress?.({
+            tier,
+            interfaces: subnets.map((s) => s.interfaceName),
+            passIndex: i + 1,
+            totalPasses: passes.length,
+            passTimeoutMs: timeoutMs,
+            addressesInPass: remaining.length,
+            vehiclesFound: vehiclesFound.length,
+          })
           const reachable = await this.prefilterReachableAddresses(remaining, passLabel, timeoutMs, concurrency)
           await this.scanAddressesViaHttp(reachable, passLabel, reportVehicle)
           if (i < passes.length - 1 && reachable.length > 0) {
