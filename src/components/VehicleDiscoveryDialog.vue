@@ -11,10 +11,14 @@
         <div class="text-sm mb-4">You can still search for vehicles in the general configuration menu.</div>
       </div>
       <div v-else class="flex flex-col items-center justify-center gap-4 min-w-[300px] min-h-[100px]">
-        <div v-if="searching" class="flex flex-col items-center gap-2 mb-2">
+        <div v-if="searching" class="flex flex-col items-center gap-2 mb-2 max-w-[420px]">
           <v-progress-circular class="mb-2" indeterminate />
           <span v-if="vehicles.length === 0">Searching for vehicles in your network...</span>
           <span v-else> Found {{ vehicles.length }} vehicle{{ vehicles.length > 1 ? 's' : '' }} so far... </span>
+          <div v-if="progressStatus" class="text-xs opacity-75 text-center">
+            <div>{{ progressStatus.headline }}</div>
+            <div v-if="progressStatus.detail" class="opacity-75">{{ progressStatus.detail }}</div>
+          </div>
         </div>
 
         <div v-if="vehicles.length > 0" class="flex flex-col gap-2 mb-3">
@@ -48,22 +52,44 @@
 
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useSnackbar } from '@/composables/snackbar'
-import vehicleDiscover, { NetworkVehicle } from '@/libs/electron/vehicle-discovery'
+import vehicleDiscover, { DiscoveryProgress, NetworkVehicle } from '@/libs/electron/vehicle-discovery'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import InteractionDialog, { Action } from './InteractionDialog.vue'
 
+const tierLabels: Record<number, string> = {
+  0: 'wired Ethernet',
+  1: 'Wi-Fi',
+  2: 'local network',
+  3: 'VPN / overlay network',
+}
+
+/**
+ * Two-line scan-progress status rendered under the dialog spinner.
+ */
+interface ProgressStatusLine {
+  /**
+   * Main status line summarising which tier and interfaces are being scanned.
+   */
+  headline: string
+  /**
+   * Optional secondary line with pass and address-count detail.
+   */
+  detail?: string
+}
+
 const props = defineProps<{
   /**
-   *
+   * `v-model` binding controlling whether the discovery dialog is currently open.
    */
   modelValue: boolean
   /**
-   *
+   * When true, the dialog also exposes the "Don't show again" action used by the
+   * auto-open flow (e.g. on startup when no vehicle is connected).
    */
   showAutoSearchOption?: boolean
 }>()
@@ -80,7 +106,20 @@ const isOpen = ref(props.modelValue)
 const searching = ref(false)
 const searched = ref(false)
 const vehicles = ref<NetworkVehicle[]>([])
+const progress = ref<DiscoveryProgress | null>(null)
 const preventAutoSearch = useStorage('cockpit-prevent-auto-vehicle-discovery-dialog', false)
+
+const progressStatus = computed<ProgressStatusLine | null>(() => {
+  if (!progress.value) return null
+  const { tier, interfaces, passIndex, totalPasses, passTimeoutMs, addressesInPass } = progress.value
+  const tierLabel = tierLabels[tier] ?? `tier ${tier}`
+  const ifaceList = interfaces.join(', ') || 'no interfaces'
+  const headline = `Scanning ${tierLabel} (${ifaceList})`
+  const passInfo =
+    totalPasses > 1 ? `Pass ${passIndex}/${totalPasses} at ${passTimeoutMs}ms` : `Probe timeout ${passTimeoutMs}ms`
+  const detail = `${passInfo} — ${addressesInPass.toLocaleString()} address(es)`
+  return { headline, detail }
+})
 
 const originalActions = [
   {
@@ -115,11 +154,18 @@ const searchVehicles = async (): Promise<void> => {
   searching.value = true
   searched.value = false
   vehicles.value = []
+  progress.value = null
   disableButtons()
-  await discoveryService.findVehicles((vehicle) => {
-    vehicles.value = [...vehicles.value, vehicle]
-  })
+  await discoveryService.findVehicles(
+    (vehicle) => {
+      vehicles.value = [...vehicles.value, vehicle]
+    },
+    (update) => {
+      progress.value = update
+    }
+  )
   searching.value = false
+  progress.value = null
   enableButtons()
   searched.value = true
 }
@@ -154,6 +200,7 @@ watch(isOpen, (isNowOpen) => {
     vehicles.value = []
     searching.value = false
     searched.value = false
+    progress.value = null
   }, 1000)
 })
 </script>
