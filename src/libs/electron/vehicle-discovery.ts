@@ -4,12 +4,34 @@ import { getBeaconInfo, getStatus, getVehicleName } from '../blueos'
 import { isElectron } from '../utils'
 
 /**
- * Maximum number of address checks performed in parallel during discovery.
- * Firing all addresses at once saturates Chromium's renderer socket pool and
- * the OS ARP cache, causing legitimate vehicles to time out before their
- * request gets a socket.
+ * Maximum number of HTTP `/status` checks in flight at once. Firing all
+ * addresses at once saturates Chromium's renderer socket pool and the OS ARP
+ * cache, causing legitimate vehicles to time out before their request gets a
+ * socket.
  */
 const MAX_CONCURRENT_ADDRESS_CHECKS = 100
+
+/**
+ * Maximum number of TCP pre-filter probes in flight at once. The probes go
+ * through Node's `net.Socket` in the Electron main process (not the renderer
+ * fetch pool), so we can afford a much higher fan-out than the HTTP stage.
+ */
+const MAX_CONCURRENT_TCP_PROBES = 500
+
+/**
+ * TCP-probe timeout for the pre-filter. Generous enough to cover a relayed
+ *  ZeroTier peer; non-existent hosts still fail much faster via RST/ICMP.
+ */
+const TCP_PROBE_TIMEOUT_MS = 500
+
+/**
+ * Threshold at which the TCP pre-filter is worth its overhead. Anything below
+ *  this just runs the HTTP scan directly to keep small-LAN behaviour unchanged.
+ */
+const TCP_PREFILTER_MIN_ADDRESSES = 1024
+
+/** Port we expect any BlueOS vehicle to listen on. */
+const BLUEOS_HTTP_PORT = 80
 
 /**
  * A vehicle found on the network
@@ -81,6 +103,47 @@ class VehicleDiscover {
   }
 
   /**
+   * Cheaply reject addresses with no TCP/80 listener via Node's `net.Socket`
+   * in the main process. Skipped for small scans where the overhead of the
+   * extra round-trip outweighs the savings on the HTTP stage.
+   * @param {string[]} addresses Candidate IPv4 addresses to probe
+   * @param {number} subnetCount Number of subnets these addresses span (used for logging)
+   * @returns {Promise<string[]>} Subset of `addresses` whose port 80 accepted a TCP connection
+   */
+  private async prefilterReachableAddresses(addresses: string[], subnetCount: number): Promise<string[]> {
+    if (addresses.length < TCP_PREFILTER_MIN_ADDRESSES) return addresses
+    if (!window.electronAPI?.checkTcpPortOpen) return addresses
+
+    const probeStart = Date.now()
+    const concurrency = Math.min(MAX_CONCURRENT_TCP_PROBES, addresses.length)
+    console.info(
+      `[VehicleDiscovery] TCP pre-filter on ${addresses.length} address(es) across ${subnetCount} subnet(s) ` +
+        `with up to ${concurrency} probes in flight (${TCP_PROBE_TIMEOUT_MS}ms timeout, port ${BLUEOS_HTTP_PORT}).`
+    )
+
+    const probe = window.electronAPI.checkTcpPortOpen
+    const reachable: string[] = []
+    let nextIndex = 0
+    const worker = async (): Promise<void> => {
+      while (nextIndex < addresses.length) {
+        const address = addresses[nextIndex++]
+        try {
+          if (await probe(address, BLUEOS_HTTP_PORT, TCP_PROBE_TIMEOUT_MS)) reachable.push(address)
+        } catch {
+          // Probe errors are equivalent to "host not reachable" for our purposes
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: concurrency }, () => worker()))
+
+    console.info(
+      `[VehicleDiscovery] TCP pre-filter kept ${reachable.length} / ${addresses.length} address(es) ` +
+        `in ${Date.now() - probeStart}ms.`
+    )
+    return reachable
+  }
+
+  /**
    * Find vehicles on the local network, optionally reporting each vehicle as it is discovered
    * @param {Function} onVehicleFound - Optional callback invoked immediately when a vehicle is found
    * @returns {Promise<NetworkVehicle[]>} All vehicles found after the scan completes
@@ -116,13 +179,15 @@ class VehicleDiscover {
         throw new Error('Failed to get information about the local subnets.')
       }
 
-      const addressesToCheck: string[] = []
+      const allAddresses: string[] = []
       for (const subnet of localSubnets) {
         const topSideAddress = subnet.topSideAddress
         for (const address of subnet.availableAddresses) {
-          if (address !== topSideAddress) addressesToCheck.push(address)
+          if (address !== topSideAddress) allAddresses.push(address)
         }
       }
+
+      const addressesToCheck = await this.prefilterReachableAddresses(allAddresses, localSubnets.length)
 
       const vehiclesFound: NetworkVehicle[] = []
       const concurrency = Math.min(MAX_CONCURRENT_ADDRESS_CHECKS, addressesToCheck.length)

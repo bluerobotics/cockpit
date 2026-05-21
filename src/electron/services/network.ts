@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import { createConnection } from 'net'
 import { networkInterfaces } from 'os'
 
 import { NetworkInfo } from '../../types/network'
@@ -132,8 +133,38 @@ const getInfoOnSubnets = (): NetworkInfo[] => {
 }
 
 /**
+ * Probe a TCP port with a short timeout. Used as a fast pre-filter during
+ * vehicle discovery: most addresses on a wide subnet either have no route
+ * (ICMP unreachable, fails in tens of ms) or no listener (RST, similar), so
+ * a TCP connect culls them far faster than the heavier HTTP `/status` probe.
+ * @param {string} host IPv4 address to probe
+ * @param {number} port TCP port to probe
+ * @param {number} timeoutMs Time to wait before giving up
+ * @returns {Promise<boolean>} true if the port accepted the connection
+ */
+const checkTcpPortOpen = (host: string, port: number, timeoutMs: number): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const socket = createConnection({ host, port })
+    let settled = false
+    const settle = (open: boolean): void => {
+      if (settled) return
+      settled = true
+      socket.destroy()
+      resolve(open)
+    }
+    socket.setTimeout(timeoutMs)
+    socket.once('connect', () => settle(true))
+    socket.once('timeout', () => settle(false))
+    socket.once('error', () => settle(false))
+  })
+}
+
+/**
  * Setup the network service
  */
 export const setupNetworkService = (): void => {
   ipcMain.handle('get-info-on-subnets', getInfoOnSubnets)
+  ipcMain.handle('check-tcp-port-open', (_event, host: string, port: number, timeoutMs: number) =>
+    checkTcpPortOpen(host, port, timeoutMs)
+  )
 }
