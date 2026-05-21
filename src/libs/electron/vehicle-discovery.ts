@@ -12,25 +12,46 @@ import { isElectron } from '../utils'
 const MAX_CONCURRENT_ADDRESS_CHECKS = 100
 
 /**
- * Maximum number of TCP pre-filter probes in flight at once. The probes go
- * through Node's `net.Socket` in the Electron main process (not the renderer
- * fetch pool), so we can afford a much higher fan-out than the HTTP stage.
+ * Tier number above which we use the overlay scan strategy. See
+ * `interfaceScanTier` in src/electron/services/network.ts for the tier map.
  */
-const MAX_CONCURRENT_TCP_PROBES = 500
+const OVERLAY_TIER_THRESHOLD = 3
 
 /**
- * TCP-probe timeout for the pre-filter. Generous enough to cover a relayed
- *  ZeroTier peer; non-existent hosts still fail much faster via RST/ICMP.
+ * One pass of the TCP pre-filter, with its own timeout / fan-out budget.
  */
-const TCP_PROBE_TIMEOUT_MS = 500
+interface ProbePass {
+  /** Per-probe TCP timeout in milliseconds. */
+  timeoutMs: number
+  /** Maximum number of probes in flight. */
+  concurrency: number
+}
 
 /**
- * Threshold at which the TCP pre-filter is worth its overhead. Anything below
- *  this just runs the HTTP scan directly to keep small-LAN behaviour unchanged.
+ * Scan strategy for regular local-link tiers (ethernet, wireless, macOS `en*`).
+ * A single pass is enough: LAN round-trips are sub-millisecond, the timeout
+ * only really shows up on unused IPs that go through ARP-resolution timeouts.
  */
-const TCP_PREFILTER_MIN_ADDRESSES = 1024
+const LAN_PROBE_PASSES: ProbePass[] = [{ timeoutMs: 500, concurrency: 500 }]
 
-/** Port we expect any BlueOS vehicle to listen on. */
+/**
+ * Scan strategy for overlay tiers (ZeroTier, WireGuard, Tailscale, …). Each
+ * pass re-probes only the addresses that failed earlier passes, so the cost
+ * is roughly (pass timeout) * (remaining addresses) / concurrency. Earlier
+ * passes find direct-path peers fast; later passes catch peers on slower or
+ * relayed paths (and ZeroTier's NAT traversal often establishes the direct
+ * path during an early pass, letting a later pass succeed cheaply).
+ */
+const OVERLAY_PROBE_PASSES: ProbePass[] = [
+  { timeoutMs: 100, concurrency: 2000 },
+  { timeoutMs: 250, concurrency: 2000 },
+  { timeoutMs: 500, concurrency: 2000 },
+  { timeoutMs: 1000, concurrency: 2000 },
+]
+
+/**
+ * Port we expect any BlueOS vehicle to listen on.
+ */
 const BLUEOS_HTTP_PORT = 80
 
 /**
@@ -104,21 +125,27 @@ class VehicleDiscover {
 
   /**
    * Cheaply reject addresses with no TCP/80 listener via Node's `net.Socket`
-   * in the main process. Skipped for small scans where the overhead of the
-   * extra round-trip outweighs the savings on the HTTP stage.
+   * in the main process. Cuts the candidate list before the heavier HTTP probe.
    * @param {string[]} addresses Candidate IPv4 addresses to probe
-   * @param {number} subnetCount Number of subnets these addresses span (used for logging)
+   * @param {string} label Identifier used in log lines (e.g. tier name)
+   * @param {number} probeTimeoutMs Per-probe timeout, scaled to the tier
+   * @param {number} maxConcurrency Maximum number of probes in flight, scaled to the tier
    * @returns {Promise<string[]>} Subset of `addresses` whose port 80 accepted a TCP connection
    */
-  private async prefilterReachableAddresses(addresses: string[], subnetCount: number): Promise<string[]> {
-    if (addresses.length < TCP_PREFILTER_MIN_ADDRESSES) return addresses
+  private async prefilterReachableAddresses(
+    addresses: string[],
+    label: string,
+    probeTimeoutMs: number,
+    maxConcurrency: number
+  ): Promise<string[]> {
+    if (addresses.length === 0) return addresses
     if (!window.electronAPI?.checkTcpPortOpen) return addresses
 
     const probeStart = Date.now()
-    const concurrency = Math.min(MAX_CONCURRENT_TCP_PROBES, addresses.length)
+    const concurrency = Math.min(maxConcurrency, addresses.length)
     console.info(
-      `[VehicleDiscovery] TCP pre-filter on ${addresses.length} address(es) across ${subnetCount} subnet(s) ` +
-        `with up to ${concurrency} probes in flight (${TCP_PROBE_TIMEOUT_MS}ms timeout, port ${BLUEOS_HTTP_PORT}).`
+      `[VehicleDiscovery] [${label}] TCP pre-filter on ${addresses.length} address(es) ` +
+        `with up to ${concurrency} probes in flight (${probeTimeoutMs}ms timeout, port ${BLUEOS_HTTP_PORT}).`
     )
 
     const probe = window.electronAPI.checkTcpPortOpen
@@ -129,7 +156,7 @@ class VehicleDiscover {
         const i = nextIndex++
         const address = addresses[i]
         try {
-          if (await probe(address, BLUEOS_HTTP_PORT, TCP_PROBE_TIMEOUT_MS)) survivors[i] = address
+          if (await probe(address, BLUEOS_HTTP_PORT, probeTimeoutMs)) survivors[i] = address
         } catch {
           // Probe errors are equivalent to "host not reachable" for our purposes
         }
@@ -139,10 +166,46 @@ class VehicleDiscover {
 
     const reachable = survivors.filter((address): address is string => address !== null)
     console.info(
-      `[VehicleDiscovery] TCP pre-filter kept ${reachable.length} / ${addresses.length} address(es) ` +
+      `[VehicleDiscovery] [${label}] TCP pre-filter kept ${reachable.length} / ${addresses.length} address(es) ` +
         `in ${Date.now() - probeStart}ms.`
     )
     return reachable
+  }
+
+  /**
+   * Run the HTTP /status + /beacon stage against a (typically small) list of
+   * pre-filtered addresses, calling `onFound` as each vehicle is identified.
+   * @param {string[]} addresses Addresses to probe
+   * @param {string} label Identifier used in log lines (e.g. tier name)
+   * @param {Function} onFound Callback invoked synchronously as each vehicle is identified
+   * @returns {Promise<NetworkVehicle[]>} Vehicles identified in this pass
+   */
+  private async scanAddressesViaHttp(
+    addresses: string[],
+    label: string,
+    onFound: (vehicle: NetworkVehicle) => void
+  ): Promise<NetworkVehicle[]> {
+    if (addresses.length === 0) return []
+    const concurrency = Math.min(MAX_CONCURRENT_ADDRESS_CHECKS, addresses.length)
+    console.info(
+      `[VehicleDiscovery] [${label}] HTTP probe on ${addresses.length} address(es) ` +
+        `with up to ${concurrency} concurrent checks.`
+    )
+
+    const vehicles: NetworkVehicle[] = []
+    let nextIndex = 0
+    const worker = async (): Promise<void> => {
+      while (nextIndex < addresses.length) {
+        const address = addresses[nextIndex++]
+        const vehicle = await this.checkAddress(address)
+        if (vehicle) {
+          vehicles.push(vehicle)
+          onFound(vehicle)
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: concurrency }, () => worker()))
+    return vehicles
   }
 
   /**
@@ -181,35 +244,48 @@ class VehicleDiscover {
         throw new Error('Failed to get information about the local subnets.')
       }
 
-      const allAddresses: string[] = []
+      const tierGroups = new Map<number, NetworkInfo[]>()
       for (const subnet of localSubnets) {
-        const topSideAddress = subnet.topSideAddress
-        for (const address of subnet.availableAddresses) {
-          if (address !== topSideAddress) allAddresses.push(address)
-        }
+        if (!tierGroups.has(subnet.tier)) tierGroups.set(subnet.tier, [])
+        tierGroups.get(subnet.tier)!.push(subnet)
       }
-
-      const addressesToCheck = await this.prefilterReachableAddresses(allAddresses, localSubnets.length)
+      const orderedTiers = Array.from(tierGroups.keys()).sort((a, b) => a - b)
 
       const vehiclesFound: NetworkVehicle[] = []
-      const concurrency = Math.min(MAX_CONCURRENT_ADDRESS_CHECKS, addressesToCheck.length)
-      console.info(
-        `[VehicleDiscovery] Scanning ${addressesToCheck.length} address(es) across ${localSubnets.length} subnet(s) ` +
-          `with up to ${concurrency} concurrent checks.`
-      )
+      const reportVehicle = (vehicle: NetworkVehicle): void => {
+        vehiclesFound.push(vehicle)
+        onVehicleFound?.(vehicle)
+      }
 
-      let nextIndex = 0
-      const worker = async (): Promise<void> => {
-        while (nextIndex < addressesToCheck.length) {
-          const address = addressesToCheck[nextIndex++]
-          const vehicle = await this.checkAddress(address)
-          if (vehicle) {
-            vehiclesFound.push(vehicle)
-            onVehicleFound?.(vehicle)
+      for (const tier of orderedTiers) {
+        const subnets = tierGroups.get(tier)!
+        const label = `tier ${tier}`
+        const passes = tier >= OVERLAY_TIER_THRESHOLD ? OVERLAY_PROBE_PASSES : LAN_PROBE_PASSES
+        const tierAddresses: string[] = []
+        for (const subnet of subnets) {
+          const topSideAddress = subnet.topSideAddress
+          for (const address of subnet.availableAddresses) {
+            if (address !== topSideAddress) tierAddresses.push(address)
+          }
+        }
+        console.info(
+          `[VehicleDiscovery] [${label}] Starting scan on ${tierAddresses.length} address(es) ` +
+            `across ${subnets.length} interface(s): ${subnets.map((s) => s.interfaceName).join(', ')} ` +
+            `(${passes.length} probe pass(es)).`
+        )
+
+        let remaining = tierAddresses
+        for (let i = 0; i < passes.length && remaining.length > 0; i++) {
+          const { timeoutMs, concurrency } = passes[i]
+          const passLabel = `${label} pass ${i + 1}/${passes.length} @${timeoutMs}ms`
+          const reachable = await this.prefilterReachableAddresses(remaining, passLabel, timeoutMs, concurrency)
+          await this.scanAddressesViaHttp(reachable, passLabel, reportVehicle)
+          if (i < passes.length - 1 && reachable.length > 0) {
+            const reachableSet = new Set(reachable)
+            remaining = remaining.filter((address) => !reachableSet.has(address))
           }
         }
       }
-      await Promise.all(Array.from({ length: concurrency }, () => worker()))
 
       this.currentSearch = undefined
 
