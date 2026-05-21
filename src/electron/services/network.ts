@@ -5,15 +5,17 @@ import { NetworkInfo } from '../../types/network'
 
 /**
  * Interface name prefixes that are virtual / non-physical and should be skipped
- * during vehicle discovery: VPN tunnels, container/VM bridges, Apple wireless
- * peer-to-peer interfaces, IPSec, etc. None of these can carry a BlueOS vehicle.
+ * during vehicle discovery; none of these can carry a BlueOS vehicle.
+ *
+ * SD-WAN / VPN overlays (ZeroTier `zt*` / macOS `feth*`, WireGuard `wg*`,
+ * Tailscale `tailscale*` / macOS `utun*`) are intentionally NOT skipped: they
+ * are routinely used to reach remote vehicles.
  */
 const VIRTUAL_INTERFACE_PREFIXES = [
   'awdl', // Apple Wireless Direct Link
   'br-', // Docker user-defined bridge
   'bridge', // macOS bridge
   'docker', // Docker default bridge
-  'feth', // macOS fake ethernet (Docker / virtualization)
   'gif', // macOS generic tunnel
   'ipsec', // IPSec tunnel
   'llw', // Apple low-latency wifi
@@ -21,12 +23,9 @@ const VIRTUAL_INTERFACE_PREFIXES = [
   'stf', // macOS 6to4 tunnel
   'tap', // generic TAP device
   'tun', // generic TUN device
-  'utun', // macOS userland tunnel (VPN)
   'vboxnet', // VirtualBox host-only
   'veth', // Linux virtual ethernet pair
   'vmnet', // VMware host-only / NAT
-  'wg', // WireGuard
-  'zt', // ZeroTier
 ]
 
 const isVirtualInterface = (interfaceName: string): boolean => {
