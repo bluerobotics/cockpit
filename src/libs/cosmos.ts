@@ -207,6 +207,14 @@ declare global {
        */
       getInfoOnSubnets: () => Promise<NetworkInfo[]>
       /**
+       * Fast TCP port probe used as a pre-filter during vehicle discovery
+       * @param host IPv4 address to probe
+       * @param port TCP port to probe
+       * @param timeoutMs Time to wait before giving up, in milliseconds
+       * @returns Promise resolving to true if the port accepted the connection
+       */
+      checkTcpPortOpen: (host: string, port: number, timeoutMs: number) => Promise<boolean>
+      /**
        * Get memory usage information from the main process
        * @returns Promise containing memory usage data
        */
