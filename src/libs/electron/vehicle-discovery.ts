@@ -167,13 +167,15 @@ class VehicleDiscover {
    * @param {string} label Identifier used in log lines (e.g. tier name)
    * @param {number} probeTimeoutMs Per-probe timeout, scaled to the tier
    * @param {number} maxConcurrency Maximum number of probes in flight, scaled to the tier
+   * @param {AbortSignal} signal Optional abort signal; workers stop pulling new addresses when it fires
    * @returns {Promise<string[]>} Subset of `addresses` whose port 80 accepted a TCP connection
    */
   private async prefilterReachableAddresses(
     addresses: string[],
     label: string,
     probeTimeoutMs: number,
-    maxConcurrency: number
+    maxConcurrency: number,
+    signal?: AbortSignal
   ): Promise<string[]> {
     if (addresses.length === 0) return addresses
     if (!window.electronAPI?.checkTcpPortOpen) return addresses
@@ -190,6 +192,7 @@ class VehicleDiscover {
     let nextIndex = 0
     const worker = async (): Promise<void> => {
       while (nextIndex < addresses.length) {
+        if (signal?.aborted) return
         const i = nextIndex++
         const address = addresses[i]
         try {
@@ -204,7 +207,7 @@ class VehicleDiscover {
     const reachable = survivors.filter((address): address is string => address !== null)
     console.info(
       `[VehicleDiscovery] [${label}] TCP pre-filter kept ${reachable.length} / ${addresses.length} address(es) ` +
-        `in ${Date.now() - probeStart}ms.`
+        `in ${Date.now() - probeStart}ms${signal?.aborted ? ' (aborted)' : ''}.`
     )
     return reachable
   }
@@ -215,12 +218,14 @@ class VehicleDiscover {
    * @param {string[]} addresses Addresses to probe
    * @param {string} label Identifier used in log lines (e.g. tier name)
    * @param {Function} onFound Callback invoked synchronously as each vehicle is identified
+   * @param {AbortSignal} signal Optional abort signal; workers stop pulling new addresses when it fires
    * @returns {Promise<NetworkVehicle[]>} Vehicles identified in this pass
    */
   private async scanAddressesViaHttp(
     addresses: string[],
     label: string,
-    onFound: (vehicle: NetworkVehicle) => void
+    onFound: (vehicle: NetworkVehicle) => void,
+    signal?: AbortSignal
   ): Promise<NetworkVehicle[]> {
     if (addresses.length === 0) return []
     const concurrency = Math.min(MAX_CONCURRENT_ADDRESS_CHECKS, addresses.length)
@@ -233,6 +238,7 @@ class VehicleDiscover {
     let nextIndex = 0
     const worker = async (): Promise<void> => {
       while (nextIndex < addresses.length) {
+        if (signal?.aborted) return
         const address = addresses[nextIndex++]
         const vehicle = await this.checkAddress(address)
         if (vehicle) {
@@ -249,11 +255,13 @@ class VehicleDiscover {
    * Find vehicles on the local network, optionally reporting each vehicle as it is discovered
    * @param {Function} onVehicleFound - Optional callback invoked immediately when a vehicle is found
    * @param {Function} onProgress - Optional callback invoked before each pre-filter pass with status info
-   * @returns {Promise<NetworkVehicle[]>} All vehicles found after the scan completes
+   * @param {AbortSignal} signal - Optional abort signal that stops pulling new work from the scan
+   * @returns {Promise<NetworkVehicle[]>} All vehicles found before the scan completed or was aborted
    */
   public async findVehicles(
     onVehicleFound?: (vehicle: NetworkVehicle) => void,
-    onProgress?: (progress: DiscoveryProgress) => void
+    onProgress?: (progress: DiscoveryProgress) => void,
+    signal?: AbortSignal
   ): Promise<NetworkVehicle[]> {
     if (!isElectron()) {
       throw new Error('For technical reasons, finding vehicles is only available in Electron.')
@@ -267,83 +275,103 @@ class VehicleDiscover {
       const searchStart = Date.now()
       console.info('[VehicleDiscovery] Starting vehicle discovery scan...')
 
-      if (!isElectron() || !window.electronAPI?.getInfoOnSubnets) {
-        const msg = 'For technical reasons, getting information about the local subnet is only available in Electron.'
-        throw new Error(msg)
+      const tearDownInFlightProbes = (): void => {
+        window.electronAPI?.abortTcpPortProbes?.()
       }
+      signal?.addEventListener('abort', tearDownInFlightProbes, { once: true })
 
-      let localSubnets: NetworkInfo[] | undefined
       try {
-        localSubnets = await window.electronAPI.getInfoOnSubnets()
-      } catch (error) {
-        console.error(`[VehicleDiscovery] Failed to get information about the local subnets: ${error}`)
-        throw new Error(`Failed to get information about the local subnets. ${error}`)
-      }
+        if (!window.electronAPI?.getInfoOnSubnets) {
+          const msg = 'For technical reasons, getting information about the local subnet is only available in Electron.'
+          throw new Error(msg)
+        }
 
-      if (localSubnets.length === 0) {
-        console.error('[VehicleDiscovery] Got an empty list of subnets from Electron.')
-        throw new Error('Failed to get information about the local subnets.')
-      }
+        let localSubnets: NetworkInfo[]
+        try {
+          localSubnets = await window.electronAPI.getInfoOnSubnets()
+        } catch (error) {
+          console.error(`[VehicleDiscovery] Failed to get information about the local subnets: ${error}`)
+          throw new Error(`Failed to get information about the local subnets. ${error}`)
+        }
 
-      const tierGroups = new Map<number, NetworkInfo[]>()
-      for (const subnet of localSubnets) {
-        if (!tierGroups.has(subnet.tier)) tierGroups.set(subnet.tier, [])
-        tierGroups.get(subnet.tier)!.push(subnet)
-      }
-      const orderedTiers = Array.from(tierGroups.keys()).sort((a, b) => a - b)
+        if (localSubnets.length === 0) {
+          console.error('[VehicleDiscovery] Got an empty list of subnets from Electron.')
+          throw new Error('Failed to get information about the local subnets.')
+        }
 
-      const vehiclesFound: NetworkVehicle[] = []
-      const reportVehicle = (vehicle: NetworkVehicle): void => {
-        vehiclesFound.push(vehicle)
-        onVehicleFound?.(vehicle)
-      }
+        const tierGroups = new Map<number, NetworkInfo[]>()
+        for (const subnet of localSubnets) {
+          if (!tierGroups.has(subnet.tier)) tierGroups.set(subnet.tier, [])
+          tierGroups.get(subnet.tier)!.push(subnet)
+        }
+        const orderedTiers = Array.from(tierGroups.keys()).sort((a, b) => a - b)
 
-      for (const tier of orderedTiers) {
-        const subnets = tierGroups.get(tier)!
-        const label = `tier ${tier}`
-        const passes = tier >= OVERLAY_TIER_THRESHOLD ? OVERLAY_PROBE_PASSES : LAN_PROBE_PASSES
-        const tierAddresses: string[] = []
-        for (const subnet of subnets) {
-          const topSideAddress = subnet.topSideAddress
-          for (const address of subnet.availableAddresses) {
-            if (address !== topSideAddress) tierAddresses.push(address)
+        const vehiclesFound: NetworkVehicle[] = []
+        const reportVehicle = (vehicle: NetworkVehicle): void => {
+          vehiclesFound.push(vehicle)
+          onVehicleFound?.(vehicle)
+        }
+
+        for (const tier of orderedTiers) {
+          if (signal?.aborted) break
+          const subnets = tierGroups.get(tier)!
+          const label = `tier ${tier}`
+          const passes = tier >= OVERLAY_TIER_THRESHOLD ? OVERLAY_PROBE_PASSES : LAN_PROBE_PASSES
+          const tierAddresses: string[] = []
+          for (const subnet of subnets) {
+            const topSideAddress = subnet.topSideAddress
+            for (const address of subnet.availableAddresses) {
+              if (address !== topSideAddress) tierAddresses.push(address)
+            }
+          }
+          console.info(
+            `[VehicleDiscovery] [${label}] Starting scan on ${tierAddresses.length} address(es) ` +
+              `across ${subnets.length} interface(s): ${subnets.map((s) => s.interfaceName).join(', ')} ` +
+              `(${passes.length} probe pass(es)).`
+          )
+
+          let remaining = tierAddresses
+          for (let i = 0; i < passes.length && remaining.length > 0; i++) {
+            if (signal?.aborted) break
+            const { timeoutMs, concurrency } = passes[i]
+            const passLabel = `${label} pass ${i + 1}/${passes.length} @${timeoutMs}ms`
+            onProgress?.({
+              tier,
+              interfaces: subnets.map((s) => s.interfaceName),
+              passIndex: i + 1,
+              totalPasses: passes.length,
+              passTimeoutMs: timeoutMs,
+              addressesInPass: remaining.length,
+              vehiclesFound: vehiclesFound.length,
+            })
+            const reachable = await this.prefilterReachableAddresses(
+              remaining,
+              passLabel,
+              timeoutMs,
+              concurrency,
+              signal
+            )
+            await this.scanAddressesViaHttp(reachable, passLabel, reportVehicle, signal)
+            if (i < passes.length - 1 && reachable.length > 0) {
+              const reachableSet = new Set(reachable)
+              remaining = remaining.filter((address) => !reachableSet.has(address))
+            }
           }
         }
+
+        if (signal?.aborted) {
+          console.info('[VehicleDiscovery] Scan aborted by caller.')
+        }
+
         console.info(
-          `[VehicleDiscovery] [${label}] Starting scan on ${tierAddresses.length} address(es) ` +
-            `across ${subnets.length} interface(s): ${subnets.map((s) => s.interfaceName).join(', ')} ` +
-            `(${passes.length} probe pass(es)).`
+          `[VehicleDiscovery] Scan complete in ${Date.now() - searchStart}ms. Found ${vehiclesFound.length} vehicle(s).`
         )
 
-        let remaining = tierAddresses
-        for (let i = 0; i < passes.length && remaining.length > 0; i++) {
-          const { timeoutMs, concurrency } = passes[i]
-          const passLabel = `${label} pass ${i + 1}/${passes.length} @${timeoutMs}ms`
-          onProgress?.({
-            tier,
-            interfaces: subnets.map((s) => s.interfaceName),
-            passIndex: i + 1,
-            totalPasses: passes.length,
-            passTimeoutMs: timeoutMs,
-            addressesInPass: remaining.length,
-            vehiclesFound: vehiclesFound.length,
-          })
-          const reachable = await this.prefilterReachableAddresses(remaining, passLabel, timeoutMs, concurrency)
-          await this.scanAddressesViaHttp(reachable, passLabel, reportVehicle)
-          if (i < passes.length - 1 && reachable.length > 0) {
-            const reachableSet = new Set(reachable)
-            remaining = remaining.filter((address) => !reachableSet.has(address))
-          }
-        }
+        return vehiclesFound
+      } finally {
+        signal?.removeEventListener('abort', tearDownInFlightProbes)
+        this.currentSearch = undefined
       }
-
-      this.currentSearch = undefined
-
-      console.info(
-        `[VehicleDiscovery] Scan complete in ${Date.now() - searchStart}ms. Found ${vehiclesFound.length} vehicle(s).`
-      )
-
-      return vehiclesFound
     }
 
     this.currentSearch = search()

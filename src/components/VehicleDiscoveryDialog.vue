@@ -1,9 +1,9 @@
 <template>
   <InteractionDialog
     v-model="isOpen"
-    :title="searching ? 'Searching for vehicles...' : 'Vehicle Discovery'"
+    :title="displaySearching ? 'Searching for vehicles...' : 'Vehicle Discovery'"
     :actions="dialogActions"
-    :persistent="searching"
+    :persistent="displaySearching"
     :variant="'text-only'"
   >
     <template #content>
@@ -11,7 +11,7 @@
         <div class="text-sm mb-4">You can still search for vehicles in the general configuration menu.</div>
       </div>
       <div v-else class="flex flex-col items-center justify-center gap-4 min-w-[300px] min-h-[100px]">
-        <div v-if="searching" class="flex flex-col items-center gap-2 mb-2 max-w-[420px]">
+        <div v-if="displaySearching" class="flex flex-col items-center gap-2 mb-2 max-w-[420px]">
           <v-progress-circular class="mb-2" indeterminate />
           <span v-if="vehicles.length === 0">Searching for vehicles in your network...</span>
           <span v-else> Found {{ vehicles.length }} vehicle{{ vehicles.length > 1 ? 's' : '' }} so far... </span>
@@ -22,7 +22,7 @@
         </div>
 
         <div v-if="vehicles.length > 0" class="flex flex-col gap-2 mb-3">
-          <div v-if="!searching" class="h-4 font-weight-bold text-center mb-5">Vehicles found!</div>
+          <div v-if="!displaySearching" class="h-4 font-weight-bold text-center mb-5">Vehicles found!</div>
           <div v-for="vehicle in vehicles" :key="vehicle.address" class="flex items-center gap-2">
             <v-btn variant="tonal" class="max-w-[500px] justify-start truncate" @click="selectVehicle(vehicle.address)">
               <span class="max-w-[300px] truncate">{{ vehicle.name }}</span>
@@ -31,16 +31,16 @@
           </div>
         </div>
 
-        <div v-else-if="searched && !searching" class="text-sm">No vehicles found in your network.</div>
+        <div v-else-if="searched && !displaySearching" class="text-sm">No vehicles found in your network.</div>
 
-        <div v-if="!searching && !searched" class="flex flex-col gap-2 items-center justify-center text-center">
+        <div v-if="!displaySearching && !searched" class="flex flex-col gap-2 items-center justify-center text-center">
           <p v-if="props.showAutoSearchOption" class="font-bold">It looks like you're not connected to a vehicle!</p>
           <p class="max-w-[25rem] mb-2">
             This tool allows you to locate and connect to BlueOS vehicles within your network.
           </p>
         </div>
 
-        <div v-if="!searching" class="flex justify-center items-center">
+        <div v-if="!displaySearching" class="flex justify-center items-center">
           <v-btn variant="outlined" :disabled="searching" class="mb-5" @click="searchVehicles">
             {{ searched ? 'Search again' : 'Search for vehicles' }}
           </v-btn>
@@ -107,7 +107,15 @@ const searching = ref(false)
 const searched = ref(false)
 const vehicles = ref<NetworkVehicle[]>([])
 const progress = ref<DiscoveryProgress | null>(null)
+const searchController = ref<AbortController | null>(null)
 const preventAutoSearch = useStorage('cockpit-prevent-auto-vehicle-discovery-dialog', false)
+
+// Stop-button latency is dominated by HTTP probes already in flight (~3s each
+// × 100 workers on a tier-3 sweep), so we treat "user stopped" as a separate
+// UI state that flips the dialog to its post-search look immediately while
+// the underlying scan tidies up in the background.
+const userStopped = ref(false)
+const displaySearching = computed(() => searching.value && !userStopped.value)
 
 const progressStatus = computed<ProgressStatusLine | null>(() => {
   if (!progress.value) return null
@@ -153,18 +161,40 @@ watch(isOpen, (value) => {
 const searchVehicles = async (): Promise<void> => {
   searching.value = true
   searched.value = false
+  userStopped.value = false
   vehicles.value = []
   progress.value = null
-  disableButtons()
-  await discoveryService.findVehicles(
-    (vehicle) => {
-      vehicles.value = [...vehicles.value, vehicle]
-    },
-    (update) => {
-      progress.value = update
+  searchController.value = new AbortController()
+  showStopAction()
+  try {
+    await discoveryService.findVehicles(
+      (vehicle) => {
+        vehicles.value = [...vehicles.value, vehicle]
+      },
+      (update) => {
+        progress.value = update
+      },
+      searchController.value.signal
+    )
+  } catch (error) {
+    if (!userStopped.value) {
+      console.error(`[VehicleDiscoveryDialog] Vehicle discovery failed: ${error}`)
+      openSnackbar({ message: `Vehicle discovery failed: ${error}`, variant: 'error', duration: 5000 })
     }
-  )
-  searching.value = false
+  } finally {
+    searching.value = false
+    progress.value = null
+    searchController.value = null
+    userStopped.value = false
+    enableButtons()
+    searched.value = true
+  }
+}
+
+const stopSearch = (): void => {
+  if (!searchController.value) return
+  userStopped.value = true
+  searchController.value.abort()
   progress.value = null
   enableButtons()
   searched.value = true
@@ -193,14 +223,21 @@ const enableButtons = (): void => {
   dialogActions.value = originalActions
 }
 
+const showStopAction = (): void => {
+  dialogActions.value = [{ text: 'Stop', action: stopSearch }]
+}
+
 watch(isOpen, (isNowOpen) => {
   if (isNowOpen) return
+
+  searchController.value?.abort()
 
   setTimeout(() => {
     vehicles.value = []
     searching.value = false
     searched.value = false
     progress.value = null
+    userStopped.value = false
   }, 1000)
 })
 </script>

@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
   checkTcpPortOpen: (host: string, port: number, timeoutMs: number) =>
     ipcRenderer.invoke('check-tcp-port-open', host, port, timeoutMs),
+  abortTcpPortProbes: () => ipcRenderer.invoke('abort-tcp-port-probes'),
   getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
   onUpdateAvailable: (callback: (info: any) => void) =>
     ipcRenderer.on('update-available', (_event, info) => callback(info)),

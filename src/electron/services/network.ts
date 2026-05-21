@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { createConnection } from 'net'
+import { createConnection, Socket } from 'net'
 import { networkInterfaces } from 'os'
 
 import { NetworkInfo } from '../../types/network'
@@ -168,6 +168,12 @@ const getInfoOnSubnets = (): NetworkInfo[] => {
 }
 
 /**
+ * Sockets opened by `checkTcpPortOpen` that haven't settled yet. Tracked so the
+ * renderer can tear them down on demand when the user aborts a discovery scan.
+ */
+const inFlightProbeSockets = new Set<Socket>()
+
+/**
  * Probe a TCP port with a short timeout. Used as a fast pre-filter during
  * vehicle discovery: most addresses on a wide subnet either have no route
  * (ICMP unreachable, fails in tens of ms) or no listener (RST, similar), so
@@ -180,10 +186,12 @@ const getInfoOnSubnets = (): NetworkInfo[] => {
 const checkTcpPortOpen = (host: string, port: number, timeoutMs: number): Promise<boolean> => {
   return new Promise((resolve) => {
     const socket = createConnection({ host, port })
+    inFlightProbeSockets.add(socket)
     let settled = false
     const settle = (open: boolean): void => {
       if (settled) return
       settled = true
+      inFlightProbeSockets.delete(socket)
       socket.destroy()
       resolve(open)
     }
@@ -195,6 +203,17 @@ const checkTcpPortOpen = (host: string, port: number, timeoutMs: number): Promis
 }
 
 /**
+ * Tear down every still-open `checkTcpPortOpen` socket. Pending probes resolve
+ * `false` via the `'error'` event their destroyed socket emits.
+ */
+const abortInFlightTcpProbes = (): void => {
+  if (inFlightProbeSockets.size === 0) return
+  console.log(`[VehicleDiscovery] Aborting ${inFlightProbeSockets.size} in-flight TCP probe socket(s).`)
+  for (const socket of inFlightProbeSockets) socket.destroy()
+  inFlightProbeSockets.clear()
+}
+
+/**
  * Setup the network service
  */
 export const setupNetworkService = (): void => {
@@ -202,4 +221,5 @@ export const setupNetworkService = (): void => {
   ipcMain.handle('check-tcp-port-open', (_event, host: string, port: number, timeoutMs: number) =>
     checkTcpPortOpen(host, port, timeoutMs)
   )
+  ipcMain.handle('abort-tcp-port-probes', abortInFlightTcpProbes)
 }

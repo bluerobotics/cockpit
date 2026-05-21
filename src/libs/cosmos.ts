@@ -215,6 +215,13 @@ declare global {
        */
       checkTcpPortOpen: (host: string, port: number, timeoutMs: number) => Promise<boolean>
       /**
+       * Tear down every still-open `checkTcpPortOpen` socket in the main
+       * process. Used to short-circuit the discovery pre-filter when the user
+       * presses "Stop" or closes the dialog mid-scan.
+       * @returns Promise resolving when the in-flight set has been cleared
+       */
+      abortTcpPortProbes: () => Promise<void>
+      /**
        * Get memory usage information from the main process
        * @returns Promise containing memory usage data
        */
