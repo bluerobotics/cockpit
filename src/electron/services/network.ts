@@ -34,6 +34,36 @@ const isVirtualInterface = (interfaceName: string): boolean => {
 }
 
 /**
+ * Smallest prefix length we are willing to expand (i.e. widest subnet we scan).
+ * /16 = 65 534 hosts. Anything wider would balloon the scan, and the next step
+ * down (/8) would mean ~16M hosts which is clearly nonsense for discovery.
+ */
+const MIN_PREFIX_LENGTH = 16
+
+/**
+ * Expand an IPv4 subnet into every host address it contains (excluding network
+ * and broadcast). Wider-than-MIN_PREFIX_LENGTH subnets are clamped to /16.
+ * @param {string} address Host's own IPv4 address (e.g. "172.24.97.147")
+ * @param {number} prefixLength CIDR prefix length parsed from the interface
+ * @returns {string[]} All host addresses in the (possibly clamped) subnet
+ */
+const expandSubnet = (address: string, prefixLength: number): string[] => {
+  const effectivePrefix = Math.max(prefixLength, MIN_PREFIX_LENGTH)
+  const ipToInt = (ip: string): number =>
+    ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0
+  const intToIp = (n: number): string => [(n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff].join('.')
+
+  const hostInt = ipToInt(address)
+  const mask = effectivePrefix === 0 ? 0 : (0xffffffff << (32 - effectivePrefix)) >>> 0
+  const networkInt = (hostInt & mask) >>> 0
+  const broadcastInt = (networkInt | (~mask >>> 0)) >>> 0
+
+  const addresses: string[] = []
+  for (let i = networkInt + 1; i < broadcastInt; i++) addresses.push(intToIp(i >>> 0))
+  return addresses
+}
+
+/**
  * Get the network information
  * @returns {NetworkInfo} The network information
  */
@@ -74,11 +104,14 @@ const getInfoOnSubnets = (): NetworkInfo[] => {
   }
 
   const result = ipv4Subnets.map((subnet) => {
-    // TODO: Use the mask to calculate the available addresses. The current implementation is not correct for anything else than /24.
-    const subnetPrefix = subnet.address.split('.').slice(0, 3).join('.')
-    const availableAddresses: string[] = []
-    for (let i = 1; i <= 254; i++) {
-      availableAddresses.push(`${subnetPrefix}.${i}`)
+    const declaredPrefix = Number(subnet.cidr?.split('/')[1] ?? 24)
+    const prefixLength = Number.isFinite(declaredPrefix) ? declaredPrefix : 24
+    const availableAddresses = expandSubnet(subnet.address, prefixLength)
+
+    if (prefixLength < MIN_PREFIX_LENGTH) {
+      console.log(
+        `[VehicleDiscovery] Interface ${subnet.interfaceName} declares /${prefixLength}; clamping scan to /${MIN_PREFIX_LENGTH} (${availableAddresses.length} addresses).`
+      )
     }
 
     return {
