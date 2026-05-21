@@ -35,6 +35,30 @@ const isVirtualInterface = (interfaceName: string): boolean => {
 }
 
 /**
+ * Discovery scan order. Lower tier scans first, so vehicles on a wired or
+ * wireless LAN are typically reported before we even start sweeping a
+ * ZeroTier-style overlay.
+ *
+ * - Tier 0: Linux/Windows ethernet (`eth*`, `enp*`, `eno*`, `ens*`, `enx*`,
+ *   Windows "Ethernet")
+ * - Tier 1: Linux/Windows wireless (`wlan*`, `wlp*`, `wlx*`, `ww*`, Windows
+ *   "Wi-Fi" / "Wireless")
+ * - Tier 2: macOS `en[0-9]+` (ambiguous wired/wireless, but always a regular
+ *   local link)
+ * - Tier 3: everything else (SD-WAN / VPN overlays — ZeroTier `feth*` / `zt*`,
+ *   WireGuard `wg*`, Tailscale `tailscale*` / `utun*`, …)
+ * @param {string} interfaceName Name reported by os.networkInterfaces()
+ * @returns {number} Lower numbers scan first
+ */
+const interfaceScanTier = (interfaceName: string): number => {
+  const lower = interfaceName.toLowerCase()
+  if (/^(eth|eno|enp|ens|enx)/.test(lower) || lower.startsWith('ethernet')) return 0
+  if (/^(wlan|wlp|wlx|ww)/.test(lower) || lower.startsWith('wi-fi') || lower.startsWith('wireless')) return 1
+  if (/^en\d/.test(lower)) return 2
+  return 3
+}
+
+/**
  * Smallest prefix length we are willing to expand (i.e. widest subnet we scan).
  * /16 = 65 534 hosts. Anything wider would balloon the scan, and the next step
  * down (/8) would mean ~16M hosts which is clearly nonsense for discovery.
@@ -104,6 +128,11 @@ const getInfoOnSubnets = (): NetworkInfo[] => {
     throw new Error('No network interfaces found.')
   }
 
+  ipv4Subnets.sort((a, b) => {
+    const tierDelta = interfaceScanTier(a.interfaceName) - interfaceScanTier(b.interfaceName)
+    return tierDelta !== 0 ? tierDelta : a.interfaceName.localeCompare(b.interfaceName)
+  })
+
   const result = ipv4Subnets.map((subnet) => {
     const declaredPrefix = Number(subnet.cidr?.split('/')[1] ?? 24)
     const prefixLength = Number.isFinite(declaredPrefix) ? declaredPrefix : 24
@@ -119,13 +148,19 @@ const getInfoOnSubnets = (): NetworkInfo[] => {
       topSideAddress: subnet.address,
       macAddress: subnet.mac,
       interfaceName: subnet.interfaceName,
+      tier: interfaceScanTier(subnet.interfaceName),
       availableAddresses,
     }
   })
 
   console.log(
-    `[VehicleDiscovery] Subnets to scan: ${JSON.stringify(
-      result.map((s) => ({ iface: s.interfaceName, top: s.topSideAddress, count: s.availableAddresses.length }))
+    `[VehicleDiscovery] Subnets to scan (preferred order): ${JSON.stringify(
+      result.map((s) => ({
+        iface: s.interfaceName,
+        tier: s.tier,
+        top: s.topSideAddress,
+        count: s.availableAddresses.length,
+      }))
     )}`
   )
 
