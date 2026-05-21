@@ -122,13 +122,14 @@ class VehicleDiscover {
     )
 
     const probe = window.electronAPI.checkTcpPortOpen
-    const reachable: string[] = []
+    const survivors: (string | null)[] = new Array(addresses.length).fill(null)
     let nextIndex = 0
     const worker = async (): Promise<void> => {
       while (nextIndex < addresses.length) {
-        const address = addresses[nextIndex++]
+        const i = nextIndex++
+        const address = addresses[i]
         try {
-          if (await probe(address, BLUEOS_HTTP_PORT, TCP_PROBE_TIMEOUT_MS)) reachable.push(address)
+          if (await probe(address, BLUEOS_HTTP_PORT, TCP_PROBE_TIMEOUT_MS)) survivors[i] = address
         } catch {
           // Probe errors are equivalent to "host not reachable" for our purposes
         }
@@ -136,6 +137,7 @@ class VehicleDiscover {
     }
     await Promise.all(Array.from({ length: concurrency }, () => worker()))
 
+    const reachable = survivors.filter((address): address is string => address !== null)
     console.info(
       `[VehicleDiscovery] TCP pre-filter kept ${reachable.length} / ${addresses.length} address(es) ` +
         `in ${Date.now() - probeStart}ms.`
