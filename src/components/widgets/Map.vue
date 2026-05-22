@@ -233,6 +233,7 @@
 
   <PoiManager ref="poiManagerMapWidgetRef" />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
+  <BaseStationConfigPanel />
   <BaseStationContextPopup />
   <MissionChecklist
     :model-value="isMissionChecklistOpen"
@@ -283,6 +284,7 @@ import copterMarkerImage from '@/assets/arducopter-top-view.avif'
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
 import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'

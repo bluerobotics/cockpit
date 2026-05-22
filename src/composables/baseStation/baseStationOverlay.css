@@ -37,3 +37,18 @@
   border-radius: 2px;
   white-space: nowrap;
 }
+
+.base-station-bearing-handle {
+  background: none;
+  border: none;
+  cursor: grab;
+}
+
+.base-station-bearing-handle-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 2px solid #008bff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
