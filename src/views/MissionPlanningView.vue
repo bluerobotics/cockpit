@@ -621,6 +621,9 @@
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
     @open-map-overlays="overlaysDialogOpen = true"
+    @place-base-station="placeBaseStationFromContextMenu"
+    @configure-base-station="baseStationStore.configPanelOpen = true"
+    @remove-base-station="confirmRemoveBaseStation(showDialog, closeDialog)"
   />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
   <Teleport to="#planningMap">
@@ -654,6 +657,7 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
+  <BaseStationContextPopup />
   <PoiMapArrows
     :map-ready="mapReady"
     :force-full-screen="true"
@@ -713,6 +717,7 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
@@ -725,6 +730,8 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
+import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
@@ -788,6 +795,7 @@ const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
+const baseStationStore = useBaseStation()
 const missionEstimates = useMissionEstimates()
 const angleOverlay = useVertexAngleOverlay()
 const dragMeasureOverlay = useDragMeasureOverlay(angleOverlay)
@@ -990,6 +998,8 @@ watch(
   () => missionStore.mapOverlayFocusRequest.revision,
   () => mapOverlays.zoomToOverlay(missionStore.mapOverlayFocusRequest.id)
 )
+
+useBaseStationOverlay(planningMap, mapReady)
 
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
@@ -2122,6 +2132,13 @@ const clearVehiclePathHistory = (): void => {
 const setHomePositionFromContextMenu = async (): Promise<void> => {
   logUserAction('Set mission home position from context menu')
   await setHomePosition()
+}
+
+const placeBaseStationFromContextMenu = (): void => {
+  if (!currentCursorGeoCoordinates.value) return
+  baseStationStore.setPosition(currentCursorGeoCoordinates.value)
+  baseStationStore.configPanelOpen = true
+  logUserAction('Placed the base station via the mission-planning context menu')
 }
 
 const setHomePosition = async (): Promise<void> => {
