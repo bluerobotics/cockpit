@@ -36,6 +36,36 @@ export enum AntennaType {
   Yagi = 'Yagi',
 }
 
+/**
+ * Source of the cellular coverage overlay shown when {@link BaseStationCommsType.MobileData} is selected.
+ */
+export enum MobileCoverageProvider {
+  OpenCellID = 'OpenCellID',
+  OSMOverpass = 'OSM Overpass',
+  Custom = 'Custom overlay',
+}
+
+export type MobileCoverageConfig = {
+  /**
+   * Active coverage data provider.
+   */
+  provider: MobileCoverageProvider
+  /**
+   * OpenCellID API key. Required when {@link provider} is {@link MobileCoverageProvider.OpenCellID}.
+   */
+  openCellIdApiKey: string
+  /**
+   * Leaflet `TileLayer` URL template (with `{z}/{x}/{y}` placeholders). Required when
+   * {@link provider} is {@link MobileCoverageProvider.Custom}.
+   */
+  customTileUrl: string
+  /**
+   * OSM operator name to filter by when {@link provider} is {@link MobileCoverageProvider.OSMOverpass}.
+   * Empty string keeps all operators.
+   */
+  osmOperator: string
+}
+
 export type AntennaSpec = {
   /**
    * Antenna form factor.
@@ -103,6 +133,10 @@ export type BaseStationConfig = {
    * Tether length in meters used to draw coverage. Only used when {@link commsType} is Tethered.
    */
   tetherLengthMeters: number
+  /**
+   * Cellular coverage overlay configuration. Only used when {@link commsType} is MobileData.
+   */
+  mobileCoverage: MobileCoverageConfig
   /**
    * Transmitter power in milliwatts. Drives a Friis-based range scaling
    * (range ∝ √P_t) when the operator picks a Custom radio.
@@ -194,6 +228,12 @@ export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   vehicleHasBlueBoatAntennaMast: false,
   tetherLengthMeters: 150,
   txPowerMilliwatts: BLUE_ROBOTICS_TX_POWER_MW,
+  mobileCoverage: {
+    provider: MobileCoverageProvider.OpenCellID,
+    openCellIdApiKey: '',
+    customTileUrl: '',
+    osmOperator: '',
+  },
   coverageColor: '#3B82F6',
   coverageOpacity: 1,
 }
