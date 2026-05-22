@@ -175,6 +175,39 @@
           <span class="text-white text-sm ml-4">Set home waypoint</span>
         </v-list-item>
         <v-divider />
+        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handlePlaceBaseStation">
+          <v-icon
+            variant="text"
+            icon="mdi-radio-tower"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px]"
+          ></v-icon>
+          <span class="text-white text-sm ml-4">{{
+            baseStationStore.config.enabled ? 'Move base station here' : 'Set base station here'
+          }}</span>
+        </v-list-item>
+        <template v-if="baseStationStore.config.enabled">
+          <v-divider />
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleConfigureBaseStation">
+            <v-icon variant="text" icon="mdi-cog" rounded="full" size="x-small" color="white" class="text-[16px]" />
+            <span class="text-white text-sm ml-4">Configure base station</span>
+          </v-list-item>
+          <v-divider />
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleRemoveBaseStation">
+            <v-icon
+              variant="text"
+              icon="mdi-radio-tower"
+              rounded="full"
+              size="x-small"
+              color="white"
+              class="text-[16px]"
+            />
+            <span class="text-white text-sm ml-4">Remove base station</span>
+          </v-list-item>
+        </template>
+        <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleClearVehiclePathHistory">
           <v-icon
             variant="text"
@@ -261,12 +294,14 @@
 import { computed, defineEmits, defineProps, nextTick, ref, watch } from 'vue'
 
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
+import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import { ContextMenuTypes, Survey, Waypoint } from '@/types/mission'
 
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
+const baseStationStore = useBaseStation()
 const menuEl = ref<HTMLElement | null>(null)
 
 /* eslint-disable jsdoc/require-jsdoc */
@@ -301,6 +336,9 @@ const emit = defineEmits<{
   (event: 'placePointOfInterest'): void
   (event: 'setHomePosition'): void
   (event: 'clearVehiclePathHistory'): void
+  (event: 'placeBaseStation'): void
+  (event: 'configureBaseStation'): void
+  (event: 'removeBaseStation'): void
 }>()
 
 const menuType = computed(() => props.menuType)
@@ -406,6 +444,21 @@ const handleSetHomePosition = (): void => {
 
 const handleClearVehiclePathHistory = (): void => {
   emit('clearVehiclePathHistory')
+  emit('close')
+}
+
+const handlePlaceBaseStation = (): void => {
+  emit('placeBaseStation')
+  emit('close')
+}
+
+const handleConfigureBaseStation = (): void => {
+  emit('configureBaseStation')
+  emit('close')
+}
+
+const handleRemoveBaseStation = (): void => {
+  emit('removeBaseStation')
   emit('close')
 }
 
