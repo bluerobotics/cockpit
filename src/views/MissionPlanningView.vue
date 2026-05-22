@@ -703,6 +703,7 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
+  <BaseStationConfigPanel />
   <BaseStationContextPopup />
   <Teleport to="#planningMap">
     <PoiMapArrows
@@ -770,6 +771,7 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
 import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
