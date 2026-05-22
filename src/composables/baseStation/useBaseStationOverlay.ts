@@ -2,14 +2,50 @@ import * as turf from '@turf/turf'
 import L from 'leaflet'
 import { type Ref, type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
 
+import { openSnackbar } from '@/composables/snackbar'
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import {
   type BaseStationConfig,
   AntennaType,
   BaseStationCommsType,
   effectiveAntennaRangeMeters,
+  MobileCoverageProvider,
 } from '@/types/baseStation'
 import type { WaypointCoordinates } from '@/types/mission'
+
+/* eslint-disable jsdoc/require-jsdoc -- `leaflet.heat` ships no typings; this is a minimal augmentation. */
+declare module 'leaflet' {
+  type HeatLatLngTuple = [number, number, number]
+  interface HeatMapOptions {
+    minOpacity?: number
+    maxZoom?: number
+    max?: number
+    radius?: number
+    blur?: number
+    gradient?: Record<number, string>
+  }
+  interface HeatLayer extends Layer {
+    setOptions(options: HeatMapOptions): HeatLayer
+    addLatLng(latlng: LatLng | HeatLatLngTuple): HeatLayer
+    setLatLngs(latlngs: Array<LatLng | HeatLatLngTuple>): HeatLayer
+  }
+  function heatLayer(latlngs: Array<LatLng | HeatLatLngTuple>, options?: HeatMapOptions): HeatLayer
+}
+/* eslint-enable jsdoc/require-jsdoc */
+
+// `leaflet.heat` is a UMD-style plugin: its IIFE assigns `L.HeatLayer = …` against whatever
+// `L` it finds on the scope chain — i.e. `window.L`. With ESM imports leaflet doesn't auto-
+// publish to the global, so the plugin's IIFE silently no-ops and `L.heatLayer` ends up
+// undefined. Expose `L` on `window` first, then load the plugin lazily on first use.
+let heatLayerLoader: Promise<void> | null = null
+const ensureHeatLayer = (): Promise<void> => {
+  if (heatLayerLoader) return heatLayerLoader
+  heatLayerLoader = (async () => {
+    Object.assign(window, { L })
+    await import('leaflet.heat')
+  })()
+  return heatLayerLoader
+}
 
 const SECTOR_ARC_STEPS = 64
 
@@ -66,9 +102,136 @@ const bearingFromCenter = (center: WaypointCoordinates, point: WaypointCoordinat
   return turf.bearing(turf.point([center[1], center[0]]), turf.point([point[1], point[0]]))
 }
 
-/* eslint-disable jsdoc/require-jsdoc -- internal helper return shape, name is self-describing. */
+/* eslint-disable jsdoc/require-jsdoc -- Inline transport DTOs; field meanings follow upstream docs. */
+
+// OSM Overpass has no per-call area cap, so we use a single ~11 km half-side bbox.
+const OVERPASS_BBOX_DEG = 0.1
+// OpenCellID's getInArea caps at 4 km² per call (`code: 3` otherwise), so we tile a 3×3 grid
+// of small boxes around the base station — ~5 km × 5 km of total coverage in 9 parallel calls.
+const OPENCELLID_TILE_HALF_DEG = 0.0075
+const OPENCELLID_TILES_PER_SIDE = 3
+// `range` is reported in meters; this anchor (~5 km) maps a typical urban tower reach to
+// full intensity in the heatmap.
+const OPENCELLID_RANGE_NORMALIZER_M = 5000
+
+type CoverageBbox = { south: number; west: number; north: number; east: number }
+
+const overpassBboxAround = (lat: number, lng: number): CoverageBbox => ({
+  south: lat - OVERPASS_BBOX_DEG,
+  west: lng - OVERPASS_BBOX_DEG,
+  north: lat + OVERPASS_BBOX_DEG,
+  east: lng + OVERPASS_BBOX_DEG,
+})
+
+type OpenCellIdResponse = {
+  cells?: Array<{ lat: number; lon: number; range?: number }>
+  error?: string
+  code?: number
+}
+
+const fetchOpenCellIdTile = async (
+  bbox: CoverageBbox,
+  apiKey: string,
+  signal: AbortSignal
+): Promise<L.HeatLatLngTuple[]> => {
+  const url =
+    `https://opencellid.org/cell/getInArea?key=${encodeURIComponent(apiKey)}` +
+    `&BBOX=${bbox.south},${bbox.west},${bbox.north},${bbox.east}` +
+    `&format=json&radio=LTE,NR&limit=1000`
+  const res = await fetch(url, { signal })
+  if (!res.ok) throw new Error(`OpenCellID HTTP ${res.status}`)
+  const data = (await res.json()) as OpenCellIdResponse
+  // `code: 1` ("No cells found") is HTTP 200 + an `error` field; treat as empty, not failure.
+  if (data.error && data.code !== 1) throw new Error(`OpenCellID: ${data.error}`)
+  return (data.cells ?? []).map<L.HeatLatLngTuple>((c) => [
+    c.lat,
+    c.lon,
+    Math.min(1, (c.range ?? 1000) / OPENCELLID_RANGE_NORMALIZER_M),
+  ])
+}
+
+const fetchOpenCellIdPoints = async (
+  center: WaypointCoordinates,
+  apiKey: string,
+  signal: AbortSignal
+): Promise<L.HeatLatLngTuple[]> => {
+  const [lat, lng] = center
+  const tileEdge = OPENCELLID_TILE_HALF_DEG * 2
+  const offsetBase = (OPENCELLID_TILES_PER_SIDE - 1) / 2
+  const tiles: CoverageBbox[] = []
+  for (let i = 0; i < OPENCELLID_TILES_PER_SIDE; i++) {
+    for (let j = 0; j < OPENCELLID_TILES_PER_SIDE; j++) {
+      const cLat = lat + (i - offsetBase) * tileEdge
+      const cLng = lng + (j - offsetBase) * tileEdge
+      tiles.push({
+        south: cLat - OPENCELLID_TILE_HALF_DEG,
+        west: cLng - OPENCELLID_TILE_HALF_DEG,
+        north: cLat + OPENCELLID_TILE_HALF_DEG,
+        east: cLng + OPENCELLID_TILE_HALF_DEG,
+      })
+    }
+  }
+  const settled = await Promise.allSettled(tiles.map((b) => fetchOpenCellIdTile(b, apiKey, signal)))
+  const fulfilled = settled.filter((r): r is PromiseFulfilledResult<L.HeatLatLngTuple[]> => r.status === 'fulfilled')
+  // If every tile failed, surface the first error so the operator gets a real diagnostic
+  // (invalid key, network down, …) instead of a silent empty heatmap.
+  if (fulfilled.length === 0) {
+    const firstReject = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+    if (firstReject) throw firstReject.reason
+  }
+  return fulfilled.flatMap((r) => r.value)
+}
+
+type OverpassResponse = {
+  elements?: Array<{ lat?: number; lon?: number; tags?: Record<string, string> }>
+}
+
+type OverpassTower = { lat: number; lon: number; operator: string | null }
+
+const fetchOverpassTowers = async (bbox: CoverageBbox, signal: AbortSignal): Promise<OverpassTower[]> => {
+  const region = `(${bbox.south},${bbox.west},${bbox.north},${bbox.east})`
+  const query =
+    `[out:json][timeout:25];` +
+    `(node["man_made"="communications_tower"]${region};` +
+    `node["tower:type"="communication"]${region};);` +
+    // `out body` (= `out;`) is required to keep node lat/lon. `out tags;` drops coords.
+    `out body;`
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: query,
+    signal,
+  })
+  if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`)
+  const data = (await res.json()) as OverpassResponse
+  return (data.elements ?? [])
+    .filter(
+      (e): e is { lat: number; lon: number; tags?: Record<string, string> } =>
+        typeof e.lat === 'number' && typeof e.lon === 'number'
+    )
+    .map<OverpassTower>((e) => ({ lat: e.lat, lon: e.lon, operator: e.tags?.operator?.trim() || null }))
+}
+
+// Real cellular sites have ~1-3 km of usable urban coverage; pick a middle value and let the
+// heatmap pixel radius track this in real meters as the operator zooms in/out.
+const HEAT_COVERAGE_METERS = 1500
+const HEAT_RADIUS_MIN_PX = 30
+const HEAT_RADIUS_MAX_PX = 140
+// Equator meters-per-pixel at zoom 0. Halves with each zoom level; multiplied by cos(lat) to
+// account for the Mercator projection narrowing toward the poles.
+const METERS_PER_PIXEL_AT_Z0 = 156543.03392
+
+type HeatRadius = { radius: number; blur: number }
 type BaseStationOverlayApi = { openConfigPanel: () => void }
 /* eslint-enable jsdoc/require-jsdoc */
+
+const heatRadiusForMap = (mapInstance: L.Map): HeatRadius => {
+  const center = mapInstance.getCenter()
+  const metersPerPixel = (METERS_PER_PIXEL_AT_Z0 * Math.cos((center.lat * Math.PI) / 180)) / 2 ** mapInstance.getZoom()
+  const ideal = HEAT_COVERAGE_METERS / metersPerPixel
+  const radius = Math.max(HEAT_RADIUS_MIN_PX, Math.min(HEAT_RADIUS_MAX_PX, ideal))
+  return { radius, blur: radius * 0.6 }
+}
 
 const baseStationMarkerHtml = (label: string): string => `
   <div class="base-station-marker-container">
@@ -98,6 +261,11 @@ export const useBaseStationOverlay = (
   const bearingHandle = shallowRef<L.Marker | undefined>()
   const bearingLine = shallowRef<L.Polyline | undefined>()
   const aimingArc = shallowRef<L.Polyline | undefined>()
+  const mobileCoverageLayer = shallowRef<L.Layer | undefined>()
+
+  let mobileCoverageController: AbortController | null = null
+  let mobileCoverageDebounce: ReturnType<typeof setTimeout> | null = null
+  let heatZoomCleanup: (() => void) | null = null
 
   const openConfigPanel = (): void => {
     store.configPanelOpen = true
@@ -289,6 +457,86 @@ export const useBaseStationOverlay = (
     bearingHandle.value = handle
   }
 
+  const teardownMobileCoverage = (): void => {
+    if (mobileCoverageController) {
+      mobileCoverageController.abort()
+      mobileCoverageController = null
+    }
+    if (heatZoomCleanup) {
+      heatZoomCleanup()
+      heatZoomCleanup = null
+    }
+    removeLayer(mobileCoverageLayer.value)
+    mobileCoverageLayer.value = undefined
+  }
+
+  const updateMobileCoverage = async (config: BaseStationConfig): Promise<void> => {
+    teardownMobileCoverage()
+
+    if (!map.value || !config.enabled || !config.position) return
+    if (config.commsType !== BaseStationCommsType.MobileData) return
+
+    const provider = config.mobileCoverage.provider
+
+    if (provider === MobileCoverageProvider.Custom) {
+      const url = config.mobileCoverage.customTileUrl.trim()
+      if (!url) return
+      mobileCoverageLayer.value = L.tileLayer(url, { opacity: 0.55 }).addTo(map.value)
+      return
+    }
+
+    const controller = new AbortController()
+    mobileCoverageController = controller
+    try {
+      let points: L.HeatLatLngTuple[]
+      if (provider === MobileCoverageProvider.OpenCellID) {
+        const apiKey = config.mobileCoverage.openCellIdApiKey.trim()
+        if (!apiKey) return
+        points = await fetchOpenCellIdPoints(config.position, apiKey, controller.signal)
+      } else {
+        const towers = await fetchOverpassTowers(
+          overpassBboxAround(config.position[0], config.position[1]),
+          controller.signal
+        )
+        if (controller.signal.aborted) return
+        // Surface the operator vocabulary actually present in the bbox so the panel can render
+        // a meaningful selector (the OSM `operator` tag is region-specific).
+        store.availableOsmOperators = [...new Set(towers.map((t) => t.operator).filter((o): o is string => !!o))].sort()
+        const selectedOperator = config.mobileCoverage.osmOperator
+        const filtered = selectedOperator ? towers.filter((t) => t.operator === selectedOperator) : towers
+        points = filtered.map<L.HeatLatLngTuple>((t) => [t.lat, t.lon, 1])
+      }
+      if (controller.signal.aborted || !map.value) return
+      if (points.length === 0) {
+        openSnackbar({
+          variant: 'info',
+          message: `${provider} returned no cellular data around the base station.`,
+          duration: 4000,
+        })
+        return
+      }
+      await ensureHeatLayer()
+      if (controller.signal.aborted || !map.value) return
+      const heat = L.heatLayer(points, { ...heatRadiusForMap(map.value), minOpacity: 0.25 }).addTo(map.value)
+      mobileCoverageLayer.value = heat
+      // Re-tune pixel radius on zoom so the visual stays anchored to ~1.5 km of real coverage.
+      const onZoom = (): void => {
+        if (map.value) heat.setOptions(heatRadiusForMap(map.value))
+      }
+      map.value.on('zoomend', onZoom)
+      heatZoomCleanup = () => map.value?.off('zoomend', onZoom)
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') return
+      openSnackbar({
+        variant: 'error',
+        message: `Mobile coverage fetch failed: ${(err as Error).message}`,
+        duration: 4000,
+      })
+    } finally {
+      if (mobileCoverageController === controller) mobileCoverageController = null
+    }
+  }
+
   const refreshAll = (): void => {
     if (!map.value || !mapReady.value) return
     const config = store.config
@@ -300,6 +548,7 @@ export const useBaseStationOverlay = (
       removeLayer(bearingHandle.value)
       removeLayer(bearingLine.value)
       removeLayer(aimingArc.value)
+      teardownMobileCoverage()
       marker.value = undefined
       coverageLayer.value = undefined
       tetherLayer.value = undefined
@@ -318,7 +567,30 @@ export const useBaseStationOverlay = (
   watch([map, mapReady], refreshAll, { immediate: true })
   watch(() => store.config, refreshAll, { deep: true })
 
+  // Debounced so live edits to API key / tile URL don't hammer the public APIs on every keystroke.
+  watch(
+    () => [
+      mapReady.value,
+      store.config.commsType,
+      store.config.mobileCoverage.provider,
+      store.config.mobileCoverage.openCellIdApiKey,
+      store.config.mobileCoverage.customTileUrl,
+      store.config.mobileCoverage.osmOperator,
+      store.config.position,
+    ],
+    () => {
+      if (mobileCoverageDebounce) clearTimeout(mobileCoverageDebounce)
+      mobileCoverageDebounce = setTimeout(() => updateMobileCoverage(store.config), 500)
+    },
+    { immediate: true }
+  )
+
   onBeforeUnmount(() => {
+    if (mobileCoverageDebounce) {
+      clearTimeout(mobileCoverageDebounce)
+      mobileCoverageDebounce = null
+    }
+    teardownMobileCoverage()
     removeLayer(marker.value)
     removeLayer(coverageLayer.value)
     removeLayer(tetherLayer.value)

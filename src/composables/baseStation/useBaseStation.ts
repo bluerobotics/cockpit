@@ -23,7 +23,15 @@ function initialize() {
     ...DEFAULT_BASE_STATION_CONFIG,
     ...config.value,
     antenna: { ...DEFAULT_BASE_STATION_CONFIG.antenna, ...(config.value.antenna ?? {}) },
+    mobileCoverage: {
+      ...DEFAULT_BASE_STATION_CONFIG.mobileCoverage,
+      ...(config.value.mobileCoverage ?? {}),
+    },
   }
+
+  // Operators discovered in the most recent Overpass response. Populates the panel selector
+  // dynamically since the OSM `operator` tag varies wildly between regions.
+  const availableOsmOperators = ref<string[]>([])
 
   const configPanelOpen = ref(false)
 
@@ -114,6 +122,7 @@ function initialize() {
     configPanelOpen,
     contextPopupOpen,
     contextPopupPosition,
+    availableOsmOperators,
     showCoverage,
     setPosition,
     setBearing,
