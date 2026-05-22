@@ -1,19 +1,45 @@
-import { reactive, ref } from 'vue'
+import { useThrottleFn } from '@vueuse/core'
+import { computed, reactive, ref, watch } from 'vue'
 
 import type { DialogOptions, DialogResult } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
-import { type BaseStationConfig, DEFAULT_BASE_STATION_CONFIG } from '@/types/baseStation'
+import { openSnackbar } from '@/composables/snackbar'
+import { useGnss } from '@/composables/useGnss'
+import { normalizeBearing } from '@/libs/baseStation/coverage'
+import { useAppInterfaceStore } from '@/stores/appInterface'
+import {
+  type BaseStationConfig,
+  ANTENNA_FACTORY_DEFAULTS,
+  AntennaType,
+  BaseStationCommsType,
+  BROWSER_GEOLOCATION_SOURCE_ID,
+  DEFAULT_BASE_STATION_CONFIG,
+} from '@/types/baseStation'
 import type { DialogActions } from '@/types/general'
 import type { WaypointCoordinates } from '@/types/mission'
+
+// GNSS receivers report at up to 10 Hz while a base station barely moves, so fixes are sampled down
+// before they reach the persisted config and the coverage overlay that redraws with it.
+const gnssPositionSampleRateMs = 1000
 
 // eslint-disable-next-line jsdoc/require-jsdoc, @typescript-eslint/explicit-function-return-type -- type inferred for the reactive() output to keep per-state-field typing local to this file
 function initialize() {
   const config = useBlueOsStorage<BaseStationConfig>('cockpit-base-station-config', DEFAULT_BASE_STATION_CONFIG)
 
   // Merge defaults so newly-added fields are populated for existing users.
-  config.value = { ...DEFAULT_BASE_STATION_CONFIG, ...config.value }
+  config.value = {
+    ...DEFAULT_BASE_STATION_CONFIG,
+    ...config.value,
+    antenna: { ...DEFAULT_BASE_STATION_CONFIG.antenna, ...(config.value.antenna ?? {}) },
+  }
 
   const configPanelOpen = ref(false)
+
+  const interfaceStore = useAppInterfaceStore()
+  watch(configPanelOpen, (isOpen) => {
+    interfaceStore.configPanelVisible = isOpen
+    if (isOpen) logUserAction('Opened the base station configuration panel')
+  })
 
   const contextPopupOpen = ref(false)
   const contextPopupPosition = ref({ x: 0, y: 0 })
@@ -27,6 +53,14 @@ function initialize() {
     contextPopupOpen.value = false
   }
 
+  const showCoverage = computed(
+    () =>
+      config.value.enabled &&
+      config.value.position !== null &&
+      (config.value.commsType === BaseStationCommsType.RadioLink ||
+        config.value.commsType === BaseStationCommsType.Tethered)
+  )
+
   const setPosition = (position: WaypointCoordinates): void => {
     config.value.position = [Number(position[0].toFixed(8)), Number(position[1].toFixed(8))]
     config.value.enabled = true
@@ -38,14 +72,100 @@ function initialize() {
     contextPopupOpen.value = false
   }
 
+  const resetAntennaToDefaults = (): void => {
+    const factory = ANTENNA_FACTORY_DEFAULTS[config.value.antenna.type]
+    config.value.antenna = { ...factory, bearing: config.value.antenna.bearing }
+  }
+
+  const setAntennaType = (type: AntennaType): void => {
+    const factory = ANTENNA_FACTORY_DEFAULTS[type]
+    config.value.antenna = { ...factory, bearing: config.value.antenna.bearing }
+  }
+
+  const setBearing = (bearing: number): void => {
+    config.value.antenna.bearing = normalizeBearing(bearing)
+  }
+
+  const gnss = useGnss()
+
+  // Serial GNSS receivers only work on Standalone, so Lite is left with the browser's Geolocation API.
+  const gpsSourceOptions = computed(() => [
+    { id: BROWSER_GEOLOCATION_SOURCE_ID, label: 'Browser geolocation' },
+    ...(gnss.isSupported ? gnss.devices.value.map((device) => ({ id: device.id, label: device.name })) : []),
+  ])
+
+  // Sources that are gone (device removed, or a device id synced in from a Standalone install) fall back
+  // to the browser, so tracking never waits on a source that cannot report a position.
+  const gpsSource = computed(() =>
+    gpsSourceOptions.value.some((source) => source.id === config.value.gpsSourceId)
+      ? config.value.gpsSourceId
+      : BROWSER_GEOLOCATION_SOURCE_ID
+  )
+
+  const isTracking = computed(() => config.value.trackByGps && config.value.enabled)
+
+  let geoWatchId: number | null = null
+  const stopGeoWatch = (): void => {
+    if (geoWatchId !== null && navigator?.geolocation) {
+      navigator.geolocation.clearWatch(geoWatchId)
+      geoWatchId = null
+    }
+  }
+  const startGeoWatch = (): void => {
+    if (geoWatchId !== null || !navigator?.geolocation) return
+    geoWatchId = navigator.geolocation.watchPosition(
+      (position) => setPosition([position.coords.latitude, position.coords.longitude]),
+      (error) => {
+        openSnackbar({
+          variant: 'error',
+          message: `Base station GPS tracking failed: ${error.message}. Disabling.`,
+          duration: 4000,
+        })
+        config.value.trackByGps = false
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 1000 }
+    )
+  }
+
+  watch(
+    () => isTracking.value && gpsSource.value === BROWSER_GEOLOCATION_SOURCE_ID,
+    (usingBrowserGeolocation) => (usingBrowserGeolocation ? startGeoWatch() : stopGeoWatch()),
+    { immediate: true }
+  )
+
+  const trackedGnssDeviceId = computed(() =>
+    isTracking.value && gpsSource.value !== BROWSER_GEOLOCATION_SOURCE_ID ? gpsSource.value : null
+  )
+
+  const applyGnssPosition = useThrottleFn(setPosition, gnssPositionSampleRateMs, true, true)
+
+  watch(
+    () => (trackedGnssDeviceId.value === null ? undefined : gnss.latestFixes[trackedGnssDeviceId.value]),
+    (fix) => {
+      if (fix?.latitude == null || fix.longitude == null || !fix.hasValidFix) return
+      applyGnssPosition([fix.latitude, fix.longitude])
+    },
+    { immediate: true }
+  )
+
+  // This singleton never unmounts, so the watch above can't release the geolocation watch on a
+  // full app teardown; clear it on window unload to avoid leaking it across reloads.
+  if (typeof window !== 'undefined') window.addEventListener('beforeunload', stopGeoWatch)
+
   return reactive({
     config,
     configPanelOpen,
     contextPopupOpen,
     contextPopupPosition,
+    showCoverage,
+    gpsSource,
+    gpsSourceOptions,
+    setPosition,
+    setBearing,
+    setAntennaType,
+    resetAntennaToDefaults,
     openContextPopup,
     closeContextPopup,
-    setPosition,
     remove,
   })
 }
