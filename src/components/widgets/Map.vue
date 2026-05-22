@@ -231,6 +231,7 @@
   </p>
 
   <PoiManager ref="poiManagerMapWidgetRef" />
+  <BaseStationConfigPanel />
   <BaseStationContextPopup />
   <MissionChecklist
     :model-value="isMissionChecklistOpen"
@@ -292,6 +293,7 @@ import copterMarkerImage from '@/assets/arducopter-top-view.avif'
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
 import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
@@ -2421,5 +2423,20 @@ watch(
   padding: 1px 4px;
   border-radius: 2px;
   white-space: nowrap;
+}
+
+.base-station-bearing-handle {
+  background: none;
+  border: none;
+  cursor: grab;
+}
+
+.base-station-bearing-handle-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 2px solid #008bff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 </style>

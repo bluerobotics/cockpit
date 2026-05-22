@@ -106,7 +106,7 @@
       />
     </div>
     <div
-      v-show="!interfaceStore.isMainMenuVisible"
+      v-show="!interfaceStore.isMainMenuVisible && !interfaceStore.isConfigPanelVisible"
       class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-y-auto z-[200]"
       :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '320px' }]"
     >
@@ -618,6 +618,7 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
+  <BaseStationConfigPanel />
   <BaseStationContextPopup />
   <PoiMapArrows
     :map-ready="mapReady"
@@ -679,6 +680,7 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
 import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
