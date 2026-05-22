@@ -89,9 +89,55 @@
                 <option v-for="comms in commsTypes" :key="comms" :value="comms">{{ comms }}</option>
               </select>
             </div>
+            <div v-if="isMobileData" class="config-row">
+              <p class="config-label">Coverage</p>
+              <select :value="config.mobileCoverage.provider" class="config-input" @change="onCoverageProviderChange">
+                <option v-for="p in mobileCoverageProviders" :key="p" :value="p">{{ p }}</option>
+              </select>
+            </div>
+            <div v-if="isMobileData && isOpenCellId" class="config-row">
+              <p class="config-label">API key</p>
+              <input v-model.trim="config.mobileCoverage.openCellIdApiKey" type="text" class="config-input" />
+            </div>
+            <div v-if="isMobileData && isOsmOverpass" class="config-row">
+              <p class="config-label">Operator</p>
+              <select v-model="config.mobileCoverage.osmOperator" class="config-input">
+                <option value="">All operators</option>
+                <option v-for="op in store.availableOsmOperators" :key="op" :value="op">{{ op }}</option>
+              </select>
+            </div>
+            <div v-if="isMobileData && isCustomCoverage" class="config-row">
+              <p class="config-label">Tile URL</p>
+              <button type="button" class="config-input config-text-btn" @click="openCustomCoverageDialog">
+                {{ config.mobileCoverage.customTileUrl ? 'Edit URL' : 'Set URL' }}
+              </button>
+            </div>
           </div>
         </template>
       </ExpansiblePanel>
+
+      <v-dialog v-model="customCoverageDialogOpen" max-width="520">
+        <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
+          <v-card-title class="text-h6 py-3 text-center">Custom coverage tile URL</v-card-title>
+          <v-card-text class="px-6">
+            <v-text-field
+              v-model="customTileUrlDraft"
+              label="Tile URL"
+              placeholder="https://tiles.example.com/{z}/{x}/{y}.png"
+              hint="Leaflet TileLayer URL with {z}, {x}, {y} placeholders. Add an API key to the URL itself if your provider requires one."
+              persistent-hint
+              variant="outlined"
+              density="compact"
+              autofocus
+            />
+          </v-card-text>
+          <v-card-actions class="px-6 pb-4">
+            <v-spacer />
+            <v-btn variant="text" @click="customCoverageDialogOpen = false">Cancel</v-btn>
+            <v-btn variant="elevated" color="primary" @click="saveCustomTileUrl">Save</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <ExpansiblePanel
         v-if="isRadioLink"
@@ -421,6 +467,7 @@ import { computed, ref, watch } from 'vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -428,6 +475,7 @@ import {
   AntennaType,
   BaseStationCommsType,
   BLUE_ROBOTICS_TX_POWER_MW,
+  MobileCoverageProvider,
   RadioBaseStationKind,
   TopSideComputerType,
 } from '@/types/baseStation'
@@ -437,6 +485,7 @@ const store = useBaseStation()
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
+const interfaceStore = useAppInterfaceStore()
 
 const config = computed(() => store.config)
 
@@ -444,11 +493,16 @@ const topSideTypes = Object.values(TopSideComputerType)
 const commsTypes = Object.values(BaseStationCommsType)
 const radioKinds = Object.values(RadioBaseStationKind)
 const antennaTypes = Object.values(AntennaType)
+const mobileCoverageProviders = Object.values(MobileCoverageProvider)
 
 const isRadioLink = computed(() => config.value.commsType === BaseStationCommsType.RadioLink)
 const isTethered = computed(() => config.value.commsType === BaseStationCommsType.Tethered)
+const isMobileData = computed(() => config.value.commsType === BaseStationCommsType.MobileData)
 const isOmni = computed(() => config.value.antenna.type === AntennaType.Omni)
 const isCustomRadio = computed(() => config.value.radioBaseStationKind === RadioBaseStationKind.Custom)
+const isOpenCellId = computed(() => config.value.mobileCoverage.provider === MobileCoverageProvider.OpenCellID)
+const isOsmOverpass = computed(() => config.value.mobileCoverage.provider === MobileCoverageProvider.OSMOverpass)
+const isCustomCoverage = computed(() => config.value.mobileCoverage.provider === MobileCoverageProvider.Custom)
 
 const latText = ref('')
 const lngText = ref('')
@@ -563,6 +617,26 @@ const onRadioKindChange = (event: Event): void => {
 }
 
 const estimatesInfoDialogOpen = ref(false)
+const customCoverageDialogOpen = ref(false)
+const customTileUrlDraft = ref('')
+
+const openCustomCoverageDialog = (): void => {
+  customTileUrlDraft.value = config.value.mobileCoverage.customTileUrl
+  customCoverageDialogOpen.value = true
+}
+
+const saveCustomTileUrl = (): void => {
+  config.value.mobileCoverage.customTileUrl = customTileUrlDraft.value.trim()
+  customCoverageDialogOpen.value = false
+}
+
+// Selecting Custom auto-pops the URL dialog (operator hasn't given us a tile URL yet),
+// matching the spec; the other providers just swap and let the overlay refresh.
+const onCoverageProviderChange = (event: Event): void => {
+  const next = (event.target as HTMLSelectElement).value as MobileCoverageProvider
+  config.value.mobileCoverage.provider = next
+  if (next === MobileCoverageProvider.Custom) openCustomCoverageDialog()
+}
 
 const onAntennaTypeChange = (event: Event): void => {
   const value = (event.target as HTMLSelectElement).value as AntennaType
@@ -733,6 +807,11 @@ const getMarginsFromBarsHeight = computed(() => {
   border-radius: 3px;
   cursor: pointer;
   padding: 0;
+}
+
+.config-text-btn {
+  text-align: center;
+  cursor: pointer;
 }
 
 /* Eyedropper hijacks the v-menu's outside-click and the OS picker UX is shaky on web; drop it. */
