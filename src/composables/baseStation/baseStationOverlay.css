@@ -1,0 +1,39 @@
+/* Base-station overlay styles must be global because Leaflet's `divIcon` renders the markup
+   outside the consuming component's scoped boundary. They live with the overlay composable so
+   any view that mounts it gets the styles, instead of relying on an unrelated component. */
+.base-station-marker-icon {
+  background: none;
+  border: none;
+}
+
+.base-station-marker-container {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+
+.base-station-marker-background {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #005fad;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.base-station-marker-label {
+  position: absolute;
+  bottom: -12px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
