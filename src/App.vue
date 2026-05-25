@@ -95,6 +95,9 @@
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <CameraReplacementDialog />
   <ExternalFeaturesDiscoveryModal auto-check-on-mount />
+  <VehicleDefaultsAutoImportModal />
+  <VehicleDefaultsViewsImportModal />
+  <VehicleDefaultsJoystickImportModal />
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
   <SnackbarContainer />
@@ -124,6 +127,9 @@ import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'
 import UpdateNotification from '@/components/UpdateNotification.vue'
+import VehicleDefaultsAutoImportModal from '@/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue'
+import VehicleDefaultsJoystickImportModal from '@/components/vehicle-defaults/VehicleDefaultsJoystickImportModal.vue'
+import VehicleDefaultsViewsImportModal from '@/components/vehicle-defaults/VehicleDefaultsViewsImportModal.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import VideoLibraryModal from '@/components/VideoLibraryModal.vue'
 import {
@@ -143,6 +149,7 @@ import SplashScreen from './components/SplashScreen.vue'
 import WidgetBar from './components/WidgetBar.vue'
 import { openMainMenuIfSafeOrDesired } from './composables/armSafetyDialog'
 import { useSnackbar } from './composables/snackbar'
+import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
 import { useAppInterfaceStore } from './stores/appInterface'
 import { useDevelopmentStore } from './stores/development'
@@ -160,6 +167,10 @@ const missionStore = useMissionStore()
 
 // Initialize the snapshot store to register action callbacks
 useSnapshotStore()
+
+// Listen for `vehicle-sync-complete` events to auto-import vehicle-type defaults or open the
+// VehicleDefaultsAutoImportModal when the user still needs to make a decision.
+useVehicleDefaultsAutoImport()
 
 const showAboutDialog = ref(false)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)
