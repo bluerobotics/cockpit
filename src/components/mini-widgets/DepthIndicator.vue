@@ -116,7 +116,9 @@ const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
 
 const currentDepth = computed<number | undefined>(() => {
   if (rawAltitude.value === undefined || resolvedAltitudeVariableId.value === undefined) return undefined
-  const altMeters = rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value as number)
+  if (typeof rawAltitude.value !== 'number' || !Number.isFinite(rawAltitude.value)) return undefined
+  const altMeters = rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value)
+  if (!Number.isFinite(altMeters)) return undefined
   const depth = unit(-altMeters, 'm')
   if (depth.value < 0.01) return 0
   return depth.to(displayUnitPreferences.distance).toJSON().value as number
