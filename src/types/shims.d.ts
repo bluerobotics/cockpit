@@ -11,7 +11,6 @@ interface Navigator {
 
 declare module '@vue-leaflet/vue-leaflet'
 declare module 'gamepad.js'
-declare module 'leaflet.heat'
 declare module 'vuetify'
 declare module 'vuetify/lib/components'
 declare module 'vuetify/lib/directives'
