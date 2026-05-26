@@ -42,6 +42,7 @@ export const distanceInMeters = (from: WaypointCoordinates, to: WaypointCoordina
 export enum WhoToFollow {
   HOME = 'Home',
   VEHICLE = 'Vehicle',
+  BASE_STATION = 'BaseStation',
 }
 
 /**

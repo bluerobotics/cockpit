@@ -91,8 +91,11 @@
         :show-poi-arrows="widget.options.showPoiArrows"
         :show-home-arrow="widget.options.showHomeArrow"
         :show-vehicle-arrow="widget.options.showVehicleArrow"
+        :show-base-station-arrow="widget.options.showBaseStationArrow"
         :vehicle-position="vehiclePosition"
         :home="home"
+        :base-station="baseStationStore.activePosition"
+        :base-station-color="baseStationStore.config.coverageColor"
         :map-center="mapCenter"
         :zoom="zoom"
         :widget="widget"
@@ -169,6 +172,15 @@
                   class="my-1"
                   label="Vehicle arrow"
                   :color="widget.options.showVehicleArrow ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showBaseStationArrow"
+                  class="my-1"
+                  label="Base station arrow"
+                  :color="widget.options.showBaseStationArrow ? 'white' : undefined"
                   hide-details
                 />
               </v-col>
@@ -589,25 +601,15 @@ datalogger.registerUsage(DatalogVariable.longitude)
 // - set initial widget options if they don't exist
 // - enable auto update for target follower
 onBeforeMount(() => {
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      showVehiclePath: true,
-      showCoordinateGrid: false,
-    }
+  const defaultOptions = {
+    showVehiclePath: true,
+    showCoordinateGrid: false,
+    showPoiArrows: true,
+    showHomeArrow: true,
+    showVehicleArrow: true,
+    showBaseStationArrow: true,
   }
-  // Ensure new options exist for existing widgets
-  if (widget.value.options.showCoordinateGrid === undefined) {
-    widget.value.options.showCoordinateGrid = false
-  }
-  if (widget.value.options.showPoiArrows === undefined) {
-    widget.value.options.showPoiArrows = true
-  }
-  if (widget.value.options.showHomeArrow === undefined) {
-    widget.value.options.showHomeArrow = true
-  }
-  if (widget.value.options.showVehicleArrow === undefined) {
-    widget.value.options.showVehicleArrow = true
-  }
+  widget.value.options = { ...defaultOptions, ...widget.value.options }
   targetFollower.enableAutoUpdate()
 })
 
@@ -1177,6 +1179,7 @@ const targetFollower = new TargetFollower(
 )
 targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
 targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
+targetFollower.setTrackableTarget(WhoToFollow.BASE_STATION, () => baseStationStore.activePosition)
 
 useBaseStationOverlay(map, mapReady)
 
