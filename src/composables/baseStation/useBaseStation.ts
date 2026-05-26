@@ -90,6 +90,11 @@ function initialize() {
         config.value.commsType === BaseStationCommsType.Tethered)
   )
 
+  // Position to feed map targets/arrows: only when a station is actually placed.
+  const activePosition = computed<WaypointCoordinates | undefined>(() =>
+    config.value.enabled ? config.value.position ?? undefined : undefined
+  )
+
   const setPosition = (position: WaypointCoordinates): void => {
     config.value.position = [Number(position[0].toFixed(8)), Number(position[1].toFixed(8))]
     config.value.enabled = true
@@ -192,6 +197,7 @@ function initialize() {
     mobileCoverageTargetToolActive,
     openCellIdApiKeyStatus,
     showCoverage,
+    activePosition,
     setPosition,
     setBearing,
     toggleSignalVisibility,
