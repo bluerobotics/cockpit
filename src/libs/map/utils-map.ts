@@ -32,6 +32,7 @@ export const singleStepZoomMapOptions: Pick<
 export enum WhoToFollow {
   HOME = 'Home',
   VEHICLE = 'Vehicle',
+  BASE_STATION = 'BaseStation',
 }
 
 /**
