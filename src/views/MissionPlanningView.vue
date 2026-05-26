@@ -2029,6 +2029,9 @@ const targetFollower = new TargetFollower(
 )
 targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
 targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
+targetFollower.setTrackableTarget(WhoToFollow.BASE_STATION, () =>
+  baseStationStore.config.enabled ? baseStationStore.config.position ?? undefined : undefined
+)
 
 const addSurveyPolygonToMap = (survey: Survey): void => {
   if (!planningMap.value) return
