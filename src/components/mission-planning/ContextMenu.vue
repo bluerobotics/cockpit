@@ -190,21 +190,28 @@
         </v-list-item>
         <template v-if="baseStationStore.config.enabled">
           <v-divider />
-          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleConfigureBaseStation">
-            <v-icon variant="text" icon="mdi-cog" rounded="full" size="x-small" color="white" class="text-[16px]" />
-            <span class="text-white text-sm ml-4">Configure base station</span>
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleRemoveBaseStation">
+            <v-icon variant="text" icon="mdi-delete" rounded="full" size="x-small" color="white" class="text-[16px]" />
+            <span class="text-white text-sm ml-4">Remove base station</span>
           </v-list-item>
           <v-divider />
-          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleRemoveBaseStation">
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleBaseStationSignalVisibility">
             <v-icon
               variant="text"
-              icon="mdi-radio-tower"
+              :icon="baseStationStore.config.showSignalOnMap ? 'mdi-eye' : 'mdi-eye-off'"
               rounded="full"
               size="x-small"
               color="white"
               class="text-[16px]"
             />
-            <span class="text-white text-sm ml-4">Remove base station</span>
+            <span class="text-white text-sm ml-4">{{
+              baseStationStore.config.showSignalOnMap ? 'Hide signal on map' : 'Show signal on map'
+            }}</span>
+          </v-list-item>
+          <v-divider />
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleConfigureBaseStation">
+            <v-icon variant="text" icon="mdi-cog" rounded="full" size="x-small" color="white" class="text-[16px]" />
+            <span class="text-white text-sm ml-4">Configure base station</span>
           </v-list-item>
         </template>
         <v-divider />
@@ -339,6 +346,7 @@ const emit = defineEmits<{
   (event: 'placeBaseStation'): void
   (event: 'configureBaseStation'): void
   (event: 'removeBaseStation'): void
+  (event: 'toggleBaseStationSignalVisibility'): void
 }>()
 
 const menuType = computed(() => props.menuType)
@@ -454,6 +462,11 @@ const handlePlaceBaseStation = (): void => {
 
 const handleConfigureBaseStation = (): void => {
   emit('configureBaseStation')
+  emit('close')
+}
+
+const handleToggleBaseStationSignalVisibility = (): void => {
+  emit('toggleBaseStationSignalVisibility')
   emit('close')
 }
 

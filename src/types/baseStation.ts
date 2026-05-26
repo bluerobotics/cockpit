@@ -228,6 +228,10 @@ export type BaseStationConfig = {
    * invisible.
    */
   coverageOpacity: number
+  /**
+   * Whether the projected signal/coverage overlays should be rendered on the map.
+   */
+  showSignalOnMap: boolean
 }
 
 /**
@@ -319,6 +323,7 @@ export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   },
   coverageColor: '#3B82F6',
   coverageOpacity: 1,
+  showSignalOnMap: true,
 }
 
 export const DEFAULT_MOBILE_COVERAGE_CACHE: MobileCoverageCache = {

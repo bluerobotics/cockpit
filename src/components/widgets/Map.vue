@@ -1474,19 +1474,18 @@ const globalOriginLatitude = ref(0)
 const globalOriginLongitude = ref(0)
 const globalOriginMarker = shallowRef<L.Marker>()
 
-// Tag used to identify the base-station "place" entry so the watcher can rebind it
-// on store changes without relying on label/icon string matching.
-type BaseStationMenuTags = {
-  /* eslint-disable jsdoc/require-jsdoc */
-  _isBaseStationPlace?: boolean
-  /* eslint-enable jsdoc/require-jsdoc */
-}
+/**
+ * Discriminator used to find base-station-owned context-menu entries when rebuilding them,
+ * without relying on label/icon string matching.
+ */
+// eslint-disable-next-line jsdoc/require-jsdoc -- Single-field discriminator; doc above the type covers it.
+type BaseStationMenuTag = { baseStationTag?: 'place' | 'context' }
 
 const baseStationMenuItem = computed(() => ({
   item: baseStationStore.config.enabled ? 'Move base station here' : 'Set base station here',
   action: () => onMenuOptionSelect('place-base-station'),
   icon: 'mdi-radio-tower',
-  _isBaseStationPlace: true,
+  baseStationTag: 'place' as const,
 }))
 
 const menuItems = reactive([
@@ -1521,7 +1520,7 @@ const menuItems = reactive([
 
 // The base-station entry's label depends on whether one already exists; rebind on store changes.
 watch(baseStationMenuItem, (newItem) => {
-  const idx = menuItems.findIndex((i) => (i as BaseStationMenuTags)._isBaseStationPlace === true)
+  const idx = menuItems.findIndex((i) => (i as BaseStationMenuTag).baseStationTag === 'place')
   if (idx >= 0) menuItems[idx] = newItem
 })
 
@@ -1529,16 +1528,22 @@ const baseStationContextItems = computed(() =>
   baseStationStore.config.enabled
     ? [
         {
+          item: 'Remove base station',
+          action: () => onMenuOptionSelect('remove-base-station'),
+          icon: 'mdi-delete',
+          baseStationTag: 'context' as const,
+        },
+        {
+          item: baseStationStore.config.showSignalOnMap ? 'Hide signal on map' : 'Show signal on map',
+          action: () => onMenuOptionSelect('toggle-base-station-signal-visibility'),
+          icon: baseStationStore.config.showSignalOnMap ? 'mdi-eye' : 'mdi-eye-off',
+          baseStationTag: 'context' as const,
+        },
+        {
           item: 'Configure base station',
           action: () => onMenuOptionSelect('configure-base-station'),
           icon: 'mdi-cog',
-          _isBaseStationContext: true,
-        },
-        {
-          item: 'Remove base station',
-          action: () => onMenuOptionSelect('remove-base-station'),
-          icon: 'mdi-radio-tower',
-          _isBaseStationContext: true,
+          baseStationTag: 'context' as const,
         },
       ]
     : []
@@ -1548,7 +1553,7 @@ watch(
   baseStationContextItems,
   (newItems) => {
     for (let i = menuItems.length - 1; i >= 0; i--) {
-      if ((menuItems[i] as { _isBaseStationContext?: boolean })._isBaseStationContext) {
+      if ((menuItems[i] as BaseStationMenuTag).baseStationTag === 'context') {
         menuItems.splice(i, 1)
       }
     }
@@ -1758,6 +1763,10 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
 
     case 'remove-base-station':
       baseStationStore.remove()
+      break
+
+    case 'toggle-base-station-signal-visibility':
+      baseStationStore.toggleSignalVisibility()
       break
 
     default:

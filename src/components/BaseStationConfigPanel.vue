@@ -479,6 +479,10 @@
         <template #title><p class="ml-10">Display</p></template>
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
+            <div class="config-row config-checkbox-row">
+              <p class="config-label">Show signal on map</p>
+              <v-checkbox v-model="config.showSignalOnMap" hide-details density="compact" class="config-checkbox" />
+            </div>
             <div v-if="isRadioLink || isTethered" class="config-row">
               <p class="config-label">Color</p>
               <v-menu :close-on-content-click="false" location="bottom end">

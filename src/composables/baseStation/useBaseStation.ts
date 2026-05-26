@@ -87,6 +87,7 @@ function initialize() {
   const showCoverage = computed(
     () =>
       config.value.enabled &&
+      config.value.showSignalOnMap &&
       config.value.position !== null &&
       (config.value.commsType === BaseStationCommsType.RadioLink ||
         config.value.commsType === BaseStationCommsType.Tethered)
@@ -121,6 +122,10 @@ function initialize() {
 
   const setBearing = (bearing: number): void => {
     config.value.antenna.bearing = normalizeBearing(bearing)
+  }
+
+  const toggleSignalVisibility = (): void => {
+    config.value.showSignalOnMap = !config.value.showSignalOnMap
   }
 
   let geoWatchId: number | null = null
@@ -187,6 +192,7 @@ function initialize() {
     showCoverage,
     setPosition,
     setBearing,
+    toggleSignalVisibility,
     setAntennaType,
     resetAntennaToDefaults,
     openContextPopup,

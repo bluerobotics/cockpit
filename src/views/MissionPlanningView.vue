@@ -586,6 +586,7 @@
     @place-base-station="placeBaseStationFromContextMenu"
     @configure-base-station="baseStationStore.configPanelOpen = true"
     @remove-base-station="baseStationStore.remove()"
+    @toggle-base-station-signal-visibility="baseStationStore.toggleSignalVisibility()"
   />
   <Teleport to="#planningMap">
     <RadialMenu

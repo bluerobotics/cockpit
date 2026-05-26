@@ -1237,6 +1237,7 @@ export const useBaseStationOverlay = (
     const shouldShow =
       map.value !== undefined &&
       config.position !== null &&
+      config.showSignalOnMap &&
       config.commsType === BaseStationCommsType.RadioLink &&
       config.antenna.type !== AntennaType.Omni
 
@@ -1433,6 +1434,7 @@ export const useBaseStationOverlay = (
     teardownRenderedMobileCoverage()
 
     if (!map.value || !config.enabled || !config.position) return
+    if (!config.showSignalOnMap) return
     if (config.commsType !== BaseStationCommsType.MobileData) return
 
     const provider = config.mobileCoverage.provider
@@ -1684,7 +1686,30 @@ export const useBaseStationOverlay = (
     },
     { immediate: true }
   )
-  watch(() => store.config, refreshAll, { deep: true })
+  // Geometry-relevant fields only; mobile-coverage overlay has its own watcher above and
+  // is intentionally excluded so live edits to API keys / opacity / labels don't rebuild
+  // every Leaflet layer in the overlay.
+  watch(
+    () => [
+      store.config.enabled,
+      store.config.position?.[0],
+      store.config.position?.[1],
+      store.config.name,
+      store.config.coverageColor,
+      store.config.coverageOpacity,
+      store.config.commsType,
+      store.config.tetherLengthMeters,
+      store.config.showSignalOnMap,
+      store.config.antenna.type,
+      store.config.antenna.bearing,
+      store.config.antenna.beamwidth,
+      store.config.antenna.range,
+      store.config.baseStationAntennaHeightMeters,
+      store.config.vehicleHasBlueBoatAntennaMast,
+      store.showCoverage,
+    ],
+    refreshAll
+  )
 
   // Debounced so live edits to API key / tile URL don't hammer the public APIs on every keystroke.
   watch(
@@ -1731,6 +1756,7 @@ export const useBaseStationOverlay = (
       store.config.mobileCoverage.showRingLabels,
       store.config.mobileCoverage.heatmapIntensity,
       store.config.coverageColor,
+      store.config.showSignalOnMap,
     ],
     () => {
       void renderMobileCoverage(store.config)
