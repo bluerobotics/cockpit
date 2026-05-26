@@ -134,8 +134,11 @@
         :show-poi-arrows="widget.options.showPoiArrows"
         :show-home-arrow="widget.options.showHomeArrow"
         :show-vehicle-arrow="widget.options.showVehicleArrow"
+        :show-base-station-arrow="widget.options.showBaseStationArrow"
         :vehicle-position="vehiclePosition"
         :home="home"
+        :base-station="baseStationStore.config.enabled ? baseStationStore.config.position ?? undefined : undefined"
+        :base-station-color="baseStationStore.config.coverageColor"
         :map-center="mapCenter"
         :zoom="zoom"
         :widget="widget"
@@ -203,6 +206,15 @@
                   class="my-1"
                   label="Vehicle arrow"
                   :color="widget.options.showVehicleArrow ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showBaseStationArrow"
+                  class="my-1"
+                  label="Base station arrow"
+                  :color="widget.options.showBaseStationArrow ? 'white' : undefined"
                   hide-details
                 />
               </v-col>
@@ -564,6 +576,9 @@ onBeforeMount(() => {
   }
   if (widget.value.options.showVehicleArrow === undefined) {
     widget.value.options.showVehicleArrow = true
+  }
+  if (widget.value.options.showBaseStationArrow === undefined) {
+    widget.value.options.showBaseStationArrow = true
   }
   targetFollower.enableAutoUpdate()
 })
@@ -1190,6 +1205,9 @@ const targetFollower = new TargetFollower(
 )
 targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
 targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
+targetFollower.setTrackableTarget(WhoToFollow.BASE_STATION, () =>
+  baseStationStore.config.enabled ? baseStationStore.config.position ?? undefined : undefined
+)
 
 useBaseStationOverlay(map, mapReady)
 

@@ -20,6 +20,7 @@ const defaultUnfollowDragThresholdPx = 150
 export enum WhoToFollow {
   HOME = 'Home',
   VEHICLE = 'Vehicle',
+  BASE_STATION = 'BaseStation',
 }
 
 /**
