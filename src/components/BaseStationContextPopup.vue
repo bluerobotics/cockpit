@@ -15,6 +15,15 @@
         <p class="text-[14px] truncate mr-2">Base station</p>
         <div class="flex shrink-0 items-center gap-x-1">
           <v-btn
+            v-tooltip="{ text: signalVisibilityTooltip, zIndex: TOOLTIP_Z_INDEX }"
+            :icon="signalVisibilityIcon"
+            variant="text"
+            size="x-small"
+            color="white"
+            :aria-label="signalVisibilityTooltip"
+            @click="onToggleSignalVisibility"
+          />
+          <v-btn
             v-tooltip="{ text: 'Remove base station', zIndex: TOOLTIP_Z_INDEX }"
             icon="mdi-trash-can"
             variant="text"
@@ -78,6 +87,7 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { baseStationSignalVisibilityIcon, baseStationSignalVisibilityLabel } from '@/libs/baseStation/menu'
 import { copyToClipboard } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -97,6 +107,8 @@ const interfaceStore = useAppInterfaceStore()
 const { showDialog, closeDialog } = useInteractionDialog()
 
 const config = computed(() => store.config)
+const signalVisibilityIcon = computed(() => baseStationSignalVisibilityIcon(config.value.showSignalOnMap))
+const signalVisibilityTooltip = computed(() => baseStationSignalVisibilityLabel(config.value.showSignalOnMap))
 
 // Clamp the popup inside the viewport so it never opens off-screen near the map edges.
 const position = computed(() => {
@@ -118,6 +130,10 @@ const onDelete = (): void => {
 const onConfigure = (): void => {
   store.configPanelOpen = true
   store.closeContextPopup()
+}
+
+const onToggleSignalVisibility = (): void => {
+  store.toggleSignalVisibility()
 }
 
 const onCopyCoordinate = async (index: 0 | 1): Promise<void> => {

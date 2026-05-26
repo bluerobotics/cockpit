@@ -624,6 +624,7 @@
     @place-base-station="placeBaseStationFromContextMenu"
     @configure-base-station="baseStationStore.configPanelOpen = true"
     @remove-base-station="confirmRemoveBaseStation(showDialog, closeDialog)"
+    @toggle-base-station-signal-visibility="baseStationStore.toggleSignalVisibility()"
   />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
   <Teleport to="#planningMap">

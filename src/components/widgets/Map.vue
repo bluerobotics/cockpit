@@ -305,6 +305,8 @@ import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import {
   baseStationMenuIcon,
   baseStationPlaceMenuLabel,
+  baseStationSignalVisibilityIcon,
+  baseStationSignalVisibilityLabel,
   configureBaseStationMenuIcon,
   configureBaseStationMenuLabel,
   removeBaseStationMenuLabel,
@@ -1447,14 +1449,19 @@ const baseStationMenuEntries = computed(() => {
   if (baseStationStore.config.enabled) {
     entries.push(
       {
-        item: configureBaseStationMenuLabel,
-        action: () => onMenuOptionSelect('configure-base-station'),
-        icon: configureBaseStationMenuIcon,
-      },
-      {
         item: removeBaseStationMenuLabel,
         action: () => onMenuOptionSelect('remove-base-station'),
         icon: baseStationMenuIcon,
+      },
+      {
+        item: baseStationSignalVisibilityLabel(baseStationStore.config.showSignalOnMap),
+        action: () => onMenuOptionSelect('toggle-base-station-signal-visibility'),
+        icon: baseStationSignalVisibilityIcon(baseStationStore.config.showSignalOnMap),
+      },
+      {
+        item: configureBaseStationMenuLabel,
+        action: () => onMenuOptionSelect('configure-base-station'),
+        icon: configureBaseStationMenuIcon,
       }
     )
   }
@@ -1697,6 +1704,10 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
 
     case 'remove-base-station':
       confirmRemoveBaseStation(showDialog, closeDialog)
+      break
+
+    case 'toggle-base-station-signal-visibility':
+      baseStationStore.toggleSignalVisibility()
       break
 
     default:
