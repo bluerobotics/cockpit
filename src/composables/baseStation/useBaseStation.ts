@@ -5,10 +5,13 @@ import { openSnackbar } from '@/composables/snackbar'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import {
   type BaseStationConfig,
+  type MobileCoverageCache,
   ANTENNA_FACTORY_DEFAULTS,
   AntennaType,
   BaseStationCommsType,
   DEFAULT_BASE_STATION_CONFIG,
+  DEFAULT_MOBILE_COVERAGE_CACHE,
+  TopSideComputerType,
 } from '@/types/baseStation'
 import type { WaypointCoordinates } from '@/types/mission'
 
@@ -17,6 +20,10 @@ const normalizeBearing = (bearing: number): number => ((bearing % 360) + 360) % 
 // eslint-disable-next-line jsdoc/require-jsdoc, @typescript-eslint/explicit-function-return-type -- type inferred for the reactive() output to keep per-state-field typing local to this file
 function initialize() {
   const config = useBlueOsStorage<BaseStationConfig>('cockpit-base-station-config', DEFAULT_BASE_STATION_CONFIG)
+  const mobileCoverageCache = useBlueOsStorage<MobileCoverageCache>(
+    'cockpit-base-station-mobile-coverage-cache',
+    DEFAULT_MOBILE_COVERAGE_CACHE
+  )
 
   // Merge defaults so newly-added fields are populated for existing users.
   config.value = {
@@ -28,10 +35,27 @@ function initialize() {
       ...(config.value.mobileCoverage ?? {}),
     },
   }
+  mobileCoverageCache.value = {
+    ...DEFAULT_MOBILE_COVERAGE_CACHE,
+    ...mobileCoverageCache.value,
+    openCellId: mobileCoverageCache.value.openCellId ?? [],
+    osmOverpass: mobileCoverageCache.value.osmOverpass ?? [],
+  }
+  // Migration shim for the legacy 'Mobile'/'Relocatable' enum values. Safe to drop once we are
+  // confident no installs still carry the old persistence (target: a couple of releases past v1.x).
+  if (config.value.topSideComputerType === 'Mobile' || config.value.topSideComputerType === 'Relocatable') {
+    config.value.topSideComputerType = TopSideComputerType.Portable
+  }
 
   // Operators discovered in the most recent Overpass response. Populates the panel selector
   // dynamically since the OSM `operator` tag varies wildly between regions.
   const availableOsmOperators = ref<string[]>([])
+  const availableOpenCellIdOperators = ref<string[]>([])
+  const mobileCoverageLoading = ref(false)
+  const mobileCoverageReloadToken = ref(0)
+  const mobileCoverageVisibleDataResetToken = ref(0)
+  const mobileCoverageTargetToolActive = ref(false)
+  const openCellIdApiKeyStatus = ref<'unknown' | 'valid' | 'invalid'>('unknown')
 
   const configPanelOpen = ref(false)
 
@@ -52,6 +76,14 @@ function initialize() {
     contextPopupOpen.value = false
   }
 
+  const requestMobileCoverageReload = (): void => {
+    mobileCoverageReloadToken.value += 1
+  }
+
+  const requestVisibleMobileCoverageDataReset = (): void => {
+    mobileCoverageVisibleDataResetToken.value += 1
+  }
+
   const showCoverage = computed(
     () =>
       config.value.enabled &&
@@ -66,7 +98,13 @@ function initialize() {
   }
 
   const remove = (): void => {
-    config.value = { ...DEFAULT_BASE_STATION_CONFIG }
+    // Keep the OpenCellID API key around as a user-level credential — having to retype it
+    // every time the base station is removed/recreated would be annoying and error-prone.
+    const preservedApiKey = config.value.mobileCoverage.openCellIdApiKey
+    config.value = {
+      ...DEFAULT_BASE_STATION_CONFIG,
+      mobileCoverage: { ...DEFAULT_BASE_STATION_CONFIG.mobileCoverage, openCellIdApiKey: preservedApiKey },
+    }
     configPanelOpen.value = false
     contextPopupOpen.value = false
   }
@@ -117,12 +155,35 @@ function initialize() {
     { immediate: true }
   )
 
+  watch(
+    () => config.value.topSideComputerType,
+    (topSideType) => {
+      if (topSideType !== TopSideComputerType.Portable) config.value.trackByGps = false
+    },
+    { immediate: true }
+  )
+
+  // Provider/key changes invalidate any previously-determined validity; the next fetch resets it.
+  watch(
+    () => [config.value.mobileCoverage.provider, config.value.mobileCoverage.openCellIdApiKey] as const,
+    () => {
+      openCellIdApiKeyStatus.value = 'unknown'
+    }
+  )
+
   return reactive({
     config,
+    mobileCoverageCache,
     configPanelOpen,
     contextPopupOpen,
     contextPopupPosition,
     availableOsmOperators,
+    availableOpenCellIdOperators,
+    mobileCoverageLoading,
+    mobileCoverageReloadToken,
+    mobileCoverageVisibleDataResetToken,
+    mobileCoverageTargetToolActive,
+    openCellIdApiKeyStatus,
     showCoverage,
     setPosition,
     setBearing,
@@ -130,6 +191,8 @@ function initialize() {
     resetAntennaToDefaults,
     openContextPopup,
     closeContextPopup,
+    requestMobileCoverageReload,
+    requestVisibleMobileCoverageDataReset,
     remove,
   })
 }

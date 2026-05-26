@@ -1,11 +1,11 @@
 import type { WaypointCoordinates } from '@/types/mission'
 
 /**
- * Topside computer mount type. Mobile is typically a laptop or tablet, fixed is a stationary
- * computer at the base station.
+ * Topside computer mount type. Portable means the base station may move during deployment,
+ * while fixed stays at a stationary location.
  */
 export enum TopSideComputerType {
-  Mobile = 'Mobile',
+  Portable = 'Portable',
   Fixed = 'Fixed',
 }
 
@@ -45,6 +45,16 @@ export enum MobileCoverageProvider {
   Custom = 'Custom overlay',
 }
 
+export const MOBILE_COVERAGE_FETCH_DROP_MIME = 'application/x-cockpit-mobile-coverage-fetch'
+
+/**
+ * Visualization mode for the mobile coverage overlay.
+ */
+export enum MobileCoverageDisplayMode {
+  Heatmap = 'Heatmap',
+  CoverageRings = 'Coverage rings',
+}
+
 export type MobileCoverageConfig = {
   /**
    * Active coverage data provider.
@@ -55,6 +65,10 @@ export type MobileCoverageConfig = {
    */
   openCellIdApiKey: string
   /**
+   * Selected OpenCellID operator/network code label. Empty string keeps all returned networks.
+   */
+  openCellIdOperator: string
+  /**
    * Leaflet `TileLayer` URL template (with `{z}/{x}/{y}` placeholders). Required when
    * {@link provider} is {@link MobileCoverageProvider.Custom}.
    */
@@ -64,7 +78,66 @@ export type MobileCoverageConfig = {
    * Empty string keeps all operators.
    */
   osmOperator: string
+  /**
+   * Visualization mode for OpenCellID overlays.
+   */
+  displayMode: MobileCoverageDisplayMode
+  /**
+   * Opacity multiplier (0..1) applied to mobile coverage overlays.
+   */
+  overlayOpacity: number
+  /**
+   * Show the operator/technology labels rendered along the rim of each coverage ring.
+   */
+  showRingLabels: boolean
+  /**
+   * Heatmap intensity (0..1). Scales the heat radius so 0 keeps a tight, low-opacity blob and
+   * 1 spreads it out to roughly match the coverage rings.
+   */
+  heatmapIntensity: number
 }
+
+/* eslint-disable jsdoc/require-jsdoc -- Self-describing geo bbox in WGS84 degrees. */
+export type CoverageBbox = { south: number; west: number; north: number; east: number }
+/* eslint-enable jsdoc/require-jsdoc */
+
+/* eslint-disable jsdoc/require-jsdoc -- OpenCellID transport DTO; fields mirror the upstream API. */
+export type CachedOpenCellIdSite = {
+  lat: number
+  lon: number
+  rangeMeters: number
+  radio?: string
+  mcc?: number
+  mnc?: number
+  lac?: number
+  cellId?: number
+  samples?: number
+  averageSignalStrength?: number
+}
+/* eslint-enable jsdoc/require-jsdoc */
+
+/* eslint-disable jsdoc/require-jsdoc -- OSM Overpass transport DTO; fields mirror the upstream API. */
+export type CachedOverpassTower = {
+  id: number
+  lat: number
+  lon: number
+  operator: string | null
+  tags: Record<string, string>
+}
+/* eslint-enable jsdoc/require-jsdoc */
+
+/* eslint-disable jsdoc/require-jsdoc -- Generic cache envelope; fields are self-describing. */
+export type CachedMobileCoverageEntry<T> = {
+  bbox: CoverageBbox
+  fetchedAtMs: number
+  data: T[]
+}
+
+export type MobileCoverageCache = {
+  openCellId: CachedMobileCoverageEntry<CachedOpenCellIdSite>[]
+  osmOverpass: CachedMobileCoverageEntry<CachedOverpassTower>[]
+}
+/* eslint-enable jsdoc/require-jsdoc */
 
 export type AntennaSpec = {
   /**
@@ -95,6 +168,10 @@ export type BaseStationConfig = {
    * Whether the base station is placed on the map. False until the user sets a position.
    */
   enabled: boolean
+  /**
+   * Optional label shown under the marker when non-empty.
+   */
+  name: string
   /**
    * Geographical position of the base station as [latitude, longitude].
    */
@@ -218,6 +295,7 @@ export const effectiveAntennaRangeMeters = (config: BaseStationConfig): number =
 
 export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   enabled: false,
+  name: '',
   position: null,
   topSideComputerType: TopSideComputerType.Fixed,
   trackByGps: false,
@@ -231,11 +309,21 @@ export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   mobileCoverage: {
     provider: MobileCoverageProvider.OpenCellID,
     openCellIdApiKey: '',
+    openCellIdOperator: '',
     customTileUrl: '',
     osmOperator: '',
+    displayMode: MobileCoverageDisplayMode.Heatmap,
+    overlayOpacity: 0.3,
+    showRingLabels: true,
+    heatmapIntensity: 0.5,
   },
   coverageColor: '#3B82F6',
   coverageOpacity: 1,
+}
+
+export const DEFAULT_MOBILE_COVERAGE_CACHE: MobileCoverageCache = {
+  openCellId: [],
+  osmOverpass: [],
 }
 
 /**
