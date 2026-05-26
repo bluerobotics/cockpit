@@ -219,6 +219,32 @@
         </v-list-item>
         <template v-if="baseStationStore.config.enabled">
           <v-divider />
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleRemoveBaseStation">
+            <v-icon
+              variant="text"
+              :icon="removeBaseStationMenuIcon"
+              rounded="full"
+              size="x-small"
+              color="white"
+              class="text-[16px]"
+            />
+            <span class="text-white text-sm ml-4">{{ removeBaseStationMenuLabel }}</span>
+          </v-list-item>
+          <v-divider />
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleBaseStationSignalVisibility">
+            <v-icon
+              variant="text"
+              :icon="baseStationSignalVisibilityIcon(baseStationStore.config.showSignalOnMap)"
+              rounded="full"
+              size="x-small"
+              color="white"
+              class="text-[16px]"
+            />
+            <span class="text-white text-sm ml-4">{{
+              baseStationSignalVisibilityLabel(baseStationStore.config.showSignalOnMap)
+            }}</span>
+          </v-list-item>
+          <v-divider />
           <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleConfigureBaseStation">
             <v-icon
               variant="text"
@@ -229,18 +255,6 @@
               class="text-[16px]"
             />
             <span class="text-white text-sm ml-4">{{ configureBaseStationMenuLabel }}</span>
-          </v-list-item>
-          <v-divider />
-          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleRemoveBaseStation">
-            <v-icon
-              variant="text"
-              :icon="baseStationMenuIcon"
-              rounded="full"
-              size="x-small"
-              color="white"
-              class="text-[16px]"
-            />
-            <span class="text-white text-sm ml-4">{{ removeBaseStationMenuLabel }}</span>
           </v-list-item>
         </template>
         <v-divider />
@@ -334,8 +348,11 @@ import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import {
   baseStationMenuIcon,
   baseStationPlaceMenuLabel,
+  baseStationSignalVisibilityIcon,
+  baseStationSignalVisibilityLabel,
   configureBaseStationMenuIcon,
   configureBaseStationMenuLabel,
+  removeBaseStationMenuIcon,
   removeBaseStationMenuLabel,
 } from '@/libs/baseStation/menu'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -384,6 +401,7 @@ const emit = defineEmits<{
   (event: 'placeBaseStation'): void
   (event: 'configureBaseStation'): void
   (event: 'removeBaseStation'): void
+  (event: 'toggleBaseStationSignalVisibility'): void
 }>()
 
 const menuType = computed(() => props.menuType)
@@ -513,6 +531,11 @@ const handlePlaceBaseStation = (): void => {
 
 const handleConfigureBaseStation = (): void => {
   emit('configureBaseStation')
+  emit('close')
+}
+
+const handleToggleBaseStationSignalVisibility = (): void => {
+  emit('toggleBaseStationSignalVisibility')
   emit('close')
 }
 

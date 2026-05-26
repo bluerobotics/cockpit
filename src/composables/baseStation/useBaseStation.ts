@@ -90,6 +90,7 @@ function initialize() {
   const showCoverage = computed(
     () =>
       config.value.enabled &&
+      config.value.showSignalOnMap &&
       config.value.position !== null &&
       (config.value.commsType === BaseStationCommsType.RadioLink ||
         config.value.commsType === BaseStationCommsType.Tethered)
@@ -143,6 +144,11 @@ function initialize() {
   )
 
   const isTracking = computed(() => config.value.trackByGps && config.value.enabled)
+
+  const toggleSignalVisibility = (): void => {
+    config.value.showSignalOnMap = !config.value.showSignalOnMap
+    logUserAction(`${config.value.showSignalOnMap ? 'Showed' : 'Hid'} the base station signal on the map`)
+  }
 
   const applyTrackedPosition = useThrottleFn(setPosition, gnssPositionSampleRateMs, true, true)
 
@@ -218,6 +224,7 @@ function initialize() {
     gpsSourceOptions,
     setPosition,
     setBearing,
+    toggleSignalVisibility,
     setAntennaType,
     resetAntennaToDefaults,
     openContextPopup,

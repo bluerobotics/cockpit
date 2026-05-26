@@ -15,6 +15,15 @@
         <p class="text-[14px] truncate mr-2">Base station</p>
         <div class="flex shrink-0 items-center gap-x-1">
           <v-btn
+            v-tooltip="{ text: signalVisibilityTooltip, zIndex: TOOLTIP_Z_INDEX }"
+            :icon="signalVisibilityIcon"
+            variant="text"
+            size="x-small"
+            color="white"
+            :aria-label="signalVisibilityTooltip"
+            @click="onToggleSignalVisibility"
+          />
+          <v-btn
             v-tooltip="{ text: 'Remove base station', zIndex: TOOLTIP_Z_INDEX }"
             icon="mdi-trash-can"
             variant="text"
@@ -41,13 +50,15 @@
         class="flex flex-col justify-center w-full items-center py-1 px-2 bg-[#EEEEEE] text-black rounded-bl-md rounded-br-md"
       >
         <div class="flex w-full items-center gap-x-2 text-[10px] py-[1px] mb-[2px]">
-          <v-icon
+          <v-btn
             v-tooltip="{ text: 'Copy latitude to clipboard', zIndex: TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-content-copy"
             size="x-small"
+            density="compact"
             color="black"
-            class="text-[12px] cursor-pointer shrink-0"
+            :aria-label="'Copy latitude to clipboard'"
+            class="text-[12px] shrink-0"
             @click="onCopyCoordinate(0)"
           />
           <p class="flex-1">Lat.:</p>
@@ -55,13 +66,15 @@
         </div>
         <v-divider class="border-black w-full" />
         <div class="flex w-full items-center gap-x-2 text-[10px] py-[1px]">
-          <v-icon
+          <v-btn
             v-tooltip="{ text: 'Copy longitude to clipboard', zIndex: TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-content-copy"
             size="x-small"
+            density="compact"
             color="black"
-            class="text-[12px] cursor-pointer shrink-0"
+            :aria-label="'Copy longitude to clipboard'"
+            class="text-[12px] shrink-0"
             @click="onCopyCoordinate(1)"
           />
           <p class="flex-1">Long.:</p>
@@ -78,6 +91,7 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { baseStationSignalVisibilityIcon, baseStationSignalVisibilityLabel } from '@/libs/baseStation/menu'
 import { copyToClipboard } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -91,6 +105,8 @@ const interfaceStore = useAppInterfaceStore()
 const { showDialog, closeDialog } = useInteractionDialog()
 
 const config = computed(() => store.config)
+const signalVisibilityIcon = computed(() => baseStationSignalVisibilityIcon(config.value.showSignalOnMap))
+const signalVisibilityTooltip = computed(() => baseStationSignalVisibilityLabel(config.value.showSignalOnMap))
 
 // Clamp the popup inside the viewport so it never opens off-screen near the map edges.
 const position = computed(() => {
@@ -112,6 +128,10 @@ const onDelete = (): void => {
 const onConfigure = (): void => {
   store.configPanelOpen = true
   store.closeContextPopup()
+}
+
+const onToggleSignalVisibility = (): void => {
+  store.toggleSignalVisibility()
 }
 
 const onCopyCoordinate = async (index: 0 | 1): Promise<void> => {
