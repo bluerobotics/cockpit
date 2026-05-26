@@ -3,7 +3,11 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
-import { defaultMapFallbackBaseColor, defaultMapFallbackNoiseIntensity } from '@/assets/defaults'
+import {
+  defaultMapFallbackBaseColor,
+  defaultMapFallbackNoiseIntensity,
+  defaultMeasurementOptions,
+} from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
@@ -13,6 +17,7 @@ import {
   AltitudeReferenceType,
   MapTileProvider,
   MapTileProviderPreference,
+  MeasurementOptions,
   MissionCommand,
   PointOfInterest,
   PointOfInterestCoordinates,
@@ -21,6 +26,7 @@ import {
   WaypointCoordinates,
 } from '@/types/mission'
 import { cockpitLastConnectedUserKey, fallbackUsername } from '@/types/settings-management'
+import type { UnitSystem } from '@/types/units'
 
 import { useMainVehicleStore } from './mainVehicle'
 
@@ -84,6 +90,12 @@ export const useMissionStore = defineStore('mission', () => {
 
   const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
   const mapClearMapDrawing = ref<(() => void) | null>(null)
+  const userUnitSystem = useBlueOsStorage<UnitSystem>('cockpit-user-unit-system', 'metric')
+  // Measurement options with persistence in BlueOS
+  const measurementOptions = useBlueOsStorage<MeasurementOptions>(
+    'cockpit-measurement-options',
+    defaultMeasurementOptions
+  )
 
   const { showDialog } = useInteractionDialog()
 
@@ -695,5 +707,7 @@ export const useMissionStore = defineStore('mission', () => {
     canUndo,
     canRedo,
     clearUndoStack,
+    userUnitSystem,
+    measurementOptions,
   }
 })

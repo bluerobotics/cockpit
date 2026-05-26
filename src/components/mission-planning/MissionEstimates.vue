@@ -89,6 +89,20 @@
           </p>
         </div>
         <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Unit system</label>
+          <v-select
+            v-model="missionStore.userUnitSystem"
+            theme="dark"
+            :items="unitSystemItems"
+            item-title="title"
+            item-value="value"
+            density="compact"
+            hide-details
+            class="w-full border"
+          />
+          <p class="text-[11px] opacity-70 mt-1">Unit system for displaying distances and areas.</p>
+        </div>
+        <div class="mb-4">
           <v-checkbox
             v-model="vehicleStore.vehiclePayloadParameters.hasHighDragSensor"
             label="Vehicle has a submerged probe (e.g. Ping1D sonar)"
@@ -153,8 +167,10 @@ import { computed, ref } from 'vue'
 import { openSnackbar } from '@/composables/snackbar'
 import { useMissionEstimates } from '@/composables/useMissionEstimates'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { unitSystemItems } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 
 defineProps<{
   /**
@@ -167,6 +183,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
+const missionStore = useMissionStore()
 
 const {
   totalMissionLength,
