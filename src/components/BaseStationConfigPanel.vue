@@ -479,6 +479,15 @@
         <template #title><p class="ml-10">Display</p></template>
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
+            <div v-if="isMissionPlanningContext" class="config-row config-checkbox-row">
+              <p class="config-label" style="width: auto; white-space: nowrap">Show signal on mission path</p>
+              <v-checkbox
+                v-model="missionStore.showMissionPathSignalStrength"
+                hide-details
+                density="compact"
+                class="config-checkbox"
+              />
+            </div>
             <div class="config-row config-checkbox-row">
               <p class="config-label">Show signal on map</p>
               <v-checkbox v-model="config.showSignalOnMap" hide-details density="compact" class="config-checkbox" />
@@ -670,6 +679,19 @@ import {
   TopSideComputerType,
 } from '@/types/baseStation'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
+
+withDefaults(
+  defineProps<{
+    /**
+     * Whether the panel is mounted inside the mission planning view. Enables planning-only controls
+     * like the mission-path signal coloring toggle.
+     */
+    isMissionPlanningContext?: boolean
+  }>(),
+  {
+    isMissionPlanningContext: false,
+  }
+)
 
 const store = useBaseStation()
 const widgetStore = useWidgetManagerStore()
