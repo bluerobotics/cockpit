@@ -28,7 +28,7 @@
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div class="config-row">
               <p class="config-label">Name</p>
-              <input v-model="config.name" type="text" class="config-input" />
+              <input v-model="config.name" type="text" class="config-input" @blur="onNameBlur" />
             </div>
             <div class="config-row">
               <p class="config-label">Latitude</p>
@@ -37,8 +37,9 @@
                 type="number"
                 step="0.000001"
                 class="config-input"
-                :disabled="config.trackByGps"
+                :disabled="store.trackByGps"
                 @input="(e) => onLatLngInput('lat', (e.target as HTMLInputElement).value)"
+                @blur="onCoordinateBlur"
               />
             </div>
             <div class="config-row">
@@ -48,14 +49,15 @@
                 type="number"
                 step="0.000001"
                 class="config-input"
-                :disabled="config.trackByGps"
+                :disabled="store.trackByGps"
                 @input="(e) => onLatLngInput('lng', (e.target as HTMLInputElement).value)"
+                @blur="onCoordinateBlur"
               />
             </div>
-            <div class="config-row config-gps-row" :class="{ 'config-row-with-source': config.trackByGps }">
+            <div class="config-row config-gps-row" :class="{ 'config-row-with-source': store.trackByGps }">
               <p class="config-label">Track by GPS</p>
               <v-checkbox
-                :model-value="config.trackByGps"
+                :model-value="store.trackByGps"
                 hide-details
                 density="compact"
                 class="config-checkbox"
@@ -63,7 +65,7 @@
                 @update:model-value="setTrackByGps"
               />
               <select
-                v-if="config.trackByGps"
+                v-if="store.trackByGps"
                 :value="store.gpsSource"
                 class="config-input"
                 aria-label="GPS source"
@@ -93,7 +95,7 @@
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div class="config-row">
               <p class="config-label">Comms</p>
-              <select v-model="config.commsType" class="config-input">
+              <select :value="config.commsType" class="config-input" @change="onCommsTypeChange">
                 <option v-for="comms in commsTypes" :key="comms" :value="comms">{{ comms }}</option>
               </select>
             </div>
@@ -169,7 +171,14 @@
                     class="config-input config-provider-select"
                     @change="onCoverageProviderChange"
                   >
-                    <option v-for="p in mobileCoverageProviders" :key="p" :value="p">{{ p }}</option>
+                    <option
+                      v-for="p in mobileCoverageProviders"
+                      :key="p"
+                      :value="p"
+                      :disabled="p === MobileCoverageProvider.OpenCellID && !isStandalone"
+                    >
+                      {{ p }}
+                    </option>
                   </select>
                   <v-progress-linear
                     v-if="store.mobileCoverageLoading"
@@ -188,23 +197,21 @@
               v-if="isMobileData && isOpenCellId && !isStandalone"
               class="px-1 pt-1 text-[10px] leading-tight opacity-70"
             >
-              OpenCellID is requested directly from your browser here and is often blocked by CORS. Use the
-              OpenStreetMap provider for key-free coverage, or run the desktop app for full OpenCellID support.
+              OpenCellID cannot be loaded from a browser. Switch to OpenStreetMap coverage, or install Cockpit
+              Standalone to use OpenCellID.
             </p>
             <div v-if="showOpenCellIdApiKeyField" class="config-row">
               <p class="config-label">API key</p>
               <div class="config-input-actions">
                 <v-icon
-                  v-if="config.mobileCoverage.openCellIdApiKey.trim() && store.openCellIdApiKeyStatus === 'valid'"
+                  v-if="store.openCellIdApiKey.trim() && store.openCellIdApiKeyStatus === 'valid'"
                   class="text-green-500"
                   size="14"
                 >
                   mdi-check-circle
                 </v-icon>
                 <v-icon
-                  v-else-if="
-                    config.mobileCoverage.openCellIdApiKey.trim() && store.openCellIdApiKeyStatus === 'invalid'
-                  "
+                  v-else-if="store.openCellIdApiKey.trim() && store.openCellIdApiKeyStatus === 'invalid'"
                   class="text-red-400"
                   size="14"
                 >
@@ -223,22 +230,22 @@
                     </button>
                   </template>
                   <div class="config-open-cell-id-tip">
-                    API key mode uses the official OpenCellID API with your own request quota, so it is usually more
-                    stable and less aggressively rate-limited than the anonymous standalone service. Anonymous mode is
-                    easier to use but may return fewer results or cool down sooner. Get a key at
-                    `opencellid.org/register.php`, then copy it from your dashboard/API access page.
+                    OpenCellID has no anonymous access, so tower data is fetched with your own key and against your own
+                    request quota. Get a key at `opencellid.org/register.php`, then copy it from your dashboard/API
+                    access page.
                   </div>
                 </v-tooltip>
                 <input
-                  v-model.trim="config.mobileCoverage.openCellIdApiKey"
+                  v-model.trim="store.openCellIdApiKey"
                   type="text"
                   class="config-input config-api-key-input"
+                  @blur="onOpenCellIdApiKeyBlur"
                 />
               </div>
             </div>
             <div v-if="isMobileData && isOsmOverpass" class="config-row">
               <p class="config-label">Operator</p>
-              <select v-model="config.mobileCoverage.osmOperator" class="config-input">
+              <select :value="config.mobileCoverage.osmOperator" class="config-input" @change="onOsmOperatorChange">
                 <option value="">All operators</option>
                 <option v-for="op in store.availableOsmOperators" :key="op" :value="op">{{ op }}</option>
               </select>
@@ -248,7 +255,11 @@
               class="config-row"
             >
               <p class="config-label">Operator</p>
-              <select v-model="config.mobileCoverage.openCellIdOperator" class="config-input">
+              <select
+                :value="config.mobileCoverage.openCellIdOperator"
+                class="config-input"
+                @change="onOpenCellIdOperatorChange"
+              >
                 <option value="">All operators</option>
                 <option v-for="op in store.availableOpenCellIdOperators" :key="op" :value="op">{{ op }}</option>
               </select>
@@ -265,7 +276,20 @@
 
       <v-dialog v-model="customCoverageDialogOpen" max-width="520">
         <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
-          <v-card-title class="text-h6 py-3 text-center">Custom coverage tile URL</v-card-title>
+          <v-card-title class="text-h6 py-3 px-6">
+            <div class="relative flex items-center justify-center w-full min-h-[28px]">
+              <span class="text-center">Custom coverage tile URL</span>
+              <v-btn
+                icon="mdi-close"
+                size="small"
+                variant="text"
+                color="white"
+                class="absolute right-0 -mr-4"
+                aria-label="Close custom coverage tile URL dialog"
+                @click="closeCustomCoverageDialog"
+              />
+            </div>
+          </v-card-title>
           <v-card-text class="px-6">
             <v-text-field
               v-model="customTileUrlDraft"
@@ -278,10 +302,13 @@
               autofocus
             />
           </v-card-text>
-          <v-card-actions class="px-6 pb-4">
+          <div class="flex justify-center w-full px-6">
+            <v-divider class="opacity-10 border-[#fafafa] w-full" />
+          </div>
+          <v-card-actions class="px-6 pb-2 pt-2">
+            <v-btn variant="text" color="white" @click="closeCustomCoverageDialog">Cancel</v-btn>
             <v-spacer />
-            <v-btn variant="text" @click="customCoverageDialogOpen = false">Cancel</v-btn>
-            <v-btn variant="elevated" color="primary" @click="saveCustomTileUrl">Save</v-btn>
+            <v-btn variant="elevated" class="bg-[#FFFFFF33] text-white" @click="saveCustomTileUrl">Save</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -350,9 +377,10 @@
                 v-model.number="config.baseStationAntennaHeightMeters"
                 type="number"
                 step="0.5"
-                min="0.5"
-                max="50"
+                :min="ANTENNA_HEIGHT_LIMITS_M.min"
+                :max="ANTENNA_HEIGHT_LIMITS_M.max"
                 class="config-input"
+                @blur="onAntennaHeightBlur"
               />
             </div>
             <div class="config-row">
@@ -373,15 +401,24 @@
                 v-model.number="config.antenna.beamwidth"
                 type="number"
                 step="1"
-                min="1"
-                max="360"
+                :min="BEAMWIDTH_LIMITS_DEG.min"
+                :max="BEAMWIDTH_LIMITS_DEG.max"
                 class="config-input"
                 :disabled="isOmni"
+                @blur="onBeamwidthBlur"
               />
             </div>
             <div class="config-row">
               <p class="config-label">Range (m)</p>
-              <input v-model.number="config.antenna.range" type="number" step="10" min="1" class="config-input" />
+              <input
+                v-model.number="config.antenna.range"
+                type="number"
+                step="10"
+                :min="ANTENNA_RANGE_LIMITS_M.min"
+                :max="ANTENNA_RANGE_LIMITS_M.max"
+                class="config-input"
+                @blur="onAntennaRangeBlur"
+              />
             </div>
             <div class="config-row config-checkbox-row">
               <div class="config-label-with-info">
@@ -406,10 +443,11 @@
                 </v-tooltip>
               </div>
               <v-checkbox
-                v-model="config.vehicleHasBlueBoatAntennaMast"
+                :model-value="config.vehicleHasBlueBoatAntennaMast"
                 hide-details
                 density="compact"
                 class="config-checkbox"
+                @update:model-value="onVehicleAntennaMastToggle"
               />
             </div>
             <div v-if="!isOmni" class="config-row">
@@ -449,7 +487,7 @@
             <v-btn
               size="x-small"
               variant="elevated"
-              class="bg-[#2b5779] my-2 w-3/4 mx-auto"
+              class="bg-[#FFFFFF22] my-2 w-3/4 mx-auto"
               prepend-icon="mdi-restore"
               @click="resetAntenna"
             >
@@ -474,7 +512,15 @@
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div class="config-row">
               <p class="config-label">Length (m)</p>
-              <input v-model.number="config.tetherLengthMeters" type="number" step="1" min="1" class="config-input" />
+              <input
+                v-model.number="config.tetherLengthMeters"
+                type="number"
+                step="1"
+                :min="TETHER_LENGTH_LIMITS_M.min"
+                :max="TETHER_LENGTH_LIMITS_M.max"
+                class="config-input"
+                @blur="onTetherLengthBlur"
+              />
             </div>
           </div>
         </template>
@@ -493,6 +539,16 @@
         <template #title><p class="ml-10">Display</p></template>
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
+            <div v-if="isMissionPlanningContext" class="config-row config-checkbox-row">
+              <p class="config-label" style="width: auto; white-space: nowrap">Show comms coverage on path</p>
+              <v-checkbox
+                :model-value="missionStore.showMissionPathSignalStrength"
+                hide-details
+                density="compact"
+                class="config-checkbox"
+                @update:model-value="(value) => missionStore.setShowMissionPathSignalStrength(!!value)"
+              />
+            </div>
             <div class="config-row config-checkbox-row">
               <p class="config-label">Show signal on map</p>
               <v-checkbox
@@ -505,7 +561,7 @@
             </div>
             <div v-if="isRadioLink || isTethered" class="config-row">
               <p class="config-label">Color</p>
-              <v-menu :close-on-content-click="false" location="bottom end">
+              <v-menu :close-on-content-click="false" location="bottom end" @update:model-value="onColorMenuToggle">
                 <template #activator="{ props: activatorProps }">
                   <button
                     v-bind="activatorProps"
@@ -527,7 +583,7 @@
             </div>
             <div v-if="isMobileData && (isOpenCellId || isOsmOverpass)" class="config-row">
               <p class="config-label">Signal view</p>
-              <select v-model="config.mobileCoverage.displayMode" class="config-input">
+              <select :value="config.mobileCoverage.displayMode" class="config-input" @change="onDisplayModeChange">
                 <option v-for="mode in mobileCoverageDisplayModes" :key="mode" :value="mode">{{ mode }}</option>
               </select>
             </div>
@@ -537,10 +593,11 @@
             >
               <p class="config-label">Show ring labels</p>
               <v-checkbox
-                v-model="config.mobileCoverage.showRingLabels"
+                :model-value="config.mobileCoverage.showRingLabels"
                 hide-details
                 density="compact"
                 class="config-checkbox"
+                @update:model-value="onRingLabelsToggle"
               />
             </div>
             <div
@@ -560,6 +617,7 @@
                 color="white"
                 track-color="rgba(255,255,255,0.2)"
                 class="config-slider"
+                @end="onHeatmapIntensityCommit"
               />
               <p class="config-slider-value">
                 {{ formatHeatmapIntensityLabel(config.mobileCoverage.heatmapIntensity) }}
@@ -579,6 +637,7 @@
                 color="white"
                 track-color="rgba(255,255,255,0.2)"
                 class="config-slider"
+                @end="onOverlayOpacityCommit"
               />
               <p class="config-slider-value">{{ Math.round(displayOpacityModel * 100) }}%</p>
             </div>
@@ -657,22 +716,24 @@
 </template>
 
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useBarsAwarePanelStyle } from '@/composables/useBarsAwarePanelStyle'
 import { bearingBetween, centroidOf, rangeAfterGainChange, rangeAfterTxPowerChange } from '@/libs/baseStation/coverage'
 import { isElectron } from '@/libs/utils'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
-import { useWidgetManagerStore } from '@/stores/widgetManager'
 import {
+  ANTENNA_FACTORY_DEFAULTS,
   AntennaType,
   BaseStationCommsType,
   BLUE_ROBOTICS_TX_POWER_MW,
+  DEFAULT_BASE_STATION_ANTENNA_HEIGHT_METERS,
+  DEFAULT_BASE_STATION_CONFIG,
   MOBILE_COVERAGE_FETCH_DROP_MIME,
   MobileCoverageDisplayMode,
   MobileCoverageProvider,
@@ -680,8 +741,21 @@ import {
 } from '@/types/baseStation'
 import type { WaypointCoordinates } from '@/types/mission'
 
+withDefaults(
+  defineProps<{
+    /**
+     * Whether the panel is mounted inside the mission planning view. Enables planning-only controls
+     * like the mission-path signal coloring toggle.
+     */
+    isMissionPlanningContext?: boolean
+  }>(),
+  {
+    isMissionPlanningContext: false,
+  }
+)
+
 const store = useBaseStation()
-const widgetStore = useWidgetManagerStore()
+const getMarginsFromBarsHeight = useBarsAwarePanelStyle(600)
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
@@ -707,9 +781,9 @@ const isCoverageRingsMode = computed(
   () => config.value.mobileCoverage.displayMode === MobileCoverageDisplayMode.CoverageRings
 )
 const isHeatmapMode = computed(() => config.value.mobileCoverage.displayMode === MobileCoverageDisplayMode.Heatmap)
-const openCellIdApiKeyFieldOpen = ref(isStandalone && !config.value.mobileCoverage.openCellIdApiKey.trim())
+const openCellIdApiKeyFieldOpen = ref(isStandalone && !store.openCellIdApiKey.trim())
 const showOpenCellIdApiKeyField = computed(
-  () => isMobileData.value && isOpenCellId.value && (!isStandalone || openCellIdApiKeyFieldOpen.value)
+  () => isMobileData.value && isOpenCellId.value && isStandalone && openCellIdApiKeyFieldOpen.value
 )
 const displayOpacityModel = computed({
   get: () => (isMobileData.value ? config.value.mobileCoverage.overlayOpacity : config.value.coverageOpacity),
@@ -727,6 +801,17 @@ const gainText = ref('')
 const gainFocused = ref(false)
 const txPowerText = ref('')
 const txPowerFocused = ref(false)
+
+// `min`/`max` on a number input only bound its spinner: a typed or pasted value can land outside
+// the range, and clearing the field assigns an empty string to a number-typed setting, which then
+// reaches the coverage geometry as NaN. Every free-typed field is committed through these limits.
+const ANTENNA_HEIGHT_LIMITS_M = { min: 0.5, max: 50 }
+const BEAMWIDTH_LIMITS_DEG = { min: 1, max: 360 }
+const ANTENNA_RANGE_LIMITS_M = { min: 1, max: 100000 }
+const TETHER_LENGTH_LIMITS_M = { min: 1, max: 5000 }
+
+const clampFieldValue = (value: number, min: number, max: number, fallback: number): number =>
+  Number.isFinite(value) ? Math.min(Math.max(value, min), max) : fallback
 
 const formatBearing = (bearing: number): string => bearing.toFixed(1)
 const formatGain = (gain: number): string => gain.toFixed(1)
@@ -787,7 +872,7 @@ const configureSourcesOption = 'action:configure-sources'
 const setTrackByGps = (value: boolean | null): void => {
   const enabled = Boolean(value)
   logUserAction(`${enabled ? 'Enabled' : 'Disabled'} base station GPS tracking`)
-  config.value.trackByGps = enabled
+  store.trackByGps = enabled
 }
 
 const onGpsSourceChange = (event: Event): void => {
@@ -802,9 +887,119 @@ const onGpsSourceChange = (event: Event): void => {
     interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsSources
     return
   }
-  config.value.gpsSourceId = select.value
+  store.gpsSourceId = select.value
   const label = store.gpsSourceOptions.find((source) => source.id === select.value)?.label ?? select.value
   logUserAction(`Set the base station GPS source to "${label}"`)
+}
+
+const onNameBlur = (): void => {
+  logUserAction(`Set the base station name to "${config.value.name}"`)
+}
+
+const onCoordinateBlur = (): void => {
+  const position = config.value.position
+  if (position) logUserAction(`Set the base station position to ${position[0]}, ${position[1]}`)
+}
+
+const onCommsTypeChange = (event: Event): void => {
+  const next = (event.target as HTMLSelectElement).value as BaseStationCommsType
+  logUserAction(`Set the base station comms type to "${next}"`)
+  config.value.commsType = next
+}
+
+const onAntennaHeightBlur = (): void => {
+  const height = clampFieldValue(
+    config.value.baseStationAntennaHeightMeters,
+    ANTENNA_HEIGHT_LIMITS_M.min,
+    ANTENNA_HEIGHT_LIMITS_M.max,
+    DEFAULT_BASE_STATION_ANTENNA_HEIGHT_METERS
+  )
+  config.value.baseStationAntennaHeightMeters = height
+  logUserAction(`Set the base station antenna height to ${height} m`)
+}
+
+const onBeamwidthBlur = (): void => {
+  const beamwidth = clampFieldValue(
+    config.value.antenna.beamwidth,
+    BEAMWIDTH_LIMITS_DEG.min,
+    BEAMWIDTH_LIMITS_DEG.max,
+    ANTENNA_FACTORY_DEFAULTS[config.value.antenna.type].beamwidth
+  )
+  config.value.antenna.beamwidth = beamwidth
+  logUserAction(`Set the base station antenna beamwidth to ${beamwidth} degrees`)
+}
+
+const onAntennaRangeBlur = (): void => {
+  const range = clampFieldValue(
+    config.value.antenna.range,
+    ANTENNA_RANGE_LIMITS_M.min,
+    ANTENNA_RANGE_LIMITS_M.max,
+    ANTENNA_FACTORY_DEFAULTS[config.value.antenna.type].range
+  )
+  config.value.antenna.range = range
+  logUserAction(`Set the base station antenna range to ${range} m`)
+}
+
+const onTetherLengthBlur = (): void => {
+  const length = clampFieldValue(
+    config.value.tetherLengthMeters,
+    TETHER_LENGTH_LIMITS_M.min,
+    TETHER_LENGTH_LIMITS_M.max,
+    DEFAULT_BASE_STATION_CONFIG.tetherLengthMeters
+  )
+  config.value.tetherLengthMeters = length
+  logUserAction(`Set the base station tether length to ${length} m`)
+}
+
+const onVehicleAntennaMastToggle = (value: boolean | null): void => {
+  const enabled = Boolean(value)
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} the vehicle antenna mast range bonus`)
+  config.value.vehicleHasBlueBoatAntennaMast = enabled
+}
+
+const onColorMenuToggle = (isOpen: boolean): void => {
+  // Logged on close: the picker emits continuously while the operator drags across the gradient.
+  logUserAction(
+    isOpen
+      ? 'Opened the base station coverage color picker'
+      : `Set the base station coverage color to ${config.value.coverageColor}`
+  )
+}
+
+const onDisplayModeChange = (event: Event): void => {
+  const next = (event.target as HTMLSelectElement).value as MobileCoverageDisplayMode
+  logUserAction(`Set the base station mobile coverage view to "${next}"`)
+  config.value.mobileCoverage.displayMode = next
+}
+
+const onRingLabelsToggle = (value: boolean | null): void => {
+  const enabled = Boolean(value)
+  logUserAction(`${enabled ? 'Showed' : 'Hid'} the base station coverage ring labels`)
+  config.value.mobileCoverage.showRingLabels = enabled
+}
+
+const onHeatmapIntensityCommit = (): void => {
+  logUserAction(`Set the base station heatmap intensity to ${config.value.mobileCoverage.heatmapIntensity}`)
+}
+
+const onOverlayOpacityCommit = (): void => {
+  logUserAction(`Set the base station coverage opacity to ${Math.round(displayOpacityModel.value * 100)}%`)
+}
+
+const onOsmOperatorChange = (event: Event): void => {
+  const operator = (event.target as HTMLSelectElement).value
+  logUserAction(`Filtered the base station OpenStreetMap coverage by "${operator || 'All operators'}"`)
+  config.value.mobileCoverage.osmOperator = operator
+}
+
+const onOpenCellIdOperatorChange = (event: Event): void => {
+  const operator = (event.target as HTMLSelectElement).value
+  logUserAction(`Filtered the base station OpenCellID coverage by "${operator || 'All operators'}"`)
+  config.value.mobileCoverage.openCellIdOperator = operator
+}
+
+const onOpenCellIdApiKeyBlur = (): void => {
+  logUserAction(`${store.openCellIdApiKey.trim() ? 'Set' : 'Cleared'} the OpenCellID API key`)
 }
 
 const onBearingInput = (value: string): void => {
@@ -816,6 +1011,7 @@ const onBearingInput = (value: string): void => {
 const onBearingBlur = (): void => {
   bearingFocused.value = false
   bearingText.value = formatBearing(config.value.antenna.bearing)
+  logUserAction(`Set the base station antenna bearing to ${bearingText.value} degrees`)
 }
 
 const onGainInput = (value: string): void => {
@@ -831,6 +1027,7 @@ const onGainInput = (value: string): void => {
 const onGainBlur = (): void => {
   gainFocused.value = false
   gainText.value = formatGain(config.value.antenna.gain)
+  logUserAction(`Set the base station antenna gain to ${gainText.value} dBi`)
 }
 
 const applyTxPower = (newPowerMw: number): void => {
@@ -849,12 +1046,14 @@ const onTxPowerInput = (value: string): void => {
 const onTxPowerBlur = (): void => {
   txPowerFocused.value = false
   txPowerText.value = formatTxPower(config.value.txPowerMilliwatts)
+  logUserAction(`Set the base station transmit power to ${txPowerText.value} mW`)
 }
 
 // Switching back to the BR base station snaps power to its known 1 W radio and rescales range
 // accordingly, so the panel never claims BR-branded hardware while running off-spec power.
 const onRadioKindChange = (event: Event): void => {
   const newKind = (event.target as HTMLSelectElement).value as RadioBaseStationKind
+  logUserAction(`Set the base station radio model to "${newKind}"`)
   config.value.radioBaseStationKind = newKind
   if (newKind === RadioBaseStationKind.BlueRobotics) applyTxPower(BLUE_ROBOTICS_TX_POWER_MW)
 }
@@ -867,6 +1066,11 @@ const openCustomCoverageDialog = (): void => {
   logUserAction('Opened the base station custom coverage tile URL dialog')
   customTileUrlDraft.value = config.value.mobileCoverage.customTileUrl
   customCoverageDialogOpen.value = true
+}
+
+const closeCustomCoverageDialog = (): void => {
+  logUserAction('Closed the base station custom coverage tile URL dialog')
+  customCoverageDialogOpen.value = false
 }
 
 const saveCustomTileUrl = (): void => {
@@ -883,11 +1087,7 @@ const onCoverageProviderChange = (event: Event): void => {
   config.value.mobileCoverage.provider = next
   if (next === MobileCoverageProvider.Custom) openCustomCoverageDialog()
   if (next !== MobileCoverageProvider.OpenCellID && isStandalone) openCellIdApiKeyFieldOpen.value = false
-  if (
-    next === MobileCoverageProvider.OpenCellID &&
-    isStandalone &&
-    !config.value.mobileCoverage.openCellIdApiKey.trim()
-  ) {
+  if (next === MobileCoverageProvider.OpenCellID && isStandalone && !store.openCellIdApiKey.trim()) {
     openCellIdApiKeyFieldOpen.value = true
   }
 }
@@ -947,6 +1147,7 @@ watch(estimatesInfoDialogOpen, (open) => {
 
 const onAntennaTypeChange = (event: Event): void => {
   const value = (event.target as HTMLSelectElement).value as AntennaType
+  logUserAction(`Set the base station antenna type to "${value}"`)
   store.setAntennaType(value)
 }
 
@@ -996,23 +1197,6 @@ const snapBearingToMission = (): void => {
   store.setBearing(bearingBetween(position, centroid))
   logUserAction('Aimed the base station antenna at the mission')
 }
-
-const { height: windowHeight } = useWindowSize()
-
-const getMarginsFromBarsHeight = computed(() => {
-  return {
-    marginTop: widgetStore.editingMode ? '0px' : widgetStore.currentTopBarHeightPixels + 'px',
-    marginBottom: widgetStore.editingMode ? '0px' : widgetStore.currentBottomBarHeightPixels + 'px',
-    height: widgetStore.editingMode
-      ? windowHeight.value + 'px'
-      : windowHeight.value -
-        widgetStore.currentTopBarHeightPixels -
-        widgetStore.currentBottomBarHeightPixels -
-        1 +
-        'px',
-    zIndex: 600,
-  }
-})
 </script>
 
 <style scoped>

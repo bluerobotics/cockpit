@@ -40,6 +40,23 @@
       <div v-if="missionCoverage !== '—'" class="flex justify-between">
         <span>Mission area (≈)</span><span>{{ missionCoverage }}</span>
       </div>
+      <template v-if="isPathSignalAvailable">
+        <v-divider class="opacity-10 my-1" />
+        <div
+          v-tooltip:top="'Tint the mission path by expected radio or mobile-data coverage at each segment.'"
+          class="flex justify-between items-center -mb-1 pr-1"
+        >
+          <span>Show comms coverage on path</span>
+          <v-checkbox
+            :model-value="missionStore.showMissionPathSignalStrength"
+            theme="dark"
+            density="compact"
+            hide-details
+            class="path-signal-checkbox"
+            @update:model-value="(value) => missionStore.setShowMissionPathSignalStrength(!!value)"
+          />
+        </div>
+      </template>
     </div>
   </div>
   <v-dialog v-model="isSettingsOpen" persistent max-width="500px">
@@ -154,6 +171,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { useMissionPathSignal } from '@/composables/baseStation/useMissionPathSignal'
 import { openSnackbar } from '@/composables/snackbar'
 import { useMissionEstimates } from '@/composables/useMissionEstimates'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -189,6 +207,8 @@ const isOptionsIconVisible = computed(
 )
 
 const maxDistance = computed(() => totalMaxDistance.value)
+const { isPathSignalAvailable } = useMissionPathSignal()
+
 const missionDuration = computed(() => totalMissionDuration.value)
 const missionEnergy = computed(() => totalMissionEnergy.value)
 const missionCoverage = computed(() => missionCoverageAreaSquareMeters.value)
@@ -216,3 +236,16 @@ const handleHideMissionEstimates = (): void => {
   })
 }
 </script>
+
+<style scoped>
+.path-signal-checkbox {
+  transform: scale(0.75);
+  transform-origin: right center;
+  flex: 0 0 auto;
+  margin-right: -8px;
+}
+
+.path-signal-checkbox :deep(.v-selection-control) {
+  min-height: 0;
+}
+</style>

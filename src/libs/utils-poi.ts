@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/libs/utils'
 import type { PointOfInterestCoordinates, ResolvedPointOfInterest } from '@/types/mission'
 
 // Marker color used for live-tracked POIs that currently have no valid position data.
@@ -5,14 +6,6 @@ const stalePoiMarkerColor = '#808080'
 
 // Marker opacity used for live-tracked POIs sitting on their fallback coordinates.
 const stalePoiMarkerOpacity = 0.4
-
-const escapeHtml = (value: string): string =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
 
 /**
  * Whether a live-tracked POI is currently positioned on its fallback coordinates (no live data).

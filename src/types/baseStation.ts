@@ -52,10 +52,6 @@ export type MobileCoverageConfig = {
    */
   provider: MobileCoverageProvider
   /**
-   * OpenCellID API key. Required when {@link provider} is {@link MobileCoverageProvider.OpenCellID}.
-   */
-  openCellIdApiKey: string
-  /**
    * Selected OpenCellID operator/network code label. Empty string keeps all returned networks.
    */
   openCellIdOperator: string
@@ -171,15 +167,6 @@ export type BaseStationConfig = {
    */
   position: WaypointCoordinates | null
   /**
-   * Whether to keep the base-station position synced with the GPS given by {@link gpsSourceId}.
-   */
-  trackByGps: boolean
-  /**
-   * Positioning source used while {@link trackByGps} is on: either {@link BROWSER_GEOLOCATION_SOURCE_ID}
-   * or the id of a GNSS device configured under Settings > Sources.
-   */
-  gpsSourceId: string
-  /**
    * Communication link type between the topside and the vehicle.
    */
   commsType: BaseStationCommsType
@@ -230,7 +217,7 @@ export type BaseStationConfig = {
 }
 
 /**
- * {@link BaseStationConfig.gpsSourceId} value standing for the browser's Geolocation API. The colon keeps it
+ * Base-station GPS source id standing for the browser's Geolocation API. The colon keeps it
  * distinct from any GNSS device id, as those are machinized to `[a-z0-9-]`.
  */
 export const BROWSER_GEOLOCATION_SOURCE_ID = 'browser:geolocation'
@@ -270,8 +257,6 @@ export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   enabled: false,
   name: '',
   position: null,
-  trackByGps: false,
-  gpsSourceId: BROWSER_GEOLOCATION_SOURCE_ID,
   commsType: BaseStationCommsType.RadioLink,
   radioBaseStationKind: RadioBaseStationKind.BlueRobotics,
   antenna: { ...ANTENNA_FACTORY_DEFAULTS[AntennaType.Omni], bearing: 0 },
@@ -281,7 +266,6 @@ export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   txPowerMilliwatts: BLUE_ROBOTICS_TX_POWER_MW,
   mobileCoverage: {
     provider: MobileCoverageProvider.OpenCellID,
-    openCellIdApiKey: '',
     openCellIdOperator: '',
     customTileUrl: '',
     osmOperator: '',
@@ -302,7 +286,7 @@ export const DEFAULT_MOBILE_COVERAGE_CACHE: MobileCoverageCache = {
 
 /**
  * Bounding box payload accepted by the OpenCellID `getInArea` endpoint, plus the API key the
- * caller wants to use (omitted to fall back to the anonymous public endpoint).
+ * caller wants to use. The endpoint has no anonymous mode, so the key is required.
  */
 /* eslint-disable jsdoc/require-jsdoc -- Field names mirror the OpenCellID HTTP contract. */
 export type OpenCellIdBboxRequest = {
@@ -310,7 +294,7 @@ export type OpenCellIdBboxRequest = {
   south: number
   east: number
   north: number
-  apiKey?: string
+  apiKey: string
 }
 /* eslint-enable jsdoc/require-jsdoc */
 

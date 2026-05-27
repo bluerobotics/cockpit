@@ -1,4 +1,4 @@
-import './baseStationOverlay.css'
+import '@/styles/baseStationOverlay.css'
 
 import L from 'leaflet'
 import { type Ref, type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
@@ -43,6 +43,7 @@ import {
   overpassBearing,
   overpassLabelParts,
 } from '@/libs/baseStation/overpass'
+import { escapeHtml, isElectron } from '@/libs/utils'
 import {
   type BaseStationConfig,
   type CachedMobileCoverageEntry,
@@ -64,8 +65,9 @@ const COVERAGE_STEP_OPACITY = 0.045
 const notifyOpenCellIdKeyRequired = (): void => {
   openSnackbar({
     variant: 'info',
-    message:
-      'OpenCellID requires a personal API key. Add one in the base-station config, or switch to OpenStreetMap coverage to load data without a key.',
+    message: isElectron()
+      ? 'OpenCellID requires a personal API key. Add one in the base-station config, or switch to OpenStreetMap coverage to load data without a key.'
+      : 'OpenCellID coverage cannot be loaded from a browser. Switch to OpenStreetMap coverage, or install Cockpit Standalone to use OpenCellID.',
     duration: 5000,
   })
 }
@@ -104,27 +106,20 @@ const OSM_LABEL_RIM_INSET = 0.92
 const OSM_TOP_ARC_START_DEG = 300
 const OSM_TOP_ARC_END_DEG = 60
 
-/* eslint-disable jsdoc/require-jsdoc -- Composable return shape; field names are self-describing. */
-type BaseStationOverlayApi = { openConfigPanel: () => void }
-/* eslint-enable jsdoc/require-jsdoc */
-
-const escapeMarkerLabel = (label: string): string =>
-  label
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-
 const baseStationMarkerHtml = (label: string, color: string): string => `
   <div class="base-station-marker-container">
     <div class="base-station-marker-background" style="background-color: ${color.slice(0, 7)}cc"></div>
     <i class="v-icon notranslate mdi mdi-radio-tower" style="color: white; position: relative; z-index: 2; font-size: 16px;"></i>
-    ${label ? `<div class="base-station-marker-label">${escapeMarkerLabel(label)}</div>` : ''}
+    ${label ? `<div class="base-station-marker-label">${escapeHtml(label)}</div>` : ''}
   </div>
 `
 
 let overlayInstanceCount = 0
+
+// The map widget can be placed several times, and the coverage data, its cache and the position
+// it is fetched for are all app-wide, so a single instance fetches while the others draw from the
+// shared cache: otherwise every extra map repeats the same requests to the public tower services.
+const coverageDataOwner = shallowRef<symbol | null>(null)
 
 /**
  * Renders the base-station marker, antenna coverage and tether circle on a Leaflet map and
@@ -132,13 +127,14 @@ let overlayInstanceCount = 0
  * handled automatically.
  * @param {ShallowRef<L.Map | undefined>} map Reactive reference to the Leaflet map instance.
  * @param {Ref<boolean>} mapReady Reactive flag that becomes true once the map is initialized.
- * @returns {BaseStationOverlayApi} Helpers to drive the overlay from the host view.
+ * @returns {void}
  */
-export const useBaseStationOverlay = (
-  map: ShallowRef<L.Map | undefined>,
-  mapReady: Ref<boolean>
-): BaseStationOverlayApi => {
+export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapReady: Ref<boolean>): void => {
   const store = useBaseStation()
+
+  const overlayId = Symbol('baseStationOverlay')
+  const ownsCoverageData = (): boolean => coverageDataOwner.value === overlayId
+  if (coverageDataOwner.value === null) coverageDataOwner.value = overlayId
 
   // Label arcs are referenced by SVG fragment id, which resolves document-wide, so every overlay
   // instance namespaces its ids to keep a second map's labels off the first map's geometry.
@@ -156,6 +152,12 @@ export const useBaseStationOverlay = (
   const cachedOpenCellIdSites = shallowRef<OpenCellIdSite[] | null>(null)
   const cachedOverpassTowers = shallowRef<OverpassTower[] | null>(null)
 
+  // Live values while a handle is being dragged, preferred over the persisted config by
+  // `refreshAll` so the overlay follows the pointer without writing (and vehicle-syncing) the
+  // whole config on every drag event. The store is written once, on drag end.
+  const draggedPosition = shallowRef<WaypointCoordinates | null>(null)
+  const draggedBearing = shallowRef<number | null>(null)
+
   let mobileCoverageController: AbortController | null = null
   let mobileCoverageTargetToolController: AbortController | null = null
   let mobileCoverageDebounce: ReturnType<typeof setTimeout> | null = null
@@ -167,10 +169,6 @@ export const useBaseStationOverlay = (
   let osmLabelCleanup: (() => void) | null = null
   let lastMarkerLabel: string | null = null
   let lastMarkerColor: string | null = null
-
-  const openConfigPanel = (): void => {
-    store.configPanelOpen = true
-  }
 
   const attachMapDropHandlers = (): void => {
     if (!(map.value instanceof L.Map)) return
@@ -230,7 +228,6 @@ export const useBaseStationOverlay = (
     cachedOverpassTowers.value = null
     store.availableOsmOperators = []
     store.availableOpenCellIdOperators = []
-    store.config.mobileCoverage.openCellIdOperator = ''
   }
 
   const openCellIdEntryForPosition = (
@@ -245,7 +242,7 @@ export const useBaseStationOverlay = (
 
   const loadOpenCellIdSitesFromStorage = (position: WaypointCoordinates): boolean => {
     // Drop empty entries that cover this position — leftover from rate-limited fetches that
-    // returned 0 sites (was previously the H1 bug where empty caches blocked re-fetching).
+    // returned 0 sites, and an entry with zero results must not block a re-fetch.
     const positionalEntry = openCellIdEntryForPosition(position)
     if (positionalEntry && positionalEntry.data.length === 0) {
       store.mobileCoverageCache.openCellId = store.mobileCoverageCache.openCellId.filter(
@@ -459,8 +456,12 @@ export const useBaseStationOverlay = (
     lastMarkerLabel = markerLabel
     lastMarkerColor = config.coverageColor
     m.on('drag', (event: L.LeafletEvent) => {
-      const target = event.target as L.Marker
-      const { lat, lng } = target.getLatLng()
+      const { lat, lng } = (event.target as L.Marker).getLatLng()
+      draggedPosition.value = [lat, lng]
+    })
+    m.on('dragend', (event: L.LeafletEvent) => {
+      const { lat, lng } = (event.target as L.Marker).getLatLng()
+      draggedPosition.value = null
       store.setPosition([lat, lng])
     })
     m.on('contextmenu', (event: L.LeafletMouseEvent) => {
@@ -530,8 +531,9 @@ export const useBaseStationOverlay = (
       return
     }
     ensureOsmLabelOverlay()
-    if (!osmLabelSvgEl) return
-    osmLabelSvgEl.replaceChildren()
+    const svgEl = osmLabelSvgEl
+    if (!svgEl) return
+    svgEl.replaceChildren()
 
     labels.forEach((labelSpec) => {
       const center = labelSpec.center
@@ -578,9 +580,53 @@ export const useBaseStationOverlay = (
       textPath.textContent = text
 
       textEl.appendChild(textPath)
-      osmLabelSvgEl.appendChild(path)
-      osmLabelSvgEl.appendChild(textEl)
+      svgEl.appendChild(path)
+      svgEl.appendChild(textEl)
     })
+  }
+
+  // Panning translates the label layer as a whole instead of regenerating every label's SVG:
+  // bound to `move`, the rebuild ran for every tower in view on each animation frame.
+  const bindCoverageLabelRerender = (labels: OsmCoverageLabelSpec[]): void => {
+    if (!map.value || labels.length === 0) return
+    const mapInstance = map.value
+    let panPixelOrigin: L.Point | null = null
+    let zooming = false
+
+    const rebuild = (): void => {
+      panPixelOrigin = null
+      zooming = false
+      if (osmLabelOverlayEl) {
+        osmLabelOverlayEl.style.transform = ''
+        osmLabelOverlayEl.style.visibility = ''
+      }
+      renderOsmCoverageLabels(labels)
+    }
+    const onMoveStart = (): void => {
+      panPixelOrigin = mapInstance.getPixelOrigin()
+    }
+    const onMove = (): void => {
+      if (!osmLabelOverlayEl || panPixelOrigin === null || zooming) return
+      const delta = panPixelOrigin.subtract(mapInstance.getPixelOrigin())
+      osmLabelOverlayEl.style.transform = `translate(${delta.x}px, ${delta.y}px)`
+    }
+    // A zoom rescales the rings the labels sit on, so no translation can keep them aligned;
+    // they stay hidden until `moveend`, which Leaflet fires at the end of a zoom too.
+    const onZoomStart = (): void => {
+      zooming = true
+      if (osmLabelOverlayEl) osmLabelOverlayEl.style.visibility = 'hidden'
+    }
+
+    mapInstance.on('movestart', onMoveStart)
+    mapInstance.on('move', onMove)
+    mapInstance.on('zoomstart', onZoomStart)
+    mapInstance.on('moveend resize', rebuild)
+    osmLabelCleanup = () => {
+      mapInstance.off('movestart', onMoveStart)
+      mapInstance.off('move', onMove)
+      mapInstance.off('zoomstart', onZoomStart)
+      mapInstance.off('moveend resize', rebuild)
+    }
   }
 
   const renderOpenCellIdCoverageRings = (sites: OpenCellIdSite[], config: BaseStationConfig): void => {
@@ -614,9 +660,7 @@ export const useBaseStationOverlay = (
     mobileCoverageLayer.value = group
     if (!config.mobileCoverage.showRingLabels) return
     renderOsmCoverageLabels(labels)
-    const rerenderLabels = (): void => renderOsmCoverageLabels(labels)
-    map.value.on('move zoom resize', rerenderLabels)
-    osmLabelCleanup = () => map.value?.off('move zoom resize', rerenderLabels)
+    bindCoverageLabelRerender(labels)
   }
 
   const updateCoverage = (config: BaseStationConfig): void => {
@@ -767,9 +811,13 @@ export const useBaseStationOverlay = (
     handle.on('drag', (event: L.LeafletEvent) => {
       const center = store.config.position
       if (!center) return
-      const target = event.target as L.Marker
-      const { lat, lng } = target.getLatLng()
-      store.setBearing(bearingBetween(center, [lat, lng]))
+      const { lat, lng } = (event.target as L.Marker).getLatLng()
+      draggedBearing.value = bearingBetween(center, [lat, lng])
+    })
+    handle.on('dragend', () => {
+      const bearing = draggedBearing.value
+      draggedBearing.value = null
+      if (bearing !== null) store.setBearing(bearing)
     })
     handle.addTo(map.value!)
     bearingHandle.value = handle
@@ -798,6 +846,9 @@ export const useBaseStationOverlay = (
       clearTimeout(mobileCoverageDebounce)
       mobileCoverageDebounce = null
     }
+    // Operator lists live on the singleton: a non-owner that clears them empties the panel
+    // filter until the next owner fetch, and the owner does not refetch on a sibling unmount.
+    if (!ownsCoverageData()) return
     clearLoadedMobileCoverageData()
   }
 
@@ -889,10 +940,7 @@ export const useBaseStationOverlay = (
     mobileCoverageLayer.value = group
     if (!config.mobileCoverage.showRingLabels) return
     renderOsmCoverageLabels(labels)
-
-    const rerenderLabels = (): void => renderOsmCoverageLabels(labels)
-    map.value.on('move zoom resize', rerenderLabels)
-    osmLabelCleanup = () => map.value?.off('move zoom resize', rerenderLabels)
+    bindCoverageLabelRerender(labels)
   }
 
   const renderMobileCoverage = async (config: BaseStationConfig): Promise<void> => {
@@ -946,7 +994,7 @@ export const useBaseStationOverlay = (
   const unhandledMobileCoverageFetchError = (err: unknown, provider: MobileCoverageProvider): string | null => {
     if ((err as DOMException)?.name === 'AbortError') return null
     const errorMessage = (err as Error).message
-    if (provider === MobileCoverageProvider.OpenCellID && store.config.mobileCoverage.openCellIdApiKey.trim()) {
+    if (provider === MobileCoverageProvider.OpenCellID && store.openCellIdApiKey.trim()) {
       if (isOpenCellIdInvalidApiKeyError(errorMessage)) {
         store.openCellIdApiKeyStatus = 'invalid'
         openSnackbar({
@@ -968,11 +1016,7 @@ export const useBaseStationOverlay = (
       noun: 'OpenCellID sites',
       loadFromStorage: loadOpenCellIdSitesFromStorage,
       fetch: async (position, signal, mode) => {
-        const { sites, fetchedBbox } = await fetchOpenCellIdSites(
-          position,
-          store.config.mobileCoverage.openCellIdApiKey.trim(),
-          signal
-        )
+        const { sites, fetchedBbox } = await fetchOpenCellIdSites(position, store.openCellIdApiKey.trim(), signal)
         if (signal.aborted) return null
         if (mode === 'append') appendOpenCellIdSites(fetchedBbox, sites)
         else storeOpenCellIdSites(fetchedBbox, sites)
@@ -1005,7 +1049,7 @@ export const useBaseStationOverlay = (
       return
     }
 
-    if (provider === MobileCoverageProvider.OpenCellID && !store.config.mobileCoverage.openCellIdApiKey.trim()) {
+    if (provider === MobileCoverageProvider.OpenCellID && !store.openCellIdApiKey.trim()) {
       store.openCellIdApiKeyStatus = 'unknown'
       notifyOpenCellIdKeyRequired()
       return
@@ -1055,7 +1099,7 @@ export const useBaseStationOverlay = (
       return
     }
 
-    if (provider === MobileCoverageProvider.OpenCellID && !store.config.mobileCoverage.openCellIdApiKey.trim()) {
+    if (provider === MobileCoverageProvider.OpenCellID && !store.openCellIdApiKey.trim()) {
       store.openCellIdApiKeyStatus = 'unknown'
       // Notify once per missing-key episode so a moving or GPS-tracked position does not
       // re-fire this snackbar on every debounced refetch.
@@ -1112,7 +1156,14 @@ export const useBaseStationOverlay = (
 
   const refreshAll = (): void => {
     if (!mapReady.value || !(map.value instanceof L.Map)) return
-    const config = store.config
+    const config =
+      draggedPosition.value !== null || draggedBearing.value !== null
+        ? {
+            ...store.config,
+            position: draggedPosition.value ?? store.config.position,
+            antenna: { ...store.config.antenna, bearing: draggedBearing.value ?? store.config.antenna.bearing },
+          }
+        : store.config
 
     if (!config.enabled || !config.position) {
       removeLayer(marker.value)
@@ -1169,6 +1220,9 @@ export const useBaseStationOverlay = (
       store.config.baseStationAntennaHeightMeters,
       store.config.vehicleHasBlueBoatAntennaMast,
       store.showCoverage,
+      draggedPosition.value?.[0],
+      draggedPosition.value?.[1],
+      draggedBearing.value,
     ],
     refreshAll
   )
@@ -1179,11 +1233,12 @@ export const useBaseStationOverlay = (
       mapReady.value,
       store.config.commsType,
       store.config.mobileCoverage.provider,
-      store.config.mobileCoverage.openCellIdApiKey,
+      store.openCellIdApiKey,
       store.config.mobileCoverage.customTileUrl,
       store.config.position,
     ],
     () => {
+      if (!ownsCoverageData()) return
       teardownMobileCoverageData()
       mobileCoverageDebounce = setTimeout(() => void fetchMobileCoverageData(store.config), 500)
     },
@@ -1193,6 +1248,7 @@ export const useBaseStationOverlay = (
   watch(
     () => store.mobileCoverageReloadToken,
     () => {
+      if (!ownsCoverageData()) return
       teardownMobileCoverageData()
       mobileCoverageDebounce = setTimeout(() => void fetchMobileCoverageData(store.config, true), 100)
     }
@@ -1201,9 +1257,22 @@ export const useBaseStationOverlay = (
   watch(
     () => store.mobileCoverageVisibleDataResetToken,
     () => {
+      if (!ownsCoverageData()) return
       void resetVisibleMobileCoverageData()
     }
   )
+
+  // Cache writes are the only cue the non-fetching instances get, and the instance taking over an
+  // unmounted owner's turn has to catch up on whatever the config asks for that the cache lacks.
+  watch([() => store.mobileCoverageCache.openCellId, () => store.mobileCoverageCache.osmOverpass], () => {
+    if (ownsCoverageData()) return
+    void renderMobileCoverage(store.config)
+  })
+  watch(coverageDataOwner, (owner) => {
+    if (owner !== null) return
+    coverageDataOwner.value = overlayId
+    void fetchMobileCoverageData(store.config)
+  })
 
   // Visual-only re-render. Provider/commsType/customTileUrl/position are already covered by
   // the fetch watcher above — pulling them in here would cause a render against the empty
@@ -1237,6 +1306,7 @@ export const useBaseStationOverlay = (
   )
 
   onBeforeUnmount(() => {
+    if (ownsCoverageData()) coverageDataOwner.value = null
     detachMapDropHandlers?.()
     detachTargetToolHandlers?.()
     teardownMobileCoverageData()
@@ -1253,6 +1323,4 @@ export const useBaseStationOverlay = (
     bearingLine.value = undefined
     aimingArc.value = undefined
   })
-
-  return { openConfigPanel }
 }

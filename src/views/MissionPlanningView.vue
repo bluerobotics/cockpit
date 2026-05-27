@@ -704,8 +704,6 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
-  <BaseStationConfigPanel />
-  <BaseStationContextPopup />
   <Teleport to="#planningMap">
     <PoiMapArrows
       :map-ready="mapReady"
@@ -713,8 +711,11 @@
       :show-poi-arrows="true"
       :show-home-arrow="true"
       :show-vehicle-arrow="true"
+      :show-base-station-arrow="baseStationStore.config.enabled"
       :vehicle-position="vehiclePosition"
       :home="home"
+      :base-station="baseStationStore.activePosition"
+      :base-station-color="baseStationStore.config.coverageColor"
       :map-center="mapCenter"
       :zoom="zoom"
       :target-follower="targetFollower"
@@ -772,8 +773,6 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
-import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
-import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
@@ -790,6 +789,7 @@ import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
+import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissionPathSignalOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
@@ -1136,6 +1136,21 @@ const loading = ref(false)
 const showMissionCreationTips = ref(missionStore.showMissionCreationTips)
 const countdownToHideTips = ref<number | undefined>(undefined)
 const isSurfaceBoat = computed(() => vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT)
+
+// The waypoint/survey panel and the base station panel both occupy the right edge, so the
+// last one opened takes it.
+const rightPanelShowsMissionConfig = computed(
+  () => interfaceStore.configPanelVisible && (isCreatingSurvey.value || selectedWaypoint.value !== undefined)
+)
+watch(
+  () => baseStationStore.configPanelOpen,
+  (isOpen) => {
+    if (isOpen && rightPanelShowsMissionConfig.value) interfaceStore.configPanelVisible = false
+  }
+)
+watch(rightPanelShowsMissionConfig, (showsMissionConfig) => {
+  if (showsMissionConfig) baseStationStore.configPanelOpen = false
+})
 
 const localCruiseSpeed = ref<number>(Number(missionStore.defaultCruiseSpeed))
 watch(
@@ -1507,6 +1522,7 @@ const clearCurrentMission = (): void => {
     planningMap.value?.removeLayer(missionWaypointsPolyline.value)
     missionWaypointsPolyline.value = null
   }
+  removeMissionPathSignalLayer()
   clearSurveyPath()
   selectedSurveyId.value = ''
   lastSelectedSurveyId.value = ''
@@ -2230,7 +2246,14 @@ const setHomePositionFromContextMenu = async (): Promise<void> => {
 }
 
 const placeBaseStationFromContextMenu = (): void => {
-  if (!currentCursorGeoCoordinates.value) return
+  if (!currentCursorGeoCoordinates.value) {
+    openSnackbar({
+      variant: 'error',
+      message: 'No map position under the cursor. Right-click on the map where the base station should go.',
+      duration: 4000,
+    })
+    return
+  }
   baseStationStore.setPosition(currentCursorGeoCoordinates.value)
   baseStationStore.configPanelOpen = true
   logUserAction('Placed the base station via the mission-planning context menu')
@@ -2610,7 +2633,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
   if (event.key === 'Enter' && isCreatingSurvey.value) {
     generateWaypointsFromSurvey()
   }
-  if (event.key === 'Delete' && !interfaceStore.configPanelVisible) {
+  if (event.key === 'Delete' && !interfaceStore.configPanelVisible && !baseStationStore.configPanelOpen) {
     if (selectedWaypoint.value) {
       removeSelectedWaypoint()
       selectedWaypoint.value = undefined
@@ -3054,6 +3077,7 @@ const clearSurveyPath = (): void => {
   surveyEdgeAddMarkers.forEach((marker) => marker.remove())
   surveyPolygonVertexesMarkers.value = []
   surveyPolygonVertexesPositions.value = []
+  renderMissionPathSignal()
 }
 
 watch([isCreatingSurvey, isCreatingSimplePath], (isCreatingNow) => {
@@ -3139,6 +3163,7 @@ const checkAndRemoveSurveyPath = (): void => {
   removeSurveyEndpointMarkers()
   surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
   surveyTurnaroundLayers.value = []
+  renderMissionPathSignal()
 }
 
 const createSurveyPath = (): void => {
@@ -3237,6 +3262,8 @@ const createSurveyPath = (): void => {
       createSurveyEndpointChevron(entrance, true).addTo(map),
       createSurveyEndpointChevron(exit, false).addTo(map),
     ]
+
+    renderMissionPathSignal()
   } catch (error) {
     surveyPreviewPath.value = null
     showDialog({
@@ -4468,6 +4495,18 @@ watch(zoom, () => {
 
 const missionWaypointsPolyline = shallowRef<L.Polyline | null>(null)
 
+const surveyExtraPathLayers = computed(() => [
+  ...(surveyCrosshatchPathLayer.value ? [surveyCrosshatchPathLayer.value] : []),
+  ...surveyTurnaroundLayers.value,
+])
+
+const { renderMissionPathSignal, removeMissionPathSignalLayer } = useMissionPathSignalOverlay(
+  planningMap,
+  surveyPathLayer,
+  missionWaypointsPolyline,
+  surveyExtraPathLayers
+)
+
 const getMissionPathLatLngs = (): L.LatLng[] =>
   missionStore.currentPlanningWaypoints.map((waypoint) => L.latLng(waypoint.coordinates[0], waypoint.coordinates[1]))
 
@@ -4488,6 +4527,8 @@ watch(
     } else {
       missionWaypointsPolyline.value.setLatLngs(missionPathLatLngs)
     }
+
+    renderMissionPathSignal()
   },
   { immediate: true, deep: true }
 )

@@ -205,6 +205,20 @@ export const hostOsName = (): 'Linux' | 'Windows' | 'macOS' | undefined => {
 }
 
 /**
+ * Escape a string so it can be embedded in HTML markup without being parsed as markup, for the
+ * map tooltips and marker labels that are built as HTML strings out of operator-entered text.
+ * @param {string} value Text to escape
+ * @returns {string} The text with HTML-significant characters replaced by entities
+ */
+export const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+/**
  * Copy text to clipboard
  * @param {string} text The text to copy
  * @returns {Promise<void>} A promise that resolves when the text is copied
