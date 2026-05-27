@@ -210,8 +210,6 @@
 
   <PoiManager ref="poiManagerMapWidgetRef" />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
-  <BaseStationConfigPanel />
-  <BaseStationContextPopup />
   <MissionChecklist
     :model-value="isMissionChecklistOpen"
     @confirmed="executeMissionOnVehicle"
@@ -261,8 +259,6 @@ import copterMarkerImage from '@/assets/arducopter-top-view.avif'
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
-import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
-import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
@@ -292,6 +288,7 @@ import {
   baseStationSignalVisibilityLabel,
   configureBaseStationMenuIcon,
   configureBaseStationMenuLabel,
+  removeBaseStationMenuIcon,
   removeBaseStationMenuLabel,
 } from '@/libs/baseStation/menu'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -1517,7 +1514,7 @@ const baseStationMenuEntries = computed(() => {
       {
         item: removeBaseStationMenuLabel,
         action: () => onMenuOptionSelect('remove-base-station'),
-        icon: baseStationMenuIcon,
+        icon: removeBaseStationMenuIcon,
       },
       {
         item: baseStationSignalVisibilityLabel(baseStationStore.config.showSignalOnMap),
@@ -1540,6 +1537,8 @@ const menuItems = reactive([...staticTopMenuItems, ...baseStationMenuEntries.val
 // around them so the reactive array handed to the context menu keeps its identity.
 watch(baseStationMenuEntries, (entries) => {
   menuItems.splice(0, menuItems.length, ...staticTopMenuItems, ...entries, ...staticBottomMenuItems)
+  // The waypoint entry is appended after construction, so the rebuild has to put it back.
+  updateSkipToWpMenu()
 })
 
 const updateSkipToWpMenu = (): void => {
@@ -1747,11 +1746,17 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       break
 
     case 'place-base-station':
-      if (clickedLocation.value) {
-        baseStationStore.setPosition(clickedLocation.value)
-        baseStationStore.configPanelOpen = true
-        logUserAction('Placed the base station via the map context menu')
+      if (!clickedLocation.value) {
+        openSnackbar({
+          variant: 'error',
+          message: 'No map position under the cursor. Right-click on the map where the base station should go.',
+          duration: 4000,
+        })
+        break
       }
+      baseStationStore.setPosition(clickedLocation.value)
+      baseStationStore.configPanelOpen = true
+      logUserAction('Placed the base station via the map context menu')
       break
 
     case 'configure-base-station':

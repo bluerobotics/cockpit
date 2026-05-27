@@ -1,4 +1,4 @@
-import { useThrottleFn } from '@vueuse/core'
+import { useStorage, useThrottleFn } from '@vueuse/core'
 import { computed, reactive, ref, watch } from 'vue'
 
 import type { DialogOptions, DialogResult } from '@/composables/interactionDialog'
@@ -6,7 +6,6 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
 import { useGnss } from '@/composables/useGnss'
 import { normalizeBearing } from '@/libs/baseStation/coverage'
-import { useAppInterfaceStore } from '@/stores/appInterface'
 import {
   type BaseStationConfig,
   type MobileCoverageCache,
@@ -27,7 +26,16 @@ const gnssPositionSampleRateMs = 1000
 // eslint-disable-next-line jsdoc/require-jsdoc, @typescript-eslint/explicit-function-return-type -- type inferred for the reactive() output to keep per-state-field typing local to this file
 function initialize() {
   const config = useBlueOsStorage<BaseStationConfig>('cockpit-base-station-config', DEFAULT_BASE_STATION_CONFIG)
-  const mobileCoverageCache = useBlueOsStorage<MobileCoverageCache>(
+
+  // Machine-local, deliberately outside the vehicle-synced config: a positioning device and the
+  // decision to follow it describe *this* topside computer, so a synced value would make every
+  // other operator's machine overwrite the shared station position with its own location. The
+  // OpenCellID key is a personal credential, and the coverage cache is re-downloadable bulk data
+  // that has no business being pretty-printed into the vehicle's settings on every append.
+  const trackByGps = useStorage('cockpit-base-station-track-by-gps', false)
+  const gpsSourceId = useStorage('cockpit-base-station-gps-source-id', BROWSER_GEOLOCATION_SOURCE_ID)
+  const openCellIdApiKey = useStorage('cockpit-base-station-opencellid-api-key', '')
+  const mobileCoverageCache = useStorage<MobileCoverageCache>(
     'cockpit-base-station-mobile-coverage-cache',
     DEFAULT_MOBILE_COVERAGE_CACHE
   )
@@ -61,9 +69,7 @@ function initialize() {
 
   const configPanelOpen = ref(false)
 
-  const interfaceStore = useAppInterfaceStore()
   watch(configPanelOpen, (isOpen) => {
-    interfaceStore.configPanelVisible = isOpen
     if (isOpen) logUserAction('Opened the base station configuration panel')
   })
 
@@ -107,13 +113,9 @@ function initialize() {
   }
 
   const remove = (): void => {
-    // Keep the OpenCellID API key around as a user-level credential — having to retype it
-    // every time the base station is removed/recreated would be annoying and error-prone.
-    const preservedApiKey = config.value.mobileCoverage.openCellIdApiKey
-    config.value = {
-      ...DEFAULT_BASE_STATION_CONFIG,
-      mobileCoverage: { ...DEFAULT_BASE_STATION_CONFIG.mobileCoverage, openCellIdApiKey: preservedApiKey },
-    }
+    // The OpenCellID API key survives removal on its own now that it lives in machine-local
+    // storage: retyping it on every remove/recreate cycle would be annoying and error-prone.
+    config.value = structuredClone(DEFAULT_BASE_STATION_CONFIG)
     configPanelOpen.value = false
     contextPopupOpen.value = false
   }
@@ -143,12 +145,12 @@ function initialize() {
   // Sources that are gone (device removed, or a device id synced in from a Standalone install) fall back
   // to the browser, so tracking never waits on a source that cannot report a position.
   const gpsSource = computed(() =>
-    gpsSourceOptions.value.some((source) => source.id === config.value.gpsSourceId)
-      ? config.value.gpsSourceId
+    gpsSourceOptions.value.some((source) => source.id === gpsSourceId.value)
+      ? gpsSourceId.value
       : BROWSER_GEOLOCATION_SOURCE_ID
   )
 
-  const isTracking = computed(() => config.value.trackByGps && config.value.enabled)
+  const isTracking = computed(() => trackByGps.value && config.value.enabled)
 
   const toggleSignalVisibility = (): void => {
     config.value.showSignalOnMap = !config.value.showSignalOnMap
@@ -174,7 +176,7 @@ function initialize() {
           message: `Base station GPS tracking failed: ${error.message}. Disabling.`,
           duration: 4000,
         })
-        config.value.trackByGps = false
+        trackByGps.value = false
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 1000 }
     )
@@ -205,7 +207,7 @@ function initialize() {
 
   // Provider/key changes invalidate any previously-determined validity; the next fetch resets it.
   watch(
-    () => [config.value.mobileCoverage.provider, config.value.mobileCoverage.openCellIdApiKey] as const,
+    () => [config.value.mobileCoverage.provider, openCellIdApiKey.value] as const,
     () => {
       openCellIdApiKeyStatus.value = 'unknown'
     }
@@ -213,6 +215,9 @@ function initialize() {
 
   return reactive({
     config,
+    trackByGps,
+    gpsSourceId,
+    openCellIdApiKey,
     mobileCoverageCache,
     configPanelOpen,
     contextPopupOpen,
