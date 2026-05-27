@@ -1,15 +1,49 @@
-import * as turf from '@turf/turf'
 import L from 'leaflet'
 import { type Ref, type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
 
-import { openSnackbar } from '@/composables/snackbar'
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { openSnackbar } from '@/composables/snackbar'
+import { createCellIdHeatLayer, mobileHeatmapRadiusFraction } from '@/libs/baseStation/cellIdHeatLayer'
+import {
+  bboxContains,
+  bboxEquals,
+  bboxIntersects,
+  leafletBoundsToCoverageBbox,
+  overpassBboxAround,
+  trimCacheEntries,
+} from '@/libs/baseStation/coverageBbox'
+import {
+  aimingArcLatLngs,
+  bearingFromCenter,
+  bearingHandlePosition,
+  sectorPolygonLatLngs,
+} from '@/libs/baseStation/geometry'
+import {
+  filterOpenCellIdSites,
+  mergeOpenCellIdSites,
+  mergeOverpassTowers,
+  openCellIdOperatorLabel,
+  overpassRangeMeters,
+} from '@/libs/baseStation/mobileCoverage'
+import {
+  type OpenCellIdSite,
+  fetchOpenCellIdSites,
+  isOpenCellIdInvalidApiKeyError,
+} from '@/libs/baseStation/openCellId'
+import {
+  type OverpassTower,
+  fetchOverpassTowers,
+  fitLabelToArc,
+  openCellIdLabelParts,
+  operatorColor,
+  overpassBeamwidth,
+  overpassBearing,
+  overpassLabelParts,
+} from '@/libs/baseStation/overpass'
 import { isElectron } from '@/libs/utils'
 import {
   type BaseStationConfig,
   type CachedMobileCoverageEntry,
-  type CachedOpenCellIdSite,
-  type CachedOverpassTower,
   type CoverageBbox,
   AntennaType,
   BaseStationCommsType,
@@ -20,307 +54,13 @@ import {
 } from '@/types/baseStation'
 import type { WaypointCoordinates } from '@/types/mission'
 
-const SECTOR_ARC_STEPS = 64
-
 // Concentric coverage rings with decreasing radius. Stacking them at the same per-layer opacity
 // produces a smooth radial fade that mimics the pattern published in BR's directional antenna
 // guide while keeping the brightest band where the signal is strongest.
 const COVERAGE_GRADIENT_STEPS = 12
 const COVERAGE_STEP_OPACITY = 0.045
 
-const sectorPolygonLatLngs = (
-  center: WaypointCoordinates,
-  rangeMeters: number,
-  bearingDeg: number,
-  beamwidthDeg: number
-): L.LatLngExpression[] => {
-  const halfBeam = beamwidthDeg / 2
-  const startBearing = bearingDeg - halfBeam
-  const endBearing = bearingDeg + halfBeam
-  const rangeKm = rangeMeters / 1000
-  const turfCenter = turf.point([center[1], center[0]])
-
-  const arc = turf.lineArc(turfCenter, rangeKm, startBearing, endBearing, { steps: SECTOR_ARC_STEPS })
-  const arcPoints = arc.geometry.coordinates.map(([lng, lat]) => [lat, lng] as L.LatLngExpression)
-  return [center as L.LatLngExpression, ...arcPoints, center as L.LatLngExpression]
-}
-
-const bearingHandlePosition = (
-  center: WaypointCoordinates,
-  rangeMeters: number,
-  bearingDeg: number
-): WaypointCoordinates => {
-  const dest = turf.destination(turf.point([center[1], center[0]]), rangeMeters / 1000, bearingDeg, {
-    units: 'kilometers',
-  })
-  const [lng, lat] = dest.geometry.coordinates
-  return [lat, lng]
-}
-
-// 180° front-facing arc at the antenna's max range, used to preview where the signal will land
-// as the operator rotates the antenna.
-const aimingArcLatLngs = (
-  center: WaypointCoordinates,
-  rangeMeters: number,
-  bearingDeg: number
-): L.LatLngExpression[] => {
-  const turfCenter = turf.point([center[1], center[0]])
-  const arc = turf.lineArc(turfCenter, rangeMeters / 1000, bearingDeg - 90, bearingDeg + 90, {
-    steps: SECTOR_ARC_STEPS,
-  })
-  return arc.geometry.coordinates.map(([lng, lat]) => [lat, lng] as L.LatLngExpression)
-}
-
-const bearingFromCenter = (center: WaypointCoordinates, point: WaypointCoordinates): number => {
-  return turf.bearing(turf.point([center[1], center[0]]), turf.point([point[1], point[0]]))
-}
-
-/* eslint-disable jsdoc/require-jsdoc -- Inline transport DTOs; field meanings follow upstream docs. */
-
-// OSM Overpass has no per-call area cap, so we use a single ~11 km half-side bbox.
-const OVERPASS_BBOX_DEG = 0.1
-const OPENCELLID_COVERAGE_HALF_SIDE_KM = 25
-// Keyed browser endpoint caps at ~4 km²; standalone's no-key ajax endpoint rejects around 25 km²,
-// so we use smaller tiles on Lite and larger ones on standalone.
-const OPENCELLID_KEYED_TILE_HALF_SIDE_KM = 0.95
-const OPENCELLID_KEYED_FOREGROUND_TILE_COUNT = 9
-const OPENCELLID_LITE_TILE_HALF_SIDE_KM = 1
-const OPENCELLID_STANDALONE_TILE_HALF_SIDE_KM = 2
-const OPENCELLID_STANDALONE_FOREGROUND_TILE_COUNT = 1
-// Keep the persisted bbox cache small; users rarely need more than the most recent few areas.
-const MOBILE_COVERAGE_CACHE_MAX_ENTRIES = 8
-type OpenCellIdSite = CachedOpenCellIdSite
-type OverpassTower = CachedOverpassTower
-
-const isOpenCellIdInvalidApiKeyError = (message: string): boolean =>
-  /invalid.*key|api key.*invalid|missing.*key|key required|unauthorized|forbidden/i.test(message)
-
-const overpassBboxAround = (lat: number, lng: number): CoverageBbox => ({
-  south: lat - OVERPASS_BBOX_DEG,
-  west: lng - OVERPASS_BBOX_DEG,
-  north: lat + OVERPASS_BBOX_DEG,
-  east: lng + OVERPASS_BBOX_DEG,
-})
-
-const kmToLatDegrees = (km: number): number => km / 111.32
-
-const kmToLngDegrees = (km: number, lat: number): number => {
-  const cosLat = Math.max(0.2, Math.cos((lat * Math.PI) / 180))
-  return km / (111.32 * cosLat)
-}
-
-const openCellIdCoverageBboxAround = (lat: number, lng: number): CoverageBbox => ({
-  south: lat - kmToLatDegrees(OPENCELLID_COVERAGE_HALF_SIDE_KM),
-  west: lng - kmToLngDegrees(OPENCELLID_COVERAGE_HALF_SIDE_KM, lat),
-  north: lat + kmToLatDegrees(OPENCELLID_COVERAGE_HALF_SIDE_KM),
-  east: lng + kmToLngDegrees(OPENCELLID_COVERAGE_HALF_SIDE_KM, lat),
-})
-
-const bboxContains = (bbox: CoverageBbox, position: WaypointCoordinates): boolean => {
-  const [lat, lng] = position
-  return lat >= bbox.south && lat <= bbox.north && lng >= bbox.west && lng <= bbox.east
-}
-
-const bboxIntersects = (left: CoverageBbox, right: CoverageBbox): boolean =>
-  left.west <= right.east && left.east >= right.west && left.south <= right.north && left.north >= right.south
-
-const bboxEquals = (left: CoverageBbox, right: CoverageBbox): boolean =>
-  left.south === right.south && left.west === right.west && left.north === right.north && left.east === right.east
-
-const leafletBoundsToCoverageBbox = (bounds: L.LatLngBounds): CoverageBbox => ({
-  south: bounds.getSouth(),
-  west: bounds.getWest(),
-  north: bounds.getNorth(),
-  east: bounds.getEast(),
-})
-
-const trimCacheEntries = <T>(entries: CachedMobileCoverageEntry<T>[]): CachedMobileCoverageEntry<T>[] => {
-  return entries.sort((a, b) => b.fetchedAtMs - a.fetchedAtMs).slice(0, MOBILE_COVERAGE_CACHE_MAX_ENTRIES)
-}
-
-const tiledCoverageBboxes = (area: CoverageBbox, centerLat: number, tileHalfSideKm: number): CoverageBbox[] => {
-  const tileLatSize = kmToLatDegrees(tileHalfSideKm * 2)
-  const tileLngSize = kmToLngDegrees(tileHalfSideKm * 2, centerLat)
-  const latCount = Math.ceil((area.north - area.south) / tileLatSize)
-  const lngCount = Math.ceil((area.east - area.west) / tileLngSize)
-  const tiles: CoverageBbox[] = []
-
-  for (let latIndex = 0; latIndex < latCount; latIndex++) {
-    const south = area.south + latIndex * tileLatSize
-    const north = Math.min(area.north, south + tileLatSize)
-    for (let lngIndex = 0; lngIndex < lngCount; lngIndex++) {
-      const west = area.west + lngIndex * tileLngSize
-      const east = Math.min(area.east, west + tileLngSize)
-      tiles.push({ south, west, north, east })
-    }
-  }
-
-  return tiles
-}
-
-const bboxCenter = (bbox: CoverageBbox): WaypointCoordinates => [
-  (bbox.south + bbox.north) / 2,
-  (bbox.west + bbox.east) / 2,
-]
-
-const sortCoverageBboxesByDistance = (center: WaypointCoordinates, bboxes: CoverageBbox[]): CoverageBbox[] =>
-  [...bboxes].sort((left, right) => {
-    const [leftLat, leftLng] = bboxCenter(left)
-    const [rightLat, rightLng] = bboxCenter(right)
-    const leftDistance = turf.distance(turf.point([center[1], center[0]]), turf.point([leftLng, leftLat]))
-    const rightDistance = turf.distance(turf.point([center[1], center[0]]), turf.point([rightLng, rightLat]))
-    return leftDistance - rightDistance
-  })
-
-const unionCoverageBboxes = (bboxes: CoverageBbox[]): CoverageBbox => ({
-  south: Math.min(...bboxes.map((bbox) => bbox.south)),
-  west: Math.min(...bboxes.map((bbox) => bbox.west)),
-  north: Math.max(...bboxes.map((bbox) => bbox.north)),
-  east: Math.max(...bboxes.map((bbox) => bbox.east)),
-})
-
-const mapWithConcurrency = async <T, R>(
-  items: T[],
-  concurrency: number,
-  mapper: (item: T) => Promise<R>
-): Promise<PromiseSettledResult<R>[]> => {
-  const settled: PromiseSettledResult<R>[] = new Array(items.length)
-  let nextIndex = 0
-
-  const worker = async (): Promise<void> => {
-    while (nextIndex < items.length) {
-      const currentIndex = nextIndex++
-      try {
-        settled[currentIndex] = {
-          status: 'fulfilled',
-          value: await mapper(items[currentIndex]),
-        }
-      } catch (error) {
-        settled[currentIndex] = {
-          status: 'rejected',
-          reason: error,
-        }
-      }
-    }
-  }
-
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()))
-  return settled
-}
-
-type OpenCellIdResponse = {
-  cells?: Array<{
-    lat: number
-    lon: number
-    range?: number
-    radio?: string
-    mcc?: number
-    mnc?: number
-    lac?: number
-    cellid?: number
-    samples?: number
-    averageSignalStrength?: number
-  }>
-  error?: string
-  code?: number
-}
-
-const fetchOpenCellIdTile = async (
-  bbox: CoverageBbox,
-  apiKey: string,
-  signal: AbortSignal
-): Promise<OpenCellIdSite[]> => {
-  const url =
-    `https://opencellid.org/cell/getInArea?key=${encodeURIComponent(apiKey)}` +
-    `&BBOX=${bbox.south},${bbox.west},${bbox.north},${bbox.east}` +
-    `&format=json&limit=50`
-  const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`OpenCellID HTTP ${res.status}`)
-  const data = (await res.json()) as OpenCellIdResponse
-  // `code: 1` ("No cells found") is HTTP 200 + an `error` field; treat as empty, not failure.
-  if (data.error && data.code !== 1) throw new Error(`OpenCellID: ${data.error}`)
-  return (data.cells ?? []).map<OpenCellIdSite>((c) => ({
-    lat: c.lat,
-    lon: c.lon,
-    rangeMeters: c.range ?? 1000,
-    radio: c.radio,
-    mcc: c.mcc,
-    mnc: c.mnc,
-    lac: c.lac,
-    cellId: c.cellid,
-    samples: c.samples,
-    averageSignalStrength: c.averageSignalStrength,
-  }))
-}
-
-const fetchOpenCellIdTileInElectron = async (bbox: CoverageBbox, apiKey: string): Promise<OpenCellIdSite[]> => {
-  const cells = await window.electronAPI?.fetchNearbyOpenCellIdCells({
-    west: bbox.west,
-    south: bbox.south,
-    east: bbox.east,
-    north: bbox.north,
-    apiKey: apiKey || undefined,
-  })
-  if (!cells) throw new Error('OpenCellID standalone bridge unavailable')
-  return cells.map<OpenCellIdSite>((c) => ({
-    lat: c.lat,
-    lon: c.lon,
-    rangeMeters: c.range ?? 1000,
-    radio: c.radio,
-    mcc: c.mcc,
-    mnc: c.mnc,
-    lac: c.lac,
-    cellId: c.cellId,
-    samples: c.samples,
-    averageSignalStrength: c.averageSignalStrength,
-  }))
-}
-
-const fetchOpenCellIdSites = async (
-  center: WaypointCoordinates,
-  apiKey: string,
-  signal: AbortSignal
-): Promise<{ sites: OpenCellIdSite[]; fetchedBbox: CoverageBbox }> => {
-  const [lat, lng] = center
-  const coverageArea = openCellIdCoverageBboxAround(lat, lng)
-  const usesApiKey = apiKey.trim().length > 0
-  const tileHalfSideKm = usesApiKey
-    ? OPENCELLID_KEYED_TILE_HALF_SIDE_KM
-    : isElectron()
-    ? OPENCELLID_STANDALONE_TILE_HALF_SIDE_KM
-    : OPENCELLID_LITE_TILE_HALF_SIDE_KM
-  const tiles = tiledCoverageBboxes(coverageArea, lat, tileHalfSideKm)
-  const selectedTiles = usesApiKey
-    ? sortCoverageBboxesByDistance(center, tiles).slice(0, OPENCELLID_KEYED_FOREGROUND_TILE_COUNT)
-    : isElectron()
-    ? sortCoverageBboxesByDistance(center, tiles).slice(0, OPENCELLID_STANDALONE_FOREGROUND_TILE_COUNT)
-    : tiles
-  const tileFetcher = isElectron()
-    ? (bbox: CoverageBbox) => fetchOpenCellIdTileInElectron(bbox, apiKey)
-    : (bbox: CoverageBbox) => fetchOpenCellIdTile(bbox, apiKey, signal)
-  const settled = await mapWithConcurrency(selectedTiles, usesApiKey ? 4 : isElectron() ? 2 : 4, tileFetcher)
-  const fulfilled = settled.filter((r): r is PromiseFulfilledResult<OpenCellIdSite[]> => r.status === 'fulfilled')
-  // If every tile failed, surface the first error so the operator gets a real diagnostic
-  // (invalid key, network down, …) instead of a silent empty heatmap.
-  if (fulfilled.length === 0) {
-    const firstReject = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected')
-    if (firstReject) throw firstReject.reason
-  }
-  const uniqueSites = new Map<string, OpenCellIdSite>()
-  for (const site of fulfilled.flatMap((r) => r.value)) {
-    const key = `${site.lat.toFixed(6)}:${site.lon.toFixed(6)}:${Math.round(site.rangeMeters)}`
-    if (!uniqueSites.has(key)) uniqueSites.set(key, site)
-  }
-  return {
-    sites: [...uniqueSites.values()],
-    fetchedBbox: unionCoverageBboxes(selectedTiles),
-  }
-}
-
-type OverpassResponse = {
-  elements?: Array<{ id?: number; lat?: number; lon?: number; tags?: Record<string, string> }>
-}
-
+/* eslint-disable jsdoc/require-jsdoc -- Inline label spec; field names are self-describing. */
 type OsmCoverageLabelSpec = {
   id: string
   center: WaypointCoordinates
@@ -330,337 +70,19 @@ type OsmCoverageLabelSpec = {
   labelParts: string[]
   color: string
 }
+/* eslint-enable jsdoc/require-jsdoc */
 
-const OSM_DEFAULT_RANGE_METERS = 1800
-const OSM_DEFAULT_DIRECTIONAL_BEAMWIDTH = 90
 const OSM_COVERAGE_FILL_OPACITY = 0.12
 const OSM_COVERAGE_STROKE_OPACITY = 0.75
 const OPENCELLID_RING_FILL_OPACITY = 0.08
 const OSM_LABEL_FONT_SIZE_PX = 10
-const OSM_LABEL_CHAR_WIDTH_PX = 5.7
 const OSM_LABEL_RIM_INSET = 0.92
 const OSM_TOP_ARC_START_DEG = 300
 const OSM_TOP_ARC_END_DEG = 60
-const OSM_OPERATOR_COLORS = ['#38BDF8', '#22C55E', '#A855F7', '#F59E0B', '#EF4444', '#14B8A6']
 
-const splitTagList = (value?: string): string[] =>
-  value
-    ?.split(/[;,]/)
-    .map((item) => item.trim())
-    .filter(Boolean) ?? []
-
-const parseTagNumber = (tags: Record<string, string>, ...keys: string[]): number | null => {
-  for (const key of keys) {
-    const value = tags[key]
-    if (!value) continue
-    const parsed = parseFloat(value)
-    if (Number.isFinite(parsed)) return parsed
-  }
-  return null
-}
-
-const pickTagValue = (tags: Record<string, string>, ...keys: string[]): string | null => {
-  for (const key of keys) {
-    const value = tags[key]?.trim()
-    if (value) return value
-  }
-  return null
-}
-
-const formatHeightLabel = (height: string): string => (/^[\d.]+$/.test(height) ? `${height}m` : height)
-
-const normalizeAngle = (angle: number): number => ((angle % 360) + 360) % 360
-
-const overpassTechnologies = (tags: Record<string, string>): string[] => {
-  const technologies = splitTagList(tags['technology:mobile_phone']).map((tech) => tech.toLowerCase())
-  const legacyCommunication = splitTagList(tags['communication:mobile_phone'])
-    .map((tech) => tech.toLowerCase())
-    .filter((tech) => tech !== 'yes')
-  return [...new Set([...technologies, ...legacyCommunication])]
-}
-
-const overpassTechnologyGenerations = (tags: Record<string, string>): string[] => {
-  const technologies = overpassTechnologies(tags)
-  const generations = technologies.flatMap((tech) => {
-    if (tech.includes('nr') || tech.includes('5g')) return ['5G']
-    if (tech.includes('lte')) return ['4G']
-    if (tech.includes('umts') || tech.includes('wcdma') || tech.includes('hspa') || tech.includes('hsupa'))
-      return ['3G']
-    if (tech.includes('gsm') || tech.includes('edge') || tech.includes('gprs')) return ['2G']
-    return []
-  })
-  return [...new Set(generations)]
-}
-
-const overpassTechnologyLabel = (tags: Record<string, string>): string | null => {
-  const generations = overpassTechnologyGenerations(tags)
-  if (generations.length > 0) return generations.join('/')
-  const technologies = overpassTechnologies(tags)
-  if (technologies.length === 0) return null
-  return technologies.map((tech) => tech.toUpperCase()).join('/')
-}
-
-const overpassRangeMeters = (tags: Record<string, string>): number => {
-  const technologies = overpassTechnologies(tags)
-  if (technologies.length === 0) return OSM_DEFAULT_RANGE_METERS
-  return Math.max(
-    ...technologies.map((tech) => {
-      if (tech.includes('nr') || tech.includes('5g')) return 1200
-      if (tech.includes('lte')) return 1800
-      if (tech.includes('umts')) return 2200
-      if (tech.includes('gsm')) return 2800
-      return OSM_DEFAULT_RANGE_METERS
-    })
-  )
-}
-
-const overpassBearing = (tags: Record<string, string>): number | null => {
-  const parsed = parseTagNumber(tags, 'communications_transponder:bearing', 'antenna:direction', 'direction', 'bearing')
-  return parsed === null ? null : normalizeAngle(parsed)
-}
-
-const overpassBeamwidth = (tags: Record<string, string>, bearing: number | null): number => {
-  const parsed = parseTagNumber(tags, 'beamwidth', 'antenna:beamwidth')
-  if (parsed !== null && parsed > 0 && parsed <= 360) return parsed
-  return bearing === null ? 360 : OSM_DEFAULT_DIRECTIONAL_BEAMWIDTH
-}
-
-const overpassLabelParts = (tower: OverpassTower): string[] => {
-  const parts = [tower.operator ?? 'Unknown operator']
-  const technologyLabel = overpassTechnologyLabel(tower.tags)
-  const manMade = pickTagValue(tower.tags, 'man_made')
-  const height = pickTagValue(tower.tags, 'height')
-
-  if (technologyLabel) parts.push(technologyLabel)
-  if (manMade) parts.push(manMade)
-  if (height) parts.push(formatHeightLabel(height))
-  return parts
-}
-
-const fitLabelToArc = (parts: string[], maxWidthPx: number): string => {
-  for (let count = parts.length; count > 0; count--) {
-    const candidate = parts.slice(0, count).join(' - ')
-    if (candidate.length * OSM_LABEL_CHAR_WIDTH_PX <= maxWidthPx) return candidate
-  }
-  const fallback = parts[0]
-  const maxChars = Math.max(8, Math.floor(maxWidthPx / OSM_LABEL_CHAR_WIDTH_PX) - 1)
-  return fallback.length > maxChars ? `${fallback.slice(0, maxChars)}…` : fallback
-}
-
-const openCellIdOperatorLabel = (site: OpenCellIdSite): string | null => {
-  if (site.mcc === undefined || site.mnc === undefined) return null
-  return `MCC ${site.mcc} / MNC ${site.mnc}`
-}
-
-const openCellIdLabelParts = (site: OpenCellIdSite): string[] => {
-  const parts: string[] = []
-  const operator = openCellIdOperatorLabel(site)
-  if (operator) parts.push(operator)
-  if (site.radio) parts.push(site.radio.toUpperCase())
-  parts.push(`${Math.round(site.rangeMeters)}m`)
-  if (site.cellId !== undefined) parts.push(`CID ${site.cellId}`)
-  return parts
-}
-
-const filterOpenCellIdSites = (sites: OpenCellIdSite[], selectedOperator: string): OpenCellIdSite[] => {
-  if (!selectedOperator) return sites
-  return sites.filter((site) => openCellIdOperatorLabel(site) === selectedOperator)
-}
-
-const operatorColor = (operator: string | null): string => {
-  if (!operator) return OSM_OPERATOR_COLORS[0]
-  const hash = [...operator].reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return OSM_OPERATOR_COLORS[hash % OSM_OPERATOR_COLORS.length]
-}
-
-const fetchOverpassTowers = async (bbox: CoverageBbox, signal: AbortSignal): Promise<OverpassTower[]> => {
-  const region = `(${bbox.south},${bbox.west},${bbox.north},${bbox.east})`
-  const query =
-    `[out:json][timeout:25];` +
-    // Limit the overlay to mobile-phone infrastructure so the map reflects cellular coverage
-    // rather than every generic communications site in the area.
-    `(node["communication:mobile_phone"]${region};` +
-    `node["technology:mobile_phone"]${region};);` +
-    `out body;`
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: query,
-    signal,
-  })
-  if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`)
-  const data = (await res.json()) as OverpassResponse
-  const seenIds = new Set<number>()
-  return (data.elements ?? [])
-    .filter(
-      (e): e is { id: number; lat: number; lon: number; tags?: Record<string, string> } =>
-        typeof e.id === 'number' && typeof e.lat === 'number' && typeof e.lon === 'number'
-    )
-    .filter((e) => {
-      if (seenIds.has(e.id)) return false
-      seenIds.add(e.id)
-      return true
-    })
-    .map<OverpassTower>((e) => ({
-      id: e.id,
-      lat: e.lat,
-      lon: e.lon,
-      operator: e.tags?.operator?.trim() || null,
-      tags: e.tags ?? {},
-    }))
-}
-
-/* eslint-enable jsdoc/require-jsdoc */
-
-// Slider 0% → blob radius is 5% of the cell range, slider 100% → full range. Linear blend
-// between the two so the slider has visible effect at every zoom level.
-const OPENCELLID_HEATMAP_MIN_RADIUS_FRACTION = 0.05
-// Per-cell peak alpha contributed at the gradient center. Two cells overlapping at full alpha
-// reach 1.0 thanks to the `lighter` compositing — this is what surfaces the warm hotspot tail
-// of the gradient when several towers cover the same patch.
-const OPENCELLID_HEATMAP_PEAK_ALPHA = 0.55
-// Cool-to-warm gradient stops mapped from per-pixel density (0..1). A single cell tops out
-// around mid-gradient (cyan/green); two cells overlapping bleed into yellow; three or more
-// reach the red hotspot range.
-const OPENCELLID_HEATMAP_GRADIENT_STOPS: ReadonlyArray<readonly [number, string]> = [
-  [0.0, 'rgba(0, 0, 255, 0)'],
-  [0.05, 'rgba(0, 80, 255, 0.4)'],
-  [0.2, 'rgba(0, 140, 255, 0.65)'],
-  [0.4, 'rgba(0, 230, 220, 0.8)'],
-  [0.6, 'rgba(60, 220, 80, 0.85)'],
-  [0.8, 'rgba(255, 220, 0, 0.9)'],
-  [1.0, 'rgba(255, 40, 0, 0.95)'],
-]
-const EARTH_CIRCUMFERENCE_M = 40075016.686
-const TILE_SIZE_PX = 256
-
-/* eslint-disable jsdoc/require-jsdoc -- helper return shapes; their property names are self-describing. */
+/* eslint-disable jsdoc/require-jsdoc -- Composable return shape; field names are self-describing. */
 type BaseStationOverlayApi = { openConfigPanel: () => void }
-type HeatmapSite = { lat: number; lon: number; rangeMeters: number }
-type CellIdHeatLayerOptions = { sites: HeatmapSite[]; radiusFraction: number; opacity: number }
-type CellIdHeatLayerInstance = L.Layer
 /* eslint-enable jsdoc/require-jsdoc */
-
-let cachedHeatGradientLut: Uint8ClampedArray | null = null
-const heatmapGradientLut = (): Uint8ClampedArray => {
-  if (cachedHeatGradientLut) return cachedHeatGradientLut
-  const lutCanvas = document.createElement('canvas')
-  lutCanvas.width = 1
-  lutCanvas.height = 256
-  const ctx = lutCanvas.getContext('2d')
-  if (!ctx) throw new Error('Heatmap LUT: 2D canvas context unavailable')
-  const grad = ctx.createLinearGradient(0, 0, 0, 256)
-  OPENCELLID_HEATMAP_GRADIENT_STOPS.forEach(([stop, color]) => grad.addColorStop(stop, color))
-  ctx.fillStyle = grad
-  ctx.fillRect(0, 0, 1, 256)
-  cachedHeatGradientLut = ctx.getImageData(0, 0, 1, 256).data
-  return cachedHeatGradientLut
-}
-
-const metersPerPixelAt = (mapInstance: L.Map, lat: number): number => {
-  const pixelsAcrossEquator = TILE_SIZE_PX * 2 ** mapInstance.getZoom()
-  return (EARTH_CIRCUMFERENCE_M * Math.cos((lat * Math.PI) / 180)) / pixelsAcrossEquator
-}
-
-// Custom Leaflet layer that renders the OpenCellID heatmap on a single canvas, with cumulative
-// alpha → cool-to-warm color mapping. Built to replace the (uninstalled) `leaflet.heat` plugin
-// so we can keep per-cell radius, eliminate canvas-edge clipping, and apply layer opacity once
-// without it bleeding into the color ramp.
-const CellIdHeatLayer = L.Layer.extend({
-  /* eslint-disable jsdoc/require-jsdoc -- Leaflet layer prototype methods, not exported API. */
-  initialize(this: CellIdHeatLayerInternal, options: CellIdHeatLayerOptions) {
-    this._heatOptions = { ...options }
-  },
-  onAdd(this: CellIdHeatLayerInternal, mapInstance: L.Map) {
-    this._map = mapInstance
-    const canvas = L.DomUtil.create('canvas', 'leaflet-cellid-heat-layer leaflet-zoom-hide')
-    canvas.style.position = 'absolute'
-    canvas.style.pointerEvents = 'none'
-    canvas.style.opacity = String(this._heatOptions.opacity)
-    this._canvas = canvas
-    mapInstance.getPanes().overlayPane.appendChild(canvas)
-    mapInstance.on('moveend resize viewreset zoomend', this._reset, this)
-    this._reset()
-    return this
-  },
-  onRemove(this: CellIdHeatLayerInternal, mapInstance: L.Map) {
-    mapInstance.getPanes().overlayPane.removeChild(this._canvas!)
-    mapInstance.off('moveend resize viewreset zoomend', this._reset, this)
-    this._canvas = undefined
-    this._map = undefined
-    return this
-  },
-  _reset(this: CellIdHeatLayerInternal) {
-    if (!this._map || !this._canvas) return
-    const topLeft = this._map.containerPointToLayerPoint([0, 0])
-    L.DomUtil.setPosition(this._canvas, topLeft)
-    const size = this._map.getSize()
-    if (this._canvas.width !== size.x) this._canvas.width = size.x
-    if (this._canvas.height !== size.y) this._canvas.height = size.y
-    this._redraw()
-  },
-  _redraw(this: CellIdHeatLayerInternal) {
-    if (!this._map || !this._canvas) return
-    const ctx = this._canvas.getContext('2d')
-    if (!ctx) return
-    const size = this._map.getSize()
-    ctx.clearRect(0, 0, size.x, size.y)
-    if (this._heatOptions.sites.length === 0) return
-    // Stage 1: accumulate per-cell radial gradients on the alpha channel. Using `lighter`
-    // makes overlapping cells brighten cumulatively → density per pixel.
-    ctx.globalCompositeOperation = 'lighter'
-    const mpp = metersPerPixelAt(this._map, this._map.getCenter().lat)
-    this._heatOptions.sites.forEach((site) => {
-      const center = this._map!.latLngToContainerPoint([site.lat, site.lon])
-      const radiusPx = Math.max(2, (site.rangeMeters * this._heatOptions.radiusFraction) / mpp)
-      if (
-        center.x + radiusPx < 0 ||
-        center.x - radiusPx > size.x ||
-        center.y + radiusPx < 0 ||
-        center.y - radiusPx > size.y
-      ) {
-        return
-      }
-      const radial = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, radiusPx)
-      radial.addColorStop(0, `rgba(255,255,255,${OPENCELLID_HEATMAP_PEAK_ALPHA})`)
-      radial.addColorStop(1, 'rgba(255,255,255,0)')
-      ctx.fillStyle = radial
-      ctx.fillRect(center.x - radiusPx, center.y - radiusPx, 2 * radiusPx, 2 * radiusPx)
-    })
-    // Stage 2: remap each pixel's alpha through the cool→warm gradient LUT so density turns
-    // into color. The LUT also dictates the final pixel alpha so the natural radial fade is
-    // preserved while hotspots get punchier.
-    const lut = heatmapGradientLut()
-    const img = ctx.getImageData(0, 0, size.x, size.y)
-    const data = img.data
-    for (let i = 0; i < data.length; i += 4) {
-      const a = data[i + 3]
-      if (a === 0) continue
-      const lutIdx = a * 4
-      data[i] = lut[lutIdx]
-      data[i + 1] = lut[lutIdx + 1]
-      data[i + 2] = lut[lutIdx + 2]
-      data[i + 3] = lut[lutIdx + 3]
-    }
-    ctx.putImageData(img, 0, 0)
-  },
-  /* eslint-enable jsdoc/require-jsdoc */
-})
-
-/* eslint-disable jsdoc/require-jsdoc -- internal layer fields, kept private to this module. */
-type CellIdHeatLayerInternal = L.Layer & {
-  _map?: L.Map
-  _canvas?: HTMLCanvasElement
-  _heatOptions: CellIdHeatLayerOptions
-  _reset: () => void
-  _redraw: () => void
-}
-/* eslint-enable jsdoc/require-jsdoc */
-
-const createCellIdHeatLayer = (options: CellIdHeatLayerOptions): CellIdHeatLayerInstance => {
-  const Ctor = CellIdHeatLayer as unknown as new (opts: CellIdHeatLayerOptions) => CellIdHeatLayerInstance
-  return new Ctor(options)
-}
 
 const escapeMarkerLabel = (label: string): string =>
   label
@@ -915,23 +337,6 @@ export const useBaseStationOverlay = (
       },
       ...store.mobileCoverageCache.osmOverpass.filter((entry) => !bboxEquals(entry.bbox, bbox)),
     ])
-  }
-
-  const mergeOpenCellIdSites = (existing: OpenCellIdSite[] | null, incoming: OpenCellIdSite[]): OpenCellIdSite[] => {
-    const merged = new Map<string, OpenCellIdSite>()
-    ;[...(existing ?? []), ...incoming].forEach((site) => {
-      const key = `${site.lat.toFixed(6)}:${site.lon.toFixed(6)}:${Math.round(site.rangeMeters)}`
-      merged.set(key, site)
-    })
-    return [...merged.values()]
-  }
-
-  const mergeOverpassTowers = (existing: OverpassTower[] | null, incoming: OverpassTower[]): OverpassTower[] => {
-    const merged = new Map<number, OverpassTower>()
-    ;[...(existing ?? []), ...incoming].forEach((tower) => {
-      merged.set(tower.id, tower)
-    })
-    return [...merged.values()]
   }
 
   const appendOpenCellIdSites = (bbox: CoverageBbox, sites: OpenCellIdSite[]): void => {
@@ -1330,11 +735,6 @@ export const useBaseStationOverlay = (
     teardownRenderedMobileCoverage()
     clearLoadedMobileCoverageData()
   }
-
-  const mobileHeatmapRadiusFraction = (config: BaseStationConfig, intensityBoost = 1): number =>
-    OPENCELLID_HEATMAP_MIN_RADIUS_FRACTION +
-    Math.max(0, Math.min(1, config.mobileCoverage.heatmapIntensity * intensityBoost)) *
-      (1 - OPENCELLID_HEATMAP_MIN_RADIUS_FRACTION)
 
   const renderOpenCellIdHeatmap = (sites: OpenCellIdSite[], config: BaseStationConfig): void => {
     if (!map.value) return
