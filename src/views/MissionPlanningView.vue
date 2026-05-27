@@ -658,7 +658,7 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
-  <BaseStationConfigPanel />
+  <BaseStationConfigPanel is-mission-planning-context />
   <BaseStationContextPopup />
   <PoiMapArrows
     :map-ready="mapReady"
@@ -666,8 +666,11 @@
     :show-poi-arrows="true"
     :show-home-arrow="true"
     :show-vehicle-arrow="true"
+    :show-base-station-arrow="baseStationStore.config.enabled"
     :vehicle-position="vehiclePosition"
     :home="home"
+    :base-station="baseStationStore.activePosition"
+    :base-station-color="baseStationStore.config.coverageColor"
     :map-center="mapCenter"
     :zoom="zoom"
     :target-follower="targetFollower"
@@ -735,6 +738,7 @@ import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
+import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissionPathSignalOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
@@ -1427,6 +1431,7 @@ const clearCurrentMission = (): void => {
     planningMap.value?.removeLayer(missionWaypointsPolyline.value)
     missionWaypointsPolyline.value = null
   }
+  removeMissionPathSignalLayer()
   clearSurveyPath()
   selectedSurveyId.value = ''
   lastSelectedSurveyId.value = ''
@@ -2996,6 +3001,7 @@ const clearSurveyPath = (): void => {
   surveyEdgeAddMarkers.forEach((marker) => marker.remove())
   surveyPolygonVertexesMarkers.value = []
   surveyPolygonVertexesPositions.value = []
+  renderMissionPathSignal()
 }
 
 watch([isCreatingSurvey, isCreatingSimplePath], (isCreatingNow) => {
@@ -3079,6 +3085,7 @@ const checkAndRemoveSurveyPath = (): void => {
   removeSurveyCrosshatchPathLayer()
   surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
   surveyTurnaroundLayers.value = []
+  renderMissionPathSignal()
 }
 
 const createSurveyPath = (): void => {
@@ -3144,6 +3151,8 @@ const createSurveyPath = (): void => {
         }).addTo(toRaw(planningMap.value)!)
       )
     }
+
+    renderMissionPathSignal()
   } catch (error) {
     showDialog({
       variant: 'error',
@@ -4325,6 +4334,12 @@ watch(zoom, () => {
 
 const missionWaypointsPolyline = shallowRef<L.Polyline | null>(null)
 
+const { renderMissionPathSignal, removeMissionPathSignalLayer } = useMissionPathSignalOverlay(
+  planningMap,
+  surveyPathLayer,
+  missionWaypointsPolyline
+)
+
 const getMissionPathLatLngs = (): L.LatLng[] =>
   missionStore.currentPlanningWaypoints.map((waypoint) => L.latLng(waypoint.coordinates[0], waypoint.coordinates[1]))
 
@@ -4345,6 +4360,8 @@ watch(
     } else {
       missionWaypointsPolyline.value.setLatLngs(missionPathLatLngs)
     }
+
+    renderMissionPathSignal()
   },
   { immediate: true, deep: true }
 )

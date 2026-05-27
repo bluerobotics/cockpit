@@ -57,6 +57,7 @@ export const useMissionStore = defineStore('mission', () => {
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
   const showMissionEstimates = useBlueOsStorage('cockpit-show-mission-estimates', true)
+  const showMissionPathSignalStrength = useBlueOsStorage('cockpit-show-mission-path-signal-strength', false)
   const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
   const cruiseSpeed = ref<number>(Number(defaultCruiseSpeed.value))
   const userLastMapTileProvider = useBlueOsStorage<MapTileProvider>(
@@ -661,6 +662,11 @@ export const useMissionStore = defineStore('mission', () => {
 
   watch(username, () => window.dispatchEvent(new CustomEvent('user-changed', { detail: { username: username.value } })))
 
+  const setShowMissionPathSignalStrength = (value: boolean): void => {
+    showMissionPathSignalStrength.value = value
+    logUserAction(`${value ? 'Enabled' : 'Disabled'} mission-path comms coverage coloring`)
+  }
+
   return {
     username,
     lastConnectedUser,
@@ -703,6 +709,8 @@ export const useMissionStore = defineStore('mission', () => {
     showChecklistBeforeArm,
     showGridOnMissionPlanning,
     showMissionEstimates,
+    showMissionPathSignalStrength,
+    setShowMissionPathSignalStrength,
     addCommandToWaypoint,
     removeCommandFromWaypoint,
     updateWaypointCommand,
