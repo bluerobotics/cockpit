@@ -1,4 +1,4 @@
-import { useStorage, useThrottleFn } from '@vueuse/core'
+import { until, useStorage, useThrottleFn } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { differenceInSeconds } from 'date-fns'
 import { saveAs } from 'file-saver'
@@ -103,10 +103,17 @@ export const useVideoStore = defineStore('video', () => {
   )
 
   const namesAvailableStreams = computed(() => {
-    const rtspStreams = streamsCorrespondency.value
-      .filter((stream) => (stream.protocol ?? 'webrtc') === 'rtsp')
-      .map((stream) => stream.externalId)
-    return [...new Set([...namesAvailableWebRTCStreams.value, ...rtspStreams])]
+    const rtspCorrespondencies = streamsCorrespondency.value.filter(
+      (stream) => (stream.protocol ?? 'webrtc') === 'rtsp'
+    )
+    const rtspStreams = rtspCorrespondencies.map((stream) => stream.externalId)
+    // Drop the `Stream <rtspUrl>` WebRTC aliases the vehicle re-advertises for already-mapped RTSP
+    // cameras; otherwise record-all spawns a phantom WebRTCManager that hangs waiting for a track.
+    const rtspWebRtcAliases = new Set(
+      rtspCorrespondencies.filter((stream) => stream.rtspUrl).map((stream) => `Stream ${stream.rtspUrl!}`)
+    )
+    const webrtcStreams = namesAvailableWebRTCStreams.value.filter((name) => !rtspWebRtcAliases.has(name))
+    return [...new Set([...webrtcStreams, ...rtspStreams])]
   })
 
   const namessAvailableAbstractedStreams = computed(() => {
@@ -349,6 +356,13 @@ export const useVideoStore = defineStore('video', () => {
 
       const oldStream = activeStreams.value[streamName]!.stream
       const updatedStream = mainWebRTCManager.availableStreams.value.find((s) => s.name === streamName)
+
+      // First-attach: bind to the existing WebRTCManager instead of recreating it, otherwise
+      // a concurrent `startRecording` races against the manager teardown and silently drops.
+      if (oldStream === undefined && updatedStream !== undefined) {
+        activeStreams.value[streamName]!.stream = updatedStream
+        return
+      }
 
       // If the stream configuration has not changed, skip the update
       if (!hasStreamConfigChanged(oldStream, updatedStream)) return
@@ -608,17 +622,37 @@ export const useVideoStore = defineStore('video', () => {
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {
-      showDialog({ message: 'No streams available.', variant: 'error' })
-      return
+      openSnackbar({ message: 'No streams available to be recorded.', variant: 'error', duration: 5000 })
+      throw new Error(`Cannot start recording for stream '${streamName}': no streams available.`)
     }
 
-    if (activeStreams.value[streamName]!.mediaStream === undefined) {
-      showDialog({ message: 'Media stream not defined.', variant: 'error' })
-      return
-    }
-    if (!activeStreams.value[streamName]!.mediaStream!.active) {
-      showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
-      return
+    // Wait reactively for the remote track; a fresh WebRTC handshake can take several seconds.
+    const mediaReadyTimeoutMs = 30000
+    const isMediaStreamReady = (): boolean => Boolean(activeStreams.value[streamName]?.mediaStream?.active)
+
+    if (!isMediaStreamReady()) {
+      openSnackbar({
+        message: `Waiting for stream '${streamName}' to start...`,
+        variant: 'warning',
+        duration: 5000,
+      })
+      try {
+        await until(isMediaStreamReady).toBe(true, { timeout: mediaReadyTimeoutMs, throwOnTimeout: true })
+      } catch {
+        openSnackbar({
+          message: `Stream '${streamName}' did not become ready in time. Recording aborted.`,
+          variant: 'error',
+          duration: 5000,
+        })
+        throw new Error(
+          `Cannot start recording for stream '${streamName}': media stream did not become ready within ${mediaReadyTimeoutMs}ms.`
+        )
+      }
+      openSnackbar({
+        message: `Stream '${streamName}' is ready. Starting recording...`,
+        variant: 'success',
+        duration: 3000,
+      })
     }
 
     await sleep(100)
@@ -1043,18 +1077,22 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   // Video recording actions
-  const startRecordingAllStreams = (): void => {
-    const streamsThatStarted: string[] = []
+  const startRecordingAllStreams = async (): Promise<void> => {
     isRecordingAllStreams.value = true
 
-    namesAvailableStreams.value.forEach((streamName) => {
-      if (!isRecording(streamName)) {
-        startRecording(streamName)
-        streamsThatStarted.push(streamName)
-      }
-    })
+    const streamsToStart = namesAvailableStreams.value.filter((streamName) => !isRecording(streamName))
+    const startResults = await Promise.allSettled(
+      streamsToStart.map(async (streamName) => {
+        await startRecording(streamName)
+        return streamName
+      })
+    )
+    const streamsThatStarted = startResults
+      .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+      .map((r) => r.value)
 
     if (streamsThatStarted.isEmpty()) {
+      isRecordingAllStreams.value = false
       alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
       return
     }
