@@ -82,8 +82,8 @@ export const useMissionStore = defineStore('mission', () => {
     mapFallbackSeed.value = generateSessionSeed()
   }
 
-  const mapDownloadMissionFromVehicle = ref<(() => Promise<void>) | null>(null)
-  const mapClearMapDrawing = ref<(() => void) | null>(null)
+  const mapClearRequestRevision = ref(0)
+  const mapDownloadRequestRevision = ref(0)
 
   const { showDialog } = useInteractionDialog()
 
@@ -539,28 +539,12 @@ export const useMissionStore = defineStore('mission', () => {
     }
   )
 
-  const registerMapMissionActions = (payload: {
-    /**
-     * Download the mission from the vehicle
-     */
-    downloadMissionFromVehicle: () => Promise<void>
-    /**
-     * Clear the map drawing
-     */
-    clearMapDrawing: () => void
-  }): void => {
-    mapDownloadMissionFromVehicle.value = payload.downloadMissionFromVehicle
-    mapClearMapDrawing.value = payload.clearMapDrawing
+  const requestMapClear = (): void => {
+    mapClearRequestRevision.value += 1
   }
 
-  const callMapDownloadMissionFromVehicle = async (): Promise<void> => {
-    if (!mapDownloadMissionFromVehicle.value) return
-    await mapDownloadMissionFromVehicle.value()
-  }
-
-  const callMapClearMapDrawing = (): void => {
-    if (!mapClearMapDrawing.value) return
-    mapClearMapDrawing.value()
+  const requestMapMissionDownload = (): void => {
+    mapDownloadRequestRevision.value += 1
   }
 
   watch(
@@ -681,9 +665,10 @@ export const useMissionStore = defineStore('mission', () => {
     canSkipToPrevWp,
     canSkipToNextWp,
     currentWaypointOnMission,
-    registerMapMissionActions,
-    callMapDownloadMissionFromVehicle,
-    callMapClearMapDrawing,
+    mapClearRequestRevision,
+    mapDownloadRequestRevision,
+    requestMapClear,
+    requestMapMissionDownload,
     vehiclePositionHistory,
     vehiclePositionHistoryRevision,
     isVehiclePositionHistoryPersistent,
