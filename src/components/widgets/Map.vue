@@ -930,12 +930,20 @@ onMounted(async () => {
     vehicleHistoryPolyline.value.setLatLngs(missionStore.vehiclePositionHistory as L.LatLngExpression[])
     lastDrawnHistoryLen = missionStore.vehiclePositionHistory.length
   }
-  // Register mission actions for map widget
-  missionStore.registerMapMissionActions({
-    downloadMissionFromVehicle,
-    clearMapDrawing,
-  })
 })
+
+// React to clear/download requests from any mission-control widget.
+watch(
+  () => missionStore.mapClearRequestRevision,
+  () => clearMapDrawing()
+)
+
+watch(
+  () => missionStore.mapDownloadRequestRevision,
+  () => {
+    downloadMissionFromVehicle()
+  }
+)
 
 const confirmDownloadDialog =
   (layerLabel: string) =>
@@ -1195,11 +1203,6 @@ onBeforeUnmount(() => {
   mapBase.value?.removeEventListener('touchstart', onTouchStart)
   mapBase.value?.removeEventListener('touchend', onTouchEnd)
 
-  // Unregister mission actions for map widget
-  missionStore.registerMapMissionActions({
-    downloadMissionFromVehicle: async () => Promise.resolve(),
-    clearMapDrawing: async () => Promise.resolve(),
-  })
   // Tear down the Leaflet instance and reset the map context
   mapContext.mapReady.value = false
   map.value?.remove()

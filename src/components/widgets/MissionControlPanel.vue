@@ -112,11 +112,7 @@
                     <v-list-item-title>Download mission from vehicle</v-list-item-title>
                   </v-list-item>
 
-                  <v-list-item
-                    :disabled="!vehicleStore.isVehicleOnline"
-                    class="cursor-pointer"
-                    @click="handleClearMissionOnMap"
-                  >
+                  <v-list-item class="cursor-pointer" @click="handleClearMissionOnMap">
                     <v-list-item-title>Clear mission on map</v-list-item-title>
                   </v-list-item>
                 </v-list>
@@ -183,11 +179,11 @@ const widgetSize = {
 }
 
 const handleDownloadMissionOnMap = async (): Promise<void> => {
-  await missionStore.callMapDownloadMissionFromVehicle()
+  missionStore.requestMapMissionDownload()
 }
 
 const handleClearMissionOnMap = (): void => {
-  missionStore.callMapClearMapDrawing()
+  missionStore.requestMapClear()
 }
 
 onBeforeMount(() => {
