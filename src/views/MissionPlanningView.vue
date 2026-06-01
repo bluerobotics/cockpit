@@ -69,6 +69,28 @@
         </div>
       </template>
     </v-tooltip>
+    <v-tooltip
+      location="top"
+      :text="surveyCrosshatch ? 'Disable 90° crosshatch re-fly' : 'Enable 90° crosshatch re-fly'"
+    >
+      <template #activator="{ props }">
+        <div
+          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="confirmButtonStyle"
+          class="absolute mt-[72px] -ml-[150px] bg-transparent cursor-pointer elevation-4"
+          variant="text"
+          @click="surveyCrosshatch = !surveyCrosshatch"
+        >
+          <div
+            class="flex items-center justify-center w-8 h-8 border-2 rounded-full"
+            :class="surveyCrosshatch ? 'bg-[#A855F7]' : 'bg-[#333333EE]'"
+          >
+            <v-icon color="white" size="16">mdi-grid</v-icon>
+          </div>
+        </div>
+      </template>
+    </v-tooltip>
     <v-tooltip location="top" text="Clear survey">
       <template #activator="{ props }">
         <div
@@ -247,6 +269,17 @@
             class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
           />
+          <v-checkbox
+            v-model="surveyCrosshatch"
+            label="Re-fly at 90° (crosshatch)"
+            theme="dark"
+            density="compact"
+            hide-details
+            class="mx-4"
+          />
+          <p class="mx-5 mb-2 text-[11px] opacity-70 text-slate-200">
+            Flies the area again at 90° for better photogrammetry coverage (≈doubles flight time).
+          </p>
           <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
           <input
             v-model.number="currentWaypointAltitude"
@@ -580,6 +613,7 @@
     @toggle-simple-path="toggleSimplePath"
     @undo-generated-waypoints="undoGenerateWaypoints"
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
+    @toggle-crosshatch="toggleSurveyCrosshatch"
     @survey-lines-angle="onSurveyLinesAngleChange"
     @remove-waypoint="removeSelectedWaypoint"
     @place-point-of-interest="openPoiDialog"
@@ -1474,7 +1508,7 @@ const updateConfirmButtonPosition = (): void => {
     )
 
     confirmButtonStyle.value = {
-      left: `${pos.x + anchorToLeft}px`,
+      left: `${pos.x + anchorToLeft + 40}px`,
       top: `${pos.y + anchorToTop}px`,
     }
   } else {
@@ -2239,6 +2273,7 @@ const performUndo = (): void => {
     surveyPolygonVertexesPositions.value = removedSurvey.polygonCoordinates.map(([lat, lng]) => L.latLng(lat, lng))
     distanceBetweenSurveyLines.value = removedSurvey.distanceBetweenLines
     surveyLinesAngle.value = removedSurvey.surveyLinesAngle
+    surveyCrosshatch.value = removedSurvey.crosshatch ?? false
 
     clearSurveyPolygonUndoStack()
     const coords = removedSurvey.polygonCoordinates
@@ -2738,6 +2773,7 @@ const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
 const rawDistanceBetweenSurveyLines = ref(10)
 const rawSurveyLinesAngle = ref(0)
 const rawTurnaroundDistance = ref(0)
+const surveyCrosshatch = ref(false)
 const existingWaypoints = ref<Waypoint[]>([])
 const surveyWaypoints = ref<Waypoint[]>([])
 
@@ -2772,14 +2808,23 @@ const onSurveyLinesAngleChange = (angle: number): void => {
 }
 
 const surveyPathLayer = shallowRef<L.Polyline | null>(null)
+const surveyCrosshatchPathLayer = shallowRef<L.Polyline | null>(null)
 const surveyTurnaroundLayers = shallowRef<L.Polyline[]>([])
 const surveyPolygonLayer = shallowRef<L.Polygon | null>(null)
+
+const removeSurveyCrosshatchPathLayer = (): void => {
+  if (surveyCrosshatchPathLayer.value) {
+    planningMap.value?.removeLayer(surveyCrosshatchPathLayer.value as unknown as L.Layer)
+    surveyCrosshatchPathLayer.value = null
+  }
+}
 
 const clearSurveyPath = (): void => {
   if (surveyPathLayer.value) {
     planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     surveyPathLayer.value = null
   }
+  removeSurveyCrosshatchPathLayer()
   surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
   surveyTurnaroundLayers.value = []
   if (surveyPolygonLayer.value) {
@@ -2875,6 +2920,7 @@ const checkAndRemoveSurveyPath = (): void => {
   if (surveyPolygonVertexesPositions.value.length >= 4 || !surveyPathLayer.value) return
   planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
   surveyPathLayer.value = null
+  removeSurveyCrosshatchPathLayer()
   surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
   surveyTurnaroundLayers.value = []
 }
@@ -2891,7 +2937,8 @@ const createSurveyPath = (): void => {
       surveyPolygonVertexesPositions.value,
       distanceBetweenSurveyLines.value,
       adjustedAngle,
-      turnaroundDistance.value
+      turnaroundDistance.value,
+      surveyCrosshatch.value
     )
 
     if (result.path.length === 0) {
@@ -2906,16 +2953,30 @@ const createSurveyPath = (): void => {
     if (surveyPathLayer.value) {
       planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     }
+    removeSurveyCrosshatchPathLayer()
 
     surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
     surveyTurnaroundLayers.value = []
 
-    surveyPathLayer.value = L.polyline(result.path, {
+    const crosshatchStart = result.crosshatchStartIndex
+    const firstPassPath = crosshatchStart !== undefined ? result.path.slice(0, crosshatchStart) : result.path
+
+    surveyPathLayer.value = L.polyline(firstPassPath, {
       color: '#2563EB',
       weight: 3,
       opacity: 0.8,
       className: 'survey-path',
     }).addTo(toRaw(planningMap.value)!)
+
+    if (crosshatchStart !== undefined) {
+      // Include the last point of the first pass so the transit leg into the second pass is drawn.
+      surveyCrosshatchPathLayer.value = L.polyline(result.path.slice(Math.max(0, crosshatchStart - 1)), {
+        color: '#A855F7',
+        weight: 1,
+        opacity: 0.56,
+        className: 'survey-path-crosshatch',
+      }).addTo(toRaw(planningMap.value)!)
+    }
 
     if (result.turnaroundSegments.length > 0) {
       surveyTurnaroundLayers.value = result.turnaroundSegments.map((segment) =>
@@ -2949,7 +3010,7 @@ watch(
 )
 
 // Watch for changes in distanceBetweenSurveyLines, surveyLinesAngle, and turnaroundDistance
-watch([distanceBetweenSurveyLines, surveyLinesAngle, turnaroundDistance], () => createSurveyPath())
+watch([distanceBetweenSurveyLines, surveyLinesAngle, turnaroundDistance, surveyCrosshatch], () => createSurveyPath())
 
 const surveyEdgeAddMarkers: L.Marker[] = []
 
@@ -3101,7 +3162,8 @@ const generateWaypointsFromSurvey = (): void => {
     surveyPolygonVertexesPositions.value,
     distanceBetweenSurveyLines.value,
     adjustedAngle,
-    turnaroundDistance.value
+    turnaroundDistance.value,
+    surveyCrosshatch.value
   )
 
   if (!continuousPath.length) {
@@ -3146,6 +3208,7 @@ const generateWaypointsFromSurvey = (): void => {
     distanceBetweenLines: distanceBetweenSurveyLines.value,
     surveyLinesAngle: surveyLinesAngle.value,
     turnaroundDistance: turnaroundDistance.value,
+    crosshatch: surveyCrosshatch.value,
     waypoints: newSurveyWaypoints,
   }
 
@@ -3236,6 +3299,16 @@ const updateWaypointMarkers = (): void => {
   refreshSurveyEntryExitMarkers()
 }
 
+const toggleSurveyCrosshatch = (): void => {
+  if (!selectedSurvey.value) {
+    openSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
+    return
+  }
+  missionStore.pushUndoSnapshot()
+  selectedSurvey.value.crosshatch = !selectedSurvey.value.crosshatch
+  regenerateSurveyWaypoints()
+}
+
 const regenerateSurveyWaypoints = (angle?: number): void => {
   if (!selectedSurveyId.value) {
     openSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
@@ -3256,7 +3329,8 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
       selectedSurvey.value.polygonCoordinates.map((coord) => L.latLng(coord[0], coord[1])),
       selectedSurvey.value.distanceBetweenLines,
       adjustedAngle,
-      selectedSurvey.value.turnaroundDistance
+      selectedSurvey.value.turnaroundDistance,
+      selectedSurvey.value.crosshatch
     )
 
     if (!continuousPath.length) {
@@ -3268,11 +3342,15 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
       return
     }
 
+    const existingWaypoint = selectedSurvey.value.waypoints[0]
+    const surveyAltitude = existingWaypoint?.altitude ?? currentWaypointAltitude.value
+    const surveyAltitudeRefType = existingWaypoint?.altitudeReferenceType ?? currentWaypointAltitudeRefType.value
+
     const newWaypoints: Waypoint[] = continuousPath.map((latLng: L.LatLng) => ({
       id: uuid(),
       coordinates: [latLng.lat, latLng.lng],
-      altitude: currentWaypointAltitude.value,
-      altitudeReferenceType: currentWaypointAltitudeRefType.value,
+      altitude: surveyAltitude,
+      altitudeReferenceType: surveyAltitudeRefType,
       commands: makeDefaultNavCommands(),
     }))
 
@@ -3420,6 +3498,7 @@ const undoGenerateWaypoints = (): void => {
   surveyPolygonVertexesPositions.value = survey.polygonCoordinates.map(([lat, lng]) => L.latLng(lat, lng))
   distanceBetweenSurveyLines.value = survey.distanceBetweenLines
   surveyLinesAngle.value = survey.surveyLinesAngle
+  surveyCrosshatch.value = survey.crosshatch ?? false
 
   const firstWpCoords = survey.waypoints[0]?.coordinates
   if (firstWpCoords && survey.polygonCoordinates.length >= 3) {
@@ -3428,7 +3507,8 @@ const undoGenerateWaypoints = (): void => {
       surveyPolygonVertexesPositions.value,
       survey.distanceBetweenLines,
       adjustedAngle,
-      survey.turnaroundDistance
+      survey.turnaroundDistance,
+      survey.crosshatch
     )
     if (defaultPath.length >= 2) {
       const first = defaultPath[0]
