@@ -61,6 +61,7 @@
 import { useElementHover, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
+import { useWidgetGeometry } from '@/composables/useWidgetGeometry'
 import { constrain } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D, SizeRect2D } from '@/types/general'
@@ -110,9 +111,6 @@ watch(
   },
   { immediate: true }
 )
-
-watch(position, (newPosition) => (widget.value.position = newPosition))
-watch(size, (newSize) => (widget.value.size = newSize))
 
 const allowMoving = toRefs(props).allowMoving
 const allowResizing = toRefs(props).allowResizing
@@ -170,6 +168,9 @@ watch([hoveringWidgetOrOverlay, allowMoving], () => {
 
 const draggingWidget = ref(false)
 const isResizing = ref(false)
+
+const { syncPositionToWidget, syncSizeToWidget } = useWidgetGeometry(widget, position, size, draggingWidget, isResizing)
+
 const resizeHandle = ref<EventTarget | null>(null)
 const getViewSize = (): {
   /**
@@ -303,11 +304,14 @@ const handleEnd = (): void => {
   if (!outerWidgetRef.value) return
   if (draggingWidget.value) {
     draggingWidget.value = false
+    syncPositionToWidget()
     outerWidgetRef.value.style.cursor = 'grab'
     document.documentElement.classList.remove('widget-dragging')
   } else if (isResizing.value) {
     isResizing.value = false
     resizeHandle.value = null
+    syncPositionToWidget()
+    syncSizeToWidget()
   }
 }
 
@@ -546,5 +550,9 @@ const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.ha
 
 html.widget-dragging iframe {
   pointer-events: none !important;
+}
+
+iframe.widget-dragging-self {
+  visibility: hidden;
 }
 </style>
