@@ -1950,7 +1950,7 @@ const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
 
   return {
     html: poiIconHtml,
-    className: 'poi-marker-icon-widget',
+    className: `poi-marker-icon-widget${poi.coordinateSource ? ' poi-marker-dynamic' : ''}`,
     iconSize: [32, 32], // Match the actual container size
     iconAnchor: [16, 32], // Center horizontally, bottom vertically (like a pin)
   }
@@ -1961,7 +1961,11 @@ const addPoiMarkerToMapWidget = (poi: PointOfInterest): void => {
 
   const poiMarkerIcon = L.divIcon(poiIconConfig(poi))
 
-  const marker = L.marker(poi.coordinates as LatLngTuple, { icon: poiMarkerIcon, draggable: true }).addTo(map.value)
+  // Dynamic POIs follow data-lake variables, so manual dragging is disabled.
+  const marker = L.marker(poi.coordinates as LatLngTuple, {
+    icon: poiMarkerIcon,
+    draggable: poi.coordinateSource === undefined,
+  }).addTo(map.value)
 
   const tooltipContent = `
     <strong>${poi.name}</strong><br>
@@ -2009,6 +2013,12 @@ const updatePoiMarkerOnMapWidget = (poi: PointOfInterest): void => {
   marker.setLatLng(poi.coordinates as LatLngTuple)
 
   marker.setIcon(L.divIcon(poiIconConfig(poi)))
+
+  if (poi.coordinateSource) {
+    marker.dragging?.disable()
+  } else {
+    marker.dragging?.enable()
+  }
 
   const updatedTooltipContent = `
     <strong>${poi.name}</strong><br>
@@ -2259,6 +2269,20 @@ watch(
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.7);
   z-index: 1;
+}
+
+.poi-marker-dynamic .poi-marker-background {
+  animation: poi-dynamic-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes poi-dynamic-glow {
+  0%,
+  100% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 2.5px 0 rgba(255, 255, 255, 0.125);
+  }
+  50% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 2.5px 2.5px rgba(255, 255, 255, 0.225);
+  }
 }
 
 .poi-tooltip-widget {
