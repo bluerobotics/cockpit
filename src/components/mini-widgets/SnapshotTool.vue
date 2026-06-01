@@ -348,7 +348,7 @@ const fireTimedSnapshot = async (): Promise<void> => {
 
 watch(isTakingTimedSnapshot, (newValue) => {
   if (newValue) {
-    fireTimedSnapshot()
+    fireTimedSnapshot().catch((err) => console.error('Timed snapshot capture failed:', err))
     openSnackbar({
       message: `Timed snapshot started. This will capture the selected interfaces every ${timedSnapshotInterval.value} seconds until you press the camera button again.`,
       variant: 'info',
@@ -357,7 +357,7 @@ watch(isTakingTimedSnapshot, (newValue) => {
 
     // Capture subsequent timed snapshots
     shotInterval = setInterval(() => {
-      fireTimedSnapshot()
+      fireTimedSnapshot().catch((err) => console.error('Timed snapshot capture failed:', err))
       timerProgress.value = 0
     }, timedSnapshotInterval.value * 1000)
 
