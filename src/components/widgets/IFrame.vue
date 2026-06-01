@@ -41,6 +41,7 @@
             ref="iframe"
             :src="toBeUsedURL"
             :style="collapsibleIframeStyle"
+            :class="{ 'widget-dragging-self': widgetDragging }"
             frameborder="0"
             @load="loadFinished"
           />
@@ -81,6 +82,7 @@
             ref="iframe"
             :src="toBeUsedURL"
             :style="iframeStyle"
+            :class="{ 'widget-dragging-self': widgetDragging }"
             frameborder="0"
             @load="loadFinished"
           />
@@ -229,10 +231,11 @@
 
 <script setup lang="ts">
 import { useElementSize, useWindowSize } from '@vueuse/core'
-import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
+import { computed, inject, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
 import { openSnackbar } from '@/composables/snackbar'
+import { widgetDraggingKey, widgetLivePositionKey, widgetLiveSizeKey } from '@/composables/useWidgetGeometry'
 import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -252,6 +255,9 @@ const props = defineProps<{
   widget: Widget
 }>()
 const widget = toRefs(props).widget
+const livePosition = inject(widgetLivePositionKey, null)
+const liveSize = inject(widgetLiveSizeKey, null)
+const widgetDragging = inject(widgetDraggingKey, null)
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 const collapsedHeaderHeightPx = 42
@@ -674,11 +680,13 @@ const collapsibleIframeStyle = computed<string>(() => {
 
 // Full widget rect, used to position the teleported content box and its status overlay.
 const widgetRectStyle = computed<string>(() => {
+  const position = livePosition?.value ?? widget.value.position
+  const size = liveSize?.value ?? widget.value.size
   let newStyle = ''
-  newStyle = newStyle.concat(' ', `left: ${widget.value.position.x * windowWidth.value}px;`)
-  newStyle = newStyle.concat(' ', `top: ${widget.value.position.y * windowHeight.value}px;`)
-  newStyle = newStyle.concat(' ', `width: ${widget.value.size.width * windowWidth.value}px;`)
-  newStyle = newStyle.concat(' ', `height: ${widget.value.size.height * windowHeight.value}px;`)
+  newStyle = newStyle.concat(' ', `left: ${position.x * windowWidth.value}px;`)
+  newStyle = newStyle.concat(' ', `top: ${position.y * windowHeight.value}px;`)
+  newStyle = newStyle.concat(' ', `width: ${size.width * windowWidth.value}px;`)
+  newStyle = newStyle.concat(' ', `height: ${size.height * windowHeight.value}px;`)
 
   if (widgetStore.editingMode) {
     newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
@@ -690,7 +698,8 @@ const widgetRectStyle = computed<string>(() => {
 })
 
 const iframeStyle = computed<string>(() => {
-  return buildContentStyle(widget.value.size.width * windowWidth.value, widget.value.size.height * windowHeight.value)
+  const size = liveSize?.value ?? widget.value.size
+  return buildContentStyle(size.width * windowWidth.value, size.height * windowHeight.value)
 })
 
 const iframeOpacity = computed<number>(() => {
@@ -706,7 +715,7 @@ function loadFinished(): void {
 }
 
 watch(
-  widget,
+  () => widget.value.options,
   () => {
     if (widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen === false) {
       if (validateURL(toBeUsedURL.value) !== true) {
