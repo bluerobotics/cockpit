@@ -212,7 +212,7 @@
           <p class="text-sm">{{ countdownToHideTips }}</p>
         </div>
         <div
-          v-if="home === undefined && !isSettingHomeWaypoint"
+          v-if="home === undefined && !isSettingHomeWaypoint && !isCreatingSurvey && !isCreatingSimplePath"
           class="flex justify-end ma-2"
           @click="handleAddHomeWaypointByClick"
           @dragstart="handleAddHomeWaypointByClick"
@@ -224,7 +224,7 @@
             <v-icon class="text-md ml-2">mdi-home-circle</v-icon>
           </p>
         </div>
-        <v-divider v-if="!isCreatingSimplePath" class="my-2" />
+        <v-divider v-if="!isCreatingSimplePath && !isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
           <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
           <input
@@ -296,7 +296,7 @@
           </button>
         </div>
         <v-divider v-if="isCreatingSurvey" class="my-2" />
-        <div v-if="isCreatingSimplePath" class="flex flex-col w-full h-full p-2">
+        <div v-if="isCreatingSimplePath" class="flex flex-col w-full h-full p-2 -mt-[5px]">
           <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
           <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
           <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
@@ -410,7 +410,7 @@
         </div>
         <v-divider v-if="isCreatingSimplePath || isCreatingSurvey" class="my-2" />
         <button
-          v-if="isCreatingSimplePath || isCreatingSurvey || missionStore.currentPlanningWaypoints.length > 0"
+          v-if="!isCreatingSimplePath && !isCreatingSurvey && missionStore.currentPlanningWaypoints.length > 0"
           :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
           :class="{
             'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':

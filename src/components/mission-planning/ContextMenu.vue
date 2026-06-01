@@ -162,8 +162,8 @@
           ></v-icon>
           <span class="text-white text-sm ml-4">Place point of interest</span>
         </v-list-item>
-        <v-divider />
-        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
+        <v-divider v-if="canSetHome" />
+        <v-list-item v-if="canSetHome" class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
           <v-icon
             variant="text"
             icon="mdi-home-map-marker"
@@ -198,6 +198,7 @@
         <p class="text-[14px]">Waypoint {{ missionStore.getWaypointNumber(selectedWaypoint?.id as string) }}</p>
         <div>
           <v-icon
+            v-if="canSetHome"
             v-tooltip="'Set home waypoint'"
             variant="text"
             icon="mdi-home-map-marker"
@@ -305,6 +306,7 @@ const emit = defineEmits<{
 const menuType = computed(() => props.menuType)
 const selectedWaypoint = computed<Waypoint | undefined>(() => props.selectedWaypoint)
 const visible = computed(() => props.visible)
+const canSetHome = computed(() => !props.isCreatingSurvey && !props.isCreatingSimplePath)
 const angle = computed(() => props.surveys.find((survey) => survey.id === props.selectedSurveyId)?.surveyLinesAngle)
 
 const clampedPosition = ref({ x: 0, y: 0 })
