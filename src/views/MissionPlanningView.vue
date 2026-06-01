@@ -1980,21 +1980,47 @@ const showContextMenu = (event: L.LeafletMouseEvent): void => {
   let x = event.originalEvent.clientX
   let y = event.originalEvent.clientY
 
-  if (contextMenuType.value === 'survey' && planningMap.value && selectedSurveyId.value) {
-    const container = planningMap.value.getContainer()
+  if (contextMenuType.value === 'survey' && planningMap.value && selectedSurvey.value) {
+    const map = toRaw(planningMap.value)!
+    const container = map.getContainer()
     const vw = container.clientWidth
     const vh = container.clientHeight
-    const edgeZone = 0.2
-    const pushTo = 0.33
-    const menuHalf = 140
+    const menuSize = 210
+    const gap = 40
 
-    if (x < vw * edgeZone) x = vw * pushTo
-    else if (x > vw * (1 - edgeZone)) x = vw * 0.87
-    if (y < vh * edgeZone) y = vh * pushTo
-    else if (y > vh * (1 - edgeZone)) y = vh * 0.8
+    const screenPoints = selectedSurvey.value.polygonCoordinates.map(([lat, lng]) =>
+      map.latLngToContainerPoint(L.latLng(lat, lng))
+    )
+    const minX = Math.min(...screenPoints.map((p) => p.x))
+    const maxX = Math.max(...screenPoints.map((p) => p.x))
+    const minY = Math.min(...screenPoints.map((p) => p.y))
+    const maxY = Math.max(...screenPoints.map((p) => p.y))
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
 
-    x -= menuHalf
-    y -= menuHalf
+    // Prefer the right side, 40px clear of the survey; only fall back to another side when it doesn't fit.
+    const placement =
+      vw - maxX >= menuSize + gap
+        ? { x: maxX + gap, y: centerY - menuSize / 2 }
+        : [
+            { freeSpace: minX, x: minX - gap - menuSize, y: centerY - menuSize / 2 },
+            { freeSpace: minY, x: centerX - menuSize / 2, y: minY - gap - menuSize },
+            { freeSpace: vh - maxY, x: centerX - menuSize / 2, y: maxY + gap },
+          ]
+            .filter((candidate) => candidate.freeSpace >= menuSize + gap)
+            .sort((a, b) => b.freeSpace - a.freeSpace)[0]
+
+    if (placement) {
+      x = placement.x
+      y = placement.y
+    } else {
+      // Survey fills most of the viewport: drop the menu into the emptiest horizontal corner.
+      x = vw - maxX > minX ? maxX + gap : minX - gap - menuSize
+      y = 0
+    }
+
+    x = Math.max(gap, Math.min(x, vw - menuSize - gap))
+    y = Math.max(gap, Math.min(y, vh - menuSize - gap))
   }
 
   contextMenuPosition.value = { x, y }
