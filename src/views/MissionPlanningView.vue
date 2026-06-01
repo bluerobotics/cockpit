@@ -3588,6 +3588,10 @@ onMounted(() => {
 
 const onMapClick = (e: L.LeafletMouseEvent): void => {
   hideContextMenu()
+
+  // The dedicated home-setting handler owns this click; bail so we don't also drop a survey vertex or waypoint here.
+  if (isSettingHomeWaypoint.value) return
+
   const oldWaypoint = selectedWaypoint.value
   if (oldWaypoint) {
     const oldMarker = waypointMarkers.value[oldWaypoint.id]
