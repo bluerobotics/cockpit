@@ -12,20 +12,80 @@
           <v-icon :size="22">mdi-close</v-icon>
         </v-btn>
       </div>
-      <div class="p-3">
-        <v-text-field v-model="newPoiName" label="Name" variant="outlined"></v-text-field>
-        <v-text-field v-model="newPoiDescription" label="Description" variant="outlined"></v-text-field>
+      <div class="p-3 -mt-6">
+        <v-text-field v-model="newPoiName" density="compact" label="Name" variant="outlined"></v-text-field>
 
-        <div class="grid grid-cols-2 gap-x-4">
-          <v-text-field v-model.number="newPoiLat" label="Latitude" variant="outlined" type="number" step="0.0000001" />
+        <div class="flex items-center justify-between mb-4 -mt-2">
+          <v-checkbox v-model="isDynamicPoi" label="Dynamic positioning" color="white" density="compact" hide-details />
+          <v-tooltip location="top" max-width="340">
+            <template #activator="{ props }">
+              <v-icon v-bind="props" size="20" class="mr-1 opacity-70 cursor-help">mdi-information-outline</v-icon>
+            </template>
+            <span>
+              Drives this POI's position from Data Lake variables instead of a fixed point — useful for tracking moving
+              entities such as other vehicles. Pick one numeric variable for latitude and one for longitude; the marker
+              then follows their values live. Values must be in decimal degrees: if your source uses another unit (e.g.
+              MAVLink degE7), create a compound variable to convert it first.
+            </span>
+          </v-tooltip>
+        </div>
+
+        <div v-if="!isDynamicPoi" class="grid grid-cols-2 gap-x-4">
+          <v-text-field
+            v-model.number="newPoiLat"
+            density="compact"
+            label="Latitude"
+            variant="outlined"
+            type="number"
+            step="0.0000001"
+          />
           <v-text-field
             v-model.number="newPoiLng"
+            density="compact"
             label="Longitude"
             variant="outlined"
             type="number"
             step="0.0000001"
           />
         </div>
+        <div v-else>
+          <v-autocomplete
+            v-model="dynamicLatVariableId"
+            :items="availableNumberVariables"
+            item-title="name"
+            item-value="id"
+            label="Latitude variable"
+            variant="outlined"
+            density="compact"
+            clearable
+            hide-details
+            class="mb-2"
+            theme="dark"
+          />
+          <v-autocomplete
+            v-model="dynamicLngVariableId"
+            :items="availableNumberVariables"
+            item-title="name"
+            item-value="id"
+            label="Longitude variable"
+            variant="outlined"
+            density="compact"
+            clearable
+            hide-details
+            class="mb-2"
+            theme="dark"
+          />
+          <div class="text-caption text-white opacity-60 mb-5">
+            Live position: {{ liveDynamicLat ?? '—' }}, {{ liveDynamicLng ?? '—' }}
+          </div>
+        </div>
+        <v-text-field
+          v-model="newPoiDescription"
+          density="compact"
+          label="Description"
+          variant="outlined"
+          class="mt-2"
+        ></v-text-field>
 
         <div class="mb-4">
           <div class="flex items-center gap-x-2 mb-4">
@@ -38,13 +98,20 @@
                 <v-icon>mdi-palette</v-icon>
               </v-btn>
             </div>
-            <v-text-field v-model="newPoiColor" label="Hex Color" hide-details variant="outlined" class="flex-grow" />
+            <v-text-field
+              v-model="newPoiColor"
+              density="compact"
+              label="Hex Color"
+              hide-details
+              variant="outlined"
+              class="flex-grow"
+            />
             <v-spacer />
             <div
               class="cursor-pointer hover:opacity-80 flex flex-col items-center"
               @click="isIconPickerOpen = !isIconPickerOpen"
             >
-              <v-icon :icon="newPoiIcon" size="48" :color="newPoiColor" />
+              <v-icon :icon="newPoiIcon" size="40" :color="newPoiColor" />
               <span class="text-white opacity-50 mx-2 text-xs mt-1">Click to change icon</span>
             </div>
           </div>
@@ -82,20 +149,29 @@
       </div>
     </template>
     <template #actions>
-      <v-btn v-if="editingPoiId" text @click="deletePoi">Delete</v-btn>
-      <v-spacer></v-spacer>
-      <v-btn text @click="savePoi">Save</v-btn>
+      <div class="flex w-full items-center justify-between my-1">
+        <v-btn v-if="editingPoiId" variant="text" @click="deletePoi">Delete</v-btn>
+        <v-spacer></v-spacer>
+        <v-btn variant="text" @click="savePoi">Save</v-btn>
+      </div>
     </template>
   </InteractionDialog>
 </template>
 
 <script setup lang="ts">
 import { v4 as uuid } from 'uuid'
-import { defineExpose, ref, watch } from 'vue'
+import { computed, defineExpose, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import {
+  getAllDataLakeVariablesInfo,
+  listenToDataLakeVariablesInfoChanges,
+  unlistenToDataLakeVariablesInfoChanges,
+} from '@/libs/actions/data-lake'
 import { useMissionStore } from '@/stores/mission'
+import type { DataLakeVariable } from '@/types/data-lake'
 import type { PointOfInterest, PointOfInterestCoordinates } from '@/types/mission'
 
 const missionStore = useMissionStore()
@@ -112,6 +188,40 @@ const newPoiLng = ref<number | null>(null)
 const isIconPickerOpen = ref(false)
 const iconSearchQuery = ref('')
 const isColorPickerOpen = ref(false)
+
+const isDynamicPoi = ref(false)
+const dynamicLatVariableId = ref<string | undefined>(undefined)
+const dynamicLngVariableId = ref<string | undefined>(undefined)
+
+const availableDataLakeVariables = ref<DataLakeVariable[]>([])
+let dataLakeVariableInfoListenerId: string | undefined = undefined
+const availableNumberVariables = computed(() =>
+  availableDataLakeVariables.value.filter((variable) => variable.type === 'number')
+)
+
+const { value: liveDynamicLatRaw } = useDataLakeVariable(() =>
+  isDynamicPoi.value ? dynamicLatVariableId.value : undefined
+)
+const { value: liveDynamicLngRaw } = useDataLakeVariable(() =>
+  isDynamicPoi.value ? dynamicLngVariableId.value : undefined
+)
+const liveDynamicLat = computed(() =>
+  typeof liveDynamicLatRaw.value === 'number' ? liveDynamicLatRaw.value : undefined
+)
+const liveDynamicLng = computed(() =>
+  typeof liveDynamicLngRaw.value === 'number' ? liveDynamicLngRaw.value : undefined
+)
+
+onMounted(() => {
+  availableDataLakeVariables.value = Object.values(getAllDataLakeVariablesInfo())
+  dataLakeVariableInfoListenerId = listenToDataLakeVariablesInfoChanges((variables) => {
+    availableDataLakeVariables.value = Object.values(variables)
+  })
+})
+
+onUnmounted(() => {
+  if (dataLakeVariableInfoListenerId) unlistenToDataLakeVariablesInfoChanges(dataLakeVariableInfoListenerId)
+})
 
 // Store original values for reverting changes if user cancels
 const originalPoiValues = ref<{
@@ -313,6 +423,9 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
     newPoiLng.value = Number(freshPoi.coordinates[1].toFixed(7))
     newPoiIcon.value = freshPoi.icon
     newPoiColor.value = freshPoi.color
+    isDynamicPoi.value = freshPoi.coordinateSource !== undefined
+    dynamicLatVariableId.value = freshPoi.coordinateSource?.latitudeVariableId
+    dynamicLngVariableId.value = freshPoi.coordinateSource?.longitudeVariableId
     dialogInitialCoordinates.value = null // Not needed for editing, and clear it
   } else if (coordinates) {
     editingPoiId.value = null
@@ -323,6 +436,9 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
     newPoiColor.value = getRandomColor()
     newPoiLat.value = coordinates[0] // Still useful to pre-fill for potential direct edit
     newPoiLng.value = coordinates[1] // Still useful to pre-fill for potential direct edit
+    isDynamicPoi.value = false
+    dynamicLatVariableId.value = undefined
+    dynamicLngVariableId.value = undefined
     dialogInitialCoordinates.value = [...coordinates] // Store for saving a new POI
   } else {
     showDialog({
@@ -371,6 +487,17 @@ const closeDialog = (): void => {
   newPoiColor.value = getRandomColor()
   isIconPickerOpen.value = false
   isColorPickerOpen.value = false
+  isDynamicPoi.value = false
+  dynamicLatVariableId.value = undefined
+  dynamicLngVariableId.value = undefined
+}
+
+// Builds a coordinate from the currently available live values, filling any unbound axis from the form/click position.
+const liveDynamicCoordinates = (): PointOfInterestCoordinates | undefined => {
+  if (liveDynamicLat.value === undefined && liveDynamicLng.value === undefined) return undefined
+  const fallbackLat = dialogInitialCoordinates.value?.[0] ?? newPoiLat.value ?? 0
+  const fallbackLng = dialogInitialCoordinates.value?.[1] ?? newPoiLng.value ?? 0
+  return [liveDynamicLat.value ?? fallbackLat, liveDynamicLng.value ?? fallbackLng]
 }
 
 const savePoi = (): void => {
@@ -379,7 +506,16 @@ const savePoi = (): void => {
     return
   }
 
-  if (newPoiLat.value === null || newPoiLng.value === null || isNaN(newPoiLat.value) || isNaN(newPoiLng.value)) {
+  if (isDynamicPoi.value) {
+    if (!dynamicLatVariableId.value && !dynamicLngVariableId.value) {
+      showDialog({
+        title: 'Invalid Variables',
+        message: 'Select at least one data-lake variable to drive the position.',
+        variant: 'error',
+      })
+      return
+    }
+  } else if (newPoiLat.value === null || newPoiLng.value === null || isNaN(newPoiLat.value) || isNaN(newPoiLng.value)) {
     showDialog({
       title: 'Invalid Coordinates',
       message: 'Latitude and Longitude must be valid numbers.',
@@ -387,6 +523,10 @@ const savePoi = (): void => {
     })
     return
   }
+
+  const coordinateSource = isDynamicPoi.value
+    ? { latitudeVariableId: dynamicLatVariableId.value, longitudeVariableId: dynamicLngVariableId.value }
+    : undefined
 
   if (editingPoiId.value) {
     // Get the current POI from store to preserve current coordinates
@@ -404,23 +544,32 @@ const savePoi = (): void => {
     // Clear original values since we're saving the changes
     originalPoiValues.value = null
 
+    // For dynamic POIs, keep current coordinates as the fallback; the data-lake engine drives the live position.
+    const updatedCoordinates = isDynamicPoi.value
+      ? liveDynamicCoordinates() ?? currentPoi.coordinates
+      : coordinatesChanged
+      ? ([newPoiLat.value, newPoiLng.value] as PointOfInterestCoordinates)
+      : currentPoi.coordinates
+
     const poiUpdate: Partial<PointOfInterest> = {
       name: newPoiName.value,
       description: newPoiDescription.value,
-      // Use current store coordinates unless user specifically changed them in the form
-      coordinates: coordinatesChanged
-        ? ([newPoiLat.value, newPoiLng.value] as PointOfInterestCoordinates)
-        : currentPoi.coordinates,
+      coordinates: updatedCoordinates,
       icon: newPoiIcon.value,
       color: newPoiColor.value,
+      coordinateSource,
       timestamp: Date.now(),
     }
     missionStore.updatePointOfInterest(editingPoiId.value, poiUpdate)
   } else {
     // For new POIs, prioritize dialogInitialCoordinates if they exist (meaning they were passed on openDialog)
     // Otherwise, use the (potentially user-modified) coordinates from the form.
-    const coordinatesToSave =
-      dialogInitialCoordinates.value ?? ([newPoiLat.value, newPoiLng.value] as PointOfInterestCoordinates)
+    // For dynamic POIs, seed from the current live values so the marker doesn't jump before the first update.
+    const coordinatesToSave = isDynamicPoi.value
+      ? liveDynamicCoordinates() ??
+        dialogInitialCoordinates.value ??
+        ([newPoiLat.value ?? 0, newPoiLng.value ?? 0] as PointOfInterestCoordinates)
+      : dialogInitialCoordinates.value ?? ([newPoiLat.value, newPoiLng.value] as PointOfInterestCoordinates)
 
     if (!coordinatesToSave) {
       // This case should ideally not be reached if openDialog is called correctly with coordinates for new POIs.
@@ -441,6 +590,7 @@ const savePoi = (): void => {
       coordinates: coordinatesToSave,
       icon: newPoiIcon.value,
       color: newPoiColor.value,
+      coordinateSource,
       timestamp: Date.now(),
     }
     missionStore.addPointOfInterest(newPoi)
@@ -493,9 +643,9 @@ defineExpose({
 }
 
 .color-picker-button {
-  width: 54px !important;
-  height: 54px !important;
-  min-width: 54px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
   border-radius: 4px !important;
 }
 
