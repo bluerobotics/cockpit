@@ -185,7 +185,8 @@ export const useSnapshotStore = defineStore('snapshot', () => {
 
   const createThumbnail = (blob: Blob, width: number, height: number): Promise<Blob> => {
     const img = document.createElement('img')
-    img.src = URL.createObjectURL(blob)
+    const objectUrl = URL.createObjectURL(blob)
+    img.src = objectUrl
     img.width = width
     img.height = height
 
@@ -200,6 +201,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
         ctx.drawImage(img, 0, 0, width, height)
         canvas.toBlob(
           (thumbnailBlob) => {
+            URL.revokeObjectURL(objectUrl)
             if (thumbnailBlob) {
               resolve(thumbnailBlob)
             } else {
@@ -210,7 +212,10 @@ export const useSnapshotStore = defineStore('snapshot', () => {
           0.9
         )
       }
-      img.onerror = () => reject(new Error('Image load failed'))
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error('Image load failed'))
+      }
     })
   }
 
