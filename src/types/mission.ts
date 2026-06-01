@@ -252,6 +252,44 @@ export type PointOfInterestIcon = string
 export type PointOfInterestColor = string
 
 /**
+ * Data-lake variable bindings that drive a Point of Interest's coordinates at runtime.
+ * When a variable id is set, the corresponding coordinate component follows that variable's value.
+ */
+export interface PointOfInterestCoordinateSource {
+  /**
+   * Data-lake variable id feeding the latitude.
+   */
+  latitudeVariableId?: string
+  /**
+   * Data-lake variable id feeding the longitude.
+   */
+  longitudeVariableId?: string
+}
+
+/**
+ * A registered data-lake listener for a dynamic POI, as a [variableId, listenerId] pair.
+ */
+export type DynamicPoiListenerHandle = [variableId: string, listenerId: string]
+
+/**
+ * Tracks the active data-lake subscription that drives a dynamic Point of Interest.
+ */
+export interface DynamicPoiSubscription {
+  /**
+   * Active data-lake listener handles for this POI.
+   */
+  listeners: DynamicPoiListenerHandle[]
+  /**
+   * Latitude variable id the subscription was built for.
+   */
+  latVariableId?: string
+  /**
+   * Longitude variable id the subscription was built for.
+   */
+  lngVariableId?: string
+}
+
+/**
  * Interface representing a Point of Interest (POI) on the map.
  */
 export interface PointOfInterest {
@@ -281,6 +319,11 @@ export interface PointOfInterest {
   color: PointOfInterestColor
   /** Timestamp of creation or last update */
   timestamp: number
+  /**
+   * When set, the POI coordinates are driven at runtime by data-lake variables.
+   * The stored `coordinates` then act as the last-known/fallback position.
+   */
+  coordinateSource?: PointOfInterestCoordinateSource
 }
 
 /**
