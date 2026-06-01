@@ -124,24 +124,41 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     video.style.display = 'none'
     document.body.appendChild(video)
 
-    await video.play()
-    const { width = video.videoWidth, height = video.videoHeight } = track.getSettings()
-    video.width = width
-    video.height = height
+    let playTimeout: ReturnType<typeof setTimeout> | undefined
+    try {
+      await Promise.race([
+        video.play(),
+        new Promise<never>((_, reject) => {
+          playTimeout = setTimeout(
+            () => reject(new Error(`Timed out starting playback for stream '${streamName}'`)),
+            5000
+          )
+        }),
+      ])
+      const { width = video.videoWidth, height = video.videoHeight } = track.getSettings()
+      video.width = width
+      video.height = height
 
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Could not get 2D context')
-    ctx.drawImage(video, 0, 0, width, height)
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Could not get 2D context')
+      ctx.drawImage(video, 0, 0, width, height)
 
-    video.pause()
-    document.body.removeChild(video)
-
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))), 'image/jpeg', 0.9)
-    })
+      return await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))), 'image/jpeg', 0.9)
+      })
+    } finally {
+      clearTimeout(playTimeout)
+      // Critical: detach the MediaStream and force the underlying WebMediaPlayer
+      // to be released. Without this, Chromium accumulates WebMediaPlayers
+      // (hard cap 1000/frame) and play() silently stalls after the limit.
+      video.pause()
+      video.srcObject = null
+      video.load()
+      video.remove()
+    }
   }
 
   const captureWorkspaceElectron = async (): Promise<Blob> => {
