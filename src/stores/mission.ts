@@ -1,5 +1,5 @@
 import * as turf from '@turf/turf'
-import { useStorage } from '@vueuse/core'
+import { useStorage, useThrottleFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
@@ -7,10 +7,12 @@ import { defaultMapFallbackBaseColor, defaultMapFallbackNoiseIntensity } from '@
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
+import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
+  DynamicPoiSubscription,
   MapTileProvider,
   MapTileProviderPreference,
   MissionCommand,
@@ -258,6 +260,123 @@ export const useMissionStore = defineStore('mission', () => {
     }
     updatePointOfInterest(id, { coordinates: newCoordinates })
   }
+
+  // Dynamic POIs: subscribe to data-lake variables and feed their coordinates into the store at the user-configured
+  // vehicle position update rate (Settings -> Mission -> "Max. vehicle position update rate"), mirroring the throttle
+  // used for the vehicle marker.
+  const dynamicPoiSubscriptions: Record<string, DynamicPoiSubscription> = {}
+  const dynamicPoiPendingCoordinates: Record<string, PointOfInterestCoordinates> = {}
+
+  const readDynamicPoiCoordinates = (poi: PointOfInterest): PointOfInterestCoordinates | undefined => {
+    const source = poi.coordinateSource
+    if (!source) return undefined
+    // Unbound axes fall back to the stored coordinate; flushDynamicPoiUpdates then no-ops via its equality check.
+    const lat = source.latitudeVariableId
+      ? Number(getDataLakeVariableData(source.latitudeVariableId))
+      : poi.coordinates[0]
+    const lng = source.longitudeVariableId
+      ? Number(getDataLakeVariableData(source.longitudeVariableId))
+      : poi.coordinates[1]
+    if (!isFinite(lat) || !isFinite(lng)) return undefined
+    return [lat, lng]
+  }
+
+  const queueDynamicPoiUpdate = (poiId: string): void => {
+    const poi = pointsOfInterest.value.find((p) => p.id === poiId)
+    if (!poi) return
+    const coordinates = readDynamicPoiCoordinates(poi)
+    if (coordinates) dynamicPoiPendingCoordinates[poiId] = coordinates
+  }
+
+  const flushDynamicPoiUpdates = (): void => {
+    for (const [poiId, coordinates] of Object.entries(dynamicPoiPendingCoordinates)) {
+      delete dynamicPoiPendingCoordinates[poiId]
+      const poi = pointsOfInterest.value.find((p) => p.id === poiId)
+      if (!poi) continue
+      if (poi.coordinates[0] === coordinates[0] && poi.coordinates[1] === coordinates[1]) continue
+      movePointOfInterest(poiId, coordinates)
+    }
+  }
+
+  const teardownDynamicPoiSubscription = (poiId: string): void => {
+    const subscription = dynamicPoiSubscriptions[poiId]
+    if (!subscription) return
+    subscription.listeners.forEach(([variableId, listenerId]) => unlistenDataLakeVariable(variableId, listenerId))
+    delete dynamicPoiSubscriptions[poiId]
+    delete dynamicPoiPendingCoordinates[poiId]
+  }
+
+  const reconcileDynamicPoiSubscriptions = (): void => {
+    const pois = pointsOfInterest.value
+
+    // Drop subscriptions for POIs that were removed, made static, or had their bound variables changed.
+    for (const poiId of Object.keys(dynamicPoiSubscriptions)) {
+      const poi = pois.find((p) => p.id === poiId)
+      const source = poi?.coordinateSource
+      const subscription = dynamicPoiSubscriptions[poiId]
+      const isUnchanged =
+        source !== undefined &&
+        source.latitudeVariableId === subscription.latVariableId &&
+        source.longitudeVariableId === subscription.lngVariableId
+      if (!isUnchanged) teardownDynamicPoiSubscription(poiId)
+    }
+
+    // Open subscriptions for newly dynamic POIs.
+    for (const poi of pois) {
+      const source = poi.coordinateSource
+      if (!source || (!source.latitudeVariableId && !source.longitudeVariableId)) continue
+      if (dynamicPoiSubscriptions[poi.id]) continue
+
+      const listeners: DynamicPoiSubscription['listeners'] = []
+      const onValue = (): void => {
+        queueDynamicPoiUpdate(poi.id)
+        flushDynamicPoiUpdatesThrottled()
+      }
+      const variableIds = [source.latitudeVariableId, source.longitudeVariableId].filter(
+        (id): id is string => id !== undefined
+      )
+      variableIds.forEach((variableId) => {
+        listeners.push([variableId, listenDataLakeVariable(variableId, onValue)])
+      })
+
+      dynamicPoiSubscriptions[poi.id] = {
+        listeners,
+        latVariableId: source.latitudeVariableId,
+        lngVariableId: source.longitudeVariableId,
+      }
+      // Seed from current values, in case they already exist in the data-lake.
+      queueDynamicPoiUpdate(poi.id)
+      flushDynamicPoiUpdatesThrottled()
+    }
+  }
+
+  let flushDynamicPoiUpdatesThrottled = useThrottleFn(
+    flushDynamicPoiUpdates,
+    mainVehicleStore.vehiclePositionMaxSampleRate,
+    true,
+    true
+  )
+  // Recreate the throttle when the rate changes; mirrors how the vehicle marker handles the same setting in
+  // mainVehicle.ts. Any trailing call still pending on the previous throttle is dropped — acceptable here because
+  // the buffer is coalesced and any in-flight value is re-derived by the next listener tick.
+  watch(
+    () => mainVehicleStore.vehiclePositionMaxSampleRate,
+    (ms) => {
+      flushDynamicPoiUpdatesThrottled = useThrottleFn(flushDynamicPoiUpdates, ms, true, true)
+    }
+  )
+
+  // Reconcile only when the dynamic bindings change (not on every coordinate tick), keeping value updates off this watcher.
+  watch(
+    () =>
+      pointsOfInterest.value.map((poi) => ({
+        id: poi.id,
+        latVariableId: poi.coordinateSource?.latitudeVariableId,
+        lngVariableId: poi.coordinateSource?.longitudeVariableId,
+      })),
+    () => reconcileDynamicPoiSubscriptions(),
+    { deep: true, immediate: true }
+  )
 
   const clearMission = (): void => {
     currentPlanningWaypoints.splice(0)
