@@ -179,6 +179,11 @@ export interface Survey {
    */
   turnaroundDistance: number
   /**
+   * When true, the survey is flown a second time with the lines rotated 90 degrees, producing a
+   * crosshatch grid. Useful for photogrammetry coverage. Optional for backwards compatibility.
+   */
+  crosshatch?: boolean
+  /**
    * Executable mission waypoints.
    */
   waypoints: Waypoint[]
@@ -198,6 +203,10 @@ export interface SurveyPath {
    * Each entry is a polyline connecting boundary ↔ turnaround points.
    */
   turnaroundSegments: L.LatLng[][]
+  /**
+   * Index in `path` where the crosshatch second pass (rotated 90°) begins. Undefined when crosshatch is disabled.
+   */
+  crosshatchStartIndex?: number
 }
 
 // TODO - Replace leaflet types with agnostic types

@@ -203,13 +203,15 @@ export const fitMapToWaypoints = (
  * @param {number} linesAngle - The angle of the survey lines in degrees.
  * @param {number} turnaroundDistance - Distance in meters to extend (positive) or inset (negative) from the polygon
  *   boundary before turning. Positive values make the vehicle fly past the edges; negative values keep it away.
+ * @param {boolean} crosshatch - When true, appends a second pass rotated 90 degrees to form a crosshatch grid.
  * @returns {SurveyPath} The generated survey path and turnaround segments.
  */
 export const generateSurveyPath = (
   polygonPoints: L.LatLng[],
   distanceBetweenLines: number,
   linesAngle: number,
-  turnaroundDistance = 0
+  turnaroundDistance = 0,
+  crosshatch = false
 ): SurveyPath => {
   if (polygonPoints.length < 4) return { path: [], turnaroundSegments: [] }
 
@@ -232,6 +234,7 @@ export const generateSurveyPath = (
 
     const continuousPath: L.LatLng[] = []
     const turnaroundSegments: L.LatLng[][] = []
+    let crosshatchStartIndex: number | undefined
     let d = -diagonal
     let isReverse = false
 
@@ -327,7 +330,24 @@ export const generateSurveyPath = (
       turnaroundSegments.push([prevExitBoundary, prevExitTurnaround])
     }
 
-    return { path: continuousPath, turnaroundSegments }
+    if (crosshatch) {
+      const secondPass = generateSurveyPath(polygonPoints, distanceBetweenLines, linesAngle + 90, turnaroundDistance)
+      if (secondPass.path.length > 0) {
+        const passEnd = continuousPath[continuousPath.length - 1]
+        // Fly the second pass in whichever direction keeps the transit leg from the first pass short.
+        if (
+          passEnd &&
+          passEnd.distanceTo(secondPass.path[secondPass.path.length - 1]) < passEnd.distanceTo(secondPass.path[0])
+        ) {
+          secondPass.path.reverse()
+        }
+        crosshatchStartIndex = continuousPath.length
+        continuousPath.push(...secondPass.path)
+        turnaroundSegments.push(...secondPass.turnaroundSegments)
+      }
+    }
+
+    return { path: continuousPath, turnaroundSegments, crosshatchStartIndex }
   } catch (error) {
     console.error('Error in generateSurveyPath:', error)
     return { path: [], turnaroundSegments: [] }
