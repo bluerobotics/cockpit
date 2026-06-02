@@ -50,7 +50,7 @@
         'text-green-500 -ml-[33px]': !isTakingTimedSnapshot,
       }"
       size="22"
-      @click="isTakingTimedSnapshot = !isTakingTimedSnapshot"
+      @click="toggleTimedSnapshot"
     />
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="500">
@@ -163,11 +163,13 @@
         type="number"
         density="compact"
         variant="outlined"
-        hide-details
+        hide-details="auto"
         theme="dark"
         class="w-[90%] mt-2"
-        :min="0.1"
-        step="0.1"
+        :min="MIN_TIMED_SNAPSHOT_INTERVAL_SEC"
+        :step="MIN_TIMED_SNAPSHOT_INTERVAL_SEC"
+        :rules="timedSnapshotIntervalRules"
+        @blur="normalizeTimedSnapshotInterval"
       />
       <div class="flex w-[90%] justify-end items-center mt-4 border-t-[1px] border-t-[#FFFFFF11]">
         <v-btn
@@ -335,6 +337,38 @@ const handleSelectSnapshotTriggerType = (type: 'single' | 'timed'): void => {
   snapshotTypeIcon.value = type === 'timed' ? 'mdi-timer-outline' : 'mdi-video-image'
   miniWidget.value.options.snapshotTriggerType = type
   isSnapshotMenuOpen.value = false
+}
+
+const MIN_TIMED_SNAPSHOT_INTERVAL_SEC = 0.1
+
+const isValidTimedSnapshotInterval = (v: unknown): boolean =>
+  typeof v === 'number' && Number.isFinite(v) && v >= MIN_TIMED_SNAPSHOT_INTERVAL_SEC
+
+const timedSnapshotIntervalRules = [
+  (v: unknown): boolean | string =>
+    isValidTimedSnapshotInterval(v) || `Must be at least ${MIN_TIMED_SNAPSHOT_INTERVAL_SEC} seconds.`,
+]
+
+const normalizeTimedSnapshotInterval = (): void => {
+  if (!isValidTimedSnapshotInterval(timedSnapshotInterval.value)) {
+    timedSnapshotInterval.value = MIN_TIMED_SNAPSHOT_INTERVAL_SEC
+  }
+}
+
+const toggleTimedSnapshot = (): void => {
+  if (isTakingTimedSnapshot.value) {
+    isTakingTimedSnapshot.value = false
+    return
+  }
+  if (!isValidTimedSnapshotInterval(timedSnapshotInterval.value)) {
+    openSnackbar({
+      message: `Timed snapshot interval must be at least ${MIN_TIMED_SNAPSHOT_INTERVAL_SEC} seconds.`,
+      variant: 'error',
+      duration: 3000,
+    })
+    return
+  }
+  isTakingTimedSnapshot.value = true
 }
 
 let progressInterval: ReturnType<typeof setInterval> | null = null
