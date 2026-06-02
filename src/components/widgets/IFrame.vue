@@ -31,7 +31,8 @@
         </div>
         <div
           v-show="!widget.options.startCollapsed"
-          class="relative flex-1 min-h-0 w-full"
+          ref="contentBox"
+          class="relative flex-1 min-h-0 w-full overflow-hidden"
           :class="expandsUpward ? 'order-1' : 'order-2'"
         >
           <iframe
@@ -73,43 +74,41 @@
     </div>
     <div v-else>
       <teleport to=".widgets-view">
-        <iframe
-          v-if="urlCheckStatus === 'ok'"
-          v-show="iframe_loaded"
-          ref="iframe"
-          :src="toBeUsedURL"
-          :style="[iframeStyle, { position: 'absolute' }]"
-          frameborder="0"
-          @load="loadFinished"
-        />
-        <div
-          v-else
-          class="iframe-status-overlay flex flex-col items-center justify-center text-center px-4 gap-2"
-          :style="[iframeStyle, { position: 'absolute' }]"
-        >
-          <template v-if="urlCheckStatus === 'waiting'">
-            <v-icon size="48" class="opacity-80">mdi-progress-clock</v-icon>
-            <p class="text-base font-semibold">{{ waitingTitle }}</p>
-            <p class="text-sm opacity-70">
-              Trying again in {{ retryCountdownSeconds }}
-              {{ retryCountdownSeconds === 1 ? 'second' : 'seconds' }}
-            </p>
-            <v-progress-linear
-              :model-value="retryRemainingPercent"
-              color="white"
-              height="4"
-              rounded
-              reverse
-              class="!max-w-[60%] mt-2"
-            />
-          </template>
-          <template v-else-if="urlCheckStatus === 'retrying'">
-            <v-progress-circular indeterminate color="white" size="48" width="3" />
-            <p class="text-base font-semibold">Retrying...</p>
-          </template>
-          <template v-else>
-            <v-progress-circular indeterminate color="white" size="32" width="3" />
-          </template>
+        <div class="absolute overflow-hidden" :style="widgetRectStyle">
+          <iframe
+            v-if="urlCheckStatus === 'ok'"
+            v-show="iframe_loaded"
+            ref="iframe"
+            :src="toBeUsedURL"
+            :style="iframeStyle"
+            frameborder="0"
+            @load="loadFinished"
+          />
+          <div v-else class="iframe-status-overlay flex flex-col items-center justify-center text-center px-4 gap-2">
+            <template v-if="urlCheckStatus === 'waiting'">
+              <v-icon size="48" class="opacity-80">mdi-progress-clock</v-icon>
+              <p class="text-base font-semibold">{{ waitingTitle }}</p>
+              <p class="text-sm opacity-70">
+                Trying again in {{ retryCountdownSeconds }}
+                {{ retryCountdownSeconds === 1 ? 'second' : 'seconds' }}
+              </p>
+              <v-progress-linear
+                :model-value="retryRemainingPercent"
+                color="white"
+                height="4"
+                rounded
+                reverse
+                class="!max-w-[60%] mt-2"
+              />
+            </template>
+            <template v-else-if="urlCheckStatus === 'retrying'">
+              <v-progress-circular indeterminate color="white" size="48" width="3" />
+              <p class="text-base font-semibold">Retrying...</p>
+            </template>
+            <template v-else>
+              <v-progress-circular indeterminate color="white" size="32" width="3" />
+            </template>
+          </div>
         </div>
       </teleport>
     </div>
@@ -190,6 +189,30 @@
                   class="ml-2"
                 />
               </div>
+              <div class="ml-3 mt-4 mr-2">
+                <v-slider
+                  v-model="contentZoomPercent"
+                  label="Content zoom"
+                  color="white"
+                  :min="minContentZoom * 100"
+                  :max="maxContentZoom * 100"
+                  :step="5"
+                  thumb-label
+                >
+                  <template #append>
+                    <span class="text-sm w-[48px] text-right">{{ contentZoomPercent }}%</span>
+                  </template>
+                </v-slider>
+              </div>
+              <v-switch
+                v-model="widget.options.scaleContentWithWidget"
+                label="Scale content when resizing widget"
+                color="white"
+                density="compact"
+                hide-details
+                class="ml-3 my-2"
+                @update:model-value="handleScaleContentToggle"
+              />
             </template>
           </ExpansiblePanel>
         </v-card-text>
@@ -205,7 +228,7 @@
 </template>
 
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core'
+import { useElementSize, useWindowSize } from '@vueuse/core'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
@@ -215,6 +238,7 @@ import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
+import { widgetDefaultSizes, WidgetType } from '@/types/widgets'
 
 import ExpansiblePanel from '../ExpansiblePanel.vue'
 const interfaceStore = useAppInterfaceStore()
@@ -490,6 +514,58 @@ const canvasSize = computed(() => ({
   height: widget.value.size.height * windowWidth.value,
 }))
 
+const minContentZoom = 0.25
+const maxContentZoom = 3
+// Reference width used when scaling content with the widget.
+const referenceWidth = widgetDefaultSizes[WidgetType.IFrame]?.width ?? 0.4
+
+const contentBox = ref<HTMLElement>()
+const { width: contentBoxWidth, height: contentBoxHeight } = useElementSize(contentBox)
+
+const clampZoom = (zoom: number): number => Math.min(maxContentZoom, Math.max(minContentZoom, zoom))
+
+const contentZoom = computed<number>(() => clampZoom(widget.value.options.contentZoom ?? 1))
+
+const contentZoomPercent = computed<number>({
+  get: () => Math.round(contentZoom.value * 100),
+  set: (percent: number) => {
+    widget.value.options.contentZoom = clampZoom(percent / 100)
+  },
+})
+
+/**
+ * Effective scale applied to the iframe content. The manual content zoom is the base.
+ * @returns {number} The scale factor applied to the iframe.
+ */
+const effectiveZoom = computed<number>(() => {
+  const autoScale = widget.value.options.scaleContentWithWidget ? widget.value.size.width / referenceWidth : 1
+  return contentZoom.value * autoScale
+})
+
+/**
+ * Compensates the manual content zoom when toggling "scale content with widget" so the effective
+ * zoom stays continuous across the toggle.
+ * @param {boolean | null} enabled The new toggle state.
+ */
+const handleScaleContentToggle = (enabled: boolean | null): void => {
+  const autoScale = widget.value.size.width / referenceWidth
+  if (autoScale <= 0) return
+  widget.value.options.contentZoom = clampZoom(enabled ? contentZoom.value / autoScale : contentZoom.value * autoScale)
+}
+
+/**
+ * Builds the CSS that scales the iframe inside the given content-area box.
+ * @param {number} areaWidth Content-area width in pixels.
+ * @param {number} areaHeight Content-area height in pixels.
+ * @returns {string} The CSS declarations positioning and scaling the iframe.
+ */
+const buildContentStyle = (areaWidth: number, areaHeight: number): string => {
+  const zoom = effectiveZoom.value
+  const width = areaWidth / zoom
+  const height = areaHeight / zoom
+  return `position: absolute; top: 0; left: 0; width: ${width}px; height: ${height}px; transform: scale(${zoom}); transform-origin: top left;`
+}
+
 const validateURL = (url: string): true | string => {
   return isValidURL(url) ? true : 'URL is not valid.'
 }
@@ -547,6 +623,8 @@ onBeforeMount((): void => {
     startCollapsed: false,
     containerName: 'iframe',
     expandDirection: 'auto' as 'auto' | 'up' | 'down',
+    contentZoom: 1,
+    scaleContentWithWidget: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 
@@ -584,7 +662,24 @@ onBeforeUnmount((): void => {
 })
 
 const collapsibleIframeStyle = computed<string>(() => {
+  let newStyle = buildContentStyle(contentBoxWidth.value, contentBoxHeight.value)
+  if (widgetStore.editingMode) {
+    newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
+  }
+  if (!widgetStore.isWidgetVisible(widget.value)) {
+    newStyle = newStyle.concat(' ', 'display: none;')
+  }
+  return newStyle
+})
+
+// Full widget rect, used to position the teleported content box and its status overlay.
+const widgetRectStyle = computed<string>(() => {
   let newStyle = ''
+  newStyle = newStyle.concat(' ', `left: ${widget.value.position.x * windowWidth.value}px;`)
+  newStyle = newStyle.concat(' ', `top: ${widget.value.position.y * windowHeight.value}px;`)
+  newStyle = newStyle.concat(' ', `width: ${widget.value.size.width * windowWidth.value}px;`)
+  newStyle = newStyle.concat(' ', `height: ${widget.value.size.height * windowHeight.value}px;`)
+
   if (widgetStore.editingMode) {
     newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
   }
@@ -595,22 +690,7 @@ const collapsibleIframeStyle = computed<string>(() => {
 })
 
 const iframeStyle = computed<string>(() => {
-  let newStyle = ''
-
-  newStyle = newStyle.concat(' ', `left: ${widget.value.position.x * windowWidth.value}px;`)
-  newStyle = newStyle.concat(' ', `top: ${widget.value.position.y * windowHeight.value}px;`)
-  newStyle = newStyle.concat(' ', `width: ${widget.value.size.width * windowWidth.value}px;`)
-  newStyle = newStyle.concat(' ', `height: ${widget.value.size.height * windowHeight.value}px;`)
-
-  if (widgetStore.editingMode) {
-    newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
-  }
-
-  if (!widgetStore.isWidgetVisible(widget.value)) {
-    newStyle = newStyle.concat(' ', 'display: none;')
-  }
-
-  return newStyle
+  return buildContentStyle(widget.value.size.width * windowWidth.value, widget.value.size.height * windowHeight.value)
 })
 
 const iframeOpacity = computed<number>(() => {
