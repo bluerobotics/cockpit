@@ -187,7 +187,6 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
-import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -197,7 +196,6 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { SnapshotResult } from '@/types/snapshot'
 import type { MiniWidget } from '@/types/widgets'
 
-const { showDialog } = useInteractionDialog()
 const snapshotStore = useSnapshotStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
@@ -239,8 +237,9 @@ const timedSnapshotInterval = computed({
   },
 })
 const isTakingTimedSnapshot = ref<boolean>(false)
-const isFailureDialogOpen = ref(false)
 const timerProgress = ref<number>(50)
+const SNAPSHOT_ERROR_SNACKBAR_DURATION = 8000
+const isSnapshotErrorSnackbarOpen = ref(false)
 
 const flashEffect = async (): Promise<void> => {
   const flashOverlay = document.createElement('div')
@@ -305,21 +304,19 @@ const handleSnapshotResult = (result: SnapshotResult, isTimed = false): void => 
     return
   }
 
-  if (isFailureDialogOpen.value) return
+  if (isSnapshotErrorSnackbarOpen.value) return
 
-  isFailureDialogOpen.value = true
-  showDialog({
-    title: 'Error taking snapshot',
+  isSnapshotErrorSnackbarOpen.value = true
+  openSnackbar({
     message:
       failed.length > 0
-        ? `Failed to capture: ${failedNames}. Make sure the streams have finished loading.`
+        ? `Failed to take snapshot for: ${failedNames}. Make sure the streams have finished loading.`
         : 'No sources available for capture. Make sure streams are connected or select specific ones in the widget settings.',
     variant: 'error',
-    persistent: false,
-    maxWidth: '550px',
-  }).finally(() => {
-    isFailureDialogOpen.value = false
+    duration: SNAPSHOT_ERROR_SNACKBAR_DURATION,
+    closeButton: true,
   })
+  setTimeout(() => (isSnapshotErrorSnackbarOpen.value = false), SNAPSHOT_ERROR_SNACKBAR_DURATION)
 }
 
 const handleTakeSnapshot = async (): Promise<void> => {
