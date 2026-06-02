@@ -54,6 +54,8 @@ const blueOsServiceUrl = (vehicleAddress: string, service: Service): string => {
     : `${protocol}//${vehicleAddress}:${port}`
 }
 
+const isAbsoluteUrl = (url: string): boolean => /^https?:\/\//i.test(url)
+
 const getServicesFromBlueOS = async (vehicleAddress: string): Promise<Service[]> => {
   const options = { timeout: defaultTimeout, retry: 0 }
   const rawData = await ky.get(`${protocol}//${vehicleAddress}/helper/v1.0/web_services`, options).json()
@@ -93,11 +95,14 @@ export const getWidgetsFromBlueOS = async (vehicleAddress: string): Promise<Exte
             ...extraJson.widgets.map((widget) => {
               const useExtPath = widget.useExtensionPathAsBaseUrl ?? false
               const iconUrl = widget.iconUrl ?? widget.iframeIcon ?? ''
+              // Legacy manifests serve paths relative to the extension's service, so resolve them against
+              // the service base URL (matching pre-18.0.0 behavior). Absolute URLs are kept as-is.
+              const resolveAgainstBase = (url: string): string => (isAbsoluteUrl(url) ? url : baseUrl + url)
 
               return {
                 ...widget,
-                iframeUrl: useExtPath ? extensionPath + widget.iframeUrl : widget.iframeUrl,
-                iframeIcon: useExtPath ? baseUrl + iconUrl : iconUrl,
+                iframeUrl: useExtPath ? extensionPath + widget.iframeUrl : resolveAgainstBase(widget.iframeUrl),
+                iframeIcon: useExtPath ? baseUrl + iconUrl : resolveAgainstBase(iconUrl),
               }
             })
           )
