@@ -177,7 +177,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
   }
 
   const snapshotFilename = (streamName: string, missionName = 'Cockpit'): string => {
-    const timeString = format(new Date(), 'LLL dd, yyyy - HH꞉mm꞉ss O')
+    const timeString = format(new Date(), 'LLL dd, yyyy - HH꞉mm꞉ss.SSS O')
     const safeMissionName = sanitizeFilenameComponent(missionName) || 'Cockpit'
     const safeStreamName = sanitizeFilenameComponent(streamName) || 'workspace'
     return `${safeMissionName} (${timeString}) #${safeStreamName}.jpeg`

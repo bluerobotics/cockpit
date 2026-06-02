@@ -166,9 +166,8 @@
         hide-details
         theme="dark"
         class="w-[90%] mt-2"
-        :min="1"
-        step="1"
-        @update:model-value="(val) => (timedSnapshotInterval = parseInt(val))"
+        :min="0.1"
+        step="0.1"
       />
       <div class="flex w-[90%] justify-end items-center mt-4 border-t-[1px] border-t-[#FFFFFF11]">
         <v-btn
