@@ -23,6 +23,26 @@ const preprocessCamelCase = <T extends z.ZodTypeAny>(schema: T): z.ZodTypeAny =>
   return z.preprocess((val: Record<string, unknown>) => camelcaseKeys(val, { deep: true }), schema)
 }
 
+/**
+ * Creates a preprocessing Zod schema that fills canonical camelCase keys from legacy snake_case aliases.
+ * Only the listed keys are remapped (existing camelCase values win).
+ * @param {Record<string, string>} aliases Map of legacy snake_case key to canonical camelCase key
+ * @param {T} schema The Zod schema to validate against after remapping
+ * @returns {z.ZodTypeAny} The schema wrapped with alias preprocessing
+ */
+const withLegacyAliases = <T extends z.ZodTypeAny>(aliases: Record<string, string>, schema: T): z.ZodTypeAny => {
+  return z.preprocess((val) => {
+    if (typeof val !== 'object' || val === null) return val
+    const obj = { ...(val as Record<string, unknown>) }
+    for (const [legacyKey, canonicalKey] of Object.entries(aliases)) {
+      if (obj[canonicalKey] === undefined && obj[legacyKey] !== undefined) {
+        obj[canonicalKey] = obj[legacyKey]
+      }
+    }
+    return obj
+  }, schema)
+}
+
 // Zod schemas for external API responses
 const ServiceMetadataSchema = z
   .object({
@@ -43,20 +63,23 @@ export const ServiceSchema = preprocessCamelCase(
   })
 )
 
-const ExternalWidgetSetupInfoSchema = z
-  .object({
-    name: z.string(),
-    iframeUrl: z.string(),
-    iconUrl: z.string().optional(),
-    iframeIcon: z.string().optional(),
-    collapsibleContainerName: z.string().optional(),
-    version: z.string().optional(),
-    startCollapsed: z.boolean().optional(),
-    useExtensionPathAsBaseUrl: z.boolean().optional(),
-  })
-  .refine((data) => data.iconUrl !== undefined || data.iframeIcon !== undefined, {
-    message: 'Either iconUrl or iframeIcon must be provided',
-  })
+const ExternalWidgetSetupInfoSchema = withLegacyAliases(
+  { iframe_url: 'iframeUrl', iframe_icon: 'iframeIcon', icon_url: 'iconUrl' },
+  z
+    .object({
+      name: z.string(),
+      iframeUrl: z.string(),
+      iconUrl: z.string().optional(),
+      iframeIcon: z.string().optional(),
+      collapsibleContainerName: z.string().optional(),
+      version: z.string().optional(),
+      startCollapsed: z.boolean().optional(),
+      useExtensionPathAsBaseUrl: z.boolean().optional(),
+    })
+    .refine((data) => data.iconUrl !== undefined || data.iframeIcon !== undefined, {
+      message: 'Either iconUrl or iframeIcon must be provided',
+    })
+)
 
 const HttpRequestActionConfigSchema = z.object({
   name: z.string(),
@@ -111,10 +134,17 @@ const JoystickMapSuggestionGroupSchema = z.object({
   version: z.string().optional(),
 })
 
-export const ExtrasJsonSchema = z.object({
-  targetCockpitApiVersion: z.string(),
-  targetSystem: z.string(),
-  widgets: z.array(ExternalWidgetSetupInfoSchema).default([]),
-  actions: z.array(ActionConfigSchema).default([]),
-  joystickSuggestions: z.array(JoystickMapSuggestionGroupSchema).optional(),
-})
+export const ExtrasJsonSchema = withLegacyAliases(
+  {
+    target_cockpit_api_version: 'targetCockpitApiVersion',
+    target_system: 'targetSystem',
+    joystick_suggestions: 'joystickSuggestions',
+  },
+  z.object({
+    targetCockpitApiVersion: z.string(),
+    targetSystem: z.string(),
+    widgets: z.array(ExternalWidgetSetupInfoSchema).default([]),
+    actions: z.array(ActionConfigSchema).default([]),
+    joystickSuggestions: z.array(JoystickMapSuggestionGroupSchema).optional(),
+  })
+)
