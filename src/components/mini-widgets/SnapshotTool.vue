@@ -281,12 +281,15 @@ const toInternalName = (externalId: string): string => {
   return videoStore.internalStreamNameFromExternal(externalId) ?? externalId
 }
 
-const handleSnapshotResult = (result: SnapshotResult): void => {
+const handleSnapshotResult = (result: SnapshotResult, isTimed = false): void => {
   const { succeeded, failed } = result
 
   if (succeeded.length > 0 && failed.length === 0) {
     flashEffect()
-    openSnackbar({ message: 'Snapshot recorded successfully.', variant: 'success', duration: 2000 })
+    // Timed captures only surface errors/warnings to avoid spamming a success snackbar per shot.
+    if (!isTimed) {
+      openSnackbar({ message: 'Snapshot recorded successfully.', variant: 'success', duration: 2000 })
+    }
     return
   }
 
@@ -376,7 +379,7 @@ let shotInterval: ReturnType<typeof setInterval> | null = null
 
 const fireTimedSnapshot = async (): Promise<void> => {
   const result = await captureSnapshot()
-  handleSnapshotResult(result)
+  handleSnapshotResult(result, true)
 }
 
 watch(isTakingTimedSnapshot, (newValue) => {
