@@ -171,6 +171,10 @@
         :rules="timedSnapshotIntervalRules"
         @blur="normalizeTimedSnapshotInterval"
       />
+      <div class="flex items-center justify-start w-[90%] mt-2">
+        <v-checkbox v-model="miniWidget.options.flashOnSnapshot" density="compact" hide-details theme="dark" />
+        <p class="ml-3 text-sm">Flash screen on capture (timed captures blink at most once per second)</p>
+      </div>
       <div class="flex w-[90%] justify-end items-center mt-4 border-t-[1px] border-t-[#FFFFFF11]">
         <v-btn
           class="w-auto text-uppercase mt-2 -mr-6"
@@ -280,12 +284,27 @@ const toInternalName = (externalId: string): string => {
   return videoStore.internalStreamNameFromExternal(externalId) ?? externalId
 }
 
+let timedFlashCounter = 0
+
+const maybeFlash = (isTimed: boolean): void => {
+  if (!miniWidget.value.options.flashOnSnapshot) return
+  // Cap timed blinks at ~1 Hz by decimating per capture count rather than wall-clock time.
+  // A time throttle whose window matches the interval (both ~1s) drops a blink whenever
+  // jitter pushes a capture just under the window; counting avoids that.
+  if (isTimed) {
+    const blinkEveryNCaptures = Math.max(1, Math.round(1 / timedSnapshotInterval.value))
+    const shouldFlash = timedFlashCounter % blinkEveryNCaptures === 0
+    timedFlashCounter++
+    if (!shouldFlash) return
+  }
+  flashEffect()
+}
+
 const handleSnapshotResult = (result: SnapshotResult, isTimed = false): void => {
   const { succeeded, failed } = result
 
   if (succeeded.length > 0 && failed.length === 0) {
-    flashEffect()
-    // Timed captures only surface errors/warnings to avoid spamming a success snackbar per shot.
+    maybeFlash(isTimed)
     if (!isTimed) {
       openSnackbar({ message: 'Snapshot recorded successfully.', variant: 'success', duration: 2000 })
     }
@@ -295,7 +314,7 @@ const handleSnapshotResult = (result: SnapshotResult, isTimed = false): void => 
   const failedNames = failed.map(toInternalName).join(', ')
 
   if (succeeded.length > 0 && failed.length > 0) {
-    flashEffect()
+    maybeFlash(isTimed)
     openSnackbar({
       message: `Snapshot captured, but failed for: ${failedNames}.`,
       variant: 'warning',
@@ -381,6 +400,7 @@ const fireTimedSnapshot = async (): Promise<void> => {
 
 watch(isTakingTimedSnapshot, (newValue) => {
   if (newValue) {
+    timedFlashCounter = 0
     fireTimedSnapshot().catch((err) => console.error('Timed snapshot capture failed:', err))
     openSnackbar({
       message: `Timed snapshot started. This will capture the selected interfaces every ${timedSnapshotInterval.value} seconds until you press the camera button again.`,
@@ -430,6 +450,7 @@ onBeforeMount(() => {
     captureWorkspace: true,
     snapshotTriggerType: 'single' as 'single' | 'timed',
     timedSnapshotInterval: 5,
+    flashOnSnapshot: true,
   }
   miniWidget.value.options = { ...defaultOptions, ...miniWidget.value.options }
   migrateSelectedStreamsToInternalNames()
