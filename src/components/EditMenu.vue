@@ -734,6 +734,8 @@ const allAvailableWidgets = computed(() => {
         containerName: widget.collapsibleContainerName,
         startCollapsed: widget.startCollapsed ?? false,
         useVehicleAddressAsBase: widget.useExtensionPathAsBaseUrl ?? false,
+        contentZoom: widget.contentZoom ?? 1,
+        scaleContentWithWidget: widget.scaleContentWithWidget ?? true,
       },
       defaultSize: widgetDefaultSizes[WidgetType.IFrame],
     })),
