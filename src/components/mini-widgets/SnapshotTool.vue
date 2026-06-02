@@ -256,6 +256,7 @@ const flashEffect = async (): Promise<void> => {
   flashOverlay.style.opacity = '0'
   flashOverlay.style.transition = 'opacity 0.1s ease'
   flashOverlay.style.zIndex = '9999'
+  flashOverlay.style.pointerEvents = 'none'
 
   document.body.appendChild(flashOverlay)
 
