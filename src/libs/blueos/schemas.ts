@@ -53,6 +53,8 @@ const ExternalWidgetSetupInfoSchema = z
     version: z.string().optional(),
     startCollapsed: z.boolean().optional(),
     useExtensionPathAsBaseUrl: z.boolean().optional(),
+    contentZoom: z.number().optional(),
+    scaleContentWithWidget: z.boolean().optional(),
   })
   .refine((data) => data.iconUrl !== undefined || data.iframeIcon !== undefined, {
     message: 'Either iconUrl or iframeIcon must be provided',

@@ -48,6 +48,18 @@ export interface ExternalWidgetSetupInfo {
    * and the IFrame widget's useVehicleAddressAsBase option is set to true.
    */
   useExtensionPathAsBaseUrl?: boolean
+
+  /**
+   * Initial content zoom applied to the iframe, independent of the widget size (optional).
+   * `1` means 100% (no scaling). Lets the extension declare the zoom its page is designed for.
+   */
+  contentZoom?: number
+
+  /**
+   * Whether the iframe content scales together with the widget size instead of being cropped (optional).
+   * Defaults to enabled so the content always stays proportional to the widget dimensions.
+   */
+  scaleContentWithWidget?: boolean
 }
 
 /**
