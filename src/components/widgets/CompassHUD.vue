@@ -581,6 +581,9 @@ const updatePoiMarkers = (): void => {
 watch(yaw, () => {
   yawAngles.forEach((angle: number) => {
     const position = angleX(angle)
+    // Ensure the line exists before tweening. The yaw watcher can fire before onMounted populates yawLinesX,
+    // and gsap.to() against a missing property emits "Invalid property ... Missing plugin?" warnings.
+    renderVars.yawLinesX[angle] ??= position
     // Only interpolate angle render with GSAP when the angle is not changing
     // sides, so it doesn't cross across the screen.
     if (Math.abs(renderVars.yawLinesX[angle] - position) > 90) {
