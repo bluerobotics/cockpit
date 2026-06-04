@@ -1,5 +1,6 @@
 import { settingsManager } from '../settings-management'
 import {
+  findDataLakeInputsInString,
   findDataLakeVariablesIdsInString,
   getDataLakeVariableIdFromInput,
   replaceDataLakeInputsInString,
@@ -34,6 +35,13 @@ const saveTransformingFunctions = (): void => {
 
 const getExpressionValue = (func: TransformingFunction): string | number | boolean => {
   const expressionWithValues = replaceDataLakeInputsInString(func.expression)
+
+  // Inputs whose variables have no value yet are left as literal '{{ ... }}' placeholders by the replacement.
+  // Bail out with a clear error instead of letting eval fail with a cryptic "Unexpected token '{'" SyntaxError.
+  const unavailableInputs = findDataLakeInputsInString(expressionWithValues)
+  if (unavailableInputs.length > 0) {
+    throw new Error(`Data lake variable(s) not available yet: ${unavailableInputs.join(', ')}.`)
+  }
 
   // If the expression contains a return statement, we can just evaluate it directly
   if (func.expression.includes('return')) {
