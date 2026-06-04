@@ -172,8 +172,8 @@ export const useSnapshotStore = defineStore('snapshot', () => {
       height: Math.floor(height),
     }
     // @ts-ignore: ignore TypeScript error on next line
-    const pngBuffer = await window.electronAPI!.captureWorkspace(rect)
-    return new Blob([pngBuffer], { type: 'image/png' })
+    const jpegBuffer = await window.electronAPI!.captureWorkspace(rect)
+    return new Blob([jpegBuffer], { type: 'image/jpeg' })
   }
 
   const snapshotFilename = (streamName: string, missionName = 'Cockpit'): string => {

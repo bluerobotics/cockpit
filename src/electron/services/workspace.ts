@@ -9,6 +9,8 @@ export const setupWorkspaceService = (): void => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) throw new Error('No window')
     const image = await win.capturePage(rect)
-    return image.toPNG()
+    // JPEG encodes ~5x faster than PNG and yields a smaller payload, which keeps the main
+    // process responsive during fast/timed captures (PNG encoding stalled the renderer).
+    return image.toJPEG(90)
   })
 }
