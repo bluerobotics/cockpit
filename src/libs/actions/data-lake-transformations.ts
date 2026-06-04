@@ -81,6 +81,9 @@ const variablesListeners: Record<string, Record<string, string[]>> = {}
 const nextDelayToEvaluateFaillingTransformingFunction: Record<string, number> = {}
 const lastTimeTriedToEvaluateFaillingTransformingFunction: Record<string, number> = {}
 const initialEvaluationTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
+// Last error logged per function, so a function that keeps failing the same way (e.g. depends on a vehicle
+// parameter that never arrives) is logged once instead of on every dependency update.
+const lastLoggedErrorForTransformingFunction: Record<string, string> = {}
 
 const setupTransformingFunctionsListeners = (): void => {
   globalTransformingFunctions.forEach((func) => {
@@ -116,14 +119,20 @@ const setupTransformingFunctionsListeners = (): void => {
               return
             } else {
               setDataLakeVariableData(func.id, getExpressionValue(func))
+              delete lastLoggedErrorForTransformingFunction[func.id]
             }
           } catch (error) {
             lastTimeTriedToEvaluateFaillingTransformingFunction[func.id] = Date.now()
             const currentDelay = nextDelayToEvaluateFaillingTransformingFunction[func.id] || 10
             const nextDelay = Math.min(2 * currentDelay, 10000)
             nextDelayToEvaluateFaillingTransformingFunction[func.id] = nextDelay
-            const msg = `Error evaluating expression for transforming function '${func.id}'. Next evaluation in ${nextDelay} ms. Error: ${error}`
-            console.error(msg)
+            // Avoid spamming the log when the same error repeats on every dependency update.
+            const errorText = `${error}`
+            if (lastLoggedErrorForTransformingFunction[func.id] !== errorText) {
+              lastLoggedErrorForTransformingFunction[func.id] = errorText
+              const msg = `Error evaluating expression for transforming function '${func.id}'. Next evaluation in ${nextDelay} ms. Error: ${errorText}`
+              console.error(msg)
+            }
           }
         })
         if (!variablesListeners[func.id]) {
