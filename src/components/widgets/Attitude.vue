@@ -132,6 +132,10 @@ const renderVars = reactive<RenderVariables>({
   pitchDegrees: 0,
 })
 
+// Instantiate the pitch heights synchronously, before the attitude watchers can fire. Otherwise gsap.to() would
+// target properties that don't exist yet on the object, emitting "Invalid property ... Missing plugin?" warnings.
+pitchAngles.forEach((a: number) => (renderVars.pitchLinesHeights[a] = 5 * a))
+
 // Pre-defined HUD colors
 const colorSwatches = ref([['#FFFFFF'], ['#FF2D2D'], ['#0ADB0ACC']])
 
@@ -153,8 +157,6 @@ onBeforeMount(() => {
 })
 
 onMounted(() => {
-  // Instantiate the initial pitch object
-  pitchAngles.forEach((a: number) => (renderVars.pitchLinesHeights[a] = 5 * a))
   renderCanvas()
 })
 
