@@ -31,15 +31,8 @@ export function useDataLakeVariable(variableId: MaybeRefOrGetter<string | undefi
     }
 
     currentVariableId = id
-    if (!id) {
-      value.value = undefined
-      return
-    }
-
-    const initialValue = getDataLakeVariableData(id)
-    if (initialValue !== undefined) {
-      value.value = initialValue
-    }
+    value.value = id ? getDataLakeVariableData(id) : undefined
+    if (!id) return
 
     currentListenerId = listenDataLakeVariable(id, (raw) => {
       value.value = raw

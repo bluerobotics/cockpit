@@ -128,6 +128,62 @@ export const setupMavlinkCameraResources = (): void => {
   }
 }
 
+type PressureAltitudeCompoundVariable = {
+  /** Data-lake / transforming-function ID exposed to the rest of Cockpit. */
+  id: string
+  /** Human-readable name shown in the data-lake browser. */
+  name: string
+  /** Ground-pressure autopilot parameter that pairs with the chosen barometer. */
+  groundPressureParam: string
+  /** MAVLink message that streams the barometer's absolute pressure. */
+  pressureMessage: string
+}
+
+export const setupPressureAltitudeResources = (): void => {
+  const pressureAltitudeVariables: PressureAltitudeCompoundVariable[] = [
+    {
+      id: 'baro2.pressure_alt',
+      name: 'baro2.pressure_alt — Pressure-based altitude [m]',
+      groundPressureParam: 'BARO2_GND_PRESS',
+      pressureMessage: 'SCALED_PRESSURE2',
+    },
+    {
+      id: 'baro3.pressure_alt',
+      name: 'baro3.pressure_alt — Pressure-based altitude [m]',
+      groundPressureParam: 'BARO3_GND_PRESS',
+      pressureMessage: 'SCALED_PRESSURE3',
+    },
+  ]
+
+  pressureAltitudeVariables.forEach(({ id, name, groundPressureParam, pressureMessage }) => {
+    try {
+      if (getAllTransformingFunctions().find((f) => f.id === id)) return
+
+      // Nested `{{autopilotSystemId}}` references are resolved by the data-lake
+      // template engine, so the expression always tracks whichever autopilot is
+      // currently connected. Missing references substitute to `NaN`, which keeps
+      // the result `NaN` until every dependency has been received.
+      const expression = getUnindentedString(`
+        ({{/vehicle/{{autopilotSystemId}}/parameters/${groundPressureParam}}} - {{/mavlink/{{autopilotSystemId}}/1/${pressureMessage}/press_abs}} * 100)
+        / 9800
+        / {{/vehicle/{{autopilotSystemId}}/parameters/BARO_SPEC_GRAV}}
+        + {{/vehicle/{{autopilotSystemId}}/parameters/BARO_ALT_OFFSET}}
+      `)
+      const description = getUnindentedString(`
+        Pressure-based altitude (meters) computed from ${pressureMessage}.press_abs together with
+        the ${groundPressureParam}, BARO_SPEC_GRAV and BARO_ALT_OFFSET autopilot parameters,
+        mirroring ArduSub's underwater depth formula. Returns NaN until all dependencies are
+        available.
+      `)
+
+      createTransformingFunction(id, name, 'number', expression, description)
+    } catch (error) {
+      console.error(`Error creating compound variable '${id}':`, error)
+    }
+  })
+}
+
 export const setupPredefinedLakeAndActionResources = (): void => {
   setupMavlinkCameraResources()
+  setupPressureAltitudeResources()
 }

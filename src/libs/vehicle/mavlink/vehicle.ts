@@ -464,6 +464,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         this._lastParameter = { name: param_name, value: trimmed_value }
         this._totalParametersCount = Number(param_count)
         this.onParameter.emit()
+        this.setParameterInDataLake(param_name, trimmed_value)
         break
       }
 
@@ -1488,6 +1489,25 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       networkLatencyMs: { id: `${vehiclePath}/networkLatencyMs`, name: `Network Latency [ms] (${vehicleName})`, type: 'number' },
     }
     /* eslint-enable vue/max-len, prettier/prettier, max-len */
+  }
+
+  /**
+   * Mirror an autopilot parameter into the data lake under
+   * `/vehicle/{systemId}/parameters/{paramName}` so widgets and transforming
+   * functions can read its latest value reactively.
+   * @param {string} paramName - Parameter name (e.g. 'BARO_SPEC_GRAV')
+   * @param {number} paramValue - Parameter value
+   */
+  private setParameterInDataLake(paramName: string, paramValue: number): void {
+    const dataLakeId = `/vehicle/${this.currentSystemId}/parameters/${paramName}`
+    if (getDataLakeVariableInfo(dataLakeId) === undefined) {
+      createDataLakeVariable({
+        id: dataLakeId,
+        name: `Parameter ${paramName} (MAVLink / System: ${this.currentSystemId})`,
+        type: 'number',
+      })
+    }
+    setDataLakeVariableData(dataLakeId, paramValue)
   }
 
   /**
