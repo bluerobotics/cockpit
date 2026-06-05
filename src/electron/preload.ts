@@ -90,6 +90,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('link-data', (_event, data) => callback(data))
   },
   systemLog: (level: string, message: string) => ipcRenderer.send('system-log', { level, message }),
+  systemLogBatch: (events: { level: string; message: string }[]) => ipcRenderer.send('system-log-batch', { events }),
   getElectronLogs: () => ipcRenderer.invoke('get-electron-logs'),
   getCurrentElectronLogInfo: () => ipcRenderer.invoke('get-current-electron-log-info'),
   getElectronLogContent: (logName: string) => ipcRenderer.invoke('get-electron-log-content', logName),
