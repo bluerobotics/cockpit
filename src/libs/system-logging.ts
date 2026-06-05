@@ -129,6 +129,53 @@ if (enableSystemLogging) {
     To disable system logging go to "Settings" -> "Dev".
   `)
 
+  const persistLogEvent = (level: string, message: string): void => {
+    if (isRunningInElectron) {
+      sendLogToElectron(level, message)
+    } else {
+      saveLogEventInDB({ epoch: Date.now(), level, msg: message })
+    }
+  }
+
+  // Repeated-log suppressor: collapses identical consecutive messages (same level + text) into a single entry
+  // plus a "repeated N times" summary, so a tight loop logging the same thing doesn't flood the log. It is
+  // intentionally O(1): only the previous message is remembered (one string comparison per call), with no map,
+  // hashing, or history, so it never becomes a bottleneck during bursts — and it skips the persist work
+  // entirely for suppressed duplicates.
+  const repeatSummaryDelayMs = 1000
+  let lastLevel: string | undefined
+  let lastMessage: string | undefined
+  let suppressedRepeatCount = 0
+  let repeatSummaryTimeout: ReturnType<typeof setTimeout> | undefined
+
+  const flushRepeatSummary = (): void => {
+    if (repeatSummaryTimeout) {
+      clearTimeout(repeatSummaryTimeout)
+      repeatSummaryTimeout = undefined
+    }
+    if (suppressedRepeatCount > 0 && lastLevel !== undefined) {
+      const times = suppressedRepeatCount === 1 ? 'time' : 'times'
+      persistLogEvent(lastLevel, `↑ previous message repeated ${suppressedRepeatCount} more ${times}`)
+    }
+    suppressedRepeatCount = 0
+    // Reset so a message that recurs after the summary is shown fresh instead of being suppressed forever.
+    lastLevel = undefined
+    lastMessage = undefined
+  }
+
+  const captureLogEvent = (level: string, message: string): void => {
+    if (level === lastLevel && message === lastMessage) {
+      suppressedRepeatCount += 1
+      if (!repeatSummaryTimeout) repeatSummaryTimeout = setTimeout(flushRepeatSummary, repeatSummaryDelayMs)
+      return
+    }
+    // Different message: report any pending repeats of the previous one first, then emit this one.
+    flushRepeatSummary()
+    lastLevel = level
+    lastMessage = message
+    persistLogEvent(level, message)
+  }
+
   const oldConsoleFunction = {
     error: console.error,
     warn: console.warn,
@@ -158,14 +205,17 @@ if (enableSystemLogging) {
         }
       })
 
-      if (isRunningInElectron) {
-        sendLogToElectron(level, wholeMessage)
-      } else {
-        saveLogEventInDB({ epoch: new Date().getTime(), level: level, msg: wholeMessage })
-      }
+      captureLogEvent(level, wholeMessage)
     }
   })
 
   // Flush whatever is still buffered before the window goes away, so the last events aren't lost.
-  window.addEventListener('beforeunload', isRunningInElectron ? flushElectronLogs : flushDBLogs)
+  window.addEventListener('beforeunload', () => {
+    flushRepeatSummary()
+    if (isRunningInElectron) {
+      flushElectronLogs()
+    } else {
+      flushDBLogs()
+    }
+  })
 }
