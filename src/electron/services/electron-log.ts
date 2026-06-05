@@ -194,9 +194,8 @@ export const setupElectronLogService = (): void => {
     }
   })
 
-  // Set up system logging IPC handler
-  ipcMain.on('system-log', (_event, { level, message }) => {
-    // Add [Renderer] tag and handle objects properly
+  // Add the [Renderer] tag and route a single renderer log message to the matching electron-log level.
+  const logRendererMessage = (level: string, message: any): void => {
     let processedMessage = ''
     try {
       if (typeof message === 'object' && message !== null) {
@@ -231,5 +230,12 @@ export const setupElectronLogService = (): void => {
         originalLoggerFunctions.log(taggedMessage)
         break
     }
+  }
+
+  // Set up system logging IPC handlers (single message and batched).
+  ipcMain.on('system-log', (_event, { level, message }) => logRendererMessage(level, message))
+  ipcMain.on('system-log-batch', (_event, { events }) => {
+    if (!Array.isArray(events)) return
+    events.forEach((event) => logRendererMessage(event?.level, event?.message))
   })
 }

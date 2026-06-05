@@ -40,6 +40,11 @@ type LogEvent = {
   msg: string
 }
 
+type LogBatchEvent = {
+  level: string
+  message: string
+}
+
 const initialDatetime = new Date()
 export interface SystemLog {
   initialDate: string
@@ -54,22 +59,61 @@ const currentSystemLog: SystemLog = {
 }
 /* eslint-enable jsdoc/require-jsdoc */
 
-const saveLogEventInDB = (event: LogEvent): void => {
+// Buffer log events and flush them in batches, to avoid one IPC message (Electron) or one IndexedDB write
+// (web) per console call. During logging bursts the per-call overhead is the dominant cost on the renderer.
+const logFlushIntervalMs = 250
+const maxBufferedEventsBeforeFlush = 100
+
+let bufferedElectronEvents: LogBatchEvent[] = []
+let electronFlushTimeout: ReturnType<typeof setTimeout> | undefined
+let dbFlushTimeout: ReturnType<typeof setTimeout> | undefined
+
+const flushElectronLogs = (): void => {
+  if (electronFlushTimeout) {
+    clearTimeout(electronFlushTimeout)
+    electronFlushTimeout = undefined
+  }
+  if (bufferedElectronEvents.length === 0) return
+  const batch = bufferedElectronEvents
+  bufferedElectronEvents = []
   try {
-    currentSystemLog.events.push(event)
+    window.electronAPI?.systemLogBatch?.(batch)
+  } catch (error) {
+    // We do not want to log this error, as it would create an infinite loop
+  }
+}
+
+const flushDBLogs = (): void => {
+  if (dbFlushTimeout) {
+    clearTimeout(dbFlushTimeout)
+    dbFlushTimeout = undefined
+  }
+  try {
     cockpitSytemLogsDB.setItem(fileName, currentSystemLog)
   } catch (error) {
     // We do not want to log this error, as it would create an infinite loop
   }
 }
 
-const sendLogToElectron = (level: string, message: string): void => {
+const saveLogEventInDB = (event: LogEvent): void => {
   try {
-    if (window.electronAPI?.systemLog) {
-      window.electronAPI.systemLog(level, message)
+    currentSystemLog.events.push(event)
+    if (currentSystemLog.events.length % maxBufferedEventsBeforeFlush === 0) {
+      flushDBLogs()
+    } else if (!dbFlushTimeout) {
+      dbFlushTimeout = setTimeout(flushDBLogs, logFlushIntervalMs)
     }
   } catch (error) {
     // We do not want to log this error, as it would create an infinite loop
+  }
+}
+
+const sendLogToElectron = (level: string, message: string): void => {
+  bufferedElectronEvents.push({ level, message })
+  if (bufferedElectronEvents.length >= maxBufferedEventsBeforeFlush) {
+    flushElectronLogs()
+  } else if (!electronFlushTimeout) {
+    electronFlushTimeout = setTimeout(flushElectronLogs, logFlushIntervalMs)
   }
 }
 
@@ -121,4 +165,7 @@ if (enableSystemLogging) {
       }
     }
   })
+
+  // Flush whatever is still buffered before the window goes away, so the last events aren't lost.
+  window.addEventListener('beforeunload', isRunningInElectron ? flushElectronLogs : flushDBLogs)
 }

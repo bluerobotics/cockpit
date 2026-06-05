@@ -372,6 +372,18 @@ declare global {
        */
       systemLog: (level: string, message: string) => void
       /**
+       * Send a batch of log messages to electron-log in a single IPC call
+       * @param events - The log events to send, each with a level and message
+       */
+      systemLogBatch: (
+        events: {
+          /** The log level (error, warn, info, debug, trace, log) */
+          level: string
+          /** The message to log */
+          message: string
+        }[]
+      ) => void
+      /**
        * Get a list of all electron logs
        */
       getElectronLogs: () => Promise<ElectronLog[]>
