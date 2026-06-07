@@ -375,7 +375,6 @@ const trendHeaders = [
   { title: 'Max (ms)', key: 'maxFrameMs', sortable: true },
   { title: 'Long tasks', key: 'longTasks', sortable: true },
   { title: 'Mem (MB)', key: 'memoryMB', sortable: true },
-  { title: 'DL vars', key: 'dataLakeVars', sortable: true },
   { title: 'DL listeners', key: 'dataLakeListeners', sortable: true },
   { title: 'DOM nodes', key: 'domNodes', sortable: true },
 ]

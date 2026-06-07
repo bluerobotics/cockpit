@@ -2,7 +2,6 @@ import {
   type DataLakeVariable,
   createDataLakeVariable,
   getDataLakeListenerCount,
-  getDataLakeVariableCount,
   getDataLakeVariableData,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
@@ -90,8 +89,6 @@ export interface TrendSnapshot {
   blockingMs: number
   /** Sampled JS/process memory usage, in MB. */
   memoryMB: number
-  /** Number of registered data lake variables (leak indicator). */
-  dataLakeVars: number
   /** Total data lake value listeners across all variables (leak indicator). */
   dataLakeListeners: number
   /** Number of DOM nodes in the document (leak indicator for widget/overlay accumulation). */
@@ -295,7 +292,6 @@ const emitTrend = (): void => {
     longTasks: windowLongTaskCount,
     blockingMs: Math.round(windowBlockingTime),
     memoryMB: Math.round(Number(getDataLakeVariableData('cockpit-memory-usage') ?? 0)),
-    dataLakeVars: getDataLakeVariableCount(),
     dataLakeListeners: getDataLakeListenerCount(),
     domNodes: typeof document !== 'undefined' ? document.getElementsByTagName('*').length : 0,
   }
@@ -472,6 +468,12 @@ export const isSelfProfilingAvailable = (): boolean => {
 
   const ProfilerCtor = (window as any).Profiler
   if (typeof ProfilerCtor !== 'function') {
+    console.info('[Performance] Self-profiling unavailable: Profiler global missing (non-Chromium runtime).')
+    selfProfilingAvailability = false
+    return false
+  }
+  if (typeof window !== 'undefined' && window.isSecureContext === false) {
+    console.info('[Performance] Self-profiling unavailable: not a secure context (needs https or localhost).')
     selfProfilingAvailability = false
     return false
   }
@@ -480,7 +482,9 @@ export const isSelfProfilingAvailable = (): boolean => {
     const probe = new ProfilerCtor({ sampleInterval: 10, maxBufferSize: 1 })
     void probe.stop?.().catch(() => undefined)
     selfProfilingAvailability = true
-  } catch {
+  } catch (error) {
+    // Most commonly a NotSupportedError when the `Document-Policy: js-profiling` header is absent.
+    console.info(`[Performance] Self-profiling unavailable: ${error instanceof Error ? error.message : error}`)
     selfProfilingAvailability = false
   }
   return selfProfilingAvailability

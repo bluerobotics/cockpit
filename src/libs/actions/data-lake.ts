@@ -69,16 +69,6 @@ export const getAllDataLakeVariablesInfo = (): Record<string, DataLakeVariable> 
 }
 
 /**
- * Number of data lake variables currently registered. Intended as a cheap leak indicator: in steady
- * state this should be roughly flat, so monotonic growth points at variables being created and never
- * cleaned up.
- * @returns {number} Count of registered data lake variables.
- */
-export const getDataLakeVariableCount = (): number => {
-  return Object.keys(dataLakeVariableInfo).length
-}
-
-/**
  * Total number of value listeners registered across all data lake variables. Intended as a cheap
  * leak indicator: unremoved listeners make every value update fan out to more callbacks over time,
  * which is a prime cause of gradually degrading framerate.
