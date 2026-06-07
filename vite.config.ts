@@ -73,6 +73,10 @@ const baseConfig = {
   },
   server: {
     host: '0.0.0.0',
+    // Opt the document into the JS Self-Profiling API so the opt-in performance profiler can run.
+    headers: {
+      'Document-Policy': 'js-profiling',
+    },
   },
 }
 

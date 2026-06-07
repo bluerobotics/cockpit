@@ -458,12 +458,33 @@ export const clearInstrumentationStats = (): void => {
   Object.keys(instrumentationStats).forEach((key) => delete instrumentationStats[key])
 }
 
+let selfProfilingAvailability: boolean | null = null
+
 /**
- * Whether the JS Self-Profiling API is available in this runtime. It requires the
- * `Document-Policy: js-profiling` response header, so it may be unavailable even on Chromium.
+ * Whether the JS Self-Profiling API is actually usable in this runtime. The `Profiler` global can
+ * exist while the API is still blocked by the missing `Document-Policy: js-profiling` header, so a
+ * mere `typeof` check is misleading. We probe once by constructing a throwaway profiler (caching the
+ * result), which reflects reality and avoids triggering a policy violation on every capture attempt.
  * @returns {boolean} True when {@link captureSelfProfile} can produce a trace.
  */
-export const isSelfProfilingAvailable = (): boolean => typeof (window as any).Profiler === 'function'
+export const isSelfProfilingAvailable = (): boolean => {
+  if (selfProfilingAvailability !== null) return selfProfilingAvailability
+
+  const ProfilerCtor = (window as any).Profiler
+  if (typeof ProfilerCtor !== 'function') {
+    selfProfilingAvailability = false
+    return false
+  }
+
+  try {
+    const probe = new ProfilerCtor({ sampleInterval: 10, maxBufferSize: 1 })
+    void probe.stop?.().catch(() => undefined)
+    selfProfilingAvailability = true
+  } catch {
+    selfProfilingAvailability = false
+  }
+  return selfProfilingAvailability
+}
 
 /**
  * Capture a low-overhead sampling profile of the main thread over the given window. This is the most

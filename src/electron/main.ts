@@ -53,6 +53,19 @@ function createWindow(): void {
 
   linkService.setMainWindow(mainWindow)
 
+  // Opt the loaded document into the JS Self-Profiling API (used by the opt-in performance profiler).
+  // It is only enabled by the `Document-Policy: js-profiling` response header, which we inject here so
+  // it works both for the dev-server URL and the file://-served production build.
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    if (details.resourceType === 'mainFrame') {
+      callback({
+        responseHeaders: { ...details.responseHeaders, 'Document-Policy': ['js-profiling'] },
+      })
+      return
+    }
+    callback({ responseHeaders: details.responseHeaders })
+  })
+
   mainWindow.on('move', () => {
     const windowBounds = mainWindow!.getBounds()
     const { x, y, width, height } = windowBounds
