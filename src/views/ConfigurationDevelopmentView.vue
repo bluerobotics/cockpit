@@ -62,6 +62,18 @@
                 Main-thread stalls are detected continuously and summarized in the system logs. Enable "Performance
                 profiling" above for the more detailed (and slightly more intrusive) instrumentation below.
               </p>
+
+              <div>
+                <p class="text-sm font-semibold mb-1">Framerate &amp; leak trend (newest first)</p>
+                <v-data-table
+                  :items="recentTrends"
+                  density="compact"
+                  theme="dark"
+                  :headers="trendHeaders"
+                  :items-per-page="10"
+                  class="bg-[#FFFFFF11] rounded-lg"
+                />
+              </div>
               <div class="flex flex-row items-center gap-3">
                 <v-btn
                   size="small"
@@ -180,9 +192,11 @@ import { ref } from 'vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import {
   type LongTaskRecord,
+  type TrendSnapshot,
   captureSelfProfile,
   getInstrumentationStats,
   getRecentLongTasks,
+  getRecentTrends,
   isSelfProfilingAvailable,
 } from '@/libs/performance-monitoring'
 import {
@@ -348,9 +362,23 @@ interface InstrumentationRow {
 /* eslint-enable jsdoc/require-jsdoc */
 
 const recentLongTasks = ref<LongTaskRecord[]>([])
+const recentTrends = ref<TrendSnapshot[]>([])
 const instrumentationRows = ref<InstrumentationRow[]>([])
 const isCapturingProfile = ref(false)
 const selfProfilingAvailable = isSelfProfilingAvailable()
+
+const trendHeaders = [
+  { title: 'Uptime (min)', key: 'uptimeMin', sortable: true },
+  { title: 'Avg FPS', key: 'avgFps', sortable: true },
+  { title: 'Frame σ (ms)', key: 'frameMsStdDev', sortable: true },
+  { title: 'p95 (ms)', key: 'p95FrameMs', sortable: true },
+  { title: 'Max (ms)', key: 'maxFrameMs', sortable: true },
+  { title: 'Long tasks', key: 'longTasks', sortable: true },
+  { title: 'Mem (MB)', key: 'memoryMB', sortable: true },
+  { title: 'DL vars', key: 'dataLakeVars', sortable: true },
+  { title: 'DL listeners', key: 'dataLakeListeners', sortable: true },
+  { title: 'DOM nodes', key: 'domNodes', sortable: true },
+]
 
 const longTaskHeaders = [
   { title: 'Start (ms)', key: 'startTime', sortable: true },
@@ -368,6 +396,7 @@ const instrumentationHeaders = [
 
 const refreshPerformanceData = (): void => {
   recentLongTasks.value = getRecentLongTasks().slice().reverse()
+  recentTrends.value = getRecentTrends().slice().reverse()
   const stats = getInstrumentationStats()
   instrumentationRows.value = Object.entries(stats).map(([name, stat]) => ({
     name,

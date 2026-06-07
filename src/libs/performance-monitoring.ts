@@ -1,6 +1,8 @@
 import {
   type DataLakeVariable,
   createDataLakeVariable,
+  getDataLakeListenerCount,
+  getDataLakeVariableCount,
   getDataLakeVariableData,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
@@ -15,7 +17,10 @@ import {
  *   free whenever a task blocks the main thread for >50ms. We aggregate consecutive long tasks into
  *   "episodes" and emit a single summary log on recovery, so a multi-second stutter becomes one log
  *   line instead of hundreds. No formatting happens in the hot path - the observer callback only
- *   updates counters and a fixed-size ring buffer.
+ *   updates counters and a fixed-size ring buffer. This tier also emits a periodic trend snapshot
+ *   (see {@link TrendSnapshot}) that captures windowed framerate health together with leak
+ *   indicators, so a session that slowly degrades over tens of minutes self-documents what is
+ *   growing - the signature of gradual decline rather than discrete stalls.
  * - Tier 2 (opt-in, more intrusive): User Timing instrumentation via {@link instrument} and the JS
  *   Self-Profiling API via {@link captureSelfProfile}. These are gated behind a flag so they are only
  *   active while a user is actively trying to pin-point where a stall comes from.
@@ -30,6 +35,10 @@ const LONG_TASK_THRESHOLD_MS = 50
 // Avoid flooding the logs if the app enters a sustained storm of stalls.
 const MAX_EPISODE_LOGS_PER_MINUTE = 12
 const ROLLING_STATS_INTERVAL_MS = 1000
+// How often to emit the trend snapshot. Low cadence keeps a multi-hour session to a few hundred
+// concise log lines while still being dense enough to see a slow decline.
+const TREND_INTERVAL_MS = 30_000
+const TREND_RING_SIZE = 240
 
 const frameRateVariableId = 'cockpit-app-frame-rate'
 
@@ -57,6 +66,36 @@ export interface LongTaskRecord {
   duration: number
   /** Best-effort attribution name provided by the browser (often "self" or a frame container). */
   attribution: string
+}
+
+/**
+ * A periodic snapshot of windowed framerate health plus leak indicators. Designed for diagnosing
+ * gradual degradation: comparing snapshots across a long session shows whether framerate is sinking
+ * and, if so, which tracked count is growing alongside it.
+ */
+export interface TrendSnapshot {
+  /** Minutes since monitoring started, at the time of the snapshot. */
+  uptimeMin: number
+  /** Average framerate over the window, in fps. */
+  avgFps: number
+  /** Standard deviation of frame intervals over the window, in ms (quantifies "oscillating"). */
+  frameMsStdDev: number
+  /** 95th-percentile frame interval over the window, in ms. */
+  p95FrameMs: number
+  /** Longest frame interval over the window, in ms (worst hitch). */
+  maxFrameMs: number
+  /** Number of long tasks observed during the window. */
+  longTasks: number
+  /** Total blocking time (long-task ms above the 50ms threshold) during the window. */
+  blockingMs: number
+  /** Sampled JS/process memory usage, in MB. */
+  memoryMB: number
+  /** Number of registered data lake variables (leak indicator). */
+  dataLakeVars: number
+  /** Total data lake value listeners across all variables (leak indicator). */
+  dataLakeListeners: number
+  /** Number of DOM nodes in the document (leak indicator for widget/overlay accumulation). */
+  domNodes: number
 }
 
 /** Aggregated User Timing statistics for an instrumented subsystem. */
@@ -95,6 +134,17 @@ let suppressedEpisodeCount = 0
 
 let rollingBlockingTime = 0
 let rollingLongestTask = 0
+
+let monitoringStartTime = 0
+let frameSamplerLastTime = 0
+// Frame intervals (ms) accumulated since the last trend snapshot. Reset each window; at 60fps a 30s
+// window holds ~1800 entries, so memory stays bounded.
+let windowFrameTimes: number[] = []
+let windowStartTime = 0
+let windowLongTaskCount = 0
+let windowBlockingTime = 0
+const trendRing: TrendSnapshot[] = []
+let trendRingHead = 0
 
 let observer: PerformanceObserver | null = null
 let monitoringStarted = false
@@ -170,6 +220,8 @@ const onLongTask = (entry: PerformanceEntry): void => {
 
   rollingBlockingTime += Math.max(0, blocking)
   rollingLongestTask = Math.max(rollingLongestTask, entry.duration)
+  windowLongTaskCount++
+  windowBlockingTime += Math.max(0, blocking)
 
   const fps = Number(getDataLakeVariableData(frameRateVariableId) ?? Infinity)
   const taskEnd = entry.startTime + entry.duration
@@ -195,10 +247,77 @@ const onLongTask = (entry: PerformanceEntry): void => {
   episodeIdleTimer = setTimeout(finalizeEpisode, EPISODE_IDLE_MS)
 }
 
+const sampleFrame = (): void => {
+  const now = performance.now()
+  windowFrameTimes.push(now - frameSamplerLastTime)
+  frameSamplerLastTime = now
+  requestAnimationFrame(sampleFrame)
+}
+
+const percentile = (sorted: number[], fraction: number): number => {
+  if (sorted.length === 0) return 0
+  const index = Math.min(sorted.length - 1, Math.floor(fraction * sorted.length))
+  return sorted[index]
+}
+
+const resetTrendWindow = (): void => {
+  windowFrameTimes = []
+  windowLongTaskCount = 0
+  windowBlockingTime = 0
+  windowStartTime = performance.now()
+}
+
+const pushTrend = (snapshot: TrendSnapshot): void => {
+  trendRing[trendRingHead] = snapshot
+  trendRingHead = (trendRingHead + 1) % TREND_RING_SIZE
+}
+
+const emitTrend = (): void => {
+  // While hidden the browser throttles rAF, so framerate numbers would be meaningless. Skip the
+  // window entirely rather than reporting a fake decline.
+  if (isHidden() || windowFrameTimes.length === 0) {
+    resetTrendWindow()
+    return
+  }
+
+  const elapsedSeconds = (performance.now() - windowStartTime) / 1000
+  const frames = windowFrameTimes.length
+  const sorted = [...windowFrameTimes].sort((a, b) => a - b)
+  const mean = windowFrameTimes.reduce((sum, value) => sum + value, 0) / frames
+  const variance = windowFrameTimes.reduce((sum, value) => sum + (value - mean) ** 2, 0) / frames
+
+  const snapshot: TrendSnapshot = {
+    uptimeMin: Math.round((performance.now() - monitoringStartTime) / 6000) / 10,
+    avgFps: elapsedSeconds > 0 ? Math.round(frames / elapsedSeconds) : 0,
+    frameMsStdDev: Math.round(Math.sqrt(variance) * 10) / 10,
+    p95FrameMs: Math.round(percentile(sorted, 0.95)),
+    maxFrameMs: Math.round(sorted[sorted.length - 1]),
+    longTasks: windowLongTaskCount,
+    blockingMs: Math.round(windowBlockingTime),
+    memoryMB: Math.round(Number(getDataLakeVariableData('cockpit-memory-usage') ?? 0)),
+    dataLakeVars: getDataLakeVariableCount(),
+    dataLakeListeners: getDataLakeListenerCount(),
+    domNodes: typeof document !== 'undefined' ? document.getElementsByTagName('*').length : 0,
+  }
+
+  const line: Record<string, unknown> = { ...snapshot }
+  if (contextProvider !== null) {
+    try {
+      Object.assign(line, contextProvider())
+    } catch {
+      // Context is best-effort; never let it break logging.
+    }
+  }
+
+  pushTrend(snapshot)
+  console.info(`[Performance] Trend: ${JSON.stringify(line)}`)
+  resetTrendWindow()
+}
+
 /**
  * Provide extra, cheap-to-read context (e.g. active video streams, connected vehicle) that gets
- * attached to each stall-episode summary. The provider is called only at episode boundaries, so it
- * never runs in the hot path.
+ * attached to each stall-episode summary and trend snapshot. The provider is called only at episode
+ * boundaries and trend ticks, so it never runs in the hot path.
  * @param {PerformanceContextProvider} provider Function returning a flat object of context values.
  */
 export const setPerformanceContextProvider = (provider: PerformanceContextProvider): void => {
@@ -214,6 +333,8 @@ export const startPerformanceMonitoring = (): void => {
   if (monitoringStarted) return
   monitoringStarted = true
 
+  monitoringStartTime = performance.now()
+
   createDataLakeVariable(blockingTimeVariable, 0)
   createDataLakeVariable(longestTaskVariable, 0)
 
@@ -223,6 +344,13 @@ export const startPerformanceMonitoring = (): void => {
     rollingBlockingTime = 0
     rollingLongestTask = 0
   }, ROLLING_STATS_INTERVAL_MS)
+
+  // Frame-interval sampler feeding the trend snapshots. A single rAF that only diffs timestamps and
+  // pushes a number; negligible cost, and it pauses automatically while the tab is hidden.
+  frameSamplerLastTime = performance.now()
+  resetTrendWindow()
+  requestAnimationFrame(sampleFrame)
+  setInterval(emitTrend, TREND_INTERVAL_MS)
 
   if (typeof PerformanceObserver === 'undefined') {
     console.info('[Performance] PerformanceObserver is unavailable; long-task monitoring disabled.')
@@ -250,6 +378,20 @@ export const getRecentLongTasks = (): LongTaskRecord[] => {
   for (let i = 0; i < LONG_TASK_RING_SIZE; i++) {
     const record = longTaskRing[(longTaskRingHead + i) % LONG_TASK_RING_SIZE]
     if (record !== undefined) ordered.push(record)
+  }
+  return ordered
+}
+
+/**
+ * Returns the trend snapshots held in the ring buffer, oldest to newest. Useful for rendering the
+ * decline curve of a long session in a diagnostics view.
+ * @returns {TrendSnapshot[]} Recorded trend snapshots ordered from oldest to newest.
+ */
+export const getRecentTrends = (): TrendSnapshot[] => {
+  const ordered: TrendSnapshot[] = []
+  for (let i = 0; i < TREND_RING_SIZE; i++) {
+    const snapshot = trendRing[(trendRingHead + i) % TREND_RING_SIZE]
+    if (snapshot !== undefined) ordered.push(snapshot)
   }
   return ordered
 }
