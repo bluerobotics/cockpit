@@ -181,7 +181,7 @@ export const useMissionStore = defineStore('mission', () => {
     redoStack.length = 0
     syncCounts()
   }
-  const persistedPositionHistory = useBlueOsStorage<WaypointCoordinates[]>('cockpit-vehicle-position-history', [])
+  const persistedPositionHistory = useStorage<WaypointCoordinates[]>('cockpit-vehicle-position-history', [])
   const isVehiclePositionHistoryPersistent = useBlueOsStorage('cockpit-vehicle-position-history-persistent', true)
   const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
   // Revision counter for `vehiclePositionHistory` mutations.
