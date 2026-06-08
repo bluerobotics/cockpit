@@ -1,14 +1,4 @@
 <template>
-  <div v-if="devStore.developmentMode" class="widgetOverlay dev-info">
-    <p>Position: {{ round(100 * widget.position.x, 2) }} x {{ round(100 * widget.position.y, 2) }} %</p>
-    <p>Size: {{ round(100 * widget.size.width, 2) }} x {{ round(100 * widget.size.height, 2) }} %</p>
-    <p>Position: {{ round(widget.position.x * windowWidth) }} x {{ round(widget.position.y * windowHeight) }} px</p>
-    <p>Size: {{ round(widget.size.width * windowWidth) }} x {{ round(widget.size.height * windowHeight) }} px</p>
-    <p>Client size: {{ innerWidgetRef?.clientWidth }} x {{ innerWidgetRef?.clientHeight }} px</p>
-    <p>Offset size: {{ innerWidgetRef?.offsetWidth }} x {{ innerWidgetRef?.offsetHeight }} px</p>
-    <p>Scroll size: {{ innerWidgetRef?.scrollWidth }} x {{ innerWidgetRef?.scrollHeight }} px</p>
-    <p v-for="[k, v] in Object.entries(widget?.options)" :key="k">{{ k }} (option): {{ v }}</p>
-  </div>
   <div
     ref="widgetOverlay"
     class="widgetOverlay"
@@ -71,8 +61,7 @@
 import { useElementHover, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
-import { constrain, round } from '@/libs/utils'
-import { useDevelopmentStore } from '@/stores/development'
+import { constrain } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import { type Widget, isWidgetConfigurable, widgetHasOwnContextMenu, WidgetType } from '@/types/widgets'
@@ -166,8 +155,6 @@ const contextMenuItems = computed(() =>
     ? [{ item: 'Options', action: openWidgetConfig, icon: 'mdi-cog' }]
     : []
 )
-
-const devStore = useDevelopmentStore()
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -429,8 +416,6 @@ const cursorStyle = computed(() => {
   return 'grab'
 })
 
-const devInfoBlurLevel = computed(() => `${devStore.widgetDevInfoBlurLevel}px`)
-
 const isWidgetFullScreen = computed(() => widgetStore.isFullScreen(widget.value))
 
 const handleTopOffset = computed(() =>
@@ -454,20 +439,6 @@ const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.ha
   height: calc(v-bind('sizeStyle.height') + 2 * var(--overlayOverSize));
   user-select: none;
   display: v-bind('overlayDisplayStyle');
-}
-.dev-info {
-  background-color: rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(v-bind('devInfoBlurLevel'));
-  z-index: 1;
-  pointer-events: none;
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: auto;
-  text-shadow: 1ch;
-  flex-flow: column wrap;
 }
 .widgetOverlay.allowMoving {
   background-color: rgba(0, 0, 0, 0.1);
