@@ -40,19 +40,19 @@ import gsap from 'gsap'
 import { unit } from 'mathjs'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { unitAbbreviation } from '@/libs/units'
 import { range, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
-const interfaceStore = useAppInterfaceStore()
 
+const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 
 datalogger.registerUsage(DatalogVariable.depth)
-const store = useMainVehicleStore()
+
 const props = defineProps<{
   /**
    * Widget reference
@@ -63,6 +63,12 @@ const widget = toRefs(props).widget
 
 // Pre-defined HUD colors
 const colorSwatches = ref([['#FF2D2D'], ['#0ADB0ACC'], ['#FFFFFF']])
+
+const defaultOptions = {
+  showDepthValue: true,
+  hudColor: '#FFFFFF',
+  depthVariableId: '/mavlink/1/1/AHRS2/altitude',
+}
 
 type RenderVariables = {
   /**
@@ -90,12 +96,7 @@ const currentUnit = computed(() => unitAbbreviation[interfaceStore.displayUnitPr
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      showDepthValue: true,
-      hudColor: colorSwatches.value[2][0],
-    }
-  }
+  widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 onMounted(() => {
   depthGraphDistances.value.forEach((distance: number) => (renderVars.depthLinesY[distance] = distanceY(distance)))
@@ -111,9 +112,12 @@ const canvasSize = computed(() => ({
 
 // The implementation below makes sure we don't update the Depth value in the widget whenever
 // the system Depth (from vehicle) updates, preventing unnecessary performance bottlenecks.
-watch(store.altitude, () => {
-  const altitude = store.altitude.msl
-  const newDepth = unit(-altitude.value, altitude.toJSON().unit)
+const { value: rawAltitude } = useDataLakeVariable(() => widget.value.options.depthVariableId)
+
+watch(rawAltitude, (newAlt) => {
+  if (newAlt === undefined) return
+  const altMeters = newAlt as number
+  const newDepth = unit(-altMeters, 'm')
 
   const depthDiff = Math.abs(newDepth.value - (depth.value || 0))
   if (depthDiff < 0.1) return

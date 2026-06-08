@@ -134,11 +134,11 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { HighlightedPoiMarker, HighlightedPoiMarkerDisplay, PoiMarker, ReachedPoiMarker } from '@/types/mission'
@@ -149,7 +149,6 @@ const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 
 datalogger.registerUsage(DatalogVariable.heading)
-const store = useMainVehicleStore()
 const props = defineProps<{
   /**
    * Widget reference
@@ -201,17 +200,20 @@ while (i < 181) {
   i += 3
 }
 
+const defaultOptions = {
+  showYawValue: true,
+  hudColor: colorSwatches.value[0][0],
+  useNegativeRange: false,
+  yawVariableId: '/mavlink/1/1/ATTITUDE/yaw',
+  latVariableId: '/mavlink/1/1/GLOBAL_POSITION_INT/lat',
+  lonVariableId: '/mavlink/1/1/GLOBAL_POSITION_INT/lon',
+  poi: {
+    showPoiOnHUD: true,
+    showDistances: 'onHudSide',
+  },
+}
+
 onBeforeMount(() => {
-  // Set initial widget options if they don't exist
-  const defaultOptions = {
-    showYawValue: true,
-    hudColor: colorSwatches.value[0][0],
-    useNegativeRange: false,
-    poi: {
-      showPoiOnHUD: true,
-      showDistances: 'onHudSide',
-    },
-  }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 
@@ -231,15 +233,31 @@ const canvasSize = computed(() => ({
   height: 64,
 }))
 
+const { value: rawYaw } = useDataLakeVariable(() => widget.value.options.yawVariableId)
+const { value: rawLat } = useDataLakeVariable(() => widget.value.options.latVariableId)
+const { value: rawLon } = useDataLakeVariable(() => widget.value.options.lonVariableId)
+
+const vehicleLatitude = computed<number | undefined>(() => {
+  if (rawLat.value === undefined) return undefined
+  return (rawLat.value as number) / 1e7
+})
+
+const vehicleLongitude = computed<number | undefined>(() => {
+  if (rawLon.value === undefined) return undefined
+  return (rawLon.value as number) / 1e7
+})
+
 // The implementation below makes sure we don't update the Yaw value in the widget whenever
 // the system Yaw (from vehicle) updates, preventing unnecessary performance bottlenecks.
 const yaw = ref(0)
 let oldYaw: number | undefined = undefined
-watch(store.attitude, (attitude) => {
-  const yawDiff = Math.abs(degrees(attitude.yaw - (oldYaw || 0)))
+watch(rawYaw, (newYaw) => {
+  if (newYaw === undefined) return
+  const yawRad = newYaw as number
+  const yawDiff = Math.abs(degrees(yawRad - (oldYaw || 0)))
   if (yawDiff > 0.1) {
-    oldYaw = attitude.yaw
-    yaw.value = degrees(store.attitude.yaw)
+    oldYaw = yawRad
+    yaw.value = degrees(yawRad)
   }
 })
 
@@ -271,16 +289,13 @@ const calculateBearing = (vehicleLat: number, vehicleLng: number, poiLat: number
 
 // Get POI data with bearing and distance relative to vehicle
 const poiData = computed(() => {
-  if (!store.coordinates.latitude || !store.coordinates.longitude) return []
+  if (!vehicleLatitude.value || !vehicleLongitude.value) return []
 
   return missionStore.pointsOfInterest.map((poi) => {
-    const distance = calculateHaversineDistance(
-      [store.coordinates.latitude!, store.coordinates.longitude!],
-      poi.coordinates
-    )
+    const distance = calculateHaversineDistance([vehicleLatitude.value!, vehicleLongitude.value!], poi.coordinates)
     const bearing = calculateBearing(
-      store.coordinates.latitude!,
-      store.coordinates.longitude!,
+      vehicleLatitude.value!,
+      vehicleLongitude.value!,
       poi.coordinates[0],
       poi.coordinates[1]
     )
@@ -429,7 +444,7 @@ const renderCanvas = (): void => {
 }
 
 const updatePoiMarkers = (): void => {
-  if (!widget.value.options.poi?.showPoiOnHUD || !store.coordinates.latitude || !store.coordinates.longitude) {
+  if (!widget.value.options.poi?.showPoiOnHUD || !vehicleLatitude.value || !vehicleLongitude.value) {
     poiMarkers.value = []
     return
   }
@@ -546,11 +561,8 @@ const updatePoiMarkers = (): void => {
         lastCardShownAt = now
       } else {
         const poi = missionStore.pointsOfInterest.find((p) => p.id === selectedId)
-        if (poi && store.coordinates.latitude && store.coordinates.longitude) {
-          const distance = calculateHaversineDistance(
-            [store.coordinates.latitude, store.coordinates.longitude],
-            poi.coordinates
-          )
+        if (poi && vehicleLatitude.value && vehicleLongitude.value) {
+          const distance = calculateHaversineDistance([vehicleLatitude.value, vehicleLongitude.value], poi.coordinates)
           // How far from a POI to mark as reached
           highlightedPoiMarker.value = {
             name: poi.name,
@@ -622,7 +634,7 @@ const stopAnimationLoop = (): void => {
 }
 
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
-watch([poiData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
+watch([poiData, vehicleLatitude, vehicleLongitude, canvasSize, yaw], debouncedUpdatePoiMarkers)
 
 // Start both canvas and POI markers animation loop when widget becomes visible or data changes
 watch([renderVars, canvasSize, widget.value.options], () => {

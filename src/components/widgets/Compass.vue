@@ -25,16 +25,15 @@ import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, wa
 
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas, sequentialArray } from '@/libs/utils'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 
 datalogger.registerUsage(DatalogVariable.heading)
-const store = useMainVehicleStore()
 const compassRoot = ref()
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
@@ -70,13 +69,13 @@ const props = defineProps<{
 }>()
 const widget = toRefs(props).widget
 
+const defaultOptions = {
+  headingStyle: headingOptions[0],
+  yawVariableId: '/mavlink/1/1/ATTITUDE/yaw',
+}
+
 onBeforeMount(() => {
-  // Set initial widget options if they don't exist
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      headingStyle: headingOptions[0],
-    }
-  }
+  widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 
 onMounted(() => {
@@ -193,18 +192,14 @@ const renderCanvas = (): void => {
  * Deal with high frequency update and decrease cpu usage when drawing low degrees changes
  */
 
+const { value: rawYaw } = useDataLakeVariable(() => widget.value.options.yawVariableId)
+
 const yaw = ref(0.01)
-let oldYaw: number | undefined = undefined
-watch(store.attitude, (attitude) => {
-  if (oldYaw === undefined) {
-    yaw.value = degrees(store.attitude.yaw)
-    oldYaw = attitude.yaw
-    return
-  }
-  const yawDiff = Math.abs(degrees(attitude.yaw - oldYaw))
-  if (yawDiff > 0.1) {
-    oldYaw = attitude.yaw
-    yaw.value = degrees(store.attitude.yaw)
+watch(rawYaw, (newYaw) => {
+  if (newYaw === undefined) return
+  const deg = degrees(newYaw as number)
+  if (Math.abs(deg - yaw.value) > 0.1) {
+    yaw.value = deg
   }
 })
 

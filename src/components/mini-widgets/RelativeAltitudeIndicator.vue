@@ -12,13 +12,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onBeforeMount, ref, toRefs, watch } from 'vue'
 
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { round } from '@/libs/utils'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
+import type { MiniWidget } from '@/types/widgets'
 
-const store = useMainVehicleStore()
+const props = defineProps<{
+  /**
+   * Mini widget reference
+   */
+  miniWidget: MiniWidget
+}>()
+const miniWidget = toRefs(props).miniWidget
+
+const defaultOptions = {
+  altitudeVariableId: '/mavlink/1/1/GLOBAL_POSITION_INT/relative_alt',
+}
+
+onBeforeMount(() => {
+  miniWidget.value.options = { ...defaultOptions, ...miniWidget.value.options }
+})
+
+const { value: rawAlt } = useDataLakeVariable(() => miniWidget.value.options.altitudeVariableId)
 
 const altitude = ref(0)
-watch(store.altitude, () => (altitude.value = store.altitude.rel))
+watch(rawAlt, (newAlt) => {
+  if (newAlt === undefined) return
+  altitude.value = (newAlt as number) / 1000
+})
 </script>

@@ -17,21 +17,40 @@
 
 <script setup lang="ts">
 import { unit } from 'mathjs'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
 
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { unitAbbreviation } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
+import type { MiniWidget } from '@/types/widgets'
 
-const vehicleStore = useMainVehicleStore()
+const props = defineProps<{
+  /**
+   * Mini widget reference
+   */
+  miniWidget: MiniWidget
+}>()
+const miniWidget = toRefs(props).miniWidget
+
+const defaultOptions = {
+  depthVariableId: '/mavlink/1/1/AHRS2/altitude',
+}
+
+onBeforeMount(() => {
+  miniWidget.value.options = { ...defaultOptions, ...miniWidget.value.options }
+})
+
 const { displayUnitPreferences } = useAppInterfaceStore()
 datalogger.registerUsage(DatalogVariable.depth)
 
+const { value: rawAltitude } = useDataLakeVariable(() => miniWidget.value.options.depthVariableId)
+
 const currentDepth = ref<undefined | number>(undefined)
-watch(vehicleStore.altitude, () => {
-  const altitude = vehicleStore.altitude.msl
-  const depth = unit(-altitude.value, altitude.toJSON().unit)
+watch(rawAltitude, (newAlt) => {
+  if (newAlt === undefined) return
+  const altMeters = newAlt as number
+  const depth = unit(-altMeters, 'm')
   if (depth.value < 0.01) {
     currentDepth.value = 0
     return
@@ -40,6 +59,7 @@ watch(vehicleStore.altitude, () => {
   const depthConverted = depth.to(displayUnitPreferences.distance)
   currentDepth.value = depthConverted.toJSON().value
 })
+
 const parsedState = computed(() => {
   const fDepth = currentDepth.value
   if (fDepth === undefined) return '--'
