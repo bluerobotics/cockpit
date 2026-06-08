@@ -342,7 +342,7 @@ const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? mis
 const home = ref()
 const mapId = computed(() => `map-${widget.value.hash}`)
 const showButtons = computed(
-  () => isMouseOver.value || downloadMenuOpen.value || widgetStore.isFullScreen(widget.value)
+  () => isMouseOver.value || downloadMenuOpen.value || speedDialOpen.value || widgetStore.isFullScreen(widget.value)
 )
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
@@ -647,10 +647,6 @@ watch(showButtons, () => {
     map.value.removeControl(layerControl)
     removeScaleControl()
   }
-})
-
-watch(isMouseOver, () => {
-  showButtons.value = isMouseOver.value
 })
 
 // Watch for grid overlay option changes
