@@ -131,9 +131,9 @@
 <script setup lang="ts">
 import { useDebounceFn, useElementVisibility, useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
-import gsap from 'gsap'
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
+import { createQuickTween } from '@/libs/animation'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
@@ -191,7 +191,10 @@ type RenderVariables = {
    */
   yawLinesX: { [angle: string]: number }
 }
-const renderVars = reactive<RenderVariables>({ yawLinesX: {} })
+// Plain (non-reactive) render state. GSAP tweens this every frame; keeping it out of Vue's reactivity
+// avoids a set/trigger/traverse storm on each animation step. The canvas redraw is driven by the
+// requestAnimationFrame loop below, kicked off whenever the render state starts changing.
+const renderVars: RenderVariables = { yawLinesX: {} }
 
 // Yaw angles for which vertical indication lines are rendered.
 const yawAngles: number[] = []
@@ -577,21 +580,27 @@ const updatePoiMarkers = (): void => {
   poiMarkers.value = markers
 }
 
+// Reused GSAP setters - one tween per line, retargeted on each update (no per-update allocation).
+// No onUpdate: the animation loop below already redraws each frame while values are interpolating.
+const yawLineTween = createQuickTween(renderVars.yawLinesX, { duration: 2.5, ease: 'elastic.out(1.2, 0.5)' })
+
 // Update the X position of each line in the render variables with GSAP to smooth the transition
 watch(yaw, () => {
   yawAngles.forEach((angle: number) => {
     const position = angleX(angle)
     // Ensure the line exists before tweening. The yaw watcher can fire before onMounted populates yawLinesX,
-    // and gsap.to() against a missing property emits "Invalid property ... Missing plugin?" warnings.
+    // and tweening a missing property emits "Invalid property ... Missing plugin?" warnings.
     renderVars.yawLinesX[angle] ??= position
     // Only interpolate angle render with GSAP when the angle is not changing
     // sides, so it doesn't cross across the screen.
     if (Math.abs(renderVars.yawLinesX[angle] - position) > 90) {
-      renderVars.yawLinesX[angle] = position
+      yawLineTween.snap(angle, position)
     } else {
-      gsap.to(renderVars.yawLinesX, { duration: 2.5, ease: 'elastic.out(1.2, 0.5)', [angle]: position })
+      yawLineTween.set(angle, position)
     }
   })
+  // renderVars is no longer reactive, so kick the render loop here instead of via a watch on it.
+  if (widgetStore.isWidgetVisible(widget.value)) startAnimationLoop()
 })
 
 // Update canvas and POI markers whenever reference variables changes
@@ -627,12 +636,17 @@ const stopAnimationLoop = (): void => {
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
 watch([poiData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
 
-// Start both canvas and POI markers animation loop when widget becomes visible or data changes
-watch([renderVars, canvasSize, widget.value.options], () => {
-  if (widgetStore.isWidgetVisible(widget.value)) {
-    startAnimationLoop()
-  }
-})
+// Start the animation loop when the widget becomes visible or its size/options change (animation-driven
+// starts come from the yaw watch above, since renderVars is no longer reactive).
+watch(
+  [canvasSize, widget.value.options],
+  () => {
+    if (widgetStore.isWidgetVisible(widget.value)) {
+      startAnimationLoop()
+    }
+  },
+  { deep: true }
+)
 
 const canvasVisible = useElementVisibility(canvasRef)
 watch(canvasVisible, (isVisible, wasVisible) => {
@@ -646,6 +660,7 @@ watch(canvasVisible, (isVisible, wasVisible) => {
 
 onBeforeUnmount(() => {
   stopAnimationLoop()
+  yawLineTween.kill()
 })
 </script>
 

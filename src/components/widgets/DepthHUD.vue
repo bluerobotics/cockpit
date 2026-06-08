@@ -36,10 +36,10 @@
 <script setup lang="ts">
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
-import gsap from 'gsap'
 import { unit } from 'mathjs'
-import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import { createQuickTween } from '@/libs/animation'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { unitAbbreviation } from '@/libs/units'
 import { range, resetCanvas, round } from '@/libs/utils'
@@ -77,7 +77,22 @@ type RenderVariables = {
    */
   indicatorY: number
 }
-const renderVars = reactive<RenderVariables>({ depthLinesY: {}, indicatorY: 0 })
+// Plain (non-reactive) render state. GSAP tweens this every frame; keeping it out of Vue's reactivity
+// avoids a set/trigger/traverse storm on each animation step. The canvas redraw is driven directly
+// from GSAP's onUpdate via scheduleRender instead.
+const renderVars: RenderVariables = { depthLinesY: {}, indicatorY: 0 }
+
+// Coalesce redraws to at most one per animation frame, regardless of how many tweens updated.
+let renderScheduled = false
+const scheduleRender = (): void => {
+  if (renderScheduled) return
+  renderScheduled = true
+  requestAnimationFrame(() => {
+    renderScheduled = false
+    if (!widgetStore.isWidgetVisible(widget.value)) return
+    renderCanvas()
+  })
+}
 
 const passedDepths = ref<number[]>(Array(10).fill(0))
 const depth = computed(() => passedDepths.value[passedDepths.value.length - 1])
@@ -215,25 +230,31 @@ const renderCanvas = (): void => {
 }
 
 // Update the X position of each line in the render variables with GSAP to smooth the transition
+// Reused GSAP setters - one tween per property, retargeted on each update (no per-update allocation).
+const lineTween = createQuickTween(renderVars.depthLinesY, { duration: 0.5, onUpdate: scheduleRender })
+const varTween = createQuickTween(renderVars, { duration: 0.5, onUpdate: scheduleRender })
+
 watch(depth, () => {
   depthGraphDistances.value.forEach((distance) => {
     renderVars.depthLinesY[distance] ??= round(canvasSize.value.height + 100)
-    gsap.to(renderVars.depthLinesY, 0.5, { [distance]: distanceY(distance) })
+    lineTween.set(distance, distanceY(distance))
   })
   const distancesToExclude = Object.keys(renderVars.depthLinesY).filter(
     (distance) => !depthGraphDistances.value.includes(Number(distance))
   )
   distancesToExclude.forEach((distance) => {
-    gsap.to(renderVars.depthLinesY, 0.5, { [distance]: round(canvasSize.value.height + 100) })
+    lineTween.set(distance, round(canvasSize.value.height + 100))
   })
-  gsap.to(renderVars, 0.5, { indicatorY: distanceY(depth.value) })
+  varTween.set('indicatorY', distanceY(depth.value))
 })
 
-// Update canvas whenever reference variables changes
-watch([renderVars, canvasSize, widget.value.options], () => {
-  if (!widgetStore.isWidgetVisible(widget.value)) return
-  nextTick(() => renderCanvas())
+onUnmounted(() => {
+  lineTween.kill()
+  varTween.kill()
 })
+
+// Redraw on size/option changes (animation-driven redraws come from GSAP's onUpdate above).
+watch([canvasSize, widget.value.options], () => scheduleRender(), { deep: true })
 
 const canvasVisible = useElementVisibility(canvasRef)
 watch(canvasVisible, (isVisible, wasVisible) => {
