@@ -15,6 +15,12 @@ import { applyCalibration } from './calibration'
 export { JoystickModel }
 
 export const joystickCalibrationOptionsKey = 'cockpit-joystick-calibration-options'
+const disabledJoystickModelsKey = 'cockpit-disabled-joystick-models'
+
+// Compiled once. The gamepad id format is fixed and getVidPid runs on every joystick state event
+// (~50Hz), so building these per call would needlessly allocate and recompile regexes in the hot path.
+const vendorIdRegex = /Vendor: (?<vendor_id>[0-9a-f]{4})/
+const productIdRegex = /Product: (?<product_id>[0-9a-f]{4})/
 
 /**
  * Possible events from GamepadListener
@@ -210,11 +216,20 @@ class JoystickManager {
   private lastTimeGamepadStatesPolled = 0
   private previousGamepadState: Map<number, JoystickState> = new Map()
   private calibrationOptions: Map<JoystickModel, JoystickCalibration> = new Map()
+  // Model per gamepad id is constant, so cache it instead of re-parsing the id on every state event.
+  private modelCache: Map<string, JoystickModel> = new Map()
+  // Cached so emitStateEvent doesn't read settings on every (~50Hz) state event.
+  private disabledJoystickModels: JoystickModel[] = []
   /**
    * Singleton constructor
    */
   private constructor() {
     console.log('Starting JoystickManager...')
+
+    this.disabledJoystickModels = (settingsManager.getKeyValue(disabledJoystickModelsKey) as JoystickModel[]) ?? []
+    settingsManager.registerListener(disabledJoystickModelsKey, (setting) => {
+      this.disabledJoystickModels = (setting.value as JoystickModel[]) ?? []
+    })
 
     if (isElectron()) {
       // Also check SDL status directly after a short delay
@@ -271,10 +286,8 @@ class JoystickManager {
     vendor_id: string | undefined // eslint-disable-line
     product_id: string | undefined // eslint-disable-line
   } {
-    const vendor_regex = new RegExp('Vendor: (?<vendor_id>[0-9a-f]{4})')
-    const product_regex = new RegExp('Product: (?<product_id>[0-9a-f]{4})')
-    const vendor_id = vendor_regex.exec(gamepadId)?.groups?.vendor_id
-    const product_id = product_regex.exec(gamepadId)?.groups?.product_id
+    const vendor_id = vendorIdRegex.exec(gamepadId)?.groups?.vendor_id
+    const product_id = productIdRegex.exec(gamepadId)?.groups?.product_id
     return { vendor_id, product_id }
   }
 
@@ -284,12 +297,17 @@ class JoystickManager {
    * @returns {JoystickModel} Joystick model
    */
   getModel(gamepadId: string): JoystickModel {
-    const { vendor_id, product_id } = this.getVidPid(gamepadId)
+    const cached = this.modelCache.get(gamepadId)
+    if (cached !== undefined) return cached
 
-    if (vendor_id == undefined || product_id == undefined) {
-      return JoystickModel.Unknown
-    }
-    return JoystickMapVidPid.get(`${vendor_id}:${product_id}`) ?? JoystickModel.Unknown
+    const { vendor_id, product_id } = this.getVidPid(gamepadId)
+    const model =
+      vendor_id == undefined || product_id == undefined
+        ? JoystickModel.Unknown
+        : JoystickMapVidPid.get(`${vendor_id}:${product_id}`) ?? JoystickModel.Unknown
+
+    this.modelCache.set(gamepadId, model)
+    return model
   }
 
   /**
@@ -573,8 +591,7 @@ class JoystickManager {
 
     // Get the joystick model to check if it's disabled
     const model = this.getModel(joystickEvent.gamepad.id)
-    const disabledJoystickModels = settingsManager.getKeyValue('cockpit-disabled-joystick-models') ?? []
-    if (disabledJoystickModels.includes(model)) return
+    if (this.disabledJoystickModels.includes(model)) return
 
     // Emit state event to registered callbacks
     for (const callback of this.callbacksJoystickState) {
