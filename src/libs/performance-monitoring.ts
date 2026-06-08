@@ -38,6 +38,7 @@ const ROLLING_STATS_INTERVAL_MS = 1000
 // concise log lines while still being dense enough to see a slow decline.
 const TREND_INTERVAL_MS = 30_000
 const TREND_RING_SIZE = 240
+const LOAF_RING_SIZE = 64
 
 const frameRateVariableId = 'cockpit-app-frame-rate'
 
@@ -63,7 +64,23 @@ export interface LongTaskRecord {
   startTime: number
   /** How long the task blocked the main thread, in ms. */
   duration: number
-  /** Best-effort attribution name provided by the browser (often "self" or a frame container). */
+  /**
+   * Best-effort attribution. The Long Tasks API only names the frame container (usually "unknown"
+   * for top-level work), so this is enriched, when available, with the dominant script from the
+   * overlapping Long Animation Frame (function and source).
+   */
+  attribution: string
+}
+
+/** A long animation frame and the dominant script that ran during it (LoAF API). */
+interface LoafFrame {
+  /** Frame start time (relative to navigation start, in ms). */
+  start: number
+  /** Frame end time (relative to navigation start, in ms). */
+  end: number
+  /** Total blocking duration reported for the frame, in ms. */
+  blockingDuration: number
+  /** Human-readable attribution of the longest script in the frame (function and source). */
   attribution: string
 }
 
@@ -109,6 +126,10 @@ type PerformanceContextProvider = () => Record<string, unknown>
 
 const longTaskRing: LongTaskRecord[] = []
 let longTaskRingHead = 0
+
+const loafRing: LoafFrame[] = []
+let loafRingHead = 0
+let loafObserver: PerformanceObserver | null = null
 
 let currentEpisode: {
   /** Start time of the episode's first long task, in ms relative to navigation start. */
@@ -158,6 +179,37 @@ const pushLongTask = (record: LongTaskRecord): void => {
   longTaskRingHead = (longTaskRingHead + 1) % LONG_TASK_RING_SIZE
 }
 
+const overlaps = (aStart: number, aEnd: number, bStart: number, bEnd: number): boolean => {
+  return aStart <= bEnd && bStart <= aEnd
+}
+
+// Build a concise label for the heaviest script in a long animation frame.
+const computeLoafAttribution = (entry: any): string => {
+  const scripts: any[] = entry.scripts ?? []
+  if (scripts.length === 0) return 'unknown'
+
+  const heaviest = scripts.reduce((max, script) => (script.duration > max.duration ? script : max), scripts[0])
+  const fn = heaviest.sourceFunctionName || heaviest.invoker || heaviest.invokerType || 'anonymous'
+  const source = typeof heaviest.sourceURL === 'string' ? heaviest.sourceURL.split('/').pop() : ''
+  const position =
+    typeof heaviest.sourceCharPosition === 'number' && heaviest.sourceCharPosition >= 0
+      ? `:${heaviest.sourceCharPosition}`
+      : ''
+  return source ? `${fn} (${source}${position})` : fn
+}
+
+// Find the attribution of the long animation frame that best overlaps the given window, preferring
+// the frame with the largest blocking duration.
+const attributionFromLoaf = (start: number, end: number): string | undefined => {
+  let best: LoafFrame | undefined
+  for (const frame of loafRing) {
+    if (frame === undefined) continue
+    if (!overlaps(start, end, frame.start, frame.end)) continue
+    if (best === undefined || frame.blockingDuration > best.blockingDuration) best = frame
+  }
+  return best?.attribution
+}
+
 const canLogEpisode = (): boolean => {
   const now = performance.now()
   const oneMinuteAgo = now - 60_000
@@ -192,6 +244,9 @@ const finalizeEpisode = (): void => {
     minFps: episode.minFps === Infinity ? null : episode.minFps,
   }
 
+  const script = attributionFromLoaf(episode.startTime, episode.lastTaskEndTime)
+  if (script !== undefined) summary.script = script
+
   if (contextProvider !== null) {
     try {
       Object.assign(summary, contextProvider())
@@ -208,10 +263,36 @@ const finalizeEpisode = (): void => {
   console.warn(`[Performance] Main-thread stall episode: ${JSON.stringify(summary)}`)
 }
 
+const onLongAnimationFrame = (entry: PerformanceEntry): void => {
+  const start = entry.startTime
+  const end = entry.startTime + entry.duration
+  const frame: LoafFrame = {
+    start,
+    end,
+    blockingDuration: (entry as any).blockingDuration ?? 0,
+    attribution: computeLoafAttribution(entry),
+  }
+  loafRing[loafRingHead] = frame
+  loafRingHead = (loafRingHead + 1) % LOAF_RING_SIZE
+
+  // The two observers can deliver in either order, so back-fill any long task that overlaps this
+  // frame but hasn't yet been given a script-level attribution.
+  for (const record of longTaskRing) {
+    if (record === undefined || record.attribution !== 'unknown') continue
+    if (overlaps(record.startTime, record.startTime + record.duration, start, end)) {
+      record.attribution = frame.attribution
+    }
+  }
+}
+
 const onLongTask = (entry: PerformanceEntry): void => {
   const blocking = entry.duration - LONG_TASK_THRESHOLD_MS
+  // Prefer LoAF script attribution; fall back to the Long Tasks container name (usually "unknown").
   // `attribution` is part of PerformanceLongTaskTiming but missing from some TS lib versions.
-  const attribution: string = (entry as any).attribution?.[0]?.name ?? 'unknown'
+  const attribution: string =
+    attributionFromLoaf(entry.startTime, entry.startTime + entry.duration) ??
+    (entry as any).attribution?.[0]?.name ??
+    'unknown'
 
   pushLongTask({ startTime: entry.startTime, duration: entry.duration, attribution })
 
@@ -351,6 +432,22 @@ export const startPerformanceMonitoring = (): void => {
   if (typeof PerformanceObserver === 'undefined') {
     console.info('[Performance] PerformanceObserver is unavailable; long-task monitoring disabled.')
     return
+  }
+
+  // Long Animation Frames (LoAF) give per-script attribution that the Long Tasks API lacks. Start it
+  // first so its frames are available to enrich long-task attribution. Chromium-only; no-ops elsewhere.
+  const supportsLoaf = PerformanceObserver.supportedEntryTypes?.includes('long-animation-frame')
+  if (supportsLoaf) {
+    try {
+      loafObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          onLongAnimationFrame(entry)
+        }
+      })
+      loafObserver.observe({ type: 'long-animation-frame', buffered: true } as PerformanceObserverInit)
+    } catch (error) {
+      console.warn('[Performance] Failed to start long-animation-frame observer:', error)
+    }
   }
 
   try {
