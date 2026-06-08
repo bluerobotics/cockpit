@@ -101,6 +101,9 @@
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
   <SnackbarContainer />
+  <FloatingWrapper v-model="devStore.showConsole" title="Console">
+    <ConsoleViewer :logging-enabled="devStore.enableSystemLogging" />
+  </FloatingWrapper>
   <SkullAnimation
     :is-visible="interfaceStore.showSkullAnimation"
     @animation-complete="interfaceStore.hideSkullAnimation"
@@ -120,8 +123,10 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 
 
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
 import CameraReplacementDialog from '@/components/CameraReplacementDialog.vue'
+import ConsoleViewer from '@/components/ConsoleViewer.vue'
 import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
+import FloatingWrapper from '@/components/FloatingWrapper.vue'
 import GlassModal from '@/components/GlassModal.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'

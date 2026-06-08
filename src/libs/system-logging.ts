@@ -59,6 +59,60 @@ const currentSystemLog: SystemLog = {
 }
 /* eslint-enable jsdoc/require-jsdoc */
 
+/**
+ * A single captured console event, as exposed to the in-app console viewer.
+ */
+export interface SystemLogViewerEvent {
+  /** Monotonic id, used as a stable key for virtualized rendering */
+  id: number
+  /** Time the event was captured (epoch ms) */
+  epoch: number
+  /** Console level (error, warn, info, debug, trace, log) */
+  level: string
+  /** The already-serialized message */
+  msg: string
+}
+
+// Bounded in-memory ring buffer of recent console events, used to feed the in-app console viewer live without
+// re-reading the persisted log. Capped so memory stays bounded regardless of how much is logged.
+const maxRecentLogEvents = 2000
+const recentLogEvents: SystemLogViewerEvent[] = []
+let logEventIdCounter = 0
+type SystemLogEventListener = (event: SystemLogViewerEvent) => void
+const systemLogEventListeners = new Set<SystemLogEventListener>()
+
+const recordLogEventForViewer = (level: string, msg: string): void => {
+  logEventIdCounter += 1
+  const event: SystemLogViewerEvent = { id: logEventIdCounter, epoch: Date.now(), level, msg }
+  recentLogEvents.push(event)
+  if (recentLogEvents.length > maxRecentLogEvents) recentLogEvents.shift()
+  systemLogEventListeners.forEach((listener) => {
+    try {
+      listener(event)
+    } catch {
+      // Never let a viewer listener throw back into the logging path (could cause an infinite loop)
+    }
+  })
+}
+
+/**
+ * Get a snapshot of the most recent in-memory console events.
+ * @returns {SystemLogViewerEvent[]} A copy of the current ring buffer
+ */
+export const getRecentSystemLogEvents = (): SystemLogViewerEvent[] => recentLogEvents.slice()
+
+/**
+ * Subscribe to live console events as they are captured.
+ * @param {SystemLogEventListener} listener - Called for each new event
+ * @returns {() => void} Unsubscribe function
+ */
+export const subscribeToSystemLogEvents = (listener: SystemLogEventListener): (() => void) => {
+  systemLogEventListeners.add(listener)
+  return () => {
+    systemLogEventListeners.delete(listener)
+  }
+}
+
 // Buffer log events and flush them in batches, to avoid one IPC message (Electron) or one IndexedDB write
 // (web) per console call. During logging bursts the per-call overhead is the dominant cost on the renderer.
 const logFlushIntervalMs = 250
@@ -130,6 +184,8 @@ if (enableSystemLogging) {
   `)
 
   const persistLogEvent = (level: string, message: string): void => {
+    // Feed the in-app console viewer (bounded in-memory buffer), independent of where logs are persisted.
+    recordLogEventForViewer(level, message)
     if (isRunningInElectron) {
       sendLogToElectron(level, message)
     } else {
