@@ -57,15 +57,26 @@
         </div>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
           <template #title>
-            <div class="flex justify-between">
+            <div class="flex justify-between items-center">
               <span>System logs</span>
-              <span class="text-sm text-gray-300 cursor-pointer" @click.stop="deleteOldLogs">
-                <v-tooltip text="Delete old logs">
-                  <template #activator="{ props }">
-                    <v-icon left class="mr-2" v-bind="props">mdi-delete-sweep</v-icon>
-                  </template>
-                </v-tooltip>
-              </span>
+              <div class="flex items-center gap-2">
+                <v-btn
+                  variant="outlined"
+                  color="white"
+                  size="small"
+                  prepend-icon="mdi-console-line"
+                  @click.stop="devStore.showConsole = true"
+                >
+                  Open console
+                </v-btn>
+                <span class="text-sm text-gray-300 cursor-pointer" @click.stop="deleteOldLogs">
+                  <v-tooltip text="Delete old logs">
+                    <template #activator="{ props }">
+                      <v-icon left class="mr-2" v-bind="props">mdi-delete-sweep</v-icon>
+                    </template>
+                  </v-tooltip>
+                </span>
+              </div>
             </div>
           </template>
           <template #content>
