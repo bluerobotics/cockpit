@@ -47,6 +47,8 @@ import {
 } from '@/types/widgets'
 const { showDialog } = useInteractionDialog()
 
+const { height: windowHeight } = useWindowSize()
+
 const viewsGroupKey = 'cockpit-views-group-v1'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
@@ -329,7 +331,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   // eslint-disable-next-line jsdoc/require-jsdoc
   const widgetClearanceForVisibleArea = (widget: Widget): { top: number; bottom: number } => {
     const clearances = { top: 0, bottom: 0 }
-    const { height: windowHeight } = useWindowSize()
 
     const widgetTopEdgePixels = windowHeight.value * widget.position.y
     const topBarStartPixels = currentTopBarHeightPixels.value
