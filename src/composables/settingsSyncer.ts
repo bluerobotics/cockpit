@@ -3,6 +3,7 @@ import { diff } from 'jest-diff'
 import { format as prettyFormat } from 'pretty-format'
 import { type MaybeRef, ref, unref, watch } from 'vue'
 
+import { instrument } from '@/libs/performance-monitoring'
 import { settingsManager } from '@/libs/settings-management'
 import { deserialize, isEqual } from '@/libs/utils'
 import type { CockpitSetting } from '@/types/settings-management'
@@ -54,33 +55,37 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   watch(
     refedValue,
     (newValue) => {
-      const isTheSameObject = Object.is(newValue, oldRefedValue)
-      const hasTheSameSerialization = prettyFormat(newValue) === prettyFormat(oldRefedValue)
+      // Instrumented per-key so opt-in profiling reveals which synced settings have hot deep
+      // watchers (the per-change prettyFormat comparison is the costly part). No-op when disabled.
+      instrument(`settings-watch:${key}`, () => {
+        const isTheSameObject = Object.is(newValue, oldRefedValue)
+        const hasTheSameSerialization = prettyFormat(newValue) === prettyFormat(oldRefedValue)
 
-      if (isTheSameObject || hasTheSameSerialization) {
-        return
-      }
-
-      if (watchUpdaterTimeout) {
-        clearTimeout(watchUpdaterTimeout)
-      }
-
-      watchUpdaterTimeout = setTimeout(() => {
-        const diffInValue = diff(oldRefedValue, newValue, {
-          expand: false,
-          contextLines: 3,
-          includeChangeCounts: true,
-        })
-        let diffToPrint = diffInValue
-        if (diffInValue && diffInValue.split('\n').length > 15) {
-          const diffLines = diffInValue.split('\n')
-          const truncatedDiff = diffLines.slice(0, 14).join('\n') + '\n...'
-          diffToPrint = truncatedDiff
+        if (isTheSameObject || hasTheSameSerialization) {
+          return
         }
-        console.log(`[SettingsSyncer] Key ${key} changed on watch:\n${diffToPrint}.`)
-        settingsManager.setKeyValue(key, newValue)
-        oldRefedValue = deserialize(JSON.stringify(newValue)) as T
-      }, 3000)
+
+        if (watchUpdaterTimeout) {
+          clearTimeout(watchUpdaterTimeout)
+        }
+
+        watchUpdaterTimeout = setTimeout(() => {
+          const diffInValue = diff(oldRefedValue, newValue, {
+            expand: false,
+            contextLines: 3,
+            includeChangeCounts: true,
+          })
+          let diffToPrint = diffInValue
+          if (diffInValue && diffInValue.split('\n').length > 15) {
+            const diffLines = diffInValue.split('\n')
+            const truncatedDiff = diffLines.slice(0, 14).join('\n') + '\n...'
+            diffToPrint = truncatedDiff
+          }
+          console.log(`[SettingsSyncer] Key ${key} changed on watch:\n${diffToPrint}.`)
+          settingsManager.setKeyValue(key, newValue)
+          oldRefedValue = deserialize(JSON.stringify(newValue)) as T
+        }, 3000)
+      })
     },
     { deep: true }
   )
