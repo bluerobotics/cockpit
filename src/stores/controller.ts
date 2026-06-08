@@ -293,6 +293,10 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
+  // Modifier actions are uniquely identified by their id, so comparing ids avoids re-serializing the
+  // (constant) modifier set with JSON.stringify on every button on every joystick poll (~60Hz hot path).
+  const modifierKeyActionIds = new Set(Object.values(modifierKeyActions).map((a) => a.id))
+
   const activeButtonActions = (
     joystickState: JoystickState,
     mapping: JoystickProtocolActionsMapping
@@ -301,9 +305,7 @@ export const useControllerStore = defineStore('controller', () => {
 
     Object.entries(mapping.buttonsCorrespondencies.regular).forEach(([key, value]) => {
       const buttonActive = joystickState.buttons[Number(key)] ?? 0 > 0.5
-      const isModifier = Object.values(modifierKeyActions)
-        .map((a) => JSON.stringify(a))
-        .includes(JSON.stringify(value.action))
+      const isModifier = modifierKeyActionIds.has(value.action.id)
       if (buttonActive && isModifier) {
         modifierKeyId = value.action.id
       }
