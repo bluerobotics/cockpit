@@ -10,14 +10,7 @@
           class="flex flex-col justify-between items-center w-full"
           :class="interfaceStore.isOnSmallScreen ? 'scale-[80%] mt-0 -mb-3' : 'scale-95 mt-4'"
         >
-          <div class="flex flex-row gap-x-[40px]">
-            <v-switch
-              v-model="devStore.developmentMode"
-              label="Development mode"
-              color="white"
-              hide-details
-              class="min-w-[155px]"
-            />
+          <div class="flex flex-row flex-wrap justify-start gap-x-[20px]">
             <v-switch
               v-model="devStore.enableBlueOsSettingsSync"
               label="BlueOS settings sync"
@@ -34,8 +27,6 @@
               class="min-w-[155px]"
               @update:model-value="reloadCockpitAndWarnUser()"
             />
-          </div>
-          <div class="flex flex-row w-full justify-start gap-x-[40px]">
             <v-switch
               v-model="devStore.showSplashScreenOnStartup"
               label="Show splashscreen on startup"
@@ -44,16 +35,6 @@
               class="min-w-[155px]"
             />
           </div>
-          <v-slider
-            v-model="devStore.widgetDevInfoBlurLevel"
-            label="Dev info blur level"
-            min="0"
-            max="10"
-            class="w-[350px]"
-            color="white"
-            step="1"
-            thumb-label="hover"
-          />
         </div>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
           <template #title>
