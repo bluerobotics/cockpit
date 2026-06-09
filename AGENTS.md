@@ -138,6 +138,7 @@ If the same logic would live in two or more places, extract it once and reuse it
 - When the user runs `git reset --soft <ref>` and asks you to recommit, group the working-tree changes back into the logical commits they described — do not pile everything into a single commit.
 - When fixing feedback for code that is already committed on the branch, prefer `git commit --fixup <sha>` over a new standalone "fix typo"/"address review" commit, unless the user says otherwise.
 - Branch names follow `issue-<number>-short-words`, using at most 5 words in the descriptive part.
+- Pick the commit-subject type that actually fits the change (`feat`/`fix`/`refactor`/`docs`/etc.). Do not prefix every commit with `fix:`. PR-number references belong in the PR body, not the commit subject.
 
 ## Data-lake first for vehicle data in widgets
 
