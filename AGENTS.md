@@ -117,6 +117,14 @@ When the user gives you a PR or review URL and asks you to address it:
 - When asked to "implement what you judge important", default to accepting only items that affect correctness, security, or a clearly stated AGENTS.md rule; surface the rest as questions instead of acting on them.
 - When asked to draft a reply comment for the user to post, write it in their voice: lowercase, terse, no headings or bullet lists unless the content is genuinely a list, and no "thanks for the review" preambles. Reference exact file paths and line numbers.
 
+## Reuse before reinventing
+
+Before writing a new helper, composable, or component, search for an existing one that already does the job:
+- Stateless utilities: check `src/libs/` (e.g. `src/libs/utils.ts`) and add to it instead of redefining a local copy.
+- Reactive logic: check `src/composables/` (e.g. `useDataLakeVariable`, `useInteractionDialog`, `useBlueOsStorage`).
+- UI: check existing components and dialogs for an established pattern before building a new one.
+If the same logic would live in two or more places, extract it once and reuse it.
+
 ## Commit hygiene
 
 - Each commit is one logical change. If a single fix touches three independent things, make three commits.
