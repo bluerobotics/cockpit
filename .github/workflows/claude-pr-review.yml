@@ -83,6 +83,7 @@ jobs:
 
             ### 1. Correctness & Implementation Bugs
             - Logic errors, off-by-ones, null/undefined hazards, race conditions, broken error handling, incorrect MAVLink handling, wrong Vue reactivity patterns, broken TypeScript types, regressions.
+            - Data-lake first: flag (as `major`) widgets/mini-widgets that read vehicle telemetry directly from a Pinia store (e.g. `useMainVehicleStore`) instead of `useDataLakeVariable`, unless the value is genuinely non-telemetry app state.
 
             ### 2. AGENTS.md Adherence
             - Cite the specific rule in `AGENTS.md` for each finding.

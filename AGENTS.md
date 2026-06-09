@@ -98,3 +98,11 @@ This command fixes all the linting issues that are automatically fixable, but it
 - Each commit is one logical change. If a single fix touches three independent things, make three commits.
 - When the user runs `git reset --soft <ref>` and asks you to recommit, group the working-tree changes back into the logical commits they described — do not pile everything into a single commit.
 - When fixing feedback for code that is already committed on the branch, prefer `git commit --fixup <sha>` over a new standalone "fix typo"/"address review" commit, unless the user says otherwise.
+
+## Data-lake first for vehicle data in widgets
+
+When a widget or mini-widget needs a vehicle telemetry value:
+- Read it from the data lake via the `useDataLakeVariable` composable (`src/composables/useDataLakeVariable.ts`), not by importing `useMainVehicleStore` or any other vehicle store.
+- Put the variable id (the `/mavlink/.../FIELD` path) in the widget's `defaultOptions`, so users can later override it.
+- To expose a new MAVLink field, extend the flattener (`src/libs/vehicle/common/data-flattener.ts`) rather than special-casing the widget.
+- Vehicle stores are for app-level state (connection, vehicle identity, mode, etc.), not for per-telemetry-message values.
