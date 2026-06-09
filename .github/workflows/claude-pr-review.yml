@@ -88,6 +88,7 @@ jobs:
             - Cite the specific rule in `AGENTS.md` for each finding.
             - Especially check: use of existing dependencies before adding new ones, alphabetical dependency ordering in `package.json`, `yarn` (not `npm`/`npx`), JSDoc completeness for added/changed public functions, comment policy (explain "why" not "what"), optional chaining usage in TS, Lite (web) vs Standalone (electron) feature-parity notes, `cockpit-` prefix for new local-storage keys, widget options default-merging pattern.
             - Scope discipline: flag renames, declaration/import/hook reorders, `const`/`let`/`var` swaps, helper moves between files, and formatter-only reflows that are unrelated to the stated purpose of the PR.
+            - Empty/filler JSDoc: flag (as `major`) any added `/** */` block whose summary or `@param`/`@returns` body is empty, whitespace-only, or filler text.
 
             ### 3. Security
             Explicitly sub-check and report on ALL of the following:
