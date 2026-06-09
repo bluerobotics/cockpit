@@ -101,6 +101,14 @@ This command fixes all the linting issues that are automatically fixable, but it
 - Migrations must be idempotent: once the new key has been written, re-running the migration on a later launch must never overwrite user data.
 - Do not write migration code for keys that were never released to users. Just change the schema.
 
+## Plans
+
+When a `.plan.md` file is attached and the user asks you to implement the plan:
+- Do not edit the plan file.
+- Do not re-create the to-do list — it is already created.
+- Walk the to-dos top-down and do not stop early.
+- If a step turns out to be wrong or unworkable, stop and ask before deviating — do not silently change scope.
+
 ## Commit hygiene
 
 - Each commit is one logical change. If a single fix touches three independent things, make three commits.
