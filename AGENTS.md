@@ -137,6 +137,7 @@ If the same logic would live in two or more places, extract it once and reuse it
 - Each commit is one logical change. If a single fix touches three independent things, make three commits.
 - When the user runs `git reset --soft <ref>` and asks you to recommit, group the working-tree changes back into the logical commits they described — do not pile everything into a single commit.
 - When fixing feedback for code that is already committed on the branch, prefer `git commit --fixup <sha>` over a new standalone "fix typo"/"address review" commit, unless the user says otherwise.
+- Branch names follow `issue-<number>-short-words`, using at most 5 words in the descriptive part.
 
 ## Data-lake first for vehicle data in widgets
 
