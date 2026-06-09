@@ -177,7 +177,8 @@ export const useSnapshotStore = defineStore('snapshot', () => {
   }
 
   const snapshotFilename = (streamName: string, missionName = 'Cockpit'): string => {
-    const timeString = format(new Date(), 'LLL dd, yyyy - HH꞉mm꞉ss.SSS O')
+    // Sanitize because the `O` timezone token emits a real colon for non-integer UTC offsets (e.g. `GMT+5:30`), which is illegal on Windows and yields a 0KB file.
+    const timeString = sanitizeFilenameComponent(format(new Date(), 'LLL dd, yyyy - HH꞉mm꞉ss.SSS O'))
     const safeMissionName = sanitizeFilenameComponent(missionName) || 'Cockpit'
     const safeStreamName = sanitizeFilenameComponent(streamName) || 'workspace'
     return `${safeMissionName} (${timeString}) #${safeStreamName}.jpeg`
