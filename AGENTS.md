@@ -29,6 +29,7 @@ When writing code:
 - Follow existing patterns in the codebase exactly
 - Follow the rules specified on `eslintrc.cjs`
 - Use optional chaining (`?.`) when possible in typescript
+- Prefer Tailwind utility classes over writing new scoped CSS when a utility already covers the styling need
 - Prefer editing existing files over creating new ones
 - Existing comments are immutable unless the code lines they document also change in the same diff. Do not reword, shorten, or delete a comment whose code is unchanged.
 - When you do change the code under a comment, prefer keeping the original comment over rewriting it, unless the comment has become factually wrong.
