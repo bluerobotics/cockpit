@@ -30,7 +30,8 @@ When writing code:
 - Follow the rules specified on `eslintrc.cjs`
 - Use optional chaining (`?.`) when possible in typescript
 - Prefer editing existing files over creating new ones
-- Do not modify or delete existing comments unless they are incorrect (e.g. due to logical changes of the code they refer to)
+- Existing comments are immutable unless the code lines they document also change in the same diff. Do not reword, shorten, or delete a comment whose code is unchanged.
+- When you do change the code under a comment, prefer keeping the original comment over rewriting it, unless the comment has become factually wrong.
 - No new comments unless they will save the reader real time understanding _why_ something was necessary
 - Avoid repeated comments; describe reasoning once only
 - Avoid adding comments to markup (like Vue templates), just describe reasoning where the behavior is actually defined
