@@ -6,6 +6,8 @@ import { join } from 'path'
 
 import { type ElectronLog } from '@/types/electron-general'
 
+import { sanitizeFilenameComponent } from '../../libs/utils'
+
 // Import the same date format used in system-logging.ts
 const systemLogDateFormat = 'LLL dd, yyyy'
 const systemLogTimeFormat = 'HH꞉mm꞉ss O'
@@ -35,7 +37,10 @@ const getElectronLogsPath = (): string => {
  */
 export const setupElectronLogService = (): void => {
   // Configure file transport to create a new log file for each session
-  logger.transports.file.fileName = `Cockpit (${format(new Date(), systemLogDateTimeFormat)}).syslog`
+  // Sanitize because the `O` timezone token emits a real colon for non-integer UTC offsets (e.g. `GMT+5:30`), which is illegal on Windows and yields a 0KB file.
+  logger.transports.file.fileName = `Cockpit (${sanitizeFilenameComponent(
+    format(new Date(), systemLogDateTimeFormat)
+  )}).syslog`
   logger.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}'
   logger.transports.file.maxSize = 10 * 1024 * 1024 // 10MB max file size
   logger.transports.file.archiveLog = (file) => file + '.old' // Archive old logs
