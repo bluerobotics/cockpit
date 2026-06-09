@@ -106,3 +106,9 @@ When a widget or mini-widget needs a vehicle telemetry value:
 - Put the variable id (the `/mavlink/.../FIELD` path) in the widget's `defaultOptions`, so users can later override it.
 - To expose a new MAVLink field, extend the flattener (`src/libs/vehicle/common/data-flattener.ts`) rather than special-casing the widget.
 - Vehicle stores are for app-level state (connection, vehicle identity, mode, etc.), not for per-telemetry-message values.
+
+## User feedback (snackbars and dialogs)
+
+- `openSnackbar` (`src/composables/snackbar.ts`) already writes to the logger. Do not pair it with a `console.log`/`warn`/`error` of the same message.
+- Do not open a new dialog while a dialog of the same purpose is already open. Guard against re-opens, especially inside timed loops (snapshots, retries, watchers).
+- For modal confirmations and from→to choices, reuse the existing `useInteractionDialog` composable (`src/composables/interactionDialog.ts`) and existing dialog patterns before creating a new component.
