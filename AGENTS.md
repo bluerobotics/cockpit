@@ -89,6 +89,8 @@ yarn lint:fix
 
 This command fixes all the linting issues that are automatically fixable, but it will return warns and errors for issues that cannot be fixed automatically. In this case you should fix those manually. The final implementation cannot contain errors or warnings.
 
+After running the lint and typecheck commands, check whether they auto-fixed (modified) any files — these tools rewrite code on their own. If they did, review every resulting change and confirm it still satisfies all the rules in this document, paying special attention to the JSDoc rules (no blank/filler blocks, typed `@param`/`@returns`, etc.), since auto-fixes can introduce or reshape JSDoc blocks that then violate them.
+
 > **Important:** Always use `yarn` for frontend commands, never `npx`, `npm` or others.
 
 - If implementing a feature that needs cannot be fully supported in both Standalone (Electron) and Lite (Web) version, the limitations should be specified in the `README.md` table, and there should exist information elements in the UI explaining that to the users.
