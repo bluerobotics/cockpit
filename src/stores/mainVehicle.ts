@@ -1021,6 +1021,15 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     await mainVehicle.value.setMissionCurrent(seq)
   }
 
+  /**
+   * Set the cruise (ground) speed live on the vehicle
+   * @param {number} speedMps - Target ground speed in meters per second
+   */
+  async function setCruiseSpeed(speedMps: number): Promise<void> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to set cruise speed.')
+    await mainVehicle.value.setCruiseSpeed(speedMps)
+  }
+
   return {
     arm,
     takeoff,
@@ -1039,6 +1048,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     pauseMission,
     returnHome,
     setMissionCurrent,
+    setCruiseSpeed,
     getCurrentVehicleName,
     mainVehicle,
     globalAddress,

@@ -1598,6 +1598,15 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Set the cruise (ground) speed live, applied immediately for the remainder of the active mission.
+   * @param {number} speedMps - Target ground speed in meters per second
+   * @returns {Promise<void>} A promise that resolves when the command is acknowledged
+   */
+  async setCruiseSpeed(speedMps: number): Promise<void> {
+    await this.sendCommandLong(MavCmd.MAV_CMD_DO_CHANGE_SPEED, 1, speedMps, -1, 0)
+  }
+
+  /**
    * Getter for current mission seq
    * @returns {number | undefined} Current mission seq, or undefined if n/a
    */
