@@ -108,6 +108,7 @@ jobs:
             ### 4. Performance
             - Unnecessary re-renders, large synchronous work on the main thread, memory leaks (unclosed subscriptions, uncleared intervals/timeouts, uncleared MAVLink listeners), inefficient reactivity, heavy dependencies pulled into the bundle, blocking I/O, redundant network requests.
             - Hot paths: flag added work on the high-frequency paths `mavlink:onIncomingMessage`, `mavlink:addToDataLake`, `dataLake:setVariable`, `dataLake:notifyListeners`, and any `watch()` on a high-frequency ref. These run on every incoming MAVLink message; non-trivial work here degrades framerate.
+            - Cleanup: flag any subscription, event listener, `watch`/`watchEffect` stop handle, `setInterval`/`setTimeout`, or MAVLink listener registered without a matching teardown in `onBeforeUnmount`/`onUnmounted` (or an equivalent disposer).
 
             ### 5. UI / UX
             - Vue component structure, accessibility (a11y), keyboard navigation, responsive behavior, color contrast/theme compliance, loading/error states, i18n if applicable, consistency with existing widgets and UI patterns.
