@@ -151,6 +151,7 @@ This applies to any pair of components/views with substantial overlap, not just 
 - Each commit is one logical change. If a single fix touches three independent things, make three commits.
 - When the user runs `git reset --soft <ref>` and asks you to recommit, group the working-tree changes back into the logical commits they described — do not pile everything into a single commit.
 - When fixing feedback for code that is already committed on the branch, prefer `git commit --fixup <sha>` over a new standalone "fix typo"/"address review" commit, unless the user says otherwise.
+- Fold `fixup!`/`squash!` commits into their targets with `git rebase --autosquash` BEFORE pushing (or before opening a PR / requesting review). Never leave a `fixup!`/`squash!` commit in pushed history — the branch should always be presented already squashed.
 - Branch names follow `issue-<number>-short-words`, using at most 5 words in the descriptive part.
 - Pick the commit-subject type that actually fits the change (`feat`/`fix`/`refactor`/`docs`/etc.). Do not prefix every commit with `fix:`. PR-number references belong in the PR body, not the commit subject.
 
