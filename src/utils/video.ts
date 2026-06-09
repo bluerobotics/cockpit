@@ -1,5 +1,7 @@
 import { format } from 'date-fns'
 
+import { sanitizeFilenameComponent } from '../libs/utils'
+
 /**
  * Returns the filename for the video file.
  * Can be used with complete paths or just the filename. It will just replace the extension with .mp4.
@@ -9,7 +11,9 @@ import { format } from 'date-fns'
  * @returns {string} The filename for the video file.
  */
 export const videoFilename = (hash: string, creationDate: Date, missionName = 'Cockpit'): string => {
-  const timeString = format(creationDate, 'LLL dd, yyyy - HH꞉mm꞉ss O')
+  // Sanitize because the `O` timezone token renders non-integer UTC offsets with a real colon (e.g. `GMT+5:30`),
+  // which is illegal on Windows and gets parsed as an NTFS alternate data stream, yielding a 0KB output file.
+  const timeString = sanitizeFilenameComponent(format(creationDate, 'LLL dd, yyyy - HH꞉mm꞉ss O'))
   return `${missionName} (${timeString}) #${hash}.mp4`
 }
 
