@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 /**
  * Options to configure the snackbar.
  */
-interface SnackbarOptions {
+export interface SnackbarOptions {
   /**
    * The message to display in the snackbar
    */

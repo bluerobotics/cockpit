@@ -9,7 +9,7 @@ import { DialogActions } from '@/types/general'
 /**
  * Options to configure the interaction dialog.
  */
-interface DialogOptions {
+export interface DialogOptions {
   /**
    * Message to display in the dialog. If an array, elements will be displayed as an item list.
    * @type {string}
@@ -51,11 +51,11 @@ interface DialogOptions {
 }
 
 /**
- *
+ * Result returned when the interaction dialog is resolved or dismissed.
  */
-interface DialogResult {
+export interface DialogResult {
   /**
-   *
+   * Whether the user confirmed the dialog (`true`) or dismissed it (`false`).
    */
   isConfirmed: boolean
 }
