@@ -75,7 +75,8 @@ gh issue list --repo bluerobotics/cockpit
 - No @example blocks unless the calling pattern is non-obvious
 - Always create docs for the @returns, unless the function has no specified return value
 - Always include the types of the @returns and @params
-- Make sure none of the JSDocs entries you added are empty
+- Never write a JSDoc whose summary line is empty, whitespace-only, or filler (placeholder characters, repeated letters, lorem-ipsum). If you have nothing useful to say, omit the block entirely instead of leaving it blank.
+- Make sure none of the JSDocs entries you added are empty, and verify the block satisfies the `jsdoc/*` rules in `.eslintrc.cjs` (e.g. `jsdoc/require-returns`) before finishing.
 
 ## Code Quality
 
