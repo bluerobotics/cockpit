@@ -109,6 +109,14 @@ When a `.plan.md` file is attached and the user asks you to implement the plan:
 - Walk the to-dos top-down and do not stop early.
 - If a step turns out to be wrong or unworkable, stop and ask before deviating — do not silently change scope.
 
+## Reacting to PR review comments
+
+When the user gives you a PR or review URL and asks you to address it:
+- Read the PR diff and the review with `gh`. Do not trust the review unconditionally — verify each point against the actual code.
+- For each point, decide `accept`, `reject`, or `needs-discussion`, and tell the user which.
+- When asked to "implement what you judge important", default to accepting only items that affect correctness, security, or a clearly stated AGENTS.md rule; surface the rest as questions instead of acting on them.
+- When asked to draft a reply comment for the user to post, write it in their voice: lowercase, terse, no headings or bullet lists unless the content is genuinely a list, and no "thanks for the review" preambles. Reference exact file paths and line numbers.
+
 ## Commit hygiene
 
 - Each commit is one logical change. If a single fix touches three independent things, make three commits.
