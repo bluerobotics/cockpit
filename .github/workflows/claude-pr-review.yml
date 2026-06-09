@@ -109,13 +109,18 @@ jobs:
             ### 6. Code Quality & Style
             - Adherence to `.eslintrc.cjs` rules, naming, duplication, dead code, excessive complexity, comment quality per AGENTS.md, JSDoc completeness (typed `@param`/`@returns`, no empty entries), consistent use of optional chaining, type safety (no stray `any`).
 
-            ### 7. Tests
+            ### 7. Commit Hygiene
+            - Fetch the commit list with `gh pr view "$PR_NUMBER" --repo "$REPO" --json commits` to evaluate this section.
+            - Flag commits that bundle multiple unrelated logical changes, and conversely a single logical change split arbitrarily across noise commits.
+            - Flag leftover noise commits (`wip`, `fix lint`, `address review`, un-squashed `fixup!`/`squash!`) that should have been cleaned up before merge.
+
+            ### 8. Tests
             - Missing coverage for new logic, brittle tests, tests that were removed/weakened, testability concerns.
 
-            ### 8. Documentation
+            ### 9. Documentation
             - README updates when a feature differs between Lite and Standalone (per AGENTS.md), in-code JSDoc, user-facing docs, changelog-worthy items.
 
-            ### 9. Nitpicks / Optional
+            ### 10. Nitpicks / Optional
             - Minor style preferences, naming suggestions, small refactors.
 
             Tone:
