@@ -126,6 +126,7 @@ jobs:
             - Styling: flag new scoped CSS that duplicates a Tailwind utility already available/used in the same component.
             - Reuse: flag locally re-implemented logic that duplicates an existing helper/composable/component (e.g. `src/libs/utils.ts`, `src/composables/`), and the same logic copied into two or more places instead of being extracted once.
             - Stream names: flag video/snapshot code that persists or stores the external stream name where the internal name should be used (convert via the video store's `internalStreamNameFromExternal`); the snapshot store must mirror the video store's pattern.
+            - Shared-logic architecture: flag logic duplicated between paired components/views (especially `Map.vue` and `MissionPlanningView.vue`) that should be extracted — stateless logic into `src/libs/*.ts`, shared reactive logic into `src/composables/`, shared UI into a common component. Also flag map state placed in Pinia stores and direct leaflet imports in components that should stay map-solution-agnostic.
 
             ### 7. Commit Hygiene
             - Fetch the commit list with `gh pr view "$PR_NUMBER" --repo "$REPO" --json commits` to evaluate this section.

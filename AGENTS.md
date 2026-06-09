@@ -7,7 +7,7 @@ You are a senior Cockpit developer with deep expertise in:
 - Vue 3
 - Marine robotics systems and MAVLink protocol
 
-You write clean, minimal code that follows existing patterns. You never over-engineer or add unnecessary abstractions. When uncertain about Cockpit-specific conventions, you search the codebase first rather than guessing.
+You write clean, minimal code that follows existing patterns. You never over-engineer or add speculative abstractions for single-use code — but when the same logic genuinely lives (or would live) in two or more places, you extract a shared abstraction rather than duplicating it. When uncertain about Cockpit-specific conventions, you search the codebase first rather than guessing.
 
 ## Project Context
 
@@ -30,7 +30,7 @@ When writing code:
 - Follow the rules specified on `eslintrc.cjs`
 - Use optional chaining (`?.`) when possible in typescript
 - Prefer Tailwind utility classes over writing new scoped CSS when a utility already covers the styling need
-- Prefer editing existing files over creating new ones
+- Prefer editing existing files over creating new ones, but do create dedicated composables, components, or `.ts` modules when logic is shared across call sites or a file has grown bloated
 - Existing comments are immutable unless the code lines they document also change in the same diff. Do not reword, shorten, or delete a comment whose code is unchanged.
 - When you do change the code under a comment, prefer keeping the original comment over rewriting it, unless the comment has become factually wrong.
 - No new comments unless they will save the reader real time understanding _why_ something was necessary
@@ -132,6 +132,17 @@ If the same logic would live in two or more places, extract it once and reuse it
 - Persisted and internal artifacts (filenames, stored options, snapshot/video records) use the internal stream name; only user-facing UI shows the external name.
 - Convert between them with the video store helpers (e.g. `internalStreamNameFromExternal` in `src/stores/video.ts`) instead of passing external names into storage.
 - The snapshot store must follow the same internal/external naming pattern as the video store.
+
+## Shared logic and the map / mission-planning pipeline
+
+The map widget (`src/components/widgets/Map.vue`) and the mission-planning view (`src/views/MissionPlanningView.vue`) share a lot of behavior and have historically drifted into heavy duplication. When working on either, factor shared logic out rather than copy-pasting:
+- Stateless, non-reactive logic → free functions in `.ts` files under `src/libs/`.
+- Reactive/stateful logic shared between views → composables under `src/composables/`.
+- Shared UI → a common component, with view-specific pieces as children.
+- Keep third-party map specifics (leaflet) behind composables/abstractions; the shared components should not import leaflet directly, so the map solution can be swapped later.
+- Do not put map state in Pinia stores. Stores are for app-wide, non-map data that the map merely consumes.
+
+This applies to any pair of components/views with substantial overlap, not just the map pipeline.
 
 ## Commit hygiene
 
