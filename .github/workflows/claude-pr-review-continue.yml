@@ -1,0 +1,159 @@
+name: Claude PR Re-review
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: claude-pr-rereview-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  rereview:
+    name: Claude PR Re-review
+    runs-on: ubuntu-latest
+    # Only run when: the comment is on a PR, starts with the `/review` command,
+    # is not from a bot, and the commenter has write access
+    # (OWNER/MEMBER/COLLABORATOR). We intentionally do NOT allow the PR author by
+    # login alone, since an external fork author could otherwise spend Anthropic
+    # credits by repeatedly commenting `/review` on their own PR. A maintainer can
+    # trigger a re-review on a contributor's behalf.
+    if: >
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/review') &&
+      github.event.comment.user.type != 'Bot' &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      # SECURITY: `issue_comment` runs the workflow from the default branch and
+      # has access to secrets. We check out the trusted default branch only and
+      # NEVER the PR head ref, since the Anthropic API key is available here.
+      - name: Checkout base ref (trusted)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Acknowledge command
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set -euo pipefail
+          gh api -X POST "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}/reactions" -f content='+1' || true
+
+      - name: Gather PR state and previous review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          HEAD_SHA=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid -q .headRefOid)
+          echo "HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
+
+          gh pr view "$PR_NUMBER" --repo "$REPO" \
+            --json number,title,body,author,baseRefName,headRefName,headRefOid,labels,additions,deletions,changedFiles,files,isDraft,url \
+            > pr.json
+          gh pr diff "$PR_NUMBER" --repo "$REPO" > pr.diff
+
+          # Most recent bot review comment, by highest seq in its marker. This
+          # parsing is coupled to the marker format the review prompts write:
+          # `<!-- claude-pr-review-bot:v1 seq=<n> sha=<sha> -->`. The `// 0` guard
+          # keeps legacy markers without a seq from breaking `tonumber`.
+          gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
+                  | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
+                  | last // empty' > last_review.json
+
+          PREV_SHA=""
+          LAST_SEQ="0"
+          if [ -s last_review.json ]; then
+            jq -r '.body' last_review.json > previous-review.md
+            PREV_SHA=$(jq -r '(.body | capture("sha=(?<s>[0-9a-fA-F]+)").s) // ""' last_review.json)
+            LAST_SEQ=$(jq -r '(.body | capture("seq=(?<n>[0-9]+)").n) // "0"' last_review.json)
+          fi
+          echo "PREV_SHA=$PREV_SHA" >> "$GITHUB_ENV"
+          echo "NEXT_SEQ=$(( LAST_SEQ + 1 ))" >> "$GITHUB_ENV"
+
+          # What the author changed since the previous review (when known). If the
+          # compare call fails (e.g. a force-push removed PREV_SHA), record it so
+          # the agent falls back to the full diff instead of guessing.
+          INCREMENTAL_FAILED=false
+          if [ -n "$PREV_SHA" ]; then
+            if ! gh api "repos/$REPO/compare/$PREV_SHA...$HEAD_SHA" \
+              --jq '.files[]? | "=== " + .filename + " (" + .status + ", +" + (.additions|tostring) + "/-" + (.deletions|tostring) + ") ===\n" + (.patch // "[binary or no textual patch]")' \
+              > incremental.diff; then
+              INCREMENTAL_FAILED=true
+            fi
+          fi
+          echo "INCREMENTAL_FAILED=$INCREMENTAL_FAILED" >> "$GITHUB_ENV"
+          [ -f previous-review.md ] || : > previous-review.md
+          [ -f incremental.diff ] || : > incremental.diff
+          echo "prev_sha=${PREV_SHA:-<none>} head_sha=$HEAD_SHA next_seq=$(( LAST_SEQ + 1 )) incremental_failed=$INCREMENTAL_FAILED"
+
+      - name: Run Claude PR re-review
+        uses: anthropics/claude-code-base-action@beta
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ env.HEAD_SHA }}
+          PREV_SHA: ${{ env.PREV_SHA }}
+          NEXT_SEQ: ${{ env.NEXT_SEQ }}
+          INCREMENTAL_FAILED: ${{ env.INCREMENTAL_FAILED }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: "claude-opus-4-6"
+          max_turns: "40"
+          allowed_tools: "Bash(gh:*),Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),View,GlobTool,GrepTool,BatchTool,Write"
+          system_prompt: |
+            You are the automated code review agent for `bluerobotics/cockpit`, running inside a GitHub Actions workflow.
+
+            FIRST, read `.github/claude-review/review-guidelines.md` from the checked-out base ref. It defines your persona, the review sections (0 through 10), the section-collapsing rules, the tone, and the hard security constraints. Follow it exactly. Also read `AGENTS.md`, `.eslintrc.cjs`, and `package.json` to ground the review.
+
+            Mode: RE-REVIEW, triggered by a `/review` comment. Your job is to report what changed since your previous review and re-check the still-open findings, then surface any new issues.
+
+            Inputs in the working directory:
+            - `pr.json` — current PR metadata (includes headRefOid).
+            - `pr.diff` — the full current PR diff (base...head).
+            - `previous-review.md` — the body of your most recent previous review (EMPTY if none exists yet).
+            - `incremental.diff` — the changes the author made since the previous review (compare PREV_SHA...HEAD_SHA); may be EMPTY.
+            Environment variables: `PR_NUMBER`, `REPO`, `GITHUB_TOKEN`, `HEAD_SHA` (current head), `PREV_SHA` (head at the previous review, or empty), `NEXT_SEQ` (the seq to use for this comment), `INCREMENTAL_FAILED` (`true` if the compare API call failed, e.g. a force-push removed `PREV_SHA`).
+
+            What you must do:
+            1. Read the guidelines and trusted context files.
+            2. If `previous-review.md` is EMPTY (no prior review exists), perform a full review of `pr.diff` using all guideline sections, and post it as described below.
+            3. Otherwise:
+               a. Extract the open findings from `previous-review.md`: every numbered finding from its most recent sections/tables that is NOT already marked Addressed or No longer applicable.
+               b. If `PREV_SHA` is empty, `INCREMENTAL_FAILED` is `true`, or `incremental.diff` is empty or looks unreliable (e.g. a force-push/rebase made it include unrelated changes), say so explicitly and base your re-check on `pr.diff` instead of `incremental.diff`.
+               c. For EACH open finding, judge against the changes whether it is now `:white_check_mark:` Addressed, `:large_yellow_circle:` Partially addressed, `:x:` Not addressed, or `:white_circle:` No longer applicable. Build the status table described below.
+               d. Re-run all guideline sections over the new changes (prefer `incremental.diff`, falling back to `pr.diff`) to surface any NEW findings, numbering them continuing the existing scheme and applying the section-collapsing rules.
+
+            Comment structure for a re-review (write it to `review.md`):
+            - Line 1 MUST be the hidden marker exactly, with real values substituted: `<!-- claude-pr-review-bot:v1 seq=$NEXT_SEQ sha=$HEAD_SHA -->`
+            - Line 2 MUST be: `## Automated PR Re-review #$NEXT_SEQ (Claude)`
+            - A line stating the compared range, e.g. `Comparing \`$PREV_SHA\` → \`$HEAD_SHA\`` (or note that this is a full review because there was no previous one, or that a rebase/force-push prevented an incremental comparison).
+            - A `### Previous findings status` section containing a markdown table with the header `| # | Finding | Severity | Status |` and one row per previous open finding, Status using the emoji shortcodes above. (Omit this section only when there was no previous review.)
+            - Then `### New findings` followed by the guideline sections 0 through 10 (collapsed where clean). The Section 0 Summary verdict is still required.
+            - The comment MUST end with the footer line: `_Generated by Claude. This is advisory; a human reviewer must still approve._`
+
+            Posting:
+            - If `HEAD_SHA` equals `PREV_SHA` (no new commits since the last review), post a short comment (still with the `seq=$NEXT_SEQ sha=$HEAD_SHA` marker and footer) saying there are no new commits since the last review, and stop.
+            - Otherwise ALWAYS CREATE A NEW comment — never update a previous one: `gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file review.md`
+            - Post exactly one comment. Do not open issues, modify files, push, or approve/request-changes.
+          prompt: |
+            Run an on-demand RE-REVIEW for this pull request, triggered by a `/review` comment.
+
+            Repository: ${{ github.repository }}
+            PR number: ${{ github.event.issue.number }}
+            PR URL: ${{ github.event.issue.html_url }}
+            Triggered by: ${{ github.event.comment.user.login }}
+            Previous-review head (PREV_SHA): ${{ env.PREV_SHA }}
+            Current head (HEAD_SHA): ${{ env.HEAD_SHA }}
+            This re-review sequence number (NEXT_SEQ): ${{ env.NEXT_SEQ }}
+
+            Follow the system instructions and `.github/claude-review/review-guidelines.md` exactly.
+            Compare your previous review against the current code: report which findings were addressed and which were not in a table, then add any new findings. Do not execute or fetch PR head code.
