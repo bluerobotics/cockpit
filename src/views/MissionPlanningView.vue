@@ -788,10 +788,11 @@ const uploadMissionToVehicle = async (): Promise<void> => {
 
   missionItemsToUpload.unshift(homeWaypoint)
 
-  // Commit the local cruise speed back to the store so the chosen value persists across sessions.
+  // Commit the local cruise speed back to the store so the chosen value persists across sessions and mission restarts.
   missionStore.defaultCruiseSpeed = localCruiseSpeed.value
+  missionStore.cruiseSpeed = localCruiseSpeed.value
 
-  if (localCruiseSpeed.value !== 1 && missionItemsToUpload.length > 1) {
+  if (localCruiseSpeed.value > 0 && missionItemsToUpload.length > 1) {
     const firstMissionItem = missionItemsToUpload[1]
     const existing = Array.isArray(firstMissionItem.commands) ? firstMissionItem.commands : []
 
