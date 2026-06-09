@@ -116,6 +116,7 @@ jobs:
 
             ### 5. UI / UX
             - Vue component structure, accessibility (a11y), keyboard navigation, responsive behavior, color contrast/theme compliance, loading/error states, i18n if applicable, consistency with existing widgets and UI patterns.
+            - Dialog spam: flag code that can open the same dialog repeatedly from a timed loop, retry routine, or watcher without first checking whether one is already open (e.g. timed-snapshot failures opening a new dialog every tick).
 
             ### 6. Code Quality & Style
             - Adherence to `.eslintrc.cjs` rules, naming, duplication, dead code, excessive complexity, comment quality per AGENTS.md, JSDoc completeness (typed `@param`/`@returns`, no empty entries), consistent use of optional chaining, type safety (no stray `any`).
