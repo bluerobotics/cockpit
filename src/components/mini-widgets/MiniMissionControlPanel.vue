@@ -1,7 +1,7 @@
 <template>
   <div
     ref="miniMissionControlPanel"
-    class="flex justify-around px-2 py-1 text-center rounded-lg w-[220px] h-9 align-center text-white bg-slate-800/60"
+    class="flex justify-around px-2 py-1 text-center rounded-lg w-[252px] h-9 align-center text-white bg-slate-800/60"
   >
     <div
       class="flex gap-1 items-center overflow-hidden"
@@ -50,6 +50,38 @@
           />
         </template>
       </v-tooltip>
+      <v-menu :close-on-content-click="false" location="top" offset="8">
+        <template #activator="{ props: speedProps }">
+          <v-tooltip location="top" open-delay="800" text="Cruise speed">
+            <template #activator="{ props: speedTooltipProps }">
+              <v-btn
+                v-bind="{ ...speedProps, ...speedTooltipProps }"
+                size="x-small"
+                icon="mdi-speedometer"
+                variant="text"
+                class="text-[16px]"
+                :disabled="!vehicleStore.isVehicleOnline"
+              />
+            </template>
+          </v-tooltip>
+        </template>
+        <div class="flex flex-col p-3 rounded-lg w-[210px] text-white" :style="interfaceStore.globalGlassMenuStyles">
+          <div class="flex justify-between items-center mb-1 text-xs">
+            <span>Cruise speed</span>
+            <span class="font-bold">{{ liveCruiseSpeed.toFixed(1) }} m/s</span>
+          </div>
+          <v-slider
+            v-model="liveCruiseSpeed"
+            :min="0.1"
+            :max="5"
+            :step="0.1"
+            color="white"
+            density="compact"
+            hide-details
+            @update:model-value="handleCruiseSpeedInput"
+          />
+        </div>
+      </v-menu>
       <v-tooltip location="top" open-delay="800" text="Return to home">
         <template #activator="{ props: homeProps }">
           <v-btn
@@ -73,14 +105,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
 const { showDialog, closeDialog } = useInteractionDialog()
+const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 
@@ -88,6 +122,23 @@ const currentWaypointOnMission = computed<string>((): string => {
   const wpIndex = missionStore.currentWaypointOnMission
   return wpIndex > 0 ? wpIndex.toString() : '--'
 })
+
+const liveCruiseSpeed = ref<number>(Number(missionStore.cruiseSpeed))
+watch(
+  () => missionStore.cruiseSpeed,
+  (newSpeed) => (liveCruiseSpeed.value = Number(newSpeed))
+)
+
+// Debounce live speed commands so dragging the slider doesn't flood the vehicle with DO_CHANGE_SPEED.
+let cruiseSpeedDebounce: ReturnType<typeof setTimeout> | undefined
+const handleCruiseSpeedInput = (value: number): void => {
+  if (cruiseSpeedDebounce) clearTimeout(cruiseSpeedDebounce)
+  cruiseSpeedDebounce = setTimeout(() => {
+    missionStore.applyCruiseSpeed(value).catch((err) => {
+      openSnackbar({ message: `Failed to set cruise speed: ${(err as Error).message}`, variant: 'error' })
+    })
+  }, 300)
+}
 
 const handleReturnHome = (): void => {
   showDialog({
