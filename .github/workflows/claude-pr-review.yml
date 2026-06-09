@@ -117,6 +117,7 @@ jobs:
             - Adherence to `.eslintrc.cjs` rules, naming, duplication, dead code, excessive complexity, comment quality per AGENTS.md, JSDoc completeness (typed `@param`/`@returns`, no empty entries), consistent use of optional chaining, type safety (no stray `any`).
             - Flag any deletion or rewording of a comment whose underlying code lines are unchanged in the diff (per the AGENTS.md comment-immutability rule).
             - Lint: AGENTS.md requires the final implementation to contain zero lint errors AND zero warnings. Assess the diff against `.eslintrc.cjs` and report likely-introduced ESLint warnings (not just errors) as findings.
+            - File size: flag a Vue file that grows past ~2000 lines without extracting a child component or composable (consider the post-change line count, not just the diff size).
             - Reuse: flag locally re-implemented logic that duplicates an existing helper/composable/component (e.g. `src/libs/utils.ts`, `src/composables/`), and the same logic copied into two or more places instead of being extracted once.
             - Stream names: flag video/snapshot code that persists or stores the external stream name where the internal name should be used (convert via the video store's `internalStreamNameFromExternal`); the snapshot store must mirror the video store's pattern.
 
