@@ -86,6 +86,7 @@ jobs:
             - Data-lake first: flag (as `major`) widgets/mini-widgets that read vehicle telemetry directly from a Pinia store (e.g. `useMainVehicleStore`) instead of `useDataLakeVariable`, unless the value is genuinely non-telemetry app state.
             - User feedback: flag `openSnackbar` calls paired with a redundant `console.{log,warn,error}` of the same message, and ad-hoc dialog templates that duplicate `useInteractionDialog`.
             - Lite vs Standalone: flag direct use of `window.electronAPI`, `electron-*` modules, or other Electron-only APIs without a runtime guard (e.g. `isElectron()`) when the codepath also runs in the Lite (web) build and would crash, log noisy errors, or render a broken state.
+            - Settings migrations: flag migration logic added inside a Pinia store instead of `src/utils/(widget-)migrations.ts`, and persisted-key reshapes done without a new versioned key (`-v2`, etc.) plus an idempotent migration.
 
             ### 2. AGENTS.md Adherence
             - Cite the specific rule in `AGENTS.md` for each finding.

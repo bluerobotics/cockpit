@@ -94,6 +94,13 @@ This command fixes all the linting issues that are automatically fixable, but it
 - When implementing new widgets, or adding/removing entries in the Options object of existing widgets, use the object merging approach (use `src/components/widgets/Plotter.vue` as a reference) to merge a default-options object with the persistent one. This ensures the new entries are added to existing widgets from the users persistence.
 - If a new Cockpit local-storage setting is being created or modified (be it directly using the settings-management.ts backend or the useBlueOsStorage composable), make sure it starts with `cockpit-` so its correctly tracked and parsed in our backend and UIs.
 
+## Settings migrations
+
+- Migration logic for `cockpit-*` keys lives in `src/utils/migrations.ts` / `src/utils/widget-migrations.ts` (or a sibling under `src/utils/`), not inside Pinia stores. Stores call the migration helpers; they never embed the migration body.
+- When the shape of a persisted key changes, introduce a new versioned key (e.g. `cockpit-foo-v2`) and migrate from the old one — do not reuse the old key with a new schema.
+- Migrations must be idempotent: once the new key has been written, re-running the migration on a later launch must never overwrite user data.
+- Do not write migration code for keys that were never released to users. Just change the schema.
+
 ## Commit hygiene
 
 - Each commit is one logical change. If a single fix touches three independent things, make three commits.
