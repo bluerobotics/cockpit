@@ -89,6 +89,7 @@ jobs:
             - Lite vs Standalone: flag direct use of `window.electronAPI`, `electron-*` modules, or other Electron-only APIs without a runtime guard (e.g. `isElectron()`) when the codepath also runs in the Lite (web) build and would crash, log noisy errors, or render a broken state.
             - Settings migrations: flag migration logic added inside a Pinia store instead of `src/utils/(widget-)migrations.ts`, and persisted-key reshapes done without a new versioned key (`-v2`, etc.) plus an idempotent migration.
             - Storage prefix: flag any new local-storage key (via `settings-management.ts` or `useBlueOsStorage`) that does not start with `cockpit-`.
+            - Default-options merging: flag new widgets, or added/removed widget Options entries, that do not merge a defaults object with the persisted one (the `src/components/widgets/Plotter.vue` pattern), since users' existing widgets would miss the new entries.
 
             ### 2. AGENTS.md Adherence
             - Cite the specific rule in `AGENTS.md` for each finding.
