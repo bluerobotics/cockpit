@@ -37,6 +37,7 @@ When writing code:
 - Avoid repeated comments; describe reasoning once only
 - Avoid adding comments to markup (like Vue templates), just describe reasoning where the behavior is actually defined
 - New comments should be brief, concise, and only cover details that are not obvious from the code in nearby lines
+- One sentence is the target for a new comment. If you find yourself writing multiple paragraphs, it probably belongs in a JSDoc instead.
 
 When explaining:
 - Be concise and direct
