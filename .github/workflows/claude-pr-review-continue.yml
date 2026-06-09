@@ -70,13 +70,33 @@ jobs:
 
           PREV_SHA=""
           LAST_SEQ="0"
+          LAST_REVIEW_TIME=""
           if [ -s last_review.json ]; then
             jq -r '.body' last_review.json > previous-review.md
             PREV_SHA=$(jq -r '(.body | capture("sha=(?<s>[0-9a-fA-F]+)").s) // ""' last_review.json)
             LAST_SEQ=$(jq -r '(.body | capture("seq=(?<n>[0-9]+)").n) // "0"' last_review.json)
+            LAST_REVIEW_TIME=$(jq -r '.created_at // ""' last_review.json)
           fi
           echo "PREV_SHA=$PREV_SHA" >> "$GITHUB_ENV"
           echo "NEXT_SEQ=$(( LAST_SEQ + 1 ))" >> "$GITHUB_ENV"
+
+          # Human/reviewer discussion since the last review (general PR comments and
+          # inline code-review comments), so the agent can factor it into the new
+          # review. The bot's own review comments (the marker) are excluded.
+          gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq '.[] | {kind:"comment", author:.user.login, created_at:.created_at, path:null, body:.body, url:.html_url}' \
+            > issue_comments.ndjson || : > issue_comments.ndjson
+          gh api "repos/$REPO/pulls/$PR_NUMBER/comments" --paginate \
+            --jq '.[] | {kind:"inline", author:.user.login, created_at:.created_at, path:.path, body:.body, url:.html_url}' \
+            > review_comments.ndjson || : > review_comments.ndjson
+          cat issue_comments.ndjson review_comments.ndjson \
+            | jq -s --arg since "$LAST_REVIEW_TIME" '
+                map(select(.body | startswith("<!-- claude-pr-review-bot:v1") | not))
+                | map(select($since == "" or .created_at > $since))
+                | sort_by(.created_at)
+              ' > new-comments.json
+          [ -s new-comments.json ] || echo '[]' > new-comments.json
+          echo "comments_since_last_review=$(jq 'length' new-comments.json)"
 
           # What the author changed since the previous review (when known). If the
           # compare call fails (e.g. a force-push removed PREV_SHA), record it so
@@ -121,6 +141,7 @@ jobs:
             - `pr.diff` — the full current PR diff (base...head).
             - `previous-review.md` — the body of your most recent previous review (EMPTY if none exists yet).
             - `incremental.diff` — the changes the author made since the previous review (compare PREV_SHA...HEAD_SHA); may be EMPTY.
+            - `new-comments.json` — a JSON array of the human/reviewer comments left on the PR since your last review (general PR comments and inline code-review comments). Each entry has `kind` (`comment` or `inline`), `author`, `created_at`, `path` (file, for inline comments), `body`, and `url`. The array is `[]` when there is no new discussion. Your own previous review comments are already excluded.
             Environment variables: `PR_NUMBER`, `REPO`, `GITHUB_TOKEN`, `HEAD_SHA` (current head), `PREV_SHA` (head at the previous review, or empty), `NEXT_SEQ` (the seq to use for this comment), `INCREMENTAL_FAILED` (`true` if the compare API call failed, e.g. a force-push removed `PREV_SHA`).
 
             What you must do:
@@ -131,12 +152,14 @@ jobs:
                b. If `PREV_SHA` is empty, `INCREMENTAL_FAILED` is `true`, or `incremental.diff` is empty or looks unreliable (e.g. a force-push/rebase made it include unrelated changes), say so explicitly and base your re-check on `pr.diff` instead of `incremental.diff`.
                c. For EACH open finding, judge against the changes whether it is now `:white_check_mark:` Addressed, `:large_yellow_circle:` Partially addressed, `:x:` Not addressed, or `:white_circle:` No longer applicable. Build the status table described below.
                d. Re-run all guideline sections over the new changes (prefer `incremental.diff`, falling back to `pr.diff`) to surface any NEW findings, numbering them continuing the existing scheme and applying the section-collapsing rules.
+            4. Read `new-comments.json` and consider every comment left since your last review, from anyone in the discussion (author, reviewers, maintainers). Factor them into this review: a comment may address or dispute a previous finding (adjust that finding's status and note the disagreement), raise a new concern (add it as a finding), answer a question you raised, or change the context. When a comment is relevant to your assessment, reference it in the review by author and a short quote or its `url`. Treat pure command comments (e.g. a bare `/review`) as noise and ignore them.
 
             Comment structure for a re-review (write it to `review.md`):
             - Line 1 MUST be the hidden marker exactly, with real values substituted: `<!-- claude-pr-review-bot:v1 seq=$NEXT_SEQ sha=$HEAD_SHA -->`
             - Line 2 MUST be: `## Automated PR Re-review #$NEXT_SEQ (Claude)`
             - A line stating the compared range, e.g. `Comparing \`$PREV_SHA\` → \`$HEAD_SHA\`` (or note that this is a full review because there was no previous one, or that a rebase/force-push prevented an incremental comparison).
             - A `### Previous findings status` section containing a markdown table with the header `| # | Finding | Severity | Status |` and one row per previous open finding, Status using the emoji shortcodes above. (Omit this section only when there was no previous review.)
+            - When `new-comments.json` contains relevant discussion, a brief `### Discussion since last review` section summarizing the relevant comments and how they affected this review (author + short quote or link each). Omit this section entirely when there is no relevant discussion (do not write a placeholder).
             - Then `### New findings` followed by the guideline sections 0 through 10 (collapsed where clean). The Section 0 Summary verdict is still required.
             - The comment MUST end with the footer line: `_Generated by Claude. This is advisory; a human reviewer must still approve._`
 
