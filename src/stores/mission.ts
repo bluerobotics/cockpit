@@ -57,6 +57,7 @@ export const useMissionStore = defineStore('mission', () => {
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
   const showMissionEstimates = useBlueOsStorage('cockpit-show-mission-estimates', true)
   const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
+  const cruiseSpeed = ref<number>(Number(defaultCruiseSpeed.value))
   const userLastMapTileProvider = useBlueOsStorage<MapTileProvider>(
     'cockpit-user-last-map-tile-provider',
     'Esri World Imagery'
@@ -495,12 +496,27 @@ export const useMissionStore = defineStore('mission', () => {
 
   let didAutoEndCurrentRun = false
 
+  /**
+   * Applies the active cruise speed to the vehicle as a live command.
+   * @param {number} [speedMps] - Speed to apply; defaults to the current active cruise speed
+   * @returns {Promise<void>}
+   */
+  const applyCruiseSpeed = async (speedMps: number = cruiseSpeed.value): Promise<void> => {
+    const speed = Number(speedMps)
+    if (!Number.isFinite(speed) || speed <= 0) return
+    cruiseSpeed.value = speed
+    if (!mainVehicleStore.isVehicleOnline) return
+    await mainVehicleStore.setCruiseSpeed(speed)
+  }
+
   // Allow executing missions
   const executeMissionOnVehicle = async (): Promise<boolean> => {
     try {
       mainVehicleStore.clearReachedMissionItems()
       didAutoEndCurrentRun = false
       await mainVehicleStore.startMission()
+      // Re-apply the cruise speed on every start/resume so it is not lost after a pause cycle.
+      await applyCruiseSpeed().catch((err) => console.error('Failed to apply cruise speed on mission start:', err))
       return true
     } catch (error) {
       return false
@@ -650,6 +666,8 @@ export const useMissionStore = defineStore('mission', () => {
     removeCommandFromWaypoint,
     updateWaypointCommand,
     defaultCruiseSpeed,
+    cruiseSpeed,
+    applyCruiseSpeed,
     userLastMapTileProvider,
     defaultMapTileProvider,
     mapFallbackBaseColor,
