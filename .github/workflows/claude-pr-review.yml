@@ -126,6 +126,7 @@ jobs:
             - Fetch the commit list with `gh pr view "$PR_NUMBER" --repo "$REPO" --json commits` to evaluate this section.
             - Flag commits that bundle multiple unrelated logical changes, and conversely a single logical change split arbitrarily across noise commits.
             - Flag leftover noise commits (`wip`, `fix lint`, `address review`, un-squashed `fixup!`/`squash!`) that should have been cleaned up before merge.
+            - Flag commit subjects whose type does not fit the change (e.g. every commit prefixed `fix:`), and PR-number references placed in the commit subject instead of the PR body.
 
             ### 8. Tests
             - Missing coverage for new logic, brittle tests, tests that were removed/weakened, testability concerns.
