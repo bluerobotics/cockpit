@@ -52,15 +52,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { computed, onMounted, ref, toRefs, watch } from 'vue'
 
 import AlertIcon from '@/components/AlertIcon.vue'
-import {
-  getDataLakeVariableData,
-  listenDataLakeVariable,
-  setDataLakeVariableData,
-  unlistenDataLakeVariable,
-} from '@/libs/actions/data-lake'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -75,7 +71,6 @@ const props = defineProps<{
 
 const miniWidget = toRefs(props).miniWidget
 const isChecked = ref(false)
-let listenerId: string | undefined
 
 const handleToggleAction = (): void => {
   if (widgetStore.editingMode) return
@@ -114,25 +109,15 @@ const isInteractive = computed(() => {
   return isConnected.value && isInput.value && !widgetStore.editingMode
 })
 
-const startListeningDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
-      isChecked.value = Boolean(value)
-    })
-    isChecked.value = Boolean(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id))
-  }
-}
-
+// Reactively reads the linked data lake variable, auto-resubscribing when the linked id changes.
+const { value: dataLakeValue } = useDataLakeVariable(() => miniWidget.value.options.dataLakeVariable?.id)
 watch(
-  () => miniWidget.value.options.dataLakeVariable?.id,
-  (newId, oldId) => {
-    if (oldId && listenerId) {
-      unlistenDataLakeVariable(oldId, listenerId)
-    }
-    if (newId) {
-      startListeningDataLakeVariable()
-    }
-  }
+  dataLakeValue,
+  (value) => {
+    if (value === undefined) return
+    isChecked.value = Boolean(value)
+  },
+  { immediate: true }
 )
 
 onMounted(() => {
@@ -149,16 +134,9 @@ onMounted(() => {
     })
   }
 
-  if (miniWidget.value.options.dataLakeVariable) {
-    startListeningDataLakeVariable()
-  } else {
+  // When linked to a data lake variable, the value comes from the composable/watch above.
+  if (!miniWidget.value.options.dataLakeVariable) {
     isChecked.value = widgetStore.getMiniWidgetLastValue(miniWidget.value.hash) as boolean
-  }
-})
-
-onUnmounted(() => {
-  if (miniWidget.value.options.dataLakeVariable && listenerId) {
-    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
   }
 })
 </script>

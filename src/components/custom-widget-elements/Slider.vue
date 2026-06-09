@@ -58,15 +58,11 @@
 
 <script setup lang="ts">
 import { toRefs } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import AlertIcon from '@/components/AlertIcon.vue'
-import {
-  getDataLakeVariableData,
-  listenDataLakeVariable,
-  setDataLakeVariableData,
-  unlistenDataLakeVariable,
-} from '@/libs/actions/data-lake'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -82,7 +78,6 @@ const props = defineProps<{
 const miniWidget = toRefs(props).miniWidget
 
 const sliderValue = ref(0)
-let listenerId: string | undefined
 let lastUpdateListenedValue: Date | undefined = undefined
 
 const setSliderValue = (value: number | string | boolean | undefined): void => {
@@ -125,29 +120,19 @@ const isInteractive = computed(() => {
   return isConnected.value && isInput.value && !widgetStore.editingMode
 })
 
-const startListeningDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, (value) => {
-      // Ignore updates that happen within 100ms of the last update
-      if (lastUpdateListenedValue && new Date().getTime() - lastUpdateListenedValue.getTime() < 100) return
-      lastUpdateListenedValue = new Date()
-
-      setSliderValue(value)
-    })
-    setSliderValue(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable.id))
-  }
-}
-
+// Reactively reads the linked data lake variable, auto-resubscribing when the linked id changes.
+const { value: dataLakeValue } = useDataLakeVariable(() => miniWidget.value.options.dataLakeVariable?.id)
 watch(
-  () => miniWidget.value.options.dataLakeVariable?.id,
-  (newId, oldId) => {
-    if (oldId && listenerId) {
-      unlistenDataLakeVariable(oldId, listenerId)
-    }
-    if (newId) {
-      startListeningDataLakeVariable()
-    }
-  }
+  dataLakeValue,
+  (value) => {
+    if (value === undefined) return
+    // Ignore updates that happen within 100ms of the last update (avoids fighting the user's own input echo)
+    if (lastUpdateListenedValue && new Date().getTime() - lastUpdateListenedValue.getTime() < 100) return
+    lastUpdateListenedValue = new Date()
+
+    setSliderValue(value)
+  },
+  { immediate: true }
 )
 
 const handleSliderInput = (value: number): void => {
@@ -177,16 +162,9 @@ onMounted(() => {
     })
   }
 
-  if (miniWidget.value.options.dataLakeVariable) {
-    startListeningDataLakeVariable()
-  } else {
+  // When linked to a data lake variable, the value comes from the composable/watch above.
+  if (!miniWidget.value.options.dataLakeVariable) {
     setSliderValue(widgetStore.getMiniWidgetLastValue(miniWidget.value.hash))
-  }
-})
-
-onUnmounted(() => {
-  if (miniWidget.value.options.dataLakeVariable && listenerId) {
-    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
   }
 })
 </script>

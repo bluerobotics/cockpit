@@ -116,15 +116,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { computed, onMounted, ref, toRefs, watch } from 'vue'
 
 import AlertIcon from '@/components/AlertIcon.vue'
-import {
-  getDataLakeVariableData,
-  listenDataLakeVariable,
-  setDataLakeVariableData,
-  unlistenDataLakeVariable,
-} from '@/libs/actions/data-lake'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -145,7 +141,6 @@ const potentiometerValue = ref(defaultMinValue)
 const rotationRange = 300
 const rotationLimit = rotationRange / 2
 const rotationAngle = ref(-rotationLimit)
-let listenerId: string | undefined
 const isEditingValue = ref(false)
 const editableValue = ref(String(Math.round(potentiometerValue.value) || defaultMinValue))
 
@@ -201,25 +196,15 @@ const isInteractive = computed(() => {
   return isConnected.value && isInput.value && !widgetStore.editingMode
 })
 
-const startListeningDataLakeVariable = (): void => {
-  if (miniWidget.value.options.dataLakeVariable) {
-    listenerId = listenDataLakeVariable(miniWidget.value.options.dataLakeVariable?.id, (value) => {
-      setDialValue(value)
-    })
-    setDialValue(getDataLakeVariableData(miniWidget.value.options.dataLakeVariable?.id))
-  }
-}
-
+// Reactively reads the linked data lake variable, auto-resubscribing when the linked id changes.
+const { value: dataLakeValue } = useDataLakeVariable(() => miniWidget.value.options.dataLakeVariable?.id)
 watch(
-  () => miniWidget.value.options.dataLakeVariable?.id,
-  (newId, oldId) => {
-    if (oldId && listenerId) {
-      unlistenDataLakeVariable(oldId, listenerId)
-    }
-    if (newId) {
-      startListeningDataLakeVariable()
-    }
-  }
+  dataLakeValue,
+  (value) => {
+    if (value === undefined) return
+    setDialValue(value)
+  },
+  { immediate: true }
 )
 
 watch(
@@ -248,9 +233,8 @@ onMounted(() => {
     })
   }
 
-  if (miniWidget.value.options.dataLakeVariable) {
-    startListeningDataLakeVariable()
-  } else {
+  // When linked to a data lake variable, the value comes from the composable/watch above.
+  if (!miniWidget.value.options.dataLakeVariable) {
     setDialValue(widgetStore.getMiniWidgetLastValue(miniWidget.value.hash))
   }
 })
@@ -351,12 +335,6 @@ const finishEditingValue = (): void => {
 
   isEditingValue.value = false
 }
-
-onUnmounted(() => {
-  if (miniWidget.value.options.dataLakeVariable && listenerId) {
-    unlistenDataLakeVariable(miniWidget.value.options.dataLakeVariable.id, listenerId)
-  }
-})
 </script>
 
 <style scoped>
