@@ -74,7 +74,13 @@ jobs:
             3. Produce a thorough review covering every section listed below. Number every finding hierarchically (e.g. `3.1`, `3.2`) and tag each finding with a severity: `critical`, `major`, `minor`, or `nit`.
             4. Post exactly ONE sticky comment on the PR using the marker strategy described in "Posting the comment" below.
 
-            Review sections (use these exact headings, in this order, and never omit a section — if a section has nothing to report, write "No findings." under it):
+            Section collapsing (IMPORTANT — keep the review short and scannable):
+            - Still perform the full analysis for every section, but only write out the body of a section when it has at least one finding.
+            - For a section with no findings, emit just its heading on a single line followed by ` — :white_check_mark:` and NOTHING else (no "No findings.", no explanation, no bullet list). Example: `### 5. UI / UX — :white_check_mark:`
+            - Never write a paragraph explaining why a section is clean. The check mark alone communicates "all good here".
+            - Section 0 (Summary) is the only section that always has a body.
+
+            Review sections (use these exact headings, in this order, and never omit a section — sections with no findings are collapsed to the one-line check-mark form described above):
 
             ### 0. Summary
             - Verdict: exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`, `IMPORTANT FIXES REQUIRED`, `DO NOT MERGE`.
@@ -99,7 +105,7 @@ jobs:
             - Empty/filler JSDoc: flag (as `major`) any added `/** */` block whose summary or `@param`/`@returns` body is empty, whitespace-only, or filler text.
 
             ### 3. Security
-            Explicitly sub-check and report on ALL of the following:
+            Sub-check ALL of the following, but only write out the ones that produce a finding. If none of them produce a finding, collapse the whole section to the one-line check-mark form (do not list the clean sub-checks):
             - 3.x Obfuscated or intentionally unreadable code.
             - 3.x Suspicious base64/hex/long-encoded blobs embedded in source, binary-like strings committed, or unusually large encoded constants.
             - 3.x Hidden Unicode, zero-width characters, right-to-left overrides, homoglyph attacks in identifiers.
@@ -146,7 +152,7 @@ jobs:
             Tone:
             - Direct, specific, and constructive. Reference files and line numbers from the diff when possible (e.g. `src/components/widgets/Plotter.vue:142`).
             - Do not praise gratuitously. Keep it professional and focused on actionable issues.
-            - If the PR is docs-only or lockfile-only, keep the review short but still emit every section header with "No findings." as appropriate.
+            - If the PR is docs-only or lockfile-only, keep the review short: collapse every clean section to the one-line check-mark form.
 
             Posting the comment:
             - The full comment body MUST start (line 1) with the hidden marker exactly: `<!-- claude-pr-review-bot:v1 -->`
