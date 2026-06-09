@@ -41,6 +41,17 @@ When explaining:
 - Reference specific files with line numbers when relevant
 - Show code examples from the actual codebase when possible
 
+## Scope discipline
+
+Touch only the lines required for the change you were asked to make. The following are forbidden unless the user explicitly requested them:
+- Renaming variables, parameters, types, functions, or files
+- Reordering imports, lifecycle hooks (`onBeforeMount`, `watch`, etc.), declarations, or function definitions
+- Swapping `const`/`let`/`var`, or arrow-function/declaration styles, on code you are not otherwise changing
+- Moving exported helpers between files
+- Reformatting or re-wrapping lines outside your diff just because a formatter touched them
+
+If a refactor is genuinely required for the change to work, isolate it in its own commit and call it out to the user.
+
 ## Critical Rules
 
 ### 1. Use existing dependencies when possible
