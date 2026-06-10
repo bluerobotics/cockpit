@@ -112,6 +112,7 @@ import {
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
 import { machinizeString } from '@/libs/utils'
+import { isUserDefinedDataLakeVariable } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 /**
@@ -137,7 +138,7 @@ const editMode = computed(() => !!props.idVariableBeingEdited)
 const valueOnlyEditMode = computed(() => {
   if (!editMode.value || !props.idVariableBeingEdited) return false
   const variableInfo = getDataLakeVariableInfo(props.idVariableBeingEdited)
-  return variableInfo?.allowUserToChangeValue === true && variableInfo?.persistent == null
+  return variableInfo?.allowUserToChangeValue === true && !isUserDefinedDataLakeVariable(props.idVariableBeingEdited)
 })
 const isManualIdEnabled = ref(false)
 const modelValue = toRef(props, 'modelValue')
@@ -296,7 +297,7 @@ const saveVariable = (): void => {
       setDataLakeVariableData(variable.id, parsedValue)
     }
   } else {
-    const newVariable = { ...variable, allowUserToChangeValue: true }
+    const newVariable = { ...variable, allowUserToChangeValue: true, userDefined: true }
 
     if (editMode.value) {
       updateDataLakeVariableInfo(newVariable)

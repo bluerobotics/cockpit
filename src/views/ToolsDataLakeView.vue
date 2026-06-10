@@ -184,6 +184,7 @@ import {
   TransformingFunction,
 } from '@/libs/actions/data-lake-transformations'
 import { copyToClipboard } from '@/libs/utils'
+import { isUserDefinedDataLakeVariable } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
@@ -394,7 +395,7 @@ const isCompoundVariable = (id: string): boolean => {
 }
 
 const isUserDefinedVariable = (id: string): boolean => {
-  return availableDataLakeVariables.value.find((v) => v.id === id)?.persistent != null
+  return isUserDefinedDataLakeVariable(id)
 }
 
 const isUserEditableVariable = (id: string): boolean => {

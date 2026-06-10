@@ -1,4 +1,23 @@
+import { type DataLakeVariable } from '@/types/data-lake'
+
 import { getDataLakeVariableData, getDataLakeVariableInfo } from './actions/data-lake'
+
+/** ID prefix for variables created through the Data Lake menu. */
+export const userDefinedDataLakeVariableIdPrefix = 'user/custom/'
+
+const normalizeDataLakeVariableId = (id: string): string => id.trimStart().replace(/^\/+/, '')
+
+/**
+ * Whether a data lake variable was created by the user through the Data Lake menu.
+ * @param {string | DataLakeVariable} variableOrId Variable info or its ID
+ * @returns {boolean} True when the variable is user-defined
+ */
+export const isUserDefinedDataLakeVariable = (variableOrId: string | DataLakeVariable): boolean => {
+  const id = typeof variableOrId === 'string' ? variableOrId : variableOrId.id
+  const info = typeof variableOrId === 'string' ? getDataLakeVariableInfo(id) : variableOrId
+  const normalizedId = normalizeDataLakeVariableId(id)
+  return info?.userDefined === true || normalizedId.startsWith(userDefinedDataLakeVariableIdPrefix)
+}
 
 /**
  * Guess the type of a string

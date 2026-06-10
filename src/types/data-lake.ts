@@ -35,6 +35,10 @@ export interface DataLakeVariable {
    * Whether the variable's value should be allowed to be changed by the user
    */
   allowUserToChangeValue?: boolean
+  /**
+   * Whether the variable was created by the user through the Data Lake menu
+   */
+  userDefined?: boolean
 }
 
 /**
