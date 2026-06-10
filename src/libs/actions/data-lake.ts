@@ -77,10 +77,18 @@ export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?
     console.warn(`Cockpit action variable with id '${variable.id}' already exists. Updating it.`)
   }
   dataLakeVariableInfo[variable.id] = variable
-  dataLakeVariableData[variable.id] = initialValue
 
-  // Initialize timestamp if initial value is provided
-  if (initialValue !== undefined) {
+  let valueToSet = initialValue
+  if (variable.persistValue) {
+    const savedValues = settingsManager.getKeyValue(persistentValuesKey)
+    if (savedValues && typeof savedValues === 'object' && savedValues[variable.id] !== undefined) {
+      valueToSet = savedValues[variable.id] as string | number | boolean
+    }
+  }
+  dataLakeVariableData[variable.id] = valueToSet
+
+  // Initialize timestamp if a value is being set
+  if (valueToSet !== undefined) {
     dataLakeVariableTimestamps[variable.id] = performance.now()
   }
 
@@ -88,7 +96,7 @@ export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?
     savePersistentVariables()
   }
 
-  if (variable.persistValue && initialValue !== undefined) {
+  if (variable.persistValue && valueToSet !== undefined) {
     savePersistentValues()
   }
 
