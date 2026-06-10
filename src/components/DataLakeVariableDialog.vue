@@ -2,11 +2,14 @@
   <v-dialog :model-value="modelValue" max-width="560px" @update:model-value="emit('update:modelValue', $event)">
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">
-        {{ editMode ? 'Edit Variable' : 'New Variable' }}
+        {{ valueOnlyEditMode ? 'Edit Variable Value' : editMode ? 'Edit Variable' : 'New Variable' }}
       </v-card-title>
       <v-card-text class="px-8">
         <div class="flex flex-col gap-4">
-          <div class="flex items-center gap-2">
+          <div v-if="valueOnlyEditMode" class="text-sm text-gray-300">
+            {{ variable.name }}
+          </div>
+          <div v-if="!valueOnlyEditMode" class="flex items-center gap-2">
             <v-text-field
               v-model="variable.id"
               label="Variable ID"
@@ -28,6 +31,7 @@
             />
           </div>
           <v-text-field
+            v-if="!valueOnlyEditMode"
             v-model="variable.name"
             label="Variable Name"
             variant="outlined"
@@ -35,7 +39,7 @@
             density="compact"
             hide-details
           />
-          <div class="flex items-center gap-2">
+          <div v-if="!valueOnlyEditMode" class="flex items-center gap-2">
             <label class="text-sm">Variable Type: </label>
             <v-radio-group
               v-model="variable.type"
@@ -51,7 +55,7 @@
           </div>
           <v-text-field
             v-model="initialValue"
-            :label="`Initial Value (${variable.type})`"
+            :label="valueOnlyEditMode ? `Value (${variable.type})` : `Initial Value (${variable.type})`"
             variant="outlined"
             :error-messages="valueError"
             density="compact"
@@ -59,6 +63,7 @@
             @input="validateValue"
           />
           <v-textarea
+            v-if="!valueOnlyEditMode"
             v-model="variable.description"
             label="Description"
             variant="outlined"
@@ -68,12 +73,14 @@
             hide-details
           />
           <v-checkbox
+            v-if="!valueOnlyEditMode"
             v-model="variable.persistent"
             label="Persist variable between boots"
             hide-details
             class="-mb-4 -mt-2"
           />
           <v-checkbox
+            v-if="!valueOnlyEditMode"
             v-model="variable.persistValue"
             class="-my-4"
             hide-details
@@ -127,6 +134,11 @@ const emit = defineEmits<{
 
 const interfaceStore = useAppInterfaceStore()
 const editMode = computed(() => !!props.idVariableBeingEdited)
+const valueOnlyEditMode = computed(() => {
+  if (!editMode.value || !props.idVariableBeingEdited) return false
+  const variableInfo = getDataLakeVariableInfo(props.idVariableBeingEdited)
+  return variableInfo?.allowUserToChangeValue === true && variableInfo?.persistent == null
+})
 const isManualIdEnabled = ref(false)
 const modelValue = toRef(props, 'modelValue')
 
@@ -248,6 +260,9 @@ const validateValue = (): boolean => {
  * Whether the form is valid and can be submitted
  */
 const isValid = computed(() => {
+  if (valueOnlyEditMode.value) {
+    return initialValue.value !== '' && !valueError.value
+  }
   return !!variable.name.trim() && !!variable.id && !valueError.value
 })
 
@@ -276,15 +291,21 @@ const saveVariable = (): void => {
     }
   }
 
-  const newVariable = { ...variable, allowUserToChangeValue: true }
-
-  if (editMode.value) {
-    updateDataLakeVariableInfo(newVariable)
+  if (valueOnlyEditMode.value) {
     if (parsedValue !== undefined) {
-      setDataLakeVariableData(newVariable.id, parsedValue)
+      setDataLakeVariableData(variable.id, parsedValue)
     }
   } else {
-    createDataLakeVariable(newVariable, parsedValue)
+    const newVariable = { ...variable, allowUserToChangeValue: true }
+
+    if (editMode.value) {
+      updateDataLakeVariableInfo(newVariable)
+      if (parsedValue !== undefined) {
+        setDataLakeVariableData(newVariable.id, parsedValue)
+      }
+    } else {
+      createDataLakeVariable(newVariable, parsedValue)
+    }
   }
 
   emit('saved')
