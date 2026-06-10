@@ -5,7 +5,7 @@ import localforage from 'localforage'
 import { settingsManager } from '@/libs/settings-management'
 import { systemLoggingEnablingKey } from '@/stores/development'
 
-import { isElectron } from './utils'
+import { isElectron, sanitizeFilenameComponent } from './utils'
 
 export const systemLogDateFormat = 'LLL dd, yyyy'
 export const systemLogTimeFormat = 'HH꞉mm꞉ss O'
@@ -20,7 +20,8 @@ export const cockpitSytemLogsDB = localforage.createInstance({
 })
 
 const initialTime = new Date()
-const fileName = `Cockpit (${format(initialTime, systemLogDateTimeFormat)}).syslog`
+// Sanitized to match the Electron syslog filename: the `O` timezone token emits a real colon for non-integer UTC offsets.
+const fileName = `Cockpit (${sanitizeFilenameComponent(format(initialTime, systemLogDateTimeFormat))}).syslog`
 
 /* eslint-disable jsdoc/require-jsdoc */
 
