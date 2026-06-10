@@ -54,11 +54,11 @@
           </div>
 
           <div class="flex-none sticky top-0 bg-inherit z-[2]">
-            <table class="w-full border-collapse">
+            <table class="w-full table-fixed border-collapse">
               <thead>
                 <tr class="bg-[#00000022]">
-                  <th class="text-center border-b border-b-[rgba(255,255,255,0.3)]">Setting</th>
-                  <th class="text-center w-[518px] p-2 border-b border-b-[rgba(255,255,255,0.3)]">Value</th>
+                  <th class="text-center w-[300px] border-b border-b-[rgba(255,255,255,0.3)]">Setting</th>
+                  <th class="text-center py-2 pr-4 border-b border-b-[rgba(255,255,255,0.3)]">Value</th>
                 </tr>
               </thead>
             </table>
@@ -77,7 +77,7 @@
               </div>
             </template>
             <template v-else>
-              <table class="w-full border-collapse">
+              <table class="w-full table-fixed border-collapse">
                 <tbody>
                   <tr v-for="item in filteredSettings" :key="item.originalKey">
                     <td class="text-start align-top p-2 pl-4 w-[300px] border-b border-b-[rgba(255,255,255,0.3)]">
@@ -97,17 +97,20 @@
                           @dblclick="startEditing(item)"
                         >
                           <template v-if="editing[item.originalKey]">
-                            <div class="flex w-full justify-between items-center">
-                              <div />
+                            <div class="flex w-full items-center min-w-0">
+                              <div class="w-7 shrink-0" />
                               <template v-if="editedValues[item.originalKey] === null">
                                 <input
                                   v-model="editedValues[item.originalKey]"
                                   placeholder="Enter value"
-                                  class="text-right bg-[#00000022] w-[160px] h-[40px] -mr-8"
+                                  class="text-center bg-[#00000022] flex-1 min-w-0 mx-[10px] h-[40px]"
                                 />
                               </template>
                               <template v-else-if="typeof editedValues[item.originalKey] === 'boolean'">
-                                <select v-model="editedValues[item.originalKey]" class="bg-[#FFFFFF11] w-[120px]">
+                                <select
+                                  v-model="editedValues[item.originalKey]"
+                                  class="bg-[#FFFFFF11] flex-1 min-w-0 mx-[10px]"
+                                >
                                   <option :value="true" class="bg-[#000000AA]">true</option>
                                   <option :value="false" class="bg-[#000000AA]">false</option>
                                 </select>
@@ -116,17 +119,17 @@
                                 <input
                                   v-model.number="editedValues[item.originalKey]"
                                   type="number"
-                                  class="text-right bg-[#00000022] w-[120px] -mr-8"
+                                  class="text-center bg-[#00000022] flex-1 min-w-0 mx-[10px]"
                                 />
                               </template>
                               <template v-else-if="typeof editedValues[item.originalKey] === 'string'">
                                 <input
                                   v-model="editedValues[item.originalKey]"
                                   placeholder="Enter value"
-                                  class="text-right bg-[#00000022] w-[160px] h-[40px] -mr-8"
+                                  class="text-center bg-[#00000022] flex-1 min-w-0 mx-[10px] h-[40px]"
                                 />
                               </template>
-                              <div>
+                              <div class="shrink-0">
                                 <v-tooltip location="top" text="Cancel">
                                   <template #activator="{ props: tooltipProps }">
                                     <v-btn
@@ -158,22 +161,28 @@
                             </div>
                           </template>
                           <template v-else>
-                            <div class="flex w-full justify-between">
-                              <div />
-                              <p class="mt-[3px]">{{ editedValues[item.originalKey] }}</p>
-                              <v-tooltip location="top" text="Edit value">
-                                <template #activator="{ props: tooltipProps }">
-                                  <v-btn
-                                    v-bind="tooltipProps"
-                                    size="x-small"
-                                    icon="mdi-pencil"
-                                    variant="text"
-                                    class="self-end"
-                                    :disabled="saving[item.originalKey]"
-                                    @click="startEditing(item)"
-                                  />
-                                </template>
-                              </v-tooltip>
+                            <div class="flex w-full items-center min-w-0">
+                              <div class="w-7 shrink-0" />
+                              <p
+                                class="mt-[3px] flex-1 min-w-0 truncate text-center mx-[10px]"
+                                :title="String(editedValues[item.originalKey])"
+                              >
+                                {{ editedValues[item.originalKey] }}
+                              </p>
+                              <div class="w-7 shrink-0 flex justify-center">
+                                <v-tooltip location="top" text="Edit value">
+                                  <template #activator="{ props: tooltipProps }">
+                                    <v-btn
+                                      v-bind="tooltipProps"
+                                      size="x-small"
+                                      icon="mdi-pencil"
+                                      variant="text"
+                                      :disabled="saving[item.originalKey]"
+                                      @click="startEditing(item)"
+                                    />
+                                  </template>
+                                </v-tooltip>
+                              </div>
                             </div>
                           </template>
                         </div>
@@ -209,24 +218,28 @@
                           </div>
                         </div>
                         <div v-else>
-                          <div class="flex w-full justify-between">
-                            <div />
-                            <p class="cursor-pointer mt-1" @dblclick="startInlineJsonEditing(item.originalKey)">
+                          <div class="flex w-full items-center min-w-0">
+                            <div class="w-7 shrink-0" />
+                            <p
+                              class="cursor-pointer mt-1 flex-1 min-w-0 truncate text-center mx-[10px]"
+                              @dblclick="startInlineJsonEditing(item.originalKey)"
+                            >
                               {...}
                             </p>
-                            <v-tooltip location="top" text="Edit value">
-                              <template #activator="{ props: tooltipProps }">
-                                <v-btn
-                                  v-bind="tooltipProps"
-                                  size="x-small"
-                                  icon="mdi-pencil"
-                                  variant="text"
-                                  class="self-end"
-                                  :disabled="saving[item.originalKey]"
-                                  @click="startInlineJsonEditing(item.originalKey)"
-                                />
-                              </template>
-                            </v-tooltip>
+                            <div class="w-7 shrink-0 flex justify-center">
+                              <v-tooltip location="top" text="Edit value">
+                                <template #activator="{ props: tooltipProps }">
+                                  <v-btn
+                                    v-bind="tooltipProps"
+                                    size="x-small"
+                                    icon="mdi-pencil"
+                                    variant="text"
+                                    :disabled="saving[item.originalKey]"
+                                    @click="startInlineJsonEditing(item.originalKey)"
+                                  />
+                                </template>
+                              </v-tooltip>
+                            </div>
                           </div>
                         </div>
                       </template>
