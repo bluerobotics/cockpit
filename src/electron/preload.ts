@@ -101,4 +101,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCurrentUserAgent: () => ipcRenderer.invoke('get-current-user-agent'),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   getHardwareTelemetryInfo: () => ipcRenderer.invoke('get-hardware-telemetry-info'),
+  updateMenuLanguage: (locale: string) => ipcRenderer.invoke('update-menu-language', locale),
 })
