@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div ref="currentAlertBar" class="flex" :class="{ 'pointer-events-none': widgetStore.editingMode }">
     <div
       class="relative mx-1 my-1.5 w-[500px] rounded-md"
@@ -35,7 +35,7 @@
                 class="flex flex-col justify-center mx-1 font-mono text-xs font-semibold leading-3 text-right text-gray-100"
               >
                 <p>{{ formattedDate(alert.time_created || new Date()) }}</p>
-                <p>{{ alert.level.toUpperCase() }}</p>
+                <p>{{ t(alert.level.charAt(0).toUpperCase() + alert.level.slice(1)) }}</p>
               </div>
             </div>
             <div
@@ -73,7 +73,7 @@
 
   <InteractionDialog
     v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
-    title="Alerter options"
+    :title="$t('Alerter options')"
     max-width="400px"
     variant="text-only"
   >
@@ -82,10 +82,15 @@
         <v-switch
           v-model="miniWidget.options.enableColorCoding"
           hide-details
-          label="Enable color coded alerts"
+          :label="$t('Enable color coded alerts')"
           color="white"
         />
-        <v-switch v-model="alertStore.enableVoiceAlerts" hide-details label="Enable voice alerts" color="white" />
+        <v-switch
+          v-model="alertStore.enableVoiceAlerts"
+          hide-details
+          :label="$t('Enable voice alerts')"
+          color="white"
+        />
         <v-slider
           v-model="alertStore.alertVolume"
           min="0"
@@ -93,7 +98,7 @@
           step="0.05"
           hide-details
           thumb-label
-          label="Alert volume"
+          :label="$t('Alert volume')"
           color="white"
           class="w-[250px] mt-2"
           :disabled="!alertStore.enableVoiceAlerts"
@@ -101,7 +106,9 @@
       </div>
     </template>
     <template #actions>
-      <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">Close</v-btn>
+      <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">{{
+        $t('Close')
+      }}</v-btn>
     </template>
   </InteractionDialog>
 </template>
@@ -110,6 +117,7 @@
 import { useElementBounding, useElementHover, useTimestamp, useToggle, useWindowSize } from '@vueuse/core'
 import { differenceInSeconds, format } from 'date-fns'
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useAlertStore } from '@/stores/alert'
 import { useVehicleAlerterStore } from '@/stores/vehicleAlerter'
@@ -132,6 +140,9 @@ const miniWidget = toRefs(props).miniWidget
 
 miniWidget.value.options.enableColorCoding ??= true
 miniWidget.value.options.lockExpansion ??= false
+
+const { t } = useI18n()
+const noRecentAlertsMessage = computed(() => t('No recent alerts.'))
 
 useVehicleAlerterStore()
 const alertStore = useAlertStore()
@@ -193,7 +204,7 @@ onMounted(() => {
       // We're showing the latest alert, check if it's too old
       const secsSinceLastAlert = differenceInSeconds(dateNow, lastAlert?.time_created || dateNow)
       if (secsSinceLastAlert > alertPersistencyInterval) {
-        currentAlert.value = new Alert(AlertLevel.Info, 'No recent alerts.')
+        currentAlert.value = new Alert(AlertLevel.Info, noRecentAlertsMessage.value)
         return
       }
       currentAlert.value = lastAlert!
@@ -219,7 +230,7 @@ watch(
   (newLength, oldLength) => {
     // If this is a new alert and we're currently showing the "no recent alerts" message,
     // jump to the new alert immediately
-    if (newLength > oldLength && currentAlert.value.message === 'No recent alerts.') {
+    if (newLength > oldLength && currentAlert.value.message === noRecentAlertsMessage.value) {
       currentDisplayedAlertIndex.value = newLength - 1
       currentAlert.value = alertStore.alerts[currentDisplayedAlertIndex.value]
     }

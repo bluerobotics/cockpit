@@ -6,7 +6,7 @@
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ round(altitude, 2).toFixed(2) }}</span>
         <span class="text-xl font-semibold leading-6 w-fit"> m</span>
       </div>
-      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">Alt (Rel)</span>
+      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ $t('Alt (Rel)') }}</span>
     </div>
   </div>
 </template>

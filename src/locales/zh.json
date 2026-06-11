@@ -2110,7 +2110,6 @@
   "Remember to set the type accordingly": "请记得相应地设置类型",
   "Optional description of what this transformation does": "此转换功能的可选描述",
   "Previous": "上一步",
->>>>>>> 315f8daa (fix(i18n): translate hardcoded strings in controller store)
   "Start": "开始",
   "Start / resume mission": "开始 / 恢复任务",
   "Start Mag Cal": "启动磁罗盘校准",

@@ -50,8 +50,8 @@
               <v-icon size="48" class="opacity-80">mdi-progress-clock</v-icon>
               <p class="text-base font-semibold">{{ waitingTitle }}</p>
               <p class="text-sm opacity-70">
-                Trying again in {{ retryCountdownSeconds }}
-                {{ retryCountdownSeconds === 1 ? 'second' : 'seconds' }}
+                {{ $t('Trying again in') }} {{ retryCountdownSeconds }}
+                {{ retryCountdownSeconds === 1 ? $t('second') : $t('seconds') }}
               </p>
               <v-progress-linear
                 :model-value="retryRemainingPercent"
@@ -64,7 +64,7 @@
             </template>
             <template v-else-if="urlCheckStatus === 'retrying'">
               <v-progress-circular indeterminate color="white" size="48" width="3" />
-              <p class="text-base font-semibold">Retrying...</p>
+              <p class="text-base font-semibold">{{ $t('Retrying...') }}</p>
             </template>
             <template v-else>
               <v-progress-circular indeterminate color="white" size="32" width="3" />
@@ -91,8 +91,8 @@
               <v-icon size="48" class="opacity-80">mdi-progress-clock</v-icon>
               <p class="text-base font-semibold">{{ waitingTitle }}</p>
               <p class="text-sm opacity-70">
-                Trying again in {{ retryCountdownSeconds }}
-                {{ retryCountdownSeconds === 1 ? 'second' : 'seconds' }}
+                {{ $t('Trying again in') }} {{ retryCountdownSeconds }}
+                {{ retryCountdownSeconds === 1 ? $t('second') : $t('seconds') }}
               </p>
               <v-progress-linear
                 :model-value="retryRemainingPercent"
@@ -105,7 +105,7 @@
             </template>
             <template v-else-if="urlCheckStatus === 'retrying'">
               <v-progress-circular indeterminate color="white" size="48" width="3" />
-              <p class="text-base font-semibold">Retrying...</p>
+              <p class="text-base font-semibold">{{ $t('Retrying...') }}</p>
             </template>
             <template v-else>
               <v-progress-circular indeterminate color="white" size="32" width="3" />
@@ -116,10 +116,10 @@
     </div>
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="600" max-width="45%">
       <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-        <v-card-title class="text-center">Settings</v-card-title>
+        <v-card-title class="text-center">{{ $t('Settings') }}</v-card-title>
         <v-card-text>
           <div>
-            <p>Iframe Source</p>
+            <p>{{ $t('IFrame source') }}</p>
             <div class="flex items-center justify-between mt-2 gap-1">
               <v-text-field
                 v-model="inputURL"
@@ -133,7 +133,7 @@
                 </template>
               </v-text-field>
               <v-btn
-                v-tooltip.bottom="'Set'"
+                v-tooltip.bottom="t('Set')"
                 icon="mdi-check"
                 class="mx-1 mb-5 bg-[#FFFFFF22]"
                 rounded="lg"
@@ -143,14 +143,14 @@
             </div>
           </div>
           <div class="mt-2 mb-2 w-[95%]">
-            <v-slider v-model="transparency" label="Transparency" color="white" :min="0" :max="90" />
+            <v-slider v-model="transparency" :label="$t('Transparency')" color="white" :min="0" :max="90" />
           </div>
           <ExpansiblePanel compact :is-expanded="true" no-bottom-divider no-top-divider>
-            <template #title>Advanced options</template>
+            <template #title>{{ $t('Advanced options') }}</template>
             <template #content>
               <v-switch
                 v-model="widget.options.useVehicleAddressAsBase"
-                label="Use vehicle address as base URL"
+                :label="$t('Use vehicle address as base URL')"
                 color="white"
                 density="compact"
                 hide-details
@@ -160,7 +160,7 @@
               <div class="flex items-center gap-2">
                 <v-switch
                   v-model="widget.options.isCollapsible"
-                  label="Collapsible"
+                  :label="$t('Collapsible container')"
                   color="white"
                   class="ml-2"
                   hide-details
@@ -171,7 +171,7 @@
                   :items="expandDirectionOptions"
                   item-title="label"
                   item-value="value"
-                  label="Expand direction"
+                  :label="$t('Expand direction')"
                   density="compact"
                   variant="outlined"
                   hide-details
@@ -181,7 +181,7 @@
                 <v-text-field
                   v-if="widget.options.isCollapsible"
                   v-model="widget.options.containerName"
-                  label="Container name"
+                  :label="$t('Container name')"
                   item-title="name"
                   density="compact"
                   variant="outlined"
@@ -194,7 +194,7 @@
               <div class="ml-3 mt-4 mr-2">
                 <v-slider
                   v-model="contentZoomPercent"
-                  label="Content zoom"
+                  :label="$t('Content zoom')"
                   color="white"
                   :min="minContentZoom * 100"
                   :max="maxContentZoom * 100"
@@ -208,7 +208,7 @@
               </div>
               <v-switch
                 v-model="widget.options.scaleContentWithWidget"
-                label="Scale content when resizing widget"
+                :label="$t('Scale content when resizing widget')"
                 color="white"
                 density="compact"
                 hide-details
@@ -221,7 +221,7 @@
         <v-divider width="80%" inset />
         <v-card-actions class="flex justify-end mt-2">
           <v-btn color="white" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
-            Close
+            {{ $t('Close') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -232,6 +232,7 @@
 <script setup lang="ts">
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { computed, inject, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
 import { openSnackbar } from '@/composables/snackbar'
@@ -246,6 +247,7 @@ import { widgetDefaultSizes, WidgetType } from '@/types/widgets'
 import ExpansiblePanel from '../ExpansiblePanel.vue'
 const interfaceStore = useAppInterfaceStore()
 
+const { t } = useI18n()
 const widgetStore = useWidgetManagerStore()
 const iframe = ref()
 const props = defineProps<{
@@ -573,17 +575,20 @@ const buildContentStyle = (areaWidth: number, areaHeight: number): string => {
 }
 
 const validateURL = (url: string): true | string => {
-  return isValidURL(url) ? true : 'URL is not valid.'
+  return isValidURL(url) ? true : t('URL is not valid')
 }
 
 const updateURL = (): void => {
   const urlValidationResult = validateURL(composedURL(inputURL.value, widget.value.options.useVehicleAddressAsBase))
   if (urlValidationResult !== true) {
-    openSnackbar({ message: `${urlValidationResult} Please enter a valid URL.`, variant: 'error' })
+    openSnackbar({ message: t('Invalid URL'), variant: 'error' })
     return
   }
   widget.value.options.source = inputURL.value
-  openSnackbar({ message: `IFrame URL sucessfully updated to '${toBeUsedURL.value}'.`, variant: 'success' })
+  openSnackbar({
+    message: t('URL updated to {url}', { url: toBeUsedURL.value }),
+    variant: 'success',
+  })
 }
 
 const handleBaseUrlToggle = (useBaseUrl: boolean): void => {

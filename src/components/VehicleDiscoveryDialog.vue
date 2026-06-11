@@ -1,19 +1,19 @@
 <template>
   <InteractionDialog
     v-model="isOpen"
-    :title="displaySearching ? 'Searching for vehicles...' : 'Vehicle Discovery'"
+    :title="displaySearching ? $t('Searching for vehicles...') : $t('Vehicle Discovery')"
     :actions="dialogActions"
     :persistent="displaySearching"
     :variant="'text-only'"
   >
     <template #content>
       <div v-if="props.showAutoSearchOption && preventAutoSearch">
-        <div class="text-sm mb-4">You can still search for vehicles in the general configuration menu.</div>
+        <div class="text-sm mb-4">{{ $t('You can still search for vehicles in the general configuration menu.') }}</div>
       </div>
       <div v-else class="flex flex-col items-center justify-center gap-4 min-w-[300px] min-h-[100px]">
         <div v-if="displaySearching" class="flex flex-col items-center gap-2 mb-2 max-w-[420px]">
           <v-progress-circular class="mb-2" indeterminate />
-          <span v-if="vehicles.length === 0">Searching for vehicles in your network...</span>
+          <span v-if="vehicles.length === 0">{{ $t('Searching for vehicles in your network...') }}</span>
           <span v-else> Found {{ vehicles.length }} vehicle{{ vehicles.length > 1 ? 's' : '' }} so far... </span>
           <div v-if="progressStatus" class="text-xs opacity-75 text-center">
             <div>{{ progressStatus.headline }}</div>
@@ -22,7 +22,9 @@
         </div>
 
         <div v-if="vehicles.length > 0" class="flex flex-col gap-2 mb-3">
-          <div v-if="!displaySearching" class="h-4 font-weight-bold text-center mb-5">Vehicles found!</div>
+          <div v-if="!displaySearching" class="h-4 font-weight-bold text-center mb-5">
+            {{ $t('Vehicles found!') }}
+          </div>
           <div v-for="vehicle in vehicles" :key="vehicle.address" class="flex items-center gap-2">
             <v-btn variant="tonal" class="max-w-[500px] justify-start truncate" @click="selectVehicle(vehicle.address)">
               <span class="max-w-[300px] truncate">{{ vehicle.name }}</span>
@@ -31,18 +33,22 @@
           </div>
         </div>
 
-        <div v-else-if="searched && !displaySearching" class="text-sm">No vehicles found in your network.</div>
+        <div v-else-if="searched && !displaySearching" class="text-sm">
+          {{ $t('No vehicles found in your network.') }}
+        </div>
 
         <div v-if="!displaySearching && !searched" class="flex flex-col gap-2 items-center justify-center text-center">
-          <p v-if="props.showAutoSearchOption" class="font-bold">It looks like you're not connected to a vehicle!</p>
+          <p v-if="props.showAutoSearchOption" class="font-bold">
+            {{ $t("It looks like you're not connected to a vehicle!") }}
+          </p>
           <p class="max-w-[25rem] mb-2">
-            This tool allows you to locate and connect to BlueOS vehicles within your network.
+            {{ $t('This tool allows you to locate and connect to BlueOS vehicles within your network.') }}
           </p>
         </div>
 
         <div v-if="!displaySearching" class="flex justify-center items-center">
           <v-btn variant="outlined" :disabled="searching" class="mb-5" @click="searchVehicles">
-            {{ searched ? 'Search again' : 'Search for vehicles' }}
+            {{ searched ? $t('Search again') : $t('Search for vehicles') }}
           </v-btn>
         </div>
       </div>
@@ -53,6 +59,7 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useSnackbar } from '@/composables/snackbar'
 import vehicleDiscover, { DiscoveryProgress, NetworkVehicle } from '@/libs/electron/vehicle-discovery'
@@ -98,6 +105,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
 }>()
 
+const { t } = useI18n()
 const { openSnackbar } = useSnackbar()
 const mainVehicleStore = useMainVehicleStore()
 const discoveryService = vehicleDiscover
@@ -131,7 +139,7 @@ const progressStatus = computed<ProgressStatusLine | null>(() => {
 
 const originalActions = [
   {
-    text: 'Close',
+    text: t('Close'),
     action: () => {
       isOpen.value = false
     },
@@ -140,7 +148,7 @@ const originalActions = [
 
 if (props.showAutoSearchOption) {
   originalActions.unshift({
-    text: "Don't show again",
+    text: t("Don't show again"),
     action: () => preventFutureAutoSearchs(),
   })
 }
@@ -204,7 +212,7 @@ const selectVehicle = async (address: string): Promise<void> => {
   mainVehicleStore.globalAddress = address
   isOpen.value = false
   await reloadCockpitAndWarnUser()
-  openSnackbar({ message: 'Vehicle address updated', variant: 'success', duration: 5000 })
+  openSnackbar({ message: t('Vehicle address updated'), variant: 'success', duration: 5000 })
 }
 
 const preventFutureAutoSearchs = (): void => {

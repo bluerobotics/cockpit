@@ -1,7 +1,7 @@
 <template>
   <InteractionDialog
     :show-dialog="showDialog"
-    title="Camera stream change detected"
+    :title="$t('Camera stream change detected')"
     :actions="dialogActions"
     variant="text-only"
     max-width="520px"
@@ -10,8 +10,11 @@
     <template #content>
       <div class="flex flex-col gap-4 min-w-[340px]">
         <p class="text-sm text-gray-300">
-          We noticed that a stream used by your widgets is no longer available, but a new stream has appeared. This
-          usually happens when replacing a camera. Would you like to update your widgets to use the new stream?
+          {{
+            $t(
+              'We noticed that a stream used by your widgets is no longer available, but a new stream has appeared. This usually happens when replacing a camera. Would you like to update your widgets to use the new stream?'
+            )
+          }}
         </p>
 
         <div v-for="orphan in orphanedWidgetStreams" :key="orphan.externalId" class="flex flex-col gap-3">
@@ -20,20 +23,20 @@
               <v-icon size="18" color="red-lighten-1">mdi-video-off</v-icon>
               <span class="font-medium text-white text-sm">{{ orphan.internalName }}</span>
               <v-chip size="x-small" color="red-darken-1" variant="flat" label class="text-white ml-auto">
-                Unavailable
+                {{ $t('Unavailable') }}
               </v-chip>
             </div>
             <div class="stream-card-details">
               <div class="detail-row">
-                <span class="detail-label">Source</span>
+                <span class="detail-label">{{ $t('Source') }}</span>
                 <span class="detail-value">{{ orphan.displayInfo.source }}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Stream ID</span>
+                <span class="detail-label">{{ $t('Stream ID') }}</span>
                 <span class="detail-value text-xs">{{ orphan.externalId }}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Type</span>
+                <span class="detail-label">{{ $t('Type') }}</span>
                 <span class="detail-value">
                   <v-chip
                     size="x-small"
@@ -47,7 +50,7 @@
                 </span>
               </div>
               <div v-if="orphan.displayInfo.resolution !== 'Unknown'" class="detail-row">
-                <span class="detail-label">Resolution</span>
+                <span class="detail-label">{{ $t('Resolution') }}</span>
                 <span class="detail-value">
                   {{ orphan.displayInfo.resolution }}
                   <template v-if="orphan.displayInfo.fps"> @ {{ orphan.displayInfo.fps }}</template>
@@ -69,7 +72,7 @@
               density="compact"
               variant="outlined"
               hide-details
-              label="Replace with"
+              :label="$t('Replace with')"
             />
           </div>
           <template v-else>
@@ -78,20 +81,20 @@
                 <v-icon size="18" color="green-lighten-1">mdi-video</v-icon>
                 <span class="font-medium text-white text-sm">{{ corr.name }}</span>
                 <v-chip size="x-small" color="green-darken-1" variant="flat" label class="text-white ml-auto">
-                  Available
+                  {{ $t('Available') }}
                 </v-chip>
               </div>
               <div class="stream-card-details">
                 <div class="detail-row">
-                  <span class="detail-label">Source</span>
+                  <span class="detail-label">{{ $t('Source') }}</span>
                   <span class="detail-value">{{ videoStore.getStreamDisplayInfo(corr.externalId).source }}</span>
                 </div>
                 <div class="detail-row">
-                  <span class="detail-label">Stream ID</span>
+                  <span class="detail-label">{{ $t('Stream ID') }}</span>
                   <span class="detail-value text-xs">{{ corr.externalId }}</span>
                 </div>
                 <div class="detail-row">
-                  <span class="detail-label">Type</span>
+                  <span class="detail-label">{{ $t('Type') }}</span>
                   <span class="detail-value">
                     <v-chip
                       size="x-small"
@@ -109,7 +112,7 @@
                   </span>
                 </div>
                 <div v-if="videoStore.getStreamDisplayInfo(corr.externalId).resolution !== '...'" class="detail-row">
-                  <span class="detail-label">Resolution</span>
+                  <span class="detail-label">{{ $t('Resolution') }}</span>
                   <span class="detail-value">
                     {{ videoStore.getStreamDisplayInfo(corr.externalId).resolution }}
                     <template v-if="videoStore.getStreamDisplayInfo(corr.externalId).fps">
@@ -123,7 +126,7 @@
         </div>
 
         <p class="text-xs text-gray-500 mt-1">
-          {{ affectedWidgetCount }} widget{{ affectedWidgetCount === 1 ? '' : 's' }} will be updated.
+          {{ $t('{count} widget(s) will be updated.', { count: affectedWidgetCount }) }}
         </p>
       </div>
     </template>
@@ -132,6 +135,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useVideoStore } from '@/stores/video'
@@ -142,6 +146,7 @@ import { MiniWidgetType, WidgetType } from '@/types/widgets'
 
 import InteractionDialog, { type Action } from './InteractionDialog.vue'
 
+const { t } = useI18n()
 const videoStore = useVideoStore()
 const widgetStore = useWidgetManagerStore()
 
@@ -341,14 +346,14 @@ const handleDialogClose = (value: boolean): void => {
 
 const dialogActions = computed((): Action[] => [
   {
-    text: 'Dismiss',
+    text: t('Dismiss'),
     action: () => {
       markDismissed()
       showDialog.value = false
     },
   },
   {
-    text: 'Replace stream',
+    text: t('Replace stream'),
     color: 'white',
     action: replaceStreams,
   },

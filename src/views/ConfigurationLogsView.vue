@@ -12,7 +12,9 @@
         />
       </template>
       <template #title
-        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">On screen telemetry data</div></template
+        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">
+          {{ $t('On screen telemetry data') }}
+        </div></template
       >
       <template #content>
         <div
@@ -31,7 +33,7 @@
           >
             <div id="leftColumn" class="flex flex-col justify-start align-start mt-[2vh] overflow-auto">
               <ExpansiblePanel compact mark-expanded darken-content hover-effect>
-                <template #title>Overlay Options</template>
+                <template #title>{{ $t('Overlay Options') }}</template>
                 <template #content>
                   <div>
                     <div class="flex flex-col flex-wrap justify-between align-start gap-y-0 pt-3">
@@ -39,7 +41,7 @@
                         <span
                           class="font-bold text-white text-start mb-5"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Font size</span
+                          >{{ $t('Font size') }}</span
                         >
                         <v-text-field
                           v-model="telemetryDisplayOptions.fontSize"
@@ -51,7 +53,7 @@
                         <span
                           class="font-bold text-white text-start mb-5"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Shadow size</span
+                          >{{ $t('Shadow size') }}</span
                         >
                         <v-text-field
                           v-model="telemetryDisplayOptions.fontShadowSize"
@@ -76,7 +78,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Font color</span
+                                >{{ $t('Font color') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -101,7 +103,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Outline color</span
+                                >{{ $t('Outline color') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -125,7 +127,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Shadow color</span
+                                >{{ $t('Shadow color') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -148,7 +150,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Bold</span
+                            >{{ $t('Bold') }}</span
                           >
                         </div>
                         <div
@@ -159,7 +161,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Italic</span
+                            >{{ $t('Italic') }}</span
                           >
                         </div>
                         <div
@@ -170,7 +172,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Underline</span
+                            >{{ $t('Underline') }}</span
                           >
                         </div>
                         <div
@@ -181,7 +183,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Strikethrough</span
+                            >{{ $t('Strikethrough') }}</span
                           >
                         </div>
                       </div>
@@ -190,7 +192,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Vehicle Variables</template>
+                <template #title>{{ $t('Vehicle Variables') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="loggedVariables"
@@ -212,14 +214,14 @@
                         :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
                         label
                         class="cursor-grab elevation-1"
-                        >{{ variable }}</v-chip
+                        >{{ translateVariable(variable) }}</v-chip
                       >
                     </div>
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Mission Variables</template>
+                <template #title>{{ $t('Mission Variables') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="otherLoggingElements"
@@ -241,18 +243,18 @@
                         :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
                         label
                         class="cursor-grab elevation-1"
-                        >{{ element }}</v-chip
+                        >{{ translateVariable(element) }}</v-chip
                       >
                     </div>
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Data Lake Variables</template>
+                <template #title>{{ $t('Data Lake Variables') }}</template>
                 <template #content>
                   <v-text-field
                     v-model="dataLakeSearch"
-                    placeholder="Search variables..."
+                    :placeholder="t('Search variables...')"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -282,7 +284,7 @@
                             ? 'data-lake-variable-chip'
                             : 'my-[2px] data-lake-variable-chip'
                         "
-                        :title="variable"
+                        :title="resolveDisplayName(variable)"
                         label
                         class="cursor-grab elevation-1 w-full justify-start"
                       >
@@ -293,7 +295,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Custom Messages</template>
+                <template #title>{{ $t('Custom Messages') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="customMessageElements"
@@ -340,7 +342,7 @@
                       <div
                         class="frosted-button backdrop-blur-md rounded-lg overflow-visible w-[400px] flex flex-col px-4 pt-2 pb-3 elevation-2"
                       >
-                        <span class="text-sm font-bold text-white text-center w-full">Enter message</span>
+                        <span class="text-sm font-bold text-white text-center w-full">{{ $t('Enter message') }}</span>
                         <span v-pre class="text-[10px] text-slate-400 text-center w-full mt-1"
                           >Type {{ to autocomplete data lake variables</span
                         >
@@ -364,9 +366,9 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Settings</template>
+                <template #title>{{ $t('Settings') }}</template>
                 <template #content>
-                  <p class="text-[12px] mt-2 ml-1">Telemetry frequency - 1 to 100 Hz (default 1 Hz)</p>
+                  <p class="text-[12px] mt-2 ml-1">{{ $t('Telemetry frequency - 1 to 100 Hz (default 1 Hz)') }}</p>
                   <div class="flex mb-1 justify">
                     <v-slider
                       v-model="newFrequency"
@@ -393,7 +395,7 @@
               </ExpansiblePanel>
               <div class="flex justify-end w-full mt-2">
                 <v-btn size="x-small" variant="text" class="mr-2" @click="resetAllChips">
-                  Reset Positions
+                  {{ $t('Reset Positions') }}
                   <v-icon size="18" class="ml-2">mdi-restore</v-icon>
                 </v-btn>
               </div>
@@ -439,7 +441,7 @@
                       "
                       class="cursor-grab elevation-1"
                       :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
-                      >{{ resolveDisplayName(variable) }}
+                      >{{ translateVariable(resolveDisplayName(variable)) }}
                       <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)">
                         mdi-close
                       </v-icon>
@@ -459,6 +461,7 @@
 import type * as monacoTypes from 'monaco-editor'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlassButton from '@/components/GlassButton.vue'
@@ -473,6 +476,47 @@ import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
+
+const { t } = useI18n()
+
+/**
+ * Translates a known telemetry variable display name to the current locale.
+ * Falls back to the original string when no mapping exists.
+ * @param {string} variable - The English display name of the variable
+ * @returns {string} The translated variable name, or the original if no translation is found
+ */
+const translateVariable = (variable: string): string => {
+  const mapping: Record<string, string> = {
+    'Roll': t('Roll'),
+    'Pitch': t('Pitch'),
+    'Heading': t('Heading'),
+    'Depth': t('Depth'),
+    'Mode': t('Mode'),
+    'Battery voltage': t('Battery voltage'),
+    'Battery current': t('Battery current'),
+    'GPS satellites': t('GPS satellites'),
+    'GPS status': t('GPS status'),
+    'Latitude': t('Latitude'),
+    'Longitude': t('Longitude'),
+    'Mission name': t('Mission name'),
+    'Time': t('Time'),
+    'Date': t('Date'),
+    'Instantaneous power': t('Instantaneous power'),
+    // VeryGenericIndicator variables
+    'Cam Tilt': t('Cam Tilt'),
+    'Cam Pan': t('Cam Pan'),
+    'Pilot Gain': t('Pilot Gain'),
+    'Lights (1)': t('Lights (1)'),
+    'Lights (2)': t('Lights (2)'),
+    'Water Temp': t('Water Temp'),
+    'Tether Turns': t('Tether Turns'),
+    'Input Hold': t('Input Hold'),
+    'Roll Pitch': t('Roll Pitch'),
+    'Altitude': t('Altitude'),
+    'Speed (GPS)': t('Speed (GPS)'),
+  }
+  return mapping[variable] || variable
+}
 
 const { showDialog } = useInteractionDialog()
 
@@ -630,15 +674,15 @@ type GridConfig = {
 }
 
 const gridConfig: GridConfig[] = [
-  { key: 'LeftTop', label: 'Left Top' },
-  { key: 'CenterTop', label: 'Center Top' },
-  { key: 'RightTop', label: 'Right Top' },
-  { key: 'LeftMid', label: 'Left Middle' },
-  { key: 'CenterMid', label: 'Center Middle' },
-  { key: 'RightMid', label: 'Right Middle' },
-  { key: 'LeftBottom', label: 'Left Bottom' },
-  { key: 'CenterBottom', label: 'Center Bottom' },
-  { key: 'RightBottom', label: 'Right Bottom' },
+  { key: 'LeftTop', label: t('Left Top') },
+  { key: 'CenterTop', label: t('Center Top') },
+  { key: 'RightTop', label: t('Right Top') },
+  { key: 'LeftMid', label: t('Left Mid') },
+  { key: 'CenterMid', label: t('Center Mid') },
+  { key: 'RightMid', label: t('Right Mid') },
+  { key: 'LeftBottom', label: t('Left Bottom') },
+  { key: 'CenterBottom', label: t('Center Bottom') },
+  { key: 'RightBottom', label: t('Right Bottom') },
 ]
 
 const getClassForConfig = computed(() => {
@@ -659,12 +703,13 @@ const getClassForConfig = computed(() => {
 
 const openHelpDialog = (): void => {
   showDialog({
-    title: 'Video Configuration Help',
+    title: t('Access video configuration to configure recording and streaming options.'),
     message: [
-      // eslint-disable-next-line vue/max-len
-      'On this screen, you can configure the telemetry data that will be displayed on the subtitle file for recorded videos. You can change the font size, color, and style, as well as the position of each variable on the screen. You can also add custom messages that will be displayed on the video player screen.',
-      'Drag and drop variables from the left panel to the desired position on the Telemetry Data Display.',
-      'For additional Help, refer to documentation or contact us.',
+      t(
+        'On this screen, you can configure the telemetry data that will be displayed on the subtitle file for recorded videos. You can change the font size, color, and style, as well as the position of each variable on the screen. You can also add custom messages that will be displayed on the video player screen.'
+      ),
+      t('Drag and drop variables from the left panel to the desired position on the Telemetry Data Display.'),
+      t('For additional Help, refer to documentation or contact us.'),
     ],
     variant: 'text-only',
     maxWidth: interfaceStore.isOnSmallScreen ? '80vw' : '60vw',

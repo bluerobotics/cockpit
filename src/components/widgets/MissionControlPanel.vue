@@ -10,7 +10,9 @@
           <v-icon class="cursor-grab opacity-40" @mousedown="enableMovingOnDrag" @mouseup="disableMovingOnDrag">
             mdi-drag
           </v-icon>
-          <div class="select-none text-[14px] font-bold mt-[1px]">Mission control panel</div>
+          <div class="select-none text-[14px] font-bold mt-[1px]">
+            {{ t('Mission control panel') }}
+          </div>
           <v-btn
             :icon="isWrapped ? 'mdi-chevron-up' : 'mdi-chevron-down'"
             variant="text"
@@ -27,7 +29,7 @@
             style="border-radius: 3px"
           >
             <div class="flex justify-around items-center w-full">
-              <v-tooltip location="top" open-delay="800" text="Skip to previous waypoint">
+              <v-tooltip location="top" open-delay="800" :text="t('Skip to previous waypoint')">
                 <template #activator="{ props: skipPrevProps }">
                   <v-btn
                     v-bind="skipPrevProps"
@@ -43,7 +45,7 @@
               <v-tooltip
                 location="top"
                 open-delay="800"
-                :text="missionStore.isMissionRunning ? 'Pause mission' : 'Start / resume mission'"
+                :text="missionStore.isMissionRunning ? t('Pause mission') : t('Start / resume mission')"
               >
                 <template #activator="{ props: playPauseProps }">
                   <v-btn
@@ -57,7 +59,7 @@
                   />
                 </template>
               </v-tooltip>
-              <v-tooltip location="top" open-delay="800" text="Skip to next waypoint">
+              <v-tooltip location="top" open-delay="800" :text="t('Skip to next waypoint')">
                 <template #activator="{ props: skipNextProps }">
                   <v-btn
                     v-bind="skipNextProps"
@@ -73,7 +75,7 @@
               <v-divider vertical class="h-[25px] mt-[3px] mx-1 opacity-10" />
               <v-menu :close-on-content-click="false" location="top" offset="8">
                 <template #activator="{ props: speedProps }">
-                  <v-tooltip location="top" open-delay="800" text="Cruise speed">
+                  <v-tooltip location="top" open-delay="800" :text="$t('Cruise speed')">
                     <template #activator="{ props: speedTooltipProps }">
                       <v-btn
                         v-bind="{ ...speedProps, ...speedTooltipProps }"
@@ -91,7 +93,7 @@
                   :style="interfaceStore.globalGlassMenuStyles"
                 >
                   <div class="flex justify-between items-center mb-1 text-xs">
-                    <span>Cruise speed</span>
+                    <span>{{ $t('Cruise speed') }}</span>
                     <span class="font-bold">{{ liveCruiseSpeed.toFixed(1) }} m/s</span>
                   </div>
                   <v-slider
@@ -106,7 +108,7 @@
                   />
                 </div>
               </v-menu>
-              <v-tooltip location="top" open-delay="800" text="Return to home">
+              <v-tooltip location="top" open-delay="800" :text="$t('Return to home')">
                 <template #activator="{ props: homeProps }">
                   <v-btn
                     v-bind="homeProps"
@@ -124,7 +126,9 @@
               <div
                 class="flex flex-col justify-center items-center w-[54px] h-[35px] mx-1 text-[10px] border-[1px] border-[#ffffff33] rounded-[4px] elevation-1 bg-[#EFFFFF22] select-none"
               >
-                <div class="w-full text-nowrap text-center font-bold text-shadow-md">Curr. WP</div>
+                <div class="w-full text-nowrap text-center font-bold text-shadow-md">
+                  {{ t('Curr. WP') }}
+                </div>
                 <div class="text-[12px] -mt-[2px] font-bold">{{ currentWaypointOnMission }}</div>
               </div>
               <v-menu offset-y theme="dark">
@@ -144,11 +148,15 @@
                     class="cursor-pointer"
                     @click="handleDownloadMissionOnMap"
                   >
-                    <v-list-item-title>Download mission from vehicle</v-list-item-title>
+                    <v-list-item-title>{{ t('Download mission from vehicle') }}</v-list-item-title>
                   </v-list-item>
 
-                  <v-list-item class="cursor-pointer" @click="handleClearMissionOnMap">
-                    <v-list-item-title>Clear mission on map</v-list-item-title>
+                  <v-list-item
+                    :disabled="!vehicleStore.isVehicleOnline"
+                    class="cursor-pointer"
+                    @click="handleClearMissionOnMap"
+                  >
+                    <v-list-item-title>{{ t('Clear mission on map') }}</v-list-item-title>
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -162,6 +170,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
@@ -172,6 +181,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 const { showDialog, closeDialog } = useInteractionDialog()
+const { t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()
@@ -245,23 +255,25 @@ onBeforeMount(() => {
 
 const handleReturnHome = (): void => {
   showDialog({
-    title: 'Return to home',
-    message: 'Are you sure you want to send the vehicle home?',
+    title: t('Return to home'),
+    message: t('Are you sure you want to send the vehicle home?'),
     variant: 'warning',
     actions: [
       {
-        text: 'Cancel',
+        text: t('Cancel'),
         size: 'small',
         action: closeDialog,
       },
       {
-        text: 'Confirm',
+        text: t('Confirm'),
         size: 'small',
         action: () => {
           closeDialog()
           vehicleStore.returnHome().catch((err) => {
             openSnackbar({
-              message: `Failed to return home: ${(err as Error).message}`,
+              message: t('Failed to return home: {error}', {
+                error: (err as Error).message,
+              }),
               variant: 'error',
             })
           })
@@ -280,7 +292,9 @@ const handlePlayAndPause = async (): Promise<void> => {
     }
   } catch (err) {
     openSnackbar({
-      message: `Failed to ${missionStore.isMissionRunning ? 'pause' : 'start'} mission: ${(err as Error).message}`,
+      message: missionStore.isMissionRunning
+        ? t('Failed to pause mission: {error}', { error: (err as Error).message })
+        : t('Failed to start mission: {error}', { error: (err as Error).message }),
       variant: 'error',
     })
   }
