@@ -106,6 +106,7 @@ module.exports = {
         ignoreHTMLAttributeValues: true,
         ignoreHTMLTextContents: true,
         ignoreUrls: true,
+        ignoreStrings: true,
       },
     ],
   },
