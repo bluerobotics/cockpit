@@ -121,6 +121,14 @@ When the user gives you a PR or review URL and asks you to address it:
 - When asked to "implement what you judge important", default to accepting only items that affect correctness, security, or a clearly stated AGENTS.md rule; surface the rest as questions instead of acting on them.
 - When asked to draft a reply comment for the user to post, write it in their voice: lowercase, terse, no headings or bullet lists unless the content is genuinely a list, and no "thanks for the review" preambles. Reference exact file paths and line numbers.
 
+## Separation of concerns
+
+Business/domain logic must not live inside `.vue` components. Keep components limited to presentation and wiring (template, props/emits, local UI state, and calls into logic that lives elsewhere).
+- Pure domain/business logic (calculations, parsing, transformations, protocol handling, validation, etc.) → framework-agnostic `.ts` modules under `src/libs/`. These must NOT import `vue` or any component, so they stay independently unit-testable and reusable.
+- Reactive orchestration (refs, computed, watchers, lifecycle) that wraps that logic → composables under `src/composables/`. Composables may import Vue; the pure logic they call should still live in `.ts` modules.
+- A `.vue` `<script>` should mostly call into `.ts`/composables, not implement the logic itself.
+- Exception: trivial glue (a one-line handler, simple template-only formatting) can stay in the component. Extract once it is non-trivial, reused, or worth testing on its own.
+
 ## Reuse before reinventing
 
 Before writing a new helper, composable, or component, search for an existing one that already does the job:
