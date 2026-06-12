@@ -19,6 +19,7 @@ import VueVirtualScroller from 'vue-virtual-scroller'
 
 import { initializeActionAutoRun } from '@/libs/actions/auto-run'
 import { app_version } from '@/libs/cosmos'
+import { dataLakeLogger } from '@/libs/data-lake-logging'
 import eventTracker, {
   defaultShareHardwareDetails,
   getSystemInfoForTelemetry,
@@ -98,6 +99,9 @@ initializeActionAutoRun()
 
 // Start logging as soon as the app is loaded to always have telemetry for videos
 datalogger.startLogging('cockpit-telemetry-logging')
+
+// Start recording selected data lake variables for CSV/JSON export (seeds from the overlay on first run)
+dataLakeLogger.startLogging()
 
 // If the app has successfully loaded, announce that so the console capture can be stopped
 window.dispatchEvent(new CustomEvent('cockpit-app-loaded'))
