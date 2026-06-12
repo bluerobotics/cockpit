@@ -1,5 +1,7 @@
+import { recordedDataLakeVariablesKey } from '@/libs/data-lake-logging'
 import { shareHardwareDetailsKey } from '@/libs/external-telemetry/event-tracking'
 import { settingsManager } from '@/libs/settings-management'
+import { collectOverlayRecordedVariableIds } from '@/utils/data-lake-recorded-variables-migration'
 
 // Tracks which one-off migrations have already run, keyed by migration name.
 const migrationsKey = 'cockpit-migrations'
@@ -60,9 +62,32 @@ const migrateLegacyTelemetryOptOutToHardwareSharing = (): void => {
 }
 
 /**
+ * Seed the data lake recording list from the video-overlay variables on first run.
+ *
+ * When nothing is selected yet, pre-selects the variables already shown on the overlay. This runs
+ * before the data lake logger starts, so the seeded selection is picked up on its first start. Runs
+ * once and never again, even if the user later clears the list.
+ */
+const migrateRecordedVariablesFromOverlay = (): void => {
+  const migrationName = 'recorded-variables-from-overlay'
+  if (hasMigrationRun(migrationName)) return
+
+  const existingSelection = settingsManager.getKeyValue(recordedDataLakeVariablesKey) as string[] | undefined
+  if (existingSelection === undefined || existingSelection.length === 0) {
+    const overlayIds = collectOverlayRecordedVariableIds()
+    if (overlayIds.length > 0) {
+      settingsManager.setKeyValue(recordedDataLakeVariablesKey, overlayIds)
+    }
+  }
+
+  markMigrationAsRun(migrationName)
+}
+
+/**
  * Run all migrations
  */
 export function runMigrations(): void {
   migrateRenameOfLocalStorageKeys()
   migrateLegacyTelemetryOptOutToHardwareSharing()
+  migrateRecordedVariablesFromOverlay()
 }
