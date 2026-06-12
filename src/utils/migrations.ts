@@ -1,6 +1,28 @@
 import { shareHardwareDetailsKey } from '@/libs/external-telemetry/event-tracking'
 import { settingsManager } from '@/libs/settings-management'
 
+// Tracks which one-off migrations have already run, keyed by migration name.
+const migrationsKey = 'cockpit-migrations'
+
+/**
+ * @param {string} name - Migration identifier
+ * @returns {boolean} Whether the migration has already run
+ */
+export const hasMigrationRun = (name: string): boolean => {
+  const migrations = (settingsManager.getKeyValue(migrationsKey) as Record<string, boolean> | undefined) ?? {}
+  return migrations[name] === true
+}
+
+/**
+ * Mark a migration as run so it never executes again.
+ * @param {string} name - Migration identifier
+ */
+export const markMigrationAsRun = (name: string): void => {
+  const migrations = (settingsManager.getKeyValue(migrationsKey) as Record<string, boolean> | undefined) ?? {}
+  migrations[name] = true
+  settingsManager.setKeyValue(migrationsKey, migrations)
+}
+
 /**
  * Migrate old localStorage keys to new ones
  */
