@@ -277,6 +277,20 @@ jobs:
           prerelease: true
           file_glob: true
 
+      - name: Configure AWS Credentials (for Stable Release)
+        uses: aws-actions/configure-aws-credentials@v6
+        if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') && success()
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload AWS Build (of Stable Release)
+        if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') && success()
+        # Upload to version-less file, to provide static URLs for the latest stable release build
+        run: |
+          aws s3 cp dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }} s3://bcloud-public/cockpit/releases/stable/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}.${{ matrix.uploadExtension }}
+
   deploy-flatpak:
     needs: test
     runs-on: ${{ matrix.os }}
@@ -359,6 +373,20 @@ jobs:
           overwrite: true
           prerelease: true
           file_glob: true
+
+      - name: Configure AWS Credentials (for Stable Release)
+        uses: aws-actions/configure-aws-credentials@v6
+        if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') && success()
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload AWS Build (of Stable Release)
+        if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') && success()
+        # Upload to version-less file, to provide static URLs for the latest stable release build
+        run: |
+          aws s3 cp dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }} s3://bcloud-public/cockpit/releases/stable/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}.${{ matrix.extension }}
 
   deploy-blueos-extension:
     needs: test
