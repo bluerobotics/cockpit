@@ -184,7 +184,9 @@ const {
   missionCoverageAreaSquareMeters,
 } = useMissionEstimates()
 
-const isOptionsIconVisible = computed(() => missionStore.effectiveVehicleType === MavType.MAV_TYPE_SURFACE_BOAT)
+const isOptionsIconVisible = computed(
+  () => vehicleStore.isVehicleOnline && missionStore.effectiveVehicleType === MavType.MAV_TYPE_SURFACE_BOAT
+)
 
 const maxDistance = computed(() => totalMaxDistance.value)
 const missionDuration = computed(() => totalMissionDuration.value)
