@@ -302,7 +302,13 @@ import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
-import { createGridOverlay, fitMapToWaypoints, TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
+import {
+  createGridOverlay,
+  fitMapToWaypoints,
+  singleStepZoomMapOptions,
+  TargetFollower,
+  WhoToFollow,
+} from '@/libs/map/utils-map'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
@@ -767,12 +773,7 @@ onMounted(async () => {
   map.value = L.map(mapId.value, {
     layers: [initialBaseLayer, seamarks, marineProfile],
     attributionControl: false,
-    // Raise wheelPxPerZoomLevel so a single wheel notch/pinch step advances exactly one zoom level
-    // (Leaflet's default 60 lets a typical ~100px deltaY round up to 2 levels with zoomSnap: 1).
-    wheelPxPerZoomLevel: 100,
-    wheelDebounceTime: 100,
-    zoomSnap: 1,
-    zoomDelta: 1,
+    ...singleStepZoomMapOptions,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
 
   // Expose the Leaflet instance to descendant components via the map context

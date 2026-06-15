@@ -827,7 +827,13 @@ import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
-import { createGridOverlay, fitMapToWaypoints, TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
+import {
+  createGridOverlay,
+  fitMapToWaypoints,
+  singleStepZoomMapOptions,
+  TargetFollower,
+  WhoToFollow,
+} from '@/libs/map/utils-map'
 import { generateSurveyPath } from '@/libs/map/utils-map'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
 import { computeMissionLocation } from '@/libs/mission/library'
@@ -4832,12 +4838,7 @@ onMounted(async () => {
 
   planningMap.value = L.map('planningMap', {
     layers: [initialBaseLayer],
-    // Raise wheelPxPerZoomLevel so a single wheel notch/pinch step advances exactly one zoom level
-    // (Leaflet's default 60 lets a typical ~100px deltaY round up to 2 levels with zoomSnap: 1).
-    wheelPxPerZoomLevel: 100,
-    wheelDebounceTime: 100,
-    zoomSnap: 1,
-    zoomDelta: 1,
+    ...singleStepZoomMapOptions,
   }).setView(mapCenter.value as LatLngTuple, zoom.value)
 
   // Expose the Leaflet instance to descendant components via the map context
