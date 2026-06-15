@@ -129,6 +129,7 @@
           </template>
         </v-tooltip>
       </v-speed-dial>
+      <MapNorthIndicator class="north-indicator" />
       <PoiMapArrows
         :map-ready="mapReady"
         :show-poi-arrows="widget.options.showPoiArrows"
@@ -285,6 +286,7 @@ import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
+import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
@@ -2151,6 +2153,14 @@ watch(
 
 .bottom-button {
   bottom: v-bind('bottomButtonsDisplacement');
+}
+
+/* Static north reference, stacked just above the bottom-right zoom control. */
+.north-indicator {
+  position: absolute;
+  right: 10px;
+  bottom: calc(v-bind('bottomButtonsDisplacement') + 85px);
+  z-index: 1002;
 }
 
 .poi-marker-icon-widget {
