@@ -156,7 +156,7 @@ jobs:
 
             Comment structure for a re-review (write it to `review.md`):
             - Line 1 MUST be the hidden marker exactly, with real values substituted: `<!-- claude-pr-review-bot:v1 seq=$NEXT_SEQ sha=$HEAD_SHA -->`
-            - Line 2 MUST be: `## Automated PR Re-review #$NEXT_SEQ (Claude)`
+            - Line 2 MUST be: `## Automated PR Re-review $NEXT_SEQ (Claude)`
             - A line stating the compared range, e.g. `Comparing \`$PREV_SHA\` → \`$HEAD_SHA\`` (or note that this is a full review because there was no previous one, or that a rebase/force-push prevented an incremental comparison).
             - A `### Previous findings status` section containing a markdown table with the header `| # | Finding | Severity | Status |` and one row per previous open finding, Status using the emoji shortcodes above. (Omit this section only when there was no previous review.)
             - When `new-comments.json` contains relevant discussion, a brief `### Discussion since last review` section summarizing the relevant comments and how they affected this review (author + short quote or link each). Omit this section entirely when there is no relevant discussion (do not write a placeholder).
