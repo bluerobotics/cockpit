@@ -195,7 +195,8 @@
       "allowToChangeInstallationDirectory": true
     },
     "linux": {
-      "icon": "public/pwa-512x512.png"
+      "icon": "public/pwa-512x512.png",
+      "target": ["AppImage"]
     },
     "flatpak": {
       "base": "org.electronjs.Electron2.BaseApp",
