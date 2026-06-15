@@ -115,22 +115,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install snapcraft for arm64
-        if: matrix.os == 'ubuntu-24-arm'
-        run: |
-          sudo apt update
-          sudo apt install -y --fix-missing snapd
-          for i in {1..10}; do
-            if sudo snap install snapcraft --classic; then
-              break
-            elif [ $i -eq 10 ]; then
-              exit 1
-            else
-              echo "Retry $i failed, waiting 30s..."
-              sleep 30
-            fi
-          done
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -195,11 +179,6 @@ jobs:
           # Make keychain name available to electron-builder
           echo "CSC_KEYCHAIN_NAME=${KEYCHAIN_NAME}" >> $GITHUB_ENV
 
-      - name: Deploy (arm)
-        if: matrix.os == 'ubuntu-24-arm'
-        run: |
-          SNAPCRAFT_BUILD_ENVIRONMENT="host" yarn ${{ matrix.deployCommand }}
-
       - name: Deploy (macOS - Release Build)
         if: (matrix.os == 'macos-15-intel' || matrix.os == 'macos-15') && github.event_name != 'pull_request'
         env:
@@ -218,8 +197,8 @@ jobs:
           echo "INFO: Building macOS for Pull Request. Signing and notarization will be skipped."
           yarn ${{ matrix.deployCommand }}:pr
 
-      - name: Deploy (Windows / Linux non-arm)
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
+      - name: Deploy (Windows / Linux)
+        if: matrix.os == 'ubuntu-24-arm' || matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
         # No Apple specific env vars needed here as electron-builder ignores them on these platforms
         run: |
           yarn ${{ matrix.deployCommand }}
