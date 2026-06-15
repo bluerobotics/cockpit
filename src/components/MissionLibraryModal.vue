@@ -414,8 +414,7 @@ const vehicleTypeLabel = (type?: MavType): string => {
 const googleEarthUrl = (coords: WaypointCoordinates): string =>
   `https://earth.google.com/web/@${coords[0]},${coords[1]},500a,1000d`
 
-const thumbnailFor = (mission: SavedMission): string | undefined =>
-  missionStore.savedMissionThumbnails[mission.id] ?? mission.thumbnail
+const thumbnailFor = (mission: SavedMission): string | undefined => missionStore.savedMissionThumbnails[mission.id]
 
 const openDetail = (mission: SavedMission): void => {
   detailMission.value = mission
@@ -501,10 +500,10 @@ const onDeleteClick = (mission: SavedMission): void => {
 }
 
 const onExportClick = (mission: SavedMission): void => {
-  // Strip runtime-only fields from the exported file; both are regenerated on import, and an `id`
+  // Strip the runtime-only `id` from the exported file; it's regenerated on import, and an `id`
   // collision across machines would silently overwrite an unrelated local entry.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, thumbnail: _thumbnail, ...exportable } = mission
+  const { id: _id, ...exportable } = mission
   const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: 'application/json' })
   const sanitizedName = mission.name.replace(/[\\/:*?"<>|]/g, '_').trim() || 'mission'
   const date = format(new Date(), 'yyyy-MM-dd_HH-mm-ss')

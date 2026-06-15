@@ -209,12 +209,6 @@ export type SavedMission = CockpitMission & {
    */
   updatedAt: number
   /**
-   * @deprecated Thumbnails are now stored in a separate storage map keyed by mission id
-   * (see `savedMissionThumbnails` in the mission store). Field kept for backwards
-   * compatibility with previously persisted entries.
-   */
-  thumbnail?: string
-  /**
    * Mission estimates captured when the mission was saved.
    */
   estimates?: MissionEstimatesSnapshot
