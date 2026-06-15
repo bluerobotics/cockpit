@@ -76,35 +76,40 @@ jobs:
         - os: macos-15-intel
           suffix: mac
           arch: x64
-          extension: dmg
+          buildExtension: dmg
+          uploadExtension: dmg
           latestMetadataName: latest-mac.yml
           deployCommand: deploy:electron:mac:x64
 
         - os: macos-15
           suffix: mac
           arch: arm64
-          extension: dmg
+          buildExtension: dmg
+          uploadExtension: dmg
           latestMetadataName: latest-mac-arm64.yml
           deployCommand: deploy:electron:mac:arm64
 
         - os: ubuntu-latest
           suffix: linux
           arch: x86_64
-          extension: AppImage
+          buildExtension: AppImage
+          uploadExtension: AppImage.tar.gz
           latestMetadataName: latest-linux.yml
           deployCommand: deploy:electron
 
         - os: ubuntu-24-arm
           suffix: linux
           arch: arm64
-          extension: AppImage
+          buildExtension: AppImage
+          uploadExtension: AppImage.tar.gz
           latestMetadataName: latest-linux-arm64.yml
           deployCommand: deploy:electron
 
         - os: windows-latest
           suffix: win
           arch: x64
-          extension: exe
+          buildExtension: exe
+          uploadExtension: exe
           latestMetadataName: latest.yml
           deployCommand: deploy:electron:windows
 
@@ -214,46 +219,27 @@ jobs:
         if: matrix.suffix == 'linux'
         run: |
           cd dist
-          chmod +x Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage
-          tar -czvf Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage.tar.gz \
-            Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage
+          chmod +x Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.buildExtension }}
+          tar -czvf Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }} \
+            Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.buildExtension }}
 
       - name: Upload binary artifact
-        if: matrix.suffix != 'linux'
         uses: actions/upload-artifact@v4
         with:
-          name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
-          path: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
+          name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }}
+          path: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }}
           if-no-files-found: error
 
       - name: Upload binary release
         uses: svenstaro/upload-release-action@v2
-        if: matrix.suffix != 'linux' && startsWith(github.ref, 'refs/tags/') && success()
+        if: startsWith(github.ref, 'refs/tags/') && success()
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
+          file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }}
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
           file_glob: true
-
-      - name: Upload tar.gz artifact (Linux)
-        if: matrix.suffix == 'linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage.tar.gz
-          path: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage.tar.gz
-          if-no-files-found: error
-
-      - name: Upload tar.gz release (Linux)
-        uses: svenstaro/upload-release-action@v2
-        if: matrix.suffix == 'linux' && startsWith(github.ref, 'refs/tags/') && success()
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.AppImage.tar.gz
-          tag: ${{ github.ref }}
-          overwrite: true
-          prerelease: true
 
       - name: Upload diff release (mac-only)
         uses: svenstaro/upload-release-action@v2
@@ -342,14 +328,14 @@ jobs:
         run: |
           mv dist/Cockpit-${{ matrix.suffix }}-aarch64-${{ env.VERSION }}.${{ matrix.extension }} dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
 
-      - name: Upload Artifact
+      - name: Upload PR Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
           path: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }}
           if-no-files-found: error
 
-      - name: Upload Release
+      - name: Upload Release Artifact
         uses: svenstaro/upload-release-action@v2
         if: startsWith(github.ref, 'refs/tags/') && success()
         with:
