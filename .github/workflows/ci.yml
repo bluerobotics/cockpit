@@ -239,7 +239,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
-          file_glob: true
 
       - name: Upload diff release (mac-only)
         uses: svenstaro/upload-release-action@v2
@@ -250,7 +249,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
-          file_glob: true
 
       - name: Upload latest metadata release
         uses: svenstaro/upload-release-action@v2
@@ -261,7 +259,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
-          file_glob: true
 
   deploy-flatpak:
     needs: test
@@ -344,7 +341,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
-          file_glob: true
 
   deploy-blueos-extension:
     needs: test
