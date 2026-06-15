@@ -74,8 +74,8 @@
 
                         <v-tooltip location="top">
                           <template #activator="{ props: tooltipProps }">
-                            <div v-bind="tooltipProps" class="w-[440px]">
-                              <ScrollingText :text="item.name" max-width="440px" align="left" :pause-on-hover="false" />
+                            <div v-bind="tooltipProps" class="w-[390px]">
+                              <ScrollingText :text="item.name" max-width="390px" align="left" :pause-on-hover="false" />
                             </div>
                           </template>
                           <span>{{ item.name }}</span>
@@ -84,41 +84,27 @@
                     </td>
                     <td>
                       <div class="flex items-center justify-center rounded-xl mx-1">
-                        <p class="w-[100px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                        <p class="w-[70px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
                           {{ item.type }}
                         </p>
                       </div>
                     </td>
                     <td>
                       <div class="flex items-center justify-center rounded-xl mx-1">
-                        <p class="w-[120px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                        <p class="w-[115px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
                           {{ item.source }}
                         </p>
                       </div>
                     </td>
                     <td>
                       <div class="flex items-center justify-start rounded-xl mx-1">
-                        <p class="w-[220px] whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono">
+                        <p class="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono">
                           {{ parsedCurrentValue(item.id) }}
                         </p>
                       </div>
                     </td>
                     <td>
                       <div class="flex items-center justify-end h-[42px] gap-1 -mr-2">
-                        <v-tooltip text="Record to data logs">
-                          <template #activator="{ props: tooltipProps }">
-                            <v-checkbox
-                              v-bind="tooltipProps"
-                              :model-value="recordedVariableIds.includes(item.id)"
-                              density="compact"
-                              hide-details
-                              color="white"
-                              class="record-checkbox flex-none"
-                              @update:model-value="(recorded) => handleRecordToggle(item.id, recorded)"
-                              @click.stop
-                            />
-                          </template>
-                        </v-tooltip>
                         <v-btn
                           v-if="isCompoundVariable(item.id)"
                           variant="outlined"
@@ -146,11 +132,24 @@
                         />
                       </div>
                     </td>
+                    <td>
+                      <div class="flex items-center justify-center rounded-xl mx-1">
+                        <v-checkbox
+                          :model-value="recordedVariableIds.includes(item.id)"
+                          density="compact"
+                          hide-details
+                          color="white"
+                          class="record-checkbox flex-none"
+                          @update:model-value="(recorded) => handleRecordToggle(item.id, recorded)"
+                          @click.stop
+                        />
+                      </div>
+                    </td>
                   </tr>
                 </template>
                 <template #no-data>
                   <tr>
-                    <td colspan="5" class="text-center flex items-center justify-center h-[50px] w-full">
+                    <td colspan="6" class="text-center flex items-center justify-center h-[50px] w-full">
                       <p class="text-[16px] ml-[170px] w-full">No data lake variables found</p>
                     </td>
                   </tr>
@@ -221,11 +220,20 @@ interface DataLakeVariableWithSource extends DataLakeVariable {
 }
 
 const tableHeaders = [
-  { title: 'Name', align: 'start', key: 'name', width: '220px', fixed: true, headerProps: { class: 'pl-10' } },
-  { title: 'Type', align: 'center', key: 'type', width: '100px', fixed: true },
-  { title: 'Source', align: 'center', key: 'source', width: '120px', fixed: true },
-  { title: 'Current Value', align: 'start', key: 'value', width: '220px', fixed: true },
-  { title: 'Actions', align: 'end', key: 'actions', width: '160px', fixed: true },
+  { title: 'Name', align: 'start', key: 'name', width: '390px', fixed: true, headerProps: { class: 'pl-10' } },
+  { title: 'Type', align: 'center', key: 'type', width: '70px', fixed: true },
+  { title: 'Source', align: 'center', key: 'source', width: '115px', fixed: true },
+  { title: 'Current Value', align: 'start', key: 'value', width: '200px', fixed: true },
+  { title: 'Actions', align: 'end', key: 'actions', width: '70px', fixed: true },
+  {
+    title: 'Record',
+    align: 'center',
+    key: 'record',
+    width: '30px',
+    fixed: true,
+    sortable: true,
+    value: (item: DataLakeVariableWithSource) => (recordedVariableIds.value.includes(item.id) ? 1 : 0),
+  },
 ] as const
 
 const recordedVariableIds = ref<string[]>([...dataLakeLogger.recordedVariableIds])
