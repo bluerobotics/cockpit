@@ -4,6 +4,13 @@ const THUMBNAIL_WIDTH = 320
 const THUMBNAIL_HEIGHT = 240
 const THUMBNAIL_PADDING = 16
 
+const utf8ToBase64 = (input: string): string => {
+  const bytes = new TextEncoder().encode(input)
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary)
+}
+
 type LatLngBounds = {
   /**
    * Minimum latitude.
@@ -54,7 +61,7 @@ export const generateMissionThumbnail = (mission: CockpitMission): string => {
       `<rect width="100%" height="100%" fill="#1f2a37"/>` +
       `<text x="50%" y="50%" fill="#ffffff66" font-family="sans-serif" font-size="16" text-anchor="middle" dominant-baseline="middle">No path</text>` +
       `</svg>`
-    return `data:image/svg+xml;base64,${btoa(emptySvg)}`
+    return `data:image/svg+xml;base64,${utf8ToBase64(emptySvg)}`
   }
 
   const bounds = computeBounds(allCoords)!
@@ -111,7 +118,7 @@ export const generateMissionThumbnail = (mission: CockpitMission): string => {
     waypointMarkers +
     `</svg>`
 
-  return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
+  return `data:image/svg+xml;base64,${utf8ToBase64(svg)}`
 }
 
 /**
