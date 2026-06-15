@@ -542,6 +542,7 @@
         </template>
       </v-tooltip>
     </v-speed-dial>
+    <MapNorthIndicator class="north-indicator" />
     <v-progress-linear
       v-if="uploadingMission"
       :model-value="missionUploadProgress"
@@ -676,6 +677,7 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
@@ -4760,6 +4762,12 @@ watch(
   cursor: pointer;
 }
 
+/* Static north reference, stacked just above the bottom-right zoom control. */
+.north-indicator {
+  position: absolute;
+  right: 10px;
+  bottom: 136px;
+}
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
