@@ -2,7 +2,7 @@
   <div
     v-if="modelValue"
     class="absolute right-4 bottom-36 rounded-[10px] px-3 py-2"
-    :style="[interfaceStore.globalGlassMenuStyles, { width: '250px' }]"
+    :style="[interfaceStore.globalGlassMenuStyles, { width: '280px' }]"
   >
     <p class="text-sm font-semibold mb-[6px]">Mission estimates</p>
     <v-divider class="mb-2" />
@@ -23,6 +23,10 @@
     <div class="text-xs leading-6">
       <div class="flex justify-between">
         <span>Length</span><span>{{ totalMissionLength }}</span>
+      </div>
+      <div v-if="maxDistance !== '—'" class="flex justify-between">
+        <span>Max distance from {{ maxDistanceReferenceLabel }}</span
+        ><span>{{ maxDistance }}</span>
       </div>
       <div class="flex justify-between">
         <span>ETA</span><span>{{ missionDuration }}</span>
@@ -170,6 +174,8 @@ const vehicleStore = useMainVehicleStore()
 
 const {
   totalMissionLength,
+  totalMaxDistance,
+  maxDistanceReferenceLabel,
   totalSurveyCoverage,
   totalMissionDuration,
   totalMissionEnergy,
@@ -178,6 +184,7 @@ const {
 
 const isOptionsIconVisible = computed(() => vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT)
 
+const maxDistance = computed(() => totalMaxDistance.value)
 const missionDuration = computed(() => totalMissionDuration.value)
 const missionEnergy = computed(() => totalMissionEnergy.value)
 const missionCoverage = computed(() => missionCoverageAreaSquareMeters.value)
