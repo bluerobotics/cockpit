@@ -9,7 +9,12 @@ import {
 } from '@/libs/mission/general-estimates'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
-import { MissionEstimatesByVehicleConfig, MissionLeg, VehicleMissionEstimate } from '@/types/mission'
+import {
+  MissionEstimatesByVehicleConfig,
+  MissionLeg,
+  VehicleMissionEstimate,
+  WaypointCoordinates,
+} from '@/types/mission'
 
 type LatLng = [number, number]
 
@@ -33,6 +38,8 @@ export const clearAllSurveyAreas = (): void => {
 export const useMissionEstimates = (): {
   missionLengthMeters: ComputedRef<number>
   missionCoverageAreaSquareMeters: ComputedRef<string>
+  totalMaxDistance: ComputedRef<string>
+  maxDistanceReferenceLabel: ComputedRef<string>
   totalMissionLength: ComputedRef<string>
   totalSurveyCoverage: ComputedRef<string>
   totalMissionDuration: ComputedRef<string>
@@ -110,6 +117,23 @@ export const useMissionEstimates = (): {
     return total
   })
 
+  // Reference point the max distance is measured from (home or, if available, the base station)
+  const maxDistanceReferencePoint = computed<WaypointCoordinates | undefined>(() => missionStore.homeMarkerPosition)
+  const maxDistanceReferenceLabel = computed<string>(() => 'home')
+
+  // Farthest mission waypoint from the reference point, indicating the maximum telemetry range needed
+  const maxDistanceMeters = computed(() => {
+    const reference = maxDistanceReferencePoint.value
+    const wps = missionStore.currentPlanningWaypoints || []
+    if (!reference || wps.length === 0) return 0
+    let max = 0
+    for (const wp of wps) {
+      const distance = calculateHaversineDistance(reference, wp.coordinates as LatLng)
+      if (distance > max) max = distance
+    }
+    return max
+  })
+
   // Mission total coverage area (consider polygons if first and last points are < than 100 meters apart)
   const missionCoverageAreaSquareMeters = computed(() => {
     const wps = missionStore.currentPlanningWaypoints || []
@@ -160,6 +184,7 @@ export const useMissionEstimates = (): {
 
   // Basic mission stats - no vehicle-specific estimates
   const totalMissionLength = computed(() => formatMetersShort(missionLengthMeters.value))
+  const totalMaxDistance = computed(() => formatMetersShort(maxDistanceMeters.value))
   const totalSurveyCoverage = computed(() => formatArea(totalSurveyCoverageSquareMeters.value))
 
   // Mission duration (s), with vehicle-specific estimates if available
@@ -178,6 +203,8 @@ export const useMissionEstimates = (): {
   return {
     missionLengthMeters,
     missionCoverageAreaSquareMeters,
+    totalMaxDistance,
+    maxDistanceReferenceLabel,
     totalMissionLength,
     totalSurveyCoverage,
     totalMissionDuration,
