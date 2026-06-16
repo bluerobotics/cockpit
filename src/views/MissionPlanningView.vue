@@ -3770,6 +3770,7 @@ const attachOfflineProgress = (layer: any, layerName: string): void => {
 
 let detachTileFallbacks: (() => void)[] = []
 let stopTileFallbackWatcher: (() => void) | undefined
+let stopUnFollowOnUserDrag: (() => void) | undefined
 let fallbackLayers: L.TileLayer[] = []
 
 onMounted(async () => {
@@ -3958,6 +3959,7 @@ onMounted(async () => {
   }
 
   targetFollower.enableAutoUpdate()
+  stopUnFollowOnUserDrag = targetFollower.unFollowOnUserDrag(planningMap.value)
   missionStore.clearMission()
   clearAllSurveyAreas()
 
@@ -3997,6 +3999,7 @@ watch(
 
 onUnmounted(() => {
   targetFollower.disableAutoUpdate()
+  stopUnFollowOnUserDrag?.()
   if (planningMap.value) {
     planningMap.value.off('mousemove', handleMapMouseMoveNearMissionPath)
     window.removeEventListener('keydown', onGlobalKeyDown)

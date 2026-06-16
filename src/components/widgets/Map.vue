@@ -624,6 +624,7 @@ const detachTileFallbacks: (() => void)[] = [
   attachTileNoiseFallback(osm, getTileFallbackOptions),
   attachTileNoiseFallback(esri, getTileFallbackOptions),
 ]
+let stopUnFollowOnUserDrag: (() => void) | undefined
 
 watch(
   () => [missionStore.mapFallbackBaseColor, missionStore.mapFallbackSeed, missionStore.mapFallbackNoiseIntensity],
@@ -886,6 +887,7 @@ onMounted(async () => {
   })
   // Enable auto update for target follower
   targetFollower.enableAutoUpdate()
+  stopUnFollowOnUserDrag = targetFollower.unFollowOnUserDrag(map.value)
 
   window.addEventListener('keydown', onKeydown)
 
@@ -1191,6 +1193,7 @@ watch(
 // - remove event listeners
 onBeforeUnmount(() => {
   targetFollower.disableAutoUpdate()
+  stopUnFollowOnUserDrag?.()
   window.removeEventListener('keydown', onKeydown)
 
   detachTileFallbacks.forEach((detach) => detach())
