@@ -10,6 +10,9 @@ import type { SurveyPath, WaypointCoordinates } from '@/types/mission'
  */
 const defaultUpdateIntervalMs = 500
 
+// Minimum distance, in pixels, the user must drag the map before tracking stops, so small or accidental drags don't disable following.
+const defaultUnfollowDragThresholdPx = 150
+
 /**
  * Enum for the different types of targets that can be followed.
  * @enum {string}
@@ -52,6 +55,9 @@ export class TargetFollower {
    * @type {ReturnType<typeof setInterval> | undefined}
    */
   private updateInterval: ReturnType<typeof setInterval> | undefined
+
+  // Whether the user is currently dragging the map, used to pause re-centering so the periodic update doesn't fight the drag.
+  private isUserDragging = false
 
   /**
    * Constructor for the TargetFollower class.
@@ -118,6 +124,7 @@ export class TargetFollower {
    * @returns {void}
    */
   public update(): void {
+    if (this.isUserDragging) return
     this.setCenter(this.target)
   }
 
@@ -160,6 +167,43 @@ export class TargetFollower {
   public unFollow(): void {
     this.target = undefined
     this.onTargetChange(this.target)
+  }
+
+  /**
+   * Stops following once the user pans the map past a pixel threshold. Leaflet drag events
+   * fire only for real user gestures, never for the follower's own panning, so there is no
+   * feedback loop.
+   * @param {L.Map} map - The leaflet map whose user drags should break the follow.
+   * @param {number} thresholdPixels - Minimum drag distance, in pixels, that stops following.
+   * @returns {() => void} Disposer that removes the drag listeners; call it on teardown.
+   */
+  public unFollowOnUserDrag(map: L.Map, thresholdPixels = defaultUnfollowDragThresholdPx): () => void {
+    let dragStartCenter: L.LatLng | undefined
+
+    const onDragStart = (): void => {
+      this.isUserDragging = true
+      dragStartCenter = this.target ? map.getCenter() : undefined
+    }
+
+    const onDragEnd = (): void => {
+      this.isUserDragging = false
+      if (!dragStartCenter || !this.target) return
+      const startPx = map.latLngToContainerPoint(dragStartCenter)
+      const endPx = map.latLngToContainerPoint(map.getCenter())
+      const draggedPixels = startPx.distanceTo(endPx)
+      dragStartCenter = undefined
+      if (draggedPixels >= thresholdPixels) {
+        this.unFollow()
+      }
+    }
+
+    map.on('dragstart', onDragStart)
+    map.on('dragend', onDragEnd)
+
+    return () => {
+      map.off('dragstart', onDragStart)
+      map.off('dragend', onDragEnd)
+    }
   }
 
   /**
