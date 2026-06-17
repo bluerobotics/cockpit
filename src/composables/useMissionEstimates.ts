@@ -5,7 +5,7 @@ import { blueBoatMissionEstimate } from '@/libs/mission/blueboat-estimates'
 import {
   calculateHaversineDistance,
   computeMissionDurationSecondsFromLegs,
-  polygonAreaSquareMeters,
+  convexHullSquareMeters,
 } from '@/libs/mission/general-estimates'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -134,23 +134,14 @@ export const useMissionEstimates = (): {
     return max
   })
 
-  // Mission total coverage area (consider polygons if first and last points are < than 100 meters apart)
+  // Mission footprint as the convex hull of every waypoint plus every survey polygon vertex,
+  // so any contained survey polygon is always a subset of the reported area.
   const missionCoverageAreaSquareMeters = computed(() => {
-    const wps = missionStore.currentPlanningWaypoints || []
-    if (wps.length >= 3) {
-      const first = wps[0].coordinates as [number, number]
-      const last = wps[wps.length - 1].coordinates as [number, number]
-      const closedToleranceInMeters = 100
-      const distanceToClose = calculateHaversineDistance(first, last)
-
-      if (distanceToClose <= closedToleranceInMeters) {
-        const isDuplicate = distanceToClose === 0
-        const ring = (isDuplicate ? wps.slice(0, -1) : wps).map((w) => w.coordinates as [number, number])
-        const area = polygonAreaSquareMeters(ring)
-        return formatArea(area)
-      }
-    }
-    return '—'
+    const waypointCoords = missionStore.currentPlanningWaypoints.map((w) => w.coordinates as LatLng)
+    const surveyVertexCoords = missionStore.currentPlanningSurveys.flatMap((s) => s.polygonCoordinates as LatLng[])
+    const points = [...waypointCoords, ...surveyVertexCoords]
+    const area = convexHullSquareMeters(points)
+    return area > 0 ? formatArea(area) : '—'
   })
 
   // Total survey coverage from survey areas set in the UI
