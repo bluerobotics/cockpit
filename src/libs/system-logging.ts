@@ -114,6 +114,40 @@ export const subscribeToSystemLogEvents = (listener: SystemLogEventListener): ((
   }
 }
 
+// Oversized-message capping. A burst of huge console messages (e.g. [Vue warn] dumps that serialize the
+// whole Vuetify theme inside the component trace) can grow the persisted log to gigabytes and choke the
+// in-app log viewer with entries nobody reads. Observed legit messages stay under 1KB while these dumps
+// reach ~80KB+. Budgets are measured in characters (message.length, i.e. UTF-16 code units) rather than
+// bytes, which is a close-enough approximation for the ASCII-dominated console output. Messages up to
+// `largeLogThresholdChars` always pass untouched; past it, each successive oversized message within
+// `oversizedLogWindowMs` gets a smaller budget, and once the budget is spent every further oversized
+// message is clamped to `oversizedLogFloorChars` until the window resets.
+const largeLogThresholdChars = 1 * 1024
+const oversizedLogWindowMs = 10_000
+const oversizedLogBudgetsChars = [16, 8, 4, 2, 1].map((kb) => kb * 1024)
+const oversizedLogFloorChars = 1 * 1024
+
+let oversizedLogWindowStart = 0
+let oversizedLogCountInWindow = 0
+
+const capLogMessage = (message: string): string => {
+  if (message.length <= largeLogThresholdChars) return message
+
+  const now = Date.now()
+  if (now - oversizedLogWindowStart >= oversizedLogWindowMs) {
+    oversizedLogWindowStart = now
+    oversizedLogCountInWindow = 0
+  }
+
+  const allowance = oversizedLogBudgetsChars[oversizedLogCountInWindow] ?? oversizedLogFloorChars
+  oversizedLogCountInWindow += 1
+
+  if (message.length <= allowance) return message
+
+  const droppedChars = message.length - allowance
+  return `${message.slice(0, allowance)}… [log capped: dropped ${droppedChars} chars to limit oversized-message bursts]`
+}
+
 // Buffer log events and flush them in batches, to avoid one IPC message (Electron) or one IndexedDB write
 // (web) per console call. During logging bursts the per-call overhead is the dominant cost on the renderer.
 const logFlushIntervalMs = 250
@@ -185,12 +219,15 @@ if (enableSystemLogging) {
   `)
 
   const persistLogEvent = (level: string, message: string): void => {
+    // Cap oversized messages once, before the fan-out, so the file, the IndexedDB store and the in-app
+    // viewer are all protected from gigabyte-scale logs and unreadably long entries.
+    const cappedMessage = capLogMessage(message)
     // Feed the in-app console viewer (bounded in-memory buffer), independent of where logs are persisted.
-    recordLogEventForViewer(level, message)
+    recordLogEventForViewer(level, cappedMessage)
     if (isRunningInElectron) {
-      sendLogToElectron(level, message)
+      sendLogToElectron(level, cappedMessage)
     } else {
-      saveLogEventInDB({ epoch: Date.now(), level, msg: message })
+      saveLogEventInDB({ epoch: Date.now(), level, msg: cappedMessage })
     }
   }
 
