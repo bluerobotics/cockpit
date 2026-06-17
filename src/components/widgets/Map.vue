@@ -243,14 +243,6 @@
     :initial-longitude="globalOriginLongitude"
     @origin-set="onGlobalOriginSet"
   />
-  <MissionControlPanel
-    v-model="widget.options.showMissionControlPanel"
-    :map-waypoints="mapWaypoints"
-    @download-mission-from-vehicle="downloadMissionFromVehicle"
-    @clear-map-drawing="clearMapDrawing"
-    @try-to-start-mission="tryToStartMission"
-    @hide-control-panel="hideControlPanel"
-  />
   <div
     v-if="isSavingOfflineTiles"
     class="absolute top-14 left-2 flex justify-start items-center text-white text-md py-2 px-4 rounded-lg"
@@ -545,9 +537,6 @@ onBeforeMount(() => {
   // Ensure new options exist for existing widgets
   if (widget.value.options.showCoordinateGrid === undefined) {
     widget.value.options.showCoordinateGrid = false
-  }
-  if (widget.value.options.showMissionControlPanel === undefined) {
-    widget.value.options.showMissionControlPanel = true
   }
   if (widget.value.options.showPoiArrows === undefined) {
     widget.value.options.showPoiArrows = true
@@ -1807,14 +1796,6 @@ const executeMissionOnVehicle = async (): Promise<void> => {
   return
 }
 
-const tryToStartMission = async (): Promise<void> => {
-  if (missionStore.showChecklistBeforeArm) {
-    isMissionChecklistOpen.value = true
-    return
-  }
-  executeMissionOnVehicle()
-}
-
 // Set dynamic styles for correct displacement of the bottom buttons when the widget is below the bottom bar
 const bottomButtonsDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).bottom, 0)}px`
@@ -1958,10 +1939,6 @@ const removePoiMarkerFromMapWidget = (poiId: string): void => {
 
   mapWidgetPoiMarkers.value[poiId].remove()
   delete mapWidgetPoiMarkers.value[poiId]
-}
-
-const hideControlPanel = (): void => {
-  widget.value.options.showMissionControlPanel = false
 }
 
 // Watch for changes in POIs from the store and update markers on this map widget
