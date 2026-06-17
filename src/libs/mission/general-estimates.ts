@@ -1,3 +1,5 @@
+import { convex, featureCollection, point } from '@turf/turf'
+
 import { MissionLeg, WaypointCoordinates } from '@/types/mission'
 
 import { norm360, radians } from '../utils'
@@ -101,6 +103,20 @@ export const polygonAreaSquareMeters = (position: WaypointCoordinates[]): number
     sum += pts[i].x * pts[j].y - pts[j].x * pts[i].y
   }
   return Math.abs(sum) / 2
+}
+
+/**
+ * Area of the convex hull of a set of lat/lng points, in square meters.
+ * @param {WaypointCoordinates[]} points - [lat, lng] pairs to wrap; order does not matter.
+ * @returns {number} Hull area in m²; 0 if fewer than 3 points or the points are collinear.
+ */
+export const convexHullSquareMeters = (points: WaypointCoordinates[]): number => {
+  if (points.length < 3) return 0
+  const fc = featureCollection(points.map(([lat, lon]) => point([lon, lat])))
+  const hull = convex(fc)
+  if (!hull) return 0
+  const ring = hull.geometry.coordinates[0].map(([lon, lat]) => [lat, lon] as WaypointCoordinates)
+  return polygonAreaSquareMeters(ring)
 }
 
 // Energy density estimates (kg/Wh) by battery chemistry
