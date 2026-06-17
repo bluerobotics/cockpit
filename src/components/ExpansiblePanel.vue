@@ -48,12 +48,12 @@
           </div>
         </div>
         <div class="flex justify-between ml-4">
-          <div v-if="hasInfoSlot" class="flex items-center w-[10%]">
+          <div v-if="$slots.info" class="flex items-center w-[10%]">
             <v-btn class="ml-auto rounded-full" size="small" color="transparent" elevation="0" @click.stop="toggleInfo">
               <v-icon :size="interfaceStore.isOnSmallScreen ? 15 : 18" color="white" icon="mdi-information-outline" />
             </v-btn>
           </div>
-          <div v-if="hasWarningSlot" class="flex justify-end items-center w-[10%]">
+          <div v-if="$slots.warning" class="flex justify-end items-center w-[10%]">
             <v-btn
               class="rounded-full relative overflow-hidden"
               size="small"
@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -160,8 +160,6 @@ const props = defineProps<{
    */
   elevationEffect?: boolean
 }>()
-
-const slots = useSlots()
 
 const isPanelExpanded = ref(props.isExpanded ?? false)
 const noTopDivider = ref(props.noTopDivider ?? false)
@@ -271,21 +269,6 @@ watch(isWarningOpen, (newValue) => {
   }
 })
 
-const hasWarningSlot = ref(false)
-const warningSlotObserver = ref<MutationObserver | null>(null)
-const updateHasWarningSlot = (): void => (hasWarningSlot.value = !!slots.warning?.())
-const hasInfoSlot = ref(false)
-const infoSlotObserver = ref<MutationObserver | null>(null)
-const updateHasInfoSlot = (): void => (hasInfoSlot.value = !!slots.info?.())
-
-const setupSlotObservers = (): void => {
-  warningSlotObserver.value = new MutationObserver(updateHasWarningSlot)
-  warningSlotObserver.value.observe(warningContent.value, { attributes: true, childList: true, subtree: true })
-
-  infoSlotObserver.value = new MutationObserver(updateHasInfoSlot)
-  infoSlotObserver.value.observe(infoContent.value, { attributes: true, childList: true, subtree: true })
-}
-
 onMounted(() => {
   if (content.value && contentInner.value) {
     if (!isPanelExpanded.value) {
@@ -307,15 +290,9 @@ onMounted(() => {
   if (warningContent.value && !isWarningOpen.value) {
     warningContent.value.style.maxHeight = '0px'
   }
-
-  updateHasWarningSlot()
-  updateHasInfoSlot()
-  setupSlotObservers()
 })
 
 onBeforeUnmount(() => {
-  if (warningSlotObserver.value) warningSlotObserver.value.disconnect()
-  if (infoSlotObserver.value) infoSlotObserver.value.disconnect()
   if (contentResizeObserver.value) contentResizeObserver.value.disconnect()
 })
 </script>
