@@ -27,6 +27,7 @@ import { settingsManager } from '@/libs/settings-management'
 import { isEqual, sequentialArray } from '@/libs/utils'
 import { isViewsGroupBlank } from '@/migration/default-profile-importer'
 import { legacySavedProfilesKey, migrateLegacyViewsGroup } from '@/migration/profile-migrations'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import {
@@ -52,6 +53,7 @@ const { height: windowHeight } = useWindowSize()
 const viewsGroupKey = 'cockpit-views-group-v1'
 
 export const useWidgetManagerStore = defineStore('widget-manager', () => {
+  const interfaceStore = useAppInterfaceStore()
   const editingMode = ref(false)
   const snapToGrid = ref(true)
   const gridInterval = ref(0.01)
@@ -269,6 +271,15 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     return currentView.value.showBottomBarOnBoot ? desiredBottomBarHeightPixels.value : 0
   })
 
+  // Positioning to overlays that need to hug the visible edge of top or bottom bar.
+  const currentTopBarHeightPixelsScaled = computed(() => {
+    return currentTopBarHeightPixels.value * interfaceStore.renderedBarScale
+  })
+
+  const currentBottomBarHeightPixelsScaled = computed(() => {
+    return currentBottomBarHeightPixels.value * interfaceStore.renderedBarScale
+  })
+
   const currentView = computed<View>({
     get() {
       const idx = Math.min(currentViewIndex.value, currentProfile.value.views.length - 1)
@@ -333,11 +344,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const clearances = { top: 0, bottom: 0 }
 
     const widgetTopEdgePixels = windowHeight.value * widget.position.y
-    const topBarStartPixels = currentTopBarHeightPixels.value
+    const topBarStartPixels = currentTopBarHeightPixelsScaled.value
     clearances.top = widgetTopEdgePixels - topBarStartPixels
 
     const widgetBottomEdgePixels = windowHeight.value * (widget.position.y + widget.size.height)
-    const bottomBarStartPixels = windowHeight.value - currentBottomBarHeightPixels.value
+    const bottomBarStartPixels = windowHeight.value - currentBottomBarHeightPixelsScaled.value
     clearances.bottom = bottomBarStartPixels - widgetBottomEdgePixels
 
     return clearances
@@ -787,6 +798,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     visibleAreaMinClearancePixels,
     currentTopBarHeightPixels,
     currentBottomBarHeightPixels,
+    currentTopBarHeightPixelsScaled,
+    currentBottomBarHeightPixelsScaled,
     showElementPropsDrawer,
     isElementsPropsDrawerVisible,
     elementToShowOnDrawer,
