@@ -839,7 +839,7 @@ import {
 } from '@/libs/map/utils-map'
 import { generateSurveyPath } from '@/libs/map/utils-map'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
-import { computeMissionLocation } from '@/libs/mission/library'
+import { computeMissionLocation, PLANNABLE_VEHICLE_TYPES } from '@/libs/mission/library'
 import { degrees } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -1068,12 +1068,7 @@ const availableFrames = Object.values(AltitudeReferenceType).map((value: Altitud
   name: value,
   value,
 }))
-const plannedVehicleTypeItems = [
-  { label: 'Surface Boat', value: MavType.MAV_TYPE_SURFACE_BOAT },
-  { label: 'Submarine', value: MavType.MAV_TYPE_SUBMARINE },
-  { label: 'UAV', value: MavType.MAV_TYPE_QUADROTOR },
-  { label: 'Ground Rover', value: MavType.MAV_TYPE_GROUND_ROVER },
-]
+const plannedVehicleTypeItems = PLANNABLE_VEHICLE_TYPES
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)

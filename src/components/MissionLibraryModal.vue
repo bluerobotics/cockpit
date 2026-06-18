@@ -324,7 +324,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { computeMissionLocation, isSavedMission } from '@/libs/mission/library'
+import { computeMissionLocation, isSavedMission, vehicleTypeLabel } from '@/libs/mission/library'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import {
@@ -395,26 +395,6 @@ watch(isVisible, (visible) => {
 })
 
 const formatDate = (date: Date): string => format(date, 'LLL dd, yyyy HH:mm')
-
-const vehicleTypeLabel = (type?: MavType): string => {
-  if (!type) return 'Any'
-  // Friendly names match the planner's vehicle-type selector; other MavType values fall through
-  // to a humanised label so legacy missions still display something readable.
-  const friendly: Partial<Record<MavType, string>> = {
-    [MavType.MAV_TYPE_SURFACE_BOAT]: 'Surface Boat',
-    [MavType.MAV_TYPE_SUBMARINE]: 'Submarine',
-    [MavType.MAV_TYPE_QUADROTOR]: 'UAV',
-    [MavType.MAV_TYPE_GROUND_ROVER]: 'Ground Rover',
-  }
-  return (
-    friendly[type] ??
-    String(type)
-      .replace('MAV_TYPE_', '')
-      .toLowerCase()
-      .replace(/(^|_)([a-z])/g, (_m, _p1, c) => ` ${c.toUpperCase()}`)
-      .trim()
-  )
-}
 
 const googleEarthUrl = (coords: WaypointCoordinates): string =>
   `https://earth.google.com/web/@${coords[0]},${coords[1]},500a,1000d`
