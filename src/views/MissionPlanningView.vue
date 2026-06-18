@@ -1178,6 +1178,7 @@ const currentMeasureAnchor = (): L.LatLng | null => {
     // inserts extend the path outward from whichever waypoint sits at the start of the array.
     const wps = missionStore.currentPlanningWaypoints
     const anchor = pendingSimplePathInsertIndex.value !== null ? wps[0] : wps[wps.length - 1]
+    if (!anchor) return null
     return L.latLng(anchor.coordinates[0], anchor.coordinates[1])
   }
   if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length > 0) {
