@@ -131,8 +131,8 @@
               v-model.number="placementScaleXPercent"
               class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
               type="number"
-              :min="PLACEMENT_SCALE_MIN_PERCENT"
-              :max="PLACEMENT_SCALE_MAX_PERCENT"
+              :min="PLACEMENT.scaleMinPercent"
+              :max="PLACEMENT.scaleMaxPercent"
               step="5"
               @blur="clampPlacementScaleX"
               @change="clampPlacementScaleX"
@@ -152,8 +152,8 @@
               v-model.number="placementScaleYPercent"
               class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
               type="number"
-              :min="PLACEMENT_SCALE_MIN_PERCENT"
-              :max="PLACEMENT_SCALE_MAX_PERCENT"
+              :min="PLACEMENT.scaleMinPercent"
+              :max="PLACEMENT.scaleMaxPercent"
               step="5"
               @blur="clampPlacementScaleY"
               @change="clampPlacementScaleY"
@@ -173,8 +173,8 @@
               v-model.number="placementRotationDeg"
               class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
               type="number"
-              :min="PLACEMENT_ROTATION_MIN_DEG"
-              :max="PLACEMENT_ROTATION_MAX_DEG"
+              :min="PLACEMENT.rotationMinDeg"
+              :max="PLACEMENT.rotationMaxDeg"
               step="5"
               @blur="clampPlacementRotation"
               @change="clampPlacementRotation"
@@ -3097,22 +3097,23 @@ const insertMissionIntoSegment = (mission: CockpitMission, segmentIndex: number)
 }
 
 // --- Mission free placement (drag/scale/rotate before committing) ---
-const PLACEMENT_SCALE_MIN_PERCENT = 10
-const PLACEMENT_SCALE_MAX_PERCENT = 2000
-const PLACEMENT_ROTATION_MIN_DEG = -180
-const PLACEMENT_ROTATION_MAX_DEG = 180
-const PLACEMENT_ROTATION_HANDLE_OFFSET_PX = 36
-const PLACEMENT_BOUNDS_PADDING_RATIO = 0.08
-const METERS_PER_DEGREE_LAT = 111320
-
 // Footprint (in px) of the vertical placement-controls strip; used to position it near the
 // mission preview without overlapping it.
-const PLACEMENT_TOOLBAR_ANCHOR_LEFT = 100
-const PLACEMENT_TOOLBAR_ANCHOR_RIGHT = 60
-const PLACEMENT_TOOLBAR_ANCHOR_TOP = 10
-const PLACEMENT_TOOLBAR_ANCHOR_BOTTOM = 215
-const PLACEMENT_TOOLBAR_GAP_PX = 20
-const PLACEMENT_TOOLBAR_MARGIN_PX = 8
+const PLACEMENT = {
+  scaleMinPercent: 10,
+  scaleMaxPercent: 2000,
+  rotationMinDeg: -180,
+  rotationMaxDeg: 180,
+  rotationHandleOffsetPx: 36,
+  boundsPaddingRatio: 0.08,
+  toolbarAnchorLeftPx: 100,
+  toolbarAnchorRightPx: 60,
+  toolbarAnchorTopPx: 10,
+  toolbarAnchorBottomPx: 215,
+  toolbarGapPx: 20,
+  toolbarMarginPx: 8,
+} as const
+const METERS_PER_DEGREE_LAT = 111320
 
 type LocalMetersBounds = {
   /**
@@ -3165,22 +3166,20 @@ const safeRotationRad = (raw: number): number => ((Number.isFinite(raw) ? raw : 
 const clampPlacementScaleX = (): void => {
   const raw = Number(placementScaleXPercent.value)
   const clamped = Number.isFinite(raw)
-    ? Math.max(PLACEMENT_SCALE_MIN_PERCENT, Math.min(PLACEMENT_SCALE_MAX_PERCENT, raw))
+    ? Math.max(PLACEMENT.scaleMinPercent, Math.min(PLACEMENT.scaleMaxPercent, raw))
     : 100
   placementScaleXPercent.value = clamped
 }
 const clampPlacementScaleY = (): void => {
   const raw = Number(placementScaleYPercent.value)
   const clamped = Number.isFinite(raw)
-    ? Math.max(PLACEMENT_SCALE_MIN_PERCENT, Math.min(PLACEMENT_SCALE_MAX_PERCENT, raw))
+    ? Math.max(PLACEMENT.scaleMinPercent, Math.min(PLACEMENT.scaleMaxPercent, raw))
     : 100
   placementScaleYPercent.value = clamped
 }
 const clampPlacementRotation = (): void => {
   const raw = Number(placementRotationDeg.value)
-  const clamped = Number.isFinite(raw)
-    ? Math.max(PLACEMENT_ROTATION_MIN_DEG, Math.min(PLACEMENT_ROTATION_MAX_DEG, raw))
-    : 0
+  const clamped = Number.isFinite(raw) ? Math.max(PLACEMENT.rotationMinDeg, Math.min(PLACEMENT.rotationMaxDeg, raw)) : 0
   placementRotationDeg.value = clamped
 }
 
@@ -3274,30 +3273,30 @@ const updatePlacementConfirmButtonPosition = (): void => {
     { x: sw.x, y: sw.y },
   ])
 
-  const visualW = PLACEMENT_TOOLBAR_ANCHOR_LEFT + PLACEMENT_TOOLBAR_ANCHOR_RIGHT
-  const visualH = PLACEMENT_TOOLBAR_ANCHOR_TOP + PLACEMENT_TOOLBAR_ANCHOR_BOTTOM
+  const visualW = PLACEMENT.toolbarAnchorLeftPx + PLACEMENT.toolbarAnchorRightPx
+  const visualH = PLACEMENT.toolbarAnchorTopPx + PLACEMENT.toolbarAnchorBottomPx
 
   const cx = (ptsBounds.minX + ptsBounds.maxX) / 2
   const cy = (ptsBounds.minY + ptsBounds.maxY) / 2
 
   const pos = pickBestPosition(
     [
-      { x: ptsBounds.maxX + PLACEMENT_TOOLBAR_GAP_PX, y: cy - visualH / 2 },
-      { x: ptsBounds.minX - PLACEMENT_TOOLBAR_GAP_PX - visualW, y: cy - visualH / 2 },
-      { x: cx - visualW / 2, y: ptsBounds.maxY + PLACEMENT_TOOLBAR_GAP_PX },
-      { x: cx - visualW / 2, y: ptsBounds.minY - PLACEMENT_TOOLBAR_GAP_PX - visualH },
+      { x: ptsBounds.maxX + PLACEMENT.toolbarGapPx, y: cy - visualH / 2 },
+      { x: ptsBounds.minX - PLACEMENT.toolbarGapPx - visualW, y: cy - visualH / 2 },
+      { x: cx - visualW / 2, y: ptsBounds.maxY + PLACEMENT.toolbarGapPx },
+      { x: cx - visualW / 2, y: ptsBounds.minY - PLACEMENT.toolbarGapPx - visualH },
     ],
     visualW,
     visualH,
     ptsBounds,
     cw,
     ch,
-    PLACEMENT_TOOLBAR_MARGIN_PX
+    PLACEMENT.toolbarMarginPx
   )
 
   placementConfirmButtonStyle.value = {
-    left: `${pos.x + PLACEMENT_TOOLBAR_ANCHOR_LEFT}px`,
-    top: `${pos.y + PLACEMENT_TOOLBAR_ANCHOR_TOP}px`,
+    left: `${pos.x + PLACEMENT.toolbarAnchorLeftPx}px`,
+    top: `${pos.y + PLACEMENT.toolbarAnchorTopPx}px`,
   }
 }
 
@@ -3413,8 +3412,8 @@ const onScaleHandleMouseMove = (event: L.LeafletMouseEvent): void => {
     if (cornerLenSq < 1e-9) return
     const projection = (mouseLocal.east * cornerLocal.east + mouseLocal.north * cornerLocal.north) / cornerLenSq
     const newScale = Math.max(
-      PLACEMENT_SCALE_MIN_PERCENT,
-      Math.min(PLACEMENT_SCALE_MAX_PERCENT, Math.round(projection * 100))
+      PLACEMENT.scaleMinPercent,
+      Math.min(PLACEMENT.scaleMaxPercent, Math.round(projection * 100))
     )
     placementScaleXPercent.value = newScale
     placementScaleYPercent.value = newScale
@@ -3422,8 +3421,8 @@ const onScaleHandleMouseMove = (event: L.LeafletMouseEvent): void => {
     if (Math.abs(cornerLocal.east) > 1e-6) {
       const newScaleX = (mouseLocal.east / cornerLocal.east) * 100
       placementScaleXPercent.value = Math.max(
-        PLACEMENT_SCALE_MIN_PERCENT,
-        Math.min(PLACEMENT_SCALE_MAX_PERCENT, Math.round(newScaleX))
+        PLACEMENT.scaleMinPercent,
+        Math.min(PLACEMENT.scaleMaxPercent, Math.round(newScaleX))
       )
     } else {
       placementScaleXPercent.value = initialScaleX
@@ -3431,8 +3430,8 @@ const onScaleHandleMouseMove = (event: L.LeafletMouseEvent): void => {
     if (Math.abs(cornerLocal.north) > 1e-6) {
       const newScaleY = (mouseLocal.north / cornerLocal.north) * 100
       placementScaleYPercent.value = Math.max(
-        PLACEMENT_SCALE_MIN_PERCENT,
-        Math.min(PLACEMENT_SCALE_MAX_PERCENT, Math.round(newScaleY))
+        PLACEMENT.scaleMinPercent,
+        Math.min(PLACEMENT.scaleMaxPercent, Math.round(newScaleY))
       )
     } else {
       placementScaleYPercent.value = initialScaleY
@@ -3575,8 +3574,8 @@ const rebuildPlacementPreview = (): void => {
 
   const localBounds = placementOriginalLocalBounds.value
   if (localBounds) {
-    const padE = (localBounds.maxE - localBounds.minE) * PLACEMENT_BOUNDS_PADDING_RATIO || 1
-    const padN = (localBounds.maxN - localBounds.minN) * PLACEMENT_BOUNDS_PADDING_RATIO || 1
+    const padE = (localBounds.maxE - localBounds.minE) * PLACEMENT.boundsPaddingRatio || 1
+    const padN = (localBounds.maxN - localBounds.minN) * PLACEMENT.boundsPaddingRatio || 1
     const minE = localBounds.minE - padE
     const maxE = localBounds.maxE + padE
     const minN = localBounds.minN - padN
@@ -3641,8 +3640,8 @@ const rebuildPlacementPreview = (): void => {
     const dirX = Math.sin(theta)
     const dirY = -Math.cos(theta)
     const rotHandlePt = L.point(
-      topCenterPt.x + PLACEMENT_ROTATION_HANDLE_OFFSET_PX * dirX,
-      topCenterPt.y + PLACEMENT_ROTATION_HANDLE_OFFSET_PX * dirY
+      topCenterPt.x + PLACEMENT.rotationHandleOffsetPx * dirX,
+      topCenterPt.y + PLACEMENT.rotationHandleOffsetPx * dirY
     )
     const rotHandleLatLng = map.containerPointToLatLng(rotHandlePt)
 
