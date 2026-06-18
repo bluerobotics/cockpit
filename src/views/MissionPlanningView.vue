@@ -2997,7 +2997,9 @@ const finalizeMissionPlacement = (mission: CockpitMission): void => {
   if (hasExistingPlanning) {
     appendMissionToPlanning(mission)
   } else {
-    loadDraftMission(mission)
+    loadDraftMission(mission).catch((err) => {
+      openSnackbar({ variant: 'error', message: `Failed to load mission: ${err}`, duration: 3500 })
+    })
   }
 }
 
