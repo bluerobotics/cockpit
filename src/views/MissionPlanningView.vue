@@ -3066,6 +3066,7 @@ const appendMissionToPlanning = (mission: CockpitMission): void => {
 
 // Splices the mission at `segmentIndex + 1` so it sits between waypoint `segmentIndex` and
 // waypoint `segmentIndex + 1`. Use `-1` to insert at the very start of the planning.
+// Appending after the last waypoint uses appendMissionToPlanning, so the upper bound is exclusive.
 const insertMissionIntoSegment = (mission: CockpitMission, segmentIndex: number): void => {
   const planning = missionStore.currentPlanningWaypoints
   if (segmentIndex < -1 || segmentIndex >= planning.length - 1) {
