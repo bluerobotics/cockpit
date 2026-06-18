@@ -588,6 +588,7 @@ const onImportFileSelected = (event: Event): void => {
   height: 650px;
   min-width: 600px;
   max-width: 90%;
+  max-height: 90vh;
   border: 1px solid #cbcbcb33;
   border-radius: 12px;
   box-shadow: 0px 4px 4px 0px #0000004c, 0px 8px 12px 6px #00000026;
