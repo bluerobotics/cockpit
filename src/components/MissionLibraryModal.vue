@@ -626,8 +626,4 @@ const onImportFileSelected = (event: Event): void => {
   border-radius: 999px;
   padding: 2px 8px;
 }
-
-.hidden {
-  display: none;
-}
 </style>
