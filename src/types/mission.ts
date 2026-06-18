@@ -161,7 +161,7 @@ export type MissionEstimatesSnapshot = {
   /**
    * Total path length.
    */
-  length: string
+  pathLength: string
   /**
    * Estimated time to complete the mission.
    */

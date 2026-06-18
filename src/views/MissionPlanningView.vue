@@ -2906,7 +2906,7 @@ const currentMissionSnapshot = computed<CockpitMission>(() => ({
 }))
 
 const currentMissionEstimatesSnapshot = computed<MissionEstimatesSnapshot>(() => ({
-  length: missionEstimates.totalMissionLength.value,
+  pathLength: missionEstimates.totalMissionLength.value,
   duration: missionEstimates.totalMissionDuration.value,
   energy: missionEstimates.totalMissionEnergy.value,
   totalSurveyCoverage: missionEstimates.totalSurveyCoverage.value,

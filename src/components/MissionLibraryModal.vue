@@ -78,9 +78,12 @@
                       <v-icon size="12" class="mr-1">mdi-grid</v-icon>
                       {{ mission.surveys.length }}
                     </span>
-                    <span v-if="mission.estimates?.length && mission.estimates.length !== '—'" class="info-pill">
+                    <span
+                      v-if="mission.estimates?.pathLength && mission.estimates.pathLength !== '—'"
+                      class="info-pill"
+                    >
                       <v-icon size="12" class="mr-1">mdi-map-marker-distance</v-icon>
-                      {{ mission.estimates.length }}
+                      {{ mission.estimates.pathLength }}
                     </span>
                     <span v-if="mission.estimates?.duration && mission.estimates.duration !== '—'" class="info-pill">
                       <v-icon size="12" class="mr-1">mdi-clock-outline</v-icon>
@@ -240,7 +243,7 @@
             <div class="flex flex-col gap-1">
               <div class="flex justify-between">
                 <span class="text-white/60">Length</span>
-                <span>{{ detailMission.estimates.length }}</span>
+                <span>{{ detailMission.estimates.pathLength }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-white/60">ETA</span>
