@@ -149,13 +149,24 @@ export const computeMissionLocation = (mission: CockpitMission): WaypointCoordin
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isSavedMission = (value: any): value is SavedMission => {
   if (!value || typeof value !== 'object') return false
-  return (
-    typeof value.id === 'string' &&
-    typeof value.name === 'string' &&
-    typeof value.createdAt === 'number' &&
-    typeof value.updatedAt === 'number' &&
-    Array.isArray(value.waypoints) &&
-    value.settings &&
-    Array.isArray(value.settings.mapCenter)
-  )
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.name !== 'string' ||
+    typeof value.createdAt !== 'number' ||
+    typeof value.updatedAt !== 'number' ||
+    !Array.isArray(value.waypoints) ||
+    !value.settings ||
+    !Array.isArray(value.settings.mapCenter)
+  ) {
+    return false
+  }
+  // Spot-check the first waypoint so an adversarial .cmp file with a malformed waypoints array
+  // is rejected up-front instead of crashing later when we read coordinates/id off entries.
+  if (value.waypoints.length > 0) {
+    const wp = value.waypoints[0]
+    if (!wp || typeof wp.id !== 'string' || !Array.isArray(wp.coordinates) || wp.coordinates.length < 2) {
+      return false
+    }
+  }
+  return true
 }
