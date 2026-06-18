@@ -115,6 +115,9 @@ export const useAppInterfaceStore = defineStore('responsive', {
     isOnSmallScreen: (state) => state.width <= 1280,
     isOnPhoneScreen: (state) => state.width < 600,
     isOnVeryLargeScreen: (state) => state.width > 1920,
+    // Mirrors the scale `WidgetBar` actually applies to the top/bottom bars on small screens, so overlays can
+    // align with the rendered bar height (not the logical 48px) from a single source of truth.
+    renderedBarScale: (state) => (state.width <= 1280 ? state.width / 1800 : 1),
     mainMenuWidth: (state) => {
       if (state.width < 720) return 78
       if (state.width >= 720 && state.width < 980) return 95
