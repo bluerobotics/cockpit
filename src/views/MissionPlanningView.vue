@@ -549,11 +549,12 @@
       bottom
       height="10"
       color="white"
-      :style="`top: ${widgetStore.currentTopBarHeightPixels}px`"
+      :style="`top: ${widgetStore.currentTopBarHeightPixelsScaled}px`"
     />
     <p
       v-if="uploadingMission"
-      class="fixed top-[58px] left-[7px] flex text-md font-bold text-white z-30 drop-shadow-md"
+      class="fixed left-[7px] flex text-md font-bold text-white z-30 drop-shadow-md"
+      :style="`top: ${widgetStore.currentTopBarHeightPixelsScaled + 10}px`"
     >
       Uploading mission to vehicle...
     </p>
@@ -635,11 +636,11 @@
     absolute
     bottom
     color="white"
-    :style="{ top: '48px' }"
+    :style="`top: ${widgetStore.currentTopBarHeightPixelsScaled}px`"
   />
   <p
     v-if="fetchingMission"
-    :style="{ top: '48px' }"
+    :style="`top: ${widgetStore.currentTopBarHeightPixelsScaled}px`"
     class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
   >
     Loading mission...
