@@ -3573,8 +3573,6 @@ const rebuildPlacementPreview = (): void => {
     placementPreviewLayers.value.push(marker)
   })
 
-  // Bounding polygon: rotates and scales with the mission by re-projecting padded original
-  // local bounds through the current placement transform.
   const localBounds = placementOriginalLocalBounds.value
   if (localBounds) {
     const padE = (localBounds.maxE - localBounds.minE) * PLACEMENT_BOUNDS_PADDING_RATIO || 1
