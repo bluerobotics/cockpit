@@ -406,12 +406,14 @@ const vehicleTypeLabel = (type?: MavType): string => {
     [MavType.MAV_TYPE_QUADROTOR]: 'UAV',
     [MavType.MAV_TYPE_GROUND_ROVER]: 'Ground Rover',
   }
-  if (friendly[type]) return friendly[type] as string
-  return String(type)
-    .replace('MAV_TYPE_', '')
-    .toLowerCase()
-    .replace(/(^|_)([a-z])/g, (_m, _p1, c) => ` ${c.toUpperCase()}`)
-    .trim()
+  return (
+    friendly[type] ??
+    String(type)
+      .replace('MAV_TYPE_', '')
+      .toLowerCase()
+      .replace(/(^|_)([a-z])/g, (_m, _p1, c) => ` ${c.toUpperCase()}`)
+      .trim()
+  )
 }
 
 const googleEarthUrl = (coords: WaypointCoordinates): string =>
