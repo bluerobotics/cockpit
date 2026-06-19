@@ -161,6 +161,20 @@
         @regenerate-survey-waypoints="regenerateSurveyWaypoints"
       />
     </div>
+    <MissionPlacementToolbar
+      v-if="isPlacingMission"
+      v-model:scale-x-percent="placementScaleXPercent"
+      v-model:scale-y-percent="placementScaleYPercent"
+      v-model:rotation-deg="placementRotationDeg"
+      :position-style="placementToolbarStyle"
+      :limits="PLACEMENT_LIMITS"
+      @clamp-scale-x="clampPlacementScaleX"
+      @clamp-scale-y="clampPlacementScaleY"
+      @clamp-rotation="clampPlacementRotation"
+      @confirm="onConfirmPlacement"
+      @reset="onResetPlacement"
+      @cancel="cancelFreePlacement()"
+    />
     <div
       v-show="!interfaceStore.isMainMenuVisible"
       ref="missionToolboxRef"
@@ -494,7 +508,7 @@
                   variant="text"
                   size="24"
                   class="text-[12px]"
-                  @click="openMissionLibrary"
+                  @click="openMissionLibrary()"
                 />
               </template>
             </v-tooltip>
@@ -847,6 +861,9 @@ import MapCenterControl from '@/components/MapCenterControl.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
+import MissionPlacementToolbar, {
+  PLACEMENT_TOOLBAR_FOOTPRINT,
+} from '@/components/mission-planning/MissionPlacementToolbar.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
@@ -866,6 +883,8 @@ import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useMissionInsertion } from '@/composables/map/useMissionInsertion'
+import { useMissionPlacement } from '@/composables/map/useMissionPlacement'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
@@ -882,6 +901,7 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
+import { positionPanelNearBounds, screenBounds } from '@/libs/map/screen-placement'
 import { applyLiveWaypointCoordinates } from '@/libs/map/survey-arrows'
 import {
   createGridOverlay,
@@ -906,7 +926,6 @@ import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/store
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { Point2D } from '@/types/general'
 import {
   type CockpitMission,
   type MissionEstimatesSnapshot,
@@ -924,7 +943,6 @@ import {
   Survey,
   SurveyPath,
 } from '@/types/mission'
-import { ScreenBounds } from '@/types/user-interface'
 
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
@@ -1515,8 +1533,10 @@ const segmentRadialMenuPosition = ref({ x: 0, y: 0 })
 const segmentRadialMenuItems: RadialMenuItem[] = [
   { icon: 'mdi-vector-polyline', tooltip: 'Add waypoint' },
   { icon: 'mdi-transit-connection-variant', tooltip: 'Insert survey here' },
+  { icon: 'mdi-bookshelf', tooltip: 'Insert mission from library here' },
 ]
 const segmentSurveyInsertIndex = ref<number | null>(null)
+const pendingSegmentInsertIndex = ref<number | null>(null)
 
 const isCtrlDown = ref(false)
 const isShiftDown = ref(false)
@@ -1671,76 +1691,20 @@ const updateSurvey = (id: string, updatedSurvey: Partial<Survey>): void => {
   }
 }
 
-/**
- * Computes screen-space axis-aligned bounding box from an array of 2D points.
- * @param {Point2D[]} pts - Screen-space points
- * @returns {ScreenBounds} The bounding box
- */
-const screenBounds = (pts: Point2D[]): ScreenBounds => {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  for (const p of pts) {
-    if (p.x < minX) minX = p.x
-    if (p.y < minY) minY = p.y
-    if (p.x > maxX) maxX = p.x
-    if (p.y > maxY) maxY = p.y
-  }
-  return { minX, minY, maxX, maxY }
-}
-
-/**
- * Picks the best candidate position by maximising viewport visibility and minimising
- * overlap with a polygon bounding box, then clamps the result inside the viewport.
- * @param {Point2D[]} candidates - Top-left positions to evaluate
- * @param {number} elW - Element width in pixels
- * @param {number} elH - Element height in pixels
- * @param {ScreenBounds} polyBounds - Polygon screen bounds
- * @param {number} vpW - Viewport width
- * @param {number} vpH - Viewport height
- * @param {number} margin - Minimum distance from viewport edge
- * @returns {Point2D} Clamped top-left position
- */
-const pickBestPosition = (
-  candidates: Point2D[],
-  elW: number,
-  elH: number,
-  polyBounds: ScreenBounds,
-  vpW: number,
-  vpH: number,
-  margin: number
-): Point2D => {
-  const area = elW * elH
-  let best = candidates[0]
-  let bestScore = -Infinity
-
-  for (const c of candidates) {
-    const l = c.x
-    const r = c.x + elW
-    const t = c.y
-    const b = c.y + elH
-
-    const visW = Math.max(0, Math.min(r, vpW - margin) - Math.max(l, margin))
-    const visH = Math.max(0, Math.min(b, vpH - margin) - Math.max(t, margin))
-    const visibility = (visW * visH) / area
-
-    const oW = Math.max(0, Math.min(r, polyBounds.maxX) - Math.max(l, polyBounds.minX))
-    const oH = Math.max(0, Math.min(b, polyBounds.maxY) - Math.max(t, polyBounds.minY))
-    const overlapPenalty = (oW * oH) / area
-
-    const score = visibility - overlapPenalty * 0.5
-    if (score > bestScore) {
-      bestScore = score
-      best = c
-    }
-  }
-
-  return {
-    x: Math.max(margin, Math.min(best.x, vpW - elW - margin)),
-    y: Math.max(margin, Math.min(best.y, vpH - elH - margin)),
-  }
-}
+// Footprint of the survey-confirm controls strip, plus the two hand-tuned offsets it has always
+// carried on top of the shared placement maths.
+const SURVEY_CONFIRM_LAYOUT = {
+  footprint: {
+    anchorLeftPx: 100,
+    anchorRightPx: 60,
+    anchorTopPx: 10,
+    anchorBottomPx: 185,
+    gapPx: 20,
+    marginPx: 8,
+  },
+  extraRightGapPx: 100,
+  extraLeftOffsetPx: 40,
+} as const
 
 const updateConfirmButtonPosition = (): void => {
   if (!planningMap.value) return
@@ -1748,42 +1712,18 @@ const updateConfirmButtonPosition = (): void => {
   if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length >= 3) {
     const map = planningMap.value
     const container = map.getContainer()
-    const cw = container.clientWidth
-    const ch = container.clientHeight
-
     const pts = surveyPolygonVertexesPositions.value.map((ll) => map.latLngToContainerPoint(ll))
-    const bounds = screenBounds(pts)
-
-    const anchorToLeft = 100
-    const anchorToRight = 60
-    const anchorToTop = 10
-    const anchorToBottom = 185
-    const visualW = anchorToLeft + anchorToRight
-    const visualH = anchorToTop + anchorToBottom
-    const gap = 20
-    const margin = 8
-
-    const cx = (bounds.minX + bounds.maxX) / 2
-    const cy = (bounds.minY + bounds.maxY) / 2
-
-    const pos = pickBestPosition(
-      [
-        { x: bounds.maxX + gap + 100, y: cy - visualH / 2 },
-        { x: bounds.minX - gap - visualW, y: cy - visualH / 2 },
-        { x: cx - visualW / 2, y: bounds.maxY + gap },
-        { x: cx - visualW / 2, y: bounds.minY - gap - visualH },
-      ],
-      visualW,
-      visualH,
-      bounds,
-      cw,
-      ch,
-      margin
+    const pos = positionPanelNearBounds(
+      screenBounds(pts),
+      SURVEY_CONFIRM_LAYOUT.footprint,
+      container.clientWidth,
+      container.clientHeight,
+      SURVEY_CONFIRM_LAYOUT.extraRightGapPx
     )
 
     confirmButtonStyle.value = {
-      left: `${pos.x + anchorToLeft + 40}px`,
-      top: `${pos.y + anchorToTop}px`,
+      left: `${pos.x + SURVEY_CONFIRM_LAYOUT.footprint.anchorLeftPx + SURVEY_CONFIRM_LAYOUT.extraLeftOffsetPx}px`,
+      top: `${pos.y + SURVEY_CONFIRM_LAYOUT.footprint.anchorTopPx}px`,
     }
   } else {
     confirmButtonStyle.value = { display: 'none' }
@@ -2011,6 +1951,12 @@ const onSegmentRadialMenuSelect = (index: number): void => {
     }
     dismissSegmentRadialMenu()
     toggleSurvey()
+    return
+  } else if (index === 2) {
+    if (radialMenuSegmentIndex !== null) {
+      openMissionLibrary({ segmentInsertIndex: radialMenuSegmentIndex })
+    }
+    dismissSegmentRadialMenu()
     return
   }
   dismissSegmentRadialMenu()
@@ -2694,6 +2640,12 @@ const performRedo = (): void => {
 }
 
 const handleKeyDown = (event: KeyboardEvent): void => {
+  // Placement owns the whole map while it is live, so Escape backs out of it and the edit
+  // shortcuts below stay off the mission sitting underneath the preview.
+  if (isPlacingMission.value) {
+    if (event.key === 'Escape') cancelFreePlacement()
+    return
+  }
   if (event.key === 'Escape') {
     if (isCreatingSurvey.value) {
       if (isDrawingSurveyPolygon.value) {
@@ -3032,6 +2984,57 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
     })
 
   updateWaypointMarkers()
+}
+
+// Merges a placed/loaded library mission into the current planning (append, segment-insert, or
+// fresh load). The insert-segment intent is carried on `placementInsertSegmentIndex` so both
+// placement outcomes ("Reposition" and "Keep original") route to the requested segment.
+const { insertSegmentIndex: placementInsertSegmentIndex, finalizeMissionPlacement } = useMissionInsertion({
+  cloneCommands: (commands) => cloneCommands(commands),
+  addWaypointMarker: (waypoint) => addWaypointMarker(waypoint),
+  updateWaypointMarkers: () => updateWaypointMarkers(),
+  loadDraftMission: (mission, opts) => loadDraftMission(mission, opts),
+})
+
+// --- Mission free placement (drag/scale/rotate before committing) ---
+const {
+  isPlacingMission,
+  placementScaleXPercent,
+  placementScaleYPercent,
+  placementRotationDeg,
+  PLACEMENT_LIMITS,
+  clampPlacementScaleX,
+  clampPlacementScaleY,
+  clampPlacementRotation,
+  resetPlacementTransform,
+  startFreePlacement,
+  cancelFreePlacement: cancelPlacementInternal,
+  confirmFreePlacement,
+  placementToolbarStyle,
+} = useMissionPlacement(planningMap, {
+  onConfirm: (placedMission) => finalizeMissionPlacement(placedMission, { wasRepositioned: true }),
+  markIgnoreNextClick: () => {
+    ignoreNextClick = true
+  },
+  toolbarFootprint: PLACEMENT_TOOLBAR_FOOTPRINT,
+})
+
+// Wrap the composable's cancel so the view-owned segment-insert routing intent is also dropped
+// when the user actively cancels via the toolbar button.
+const cancelFreePlacement = (): void => {
+  logUserAction('Cancelled mission placement')
+  cancelPlacementInternal()
+  placementInsertSegmentIndex.value = null
+}
+
+const onConfirmPlacement = (): void => {
+  logUserAction('Confirmed mission placement on the map')
+  confirmFreePlacement()
+}
+
+const onResetPlacement = (): void => {
+  logUserAction('Reset the mission placement scale and rotation')
+  resetPlacementTransform()
 }
 
 const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
@@ -4011,12 +4014,20 @@ const tryFetchHome = async (): Promise<void> => {
   }
 }
 
-const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
+const loadDraftMission = async (
+  mission: CockpitMission,
+  options?: {
+    /** Keep the host map's current center/zoom instead of restoring the saved-mission settings. */
+    preserveMapView?: boolean
+  }
+): Promise<void> => {
   clearCurrentMission()
 
   try {
-    mapCenter.value = mission.settings.mapCenter
-    zoom.value = mission.settings.zoom
+    if (!options?.preserveMapView) {
+      mapCenter.value = mission.settings.mapCenter
+      zoom.value = mission.settings.zoom
+    }
     currentWaypointAltitude.value = mission.settings.currentWaypointAltitude
     currentWaypointAltitudeRefType.value = mission.settings.currentWaypointAltitudeRefType
     missionStore.defaultCruiseSpeed = mission.settings.defaultCruiseSpeed
@@ -4081,8 +4092,20 @@ const currentMissionEstimatesSnapshot = computed<MissionEstimatesSnapshot>(() =>
   missionCoverageArea: missionEstimates.missionCoverageAreaSquareMeters.value,
 }))
 
-const openMissionLibrary = (): void => {
-  logUserAction('Opened the mission library')
+const openMissionLibrary = (
+  options: {
+    /** Segment index to splice the loaded mission into; omit for a normal placement. */
+    segmentInsertIndex?: number | null
+  } = {}
+): void => {
+  // Set the segment-insert intent in the same call that opens the library, so callers never have
+  // to poke `pendingSegmentInsertIndex` around the open; a plain toolbar open clears it.
+  pendingSegmentInsertIndex.value = options.segmentInsertIndex ?? null
+  logUserAction(
+    options.segmentInsertIndex != null
+      ? 'Opened the mission library to insert a mission into a segment'
+      : 'Opened the mission library'
+  )
   interfaceStore.missionLibraryVisibility = true
 }
 
@@ -4136,23 +4159,45 @@ const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
     missionStore.plannedVehicleType = mission.vehicleType
   }
 
+  // Move the pending intent into a placement-scoped tracker so it survives the dialog/flow.
+  placementInsertSegmentIndex.value = pendingSegmentInsertIndex.value
+  pendingSegmentInsertIndex.value = null
+  const isInserting = placementInsertSegmentIndex.value !== null
+  // Anything already on the planner is merged with rather than replaced, so the labels have to say
+  // "add" instead of "load" and the message has to name what happens to the existing work.
+  const isMerging = isInserting || canSaveCurrentMissionToLibrary.value
+
   showDialog({
     variant: 'info',
-    title: 'Load mission',
-    message: `Where should "${mission.name}" be placed?`,
+    title: isInserting ? 'Insert mission' : isMerging ? 'Add mission' : 'Load mission',
+    message: isMerging
+      ? `"${mission.name}" will be added to the mission you are already planning. Where should it go?`
+      : `Where should "${mission.name}" be placed?`,
     persistent: false,
     maxWidth: 620,
     actions: [
-      { text: 'Cancel', color: 'white', action: closeDialog },
       {
-        text: 'Keep original location',
-        color: 'white',
+        text: 'Cancel',
+        action: () => {
+          placementInsertSegmentIndex.value = null
+          closeDialog()
+        },
+      },
+      {
+        text: isMerging ? 'At its original location' : 'Keep original location',
         action: () => {
           closeDialog()
           logUserAction(`Loaded mission "${mission.name}" at its original location`)
-          loadDraftMission(mission).catch((err) => {
-            openSnackbar({ variant: 'error', message: `Failed to load mission: ${err}`, duration: 3500 })
-          })
+          finalizeMissionPlacement(mission)
+        },
+      },
+      {
+        text: 'Reposition on map',
+        class: 'bg-[#FFFFFF33]',
+        action: () => {
+          closeDialog()
+          logUserAction(`Started repositioning mission "${mission.name}" on the map`)
+          startFreePlacement(mission)
         },
       },
     ],
@@ -4164,6 +4209,8 @@ onMounted(() => {
 })
 
 const onMapClick = (e: L.LeafletMouseEvent): void => {
+  // Swallow map clicks during placement; confirm/cancel happen via the dedicated overlay buttons.
+  if (isPlacingMission.value) return
   hideContextMenu()
 
   // The dedicated home-setting handler owns this click; bail so we don't also drop a survey vertex or waypoint here.
