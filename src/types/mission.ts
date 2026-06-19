@@ -486,6 +486,58 @@ export type MapTileProvider = 'Esri World Imagery' | 'OpenStreetMap'
  */
 export type MapTileProviderPreference = MapTileProvider | 'Use last selected'
 
+/**
+ * How a GeoTIFF map overlay's raster values are mapped to colors.
+ * - `grayscale`: render RGB(A) rasters directly, or a single band as grey (sidescan mosaics, orthophotos).
+ * - `intensity`: stretch a single band between its min/max as greyscale (backscatter).
+ * - `bathymetry`: stretch a single band between its min/max onto a depth color ramp.
+ */
+export type MapOverlayRenderMode = 'grayscale' | 'intensity' | 'bathymetry'
+
+/**
+ * Geographic bounds of a map overlay in WGS84, as `[[south, west], [north, east]]`.
+ */
+export type MapOverlayBounds = [[number, number], [number, number]]
+
+/**
+ * Persisted metadata for a user-loaded GeoTIFF map overlay. The raster bytes are stored
+ * separately (in IndexedDB) keyed by {@link MapOverlayMeta.id}.
+ */
+export interface MapOverlayMeta {
+  /**
+   * Unique id, also used as the storage key for the overlay's raster bytes.
+   */
+  id: string
+  /**
+   * User-facing name, derived from the original file name.
+   */
+  name: string
+  /**
+   * WGS84 bounds used to frame the overlay (e.g. "zoom to survey").
+   */
+  bounds: MapOverlayBounds
+  /**
+   * Layer opacity in the range [0, 1].
+   */
+  opacity: number
+  /**
+   * Whether the overlay is shown on the map by default.
+   */
+  visible: boolean
+  /**
+   * Color mapping applied to the raster values.
+   */
+  renderMode: MapOverlayRenderMode
+  /**
+   * Size of the stored raster in bytes.
+   */
+  fileSize: number
+  /**
+   * Creation timestamp (epoch milliseconds).
+   */
+  createdAt: number
+}
+
 export type IconDimensions = {
   /**
    * The size of the icon in pixels
