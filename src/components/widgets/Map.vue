@@ -232,6 +232,7 @@
   </p>
 
   <PoiManager ref="poiManagerMapWidgetRef" />
+  <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
   <MissionChecklist
     :model-value="isMissionChecklistOpen"
     @confirmed="executeMissionOnVehicle"
@@ -284,6 +285,7 @@ import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
+import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
@@ -565,6 +567,8 @@ const marineProfile = overlays['Marine Profile']
 
 // Syncs user-loaded GeoTIFF overlays (sonar/bathymetry surveys) onto this map
 const mapOverlays = useMapOverlays()
+const overlayLoadingIds = mapOverlays.loadingIds
+const overlaysDialogOpen = ref(false)
 
 // Replace failed tiles with a procedural noise background sampled by lat/lon
 const getTileFallbackOptions = (): NoiseTileOptions => ({
@@ -1436,6 +1440,12 @@ const menuItems = reactive([
     action: () => onMenuOptionSelect('place-poi'),
     icon: 'mdi-map-marker-plus',
   },
+  {
+    item: 'Add overlay (GeoTIFF)',
+    action: () => onMenuOptionSelect('add-overlay'),
+    icon: 'mdi-image-plus',
+    _isOverlay: true,
+  },
   { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
   {
     item: 'Set default map position',
@@ -1468,6 +1478,13 @@ const updateSkipToWpMenu = (): void => {
   }
 }
 
+const updateOverlayMenuLabel = (): void => {
+  const overlayItem = menuItems.find((item) => (item as any)._isOverlay === true)
+  if (overlayItem) {
+    overlayItem.item = missionStore.mapOverlays.length > 0 ? 'Manage overlays' : 'Add overlay (GeoTIFF)'
+  }
+}
+
 const openContextMenuAt = async (mouseEv: MouseEvent, wpIndex: number | null): Promise<void> => {
   if (contextMenuVisible.value) {
     contextMenuVisible.value = false
@@ -1476,6 +1493,7 @@ const openContextMenuAt = async (mouseEv: MouseEvent, wpIndex: number | null): P
 
   contextMenuSelectedWpIndex.value = wpIndex
   updateSkipToWpMenu()
+  updateOverlayMenuLabel()
   contextMenuVersion.value++
   contextMenuVisible.value = true
   await nextTick()
@@ -1591,6 +1609,10 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
 
     case 'set-default-map-position':
       setDefaultMapPosition()
+      break
+
+    case 'add-overlay':
+      overlaysDialogOpen.value = true
       break
 
     case 'place-poi':

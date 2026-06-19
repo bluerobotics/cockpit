@@ -162,6 +162,20 @@
           ></v-icon>
           <span class="text-white text-sm ml-4">Place point of interest</span>
         </v-list-item>
+        <v-divider />
+        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleOpenMapOverlays">
+          <v-icon
+            variant="text"
+            icon="mdi-image-plus"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[16px]"
+          ></v-icon>
+          <span class="text-white text-sm ml-4">
+            {{ missionStore.mapOverlays.length > 0 ? 'Manage overlays' : 'Add overlay (GeoTIFF)' }}
+          </span>
+        </v-list-item>
         <v-divider v-if="canSetHome" />
         <v-list-item v-if="canSetHome" class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
           <v-icon
@@ -301,6 +315,7 @@ const emit = defineEmits<{
   (event: 'placePointOfInterest'): void
   (event: 'setHomePosition'): void
   (event: 'clearVehiclePathHistory'): void
+  (event: 'openMapOverlays'): void
 }>()
 
 const menuType = computed(() => props.menuType)
@@ -380,6 +395,11 @@ const handleToggleSimplePath = (): void => {
 
 const handlePlacePointOfInterest = (): void => {
   emit('placePointOfInterest')
+  emit('close')
+}
+
+const handleOpenMapOverlays = (): void => {
+  emit('openMapOverlays')
   emit('close')
 }
 

@@ -585,7 +585,9 @@
     @place-point-of-interest="openPoiDialog"
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
+    @open-map-overlays="overlaysDialogOpen = true"
   />
+  <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
   <Teleport to="#planningMap">
     <RadialMenu
       :visible="segmentRadialMenuVisible"
@@ -677,6 +679,7 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
+import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
@@ -931,6 +934,8 @@ const { mapReady } = mapContext
 
 // Syncs user-loaded GeoTIFF overlays (sonar/bathymetry surveys) onto the planning map
 const mapOverlays = useMapOverlays()
+const overlayLoadingIds = mapOverlays.loadingIds
+const overlaysDialogOpen = ref(false)
 
 // Frame the map on a GeoTIFF overlay when requested from the configuration panel
 watch(
