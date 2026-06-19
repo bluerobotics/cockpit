@@ -263,8 +263,6 @@
 import { useDebounceFn, useElementHover } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
-import { tileLayerOffline } from 'leaflet.offline'
-import { SaveStatus, savetiles } from 'leaflet.offline'
 import {
   computed,
   nextTick,
@@ -291,6 +289,7 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
+import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
@@ -563,6 +562,9 @@ onBeforeMount(() => {
 const { osm, esri, baseMaps, overlays } = useMapTileLayers({ seamarks: true, marineProfile: true })
 const seamarks = overlays['Seamarks']
 const marineProfile = overlays['Marine Profile']
+
+// Syncs user-loaded GeoTIFF overlays (sonar/bathymetry surveys) onto this map
+const mapOverlays = useMapOverlays()
 
 // Replace failed tiles with a procedural noise background sampled by lat/lon
 const getTileFallbackOptions = (): NoiseTileOptions => ({
@@ -861,6 +863,9 @@ onMounted(async () => {
 
   mapReady.value = true
 
+  // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
+  if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
+
   // Apply the current showButtons state to the leaflet controls
   if (showButtons.value && map.value) {
     map.value.addControl(zoomControl)
@@ -900,6 +905,11 @@ watch(
   }
 )
 
+// Frame the map on a GeoTIFF overlay when requested from the configuration panel
+watch(
+  () => missionStore.mapOverlayFocusRequest.revision,
+  () => mapOverlays.zoomToOverlay(missionStore.mapOverlayFocusRequest.id)
+)
 const handleContextMenu = {
   open: async (event: MouseEvent): Promise<void> => {
     if (!map.value || isPinching.value || isDragging.value) return
@@ -1068,6 +1078,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
 
   detachTileFallbacks.forEach((detach) => detach())
+  mapOverlays.destroyOverlays()
 
   if (map.value) {
     map.value.off('contextmenu')
