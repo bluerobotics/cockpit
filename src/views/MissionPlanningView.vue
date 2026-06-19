@@ -671,6 +671,7 @@ import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { tileLayerOffline } from 'leaflet.offline'
+import { SaveStatus, savetiles } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
 
@@ -690,6 +691,7 @@ import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
+import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   clearAllSurveyAreas,
@@ -3715,38 +3717,8 @@ let stopUnFollowOnUserDrag: (() => void) | undefined
 let fallbackLayers: L.TileLayer[] = []
 
 onMounted(async () => {
-  const tileBufferOptions = { edgeBufferTiles: 2, keepBuffer: 8, updateWhenIdle: false } as const
-
-  const osm = tileLayerOffline('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 23,
-    maxNativeZoom: 19,
-    attribution: '© OpenStreetMap',
-    // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
-    // See https://wiki.openstreetmap.org/wiki/Referer
-    referrerPolicy: 'strict-origin-when-cross-origin',
-    // CORS is required so the noise-fallback utility can read tile pixels via canvas
-    // to detect placeholder tiles that return HTTP 200.
-    crossOrigin: 'anonymous',
-    ...tileBufferOptions,
-  })
-  const esri = tileLayerOffline(
-    // `blankTile=false` makes ArcGIS return HTTP 404 for missing tiles instead of a
-    // "Map data not yet available" placeholder image. This lets the standard `tileerror`
-    // path drive our procedural-noise fallback.
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false',
-    {
-      maxZoom: 23,
-      maxNativeZoom: 19,
-      attribution: '© Esri World Imagery',
-      crossOrigin: 'anonymous',
-      ...tileBufferOptions,
-    }
-  )
-
-  const baseMaps = {
-    'OpenStreetMap': osm,
-    'Esri World Imagery': esri,
-  }
+  // Build the shared base maps and extra OSM overlay (tile-provider definitions live in useMapTileLayers)
+  const { osm, esri, extraOsm, baseMaps } = useMapTileLayers({ extraOsm: true })
 
   const preferredProvider =
     missionStore.defaultMapTileProvider === 'Use last selected'
@@ -3763,15 +3735,7 @@ onMounted(async () => {
   mapContext.map.value = planningMap.value
   mapContext.mapReady.value = true
 
-  const extraOsm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
-    // See https://wiki.openstreetmap.org/wiki/Referer
-    referrerPolicy: 'strict-origin-when-cross-origin',
-    crossOrigin: 'anonymous',
-    ...tileBufferOptions,
-  }).addTo(planningMap.value)
+  extraOsm?.addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
 
   // Replace failed tiles with a procedural noise background sampled by lat/lon, so
@@ -3781,7 +3745,7 @@ onMounted(async () => {
     seed: missionStore.mapFallbackSeed,
     intensity: missionStore.mapFallbackNoiseIntensity,
   })
-  fallbackLayers = [osm, esri, extraOsm]
+  fallbackLayers = [osm, esri, extraOsm].filter((layer): layer is L.TileLayer => layer !== undefined)
   detachTileFallbacks = fallbackLayers.map((layer) => attachTileNoiseFallback(layer, getTileFallbackOptions))
   stopTileFallbackWatcher = watch(
     () => [missionStore.mapFallbackBaseColor, missionStore.mapFallbackSeed, missionStore.mapFallbackNoiseIntensity],

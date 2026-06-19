@@ -260,12 +260,11 @@
 </template>
 
 <script setup lang="ts">
-import 'leaflet-edgebuffer'
-
 import { useDebounceFn, useElementHover } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
 import { tileLayerOffline } from 'leaflet.offline'
+import { SaveStatus, savetiles } from 'leaflet.offline'
 import {
   computed,
   nextTick,
@@ -292,6 +291,7 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
+import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -559,65 +559,10 @@ onBeforeMount(() => {
   targetFollower.enableAutoUpdate()
 })
 
-const tileBufferOptions = { edgeBufferTiles: 2, keepBuffer: 8, updateWhenIdle: false } as const
-
-// Configure the available map tile providers
-const osm = tileLayerOffline('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 23,
-  maxNativeZoom: 19,
-  attribution: '© OpenStreetMap',
-  // Required by the OSM tile usage policy: tiles requested without a Referer are blocked (403R).
-  // See https://wiki.openstreetmap.org/wiki/Referer
-  referrerPolicy: 'strict-origin-when-cross-origin',
-  // CORS is required so the noise-fallback utility can read tile pixels via canvas
-  // to detect placeholder tiles that return HTTP 200.
-  crossOrigin: 'anonymous',
-  ...tileBufferOptions,
-})
-
-const esri = tileLayerOffline(
-  // `blankTile=false` makes ArcGIS return HTTP 404 for missing tiles instead of a
-  // "Map data not yet available" placeholder image. This lets the standard `tileerror`
-  // path drive our procedural-noise fallback.
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?blankTile=false',
-  {
-    maxZoom: 23,
-    maxNativeZoom: 19,
-    attribution: '© Esri World Imagery',
-    // CORS is required so the noise-fallback utility can read tile pixels via canvas
-    // to detect any remaining provider-side placeholders that still return HTTP 200.
-    crossOrigin: 'anonymous',
-    ...tileBufferOptions,
-  }
-)
-
-// Overlays
-const seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
-  maxZoom: 18,
-  attribution: '© OpenSeaMap contributors',
-  ...tileBufferOptions,
-})
-
-const marineProfile = L.tileLayer.wms('https://geoserver.openseamap.org/geoserver/gwc/service/wms', {
-  layers: 'gebco2021:gebco_2021',
-  format: 'image/png',
-  transparent: true,
-  version: '1.1.1',
-  attribution: '© GEBCO, OpenSeaMap',
-  tileSize: 256,
-  maxZoom: 19,
-  ...tileBufferOptions,
-})
-
-const baseMaps = {
-  'OpenStreetMap': osm,
-  'Esri World Imagery': esri,
-}
-
-const overlays = {
-  'Seamarks': seamarks,
-  'Marine Profile': marineProfile,
-}
+// Build the shared base maps and overlays (tile-provider definitions live in useMapTileLayers)
+const { osm, esri, baseMaps, overlays } = useMapTileLayers({ seamarks: true, marineProfile: true })
+const seamarks = overlays['Seamarks']
+const marineProfile = overlays['Marine Profile']
 
 // Replace failed tiles with a procedural noise background sampled by lat/lon
 const getTileFallbackOptions = (): NoiseTileOptions => ({
