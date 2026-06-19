@@ -97,11 +97,26 @@ export function useInteractionDialog(): {
   })
 
   let dialogApp: App<Element> | null = null
-  let resolveFn: (value: DialogResult | PromiseLike<DialogResult>) => void
-  let rejectFn: (reason?: DialogResult) => void
+  let mountPoint: HTMLElement | null = null
+  let resolveFn: ((value: DialogResult | PromiseLike<DialogResult>) => void) | undefined
+  let rejectFn: ((reason?: DialogResult) => void) | undefined
+
+  const unmountDialog = (): void => {
+    if (dialogApp) {
+      dialogApp.unmount()
+      dialogApp = null
+    }
+    if (mountPoint) {
+      mountPoint.remove()
+      mountPoint = null
+    }
+  }
 
   const mountDialog = (): void => {
-    const mountPoint = document.createElement('div')
+    // Unmount any previously mounted dialog first, otherwise repeated calls stack orphaned dialog
+    // instances that can never be dismissed and end up blocking the whole screen.
+    unmountDialog()
+    mountPoint = document.createElement('div')
     document.body.appendChild(mountPoint)
     dialogApp = createApp(InteractionDialogComponent, {
       ...dialogProps,
@@ -118,6 +133,9 @@ export function useInteractionDialog(): {
   }
 
   const showDialog = (options: DialogOptions): Promise<DialogResult> => {
+    // Settle any still-pending dialog before replacing it so a caller awaiting a superseded dialog doesn't hang
+    // forever. Resolve (rather than reject) to avoid unhandled rejections for the many callers that don't await.
+    resolveFn?.({ isConfirmed: false })
     return new Promise((resolve, reject) => {
       Object.assign(dialogProps, options, { showDialog: true })
       resolveFn = resolve
@@ -128,16 +146,11 @@ export function useInteractionDialog(): {
 
   const closeDialog = (): void => {
     dialogProps.showDialog = false
-    if (dialogApp) {
-      dialogApp.unmount()
-      dialogApp = null
-    }
+    unmountDialog()
   }
 
   onUnmounted(() => {
-    if (dialogApp) {
-      dialogApp.unmount()
-    }
+    unmountDialog()
   })
 
   return { showDialog, closeDialog }
