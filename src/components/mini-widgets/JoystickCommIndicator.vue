@@ -92,6 +92,6 @@ const switchLabel = computed(() => {
 
 const setJoystickForwarding = (value: boolean | null): void => {
   logUserAction(`${value ? 'Enabled' : 'Disabled'} joystick command forwarding`)
-  controllerStore.enableForwarding = Boolean(value)
+  controllerStore.setForwardingByUser(Boolean(value))
 }
 </script>
