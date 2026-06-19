@@ -254,7 +254,7 @@ export type GeoAnchor = {
   lng: number
 }
 
-const METERS_PER_DEGREE_LAT = 111320
+export const METERS_PER_DEGREE_LAT = 111320
 const metersPerDegreeLng = (lat: number): number => METERS_PER_DEGREE_LAT * Math.cos((lat * Math.PI) / 180)
 
 /**
