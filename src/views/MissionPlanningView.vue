@@ -670,8 +670,6 @@ import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
-import { tileLayerOffline } from 'leaflet.offline'
-import { SaveStatus, savetiles } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
 
@@ -691,6 +689,7 @@ import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
+import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useSnackbar } from '@/composables/snackbar'
 import {
@@ -929,6 +928,15 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 const planningMap = shallowRef<Map | undefined>()
 const mapContext = provideMapContext()
 const { mapReady } = mapContext
+
+// Syncs user-loaded GeoTIFF overlays (sonar/bathymetry surveys) onto the planning map
+const mapOverlays = useMapOverlays()
+
+// Frame the map on a GeoTIFF overlay when requested from the configuration panel
+watch(
+  () => missionStore.mapOverlayFocusRequest.revision,
+  () => mapOverlays.zoomToOverlay(missionStore.mapOverlayFocusRequest.id)
+)
 
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
@@ -3855,6 +3863,9 @@ onMounted(async () => {
   const layerControl = L.control.layers(baseMaps)
   planningMap.value.addControl(layerControl)
 
+  // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
+  await mapOverlays.initOverlays(planningMap.value, layerControl)
+
   // Initialize scale control (always show)
   createScaleControl()
 
@@ -3920,6 +3931,7 @@ onUnmounted(() => {
   fallbackLayers = []
   stopTileFallbackWatcher?.()
   stopTileFallbackWatcher = undefined
+  mapOverlays.destroyOverlays()
 
   // Reset the map context so descendants stop reacting to the destroyed instance
   mapContext.mapReady.value = false
