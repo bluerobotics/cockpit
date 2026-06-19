@@ -182,6 +182,207 @@ export const computeMissionLocation = (mission: CockpitMission): WaypointCoordin
 }
 
 /**
+ * Limits applied to the placement transform inputs (scale and rotation).
+ * Shared between the composable that owns the state and the template that binds the inputs.
+ */
+export const PLACEMENT_LIMITS = {
+  /**
+   * Minimum allowed scale percentage (per axis).
+   */
+  scaleMinPercent: 10,
+  /**
+   * Maximum allowed scale percentage (per axis).
+   */
+  scaleMaxPercent: 2000,
+  /**
+   * Minimum allowed rotation in degrees.
+   */
+  rotationMinDeg: -180,
+  /**
+   * Maximum allowed rotation in degrees.
+   */
+  rotationMaxDeg: 180,
+} as const
+
+/**
+ * A 2D point in a local east/north meters frame anchored at some lat/lng origin.
+ */
+export type LocalMetersPoint = {
+  /**
+   * East offset in meters from the local-frame origin.
+   */
+  east: number
+  /**
+   * North offset in meters from the local-frame origin.
+   */
+  north: number
+}
+
+/**
+ * Axis-aligned bounding box in a local east/north meters frame.
+ */
+export type LocalMetersBounds = {
+  /**
+   * Minimum east offset (meters).
+   */
+  minE: number
+  /**
+   * Maximum east offset (meters).
+   */
+  maxE: number
+  /**
+   * Minimum north offset (meters).
+   */
+  minN: number
+  /**
+   * Maximum north offset (meters).
+   */
+  maxN: number
+}
+
+/**
+ * A geographic anchor as a plain `{ lat, lng }` pair so callers don't need a leaflet dependency.
+ */
+export type GeoAnchor = {
+  /**
+   * Latitude in degrees.
+   */
+  lat: number
+  /**
+   * Longitude in degrees.
+   */
+  lng: number
+}
+
+const METERS_PER_DEGREE_LAT = 111320
+const metersPerDegreeLng = (lat: number): number => METERS_PER_DEGREE_LAT * Math.cos((lat * Math.PI) / 180)
+
+/**
+ * Sanitises a user-entered scale percentage, falling back to 1.0 when the input is invalid.
+ * @param {number} raw - Raw percentage value (e.g. 100 means no scaling).
+ * @returns {number} The corresponding multiplier as a positive finite number.
+ */
+export const safeScalePercent = (raw: number): number => (Number.isFinite(raw) && raw > 0 ? raw / 100 : 1)
+
+/**
+ * Sanitises a user-entered rotation in degrees and converts it to radians.
+ * @param {number} raw - Raw rotation in degrees.
+ * @returns {number} The rotation in radians, or 0 when the input is non-finite.
+ */
+export const safeRotationRad = (raw: number): number => ((Number.isFinite(raw) ? raw : 0) * Math.PI) / 180
+
+/**
+ * Maps a point in the original mission local frame to a geographic coordinate, applying the
+ * configured scale and rotation around `currentAnchor`.
+ * @param {number} east - East offset (meters) from the original anchor.
+ * @param {number} north - North offset (meters) from the original anchor.
+ * @param {GeoAnchor} currentAnchor - Lat/lng anchor where the transformed point is centred.
+ * @param {number} scaleXPercent - Scale-X percentage (100 = no scaling).
+ * @param {number} scaleYPercent - Scale-Y percentage (100 = no scaling).
+ * @param {number} rotationDeg - Clockwise rotation in degrees applied around the anchor.
+ * @returns {WaypointCoordinates} The transformed coordinate as `[lat, lng]`.
+ */
+export const transformLocalMeters = (
+  east: number,
+  north: number,
+  currentAnchor: GeoAnchor,
+  scaleXPercent: number,
+  scaleYPercent: number,
+  rotationDeg: number
+): WaypointCoordinates => {
+  const scaleX = safeScalePercent(scaleXPercent)
+  const scaleY = safeScalePercent(scaleYPercent)
+  const theta = safeRotationRad(rotationDeg)
+  const cos = Math.cos(theta)
+  const sin = Math.sin(theta)
+
+  const sx = east * scaleX
+  const sy = north * scaleY
+  // Clockwise rotation on screen (north = +y on map).
+  const rotatedEast = sx * cos + sy * sin
+  const rotatedNorth = -sx * sin + sy * cos
+
+  return [
+    currentAnchor.lat + rotatedNorth / METERS_PER_DEGREE_LAT,
+    currentAnchor.lng + rotatedEast / metersPerDegreeLng(currentAnchor.lat),
+  ]
+}
+
+/**
+ * Projects a geographic coordinate into the original mission local frame anchored at `origin`.
+ * @param {WaypointCoordinates} coord - Coordinate as `[lat, lng]`.
+ * @param {GeoAnchor} origin - Lat/lng origin of the local frame.
+ * @returns {LocalMetersPoint} The east/north offset in meters from the origin.
+ */
+export const projectCoordToOriginalLocal = (coord: WaypointCoordinates, origin: GeoAnchor): LocalMetersPoint => ({
+  east: (coord[1] - origin.lng) * metersPerDegreeLng(origin.lat),
+  north: (coord[0] - origin.lat) * METERS_PER_DEGREE_LAT,
+})
+
+/**
+ * Applies the placement transform to an original mission coordinate, returning the placed coordinate.
+ * @param {WaypointCoordinates} coord - Original coordinate as `[lat, lng]`.
+ * @param {GeoAnchor} originalAnchor - Lat/lng origin of the mission's local frame.
+ * @param {GeoAnchor} currentAnchor - Lat/lng anchor where the placed mission is centred.
+ * @param {number} scaleXPercent - Scale-X percentage (100 = no scaling).
+ * @param {number} scaleYPercent - Scale-Y percentage (100 = no scaling).
+ * @param {number} rotationDeg - Clockwise rotation in degrees.
+ * @returns {WaypointCoordinates} The placed coordinate as `[lat, lng]`.
+ */
+export const transformPlacementCoord = (
+  coord: WaypointCoordinates,
+  originalAnchor: GeoAnchor,
+  currentAnchor: GeoAnchor,
+  scaleXPercent: number,
+  scaleYPercent: number,
+  rotationDeg: number
+): WaypointCoordinates => {
+  const local = projectCoordToOriginalLocal(coord, originalAnchor)
+  return transformLocalMeters(local.east, local.north, currentAnchor, scaleXPercent, scaleYPercent, rotationDeg)
+}
+
+/**
+ * Inverse of the rotation half of {@link transformLocalMeters}: takes a vector expressed in the
+ * rotated current frame back into the original local frame, where captured corner positions live.
+ * @param {number} eastRot - East offset (meters) in the rotated current frame.
+ * @param {number} northRot - North offset (meters) in the rotated current frame.
+ * @param {number} rotationDeg - Clockwise rotation in degrees that was applied to reach the current frame.
+ * @returns {LocalMetersPoint} The same vector expressed in the original local frame.
+ */
+export const unrotateToOriginalLocal = (eastRot: number, northRot: number, rotationDeg: number): LocalMetersPoint => {
+  const theta = safeRotationRad(rotationDeg)
+  const cos = Math.cos(theta)
+  const sin = Math.sin(theta)
+  return { east: eastRot * cos - northRot * sin, north: eastRot * sin + northRot * cos }
+}
+
+/**
+ * Computes the local-frame bounding box of a mission's waypoints and survey polygons.
+ * @param {CockpitMission} mission - The mission whose features should be bounded.
+ * @param {GeoAnchor} origin - Lat/lng origin of the local frame.
+ * @returns {LocalMetersBounds | null} The bounds, or null when the mission has no features.
+ */
+export const computeOriginalLocalBounds = (mission: CockpitMission, origin: GeoAnchor): LocalMetersBounds | null => {
+  const waypointCoords = (mission.waypoints ?? []).map((w) => w.coordinates)
+  const surveyCoords = (mission.surveys ?? []).flatMap((s) => s.polygonCoordinates ?? [])
+  if (waypointCoords.length === 0 && surveyCoords.length === 0) return null
+  let minE = Infinity
+  let maxE = -Infinity
+  let minN = Infinity
+  let maxN = -Infinity
+  const accumulate = (c: WaypointCoordinates): void => {
+    const { east, north } = projectCoordToOriginalLocal(c, origin)
+    if (east < minE) minE = east
+    if (east > maxE) maxE = east
+    if (north < minN) minN = north
+    if (north > maxN) maxN = north
+  }
+  for (const c of waypointCoords) accumulate(c)
+  for (const c of surveyCoords) accumulate(c)
+  return { minE, maxE, minN, maxN }
+}
+
+/**
  * Type guard for SavedMission.
  * @param {unknown} value - The value to check.
  * @returns {boolean} True if the value matches the SavedMission shape.
