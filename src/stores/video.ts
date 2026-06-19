@@ -660,16 +660,30 @@ export const useVideoStore = defineStore('video', () => {
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
     // Common configuration for the not growing dialogs
+    let notGrowingDialogOpen = false
+    const closeNotGrowingDialog = (): void => {
+      notGrowingDialogOpen = false
+      closeDialog()
+    }
     const suppressNotGrowingDialog = (): void => {
       suppressNotGrowingDialogs.value = true
-      closeDialog()
+      closeNotGrowingDialog()
     }
     const notGrowingDialogConfig = {
       variant: 'error',
+      // Persistent so it can only be closed via the actions below, which reset notGrowingDialogOpen. A
+      // backdrop/Escape dismissal would otherwise leave the flag stuck and stop the dialog from ever reappearing.
+      persistent: true,
       actions: [
         { text: "Don't show again during this session", size: 'small', action: suppressNotGrowingDialog },
-        { text: 'Close', size: 'small', action: closeDialog },
+        { text: 'Close', size: 'small', action: closeNotGrowingDialog },
       ],
+    }
+    // Only show the dialog once at a time, otherwise the timed monitor would re-open it on every tick.
+    const showNotGrowingDialog = (message: string): void => {
+      if (suppressNotGrowingDialogs.value || notGrowingDialogOpen) return
+      notGrowingDialogOpen = true
+      showDialog({ ...notGrowingDialogConfig, message })
     }
 
     // On Electron, we can get the size of the video output file in real time
@@ -698,10 +712,7 @@ export const useVideoStore = defineStore('video', () => {
         }
         const lastKnownFileSize = unprocessedVideos.value[recordingHash].lastKnownFileSize
         if (fileStats.size! <= lastKnownFileSize!) {
-          if (!suppressNotGrowingDialogs.value) {
-            const msg = 'The video output file is not growing. This can indicate a problem with the recording.'
-            showDialog({ ...notGrowingDialogConfig, message: msg })
-          }
+          showNotGrowingDialog('The video output file is not growing. This can indicate a problem with the recording.')
           return
         }
         unprocessedVideos.value[recordingHash].lastKnownFileSize = fileStats.size
@@ -722,10 +733,9 @@ export const useVideoStore = defineStore('video', () => {
         const numberOfChunks = await tempVideoStorage.localForage.length()
         const lastKnownNumberOfChunks = unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks
         if (numberOfChunks <= lastKnownNumberOfChunks!) {
-          if (!suppressNotGrowingDialogs.value) {
-            const msg = 'The number of video chunks is not growing. This can indicate a problem with the recording.'
-            showDialog({ ...notGrowingDialogConfig, message: msg })
-          }
+          showNotGrowingDialog(
+            'The number of video chunks is not growing. This can indicate a problem with the recording.'
+          )
           return
         }
         unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks = numberOfChunks
