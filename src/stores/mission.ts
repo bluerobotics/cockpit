@@ -11,6 +11,7 @@ import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
+  MapOverlayMeta,
   MapTileProvider,
   MapTileProviderPreference,
   MissionCommand,
@@ -92,6 +93,38 @@ export const useMissionStore = defineStore('mission', () => {
   const mainVehicleStore = useMainVehicleStore()
 
   const pointsOfInterest = useBlueOsStorage<PointOfInterest[]>('cockpit-points-of-interest', [])
+
+  // Metadata for user-loaded GeoTIFF overlays. The raster bytes live in the overlay storage
+  // (IndexedDB), keyed by each entry's `id`.
+  const mapOverlays = useBlueOsStorage<MapOverlayMeta[]>('cockpit-map-overlays-v1', [])
+
+  const addMapOverlay = (overlay: MapOverlayMeta): void => {
+    mapOverlays.value.push(overlay)
+  }
+
+  const removeMapOverlay = (id: string): void => {
+    const index = mapOverlays.value.findIndex((overlay) => overlay.id === id)
+    if (index !== -1) {
+      mapOverlays.value.splice(index, 1)
+    }
+  }
+
+  // Cross-component request to frame the active map on a given overlay. The bumped revision lets the map views
+  // react even when the same overlay is requested twice in a row.
+  const mapOverlayFocusRequest = ref<{
+    /**
+     * Id of the overlay to frame.
+     */
+    id: string
+    /**
+     * Bumped on each request so repeated focus requests still trigger the map views.
+     */
+    revision: number
+  }>({ id: '', revision: 0 })
+
+  const requestMapOverlayFocus = (id: string): void => {
+    mapOverlayFocusRequest.value = { id, revision: mapOverlayFocusRequest.value.revision + 1 }
+  }
 
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
@@ -652,6 +685,11 @@ export const useMissionStore = defineStore('mission', () => {
     updatePointOfInterest,
     removePointOfInterest,
     movePointOfInterest,
+    mapOverlays,
+    addMapOverlay,
+    removeMapOverlay,
+    mapOverlayFocusRequest,
+    requestMapOverlayFocus,
     persistDraft,
     clearDraft,
     bumpVehicleMissionRevision,

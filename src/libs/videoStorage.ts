@@ -65,7 +65,7 @@ class ElectronStorage implements ElectronStorageDB {
  * LocalForage storage implementation.
  * Uses the localforage library to store and retrieve data in the IndexedDB.
  */
-class LocalForageStorage implements StorageDB {
+export class LocalForageStorage implements StorageDB {
   localForage: LocalForage
 
   /**
