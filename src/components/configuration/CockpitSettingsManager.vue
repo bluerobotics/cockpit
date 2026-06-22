@@ -162,14 +162,14 @@
                           </template>
                           <template v-else>
                             <div class="flex w-full items-center min-w-0">
-                              <div class="w-7 shrink-0" />
+                              <div class="w-14 shrink-0" />
                               <p
                                 class="mt-[3px] flex-1 min-w-0 truncate text-center mx-[10px]"
                                 :title="String(editedValues[item.originalKey])"
                               >
                                 {{ editedValues[item.originalKey] }}
                               </p>
-                              <div class="w-7 shrink-0 flex justify-center">
+                              <div class="w-14 shrink-0 flex justify-center">
                                 <v-tooltip location="top" text="Edit value">
                                   <template #activator="{ props: tooltipProps }">
                                     <v-btn
@@ -179,6 +179,23 @@
                                       variant="text"
                                       :disabled="saving[item.originalKey]"
                                       @click="startEditing(item)"
+                                    />
+                                  </template>
+                                </v-tooltip>
+                                <v-tooltip
+                                  v-if="item.source === 'v2'"
+                                  location="top"
+                                  text="Reset this variable to its default value on the next Cockpit boot"
+                                >
+                                  <template #activator="{ props: tooltipProps }">
+                                    <v-btn
+                                      v-bind="tooltipProps"
+                                      size="x-small"
+                                      icon="mdi-restore"
+                                      variant="text"
+                                      class="text-white"
+                                      :disabled="saving[item.originalKey]"
+                                      @click="resetSetting(item)"
                                     />
                                   </template>
                                 </v-tooltip>
@@ -219,14 +236,14 @@
                         </div>
                         <div v-else>
                           <div class="flex w-full items-center min-w-0">
-                            <div class="w-7 shrink-0" />
+                            <div class="w-14 shrink-0" />
                             <p
                               class="cursor-pointer mt-1 flex-1 min-w-0 truncate text-center mx-[10px]"
                               @dblclick="startInlineJsonEditing(item.originalKey)"
                             >
                               {...}
                             </p>
-                            <div class="w-7 shrink-0 flex justify-center">
+                            <div class="w-14 shrink-0 flex justify-center">
                               <v-tooltip location="top" text="Edit value">
                                 <template #activator="{ props: tooltipProps }">
                                   <v-btn
@@ -236,6 +253,23 @@
                                     variant="text"
                                     :disabled="saving[item.originalKey]"
                                     @click="startInlineJsonEditing(item.originalKey)"
+                                  />
+                                </template>
+                              </v-tooltip>
+                              <v-tooltip
+                                v-if="item.source === 'v2'"
+                                location="top"
+                                text="Reset this variable to its default value on the next Cockpit boot"
+                              >
+                                <template #activator="{ props: tooltipProps }">
+                                  <v-btn
+                                    v-bind="tooltipProps"
+                                    size="x-small"
+                                    icon="mdi-restore"
+                                    variant="text"
+                                    class="text-white"
+                                    :disabled="saving[item.originalKey]"
+                                    @click="resetSetting(item)"
                                   />
                                 </template>
                               </v-tooltip>
@@ -294,7 +328,12 @@
 
       <v-card-actions>
         <div class="flex justify-between items-center p-2 w-full h-full text-[rgba(255,255,255,0.5)]">
-          <v-btn @click="resetAllCockpitSettings">Reset to defaults</v-btn>
+          <div class="flex items-center gap-x-2">
+            <v-btn @click="resetAllCockpitSettings">Reset to defaults</v-btn>
+            <v-btn v-if="pendingResetCount > 0" class="text-amber-300" @click="restartCockpit">
+              Restart ({{ pendingResetCount }} pending)
+            </v-btn>
+          </div>
           <v-btn class="text-white" @click="closeConfigDialog">Close</v-btn>
         </div>
       </v-card-actions>
@@ -370,6 +409,7 @@ const inlineJsonText = reactive<Record<string, string>>({})
 const saving = reactive<Record<string, boolean>>({})
 const JsonEditError = ref(false)
 const isLoaded = ref(false)
+const pendingResetCount = ref(0)
 const selectedUserId = ref('')
 const selectedVehicleId = ref('')
 const showLegacyInternalKeys = ref(false)
@@ -559,7 +599,12 @@ const waitForV2ValueToPersist = async (
 const loadUserSettings = (): void => {
   localStorageSnapshot.value = readLocalStorageSnapshot()
   localSyncedSettings.value = readSyncedSettings()
+  pendingResetCount.value = settingsManager.getKeysPendingReset().length
   isLoaded.value = true
+}
+
+const restartCockpit = (): void => {
+  reloadCockpitAndWarnUser()
 }
 
 const closeConfigDialog = (): void => {
@@ -616,6 +661,40 @@ const commitChanges = async (item: SettingsRow): Promise<void> => {
   } finally {
     saving[item.originalKey] = false
   }
+}
+
+const resetDialogOpen = ref(false)
+
+const resetSetting = (item: SettingsRow): void => {
+  if (saving[item.originalKey]) return
+  if (item.source !== 'v2' || !item.v2SettingKey) return
+  if (!selectedUserId.value || !selectedVehicleId.value) return
+
+  settingsManager.deleteKeyValue(item.v2SettingKey, selectedUserId.value, selectedVehicleId.value)
+  loadUserSettings()
+
+  // Avoid stacking dialogs when resetting several variables in a row
+  if (resetDialogOpen.value) return
+
+  resetDialogOpen.value = true
+  showDialog({
+    title: 'Variable reset',
+    message:
+      'The variable was reset in the settings, but its value is still in runtime memory. ' +
+      'Restart Cockpit for the reset to take effect. ' +
+      'If you want to reset more than one variable, you can do so before restarting.',
+    variant: 'warning',
+    maxWidth: 600,
+    actions: [
+      {
+        text: 'OK',
+        action: () => {
+          resetDialogOpen.value = false
+          closeDialog()
+        },
+      },
+    ],
+  })
 }
 
 const startInlineJsonEditing = (key: string): void => {
