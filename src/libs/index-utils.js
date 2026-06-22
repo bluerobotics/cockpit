@@ -112,6 +112,87 @@ export function getCapturedLogs() {
 }
 
 /**
+ * Builds a DOM-based modal used by the pre-Vue fallback screen.
+ * Native alert/confirm dialogs don't respond to mouse clicks in our Electron/webview shell,
+ * so we render real buttons that handle clicks (plus Enter/Esc) ourselves.
+ * @param {string} message - The message to display
+ * @param {boolean} withCancel - Whether to render a Cancel button alongside OK
+ * @returns {Promise<boolean>} Resolves true when confirmed, false when cancelled
+ */
+function showFallbackModal(message, withCancel) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div')
+    overlay.style.cssText =
+      'position:fixed;inset:0;z-index:2147483647;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.6);'
+
+    const card = document.createElement('div')
+    card.style.cssText =
+      'display:flex;flex-direction:column;align-items:center;background:#333;color:#fff;' +
+      'border:#fff solid 1px;border-radius:5px;padding:2rem;margin:1.5rem;max-width:65%;text-align:center;font-size:16px;'
+
+    const text = document.createElement('p')
+    text.style.cssText = 'white-space:pre-line;margin:0 0 0.5rem 0;'
+    text.textContent = message
+    card.appendChild(text)
+
+    const buttonsRow = document.createElement('div')
+    buttonsRow.style.cssText = 'display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;'
+
+    const baseButtonStyle =
+      'border:none;color:white;padding:15px 32px;font-size:16px;margin-top:1.5rem;cursor:pointer;border-radius:5px;'
+
+    const finish = (result) => {
+      document.removeEventListener('keydown', onKeyDown)
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay)
+      resolve(result)
+    }
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Enter') finish(true)
+      if (event.key === 'Escape' && withCancel) finish(false)
+    }
+
+    if (withCancel) {
+      const cancelButton = document.createElement('button')
+      cancelButton.textContent = 'Cancel'
+      cancelButton.style.cssText = baseButtonStyle + 'background-color:#a12626;'
+      cancelButton.addEventListener('click', () => finish(false))
+      buttonsRow.appendChild(cancelButton)
+    }
+
+    const okButton = document.createElement('button')
+    okButton.textContent = 'OK'
+    okButton.style.cssText = baseButtonStyle + 'background-color:#0486aa;'
+    okButton.addEventListener('click', () => finish(true))
+    buttonsRow.appendChild(okButton)
+
+    card.appendChild(buttonsRow)
+    overlay.appendChild(card)
+    document.body.appendChild(overlay)
+    document.addEventListener('keydown', onKeyDown)
+    okButton.focus()
+  })
+}
+
+/**
+ * Shows a fallback alert dialog with a single OK button.
+ * @param {string} message - The message to display
+ * @returns {Promise<void>} Resolves when the user dismisses the dialog
+ */
+export async function showFallbackAlert(message) {
+  await showFallbackModal(message, false)
+}
+
+/**
+ * Shows a fallback confirmation dialog with Cancel and OK buttons.
+ * @param {string} message - The message to display
+ * @returns {Promise<boolean>} Resolves true when confirmed, false when cancelled
+ */
+export function showFallbackConfirm(message) {
+  return showFallbackModal(message, true)
+}
+
+/**
  * Backup localStorage settings to JSON file
  * @returns {Promise<{success: boolean, message: string}>} Result of backup operation
  */
@@ -196,7 +277,7 @@ This will:
 
 Found ${Object.keys(backupData).length} setting(s) to import.`
 
-        if (!confirm(confirmMessage)) {
+        if (!(await showFallbackConfirm(confirmMessage))) {
           resolve({ success: false, message: 'Import cancelled by user' })
           return
         }
@@ -217,7 +298,7 @@ Found ${Object.keys(backupData).length} setting(s) to import.`
           await Promise.allSettled(keys.map((key) => caches.delete(key)))
         }
 
-        alert('Settings imported successfully! The page will now reload.')
+        await showFallbackAlert('Settings imported successfully! The page will now reload.')
         location.reload()
       } catch (error) {
         resolve({
@@ -325,7 +406,7 @@ Please try again or contact support.`,
  */
 export async function resetSettings() {
   try {
-    if (!confirm('Are you sure you want to reset Cockpit settings?')) {
+    if (!(await showFallbackConfirm('Are you sure you want to reset Cockpit settings?'))) {
       return { success: false, message: 'Reset cancelled by user' }
     }
 

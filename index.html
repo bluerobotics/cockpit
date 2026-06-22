@@ -139,20 +139,19 @@
                 nonAppMain.appendChild(fallbackContent);
 
                 document.getElementById('backup-settings-btn').addEventListener('click', function() {
-                    utils.backupSettings().then(function(r) { if (!r.success) alert(r.message); });
+                    utils.backupSettings().then(function(r) { if (!r.success) utils.showFallbackAlert(r.message); });
                 });
                 document.getElementById('import-settings-btn').addEventListener('click', function() {
                     utils.importSettings().then(function(r) {
-                        if (!r.success && !r.message.includes('cancelled')) alert(r.message);
-                        location.reload();
+                        if (!r.success && !r.message.includes('cancelled')) utils.showFallbackAlert(r.message);
                     });
                 });
                 document.getElementById('download-logs-btn').addEventListener('click', function() {
-                    utils.downloadLogs().then(function(r) { alert(r.message); });
+                    utils.downloadLogs().then(function(r) { utils.showFallbackAlert(r.message); });
                 });
                 document.getElementById('clear-settings-btn').addEventListener('click', function() {
                     utils.resetSettings().then(function(r) {
-                        if (!r.success && !r.message.includes('cancelled')) alert(r.message);
+                        if (!r.success && !r.message.includes('cancelled')) utils.showFallbackAlert(r.message);
                     });
                 });
             });
