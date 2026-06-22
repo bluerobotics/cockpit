@@ -293,7 +293,7 @@ Found ${Object.keys(backupData).length} setting(s) to import.`
         }
 
         // Clear cache and reload page
-        if (caches) {
+        if (typeof caches !== 'undefined') {
           const keys = await caches.keys()
           await Promise.allSettled(keys.map((key) => caches.delete(key)))
         }
@@ -405,23 +405,24 @@ Please try again or contact support.`,
  * @returns {Promise<{success: boolean, message: string}>} Result of reset operation
  */
 export async function resetSettings() {
-  try {
-    if (!(await showFallbackConfirm('Are you sure you want to reset Cockpit settings?'))) {
-      return { success: false, message: 'Reset cancelled by user' }
-    }
+  if (!(await showFallbackConfirm('Are you sure you want to reset Cockpit settings?'))) {
+    return { success: false, message: 'Reset cancelled by user' }
+  }
 
+  try {
     localStorage.clear()
 
-    // Clear cache to ensure a fresh access to all files
-    if (caches) {
-      const keys = await caches.keys()
-      await Promise.allSettled(keys.map((key) => caches.delete(key)))
+    // Clear cache to ensure a fresh access to all files.
+    // Capped with a timeout so a slow/hanging cache API can never block the restart below.
+    if (typeof caches !== 'undefined') {
+      const clearCaches = caches.keys().then((keys) => Promise.allSettled(keys.map((key) => caches.delete(key))))
+      await Promise.race([clearCaches, new Promise((resolve) => setTimeout(resolve, 2000))])
     }
-
-    location.reload()
-
-    return { success: true, message: 'Settings reset successfully' }
   } catch (error) {
-    return { success: false, message: `Error resetting settings: ${error.message}` }
+    // Even if clearing the cache fails, we still want to restart so the cleared settings take effect
+    console.error('Error while resetting settings:', error)
   }
+
+  window.location.reload()
+  return { success: true, message: 'Settings reset successfully' }
 }
