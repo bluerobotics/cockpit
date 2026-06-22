@@ -193,6 +193,34 @@ export function showFallbackConfirm(message) {
 }
 
 /**
+ * Shows a full-screen "Reloading..." overlay so the user can't interact while Cockpit restarts.
+ * @returns {void}
+ */
+export function showFallbackReloadingOverlay() {
+  const overlay = document.createElement('div')
+  overlay.style.cssText =
+    'position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;justify-content:center;' +
+    'align-items:center;gap:2rem;background:#333;color:#fff;font-size:20px;'
+
+  const spinner = document.createElement('div')
+  spinner.style.cssText =
+    'width:36px;height:36px;border:3px solid rgba(255,255,255,0.15);border-top-color:rgba(255,255,255,0.8);' +
+    'border-radius:50%;'
+  spinner.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], {
+    duration: 800,
+    iterations: Infinity,
+  })
+
+  const text = document.createElement('p')
+  text.textContent = 'Reloading...'
+  text.style.cssText = 'margin:0;'
+
+  overlay.appendChild(spinner)
+  overlay.appendChild(text)
+  document.body.appendChild(overlay)
+}
+
+/**
  * Backup localStorage settings to JSON file
  * @returns {Promise<{success: boolean, message: string}>} Result of backup operation
  */
@@ -408,6 +436,8 @@ export async function resetSettings() {
   if (!(await showFallbackConfirm('Are you sure you want to reset Cockpit settings?'))) {
     return { success: false, message: 'Reset cancelled by user' }
   }
+
+  showFallbackReloadingOverlay()
 
   try {
     localStorage.clear()
